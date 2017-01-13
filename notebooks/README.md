@@ -1,6 +1,6 @@
 ### Data
 
-We are currently veting and cleaning our data sources for open sourcing and plan to finish this process until the end of January 2017. As soon as we are done we will add detailed instructions of how to run the notebooks to this folder of the repository.
+We are currently veting and cleaning our data sources for open sourcing and plan to finish this process before the end of January 2017. As soon as we are done we will add detailed instructions of how to run the notebooks to this folder of the repository.
 
 Below is a list of the main data sources used in the application along with a short description.
 

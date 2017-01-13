@@ -19,8 +19,8 @@ We believe algorithms that aim to serve the public interest should be audit-able
 
 This repository contains several components where each is located within a single folder on the root level. Currently existing folders are:
 
-* `frontend`: Containing the Bob Emploi web application.
-* `notebooks`: Data analysis notebooks.
+* `frontend`: Bob Emploi web application.
+* `notebooks`: Data analysis reports in the form of [Jupyter Notebooks](https://jupyter.org/).
 
 Each folder contains a README file with further details regarding this application.
 
@@ -40,7 +40,7 @@ All components / applications are packaged in [Docker Containers](https://www.do
 
 ### Core Application Code
 
-The core application source code is published in the `frontend` folder of this repository. It is still under very active development and even major features and interfaces are likely to change. 
+The core application source code is published in the `frontend` folder of this repository. It is still under very active development and even major features and interfaces are likely to change.
 
 ### Components
 We have currently opened two of the components we built as part of Bob Emploi:
@@ -51,4 +51,4 @@ We have currently opened two of the components we built as part of Bob Emploi:
 
 We have opened some of the data analysis notebooks (folder `notebooks`) pertaining to the data sources used by the application. These are unedited and incomplete, but provide a first insight on the data our recommendations are based on. As these are critical to being able to assess the validity of Bob Emploi's recommendation, we will first focus our open-sourcing efforts on opening more notebooks.
 
-In particular, some of our datasets contain private data, or belong to an external data partner), and as such notebooks analyzing them will be opened over time as we're able to individually vet them for any potential leakage of sensitive information. The [notebooks README](notebooks/README.md) contains a list of the main data sources used in the application along with a short description.
+In particular, some of our datasets contain private data, or belong to an external data partner, and as such notebooks analyzing them will be opened over time as we are able to individually vet them for any potential leakage of sensitive information. The [notebooks README](notebooks/README.md) contains a list of the main data sources used in the application along with a short description.
