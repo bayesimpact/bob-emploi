@@ -1,0 +1,253 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "bob_emploi/frontend/api/chantier.proto";
+import "bob_emploi/frontend/api/company.proto";
+
+// TODO: Rename package to bayesimpact.bob.
+package bayesimpact.pe;
+
+// Next available ID: 24.
+message Action {
+  // A unique identifier for this action (unique across all actions for a
+  // user).
+  string action_id = 1;
+
+  // A short descriptive title in the user's language.
+  string title = 2;
+
+  // The feminine version of the title if it is different.
+  string title_feminine = 16;
+
+  // Current status of this action for the user.
+  ActionStatus status = 3;
+
+  // A short description of the action in the user's language. It uses markdown
+  // syntax. Note that it's always displayed just below the title so it
+  // should try not to start by repeating the title.
+  string short_description = 4;
+
+  // The feminine version of the short_description if it is different.
+  string short_description_feminine = 17;
+
+  // Link to start the actual action, usually on an external website.
+  string link = 15;
+
+  // A list of steps on how to do the action, using markdown and in the user's
+  // language. DEPRECATED, although do not remove for now as we might use it
+  // later.
+  string how_to = 6 [deprecated = true];
+
+  // The date and time at which this action was first suggested.
+  google.protobuf.Timestamp created_at = 7;
+
+  // The date and time at which this action was stopped (marked as done,
+  // declined or snoozed).
+  google.protobuf.Timestamp stopped_at = 5;
+
+  // The date and time at which this action was stuck.
+  google.protobuf.Timestamp stuck_at = 23;
+
+  // The date and time at which an action from the same action template can be
+  // generated again. If not set, no new actions should be generated.
+  google.protobuf.Timestamp end_of_cool_down = 8;
+
+  // Feedback on the execution of the action. (e.g.: Answer to 'How did it go?')
+  string done_feedback = 12;
+
+  // Reason why this suggestion was declined.
+  string decline_reason = 13;
+
+  // The ID of the template from which this action was generated.
+  string action_template_id = 14;
+
+  // The chantiers that the user has activated and that pushed us to suggest
+  // this action in the first place. Note that those chantiers might be
+  // deactivated later.
+  repeated Chantier chantiers = 18;
+
+  // A company to apply to. Only set if this action is an action meant to
+  // spontaneously apply to a company.
+  Company apply_to_company = 19;
+
+  // Goal if this is a sticky action.
+  string goal = 20;
+
+  // A text to explain why one should start a sticky action as a multiple steps
+  // process instead of just using the initial action.
+  string sticky_action_incentive = 21;
+
+  // Detailed steps if this is a sticky action.
+  repeated StickyActionStep steps = 22;
+}
+
+enum ActionStatus {
+  ACTION_UNKNOWN_STATUS = 0;
+
+  // This action has been pushed to the user but they have not read it or
+  // interacted with it yet.
+  ACTION_UNREAD = 1;
+
+  // The user is currently tackling this action.
+  ACTION_CURRENT = 2;
+
+  // The user has stuck this action to tackle it over upcoming days.
+  ACTION_STUCK = 6;
+
+  // The action was current and got marked as done. After that we will ask the
+  // user a question about the action (e.g.: 'How did it go?'). The answer will be
+  // recorded in the `done_feedback` field. It starts a cool down time during
+  // which no similar actions (from the same action template) will be
+  // generated.
+  ACTION_DONE = 3;
+
+  // The action was postponed by the user. It is removed from the list of
+  // visible actions but an action from the same action template can be
+  // generated the next time actions are needed.
+  ACTION_SNOOZED = 4;
+
+  // The action was unread or current but the user decided not to do it. The
+  // reason for this decline is to be captured in `decline_reason`. The
+  // corresponding action template will not be used anymore for this project.
+  ACTION_DECLINED = 5;
+
+  // The user has finished this sticky action.
+  ACTION_STICKY_DONE = 7;
+}
+
+// A template for creating new actions for a user.
+message ActionTemplate {
+  // A unique identifier for this template.
+  string action_template_id = 1;
+
+  // The title of the actions that will be created. For now this is directly
+  // copied over to the action's title field. In the future we might be more
+  // creative.
+  string title = 2;
+
+  // The feminine version of the title if it is different.
+  string title_feminine = 8;
+
+  // The short description of the actions that will be created. For now this
+  // is directly copied over to the action's short_description field. In the
+  // future we might be more creative.
+  string short_description = 3;
+
+  // The feminine version of the short_description if it is different.
+  string short_description_feminine = 11;
+
+  // A set of chantier IDs for which the ations generated by the current
+  // template should be suggested.
+  repeated string chantiers = 5;
+
+  // A list of steps on how to do the actions that will be created, using
+  // markdown and in the user's language. For now this is directly copied over
+  // to the action's how_to field. In the future we might be more creative.
+  string how_to = 6;
+
+  // Link to start the actual action, usually on an external website. Some
+  // variables in there will be replaced when instantiating the template:
+  //  - %cityName, the name of the city (URL encoded).
+  //  - %latin1CityName, same as above but using latin-1 encoding instead of
+  //    utf-8.
+  //  - %departementId, the ID of the departement.
+  //  - %postcode, the postcode of the city (or the closest thing that looks
+  //    like it: the departement ID followed by 0 up to 5 digits).
+  //  - %regionId, the ID of the region.
+  //  - %romeId, the ID of the job group.
+  //  - %jobId, the OGR code of the job.
+  //  - %jobGroupNameUrl, the name of the job group prepared for a URL (e.g.
+  //    assistanat-de-direction, boucherie).
+  //  - %masculineJobName, the name of the job as a masculine (even if user is
+  //    feminine).
+  //  - %latin1MasculineJobName, same as above but using latin-1 encoding
+  //    instead of utf-8.
+  string link = 7;
+
+  // The level of priority of this action template over others. There is no
+  // preference among action templates with the same priority. The minimum
+  // priority is 0, and the higher levels get picked first.
+  int32 priority_level = 12;
+
+  // Cool down duration in days: number of days to wait before re-suggesting an
+  // action after an action from this template was marked as done. It is set
+  // only for recurrent actions (i.e. 0 means non-recurring).
+  int32 cool_down_duration_days = 9;
+
+  // A list of action filter IDs: do not generate any action if one these
+  // filters returns false for the project. We use the same scoring design than
+  // for chantiers (http://go/pe:scoring-chantiers#heading=h.uxvt0tjbxorb), see
+  // the list of available filters in scoring.py.
+  repeated string filters = 10;
+
+  // The type of generator of actions if this is not simply copying values over
+  // to create new actions.
+  ActionGenerator special_generator = 13;
+
+  // Goal if this is a sticky action.
+  string goal = 14;
+
+  // A text to explain why one should start a sticky action as a multiple steps
+  // process instead of just using the initial action.
+  string sticky_action_incentive = 15;
+
+  // IDs of detailed steps if this is a sticky action.
+  repeated string step_ids = 16;
+}
+
+
+message StickyActionStep {
+  // Unique step ID (unique among all steps for this user).
+  string step_id = 10;
+
+  // Short title for the step.
+  string title = 1;
+
+  // Markdown text describing the full instructions for this step, including
+  // links to external websites.
+  string content = 2;
+
+  // Link to an external website useful for this step.
+  string link = 11;
+
+  // Name of the button with the link.
+  string link_name = 12;
+
+  // Rough number of minutes that the step will take. This is the active part,
+  // requiring the user to actually do something.
+  int32 duration_active_minutes = 3;
+
+  // Rough number of minutes that the user might need to wait before finishing
+  // the step, e.g. waiting for a friend to call them back.
+  int32 duration_waiting_minutes = 4;
+
+  // Caption for the finish checkbox, e.g. "I did that step, and am ready for
+  // the next".
+  string finish_checkbox_caption = 5;
+
+  // Caption for the finish small input text, e.g. "Enter the name of the
+  // friend you want to meet".
+  string finish_text_caption = 6;
+
+  // Caption for the finish comments or large text input, e.g. "Enter what you
+  // learned from that".
+  string finish_long_text_caption = 7;
+
+
+  // USER GENERATED CONTENT.
+
+  // Is this step done.
+  bool is_done = 8;
+
+  // Long or short text entered by user when finishing the step.
+  string text = 9;
+}
+
+
+enum ActionGenerator {
+  DEFAULT_ACTION_GENERATOR = 0;
+
+  // An action generator that gets companies from La Bonne Boite API when
+  // creating an action.
+  LA_BONNE_BOITE = 1;
+}

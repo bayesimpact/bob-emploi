@@ -1,0 +1,197 @@
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'GTWalsheim';
+}
+
+/* We do most of the styling as inline styles using React. Only the text that we render
+via the Markdown component is easier to be styled via classic CSS */
+h2, h3 {
+  margin-top: 3em;
+}
+
+h2+h3 {
+  margin-top: 1em;
+}
+
+input, select, textarea {
+  border: solid 1px #d9d9e0;  /* silver */
+}
+
+div:focus, input:focus, select:focus, button:focus, a:focus, textarea:focus {
+  outline: none;
+}
+
+input:hover, select:hover, textarea:hover {
+  border-color: #9596a0;  /* cool-grey */
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #58bbfb;  /* skye-blue */
+}
+
+.marked-invalid input, .marked-invalid select {
+  border-color: #ee4266;  /* red-pink */
+}
+
+.marked-invalid .algolia-autocomplete input.aa-input {
+  border-color: #ee4266;  /* red-pink */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+button.google-login {
+  background: #dc4e41;
+}
+
+button.google-login:hover, button.google-login:focus {
+  background: #c33b2f;
+}
+
+button.google-login span {
+  margin-left: 4px;
+}
+
+button.facebook-login {
+  background: #3b5998;
+}
+
+button.facebook-login:hover, button.facebook-login:focus {
+  background: #2a4885;
+}
+
+button.login {
+  border: none;
+  border-radius: 100px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  margin-bottom: 15px;
+  padding: 7px 18px;
+  text-align: left;
+  transition: background-color 450ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms;
+  width: 280px;
+}
+
+button.login .fa {
+  display: inline-block;
+  margin-right: 0.5em;
+  width: 1em;
+}
+
+
+/* Tooltip from http://www.w3schools.com/howto/howto_css_tooltip.asp */
+/* Tooltip container */
+.tooltip {
+    position: relative;
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+    visibility: hidden;
+    min-width: 120px;
+    background-color: #fff;
+    color: #21293d;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.3);
+
+    /* Position the tooltip text */
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+
+    /* Fade in tooltip */
+    opacity: 0;
+    transition: opacity 1s;
+}
+
+.tooltip .tooltiptext.tooltip-bottom, .tooltip .tooltiptext.tooltip-bottom-right {
+    bottom: initial;
+    top: 135%;
+}
+
+.tooltip .tooltiptext.tooltip-bottom-right {
+    transform: translateX(-10%);
+}
+
+.tooltip .tooltiptext::before {
+    background: #fff;
+    border-radius: 6px;
+    bottom: 0;
+    content: "";
+    height: 10px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    z-index: 1;
+}
+
+/* Tooltip arrow */
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    background-color: #fff;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.3);
+    transform: rotate(45deg) translate(0, -6.5px);
+    width: 10px;
+    height: 10px;
+    z-index: -1;
+}
+
+.tooltip .tooltiptext.tooltip-bottom::before, .tooltip .tooltiptext.tooltip-bottom-right::before {
+    bottom: initial;
+    top: 0;
+}
+
+.tooltip .tooltiptext.tooltip-bottom::after, .tooltip .tooltiptext.tooltip-bottom-right::after {
+    bottom: 100%;
+    top: initial;
+    transform: rotate(45deg) translate(0, 6.5px);
+}
+
+.tooltip .tooltiptext.tooltip-bottom-right::after {
+    left: 10%;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Show the tooltip text when `forced` class is set */
+.tooltip.forced .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Fixes the layout on Firefox and IE, where the iframe to authenticate with
+ * Google weirdly messes the layout by adding scrollbar even when not needed. */
+#ssIFrame_google {
+  top: 0;
+}
+
+/* Fixes IE placeholder color. */
+input:-ms-input-placeholder {
+  color: #999 !important;
+}
+
+/* Drop IE icons to clear field or reveal password. */
+input::-ms-reveal, input::-ms-clear {
+  display: none;
+}

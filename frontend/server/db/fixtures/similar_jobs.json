@@ -1,0 +1,145 @@
+[
+ {
+  "_id": "M1403",
+  "jobGroups": [
+   {
+    "jobGroup": {
+     "name": "Analyse et ingénierie financière",
+     "romeId": "M1201",
+     "samples": [
+      {
+       "codeOgr": "38051",
+       "feminineName": "Analyste quantitatif en finance",
+       "masculineName": "Analyste quantitatif en finance",
+       "name": "Analyste quantitatif en finance"
+      },
+      {
+       "codeOgr": "15353",
+       "feminineName": "Gestionnaire de risques financiers",
+       "masculineName": "Gestionnaire de risques financiers",
+       "name": "Gestionnaire de risques financiers"
+      },
+      {
+       "codeOgr": "10949",
+       "feminineName": "Analyste financière",
+       "masculineName": "Analyste financier",
+       "name": "Analyste financier / financière"
+      }
+     ]
+    }
+   },
+   {
+    "jobGroup": {
+     "name": "Analyse de tendance",
+     "romeId": "M1702",
+     "samples": [
+      {
+       "codeOgr": "17816",
+       "feminineName": "Planneuse stratégique",
+       "masculineName": "Planneur stratégique",
+       "name": "Planneur / Planneuse stratégique"
+      },
+      {
+       "codeOgr": "18670",
+       "feminineName": "Responsable de bureau de style et tendances",
+       "masculineName": "Responsable de bureau de style et tendances",
+       "name": "Responsable de bureau de style et tendances"
+      },
+      {
+       "codeOgr": "24849",
+       "feminineName": "Junior planner",
+       "masculineName": "Junior planner",
+       "name": "Junior planner"
+      }
+     ]
+    }
+   },
+   {
+    "jobGroup": {
+     "name": "Développement et promotion publicitaire",
+     "romeId": "E1401",
+     "samples": [
+      {
+       "codeOgr": "11206",
+       "feminineName": "Assistante chef de publicité",
+       "masculineName": "Assistant chef de publicité",
+       "name": "Assistant / Assistante chef de publicité"
+      },
+      {
+       "codeOgr": "12265",
+       "feminineName": "Chef de publicité senior",
+       "masculineName": "Chef de publicité senior",
+       "name": "Chef de publicité senior"
+      },
+      {
+       "codeOgr": "12254",
+       "feminineName": "Chef de projet publicitaire",
+       "masculineName": "Chef de projet publicitaire",
+       "name": "Chef de projet publicitaire"
+      }
+     ]
+    }
+   },
+   {
+    "jobGroup": {
+     "name": "Conseil en organisation et management d'entreprise",
+     "romeId": "M1402",
+     "samples": [
+      {
+       "codeOgr": "38829",
+       "feminineName": "Chef de projet green IT",
+       "masculineName": "Chef de projet green IT",
+       "name": "Chef de projet green IT"
+      },
+      {
+       "codeOgr": "19064",
+       "feminineName": "Responsable en organisation en entreprise",
+       "masculineName": "Responsable en organisation en entreprise",
+       "name": "Responsable en organisation en entreprise"
+      },
+      {
+       "codeOgr": "19062",
+       "feminineName": "Responsable en knowledge management",
+       "masculineName": "Responsable en knowledge management",
+       "name": "Responsable en knowledge management"
+      }
+     ]
+    }
+   },
+   {
+    "jobGroup": {
+     "name": "Développement local",
+     "romeId": "K1802",
+     "samples": [
+      {
+       "codeOgr": "11792",
+       "feminineName": "Chargée de développement économique",
+       "masculineName": "Chargé de développement économique",
+       "name": "Chargé / Chargée de développement économique"
+      }
+     ]
+    }
+   },
+   {
+    "jobGroup": {
+     "name": "Recherche en sciences de l'homme et de la société",
+     "romeId": "K2401",
+     "samples": [
+      {
+       "codeOgr": "12607",
+       "feminineName": "Chercheuse en économie",
+       "masculineName": "Chercheur en économie",
+       "name": "Chercheur / Chercheuse en économie"
+      },
+      {
+       "codeOgr": "14566",
+       "feminineName": "Économiste chercheuse",
+       "masculineName": "Économiste chercheur",
+       "name": "Économiste chercheur / chercheuse"
+      }
+     ]
+    }
+   }
+  ]
+ }
+]

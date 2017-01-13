@@ -1,0 +1,61 @@
+{
+  "extends": [
+    "eslint:recommended",
+    "plugin:import/recommended",
+    "plugin:react/recommended"
+  ],
+  "parser": "babel-eslint",
+  "plugins": [
+    "import",
+    "react"
+  ],
+  "settings": {
+    "import/resolver": "webpack"
+  },
+  "ecmaFeatures": {
+    "jsx": true,
+    "modules": true
+  },
+  "env": {
+    "browser": true,
+    "amd": true,
+    "es6": true,
+    "node": true
+  },
+  "rules": {
+    "array-bracket-spacing": "error",
+    "brace-style": ["error", "1tbs", {"allowSingleLine": false}],
+    "camelcase": ["error", {"properties": "always"}],
+    "comma-dangle": ["error", "always-multiline"],
+    "comma-style": "error",
+    "dot-location": "error",
+    "eol-last": "error",
+    "eqeqeq": "error",
+    "global-strict": 0,
+    "import/unambiguous": 0,
+    "indent": ["error", 2, {"SwitchCase": 1}],
+    "jsx-quotes": ["error", "prefer-double"],
+    "key-spacing": "error",
+    "linebreak-style": "error",
+    "max-len": ["error", 100, 4, { "ignoreUrls": true }],
+    "no-console": "error",
+    "no-else-return": "error",
+    "no-lonely-if": "error",
+    "no-trailing-spaces": "error",
+    "no-unexpected-multiline": "error",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^unused[A-Z]" }],
+    "no-use-before-define": "error",
+    "object-curly-spacing": "error",
+    "operator-assignment": "error",
+    "prefer-const": "error",
+    "quotes": ["error", "single", "avoid-escape"],
+    "react/jsx-curly-spacing": "error",
+    "react/jsx-equals-spacing": "error",
+    "react/jsx-indent": ["error", 2],
+    "react/jsx-space-before-closing": "error",
+    "react/no-unused-prop-types": ["error", {"skipShapeProps": true}],
+    "semi": ["error", "never"],
+    "sort-keys": "error",
+    "space-in-parens": "error"
+  }
+}

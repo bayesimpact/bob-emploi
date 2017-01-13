@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="52px" height="52px" viewBox="0 0 52 52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 41.2 (35397) - http://www.bohemiancoding.com/sketch -->
+    <title>white-group</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="17.3333333" y="13.4814815" width="5.77777778" height="7.7037037" rx="2.88888889"></rect>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="5.77777778" height="7.7037037" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+        <rect id="path-3" x="28.8888889" y="13.4814815" width="5.77777778" height="7.7037037" rx="2.88888889"></rect>
+        <mask id="mask-4" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="5.77777778" height="7.7037037" fill="white">
+            <use xlink:href="#path-3"></use>
+        </mask>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Dashboard---Test-Icons-CT-(hover)" transform="translate(-52.000000, -493.000000)">
+            <g id="white-group" transform="translate(52.000000, 493.000000)">
+                <circle id="Oval-5" fill="#EE4266" cx="26" cy="26" r="26"></circle>
+                <rect id="Rectangle-5" fill="#FFFFFF" x="15.4074074" y="25.037037" width="21.1851852" height="11.5555556"></rect>
+                <rect id="Rectangle-5" fill="#FFFFFF" x="15.4074074" y="17.3333333" width="21.1851852" height="5.77777778" rx="1.92592593"></rect>
+                <use id="Rectangle-6" stroke="#EE4266" mask="url(#mask-2)" stroke-width="3.85185185" fill="#FFFFFF" xlink:href="#path-1"></use>
+                <use id="Rectangle-6" stroke="#EE4266" mask="url(#mask-4)" stroke-width="3.85185185" fill="#FFFFFF" xlink:href="#path-3"></use>
+            </g>
+        </g>
+    </g>
+</svg>

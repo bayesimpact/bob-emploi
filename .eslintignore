@@ -1,0 +1,4 @@
+coverage/
+dist/
+vendor/
+*_pb.js

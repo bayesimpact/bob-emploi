@@ -1,0 +1,416 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/geo.proto";
+import "google/protobuf/timestamp.proto";
+
+// Description of a job, like plumber or school teacher.
+message Job {
+  // The group this job is part of. Might be empty if this job is a sample in a
+  // job group.
+  JobGroup job_group = 1;
+
+  // Complete name of this job in user's language for both genders.
+  string name = 2;
+
+  // Complete masculine name of this job in the user's language.
+  string masculine_name = 4;
+
+  // Complete feminine name of this job in the user's language.
+  string feminine_name = 5;
+
+  // OGR code identifying the job more precisely.
+  string code_ogr = 3;
+}
+
+// Description of a job group.
+// Next free ID: 13.
+message JobGroup {
+  // Identifier of the group in the ROME index.
+  string rome_id = 1;
+
+  // Complete name of this group in user's language.
+  string name = 2;
+
+  // Example of jobs in this group.
+  repeated Job samples = 3;
+
+  // All jobs in this group.
+  repeated Job jobs = 5;
+
+  // A link to a nice image representing this job group.
+  string image_link = 4;
+
+  // Major and minor Holland Codes (e.g A (artistic) or R (realistic)).
+  string holland_code_major = 8;
+  string holland_code_minor = 9;
+
+  // A description of the work environment as a short text (from ROME).
+  string working_environment = 10;
+
+  // A description of the job group (from ROME).
+  string description = 11;
+
+  // Requirements for this job group.
+  JobRequirements requirements = 12;
+
+  // A short text (but multiple lines) describing the requirements for this job
+  // group (from ROME).
+  string requirements_text = 13;
+
+  // Work environment for this job group.
+  WorkEnvironment work_environment_keywords = 14;
+
+  // How difficult it is for job seekers to apply to this kind of jobs.
+  ApplicationProcessComplexity application_complexity = 15;
+}
+
+message LocalJobStats {
+  // Labor needed for the user's job in their latest job in their bassin
+  // d'emploi.
+  HiringNeed bmo = 1;
+
+  // Esimation of the salary the job seeker could get with this job.
+  SalaryEstimation salary = 3;
+
+  // Estimation of the total unemployment duration for this job.
+  DurationEstimation unemployment_duration = 4;
+
+  // IMT stats (e.g. EmploymentType distribution)
+  ImtLocalJobStats imt = 5;
+
+  // The city where those stats can be found. In case where this LocalJobStats
+  // is used for a wider area than just a city, the stats are the best ones
+  // that can be found in a city within this area. This is the city.
+  FrenchCity best_city = 6;
+
+  // Evolution in percentage of the number of offers since last year (Year over
+  // Year growth).
+  int32 job_offers_change = 7;
+
+  // Number of job offers by Pôle Emploi during the last year.
+  int32 num_job_offers_last_year = 8;
+
+  // Number of job offers by Pôle Emploi during the previous year.
+  int32 num_job_offers_previous_year = 9;
+
+  // Number of job offers currently available on the Pôle Emploi website. This
+  // number might have some delay depending on when it was computed but the
+  // goal is to have it updated daily.
+  int32 num_available_job_offers = 10;
+
+  // A sorted list of less stressful job groups, the less stressful first.
+  repeated RelatedLocalJobGroup less_stressful_job_groups = 11;
+
+  // Count of job offers by Pôle Emploi during each year.
+  map<int32, int32> num_job_offers_per_year = 12;
+}
+
+// Stats for a job group related to another one, e.g. a similar job group that
+// is less stressful locally.
+message RelatedLocalJobGroup {
+  // The job group that is related
+  JobGroup job_group = 1;
+
+  // Shallow stats containing merely the important stats that defines the
+  // relation with the main job group, e.g. the IMT market stress.
+  LocalJobStats local_stats = 2;
+}
+
+
+// Information about hiring needs (or in French: Besoin en Main d'Œuvre aka
+// BMO) http://bmo.pole-emploi.org/.
+message HiringNeed {
+  // Percentage of the planned hirings that are only seasonal.
+  int32 percent_seasonal = 2;
+
+  // Percentage of the planned hirings that are planned to be difficult (for
+  // employers).
+  int32 percent_difficult = 3;
+}
+
+enum SalaryUnit {
+  UNKNOWN_SALARY_UNIT = 0;
+
+  // Annual gross salary (mostly used for large salaries).
+  ANNUAL_GROSS_SALARY = 1;
+
+  // Monthly net salary, i.e. what the job seeker would get at the end of the
+  // month.
+  MONTHLY_NET_SALARY = 2;
+
+  // Monthly gross salary, i.e. what the job seeker has written in their contract,
+  // when the contract mentions a monthly salary.
+  MONTHLY_GROSS_SALARY = 3;
+
+  // Hourly net salary, i.e. what the job seeker would get per hour.
+  HOURLY_NET_SALARY = 4;
+}
+
+message SalaryEstimation {
+  // The estimation of the salary as a short text in the user's language, e.g.
+  // "12-22k€".
+  string short_text = 1;
+
+  // Minimal salary of the estimation (usually corresponds to 80% of data
+  // points being greater than this).
+  float min_salary = 2;
+
+  // Maximal salary of the estimation (usually corresponds to 80% of data
+  // points being less than this).
+  float max_salary = 3;
+
+  // Median salary estimation.
+  float median_salary = 4;
+
+  // Unit of the salary.
+  SalaryUnit unit = 5;
+}
+
+message DurationEstimation {
+  // Estimated unemployment duration in days.
+  uint32 days = 1;
+}
+
+enum EmploymentType {
+  option allow_alias = true;
+
+  UNDEFINED_EMPLOYMENT_TYPE = 0;
+
+  // User is doing an internship.
+  INTERNSHIP = 1;
+
+  // Temporary unlimited contract.
+  CDI = 2;
+
+  // Contract limited in time.
+  CDD = 3 [deprecated = true];
+
+  // Contract limited in time, but over 3 months.
+  CDD_OVER_3_MONTHS = 3;
+
+  // Contract limited in time to 3 months and less.
+  CDD_LESS_EQUAL_3_MONTHS = 5;
+
+  // Interim position
+  INTERIM = 4;
+}
+
+message JobRequirements {
+  // A set of required skills.
+  repeated JobRequirement skills = 1;
+
+  // A set of required diplomas.
+  repeated JobRequirement diplomas = 2;
+
+  // An additional set of requirements (e.g. English speaking).
+  repeated JobRequirement extras = 3;
+
+  // A set of contract type "requirements".
+  repeated JobRequirement contract_types = 4;
+
+  // A set of required driving licenses.
+  repeated JobRequirement driving_licenses = 5;
+
+  // A set of required level of office tools skills.
+  repeated JobRequirement office_skills = 6;
+}
+
+message JobRequirement {
+  // Name of the requirement, in the user's language.
+  string name = 1;
+
+  // The percentage of cases (for the job or job group) that this would be a suggestion.
+  int32 percent_suggested = 2;
+
+  // How strong is this suggestion when it is suggested from 1 to 100: 1 - not
+  // really required, no benefits; 50 - not absolutely required, but strongly
+  // suggested; 100 absolutely required. 0 means unknown.
+  int32 percent_required = 5;
+
+  // Additional info depending on the type of requirement.
+  oneof extra_info {
+    // Skill information (the name may be omitted).
+    Skill skill = 3;
+
+    // Diploma information (the name may be omitted).
+    Diploma diploma = 4;
+
+    // Contract type.
+    EmploymentType contract_type = 6;
+
+    // Driving license type.
+    DrivingLicense driving_license = 7;
+
+    // Level for office tools: 1 is the worst (not even a requirement), 3 is
+    // the best. Keep in sync with scale for the
+    // UserProfile.office_skills_estimate.
+    int32 office_skills_level = 8;
+  }
+}
+
+message Skill {
+  // French name of the skill.
+  string name = 1;
+
+  // Unique ID for the skill (based on OGR code from ROME).
+  string skill_id = 2;
+
+  // The kind of skill (theoretical vs practical).
+  SkillKind kind = 3;
+}
+
+enum SkillKind {
+  UNDEFINED_SKILL_KIND = 0;
+
+  THEORETICAL_SKILL = 1;
+
+  PRACTICAL_SKILL = 2;
+}
+
+message Diploma {
+  // French name of the diploma.
+  string name = 1;
+  DegreeLevel level = 2;
+  // TODO: Do some research to find IDs.
+}
+
+enum DegreeLevel {
+  UNKNOWN_DEGREE = 0;
+
+  NO_DEGREE = 1;
+
+  CAP_BEP = 2;
+
+  BAC_BACPRO = 3;
+
+  BTS_DUT_DEUG = 4;
+
+  LICENCE_MAITRISE = 5;
+
+  DEA_DESS_MASTER_PHD = 6;
+}
+
+enum DrivingLicense {
+  UNKNOWN_DRIVING_LICENSE = 0;
+  MOTORCYCLE = 1;
+  CAR = 2;
+  TRUCK = 3;
+}
+
+// Message to hold data that we scraped from the IMT website. The granularity is
+// on a Job level (in contrast to most other data that we have on the JobGroup level).
+// We have one entry for each Job and each departement.
+// Next free Id: 14
+message ImtLocalJobStats {
+  // The city of the IMT data. Only departement will be set.
+  FrenchCity city = 1;
+
+  // The job of the IMT data. Note that it is a job and not a job group!
+  Job job = 2;
+
+  // The number of open offers in the last week. I (stephan) assume that this is
+  // not a sliding window of the last 7 days but that the values change over the weekend.
+  // I once saw a change between the Friday and Monday values and did not see a change between
+  // Monday and Tuesday values. The data of scraping is recorded in `scraped_at`.
+  uint32 last_week_offers = 3;
+
+  // The number of people looking for this job during the last week.
+  uint32 last_week_demand = 4;
+
+  // The average number of weekly open offers per 10 openings. This value gives
+  // a ratio in combination with
+  uint32 yearly_avg_offers_per_10_openings = 5;
+
+  // The denomiator to compute the average yearly ratio with yearly_avg_offers_per_10_openings.
+  // It should always be 10.
+  uint32 yearly_avg_offers_denominator = 6;
+
+  // Estimated gross monthly salary for young employees (under 35 years).
+  SalaryEstimation junior_salary = 7;
+
+  // Estimated gross monthly salary for more experienced employees (35 years and older).
+  SalaryEstimation senior_salary = 8;
+
+  // Whether hiring for this job only happens during active_months.
+  bool seasonal = 9;
+
+  // A list of months in which hiring in this job is stronger than in others.
+  repeated Month active_months = 10;
+
+  // This list gives the percentages of each employment type.
+  repeated EmploymentTypePercentage employment_type_percentages = 11;
+
+  // The date on which we scraped this entry from the IMT website.
+  google.protobuf.Timestamp scraped_at = 12;
+
+  // The top three modes of application (e.g. spontaneous, placement agency),
+  // for this job, ranked by number of successful applications.
+  map<string, ApplicationModesOrdering> application_modes = 13;
+}
+
+message ApplicationModesOrdering {
+  ApplicationMode first = 1;
+  ApplicationMode second = 2;
+  ApplicationMode third = 3;
+}
+
+enum ApplicationMode {
+  UNDEFINED_APPLICATION_MODE = 0;
+  SPONTANEOUS_APPLICATION = 1;
+  PLACEMENT_AGENCY = 2;
+  PERSONAL_OR_PROFESSIONAL_CONTACTS = 3;
+}
+
+enum Month {
+  UNKNOWN_MONTH = 0;
+  JANUARY = 1;
+  FEBRUARY = 2;
+  MARCH = 3;
+  APRIL = 4;
+  MAY = 5;
+  JUNE = 6;
+  JULY = 7;
+  AUGUST = 8;
+  SEPTEMBER = 9;
+  OCTOBER = 10;
+  NOVEMBER = 11;
+  DECEMBER = 12;
+}
+
+message EmploymentTypePercentage {
+  // The employment type.
+  EmploymentType employment_type = 1;
+
+  float percentage = 2;
+}
+
+
+// A job's working environment through a list of key terms.
+message WorkEnvironment {
+  // A set of kind of organizations (e.g. supermarket, large company, consulting
+  // company) in which jobs of a given job group are typically found in.
+  repeated string structures = 1;
+
+  // A set of industry sectors in which jobs of a given job group are usually.
+  repeated string sectors = 2;
+
+  // A set of usual or potential conditions for jobs of a given job group.
+  repeated string conditions = 3;
+}
+
+
+enum ApplicationProcessComplexity {
+  UNKNOWN_APPLICATION_COMPLEXITY = 0;
+
+  // Application are usually pretty simple, and the hiring process does not
+  // look down on applicants that apply quickly.
+  SIMPLE_APPLICATION_PROCESS = 1;
+
+  // Application are usually prety complex, and the hiring process values
+  // applications of great quality and original ones.
+  COMPLEX_APPLICATION_PROCESS = 2;
+
+  // The application process does not follow main guidelines (e.g. hiring
+  // talent for cinema).
+  SPECIAL_APPLICATION_PROCESS = 3;
+}

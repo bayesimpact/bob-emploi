@@ -1,0 +1,19 @@
+[
+  {
+    "_id": "69:M1403",
+    "bmo": {
+      "percentDifficult": 10,
+      "percentSeasonal": 82
+    },
+    "salary": {
+      "maxSalary": 23000,
+      "medianSalary": 20000,
+      "minSalary": 17500,
+      "shortText": "17 500 - 23 000",
+      "unit": "ANNUAL_GROSS_SALARY"
+    },
+    "unemploymentDuration": {
+      "days": 92
+    }
+  }
+]

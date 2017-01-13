@@ -1,0 +1,146 @@
+[
+ {
+  "_id": "ghost:M1403",
+  "bestCity": {
+   "cityId": "ghost",
+   "departementId": "",
+   "name": "",
+   "regionId": ""
+  },
+  "unemploymentDuration": {
+   "days": 101
+  }
+ },
+ {
+  "_id": "ghost-r84:M1403",
+  "bestCity": {
+   "cityId": "ghost-r84",
+   "departementId": "",
+   "name": "",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 111
+  }
+ },
+ {
+  "_id": "69123:M1403",
+  "bestCity": {
+   "cityId": "69123",
+   "departementId": "69",
+   "name": "Lyon",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 76
+  }
+ },
+ {
+  "_id": "ghost-d69:K2503",
+  "bestCity": {
+   "cityId": "ghost-d69",
+   "departementId": "69",
+   "name": "",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 61
+  }
+ },
+ {
+  "_id": "69123:K2503",
+  "bestCity": {
+   "cityId": "69123",
+   "departementId": "69",
+   "name": "Lyon",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 52
+  }
+ },
+ {
+  "_id": "ghost-d69:M1403",
+  "bestCity": {
+   "cityId": "ghost-d69",
+   "departementId": "69",
+   "name": "",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 47
+  }
+ },
+ {
+  "_id": "d69:M1403",
+  "bestCity": {
+   "cityId": "ghost-d69",
+   "departementId": "69",
+   "name": "",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 47
+  }
+ },
+ {
+  "_id": "d69:K2503",
+  "bestCity": {
+   "cityId": "69123",
+   "departementId": "69",
+   "name": "Lyon",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 52
+  }
+ },
+ {
+  "_id": "r84:K2503",
+  "bestCity": {
+   "cityId": "38421",
+   "departementId": "38",
+   "name": "Saint-Martin-d'Hères",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 29
+  }
+ },
+ {
+  "_id": "r84:M1403",
+  "bestCity": {
+   "cityId": "73065",
+   "departementId": "73",
+   "name": "Chambéry",
+   "regionId": "84"
+  },
+  "unemploymentDuration": {
+   "days": 30
+  }
+ },
+ {
+  "_id": "K2503",
+  "bestCity": {
+   "cityId": "56098",
+   "departementId": "56",
+   "name": "Lanester",
+   "regionId": "53"
+  },
+  "unemploymentDuration": {
+   "days": 27
+  }
+ },
+ {
+  "_id": "M1403",
+  "bestCity": {
+   "cityId": "97415",
+   "departementId": "974",
+   "name": "Saint-Paul",
+   "regionId": "04"
+  },
+  "unemploymentDuration": {
+   "days": 29
+  }
+ }
+]

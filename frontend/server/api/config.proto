@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message ClientConfig {
+  // Client ID for Google Single Sign On, e.g.
+  // 1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com.
+  string google_SSO_client_id = 1;
+
+  // App ID for Facebook Single Sign On, e.g. 1048782155234293.
+  string facebook_SSO_app_id = 2;
+}

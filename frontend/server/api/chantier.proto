@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package bayesimpact.pe;
+
+// A template for creating new chantiers for a user.
+message Chantier {
+  // A unique identifier for this template.
+  string chantier_id = 1;
+
+  // The kind of this chantier e.g. IMPROVE_SUCCESS_RATE,
+  // INCREASE_AVAILABLE_OFFERS.
+  ChantierKind kind = 6;
+
+  // The title of the chantier.
+  string title = 2;
+
+  // The title of the chantier phrased as a first person sentence so that it
+  // can be appended to a sentence like "I did everything I could to…" or "My
+  // actions to…", e.g. "upload my CV online.".
+  string title_first_person = 11;
+
+  // A short description of the chantier. This explains why it's useful for the
+  // user to tackle this chantier.
+  string short_description = 3;
+
+  // A catchline to hook the user when suggesting the chantier in the user's
+  // language.
+  string incentive = 4;
+
+  // The model used to score this chantier compared to other.
+  // http://go/pe:scoring-chantiers
+  string scoring_model = 5;
+}
+
+message ChantiersSet {
+  map<string, bool> chantier_ids = 1;
+}
+
+message ChantierTitles {
+  map<string, string> titles = 1;
+}
+
+enum ChantierKind {
+  UNKNOWN_CHANTIER_KIND = 0;
+
+  // Order matters: this is the order we use to show to the user.
+
+  // The kind of chantiers that helps the user succeed to job applications they
+  // already try. This is internally called "Blue". E.g. "Improve your
+  // resume", "Train for interviews".
+  IMPROVE_SUCCESS_RATE = 1;
+
+  // The kind of chantiers that increase the offers to which the user can
+  // apply. This is internally called "Red". E.g. "Lower your salary", "Look
+  // into part-time jobs as well".
+  INCREASE_AVAILABLE_OFFERS = 2;
+
+  // The kind of chantiers that unlock new very different leads. This is
+  // internally called "Green". E.g. "Try to be a freelance", "Learn about
+  // related jobs".
+  UNLOCK_NEW_LEADS = 3;
+
+  // The kind of chantiers that anyone would work on when searching a job. This
+  // is internally called "White. E.g. apply to job offers, send spontaneous
+  // applications.
+  CORE_JOB_SEARCH = 4;
+}
+
+message PotentialChantiers {
+  // A sorted list of repeated potential chantiers. The first ones are the ones
+  // that should help the most the user. Note that it also includes the
+  // chantiers that the user has already started for this project if any.
+  repeated PotentialChantier chantiers = 1;
+
+  // Sorted list of groups of chantiers.
+  repeated ChantierGroupScore groups = 2;
+}
+
+message PotentialChantier {
+  // The chantier template that would be used to generate a chantier if selected.
+  Chantier template = 1;
+
+  // Whether the user has already started such a chantier for the current
+  // project.
+  bool user_has_started = 2;
+
+  // Percentage of additional job offers that this chantier could unlock.
+  // Usually only available for INCREASE_AVAILABLE_OFFERS chantiers.
+  float additional_job_offers_percent = 3;
+}
+
+message ChantierGroupScore {
+  // The kind of chantiers in this group e.g. IMPROVE_SUCCESS_RATE,
+  // INCREASE_AVAILABLE_OFFERS.
+  ChantierKind kind = 1;
+
+  // How much chantiers of this group are needed.
+  ChantierNeed need = 2;
+}
+
+enum ChantierNeed {
+  UNKNOWN_NEED = 0;
+
+  // Chantier could be useful but this will probably not unblock the user.
+  NOT_NEEDED = 1;
+
+  // Chantier will make a difference.
+  SOMEHOW_NEEDED = 2;
+
+  // Chantier is almost required, user will have trouble finding a job without
+  // addressing those.
+  REALLY_NEEDED = 3;
+}

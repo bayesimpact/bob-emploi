@@ -1,0 +1,19 @@
+[REPORTS]
+output=colorized
+disable=I,R,no-member
+reports=no
+
+[MISCELLANEOUS]
+notes=FIXME,XXX
+
+[VARIABLES]
+dummy-variables-rgx=unused_.*
+
+[DESIGN]
+ignored-argument-names=unused_.*
+
+# Override default regex to allow long method names in tests.
+method-rgx=([a-z_][a-z0-9_]{4,30}|test_[a-z0-9_]+)$
+
+[TYPECHECK]
+ignored-modules=pandas.*,numpy.*,farmhash,bob_emploi.frontend.api.*

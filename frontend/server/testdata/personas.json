@@ -1,0 +1,1162 @@
+{
+  "empty": {
+    "user": {},
+    "project": {}
+  },
+  "inflexible": {
+    "user": {
+      "contractTypeFlexibility": "ABSOLUTELY_NOT"
+    },
+    "project": {}
+  },
+  "evolueuse": {
+    "user": {
+      "highestDegree": "BTS_DUT_DEUG",
+      "email": "evolueuse.persona@gmail.com",
+      "city": {
+        "name": "Lyon",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Rhône",
+        "departementId": "69",
+        "cityId": "69123",
+        "regionId": "84"
+      },
+      "name": "Evolueuse",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1975,
+      "gender": "FEMININE",
+      "latestJob": {
+        "jobGroup": {
+          "name": "Secrétariat",
+          "romeId": "M1607"
+        },
+        "codeOgr": "19364",
+        "feminineName": "Secrétaire",
+        "name": "Secrétaire",
+        "masculineName": "Secrétaire"
+      }
+    },
+    "featuresEnabled": {
+      "lbbIntegration": "ACTIVE"
+    },
+    "project": {
+      "kind": "FIND_JOB",
+      "workloads": ["FULL_TIME"],
+      "projectId": "57e92a5e-f35b",
+      "jobSearchLengthMonths": 2,
+      "source": "PROJECT_MANUALLY_CREATED",
+      "employmentTypes": ["CDI"],
+      "networkEstimate": 3,
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "jobGroup": {
+          "name": "Assistanat de direction",
+          "romeId": "M1604"
+        },
+        "codeOgr": "11227",
+        "feminineName": "Assistante de direction",
+        "name": "Assistant / Assistante de direction",
+        "masculineName": "Assistant de direction"
+      },
+      "coverImageUrl": "generic2",
+      "minSalary": 35000,
+      "title": "Trouver un emploi d'assistante de direction autour de Lyon",
+      "createdAt": "2016-09-26T14:02:06.228413Z",
+      "previousJobSimilarity": "DONE_SIMILAR",
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "name": "Lyon",
+          "regionName": "Auvergne-Rhône-Alpes",
+          "departementName": "Rhône",
+          "departementId": "69",
+          "cityId": "69123",
+          "regionId": "84"
+        }
+      }
+    }
+  },
+  "mover": {
+    "user": {
+      "highestDegree": "BTS_DUT_DEUG",
+      "email": "demenageur.persona@gmail.com",
+      "city": {
+        "name": "Bourg-en-Bresse",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Ain",
+        "departementId": "01",
+        "cityId": "01053",
+        "regionId": "84"
+      },
+      "name": "Demenageur",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1983,
+      "frustrations": ["HANDICAPED"],
+      "gender": "MASCULINE",
+      "drivingLicenses": ["CAR"],
+      "latestJob": {
+        "jobGroup": {
+          "name": "Assistanat commercial",
+          "romeId": "D1401"
+        },
+        "codeOgr": "12748",
+        "feminineName": "Commerciale sédentaire",
+        "name": "Commercial / Commerciale sédentaire",
+        "masculineName": "Commercial sédentaire"
+      }
+    },
+    "project": {
+      "kind": "FIND_JOB",
+      "workloads": ["FULL_TIME"],
+      "projectId": "57e92ce5-3153",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "jobSearchLengthMonths": 24,
+      "employmentTypes": ["CDI"],
+      "networkEstimate": 1,
+      "status": "PROJECT_CURRENT",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "targetJob": {
+        "jobGroup": {
+          "name": "Assistanat commercial",
+          "romeId": "D1401"
+        },
+        "codeOgr": "12748",
+        "feminineName": "Commerciale sédentaire",
+        "name": "Commercial / Commerciale sédentaire",
+        "masculineName": "Commercial sédentaire"
+      },
+      "coverImageUrl": "generic3",
+      "minSalary": 40000,
+      "title": "Trouver un emploi de commercial sédentaire en Auvergne-Rhône-Alpes",
+      "createdAt": "2016-09-26T14:12:52.717220Z",
+      "previousJobSimilarity": "DONE_THIS",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "name": "Toulouse",
+          "regionName": "Occitanie",
+          "departementName": "Rhône",
+          "departementId": "31",
+          "cityId": "31555",
+          "regionId": "85"
+        }
+      }
+    }
+  },
+  "newbie": {
+    "user": {
+      "email": "newbie.persona@gmail.com",
+      "city": {
+        "name": "Bourg-en-Bresse",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Ain",
+        "departementId": "01",
+        "cityId": "01053",
+        "regionId": "84"
+      },
+      "name": "Newbie",
+      "situation": "FIRST_TIME",
+      "yearOfBirth": 1986,
+      "gender": "MASCULINE",
+      "englishLevelEstimate": 2,
+      "latestJob": null
+    },
+    "project": {
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "workloads": ["FULL_TIME"],
+      "projectId": "57e92dc0-d824",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "employmentTypes": ["CDI"],
+      "status": "PROJECT_CURRENT",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "targetJob": {
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "name": "Boucher / Bouchère",
+        "masculineName": "Boucher"
+      },
+      "coverImageUrl": "generic3",
+      "minSalary": 25000,
+      "title": "Trouver un emploi de boucher autour de Bourg-en-Bresse",
+      "createdAt": "2016-09-26T14:16:32.199172Z",
+      "previousJobSimilarity": "NEVER_DONE",
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "name": "Bourg-en-Bresse",
+          "regionName": "Auvergne-Rhône-Alpes",
+          "departementName": "Ain",
+          "departementId": "01",
+          "cityId": "01053",
+          "regionId": "84"
+        }
+      }
+    }
+  },
+  "persistant": {
+    "user": {
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "persiteuse.persona@gmail.com",
+      "city": {
+        "name": "Lyon",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Rhône",
+        "departementId": "69",
+        "cityId": "69123",
+        "regionId": "84"
+      },
+      "name": "Persisteuse",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1964,
+      "frustrations": ["NO_OFFERS"],
+      "gender": "FEMININE",
+      "drivingLicenses": ["CAR"],
+      "latestJob": {
+        "jobGroup": {
+          "name": "Marketing",
+          "romeId": "M1705"
+        },
+        "codeOgr": "19125",
+        "feminineName": "Responsable marketing",
+        "name": "Responsable marketing",
+        "masculineName": "Responsable marketing"
+      }
+    },
+    "project": {
+      "kind": "FIND_JOB",
+      "workloads": ["FULL_TIME"],
+      "projectId": "57e92f6b-63df",
+      "jobSearchLengthMonths": 2,
+      "source": "PROJECT_MANUALLY_CREATED",
+      "employmentTypes": ["CDI"],
+      "networkEstimate": 3,
+      "totalInterviewsEstimate": "A_LOT",
+      "weeklyApplicationsEstimate": "SOME",
+      "jobSearchLengthMonths": 18,
+      "status": "PROJECT_CURRENT",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "targetJob": {
+        "jobGroup": {
+          "name": "Marketing",
+          "romeId": "M1705"
+        },
+        "codeOgr": "19125",
+        "feminineName": "Responsable marketing",
+        "name": "Responsable marketing",
+        "masculineName": "Responsable marketing"
+      },
+      "coverImageUrl": "generic2",
+      "minSalary": 42000,
+      "title": "Trouver un emploi de responsable marketing autour de Lyon",
+      "createdAt": "2016-09-26T14:23:39.352518Z",
+      "previousJobSimilarity": "DONE_THIS",
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "name": "Lyon",
+          "regionName": "Auvergne-Rhône-Alpes",
+          "departementName": "Rhône",
+          "departementId": "69",
+          "cityId": "69123",
+          "regionId": "84"
+        }
+      }
+    }
+  },
+  "abdelkrim": {
+    "project": {
+      "coverImageUrl": "generic5",
+      "createdAt": "2016-09-29T09:28:51.468263Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "kind": "FIND_JOB",
+      "minSalary": 31000.0,
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "94011",
+          "departementId": "94",
+          "departementName": "Val-de-Marne",
+          "name": "Bonneuil-sur-Marne",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecded3-b55b",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11999",
+        "feminineName": "Chauffeuse-livreuse",
+        "jobGroup": {
+          "name": "Conduite et livraison par tournées sur courte distance",
+          "romeId": "N4105"
+        },
+        "masculineName": "Chauffeur-livreur",
+        "name": "Chauffeur-livreur / Chauffeuse-livreuse"
+      },
+      "title": "Trouver un emploi de chauffeur-livreur en Île-de-France",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "drivingLicenses": ["CAR"],
+      "city": {
+        "cityId": "94011",
+        "departementId": "94",
+        "departementName": "Val-de-Marne",
+        "name": "Bonneuil-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "email": "abdelkrimxxxx@yahoo.fr",
+      "frustrations": ["RESUME"],
+      "gender": "MASCULINE",
+      "name": "abdelkrim",
+      "situation": "FIRST_TIME",
+      "yearOfBirth": 1982
+    }
+  },
+  "karen": {
+    "project": {
+      "coverImageUrl": "generic5",
+      "createdAt": "2016-09-29T07:50:51.689185Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "kind": "FIND_JOB",
+      "minSalary": 20000.0,
+      "mobility": {
+        "areaType": "DEPARTEMENT",
+        "city": {
+          "cityId": "77337",
+          "departementId": "77",
+          "departementName": "Seine-et-Marne",
+          "name": "Noisiel",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecc7dc-695a",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "jobSearchLengthMonths": 2,
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "19364",
+        "feminineName": "Secrétaire",
+        "jobGroup": {
+          "name": "Secrétariat",
+          "romeId": "M1607"
+        },
+        "masculineName": "Secrétaire",
+        "name": "Secrétaire"
+      },
+      "title": "Trouver un emploi de secrétaire dans le département Seine-et-Marne",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "77337",
+        "departementId": "77",
+        "departementName": "Seine-et-Marne",
+        "name": "Noisiel",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "BTS_DUT_DEUG",
+      "email": "karenxxxxx@yahoo.fr",
+      "gender": "FEMININE",
+      "latestJob": {
+        "codeOgr": "19374",
+        "feminineName": "Secrétaire de direction",
+        "jobGroup": {
+          "name": "Assistanat de direction",
+          "romeId": "M1604"
+        },
+        "masculineName": "Secrétaire de direction",
+        "name": "Secrétaire de direction"
+      },
+      "name": "karen",
+      "salaryRequiremenFlexibility": "ABSOLUTELY_NOT",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1971
+    }
+  },
+  "fabrice": {
+    "project": {
+      "coverImageUrl": "generic3",
+      "createdAt": "2016-09-29T07:54:02.514215Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecc89b-16cf",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "10744",
+        "feminineName": "Agente immobilier",
+        "jobGroup": {
+          "name": "Transaction immobilière",
+          "romeId": "C1504"
+        },
+        "masculineName": "Agent immobilier",
+        "name": "Agent / Agente immobilier"
+      },
+      "title": "Trouver un emploi d'agent immobilier autour de Paris",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "BAC_BACPRO",
+      "email": "fabe.xxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "latestJob": {
+        "codeOgr": "10744",
+        "feminineName": "Agente immobilier",
+        "jobGroup": {
+          "name": "Transaction immobilière",
+          "romeId": "C1504"
+        },
+        "masculineName": "Agent immobilier",
+        "name": "Agent / Agente immobilier"
+      },
+      "name": "fabrice",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1977
+    }
+  },
+  "joel": {
+    "project": {
+      "coverImageUrl": "generic4",
+      "createdAt": "2016-09-29T13:30:04.693286Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 4,
+      "projectId": "57ed175d-215a",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "13999",
+        "feminineName": "Designeuse graphique",
+        "jobGroup": {
+          "name": "Réalisation de contenus multimédias",
+          "romeId": "E1205"
+        },
+        "masculineName": "Designer graphique",
+        "name": "Designer / Designeuse graphique"
+      },
+      "title": "Trouver un emploi de designer graphique autour de Paris",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "drivingLicenses": ["CAR"],
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "email": "joelxxxxx@gmail.com",
+      "gender": "MASCULINE",
+      "latestJob": {
+        "codeOgr": "13999",
+        "feminineName": "Designeuse graphique",
+        "jobGroup": {
+          "name": "Réalisation de contenus multimédias",
+          "romeId": "E1205"
+        },
+        "masculineName": "Designer graphique",
+        "name": "Designer / Designeuse graphique"
+      },
+      "name": "Joël",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1986
+    }
+  },
+  "jennifer": {
+    "project": {
+      "coverImageUrl": "generic5",
+      "createdAt": "2016-09-29T07:56:06.227671Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "NEVER_DONE",
+      "intensity": "PROJECT_PRETTY_INTENSE",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "minSalary": 35000.0,
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecc916-88b8",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11408",
+        "feminineName": "Auditrice comptable et financière",
+        "jobGroup": {
+          "name": "Audit et contrôle comptables et financiers",
+          "romeId": "M1202"
+        },
+        "masculineName": "Auditeur comptable et financier",
+        "name": "Auditeur(trice) comptable et financier(ère)"
+      },
+      "title": "Trouver un emploi d'auditrice comptable et financière en Île-de-France",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "jenniferxxxx@hotmail.fr",
+      "gender": "FEMININE",
+      "latestJob": {
+        "codeOgr": "13597",
+        "feminineName": "Contrôleuse de gestion",
+        "jobGroup": {
+          "name": "Contrôle de gestion",
+          "romeId": "M1204"
+        },
+        "masculineName": "Contrôleur de gestion",
+        "name": "Contrôleur / Contrôleuse de gestion"
+      },
+      "frustrations": ["SEX_DISCRIMINATION", "AGE_DISCRIMINATION"],
+      "name": "jennifer",
+      "situation": "IN_TRAINING",
+      "yearOfBirth": 1993
+    }
+  },
+  "joana": {
+    "project": {
+      "coverImageUrl": "generic5",
+      "createdAt": "2016-09-29T09:25:11.514083Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_SIMILAR",
+      "intensity": "PROJECT_FIGURING_INTENSITY",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 4,
+      "projectId": "57ecddf8-30ab",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "13696",
+        "feminineName": "Coordinatrice transit -import/export-",
+        "jobGroup": {
+          "name": "Gestion des opérations de circulation internationale des marchandises",
+          "romeId": "N1202"
+        },
+        "masculineName": "Coordinateur transit -import/export-",
+        "name": "Coordinateur / Coordinatrice transit -import/export-"
+      },
+      "title": "Trouver un emploi de coordinatrice transit -import/export- en Île-de-France",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "email": "joana.xxxxx@gmail.com",
+      "gender": "FEMININE",
+      "drivingLicenses": ["CAR"],
+      "latestJob": {
+        "codeOgr": "13696",
+        "feminineName": "Coordinatrice transit -import/export-",
+        "jobGroup": {
+          "name": "Gestion des opérations de circulation internationale des marchandises",
+          "romeId": "N1202"
+        },
+        "masculineName": "Coordinateur transit -import/export-",
+        "name": "Coordinateur / Coordinatrice transit -import/export-"
+      },
+      "name": "Joana",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1990
+    }
+  },
+  "ludivine": {
+    "project": {
+      "coverImageUrl": "generic1",
+      "createdAt": "2016-09-29T08:09:43.721509Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "kind": "FIND_JOB",
+      "minSalary": 20000.0,
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "77468",
+          "departementId": "77",
+          "departementName": "Seine-et-Marne",
+          "name": "Torcy",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 4,
+      "projectId": "57eccc48-f767",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "38156",
+        "feminineName": "Directrice adjointe d'accueil de loisirs",
+        "jobGroup": {
+          "name": "Animation de loisirs auprès d'enfants ou d'adolescents",
+          "romeId": "G1203"
+        },
+        "masculineName": "Directeur adjoint d'accueil de loisirs",
+        "name": "Directeur adjoint / Directrice adjointe d'accueil de loisirs"
+      },
+      "title": "Trouver un emploi de directrice adjointe d'accueil de loisirs en Île-de-France",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "drivingLicenses": ["CAR"],
+      "city": {
+        "cityId": "77468",
+        "departementId": "77",
+        "departementName": "Seine-et-Marne",
+        "name": "Torcy",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "BAC_BACPRO",
+      "email": "ludivinexxxx@live.fr",
+      "gender": "FEMININE",
+      "latestJob": {
+        "codeOgr": "38156",
+        "feminineName": "Directrice adjointe d'accueil de loisirs",
+        "jobGroup": {
+          "name": "Animation de loisirs auprès d'enfants ou d'adolescents",
+          "romeId": "G1203"
+        },
+        "masculineName": "Directeur adjoint d'accueil de loisirs",
+        "name": "Directeur adjoint / Directrice adjointe d'accueil de loisirs"
+      },
+      "name": "ludivine",
+      "frustrations": ["SINGLE_PARENT"],
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1989
+    }
+  },
+  "malek": {
+    "project": {
+      "coverImageUrl": "generic4",
+      "createdAt": "2016-09-29T09:42:53.527056Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "minSalary": 1400.0,
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 4,
+      "projectId": "57ece21e-5850",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "20613",
+        "feminineName": "Vendeuse en prêt-à-porter",
+        "jobGroup": {
+          "name": "Vente en habillement et accessoires de la personne",
+          "romeId": "D1214"
+        },
+        "masculineName": "Vendeur en prêt-à-porter",
+        "name": "Vendeur / Vendeuse en prêt-à-porter"
+      },
+      "title": "Trouver un emploi de vendeuse en prêt-à-porter autour de Paris",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "CAP_BEP",
+      "email": "malek.xxxxx@live.fr",
+      "gender": "FEMININE",
+      "latestJob": {
+        "feminineName": "aide éducatrice",
+        "masculineName": "aide éducatrice",
+        "name": "aide éducatrice"
+      },
+      "name": "hanane",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1982
+    }
+  },
+  "monxxxxx@laposte.com": {
+    "project": {
+      "coverImageUrl": "generic3",
+      "createdAt": "2016-09-29T07:58:31.466419Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecc9a7-5f0a",
+      "seniority": "JUNIOR",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "14500",
+        "feminineName": "Disquaire",
+        "jobGroup": {
+          "name": "Vente en articles de sport et loisirs",
+          "romeId": "D1211"
+        },
+        "masculineName": "Disquaire",
+        "name": "Disquaire"
+      },
+      "title": "Trouver un emploi de disquaire autour de Paris",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "BAC_BACPRO",
+      "email": "monxxxxx@laposte.com",
+      "gender": "MASCULINE",
+      "latestJob": {
+        "codeOgr": "14105",
+        "feminineName": "Dessinatrice-projeteuse du BTP",
+        "jobGroup": {
+          "name": "Dessin BTP",
+          "romeId": "F1104"
+        },
+        "masculineName": "Dessinateur-projeteur du BTP",
+        "name": "Dessinateur-projeteur / Dessinatrice-projeteuse du BTP"
+      },
+      "name": "Pascal",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1978
+    }
+  },
+  "nassera": {
+    "project": {
+      "coverImageUrl": "generic1",
+      "createdAt": "2016-09-29T09:40:05.174172Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 1,
+      "projectId": "57ece175-df63",
+      "seniority": "EXPERT",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11258",
+        "feminineName": "Assistante de vie scolaire",
+        "jobGroup": {
+          "name": "Éducation et surveillance au sein d'établissements d'enseignement",
+          "romeId": "K2104"
+        },
+        "masculineName": "Assistant de vie scolaire",
+        "name": "Assistant / Assistante de vie scolaire"
+      },
+      "title": "Trouver un emploi d'assistante de vie scolaire autour de Paris",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "email": "nanou-xxxxx@hotmail.fr",
+      "englishLevelEstimate": 3,
+      "frustrations": ["ATYPIC_PROFILE"],
+      "gender": "FEMININE",
+      "latestJob": {
+        "codeOgr": "20416",
+        "feminineName": "Traductrice-interprète",
+        "jobGroup": {
+          "name": "Traduction, interprétariat",
+          "romeId": "E1108"
+        },
+        "masculineName": "Traducteur-interprète",
+        "name": "Traducteur-interprète / Traductrice-interprète"
+      },
+      "name": "nassera",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1974
+    }
+  },
+  "fabrice2": {
+    "project": {
+      "coverImageUrl": "generic1",
+      "createdAt": "2016-09-29T07:57:04.125810Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "REORIENTATION",
+      "mobility": {
+        "areaType": "DEPARTEMENT",
+        "city": {
+          "cityId": "94028",
+          "departementId": "94",
+          "departementName": "Val-de-Marne",
+          "name": "Créteil",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 4,
+      "projectId": "57ecc950-a9a1",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "title": "Me réorienter dans le département Val-de-Marne",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "94028",
+        "departementId": "94",
+        "departementName": "Val-de-Marne",
+        "name": "Créteil",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "email": "xxxxx.fabrice@neuf.fr",
+      "gender": "MASCULINE",
+      "frustrations": ["AGE_DISCRIMINATION"],
+      "latestJob": {
+        "codeOgr": "18478",
+        "feminineName": "Régleuse sur machine de production",
+        "jobGroup": {
+          "name": "Réglage d'équipement de production industrielle",
+          "romeId": "H2912"
+        },
+        "masculineName": "Régleur sur machine de production",
+        "name": "Régleur / Régleuse sur machine de production"
+      },
+      "name": "fabrice",
+      "officeSkillsEstimate": 3,
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1964
+    }
+  },
+  "richard": {
+    "project": {
+      "coverImageUrl": "generic5",
+      "createdAt": "2016-09-29T08:08:08.773202Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "minSalary": 40000.0,
+      "mobility": {
+        "areaType": "CITY",
+        "city": {
+          "cityId": "75056",
+          "departementId": "75",
+          "departementName": "Paris",
+          "name": "Paris",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57eccbe9-22f1",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "16123",
+        "feminineName": "Juriste d'entreprise",
+        "jobGroup": {
+          "name": "Défense et conseil juridique",
+          "romeId": "K1903"
+        },
+        "masculineName": "Juriste d'entreprise",
+        "name": "Juriste d'entreprise"
+      },
+      "title": "Trouver un emploi de juriste d'entreprise autour de Paris",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "drivingLicenses": ["CAR"],
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "richxxxx@yahoo.fr",
+      "gender": "MASCULINE",
+      "latestJob": {
+        "codeOgr": "16123",
+        "feminineName": "Juriste d'entreprise",
+        "jobGroup": {
+          "name": "Défense et conseil juridique",
+          "romeId": "K1903"
+        },
+        "masculineName": "Juriste d'entreprise",
+        "name": "Juriste d'entreprise"
+      },
+      "name": "richard",
+      "officeSkillsEstimate": 1,
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1982
+    }
+  },
+  "margaux": {
+    "project": {
+      "coverImageUrl": "generic2",
+      "createdAt": "2016-09-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "93050",
+          "departementId": "93",
+          "departementName": "Seine-Saint-Denis",
+          "name": "Neuilly-sur-Marne",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecddb3-bfe8",
+      "seniority": "JUNIOR",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "10241",
+        "feminineName": "Acheteuse",
+        "jobGroup": {
+          "name": "Achats",
+          "romeId": "M1101"
+        },
+        "masculineName": "Acheteur",
+        "name": "Acheteur / Acheteuse"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "drivingLicenses": ["CAR"],
+      "contractTypeFlexibility": "IF_NEEDED",
+      "city": {
+        "cityId": "93050",
+        "departementId": "93",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "rxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "latestJob": {
+        "codeOgr": "10241",
+        "feminineName": "Acheteuse",
+        "jobGroup": {
+          "name": "Achats",
+          "romeId": "M1101"
+        },
+        "masculineName": "Acheteur",
+        "name": "Acheteur / Acheteuse"
+      },
+      "name": "Margaux",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1992
+    }
+  },
+  "remi": {
+    "project": {
+      "coverImageUrl": "generic2",
+      "createdAt": "2016-09-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "93050",
+          "departementId": "93",
+          "departementName": "Seine-Saint-Denis",
+          "name": "Neuilly-sur-Marne",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecddb3-bfe8",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "10241",
+        "feminineName": "Acheteuse",
+        "jobGroup": {
+          "name": "Achats",
+          "romeId": "M1101"
+        },
+        "masculineName": "Acheteur",
+        "name": "Acheteur / Acheteuse"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "drivingLicenses": ["CAR"],
+      "city": {
+        "cityId": "93050",
+        "departementId": "93",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "rxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "latestJob": {
+        "codeOgr": "10241",
+        "feminineName": "Acheteuse",
+        "jobGroup": {
+          "name": "Achats",
+          "romeId": "M1101"
+        },
+        "masculineName": "Acheteur",
+        "name": "Acheteur / Acheteuse"
+      },
+      "name": "Rémi",
+      "situation": "EMPLOYED",
+      "yearOfBirth": 1989
+    }
+  }
+}

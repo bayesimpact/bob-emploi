@@ -1,0 +1,15 @@
+# Overrides of Compose services used to help develop faster without rebuilding
+# the container on every change.
+version: "2"
+services:
+  frontend-flask:
+    volumes:
+      - ./frontend/server:/work/bob_emploi/frontend
+      - ./frontend/server/entrypoint.sh:/work/entrypoint.sh:ro
+  frontend-flask-test:
+    volumes:
+      - ./frontend/server:/work/bob_emploi/frontend
+      - ./frontend/server/entrypoint.sh:/work/entrypoint.sh:ro
+      - ./frontend/server/lint_and_test.sh:/work/lint_and_test.sh:ro
+      - ./.pylintrc:/work/.pylintrc:ro
+      - ./.pep8:/work/.pep8:ro
