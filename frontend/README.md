@@ -6,11 +6,11 @@ Bob Emploi is a React Single Page Application with a RESTful JSON API written in
 
 The frontend is implemented as a [React](https://facebook.github.io/react/) single page application. It uses [Webpack](https://webpack.github.io/) as a build system and [Redux](http://redux.js.org/) to handle application state. Styling of HTML elements is done via inline styling directly in the React components. Some CSS can also be found in the file `App.css`.
 
-The server part of the application is written in Python and implements a RESTful API using the [Flask Microframework](http://flask.pocoo.org/). 
+The server part of the application is written in Python and implements a RESTful API using the [Flask Microframework](http://flask.pocoo.org/).
 
-The Google [Protobuffer language](https://developers.google.com/protocol-buffers/) is used to define language-neutral data structures that can easily be exchanged between the client, the server and the database.
+The Google [Protobuffer language](https://developers.google.com/protocol-buffers/) is used to define language-neutral data structures that can easily be exchanged between the client, the server and the database. We use a JSON encoding of the protobuffers to transmit data over the wire.
 
-The application data is stored in a [MongoDB](https://www.mongodb.com/) which is partly populated by data pre-computed from our datasets. These data-analysis and processing scripts will be open sourced in a next step. We have however provided fixtures for all collections so that the application is usable out of the box without the need to locally run any importers. 
+The application data is stored in a [MongoDB](https://www.mongodb.com/) which is partly populated by data pre-computed from our datasets. These data analysis and processing scripts will be open sourced in a next step. We have however provided fixtures for all collections so that the application is usable out of the box without the need to locally run any importers.
 
 ## Local Development
 
@@ -28,6 +28,7 @@ We will in the future add a more detailed explanation of the layout of the code,
 * `frontend/src/components/pages/main.jsx`: javascript client code.
 * `frontend/src/store`: Redux store and client side data models.
 * `frontend/server/server.py`: Python server code.
+* `frontend/server/db`: Code to generate the pre-populated DB.
 * `frontend/cfg`: client side build system.
 * `frontend/server.js` development server.
 * `server/api` business logic data structures.
