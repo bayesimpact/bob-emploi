@@ -22,22 +22,6 @@ test:
     - test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 frontend/release/build.sh
   post:
     - mv frontend/server/cover $CIRCLE_ARTIFACTS/frontend-flask-coverage
-deployment:
-  docker:
-    branch: /^(?!master).*$/
-    commands:
-      # Check that branch is still valid not to deploy a branch that got killed while testing.
-      - ./should_run_ci.sh "$CIRCLE_BRANCH" "$CIRCLE_TAG"
-      - test -e skip-frontend || frontend/release/publish.sh "branch-$CIRCLE_BRANCH"
-      - test -e skip-frontend || wget -o /dev/null -O /dev/null --background https://demo-mygameplan.bayes.org/start/branch-$CIRCLE_BRANCH
-      - test -e skip-frontend || frontend/demo/cleanup_ecr.py
-  releases:
-    tag: /^(?!master).*$/
-    owner: bayesimpact
-    commands:
-      - frontend/release/publish.sh "tag-$CIRCLE_TAG"
-      - wget -o /dev/null -O /dev/null --background https://demo-mygameplan.bayes.org/start/tag-$CIRCLE_TAG
-      - frontend/demo/cleanup_ecr.py
 experimental:
   notify:
     branches:
