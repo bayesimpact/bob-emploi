@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package bayesimpact.pe;
+
+message Company {
+  // Main name of the company.
+  string name = 1;
+
+  // Unique identifier (SIRET) of the company.
+  string siret = 2;
+
+  // Name of the city in which the company main site is.
+  string city_name = 3;
+
+  // Sector of activity.
+  string activity_sector_name = 4;
+
+  // Text showing how many employees work for the company.
+  string headcount_text = 5;
+}

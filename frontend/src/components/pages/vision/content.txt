@@ -1,0 +1,11 @@
+Nous sommes une association à but non lucratif dont la mission est d'utiliser le pouvoir des algorithmes pour apporter des solutions aux problèmes de société. Nous avons ainsi créé notre ONG, Bayes Impact, sur la conviction que les nouvelles technologies peuvent faire plus que générer du profit. 
+
+Depuis nos débuts il y a deux ans, nous avons travaillé sur plusieurs projets d'intérêt général autour du globe, qui vont de l'optimisation du parcours de santé des hôpitaux à la réduction de la violence policière en Californie.
+
+Notre travail sur Bob Emploi est parti d'une idée simple : permettre à chaque individu de bénéficier d'un accompagnement sur mesure en utilisant les algorithmes pour identifier les meilleures solutions pour chaque profil.
+
+Le chômage est un problème extrêmement complexe et la technologie n'est qu'un outil et non une fin en soi. Nous avons ainsi développé Bob Emploi en contact continu avec des chercheurs d'emploi de tous profils, mais aussi des conseillers et des accompagnateurs. C'est d'autant plus important que l'objectif de Bob Emploi n'est pas de remplacer l'accompagnement humain, mais d'en décupler sa puissance de façon complémentaire.
+
+C'est aussi pourquoi nous avons choisi un modèle ouvert et non-lucratif, afin de pouvoir rassembler les énergies de tous et améliorer continuellement notre solution.
+
+Notre vision à travers Bob Emploi est de poser la première pierre d'un **véritable service public citoyen** : une plate-forme indépendante, gratuite, et en constante amélioration, construite par la communauté pour la communauté.

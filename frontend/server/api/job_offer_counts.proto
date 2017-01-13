@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/geo.proto";
+
+package bayesimpact.pe;
+
+
+message JobOfferCounts {
+
+  // The city of the job offer counts.
+  FrenchCity city = 1;
+
+  uint32 city_count = 2;
+
+  uint32 departement_count = 3;
+
+  uint32 region_count = 4;
+
+  uint32 country_count = 5;
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="122px" height="122px" viewBox="0 0 122 122" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 41 (35326) - http://www.bohemiancoding.com/sketch -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group">
+            <circle id="Oval-2" fill="#58BBFB" cx="61" cy="61" r="61"></circle>
+            <rect id="path-1" fill="#3C97D1" x="40" y="43" width="47" height="26"></rect>
+            <circle id="Oval" fill="#3C97D1" cx="63.5" cy="69.5" r="23.5"></circle>
+            <rect id="path-1" fill="#FFD300" x="38" y="41" width="47" height="26"></rect>
+            <circle id="Oval" fill="#FFD300" cx="61.5" cy="67.5" r="23.5"></circle>
+            <polygon id="Star" fill="#FFFFFF" points="61 70.5 55.7099327 73.2811529 56.7202457 67.3905765 52.4404914 63.2188471 58.3549664 62.3594235 61 57 63.6450336 62.3594235 69.5595086 63.2188471 65.2797543 67.3905765 66.2900673 73.2811529"></polygon>
+        </g>
+    </g>
+</svg>

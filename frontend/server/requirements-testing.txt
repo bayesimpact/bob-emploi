@@ -1,0 +1,6 @@
+coverage
+mongomock
+nose
+nose-watch
+pep8
+pylint

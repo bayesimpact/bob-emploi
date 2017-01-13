@@ -1,0 +1,227 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+import "bob_emploi/frontend/api/action.proto";
+import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/job.proto";
+
+package bayesimpact.pe;
+
+// Next available tag: 11.
+message Project {
+  // A unique identifier for this project.
+  string project_id = 1;
+
+  // A short descriptive title in the user's language.
+  string title = 2;
+
+  // Current status of this project for the user.
+  ProjectStatus status = 3;
+
+  // A short description of the project in the user's language. It uses markdown
+  // syntax. It summarizes the parameters below.
+  string short_description = 4 [deprecated = true];
+
+  // URL of the cover image for this project. It can also be the name of a
+  // hard-coded cover image (e.g. "cake").
+  string cover_image_url = 17;
+
+  // Job targeted by this project.
+  Job target_job = 6;
+
+  // Geographic mobility for this project.
+  Location mobility = 7;
+
+  // Minimal salary requested by the user if any. The unit of this field is determined
+  // in user.proto - `preferred_salary_unit`.
+  float min_salary = 8;
+
+  // A set of employment types requested by the user if any (e.g. CDI).
+  repeated EmploymentType employment_types = 36;
+
+  // Set of chantiers templates that have been seen by the user: keys are
+  // chantier template ids, values are the activation state of the chantiers.
+  // Chantier template missing from this set have never been seen by the user
+  // for this project.
+  map<string, bool> activated_chantiers = 18;
+
+  // List of current actions for this project. They stay in here until the next
+  // generation of new actions and then the finished or declined ones are moved
+  // to past_actions. They are sorted by their created_at field: most recent
+  // last.
+  repeated Action actions = 25;
+
+  // List of past actions that were done or declined in previous days. They are
+  // sorted by their stopped_at field: most recent last.
+  repeated Action past_actions = 35;
+
+  // List of actions that are stuck by the users. They are sorted by their
+  // stucked_at field: most recent last.
+  repeated Action sticky_actions = 10;
+
+  // Reason why this project was deleted.
+  string deletion_reason = 14;
+
+  // The date and time at which this project was created or if it was a
+  // suggestion, when the suggestion was first created.
+  google.protobuf.Timestamp created_at = 15;
+
+  // How the project/suggestion was created in the first place.
+  ProjectSource source = 16;
+
+  // The kind of project (e.g. to find a job).
+  ProjectKind kind = 19;
+
+  // Whether the user worked in this job before.
+  PreviousJobSimilarity previous_job_similarity = 20;
+
+  // The seniority of the user regarding the project profession.
+  // Only set if experience != NEVER_DONE.
+  ProjectSeniority seniority = 27;
+
+  // The user's estimate whether they have all the required diplomas,
+  // together with a list of the asked diplomas.
+  RequirementFulfillmentEstimate diploma_fulfillment_estimate = 29;
+
+  // A set of workload types that the user could accept (e.g. full time).
+  repeated ProjectWorkload workloads = 37;
+
+  // How good is their network for this project from 1 to 3. 1 = weak, 3 =
+  // super strong, -1 = unknown.
+  int32 network_estimate = 22;
+
+  // Effort the user wants to put into this project.
+  ProjectIntensity intensity = 26;
+
+  // How long the user searches in this field in months. -1 means not started yet.
+  // 19 means more than 18 months.
+  // TODO(pascal): This should change with time!
+  int32 job_search_length_months = 31;
+
+  // Users estimate of how many offers they usually have access to per week.
+  NumberOfferEstimateOption weekly_offers_estimate = 32;
+
+  // Users estimate of how many applications they usually send per week.
+  // We are re-using the weekly_offers_estimate options here as they are roughly the same.
+  NumberOfferEstimateOption weekly_applications_estimate = 33;
+
+  // TODO: Create a new enum for interviews and propagate the changes through the whole app.
+  // Users estimate of how many interviews they had in total.
+  // We are re-using the weekly_offers_estimate options here as they are roughly the same.
+  NumberOfferEstimateOption total_interviews_estimate = 34;
+
+  // When actions were last generated for this project. Note that if too many
+  // actions were there so that we could not generate new ones we still update
+  // this timestamp when we try.
+  google.protobuf.Timestamp actions_generated_at = 5;
+
+  // Job stats for this specific project.
+  LocalJobStats local_stats = 9;
+}
+
+enum NumberOfferEstimateOption {
+  UNKNOWN_NUMBER_ESTIMATE_OPTION = 0;
+
+  LESS_THAN_2 = 1;
+
+  // Between 2 and 5.
+  SOME = 2;
+
+  // Between 6 and 15.
+  DECENT_AMOUNT = 3;
+
+  // More than 15.
+  A_LOT = 4;
+}
+
+// The estimate of the user regarding the fulfillment of a requirement.
+enum RequirementFulfillmentEstimate {
+  UNKNOWN_JOB_REQUIREMENT_FULFILLMENT = 0;
+  FULFILLED = 1;
+  NOT_FULFILLED = 2;
+  FULFILLMENT_NOT_SURE = 3;
+  NOTHING_REQUIRED = 4;
+}
+
+enum ProjectSeniority {
+  UNKNOWN_PROJECT_SENIORITY = 0;
+  INTERNSHIP = 1;
+
+  // Less than 2 years
+  JUNIOR = 2;
+
+  // 2 to less than 6 years.
+  INTERMEDIARY = 3;
+
+  // 6 to less than 10 years.
+  SENIOR = 4;
+
+  // More than 10 years.
+  EXPERT = 5;
+}
+
+enum ProjectWorkload {
+  UNKNOWN_PROJECT_WORKLOAD = 0;
+  PART_TIME = 1;
+  FULL_TIME = 2;
+}
+
+enum PreviousJobSimilarity {
+  UNKNOWN_PROJECT_EXPERIENCE = 0;
+  DONE_THIS = 1;
+  DONE_SIMILAR = 2;
+  NEVER_DONE = 3;
+}
+
+enum ProjectKind {
+  option allow_alias = true;
+  UNKNOWN_PROJECT_KIND = 0;
+  FIND_JOB = 1;
+  CREATE_COMPANY = 2 [deprecated = true];
+  CREATE_OR_TAKE_OVER_COMPANY = 2;
+  TAKE_OVER_COMPANY = 3 [deprecated = true];
+  REORIENTATION = 4;
+}
+
+enum ProjectStatus {
+  PROJECT_UNKNOWN_STATUS = 0;
+
+  // This is the default status: the user is currently tackling this project.
+  PROJECT_CURRENT = 1;
+
+  // The project is selected by the user, but they have set it on stand-by for
+  // a while.
+  PROJECT_ON_STAND_BY = 2;
+
+  // The project was current but got completed.
+  PROJECT_COMPLETED = 3;
+
+  // The project was current but got deleted.
+  PROJECT_DELETED = 4;
+}
+
+enum ProjectSource {
+  UNKNOWN_PROJECT_SOURCE = 0;
+
+  // The user created this project from scratch.
+  PROJECT_MANUALLY_CREATED = 1;
+
+  // An automated system created the project and allowed the user to accept it
+  // or not.
+  PROJECT_SUGGESTED = 2;
+}
+
+enum ProjectIntensity {
+  option allow_alias = true;
+  UNKNOWN_PROJECT_INTENSITY = 0;
+
+  PROJECT_NOT_VERY_INTENSE = 1 [deprecated = true];
+  // User is not actually applying for jobs but is exploring this project to
+  // see if it would be worth it.
+  PROJECT_FIGURING_INTENSITY = 1;
+
+  PROJECT_NORMALLY_INTENSE = 2;
+  PROJECT_PRETTY_INTENSE = 3;
+  PROJECT_EXTREMELY_INTENSE = 4;
+}

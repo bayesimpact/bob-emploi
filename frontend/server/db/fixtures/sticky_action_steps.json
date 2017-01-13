@@ -1,0 +1,16 @@
+[
+  {
+    "_id": "a1-step1",
+    "title": "Créer un tableau des candidatures",
+    "content": "Allez sur Google Drive et créez un nouveau tableur.",
+    "durationActiveMinutes": 10,
+    "finishCheckboxCaption": "J'ai fini."
+  },
+  {
+    "_id": "a1-step2",
+    "title": "Remplir le tableau",
+    "content": "Listez dans le tableau toutes les candidatures de ces derniers mois",
+    "durationActiveMinutes": 60,
+    "finishTextCaption": "Combien de candidatures avez vous en tout ?"
+  }
+]

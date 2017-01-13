@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+import "bob_emploi/frontend/api/chantier.proto";
+import "bob_emploi/frontend/api/config.proto";
+import "bob_emploi/frontend/api/discovery.proto";
+import "bob_emploi/frontend/api/export.proto";
+import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/project.proto";
+import "bob_emploi/frontend/api/user.proto";
+
+package bayesimpact.pe;
+
+// TODO: Actually use the protobuffers on the client side to enforce the API.
+
+// This service is mainly meant for a logged-in user, so all methods below assume
+// that they can retrieve the UserID except for GetConfig.
+service FrontendService {
+  // Retrieve the client config from the server. Clients can use this endpoint
+  // to setup or update their config dynamically.
+  rpc GetConfig(google.protobuf.Empty) returns (ClientConfig);
+
+  // Retrieve the user's data (the input is actually only a user's ID).
+  rpc GetUser(User) returns (User);
+
+  // Save the user's data.
+  rpc SaveUser(User) returns (User);
+
+  // Delete the user and all data associated.
+  rpc DeleteUser(User) returns (UserId);
+
+  // Creates daily actions for the user if none for today.
+  rpc RefreshActionPlan(User) returns (User);
+
+  // Authenticate a user: retrieve a user's data or create a new user.
+  rpc Authenticate(AuthRequest) returns (AuthResponse);
+
+  // Get requirements for a project. For now they are only requirements for the
+  // job group.
+  rpc ProjectRequirements(Project) returns (JobRequirements);
+
+  // Get potential chantiers for a project.
+  rpc ProjectPotentialChantiers(Project) returns (PotentialChantiers);
+
+  // Update chantiers of a project.
+  rpc ProjectUpdateChantiers(ChantiersSet) returns (User);
+
+  // Get the title of all existing chantiers keyed by ID.
+  rpc Chantiers(google.protobuf.Empty) returns (ChantierTitles);
+
+  // Get new jobs to explore for the user (the input is actually only a user's
+  // ID).
+  // TODO(pascal): Switch to ExploreAroundJob, then drop this endpoint.
+  rpc Explore(User) returns (JobsExploration);
+
+  // Get more exploration info about a specific job group.
+  // TODO(pascal): Switch to JobGroupStats, then drop this endpoint.
+  rpc ExploreJobGroupInfo(JobGroupExplorationRequest) returns (JobGroupExploration);
+
+  // Get new jobs to explore around a job for a given city.
+  rpc ExploreAroundJob(JobExplorationRequest) returns (JobsExploration);
+
+  // Get job group stats for a given city.
+  rpc JobGroupStats(JobExplorationRequest) returns (JobGroupExploration);
+
+  // Create an export of the user's current dashboard (the input is actually only a user's ID).
+  rpc CreateDashboardExport(User) returns (DashboardExport);
+
+  // Retrieve an export of the user's current dashboard
+  // (the input is actually only an dashboard export's ID).
+  rpc GetDashboardExport(DashboardExport) returns (DashboardExport);
+}

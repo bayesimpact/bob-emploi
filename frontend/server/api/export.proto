@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+import "bob_emploi/frontend/api/project.proto";
+import "bob_emploi/frontend/api/chantier.proto";
+
+package bayesimpact.pe;
+
+
+// Message to capture the current state of a user dashboard. http://go/pe:data-export
+message DashboardExport {
+
+  string dashboard_export_id = 1;
+
+  // Creation time of the export.
+  google.protobuf.Timestamp created_at = 2;
+
+  // All projects of the user.
+  repeated Project projects = 3;
+
+  // All active chantiers of the user over all their projects.
+  map<string, Chantier> chantiers = 4;
+}

@@ -1,0 +1,1861 @@
+[
+ {
+  "_id": "K2503",
+  "description": "Surveille, protège des lieux et des biens et prévient les actes de malveillance, les troubles à la tranquillité de lieux et de personnes selon les réglementations de la sécurité. - Peut encadrer une équipe.",
+  "hollandCodeMajor": "C",
+  "hollandCodeMinor": "R",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/K2503.jpg",
+  "jobs": [
+   {
+    "codeOgr": "10366",
+    "feminineName": "Agente conductrice de chien",
+    "masculineName": "Agent conducteur de chien",
+    "name": "Agent conducteur / Agente conductrice de chien"
+   },
+   {
+    "codeOgr": "10367",
+    "feminineName": "Agente conductrice de chien de défense",
+    "masculineName": "Agent conducteur de chien de défense",
+    "name": "Agent conducteur / Agente conductrice de chien de défense"
+   },
+   {
+    "codeOgr": "10370",
+    "feminineName": "Agente cynophile de sécurité",
+    "masculineName": "Agent cynophile de sécurité",
+    "name": "Agent / Agente cynophile de sécurité"
+   },
+   {
+    "codeOgr": "10435",
+    "feminineName": "Agente de démarque",
+    "masculineName": "Agent de démarque",
+    "name": "Agent / Agente de démarque"
+   },
+   {
+    "codeOgr": "10556",
+    "feminineName": "Agente de prévention et de sécurité",
+    "masculineName": "Agent de prévention et de sécurité",
+    "name": "Agent / Agente de prévention et de sécurité"
+   },
+   {
+    "codeOgr": "10557",
+    "feminineName": "Agente de prévention et de sécurité privée",
+    "masculineName": "Agent de prévention et de sécurité privée",
+    "name": "Agent / Agente de prévention et de sécurité privée"
+   },
+   {
+    "codeOgr": "10578",
+    "feminineName": "Agente de protection rapprochée",
+    "masculineName": "Agent de protection rapprochée",
+    "name": "Agent / Agente de protection rapprochée"
+   },
+   {
+    "codeOgr": "10599",
+    "feminineName": "Agente de sécurité",
+    "masculineName": "Agent de sécurité",
+    "name": "Agent / Agente de sécurité"
+   },
+   {
+    "codeOgr": "10600",
+    "feminineName": "Agente de sécurité boîte de nuit, discothèque",
+    "masculineName": "Agent de sécurité boîte de nuit, discothèque",
+    "name": "Agent / Agente de sécurité boîte de nuit, discothèque"
+   },
+   {
+    "codeOgr": "10601",
+    "feminineName": "Agente de sécurité incendie",
+    "masculineName": "Agent de sécurité incendie",
+    "name": "Agent / Agente de sécurité incendie"
+   },
+   {
+    "codeOgr": "10602",
+    "feminineName": "Agente de sécurité SSIAP 1",
+    "masculineName": "Agent de sécurité SSIAP 1",
+    "name": "Agent / Agente de sécurité SSIAP 1"
+   },
+   {
+    "codeOgr": "10604",
+    "feminineName": "Agente de service de sécurité incendie",
+    "masculineName": "Agent de service de sécurité incendie",
+    "name": "Agent / Agente de service de sécurité incendie"
+   },
+   {
+    "codeOgr": "10606",
+    "feminineName": "Agente de service sécurité",
+    "masculineName": "Agent de service sécurité",
+    "name": "Agent / Agente de service sécurité"
+   },
+   {
+    "codeOgr": "10613",
+    "feminineName": "Agente de sûreté",
+    "masculineName": "Agent de sûreté",
+    "name": "Agent / Agente de sûreté"
+   },
+   {
+    "codeOgr": "10614",
+    "feminineName": "Agente de sûreté aéroportuaire",
+    "masculineName": "Agent de sûreté aéroportuaire",
+    "name": "Agent / Agente de sûreté aéroportuaire"
+   },
+   {
+    "codeOgr": "10615",
+    "feminineName": "Agente de sûreté de passage",
+    "masculineName": "Agent de sûreté de passage",
+    "name": "Agent / Agente de sûreté de passage"
+   },
+   {
+    "codeOgr": "10616",
+    "feminineName": "Agente de sûreté fret",
+    "masculineName": "Agent de sûreté fret",
+    "name": "Agent / Agente de sûreté fret"
+   },
+   {
+    "codeOgr": "10617",
+    "feminineName": "Agente de surveillance",
+    "masculineName": "Agent de surveillance",
+    "name": "Agent / Agente de surveillance"
+   },
+   {
+    "codeOgr": "10621",
+    "feminineName": "Agente de surveillance et de protection",
+    "masculineName": "Agent de surveillance et de protection",
+    "name": "Agent / Agente de surveillance et de protection"
+   },
+   {
+    "codeOgr": "10622",
+    "feminineName": "Agente de surveillance et de sécurité",
+    "masculineName": "Agent de surveillance et de sécurité",
+    "name": "Agent / Agente de surveillance et de sécurité"
+   },
+   {
+    "codeOgr": "10623",
+    "feminineName": "Agente de surveillance et d'intervention",
+    "masculineName": "Agent de surveillance et d'intervention",
+    "name": "Agent / Agente de surveillance et d'intervention"
+   },
+   {
+    "codeOgr": "10624",
+    "feminineName": "Agente de télésurveillance",
+    "masculineName": "Agent de télésurveillance",
+    "name": "Agent / Agente de télésurveillance"
+   },
+   {
+    "codeOgr": "10714",
+    "feminineName": "Agente d'exploitation et de sûreté aéroportuaire",
+    "masculineName": "Agent d'exploitation et de sûreté aéroportuaire",
+    "name": "Agent / Agente d'exploitation et de sûreté aéroportuaire"
+   },
+   {
+    "codeOgr": "12856",
+    "feminineName": "Conductrice canin",
+    "masculineName": "Conducteur canin",
+    "name": "Conducteur canin / Conductrice canin"
+   },
+   {
+    "codeOgr": "12920",
+    "feminineName": "Conductrice de chien",
+    "masculineName": "Conducteur de chien",
+    "name": "Conducteur / Conductrice de chien"
+   },
+   {
+    "codeOgr": "13668",
+    "feminineName": "Convoyeuse conductrice de fonds",
+    "masculineName": "Convoyeur conducteur de fonds",
+    "name": "Convoyeur conducteur / Convoyeuse conductrice de fonds"
+   },
+   {
+    "codeOgr": "13670",
+    "feminineName": "Convoyeuse de fonds",
+    "masculineName": "Convoyeur de fonds",
+    "name": "Convoyeur / Convoyeuse de fonds"
+   },
+   {
+    "codeOgr": "13671",
+    "feminineName": "Convoyeuse de fonds et valeurs",
+    "masculineName": "Convoyeur de fonds et valeurs",
+    "name": "Convoyeur / Convoyeuse de fonds et valeurs"
+   },
+   {
+    "codeOgr": "13672",
+    "feminineName": "Convoyeuse garde",
+    "masculineName": "Convoyeur garde",
+    "name": "Convoyeur / Convoyeuse garde"
+   },
+   {
+    "codeOgr": "13673",
+    "feminineName": "Convoyeuse messagère",
+    "masculineName": "Convoyeur messager",
+    "name": "Convoyeur messager / Convoyeuse messagère"
+   },
+   {
+    "codeOgr": "15197",
+    "feminineName": "Garde du corps privée",
+    "masculineName": "Garde du corps privé",
+    "name": "Garde du corps privé / privée"
+   },
+   {
+    "codeOgr": "15221",
+    "feminineName": "Gardienne de musée",
+    "masculineName": "Gardien de musée",
+    "name": "Gardien / Gardienne de musée"
+   },
+   {
+    "codeOgr": "15233",
+    "feminineName": "Gardienne veilleuse",
+    "masculineName": "Gardien veilleur",
+    "name": "Gardien veilleur / Gardienne veilleuse"
+   },
+   {
+    "codeOgr": "15950",
+    "feminineName": "Inspectrice de magasin",
+    "masculineName": "Inspecteur de magasin",
+    "name": "Inspecteur / Inspectrice de magasin"
+   },
+   {
+    "codeOgr": "16065",
+    "feminineName": "Intervenante sur alarme",
+    "masculineName": "Intervenant sur alarme",
+    "name": "Intervenant / Intervenante sur alarme"
+   },
+   {
+    "codeOgr": "16322",
+    "feminineName": "Maîtresse-chien de sécurité",
+    "masculineName": "Maître-chien de sécurité",
+    "name": "Maître-chien / Maîtresse-chien de sécurité"
+   },
+   {
+    "codeOgr": "17221",
+    "feminineName": "Opératrice en télésurveillance",
+    "masculineName": "Opérateur en télésurveillance",
+    "name": "Opérateur / Opératrice en télésurveillance"
+   },
+   {
+    "codeOgr": "17735",
+    "feminineName": "Physionomiste",
+    "masculineName": "Physionomiste",
+    "name": "Physionomiste"
+   },
+   {
+    "codeOgr": "17758",
+    "feminineName": "Pilote d'équipe sécurité",
+    "masculineName": "Pilote d'équipe sécurité",
+    "name": "Pilote d'équipe sécurité"
+   },
+   {
+    "codeOgr": "17898",
+    "feminineName": "Portière physionomiste",
+    "masculineName": "Portier physionomiste",
+    "name": "Portier / Portière physionomiste"
+   },
+   {
+    "codeOgr": "19280",
+    "feminineName": "Rondière en sécurité",
+    "masculineName": "Rondier en sécurité",
+    "name": "Rondier / Rondière en sécurité"
+   },
+   {
+    "codeOgr": "19515",
+    "feminineName": "Stadière",
+    "masculineName": "Stadier",
+    "name": "Stadier / Stadière"
+   },
+   {
+    "codeOgr": "19590",
+    "feminineName": "Surveillante de magasin",
+    "masculineName": "Surveillant de magasin",
+    "name": "Surveillant / Surveillante de magasin"
+   },
+   {
+    "codeOgr": "19591",
+    "feminineName": "Surveillante de musée",
+    "masculineName": "Surveillant de musée",
+    "name": "Surveillant / Surveillante de musée"
+   },
+   {
+    "codeOgr": "19592",
+    "feminineName": "Surveillante de parking",
+    "masculineName": "Surveillant de parking",
+    "name": "Surveillant / Surveillante de parking"
+   },
+   {
+    "codeOgr": "19926",
+    "feminineName": "Technicienne de station centrale de surveillance",
+    "masculineName": "Technicien de station centrale de surveillance",
+    "name": "Technicien/Technicienne de station centrale de surveillance"
+   },
+   {
+    "codeOgr": "20285",
+    "feminineName": "Technicienne vidéosurveillance des jeux",
+    "masculineName": "Technicien vidéosurveillance des jeux",
+    "name": "Technicien / Technicienne vidéosurveillance des jeux"
+   },
+   {
+    "codeOgr": "20688",
+    "feminineName": "Vigile",
+    "masculineName": "Vigile",
+    "name": "Vigile"
+   },
+   {
+    "codeOgr": "38195",
+    "feminineName": "Surveillante de nuit",
+    "masculineName": "Surveillant de nuit",
+    "name": "Surveillant / Surveillante de nuit"
+   },
+   {
+    "codeOgr": "38455",
+    "feminineName": "Agente de sécurité magasin",
+    "masculineName": "Agent de sécurité magasin",
+    "name": "Agent / Agente de sécurité magasin"
+   },
+   {
+    "codeOgr": "38456",
+    "feminineName": "Agente de sécurité filtrage",
+    "masculineName": "Agent de sécurité filtrage",
+    "name": "Agent / Agente de sécurité filtrage"
+   },
+   {
+    "codeOgr": "38457",
+    "feminineName": "Agente de sécurité vidéosurveillance",
+    "masculineName": "Agent de sécurité vidéosurveillance",
+    "name": "Agent / Agente de sécurité vidéosurveillance"
+   },
+   {
+    "codeOgr": "38638",
+    "feminineName": "Conductrice véhicule protection de convoi exceptionnel",
+    "masculineName": "Conducteur véhicule protection de convoi exceptionnel",
+    "name": "Conducteur(trice) véhicule protection de convoi exceptionnel"
+   },
+   {
+    "codeOgr": "38639",
+    "feminineName": "Guideuse moto de convoi exceptionnel",
+    "masculineName": "Guideur moto de convoi exceptionnel",
+    "name": "Guideur / Guideuse moto de convoi exceptionnel"
+   }
+  ],
+  "name": "Sécurité et surveillance privées",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "CAP, BEP ou équivalent",
+     "percentRequired": 73,
+     "percentSuggested": 11
+    }
+   ],
+   "extras": [
+    {
+     "name": "Permis B - Véhicule léger",
+     "percentRequired": 74,
+     "percentSuggested": 23
+    }
+   ],
+   "skills": [
+    {
+     "name": "Utilisation d'outils bureautiques (traitement de texte, tableur,...)",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21467"
+     }
+    },
+    {
+     "name": "Réglementation en Hygiène, Sécurité, Environnement -HSE-",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22567"
+     }
+    },
+    {
+     "name": "Techniques de médiation",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22974"
+     }
+    },
+    {
+     "name": "Lecture de fiche technique",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "20943"
+     }
+    },
+    {
+     "name": "Maniement d'arme",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "20967"
+     }
+    },
+    {
+     "name": "Réglementation sécurité incendie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22580"
+     }
+    },
+    {
+     "name": "Techniques de lutte incendie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22952"
+     }
+    },
+    {
+     "name": "Règles de sûreté aéroportuaire",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22638"
+     }
+    },
+    {
+     "name": "Techniques cynophiles",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22758"
+     }
+    },
+    {
+     "name": "Utilisation d'outils de radiocommunication",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21472"
+     }
+    },
+    {
+     "name": "Techniques d'autodéfense",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22806"
+     }
+    },
+    {
+     "name": "Techniques de surveillance/télésurveillance",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23131"
+     }
+    }
+   ]
+  },
+  "romeId": "K2503",
+  "samples": [
+   {
+    "codeOgr": "10604",
+    "feminineName": "Agente de service de sécurité incendie",
+    "masculineName": "Agent de service de sécurité incendie",
+    "name": "Agent / Agente de service de sécurité incendie"
+   },
+   {
+    "codeOgr": "10623",
+    "feminineName": "Agente de surveillance et d'intervention",
+    "masculineName": "Agent de surveillance et d'intervention",
+    "name": "Agent / Agente de surveillance et d'intervention"
+   },
+   {
+    "codeOgr": "16065",
+    "feminineName": "Intervenante sur alarme",
+    "masculineName": "Intervenant sur alarme",
+    "name": "Intervenant / Intervenante sur alarme"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein de sociétés de sécurité privée, d'entreprises, de structures d'hébergement ou de soins,... en contact avec différents intervenants et institutionnels (publics, police, gendarmerie, pompiers, ...). - Elle varie selon le secteur (aéroportuaire, évènementiel, transport, ...), le mode d'organisation, le type de public (clients, visiteurs, ...) et d'équipement (télésurveillance, ...). - Elle peut s'exercer les fins de semaine, jours fériés, de nuit et être soumise à des astreintes. - L'activité peut s'effectuer en poste de sécurité. - Le port d'une tenue professionnelle (Protection Travailleur Isolé -PTI-, ...) peut être requis."
+ },
+ {
+  "_id": "M1403",
+  "description": "Analyse des données (économiques, statistiques, ...) et les restitue en une information opérationnelle et stratégique d'aide à la décision pour la structure, l'entreprise. - Peut réaliser et mettre en oeuvre le recueil de données. - Peut coordonner une équipe ou diriger un service.",
+  "hollandCodeMajor": "I",
+  "hollandCodeMinor": "E",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/M1403.jpg",
+  "jobs": [
+   {
+    "codeOgr": "10947",
+    "feminineName": "Analyste en intelligence économique",
+    "masculineName": "Analyste en intelligence économique",
+    "name": "Analyste en intelligence économique"
+   },
+   {
+    "codeOgr": "11200",
+    "feminineName": "Assistante chargée d'études socio-économiques",
+    "masculineName": "Assistant chargé d'études socio-économiques",
+    "name": "Assistant(e) chargé(e) d'études socio-économiques"
+   },
+   {
+    "codeOgr": "11400",
+    "feminineName": "Attachée d'études statistiques",
+    "masculineName": "Attaché d'études statistiques",
+    "name": "Attaché / Attachée d'études statistiques"
+   },
+   {
+    "codeOgr": "11899",
+    "feminineName": "Chargée d'études commerciales",
+    "masculineName": "Chargé d'études commerciales",
+    "name": "Chargé / Chargée d'études commerciales"
+   },
+   {
+    "codeOgr": "11900",
+    "feminineName": "Chargée d'études de marché",
+    "masculineName": "Chargé d'études de marché",
+    "name": "Chargé / Chargée d'études de marché"
+   },
+   {
+    "codeOgr": "11902",
+    "feminineName": "Chargée d'études économiques",
+    "masculineName": "Chargé d'études économiques",
+    "name": "Chargé / Chargée d'études économiques"
+   },
+   {
+    "codeOgr": "11904",
+    "feminineName": "Chargée d'études économiques et sociales",
+    "masculineName": "Chargé d'études économiques et sociales",
+    "name": "Chargé / Chargée d'études économiques et sociales"
+   },
+   {
+    "codeOgr": "11905",
+    "feminineName": "Chargée d'études économiques et statistiques",
+    "masculineName": "Chargé d'études économiques et statistiques",
+    "name": "Chargé / Chargée d'études économiques et statistiques"
+   },
+   {
+    "codeOgr": "11908",
+    "feminineName": "Chargée d'études en marketing",
+    "masculineName": "Chargé d'études en marketing",
+    "name": "Chargé / Chargée d'études en marketing"
+   },
+   {
+    "codeOgr": "11912",
+    "feminineName": "Chargée d'études financières",
+    "masculineName": "Chargé d'études financières",
+    "name": "Chargé / Chargée d'études financières"
+   },
+   {
+    "codeOgr": "11918",
+    "feminineName": "Chargée d'études prospectives",
+    "masculineName": "Chargé d'études prospectives",
+    "name": "Chargé / Chargée d'études prospectives"
+   },
+   {
+    "codeOgr": "11919",
+    "feminineName": "Chargée d'études satisfaction",
+    "masculineName": "Chargé d'études satisfaction",
+    "name": "Chargé / Chargée d'études satisfaction"
+   },
+   {
+    "codeOgr": "11920",
+    "feminineName": "Chargée d'études socio-économiques",
+    "masculineName": "Chargé d'études socio-économiques",
+    "name": "Chargé / Chargée d'études socio-économiques"
+   },
+   {
+    "codeOgr": "11921",
+    "feminineName": "Chargée d'études statistiques",
+    "masculineName": "Chargé d'études statistiques",
+    "name": "Chargé / Chargée d'études statistiques"
+   },
+   {
+    "codeOgr": "12165",
+    "feminineName": "Chef de groupe études socio-économiques",
+    "masculineName": "Chef de groupe études socio-économiques",
+    "name": "Chef de groupe études socio-économiques"
+   },
+   {
+    "codeOgr": "12245",
+    "feminineName": "Chef de projet études socio-économiques",
+    "masculineName": "Chef de projet études socio-économiques",
+    "name": "Chef de projet études socio-économiques"
+   },
+   {
+    "codeOgr": "12353",
+    "feminineName": "Chef de service études socio-économiques",
+    "masculineName": "Chef de service études socio-économiques",
+    "name": "Chef de service études socio-économiques"
+   },
+   {
+    "codeOgr": "14408",
+    "feminineName": "Directrice d'études économiques",
+    "masculineName": "Directeur d'études économiques",
+    "name": "Directeur / Directrice d'études économiques"
+   },
+   {
+    "codeOgr": "14409",
+    "feminineName": "Directrice d'études socio-économiques",
+    "masculineName": "Directeur d'études socio-économiques",
+    "name": "Directeur / Directrice d'études socio-économiques"
+   },
+   {
+    "codeOgr": "14569",
+    "feminineName": "Economiste d'entreprise",
+    "masculineName": "Economiste d'entreprise",
+    "name": "Economiste d'entreprise"
+   },
+   {
+    "codeOgr": "15727",
+    "feminineName": "Ingénieure économiste en entreprise",
+    "masculineName": "Ingénieur économiste en entreprise",
+    "name": "Ingénieur / Ingénieure économiste en entreprise"
+   },
+   {
+    "codeOgr": "15888",
+    "feminineName": "Ingénieure statisticienne",
+    "masculineName": "Ingénieur statisticien",
+    "name": "Ingénieur statisticien / Ingénieure statisticienne"
+   },
+   {
+    "codeOgr": "18892",
+    "feminineName": "Responsable de veille stratégique",
+    "masculineName": "Responsable de veille stratégique",
+    "name": "Responsable de veille stratégique"
+   },
+   {
+    "codeOgr": "18963",
+    "feminineName": "Responsable d'études économiques",
+    "masculineName": "Responsable d'études économiques",
+    "name": "Responsable d'études économiques"
+   },
+   {
+    "codeOgr": "18966",
+    "feminineName": "Responsable d'études socio-économiques",
+    "masculineName": "Responsable d'études socio-économiques",
+    "name": "Responsable d'études socio-économiques"
+   },
+   {
+    "codeOgr": "19522",
+    "feminineName": "Statisticienne",
+    "masculineName": "Statisticien",
+    "name": "Statisticien / Statisticienne"
+   },
+   {
+    "codeOgr": "38481",
+    "feminineName": "Economètre",
+    "masculineName": "Economètre",
+    "name": "Economètre"
+   },
+   {
+    "codeOgr": "38512",
+    "feminineName": "Responsable prévision des ventes",
+    "masculineName": "Responsable prévision des ventes",
+    "name": "Responsable prévision des ventes"
+   },
+   {
+    "codeOgr": "38970",
+    "feminineName": "Data miner",
+    "masculineName": "Data miner",
+    "name": "Data miner"
+   },
+   {
+    "codeOgr": "38971",
+    "feminineName": "Data analyst",
+    "masculineName": "Data analyst",
+    "name": "Data analyst"
+   },
+   {
+    "codeOgr": "38972",
+    "feminineName": "Data scientist",
+    "masculineName": "Data scientist",
+    "name": "Data scientist"
+   },
+   {
+    "codeOgr": "39004",
+    "feminineName": "Analyse pricing",
+    "masculineName": "Analyse prix",
+    "name": "Analyse prix / pricing"
+   }
+  ],
+  "name": "Études et prospectives socio-économiques",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "Bac+5 et plus ou équivalent",
+     "percentRequired": 62,
+     "percentSuggested": 14
+    },
+    {
+     "name": "Bac+3, Bac+4 ou équivalent",
+     "percentRequired": 62,
+     "percentSuggested": 13
+    },
+    {
+     "name": "Bac+2 ou équivalent",
+     "percentRequired": 63,
+     "percentSuggested": 12
+    }
+   ],
+   "extras": [
+    {
+     "name": "Permis B - Véhicule léger",
+     "percentRequired": 67,
+     "percentSuggested": 7
+    },
+    {
+     "name": "Tableur",
+     "percentSuggested": 26
+    },
+    {
+     "name": "Traitement de texte",
+     "percentSuggested": 23
+    }
+   ],
+   "skills": [
+    {
+     "name": "Techniques commerciales",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23012"
+     }
+    },
+    {
+     "name": "Utilisation d'outils bureautiques (traitement de texte, tableur,...)",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21467"
+     }
+    },
+    {
+     "name": "Conduite de projet",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21746"
+     }
+    },
+    {
+     "name": "Méthodes d'enquête",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22141"
+     }
+    },
+    {
+     "name": "Utilisation de logiciels de gestion de base de données",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21254"
+     }
+    },
+    {
+     "name": "Gestion budgétaire",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21994"
+     }
+    },
+    {
+     "name": "Analyse statistique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22721"
+     }
+    },
+    {
+     "name": "Langage de programmation informatique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22063"
+     }
+    },
+    {
+     "name": "Utilisation de logiciels de modélisation et simulation",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21261"
+     }
+    },
+    {
+     "name": "Techniques de conduite d'entretien",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22844"
+     }
+    },
+    {
+     "name": "Modélisation économique",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21001"
+     }
+    },
+    {
+     "name": "Econométrie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21820"
+     }
+    },
+    {
+     "name": "Algorithmique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21500"
+     }
+    },
+    {
+     "name": "Méthodes de prospective",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22136"
+     }
+    },
+    {
+     "name": "Sciences économiques et sociales",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22680"
+     }
+    },
+    {
+     "name": "Big data analytics",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "38984"
+     }
+    },
+    {
+     "name": "Scénarios prédictifs",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "38985"
+     }
+    }
+   ]
+  },
+  "romeId": "M1403",
+  "samples": [
+   {
+    "codeOgr": "38970",
+    "feminineName": "Data miner",
+    "masculineName": "Data miner",
+    "name": "Data miner"
+   },
+   {
+    "codeOgr": "11200",
+    "feminineName": "Assistante chargée d'études socio-économiques",
+    "masculineName": "Assistant chargé d'études socio-économiques",
+    "name": "Assistant(e) chargé(e) d'études socio-économiques"
+   },
+   {
+    "codeOgr": "11912",
+    "feminineName": "Chargée d'études financières",
+    "masculineName": "Chargé d'études financières",
+    "name": "Chargé / Chargée d'études financières"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein d'entreprises, de cabinets d'études et de conseil, d'instituts d'études et de sondages, de collectivités territoriales, de services de l'Etat, en relation avec différents services (direction, service informatique, communication, centres de documentation, ...). - Elle varie selon le secteur (industrie, services, institutionnels, ...), le type d'études et de thèmes (économie, produits, ...)."
+ },
+ {
+  "_id": "E1401",
+  "description": "Elabore, coordonne le plan de promotion de produits, de sa conception à sa réalisation et organise la campagne publicitaire pour le compte de clients annonceurs selon la stratégie commerciale définie. - Peut développer un portefeuille de clients. - Peut diriger une équipe et coordonner l'activité d'une agence.",
+  "hollandCodeMajor": "E",
+  "hollandCodeMinor": "C",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/E1401.jpg",
+  "name": "Développement et promotion publicitaire",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "Bac+2 ou équivalent",
+     "percentRequired": 54,
+     "percentSuggested": 13
+    },
+    {
+     "name": "Bac+3, Bac+4 ou équivalent",
+     "percentRequired": 54,
+     "percentSuggested": 7
+    }
+   ],
+   "extras": [
+    {
+     "name": "Permis B - Véhicule léger",
+     "percentRequired": 71,
+     "percentSuggested": 10
+    },
+    {
+     "name": "Traitement de texte",
+     "percentSuggested": 14
+    },
+    {
+     "name": "Tableur",
+     "percentSuggested": 14
+    }
+   ],
+   "skills": [
+    {
+     "name": "Techniques commerciales",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23012"
+     }
+    },
+    {
+     "name": "Utilisation d'outils bureautiques (traitement de texte, tableur,...)",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21467"
+     }
+    },
+    {
+     "name": "Gestion comptable et administrative",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21995"
+     }
+    },
+    {
+     "name": "Conduite de projet",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21746"
+     }
+    },
+    {
+     "name": "Techniques de marketing",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22970"
+     }
+    },
+    {
+     "name": "Utilisation de logiciels de Publication Assistée par Ordinateur -PAO-",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21264"
+     }
+    },
+    {
+     "name": "Chaîne graphique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21702"
+     }
+    },
+    {
+     "name": "Techniques de communication",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22840"
+     }
+    },
+    {
+     "name": "Spécificités des médias",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22713"
+     }
+    },
+    {
+     "name": "Techniques de publicité (choix de médias, supports, ...)",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23071"
+     }
+    }
+   ]
+  },
+  "romeId": "E1401",
+  "samples": [
+   {
+    "codeOgr": "14239",
+    "feminineName": "Directrice de clientèle d'agence de publicité",
+    "masculineName": "Directeur de clientèle d'agence de publicité",
+    "name": "Directeur / Directrice de clientèle d'agence de publicité"
+   },
+   {
+    "codeOgr": "12163",
+    "feminineName": "Chef de groupe en agence de publicité",
+    "masculineName": "Chef de groupe en agence de publicité",
+    "name": "Chef de groupe en agence de publicité"
+   },
+   {
+    "codeOgr": "12173",
+    "feminineName": "Chef de groupe publicité",
+    "masculineName": "Chef de groupe publicité",
+    "name": "Chef de groupe publicité"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein d'agences de publicité, de communication, ... en relation avec différents intervenants (équipes de création, service d'achat d'espaces, clients, sous-traitants, ...). - Elle varie selon la taille de l'agence, l'importance des budgets gérés et le mode d'organisation (globale, corporate, ...)."
+ },
+ {
+  "_id": "K1802",
+  "description": "Conçoit ou participe à la conception de projets de développement local, social (amélioration de l'habitat, valorisation d'activités, aménagement du territoire, ...) et les met en oeuvre selon le domaine d'intervention (économique, social, urbain, ...) afin de dynamiser un territoire (ville, bassin d'emploi, région, ...). - Peut intervenir dans le montage et la réalisation de projets de développement dans le cadre d'une coopération internationale. - Peut coordonner une équipe.",
+  "hollandCodeMajor": "E",
+  "hollandCodeMinor": "C",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/K1802.jpg",
+  "name": "Développement local",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "Bac+3, Bac+4 ou équivalent",
+     "percentRequired": 61,
+     "percentSuggested": 14
+    },
+    {
+     "name": "Bac+2 ou équivalent",
+     "percentRequired": 55,
+     "percentSuggested": 11
+    },
+    {
+     "name": "Bac+5 et plus ou équivalent",
+     "percentRequired": 60,
+     "percentSuggested": 10
+    }
+   ],
+   "extras": [
+    {
+     "name": "Permis B - Véhicule léger",
+     "percentRequired": 85,
+     "percentSuggested": 26
+    },
+    {
+     "name": "Traitement de texte",
+     "percentSuggested": 26
+    },
+    {
+     "name": "Tableur",
+     "percentSuggested": 24
+    }
+   ],
+   "skills": [
+    {
+     "name": "Techniques commerciales",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23012"
+     }
+    },
+    {
+     "name": "Gestion comptable et administrative",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21995"
+     }
+    },
+    {
+     "name": "Conduite de projet",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21746"
+     }
+    },
+    {
+     "name": "Procédures d'appel d'offres",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22381"
+     }
+    },
+    {
+     "name": "Techniques pédagogiques",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23253"
+     }
+    },
+    {
+     "name": "Techniques de communication",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22840"
+     }
+    },
+    {
+     "name": "Techniques de conduite de réunion",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22843"
+     }
+    },
+    {
+     "name": "Utilisation de Système d'Information Géographique -SIG-",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21389"
+     }
+    },
+    {
+     "name": "Comptabilité publique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21739"
+     }
+    },
+    {
+     "name": "Economie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21821"
+     }
+    },
+    {
+     "name": "Sociologie des organisations",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22690"
+     }
+    }
+   ]
+  },
+  "romeId": "K1802",
+  "samples": [
+   {
+    "codeOgr": "14147",
+    "feminineName": "Développeuse culturelle",
+    "masculineName": "Développeur culturel",
+    "name": "Développeur culturel / Développeuse culturelle"
+   },
+   {
+    "codeOgr": "10443",
+    "feminineName": "Agente de développement social urbain",
+    "masculineName": "Agent de développement social urbain",
+    "name": "Agent / Agente de développement social urbain"
+   },
+   {
+    "codeOgr": "10439",
+    "feminineName": "Agente de développement d'habitat social",
+    "masculineName": "Agent de développement d'habitat social",
+    "name": "Agent / Agente de développement d'habitat social"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein d'organismes publics ou privés (organisations professionnelles, associations, services de l'Etat et collectivités territoriales, ...) en relation avec différents interlocuteurs (élus locaux, citoyens, travailleurs sociaux, institutions administratives, ...). - Elle peut varier selon le type de structure (association, collectivité territoriale, ...), et le champ d'intervention (développement urbain, aménagement du territoire, international ...). - Elle peut nécessiter des déplacements et un éloignement du domicile de plusieurs mois pour les missions à l'international."
+ },
+ {
+  "_id": "K2401",
+  "description": "Contribue à l'accroissement des connaissances dans son champ disciplinaire en menant des travaux de recherche, des chantiers scientifiques sur de nouvelles problématiques des sciences de l'homme et de la société (sociologie, psychologie, ethnologie, économie, histoire, ...). - Valorise et diffuse les résultats auprès de la communauté scientifique, d'institutionnels et d'entreprises. - Peut diriger une équipe de recherche.",
+  "hollandCodeMajor": "I",
+  "hollandCodeMinor": "E",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/K2401.jpg",
+  "name": "Recherche en sciences de l'homme et de la société",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "Bac+5 et plus ou équivalent",
+     "percentRequired": 81,
+     "percentSuggested": 22
+    },
+    {
+     "name": "Bac+3, Bac+4 ou équivalent",
+     "percentRequired": 63,
+     "percentSuggested": 7
+    }
+   ],
+   "extras": [
+    {
+     "name": "Permis B - Véhicule léger",
+     "percentRequired": 81,
+     "percentSuggested": 14
+    },
+    {
+     "name": "Traitement de texte",
+     "percentSuggested": 20
+    },
+    {
+     "name": "Tableur",
+     "percentSuggested": 19
+    }
+   ],
+   "skills": [
+    {
+     "name": "Utilisation d'outils bureautiques (traitement de texte, tableur,...)",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21467"
+     }
+    },
+    {
+     "name": "Conduite de projet",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21746"
+     }
+    },
+    {
+     "name": "Techniques pédagogiques",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23253"
+     }
+    },
+    {
+     "name": "Gestion budgétaire",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21994"
+     }
+    },
+    {
+     "name": "Analyse statistique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22721"
+     }
+    },
+    {
+     "name": "Utilisation de logiciels de gestion documentaire",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21260"
+     }
+    },
+    {
+     "name": "Utilisation de logiciels de modélisation et simulation",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21261"
+     }
+    },
+    {
+     "name": "Méthodes d'investigation",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22145"
+     }
+    },
+    {
+     "name": "Méthodologie de recherche",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22150"
+     }
+    }
+   ]
+  },
+  "romeId": "K2401",
+  "samples": [
+   {
+    "codeOgr": "14916",
+    "feminineName": "Ethnolinguiste",
+    "masculineName": "Ethnolinguiste",
+    "name": "Ethnolinguiste"
+   },
+   {
+    "codeOgr": "12614",
+    "feminineName": "Chercheuse en sciences humaines et sociales",
+    "masculineName": "Chercheur en sciences humaines et sociales",
+    "name": "Chercheur / Chercheuse en sciences humaines et sociales"
+   },
+   {
+    "codeOgr": "12610",
+    "feminineName": "Chercheuse en histoire",
+    "masculineName": "Chercheur en histoire",
+    "name": "Chercheur / Chercheuse en histoire"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein d'établissements/organismes de recherche, d'établissements d'enseignement supérieur et de recherche, de cabinets d'études et de conseil, ... en relation avec différents intervenants (spécialistes d'autres disciplines, institutionnels, universitaires, ...). - Elle varie selon la discipline (sociologie, psychologie, ethnologie, économie, archéologie, ...), le lieu de conduite de travaux/d'observations (milieu naturel, ...), le type de recherche, les financements. - Elle peut s'exercer sur le terrain et impliquer un éloignement du domicile de plusieurs jours (colloques, séminaires, ...) ou mois (campagne de travaux, observation terrain, ...)."
+ },
+ {
+  "_id": "M1201",
+  "description": "Réalise des analyses et études financières (de marché, de risques, de produits, de restructurations économiques, ...) à destination des opérateurs sur marchés ou des instances dirigeantes de l'entreprise selon les réglementations commerciales, comptables et financières. - Peut mettre en oeuvre des opérations de fusion/acquisition. - Peut concevoir des instruments de suivi et d'analyse de risques. - Peut coordonner une équipe.",
+  "hollandCodeMajor": "E",
+  "hollandCodeMinor": "I",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/M1201.jpg",
+  "jobs": [
+   {
+    "codeOgr": "10940",
+    "feminineName": "Analyste de produits dérivés",
+    "masculineName": "Analyste de produits dérivés",
+    "name": "Analyste de produits dérivés"
+   },
+   {
+    "codeOgr": "10949",
+    "feminineName": "Analyste financière",
+    "masculineName": "Analyste financier",
+    "name": "Analyste financier / financière"
+   },
+   {
+    "codeOgr": "11761",
+    "feminineName": "Chargée d'analyse et d'ingénierie financière",
+    "masculineName": "Chargé d'analyse et d'ingénierie financière",
+    "name": "Chargé / Chargée d'analyse et d'ingénierie financière"
+   },
+   {
+    "codeOgr": "13423",
+    "feminineName": "Conseillère en fusion/acquisition",
+    "masculineName": "Conseiller en fusion/acquisition",
+    "name": "Conseiller / Conseillère en fusion/acquisition"
+   },
+   {
+    "codeOgr": "14568",
+    "feminineName": "Economiste de marché",
+    "masculineName": "Economiste de marché",
+    "name": "Economiste de marché"
+   },
+   {
+    "codeOgr": "14570",
+    "feminineName": "Economiste financière",
+    "masculineName": "Economiste financier",
+    "name": "Economiste financier / financière"
+   },
+   {
+    "codeOgr": "15353",
+    "feminineName": "Gestionnaire de risques financiers",
+    "masculineName": "Gestionnaire de risques financiers",
+    "name": "Gestionnaire de risques financiers"
+   },
+   {
+    "codeOgr": "15803",
+    "feminineName": "Ingénieure financière",
+    "masculineName": "Ingénieur financier",
+    "name": "Ingénieur financier / Ingénieure financière"
+   },
+   {
+    "codeOgr": "19079",
+    "feminineName": "Responsable financement de projet",
+    "masculineName": "Responsable financement de projet",
+    "name": "Responsable financement de projet"
+   },
+   {
+    "codeOgr": "19114",
+    "feminineName": "Responsable merger and acquisition",
+    "masculineName": "Responsable merger and acquisition",
+    "name": "Responsable merger and acquisition"
+   },
+   {
+    "codeOgr": "19265",
+    "feminineName": "Risk manager- risques financiers",
+    "masculineName": "Risk manager- risques financiers",
+    "name": "Risk manager- risques financiers"
+   },
+   {
+    "codeOgr": "38051",
+    "feminineName": "Analyste quantitatif en finance",
+    "masculineName": "Analyste quantitatif en finance",
+    "name": "Analyste quantitatif en finance"
+   }
+  ],
+  "name": "Analyse et ingénierie financière",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "Bac+5 et plus ou équivalent",
+     "percentRequired": 75,
+     "percentSuggested": 23
+    },
+    {
+     "name": "Bac+3, Bac+4 ou équivalent",
+     "percentRequired": 70,
+     "percentSuggested": 11
+    },
+    {
+     "name": "Bac+2 ou équivalent",
+     "percentRequired": 77,
+     "percentSuggested": 7
+    }
+   ],
+   "extras": [
+    {
+     "name": "Tableur",
+     "percentSuggested": 20
+    },
+    {
+     "name": "Traitement de texte",
+     "percentSuggested": 19
+    }
+   ],
+   "skills": [
+    {
+     "name": "Fiscalité",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21947"
+     }
+    },
+    {
+     "name": "Droit commercial",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21794"
+     }
+    },
+    {
+     "name": "Gestion économique et financière",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22001"
+     }
+    },
+    {
+     "name": "Comptabilité générale",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21738"
+     }
+    },
+    {
+     "name": "Droit économique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21808"
+     }
+    },
+    {
+     "name": "Analyse financière",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21503"
+     }
+    },
+    {
+     "name": "Analyse de risques financiers",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "20754"
+     }
+    },
+    {
+     "name": "Réglementation bancaire",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22529"
+     }
+    },
+    {
+     "name": "Caractéristiques des actifs financiers",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21553"
+     }
+    },
+    {
+     "name": "Loi de sécurité financière",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22089"
+     }
+    },
+    {
+     "name": "Mathématiques financières",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22097"
+     }
+    },
+    {
+     "name": "Méthodes de gestion des risques",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22133"
+     }
+    },
+    {
+     "name": "Typologie des facteurs de risques financiers",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23351"
+     }
+    },
+    {
+     "name": "Calculs financiers",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "20811"
+     }
+    },
+    {
+     "name": "Modélisation économique",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21001"
+     }
+    },
+    {
+     "name": "Econométrie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21820"
+     }
+    },
+    {
+     "name": "Etude prospective",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21940"
+     }
+    },
+    {
+     "name": "Réglementation des marchés financiers",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22545"
+     }
+    }
+   ]
+  },
+  "romeId": "M1201",
+  "samples": [
+   {
+    "codeOgr": "19114",
+    "feminineName": "Responsable merger and acquisition",
+    "masculineName": "Responsable merger and acquisition",
+    "name": "Responsable merger and acquisition"
+   },
+   {
+    "codeOgr": "15803",
+    "feminineName": "Ingénieure financière",
+    "masculineName": "Ingénieur financier",
+    "name": "Ingénieur financier / Ingénieure financière"
+   },
+   {
+    "codeOgr": "38051",
+    "feminineName": "Analyste quantitatif en finance",
+    "masculineName": "Analyste quantitatif en finance",
+    "name": "Analyste quantitatif en finance"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein de banques, de sociétés d'assurance, de sociétés de bourses, de sociétés de conseils en investissement, de grandes entreprises et groupes, en relation avec différents services (comptabilité, direction financière et administrative, ...) parfois en contact avec des clients. - Elle peut impliquer des déplacements (nationaux, internationaux). - Elle varie selon le secteur (banque, assurance, conseil, ...) et le type d'étude (fusion/acquisition, modélisation financière, ...)."
+ },
+ {
+  "_id": "M1402",
+  "description": "Conseille et accompagne les dirigeants de l'entreprise dans l'élaboration de stratégies de transformation, d'adaptation et de conduite du changement. Conçoit les processus de changements organisationnels et managériaux (humains, technologiques, financiers, informatiques, démarche qualité, sécurité, ...) selon les finalités attendues. - Peut coordonner l'activité d'une équipe ou diriger un service.",
+  "hollandCodeMajor": "E",
+  "hollandCodeMinor": "C",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/M1402.jpg",
+  "name": "Conseil en organisation et management d'entreprise",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "Bac+5 et plus ou équivalent",
+     "percentRequired": 67,
+     "percentSuggested": 17
+    },
+    {
+     "name": "Bac+3, Bac+4 ou équivalent",
+     "percentRequired": 65,
+     "percentSuggested": 13
+    },
+    {
+     "name": "Bac+2 ou équivalent",
+     "percentRequired": 64,
+     "percentSuggested": 9
+    }
+   ],
+   "extras": [
+    {
+     "name": "Permis B - Véhicule léger",
+     "percentRequired": 80,
+     "percentSuggested": 16
+    },
+    {
+     "name": "Traitement de texte",
+     "percentSuggested": 20
+    },
+    {
+     "name": "Tableur",
+     "percentSuggested": 20
+    }
+   ],
+   "skills": [
+    {
+     "name": "Techniques commerciales",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23012"
+     }
+    },
+    {
+     "name": "Utilisation d'outils bureautiques (traitement de texte, tableur,...)",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21467"
+     }
+    },
+    {
+     "name": "Réglementation en Hygiène, Sécurité, Environnement -HSE-",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22567"
+     }
+    },
+    {
+     "name": "Techniques de médiation",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22974"
+     }
+    },
+    {
+     "name": "Conduite de projet",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21746"
+     }
+    },
+    {
+     "name": "Gestion des Ressources Humaines",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22000"
+     }
+    },
+    {
+     "name": "Techniques pédagogiques",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23253"
+     }
+    },
+    {
+     "name": "Utilisation de logiciels de gestion de base de données",
+     "skill": {
+      "kind": "PRACTICAL_SKILL",
+      "skillId": "21254"
+     }
+    },
+    {
+     "name": "Gestion budgétaire",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21994"
+     }
+    },
+    {
+     "name": "Techniques de communication",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22840"
+     }
+    },
+    {
+     "name": "Droit commercial",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21794"
+     }
+    },
+    {
+     "name": "Législation sociale",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22086"
+     }
+    },
+    {
+     "name": "Normes qualité",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22233"
+     }
+    },
+    {
+     "name": "Marketing",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22095"
+     }
+    },
+    {
+     "name": "Techniques d'audit",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22805"
+     }
+    },
+    {
+     "name": "Ergonomie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21935"
+     }
+    },
+    {
+     "name": "Techniques de planification",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23033"
+     }
+    },
+    {
+     "name": "Méthodes d'analyse de risques",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22118"
+     }
+    },
+    {
+     "name": "Méthodes d'analyse (systémique, fonctionnelle, de risques, ...)",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22117"
+     }
+    },
+    {
+     "name": "Dispositifs d'assurance-qualité",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21785"
+     }
+    },
+    {
+     "name": "Dispositifs d'agréments et certification",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21784"
+     }
+    },
+    {
+     "name": "Sociologie des organisations",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22690"
+     }
+    },
+    {
+     "name": "Ingénierie de la formation",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22050"
+     }
+    },
+    {
+     "name": "Analyse financière",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21503"
+     }
+    },
+    {
+     "name": "Architecture et urbanisme des systèmes d'information",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21515"
+     }
+    },
+    {
+     "name": "Gestion de trésorerie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21999"
+     }
+    }
+   ]
+  },
+  "romeId": "M1402",
+  "samples": [
+   {
+    "codeOgr": "38511",
+    "feminineName": "Intervenante Prévention des Risques Professionnels - IPRP",
+    "masculineName": "Intervenant Prévention des Risques Professionnels - IPRP",
+    "name": "Intervenant(e) Prévention des Risques Professionnels - IPRP"
+   },
+   {
+    "codeOgr": "13532",
+    "feminineName": "Consultante en intelligence économique",
+    "masculineName": "Consultant en intelligence économique",
+    "name": "Consultant / Consultante en intelligence économique"
+   },
+   {
+    "codeOgr": "38138",
+    "feminineName": "Directrice qualité services",
+    "masculineName": "Directeur qualité services",
+    "name": "Directeur / Directrice qualité services"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein de sociétés de services, de cabinets de conseils, en entreprise, ... en relation avec différents services et clients (finances, informatique, production, qualité, ressources humaines, ...). - Elle varie selon le secteur (industrie, service, banque, ...), le domaine d'intervention (finances, ressources humaines, management, ...) et la taille (groupe, PME)."
+ },
+ {
+  "_id": "M1702",
+  "description": "Analyse les marques, les comportements des consommateurs et identifie les évolutions, les nouvelles tendances, les innovations, les concepts afin d'anticiper la demande, et de faire correspondre les produits aux attentes des clients. - Peut encadrer une équipe ou un service.",
+  "hollandCodeMajor": "E",
+  "hollandCodeMinor": "I",
+  "imageLink": "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/M1702.jpg",
+  "name": "Analyse de tendance",
+  "requirements": {
+   "diplomas": [
+    {
+     "name": "Bac+5 et plus ou équivalent",
+     "percentRequired": 90,
+     "percentSuggested": 28
+    },
+    {
+     "name": "Bac+3, Bac+4 ou équivalent",
+     "percentRequired": 86,
+     "percentSuggested": 10
+    },
+    {
+     "name": "Bac+2 ou équivalent",
+     "percentRequired": 100,
+     "percentSuggested": 7
+    }
+   ],
+   "extras": [
+    {
+     "name": "Permis B - Véhicule léger",
+     "percentRequired": 25,
+     "percentSuggested": 6
+    },
+    {
+     "name": "Tableur",
+     "percentSuggested": 14
+    },
+    {
+     "name": "Traitement de texte",
+     "percentSuggested": 7
+    }
+   ],
+   "skills": [
+    {
+     "name": "Techniques commerciales",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "23012"
+     }
+    },
+    {
+     "name": "Gestion comptable et administrative",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "21995"
+     }
+    },
+    {
+     "name": "Méthodes d'enquête",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22141"
+     }
+    },
+    {
+     "name": "Techniques de management",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22956"
+     }
+    },
+    {
+     "name": "Analyse statistique",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22721"
+     }
+    },
+    {
+     "name": "Marketing",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22095"
+     }
+    },
+    {
+     "name": "Sociologie",
+     "skill": {
+      "kind": "THEORETICAL_SKILL",
+      "skillId": "22689"
+     }
+    }
+   ]
+  },
+  "romeId": "M1702",
+  "samples": [
+   {
+    "codeOgr": "17816",
+    "feminineName": "Planneuse stratégique",
+    "masculineName": "Planneur stratégique",
+    "name": "Planneur / Planneuse stratégique"
+   },
+   {
+    "codeOgr": "18670",
+    "feminineName": "Responsable de bureau de style et tendances",
+    "masculineName": "Responsable de bureau de style et tendances",
+    "name": "Responsable de bureau de style et tendances"
+   },
+   {
+    "codeOgr": "14476",
+    "feminineName": "Directrice stratégique",
+    "masculineName": "Directeur stratégique",
+    "name": "Directeur / Directrice stratégique"
+   }
+  ],
+  "workingEnvironment": "L'activité de cet emploi/métier s'exerce au sein d'agences de publicité, de communication, de cabinets de design, ... en contact avec différents intervenants (créatifs, commerciaux, chefs de produits, annonceur, ...). - Elle varie selon le secteur d'activité (publicité, alimentaire, stylisme, ...). - Elle peut s'exercer les fins de semaine."
+ }
+]
