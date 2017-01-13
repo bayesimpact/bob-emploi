@@ -65,5 +65,4 @@ services:
       MONGO_URL: 'frontend-db'
       DEBUG: '1'
       SERVER_VERSION: local-test
-      FACEBOOK_APP_SECRET: 'aA12bB34cC56dD78eE90fF12aA34bB56'
     tty: true
