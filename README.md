@@ -28,13 +28,21 @@ Each folder contains a README file with further details regarding this applicati
 
 If you want to contribute to Bob Emploi with a bug fix or feature suggestion, please follow the Github contribution workflow described in [here](https://guides.github.com/activities/contributing-to-open-source/#contributing). At the current stage however, the main intention of the open source repository is to be transparent about the inner workings of Bob. In the future we hope  for, and will actively seek out for, contributions from the community. When we are ready for that, we will add detailed contribution instructions, suggestions of what to work on and a [CLA](https://en.wikipedia.org/wiki/Contributor_License_Agreement) to this repository.
 
+## Installation / Local Development
+
+All components / applications are packaged in [Docker Containers](https://www.docker.com/), which makes it extremely portable and reduces the setup of your development environment to a few simple commands.
+
+1. Install Docker: use [these detailed instructions](https://www.docker.com/products/overview#/install_the_platform) for installation
+2. Run application-specific docker command. For example:
+  * To run build and frontend locally: `docker-compose up -d frontend-dev` (Will make application available at `http://localhost:3000`)
+  * To run test: `docker-compose run --no-deps frontend-dev-webpack npm test`
+  * ...
+
+You can find the full list of commands in the README of each folder.
+
 ### Short Links
 
 We use a Bayes internal URL shortener that allows us to create links like http://go/bob-design-doc to conveniently link resources from within the source code or documentation. These links are only intended for internal usage and would not work on your computer. We are currently in a process to vet which documents can be made public and will in the future find a solution to replace the _go links_ in the code by publicly available URLs.
-
-## Installation / Local Development
-
-All components / applications are packaged in [Docker Containers](https://www.docker.com/), which makes it extremely portable and reduces the setup of your development environment to a few simple commands. Please visit [these detailed instructions](https://www.docker.com/products/overview#/install_the_platform) to install the Docker Platform on your local machine. The application specific READMEs in the individual subfolders of this repository will contain the detailed commands to run the applications. For example executing `docker-compose up -d frontend-dev` is enough to build the main application and make it available on `http://localhost:3000`.
 
 ## Open-Sourcing Status
 
