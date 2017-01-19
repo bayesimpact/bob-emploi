@@ -116,6 +116,9 @@ export class Logger {
       properties['Project Job Name'] = action.project.targetJob.masculineName
       properties['Project City'] = action.project.mobility.city.name
     }
+    if (action.advice) {
+      properties['Advice'] = action.advice
+    }
     if (action.error) {
       properties['Error'] = action.error
     }

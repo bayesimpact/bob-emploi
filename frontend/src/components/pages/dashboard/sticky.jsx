@@ -6,8 +6,9 @@ import ReactHeight from 'react-height'
 import {stickyProgress} from 'store/action'
 import {finishStickyActionStep, stopStickyAction} from 'store/actions'
 
-import {ShortKey} from 'components/shortkey'
 import {Modal} from 'components/modal'
+import {PageWithNavigationBar} from 'components/navigation'
+import {ShortKey} from 'components/shortkey'
 import {Colors, ExternalSiteButton, Icon, Input, LabeledToggle, Markdown,
         RoundButton, SmoothTransitions, Styles} from 'components/theme'
 
@@ -177,7 +178,45 @@ class PaneCloseButtonBase extends React.Component {
 const PaneCloseButton = Radium(PaneCloseButtonBase)
 
 
-class StickyActionPaneBase extends React.Component {
+class StickyActionPane extends React.Component {
+  static propTypes = {
+    action: React.PropTypes.object,
+    onClose: React.PropTypes.func.isRequired,
+  }
+
+  render() {
+    const {action, onClose, ...extraProps} = this.props
+    return <Pane {...extraProps} onClose={onClose} style={{width: '50vw'}}>
+      <StickyAction action={action} onClose={onClose} />
+    </Pane>
+  }
+}
+
+
+class StickyActionPage extends React.Component {
+  static propTypes = {
+    action: React.PropTypes.object,
+    onClose: React.PropTypes.func.isRequired,
+  }
+
+  render() {
+    const {action, onClose, ...extraProps} = this.props
+    const pageStyle = {
+      backgroundColor: '#fff',
+      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.2)',
+      margin: '50px auto',
+      width: 720,
+    }
+    return <PageWithNavigationBar {...extraProps} isContentScrollable={true}>
+      <div style={pageStyle}>
+        <StickyAction action={action} onClose={onClose} />
+      </div>
+    </PageWithNavigationBar>
+  }
+}
+
+
+class StickyActionBase extends React.Component {
   static propTypes = {
     action: React.PropTypes.object,
     dispatch: React.PropTypes.func.isRequired,
@@ -314,9 +353,9 @@ class StickyActionPaneBase extends React.Component {
   }
 
   render() {
-    const {action, onClose, ...extraProps} = this.props
+    const {action, onClose} = this.props
     const {expandedStepIndex, isFinishActionModalShown, lastExpandableStepIndex} = this.state
-    return <Pane {...extraProps} onClose={onClose} style={{width: '50vw'}}>
+    return <div>
       <FinishStickyActionModal
           isShown={isFinishActionModalShown}
           onClose={() => {
@@ -330,10 +369,10 @@ class StickyActionPaneBase extends React.Component {
           onExpand={index > lastExpandableStepIndex ? null :
             () => this.setState({expandedStepIndex: index})}
           isExpanded={index === expandedStepIndex} />)}
-    </Pane>
+    </div>
   }
 }
-const StickyActionPane = connect()(StickyActionPaneBase)
+const StickyAction = connect()(StickyActionBase)
 
 
 class StepBase extends React.Component {
@@ -637,4 +676,4 @@ class FinishStickyActionModal extends React.Component {
 }
 
 
-export {StickyActionPane}
+export {StickyActionPane, StickyActionPage}

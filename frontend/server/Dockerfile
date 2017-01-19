@@ -27,7 +27,7 @@ RUN apt-get update -qqy && \
   touch bob_emploi/frontend/__init__.py
 
 COPY entrypoint.sh .
-COPY server.py auth.py mail.py scoring.py proto.py bob_emploi/frontend/
+COPY server.py action.py advisor.py auth.py mail.py now.py scoring.py proto.py bob_emploi/frontend/
 COPY asynchronous/__init__.py asynchronous/mail_actions.py bob_emploi/frontend/asynchronous/
 COPY api bob_emploi/frontend/api
 

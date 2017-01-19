@@ -27,10 +27,17 @@ GOOGLE_SSO_CLIENT_ID = os.getenv(
     '1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com')
 # https://developers.facebook.com/apps/1048782155234293/settings/
 _FACEBOOK_SECRET = os.getenv(
-    'FACEBOOK_APP_SECRET', 'aA12bB34cC56dD78eE90fF12aA34bB56').encode('ascii', 'ignore')
+    'FACEBOOK_APP_SECRET',
+    # This is a fake ID, not used anywhere in staging nor prod. This default
+    # value is used for tests and dev environment.
+    'aA12bB34cC56dD78eE90fF12aA34bB56').encode('ascii', 'ignore')
 FACEBOOK_SSO_APP_ID = os.getenv('FACEBOOK_SSO_APP_ID', '1048782155234293')
 
-SECRET_SALT = os.getenv('SECRET_SALT', 'a2z3S5AKAEavfdr234aze075').encode('ascii', 'ignore')
+SECRET_SALT = os.getenv(
+    'SECRET_SALT',
+    # This is a fake salt, not used anywhere in staging nor prod. This default
+    # value is used for tests and dev environment.
+    'a2z3S5AKAEavfdr234aze075').encode('ascii', 'ignore')
 # Validity of generated salt tokens.
 _SALT_VALIDITY_SECONDS = datetime.timedelta(hours=2).total_seconds()
 

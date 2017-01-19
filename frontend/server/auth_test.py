@@ -476,6 +476,26 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(200, response.status_code)
 
+    def test_update_no_email_change(self, mock_verify_id_token):
+        """Update a Google signed-in user without changing the email."""
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'pascal@bayes.org',
+            'sub': '12345',
+        }
+        response = self.app.post(
+            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        user_id = auth_response['authenticatedUser']['userId']
+
+        response = self.app.post(
+            '/api/user',
+            data='{"userId": "%s", "googleId": "12345", '
+            '"profile": {"name": "Pascal", "email": "pascal@bayes.org"}}' % user_id,
+            content_type='application/json')
+        self.assertEqual(200, response.status_code)
+
     def test_load_user(self, mock_verify_id_token):
         """Auth request retrieves user."""
         # First create a new user.

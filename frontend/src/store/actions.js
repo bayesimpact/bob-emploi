@@ -49,6 +49,8 @@ export const STOP_STICKY_ACTION = 'STOP_STICKY_ACTION'
 export const ADD_MANUAL_EXPLORATION = 'ADD_MANUAL_EXPLORATION'
 export const EDIT_MANUAL_EXPLORATION = 'EDIT_MANUAL_EXPLORATION'
 export const DELETE_MANUAL_EXPLORATION = 'DELETE_MANUAL_EXPLORATION'
+export const ACCEPT_ADVICE = 'ACCEPT_ADVICE'
+export const DECLINE_ADVICE = 'DECLINE_ADVICE'
 
 // App actions.
 
@@ -72,6 +74,7 @@ export const OPEN_DISCOVERY_PAGE = 'OPEN_DISCOVERY_PAGE'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
+  [ACCEPT_ADVICE]: 'Accept suggested advice',
   [ACCEPT_PRIVACY_NOTICE]: 'Accept privacy notice',
   [AUTHENTICATE_USER]: 'Log in',
   [CANCEL_ACTION]: 'Close action',
@@ -79,6 +82,7 @@ export const actionTypesToLog = {
   [CREATE_DASHBOARD_EXPORT]: 'Create dashbord export',
   [CREATE_PROJECT]: 'Create project',
   [CREATE_PROJECT_SAVE]: 'Save project',
+  [DECLINE_ADVICE]: 'Decline suggested advice',
   [DELETE_PROJECT]: 'Delete project',
   [DELETE_USER_DATA]: 'Delete user',
   [DISPLAY_TOAST_MESSAGE]: 'Display toast message',
@@ -498,7 +502,21 @@ function finishStickyActionStep(step, text) {
 
 function stopStickyAction(action, feedback) {
   return (dispatch, getState) => {
-    dispatch({action, feedback,type: STOP_STICKY_ACTION})
+    dispatch({action, feedback, type: STOP_STICKY_ACTION})
+    return dispatch(saveUser(getState().user))
+  }
+}
+
+function acceptAdvice(project) {
+  return (dispatch, getState) => {
+    dispatch({advice: project.bestAdviceId, project, type: ACCEPT_ADVICE})
+    return dispatch(saveUser(getState().user))
+  }
+}
+
+function declineAdvice(project, reason) {
+  return (dispatch, getState) => {
+    dispatch({advice: project.bestAdviceId, project, reason, type: DECLINE_ADVICE})
     return dispatch(saveUser(getState().user))
   }
 }
@@ -596,4 +614,5 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         setUserInteraction, createActionPlan, redirectToMobileForm,
         deleteProject, refreshActionPlan, openActionExternalLink, stickAction,
         logDiscoveryPageOpenedAction, finishStickyActionStep, addManualExploration,
-        editManualExploration, deleteManualExploration, stopStickyAction}
+        editManualExploration, deleteManualExploration, stopStickyAction, acceptAdvice,
+        declineAdvice}

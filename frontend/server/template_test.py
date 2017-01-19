@@ -1,8 +1,8 @@
 # encoding: utf-8
-"""Tests for the server.populate_template function."""
+"""Tests for the action.populate_template function."""
 import unittest
 
-from bob_emploi.frontend import server
+from bob_emploi.frontend import action
 from bob_emploi.frontend.api import project_pb2
 
 
@@ -28,7 +28,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.target_job.job_group.rome_id = 'A1234'
         self.project.mobility.city.departement_id = '45'
 
-        link = server.populate_template(
+        link = action.populate_template(
             'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?'
             'codeRome=%romeId&codeZoneGeographique=%departementId&'
             'typeZoneGeographique=DEPARTEMENT',
@@ -44,7 +44,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.target_job.masculine_name = 'Boucher'
         self.project.mobility.city.name = 'Toulouse'
 
-        link = server.populate_template(
+        link = action.populate_template(
             'https://www.leboncoin.fr/offres_d_emploi/offres/ile_de_france/occasions/'
             '?th=1&q=%latin1MasculineJobName&location=%latin1CityName&parrot=0 ',
             self.project.mobility.city,
@@ -59,7 +59,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.target_job.masculine_name = 'Data scientist'
         self.project.mobility.city.name = 'Le Havre'
 
-        link = server.populate_template(
+        link = action.populate_template(
             'https://www.leboncoin.fr/offres_d_emploi/offres/ile_de_france/occasions/'
             '?th=1&q=%latin1MasculineJobName&location=%latin1CityName&parrot=0 ',
             self.project.mobility.city,
@@ -74,7 +74,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.target_job.masculine_name = 'Employé de ménage'
         self.project.mobility.city.name = 'Orléans-cœur'
 
-        link = server.populate_template(
+        link = action.populate_template(
             'https://www.leboncoin.fr/offres_d_emploi/offres/ile_de_france/occasions/'
             '?th=1&q=%latin1MasculineJobName&location=%latin1CityName&parrot=0 ',
             self.project.mobility.city,
@@ -90,7 +90,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.name = 'Toulouse'
         self.project.mobility.city.departement_id = '31'
 
-        link = server.populate_template(
+        link = action.populate_template(
             'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,
@@ -107,7 +107,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.departement_id = '974'
         self.project.mobility.city.postcodes = ''
 
-        link = server.populate_template(
+        link = action.populate_template(
             'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%postcode/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,
@@ -123,7 +123,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.name = 'Le Havre'
         self.project.mobility.city.departement_id = '76'
 
-        link = server.populate_template(
+        link = action.populate_template(
             'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,
@@ -140,7 +140,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.name = 'Orléans'
         self.project.mobility.city.departement_id = '42'
 
-        link = server.populate_template(
+        link = action.populate_template(
             'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,

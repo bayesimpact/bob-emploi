@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package bayesimpact.pe;
+
+// The definition of an Advice Module. See http://go/bob:advisor-design.
+message AdviceModule {
+  // Name of the scoring model to decide whether to trigger this advice.
+  string trigger_scoring_model = 1;
+
+  // ID of the sticky action template to engage the user when they have
+  // accepted the advice.
+  string engage_sticky_action_template = 2;
+}

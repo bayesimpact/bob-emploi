@@ -16,32 +16,28 @@ import os
 import random
 import re
 import time
-from urllib import parse
 
 from bson import objectid
-import emploi_store
 import farmhash
 import flask
 from google.protobuf import json_format
 import pymongo
-import unidecode
 from werkzeug.contrib import fixers
 
+from bob_emploi.frontend import action
+from bob_emploi.frontend import advisor
 from bob_emploi.frontend import auth
-from bob_emploi.frontend import scoring
+from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
+from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import discovery_pb2
-from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import export_pb2
-
-# TODO(pascal): Split this further.
-# pylint: disable=too-many-lines
 
 app = flask.Flask(__name__)  # pylint: disable=invalid-name
 # Get original host and scheme used before proxies (load balancer, nginx, etc).
@@ -54,10 +50,6 @@ _DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'localhost')).get_database(
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
-
-# Matches a title that is about "any company that...", e.g. "Postuler à une
-# entreprise".
-_ANY_COMPANY_REGEXP = re.compile('^(.*) une entreprise')
 
 _ProjectIntensityDefinition = collections.namedtuple(
     'ProjetIntensityDefinition', [
@@ -83,12 +75,6 @@ _POLE_EMPLOI_OFFERS_LINK = (
 _LA_BONNE_BOITE_LINK = (
     'http://labonneboite.pole-emploi.fr/entreprises/commune/%cityId/rome/%romeId?'
     'utm_medium=web&utm_source=bob&utm_campaign=bob-recherche')
-
-_EMPLOI_STORE_DEV_CLIENT_ID = os.getenv('EMPLOI_STORE_CLIENT_ID')
-_EMPLOI_STORE_DEV_SECRET = os.getenv('EMPLOI_STORE_CLIENT_SECRET')
-
-# Make an alias so it's easier to mock time when testing this module.
-_NOW = datetime.datetime.now
 
 # Email regex from http://emailregex.com/
 _EMAIL_REGEX = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
@@ -164,7 +150,7 @@ def _generic_image():
 
 def _save_user(user_data, is_new_user):
     if not user_data.registered_at.seconds:
-        user_data.registered_at.FromDatetime(_NOW())
+        user_data.registered_at.FromDatetime(now.get())
         # No need to pollute our DB with super precise timestamps.
         user_data.registered_at.nanos = 0
         # Enable email notifications for new users.
@@ -177,13 +163,15 @@ def _save_user(user_data, is_new_user):
     if _is_in_unverified_data_zone(user_data.profile):
         user_data.app_not_available = True
 
+    _populate_feature_flags(user_data)
+
     for project in user_data.projects:
         rome_id = project.target_job.job_group.rome_id
         if not project.project_id:
             # Add ID, timestamp and stats to new projects
             project.project_id = '%x-%x' % (round(time.time()), random.randrange(0x10000))
             project.source = project_pb2.PROJECT_MANUALLY_CREATED
-            project.created_at.FromDatetime(_NOW())
+            project.created_at.FromDatetime(now.get())
         if not project.HasField('local_stats'):
             _populate_job_stats_dict(
                 {rome_id: project.local_stats}, project.mobility.city)
@@ -194,23 +182,24 @@ def _save_user(user_data, is_new_user):
             else:
                 project.cover_image_url = _generic_image()
 
-        for action in project.actions:
-            if action.status in _ACTION_STOPPED_STATUSES:
-                _stop_action(action)
+        advisor.maybe_advise(user_data, project, _DB)
 
-        for action in project.past_actions:
-            _stop_action(action)
+        for current_action in project.actions:
+            if current_action.status in _ACTION_STOPPED_STATUSES:
+                action.stop(current_action, _DB)
 
-        for action in project.sticky_actions:
-            if not action.HasField('stuck_at'):
-                action.stuck_at.FromDatetime(_NOW())
+        for past_action in project.past_actions:
+            action.stop(past_action, _DB)
+
+        for sticky_action in project.sticky_actions:
+            if not sticky_action.HasField('stuck_at'):
+                sticky_action.stuck_at.FromDatetime(now.get())
 
     if not is_new_user:
         previous_user_data = _get_user_data(user_data.user_id, update_requested_at=False)
         _assert_no_credentials_change(previous_user_data, user_data)
         _copy_unmodifiable_fields(previous_user_data, user_data)
-
-    _populate_feature_flags(user_data)
+        _populate_feature_flags(user_data)
 
     # Modifications on user_data after this point will not be saved.
     user_dict = json.loads(json_format.MessageToJson(user_data))
@@ -263,18 +252,18 @@ def _copy_unmodifiable_fields(previous_user_data, user_data):
 def _assert_no_credentials_change(previous, new):
     if previous.facebook_id != new.facebook_id or previous.google_id != new.google_id:
         flask.abort(403, 'Impossible de modifier jour les identifiants.')
-    if new.facebook_id or new.google_id:
-        # Email address can be changed for Google SSO users and can be set when empty for FB users.
-        if new.profile.email and (not previous.profile.email or new.google_id):
-            if not _EMAIL_REGEX.match(new.profile.email):
-                flask.abort(403, 'Adresse email invalide.')
-            email_taken = bool(_DB.user.find(
-                {'profile.email': new.profile.email}, {'_id': 1}).limit(1).count())
-            if email_taken:
-                flask.abort(403, "L'utilisateur existe mais utilise un autre moyen de connexion.")
+    if previous.profile.email == new.profile.email:
         return
-    if previous.profile.email != new.profile.email:
-        flask.abort(403, "Impossible de modifier l'adresse email.")
+    if (new.facebook_id and not previous.profile.email) or new.google_id:
+        # Email address can be changed for Google SSO users and can be set when empty for FB users.
+        if not _EMAIL_REGEX.match(new.profile.email):
+            flask.abort(403, 'Adresse email invalide.')
+        email_taken = bool(_DB.user.find(
+            {'profile.email': new.profile.email}, {'_id': 1}).limit(1).count())
+        if email_taken:
+            flask.abort(403, "L'utilisateur existe mais utilise un autre moyen de connexion.")
+        return
+    flask.abort(403, "Impossible de modifier l'adresse email.")
 
 
 def _safe_object_id(_id):
@@ -297,15 +286,14 @@ def _get_user_data(user_id, update_requested_at=True):
         # Switch to raising an error if you move this function in a lib.
         flask.abort(404, 'Utilisateur "%s" inconnu.' % user_id)
 
-    now = _NOW()
-    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_day = now.get().replace(hour=0, minute=0, second=0, microsecond=0)
     # TODO: HACK to be cleaned up soon. We don't want a user_proto floating around
     # that should not be saved, nor returning a proto that is not the latest
     # value from dB. Consider creating a separate endpoint to mark the user as requested.
     if user_proto.requested_by_user_at_date.ToDatetime() < start_of_day and update_requested_at:
         user_proto_copy = user_pb2.User()
         user_proto_copy.CopyFrom(user_proto)
-        user_proto_copy.requested_by_user_at_date.FromDatetime(_NOW())
+        user_proto_copy.requested_by_user_at_date.FromDatetime(now.get())
         # No need to pollute our DB with super precise timestamps.
         user_proto_copy.requested_by_user_at_date.nanos = 0
         _save_user(user_proto_copy, is_new_user=False)
@@ -320,28 +308,6 @@ _ACTION_STOPPED_STATUSES = frozenset([
     action_pb2.ACTION_DONE,
     action_pb2.ACTION_STICKY_DONE,
     action_pb2.ACTION_DECLINED])
-
-
-def _stop_action(action):
-    if action.HasField('stopped_at'):
-        return
-    action.stopped_at.FromDatetime(_NOW())
-    if action.status == action_pb2.ACTION_SNOOZED:
-        action.end_of_cool_down.FromDatetime(_NOW())
-        return
-    if action.status in (
-            action_pb2.ACTION_UNREAD, action_pb2.ACTION_CURRENT, action_pb2.ACTION_STUCK):
-        # This action was not completed, so we will show it later, but not for
-        # the next 2 days so that actions change every day.
-        action.end_of_cool_down.FromDatetime(_NOW() + datetime.timedelta(days=2))
-        return
-    if action.status not in (action_pb2.ACTION_DONE, action_pb2.ACTION_STICKY_DONE):
-        return
-    action_template = _action_templates().get(action.action_template_id)
-    if not action_template or action_template.cool_down_duration_days == 0:
-        return
-    action.end_of_cool_down.FromDatetime(
-        _NOW() + datetime.timedelta(days=action_template.cool_down_duration_days))
 
 
 # Cache (from MongoDB) of known chantiers.
@@ -384,26 +350,6 @@ def chantiers():
     return result
 
 
-# Cache (from MongoDB) of known action templates.
-_ACTION_TEMPLATES = {}
-
-
-def _action_templates():
-    """Returns a list of known action templates as protos."""
-    return proto.cache_mongo_collection(
-        _DB.action_templates.find, _ACTION_TEMPLATES, action_pb2.ActionTemplate)
-
-
-# Cache (from MongoDB) of known sticky action steps.
-_STICKY_ACTION_STEPS = {}
-
-
-def _sticky_action_steps():
-    """Returns a dic of known sticky action steps keyed by ID."""
-    return proto.cache_mongo_collection(
-        _DB.sticky_action_steps.find, _STICKY_ACTION_STEPS, action_pb2.StickyActionStep)
-
-
 # TODO(stephan): Split this into separate endpoints for registration and login.
 @app.route('/api/user/authenticate', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.AuthRequest, out_type=user_pb2.AuthResponse)
@@ -435,9 +381,12 @@ def _job_groups_info():
 
 
 def _maybe_generate_new_action_plan(user_proto, project):
-    now = _NOW()
-    this_morning = now.replace(hour=3, minute=0, second=0, microsecond=0)
-    if this_morning > now:
+    if _project_in_advisor(project):
+        # Do not generate actions for projects handled by the Advisor.
+        return False
+    now_instant = now.get()
+    this_morning = now_instant.replace(hour=3, minute=0, second=0, microsecond=0)
+    if this_morning > now_instant:
         this_morning -= datetime.timedelta(hours=24)
     if project.actions_generated_at.ToDatetime() > this_morning:
         return False
@@ -452,8 +401,8 @@ def _maybe_generate_new_action_plan(user_proto, project):
         return False
 
     # Renew all actions.
-    for action in project.actions:
-        _stop_action(action)
+    for old_action in project.actions:
+        action.stop(old_action, _DB)
     new_past_actions = [a for a in project.actions]
     new_past_actions.sort(key=lambda action: action.stopped_at.ToDatetime())
     project.past_actions.extend(new_past_actions)
@@ -466,13 +415,19 @@ def _maybe_generate_new_action_plan(user_proto, project):
     target_other_actions = random.randint(
         intensity_def.min_actions_per_day, intensity_def.max_actions_per_day)
 
-    project.actions_generated_at.FromDatetime(now)
+    project.actions_generated_at.FromDatetime(now_instant)
 
     _add_actions_to_project(
         user_proto, project, target_white_actions, use_white_chantiers=True)
     _add_actions_to_project(user_proto, project, target_other_actions)
 
     return True
+
+
+def _project_in_advisor(project):
+    """Check whether a project is handled by the Advisor."""
+    return project.best_advice_id and project.advice_status in (
+        project_pb2.ADVICE_RECOMMENDED, project_pb2.ADVICE_ACCEPTED, project_pb2.ADVICE_ENGAGED)
 
 
 def _add_actions_to_project(user_proto, project, num_adds, use_white_chantiers=False):
@@ -492,17 +447,19 @@ def _add_actions_to_project(user_proto, project, num_adds, use_white_chantiers=F
 
     # List all action template IDs for which we already had an action in the
     # near past.
-    now = _NOW()
+    now_instant = now.get()
     still_hot_action_template_ids = set()
-    for action in itertools.chain(project.actions, project.past_actions, project.sticky_actions):
-        if action.HasField('end_of_cool_down') and action.end_of_cool_down.ToDatetime() < now:
+    for hot_action in itertools.chain(
+            project.actions, project.past_actions, project.sticky_actions):
+        if (hot_action.HasField('end_of_cool_down') and
+                hot_action.end_of_cool_down.ToDatetime() < now_instant):
             continue
-        still_hot_action_template_ids.add(action.action_template_id)
+        still_hot_action_template_ids.add(hot_action.action_template_id)
 
     # List all action templates that are at least in one of the activated
     # chantiers.
     actions_pool = [
-        a for action_template_id, a in _action_templates().items()
+        a for action_template_id, a in action.templates(_DB).items()
         # Do not add an action that was already taken.
         if action_template_id not in still_hot_action_template_ids and
         # Only add actions that are meant for these chantiers.
@@ -516,8 +473,8 @@ def _add_actions_to_project(user_proto, project, num_adds, use_white_chantiers=F
 
     # Split action templates by priority.
     pools = collections.defaultdict(list)
-    for action in filtered_actions_pool:
-        pools[action.priority_level].append(action)
+    for filtered_action in filtered_actions_pool:
+        pools[filtered_action.priority_level].append(filtered_action)
 
     if not pools:
         logging.warning(
@@ -527,7 +484,7 @@ def _add_actions_to_project(user_proto, project, num_adds, use_white_chantiers=F
             ' - %d action templates still hot\n'
             ' - %d before filtering',
             len(activated_chantiers),
-            len(_action_templates()),
+            len(action.templates(_DB)),
             len(still_hot_action_template_ids),
             len(actions_pool))
         return False
@@ -548,138 +505,11 @@ def _add_actions_to_project(user_proto, project, num_adds, use_white_chantiers=F
 
         for template in pool:
             added = True
-            _add_new_action(user_proto, project, template, activated_chantiers)
+            action.instantiate(
+                project.actions.add(), user_proto, project, template,
+                activated_chantiers, _DB, _chantiers())
 
     return added
-
-
-def _add_new_action(user_proto, project, template, activated_chantiers):
-    action = project.actions.add()
-    action.action_id = '%s-%s-%x-%x' % (
-        project.project_id,
-        template.action_template_id,
-        round(time.time()),
-        random.randrange(0x10000))
-    action.action_template_id = template.action_template_id
-    action.title = template.title
-    action.title_feminine = template.title_feminine
-    action.short_description = template.short_description
-    action.short_description_feminine = template.short_description_feminine
-    action.link = populate_template(
-        template.link, project.mobility.city, project.target_job)
-    action.how_to = template.how_to
-    action.status = action_pb2.ACTION_UNREAD
-    action.created_at.FromDatetime(_NOW())
-
-    if user_proto.features_enabled.sticky_actions == user_pb2.ACTIVE:
-        action.goal = template.goal
-        action.sticky_action_incentive = template.sticky_action_incentive
-        sticky_action_steps = _sticky_action_steps()
-        action.steps.extend([
-            sticky_action_steps.get(step_id)
-            for step_id in template.step_ids
-            if sticky_action_steps.get(step_id)])
-        for i, step in enumerate(action.steps):
-            step.step_id = '%s-%x' % (action.action_id, i)
-            if step.link:
-                step.link = populate_template(
-                    step.link, project.mobility.city, project.target_job)
-
-    if (template.special_generator == action_pb2.LA_BONNE_BOITE and
-            user_proto.features_enabled.lbb_integration == user_pb2.ACTIVE):
-        _get_company_from_lbb(project, action.apply_to_company)
-        if action.apply_to_company.name:
-            title_match = _ANY_COMPANY_REGEXP.match(action.title)
-            if title_match:
-                company_name = action.apply_to_company.name
-                if action.apply_to_company.city_name:
-                    company_name += ' (%s)' % action.apply_to_company.city_name
-                else:
-                    logging.warning(
-                        'LBB Action %s is missing a city name (user %s).',
-                        action.action_id, user_proto.user_id)
-                action.title = title_match.group(1) + " l'entreprise : " + company_name
-            else:
-                logging.warning(
-                    'LBB Action %s does not have a title that can be updated (user %s).',
-                    action.action_id, user_proto.user_id)
-
-    all_chantiers = _chantiers()
-    for chantier_id in activated_chantiers & set(template.chantiers):
-        chantier = action.chantiers.add()
-        chantier.chantier_id = chantier_id
-        chantier.kind = all_chantiers[chantier_id].kind
-        chantier.title = all_chantiers[chantier_id].title
-        chantier.title_first_person = all_chantiers[chantier_id].title_first_person
-
-
-def _get_company_from_lbb(project, company):
-    if not _EMPLOI_STORE_DEV_CLIENT_ID or not _EMPLOI_STORE_DEV_SECRET:
-        logging.warning('Missing Emploi Store Dev identifiers.')
-        return False
-    client = emploi_store.Client(
-        client_id=_EMPLOI_STORE_DEV_CLIENT_ID,
-        client_secret=_EMPLOI_STORE_DEV_SECRET)
-    city_proto = geo_pb2.FrenchCity()
-    if not proto.parse_from_mongo(
-            _DB.cities.find_one({'_id': project.mobility.city.city_id}), city_proto):
-        logging.warning('No coordinates for city %s', project.mobility.city.city_id)
-        return False
-    try:
-        lbb_companies = client.get_lbb_companies(
-            latitude=city_proto.latitude, longitude=city_proto.longitude,
-            rome_codes=[project.target_job.job_group.rome_id])
-    except IOError as error:
-        logging.error('Error while calling LBB API: %s\n%s', error, project)
-        return False
-    apply_to_companies = set(
-        action.apply_to_company.siret
-        for action in itertools.chain(project.actions, project.past_actions)
-        if action.apply_to_company.siret)
-    try:
-        lbb_company = next(c for c in lbb_companies if c.get('siret') not in apply_to_companies)
-    except IOError as error:
-        logging.error('Error while calling LBB API: %s\n%s', error, project)
-        return False
-    except StopIteration:
-        logging.warning('Could not find any companies with LBB:\n%s', project)
-        return False
-    company.name = lbb_company.get('name')
-    company.siret = lbb_company.get('siret')
-    company.city_name = lbb_company.get('city')
-    return True
-
-
-def populate_template(template, city, job):
-    """Populate a template with project variables.
-
-    Args:
-        template: a string that may or may not contain placeholders e.g.
-            %romeId, %departementId.
-        city: the city to target.
-        job: the job to target.
-    Returns:
-        A string with the placeholder replaced by actual values.
-    """
-    if '%' not in template:
-        return template
-    project_vars = {
-        '%cityId': city.city_id,
-        '%cityName': parse.quote(city.name),
-        '%latin1CityName': parse.quote(city.name.encode('latin-1', 'replace')),
-        '%departementId': city.departement_id,
-        '%postcode': city.postcodes.split('-')[0] or (
-            city.departement_id + '0' * (5 - len(city.departement_id))),
-        '%regionId': city.region_id,
-        '%romeId': job.job_group.rome_id,
-        '%jobId': job.code_ogr,
-        '%jobGroupNameUrl': parse.quote(unidecode.unidecode(
-            job.job_group.name.lower().replace(' ', '-').replace("'", '-'))),
-        '%masculineJobName': parse.quote(job.masculine_name),
-        '%latin1MasculineJobName': parse.quote(job.masculine_name.encode('latin-1', 'replace')),
-    }
-    pattern = re.compile('|'.join(project_vars.keys()))
-    return pattern.sub(lambda v: project_vars[v.group(0)], template)
 
 
 # TODO(pascal): Switch the project/requirements endpoint to be a GET as it does
@@ -930,10 +760,10 @@ def _enrich_discovery_protos(exploration_job_groups, city):
         job = job_pb2.Job(job_group=exploration_job_group.job_group)
         exploration_job_group.links.add(
             caption='Consulter %s sur pole-emploi.fr' % available_offers,
-            url=populate_template(_POLE_EMPLOI_OFFERS_LINK, city, job))
+            url=action.populate_template(_POLE_EMPLOI_OFFERS_LINK, city, job))
         exploration_job_group.links.add(
             caption='Voir les entreprises qui recrutent',
-            url=populate_template(_LA_BONNE_BOITE_LINK, city, job))
+            url=action.populate_template(_LA_BONNE_BOITE_LINK, city, job))
 
 
 @app.route('/api/cache/clear', methods=['GET'])
@@ -946,7 +776,7 @@ def clear_cache():
     """
     _JOB_GROUPS_INFO.clear()
     _CHANTIERS.clear()
-    _ACTION_TEMPLATES.clear()
+    action.clear_cache()
     return 'Server cache cleared.'
 
 
@@ -984,7 +814,7 @@ def _create_dashboard_export(user_id):
             chantier = all_chantiers.get(chantier_id)
             if chantier:
                 dashboard_export.chantiers[chantier_id].CopyFrom(chantier)
-    dashboard_export.created_at.FromDatetime(_NOW())
+    dashboard_export.created_at.FromDatetime(now.get())
     export_json = json.loads(json_format.MessageToJson(dashboard_export))
     export_json['_id'] = _get_unguessable_object_id()
     result = _DB.dashboard_exports.insert_one(export_json)

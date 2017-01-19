@@ -11,6 +11,7 @@ import mock
 import mongomock
 
 from bob_emploi.frontend import base_test
+from bob_emploi.frontend import now
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend import server
 from bob_emploi.frontend.api import chantier_pb2
@@ -91,7 +92,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
         self.assertTrue(id_generation_time < yesterday or id_generation_time > tomorrow)
 
-    @mock.patch(server.__name__ + '._NOW')
+    @mock.patch(now.__name__ + '.get')
     def test_requested_by_user_at_date(self, mock_now):
         """Test updating the requested_by_user_at_date field on a user."""
         mock_now.side_effect = datetime.datetime.now
@@ -349,6 +350,33 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(1, len(projects))
         project = projects.pop()
 
+    def test_project_in_advisor(self):
+        """New project should get advised if the user is in the experiment."""
+        project = {
+            'mobility': {
+                'city': {'departementId': '38'},
+            },
+            'localStats': {
+                'lessStressfulJobGroups': [{}],
+            },
+            'minSalary': 1000,
+            'targetJob': {'jobGroup': {'romeId': 'M1403'}},
+        }
+        user_id = self.authenticate_new_user(email='foo@bayes.org')
+        response = self.app.post(
+            '/api/user',
+            data='{"userId": "%s", "profile": {"email":"foo@bayes.org"}, '
+            '"projects": [%s]}' % (user_id, json.dumps(project)),
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        project = user_info['projects'][0]
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
+        self.assertEqual('ADVICE_RECOMMENDED', project.get('adviceStatus'))
+        self.assertEqual('reorientation', project.get('bestAdviceId'))
+
+        project_actions = self._refresh_action_plan(user_id)
+        self.assertEqual([], project_actions, msg='No actions generated for projects in Advisor')
+
     def test_post_user_with_no_id(self):
         """Called with no ID the endpoint should return an error."""
         user_id = self.create_user()
@@ -519,7 +547,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertLessEqual(action_snoozed['endOfCoolDown'], after.isoformat())
 
     @mock.patch(server.__name__ + '.random.randint')
-    @mock.patch(server.__name__ + '._NOW')
+    @mock.patch(now.__name__ + '.get')
     def test_generate_actions_on_next_day(self, mock_now, mock_randint):
         """Do not generate new actions just when actions are marked as done."""
         mock_randint.side_effect = lambda min_int, max_int: max_int
@@ -571,7 +599,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             set(a['actionId'] for a in initial_actions),
             set(a['actionId'] for a in past_actions))
 
-    @mock.patch(server.__name__ + '._NOW')
+    @mock.patch(now.__name__ + '.get')
     def test_generate_actions_same_day(self, mock_now):
         """Test that we do not generate new actions on the same day."""
         mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
@@ -582,7 +610,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         actions = self._refresh_action_plan(user_id)
         self.assertEqual(initial_actions, actions)
 
-    @mock.patch(server.__name__ + '._NOW')
+    @mock.patch(now.__name__ + '.get')
     def test_generate_actions_at_night(self, mock_now):
         """Test that we do not generate new actions before 3am the next day."""
         mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
@@ -593,7 +621,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         actions = self._refresh_action_plan(user_id)
         self.assertEqual(initial_actions, actions)
 
-    @mock.patch(server.__name__ + '._NOW')
+    @mock.patch(now.__name__ + '.get')
     def test_generate_actions_at_late_night(self, mock_now):
         """Test that we generate new actions after 3am the next day."""
         mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
@@ -604,7 +632,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         actions = self._refresh_action_plan(user_id)
         self.assertNotEqual(initial_actions, actions)
 
-    @mock.patch(server.__name__ + '._NOW')
+    @mock.patch(now.__name__ + '.get')
     def test_generate_actions_at_night_next_day(self, mock_now):
         """Test that we generate new actions at night if more than 24 hours."""
         mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
@@ -616,7 +644,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertNotEqual(initial_actions, actions)
 
     @mock.patch(server.__name__ + '.random.randint')
-    @mock.patch(server.__name__ + '._NOW')
+    @mock.patch(now.__name__ + '.get')
     def test_generate_actions_on_next_day_login(self, mock_now, mock_randint):
         """Generate new actions when logging in the next day."""
         mock_randint.side_effect = lambda min_int, max_int: max_int
@@ -701,9 +729,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             ['d1', 'd2'],
             sorted(a.get('actionTemplateId') for a in project_actions[2:]))
 
-    @mock.patch(server.__name__ + '._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.emploi_store.Client')
+    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_CLIENT_ID')
+    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_SECRET')
+    @mock.patch(server.__name__ + '.action.emploi_store.Client')
     def test_lbb_action(self, mock_es_client, unused_mock_secret, unused_mock_client_id):
         """Add an action using the LBB integration."""
         def _set_project_city(user):
@@ -733,6 +761,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'name': 'Bayes Impact',
             'siret': '12345',
             'city': 'Lyon',
+            'naf_text': 'Startup caritative',
+            'headcount_text': '5 à 10 salariés',
         }])
         mock_es_client.reset_mock()
         project_actions = self._refresh_action_plan(user_id)
@@ -744,11 +774,14 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(
             'Bayes Impact',
             project_actions[0].get('applyToCompany', {}).get('name'))
+        self.assertEqual(
+            'Startup caritative',
+            project_actions[0].get('applyToCompany', {}).get('activitySectorName'))
         self.assertAlmostEqual(45.678, mock_es_client().get_lbb_companies.call_args[1]['latitude'])
 
-    @mock.patch(server.__name__ + '._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.emploi_store.Client')
+    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_CLIENT_ID')
+    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_SECRET')
+    @mock.patch(server.__name__ + '.action.emploi_store.Client')
     def test_lbb_action_not_in_experiment(
             self, mock_es_client, unused_mock_secret, unused_mock_client_id):
         """Add an action without the LBB integration."""
@@ -770,6 +803,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'name': 'Bayes Impact',
             'siret': '12345',
             'city': 'Lyon',
+            'naf_text': 'Startup caritative',
+            'headcount_text': '5 à 10 salariés',
         }])
         mock_es_client.reset_mock()
 
@@ -779,9 +814,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertFalse(project_actions[0].get('applyToCompany'))
         self.assertFalse(mock_es_client.called)
 
-    @mock.patch(server.__name__ + '._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.emploi_store.Client')
+    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_CLIENT_ID')
+    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_SECRET')
+    @mock.patch(server.__name__ + '.action.emploi_store.Client')
     def test_lbb_action_dupes(self, mock_es_client, unused_mock_secret, unused_mock_client_id):
         """Add two actions using the LBB integration with different companies."""
         def _set_project_city(user):
@@ -813,11 +848,15 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 'name': 'Bayes Impact',
                 'siret': '12345',
                 'city': 'Lyon',
+                'naf_text': 'Startup caritative',
+                'headcount_text': '5 à 10 salariés',
             },
             {
                 'name': 'Liberté Living Lab',
                 'siret': '67890',
                 'city': 'Paris',
+                'naf_text': 'Coworking',
+                'headcount_text': '5 à 10 salariés',
             },
         ])
         mock_es_client.reset_mock()

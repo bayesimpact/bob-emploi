@@ -7,6 +7,7 @@ import unittest
 import mock
 import mongomock
 
+from bob_emploi.frontend import action
 from bob_emploi.frontend import server
 
 
@@ -24,10 +25,10 @@ class ServerTestCase(unittest.TestCase):
     def setUp(self):
         """Set up mock environment."""
         super(ServerTestCase, self).setUp()
-        # Simulate a clean load of the module.
+        # Simulate a clean load of the modules.
         server._JOB_GROUPS_INFO = {}  # pylint: disable=protected-access
         server._CHANTIERS = {}  # pylint: disable=protected-access
-        server._ACTION_TEMPLATES = {}  # pylint: disable=protected-access
+        action.clear_cache()
 
         self.app = server.app.test_client()
         self._db = mongomock.MongoClient().get_database('test')

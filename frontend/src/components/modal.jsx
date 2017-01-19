@@ -28,6 +28,8 @@ class Modal extends React.Component {
     // Additional styling for the modal box.
     style: React.PropTypes.object,
     title: React.PropTypes.node,
+    // Additionl styling for the title.
+    titleStyle: React.PropTypes.object,
     // Duration in milliseconds of the transition to open and close the modal.
     transitionDurationMilliSec: React.PropTypes.number,
   }
@@ -169,6 +171,7 @@ class Modal extends React.Component {
       lineHeight: 1.64,
       margin: '40px 27px 0',
       textAlign: 'center',
+      ...this.props.titleStyle,
     }
     return <div style={pageStyle}>
       <div style={backgroundStyle} />

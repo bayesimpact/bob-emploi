@@ -881,6 +881,16 @@ class _ApplicationComplexityFilter(_ScoringModelBase):
         return _Score(0)
 
 
+class _AdviceReorientation(_ScoringModelBase):
+    """A scoring model to trigger the Reorientation Advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        if not project.details.local_stats.less_stressful_job_groups:
+            return _Score(0)
+        return _Score(3)
+
+
 _ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'constructor'])
 
 
@@ -920,6 +930,7 @@ GROUP_SCORING_MODELS = {
 
 SCORING_MODELS = {
     '': _ScoringModelBase(),
+    'advice-reorientation': _AdviceReorientation(),
     'chantier-about-job': _LearnMoreAboutJobScoringModel(),
     'chantier-apprentissage': _ApprentissageScoringModel(),
     'chantier-atypical-profile': _ShowcaseAtypicalProfileScoringModel(),
@@ -954,6 +965,7 @@ SCORING_MODELS = {
     'chantier-subsidized-contract': _SubsidizedContractScoringModel(),
     'chantier-training': _TrainingScoringModel(),
     'chantier-use-network': _UseYourNetworkScoringModel(),
+    'constant(0)': ConstantScoreModel(0),
     'constant(2)': ConstantScoreModel(2),
     'for-complex-application': _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS),
     'for-driver(car)': _UserProfileFilter(lambda user: job_pb2.CAR in user.driving_licenses),

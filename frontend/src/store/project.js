@@ -277,6 +277,15 @@ function finishStickyActionStep(project, finishedStep, text) {
 }
 
 
+function shouldShowAdvice(project) {
+  if (!project.bestAdviceId) {
+    return false
+  }
+  return (project.adviceStatus === 'ADVICE_RECOMMENDED'
+      || project.adviceStatus === 'ADVICE_ACCEPTED' && !project.stickyActions)
+}
+
+
 export {
   PROJECT_EXPERIENCE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
@@ -284,5 +293,5 @@ export {
   allDoneAndPastActionsAndProjects, allActionsById, projectsWithOpenActions,
   areAllActionsDoneForToday, allDoneActions, hasActionPlan,
   isAnyActionPlanGeneratedRecently, isNewActionPlanNeeded,
-  allStickyActions, findAction, finishStickyActionStep,
+  allStickyActions, findAction, finishStickyActionStep, shouldShowAdvice,
 }

@@ -8,7 +8,8 @@ import {CircularProgress} from 'components/progress'
 import {ShortKey} from 'components/shortkey'
 
 import {fetchPotentialChantiers, updateProjectChantiers, createActionPlan,
-        setProjectProperty, deleteProject} from 'store/actions'
+        setProjectProperty, deleteProject, acceptAdvice, declineAdvice} from 'store/actions'
+import {shouldShowAdvice} from 'store/project'
 import {Routes} from 'components/url'
 
 import {PageWithNavigationBar} from 'components/navigation'
@@ -17,6 +18,7 @@ import {PotentialChantiersLists} from './project/chantiers'
 import {IntensityChangeButton, IntensityModal} from './project/intensity'
 import {EditProjectModal} from './project/edit_project'
 import {AdvisorPage} from './project/advisor'
+import {StickyActionPage} from './dashboard/sticky'
 
 import {Modal, ModalHeader} from 'components/modal'
 import {CoverImage, Colors, RoundButton, SmoothTransitions, Styles,
@@ -350,7 +352,6 @@ class ProjectPage extends React.Component {
   }
 
   state = {
-    isAdvisorShown: true,
     isConfirmDeleteModalShown: false,
     isEditProjectModalShown: false,
     isIntensityModalShown: false,
@@ -433,13 +434,30 @@ class ProjectPage extends React.Component {
     return !Object.keys(project.activatedChantiers || {}).length
   }
 
+  handleAcceptAdvice(project) {
+    // TODO(pascal): Redirect to Sticky Action Full Page.
+    this.props.dispatch(acceptAdvice(project))
+  }
+
+  handleDeclineAdvice(project, reason) {
+    this.props.dispatch(declineAdvice(project, reason))
+  }
+
   render() {
     const project = getProjectFromProps(this.props)
     const {app, user} = this.props
     const {isConfirmDeleteModalShown, isIntensityModalShown, isLoadingPotentialChantiers,
-           isWaitingInterstitialShown, isEditProjectModalShown, isAdvisorShown} = this.state
+           isWaitingInterstitialShown, isEditProjectModalShown} = this.state
 
     const isFirstTime = this.getIsFirstTime()
+
+    if (user.featuresEnabled && user.featuresEnabled.advisor
+        && project.adviceStatus === 'ADVICE_ACCEPTED' && project.stickyActions
+        && project.stickyActions.length === 1) {
+      return <StickyActionPage
+        action={project.stickyActions[0]} onClose={() => alert("En cours d'implémentation")} />
+    }
+
 
     if (isWaitingInterstitialShown) {
       return <WaitingProjectPage
@@ -447,9 +465,11 @@ class ProjectPage extends React.Component {
           onDone={this.handleWaitingInterstitialDone} />
     }
 
-    if (user.featuresEnabled && user.featuresEnabled.advisor && isAdvisorShown) {
-      return <AdvisorPage {...this.props} project={project} onContinue={
-        () => this.setState({isAdvisorShown: false})} />
+    if (user.featuresEnabled && user.featuresEnabled.advisor && shouldShowAdvice(project)) {
+      return <AdvisorPage
+          {...this.props} project={project}
+          onAccept={() => this.handleAcceptAdvice(project)}
+          onDecline={reason => this.handleDeclineAdvice(project, reason)} />
     }
 
     let innerPage

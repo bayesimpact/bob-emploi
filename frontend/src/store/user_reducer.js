@@ -8,7 +8,7 @@ import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, FINISH_ACTION,
         FINISH_PROFILE_QUALIFICATIONS, FINISH_PROFILE_FRUSTRATIONS, FINISH_PROFILE_CRITERIA,
         ACCEPT_PRIVACY_NOTICE, FINISH_STICKY_ACTION_STEP, ADD_MANUAL_EXPLORATION,
         EDIT_MANUAL_EXPLORATION, DELETE_MANUAL_EXPLORATION, STOP_STICKY_ACTION,
-        } from '../store/actions'
+        ACCEPT_ADVICE, DECLINE_ADVICE} from '../store/actions'
 import {finishStickyActionStep} from './project'
 import {travelInTime} from './user'
 import Cookies from 'js-cookie'
@@ -253,6 +253,17 @@ function user(state=initialData, action) {
         manualExplorations: state.manualExplorations.slice(0, action.index).concat(
           state.manualExplorations.slice(action.index + 1)),
       }
+    case ACCEPT_ADVICE:
+      return updateProject(state, {
+        adviceStatus: 'ADVICE_ACCEPTED',
+        projectId: action.project.projectId,
+      })
+    case DECLINE_ADVICE:
+      return updateProject(state, {
+        adviceDeclinedReason: action.reason || '',
+        adviceStatus: 'ADVICE_DECLINED',
+        projectId: action.project.projectId,
+      })
     default:
       return state
   }

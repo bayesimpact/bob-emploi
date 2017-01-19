@@ -73,6 +73,9 @@
           "cityId": "69123",
           "regionId": "84"
         }
+      },
+      "localStats": {
+        "lessStressfulJobGroups": [{}]
       }
     }
   },

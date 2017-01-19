@@ -8,7 +8,7 @@ import "bob_emploi/frontend/api/job.proto";
 
 package bayesimpact.pe;
 
-// Next available tag: 11.
+// Next available tag: 21.
 message Project {
   // A unique identifier for this project.
   string project_id = 1;
@@ -118,6 +118,15 @@ message Project {
 
   // Job stats for this specific project.
   LocalJobStats local_stats = 9;
+
+  // ID of the best Advice Module for this project.
+  string best_advice_id = 11;
+
+  // Status of the Advice for this project.
+  AdviceStatus advice_status = 12;
+
+  // Feedback of the user when they decline an advice.
+  string advice_declined_reason = 13;
 }
 
 enum NumberOfferEstimateOption {
@@ -224,4 +233,21 @@ enum ProjectIntensity {
   PROJECT_NORMALLY_INTENSE = 2;
   PROJECT_PRETTY_INTENSE = 3;
   PROJECT_EXTREMELY_INTENSE = 4;
+}
+
+enum AdviceStatus {
+  UNKNOWN_ADVICE_STATUS = 0;
+
+  // The Advisor has recommended an advice.
+  ADVICE_RECOMMENDED = 1;
+
+  // The user has accepted the advice and is starting to engage.
+  ADVICE_ACCEPTED = 2;
+
+  // The user has declined the advice that was recommended.
+  ADVICE_DECLINED = 3;
+
+  // The user has finished all steps of the sticky action to engage into the
+  // advice.
+  ADVICE_ENGAGED = 4;
 }
