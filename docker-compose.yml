@@ -1,5 +1,33 @@
 version: "2"
 services:
+  data-analysis-notebook:
+    image: docker.bayesimpact.org/bob-emploi/notebooks
+    build:
+      context: data_analysis
+      dockerfile: Dockerfile.notebooks
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data_analysis/data:/home/jovyan/work/data:rw
+      - ./data_analysis/bob_emploi:/opt/conda/lib/python3.5/bob_emploi:ro
+      - ./data_analysis/notebooks:/home/jovyan/work/notebooks
+  data-analysis-prepare:
+    image: docker.bayesimpact.org/bob-emploi/data-analysis-prepare
+    build:
+      context: data_analysis
+      dockerfile: Dockerfile.prepare
+    volumes:
+      - ./data_analysis:/data_analysis
+      - ./data_analysis/data:/data_analysis/data
+      - ./.pep8:/data_analysis/.pep8:ro
+      - ./.pylintrc:/data_analysis/.pylintrc:ro
+      - ./frontend/server/proto.py:/data_analysis/bob_emploi/frontend/proto.py:ro
+      - ./frontend/server/scoring.py:/data_analysis/bob_emploi/frontend/scoring.py:ro
+      - ./frontend/server/api:/data_analysis/bob_emploi/frontend/api
+    environment:
+      EMPLOI_STORE_CLIENT_ID:
+      EMPLOI_STORE_CLIENT_SECRET:
+    tty: true
   frontend-db:
     build: frontend/server/db
     ports:

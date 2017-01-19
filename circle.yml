@@ -12,6 +12,7 @@ dependencies:
     - rm docker-compose.override.yml
     # Build all containers.
     - test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 docker-compose build frontend-db frontend-dev-webpack frontend-flask frontend-flask-test
+    - test -e skip-data-analysis || GIT_SHA1=$CIRCLE_SHA1 docker-compose build data-analysis-prepare
 test:
   pre:
     - mkdir -p frontend/server/cover
@@ -20,6 +21,7 @@ test:
     - test -e skip-frontend || docker-compose run --no-deps frontend-dev-webpack npm test
     - test -e skip-frontend || docker-compose run --no-deps frontend-flask-test ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html --cover-min-percentage=95
     - test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 frontend/release/build.sh
+    - test -e skip-data-analysis || docker-compose run --no-deps data-analysis-prepare ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=.
   post:
     - mv frontend/server/cover $CIRCLE_ARTIFACTS/frontend-flask-coverage
 experimental:
