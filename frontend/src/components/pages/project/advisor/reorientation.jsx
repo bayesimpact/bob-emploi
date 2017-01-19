@@ -2,6 +2,7 @@ import React from 'react'
 import {connect} from 'react-redux'
 
 import config from 'config'
+import {maybeContract, lowerFirstLetter} from 'store/french'
 import {MarketStressChart, Section, TitleBox} from './base'
 import {CheckboxList, Colors, RoundButton} from 'components/theme'
 import {Modal} from 'components/modal'
@@ -20,6 +21,9 @@ class ReorientationAdvice extends React.Component {
 
   state = {
     isDeclineModalShown: false,
+    isTransitionToCoachModalShown: false,
+    isTransitionToEngagementModalShown: false,
+    reason: '',
   }
 
   // TODO(guillaume): Create a framework to refactor formulations.
@@ -173,9 +177,10 @@ class ReorientationAdvice extends React.Component {
   }
 
   renderButtons() {
-    const {onAccept} = this.props
     return <div style={{display: 'flex', padding: '0 50px'}}>
-      <RoundButton type="validation" style={{flex: 1}} onClick={onAccept}>
+      <RoundButton
+          type="validation" style={{flex: 1}}
+          onClick={() => this.setState({isTransitionToEngagementModalShown: true})}>
         Je souhaite me réorienter
       </RoundButton>
       <span style={{width: 20}} />
@@ -188,13 +193,24 @@ class ReorientationAdvice extends React.Component {
   }
 
   render() {
-    const {onDecline, style} = this.props
-    const {isDeclineModalShown} = this.state
+    const {onDecline, onAccept, project, style} = this.props
+    const {isDeclineModalShown, isTransitionToCoachModalShown,
+      isTransitionToEngagementModalShown} = this.state
     return <div style={style}>
-      <DeclineModalShown
+      <DeclineModal
           onClose={() => this.setState({isDeclineModalShown: false})}
           isShown={isDeclineModalShown}
-          onSubmit={reason => onDecline(reason)} />
+          onSubmit={reason => this.setState({
+            isDeclineModalShown: false,
+            isTransitionToCoachModalShown: true,
+            reason,
+          })} />
+      <TransitionToCoachModal
+          project={project} isShown={isTransitionToCoachModalShown}
+          onSubmit={() => onDecline(this.state.reason)} />
+      <TransitionToEngagementModal
+          isShown={isTransitionToEngagementModalShown}
+          onSubmit={onAccept} />
       {this.renderTitleBox()}
       {this.renderDetailedAnalysis()}
       {this.renderButtons()}
@@ -203,7 +219,7 @@ class ReorientationAdvice extends React.Component {
 }
 
 
-class DeclineModalShownBase extends React.Component {
+class DeclineModalBase extends React.Component {
   static propTypes = {
     gender: React.PropTypes.string,
     onClose: React.PropTypes.func.isRequired,
@@ -281,8 +297,71 @@ class DeclineModalShownBase extends React.Component {
     </Modal>
   }
 }
-const DeclineModalShown = connect(({user}) => ({gender: user.profile.gender}))(
-    DeclineModalShownBase)
+const DeclineModal = connect(({user}) => ({gender: user.profile.gender}))(DeclineModalBase)
+
+
+class TransitionToCoachModal extends React.Component {
+  static propTypes = {
+    onSubmit: React.PropTypes.func.isRequired,
+    project: React.PropTypes.object.isRequired,
+  }
+
+  render() {
+    const {onSubmit, project, ...extraProps} = this.props
+    const style = {
+      fontSize: 14,
+      lineHeight: 1.57,
+      padding: '0 60px 50px',
+      textAlign: 'center',
+      width: 480,
+    }
+    return <Modal {...extraProps} title="Merci pour votre aide" style={style}>
+      <img src={require('images/thumb-up.svg')} style={{margin: 40}} />
+      <div>
+        {config.productName} ce n'est pas que de la reconversion&nbsp;! Nous allons
+        <strong> vous aider pour votre projet </strong>
+        {maybeContract('de ', "d'", project.title)}{lowerFirstLetter(project.title)}.
+        <br />
+        <br />
+        Nous vous accompagnerons quotidiennement en vous proposant <strong>des
+        astuces et des offres</strong> qui vous aideront à retrouver un emploi
+        le plus vite possible.
+      </div>
+      <RoundButton onClick={onSubmit} type="validation" style={{marginTop: 40}}>
+        C'est parti&nbsp;!
+      </RoundButton>
+    </Modal>
+  }
+}
+
+
+class TransitionToEngagementModal extends React.Component {
+  static propTypes = {
+    onSubmit: React.PropTypes.func.isRequired,
+  }
+
+  render() {
+    const {onSubmit, ...extraProps} = this.props
+    const style = {
+      fontSize: 14,
+      lineHeight: 1.57,
+      padding: '0 60px 50px',
+      textAlign: 'center',
+      width: 480,
+    }
+    return <Modal {...extraProps} title="Trouvons votre futur métier&nbsp;!" style={style}>
+      <img src={require('images/thumb-up.svg')} style={{margin: 40}} />
+      <div>
+        Nous allons chercher ensemble, étape par étape, un métier qui vous
+        plaira et qui vous permettra de trouver un emploi <strong>plus vite et
+        plus facilement</strong>.
+      </div>
+      <RoundButton onClick={onSubmit} type="validation" style={{marginTop: 40}}>
+        C'est parti&nbsp;!
+      </RoundButton>
+    </Modal>
+  }
+}
 
 
 export {ReorientationAdvice}

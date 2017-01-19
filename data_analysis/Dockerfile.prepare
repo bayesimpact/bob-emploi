@@ -1,0 +1,36 @@
+FROM bayesimpact/pandas-base:latest
+
+RUN mkdir /data_analysis
+WORKDIR /data_analysis
+
+RUN apt-get update -qqy && \
+  apt-get install unzip python-pdfminer python-dev python3-gflags locales -qqy && \
+  # Install locale fr_FR so that we can format dates for French users.
+  sed -i -e "s/# fr_FR.UTF/fr_FR.UTF/" /etc/locale.gen && locale-gen && \
+  rm /bin/sh && ln -s /bin/bash /bin/sh
+
+COPY requirements-py.txt ./
+RUN pip install -r requirements-py.txt
+
+# Install Protobuf compiler and Python runtime.
+ENV PROTOBUF_VERSION=3.0.2
+RUN wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip && \
+  unzip -qq protoc.zip && \
+  rm protoc.zip && \
+  rm readme.txt && \
+  mv bin/protoc /usr/local/bin && \
+  mkdir /usr/local/share/proto && \
+  mv include/google /usr/local/share/proto && \
+  wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-python-${PROTOBUF_VERSION}.zip -O protobuf-python.zip && \
+  unzip -qq protobuf-python.zip && \
+  rm protobuf-python.zip && \
+  cd protobuf-${PROTOBUF_VERSION}/python && \
+  ./setup.py install && \
+  cd ../.. && \
+  rm -rf protobuf-${PROTOBUF_VERSION}
+
+ENV PYTHONPATH=/data_analysis:/usr/lib/python3/dist-packages/
+
+ENTRYPOINT ["./entrypoint.sh"]
+
+CMD ["make", "all"]
