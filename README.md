@@ -22,7 +22,10 @@ We believe algorithms that aim to serve the public interest should be audit-able
 This repository contains several components where each is located within a single folder on the root level. Currently existing folders are:
 
 * `frontend`: Bob Emploi web application.
-* `notebooks`: Data analysis reports in the form of [Jupyter Notebooks](https://jupyter.org/).
+* `data_analysis`: Data analysis part of Bob Emploi.
+  * `data`: Public data sources used for Bob.
+  * `bob_emploi`: Data processing Python module.
+  * `notebooks`: Data analysis reports in the form of [Jupyter Notebooks](https://jupyter.org/).
 
 Each folder contains a README file with further details regarding this application.
 
