@@ -17,7 +17,8 @@ from bob_emploi.frontend.api import user_pb2
 _ADVICE_MODULES = {
     'reorientation': advisor_pb2.AdviceModule(
         trigger_scoring_model='advice-reorientation',
-        engage_sticky_action_template='rec1CWahSiEtlwEHW'),
+        engage_sticky_action_template='rec1CWahSiEtlwEHW',
+        is_ready_for_prod=True),
 }
 
 _ScoredAdvice = collections.namedtuple('ScoredAdvice', ['advice', 'score'])
@@ -46,6 +47,8 @@ def _maybe_find_best_advice(user, project, database):
     scoring_project = scoring.ScoringProject(
         project, user.profile, user.features_enabled, database)
     for advice, module in _ADVICE_MODULES.items():
+        if not module.is_ready_for_prod and user.features_enabled.alpha:
+            continue
         scoring_model = scoring.get_scoring_model(module.trigger_scoring_model)
         if scoring_model is None:
             logging.warning(

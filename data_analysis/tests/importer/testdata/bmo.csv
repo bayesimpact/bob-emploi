@@ -1,0 +1,11 @@
+CATCHMENT_AREA_CODE,CATCHMENT_AREA_NAME,PROFESSION_FAMILY_CODE,PROFESSION_FAMILY_NAME,FAP_CODE,FAP_NAME,DEPARTEMENT_CODE,DEPARTEMENT_NAME,NB_RECRUT_PROJECTS,NB_DIFF_RECRUT_PROJECTS,NB_SEASON_RECRUT_PROJECTS,REGION_CODE,REGION_LIB
+0101,SAINTE-ROSE,Z,Autres métiers,A0Z40,"Agriculteurs salariés, ouvriers agricoles",971,GUADELOUPE,45.9096865448,,45.9096865448,01,GUADELOUPE
+0101,SAINTE-ROSE,Z,Autres métiers,A0Z43,Conducteurs d'engins agricoles ou forestiers,971,GUADELOUPE,8.63656218159,8.63656218159,8.63656218159,01,GUADELOUPE
+0101,SAINTE-ROSE,Z,Autres métiers,A1Z41,"Jardiniers salariés, paysagistes",971,GUADELOUPE,9.86143652889,9.86143652889,4.41751944516,01,GUADELOUPE
+0101,SAINTE-ROSE,Z,Autres métiers,A2Z70,Techniciens et agents d'encadrement d'exploitations agricoles,971,GUADELOUPE,8.63656218159,8.63656218159,,01,GUADELOUPE
+0101,SAINTE-ROSE,O,Ouvriers de la construction et du bâtiment,B0Z21,Ouvriers non qualifiés du gros œuvre du bâtiment,971,GUADELOUPE,14.8467879339,7.42339396696,,01,GUADELOUPE
+0101,SAINTE-ROSE,O,Ouvriers de la construction et du bâtiment,B1Z40,"Ouvriers qualifiés des travaux publics, du béton et de l'extraction",971,GUADELOUPE,18.064800732,18.064800732,18.064800732,01,GUADELOUPE
+0101,SAINTE-ROSE,O,Ouvriers de la construction et du bâtiment,B2Z42,Charpentiers (métal),971,GUADELOUPE,12.9713546367,12.9713546367,,01,GUADELOUPE
+0101,SAINTE-ROSE,O,Ouvriers de la construction et du bâtiment,B3Z20,Ouvriers non qualifiés du second œuvre du bâtiment,971,GUADELOUPE,16.3051570726,16.3051570726,,01,GUADELOUPE
+0101,SAINTE-ROSE,T,Autres techniciens et employés,B6Z73,"Chefs de chantier, conducteurs de travaux (non cadres)",971,GUADELOUPE,6.48567731835,6.48567731835,,01,GUADELOUPE
+0105,BOUILLANTE,Z,Autres métiers,A2Z70,Techniciens et agents d'encadrement d'exploitations agricoles,971,GUADELOUPE,7.40239117002,,,01,GUADELOUPE

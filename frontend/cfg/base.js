@@ -2,14 +2,12 @@
 // Use this file to edit settings that are the same for all environments (dev, test, prod).
 
 var path = require('path')
+var webpack = require('webpack')
 
 var port = 80
 var srcPath = path.join(__dirname, '/../src')
 
-const publicPath = '/assets/'
-
 module.exports = {
-  debug: true,
   devServer: {
     contentBase: './src/',
     historyApiFallback: true,
@@ -18,19 +16,25 @@ module.exports = {
     port: port,
     publicPath: '/',
   },
-  host: process.env.BIND_HOST || 'localhost',
   module: {
-    loaders: [
+    rules: [
       {
-        loader: 'style!css',
+        enforce: 'pre',
+        include: path.join(__dirname, 'src'),
+        test: /\.(js|jsx)$/,
+        use: 'eslint-loader',
+      },
+      {
         test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
       },
       {
-        loader: 'url-loader?limit=8192',
         test: /\.(png|jpg|gif|eot|ttf|woff2?)(\?[a-z0-9=&.]+)?$/,
+        use: 'url-loader?limit=8192',
       },
       {
-        loaders: [
+        test: /\.svg(\?[a-z0-9=&.]+)?$/,
+        use: [
           'url-loader?limit=8192',
           'svgo-loader?' + JSON.stringify({
             plugins: [
@@ -40,27 +44,19 @@ module.exports = {
             ],
           }),
         ],
-        test: /\.svg(\?[a-z0-9=&.]+)?$/,
       },
       {
-        loader: 'json',
-        test: /\.json$/,
-      },
-      {
-        loader: 'raw',
         test: /\.txt$/,
-      },
-    ],
-    preLoaders: [
-      {
-        include: path.join(__dirname, 'src'),
-        loader: 'eslint-loader',
-        test: /\.(js|jsx)$/,
+        use: 'raw-loader',
       },
     ],
   },
-  port: port,
-  publicPath,
+  plugins: [
+    // fetch polyfill
+    new webpack.ProvidePlugin({
+      'fetch': 'imports-loader?this=>global!exports-loader?global.fetch!whatwg-fetch',
+    }),
+  ],
   resolve: {
     alias: {
       api: srcPath + '/../bob_emploi/frontend/api',
@@ -70,6 +66,6 @@ module.exports = {
       store: srcPath + '/store/',
       styles: srcPath + '/styles/',
     },
-    extensions: ['', '.js', '.jsx', '_pb.js'],
+    extensions: ['.js', '.jsx', '_pb.js'],
   },
 }

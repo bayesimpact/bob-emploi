@@ -1,0 +1,147 @@
+<!doctype html>
+<html ng-app="coverImagesApp">
+  <head>
+    <meta charset="utf-8"/>
+    <title>Cover Images</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.min.js"></script>
+    <script>
+      angular.module('coverImagesApp', []).
+      directive("fileread", [function () {
+        return {
+          scope: {
+            fileread: "="
+          },
+          link: function(scope, element, attributes) {
+            element.bind("change", function(changeEvent) {
+              var reader = new FileReader()
+              reader.onload = function(loadEvent) {
+                scope.$apply(function() {
+                  scope.fileread = loadEvent.target.result
+                })
+              }
+              reader.readAsDataURL(changeEvent.target.files[0])
+            })
+          },
+        }
+      }]).
+      controller('ImageCoverer', function($scope) {
+        $scope.title = "Conseil en organisation"
+        $scope.moreText = "Directrice qualité services, Chef de projet green IT, Animatrice de réseau d'entreprises…"
+        $scope.centerCover = true
+        $scope.$watch('imageFile', function(newValue) {
+          if (newValue) {
+            $scope.image = newValue
+            $scope.imageUrl = ''
+          }
+        })
+        $scope.$watch('imageUrl', function(newValue) {
+          if (newValue) {
+            $scope.image = newValue
+            $scope.imageFile = ''
+          }
+        })
+      })
+    </script>
+    <style>
+      @font-face {
+        font-family: "GTWalsheim";
+        src: url(GTWalsheimBold.woff2) format('woff2');
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "GTWalsheim";
+        src: url(GTWalsheimRegular.woff2) format('woff2');
+        font-weight: 300;
+      }
+      .cover-all {
+        bottom: 0;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+      .cover-img {
+        background-position: top center;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+      .try-center .cover-img {
+        background-position: center center;
+      }
+      .opaque {
+        background-color: #000;
+        opacity: .4;
+      }
+      h1, .subtitle {
+        color: #fff;
+        font-family: "GTWalsheim";
+        text-align: center;
+        text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      }
+      h1 {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        line-height: 1.26;
+        padding: 40px;
+      }
+      .subtitle {
+        font-size: 18.7px;
+        letter-spacing: .6px;
+      }
+      .discovery-card {
+        min-height: 122px;
+        width: 450px;
+      }
+      .project-card {
+        height: 200px;
+        width: 430px;
+      }
+      .center {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      hr {
+        border: solid 1px;
+        color: #ee4266;
+        margin: auto;
+        width: 70px;
+      }
+    </style>
+  </head>
+  <body ng-controller="ImageCoverer" ng-class="{'try-center': centerCover}">
+    <input type="text" ng-model="title" />
+    <input type="file" fileread="imageFile" />
+    <input type="text" ng-model="imageUrl" placeholder="URL of an image" />
+    <label>
+      <input type="checkbox" ng-model="centerCover" />
+      try centered image instead of top
+    </label>
+    <div style="position: relative; z-index: 0">
+      <div class="cover-all" style="z-index: -1">
+        <div class="cover-all cover-img" style="z-index: -2" ng-style="{'background-image': 'url(' + image + ')'}"></div>
+        <div class="cover-all opaque"></div>
+      </div>
+      <h1>{{title}}</h1> 
+    </div>
+
+    <div class="discovery-card" style="position: relative; z-index: 0">
+      <div class="cover-all" style="z-index: -1">
+        <div class="cover-all cover-img" style="z-index: -2" ng-style="{'background-image': 'url(' + image + ')'}"></div>
+        <div class="cover-all opaque"></div>
+      </div>
+      <h1>{{title}}</h1> 
+    </div>
+
+    <div class="project-card" style="display: flex; flex-direction: column; position: relative; z-index: 0">
+      <div class="cover-all" style="z-index: -1">
+        <div class="cover-all cover-img" style="z-index: -2" ng-style="{'background-image': 'url(' + image + ')'}"></div>
+        <div class="cover-all opaque"></div>
+      </div>
+      <h1 class="center" style="flex: 1; margin: 0; padding: 0">{{title}}</h1> 
+      <hr />
+      <div class="subtitle center" style="flex: 1">{{moreText}}</div>
+    </div>
+  </body>
+</html>

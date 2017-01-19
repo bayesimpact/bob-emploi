@@ -7,7 +7,7 @@ import "bob_emploi/frontend/api/company.proto";
 // TODO: Rename package to bayesimpact.bob.
 package bayesimpact.pe;
 
-// Next available ID: 24.
+// Next available ID: 26.
 message Action {
   // A unique identifier for this action (unique across all actions for a
   // user).
@@ -58,6 +58,9 @@ message Action {
   // Reason why this suggestion was declined.
   string decline_reason = 13;
 
+  // Whether this action was considered useful by the user.
+  Usefulness was_useful = 25;
+
   // The ID of the template from which this action was generated.
   string action_template_id = 14;
 
@@ -72,6 +75,11 @@ message Action {
 
   // Goal if this is a sticky action.
   string goal = 20;
+
+  // A small piece of sentence that summarize the goal if this is a sticky
+  // action. It can be used to complete sentences like: "These are all the
+  // steps ...", e.g. "to apply for a work visa".
+  string short_goal = 24;
 
   // A text to explain why one should start a sticky action as a multiple steps
   // process instead of just using the initial action.
@@ -187,6 +195,11 @@ message ActionTemplate {
   // Goal if this is a sticky action.
   string goal = 14;
 
+  // A small piece of sentence that summarize the goal if this is a sticky
+  // action. It can be used to complete sentences like: "These are all the
+  // steps ...", e.g. "to apply for a work visa".
+  string short_goal = 17;
+
   // A text to explain why one should start a sticky action as a multiple steps
   // process instead of just using the initial action.
   string sticky_action_incentive = 15;
@@ -250,4 +263,12 @@ enum ActionGenerator {
   // An action generator that gets companies from La Bonne Boite API when
   // creating an action.
   LA_BONNE_BOITE = 1;
+}
+
+enum Usefulness {
+  UNKNOWN_USEFULNESS = 0;
+
+  USEFUL = 1;
+
+  NOT_USEFUL = 2;
 }

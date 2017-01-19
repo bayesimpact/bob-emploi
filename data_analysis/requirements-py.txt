@@ -1,0 +1,25 @@
+# TODO: Remove when https://github.com/eliben/pycparser/issues/147 is resolved.
+--no-binary pycparser
+# Requirements for python code (outside of notebooks). Keep them sorted.
+airtable>=0.3.1
+algoliasearch
+coverage
+csvkit
+mongomock
+nbformat
+nose
+nose-exclude
+nose-watch
+pandas
+pep8
+pylint
+pymongo
+python-emploi-store
+requests
+runipy
+sas7bdat
+scrapy
+sklearn
+tqdm
+termcolor
+xmltodict

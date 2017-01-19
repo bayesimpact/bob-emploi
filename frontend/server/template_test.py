@@ -91,12 +91,12 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.departement_id = '31'
 
         link = action.populate_template(
-            'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
+            'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,
             self.project.target_job)
         self.assertEqual(
-            'http://labonneboite.pole-emploi.fr/entreprises/Toulouse-31000/'
+            'https://labonneboite.pole-emploi.fr/entreprises/Toulouse-31000/'
             'boucherie?sort=distance&d=10&h=1',
             link)
 
@@ -108,12 +108,12 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.postcodes = ''
 
         link = action.populate_template(
-            'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%postcode/'
+            'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%postcode/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,
             self.project.target_job)
         self.assertEqual(
-            'http://labonneboite.pole-emploi.fr/entreprises/Saint-Denis-97400/'
+            'https://labonneboite.pole-emploi.fr/entreprises/Saint-Denis-97400/'
             'assistanat-de-direction?sort=distance&d=10&h=1',
             link)
 
@@ -124,12 +124,12 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.departement_id = '76'
 
         link = action.populate_template(
-            'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
+            'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,
             self.project.target_job)
         self.assertEqual(
-            'http://labonneboite.pole-emploi.fr/entreprises/Le%20Havre-76000/'
+            'https://labonneboite.pole-emploi.fr/entreprises/Le%20Havre-76000/'
             'assistanat-de-direction?sort=distance&d=10&h=1',
             link)
 
@@ -141,12 +141,12 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.mobility.city.departement_id = '42'
 
         link = action.populate_template(
-            'http://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
+            'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
             '%jobGroupNameUrl?sort=distance&d=10&h=1',
             self.project.mobility.city,
             self.project.target_job)
         self.assertEqual(
-            'http://labonneboite.pole-emploi.fr/entreprises/Orl%C3%A9ans-42000/'
+            'https://labonneboite.pole-emploi.fr/entreprises/Orl%C3%A9ans-42000/'
             'recherche-en-sciences-de-l-homme-et-de-la-societe?sort=distance&d=10&h=1',
             link)
 

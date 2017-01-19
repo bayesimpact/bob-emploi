@@ -44,8 +44,8 @@ app = flask.Flask(__name__)  # pylint: disable=invalid-name
 app.wsgi_app = fixers.ProxyFix(app.wsgi_app)
 
 
-_DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'localhost')).get_database(
-    os.getenv('MONGO_DATABASE', 'test'))
+_DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
+    .get_default_database()
 
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 
@@ -73,7 +73,7 @@ _POLE_EMPLOI_OFFERS_LINK = (
     '____%romeId______')
 # Template for the link to La Bonne Boite company suggestion.
 _LA_BONNE_BOITE_LINK = (
-    'http://labonneboite.pole-emploi.fr/entreprises/commune/%cityId/rome/%romeId?'
+    'https://labonneboite.pole-emploi.fr/entreprises/commune/%cityId/rome/%romeId?'
     'utm_medium=web&utm_source=bob&utm_campaign=bob-recherche')
 
 # Email regex from http://emailregex.com/
@@ -158,6 +158,8 @@ def _save_user(user_data, is_new_user):
         user_data.profile.email_days.extend([
             user_pb2.MONDAY, user_pb2.TUESDAY, user_pb2.WEDNESDAY,
             user_pb2.THURSDAY, user_pb2.FRIDAY])
+        # Enable Advisor for new users.
+        user_data.features_enabled.advisor = user_pb2.ACTIVE
 
     # TODO: Don't do this on every save.
     if _is_in_unverified_data_zone(user_data.profile):
@@ -874,7 +876,7 @@ def _populate_feature_flags(user_proto):
         user_pb2.ACTIVE if lbb_integration else user_pb2.CONTROL)
 
     if _TEST_USER_REGEXP.search(user_proto.profile.email):
-        user_proto.features_enabled.advisor = user_pb2.ACTIVE
+        user_proto.features_enabled.alpha = True
 
 
 if __name__ == "__main__":
