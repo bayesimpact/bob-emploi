@@ -73,7 +73,7 @@ services:
         - GIT_SHA1
     image: docker.bayesimpact.org/bob-emploi/frontend-flask
     environment:
-      MONGO_URL: 'frontend-db'
+      MONGO_URL: 'mongodb://frontend-db/test'
       DEBUG: '1'
       SERVER_VERSION: local-dev
       EMPLOI_STORE_CLIENT_ID:
@@ -90,7 +90,7 @@ services:
     depends_on:
       - frontend-flask
     environment:
-      MONGO_URL: 'frontend-db'
+      MONGO_URL: 'mongodb://frontend-db/test'
       DEBUG: '1'
       SERVER_VERSION: local-test
     tty: true
