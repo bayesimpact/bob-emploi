@@ -26,8 +26,8 @@ from bob_emploi.frontend.api import user_pb2
 # WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
 _SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
 
-_DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'localhost')).get_database(
-    os.getenv('MONGO_DATABASE', 'test'))
+_DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
+    .get_default_database()
 # Minimum duration between two emails.
 _COOL_DOWN_TIME = datetime.timedelta(hours=20)
 

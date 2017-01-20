@@ -455,7 +455,9 @@ class ProjectPage extends React.Component {
         && project.adviceStatus === 'ADVICE_ACCEPTED' && project.stickyActions
         && project.stickyActions.length === 1) {
       return <StickyActionPage
-        action={project.stickyActions[0]} onClose={() => alert("En cours d'implémentation")} />
+          action={project.stickyActions[0]}
+          onDone={() => alert("En cours d'implémentation")}
+          onStop={() => alert("En cours d'implémentation")} />
     }
 
 

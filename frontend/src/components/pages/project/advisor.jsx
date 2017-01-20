@@ -1,14 +1,23 @@
 import React from 'react'
+import {connect} from 'react-redux'
 
+import {advisorRecommendationIsShown} from 'store/actions'
 import {PageWithNavigationBar} from 'components/navigation'
+
 import {ReorientationAdvice} from './advisor/reorientation'
 
 
-class AdvisorPage extends React.Component {
+class AdvisorPageBase extends React.Component {
   static propTypes = {
+    dispatch: React.PropTypes.func.isRequired,
     onAccept: React.PropTypes.func.isRequired,
     onDecline: React.PropTypes.func.isRequired,
     project: React.PropTypes.object.isRequired,
+  }
+
+  componentWillMount() {
+    const {dispatch, project} = this.props
+    dispatch(advisorRecommendationIsShown(project))
   }
 
   render() {
@@ -22,6 +31,7 @@ class AdvisorPage extends React.Component {
     </PageWithNavigationBar>
   }
 }
+const AdvisorPage = connect()(AdvisorPageBase)
 
 
 export {AdvisorPage}

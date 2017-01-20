@@ -44,8 +44,8 @@ app = flask.Flask(__name__)  # pylint: disable=invalid-name
 app.wsgi_app = fixers.ProxyFix(app.wsgi_app)
 
 
-_DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'localhost')).get_database(
-    os.getenv('MONGO_DATABASE', 'test'))
+_DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
+    .get_default_database()
 
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 

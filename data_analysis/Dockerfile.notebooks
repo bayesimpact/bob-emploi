@@ -1,0 +1,7 @@
+FROM jupyter/scipy-notebook:latest
+
+USER root
+
+RUN pip install brewer2mpl distance gensim qgrid sas7bdat xlrd xmltodict && \
+  echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen && \
+  locale-gen

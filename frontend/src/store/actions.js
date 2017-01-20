@@ -71,11 +71,13 @@ export const REFRESH_USER_DATA = 'REFRESH_USER_DATA'
 export const RESET_USER_PASSWORD = 'RESET_USER_PASSWORD'
 export const OPEN_ACTION_EXTERNAL_LINK = 'OPEN_ACTION_EXTERNAL_LINK'
 export const OPEN_DISCOVERY_PAGE = 'OPEN_DISCOVERY_PAGE'
+export const ADVICE_IS_SHOWN = 'ADVICE_IS_SHOWN'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
   [ACCEPT_ADVICE]: 'Accept suggested advice',
   [ACCEPT_PRIVACY_NOTICE]: 'Accept privacy notice',
+  [ADVICE_IS_SHOWN]: 'Advice suggested',
   [AUTHENTICATE_USER]: 'Log in',
   [CANCEL_ACTION]: 'Close action',
   [CREATE_ACTION_PLAN]: 'Create action plan',
@@ -135,6 +137,10 @@ const logDiscoveryPageOpenedAction = {type: OPEN_DISCOVERY_PAGE}
 const switchToMobileVersionAction = {type: SWITCH_TO_MOBILE_VERSION}
 
 // Synchronous action generators, keep them grouped and alpha sorted.
+
+function advisorRecommendationIsShown(project) {
+  return dispatch => dispatch({advice: project.bestAdviceId, project, type: ADVICE_IS_SHOWN})
+}
 
 function displayToasterMessage(error) {
   return dispatch => dispatch({error, type: DISPLAY_TOAST_MESSAGE})
@@ -615,4 +621,4 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         deleteProject, refreshActionPlan, openActionExternalLink, stickAction,
         logDiscoveryPageOpenedAction, finishStickyActionStep, addManualExploration,
         editManualExploration, deleteManualExploration, stopStickyAction, acceptAdvice,
-        declineAdvice}
+        declineAdvice, advisorRecommendationIsShown}

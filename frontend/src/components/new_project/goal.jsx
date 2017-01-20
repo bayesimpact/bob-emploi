@@ -113,6 +113,7 @@ class NewProjectGoalStep extends React.Component {
   render() {
     const {jobs, userProfile} = this.props
     const {areaType, city, kind, targetJob, isValidated} = this.state
+    const maybeE = userProfile.gender === 'FEMININE' ? 'e' : ''
     return <Step {...this.props} fastForward={this.fastForward}
                       onNextButtonClick={this.handleSubmit}
                       nextButtonContent={kind === 'REORIENTATION' ? 'Explorer les métiers' : null}>
@@ -138,7 +139,9 @@ class NewProjectGoalStep extends React.Component {
               value={city}
               placeholder="ville ou code postal" />
         </FieldSet>
-        <FieldSet label="Je suis prêt à bouger :"isValid={!!areaType} isValidated={isValidated}>
+        <FieldSet
+            label={`Je suis prêt${maybeE} à bouger :`} isValid={!!areaType}
+            isValidated={isValidated}>
           <Select
               options={PROJECT_LOCATION_AREA_TYPE_OPTIONS} value={areaType}
               onChange={this.handleChange('areaType')} />
