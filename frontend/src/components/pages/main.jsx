@@ -6,12 +6,12 @@ import ReactDOM from 'react-dom'
 import {connect, Provider} from 'react-redux'
 import {IndexRoute, Router, Route, browserHistory} from 'react-router'
 import {syncHistoryWithStore, routerReducer} from 'react-router-redux'
-import {compose, createStore, applyMiddleware, combineReducers} from 'redux'
+import {createStore, applyMiddleware, combineReducers} from 'redux'
 import thunk from 'redux-thunk'
 import Snackbar from 'material-ui/Snackbar'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import {StyleRoot} from 'radium'
-import DevTools from 'components/devtools'
+import {composeWithDevTools} from 'redux-devtools-extension'
 import Cookies from 'js-cookie'
 import {Routes} from 'components/url'
 import {Colors} from 'components/theme'
@@ -30,7 +30,6 @@ import {ContributionPage} from './contribution'
 import {LoginModal} from 'components/login'
 import {AppNotAvailablePage} from './app_not_available'
 
-import config from 'config'
 import {isOnSmallScreen} from 'store/mobile'
 import {user} from 'store/user_reducer'
 import {actionTypesToLog, hideToasterMessageAction, fetchUser, logoutAction,
@@ -44,13 +43,10 @@ import {createAmplitudeMiddleware} from 'store/amplitude'
 const injectTapEventPlugin = require('react-tap-event-plugin')
 injectTapEventPlugin()
 
-// Enable devTools middleware.
 const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
-const finalCreateStore = compose(
+// Enable devTools middleware.
+const finalCreateStore = composeWithDevTools(
   applyMiddleware(thunk, amplitudeMiddleware),
-  // TODO(pascal): Remove it with an ENV variable instead so that it does not
-  // even get compiled.
-  config.isReduxDevToolsEnabled ? DevTools.instrument() : store => store,
 )(createStore)
 
 // Create the store that will be provided to connected components via Context.
@@ -260,10 +256,7 @@ ReactDOM.render(
   <div style={{backgroundColor: Colors.BACKGROUND_GREY}}>
     <StyleRoot>
       <Provider store={store}>
-        <div>
-          <MyRouter />
-          {config.isReduxDevToolsEnabled ? <DevTools /> : null}
-        </div>
+        <MyRouter />
       </Provider>
     </StyleRoot>
   </div>,

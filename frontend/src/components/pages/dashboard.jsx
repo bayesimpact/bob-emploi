@@ -15,6 +15,7 @@ import {Action, ActionDescriptionModal} from 'components/actions'
 import {DebugModal} from 'components/debug'
 import {GamificationModal} from 'components/modal'
 import {PageWithNavigationBar} from 'components/navigation'
+import {StickyActionPane} from 'components/sticky'
 import {Colors, RoundButton, Styles} from 'components/theme'
 import {Routes} from 'components/url'
 import {allActionsById, allActiveActions, allDoneAndPastActionsAndProjects,
@@ -25,7 +26,6 @@ import {isFirstActionPlanReadyToBeCreated, shouldShowFirstWelcomeBackScreen,
 import {DailyGoal} from './dashboard/daily_goal'
 import {ProjectCard} from './dashboard/project_card'
 import {ActionsHistory} from './dashboard/actions_history'
-import {StickyActionPane} from './dashboard/sticky'
 
 
 const projectsAsSet = projects => _.indexBy(projects || [], 'projectId')

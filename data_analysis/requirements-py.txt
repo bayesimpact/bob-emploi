@@ -6,6 +6,7 @@ algoliasearch
 coverage
 csvkit
 mongomock
+nbformat
 nose
 nose-exclude
 nose-watch
@@ -15,6 +16,7 @@ pylint
 pymongo
 python-emploi-store
 requests
+runipy
 sas7bdat
 scrapy
 sklearn

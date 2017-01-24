@@ -267,6 +267,7 @@ function finishStickyActionStep(project, finishedStep, text) {
   // Action is finished.
   return {
     ...project,
+    ...(project.adviceStatus === 'ADVICE_ACCEPTED' ? {adviceStatus: 'ADVICE_ENGAGED'} : {}),
     pastActions: (project.pastActions || []).concat([{
       ...finishedStepAction,
       status: 'ACTION_STICKY_DONE',

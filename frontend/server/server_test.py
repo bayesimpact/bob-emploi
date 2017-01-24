@@ -55,7 +55,8 @@ def _clean_up_variable_flags(features_enabled):
     del_features = []
     for feature in features_enabled:
         for prefix in (
-                'actionFeedbackModal', 'hideDiscoveryNav', 'lbbIntegration', 'stickyActions'):
+                'actionFeedbackModal', 'advisor', 'hideDiscoveryNav',
+                'lbbIntegration', 'stickyActions'):
             if feature.startswith(prefix):
                 del_features.append(feature)
     for feature in del_features:

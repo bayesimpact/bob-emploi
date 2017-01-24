@@ -28,7 +28,7 @@ class NotebookLintCase(unittest.TestCase):
 
     def test_num_notebooks(self):
         """Check that we are indeed linting notebooks."""
-        self.assertGreater(len(self.__class__.files), 13)
+        self.assertGreater(len(self.__class__.files), 12)
 
     def test_import_in_first_code_cell(self):
         """Check that imports are only in first code cell."""
@@ -82,6 +82,21 @@ class NotebookLintCase(unittest.TestCase):
         for file_name, unused_notebook in self.__class__.notebooks:
             self.assertNotIn(
                 ' ', path.basename(file_name), msg='Use underscore in filename %s' % file_name)
+
+    def test_clean_execution(self):
+        """Check that all code cells have been executed once in the right order."""
+        for file_name, notebook in self.__class__.notebooks:
+            cells = notebook.get('cells', [])
+            code_cells = [c for c in cells if c.get('cell_type') == 'code']
+            for index, cell in enumerate(code_cells):
+                self.assertTrue(
+                    cell.get('source'),
+                    msg='There is an empty code cell in notebook %s' % file_name)
+                self.assertEqual(
+                    index + 1, cell.get('execution_count'),
+                    msg='The code cells in notebook %s have not been executed '
+                    'in the right order. Run "Kernel > Restart & run all" '
+                    'then save the notebook.' % file_name)
 
 
 class TolerantAsserter(object):
