@@ -91,7 +91,8 @@ def _extract_activities(tree):
 def _compute_riasec_profile(activities):
     riasec_profile = {c: 0 for c in 'RIASEC'}
     for act in activities:
-        riasec_profile[act['riasec_majeur']] += 1
+        if 'riasec_majeur' in act:
+            riasec_profile[act['riasec_majeur']] += 1
     return riasec_profile
 
 

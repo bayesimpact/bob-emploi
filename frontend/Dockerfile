@@ -5,16 +5,13 @@ FROM bayesimpact/react-base:latest
 COPY package.json .
 RUN npm install
 
-# Patch node modules.
-COPY vendor ./vendor
-RUN vendor/patch.sh
-
 EXPOSE 80
 
 ENV PROTOBUF_VERSION=3.0.0-beta-3 \
   BIND_HOST=0.0.0.0
 
 # Install Protobuf compiler.
+COPY vendor/install-protoc.sh ./vendor/install-protoc.sh
 RUN apt-get update -qqy && \
   apt-get install -qqy --no-install-recommends wget unzip && \
   vendor/install-protoc.sh ${PROTOBUF_VERSION} /usr/local

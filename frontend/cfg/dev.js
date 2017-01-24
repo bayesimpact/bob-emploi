@@ -5,9 +5,6 @@ var _ = require('lodash')
 
 var baseConfig = require('./base')
 
-// Add needed plugins here.
-var BowerWebpackPlugin = require('bower-webpack-plugin')
-
 var config = _.merge({
   cache: true,
   devtool: 'eval-source-map',
@@ -21,30 +18,27 @@ var config = _.merge({
     path: __dirname,
     publicPath: baseConfig.devServer.publicPath,
   },
-  plugins: [
-    new webpack.HotModuleReplacementPlugin(),
-    // Fetch polyfill.
-    new webpack.ProvidePlugin({
-      'fetch': 'imports?this=>global!exports?global.fetch!whatwg-fetch',
-    }),
-    // Embed the JavaScript in the index.html page.
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, '/../src/index.html'),
-    }),
-    new webpack.NoErrorsPlugin(),
-    new BowerWebpackPlugin({
-      searchResolveModulesDirectories: false,
-    }),
-  ],
 }, baseConfig)
 
-// Add needed loaders.
-config.module.loaders.push({
+Array.prototype.push.apply(config.plugins, [
+  new webpack.LoaderOptionsPlugin({
+    debug: true,
+  }),
+  new webpack.HotModuleReplacementPlugin(),
+  // Embed the JavaScript in the index.html page.
+  new HtmlWebpackPlugin({
+    template: path.join(__dirname, '/../src/index.html'),
+  }),
+  new webpack.NoEmitOnErrorsPlugin(),
+])
+
+// Add needed rules.
+config.module.rules.push({
   include: [
     path.join(__dirname, '/../src'),
   ],
-  loader: 'react-hot!babel-loader',
   test: /\.(js|jsx)$/,
+  use: ['react-hot-loader', 'babel-loader'],
 })
 
 module.exports = config

@@ -12,7 +12,6 @@ const config = {
   githubSourceLink: 'https://github.com/bayesimpact/bob-emploi',
   googleSSOClientId: '1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com',
   helpRequestUrl: 'https://aide.bob-emploi.fr/hc/fr/requests/new',
-  isReduxDevToolsEnabled: true,
   productName: 'Bob emploi DEV',
 }
 

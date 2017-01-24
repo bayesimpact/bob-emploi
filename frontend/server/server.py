@@ -158,6 +158,8 @@ def _save_user(user_data, is_new_user):
         user_data.profile.email_days.extend([
             user_pb2.MONDAY, user_pb2.TUESDAY, user_pb2.WEDNESDAY,
             user_pb2.THURSDAY, user_pb2.FRIDAY])
+        # Enable Advisor for new users.
+        user_data.features_enabled.advisor = user_pb2.ACTIVE
 
     # TODO: Don't do this on every save.
     if _is_in_unverified_data_zone(user_data.profile):

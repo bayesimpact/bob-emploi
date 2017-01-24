@@ -83,6 +83,21 @@ class NotebookLintCase(unittest.TestCase):
             self.assertNotIn(
                 ' ', path.basename(file_name), msg='Use underscore in filename %s' % file_name)
 
+    def test_clean_execution(self):
+        """Check that all code cells have been executed once in the right order."""
+        for file_name, notebook in self.__class__.notebooks:
+            cells = notebook.get('cells', [])
+            code_cells = [c for c in cells if c.get('cell_type') == 'code']
+            for index, cell in enumerate(code_cells):
+                self.assertTrue(
+                    cell.get('source'),
+                    msg='There is an empty code cell in notebook %s' % file_name)
+                self.assertEqual(
+                    index + 1, cell.get('execution_count'),
+                    msg='The code cells in notebook %s have not been executed '
+                    'in the right order. Run "Kernel > Restart & run all" '
+                    'then save the notebook.' % file_name)
+
 
 class TolerantAsserter(object):
     """An asserter that refrains itself for some time before raising errors.

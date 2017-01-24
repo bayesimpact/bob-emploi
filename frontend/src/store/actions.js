@@ -51,6 +51,7 @@ export const EDIT_MANUAL_EXPLORATION = 'EDIT_MANUAL_EXPLORATION'
 export const DELETE_MANUAL_EXPLORATION = 'DELETE_MANUAL_EXPLORATION'
 export const ACCEPT_ADVICE = 'ACCEPT_ADVICE'
 export const DECLINE_ADVICE = 'DECLINE_ADVICE'
+export const CANCEL_ADVICE_ENGAGEMENT = 'CANCEL_ADVICE_ENGAGEMENT'
 
 // App actions.
 
@@ -80,6 +81,7 @@ export const actionTypesToLog = {
   [ADVICE_IS_SHOWN]: 'Advice suggested',
   [AUTHENTICATE_USER]: 'Log in',
   [CANCEL_ACTION]: 'Close action',
+  [CANCEL_ADVICE_ENGAGEMENT]: 'Cancel advice engagement',
   [CREATE_ACTION_PLAN]: 'Create action plan',
   [CREATE_DASHBOARD_EXPORT]: 'Create dashbord export',
   [CREATE_PROJECT]: 'Create project',
@@ -513,6 +515,18 @@ function stopStickyAction(action, feedback) {
   }
 }
 
+function stopAdviceEngagement(project, feedback) {
+  if (!project.stickyActions || project.stickyActions.length !== 1) {
+    return () => {}
+  }
+  const action = project.stickyActions[0]
+  return (dispatch, getState) => {
+    dispatch({action, advice: project.bestAdviceId, feedback, type: STOP_STICKY_ACTION})
+    dispatch({advice: project.bestAdviceId, feedback, project, type: CANCEL_ADVICE_ENGAGEMENT})
+    return dispatch(saveUser(getState().user))
+  }
+}
+
 function acceptAdvice(project) {
   return (dispatch, getState) => {
     dispatch({advice: project.bestAdviceId, project, type: ACCEPT_ADVICE})
@@ -621,4 +635,4 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         deleteProject, refreshActionPlan, openActionExternalLink, stickAction,
         logDiscoveryPageOpenedAction, finishStickyActionStep, addManualExploration,
         editManualExploration, deleteManualExploration, stopStickyAction, acceptAdvice,
-        declineAdvice, advisorRecommendationIsShown}
+        declineAdvice, advisorRecommendationIsShown, stopAdviceEngagement}

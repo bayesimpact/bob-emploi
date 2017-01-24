@@ -59,6 +59,7 @@ def instantiate(
 
     if user_proto.features_enabled.sticky_actions == user_pb2.ACTIVE:
         action.goal = template.goal
+        action.short_goal = template.short_goal
         action.sticky_action_incentive = template.sticky_action_incentive
         sticky_action_steps = _sticky_action_steps(database)
         action.steps.extend([

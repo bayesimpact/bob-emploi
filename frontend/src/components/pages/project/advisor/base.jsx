@@ -40,7 +40,7 @@ class TitleBox extends React.Component {
       <div style={subTitleStyle}>
         Notre diagnostic
       </div>
-      <ul style={{fontSize: 18, lineHeight: '26px'}}>
+      <ul style={{fontSize: 18, lineHeight: '26px', marginBottom: 0}}>
         {children}
       </ul>
     </div>
@@ -65,7 +65,7 @@ class Section extends React.Component{
       ...style,
     }
     const sectionHeaderStyle = {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: 'bold',
     }
     return <section style={sectionStyle}>
@@ -75,17 +75,38 @@ class Section extends React.Component{
   }
 }
 
-
 // TODO(pascal): Move to a base module to be reused in multiple Advice Components.
 class MarketStressChart extends React.Component {
   static propTypes = {
+    maxNumOffersShown: React.PropTypes.number,
     numCandidates: React.PropTypes.number.isRequired,
     numOffers: React.PropTypes.number.isRequired,
   }
 
+  static defaultProps = {
+    maxNumOffersShown: 18,
+  }
+
   render() {
-    const {numCandidates, numOffers, ...extraProps} = this.props
+    const {numCandidates, numOffers, maxNumOffersShown, ...extraProps} = this.props
+    const numOffersToShow = Math.min(numOffers, maxNumOffersShown)
     const arrayOfLength = length => new Array(length).fill(undefined)
+    let offerImage
+    if (numCandidates > 0 && numOffers/numCandidates > .7) {
+      offerImage = require('images/offer-green.svg')
+    } else if (numCandidates > 0 && numOffers/numCandidates > .4) {
+      offerImage = require('images/offer-orange.svg')
+    } else {
+      offerImage = require('images/offer-red.svg')
+    }
+    const additionalOffers = numOffersToShow < numOffers ? '+' + (numOffers - numOffersToShow) : ''
+    const additionalOffersStyle = {
+      fontWeight: 'bold',
+      lineHeight: '27px',
+      marginTop: 15,
+      verticalAlign: 'middle',
+    }
+
     return <div {...extraProps}>
       <div>
         {arrayOfLength(numCandidates).map((unused, index) =>
@@ -93,11 +114,12 @@ class MarketStressChart extends React.Component {
               key={`candidate-${index}`} src={require('images/jobseeker.svg')}
               style={{marginRight: 10}} />)}
       </div>
-      <div style={{marginTop: 10}}>
-        {arrayOfLength(numOffers).map((unused, index) =>
+      <div style={{display: 'flex', flexWrap: 'wrap', maxWidth: 360}}>
+        {arrayOfLength(numOffersToShow).map((unused, index) =>
           <img
-              key={`offer-${index}`} src={require('images/offer.svg')}
-              style={{marginLeft: 1, marginRight: 11}} />)}
+              key={`offer-${index}`} src={offerImage}
+              style={{marginLeft: 1, marginRight: 11, marginTop: 10}} />)}
+        <span style={additionalOffersStyle}>{additionalOffers}</span>
       </div>
     </div>
   }

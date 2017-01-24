@@ -8,7 +8,7 @@ import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, FINISH_ACTION,
         FINISH_PROFILE_QUALIFICATIONS, FINISH_PROFILE_FRUSTRATIONS, FINISH_PROFILE_CRITERIA,
         ACCEPT_PRIVACY_NOTICE, FINISH_STICKY_ACTION_STEP, ADD_MANUAL_EXPLORATION,
         EDIT_MANUAL_EXPLORATION, DELETE_MANUAL_EXPLORATION, STOP_STICKY_ACTION,
-        ACCEPT_ADVICE, DECLINE_ADVICE} from '../store/actions'
+        ACCEPT_ADVICE, DECLINE_ADVICE, CANCEL_ADVICE_ENGAGEMENT} from '../store/actions'
 import {finishStickyActionStep} from './project'
 import {travelInTime} from './user'
 import Cookies from 'js-cookie'
@@ -200,16 +200,22 @@ function user(state=initialData, action) {
       // the sticky action).
       return {
         ...state,
-        projects: (state.projects || []).map(project => ({
-          ...project,
-          // Here we modify manualy the past_actions field as a sticky action
-          // can only get passed if the user decides it. Regular actions, are
-          // moved to past_actions on the server when the action plan is
-          // refreshed (daily).
-          pastActions: (project.pastActions || []).concat([action.action]),
-          stickyActions: (project.stickyActions || []).filter(
-              stickyAction => stickyAction.actionId !== action.action.actionId),
-        })),
+        projects: (state.projects || []).map(project => {
+          const isTargetedAction = stickyAction => stickyAction.actionId === action.action.actionId
+          if (!(project.stickyActions || []).some(isTargetedAction)) {
+            return project
+          }
+          return {
+            ...project,
+            // Here we modify manualy the past_actions field as a sticky action
+            // can only get passed if the user decides it. Regular actions, are
+            // moved to past_actions on the server when the action plan is
+            // refreshed (daily).
+            pastActions: (project.pastActions || []).concat([action.action]),
+            stickyActions: (project.stickyActions || []).filter(
+                stickyAction => stickyAction.actionId !== action.action.actionId),
+          }
+        }),
       }
     case CREATE_PROJECT: {
       const project = {
@@ -261,6 +267,11 @@ function user(state=initialData, action) {
     case DECLINE_ADVICE:
       return updateProject(state, {
         adviceDeclinedReason: action.reason || '',
+        adviceStatus: 'ADVICE_DECLINED',
+        projectId: action.project.projectId,
+      })
+    case CANCEL_ADVICE_ENGAGEMENT:
+      return updateProject(state, {
         adviceStatus: 'ADVICE_DECLINED',
         projectId: action.project.projectId,
       })
