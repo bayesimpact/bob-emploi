@@ -1,6 +1,8 @@
 [
   {
-    "_id": "69:11227",
-    "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"]
+    "_id": "69:M1604",
+    "imt": {
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"]
+    }
   }
 ]

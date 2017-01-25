@@ -7,7 +7,7 @@ import "bob_emploi/frontend/api/company.proto";
 // TODO: Rename package to bayesimpact.bob.
 package bayesimpact.pe;
 
-// Next available ID: 24.
+// Next available ID: 26.
 message Action {
   // A unique identifier for this action (unique across all actions for a
   // user).
@@ -57,6 +57,9 @@ message Action {
 
   // Reason why this suggestion was declined.
   string decline_reason = 13;
+
+  // Whether this action was considered useful by the user.
+  Usefulness was_useful = 25;
 
   // The ID of the template from which this action was generated.
   string action_template_id = 14;
@@ -260,4 +263,12 @@ enum ActionGenerator {
   // An action generator that gets companies from La Bonne Boite API when
   // creating an action.
   LA_BONNE_BOITE = 1;
+}
+
+enum Usefulness {
+  UNKNOWN_USEFULNESS = 0;
+
+  USEFUL = 1;
+
+  NOT_USEFUL = 2;
 }

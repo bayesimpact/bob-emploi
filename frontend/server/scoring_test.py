@@ -157,11 +157,14 @@ class UseYourNetworkScoringModelTestCase(ScoringModelTestBase('chantier-use-netw
         persona = _PERSONAS['empty'].clone()
         persona.project.network_estimate = 5
         persona.project.mobility.city.departement_id = '69'
-        persona.project.target_job.code_ogr = '1234'
+        persona.project.target_job.job_group.rome_id = 'A1234'
         self.database.local_diagnosis.insert_one({
-            '_id': '69:1234',
-            'yearlyAvgOffersPer10Openings': 1,
-            'yearlyAvgOffersDenominator': 10})
+            '_id': '69:A1234',
+            'imt': {
+                'yearlyAvgOffersPer10Openings': 1,
+                'yearlyAvgOffersDenominator': 10,
+            },
+        })
 
         score = self._score_persona(persona)
 

@@ -2,6 +2,16 @@ FROM jupyter/scipy-notebook:latest
 
 USER root
 
-RUN pip install brewer2mpl distance gensim nbformat qgrid runipy sas7bdat termcolor xlrd xmltodict && \
+RUN pip install brewer2mpl \
+  distance \
+  gensim \
+  matplotlib-venn \
+  nbformat \
+  qgrid \
+  runipy \
+  sas7bdat \
+  termcolor \
+  xlrd \
+  xmltodict && \
   echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen && \
   locale-gen

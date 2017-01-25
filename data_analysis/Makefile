@@ -1,13 +1,13 @@
 all: public
 # A Makefile to simplify the download and preparation of public datasets.
 
-public: requirements geo rome crosswalks bmo stmt
+public: requirements geo dares rome crosswalks bmo stmt
 
 requirements: data/requirements/job_requirements_output.csv
 
-data/requirements/job_requirements_input.csv: data/ficheMetierXml/ficheMetierXml.zip
+data/requirements/job_requirements_input.csv: data/rome/ficheMetierXml/ficheMetierXml.zip
 	mkdir -p $(dir $@)
-	python bob_emploi/parsers/rome_parser/helpers.py data/ficheMetierXml data/requirements/job_requirements_input.csv
+	python bob_emploi/parsers/rome_parser/helpers.py data/rome/ficheMetierXml data/requirements/job_requirements_input.csv
 
 data/requirements/job_requirements_output.csv: data/requirements/job_requirements_input.csv
 	python bob_emploi/parsers/rome_parser/parse.py data/requirements/job_requirements_input.csv data/requirements/job_requirements_output
@@ -46,12 +46,12 @@ data/geo/insee_france_regions.tsv:
 	iconv -f windows-1252 -t utf-8 "$(@D)/reg2016.txt" > $@
 	rm "$(@D)/reg2016.txt"
 
-rome: data/ficheMetierXml/ficheMetierXml.zip data/rome/RefRomeCsv.zip
+rome: data/rome/ficheMetierXml/ficheMetierXml.zip data/rome/RefRomeCsv.zip
 
-data/ficheMetierXml/ficheMetierXml.zip:
+data/rome/ficheMetierXml/ficheMetierXml.zip:
 	mkdir -p $(@D)
 	wget -P $(@D)/ https://api.emploi-store.fr/api/docs/romeopen/FICHES_METIERS_XML/1/ficheMetierXml.zip
-	unzip data/ficheMetierXml/ficheMetierXml.zip -d data/ficheMetierXml/
+	unzip data/rome/ficheMetierXml/ficheMetierXml.zip -d data/rome/ficheMetierXml/
 
 data/rome/RefRomeCsv.zip:
 	mkdir -p data/rome/csv
@@ -59,6 +59,12 @@ data/rome/RefRomeCsv.zip:
 	unzip data/rome/RefRomeCsv.zip -d data/rome/csv
 	# TODO: Get rid of this once the ROME has been cleaned up.
 	sed -i -e "s/trcie/trice/" data/rome/csv/*.csv
+
+data/dares/caracteristiques_des_personnes_en_emploi_2014.xls:
+	mkdir -p $(@D)
+	wget -O $@ http://dares.travail-emploi.gouv.fr/IMG/xls/b_-_caracteristiques_des_personnes_en_emploi-4.xls
+
+dares: data/dares/caracteristiques_des_personnes_en_emploi_2014.xls
 
 crosswalks: data/crosswalks/passage_fap2009_romev3.txt data/crosswalks/Correspondance_Rome_Formacode.csv data/intitule_fap2009.txt
 

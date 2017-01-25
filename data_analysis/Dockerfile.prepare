@@ -9,8 +9,32 @@ RUN apt-get update -qqy && \
   sed -i -e "s/# fr_FR.UTF/fr_FR.UTF/" /etc/locale.gen && locale-gen && \
   rm /bin/sh && ln -s /bin/bash /bin/sh
 
-COPY requirements-py.txt ./
-RUN pip install -r requirements-py.txt
+# Requirements for python code (outside of notebooks). Keep them sorted.
+# TODO: Remove the --no-binary pycparser argument when https://github.com/eliben/pycparser/issues/147 is resolved.
+RUN pip install --no-binary pycparser \
+  airtable>=0.3.1 \
+  algoliasearch \
+  coverage \
+  csvkit \
+  mongomock \
+  nbformat \
+  nose \
+  nose-exclude \
+  nose-watch \
+  pandas \
+  pep8 \
+  pylint \
+  pymongo \
+  python-emploi-store \
+  requests \
+  runipy \
+  sas7bdat \
+  scrapy \
+  sklearn \
+  termcolor \
+  tqdm \
+  xmltodict
+
 
 # Install Protobuf compiler and Python runtime.
 ENV PROTOBUF_VERSION=3.0.2

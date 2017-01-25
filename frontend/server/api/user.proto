@@ -316,8 +316,11 @@ message Features {
   bool auto_stop_emails = 13;
 
   // Whether we show the "Advisor" UX to the user.
-  // Preparation started: 2016-01-06.
+  // Graduated for new users: 2016-01-23.
   BinaryExperiment advisor = 14;
+
+  // Enable all alpha features (usually for devs and/or user tests).
+  bool alpha = 15;
 }
 
 enum Gender {

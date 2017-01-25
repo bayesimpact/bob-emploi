@@ -73,7 +73,7 @@ _POLE_EMPLOI_OFFERS_LINK = (
     '____%romeId______')
 # Template for the link to La Bonne Boite company suggestion.
 _LA_BONNE_BOITE_LINK = (
-    'http://labonneboite.pole-emploi.fr/entreprises/commune/%cityId/rome/%romeId?'
+    'https://labonneboite.pole-emploi.fr/entreprises/commune/%cityId/rome/%romeId?'
     'utm_medium=web&utm_source=bob&utm_campaign=bob-recherche')
 
 # Email regex from http://emailregex.com/
@@ -876,7 +876,7 @@ def _populate_feature_flags(user_proto):
         user_pb2.ACTIVE if lbb_integration else user_pb2.CONTROL)
 
     if _TEST_USER_REGEXP.search(user_proto.profile.email):
-        user_proto.features_enabled.advisor = user_pb2.ACTIVE
+        user_proto.features_enabled.alpha = True
 
 
 if __name__ == "__main__":

@@ -80,11 +80,11 @@ class ActionDescriptionModalBase extends React.Component {
     this.setState({isPositiveFeedbackModalShown: true})
   }
 
-  handleSubmitPositiveFeedback = (good, caption) => {
+  handleSubmitPositiveFeedback = (wasUseful, caption) => {
     const {dispatch, action} = this.props
     this.closeAndDo(() => {
       this.setState({isPositiveFeedbackModalShown: false})
-      dispatch(finishAction(action, {caption, good}))
+      dispatch(finishAction(action, {caption, wasUseful}))
     })
   }
 

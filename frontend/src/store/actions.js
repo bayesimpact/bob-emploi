@@ -466,7 +466,7 @@ function finishAction(action, feedback) {
   return (dispatch, getState) => {
     dispatch({action, feedback, type: FINISH_ACTION})
     return dispatch(saveUser(getState().user)).then(() => {
-      if (feedback.good) {
+      if (feedback.wasUseful) {
         dispatch(displayToasterMessage(
             'Génial, notre algorithme continuera de vous proposer des actions dans cette lignée.'))
       } else {

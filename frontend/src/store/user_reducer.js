@@ -144,6 +144,7 @@ function user(state=initialData, action) {
         ...action.action,
         doneFeedback: action.feedback.caption,
         status: 'ACTION_DONE',
+        wasUseful: action.feedback.wasUseful ? 'USEFUL' : 'NOT_USEFUL',
       }
       return updateAction(state, finishedAction)
     }

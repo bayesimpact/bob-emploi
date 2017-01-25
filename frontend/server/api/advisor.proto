@@ -10,4 +10,8 @@ message AdviceModule {
   // ID of the sticky action template to engage the user when they have
   // accepted the advice.
   string engage_sticky_action_template = 2;
+
+  // Whether this module is fully implemented, otherwise it's only availble to
+  // test users.
+  bool is_ready_for_prod = 3;
 }
