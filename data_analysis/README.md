@@ -7,14 +7,14 @@ This component of the repository mostly consists of a collection of datasets, no
 The data analysis component is organized into several subfolders, with some of them containing a specialized README with more detailed information.
 
 * `data`: Public data sources used for Bob.
-* `bob_emploi`: Data processing Python module.
+* `bob_emploi`: Data processing Python modules.
 * `notebooks`: Data analysis reports in the form of [Jupyter Notebooks](https://jupyter.org/).
-* `tests`: Tests of Python code and our notebooks.
+* `tests`: Tests of Python code and notebooks.
 * `tools`: Small applications to help with data analysis.
 
 ## Data Analysis Notebooks
 
-We use [Jupyiter Notebooks](https://jupyter.org/) for data analysis, which can be viewed and modified by installing the Jupyter environment on a local machine. An easy solution for only viewing the notebook, is using Github, which automatically renders them in the browser. Simply visit https://github.com/bayesimpact/bob-emploi/tree/master/notebooks and click on one of the Notebook files.
+We use [Jupyiter Notebooks](https://jupyter.org/) for data analysis. If you want to run them and modify them, see below the Docker section. An easy solution for only viewing the notebooks, is using Github, which automatically renders them in the browser. Simply visit https://github.com/bayesimpact/bob-emploi/tree/master/notebooks and click on one of the Notebook files.
 
 ## Getting started
 
@@ -41,5 +41,3 @@ If a token is required, it can be retrieved with:
 ```sh
 docker exec bobemploi_data-analysis-notebook_1 jupyter notebook list
 ```
-
-We have Python 2 and 3 installed in the notebook docker. You can switch between the different kernels using the menu bar within the notebook environment.

@@ -37,7 +37,7 @@ All components / applications are packaged in [Docker Containers](https://www.do
 1. Install Docker: use [these detailed instructions](https://www.docker.com/products/overview#/install_the_platform) for installation
 2. Run application-specific docker command. For example:
   * To _run_ and _build_ the frontend locally: `docker-compose up -d frontend-dev` (Will make the application available at `http://localhost:3000`)
-  * To _run_ the tests: `docker-compose run --no-deps frontend-dev-webpack npm test`
+  * To run the _tests_: `docker-compose run --no-deps frontend-dev-webpack npm test`
   * ...
 
 You can find the full list of commands in the README of each folder.
