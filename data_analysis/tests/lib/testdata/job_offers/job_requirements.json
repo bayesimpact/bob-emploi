@@ -1,0 +1,10 @@
+[
+  {
+    "_id": "D1501",
+    "diplomas": [
+      {"name": "Bac"},
+      {"name": "Brevet"}
+    ],
+    "extras": [{"name": "Anglais courant"}]
+  }
+]

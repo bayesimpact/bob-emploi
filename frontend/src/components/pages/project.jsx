@@ -8,17 +8,18 @@ import {CircularProgress} from 'components/progress'
 import {ShortKey} from 'components/shortkey'
 
 import {fetchPotentialChantiers, updateProjectChantiers, createActionPlan,
-        setProjectProperty, deleteProject, acceptAdvice, declineAdvice} from 'store/actions'
+        setProjectProperty, deleteProject, acceptAdvice, declineAdvice,
+        stopAdviceEngagement} from 'store/actions'
 import {shouldShowAdvice} from 'store/project'
 import {Routes} from 'components/url'
 
 import {PageWithNavigationBar} from 'components/navigation'
 import {NEW_PROJECT_ID} from 'components/new_project'
+import {StickyActionPage} from 'components/sticky'
 import {PotentialChantiersLists} from './project/chantiers'
 import {IntensityChangeButton, IntensityModal} from './project/intensity'
 import {EditProjectModal} from './project/edit_project'
 import {AdvisorPage} from './project/advisor'
-import {StickyActionPage} from './dashboard/sticky'
 
 import {Modal, ModalHeader} from 'components/modal'
 import {CoverImage, Colors, RoundButton, SmoothTransitions, Styles,
@@ -359,7 +360,7 @@ class ProjectPage extends React.Component {
   }
 
   componentWillMount() {
-    const {params} = this.props
+    const {params, user} = this.props
     const project = getProjectFromProps(this.props)
     const {projectId} = project
     if (!projectId) {
@@ -380,16 +381,35 @@ class ProjectPage extends React.Component {
       // intensity) but it happened at least once, so we catch the case.
       this.setState({isIntensityModalShown: true})
     }
+    if (user.featuresEnabled && user.featuresEnabled.advisor
+        && project.adviceStatus === 'ADVICE_ACCEPTED' && project.stickyActions
+        && project.stickyActions.length === 1) {
+      this.setState({fullPageStickyAction: project.stickyActions[0]})
+    }
   }
 
   componentWillReceiveProps(nextProps) {
-    const {projectId} = getProjectFromProps(nextProps)
+    const {user} = nextProps
+    const {adviceStatus, pastActions, projectId, stickyActions} = getProjectFromProps(nextProps)
     if (!projectId) {
       return
     }
     if (projectId !== nextProps.params.projectId) {
       browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId)
       this.loadPotentialChantiers(projectId)
+    }
+
+    if (this.state.fullPageStickyAction) {
+      // Update to the latest value of the sticky actions.
+      const action = (stickyActions || []).concat(pastActions || []).find(
+        action => action.actionId === this.state.fullPageStickyAction.actionId)
+      if (action) {
+        this.setState({fullPageStickyAction: action})
+      }
+    } else if (user.featuresEnabled && user.featuresEnabled.advisor
+        && adviceStatus === 'ADVICE_ACCEPTED' && stickyActions
+        && stickyActions.length === 1) {
+      this.setState({fullPageStickyAction: stickyActions[0]})
     }
   }
 
@@ -435,7 +455,6 @@ class ProjectPage extends React.Component {
   }
 
   handleAcceptAdvice(project) {
-    // TODO(pascal): Redirect to Sticky Action Full Page.
     this.props.dispatch(acceptAdvice(project))
   }
 
@@ -445,19 +464,22 @@ class ProjectPage extends React.Component {
 
   render() {
     const project = getProjectFromProps(this.props)
-    const {app, user} = this.props
-    const {isConfirmDeleteModalShown, isIntensityModalShown, isLoadingPotentialChantiers,
+    const {app, dispatch, user} = this.props
+    const {fullPageStickyAction, isConfirmDeleteModalShown,
+           isIntensityModalShown, isLoadingPotentialChantiers,
            isWaitingInterstitialShown, isEditProjectModalShown} = this.state
 
     const isFirstTime = this.getIsFirstTime()
 
-    if (user.featuresEnabled && user.featuresEnabled.advisor
-        && project.adviceStatus === 'ADVICE_ACCEPTED' && project.stickyActions
-        && project.stickyActions.length === 1) {
+    if (fullPageStickyAction) {
       return <StickyActionPage
-        action={project.stickyActions[0]} onClose={() => alert("En cours d'implémentation")} />
+          action={fullPageStickyAction}
+          onDone={() => this.setState({fullPageStickyAction: null})}
+          onStop={feedback => {
+            this.setState({fullPageStickyAction: null})
+            dispatch(stopAdviceEngagement(project, feedback))
+          }} />
     }
-
 
     if (isWaitingInterstitialShown) {
       return <WaitingProjectPage

@@ -1,32 +1,25 @@
 var path = require('path')
 var srcPath = path.join(__dirname, '/../src/')
 
-// Add needed plugins here.
-var BowerWebpackPlugin = require('bower-webpack-plugin')
-
 module.exports = {
   devtool: 'eval',
+  entry: './test/loadtests.js',
   module: {
-    loaders: [
+    rules: [
       {
-        loader: 'null-loader',
         test: /\.(png|jpg|gif|svg|woff|woff2|css|sass|scss|less|styl)$/,
+        use: 'null-loader',
       },
       {
         include: [
           path.join(__dirname, '/../src'),
           path.join(__dirname, '/../test'),
         ],
-        loader: 'babel-loader',
         test: /\.(js|jsx)$/,
+        use: 'babel-loader',
       },
     ],
   },
-  plugins: [
-    new BowerWebpackPlugin({
-      searchResolveModulesDirectories: false,
-    }),
-  ],
   resolve: {
     alias: {
       actions: srcPath + 'actions/',
@@ -38,6 +31,6 @@ module.exports = {
       store: srcPath + 'store/',
       styles: srcPath + 'styles/',
     },
-    extensions: ['', '.js', '.jsx', '_pb.js'],
+    extensions: ['.js', '.jsx', '_pb.js'],
   },
 }

@@ -55,7 +55,8 @@ def _clean_up_variable_flags(features_enabled):
     del_features = []
     for feature in features_enabled:
         for prefix in (
-                'actionFeedbackModal', 'hideDiscoveryNav', 'lbbIntegration', 'stickyActions'):
+                'actionFeedbackModal', 'advisor', 'hideDiscoveryNav',
+                'lbbIntegration', 'stickyActions', 'alpha'):
             if feature.startswith(prefix):
                 del_features.append(feature)
     for feature in del_features:
@@ -1470,7 +1471,7 @@ class ExploreEndpointsTestCase(base_test.ServerTestCase):
                     {
                         'caption': 'Voir les entreprises qui recrutent',
                         'url':
-                            'http://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
+                            'https://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
                             'rome/B1242?utm_medium=web&utm_source=bob&utm_campaign=bob-recherche',
                     },
                 ],
@@ -1519,7 +1520,7 @@ class ExploreEndpointsTestCase(base_test.ServerTestCase):
                     {
                         'caption': 'Voir les entreprises qui recrutent',
                         'url':
-                            'http://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
+                            'https://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
                             'rome/B1242?utm_medium=web&utm_source=bob&utm_campaign=bob-recherche',
                     },
                 ],

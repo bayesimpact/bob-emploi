@@ -159,19 +159,24 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         response = self.app.post('/api/user/authenticate', data=request)
         self.assertEqual(401, response.status_code)
 
-    def test_reset_password_old_auth_token(self):
+    @mock.patch(mailjet_rest.__name__ + '.Client')
+    @mock.patch(auth.__name__ + '.time')
+    def test_reset_password_old_auth_token(self, mock_time, mock_mailjet_client):
         """Try reseting a password with an old token."""
-        user_id = self.authenticate_new_user(email='foo@bar.fr', password='psswd')
+        self.authenticate_new_user(email='foo@bar.fr', password='psswd')
 
-        # TODO(pascal): Switch to mess with time.time() and call the
-        # reset_password endpoint instead of accessing protected function.
-        auth_token = auth._timestamped_hash(  # pylint: disable=protected-access
-            int(time.time()) - 86400, 'foo@bar.fr' + user_id)
+        mock_time.time.return_value = time.time() - 86400
+        auth_token = self._get_reset_token('foo@bar.fr', mock_mailjet_client)
+
+        mock_time.time.return_value = time.time()
         request = (
             '{"email": "foo@bar.fr", "authToken": "%s", "hashedPassword": "%s"}'
             % (auth_token, _sha1('foo@bar.fr', 'new password')))
         response = self.app.post('/api/user/authenticate', data=request)
         self.assertEqual(403, response.status_code)
+        self.assertIn(
+            "Le jeton d'authentification est périmé.",
+            response.get_data(as_text=True))
 
     def _get_salt(self, email):
         # Check again if user exists.

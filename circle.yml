@@ -8,10 +8,12 @@ dependencies:
   override:
     # Skip all the other commands if we should not run CI.
     - ./should_run_ci.sh "$CIRCLE_BRANCH" "$CIRCLE_TAG"
+    - ./should_run_slow_tests.sh
     # Drop the overrides use for dev.
     - rm docker-compose.override.yml
     # Build all containers.
     - test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 docker-compose build frontend-db frontend-dev-webpack frontend-flask frontend-flask-test
+    - test -e skip-data-analysis || GIT_SHA1=$CIRCLE_SHA1 docker-compose build data-analysis-prepare data-analysis-notebook
 test:
   pre:
     - mkdir -p frontend/server/cover
@@ -20,6 +22,9 @@ test:
     - test -e skip-frontend || docker-compose run --no-deps frontend-dev-webpack npm test
     - test -e skip-frontend || docker-compose run --no-deps frontend-flask-test ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html --cover-min-percentage=95
     - test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 frontend/release/build.sh
+    - test -e skip-data-analysis || docker-compose run --no-deps data-analysis-prepare ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=.
+    - test -e skip-slow-tests || docker-compose run --no-deps data-analysis-prepare make all
+    - test -e skip-slow-tests || docker-compose run --no-deps data-analysis-notebook python bob_emploi/notebook_runner.py notebooks
   post:
     - mv frontend/server/cover $CIRCLE_ARTIFACTS/frontend-flask-coverage
 experimental:

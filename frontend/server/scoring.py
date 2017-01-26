@@ -69,30 +69,32 @@ class ScoringProject(object):
         self.now = now or datetime.datetime.utcnow()
 
         # Cache for DB data.
-        self._imt = None
         self._job_group_info = None
         self._unemployment_durations = None
+        self._local_diagnosis = None
 
     # When scoring models need it, add methods to access data from DB:
     # project requirements from job offers, IMT, median unemployment duration
     # from FHS, etc.
 
+    def local_diagnosis(self):
+        """Get local stats for the project's job group and département."""
+        if self._local_diagnosis is not None:
+            return self._local_diagnosis
+
+        self._local_diagnosis = job_pb2.LocalJobStats()
+        local_id = '%s:%s' % (
+            self.details.mobility.city.departement_id,
+            self.details.target_job.job_group.rome_id)
+        # TODO(pascal): Handle when return is False (no data).
+        proto.parse_from_mongo(
+            self._db.local_diagnosis.find_one({'_id': local_id}), self._local_diagnosis)
+
+        return self._local_diagnosis
+
     def imt_proto(self):
         """Get IMT data for the project's job and département."""
-        if self._imt is not None:
-            return self._imt
-
-        self._imt = job_pb2.ImtLocalJobStats()
-        local_id = '%s:%s' % (
-            # TODO(pascal): Handle projects with no département.
-            self.details.mobility.city.departement_id,
-            # TODO(pascal): Handle projects with no target job.
-            self.details.target_job.code_ogr)
-
-        # TODO(pascal): Handle when return is False (no data).
-        proto.parse_from_mongo(self._db.local_diagnosis.find_one({'_id': local_id}), self._imt)
-
-        return self._imt
+        return self.local_diagnosis().imt
 
     def market_stress(self):
         """Get the ratio of # applicants / # job offers for the project."""

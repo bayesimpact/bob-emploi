@@ -51,6 +51,7 @@ export const EDIT_MANUAL_EXPLORATION = 'EDIT_MANUAL_EXPLORATION'
 export const DELETE_MANUAL_EXPLORATION = 'DELETE_MANUAL_EXPLORATION'
 export const ACCEPT_ADVICE = 'ACCEPT_ADVICE'
 export const DECLINE_ADVICE = 'DECLINE_ADVICE'
+export const CANCEL_ADVICE_ENGAGEMENT = 'CANCEL_ADVICE_ENGAGEMENT'
 
 // App actions.
 
@@ -71,13 +72,16 @@ export const REFRESH_USER_DATA = 'REFRESH_USER_DATA'
 export const RESET_USER_PASSWORD = 'RESET_USER_PASSWORD'
 export const OPEN_ACTION_EXTERNAL_LINK = 'OPEN_ACTION_EXTERNAL_LINK'
 export const OPEN_DISCOVERY_PAGE = 'OPEN_DISCOVERY_PAGE'
+export const ADVICE_IS_SHOWN = 'ADVICE_IS_SHOWN'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
   [ACCEPT_ADVICE]: 'Accept suggested advice',
   [ACCEPT_PRIVACY_NOTICE]: 'Accept privacy notice',
+  [ADVICE_IS_SHOWN]: 'Advice suggested',
   [AUTHENTICATE_USER]: 'Log in',
   [CANCEL_ACTION]: 'Close action',
+  [CANCEL_ADVICE_ENGAGEMENT]: 'Cancel advice engagement',
   [CREATE_ACTION_PLAN]: 'Create action plan',
   [CREATE_DASHBOARD_EXPORT]: 'Create dashbord export',
   [CREATE_PROJECT]: 'Create project',
@@ -135,6 +139,10 @@ const logDiscoveryPageOpenedAction = {type: OPEN_DISCOVERY_PAGE}
 const switchToMobileVersionAction = {type: SWITCH_TO_MOBILE_VERSION}
 
 // Synchronous action generators, keep them grouped and alpha sorted.
+
+function advisorRecommendationIsShown(project) {
+  return dispatch => dispatch({advice: project.bestAdviceId, project, type: ADVICE_IS_SHOWN})
+}
 
 function displayToasterMessage(error) {
   return dispatch => dispatch({error, type: DISPLAY_TOAST_MESSAGE})
@@ -458,7 +466,7 @@ function finishAction(action, feedback) {
   return (dispatch, getState) => {
     dispatch({action, feedback, type: FINISH_ACTION})
     return dispatch(saveUser(getState().user)).then(() => {
-      if (feedback.good) {
+      if (feedback.wasUseful) {
         dispatch(displayToasterMessage(
             'Génial, notre algorithme continuera de vous proposer des actions dans cette lignée.'))
       } else {
@@ -503,6 +511,18 @@ function finishStickyActionStep(step, text) {
 function stopStickyAction(action, feedback) {
   return (dispatch, getState) => {
     dispatch({action, feedback, type: STOP_STICKY_ACTION})
+    return dispatch(saveUser(getState().user))
+  }
+}
+
+function stopAdviceEngagement(project, feedback) {
+  if (!project.stickyActions || project.stickyActions.length !== 1) {
+    return () => {}
+  }
+  const action = project.stickyActions[0]
+  return (dispatch, getState) => {
+    dispatch({action, advice: project.bestAdviceId, feedback, type: STOP_STICKY_ACTION})
+    dispatch({advice: project.bestAdviceId, feedback, project, type: CANCEL_ADVICE_ENGAGEMENT})
     return dispatch(saveUser(getState().user))
   }
 }
@@ -615,4 +635,4 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         deleteProject, refreshActionPlan, openActionExternalLink, stickAction,
         logDiscoveryPageOpenedAction, finishStickyActionStep, addManualExploration,
         editManualExploration, deleteManualExploration, stopStickyAction, acceptAdvice,
-        declineAdvice}
+        declineAdvice, advisorRecommendationIsShown, stopAdviceEngagement}

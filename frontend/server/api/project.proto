@@ -250,4 +250,8 @@ enum AdviceStatus {
   // The user has finished all steps of the sticky action to engage into the
   // advice.
   ADVICE_ENGAGED = 4;
+
+  // The advice was accepted but then canceled during the engagement part (the
+  // Sticky Action).
+  ADVICE_CANCELED = 5;
 }

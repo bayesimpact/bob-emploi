@@ -178,29 +178,57 @@ class PaneCloseButtonBase extends React.Component {
 const PaneCloseButton = Radium(PaneCloseButtonBase)
 
 
-class StickyActionPane extends React.Component {
+class StickyActionPaneBase extends React.Component {
   static propTypes = {
     action: React.PropTypes.object,
+    dispatch: React.PropTypes.func.isRequired,
     onClose: React.PropTypes.func.isRequired,
+  }
+
+  state = {
+    isFinishActionModalShown: false,
+    isStopActionModalShown: false,
+  }
+
+  handleStopStickyAction = feedback => {
+    const {action, dispatch, onClose} = this.props
+    dispatch(stopStickyAction(action, feedback))
+    onClose()
   }
 
   render() {
     const {action, onClose, ...extraProps} = this.props
+    const {isFinishActionModalShown, isStopActionModalShown} = this.state
     return <Pane {...extraProps} onClose={onClose} style={{width: '50vw'}}>
-      <StickyAction action={action} onClose={onClose} />
+      <StopStickyActionModal
+          isShown={isStopActionModalShown}
+          onClose={() => this.setState({isStopActionModalShown: false})}
+          onStop={this.handleStopStickyAction} />
+      <FinishStickyActionModal
+          isShown={isFinishActionModalShown}
+          onClose={() => {
+            this.setState({isFinishActionModalShown: false})
+            onClose()
+          }} />
+      <StickyAction
+          action={action}
+          onStop={() => this.setState({isStopActionModalShown: true})}
+          onDone={() => this.setState({isFinishActionModalShown: true})} />
     </Pane>
   }
 }
+const StickyActionPane = connect()(StickyActionPaneBase)
 
 
 class StickyActionPage extends React.Component {
   static propTypes = {
     action: React.PropTypes.object,
-    onClose: React.PropTypes.func.isRequired,
+    onDone: React.PropTypes.func.isRequired,
+    onStop: React.PropTypes.func.isRequired,
   }
 
   render() {
-    const {action, onClose, ...extraProps} = this.props
+    const {action, onDone, onStop, ...extraProps} = this.props
     const pageStyle = {
       backgroundColor: '#fff',
       boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.2)',
@@ -209,24 +237,23 @@ class StickyActionPage extends React.Component {
     }
     return <PageWithNavigationBar {...extraProps} isContentScrollable={true}>
       <div style={pageStyle}>
-        <StickyAction action={action} onClose={onClose} />
+        <StickyAction action={action} onDone={onDone} onStop={onStop} />
       </div>
     </PageWithNavigationBar>
   }
 }
 
 
-class StickyActionBase extends React.Component {
+class StickyAction extends React.Component {
   static propTypes = {
     action: React.PropTypes.object,
-    dispatch: React.PropTypes.func.isRequired,
-    onClose: React.PropTypes.func.isRequired,
+    onDone: React.PropTypes.func.isRequired,
+    onStop: React.PropTypes.func.isRequired,
   }
 
   state = {
     expandedStepIndex: -1,
-    isFinishActionModalShown: false,
-    isStopActionModalShown: false,
+    isConfirmStopModalShown: false,
     lastExpandableStepIndex: -1,
   }
 
@@ -235,7 +262,7 @@ class StickyActionBase extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const {action} = nextProps
+    const {action, onDone} = nextProps
     const prevAction = this.props.action
     if (action !== prevAction) {
       this.updateExpandedStep(action)
@@ -245,7 +272,7 @@ class StickyActionBase extends React.Component {
       return
     }
     if (action.status === 'ACTION_STICKY_DONE' && prevAction.status === 'ACTION_STUCK') {
-      this.setState({isFinishActionModalShown: true})
+      onDone()
     }
   }
 
@@ -259,12 +286,6 @@ class StickyActionBase extends React.Component {
       expandedStepIndex: lastExpandableStepIndex,
       lastExpandableStepIndex,
     })
-  }
-
-  handleStopStickyAction = feedback => {
-    const {action, dispatch, onClose} = this.props
-    dispatch(stopStickyAction(action, feedback))
-    onClose()
   }
 
   renderHeader() {
@@ -341,11 +362,9 @@ class StickyActionBase extends React.Component {
       </div>
       {/* TODO(pascal): If action is stopped, allow to start it again. */}
       {action.stoppedAt ? null : <div style={stopContainerStyle}>
-        <StopStickyActionModal
-            isShown={this.state.isStopActionModalShown}
-            onClose={() => this.setState({isStopActionModalShown: false})}
-            onStop={this.handleStopStickyAction} />
-        <RoundButton onClick={() => this.setState({isStopActionModalShown: true})} type="discreet">
+        <RoundButton
+            onClick={() => this.setState({isConfirmStopModalShown: true})}
+            type="discreet">
           Arrêter cette action
         </RoundButton>
       </div>}
@@ -353,15 +372,13 @@ class StickyActionBase extends React.Component {
   }
 
   render() {
-    const {action, onClose} = this.props
-    const {expandedStepIndex, isFinishActionModalShown, lastExpandableStepIndex} = this.state
+    const {action, onStop} = this.props
+    const {expandedStepIndex, lastExpandableStepIndex} = this.state
     return <div>
-      <FinishStickyActionModal
-          isShown={isFinishActionModalShown}
-          onClose={() => {
-            this.setState({isFinishActionModalShown: false})
-            onClose()
-          }} />
+      <ConfirmStopModal
+          isShown={this.state.isConfirmStopModalShown}
+          onClose={() => this.setState({isConfirmStopModalShown: false})}
+          onStop={onStop} />
       {this.renderHeader()}
       {this.renderProgress()}
       {(action && action.steps || []).map((step, index) => <Step
@@ -372,7 +389,43 @@ class StickyActionBase extends React.Component {
     </div>
   }
 }
-const StickyAction = connect()(StickyActionBase)
+
+
+class ConfirmStopModal extends React.Component {
+  static propTypes = {
+    // TODO(pascal): Set it to "pour vous reconvertir" for the sticky action
+    // for reorientation.
+    actionGoal: React.PropTypes.text,
+    onClose: React.PropTypes.func.isRequired,
+    onStop: React.PropTypes.func.isRequired,
+  }
+
+  render() {
+    const {actionGoal, onClose, onStop, ...extraProps} = this.props
+    const style = {
+      color: Colors.SLATE,
+      fontSize: 14,
+      lineHeight: 1.21,
+      padding: '0 50px 35px',
+      textAlign: 'center',
+      width: 480,
+    }
+    return <Modal
+        onClose={onClose} {...extraProps} title="Voulez-vous vraiment arrêter&nbsp;?"
+        style={style} titleStyle={{marginBottom: 20}}>
+      Si vous vous arrêtez maintenant, les actions que vous avez
+      entreprises {actionGoal} seront perdues.
+      <div style={{marginTop: 35, textAlign: 'right'}}>
+        <RoundButton type="discreet" onClick={onClose} style={{marginRight: 15}}>
+          Annuler
+        </RoundButton>
+        <RoundButton type="deletion" onClick={onStop}>
+          Oui, je veux arrêter
+        </RoundButton>
+      </div>
+    </Modal>
+  }
+}
 
 
 class StepBase extends React.Component {
