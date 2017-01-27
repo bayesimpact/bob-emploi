@@ -20,14 +20,20 @@ We use [Jupyiter Notebooks](https://jupyter.org/) for data analysis. If you want
 
 ### Data
 
-To download and prepare the data run `docker-compose run data-analysis-prepare make all`, which will populate the `data_analysis/data` subfolder by using a Makefile inside a
+To download and prepare the data run
+
+```sh
+docker-compose run data-analysis-prepare make all
+```
+
+which will populate the `data_analysis/data` subfolder by using a Makefile inside a
 Docker container. More information on the data sources used can be found in the [data README](data/README.md).
 
 ### Notebooks
 
 We use the notebooks to tell a story and communicate results from one or several dataset. We use the [Bayes Notebook Styleguide](https://docs.google.com/document/d/1g2ITZWGfgkmljutwP5QWJ7b31l4o2JrbodEWKY277X0/edit#) to ensure the uniformity of our notebooks. Most notebooks depend on data that has to be downloaded first, as described in the paragraph above.
 
-#### Docker
+#### Running the Notebooks
 
 Simply run
 
@@ -40,4 +46,20 @@ If a token is required, it can be retrieved with:
 
 ```sh
 docker exec bobemploi_data-analysis-notebook_1 jupyter notebook list
+```
+
+### Tests
+
+Also all tests are packaged in a Docker container and can be executed by running:
+
+```sh
+docker-compose run --rm data-analysis-prepare ./lint_and_test.sh
+```
+
+We use _nosetests_ as a test runner which automatically discovers all tests located anywhere in the `tests` folder.
+
+Additionally there is a script that allows to run notebooks in an automated way, to make sure that all notebooks still work after an export this this repository. Execute this runner via:
+
+```sh
+docker-compose run --rm data-analysis-notebook python bob_emploi/notebook_runner.py notebooks
 ```
