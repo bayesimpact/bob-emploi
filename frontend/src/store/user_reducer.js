@@ -4,9 +4,9 @@ import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, FINISH_ACTION,
         CREATE_PROJECT, UPDATE_PROJECT_CHANTIERS, CREATE_PROJECT_SAVE,
         MOVE_USER_DATES_BACK_1_DAY, READ_ACTION, SET_PROJECT_PROPERTIES,
         DELETE_USER_DATA, SET_USER_INTERACTION, CREATE_ACTION_PLAN,
-        DELETE_PROJECT, REFRESH_ACTION_PLAN, STICK_ACTION, FINISH_PROFILE_SITUATION,
-        FINISH_PROFILE_QUALIFICATIONS, FINISH_PROFILE_FRUSTRATIONS, FINISH_PROFILE_CRITERIA,
-        ACCEPT_PRIVACY_NOTICE, FINISH_STICKY_ACTION_STEP, ADD_MANUAL_EXPLORATION,
+        REFRESH_ACTION_PLAN, STICK_ACTION, FINISH_PROFILE_SITUATION,
+        FINISH_PROFILE_QUALIFICATIONS, ACCEPT_PRIVACY_NOTICE,
+        FINISH_STICKY_ACTION_STEP, ADD_MANUAL_EXPLORATION,
         EDIT_MANUAL_EXPLORATION, DELETE_MANUAL_EXPLORATION, STOP_STICKY_ACTION,
         ACCEPT_ADVICE, DECLINE_ADVICE, CANCEL_ADVICE_ENGAGEMENT} from '../store/actions'
 import {finishStickyActionStep} from './project'
@@ -76,12 +76,44 @@ function updateProject(state, project) {
   }
 }
 
+function updateAdvice(state, project, advice) {
+  let projectModified = false
+  const updatedState = {
+    ...state,
+    projects: (state.projects || []).map(stateProject => {
+      if (stateProject.projectId !== project.projectId) {
+        return stateProject
+      }
+      let adviceModified = false
+      const updatedProjectState = {
+        ...stateProject,
+      }
+
+      const advices = (stateProject.advices || []).map(stateAdvice => {
+        if (stateAdvice.adviceId !== advice.adviceId) {
+          return stateAdvice
+        }
+        adviceModified = true
+        return {...stateAdvice, ...advice}
+      })
+      if (adviceModified) {
+        updatedProjectState.advices = advices
+      }
+
+      if (!adviceModified) {
+        return stateProject
+      }
+      projectModified = true
+      return updatedProjectState
+    }),
+  }
+  return projectModified ? updatedState : state
+}
+
 function user(state=initialData, action) {
   const success = action.status === 'success'
   switch (action.type) {
     case ACCEPT_PRIVACY_NOTICE:  // Fallthrough intended.
-    case FINISH_PROFILE_CRITERIA:  // Fallthrough intended.
-    case FINISH_PROFILE_FRUSTRATIONS:  // Fallthrough intended.
     case FINISH_PROFILE_QUALIFICATIONS:  // Fallthrough intended.
     case FINISH_PROFILE_SITUATION:  // Fallthrough intended.
     case SET_USER_PROFILE:
@@ -228,17 +260,6 @@ function user(state=initialData, action) {
         projects: (state.projects || []).concat([project]),
       }
     }
-    case DELETE_PROJECT: {
-      const project = {
-        ...action.project,
-        status: 'PROJECT_DELETED',
-      }
-      return {
-        ...state,
-        deletedProjects: (state.deletedProjects || []).concat([project]),
-        projects: (state.projects || []).filter(({projectId}) => projectId !== project.projectId),
-      }
-    }
     case SET_PROJECT_PROPERTIES:
       return updateProject(state, {...action.projectProperties, projectId: action.projectId})
     case MOVE_USER_DATES_BACK_1_DAY:
@@ -261,20 +282,20 @@ function user(state=initialData, action) {
           state.manualExplorations.slice(action.index + 1)),
       }
     case ACCEPT_ADVICE:
-      return updateProject(state, {
-        adviceStatus: 'ADVICE_ACCEPTED',
-        projectId: action.project.projectId,
+      return updateAdvice(state, action.project, {
+        adviceId: action.advice.adviceId,
+        status: 'ADVICE_ACCEPTED',
       })
     case DECLINE_ADVICE:
-      return updateProject(state, {
-        adviceDeclinedReason: action.reason || '',
-        adviceStatus: 'ADVICE_DECLINED',
-        projectId: action.project.projectId,
+      return updateAdvice(state, action.project, {
+        adviceId: action.advice.adviceId,
+        declinedReason: action.reason || '',
+        status: 'ADVICE_DECLINED',
       })
     case CANCEL_ADVICE_ENGAGEMENT:
-      return updateProject(state, {
-        adviceStatus: 'ADVICE_DECLINED',
-        projectId: action.project.projectId,
+      return updateAdvice(state, action.project, {
+        adviceId: action.advice.adviceId,
+        status: 'ADVICE_CANCELED',
       })
     default:
       return state

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "bob_emploi/frontend/api/geo.proto";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 
 message JobOfferCounts {

@@ -101,12 +101,11 @@ class ScoringProject(object):
         imt = self.imt_proto()
         if not imt.yearly_avg_offers_denominator:
             return None
-        # TODO(stephan): Rename yearly_avg_offers_per_10_opening to
-        # yearly_avg_offers_per_10_job_seekers or similar.
-        if not imt.yearly_avg_offers_per_10_openings:
+        offers = imt.yearly_avg_offers_per_10_candidates or imt.yearly_avg_offers_per_10_openings
+        if not offers:
             # No job offers at all, ouch!
             return 1000
-        return imt.yearly_avg_offers_denominator / imt.yearly_avg_offers_per_10_openings
+        return imt.yearly_avg_offers_denominator / offers
 
     def _rome_id(self):
         return self.details.target_job.job_group.rome_id
@@ -195,6 +194,20 @@ class ScoringProject(object):
         proto.parse_from_mongo(self._db.recent_job_offers.find_one({'_id': local_id}), local_stats)
         return local_stats.num_available_job_offers
 
+    def get_contract_type_percentages(self):
+        """ Compute the offers that are available for each contract type.
+
+        Return:
+            contract_to_increase: Dictionary, keyed by contract type, of percentages of job offers
+                from that project. The key is present only if we know this percentage.
+        """
+        # Putting employment type percentage in a dictionary.
+        stats = {}
+        for emp in self.imt_proto().employment_type_percentages:
+            stats[emp.employment_type] = emp.percentage
+
+        return stats
+
 
 class _Score(collections.namedtuple('Score', ['score', 'additional_job_offers'])):
 
@@ -266,6 +279,24 @@ class _UseYourNetworkScoringModel(_ScoringModelBase):
         if market_stress:
             score += .5 * market_stress
         return _Score(score)
+
+
+class _ImproveYourNetworkScoringModel(_ScoringModelBase):
+    """A scoring model for Advice that user needs to improve their network."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        if project.details.network_estimate >= 3:
+            # No need to improve their network: it is already good.
+            return _Score(0)
+
+        imt = project.imt_proto()
+        first_modes = set(mode.first for mode in imt.application_modes.values())
+        first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
+        if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
+            return _Score(4)
+
+        return _Score(0)
 
 
 class _GetMoreOffersScoringModel(_ScoringModelBase):
@@ -361,6 +392,19 @@ class _SpontaneousApplicationScoringModel(_ScoringModelBase):
         if (user_pb2.NO_OFFERS in project.user_profile.frustrations and
                 project.details.job_search_length_months > 6):
             return _Score(4)
+
+        details = project.details
+        if details.weekly_applications_estimate > project_pb2.LESS_THAN_2 and \
+                details.weekly_offers_estimate < details.weekly_applications_estimate:
+            # User already does spontaneous applications.
+            return _Score(0)
+
+        imt = project.imt_proto()
+        first_modes = set(mode.first for mode in imt.application_modes.values())
+        first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
+        if first_modes == {job_pb2.SPONTANEOUS_APPLICATION}:
+            return _Score(4)
+
         return _Score(0)
 
 
@@ -893,6 +937,48 @@ class _AdviceReorientation(_ScoringModelBase):
         return _Score(3)
 
 
+class _AdviceLongCDD(_ScoringModelBase):
+    """A scoring model to trigger the long CDD Advice."""
+
+    def _get_contract_type_to_increase(self, project):
+        """Computes the increase in job offers per contract type."""
+        selected_types = project.details.employment_types
+        contract_stats = project.get_contract_type_percentages()
+
+        # Computing total percentage of available offers.
+        # If no IMT statistics, we can not say anything so we assume they have access to all offers.
+        percentage_available = sum(
+            contract_stats.get(c, 100)
+            for c in selected_types)
+
+        # If available offers are unknown or already max, we cannot compute any possible increase.
+        if percentage_available >= 100:
+            return {}
+
+        contract_type_to_increase = {}
+        for contract in contract_stats:
+            if percentage_available == 0:
+                contract_type_to_increase[contract] = 10
+            else:
+                contract_type_to_increase[contract] = \
+                    contract_stats[contract] / percentage_available
+
+        return contract_type_to_increase
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        contract_type_to_increase = self._get_contract_type_to_increase(project)
+
+        # Parameters of the scoring function:
+        # min_offer_increase = 1 if we want at least 100% of offer increase
+        min_offer_increase = 1
+
+        if (job_pb2.CDD_OVER_3_MONTHS not in contract_type_to_increase or
+                contract_type_to_increase[job_pb2.CDD_OVER_3_MONTHS] < min_offer_increase):
+            return _Score(0)
+        return _Score(2 + contract_type_to_increase[job_pb2.CDD_OVER_3_MONTHS])
+
+
 _ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'constructor'])
 
 
@@ -933,6 +1019,8 @@ GROUP_SCORING_MODELS = {
 SCORING_MODELS = {
     '': _ScoringModelBase(),
     'advice-reorientation': _AdviceReorientation(),
+    'advice-improve-network': _ImproveYourNetworkScoringModel(),
+    'advice-long-cdd': _AdviceLongCDD(),
     'chantier-about-job': _LearnMoreAboutJobScoringModel(),
     'chantier-apprentissage': _ApprentissageScoringModel(),
     'chantier-atypical-profile': _ShowcaseAtypicalProfileScoringModel(),

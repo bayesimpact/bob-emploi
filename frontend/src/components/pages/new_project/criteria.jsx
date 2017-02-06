@@ -12,6 +12,9 @@ class NewProjectCriteriaStep extends React.Component {
     newProject: React.PropTypes.object,
     onSubmit: React.PropTypes.func,
   }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool.isRequired,
+  }
 
   constructor(props) {
     super(props)
@@ -62,7 +65,13 @@ class NewProjectCriteriaStep extends React.Component {
   }
 
   render() {
+    const {isMobileVersion} = this.context
     const {minSalary, employmentTypes, workloads, isValidated} = this.state
+    const checkboxListContainerStyle = {
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      justifyContent: 'space-between',
+    }
     return <Step
         {...this.props} fastForward={this.fastForward}
         onNextButtonClick={this.handleSubmit}>
@@ -70,7 +79,7 @@ class NewProjectCriteriaStep extends React.Component {
           label="Je cherche un poste en :"
           isValid={!!(employmentTypes || []).length && !!(workloads || []).length}
           isValidated={isValidated}>
-        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+        <div style={checkboxListContainerStyle}>
           <CheckboxList
               options={PROJECT_EMPLOYMENT_TYPE_OPTIONS}
               values={employmentTypes}
@@ -112,6 +121,9 @@ class SalaryInputBase extends React.Component {
     onChange: React.PropTypes.func,
     unitValue: React.PropTypes.string.isRequired,
     value: React.PropTypes.number,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool.isRequired,
   }
 
   state = {
@@ -170,18 +182,18 @@ class SalaryInputBase extends React.Component {
 
   render() {
     const {unitValue} = this.props
+    const {isMobileVersion} = this.context
     const {salaryValue} = this.state
-    return <div style={{display: 'flex'}}>
+    return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
       <IconInput
           iconName="currency-eur"
           placeholder="Montant"
-          value={salaryValue} onChange={this.handleSalaryValueChange}
-          style={{width: 175}} />
+          value={salaryValue} onChange={this.handleSalaryValueChange} />
       <Select
           options={SALARY_UNIT_OPTIONS} value={unitValue}
           onChange={this.handleSalaryUnitChange}
           isEmptyDisabled={true}
-          style={{marginLeft: 10, width: 175}} />
+          style={{marginLeft: isMobileVersion ? 0 : 10, marginTop: isMobileVersion ? 10 : 0}} />
     </div>
   }
 }

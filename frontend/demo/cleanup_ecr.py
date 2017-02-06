@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Script to cleanup the AWS ECR (Docker Registry) from old images."""
+# TODO(pascal): Drop this file and replace by a clean up of Docker Hub repos.
+
 import collections
 import datetime
 import json

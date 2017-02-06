@@ -7,7 +7,7 @@ import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/project.proto";
 import "bob_emploi/frontend/api/geo.proto";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 // All data for a user of the mashup app, a job seeker.
 message User {
@@ -168,22 +168,24 @@ message UserProfile {
   int32 office_skills_estimate = 31;
 
   // User frustration reasons (e.g.: no offers, no answers, single parent, ...).
-  repeated Frustration frustrations = 32;
+  // Not used anymore after we removed asking for it from the onboarding.
+  repeated Frustration frustrations = 32 [deprecated = true];
 
   // Whether the user could imagine to do a training or not.
-  FlexibilityOption training_flexibility = 34;
+  // Not used anymore after we removed asking for it from the onboarding (All flexibilities).
+  FlexibilityOption training_flexibility = 34 [deprecated = true];
 
   // Whether the user could imagine to lower their salary requirements.
-  FlexibilityOption salary_requirement_flexibility = 35;
+  FlexibilityOption salary_requirement_flexibility = 35 [deprecated = true];
 
   // Whether the user could imagine to work on a less desirable contract type.
-  FlexibilityOption contract_type_flexibility = 36;
+  FlexibilityOption contract_type_flexibility = 36 [deprecated = true];
 
   // Whether the user could imagine to move to a different city in order to get a job.
-  FlexibilityOption geographical_flexibility = 37;
+  FlexibilityOption geographical_flexibility = 37 [deprecated = true];
 
   // Whether the user could imagine to work in a different field.
-  FlexibilityOption professional_flexibility = 38;
+  FlexibilityOption professional_flexibility = 38 [deprecated = true];
 
   // The preferred salary unit of the user.
   SalaryUnit preferred_salary_unit = 39;
@@ -309,7 +311,7 @@ message Features {
 
   // Whether we show the "Sticky Action" UX to the user.
   // Graduated (directly): 2016-12-18.
-  BinaryExperiment sticky_actions = 12;
+  BinaryExperiment sticky_actions = 12 [deprecated = true];
 
   // This is not really an experiment but rather a marker for users for which
   // we have disabled all emailDays because they were not reading their emails.
@@ -321,6 +323,9 @@ message Features {
 
   // Enable all alpha features (usually for devs and/or user tests).
   bool alpha = 15;
+
+  // Whether the user should receive the Net Promoter Score email.
+  NPSEmailStatus net_promoter_score_email = 16;
 }
 
 enum Gender {
@@ -434,4 +439,16 @@ enum FeedbackMedium {
   ON_SITE = 2;
 
   PHONE_OR_ON_SITE = 3;
+}
+
+// Status of the email sent to user to compute the Net Promoter Score.
+enum NPSEmailStatus {
+  // User was created before the NPS experiment was ever started.
+  BEFORE_NPS_EXPERIMENT = 0;
+
+  // User has been created recently and did not receive any NPS email yet.
+  NPS_EMAIL_PENDING = 1;
+
+  // We sent the NPS email to the user.
+  NPS_EMAIL_SENT = 2;
 }

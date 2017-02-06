@@ -126,7 +126,7 @@ class ServerTestCase(unittest.TestCase):
         auth_response2 = self.json_from_response(response2)
         return auth_response2['authenticatedUser']
 
-    def create_user(self, modifiers=None, data=None, email=None):
+    def create_user(self, modifiers=None, data=None, email=None, advisor=True):
         """Creates a new user.
 
         Args:
@@ -159,6 +159,8 @@ class ServerTestCase(unittest.TestCase):
             for modifier in modifiers:
                 modifier(data)
 
+        server.ADVISOR_DISABLED_FOR_TESTING = not advisor
+
         # Create password.
         user_id = self.authenticate_new_user(email=email)
 
@@ -168,6 +170,8 @@ class ServerTestCase(unittest.TestCase):
         response = self.app.post(
             '/api/user', data=json.dumps(data), content_type='application/json')
         self.assertEqual(200, response.status_code, response.get_data())
+
+        server.ADVISOR_DISABLED_FOR_TESTING = False
 
         return user_id
 

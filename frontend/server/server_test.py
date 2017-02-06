@@ -4,7 +4,6 @@ import datetime
 import hashlib
 import json
 import unittest
-from urllib import parse
 
 from bson import objectid
 import mock
@@ -56,7 +55,7 @@ def _clean_up_variable_flags(features_enabled):
     for feature in features_enabled:
         for prefix in (
                 'actionFeedbackModal', 'advisor', 'hideDiscoveryNav',
-                'lbbIntegration', 'stickyActions', 'alpha'):
+                'lbbIntegration', 'stickyActions', 'alpha', 'netPromoterScoreEmail'):
             if feature.startswith(prefix):
                 del_features.append(feature)
     for feature in del_features:
@@ -170,7 +169,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info2.pop('projects')
         user_info.pop('projects')
         user_info2.pop('featuresEnabled')
-        user_info2['profile'].pop('emailDays')
         self.assertEqual(user_info, user_info2)
 
     def test_user(self):
@@ -192,11 +190,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         self.assertEqual(
             {
-                'featuresEnabled': {'emailNotifications': True},
+                'featuresEnabled': {},
                 'profile': {
                     'city': {'name': 'fobar'},
                     'email': 'foo@bar.fr',
-                    'emailDays': ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
                 },
                 'userId': user_id,
             },
@@ -221,11 +218,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         _clean_up_variable_flags(stored_user_info['featuresEnabled'])
         self.assertEqual(
             {
-                'featuresEnabled': {'emailNotifications': True},
+                'featuresEnabled': {},
                 'profile': {
                     'city': {'name': 'fobar'},
                     'email': 'foo@bar.fr',
-                    'emailDays': ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
                 },
                 'userId': user_id,
             },
@@ -234,37 +230,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         # Check the app is available for user.
         self.assertFalse(user_info.get('appNotAvailable'))
 
-    def test_user_unchangeable_features(self):
-        """Race condition to modify feature flags."""
-        user_id = self.authenticate_new_user(email='foo@bar.fr')
-        self._db.user.update_one(
-            {'_id': mongomock.ObjectId(user_id)},
-            {'$set': {'featuresEnabled.emailNotifications': True}})
-        response = self.app.post(
-            '/api/user',
-            data='{"userId": "%s", "profile": {"city": {"name": "fobar"}, "email": "foo@bar.fr"}, '
-            '"projects": [{"title": "Yay title"}]}' % user_id,
-            content_type='application/json')
-        user_info = self.json_from_response(response)
-        self.assertEqual({'name': 'fobar'}, user_info.get('profile', {}).get('city'))
-        self.assertTrue(user_info.get('featuresEnabled', {}).get('emailNotifications'))
-        # Make sure that this is persistant.
-        self.assertTrue(
-            self.user_info_from_db(user_id).get('featuresEnabled', {}).get('emailNotifications'))
-
-    def test_user_feature_flags_from_clients(self):
-        """Client trying to change feature flags."""
-        user_id = self.authenticate_new_user(email='foo@bar.fr')
-        response = self.app.post(
-            '/api/user',
-            data='{"userId": "%s", "profile": {"city": {"name": "fobar"}, "email": "foo@bar.fr"}, '
-            '"featuresEnabled": {"emailNotifications": false}}' % user_id,
-            content_type='application/json')
-        user_info = self.json_from_response(response)
-        self.assertEqual({'name': 'fobar'}, user_info.get('profile', {}).get('city'))
-        self.assertTrue(user_info.get('featuresEnabled', {}).get('emailNotifications'))
-        self.assertTrue(
-            self.user_info_from_db(user_id).get('featuresEnabled', {}).get('emailNotifications'))
+    # TODO(pascal): Add a test back (check history before 97d087e for instance)
+    # to check that users cannot modify feature flags. For now we do not have a
+    # feature flag that is supposed to be stable.
 
     def test_feature_flag_mod_draws(self):
         """Assign feature flags based on user ID mod."""
@@ -298,7 +266,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         def _set_project_rome(user):
             user['projects'][0]['targetJob']['jobGroup']['romeId'] = 'A5678'
         user_id = self.create_user([
-            _add_project, _set_project_rome, _add_chantier(0, 'c1')])
+            _add_project, _set_project_rome, _add_chantier(0, 'c1')], advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_one({
             '_id': 'sticky',
@@ -372,8 +340,15 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info = self.json_from_response(response)
         project = user_info['projects'][0]
         self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
-        self.assertEqual('ADVICE_RECOMMENDED', project.get('adviceStatus'))
-        self.assertEqual('reorientation', project.get('bestAdviceId'))
+        self.assertEqual(
+            [
+                {'status': 'ADVICE_RECOMMENDED', 'adviceId': 'reorientation'},
+                {'status': 'ADVICE_RECOMMENDED', 'adviceId': 'organization'},
+                {'status': 'ADVICE_NOT_RECOMMENDED', 'adviceId': 'spontaneous-application'},
+                {'status': 'ADVICE_NOT_RECOMMENDED', 'adviceId': 'network-application'},
+                {'status': 'ADVICE_NOT_RECOMMENDED', 'adviceId': 'long-cdd'},
+            ],
+            project.get('advices'))
 
         project_actions = self._refresh_action_plan(user_id)
         self.assertEqual([], project_actions, msg='No actions generated for projects in Advisor')
@@ -569,7 +544,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'actionTemplateId': 'w%d' % i,
         } for i in range(25)])
         server.clear_cache()
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')])
+        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')], advisor=False)
         user_info = self._refresh_action_plan(user_id, get_user_info=True)
         initial_actions = user_info['projects'][0]['actions']
 
@@ -626,7 +601,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_generate_actions_at_late_night(self, mock_now):
         """Test that we generate new actions after 3am the next day."""
         mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')])
+        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')], advisor=False)
         initial_actions = self._refresh_action_plan(user_id)
         # The next day, at 2:00.
         mock_now.return_value = datetime.datetime(2016, 11, 27, 4, 0, 0)
@@ -637,7 +612,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_generate_actions_at_night_next_day(self, mock_now):
         """Test that we generate new actions at night if more than 24 hours."""
         mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')])
+        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')], advisor=False)
         initial_actions = self._refresh_action_plan(user_id)
         # Two days later, at 2:00.
         mock_now.return_value = datetime.datetime(2016, 11, 28, 2, 0, 0)
@@ -666,7 +641,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'actionTemplateId': 'w%d' % i,
         } for i in range(25)])
         server.clear_cache()
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')], email='nextday@log.in')
+        user_id = self.create_user(
+            [_add_project, _add_chantier(0, 'c1')], email='nextday@log.in', advisor=False)
         user_info = self._refresh_action_plan(user_id, get_user_info=True)
         initial_actions = user_info['projects'][0]['actions']
 
@@ -700,7 +676,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id = self.create_user(modifiers=[
             _add_project,
             _add_chantier(0, 'c1'),
-        ])
+        ], advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_many([
             {
@@ -743,7 +719,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 _add_project,
                 _add_chantier(0, 'c1'),
                 _set_project_city,
-            ])
+            ],
+            advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_one({
             '_id': 'lbb',
@@ -791,7 +768,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             modifiers=[
                 _add_project,
                 _add_chantier(0, 'c1'),
-            ])
+            ],
+            advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_one({
             '_id': 'lbb',
@@ -830,7 +808,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 _set_project_city,
                 _add_action(0, 'c1', actions_field='pastActions', **{
                     'applyToCompany': {'siret': '12345'}}),
-            ])
+            ], advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_one({
             '_id': 'lbb',
@@ -879,7 +857,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             _add_project,
             _add_chantier(0, 'c1'),
             _update_user,
-        ])
+        ], advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_one({
             '_id': 'a',
@@ -899,7 +877,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             _add_project,
             _add_chantier(0, 'c1'),
             _add_action(0, 'd1', status='ACTION_UNREAD'),
-        ])
+        ], advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_many([
             {
@@ -965,7 +943,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                 stoppedAt=yesterday.isoformat()+'Z',
                 endOfCoolDown=yesterday.isoformat()+'Z',
                 actions_field='pastActions'),
-        ])
+        ], advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_one({
             '_id': 'd1',
@@ -982,7 +960,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id = self.create_user(modifiers=[
             _add_project,
             _add_chantier(0, 'c1'),
-        ])
+        ], advisor=False)
         self._db.action_templates.drop()
         self._db.action_templates.insert_many([
             {
@@ -1243,7 +1221,7 @@ class ProjectUpdateChantiersTestCase(base_test.ServerTestCase):
         def _set_intense_project(user):
             user['projects'][0]['intensity'] = 'PROJECT_EXTREMELY_INTENSE'
 
-        user_id = self.create_user(modifiers=[_add_project, _set_intense_project])
+        user_id = self.create_user(modifiers=[_add_project, _set_intense_project], advisor=False)
         user_info = self.get_user_info(user_id)
         project_id = user_info['projects'][0]['projectId']
         self._db.chantiers.insert_one({
@@ -1271,7 +1249,7 @@ class ProjectUpdateChantiersTestCase(base_test.ServerTestCase):
         """Populate project with many actions for an intense project."""
         mock_randint.side_effect = lambda min_int, max_int: max_int
 
-        user_id = self.create_user(modifiers=[_add_project])
+        user_id = self.create_user(modifiers=[_add_project], advisor=False)
         user_info = self.get_user_info(user_id)
         project_id = user_info['projects'][0]['projectId']
         self._db.chantiers.insert_many([
@@ -1351,228 +1329,6 @@ class ProjectUpdateChantiersTestCase(base_test.ServerTestCase):
         # Check that the changes was stored in the DB as well.
         user_in_db = self.user_info_from_db(user_id)
         self.assertEqual(user_after, user_in_db)
-
-
-class ExploreEndpointsTestCase(base_test.ServerTestCase):
-    """Unit tests for the explore endpoints."""
-
-    def test_basic(self):
-        """Test basic usage."""
-        self._db.job_group_info.insert_many([
-            {
-                '_id': 'A6789',
-                'name': 'My old job group name',
-                'romeId': 'A6789',
-            },
-            {
-                '_id': 'B1212',
-                'name': 'Job group name',
-                'romeId': 'B1212',
-                'requirements': {'extras': [{'name': 'foo'}]},
-            },
-            {
-                '_id': 'C3434',
-                'name': 'Other job group name',
-                'romeId': 'C3434',
-            },
-        ])
-        self._db.similar_jobs.insert_one({
-            '_id': 'A6789',
-            'jobGroups': [
-                {'jobGroup': {'romeId': 'B1212'}},
-                {'jobGroup': {'romeId': 'C3434'}},
-            ],
-        })
-        self._db.local_diagnosis.insert_many([
-            {
-                '_id': '69:B1212',
-                'bmo': {
-                    'percentDifficult': 5,
-                    'percentSeasonal': 10,
-                },
-                'salary': {
-                    'shortText': '17 400 - 17 400',
-                    'medianSalary': 17400.0,
-                    'unit': 'ANNUAL_GROSS_SALARY',
-                    'maxSalary': 17400.0,
-                    'minSalary': 17400.0
-                },
-                'unemploymentDuration': {'days': 84},
-            },
-            {
-                '_id': '69:C3434',
-                'unemploymentDuration': {'days': 42},
-            },
-        ])
-
-        user_id = self.create_user(data={'profile': {
-            'city': {'departementId': '69', 'cityId': '69123'},
-            'latestJob': {'jobGroup': {'romeId': 'A6789'}, 'codeOgr': '456'},
-        }})
-        response = self.app.get('/api/explore/%s' % user_id)
-
-        json_response = self.json_from_response(response)
-        self.assertEqual(set(['sourceJob', 'city', 'jobGroups']), set(json_response))
-        try:
-            rome_ids = [
-                g['jobGroup']['romeId'] for g in json_response['jobGroups']]
-        except KeyError as error:
-            raise KeyError('%s in:\n%s' % (error, json_response['jobGroups']))
-        self.assertEqual(['A6789', 'C3434', 'B1212'], rome_ids)
-        self.assertIn('requirements', json_response['jobGroups'][2]['jobGroup'])
-        self.assertIn('stats', json_response['jobGroups'][2])
-        self.assertIn('salary', json_response['jobGroups'][2]['stats'])
-        self.assertEqual({'departementId': '69', 'cityId': '69123'}, json_response['city'])
-        self.assertEqual(
-            {'jobGroup': {'romeId': 'A6789'}, 'codeOgr': '456'},
-            json_response['sourceJob'])
-
-    def test_specific_job_group(self):
-        """Endpoint to get info only on one job group."""
-        self.maxDiff = None  # pylint: disable=invalid-name
-        self._db.job_group_info.insert_one({
-            '_id': 'B1242',
-            'name': 'My job group name',
-            'romeId': 'B1242',
-        })
-        self._db.local_diagnosis.insert_one({
-            '_id': '69:B1242',
-            'salary': {'shortText': '17 400 - 17 400'},
-        })
-        self._db.recent_job_offers.insert_one({
-            '_id': '69:B1242',
-            'numAvailableJobOffers': 13,
-        })
-
-        user_id = self.create_user(data={'profile': {
-            'city': {
-                'name': 'Lyon', 'departementId': '69', 'cityId': '69123', 'postcodes': '69006'},
-            'latestJob': {'jobGroup': {'romeId': 'A6789'}, 'codeOgr': '456'},
-        }})
-        response = self.app.get('/api/explore/%s/B1242' % user_id)
-
-        json_response = self.json_from_response(response)
-        self.assertIn('generic', json_response['jobGroup'].pop('imageLink'))
-        self.assertEqual(
-            {
-                'jobGroup': {'name': 'My job group name', 'romeId': 'B1242'},
-                'stats': {
-                    'numAvailableJobOffers': 13,
-                    'salary': {'shortText': '17 400 - 17 400'},
-                },
-                'links': [
-                    {
-                        'caption': 'Consulter les 13 offres ou plus sur pole-emploi.fr',
-                        'url':
-                            'https://candidat.pole-emploi.fr/candidat/rechercheoffres/'
-                            'resultats/A__DEPARTEMENT_69___P__________INDIFFERENT________'
-                            '_________B1242______',
-                    },
-                    {
-                        'caption': 'Voir les entreprises qui recrutent',
-                        'url':
-                            'https://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
-                            'rome/B1242?utm_medium=web&utm_source=bob&utm_campaign=bob-recherche',
-                    },
-                ],
-            },
-            json_response)
-
-    def test_specific_job_group_new_endpoint(self):
-        """New endpoint to get info only on one job group."""
-        self.maxDiff = None  # pylint: disable=invalid-name
-        self._db.job_group_info.insert_one({
-            '_id': 'B1242',
-            'name': 'My job group name',
-            'romeId': 'B1242',
-        })
-        self._db.local_diagnosis.insert_one({
-            '_id': '69:B1242',
-            'salary': {'shortText': '17 400 - 17 400'},
-        })
-        self._db.recent_job_offers.insert_one({
-            '_id': '69:B1242',
-            'numAvailableJobOffers': 13,
-        })
-
-        response = self.app.get('/api/explore/job/stats?data=%s' % parse.quote(json.dumps({
-            'city': {'departementId': '69', 'cityId': '69123'},
-            'sourceJob': {'jobGroup': {'romeId': 'B1242'}},
-        })))
-
-        json_response = self.json_from_response(response)
-        self.assertIn('generic', json_response['jobGroup'].pop('imageLink'))
-        self.assertEqual(
-            {
-                'jobGroup': {'name': 'My job group name', 'romeId': 'B1242'},
-                'stats': {
-                    'numAvailableJobOffers': 13,
-                    'salary': {'shortText': '17 400 - 17 400'},
-                },
-                'links': [
-                    {
-                        'caption': 'Consulter les 13 offres ou plus sur pole-emploi.fr',
-                        'url':
-                            'https://candidat.pole-emploi.fr/candidat/rechercheoffres/'
-                            'resultats/A__DEPARTEMENT_69___P__________INDIFFERENT________'
-                            '_________B1242______',
-                    },
-                    {
-                        'caption': 'Voir les entreprises qui recrutent',
-                        'url':
-                            'https://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
-                            'rome/B1242?utm_medium=web&utm_source=bob&utm_campaign=bob-recherche',
-                    },
-                ],
-            },
-            json_response)
-
-    def test_specific_job_group_unknown(self):
-        """Get info about one unknown job group."""
-        user_id = self.create_user(data={'profile': {
-            'city': {'departementId': '69', 'cityId': '69123'},
-            'latestJob': {'jobGroup': {'romeId': 'A6789'}, 'codeOgr': '456'},
-        }})
-        response = self.app.get('/api/explore/%s/UNK12' % user_id)
-
-        self.assertEqual(404, response.status_code, msg=response.get_data(as_text=True))
-
-    def test_explore_job(self):
-        """Explore about a given job and city."""
-        self._db.job_group_info.insert_many([
-            {
-                '_id': 'A6789',
-                'name': 'My old job group name',
-                'romeId': 'A6789',
-            },
-            {
-                '_id': 'B1212',
-                'name': 'Job group name',
-                'romeId': 'B1212',
-                'requirements': {'extras': [{'name': 'foo'}]},
-            },
-            {
-                '_id': 'C3434',
-                'name': 'Other job group name',
-                'romeId': 'C3434',
-            },
-        ])
-        self._db.similar_jobs.insert_one({
-            '_id': 'A6789',
-            'jobGroups': [
-                {'jobGroup': {'romeId': 'B1212'}},
-                {'jobGroup': {'romeId': 'C3434'}},
-            ],
-        })
-
-        response = self.app.get('/api/explore/job?data=%s' % parse.quote(json.dumps({
-            'city': {'departementId': '69', 'cityId': '69123'},
-            'sourceJob': {'jobGroup': {'romeId': 'A6789'}, 'codeOgr': '456'},
-        })))
-
-        json_response = self.json_from_response(response)
-        rome_ids = [g['jobGroup']['romeId'] for g in json_response.get('jobGroups', [])]
-        self.assertEqual(['A6789', 'B1212', 'C3434'], rome_ids)
 
 
 class CacheClearEndpointTestCase(base_test.ServerTestCase):

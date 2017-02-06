@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="85px" height="85px" viewBox="0 0 85 85" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 42 (36781) - http://www.bohemiancoding.com/sketch -->
+    <title>A26D0E7A-8CF3-4E43-B35D-50526734CE44</title>
+    <desc>Created with sketchtool.</desc>
+    <defs>
+        <filter x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox" id="filter-1">
+            <feOffset dx="5" dy="10" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="12.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0.219607843   0 0 0 0 0.247058824   0 0 0 0 0.321568627  0 0 0 0.25 0" type="matrix" in="shadowBlurOuter1" result="shadowMatrixOuter1"></feColorMatrix>
+            <feMerge>
+                <feMergeNode in="shadowMatrixOuter1"></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+        </filter>
+        <circle id="path-2" cx="42.5" cy="42.5" r="42.5"></circle>
+    </defs>
+    <g id="Proto" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Landing-Page-(advisor)">
+            <g id="check-ico" filter="url(#filter-1)">
+                <mask id="mask-3" fill="white">
+                    <use xlink:href="#path-2"></use>
+                </mask>
+                <use id="Oval-7" fill="#58BBFB" xlink:href="#path-2"></use>
+                <polygon id="Rectangle-4" fill="#40A2E1" mask="url(#mask-3)" points="27 23 62 23 62 59 56 66 27 66"></polygon>
+                <polygon id="Rectangle-4" fill="#FFFFFF" mask="url(#mask-3)" points="25 21 60 21 60 57 54 64 25 64"></polygon>
+                <path d="M33,31 L52,31 L52,50 L33,50 L33,31 Z M35,33 L35,48 L50,48 L50,33 L35,33 Z" id="Combined-Shape" fill="#E8EAF0" mask="url(#mask-3)"></path>
+                <polygon id="Path-3" fill="#D9D9E0" mask="url(#mask-3)" points="60 57 54 57 54 64"></polygon>
+                <path d="M42.9532948,40.8319744 L38.748094,36.6267736 L36.6267736,38.748094 L42.9142136,45.0355339 L43.3822269,44.5675205 L43.4213081,44.6066017 L56.496188,31.5317219 L54.3748676,29.4104015 L42.9532948,40.8319744 Z" id="Combined-Shape" fill="#383F52" mask="url(#mask-3)"></path>
+            </g>
+        </g>
+    </g>
+</svg>

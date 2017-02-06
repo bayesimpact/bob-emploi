@@ -28,6 +28,11 @@ class NotificationsStep extends ProfileStepBaseClass {
     })
   }
 
+  componentWillMount() {
+    const {profile} = this.props
+    this.setState({alreadyHasEmailNotifications: !!(profile.emailDays || []).length})
+  }
+
   renderEmailDaysFieldset(detailsStyle) {
     const {emailDays, isWeeklySummaryEnabled} = this.state
     return <FieldSet label={<span style={{fontWeight: 500}}>
@@ -52,7 +57,7 @@ class NotificationsStep extends ProfileStepBaseClass {
     return <hr style={{
       borderTop: 'solid 1px ' + Colors.SILVER,
       marginBottom: 35,
-      width: 440,
+      width: '100%',
     }} />
   }
 
@@ -76,6 +81,7 @@ class NotificationsStep extends ProfileStepBaseClass {
   }
 
   render() {
+    const {alreadyHasEmailNotifications} = this.state
     const detailsStyle = {
       color: Colors.COOL_GREY,
       fontSize: 14,
@@ -85,16 +91,16 @@ class NotificationsStep extends ProfileStepBaseClass {
     }
     return <ProfileStep
       title="Vos notifications"
-      explanation={<div style={{maxWidth: 440}}>
+      explanation={alreadyHasEmailNotifications ? <div style={{maxWidth: 440, padding: '0 50px'}}>
         {config.productName} fonctionne en vous accompagnant au quotidien. Pour
         vous faciliter la tâche, nous vous enverrons des emails contenant nos
         conseils du jour <strong>en fonction de vos préférences</strong>.
-      </div>}
+      </div> : null}
       fastForward={this.handleSubmit}
       onNextButtonClick={this.handleSubmit}
       {...this.props}>
-      {this.renderEmailDaysFieldset(detailsStyle)}
-      {this.renderHorizontalRule()}
+      {alreadyHasEmailNotifications ? this.renderEmailDaysFieldset(detailsStyle) : null}
+      {alreadyHasEmailNotifications ? this.renderHorizontalRule() : null}
       {this.renderNewsletterFieldset(detailsStyle)}
     </ProfileStep>
   }

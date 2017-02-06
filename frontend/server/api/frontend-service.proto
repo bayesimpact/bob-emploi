@@ -4,13 +4,12 @@ import "google/protobuf/empty.proto";
 
 import "bob_emploi/frontend/api/chantier.proto";
 import "bob_emploi/frontend/api/config.proto";
-import "bob_emploi/frontend/api/discovery.proto";
 import "bob_emploi/frontend/api/export.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/project.proto";
 import "bob_emploi/frontend/api/user.proto";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 // TODO: Actually use the protobuffers on the client side to enforce the API.
 
@@ -48,21 +47,6 @@ service FrontendService {
 
   // Get the title of all existing chantiers keyed by ID.
   rpc Chantiers(google.protobuf.Empty) returns (ChantierTitles);
-
-  // Get new jobs to explore for the user (the input is actually only a user's
-  // ID).
-  // TODO(pascal): Switch to ExploreAroundJob, then drop this endpoint.
-  rpc Explore(User) returns (JobsExploration);
-
-  // Get more exploration info about a specific job group.
-  // TODO(pascal): Switch to JobGroupStats, then drop this endpoint.
-  rpc ExploreJobGroupInfo(JobGroupExplorationRequest) returns (JobGroupExploration);
-
-  // Get new jobs to explore around a job for a given city.
-  rpc ExploreAroundJob(JobExplorationRequest) returns (JobsExploration);
-
-  // Get job group stats for a given city.
-  rpc JobGroupStats(JobExplorationRequest) returns (JobGroupExploration);
 
   // Create an export of the user's current dashboard (the input is actually only a user's ID).
   rpc CreateDashboardExport(User) returns (DashboardExport);

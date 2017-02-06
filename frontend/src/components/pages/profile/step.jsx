@@ -59,18 +59,22 @@ class ProfileStep extends React.Component {
     style: React.PropTypes.object,
     title: React.PropTypes.string.isRequired,
   }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
 
   render() {
     const {children, fastForward, nextButtonContent, onPreviousButtonClick,
            onNextButtonClick, contentStyle, style, title, explanation,
            isNextButtonDisabled} = this.props
+    const {isMobileVersion} = this.context
     const stepStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
       boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.04)',
       display: 'flex',
       flexDirection: 'column',
-      width: 945,
+      width: isMobileVersion ? 'initial' : 945,
       ...style,
     }
     const titleStyle = {
@@ -93,6 +97,7 @@ class ProfileStep extends React.Component {
       flexDirection: 'column',
       marginTop: 40,
       padding: '0 50px',
+      width: isMobileVersion ? 'initial' : 480,
       ...contentStyle,
     }
     return <div style={stepStyle}>

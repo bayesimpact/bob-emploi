@@ -10,8 +10,7 @@ import {ShortKey} from 'components/shortkey'
 import {validateEmail} from 'store/validations'
 import {facebookAuthenticateUser, googleAuthenticateUser, emailCheck,
         registerNewUser, loginUser, displayToasterMessage, resetPassword,
-        askPasswordReset, redirectToMobileForm, openLoginModal,
-        closeLoginModalAction,
+        askPasswordReset, openLoginModal, closeLoginModalAction,
         AUTHENTICATE_USER, EMAIL_CHECK, RESET_USER_PASSWORD} from 'store/actions'
 import {Colors, Icon, IconInput, LabeledToggle, RoundButton, Styles} from 'components/theme'
 import {upperFirstLetter} from 'store/french'
@@ -406,10 +405,12 @@ class LoginModalBase extends React.Component {
     defaultEmail: React.PropTypes.string,
     defaultIsLoginFormShown: React.PropTypes.bool,
     dispatch: React.PropTypes.func.isRequired,
-    isMobileVersion: React.PropTypes.bool.isRequired,
     isShown: React.PropTypes.bool,
     onLogin: React.PropTypes.func,
     resetToken: React.PropTypes.string,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool.isRequired,
   }
 
   state = {
@@ -418,17 +419,13 @@ class LoginModalBase extends React.Component {
   }
 
   componentWillMount() {
-    const {defaultIsLoginFormShown, isMobileVersion, isShown} = this.props
-    this.componentWillReceiveProps({defaultIsLoginFormShown, isMobileVersion, isShown})
+    const {defaultIsLoginFormShown, isShown} = this.props
+    this.componentWillReceiveProps({defaultIsLoginFormShown, isShown})
   }
 
   componentWillReceiveProps(nextProps) {
     const wantShown = nextProps.isShown || !!nextProps.resetToken
     if (wantShown === this.state.isShown) {
-      return
-    }
-    if (wantShown && nextProps.isMobileVersion) {
-      nextProps.dispatch(redirectToMobileForm())
       return
     }
     this.setState({isShown: wantShown})
@@ -524,13 +521,14 @@ class LoginModalBase extends React.Component {
 
   render() {
     const {defaultEmail, resetToken} = this.props
+    const {isMobileVersion} = this.context
     const {isLoginFormShown} = this.state
     const actionBoxStyle = {
       alignItems: 'center',
       alignSelf: 'stretch',
       display: 'flex',
       flexDirection: 'column',
-      padding: '30px 60px',
+      padding: isMobileVersion ? '30px 20px' : '30px 60px',
     }
     const socialLoginBox = {
       ...actionBoxStyle,
@@ -538,7 +536,7 @@ class LoginModalBase extends React.Component {
       fontSize: 15,
     }
     const containerStyle = {
-      width: 400,
+      width: isMobileVersion ? 'inherit' : 400,
     }
     const socialLoginPrefix = isLoginFormShown ? 'Connexion' : 'Inscription'
     let form
@@ -582,12 +580,11 @@ class LoginModalBase extends React.Component {
   }
 }
 const LoginModal = connect(({app}) => {
-  const {isMobileVersion, loginModal} = app
+  const {loginModal} = app
   const {email, isReturningUser, resetToken} = loginModal && loginModal.defaultValues || {}
   return {
     defaultEmail: email,
     defaultIsLoginFormShown: !!isReturningUser,
-    isMobileVersion,
     isShown: !!loginModal,
     resetToken,
   }
@@ -606,15 +603,16 @@ class LoginButtonBase extends React.Component {
   handleClick = () => {
     const {isLoggedIn, isSignUpButton, dispatch} = this.props
     if (isLoggedIn) {
-      browserHistory.push(Routes.DASHBOARD_PAGE)
+      browserHistory.push(Routes.PROJECT_PAGE)
       return
     }
     dispatch(openLoginModal({isReturningUser: !isSignUpButton}))
   }
 
   render() {
-    const {children, style} = this.props
-    return <RoundButton type="deletion" style={style} onClick={this.handleClick}>
+    // eslint-disable-next-line no-unused-vars
+    const {children, dispatch, isLoggedIn, isSignUpButton, ...extraProps} = this.props
+    return <RoundButton type="deletion" onClick={this.handleClick} {...extraProps}>
       {children}
     </RoundButton>
   }

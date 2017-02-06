@@ -115,21 +115,43 @@ function allStickyActions(projectList) {
 }
 
 
+function createProjectTitleComponents(project, gender) {
+  const {cityName, prefix} = inCityPrefix(
+    project.city && project.city.name ||
+    project.mobility && project.mobility.city && project.mobility.city.name)
+  const where = prefix + cityName
+  if (project.kind === 'FIND_JOB') {
+    return {
+      what: genderizeJob(project.targetJob, gender),
+      where,
+    }
+  }
+  if (project.kind === 'CREATE_COMPANY') {
+    return {
+      what: 'Créer une entreprise',
+      where,
+    }
+  }
+  if (project.kind === 'TAKE_OVER_COMPANY') {
+    return {
+      what: 'Reprendre une entreprise',
+      where,
+    }
+  }
+  if (project.kind === 'REORIENTATION') {
+    return {
+      what: 'Me réorienter',
+      where,
+    }
+  }
+  return {}
+}
+
+
 function createProjectTitle(newProject, gender) {
-  const {cityName, prefix} = inCityPrefix(newProject.city.name)
-  const locationString = prefix + cityName
-  if (newProject.kind === 'FIND_JOB') {
-    const jobString = genderizeJob(newProject.targetJob, gender)
-    return jobString + ' ' + locationString
-  }
-  if (newProject.kind === 'CREATE_COMPANY') {
-    return `Créer une entreprise ${locationString}`
-  }
-  if (newProject.kind === 'TAKE_OVER_COMPANY') {
-    return `Reprendre une entreprise ${locationString}`
-  }
-  if (newProject.kind === 'REORIENTATION') {
-    return `Me réorienter ${locationString}`
+  const {what, where} = createProjectTitleComponents(newProject, gender)
+  if (what && where) {
+    return `${what} ${where}`
   }
 }
 
@@ -232,17 +254,10 @@ function findAction(projects, action) {
 }
 
 
-function finishStickyActionStep(project, finishedStep, text) {
-  const stepAction = (project.stickyActions || []).find(
-    stickyAction => (stickyAction.steps || []).some(
-      step => step.stepId === finishedStep.stepId))
-  if (!stepAction) {
-    return project
-  }
-
-  const finishedStepAction = {
-    ...stepAction,
-    steps: stepAction.steps.map(step => {
+function finishStickyStepInAction(action, finishedStep, text) {
+  return {
+    ...action,
+    steps: action.steps.map(step => {
       if (step.stepId !== finishedStep.stepId) {
         return step
       }
@@ -253,6 +268,41 @@ function finishStickyActionStep(project, finishedStep, text) {
       }
     }),
   }
+}
+
+
+function finishStickyActionStep(project, finishedStep, text) {
+  const isTargetedAction = action => (action.steps || []).
+    some(step => step.stepId === finishedStep.stepId)
+
+  // Let's check if this a sticky from an advice.
+  let inAdvice = false
+  const advices = (project.advices || []).map(advice => {
+    if (!advice.engagementAction || !isTargetedAction(advice.engagementAction)) {
+      return advice
+    }
+    inAdvice = true
+    const engagementAction = finishStickyStepInAction(advice.engagementAction, finishedStep, text)
+    const isActionDone = !engagementAction.steps.some(step => !step.isDone)
+    if (isActionDone) {
+      engagementAction.status = 'ACTION_STICKY_DONE'
+    }
+    return {
+      ...advice,
+      engagementAction,
+      status: isActionDone ? 'ADVICE_ENGAGED' : advice.status,
+    }
+  })
+  if (inAdvice) {
+    return {...project, advices}
+  }
+
+  const stepAction = (project.stickyActions || []).find(isTargetedAction)
+  if (!stepAction) {
+    return project
+  }
+
+  const finishedStepAction = finishStickyStepInAction(stepAction, finishedStep, text)
 
   if (finishedStepAction.steps.some(step => !step.isDone)) {
     // There are still steps to do.
@@ -278,12 +328,36 @@ function finishStickyActionStep(project, finishedStep, text) {
 }
 
 
-function shouldShowAdvice(project) {
-  if (!project.bestAdviceId) {
-    return false
+function nextAdviceToRecommend(project) {
+  const isRecommended = ({status, engagementAction}) =>
+    status === 'ADVICE_RECOMMENDED' || status === 'ADVICE_ACCEPTED' && !engagementAction
+
+  if (project.advices) {
+    for (let recommendationNumber = 1;
+        recommendationNumber <= project.advices.length;
+        ++recommendationNumber) {
+      const advice = project.advices[recommendationNumber - 1]
+      if (isRecommended(advice)) {
+        return {advice, recommendationNumber}
+      }
+    }
   }
-  return (project.adviceStatus === 'ADVICE_RECOMMENDED'
-      || project.adviceStatus === 'ADVICE_ACCEPTED' && !project.stickyActions)
+
+  return null
+}
+
+
+function getAdviceById(advice, project) {
+  return (project.advices || []).
+    find(updatedAdvice => advice.adviceId === updatedAdvice.adviceId)
+}
+
+
+function hasUserEverAcceptedAdvice(project) {
+  const wasAcceptedStatus = status =>
+    status === 'ADVICE_ACCEPTED' || status === 'ADVICE_ENGAGED' || status === 'ADVICE_CANCELED'
+  return wasAcceptedStatus(project.adviceStatus) ||
+    (project.advices || []).some(advice => wasAcceptedStatus(advice.status))
 }
 
 
@@ -294,5 +368,6 @@ export {
   allDoneAndPastActionsAndProjects, allActionsById, projectsWithOpenActions,
   areAllActionsDoneForToday, allDoneActions, hasActionPlan,
   isAnyActionPlanGeneratedRecently, isNewActionPlanNeeded,
-  allStickyActions, findAction, finishStickyActionStep, shouldShowAdvice,
+  allStickyActions, findAction, finishStickyActionStep, nextAdviceToRecommend,
+  getAdviceById, hasUserEverAcceptedAdvice, createProjectTitleComponents,
 }

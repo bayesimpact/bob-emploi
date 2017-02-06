@@ -27,6 +27,7 @@ class JobGroupStatsBase extends React.Component {
   static propTypes = {
     imt: React.PropTypes.shape({
       yearlyAvgOffersDenominator: React.PropTypes.number,
+      yearlyAvgOffersPer10Candidates: React.PropTypes.number,
       yearlyAvgOffersPer10Openings: React.PropTypes.number,
     }),
     jobOffersChange: React.PropTypes.number,
@@ -86,11 +87,13 @@ class JobGroupStatsBase extends React.Component {
     if (!imt || !imt.yearlyAvgOffersDenominator) {
       return null
     }
+    const yearlyAvgOffersPer10Candidates = imt.yearlyAvgOffersPer10Candidates ||
+      imt.yearlyAvgOffersPer10Openings || 0
     return <div style={sectionStyle}>
       Concurrence : <span style={this.estimateStyle(
-          imt.yearlyAvgOffersPer10Openings || 0, THRESHOLDS.marketStress)}>
-        {imt.yearlyAvgOffersPer10Openings || 0}
-      </span> offre{imt.yearlyAvgOffersPer10Openings > 1 ? 's' : ''} pour <strong>
+          yearlyAvgOffersPer10Candidates, THRESHOLDS.marketStress)}>
+        {yearlyAvgOffersPer10Candidates}
+      </span> offre{yearlyAvgOffersPer10Candidates > 1 ? 's' : ''} pour <strong>
         {imt.yearlyAvgOffersDenominator}
       </strong> candidat{imt.yearlyAvgOffersDenominator > 1 ? 's' : ''}
     </div>

@@ -4,6 +4,7 @@ import {Colors, RoundButton} from 'components/theme'
 import {ShortKey} from 'components/shortkey'
 
 
+// TODO: Factor with profile step.
 class Step extends React.Component {
   static propTypes = {
     children: React.PropTypes.node.isRequired,
@@ -24,6 +25,7 @@ class Step extends React.Component {
     const stepStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
+      boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.04)',
       display: 'flex',
       flexDirection: 'column',
       ...style,
@@ -37,18 +39,28 @@ class Step extends React.Component {
       textAlign: 'center',
       textTransform: 'uppercase',
     }
+    const titleStyle = {
+      color: Colors.DARK_TWO,
+      fontSize: 23,
+      fontWeight: 500,
+      lineHeight: 1.6,
+      marginTop: 40,
+      textAlign: 'center',
+    }
     const containerStyle = {
       display: 'flex',
       flex: 1,
       flexDirection: 'column',
       marginTop: 33,
-      padding: '0 60px',
-      width: 480,
+      maxWidth: 480,
+      padding: '0 20px',
       ...contentStyle,
     }
     return <div style={stepStyle}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={fastForward} />
-      {subheader ? <div style={subheaderStyle}>{subheader}</div> : null}
+      {subheader ?
+        <div style={subheaderStyle}>{subheader}</div> :
+        <div style={titleStyle}>Définir mon projet</div>}
       <div style={containerStyle}>
         {children}
       </div>

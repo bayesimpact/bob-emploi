@@ -1,6 +1,8 @@
 import React from 'react'
 import {browserHistory} from 'react-router'
 
+import config from 'config'
+
 import {StaticPage} from 'components/static'
 import {Colors, RoundButton} from 'components/theme'
 import {Routes} from 'components/url'
@@ -42,16 +44,25 @@ class AppNotAvailablePage extends React.Component {
     }
     return <StaticPage page="app_not_available">
       <div style={boxStyle}>
-        <div style={titleStyle}>Le service n'est pas encore disponible chez vous</div>
+        <div style={titleStyle}>Le service n'est pas encore disponible pour votre profil</div>
         <div style={containerStyle}>
           <p>
-            Nous sommes en train de lancer ce service de façon progressive en France.
-            Cela signifie que certains secteurs d'activité et certaines zones géographiques ne sont
-            pas encore représentés.
+            Nous sommes en train de lancer {config.productName} de façon progressive en
+            France. Cela signifie que certains secteurs d'activité et certaines
+            zones géographiques ne sont pas encore représentés.
+            Malheureusement, cela a l'air d'être le cas pour vous pour le
+            moment.
           </p>
           <p>
-            Malheureusement, ça a l'air d'être le cas pour vous pour le moment. Nous vous
-            recontacterons par mail lorsque le service sera disponible chez vous !
+            Une combinaison de quatre bases de données différentes est
+            nécessaire pour pouvoir établir des suggestions personnalisées pour
+            votre profil. Nous ne pouvons pas vous préciser quelle est la
+            variable bloquante pour chaque utilisateur de {config.productName}.
+          </p>
+          <p>
+            Nous espérons en disposer rapidement pour pouvoir vous aider dans
+            votre recherche d'emploi. Nous vous contacterons par email quand le
+            service sera disponible pour vous.
           </p>
         </div>
         <div style={{display: 'flex', marginBottom: 40, marginTop: 70}}>

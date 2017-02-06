@@ -3,7 +3,7 @@ var chai = require('chai')
 var expect = chai.expect
 chai.config.truncateThreshold = 0
 import {user} from 'store/user_reducer'
-import {CREATE_PROJECT, STOP_STICKY_ACTION} from 'store/actions'
+import {CREATE_PROJECT, DECLINE_ADVICE, STOP_STICKY_ACTION} from 'store/actions'
 
 describe('user reducer', () => {
   it('should return unchanged state for an unknown action', () => {
@@ -36,6 +36,38 @@ describe('user reducer', () => {
         {stickyActions: [{actionId: 'active'}]},
         {pastActions: [{actionId: 'to-stop'}], stickyActions: []},
       ],
+    })
+  })
+
+  it('should decline an advice', () => {
+    const oldState = {
+      projects: [{
+        advices: [
+          {adviceId: 'organize', status: 'ADVICE_ACCEPTED'},
+          {adviceId: 'reorientation', status: 'ADVICE_RECOMMENDED'},
+        ],
+        projectId: 'foo',
+      }],
+    }
+    const action = {
+      advice: {adviceId: 'reorientation'},
+      project: {projectId: 'foo'},
+      reason: 'boooring',
+      type: DECLINE_ADVICE,
+    }
+    const newState = user(oldState, action)
+    expect(newState).to.deep.equal({
+      projects: [{
+        advices: [
+          {adviceId: 'organize', status: 'ADVICE_ACCEPTED'},
+          {
+            adviceId: 'reorientation',
+            declinedReason: 'boooring',
+            status: 'ADVICE_DECLINED',
+          },
+        ],
+        projectId: 'foo',
+      }],
     })
   })
 })

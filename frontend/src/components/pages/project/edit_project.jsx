@@ -7,9 +7,9 @@ import {fetchPotentialChantiers, setProjectProperty,
         POST_USER_DATA, GET_POTENTIAL_CHANTIERS} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {Modal} from 'components/modal'
-import {NewProjectCriteriaStep} from 'components/new_project/criteria'
-import {NewProjectExperienceStep} from 'components/new_project/experience'
-import {NewProjectJobsearchStep} from 'components/new_project/jobsearch'
+import {NewProjectCriteriaStep} from 'components/pages/new_project/criteria'
+import {NewProjectExperienceStep} from 'components/pages/new_project/experience'
+import {NewProjectJobsearchStep} from 'components/pages/new_project/jobsearch'
 
 
 const STEPS = [

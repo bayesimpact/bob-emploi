@@ -4,8 +4,7 @@ import "google/protobuf/timestamp.proto";
 import "bob_emploi/frontend/api/chantier.proto";
 import "bob_emploi/frontend/api/company.proto";
 
-// TODO: Rename package to bayesimpact.bob.
-package bayesimpact.pe;
+package bayes.bob;
 
 // Next available ID: 26.
 message Action {

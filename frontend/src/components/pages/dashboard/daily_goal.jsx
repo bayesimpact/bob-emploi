@@ -195,7 +195,6 @@ class BouncyImage extends React.Component {
 }
 
 
-// TODO(stephan): See if we can factor this with discovery.FadeInFadeOut.
 class TransitionBetweenChildren extends React.Component {
   static propTypes = {
     children: React.PropTypes.element,

@@ -38,7 +38,8 @@ message JobGroup {
   repeated Job jobs = 5;
 
   // A link to a nice image representing this job group.
-  string image_link = 4;
+  // TODO(pascal): Clean up, this is not used anymore.
+  string image_link = 4 [deprecated = true];
 
   // Major and minor Holland Codes (e.g A (artistic) or R (realistic)).
   string holland_code_major = 8;
@@ -300,7 +301,7 @@ enum DrivingLicense {
 // Message to hold data that we scraped from the IMT website. The granularity is
 // on a Job level (in contrast to most other data that we have on the JobGroup level).
 // We have one entry for each Job and each departement.
-// Next free Id: 14
+// Next free Id: 15
 message ImtLocalJobStats {
   // The city of the IMT data. Only departement will be set.
   FrenchCity city = 1;
@@ -317,9 +318,18 @@ message ImtLocalJobStats {
   // The number of people looking for this job during the last week.
   uint32 last_week_demand = 4;
 
-  // The average number of weekly open offers per 10 openings. This value gives
+  // The average number of weekly open offers per 10 candiates. This value gives
   // a ratio in combination with
-  uint32 yearly_avg_offers_per_10_openings = 5;
+  // TODO(pascal): Move usage to yearly_avg_offers_per_10_candidates and remove
+  // this field.
+  uint32 yearly_avg_offers_per_10_openings = 5 [deprecated = true];
+
+  // The average number of weekly open offers per 10 candidates. This value
+  // gives a ratio in combination with yearly_avg_offers_denominator.
+  // NOTE: Be careful when using this, the data might not be populated yet as
+  // the field is the new name of the one above. If it's not populated, rely on
+  // yearly_avg_offers_per_10_openings.
+  uint32 yearly_avg_offers_per_10_candidates = 14;
 
   // The denomiator to compute the average yearly ratio with yearly_avg_offers_per_10_openings.
   // It should always be 10.
@@ -338,6 +348,7 @@ message ImtLocalJobStats {
   repeated Month active_months = 10;
 
   // This list gives the percentages of each employment type.
+  // We wish we could create a map, but enums cannot be keys of a map in proto3.
   repeated EmploymentTypePercentage employment_type_percentages = 11;
 
   // The date on which we scraped this entry from the IMT website.

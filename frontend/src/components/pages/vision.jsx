@@ -6,14 +6,12 @@ import {Routes} from 'components/url'
 import {Colors, Icon, Markdown, RoundButton} from 'components/theme'
 
 class VisionPage extends React.Component {
-  static propTypes = {
-    app: React.PropTypes.shape({
-      isMobileVersion: React.PropTypes.bool,
-    }).isRequired,
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
   }
 
   render() {
-    const {isMobileVersion} = this.props.app
+    const {isMobileVersion} = this.context
     const leftTitleStyle = {
       color: Colors.SLATE,
       fontSize: 35,

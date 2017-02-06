@@ -6,9 +6,9 @@ import "bob_emploi/frontend/api/action.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 
-package bayesimpact.pe;
+package bayes.bob;
 
-// Next available tag: 21.
+// Next available tag: 23.
 message Project {
   // A unique identifier for this project.
   string project_id = 1;
@@ -25,7 +25,8 @@ message Project {
 
   // URL of the cover image for this project. It can also be the name of a
   // hard-coded cover image (e.g. "cake").
-  string cover_image_url = 17;
+  // TODO(pascal): Clean up, this is not used anymore.
+  string cover_image_url = 17 [deprecated = true];
 
   // Job targeted by this project.
   Job target_job = 6;
@@ -120,13 +121,34 @@ message Project {
   LocalJobStats local_stats = 9;
 
   // ID of the best Advice Module for this project.
-  string best_advice_id = 11;
+  // DEPRECATED: Use the first element of advices.
+  string best_advice_id = 11 [deprecated = true];
 
   // Status of the Advice for this project.
-  AdviceStatus advice_status = 12;
+  // DEPRECATED: Use the first element of advices.
+  AdviceStatus advice_status = 12 [deprecated = true];
 
   // Feedback of the user when they decline an advice.
-  string advice_declined_reason = 13;
+  // DEPRECATED: Use the first element of advices.
+  string advice_declined_reason = 13 [deprecated = true];
+
+  // Sorted list of advices that triggered for this user.
+  repeated Advice advices = 21;
+}
+
+message Advice {
+  // Unique ID for the advice module: note that it can be the same for other
+  // users or for other projects. e.g "reorientation", "spontaneous-application".
+  string advice_id = 1;
+
+  // Status of this advice.
+  AdviceStatus status = 2;
+
+  // Feedback of the user when they decline an advice.
+  string declined_reason = 3;
+
+  // Engagement "sticky" action to start if the user accepts the advice.
+  Action engagement_action = 4;
 }
 
 enum NumberOfferEstimateOption {
@@ -238,20 +260,24 @@ enum ProjectIntensity {
 enum AdviceStatus {
   UNKNOWN_ADVICE_STATUS = 0;
 
-  // The Advisor has recommended an advice.
+  // The Advisor has recommended a piece of advice.
   ADVICE_RECOMMENDED = 1;
 
-  // The user has accepted the advice and is starting to engage.
+  // The user has accepted the piece of advice and is starting to engage.
   ADVICE_ACCEPTED = 2;
 
-  // The user has declined the advice that was recommended.
+  // The user has declined the piece of advice that was recommended.
   ADVICE_DECLINED = 3;
 
   // The user has finished all steps of the sticky action to engage into the
   // advice.
   ADVICE_ENGAGED = 4;
 
-  // The advice was accepted but then canceled during the engagement part (the
-  // Sticky Action).
+  // The piece of advice was accepted but then canceled during the engagement
+  // part (the Sticky Action).
   ADVICE_CANCELED = 5;
+
+  // The Advisor never recommended that (but we might still show it to user as
+  // an example of things Bob can advise on).
+  ADVICE_NOT_RECOMMENDED = 6;
 }

@@ -57,26 +57,25 @@ def instantiate(
     action.status = action_pb2.ACTION_UNREAD
     action.created_at.FromDatetime(now.get())
 
-    if user_proto.features_enabled.sticky_actions == user_pb2.ACTIVE:
-        action.goal = template.goal
-        action.short_goal = template.short_goal
-        action.sticky_action_incentive = template.sticky_action_incentive
-        sticky_action_steps = _sticky_action_steps(database)
-        action.steps.extend([
-            sticky_action_steps.get(step_id)
-            for step_id in template.step_ids
-            if sticky_action_steps.get(step_id)])
-        for i, step in enumerate(action.steps):
-            step.step_id = '%s-%x' % (action.action_id, i)
-            # Populate all string fields as templates.
-            for field_descriptor in step.DESCRIPTOR.fields:
-                if field_descriptor.type != field_descriptor.TYPE_STRING:
-                    continue
-                field_name = field_descriptor.name
-                field = getattr(step, field_name)
-                if field:
-                    setattr(step, field_name, populate_template(
-                        field, project.mobility.city, project.target_job))
+    action.goal = template.goal
+    action.short_goal = template.short_goal
+    action.sticky_action_incentive = template.sticky_action_incentive
+    sticky_action_steps = _sticky_action_steps(database)
+    action.steps.extend([
+        sticky_action_steps.get(step_id)
+        for step_id in template.step_ids
+        if sticky_action_steps.get(step_id)])
+    for i, step in enumerate(action.steps):
+        step.step_id = '%s-%x' % (action.action_id, i)
+        # Populate all string fields as templates.
+        for field_descriptor in step.DESCRIPTOR.fields:
+            if field_descriptor.type != field_descriptor.TYPE_STRING:
+                continue
+            field_name = field_descriptor.name
+            field = getattr(step, field_name)
+            if field:
+                setattr(step, field_name, populate_template(
+                    field, project.mobility.city, project.target_job))
 
     if (template.special_generator == action_pb2.LA_BONNE_BOITE and
             user_proto.features_enabled.lbb_integration == user_pb2.ACTIVE):

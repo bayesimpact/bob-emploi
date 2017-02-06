@@ -25,8 +25,8 @@ const getDiplomaFulfillmentEstimateOptions = gender => {
   const genderE = gender === 'FEMININE' ? 'e' : ''
   return [
     {name: "Oui, j'ai des diplômes suffisants", value: 'FULFILLED'},
-    {name: 'Non, mais je peux me débrouiller', value: 'FULFILLMENT_NOT_SURE'},
-    {name: `Je ne suis pas sûr${genderE}`, value: 'NOT_FULFILLED'},
+    {name: "Non, je n'ai pas les diplômes suffisants", value: 'NOT_FULFILLED'},
+    {name: `Je ne suis pas sûr${genderE}`, value: 'FULFILLMENT_NOT_SURE'},
   ]
 }
 
@@ -136,17 +136,23 @@ class NewProjectExperienceStepBase extends React.Component {
            diplomaFulfillmentEstimate, networkEstimate} = this.state
     const requiredDiplomaNames = this.getRequiredDiplomaNames()
 
-    const diplomasLabel = 'Pensez-vous avoir les diplômes requis pour ce métier ? ' +
-      'Les offres demandent souvent un ' + requiredDiplomaNames.join(', ')  + ' ou équivalent.'
+    const diplomasLabel = <span>
+      Pensez-vous avoir les diplômes requis pour ce métier&nbsp;?
+      Les offres demandent souvent un {requiredDiplomaNames.join(', ')} ou équivalent.
+    </span>
+    const networkLabel = <span>
+      Avez-vous un bon réseau&nbsp;?
+      Connaissez-vous des gens qui pourraient vous aider à obtenir ce métier&nbsp;?
+    </span>
     return <Step {...this.props} fastForward={this.fastForward}
                       onNextButtonClick={this.handleSubmit}>
       {isFetchingRequirements ? <CircularProgress /> : <div>
-        <FieldSet label="Avez-vous déjà fait ce métier ?"
+        <FieldSet label="Avez-vous déjà fait ce métier&nbsp;?"
                   isValid={!!previousJobSimilarity} isValidated={isValidated}>
           <Select options={previousJobSimilarityOptions} value={previousJobSimilarity}
                   onChange={this.handleChange('previousJobSimilarity')} />
         </FieldSet>
-        <FieldSet label="Quel est votre niveau d'expérience ?"
+        <FieldSet label="Quel est votre niveau d'expérience&nbsp;?"
                   disabled={!isSeniorityRequired(previousJobSimilarity)}
                   isValid={!!seniority} isValidated={isValidated}>
           <Select options={seniorityOptions} value={seniority}
@@ -161,10 +167,7 @@ class NewProjectExperienceStepBase extends React.Component {
                 onChange={this.handleChange('diplomaFulfillmentEstimate')} />
           </FieldSet>
         ) : null}
-        <FieldSet
-            label={'Avez-vous un bon réseau ? Connaissez-vous des gens qui pourraient vous aider ' +
-            'à obtenir ce métier ?'}
-            isValid={!!networkEstimate} isValidated={isValidated}>
+        <FieldSet label={networkLabel} isValid={!!networkEstimate} isValidated={isValidated}>
           <Select
               options={networkEstimateOptions}
               value={networkEstimate && networkEstimate.toString()}

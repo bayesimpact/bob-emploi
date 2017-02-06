@@ -2,8 +2,6 @@
 
 const config = {
   // This is configured in:
-  // https://airtable.com/tbl2whpdPEwv7G57B/viwafisMenDvsaKsJ
-  airTableBlockMobileForm: 'shrB2elDXSvSvJ7C8',
   // This is configured in https://www.amplitude.com/app/159830/manage.
   amplitudeToken: '277314ee2eade2cb083c0d612107dcc6',
   appEnv: 'dist',  // feel free to remove the appEnv property here
@@ -23,6 +21,7 @@ const config = {
   // (1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com),
   googleSSOClientId: '524962411351-hl5h7ap6mbvsj4of7pl6i51heqsuqtgo.apps.googleusercontent.com',
   helpRequestUrl: 'https://aide.bob-emploi.fr/hc/fr/requests/new',
+  jobGroupImageUrl: 'https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/ROME_ID.jpg',
   productName: 'Bob emploi',
 }
 

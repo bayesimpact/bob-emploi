@@ -5,11 +5,14 @@ require('styles/fonts/GTWalsheim/font.css')
 require('mdi/css/materialdesignicons.min.css')
 import _ from 'underscore'
 
+import config from 'config'
+
 import {JobSuggest} from 'components/suggestions'
 import {CircularProgress} from 'components/progress'
 
 export const Colors = {
   BACKGROUND_GREY: '#f3f4f7',
+  BUTTERSCOTCH: '#ffbc4c',
   CHARCOAL_GREY: '#383f52',
   COOL_GREY: '#9596a0',
   DARK: '#21293d',
@@ -17,6 +20,7 @@ export const Colors = {
   GREENISH_TEAL: '#43d484',
   GREYISH_BROWN: '#575757',
   HOVER_GREEN: '#31bd59',
+  LIGHTER_PURPLE: '#b755f2',
   LIGHT_GREY: '#f9fafd',
   MODAL_PROJECT_GREY: '#e8eaf0',
   PINKISH_GREY: '#cbcbd5',
@@ -32,7 +36,7 @@ export const Colors = {
   WARM_GREY: '#858585',
   WHITE_HALO: '#dcdcdc',
 }
-
+// TODO(guillaume): Add WHITE color everywhere in the app.
 
 export const SmoothTransitions = {
   transition: 'all 450ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms',
@@ -268,7 +272,8 @@ class Markdown extends React.Component {
       return null
     }
     return <ReactMarkdown source={content} escapeHtml={true}
-              renderers={{Link: props => <a {...props} target="_blank" />}}
+              // eslint-disable-next-line no-unused-vars
+              renderers={{Link: ({literal, nodeKey, ...props}) => <a {...props} target="_blank" />}}
               {...extraProps} />
   }
 }
@@ -314,6 +319,11 @@ class CoverImage extends React.Component {
     blur: React.PropTypes.number,
     coverOpacity: React.PropTypes.number,
     opaqueCoverColor: React.PropTypes.string,
+    opaqueCoverGradient: React.PropTypes.shape({
+      left: React.PropTypes.string.isRequired,
+      middle: React.PropTypes.string,
+      right: React.PropTypes.string.isRequired,
+    }),
     style: React.PropTypes.object,
     url: React.PropTypes.string,
   }
@@ -324,7 +334,7 @@ class CoverImage extends React.Component {
   }
 
   render() {
-    const {blur, coverOpacity, opaqueCoverColor, style, url} = this.props
+    const {blur, coverOpacity, opaqueCoverColor, opaqueCoverGradient, style, url} = this.props
     const coverImageUrl = COVER_IMAGE_URLS[url] || url
     const coverAll = {
       bottom: 0,
@@ -351,10 +361,30 @@ class CoverImage extends React.Component {
       opacity: coverOpacity,
       zIndex: -1,
     }
+    if (opaqueCoverGradient) {
+      const gradientParts = ['104deg', opaqueCoverGradient.left]
+      if (opaqueCoverGradient.middle) {
+        gradientParts.push(opaqueCoverGradient.middle)
+      }
+      gradientParts.push(opaqueCoverGradient.right)
+      opaqueCoverStyle.background = `linear-gradient(${gradientParts.join(', ')})`
+    }
     return <div style={{...coverAll, ...style}}>
       {coverImageUrl ? <div style={coverImageStyle} /> : null}
       <div style={opaqueCoverStyle} />
     </div>
+  }
+}
+
+
+class JobGroupCoverImage extends React.Component {
+  static propTypes = {
+    romeId: React.PropTypes.string.isRequired,
+  }
+
+  render() {
+    const {romeId, ...extraProps} = this.props
+    return <CoverImage {...extraProps} url={config.jobGroupImageUrl.replace('ROME_ID', romeId)} />
   }
 }
 
@@ -758,7 +788,7 @@ class JobSuggestWithNote extends React.Component {
     return <div style={{display: 'flex', flexDirection: 'column'}}>
       <JobSuggest {...this.props} style={{padding: 1, ...Styles.INPUT}} />
       <div style={noteStyle}>
-        Vous ne trouvez pas votre métier ? <a
+        Vous ne trouvez pas votre métier&nbsp;? <a
             style={linkStyle} href="https://airtable.com/shreUw3GYqAwVAA27" target="_blank">
           Cliquez ici pour l'ajouter
         </a>.
@@ -800,5 +830,5 @@ class Input extends React.Component {
 export {
   Markdown, PartnerLogos, HorizontalRule, CoverImage, FieldSet, LabeledToggle,
   Select, CheckboxList, Icon, RoundButton, IconInput, RadioGroup, ExternalSiteButton,
-  SettingsButton, JobSuggestWithNote, Input,
+  SettingsButton, JobSuggestWithNote, Input, JobGroupCoverImage,
 }

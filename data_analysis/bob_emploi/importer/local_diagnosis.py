@@ -251,7 +251,7 @@ def _get_less_stressful_job_groups(data_folder, mobility_csv, job_imt_json):
     imt['code_rome'] = imt.job.apply(
         lambda job: job.get('jobGroup', {}).get('romeId'))
     imt['departement_id'] = imt.city.apply(lambda city: city.get('departementId'))
-    imt['market_score'] = imt.yearlyAvgOffersPer10Openings.div(imt.yearlyAvgOffersDenominator)
+    imt['market_score'] = imt.yearlyAvgOffersPer10Candidates.div(imt.yearlyAvgOffersDenominator)
     imt = imt.set_index(['code_rome', 'departement_id'])
     imt.dropna(subset=['market_score'], inplace=True)
 
@@ -270,7 +270,7 @@ def _get_less_stressful_job_groups(data_folder, mobility_csv, job_imt_json):
     best_reorientation = best_reorientation[
         best_reorientation.market_score >= 1.5 * best_reorientation.market_score_source]
 
-    imt_valuable_columns = ['yearlyAvgOffersPer10Openings', 'yearlyAvgOffersDenominator']
+    imt_valuable_columns = ['yearlyAvgOffersPer10Candidates', 'yearlyAvgOffersDenominator']
     return pandas.DataFrame([
         {
             'local_id': '%s:%s' % (r.departement_id, r.code_rome),

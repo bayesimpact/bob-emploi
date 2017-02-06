@@ -6,14 +6,12 @@ import {StaticPage, StrongTitle} from 'components/static'
 import {Colors, Markdown, RoundButton, Styles} from 'components/theme'
 
 class ContributionPage extends React.Component {
-  static propTypes = {
-    app: React.PropTypes.shape({
-      isMobileVersion: React.PropTypes.bool,
-    }).isRequired,
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
   }
 
   render() {
-    const {isMobileVersion} = this.props.app
+    const {isMobileVersion} = this.context
     const leftTitleStyle = {
       color: Colors.SLATE,
       flexShrink: 0,

@@ -1,5 +1,7 @@
 import React from 'react'
 
+// TODO: Remove frustrations and flexibilities after the deprecated fields got removed from the
+// user.proto.
 const USER_PROFILE_SHAPE = React.PropTypes.shape({
   city: React.PropTypes.object,
   contractTypeFlexibility: React.PropTypes.string,

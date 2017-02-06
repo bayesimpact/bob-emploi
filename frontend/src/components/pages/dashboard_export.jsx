@@ -7,7 +7,7 @@ import {Action, GET_DASHBOARD_EXPORT} from 'components/actions'
 import {getDashboardExport} from 'store/actions'
 import {allDoneActions, PROJECT_LOCATION_AREA_TYPE_OPTIONS,
         PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
-import {CoverImage, HorizontalRule} from 'components/theme'
+import {JobGroupCoverImage, HorizontalRule} from 'components/theme'
 
 const areaTypeOptions = _.indexBy(PROJECT_LOCATION_AREA_TYPE_OPTIONS, 'value')
 const employmentTypeOptions = _.indexBy(PROJECT_EMPLOYMENT_TYPE_OPTIONS, 'value')
@@ -69,7 +69,7 @@ class ProjectSummary extends React.Component {
     const hasActiveChantiers = _.any(_.values(project.activatedChantiers))
     return <div style={containerStyle}>
       <div style={headerStyle}>
-        <CoverImage url={project.coverImageUrl} style={{zIndex: -1}} />
+        <JobGroupCoverImage romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}} />
         <div style={titleStyle}>{project.title}</div>
         <HorizontalRule />
         <div style={subtitleStyle}>

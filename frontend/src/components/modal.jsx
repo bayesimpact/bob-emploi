@@ -13,6 +13,8 @@ const closeButtonHeight = 30
 
 class Modal extends React.Component {
   static propTypes = {
+    // Opacity of the black cover on the backround.
+    backgroundCoverOpacity: React.PropTypes.number.isRequired,
     // Content of the modal box.
     children: React.PropTypes.node,
     // Children to set on top of the semi-opaque background but outside of the
@@ -35,6 +37,7 @@ class Modal extends React.Component {
   }
 
   static defaultProps = {
+    backgroundCoverOpacity: .5,
     transitionDurationMilliSec: 450,
   }
 
@@ -115,7 +118,7 @@ class Modal extends React.Component {
   }
 
   render() {
-    const {externalChildren, isShown, onClose, style, title,
+    const {backgroundCoverOpacity, externalChildren, isShown, onClose, style, title,
            transitionDurationMilliSec} = this.props
     const {children, isContentShown, isTooBigToBeCentered, isTransitionOver,
            modalHeight} = this.state
@@ -137,7 +140,7 @@ class Modal extends React.Component {
       bottom: isTooBigToBeCentered ? 'initial' : 0,
       height: isTooBigToBeCentered ? (modalHeight + 2 * closeButtonHeight) : '100vh',
       left: 0,
-      opacity: isShown ? .5 : 0,
+      opacity: isShown ? backgroundCoverOpacity : 0,
       position: 'absolute',
       right: 0,
       top: 0,
@@ -192,12 +195,13 @@ class ModalCloseButtonBase extends React.Component {
     onClick: React.PropTypes.func.isRequired,
     style: React.PropTypes.object,
   }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool.isRequired,
+  }
 
   render() {
     const {closeOnEscape, onClick, style, ...otherProps} = this.props
-    // TODO(pascal): Fix that the closing button is still visible even when
-    // overflowX or overflowY are set on the modal content.
-    // See: frontend/src/components/new_project.jsx
+    const {isMobileVersion} = this.context
     const closeButtonStyle = {
       ':hover': {
         backgroundColor: Colors.SLATE,
@@ -214,7 +218,7 @@ class ModalCloseButtonBase extends React.Component {
       height: 35,
       justifyContent: 'center',
       position: 'absolute',
-      right: 0,
+      right: isMobileVersion ? 25 : 0,
       transform: 'translate(50%, 50%)',
       width: 35,
       zIndex: 1,

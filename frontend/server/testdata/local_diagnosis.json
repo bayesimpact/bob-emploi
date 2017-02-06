@@ -4,5 +4,26 @@
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"]
     }
+  },
+  {
+    "_id": "31:D1401",
+    "imt": {
+      "applicationModes": {
+        "Commercial": {
+          "first": "PERSONAL_OR_PROFESSIONAL_CONTACTS",
+          "second": "PLACEMENT_AGENCY",
+          "third": "SPONTANEOUS_APPLICATION"
+        }
+      }
+    }
+  },
+  {
+    "_id": "77:M1607",
+    "imt": {
+      "employmentTypePercentages": [
+        {"employmentType": "CDI" , "percentage": 5},
+        {"employmentType": "CDD_OVER_3_MONTHS" , "percentage": 95}
+      ]
+    }
   }
 ]

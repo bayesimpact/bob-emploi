@@ -3,8 +3,7 @@ import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 
 import {deleteUser, displayToasterMessage, setUserProfile, FINISH_PROFILE_SITUATION,
-        FINISH_PROFILE_QUALIFICATIONS, FINISH_PROFILE_FRUSTRATIONS, FINISH_PROFILE_CRITERIA,
-        ACCEPT_PRIVACY_NOTICE} from 'store/actions'
+        FINISH_PROFILE_QUALIFICATIONS, ACCEPT_PRIVACY_NOTICE} from 'store/actions'
 import {PageWithNavigationBar} from 'components/navigation'
 import {Colors, RoundButton, Styles} from 'components/theme'
 import {Routes} from 'components/url'
@@ -15,16 +14,12 @@ import {AccountStep} from './profile/account'
 import {GeneralStep} from './profile/general'
 import {NoticeStep} from './profile/notice'
 import {GeneralSkillsStep} from './profile/general_skills'
-import {FrustrationsStep} from './profile/frustrations'
-import {FlexibilitiesStep} from './profile/flexibilities'
 import {NotificationsStep} from './profile/notifications'
 
 const ONBOARDING_STEPS = [
   {component: NoticeStep, name: 'confidentialite', type: ACCEPT_PRIVACY_NOTICE},
   {component: GeneralStep, name: 'profil', type: FINISH_PROFILE_SITUATION},
   {component: GeneralSkillsStep, name: 'qualifications', type: FINISH_PROFILE_QUALIFICATIONS},
-  {component: FrustrationsStep, name: 'frustrations', type: FINISH_PROFILE_FRUSTRATIONS},
-  {component: FlexibilitiesStep, name: 'criteres', type: FINISH_PROFILE_CRITERIA},
 ]
 
 const PAGE_VIEW_STEPS = [
@@ -32,16 +27,18 @@ const PAGE_VIEW_STEPS = [
   {component: NotificationsStep},
   {component: GeneralStep},
   {component: GeneralSkillsStep},
-  {component: FrustrationsStep},
-  {component: FlexibilitiesStep},
 ]
 
 
 class OnboardingView extends React.Component {
   static propTypes = {
     onChange: React.PropTypes.func.isRequired,
+    onNewPage: React.PropTypes.func.isRequired,
     stepName: React.PropTypes.string,
     userProfile: React.PropTypes.object.isRequired,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool.isRequired,
   }
 
   constructor(props) {
@@ -49,50 +46,49 @@ class OnboardingView extends React.Component {
   }
 
   handleSubmit = (userProfileUpdates) => {
-    const {stepName, onChange} = this.props
+    const {stepName, onChange, onNewPage} = this.props
     // TODO(stephan): Build the map name => index once at startup time.
     const currentStepIndex = ONBOARDING_STEPS.findIndex(step => step.name === stepName)
     const isLastStep = currentStepIndex === ONBOARDING_STEPS.length - 1
     if (!isLastStep) {
       const nextStep = ONBOARDING_STEPS[currentStepIndex + 1]
       browserHistory.push(Routes.PROFILE_PAGE + '/' + nextStep.name)
+      onNewPage()
     }
     onChange(userProfileUpdates, isLastStep, ONBOARDING_STEPS[currentStepIndex].type)
   }
 
   handleStepBack = (userProfileUpdates) => {
-    const {stepName, onChange} = this.props
+    const {stepName, onChange, onNewPage} = this.props
     const currentStepIndex = ONBOARDING_STEPS.findIndex(step => step.name === stepName)
     if (currentStepIndex > 0) {
       const previousStep = ONBOARDING_STEPS[currentStepIndex - 1]
       // TODO(stephan): Make it go backwards in browser history if possible.
       browserHistory.push(Routes.PROFILE_PAGE + '/' + previousStep.name)
+      onNewPage()
     }
     onChange(userProfileUpdates)
   }
 
   render() {
     const {stepName, userProfile} = this.props
+    const {isMobileVersion} = this.context
     if (!stepName) {
       return null
     }
     const currentStepItem = ONBOARDING_STEPS.find(step => step.name === stepName)
     const CurrentStepComponent = currentStepItem && currentStepItem.component
-    const currentStepIndex = ONBOARDING_STEPS.findIndex(step => step.name === stepName)
-    const nextButtonContent = currentStepIndex === (ONBOARDING_STEPS.length - 1) ?
-      'Terminer' : undefined
     const style = {
       alignItems: 'center',
       display: 'flex',
       justifyContent: 'center',
       paddingBottom: 90,
-      paddingTop: 90,
+      paddingTop: isMobileVersion ? 0 : 90,
     }
     return <div style={style}>
       <CurrentStepComponent
           onSubmit={this.handleSubmit}
           onBack={this.handleStepBack}
-          nextButtonContent={currentStepIndex > 0 ? nextButtonContent : null}
           isShownAsStepsDuringOnboarding={true}
           profile={userProfile} />
     </div>
@@ -129,7 +125,7 @@ class PageView extends React.Component {
             nextButtonContent="Sauvegarder"
             profile={userProfile} />
       })}
-      <div style={{display: 'flex', flexDirection: 'row-reverse', marginTop: 45, width: 945}}>
+      <div style={{display: 'flex', flexDirection: 'row-reverse', marginTop: 45, width: '100%'}}>
         <RoundButton
             type="discreet"
             onClick={() => this.setState({isAccountDeletionModalShown: true})}>
@@ -152,7 +148,7 @@ class ProfilePage extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      isShownAsStepsDuringOnboarding: !onboardingComplete(props.user.profile),
+      isShownAsStepsDuringOnboarding: !onboardingComplete(props.user),
     }
   }
 
@@ -173,7 +169,7 @@ class ProfilePage extends React.Component {
     })
     if (isLastStep) {
       if (this.state.isShownAsStepsDuringOnboarding) {
-        browserHistory.push(Routes.DASHBOARD_PAGE)
+        browserHistory.push(Routes.NEW_PROJECT_PAGE)
       }
     }
   }
@@ -184,10 +180,12 @@ class ProfilePage extends React.Component {
     const style = {
       backgroundColor: Colors.BACKGROUND_GREY,
     }
-    return <PageWithNavigationBar style={style} page="profile" isContentScrollable={true}>
+    return <PageWithNavigationBar
+          style={style} page="profile" isContentScrollable={true} ref="page">
       {isShownAsStepsDuringOnboarding ? (
         <OnboardingView
             onChange={this.handleProfileSave}
+            onNewPage={() => this.refs.page.scrollTo(0)}
             stepName={params.stepName}
             userProfile={user.profile} />
       ) :

@@ -752,7 +752,7 @@ class PositiveFeedbackModal extends React.Component {
       <RoundButton
           type="validation" disabled={!isUseful && !isNotUseful}
           style={{margin: '25px 0 40px'}} onClick={this.handleSubmit}>
-        Terminer
+        Envoyer
       </RoundButton>
     </Modal>
   }
@@ -843,7 +843,7 @@ class NegativeFeedbackModal extends React.Component {
       <RoundButton
           type="validation"
           style={{margin: '0 0 40px'}} onClick={this.handleSubmit}>
-        Terminer
+        Envoyer
       </RoundButton>
     </Modal>
   }

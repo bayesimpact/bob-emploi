@@ -80,8 +80,7 @@ class NoticeStep extends React.Component {
 
       <div style={textStyle}>
         <p>
-          Nous allons vous poser quelques questions sur vous, vos aspirations
-          et vos frustrations.
+          Nous allons vous poser quelques questions sur vous et vos aspirations.
         </p>
         <p>
           <strong>Toutes vos réponses resteront

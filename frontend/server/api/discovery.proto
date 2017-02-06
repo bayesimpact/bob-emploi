@@ -3,7 +3,7 @@ syntax = "proto3";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 message JobsExploration {
   // A sorted list of job groups to explore. We believe that the first are the
@@ -37,13 +37,6 @@ message ExternalExplorationLink {
 
   // The URL to the external site.
   string url = 2;
-}
-
-// Request for more exploration info about a specific job group.
-message JobGroupExplorationRequest {
-  string user_id = 1;
-
-  string job_group_rome_id = 2;
 }
 
 // Request for exploration info around a job for a given city.

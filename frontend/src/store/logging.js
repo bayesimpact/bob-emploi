@@ -40,7 +40,7 @@ const flattenFeatureFlags = featuresEnabled => {
       features['Features.' + feature] = featuresEnabled[feature]
     }
   }
-  features['Features'] = boolFeatures
+  features['Features'] = boolFeatures.sort()
   return features
 }
 
@@ -116,8 +116,8 @@ export class Logger {
       properties['Project Job Name'] = action.project.targetJob.masculineName
       properties['Project City'] = action.project.mobility.city.name
     }
-    if (action.advice) {
-      properties['Advice'] = action.advice
+    if (action.advice && action.advice.adviceId) {
+      properties['Advice'] = action.advice.adviceId
     }
     if (action.error) {
       properties['Error'] = action.error

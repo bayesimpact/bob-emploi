@@ -47,7 +47,7 @@ services:
     ports:
       - "3000:80"
   frontend-dev-webpack:
-    image: docker.bayesimpact.org/bob-emploi/dev-webpack
+    image: bayesimpact/bob-emploi-dev-webpack
     build: frontend
     volumes:
       - ./frontend/cfg:/usr/app/cfg:ro
@@ -74,7 +74,7 @@ services:
       context: frontend/server
       args:
         - GIT_SHA1
-    image: docker.bayesimpact.org/bob-emploi/frontend-flask
+    image: bayesimpact/bob-emploi-frontend-server
     environment:
       MONGO_URL: 'mongodb://frontend-db/test'
       DEBUG: '1'
@@ -89,7 +89,7 @@ services:
     build:
       context: .
       dockerfile: frontend/server/Dockerfile.test
-    image: docker.bayesimpact.org/bob-emploi/frontend-flask-test
+    image: bayesimpact/bob-emploi-frontend-server-test
     depends_on:
       - frontend-flask
     environment:
