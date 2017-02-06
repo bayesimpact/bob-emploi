@@ -25,6 +25,7 @@ Array.prototype.push.apply(config.plugins, [
     debug: true,
   }),
   new webpack.HotModuleReplacementPlugin(),
+  new webpack.NamedModulesPlugin(),
   // Embed the JavaScript in the index.html page.
   new HtmlWebpackPlugin({
     template: path.join(__dirname, '/../src/index.html'),

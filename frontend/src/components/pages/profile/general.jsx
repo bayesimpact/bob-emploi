@@ -87,6 +87,7 @@ class GeneralStep extends ProfileStepBaseClass {
   }
 
   render() {
+    const {isMobileVersion} = this.context
     const {city, gender, yearOfBirth, latestJob, situation, isValidated} = this.state
     return <ProfileStep
         title="Votre profil"
@@ -96,51 +97,47 @@ class GeneralStep extends ProfileStepBaseClass {
         {...this.props}>
       <FieldSet label="Vous êtes" isValid={!!gender} isValidated={isValidated}>
         <RadioGroup
-            style={{justifyContent: 'space-between', width: 250}}
+            style={{justifyContent: 'space-around'}}
             onChange={this.handleChange('gender')}
             options={genders} value={gender} />
       </FieldSet>
       <FieldSet
           label="Votre situation actuelle"
-          isValid={!!situation} isValidated={isValidated}
-          style={{width: 360}}>
+          isValid={!!situation} isValidated={isValidated}>
         <Select
             name="situation" options={situations} value={situation}
             onChange={this.handleChange('situation')} />
       </FieldSet>
       <FieldSet
           label={latestJobLabel[situation] || 'Votre métier ?'}
-          isValid={!!latestJob} isValidated={isValidated}
-          style={{width: 360}}>
+          isValid={!!latestJob} isValidated={isValidated}>
         <JobSuggestWithNote
             onChange={this.handleChange('latestJob')}
             gender={gender}
             value={latestJob}
             placeholder={'Nom du métier'} />
       </FieldSet>
-      <div style={{display: 'flex'}}>
-        <FieldSet
-            label="Année de naissance"
-            isValid={!!yearOfBirth} isValidated={isValidated}
-            style={{width: 140}}>
-          <BirthYearSelector onChange={this.handleYearOfBirthChange} value={yearOfBirth} />
-        </FieldSet>
-        <FieldSet label="Ville de résidence actuelle"
-                  isValid={!!city} isValidated={isValidated}
-                  onMouseOver={() => this.setState({isCityHovered: true})}
-                  onMouseOut={() => this.setState({isCityHovered: false})}
-                  style={{alignSelf: 'stretch', paddingLeft: 20}}>
-          <CitySuggestWithTooltip
-              value={city} style={{display: 'flex'}}
-              citySuggestStyle={{...Styles.INPUT, width: 200}}
-              isHintShown={this.state.isCityHovered}
-              onChange={this.handleChange('city')}
-              placeholder="ville ou code postal">
-            Renseignez bien votre ville de résidence, nous vous demanderons plus tard
-            si vous cherchez du travail dans d'autres villes.
-          </CitySuggestWithTooltip>
-        </FieldSet>
-      </div>
+      <FieldSet
+          label="Année de naissance"
+          isValid={!!yearOfBirth} isValidated={isValidated}
+          style={{width: isMobileVersion ? 'inherit' : 140}}>
+        <BirthYearSelector onChange={this.handleYearOfBirthChange} value={yearOfBirth} />
+      </FieldSet>
+      {/* TODO(pasal): Please remove the left padding on the fieldset, I can't get rid of it */}
+      <FieldSet label="Ville de résidence actuelle"
+                isValid={!!city} isValidated={isValidated}
+                onMouseOver={() => this.setState({isCityHovered: true})}
+                onMouseOut={() => this.setState({isCityHovered: false})} >
+        <CitySuggestWithTooltip
+            value={city}
+            citySuggestStyle={Styles.INPUT}
+            isHintShown={this.state.isCityHovered}
+            onChange={this.handleChange('city')}
+            placeholder="ville ou code postal">
+          Renseignez bien votre ville de résidence, nous vous demanderons plus tard
+          si vous cherchez du travail dans d'autres villes.
+        </CitySuggestWithTooltip>
+      </FieldSet>
     </ProfileStep>
   }
 }
@@ -172,7 +169,7 @@ class BirthYearSelector extends React.Component {
       ...Styles.INPUT,
       ...style,
     }
-    return <select value={value || yearOfBirth} style={selectStyle} {...otherProps}>
+    return <select value={value || yearOfBirth || ''} style={selectStyle} {...otherProps}>
       <option></option>
       {this.yearOfBirthRange.map(year => {
         return <option key={year} value={year}>{year}</option>

@@ -62,7 +62,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         self.assertEqual(1, len(proto.less_stressful_job_groups))
         less_stressful = proto.less_stressful_job_groups[0]
         self.assertEqual('F1702', less_stressful.job_group.rome_id)
-        self.assertEqual(6, less_stressful.local_stats.imt.yearly_avg_offers_per_10_openings)
+        self.assertEqual(6, less_stressful.local_stats.imt.yearly_avg_offers_per_10_candidates)
 
     def test_finalize_salary_estimation(self):
         """Basic usage of finalize_salary_estimation."""

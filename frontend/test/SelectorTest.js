@@ -52,49 +52,47 @@ describe('Welcome Back selectors', () => {
   })
 })
 
-function getCompleteProfile() {
+function getCompleteUser() {
   return {
-    'city': {
-      'cityId': '01053',
-      'departementId': '01',
-      'departementName': 'Ain',
-      'name': 'Bourg-en-Bresse',
-      'regionId': '84',
-      'regionName': 'Auvergne-Rhône-Alpes',
-    },
-    'contractTypeFlexibility': 'YES',
-    'email': 'demenageur.persona@gmail.com',
-    'englishLevelEstimate': 1,
-    'gender': 'MASCULINE',
-    'geographicalFlexibility': 'YES',
-    'highestDegree': 'CAP_BEP',
-    'lastName': 'Dupont',
-    'latestJob': {
-      'codeOgr': '12748',
-      'jobGroup': {
-        'name': 'Assistanat commercial',
-        'romeId': 'D1401',
+    'profile': {
+      'city': {
+        'cityId': '01053',
+        'departementId': '01',
+        'departementName': 'Ain',
+        'name': 'Bourg-en-Bresse',
+        'regionId': '84',
+        'regionName': 'Auvergne-Rhône-Alpes',
       },
-      'name': 'Commercial / Commerciale sédentaire',
+      'email': 'demenageur.persona@gmail.com',
+      'englishLevelEstimate': 1,
+      'gender': 'MASCULINE',
+      'highestDegree': 'CAP_BEP',
+      'lastName': 'Dupont',
+      'latestJob': {
+        'codeOgr': '12748',
+        'jobGroup': {
+          'name': 'Assistanat commercial',
+          'romeId': 'D1401',
+        },
+        'name': 'Commercial / Commerciale sédentaire',
+      },
+      'name': 'Demenageur',
+      'officeSkillsEstimate': 1,
+      'situation': 'LOST_QUIT',
+      'yearOfBirth': 1983,
     },
-    'name': 'Demenageur',
-    'officeSkillsEstimate': 1,
-    'professionalFlexibility': 'YES',
-    'salaryRequirementFlexibility': 'YES',
-    'situation': 'LOST_QUIT',
-    'trainingFlexibility': 'YES',
-    'yearOfBirth': 1983,
+    projects: [{projectId: 'test'}],
   }
 }
 
 describe('Onboarding complete', () => {
-  it('should return false for an empty profile', () => {
+  it('should return false for an empty user', () => {
     const result = onboardingComplete({})
     expect(result).to.equal(false)
   })
 
   it('should return true for a totally complete profile', () => {
-    const result = onboardingComplete(getCompleteProfile())
+    const result = onboardingComplete(getCompleteUser())
     expect(result).to.equal(true)
   })
 
@@ -102,17 +100,22 @@ describe('Onboarding complete', () => {
     'city', 'email', 'gender', 'highestDegree',
     'lastName', 'name', 'situation', 'yearOfBirth',
     'latestJob', 'englishLevelEstimate', 'officeSkillsEstimate',
-    'contractTypeFlexibility', 'geographicalFlexibility', 'professionalFlexibility',
-    'salaryRequirementFlexibility', 'trainingFlexibility',
   ]
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i]
     it(`should return false for the required field "${field}" missing`, () => {
-      const profile = getCompleteProfile()
-      delete profile[field]
-      const result = onboardingComplete(profile)
+      const user = getCompleteUser()
+      delete user.profile[field]
+      const result = onboardingComplete(user)
       expect(result).to.equal(false)
     })
   }
+
+  it('should return false if the user does not have a project yet', () => {
+    const user = getCompleteUser()
+    user.projects = []
+    const result = onboardingComplete()
+    expect(result).to.equal(false)
+  })
 })
 

@@ -1,9 +1,21 @@
 /* eslint-env mocha */
 const chai = require('chai')
+chai.config.truncateThreshold = 0
 const expect = chai.expect
 import {createProjectTitle, PROJECT_EMPLOYMENT_TYPE_OPTIONS, allActionsById,
-        allActiveActions, areAllActionsDoneForToday, isNewActionPlanNeeded} from 'store/project'
+        allActiveActions, areAllActionsDoneForToday, isNewActionPlanNeeded,
+        finishStickyActionStep} from 'store/project'
 const {EmploymentType} = require('api/job')
+
+// Polyfill Array.find.
+Array.prototype.find = Array.prototype.find || function(predicate) {
+  for (let i = 0; i < this.length; ++i) {
+    if (predicate(this[i])) {
+      return this[i]
+    }
+  }
+  return null
+}
 
 describe('createProjectTitle', () => {
 
@@ -211,5 +223,114 @@ describe('isNewActionPlanNeeded', () => {
       activatedChantiers: {bar: true, foo: true},
     }])
     expect(actual).to.be.ok
+  })
+})
+
+describe('finishStickyActionStep', () => {
+  it('should mark a step as done for sticky action in an advice', () => {
+    const project = {
+      advices: [{
+        adviceId: 'reorientation',
+        engagementAction: {
+          steps: [{stepId: 'first-step'}, {stepId: 'next-step'}],
+        },
+        status: 'ADVICE_ACCEPTED',
+      }],
+    }
+    const updatedProject = finishStickyActionStep(
+      project, {stepId: 'first-step'}, 'Custom notes for the step')
+    expect(updatedProject).to.deep.equal({
+      advices: [{
+        adviceId: 'reorientation',
+        engagementAction: {
+          steps: [{
+            isDone: true,
+            stepId: 'first-step',
+            text: 'Custom notes for the step',
+          }, {stepId: 'next-step'}],
+        },
+        status: 'ADVICE_ACCEPTED',
+      }],
+    })
+  })
+
+  it('should mark the advice action as done when finishing the last step', () => {
+    const project = {
+      advices: [{
+        adviceId: 'reorientation',
+        engagementAction: {
+          status: 'ACTION_STUCK',
+          steps: [{isDone: true, stepId: 'first-step'}, {stepId: 'last-step'}],
+        },
+        status: 'ADVICE_ACCEPTED',
+      }],
+    }
+    const updatedProject = finishStickyActionStep(project, {stepId: 'last-step'})
+    expect(updatedProject).to.deep.equal({
+      advices: [{
+        adviceId: 'reorientation',
+        engagementAction: {
+          status: 'ACTION_STICKY_DONE',
+          steps: [
+            {
+              isDone: true,
+              stepId: 'first-step',
+            },
+            {
+              isDone: true,
+              stepId: 'last-step',
+              text: '',
+            },
+          ],
+        },
+        status: 'ADVICE_ENGAGED',
+      }],
+    })
+  })
+
+  it('should mark a step as done for a sticky action', () => {
+    const project = {
+      stickyActions: [{
+        steps: [{stepId: 'first-step'}, {stepId: 'next-step'}],
+      }],
+    }
+    const updatedProject = finishStickyActionStep(
+      project, {stepId: 'first-step'}, 'Custom notes for the step')
+    expect(updatedProject).to.deep.equal({
+      stickyActions: [{
+        steps: [{
+          isDone: true,
+          stepId: 'first-step',
+          text: 'Custom notes for the step',
+        }, {stepId: 'next-step'}],
+      }],
+    })
+  })
+
+  it('should move a sticky action to past actions if the last step is done', () => {
+    const project = {
+      stickyActions: [{
+        steps: [{isDone: true, stepId: 'first-step'}, {stepId: 'next-step'}],
+      }],
+    }
+    const updatedProject = finishStickyActionStep(
+      project, {stepId: 'next-step'}, 'Custom notes for the step')
+    expect(updatedProject).to.deep.equal({
+      pastActions: [{
+        status: 'ACTION_STICKY_DONE',
+        steps: [
+          {
+            isDone: true,
+            stepId: 'first-step',
+          },
+          {
+            isDone: true,
+            stepId: 'next-step',
+            text: 'Custom notes for the step',
+          },
+        ],
+      }],
+      stickyActions: [],
+    })
   })
 })

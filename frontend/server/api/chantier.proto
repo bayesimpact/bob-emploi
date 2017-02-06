@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 // A template for creating new chantiers for a user.
 message Chantier {

@@ -1,6 +1,5 @@
 import {browserHistory} from 'react-router'
 
-import config from 'config'
 import {api} from './api'
 import {newProject} from 'store/project'
 import {splitFullName} from 'store/auth'
@@ -25,19 +24,14 @@ export const SET_USER_PROFILE = 'SET_USER_PROFILE'
 export const ACCEPT_PRIVACY_NOTICE = 'ACCEPT_PRIVACY_NOTICE'
 export const FINISH_PROFILE_SITUATION = 'FINISH_PROFILE_SITUATION'
 export const FINISH_PROFILE_QUALIFICATIONS = 'FINISH_PROFILE_QUALIFICATIONS'
-export const FINISH_PROFILE_FRUSTRATIONS = 'FINISH_PROFILE_FRUSTRATIONS'
-export const FINISH_PROFILE_CRITERIA = 'FINISH_PROFILE_CRITERIA'
 export const FINISH_ACTION = 'FINISH_ACTION'
 export const CANCEL_ACTION = 'CANCEL_ACTION'
 export const READ_ACTION = 'READ_ACTION'
 export const STICK_ACTION = 'STICK_ACTION'
 export const CREATE_PROJECT = 'CREATE_PROJECT'
 export const CREATE_PROJECT_SAVE = 'CREATE_PROJECT_SAVE'
-export const DELETE_PROJECT = 'DELETE_PROJECT'
 export const SET_PROJECT_PROPERTIES = 'SET_PROJECT_PROPERTIES'
 export const SET_USER_INTERACTION = 'SET_USER_INTERACTION'
-export const GET_DISCOVERY_DATA = 'GET_DISCOVERY_DATA'
-export const GET_DISCOVERY_JOB_GROUP_DATA = 'GET_DISCOVERY_JOB_GROUP_DATA'
 export const CREATE_ACTION_PLAN = 'CREATE_ACTION_PLAN'
 export const REFRESH_ACTION_PLAN = 'REFRESH_ACTION_PLAN'
 export const UPDATE_PROJECT_CHANTIERS = 'UPDATE_PROJECT_CHANTIERS'
@@ -55,8 +49,6 @@ export const CANCEL_ADVICE_ENGAGEMENT = 'CANCEL_ADVICE_ENGAGEMENT'
 
 // App actions.
 
-export const CLOSE_NEW_PROJECT_MODAL = 'CLOSE_NEW_PROJECT_MODAL'
-export const OPEN_NEW_PROJECT_MODAL = 'OPEN_NEW_PROJECT_MODAL'
 export const CLOSE_LOGIN_MODAL = 'CLOSE_LOGIN_MODAL'
 export const OPEN_LOGIN_MODAL = 'OPEN_LOGIN_MODAL'
 export const GET_PROJECT_REQUIREMENTS = 'GET_PROJECT_REQUIREMENTS'
@@ -66,13 +58,12 @@ export const HIDE_TOASTER_MESSAGE = 'HIDE_TOASTER_MESSAGE'
 export const DISPLAY_TOAST_MESSAGE = 'DISPLAY_TOAST_MESSAGE'
 export const ACCEPT_COOKIES_USAGE = 'ACCEPT_COOKIES_USAGE'
 export const SWITCH_TO_MOBILE_VERSION = 'SWITCH_TO_MOBILE_VERSION'
-export const REDIRECT_TO_MOBILE_FORM = 'REDIRECT_TO_MOBILE_FORM'
 export const LOAD_LANDING_PAGE = 'LOAD_LANDING_PAGE'
 export const REFRESH_USER_DATA = 'REFRESH_USER_DATA'
 export const RESET_USER_PASSWORD = 'RESET_USER_PASSWORD'
 export const OPEN_ACTION_EXTERNAL_LINK = 'OPEN_ACTION_EXTERNAL_LINK'
-export const OPEN_DISCOVERY_PAGE = 'OPEN_DISCOVERY_PAGE'
 export const ADVICE_IS_SHOWN = 'ADVICE_IS_SHOWN'
+export const ENGAGEMENT_ACTION_IS_SHOWN = 'ENGAGEMENT_ACTION_IS_SHOWN'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
@@ -87,12 +78,10 @@ export const actionTypesToLog = {
   [CREATE_PROJECT]: 'Create project',
   [CREATE_PROJECT_SAVE]: 'Save project',
   [DECLINE_ADVICE]: 'Decline suggested advice',
-  [DELETE_PROJECT]: 'Delete project',
   [DELETE_USER_DATA]: 'Delete user',
   [DISPLAY_TOAST_MESSAGE]: 'Display toast message',
+  [ENGAGEMENT_ACTION_IS_SHOWN]: 'Advice engagement action shown',
   [FINISH_ACTION]: 'Close action',
-  [FINISH_PROFILE_CRITERIA]: 'Finish profile criteria',
-  [FINISH_PROFILE_FRUSTRATIONS]: 'Finish profile frustrations',
   [FINISH_PROFILE_QUALIFICATIONS]: 'Finish profile qualifications',
   [FINISH_PROFILE_SITUATION]: 'Finish profile situation',
   [FINISH_STICKY_ACTION_STEP]: 'Finish sticky action step',
@@ -102,10 +91,7 @@ export const actionTypesToLog = {
   [LOGOUT]: 'Log out',
   [MOVE_USER_DATES_BACK_1_DAY]: 'Time travel!',
   [OPEN_ACTION_EXTERNAL_LINK]: 'Open action external link',
-  [OPEN_DISCOVERY_PAGE]: 'View discovery page',
-  [OPEN_NEW_PROJECT_MODAL]: 'Start creating project',
   [READ_ACTION]: 'Open new action',
-  [REDIRECT_TO_MOBILE_FORM]: 'Kicked out of the app on mobile',
   [REFRESH_ACTION_PLAN]: 'New actions shown',
   [REFRESH_USER_DATA]: 'User data refreshed',
   [REGISTER_USER]: 'Register new user',
@@ -131,17 +117,19 @@ export const actionTypesToLog = {
 
 const acceptCookiesUsageAction = {type: ACCEPT_COOKIES_USAGE}
 const closeLoginModalAction = {type: CLOSE_LOGIN_MODAL}
-const closeNewProjectModalAction = {type: CLOSE_NEW_PROJECT_MODAL}
 const hideToasterMessageAction = {type: HIDE_TOASTER_MESSAGE}
 const logoutAction = {type: LOGOUT}
 const loadLandingPageAction = {type: LOAD_LANDING_PAGE}
-const logDiscoveryPageOpenedAction = {type: OPEN_DISCOVERY_PAGE}
 const switchToMobileVersionAction = {type: SWITCH_TO_MOBILE_VERSION}
 
 // Synchronous action generators, keep them grouped and alpha sorted.
 
-function advisorRecommendationIsShown(project) {
-  return dispatch => dispatch({advice: project.bestAdviceId, project, type: ADVICE_IS_SHOWN})
+function advisorRecommendationIsShown(project, advice) {
+  return dispatch => dispatch({advice, project, type: ADVICE_IS_SHOWN})
+}
+
+function advisorEngagementActionIsShown(project, advice) {
+  return dispatch => dispatch({advice, project, type: ENGAGEMENT_ACTION_IS_SHOWN})
 }
 
 function displayToasterMessage(error) {
@@ -154,22 +142,6 @@ function openActionExternalLink(action) {
 
 function openLoginModal(defaultValues) {
   return {defaultValues, type: OPEN_LOGIN_MODAL}
-}
-
-function openNewProjectModal(props) {
-  const {jobs, name, restrictJobGroup, romeId, ...otherProps} = props || {}
-  if (romeId && !restrictJobGroup) {
-    const finalizedJobs = (jobs || []).map(job => ({...job, jobGroup: {name, romeId}}))
-    props = {...otherProps, restrictJobGroup: {jobs: finalizedJobs, name, romeId}}
-  }
-  return dispatch => dispatch({props: props || {}, type: OPEN_NEW_PROJECT_MODAL})
-}
-
-function redirectToMobileForm() {
-  return dispatch => {
-    dispatch({type: REDIRECT_TO_MOBILE_FORM})
-    window.location = 'https://airtable.com/' + config.airTableBlockMobileForm
-  }
 }
 
 // Asynchronous action generators.
@@ -293,24 +265,6 @@ function saveUser(user) {
         return response
       })
   }
-}
-
-// Get new jobs to explore around a job for a given city.
-function fetchDiscoveryData(city, job) {
-  const {cityId, departementId} = city
-  const {codeOgr, jobGroup} = job
-  const {romeId} = jobGroup
-  return wrapAsyncAction(GET_DISCOVERY_DATA, () => api.exploreGet(
-      {cityId, departementId}, {codeOgr, jobGroup: {romeId}}))
-}
-
-// Get job group stats for a given city.
-function fetchJobGroupData(city, jobGroup) {
-  const {cityId, departementId} = city
-  return wrapAsyncAction(
-    GET_DISCOVERY_JOB_GROUP_DATA,
-    () => api.exploreJobGroupGet({cityId, departementId}, jobGroup.romeId),
-    {city})
 }
 
 const _FACEBOOK_GENDER_MAPPING = {
@@ -515,28 +469,23 @@ function stopStickyAction(action, feedback) {
   }
 }
 
-function stopAdviceEngagement(project, feedback) {
-  if (!project.stickyActions || project.stickyActions.length !== 1) {
-    return () => {}
-  }
-  const action = project.stickyActions[0]
+function stopAdviceEngagement(project, advice, feedback) {
   return (dispatch, getState) => {
-    dispatch({action, advice: project.bestAdviceId, feedback, type: STOP_STICKY_ACTION})
-    dispatch({advice: project.bestAdviceId, feedback, project, type: CANCEL_ADVICE_ENGAGEMENT})
+    dispatch({advice, feedback, project, type: CANCEL_ADVICE_ENGAGEMENT})
     return dispatch(saveUser(getState().user))
   }
 }
 
-function acceptAdvice(project) {
+function acceptAdvice(project, advice) {
   return (dispatch, getState) => {
-    dispatch({advice: project.bestAdviceId, project, type: ACCEPT_ADVICE})
+    dispatch({advice, project, type: ACCEPT_ADVICE})
     return dispatch(saveUser(getState().user))
   }
 }
 
-function declineAdvice(project, reason) {
+function declineAdvice(project, reason, advice) {
   return (dispatch, getState) => {
-    dispatch({advice: project.bestAdviceId, project, reason, type: DECLINE_ADVICE})
+    dispatch({advice, project, reason, type: DECLINE_ADVICE})
     return dispatch(saveUser(getState().user))
   }
 }
@@ -555,13 +504,6 @@ function createNewProject(newProjectData, options) {
     dispatch({options, project, type: CREATE_PROJECT})
     // Don't use normal saveUser to be able to distinguish between project creation and user saving.
     return dispatch(wrapAsyncAction(CREATE_PROJECT_SAVE, () => api.userPost(getState().user)))
-  }
-}
-
-function deleteProject(project) {
-  return (dispatch, getState) => {
-    dispatch({project, type: DELETE_PROJECT})
-    return dispatch(saveUser(getState().user))
   }
 }
 
@@ -623,16 +565,15 @@ function askPasswordReset(email) {
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         finishAction, cancelAction, readAction, facebookAuthenticateUser,
         googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
-        openNewProjectModal, closeNewProjectModalAction, createNewProject,
-        fetchProjectRequirements, fetchDiscoveryData, resetPassword,
-        fetchJobGroupData, fetchPotentialChantiers,
+        createNewProject, fetchProjectRequirements, resetPassword, fetchPotentialChantiers,
         updateProjectChantiers, moveUserDatesBackOneDay,
         createDashboardExport, getDashboardExport, displayToasterMessage,
         setProjectProperty, closeLoginModalAction, openLoginModal,
         getChantierTitles, acceptCookiesUsageAction, switchToMobileVersionAction,
         loadLandingPageAction, deleteUser, askPasswordReset,
-        setUserInteraction, createActionPlan, redirectToMobileForm,
-        deleteProject, refreshActionPlan, openActionExternalLink, stickAction,
-        logDiscoveryPageOpenedAction, finishStickyActionStep, addManualExploration,
-        editManualExploration, deleteManualExploration, stopStickyAction, acceptAdvice,
-        declineAdvice, advisorRecommendationIsShown, stopAdviceEngagement}
+        setUserInteraction, createActionPlan, refreshActionPlan,
+        openActionExternalLink, stickAction, finishStickyActionStep,
+        addManualExploration, editManualExploration, deleteManualExploration,
+        stopStickyAction, acceptAdvice, declineAdvice,
+        advisorRecommendationIsShown, stopAdviceEngagement, advisorEngagementActionIsShown,
+}

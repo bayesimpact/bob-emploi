@@ -350,7 +350,6 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
             '"profile": {"email": "me@facebook.com"}}' % user_id,
             content_type='application/json')
         user_info = self.json_from_response(response)
-        del user_info['profile']['emailDays']
         self.assertEqual({'email': 'me@facebook.com'}, user_info['profile'])
 
     def test_load_user(self):

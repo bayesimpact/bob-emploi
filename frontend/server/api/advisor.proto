@@ -1,9 +1,12 @@
 syntax = "proto3";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 // The definition of an Advice Module. See http://go/bob:advisor-design.
 message AdviceModule {
+  // Unique readable ID for the module.
+  string  advice_id = 4;
+
   // Name of the scoring model to decide whether to trigger this advice.
   string trigger_scoring_model = 1;
 

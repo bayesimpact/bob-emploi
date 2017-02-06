@@ -133,7 +133,7 @@ AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%%%%20Images/%%s.jpg \\
         name='Local Diagnosis',
         command="""docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/local_diagnosis.py \\
-            --bmo_csv data/bmo/bmo_2015.csv \\
+            --bmo_csv data/bmo/bmo_2016.csv \\
             --fap_rome_crosswalk data/crosswalks/passage_fap2009_romev3.txt \\
             --salaries_csv data/fhs_salaries.csv \\
             --unemployment_duration_csv data/fhs_category_a_duration.csv \\

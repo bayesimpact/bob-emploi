@@ -8,7 +8,8 @@ import {logoutAction} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {onboardingComplete} from 'store/main_selectors'
 
-import {NewProjectModal} from 'components/new_project'
+import {DebugModal} from 'components/debug'
+import {ShortKey} from 'components/shortkey'
 import {CookieMessage} from './cookie_message'
 import {BetaMessage} from './beta_message'
 import {Colors, Icon, SmoothTransitions, Styles} from './theme'
@@ -20,6 +21,7 @@ class NavigationLink extends React.Component {
   static propTypes = {
     children: React.PropTypes.node,
     isSelected: React.PropTypes.bool,
+    selectionStyle: React.PropTypes.oneOf(['bottom', 'top']),
     style: React.PropTypes.object,
     to: React.PropTypes.string,
   }
@@ -30,21 +32,32 @@ class NavigationLink extends React.Component {
   }
 
   render() {
-    const {children, isSelected, style, ...extraProps} = this.props
+    const {children, isSelected, selectionStyle, style, ...extraProps} = this.props
     const isHighlighted = isSelected || this.state.isHovered || this.state.isFocused
+    const isSelectionOnTop = selectionStyle === 'top'
     const containerStyle = {
       color: isHighlighted ? '#fff' : Colors.COOL_GREY,
       fontSize: 13,
       fontWeight: 500,
       letterSpacing: 1,
-      padding: 25,
+      padding: '20px 25px 21px',
+      position: 'relative',
       textDecoration: 'none',
       textTransform: 'uppercase',
       ...SmoothTransitions,
       ...style,
       ...(isHighlighted && style && style[':highlight'] || null),
     }
-
+    const selectMarkStyle = {
+      backgroundColor: Colors.RED_PINK,
+      borderRadius: isSelectionOnTop ? '0 0 3px 3px' : '3px 3px 0 0',
+      bottom: isSelectionOnTop ? 'initial' : 0,
+      height: 4,
+      left: '35%',
+      position: 'absolute',
+      top: isSelectionOnTop ? 0 : 'initial',
+      width: '30%',
+    }
     return <Link
         {...extraProps} style={containerStyle}
         onMouseOut={() => this.setState({isHovered: false})}
@@ -52,6 +65,7 @@ class NavigationLink extends React.Component {
         onFocus={() => this.setState({isFocused: true})}
         onBlur={() => this.setState({isFocused: false})}>
       {children}
+      {(isSelected && selectionStyle) ? <div style={selectMarkStyle} /> : null}
     </Link>
   }
 }
@@ -69,21 +83,23 @@ class MenuLinkBase extends React.Component {
   render() {
     const {children, style, ...extraProps} = this.props
     const containerStyle = {
-      ':focus': {
-        backgroundColor: Colors.RED_PINK_HOVER,
-        color: '#fff',
-      },
-      ':hover': {
-        backgroundColor: Colors.RED_PINK_HOVER,
-        color: '#fff',
-      },
       alignItems: 'center',
-      color: '#fbd9e0',
+      color: '#fff',
       display: 'flex',
+      fontWeight: 'normal',
       height: MENU_LINK_HEIGHT,
       paddingLeft: 25,
       textAlign: 'left',
       ...style,
+      // eslint-disable-next-line sort-keys
+      ':focus': {
+        backgroundColor: Colors.RED_PINK,
+        ...(style && style[':hover'] || {}),
+      },
+      ':hover': {
+        backgroundColor: Colors.RED_PINK,
+        ...(style && style[':hover'] || {}),
+      },
     }
     return <div {...extraProps} style={containerStyle}>
       {children}
@@ -93,8 +109,11 @@ class MenuLinkBase extends React.Component {
 const MenuLink = Radium(MenuLinkBase)
 
 
-class MobileNavigationBar extends React.Component {
+class MobileNavigationBarBase extends React.Component {
   static propTypes = {
+    dispatch: React.PropTypes.func.isRequired,
+    isLoggedIn: React.PropTypes.bool.isRequired,
+    onboardingComplete: React.PropTypes.bool,
     page: React.PropTypes.string,
   }
 
@@ -102,7 +121,14 @@ class MobileNavigationBar extends React.Component {
     isMenuOpen: false,
   }
 
+  logOut = event => {
+    event.stopPropagation()
+    this.props.dispatch(logoutAction)
+    browserHistory.push(Routes.ROOT)
+  }
+
   render() {
+    const {onboardingComplete, isLoggedIn} = this.props
     const {isMenuOpen} = this.state
     const style = {
       alignItems: 'center',
@@ -122,7 +148,7 @@ class MobileNavigationBar extends React.Component {
       top: 0,
     }
     const menuStyle = {
-      backgroundColor: Colors.RED_PINK,
+      backgroundColor: Colors.CHARCOAL_GREY,
       color: '#fff',
       left: 0,
       paddingTop: 50,
@@ -132,7 +158,8 @@ class MobileNavigationBar extends React.Component {
       zIndex: 1,
     }
     const linkStyle = page => ({
-      color: page === this.props.page ? '#fff' : '#fbd9e0',
+      backgroundColor: page === this.props.page ? Colors.RED_PINK : 'inherit',
+      color: '#fff',
       display: 'block',
       padding: '20px 40px',
       textDecoration: 'none',
@@ -153,6 +180,19 @@ class MobileNavigationBar extends React.Component {
           <Link to={Routes.CONTRIBUTION_PAGE} style={linkStyle('contribution')}>
             Contribuer
           </Link>
+          {isLoggedIn && onboardingComplete ? <div>
+            <Link to={Routes.PROJECT_PAGE} style={linkStyle('project')}>
+              Mon projet
+            </Link>
+          </div> : null}
+          {isLoggedIn ? <div>
+            <Link to={Routes.PROFILE_PAGE} style={linkStyle('profile')}>
+              Vos informations
+            </Link>
+            <Link style={linkStyle('logout')} onClick={this.logOut}>
+              Déconnexion
+            </Link>
+          </div> : null}
         </div>
       :
       <Icon
@@ -163,16 +203,23 @@ class MobileNavigationBar extends React.Component {
     </nav>
   }
 }
+const MobileNavigationBar = connect(({user}) => ({
+  isLoggedIn: !!(user.profile && user.profile.name),
+  onboardingComplete: onboardingComplete(user),
+}))(MobileNavigationBarBase)
+
 
 
 class NavigationBarBase extends React.Component {
   static propTypes = {
     dispatch: React.PropTypes.func.isRequired,
-    isMobileVersion: React.PropTypes.bool.isRequired,
     onboardingComplete: React.PropTypes.bool,
     page: React.PropTypes.string,
     style: React.PropTypes.object,
     userProfile: USER_PROFILE_SHAPE.isRequired,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool.isRequired,
   }
 
   state = {
@@ -194,19 +241,20 @@ class NavigationBarBase extends React.Component {
   }
 
   handleLogoClick = () => {
-    const {page, userProfile} = this.props
-    if (page === 'profile' && !onboardingComplete(userProfile)) {
+    const {page, onboardingComplete} = this.props
+    if ((page === 'profile' || page === 'new_project') && !onboardingComplete) {
       return
     }
-    if (userProfile && onboardingComplete(userProfile)) {
-      browserHistory.push(Routes.DASHBOARD_PAGE)
+    if (onboardingComplete) {
+      browserHistory.push(Routes.PROJECT_PAGE)
       return
     }
     browserHistory.push(Routes.ROOT)
   }
 
   render() {
-    const {isMobileVersion, onboardingComplete, page, style, userProfile} = this.props
+    const {onboardingComplete, page, style, userProfile} = this.props
+    const {isMobileVersion} = this.context
     const {name} = userProfile
     const {isLogOutDropDownShown} = this.state
     if (isMobileVersion) {
@@ -241,16 +289,19 @@ class NavigationBarBase extends React.Component {
 
         <div style={{flex: 1}} />
 
-        <NavigationLink to={Routes.ROOT} isSelected={page === 'landing'}>
+        <NavigationLink to={Routes.ROOT} isSelected={page === 'landing'} selectionStyle="top">
           Accueil
         </NavigationLink>
-        <NavigationLink to={Routes.VISION_PAGE} isSelected={page === 'vision'}>
+        <NavigationLink to={Routes.VISION_PAGE} isSelected={page === 'vision'} selectionStyle="top">
           Notre mission
         </NavigationLink>
-        <NavigationLink to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'}>
+        <NavigationLink
+            to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'} selectionStyle="top">
           Contribuer
         </NavigationLink>
-        <LoginButton style={{marginLeft: 25, marginRight: 13, textTransform: 'uppercase'}}>
+        <LoginButton
+            style={{marginLeft: 25, marginRight: 13, textTransform: 'uppercase'}}
+            type="navigationOnImage">
           Se connecter
         </LoginButton>
       </nav>
@@ -264,14 +315,18 @@ class NavigationBarBase extends React.Component {
     }
     const dropDownButtonStyle = {
       ':focus': {
-        backgroundColor: Colors.RED_PINK_HOVER,
+        backgroundColor: Colors.CHARCOAL_GREY,
+        color: '#fff',
       },
       ':hover': {
-        backgroundColor: Colors.RED_PINK_HOVER,
+        backgroundColor: Colors.CHARCOAL_GREY,
+        color: '#fff',
       },
       alignItems: 'center',
-      backgroundColor: Colors.RED_PINK,
+      backgroundColor: isLogOutDropDownShown ? Colors.CHARCOAL_GREY : 'initial',
+      borderLeft: `solid 1px ${Colors.SLATE}`,
       bottom: 0,
+      color: Colors.COOL_GREY,
       display: 'flex',
       justifyContent: 'center',
       left: 0,
@@ -279,6 +334,7 @@ class NavigationBarBase extends React.Component {
       position: 'absolute',
       right: 0,
       top: 0,
+      ...SmoothTransitions,
     }
     const openInNewTab = href => window.open(href, '_blank')
     const menuItems = [
@@ -299,7 +355,11 @@ class NavigationBarBase extends React.Component {
       }}>
         Nous contacter
       </MenuLink>,
-      <MenuLink key="logout" onClick={this.logOut}>Déconnexion</MenuLink>,
+      <MenuLink key="logout"
+          onClick={this.logOut}
+          style={{':hover': {color: '#fff'}, color: Colors.COOL_GREY}}>
+        Déconnexion
+      </MenuLink>,
     ]
     const dropDownStyle = {
       ...linkContainerStyle,
@@ -318,23 +378,18 @@ class NavigationBarBase extends React.Component {
       zIndex: 2,
     }
     return <nav style={containerStyle}>
-      <NewProjectModal />
       {logo}
 
       <div style={{flex: 1}} />
 
       {onboardingComplete ? <div>
         <NavigationLink
-          to={Routes.DASHBOARD_PAGE} isSelected={page === 'dashboard'}>
-          Actions du jour
-        </NavigationLink>
-        <NavigationLink
-            to={Routes.DISCOVERY_PAGE} isSelected={page === 'discovery'}>
-          Métiers à explorer
+            to={Routes.PROJECT_PAGE} isSelected={page === 'project'} selectionStyle="bottom">
+          Mon projet
         </NavigationLink>
         <NavigationLink
             to="https://aide.bob-emploi.fr/hc/fr" target="_blank"
-            style={{padding: '25px 50px 25px 25px'}}>
+            style={{padding: '20px 50px 21px 25px'}} selectionStyle="bottom">
           Aide
         </NavigationLink>
       </div> : null}
@@ -354,22 +409,24 @@ class NavigationBarBase extends React.Component {
     </nav>
   }
 }
-const NavigationBar = connect(({app, user}) => ({
-  isMobileVersion: app.isMobileVersion,
-  onboardingComplete: onboardingComplete(user.profile),
+const NavigationBar = connect(({user}) => ({
+  onboardingComplete: onboardingComplete(user),
   userProfile: user.profile,
 }))(Radium(NavigationBarBase))
 
 
-class FooterBase extends React.Component {
+class Footer extends React.Component {
   static propTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
     page: React.PropTypes.string,
     style: React.PropTypes.object,
   }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool.isRequired,
+  }
 
   render() {
-    const {isMobileVersion, page, style} = this.props
+    const {page, style} = this.props
+    const {isMobileVersion} = this.context
     const containerStyle = {
       alignItems: 'center',
       backgroundColor: Colors.DARK,
@@ -380,6 +437,12 @@ class FooterBase extends React.Component {
     }
     if (isMobileVersion) {
       containerStyle.flexDirection = 'column'
+    }
+    const logoStyle = {
+      height: 65,
+      marginBottom: isMobileVersion ? 35 : 0,
+      // Trick to center the logo without the Beta.
+      marginLeft: isMobileVersion ? 40 : 0,
     }
     const linkStyle = {
       fontSize: 11,
@@ -395,9 +458,10 @@ class FooterBase extends React.Component {
     return <footer style={containerStyle}>
       <img
           src={isMobileVersion ?
-            require('images/logo-bob-white-text.svg') :
+            require('images/logo-bob-emploi-beta-mobile.svg') :
             require('images/logo-bob-emploi-white.svg')}
-          style={{height: 65, marginBottom: isMobileVersion ? 35 : 0}} />
+          style={logoStyle} />
+
       <div style={{flex: 1}} />
 
       <NavigationLink
@@ -428,7 +492,6 @@ class FooterBase extends React.Component {
     </footer>
   }
 }
-const Footer = connect(({app}) => ({isMobileVersion: app.isMobileVersion}))(FooterBase)
 
 
 class PageWithNavigationBar extends React.Component {
@@ -437,6 +500,17 @@ class PageWithNavigationBar extends React.Component {
     isContentScrollable: React.PropTypes.bool,
     page: React.PropTypes.string,
     style: React.PropTypes.object,
+  }
+
+  state = {
+    isDebugModalShown: false,
+  }
+
+  scrollTo(offsetTop) {
+    const {scrollable} = this.refs
+    if (scrollable) {
+      scrollable.scrollTop = offsetTop
+    }
   }
 
   render() {
@@ -454,7 +528,7 @@ class PageWithNavigationBar extends React.Component {
         ...style,
       }
       content = <div style={{flex: 1, position: 'relative'}}>
-        <div style={scrollContainerStyle} {...extraProps}>
+        <div style={scrollContainerStyle} ref="scrollable" {...extraProps}>
           {children}
         </div>
       </div>
@@ -467,6 +541,14 @@ class PageWithNavigationBar extends React.Component {
       <CookieMessage />
       <BetaMessage />
       <NavigationBar page={page} />
+
+      <ShortKey
+          keyCode="KeyE" ctrlKey={true} shiftKey={true}
+          onKeyPress={() => this.setState({isDebugModalShown: true})} />
+      <DebugModal
+          onClose={() => this.setState({isDebugModalShown: false})}
+          isShown={this.state.isDebugModalShown} />
+
       {content}
     </div>
   }

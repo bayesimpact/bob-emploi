@@ -326,6 +326,72 @@
       "yearOfBirth": 1982
     }
   },
+  "florian": {
+    "project": {
+      "coverImageUrl": "generic5",
+      "createdAt": "2016-09-29T07:50:51.689185Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "kind": "FIND_JOB",
+      "minSalary": 20000.0,
+      "mobility": {
+        "areaType": "DEPARTEMENT",
+        "city": {
+          "cityId": "77337",
+          "departementId": "77",
+          "departementName": "Seine-et-Marne",
+          "name": "Noisiel",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecc7dc-321cf",
+      "shortDescription": "This is a dummy short description. We will add something better in the future.",
+      "jobSearchLengthMonths": 2,
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "19364",
+        "feminineName": "Secrétaire",
+        "jobGroup": {
+          "name": "Secrétariat",
+          "romeId": "M1607"
+        },
+        "masculineName": "Secrétaire",
+        "name": "Secrétaire"
+      },
+      "title": "Trouver un emploi de secrétaire dans le département Seine-et-Marne",
+      "workloads": ["FULL_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "77337",
+        "departementId": "77",
+        "departementName": "Seine-et-Marne",
+        "name": "Noisiel",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "BTS_DUT_DEUG",
+      "email": "karenxxxxx@yahoo.fr",
+      "gender": "FEMININE",
+      "latestJob": {
+        "codeOgr": "19374",
+        "feminineName": "Secrétaire de direction",
+        "jobGroup": {
+          "name": "Assistanat de direction",
+          "romeId": "M1604"
+        },
+        "masculineName": "Secrétaire de direction",
+        "name": "Secrétaire de direction"
+      },
+      "name": "karen",
+      "salaryRequiremenFlexibility": "ABSOLUTELY_NOT",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1971
+    }
+  },
   "karen": {
     "project": {
       "coverImageUrl": "generic5",

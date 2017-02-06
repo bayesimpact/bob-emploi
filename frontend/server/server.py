@@ -33,7 +33,6 @@ from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
-from bob_emploi.frontend.api import discovery_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -50,6 +49,7 @@ _DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
+_ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
 
 _ProjectIntensityDefinition = collections.namedtuple(
     'ProjetIntensityDefinition', [
@@ -66,18 +66,14 @@ _PROJECT_INTENSITIES = {
     project_pb2.PROJECT_EXTREMELY_INTENSE: _ProjectIntensityDefinition(2, 2, 2, 4),
 }
 
-# Template for the link to Pôle Emploi job offers.
-_POLE_EMPLOI_OFFERS_LINK = (
-    'https://candidat.pole-emploi.fr/candidat/rechercheoffres/resultats/'
-    'A__DEPARTEMENT_%departementId___P__________INDIFFERENT_____________'
-    '____%romeId______')
-# Template for the link to La Bonne Boite company suggestion.
-_LA_BONNE_BOITE_LINK = (
-    'https://labonneboite.pole-emploi.fr/entreprises/commune/%cityId/rome/%romeId?'
-    'utm_medium=web&utm_source=bob&utm_campaign=bob-recherche')
-
 # Email regex from http://emailregex.com/
 _EMAIL_REGEX = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+
+# For testing on old users, we sometimes want to disable advisor for newly
+# created users.
+# TODO(pascal): Remove that when we stop testing about users that do not have
+# the advisor feature.
+ADVISOR_DISABLED_FOR_TESTING = False
 
 
 @app.route('/api/user', methods=['DELETE'])
@@ -153,13 +149,11 @@ def _save_user(user_data, is_new_user):
         user_data.registered_at.FromDatetime(now.get())
         # No need to pollute our DB with super precise timestamps.
         user_data.registered_at.nanos = 0
-        # Enable email notifications for new users.
-        user_data.features_enabled.email_notifications = True
-        user_data.profile.email_days.extend([
-            user_pb2.MONDAY, user_pb2.TUESDAY, user_pb2.WEDNESDAY,
-            user_pb2.THURSDAY, user_pb2.FRIDAY])
         # Enable Advisor for new users.
-        user_data.features_enabled.advisor = user_pb2.ACTIVE
+        if not ADVISOR_DISABLED_FOR_TESTING:
+            user_data.features_enabled.advisor = user_pb2.ACTIVE
+        # Send an NPS email the next day.
+        user_data.features_enabled.net_promoter_score_email = user_pb2.NPS_EMAIL_PENDING
 
     # TODO: Don't do this on every save.
     if _is_in_unverified_data_zone(user_data.profile):
@@ -428,8 +422,7 @@ def _maybe_generate_new_action_plan(user_proto, project):
 
 def _project_in_advisor(project):
     """Check whether a project is handled by the Advisor."""
-    return project.best_advice_id and project.advice_status in (
-        project_pb2.ADVICE_RECOMMENDED, project_pb2.ADVICE_ACCEPTED, project_pb2.ADVICE_ENGAGED)
+    return bool(project.advices)
 
 
 def _add_actions_to_project(user_proto, project, num_adds, use_white_chantiers=False):
@@ -629,103 +622,6 @@ def project_update_chantiers(templates_set, user_id, project_id):
     return _save_user(user_proto, is_new_user=False)
 
 
-@app.route('/api/explore/<user_id>', methods=['GET'])
-@proto.flask_api(out_type=discovery_pb2.JobsExploration)
-def explore(user_id):
-    """Get new jobs to explore for the user."""
-    user_proto = _get_user_data(user_id)
-    if not user_proto.profile.city.departement_id:
-        flask.abort(422, 'Pas assez de contexte géographique pour explorer.')
-    source_job = user_proto.profile.latest_job
-    if not source_job.job_group.rome_id:
-        for project in user_proto.projects:
-            if project.target_job.job_group.rome_id:
-                source_job = project.target_job
-                break
-        else:
-            flask.abort(422, 'Pas assez de contexte professionel pour explorer.')
-    return _explore(source_job, user_proto.profile.city)
-
-
-def _explore(source_job, city):
-    response = discovery_pb2.JobsExploration()
-    response.city.CopyFrom(city)
-    response.source_job.CopyFrom(source_job)
-
-    # Find ROME IDs of similar job groups.
-    job_group_mobility = discovery_pb2.JobsExploration()
-    proto.parse_from_mongo(
-        _DB.similar_jobs.find_one({'_id': source_job.job_group.rome_id}), job_group_mobility)
-    job_mobility = discovery_pb2.JobsExploration()
-    proto.parse_from_mongo(_DB.similar_jobs.find_one({'_id': source_job.code_ogr}), job_mobility)
-    # We've checked in a notebook that those IDs would be unique here despite
-    # joining the ones from job and from job group.
-    # http://go/pe:notebooks/datasets/ROME%20mobility.ipynb
-    job_group_ids = list((e.job_group.rome_id for e in itertools.chain(
-        job_group_mobility.job_groups, job_mobility.job_groups)))
-    job_group_ids.append(source_job.job_group.rome_id)
-
-    # Populate the response with data from job group info.
-    job_groups_info = _job_groups_info()
-    # Keep access to each exploration job group data keyed by ROME ID so that
-    # we can enrich it by ID without iterating over the whole proto several
-    # times.
-    exploration_job_groups = {}
-    for job_group_id in job_group_ids:
-        job_group_info = job_groups_info.get(job_group_id)
-        if not job_group_info:
-            continue
-        exploration_job_group = response.job_groups.add(job_group=job_group_info)
-        exploration_job_groups[job_group_id] = exploration_job_group
-
-    _enrich_discovery_protos(exploration_job_groups, city)
-
-    def _sort_key(job_group):
-        # Keep the source job group first.
-        if job_group.job_group.rome_id == source_job.job_group.rome_id:
-            return -1
-        return job_group.stats.unemployment_duration.days
-
-    response.job_groups.sort(key=_sort_key)
-    return response
-
-
-@app.route('/api/explore/<user_id>/<job_group_rome_id>', methods=['GET'])
-@proto.flask_api(out_type=discovery_pb2.JobGroupExploration)
-def explore_job_group(user_id, job_group_rome_id):
-    """Get more exploration info about a specific job group."""
-    user_proto = _get_user_data(user_id)
-    if not user_proto.profile.city.departement_id:
-        flask.abort(422, 'Pas assez de contexte géographique pour explorer.')
-    return _job_stats(job_group_rome_id, user_proto.profile.city)
-
-
-def _job_stats(job_group_rome_id, city):
-    response = discovery_pb2.JobGroupExploration()
-    job_group_info = _job_groups_info().get(job_group_rome_id)
-    if not job_group_info:
-        flask.abort(404, 'Groupe de métier "%s" inconnu.' % job_group_rome_id)
-    response.job_group.CopyFrom(job_group_info)
-    _enrich_discovery_protos({job_group_rome_id: response}, city)
-    return response
-
-
-@app.route('/api/explore/job', methods=['GET'])
-@proto.flask_api(
-    in_type=discovery_pb2.JobExplorationRequest, out_type=discovery_pb2.JobsExploration)
-def explore_job(request):
-    """Explore jobs around a job for a given city."""
-    return _explore(request.source_job, request.city)
-
-
-@app.route('/api/explore/job/stats', methods=['GET'])
-@proto.flask_api(
-    in_type=discovery_pb2.JobExplorationRequest, out_type=discovery_pb2.JobGroupExploration)
-def job_stats(request):
-    """Get stats for a given job group in a given city."""
-    return _job_stats(request.source_job.job_group.rome_id, request.city)
-
-
 def _populate_job_stats_dict(local_job_stats, city):
     local_stats_ids = dict(
         ('%s:%s' % (city.departement_id, job_group_id), job_group_id)
@@ -742,30 +638,6 @@ def _populate_job_stats_dict(local_job_stats, city):
     for job_group_offers_count in job_group_offers_counts:
         job_group_id = local_stats_ids[job_group_offers_count['_id']]
         proto.parse_from_mongo(job_group_offers_count, local_job_stats[job_group_id])
-
-
-def _enrich_discovery_protos(exploration_job_groups, city):
-    """Enrich a dict of JobExploration protos with local stats and images."""
-    _populate_job_stats_dict({g: e.stats for g, e in exploration_job_groups.items()}, city)
-
-    # Fill empty cover images.
-    for exploration_job_group in exploration_job_groups.values():
-        if not exploration_job_group.job_group.image_link:
-            exploration_job_group.job_group.image_link = _generic_image()
-
-    # Add external links.
-    for exploration_job_group in exploration_job_groups.values():
-        num_available_job_offers = exploration_job_group.stats.num_available_job_offers
-        available_offers = (
-            'les offres' if num_available_job_offers <= 1
-            else 'les %d offres ou plus' % num_available_job_offers)
-        job = job_pb2.Job(job_group=exploration_job_group.job_group)
-        exploration_job_group.links.add(
-            caption='Consulter %s sur pole-emploi.fr' % available_offers,
-            url=action.populate_template(_POLE_EMPLOI_OFFERS_LINK, city, job))
-        exploration_job_group.links.add(
-            caption='Voir les entreprises qui recrutent',
-            url=action.populate_template(_LA_BONNE_BOITE_LINK, city, job))
 
 
 @app.route('/api/cache/clear', methods=['GET'])
@@ -867,7 +739,7 @@ def _populate_feature_flags(user_proto):
 
     user_proto.features_enabled.ClearField('action_feedback_modal')
 
-    user_proto.features_enabled.sticky_actions = user_pb2.ACTIVE
+    user_proto.features_enabled.ClearField('sticky_actions')
 
     user_proto.features_enabled.ClearField('hide_discovery_nav')
 
@@ -875,7 +747,7 @@ def _populate_feature_flags(user_proto):
     user_proto.features_enabled.lbb_integration = (
         user_pb2.ACTIVE if lbb_integration else user_pb2.CONTROL)
 
-    if _TEST_USER_REGEXP.search(user_proto.profile.email):
+    if _ALPHA_USER_REGEXP.search(user_proto.profile.email):
         user_proto.features_enabled.alpha = True
 
 

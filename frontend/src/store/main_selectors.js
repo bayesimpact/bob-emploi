@@ -2,15 +2,6 @@ import moment from 'moment'
 
 import {hasActionPlan} from 'store/project'
 
-function isFirstActionPlanReadyToBeCreated(user) {
-  if (!user.projects || user.projects.length !== 1 || user.deletedProjects) {
-    // Not enough or too many projects.
-    return false
-  }
-  const project = user.projects[0]
-  return !project.actions && !project.pastActions
-}
-
 function shouldShowFirstWelcomeBackScreen(user) {
   // This could also be done without moment.
   const userRegistrationMoment = moment(user.registeredAt)
@@ -27,20 +18,17 @@ function shouldShowSecondWelcomeBackScreen(user) {
   return hasActionPlan(user) && daysSinceLastUserRequest >= 10 && !hasSeenSecondWelcomeBack
 }
 
-function onboardingComplete(profile) {
-  if (!profile) {
+function onboardingComplete(user) {
+  if (!user || !user.profile) {
     return false
   }
   const {email, gender, name, city, yearOfBirth, latestJob, situation,
          highestDegree, lastName,
-         englishLevelEstimate, officeSkillsEstimate, contractTypeFlexibility,
-         geographicalFlexibility, professionalFlexibility, salaryRequirementFlexibility,
-         trainingFlexibility} = profile
+         englishLevelEstimate, officeSkillsEstimate} = user.profile
+  const hasProject = !!(user.projects && user.projects.length)
   return !!(gender && name && city && yearOfBirth && situation &&
       email && highestDegree && lastName && latestJob &&
-      englishLevelEstimate && officeSkillsEstimate && contractTypeFlexibility &&
-      geographicalFlexibility && professionalFlexibility && salaryRequirementFlexibility &&
-      trainingFlexibility)
+      englishLevelEstimate && officeSkillsEstimate && hasProject)
 }
 
 const mainSelector = function(state) {
@@ -48,11 +36,11 @@ const mainSelector = function(state) {
     ...state,
     user: {
       ...state.user,
-      onboardingComplete: state.user && onboardingComplete(state.user.profile),
+      onboardingComplete: state.user && onboardingComplete(state.user),
     },
   }
 }
 
 
-export {isFirstActionPlanReadyToBeCreated, shouldShowFirstWelcomeBackScreen,
+export {shouldShowFirstWelcomeBackScreen,
         shouldShowSecondWelcomeBackScreen, mainSelector, onboardingComplete}

@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "bob_emploi/frontend/api/project.proto";
 import "bob_emploi/frontend/api/chantier.proto";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 
 // Message to capture the current state of a user dashboard. http://go/pe:data-export

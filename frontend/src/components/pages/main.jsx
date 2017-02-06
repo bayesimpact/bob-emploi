@@ -15,10 +15,11 @@ import {composeWithDevTools} from 'redux-devtools-extension'
 import Cookies from 'js-cookie'
 import {Routes} from 'components/url'
 import {Colors} from 'components/theme'
+import {AdvicePage} from './advice'
 import {CookiesPage} from './cookies'
 import {DashboardPage} from './dashboard'
-import {DiscoveryPage} from './discovery'
 import {LandingPage} from './landing'
+import {NewProjectPage} from './new_project'
 import {ProfilePage} from './profile'
 import {ProjectPage} from './project'
 import {DashboardExportPage} from './dashboard_export'
@@ -33,7 +34,7 @@ import {AppNotAvailablePage} from './app_not_available'
 import {isOnSmallScreen} from 'store/mobile'
 import {user} from 'store/user_reducer'
 import {actionTypesToLog, hideToasterMessageAction, fetchUser, logoutAction,
-        openLoginModal, switchToMobileVersionAction, redirectToMobileForm} from 'store/actions'
+        openLoginModal, switchToMobileVersionAction} from 'store/actions'
 import {app, asyncState} from 'store/app_reducer'
 import {mainSelector, onboardingComplete} from 'store/main_selectors'
 import {createAmplitudeMiddleware} from 'store/amplitude'
@@ -66,6 +67,7 @@ const history = syncHistoryWithStore(browserHistory, store)
 // TODO: Move app into its own component to make this file smaller and more pure in its purpose.
 class App extends React.Component {
   static propTypes = {
+    app: React.PropTypes.object.isRequired,
     asyncState: React.PropTypes.object.isRequired,
     children: React.PropTypes.node,
     dispatch: React.PropTypes.func.isRequired,
@@ -73,9 +75,19 @@ class App extends React.Component {
     user: React.PropTypes.object.isRequired,
   }
 
+  static childContextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
+
+  getChildContext() {
+    const {isMobileVersion} = this.props.app
+    return {isMobileVersion}
+  }
+
   componentWillMount() {
     if (isOnSmallScreen()) {
       this.props.dispatch(switchToMobileVersionAction)
+      document.getElementById('viewport').setAttribute('content', 'width=320')
     }
   }
 
@@ -116,7 +128,7 @@ class App extends React.Component {
   }
 
   handleLogin = user => {
-    if (!onboardingComplete(user.profile)) {
+    if (!onboardingComplete(user)) {
       browserHistory.push(Routes.PROFILE_PAGE)
       return
     }
@@ -126,7 +138,7 @@ class App extends React.Component {
     // not.
     const route = location.state && location.state.nextPathname || location.pathname
     if (route === Routes.ROOT) {
-      browserHistory.replace(Routes.DASHBOARD_PAGE)
+      browserHistory.replace(Routes.PROJECT_PAGE)
       return
     }
     browserHistory.replace(route)
@@ -191,13 +203,10 @@ class MyRouterBase extends React.Component {
       dispatch(logoutAction)
     }
 
-    if (!onboardingComplete(user.profile) &&
+    if (!onboardingComplete(user) &&
         !nextRouterState.location.pathname.startsWith(Routes.PROFILE_PAGE)) {
       replace({pathname: Routes.PROFILE_PAGE})
       return
-    }
-    if (isOnSmallScreen()) {
-      dispatch(redirectToMobileForm())
     }
   }
 
@@ -218,8 +227,11 @@ class MyRouterBase extends React.Component {
 
   render() {
     const mainConnect = connect(mainSelector)
-    return (
-      <Router history={history} onUpdate={() => window.scrollTo(0, 0)}
+    if (!this.routesCache) {
+      // Cache for the Routes: our routes are not dynamic, and the Hot Module
+      // Replacement chokes on it when we do not render the exact same object,
+      // so we cache it here.
+      this.routesCache = <Router history={history} onUpdate={() => window.scrollTo(0, 0)}
         createElement={this.createElement}>
         <Route path={Routes.ROOT} component={AppWrapped}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
@@ -235,17 +247,18 @@ class MyRouterBase extends React.Component {
             <Route onEnter={this.requireAuthAndDesktop}>
               <Route path={Routes.PROFILE_PAGE} component={mainConnect(ProfilePage)} />
               <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={mainConnect(ProfilePage)} />
+              <Route path={Routes.NEW_PROJECT_PAGE} component={NewProjectPage} />
               <Route path={Routes.DASHBOARD_PAGE} component={DashboardPage} />
               <Route path={Routes.DASHBOARD_ACTION_PAGE} component={DashboardPage} />
-              <Route
-                  path={Routes.PROJECT_PAGE + '/:projectId'}
-                  component={mainConnect(ProjectPage)} />
-              <Route path={Routes.DISCOVERY_PAGE} component={mainConnect(DiscoveryPage)} />
+              <Route path={Routes.PROJECT_PAGE} component={mainConnect(ProjectPage)} />
+              <Route path={Routes.PROJECT_PATH} component={mainConnect(ProjectPage)} />
+              <Route path={Routes.ADVICE_PATH} component={mainConnect(AdvicePage)} />
             </Route>
           </Route>
         </Route>
       </Router>
-    )
+    }
+    return this.routesCache
   }
 }
 const MyRouter = connect(({user}) => ({user}))(MyRouterBase)

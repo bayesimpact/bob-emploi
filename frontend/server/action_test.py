@@ -28,7 +28,7 @@ class InstantiateTestCase(unittest.TestCase):
         })
         action.instantiate(
             new_action,
-            user_pb2.User(features_enabled=user_pb2.Features(sticky_actions=user_pb2.ACTIVE)),
+            user_pb2.User(),
             project_pb2.Project(
                 mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(
                     city_id='45123',

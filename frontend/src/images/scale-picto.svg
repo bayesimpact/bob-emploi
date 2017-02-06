@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="85px" height="85px" viewBox="0 0 85 85" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 42 (36781) - http://www.bohemiancoding.com/sketch -->
+    <title>private-ico</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <circle id="path-1" cx="42.5" cy="42.5" r="42.5"></circle>
+    </defs>
+    <g id="Proto" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="advisor---research-(trigger-for-all)" transform="translate(-478.000000, -636.000000)">
+            <g id="private-ico" transform="translate(478.000000, 636.000000)">
+                <mask id="mask-2" fill="white">
+                    <use xlink:href="#path-1"></use>
+                </mask>
+                <use id="Oval-7" fill="#58BBFB" xlink:href="#path-1"></use>
+                <polygon id="Rectangle-33" fill="#383F52" mask="url(#mask-2)" points="20 23 42.5 22 65 23 65 24 42.5 25 20 24"></polygon>
+                <polygon id="Rectangle-32" fill="#383F52" mask="url(#mask-2)" points="41 24 44 24 45 68 40 68"></polygon>
+                <path d="M30.5330394,70.441411 C30.8139465,69.0930569 32.1624984,68 33.5377765,68 L51.4622235,68 C52.8407869,68 54.1869315,69.0972712 54.4669606,70.441411 L55,73 L30,73 L30.5330394,70.441411 Z" id="Rectangle-21" fill="#FFFFFF" mask="url(#mask-2)"></path>
+                <rect id="Rectangle-2" fill="#40A2E1" mask="url(#mask-2)" x="11" y="73" width="63" height="12"></rect>
+                <path d="M20.5,24 L9.5,47" id="Path-2" stroke="#383F52" mask="url(#mask-2)"></path>
+                <path d="M31.5,24 L20.5,47" id="Path-2" stroke="#383F52" mask="url(#mask-2)" transform="translate(26.000000, 35.500000) scale(-1, 1) translate(-26.000000, -35.500000) "></path>
+                <path d="M9,47 C10.6739576,51.7360617 15.1907197,55.1292356 20.5,55.1292356 C25.8092803,55.1292356 30.3260424,51.7360617 32,47 L9,47 Z" id="Combined-Shape" fill="#FFFFFF" mask="url(#mask-2)"></path>
+                <circle id="Oval" fill="#FFFFFF" mask="url(#mask-2)" cx="20.5" cy="23.5" r="2.5"></circle>
+                <path d="M64.5,24 L53.5,47" id="Path-2" stroke="#383F52" mask="url(#mask-2)"></path>
+                <path d="M75.5,24 L64.5,47" id="Path-2" stroke="#383F52" mask="url(#mask-2)" transform="translate(70.000000, 35.500000) scale(-1, 1) translate(-70.000000, -35.500000) "></path>
+                <path d="M53,47 C54.6739576,51.7360617 59.1907197,55.1292356 64.5,55.1292356 C69.8092803,55.1292356 74.3260424,51.7360617 76,47 L53,47 Z" id="Combined-Shape" fill="#FFFFFF" mask="url(#mask-2)"></path>
+                <circle id="Oval" fill="#FFFFFF" mask="url(#mask-2)" cx="64.5" cy="23.5" r="2.5"></circle>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -4,6 +4,7 @@
   font-size: 1rem;
   position: relative;
   text-align: left;
+  width: 100%;
 }
 .algolia-autocomplete .aa-input, .algolia-autocomplete .aa-hint {
   width: 100%;

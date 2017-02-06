@@ -5,7 +5,6 @@ import {stickyProgress} from 'store/action'
 import {finishStickyActionStep, stopStickyAction} from 'store/actions'
 
 import {Modal} from 'components/modal'
-import {PageWithNavigationBar} from 'components/navigation'
 import {Pane} from 'components/pane'
 import {Colors, ExternalSiteButton, Icon, Input, LabeledToggle, Markdown,
         RoundButton, SmoothTransitions, Styles} from 'components/theme'
@@ -30,9 +29,9 @@ class StickyActionPaneBase extends React.Component {
 
   renderDoneNode() {
     return <Congratulations
-        submitCaption="Faire une autre action"
+        submitCaption="Voir les autres solutions"
         onSubmit={this.props.onClose}>
-      Super, vous avez fini cette action.
+      Super, vous avez fini cette solution.
       On croise les doigts pour vous&nbsp;!
    </Congratulations>
   }
@@ -55,54 +54,17 @@ class StickyActionPaneBase extends React.Component {
 const StickyActionPane = connect()(StickyActionPaneBase)
 
 
-class StickyActionPage extends React.Component {
-  static propTypes = {
-    action: React.PropTypes.object,
-    onDone: React.PropTypes.func.isRequired,
-    onStop: React.PropTypes.func.isRequired,
-  }
-
-  renderDoneNode() {
-    return <Congratulations
-        submitCaption="Commencer maintenant"
-        onSubmit={this.props.onDone}>
-      Vous êtes sur la bonne voie pour commencer votre nouveau métier. Nous
-      allons maintenant vous accompagner quotidiennement en vous proposant
-      <strong> des astuces et des offres</strong> qui vous aideront à retrouver
-      un emploi le plus vite possible.
-   </Congratulations>
-  }
-
-  render() {
-    // eslint-disable-next-line no-unused-vars
-    const {action, onDone, onStop, ...extraProps} = this.props
-    const pageStyle = {
-      backgroundColor: '#fff',
-      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.2)',
-      margin: '50px auto',
-      width: 720,
-    }
-    return <PageWithNavigationBar {...extraProps} isContentScrollable={true}>
-      <div style={pageStyle}>
-        <StickyAction action={action} onStop={onStop} doneNode={this.renderDoneNode()} />
-      </div>
-    </PageWithNavigationBar>
-  }
-}
-
-
 class StickyAction extends React.Component {
   static propTypes = {
     action: React.PropTypes.object,
     // Node rendered at the bottom of all steps when the last step is done.
     doneNode: React.PropTypes.node,
-    onStop: React.PropTypes.func.isRequired,
+    onStop: React.PropTypes.func,
   }
 
   state = {
     expandedStepIndex: -1,
     isConfirmStopModalShown: false,
-    isDoneFooterShown: false,
     lastExpandableStepIndex: -1,
   }
 
@@ -115,13 +77,6 @@ class StickyAction extends React.Component {
     const prevAction = this.props.action
     if (action !== prevAction) {
       this.updateExpandedStep(action)
-    }
-
-    if (!action || !prevAction) {
-      return
-    }
-    if (action.status === 'ACTION_STICKY_DONE' && prevAction.status === 'ACTION_STUCK') {
-      this.setState({isDoneFooterShown: true})
     }
   }
 
@@ -142,21 +97,12 @@ class StickyAction extends React.Component {
     const headerStyle = {
       borderBottom: 'solid 1px ' + Colors.MODAL_PROJECT_GREY,
       color: Colors.CHARCOAL_GREY,
-      display: 'flex',
       fontSize: 25,
       fontWeight: 500,
-      padding: '30px 50px',
-    }
-    const starStyle = {
-      color: Colors.SUN_YELLOW,
-      fontSize: 27,
-      marginTop: '.2em',
+      padding: '30px 30px',
     }
     return <header style={headerStyle}>
-      <span style={{flex: 1}}>
-        {action.goal}
-      </span>
-      <Icon name="star" style={starStyle} />
+      {action.goal}
     </header>
   }
 
@@ -174,15 +120,16 @@ class StickyAction extends React.Component {
       alignItems: 'center',
       borderLeft: 'solid 1px ' + Colors.MODAL_PROJECT_GREY,
       display: 'flex',
-      padding: 5,
     }
     const leftCellStyle = {
       display: 'flex',
       flex: 1,
+      flexBasis: 250,
       flexDirection: 'column',
       justifyContent: 'center',
-      padding: '0 20px 0 50px',
+      padding: '0 20px 0 30px',
     }
+    // TODO(pascal): Factor the progress bar.
     const progressContainerStyle = {
       backgroundColor: Colors.MODAL_PROJECT_GREY,
       borderRadius: 100,
@@ -196,40 +143,50 @@ class StickyAction extends React.Component {
     }
     const progressStyle = {
       ...Styles.PROGRESS_GRADIENT,
+      borderRadius: '10px',
       bottom: 0,
       left: 0,
       position: 'absolute',
       top: 0,
       width: (100 * stickyProgress(action)) + '%',
     }
+    const stopButtonStyle = {
+      borderRadius: 0,
+      height: '100%',
+      margin: 0,
+      width: '100%',
+    }
+    const canStop = !action.stoppedAt && this.props.onStop
     return <section style={style}>
       <div style={leftCellStyle}>
-        <div>Votre avancement pour cette action</div>
+        <div>Votre avancement pour cette solution</div>
         <div style={progressContainerStyle}>
           <div style={progressStyle} />
         </div>
       </div>
       {/* TODO(pascal): If action is stopped, allow to start it again. */}
-      {action.stoppedAt ? null : <div style={stopContainerStyle}>
+      {canStop ? <div style={stopContainerStyle}>
         <RoundButton
             onClick={() => this.setState({isConfirmStopModalShown: true})}
-            type="discreet">
-          Arrêter cette action
+            type="discreet"
+            style={stopButtonStyle}>
+          Arrêter cette solution
         </RoundButton>
-      </div>}
+      </div> : null}
     </section>
   }
 
   renderDoneFooter() {
-    if (!this.state.isDoneFooterShown) {
+    const {action, doneNode} = this.props
+    if (action.status !== 'ACTION_STICKY_DONE') {
       return null
     }
-    return this.props.doneNode
+    return doneNode
   }
 
   render() {
     const {action, onStop} = this.props
-    const {expandedStepIndex, lastExpandableStepIndex} = this.state
+    const {expandedStepIndex} = this.state
     return <div>
       <ConfirmStopModal
           isShown={this.state.isConfirmStopModalShown}
@@ -239,8 +196,7 @@ class StickyAction extends React.Component {
       {this.renderProgress()}
       {(action && action.steps || []).map((step, index) => <Step
           key={index} index={index + 1} step={step}
-          onExpand={index > lastExpandableStepIndex ? null :
-            () => this.setState({expandedStepIndex: index})}
+          onExpand={() => this.setState({expandedStepIndex: index})}
           isExpanded={index === expandedStepIndex} />)}
       {this.renderDoneFooter()}
     </div>
@@ -268,8 +224,8 @@ class ConfirmStopModal extends React.Component {
     return <Modal
         onClose={onClose} {...extraProps} title="Voulez-vous vraiment arrêter&nbsp;?"
         style={style} titleStyle={{marginBottom: 20}}>
-      Si vous vous arrêtez maintenant, les actions que vous avez
-      entreprises {actionGoal} seront perdues.
+      Si vous vous arrêtez maintenant, les conseils que vous avez
+      commencés {actionGoal} seront perdus.
       <div style={{marginTop: 35, textAlign: 'right'}}>
         <RoundButton type="discreet" onClick={onClose} style={{marginRight: 15}}>
           Annuler
@@ -290,6 +246,9 @@ class StepBase extends React.Component {
     isExpanded: React.PropTypes.bool,
     onExpand: React.PropTypes.func,
     step: React.PropTypes.object.isRequired,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
   }
 
   state = {
@@ -336,10 +295,10 @@ class StepBase extends React.Component {
     const style = {
       color: isExpanded ? Colors.DARK_TWO :
         (step.isDone || onExpand) ? Colors.SLATE : Colors.PINKISH_GREY,
-      cursor: onExpand ? 'pointer' : 'initial',
+      cursor: (onExpand && !isExpanded) ? 'pointer' : 'initial',
       fontSize: (step.isDone && !isExpanded) ? 15 : 17,
       fontWeight: 500,
-      padding: isExpanded ? '40px 0 16px' : '13px 0 12px',
+      padding: isExpanded ? '40px 0 16px' : '17px 0 12px',
       position: 'relative',
       ...SmoothTransitions,
     }
@@ -348,7 +307,8 @@ class StepBase extends React.Component {
       fontSize: 27,
       position: 'absolute',
       right: 0,
-      top: isExpanded ? 39 : 12,
+      // TODO(pascal): Center it vertically instead of a manual guess.
+      top: isExpanded ? 39 : 10,
       ...SmoothTransitions,
     }
     return <header style={style} onClick={onExpand}>
@@ -358,6 +318,7 @@ class StepBase extends React.Component {
   }
 
   renderContent() {
+    const {isMobileVersion} = this.context
     const {content} = this.props.step
     const style = {
       alignItems: 'center',
@@ -370,7 +331,8 @@ class StepBase extends React.Component {
       width: 45,
     }
     return <div style={style}>
-      <img src={require('images/check-list-picto.svg')} style={pictoStyle} />
+      {isMobileVersion ? null : <img
+          src={require('images/check-list-picto.svg')} style={pictoStyle} />}
       <div style={{flex: 1}}>
         <Markdown content={content} />
       </div>
@@ -378,17 +340,22 @@ class StepBase extends React.Component {
   }
 
   renderFinishForm() {
+    const {isMobileVersion} = this.context
     const {finishCheckboxCaption, finishLongTextCaption, finishTextCaption} = this.props.step
     const style = {
       borderTop: 'solid 1px ' + Colors.MODAL_PROJECT_GREY,
-      margin: '36px 70px 0',
+      margin: isMobileVersion ? 'initial' : '36px 70px 0',
       padding: '30px 0',
     }
-    const caption = finishTextCaption || finishLongTextCaption || 'Où en êtes vous ?'
+    const captionStyle = {
+      color: Colors.CHARCOAL_GREY,
+      fontSize: 15,
+      fontWeight: 500,
+      marginBottom: 15,
+    }
+    const caption = finishTextCaption || finishLongTextCaption || ''
     return <div style={style}>
-      <div style={{color: Colors.CHARCOAL_GREY, fontSize: 15, fontWeight: 500, marginBottom: 15}}>
-        {caption}
-      </div>
+      {caption ? <div style={captionStyle}>{caption}</div> : null}
       {finishTextCaption ?
         this.renderFinishTextInput() :
         finishLongTextCaption ?
@@ -480,7 +447,7 @@ class StepBase extends React.Component {
     const style = {
       backgroundColor: isExpanded ? Colors.LIGHT_GREY : 'initial',
       borderBottom: 'solid 1px ' + Colors.MODAL_PROJECT_GREY,
-      padding: '0 50px',
+      padding: '0 30px',
     }
     const contentStyle = {
       maxHeight: isExpanded ? (contentHeight || 'initial') : 0,
@@ -535,8 +502,8 @@ class StopStickyActionModal extends React.Component {
         {...extraProps} title="Pourquoi arrêter maintenant ?" onClose={onClose}
         style={style}>
       <div style={{maxWidth: 360}}>
-        Nous cherchons à nous améliorer sans cesse. Dites nous comment nous
-        aurions pu faire mieux pour vous aider.
+        Nous essayons de mieux comprendre vos préférences
+        afin de vous aider au mieux.
       </div>
       <textarea
           style={textareaStyle} placeholder="Donnez-nous votre avis" value={feedback}
@@ -573,7 +540,7 @@ class Congratulations extends React.Component {
       textAlign: 'center',
     }
     return <div style={style}>
-      <div style={{color: Colors.DARK, fontSize: 25}}>
+      <div style={{color: Colors.DARK, fontSize: 25, fontWeight: 'bold'}}>
         Félicitations&nbsp;!
       </div>
       <img src={require('images/congrats-ico.svg')} style={{marginTop: 20}} />
@@ -590,4 +557,4 @@ class Congratulations extends React.Component {
 }
 
 
-export {StickyActionPane, StickyActionPage}
+export {StickyActionPane, StickyAction, Congratulations}

@@ -4,15 +4,14 @@ import _ from 'underscore'
 import Radium from 'radium'
 import {connect} from 'react-redux'
 
+import config from 'config'
 import {ShortKey} from 'components/shortkey'
 import {isActionStuck} from 'store/action'
-import {moveUserDatesBackOneDay, openNewProjectModal, setUserInteraction,
-        refreshActionPlan} from 'store/actions'
+import {moveUserDatesBackOneDay, setUserInteraction, refreshActionPlan} from 'store/actions'
 import {maybeContractPrefix, readableDay} from 'store/french'
 
 import {CircularProgress} from 'components/progress'
 import {Action, ActionDescriptionModal} from 'components/actions'
-import {DebugModal} from 'components/debug'
 import {GamificationModal} from 'components/modal'
 import {PageWithNavigationBar} from 'components/navigation'
 import {StickyActionPane} from 'components/sticky'
@@ -21,7 +20,7 @@ import {Routes} from 'components/url'
 import {allActionsById, allActiveActions, allDoneAndPastActionsAndProjects,
         projectsWithOpenActions, areAllActionsDoneForToday,
         isNewActionPlanNeeded, allStickyActions, findAction} from 'store/project'
-import {isFirstActionPlanReadyToBeCreated, shouldShowFirstWelcomeBackScreen,
+import {shouldShowFirstWelcomeBackScreen,
         shouldShowSecondWelcomeBackScreen} from 'store/main_selectors'
 import {DailyGoal} from './dashboard/daily_goal'
 import {ProjectCard} from './dashboard/project_card'
@@ -38,7 +37,6 @@ const GENERATING_ACTION_PLAN_INTERSTITIAL_DURATION_MILLISEC = 5000
 class DashboardPageBase extends React.Component {
   static propTypes = {
     dispatch: React.PropTypes.func.isRequired,
-    isFirstActionPlanReadyToBeCreated: React.PropTypes.bool,
     isFirstWelcomeBackScreenNeeded: React.PropTypes.bool,
     isNewActionPlanNeeded: React.PropTypes.bool,
     isSecondWelcomeBackScreenNeeded: React.PropTypes.bool,
@@ -47,12 +45,9 @@ class DashboardPageBase extends React.Component {
   }
 
   state = {
-    hasShownFirstDayModal: false,
     hasTriedToRefreshActionPlan: false,
     isCreatingActionPlanForTheFirstTime: false,
     isCreatingActionPlanShown: false,
-    isDebugModalShown: false,
-    isFirstDayModalShown: false,
     isHistoryShown: false,
     openAction: null,
   }
@@ -73,35 +68,21 @@ class DashboardPageBase extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const {isFirstActionPlanReadyToBeCreated, isFirstWelcomeBackScreenNeeded,
-           isNewActionPlanNeeded, isSecondWelcomeBackScreenNeeded, openActionId,
-           user} = nextProps
-    const {hasShownFirstDayModal, isFirstDayModalShown, openAction} = this.state
+    const {isFirstWelcomeBackScreenNeeded, isNewActionPlanNeeded,
+           isSecondWelcomeBackScreenNeeded, openActionId, user} = nextProps
+    const {openAction} = this.state
 
     if (openActionId) {
       // Do not show anything below an action loaded by URL.
       return
     }
 
-    if (isFirstActionPlanReadyToBeCreated) {
-      if (!hasShownFirstDayModal) {
-        this.setState({hasShownFirstDayModal: true, isFirstDayModalShown: true})
-        // Show the first day modal.
-        return
-      }
-      if (isFirstDayModalShown) {
-        // Do not show anything below the first day modal.
-        return
-      }
-    }
-
-    if (!hasShownFirstDayModal && (
-          isFirstWelcomeBackScreenNeeded || isSecondWelcomeBackScreenNeeded)) {
+    if (isFirstWelcomeBackScreenNeeded || isSecondWelcomeBackScreenNeeded) {
       // Do not show anything below welcome back modals.
       return
     }
 
-    if (!hasShownFirstDayModal && isNewActionPlanNeeded) {
+    if (isNewActionPlanNeeded) {
       this.createActionPlan()
     }
 
@@ -125,7 +106,7 @@ class DashboardPageBase extends React.Component {
   }
 
   fastForward = () => {
-    const {dispatch, user} = this.props
+    const {user} = this.props
     if (this.state.isCreatingActionPlanShown) {
       this.setState({isCreatingActionPlanShown: false})
       return
@@ -133,8 +114,6 @@ class DashboardPageBase extends React.Component {
     const projects = user.projects || []
     if (projects.length) {
       browserHistory.push(Routes.PROJECT_PAGE + '/' + projects[0].projectId)
-    } else {
-      dispatch(openNewProjectModal())
     }
   }
 
@@ -143,11 +122,6 @@ class DashboardPageBase extends React.Component {
     if (this.props.openActionId) {
       browserHistory.push(Routes.DASHBOARD_PAGE)
     }
-  }
-
-  handleFirstDayModalClose = () => {
-    this.setState({isFirstDayModalShown: false})
-    this.createActionPlan()
   }
 
   handleWelcomeBackModalClose = interaction => {
@@ -187,23 +161,19 @@ class DashboardPageBase extends React.Component {
   }
 
   render() {
-    const {dispatch, isFirstWelcomeBackScreenNeeded, isSecondWelcomeBackScreenNeeded,
+    const {isFirstWelcomeBackScreenNeeded, isSecondWelcomeBackScreenNeeded,
            openActionId, user} = this.props
-    const {hasShownFirstDayModal, isCreatingActionPlanForTheFirstTime,
-           isCreatingActionPlanShown, isDebugModalShown, isFirstDayModalShown,
-           isHistoryShown, openAction} = this.state
+    const {isCreatingActionPlanForTheFirstTime,
+           isCreatingActionPlanShown, isHistoryShown, openAction} = this.state
     const pastActionsAndProjects = allDoneAndPastActionsAndProjects(user.projects)
-    const canShowAnyWelcomeBackScreen =
-      !openAction && !isFirstDayModalShown && !hasShownFirstDayModal
+    const canShowAnyWelcomeBackScreen = !openAction
     const isSecondWelcomeBackScreenShown =
       canShowAnyWelcomeBackScreen && isSecondWelcomeBackScreenNeeded
     const isFirstWelcomeBackScreenShown =
       canShowAnyWelcomeBackScreen && isFirstWelcomeBackScreenNeeded &&
       !isSecondWelcomeBackScreenNeeded
-    const isAnythingBelowModalShown = !(
-      openActionId || isFirstDayModalShown || isFirstWelcomeBackScreenShown ||
-      isSecondWelcomeBackScreenShown)
-    const isWelcomePageShown = !(user.projects && user.projects.length)
+    const isAnythingBelowModalShown =
+      !(openActionId || isFirstWelcomeBackScreenShown || isSecondWelcomeBackScreenShown)
     const style = {
       backgroundColor: Colors.BACKGROUND_GREY,
       display: 'flex',
@@ -214,28 +184,18 @@ class DashboardPageBase extends React.Component {
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.fastForward} />
       <ShortKey keyCode="KeyY" ctrlKey={true} shiftKey={true} onKeyPress={this.moveToTomorrow} />
 
-      <ShortKey
-          keyCode="KeyE" ctrlKey={true} shiftKey={true}
-          onKeyPress={() => this.setState({isDebugModalShown: true})} />
-
-      {isAnythingBelowModalShown ? isWelcomePageShown ?
-        <WelcomePage dispatch={dispatch} style={{flex: 1}} /> :
+      {isAnythingBelowModalShown ?
         <DashboardMainContent
             isCreatingActionPlanShown={isCreatingActionPlanShown}
             user={user} onOpenAction={openAction => this.setState({openAction})}
             onShowActionHistoryClick={() => this.setState({isHistoryShown: true})}
-            isCreatingActionPlanForTheFirstTime={isCreatingActionPlanForTheFirstTime} /> : null}
+            isCreatingActionPlanForTheFirstTime={isCreatingActionPlanForTheFirstTime} />
+        : null}
 
-      {isAnythingBelowModalShown ? <DashboardSidebar
-          projects={user.projects}
-          isWelcomePageShown={isWelcomePageShown}
-          onNewProjectClick={() => dispatch(openNewProjectModal())} /> : null}
+      {isAnythingBelowModalShown ? <DashboardSidebar projects={user.projects} /> : null}
 
       {/* Modals on top of dashboard. The order defines which one is on top. */}
 
-      <DebugModal
-          onClose={() => this.setState({isDebugModalShown: false})}
-          isShown={isDebugModalShown} />
       <ActionsHistory
           isShown={isHistoryShown} actionsAndProjects={pastActionsAndProjects}
           onClose={() => this.setState({isHistoryShown: false})}
@@ -247,9 +207,6 @@ class DashboardPageBase extends React.Component {
       <StickyActionPane
           isShown={!!(openAction && isActionStuck(openAction))}
           onClose={this.handleActionModalClose} action={openAction} />
-      <FirstDayModal
-          isShown={isFirstDayModalShown}
-          onClose={this.handleFirstDayModalClose} />
       <WelcomeBackModal
           isShown={isFirstWelcomeBackScreenShown}
           onClose={() => this.handleWelcomeBackModalClose('hasSeenFirstWelcomeBack')} />
@@ -261,7 +218,6 @@ class DashboardPageBase extends React.Component {
 }
 const DashboardPage = connect(({app, user}, {params}) => {
   return {
-    isFirstActionPlanReadyToBeCreated: isFirstActionPlanReadyToBeCreated(user),
     isFirstWelcomeBackScreenNeeded: shouldShowFirstWelcomeBackScreen(user),
     isNewActionPlanNeeded: isNewActionPlanNeeded(user.projects),
     isSecondWelcomeBackScreenNeeded: shouldShowSecondWelcomeBackScreen(user),
@@ -273,13 +229,11 @@ const DashboardPage = connect(({app, user}, {params}) => {
 
 class DashboardSidebar extends React.Component {
   static propTypes = {
-    isWelcomePageShown: React.PropTypes.bool,
-    onNewProjectClick: React.PropTypes.func.isRequired,
     projects: React.PropTypes.array,
   }
 
   render() {
-    const {projects, isWelcomePageShown, onNewProjectClick} = this.props
+    const {projects} = this.props
     const projectsStyle = {
       backgroundColor: Colors.MODAL_PROJECT_GREY,
       display: 'flex',
@@ -293,15 +247,6 @@ class DashboardSidebar extends React.Component {
             key={project.projectId || i} project={project}
             style={{marginBottom: 20}} />
       })}
-
-      {isWelcomePageShown ? null :
-      <RoundButton
-          type="discreet" isNarrow={true}
-          onClick={onNewProjectClick}
-          style={{alignSelf: 'center', letterSpacing: .5}}>
-        Ajouter un nouveau projet
-      </RoundButton>
-      }
     </div>
 
   }
@@ -460,83 +405,6 @@ class GeneratingActionPlanInterstitial extends React.Component {
 }
 
 
-class WelcomePage extends React.Component {
-  static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    style: React.PropTypes.object,
-  }
-
-  render() {
-    const style = {
-      alignItems: 'center',
-      backgroundColor: Colors.BACKGROUND_GREY,
-      color: Colors.CHARCOAL_GREY,
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: 16,
-      lineHeight: 1.88,
-      textAlign: 'center',
-      ...this.props.style,
-    }
-    const dayOneIconStyle = {
-      backgroundColor: Colors.SKY_BLUE,
-      borderRadius: '100%',
-      height: 122,
-      margin: '32px auto',
-      width: 122,
-    }
-    const separatorStyle = {
-      alignSelf: 'stretch',
-      borderBottom: 'none',
-      borderTop: 'solid 1px ' + Colors.SILVER,
-      margin: '0 50px 50px',
-    }
-    const titleStyle = {
-      color: Colors.SLATE,
-      fontSize: 25,
-      fontWeight: 'bold',
-      margin: '12px 0 0',
-      textAlign: 'center',
-    }
-    const explanationStyle = {
-      color: Colors.SLATE,
-      fontSize: 14,
-      lineHeight: 1.43,
-      margin: 38,
-      maxWidth: 480,
-      textAlign: 'center',
-    }
-    return <div style={style}>
-      <div style={{alignItems: 'center', display: 'flex', height: 220, justifyContent: 'center'}}>
-        <img style={dayOneIconStyle} src={require('images/day-1-picto.svg')} />
-      </div>
-
-      <hr style={separatorStyle} />
-
-      <h1 style={titleStyle}>
-        Boostez votre recherche d'emploi
-      </h1>
-
-      <div style={explanationStyle}>
-        Pour chaque métier que vous recherchez, nous allons vous aider à créer
-        un <strong>plan d'action sur mesure</strong>.<br />
-
-        <br />
-
-        En fonction de ce plan, nous vous proposerons ensuite des <strong>actions
-        simples et concrètes</strong> tous les jours.
-      </div>
-
-      <RoundButton
-          type="validation" style={{margin: 12}}
-          onClick={() => this.props.dispatch(openNewProjectModal())}>
-        Créer un plan d'action pour un métier
-      </RoundButton>
-    </div>
-  }
-}
-
-
 class ProjectActions extends React.Component {
   static propTypes = {
     futureProject: React.PropTypes.object,
@@ -654,27 +522,6 @@ class SeparatorBase extends React.Component {
 const Separator = Radium(SeparatorBase)
 
 
-class FirstDayModal extends React.Component {
-  static propTypes = {
-    isShown: React.PropTypes.bool,
-    onClose: React.PropTypes.func.isRequired,
-  }
-
-  render() {
-    const {isShown, onClose} = this.props
-    return <GamificationModal
-        isShown={isShown} onClose={onClose}
-        title="Félicitations !"
-        imageSrc={require('images/day-1-picto.svg')}
-        buttonText="C'est parti">
-      Vous venez de créer votre premier projet.
-      Nous allons maintenant vous <strong>accompagner au quotidien</strong> pour
-      avancer dans votre recherche d'emploi&nbsp;!
-    </GamificationModal>
-  }
-}
-
-
 class WelcomeBackModal extends React.Component {
   static propTypes = {
     isShown: React.PropTypes.bool,
@@ -689,8 +536,9 @@ class WelcomeBackModal extends React.Component {
         imageSrc={require('images/jourx-ico.svg')}
         buttonText="Découvrir mon plan d'action">
     Nous sommes là pour vous aider dans la durée.
-    Plus vous utilisez Bob Emploi et <strong>plus nous apprendrons</strong> comment vous faire de
-    meilleures recommandations&nbsp;!
+    Plus vous utilisez {config.productName} et <strong>plus nous
+    apprendrons</strong> comment vous faire de meilleures
+    recommandations&nbsp;!
     </GamificationModal>
   }
 }

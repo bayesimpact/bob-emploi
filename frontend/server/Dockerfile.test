@@ -1,4 +1,4 @@
-FROM docker.bayesimpact.org/bob-emploi/frontend-flask
+FROM bayesimpact/bob-emploi-frontend-server
 
 COPY frontend/server/requirements-testing.txt /work
 RUN pip install -r requirements-testing.txt

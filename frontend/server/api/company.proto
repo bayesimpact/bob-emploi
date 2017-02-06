@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package bayesimpact.pe;
+package bayes.bob;
 
 message Company {
   // Main name of the company.

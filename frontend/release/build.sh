@@ -15,7 +15,7 @@ docker-compose run ${RM_FLAG} frontend-dev-webpack npm run dist
 docker build --pull \
   --build-arg GIT_SHA1="$GIT_SHA1" \
   -f frontend/release/Dockerfile \
-  -t docker.bayesimpact.org/bob-emploi/frontend \
+  -t bayesimpact/bob-emploi-frontend \
   frontend
 
 # Build the frontend-flask container.

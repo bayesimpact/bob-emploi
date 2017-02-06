@@ -1,11 +1,11 @@
 import Cookies from 'js-cookie'
 
-import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, CLOSE_NEW_PROJECT_MODAL, GET_DISCOVERY_DATA,
-        OPEN_NEW_PROJECT_MODAL, GET_PROJECT_REQUIREMENTS, GET_POTENTIAL_CHANTIERS,
+import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE,
+        GET_PROJECT_REQUIREMENTS, GET_POTENTIAL_CHANTIERS,
         UPDATE_PROJECT_CHANTIERS, GET_DASHBOARD_EXPORT, CREATE_DASHBOARD_EXPORT,
         OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_CHANTIER_TITLES,
         ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, REFRESH_USER_DATA,
-        LOGOUT, DELETE_USER_DATA, CREATE_ACTION_PLAN, GET_DISCOVERY_JOB_GROUP_DATA} from './actions'
+        LOGOUT, DELETE_USER_DATA, CREATE_ACTION_PLAN} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
@@ -14,12 +14,8 @@ const appInitialData = {
   chantierTitles: {},
   // Cache for dashboard exports.
   dashboardExports: {},
-  // Cache for discoveries keyed by "jobId:cityId".
-  discoveries: {},
   isMobileVersion: false,
   isNewProjectModalOpen: false,
-  // Cache for job group stats keyed by "romeId:cityId".
-  jobGroupStats: {},
   // Cache of job requirements.
   jobRequirements: {},
   loginModal: null,
@@ -36,10 +32,6 @@ function app(state=appInitialData, action) {
       return {...state, loginModal: {defaultValues: action.defaultValues || {}}}
     case CLOSE_LOGIN_MODAL:
       return {...state, loginModal: null}
-    case OPEN_NEW_PROJECT_MODAL:
-      return {...state, isNewProjectModalOpen: true, newProjectProps: action.props}
-    case CLOSE_NEW_PROJECT_MODAL:
-      return {...state, isNewProjectModalOpen: false}
     case GET_PROJECT_REQUIREMENTS:
       if (action.status === 'success' && action.project) {
         return {
@@ -79,38 +71,6 @@ function app(state=appInitialData, action) {
                   userHasStarted: !!action.chantierIds[chantier.template.chantierId],
                 })),
             },
-          },
-        }
-      }
-      break
-    case GET_DISCOVERY_DATA:
-      if (action.status === 'success') {
-        const {city, jobGroups, sourceJob} = action.response
-        const jobGroupStats = {...state.jobGroupStats};
-        // jobGroups is a list of job group stats: we store it both in the
-        // discoveries map to have the exploration data and we also prepopulate
-        // the jobGroupStats map with each individual stat per job group.
-        (jobGroups || []).forEach(jobGroup => {
-          jobGroups[jobGroup.romeId + ':' + city.cityId] = jobGroup
-        })
-        return {
-          ...state,
-          discoveries: {
-            ...state.discoveries,
-            [sourceJob.codeOgr + ':' + city.cityId]: jobGroups,
-          },
-          jobGroupStats,
-        }
-      }
-      break
-    case GET_DISCOVERY_JOB_GROUP_DATA:
-      if (action.status === 'success') {
-        const {jobGroup} = action.response
-        return {
-          ...state,
-          jobGroupStats: {
-            ...state.jobGroupStats,
-            [jobGroup.romeId + ':' + action.city.cityId]: action.response,
           },
         }
       }

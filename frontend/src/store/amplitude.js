@@ -6,7 +6,13 @@ import {Logger} from './logging'
 
 
 export const createAmplitudeMiddleware = actionTypesToLog => {
-  window.amplitude.getInstance().init(config.amplitudeToken)
+  // More info about Amplitude client options:
+  // https://github.com/amplitude/Amplitude-Javascript#configuration-options
+  window.amplitude.getInstance().init(config.amplitudeToken, null, {
+    includeGclid: true,
+    includeReferrer: true,
+    includeUtm: true,
+  })
   const logger = new Logger(actionTypesToLog)
   let userId
   return store => next => action => {

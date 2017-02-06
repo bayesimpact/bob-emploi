@@ -73,6 +73,17 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
   render() {
     const {drivingLicenses, englishLevelEstimate, isValidated, highestDegree,
            officeSkillsEstimate} = this.state
+    const isMobileVersion = this.context
+    // TODO(guillaume): Put more space between checkboxes on mobile.
+    const checkboxListStyle = {
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      justifyContent: 'space-between',
+    }
+    const radioGroupStyle = {
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      justifyContent: 'space-between',
+    }
     return <ProfileStep
         title="Vos qualifications"
         fastForward={this.fastForward}
@@ -80,8 +91,7 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
         onPreviousButtonClick={this.handleBack}
         {...this.props}>
       <FieldSet label="Plus haut niveau de diplôme obtenu"
-                isValid={!!highestDegree} isValidated={isValidated}
-                style={{width: 360}}>
+                isValid={!!highestDegree} isValidated={isValidated}>
         <Select onChange={this.handleChange('highestDegree')} value={highestDegree}
                 options={degrees} />
       </FieldSet>
@@ -90,12 +100,12 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
             options={drivingLicensesOptions}
             values={drivingLicenses}
             onChange={this.handleChange('drivingLicenses')}
-            style={{display: 'flex', justifyContent: 'space-between'}} />
+            style={checkboxListStyle} />
       </FieldSet>
       <FieldSet
           label="Niveau d'anglais" isValid={!!englishLevelEstimate} isValidated={isValidated}>
         <RadioGroup
-            style={{justifyContent: 'space-between'}}
+            style={radioGroupStyle}
             options={levelEstimateOptions}
             value={englishLevelEstimate}
             onChange={this.handleChange('englishLevelEstimate')} />
@@ -104,7 +114,7 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
           label="Niveau en suite bureautique (Word, Excel, …)"
           isValid={!!officeSkillsEstimate} isValidated={isValidated}>
         <RadioGroup
-            style={{justifyContent: 'space-between'}}
+            style={radioGroupStyle}
             options={levelEstimateOptions}
             value={officeSkillsEstimate}
             onChange={this.handleChange('officeSkillsEstimate')} />
