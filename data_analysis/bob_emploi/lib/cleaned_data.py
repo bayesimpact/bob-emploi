@@ -23,7 +23,7 @@ import re
 
 import pandas
 
-_ROME_VERSION = 'v329'
+_ROME_VERSION = 'v330'
 
 
 # TODO: Use this function in city suggest importer to read the stats file.
@@ -194,9 +194,9 @@ def rome_work_environments(
     links = pandas.read_csv(links_filename)
     ref = pandas.read_csv(ref_filename)
     environments = pandas.merge(links, ref, on='code_ogr', how='inner')
+    environments['name'] = environments.libelle_env_travail.str.replace("''", "'")
     return environments.rename(columns={
         'libelle_type_section_env_trav': 'section',
-        'libelle_env_travail': 'name',
     })[['name', 'code_ogr', 'code_rome', 'section']]
 
 
@@ -368,3 +368,19 @@ def french_cities(data_folder='data', filename=None, unique=False):
 
     return cities[[
         'name', 'departement_id', 'region_id', 'current', 'current_city_id', 'arrondissement']]
+
+
+def scraped_imt(data_folder='data', filename=None):
+    """IMT - Information sur le Marché du Travail.
+
+    This is information on the labor market scraped from the Pôle emploi website.
+
+    The table is indexed by "departement_id" and "rome_id" and contains the
+    fields equivalent to the ImtLocalJobStats protobuf in camelCase.
+    """
+    if not filename:
+        filename = path.join(data_folder, 'scraped_imt_local_job_stats.json')
+    imt = pandas.read_json(filename, orient='records')
+    imt['departement_id'] = imt.city.apply(lambda c: c['departementId'])
+    imt['rome_id'] = imt.job.apply(lambda j: j['jobGroup']['romeId'])
+    return imt.set_index(['departement_id', 'rome_id'])

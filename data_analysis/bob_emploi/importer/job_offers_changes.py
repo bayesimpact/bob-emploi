@@ -1,7 +1,10 @@
-"""Importer for changes of # of job offers.
+"""Precomputation for changes of # of job offers.
 
-This script gathers information from job offers and uploads to MongoDB the
-changes in the past year per job group and per département.
+NOTE: This script is not an importer!
+
+This script gathers information from job offers into a JSON file that is then
+combined with other results and uploaded to MongoDB. It computes the changes in
+the past year per job group and per département.
 
 It does not use pandas as we want to be able to swallow a very large file (13
 Gb) that would not fit in memory. To do that we compute data on the fly.
@@ -84,6 +87,4 @@ if __name__ == "__main__":
     # This is actually never used like this, in a normal importing flow, we
     # would import the data in a .json file and then combine it with other data
     # in local_diagnosis.py.
-    # TODO(stephan): Mark this file so that it's easy to spot that it's not
-    # doing an import.
     mongo.importer_main(csv2dicts, 'job_offers_changes')  # pragma: no cover

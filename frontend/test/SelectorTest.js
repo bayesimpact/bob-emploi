@@ -4,8 +4,6 @@ var expect = chai.expect
 import {onboardingComplete, shouldShowFirstWelcomeBackScreen,
         shouldShowSecondWelcomeBackScreen} from 'store/main_selectors'
 
-// TODO(stephan): Add tests for selector functions in `main_selectors`.
-
 function getUser() {
   return {
     interactions: {
@@ -114,6 +112,13 @@ describe('Onboarding complete', () => {
   it('should return false if the user does not have a project yet', () => {
     const user = getCompleteUser()
     user.projects = []
+    const result = onboardingComplete()
+    expect(result).to.equal(false)
+  })
+
+  it('should return false if the user has an incomplete project', () => {
+    const user = getCompleteUser()
+    user.projects[0].isIncomplete = true
     const result = onboardingComplete()
     expect(result).to.equal(false)
   })

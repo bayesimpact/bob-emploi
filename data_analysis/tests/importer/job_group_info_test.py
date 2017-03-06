@@ -12,7 +12,6 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
 
     rome_csv_pattern = path.join(
         path.dirname(__file__), 'testdata/unix_%s_v327_utf8.csv')
-    job_images_urls_pattern = 'https://storage.gra1.cloud.ovh.net/v1/AUTH_abc%%20def/%s.jpg'
     job_requirements_json = path.join(
         path.dirname(__file__), 'testdata/job_offers/job_requirements.json')
     job_application_complexity_json = path.join(
@@ -21,8 +20,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
     def test_make_dicts(self):
         """Test basic usage of the csv2dicts function."""
         collection = job_group_info.make_dicts(
-            self.rome_csv_pattern, self.job_images_urls_pattern,
-            self.job_requirements_json, self.job_application_complexity_json)
+            self.rome_csv_pattern, self.job_requirements_json, self.job_application_complexity_json)
 
         self.assertEqual(531, len(collection))
         for info in collection:
@@ -53,10 +51,6 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual(
             ['Boutique, commerce de détail'],
             d1501.work_environment_keywords.structures)
-        self.assertEqual(
-            'https://storage.gra1.cloud.ovh.net/v1/AUTH_abc%20def/F1204.jpg',
-            job_group_protos['F1204'].image_link,
-            msg='Image via job group ID')
 
 
 if __name__ == '__main__':

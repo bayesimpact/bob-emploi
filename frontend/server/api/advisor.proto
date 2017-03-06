@@ -5,7 +5,7 @@ package bayes.bob;
 // The definition of an Advice Module. See http://go/bob:advisor-design.
 message AdviceModule {
   // Unique readable ID for the module.
-  string  advice_id = 4;
+  string advice_id = 4;
 
   // Name of the scoring model to decide whether to trigger this advice.
   string trigger_scoring_model = 1;
@@ -17,4 +17,8 @@ message AdviceModule {
   // Whether this module is fully implemented, otherwise it's only availble to
   // test users.
   bool is_ready_for_prod = 3;
+
+  // Name of the Advice message's field to store extra data for this module to
+  // render a card in the client.
+  string extra_data_field_name = 5;
 }

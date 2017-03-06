@@ -2,7 +2,7 @@ Notre objectif est de créer le service le plus utile possible pour aider les pe
 
 ### Proposez de nouvelles recommandations
 
-Bob Emploi fonctionne en proposant des recommandations aussi personnalisées que possible aux chercheurs d'emploi dans le but de les aider à avancer dans leur recherche. Ces recommandations sont de deux types : les solutions stratégiques ("Avez-vous pensé aux contrats en freelance ?") et les actions simples et concrètes qui seront proposées chaque jour aux chercheurs d'emploi pour les mettre en œuvre ("Lire cet article sur comment envisager un passage en freelance").
+Bob Emploi fonctionne en proposant des recommandations aussi personnalisées que possible aux chercheurs d'emploi dans le but de les aider à avancer dans leur recherche. Ces recommandations sont de deux types : les solutions stratégiques (« Avez-vous pensé aux contrats en freelance ? ») et les actions simples et concrètes qui seront proposées chaque jour aux chercheurs d'emploi pour les mettre en œuvre (« Lire cet article sur comment envisager un passage en freelance »).
 Nous avons créé à ce jour plus de 500 recommandations, notamment grâce aux contributions de chercheurs d'emploi, de conseillers Pôle Emploi, mais aussi d'individus provenant de tous horizons.
 
 Si vous souhaitez partager des suggestions propres à votre région, vous pouvez nous [les envoyer en cliquant ici](https://airtable.com/shrmcnxqIrQBND0AC).

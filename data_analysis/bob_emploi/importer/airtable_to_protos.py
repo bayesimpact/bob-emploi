@@ -38,6 +38,7 @@ from google.protobuf import json_format
 from bob_emploi.lib import mongo
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import chantier_pb2
 
 # Regular expression to validate links, e.g http://bayesimpact.org. Keep in
@@ -108,7 +109,9 @@ PROTO_CLASSES = {
     'ActionTemplate': _ActionTemplateConverter(
         action_pb2.ActionTemplate, 'action_template_id', required_fields=['chantiers']),
     'StickyActionStep': _ProtoAirtableConverter(
-        action_pb2.StickyActionStep, None, required_fields=['title'])
+        action_pb2.StickyActionStep, None, required_fields=['title']),
+    'AdviceModule': _ProtoAirtableConverter(
+        advisor_pb2.AdviceModule, None, required_fields=['advice_id', 'trigger_scoring_model']),
 }
 
 

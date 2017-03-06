@@ -1,6 +1,5 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import {CircularProgress} from 'components/progress'
 
 import {FieldSet, Select} from 'components/theme'
 import {Step} from './step'
@@ -48,7 +47,7 @@ class NewProjectExperienceStepBase extends React.Component {
     jobRequirements: React.PropTypes.object,
     newProject: React.PropTypes.object,
     onSubmit: React.PropTypes.func.isRequired,
-    userProfile: React.PropTypes.shape({
+    profile: React.PropTypes.shape({
       gender: React.PropTypes.string,
     }),
   }
@@ -67,13 +66,9 @@ class NewProjectExperienceStepBase extends React.Component {
     }
   }
 
-  constructor(props) {
-    super(props)
-    this.state = {...props.newProject}
-  }
-
   componentWillMount() {
     const {jobRequirements, newProject} = this.props
+    this.setState({...newProject})
     if (!jobRequirements[newProject.targetJob.codeOgr]) {
       this.props.dispatch(fetchProjectRequirements({
         targetJob: newProject.targetJob,
@@ -130,23 +125,19 @@ class NewProjectExperienceStepBase extends React.Component {
   }
 
   render() {
-    const {gender} = this.props.userProfile
+    const {gender} = this.props.profile
     const {isFetchingRequirements} = this.props
     const {previousJobSimilarity, seniority, isValidated,
            diplomaFulfillmentEstimate, networkEstimate} = this.state
     const requiredDiplomaNames = this.getRequiredDiplomaNames()
 
-    const diplomasLabel = <span>
-      Pensez-vous avoir les diplômes requis pour ce métier&nbsp;?
-      Les offres demandent souvent un {requiredDiplomaNames.join(', ')} ou équivalent.
-    </span>
     const networkLabel = <span>
       Avez-vous un bon réseau&nbsp;?
       Connaissez-vous des gens qui pourraient vous aider à obtenir ce métier&nbsp;?
     </span>
     return <Step {...this.props} fastForward={this.fastForward}
                       onNextButtonClick={this.handleSubmit}>
-      {isFetchingRequirements ? <CircularProgress /> : <div>
+      <div>
         <FieldSet label="Avez-vous déjà fait ce métier&nbsp;?"
                   isValid={!!previousJobSimilarity} isValidated={isValidated}>
           <Select options={previousJobSimilarityOptions} value={previousJobSimilarity}
@@ -158,9 +149,16 @@ class NewProjectExperienceStepBase extends React.Component {
           <Select options={seniorityOptions} value={seniority}
                   onChange={this.handleChange('seniority')} />
         </FieldSet>
-        {requiredDiplomaNames.length ? (
-          <FieldSet label={diplomasLabel} style={{maxWidth: 600}}
-                    isValid={!!diplomaFulfillmentEstimate} isValidated={isValidated}>
+        {requiredDiplomaNames.length || isFetchingRequirements ? (
+          <FieldSet
+            label={<span>
+              Pensez-vous avoir les diplômes requis pour ce métier&nbsp;?
+              {requiredDiplomaNames.length ? <span> Les
+                offres demandent souvent un {requiredDiplomaNames.join(', ')} ou équivalent.
+              </span> : null}
+            </span>}
+            style={{maxWidth: 600}}
+            isValid={!!diplomaFulfillmentEstimate} isValidated={isValidated}>
             <Select
                 options={getDiplomaFulfillmentEstimateOptions(gender)}
                 value={diplomaFulfillmentEstimate}
@@ -173,7 +171,7 @@ class NewProjectExperienceStepBase extends React.Component {
               value={networkEstimate && networkEstimate.toString()}
               onChange={this.handleChange('networkEstimate')} />
         </FieldSet>
-      </div>}
+      </div>
     </Step>
   }
 }

@@ -166,11 +166,10 @@ class LevelSelector extends React.Component {
     projectIntensity: React.PropTypes.string,
   }
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      preselection: props.projectIntensity || 'PROJECT_PRETTY_INTENSE',
-    }
+  componentWillMount() {
+    this.setState({
+      preselection: this.props.projectIntensity || 'PROJECT_PRETTY_INTENSE',
+    })
   }
 
   fastForward = () => {

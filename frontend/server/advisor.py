@@ -14,15 +14,15 @@ from bob_emploi.frontend.api import user_pb2
 
 # TODO(pascal): Import from AirTable.
 _ADVICE_MODULES = [
+    # TODO(pascal): Clean up scoring model then remove.
     advisor_pb2.AdviceModule(
         advice_id='reorientation',
         trigger_scoring_model='advice-reorientation',
         # https://airtable.com/tblsScCB9ouUfiQ8q/viwBc6UUcEcxN2wC4/rec1CWahSiEtlwEHW
-        engage_sticky_action_template='rec1CWahSiEtlwEHW',
-        is_ready_for_prod=True),
+        engage_sticky_action_template='rec1CWahSiEtlwEHW'),
     advisor_pb2.AdviceModule(
         advice_id='spontaneous-application',
-        trigger_scoring_model='chantier-spontaneous-application',
+        trigger_scoring_model='constant(2)',
         # https://airtable.com/tblsScCB9ouUfiQ8q/viwBc6UUcEcxN2wC4/recx1jyNbJWmcK7XP
         engage_sticky_action_template='recx1jyNbJWmcK7XP',
         is_ready_for_prod=True),
@@ -32,16 +32,24 @@ _ADVICE_MODULES = [
         # https://airtable.com/tblsScCB9ouUfiQ8q/viwBc6UUcEcxN2wC4/recmBrBpGNTaF6CPA
         engage_sticky_action_template='recmBrBpGNTaF6CPA',
         is_ready_for_prod=True),
+    # TODO(pascal): Clean up scoring model then remove.
     advisor_pb2.AdviceModule(
         advice_id='long-cdd',
         trigger_scoring_model='advice-long-cdd',
-        engage_sticky_action_template='recWvSwLhhlIpVyJl',
+        engage_sticky_action_template='recWvSwLhhlIpVyJl'),
+    advisor_pb2.AdviceModule(
+        advice_id='other-work-env',
+        trigger_scoring_model='advice-other-work-env',
+        # TODO(pascal): Fix when ready.
+        engage_sticky_action_template='reciXQKXyZb1beHXz',
+        extra_data_field_name='other_work_env_advice_data',
         is_ready_for_prod=True),
     advisor_pb2.AdviceModule(
-        advice_id='organization',
+        advice_id='improve-success',
+        # TODO(guillaume): Fix with correct model.
         trigger_scoring_model='constant(2)',
-        engage_sticky_action_template='reciXQKXyZb1beHXz',
-        is_ready_for_prod=True),
+        # TODO(guillaume): Fix with correct sticky.
+        engage_sticky_action_template='reciXQKXyZb1beHXz'),
 ]
 
 _ScoredAdvice = collections.namedtuple('ScoredAdvice', ['advice', 'score'])
@@ -54,6 +62,8 @@ def maybe_advise(user, project, database):
         user: the full user info.
         project: the project to advise. This proto will be modified.
     """
+    if project.is_incomplete:
+        return
     _maybe_recommend_advice(user, project, database)
     _maybe_populate_engage_action(user, project, database)
 
@@ -78,15 +88,22 @@ def _maybe_recommend_advice(user, project, database):
 
     modules = sorted(
         _ADVICE_MODULES,
-        key=lambda m: scores[m.advice_id],
+        key=lambda m: (scores.get(m.advice_id, 0), m.advice_id),
         reverse=True)
     for module in modules:
+        if not scores.get(module.advice_id):
+            break
         piece_of_advice = project.advices.add()
         piece_of_advice.advice_id = module.advice_id
-        if scores.get(module.advice_id):
-            piece_of_advice.status = project_pb2.ADVICE_RECOMMENDED
-        else:
-            piece_of_advice.status = project_pb2.ADVICE_NOT_RECOMMENDED
+        piece_of_advice.status = project_pb2.ADVICE_RECOMMENDED
+        piece_of_advice.num_stars = scores.get(module.advice_id)
+
+        # TODO(pascal): Refactor with a cleaner pattern when/if we have more fields.
+        if module.extra_data_field_name == 'other_work_env_advice_data':
+            job_group_info = scoring_project.job_group_info()
+            if job_group_info.HasField('work_environment_keywords'):
+                piece_of_advice.other_work_env_advice_data.work_environment_keywords.CopyFrom(
+                    job_group_info.work_environment_keywords)
 
     return True
 
@@ -103,13 +120,7 @@ def _maybe_populate_engage_action(user, project, database):
 
 
 def _advice_need_engage_action(advice):
-    return advice.advice_id and \
-        not advice.engagement_action.action_id and \
-        advice.status in {
-            project_pb2.ADVICE_ACCEPTED,
-            project_pb2.ADVICE_DECLINED,
-            project_pb2.ADVICE_NOT_RECOMMENDED,
-        }
+    return advice.advice_id and not advice.engagement_action.action_id
 
 
 def _get_engagement_action_template(advice_id, database):

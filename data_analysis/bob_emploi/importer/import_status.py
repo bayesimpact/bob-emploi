@@ -17,6 +17,7 @@ import termcolor
 import pymongo
 
 from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import discovery_pb2
 from bob_emploi.frontend.api import export_pb2
@@ -55,7 +56,7 @@ IMPORTERS = {
         name='ROME Mobility',
         command="""docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/rome_mobility.py \\
-            --rome_csv_pattern data/rome/csv/unix_%%s_v329_utf8.csv \\
+            --rome_csv_pattern data/rome/csv/unix_%%s_v330_utf8.csv \\
             --mongo_url "%(mongo_url)s""
         """,
         is_imported=True,
@@ -119,8 +120,7 @@ IMPORTERS = {
         name='Job Group Info',
         command="""docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/job_group_info.py \\
-            --rome_csv_pattern data/rome/csv/unix_%%s_v329_utf8.csv \\
-            --job_images_urls_pattern https://storage.gra1.cloud.ovh.net/v1/\
+            --rome_csv_pattern data/rome/csv/unix_%%s_v330_utf8.csv \\
 AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%%%%20Images/%%s.jpg \\
             --job_requirements_json data/job_offers/job_offers_requirements.json \\
             --job_application_complexity_json data/job_application_complexity.json \\
@@ -139,7 +139,7 @@ AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%%%%20Images/%%s.jpg \\
             --unemployment_duration_csv data/fhs_category_a_duration.csv \\
             --job_offers_changes_json data/job_offers/job_offers_changes.json \\
             --job_imt_json data/scraped_imt_local_job_stats.json \\
-            --mobility_csv data/rome/csv/unix_rubrique_mobilite_v329_utf8.csv \\
+            --mobility_csv data/rome/csv/unix_rubrique_mobilite_v330_utf8.csv \\
             --mongo_url "%(mongo_url)s"
         """,
         is_imported=True,
@@ -173,6 +173,20 @@ AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%%%%20Images/%%s.jpg \\
         is_imported=True,
         proto_type=geo_pb2.FrenchCity,
         key='Code officiel géographique'),
+    'advice_modules': Importer(
+        name='Advice modules',
+        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/airtable_to_protos.py \\
+            --table advice_modules \\
+            --proto AdviceModule \\
+            --mongo_collection advice_modules \\
+            --base_id appXmyc7yYj0pOcae \\
+            --mongo_url "%(mongo_url)s"
+        """,
+        is_imported=True,
+        proto_type=advisor_pb2.AdviceModule,
+        key='AirTable key'),
 }
 
 

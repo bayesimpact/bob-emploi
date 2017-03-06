@@ -54,9 +54,11 @@ class StickyActionPaneBase extends React.Component {
 const StickyActionPane = connect()(StickyActionPaneBase)
 
 
-class StickyAction extends React.Component {
+class StickyActionBase extends React.Component {
   static propTypes = {
     action: React.PropTypes.object,
+    advice: React.PropTypes.object,
+    dispatch: React.PropTypes.func.isRequired,
     // Node rendered at the bottom of all steps when the last step is done.
     doneNode: React.PropTypes.node,
     onStop: React.PropTypes.func,
@@ -78,6 +80,11 @@ class StickyAction extends React.Component {
     if (action !== prevAction) {
       this.updateExpandedStep(action)
     }
+  }
+
+  handleFinishStep = (step, text) => {
+    const {dispatch, action, advice} = this.props
+    dispatch(finishStickyActionStep(step, text, action, advice))
   }
 
   updateExpandedStep(action) {
@@ -151,6 +158,9 @@ class StickyAction extends React.Component {
       width: (100 * stickyProgress(action)) + '%',
     }
     const stopButtonStyle = {
+      ':hover': {
+        backgroundColor: Colors.BACKGROUND_GREY,
+      },
       borderRadius: 0,
       height: '100%',
       margin: 0,
@@ -185,23 +195,26 @@ class StickyAction extends React.Component {
   }
 
   render() {
-    const {action, onStop} = this.props
+    const {action, advice, onStop} = this.props
     const {expandedStepIndex} = this.state
     return <div>
-      <ConfirmStopModal
+      {onStop ? <ConfirmStopModal
           isShown={this.state.isConfirmStopModalShown}
           onClose={() => this.setState({isConfirmStopModalShown: false})}
-          onStop={onStop} actionGoal={action.shortGoal ? ('pour ' + action.shortGoal) : ''} />
+          onStop={onStop}
+          actionGoal={action.shortGoal ? ('pour ' + action.shortGoal) : ''} /> : null}
       {this.renderHeader()}
       {this.renderProgress()}
       {(action && action.steps || []).map((step, index) => <Step
-          key={index} index={index + 1} step={step}
+          key={index} index={index + 1} step={step} advice={advice}
+          onFinish={text => this.handleFinishStep(step, text)}
           onExpand={() => this.setState({expandedStepIndex: index})}
           isExpanded={index === expandedStepIndex} />)}
       {this.renderDoneFooter()}
     </div>
   }
 }
+const StickyAction = connect()(StickyActionBase)
 
 
 class ConfirmStopModal extends React.Component {
@@ -239,12 +252,12 @@ class ConfirmStopModal extends React.Component {
 }
 
 
-class StepBase extends React.Component {
+class Step extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
     index: React.PropTypes.number.isRequired,
     isExpanded: React.PropTypes.bool,
     onExpand: React.PropTypes.func,
+    onFinish: React.PropTypes.func,
     step: React.PropTypes.object.isRequired,
   }
   static contextTypes = {
@@ -286,8 +299,8 @@ class StepBase extends React.Component {
   }
 
   handleStepDone(text) {
-    const {dispatch, step} = this.props
-    dispatch(finishStickyActionStep(step, text))
+    const {onFinish} = this.props
+    onFinish && onFinish(text)
   }
 
   renderHeader() {
@@ -465,7 +478,6 @@ class StepBase extends React.Component {
     </div>
   }
 }
-const Step = connect()(StepBase)
 
 
 class StopStickyActionModal extends React.Component {
@@ -557,4 +569,4 @@ class Congratulations extends React.Component {
 }
 
 
-export {StickyActionPane, StickyAction, Congratulations}
+export {StickyActionPane}

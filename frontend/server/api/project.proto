@@ -8,7 +8,7 @@ import "bob_emploi/frontend/api/job.proto";
 
 package bayes.bob;
 
-// Next available tag: 23.
+// Next available tag: 11.
 message Project {
   // A unique identifier for this project.
   string project_id = 1;
@@ -120,20 +120,11 @@ message Project {
   // Job stats for this specific project.
   LocalJobStats local_stats = 9;
 
-  // ID of the best Advice Module for this project.
-  // DEPRECATED: Use the first element of advices.
-  string best_advice_id = 11 [deprecated = true];
-
-  // Status of the Advice for this project.
-  // DEPRECATED: Use the first element of advices.
-  AdviceStatus advice_status = 12 [deprecated = true];
-
-  // Feedback of the user when they decline an advice.
-  // DEPRECATED: Use the first element of advices.
-  string advice_declined_reason = 13 [deprecated = true];
-
   // Sorted list of advices that triggered for this user.
   repeated Advice advices = 21;
+
+  // Tells whether the project is missing information and needs more information by the user.
+  bool is_incomplete = 23;
 }
 
 message Advice {
@@ -149,6 +140,18 @@ message Advice {
 
   // Engagement "sticky" action to start if the user accepts the advice.
   Action engagement_action = 4;
+
+  // Number of stars (1 to 3) assigned to this advice when first scored.
+  float num_stars = 5;
+
+  // Extra data needed to recommend the "Other work environments" pieces of
+  // advice.
+  OtherWorkEnvAdviceData other_work_env_advice_data = 6;
+}
+
+message OtherWorkEnvAdviceData {
+  // Work environment for the targeted job group.
+  WorkEnvironment work_environment_keywords = 1;
 }
 
 enum NumberOfferEstimateOption {

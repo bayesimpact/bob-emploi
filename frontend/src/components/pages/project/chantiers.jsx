@@ -158,13 +158,12 @@ class PotentialChantiersGroupModal extends React.Component {
     title: React.PropTypes.node,
   }
 
-  constructor(props) {
-    super(props)
+  componentWillMount() {
+    const {defaultSelected, potentialChantiers} = this.props
     const selected = {}
-    props.potentialChantiers.forEach(chantier =>
-        selected[chantier.template.chantierId] = (
-          !!props.defaultSelected[chantier.template.chantierId]))
-    this.state = {selected}
+    potentialChantiers.forEach(chantier =>
+      selected[chantier.template.chantierId] = (!!defaultSelected[chantier.template.chantierId]))
+    this.setState({selected})
   }
 
   toggle = chantier => {
@@ -307,12 +306,11 @@ class PotentialChantiersGroupBase extends React.Component {
     title: React.PropTypes.node,
   }
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      isFirstTime: !!props.isFirstTime,
+  componentWillMount() {
+    this.setState({
+      isFirstTime: !!this.props.isFirstTime,
       isModalShown: false,
-    }
+    })
   }
 
   handleSubmitModal = newSelection => {
@@ -434,15 +432,15 @@ class PotentialChantiersLists extends React.Component {
     submitCaption: React.PropTypes.string,
   }
 
-  constructor(props) {
-    super(props)
+  componentWillMount() {
+    const {potentialChantiers} = this.props
     const areChantiersSelected = {};
-    (props.potentialChantiers.chantiers || []).forEach(chantier => {
+    (potentialChantiers.chantiers || []).forEach(chantier => {
       if (chantier.userHasStarted) {
         areChantiersSelected[chantier.template.chantierId] = true
       }
     })
-    this.state = {areChantiersSelected}
+    this.setState({areChantiersSelected})
   }
 
   isSelectionModified = () => {

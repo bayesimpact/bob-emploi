@@ -286,17 +286,17 @@ class _ImproveYourNetworkScoringModel(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if project.details.network_estimate >= 3:
-            # No need to improve their network: it is already good.
+        if project.details.network_estimate > 1:
+            # No need to improve their network: it is already good enough.
             return _Score(0)
 
         imt = project.imt_proto()
         first_modes = set(mode.first for mode in imt.application_modes.values())
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
-            return _Score(4)
+            return _Score(3)
 
-        return _Score(0)
+        return _Score(2)
 
 
 class _GetMoreOffersScoringModel(_ScoringModelBase):
@@ -979,6 +979,17 @@ class _AdviceLongCDD(_ScoringModelBase):
         return _Score(2 + contract_type_to_increase[job_pb2.CDD_OVER_3_MONTHS])
 
 
+class _AdviceOtherWorkEnv(_ScoringModelBase):
+    """A scoring model to trigger the "Other Work Environment" Advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        work_env = project.job_group_info().work_environment_keywords
+        if len(work_env.structures) > 1 or len(work_env.sectors) > 1:
+            return _Score(2)
+        return _Score(0)
+
+
 _ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'constructor'])
 
 
@@ -1021,6 +1032,7 @@ SCORING_MODELS = {
     'advice-reorientation': _AdviceReorientation(),
     'advice-improve-network': _ImproveYourNetworkScoringModel(),
     'advice-long-cdd': _AdviceLongCDD(),
+    'advice-other-work-env': _AdviceOtherWorkEnv(),
     'chantier-about-job': _LearnMoreAboutJobScoringModel(),
     'chantier-apprentissage': _ApprentissageScoringModel(),
     'chantier-atypical-profile': _ShowcaseAtypicalProfileScoringModel(),

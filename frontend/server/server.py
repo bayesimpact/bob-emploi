@@ -10,7 +10,6 @@ import collections
 import datetime
 import hashlib
 import itertools
-import json
 import logging
 import os
 import random
@@ -69,11 +68,16 @@ _PROJECT_INTENSITIES = {
 # Email regex from http://emailregex.com/
 _EMAIL_REGEX = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
 
-# For testing on old users, we sometimes want to disable advisor for newly
+# For testing on old users, we sometimes want to enable advisor for newly
 # created users.
 # TODO(pascal): Remove that when we stop testing about users that do not have
 # the advisor feature.
-ADVISOR_DISABLED_FOR_TESTING = False
+ADVISOR_ENABLED_FOR_TESTING = False
+
+_Tick = collections.namedtuple('Tick', ['name', 'time'])
+
+# Log timing of requests that take too long to be treated.
+_LONG_REQUEST_DURATION_SECONDS = 1.5
 
 
 @app.route('/api/user', methods=['DELETE'])
@@ -135,9 +139,23 @@ def user(user_data):
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
 def user_refresh_action_plan(user_data):
     """Creates daily actions for the user if none for today."""
-    user_proto = _get_user_data(user_data.user_id, update_requested_at=False)
+    user_proto = _get_user_data(user_data.user_id)
     _maybe_generate_new_actions(user_proto)
     return user_proto
+
+
+@app.route('/api/app/use/<user_id>', methods=['POST'])
+@proto.flask_api(out_type=user_pb2.User)
+def use_app(user_id):
+    """Update the user's data to mark that they have just used the app."""
+    user_proto = _get_user_data(user_id)
+    start_of_day = now.get().replace(hour=0, minute=0, second=0, microsecond=0)
+    if user_proto.requested_by_user_at_date.ToDatetime() >= start_of_day:
+        return user_proto
+    user_proto.requested_by_user_at_date.FromDatetime(now.get())
+    # No need to pollute our DB with super precise timestamps.
+    user_proto.requested_by_user_at_date.nanos = 0
+    return _save_user(user_proto, is_new_user=False)
 
 
 def _generic_image():
@@ -145,60 +163,69 @@ def _generic_image():
 
 
 def _save_user(user_data, is_new_user):
+    _tick('Save user start')
     if not user_data.registered_at.seconds:
         user_data.registered_at.FromDatetime(now.get())
         # No need to pollute our DB with super precise timestamps.
         user_data.registered_at.nanos = 0
         # Enable Advisor for new users.
-        if not ADVISOR_DISABLED_FOR_TESTING:
+        if ADVISOR_ENABLED_FOR_TESTING or user_data.profile.email.endswith('@example.com'):
             user_data.features_enabled.advisor = user_pb2.ACTIVE
         # Send an NPS email the next day.
         user_data.features_enabled.net_promoter_score_email = user_pb2.NPS_EMAIL_PENDING
 
+    _tick('Unverified data zone check start')
     # TODO: Don't do this on every save.
     if _is_in_unverified_data_zone(user_data.profile):
         user_data.app_not_available = True
+    _tick('Unverified data zone check end')
 
     _populate_feature_flags(user_data)
 
     for project in user_data.projects:
+        if project.is_incomplete:
+            continue
+        _tick('Process project start')
         rome_id = project.target_job.job_group.rome_id
         if not project.project_id:
             # Add ID, timestamp and stats to new projects
             project.project_id = '%x-%x' % (round(time.time()), random.randrange(0x10000))
             project.source = project_pb2.PROJECT_MANUALLY_CREATED
             project.created_at.FromDatetime(now.get())
+
+        _tick('Populate local stats')
         if not project.HasField('local_stats'):
             _populate_job_stats_dict(
                 {rome_id: project.local_stats}, project.mobility.city)
-        if not project.cover_image_url:
-            job_group_info = _job_groups_info().get(rome_id)
-            if job_group_info and job_group_info.image_link:
-                project.cover_image_url = job_group_info.image_link
-            else:
-                project.cover_image_url = _generic_image()
 
+        if project.cover_image_url:
+            _tick('Clean up cover image')
+            project.ClearField('cover_image_url')
+
+        _tick('Advisor')
         advisor.maybe_advise(user_data, project, _DB)
 
+        _tick('Stop actions')
         for current_action in project.actions:
             if current_action.status in _ACTION_STOPPED_STATUSES:
                 action.stop(current_action, _DB)
-
         for past_action in project.past_actions:
             action.stop(past_action, _DB)
 
         for sticky_action in project.sticky_actions:
             if not sticky_action.HasField('stuck_at'):
                 sticky_action.stuck_at.FromDatetime(now.get())
+        _tick('Process project end')
 
     if not is_new_user:
-        previous_user_data = _get_user_data(user_data.user_id, update_requested_at=False)
+        previous_user_data = _get_user_data(user_data.user_id)
         _assert_no_credentials_change(previous_user_data, user_data)
         _copy_unmodifiable_fields(previous_user_data, user_data)
         _populate_feature_flags(user_data)
 
     # Modifications on user_data after this point will not be saved.
-    user_dict = json.loads(json_format.MessageToJson(user_data))
+    _tick('Save user')
+    user_dict = json_format.MessageToDict(user_data)
     user_dict.update(_SERVER_TAG)
     if is_new_user:
         user_dict['_id'] = _get_unguessable_object_id()
@@ -206,6 +233,7 @@ def _save_user(user_data, is_new_user):
         user_data.user_id = str(result.inserted_id)
     else:
         _DB.user.replace_one({'_id': _safe_object_id(user_data.user_id)}, user_dict)
+    _tick('Return user proto')
     return user_data
 
 
@@ -270,29 +298,13 @@ def _safe_object_id(_id):
         flask.abort(400, 'L\'identifiant "%s" n\'est pas un identifiant MongoDB valide.')
 
 
-def _get_user_data(user_id, update_requested_at=True):
-    """Load user data from DB.
-
-    Make sure to use `update_requested_at=False` when you load user data
-    without being requested by the user (e.g. in the mailer).
-    """
+def _get_user_data(user_id):
+    """Load user data from DB."""
     user_dict = _DB.user.find_one({'_id': _safe_object_id(user_id)})
     user_proto = user_pb2.User()
     if not proto.parse_from_mongo(user_dict, user_proto):
         # Switch to raising an error if you move this function in a lib.
         flask.abort(404, 'Utilisateur "%s" inconnu.' % user_id)
-
-    start_of_day = now.get().replace(hour=0, minute=0, second=0, microsecond=0)
-    # TODO: HACK to be cleaned up soon. We don't want a user_proto floating around
-    # that should not be saved, nor returning a proto that is not the latest
-    # value from dB. Consider creating a separate endpoint to mark the user as requested.
-    if user_proto.requested_by_user_at_date.ToDatetime() < start_of_day and update_requested_at:
-        user_proto_copy = user_pb2.User()
-        user_proto_copy.CopyFrom(user_proto)
-        user_proto_copy.requested_by_user_at_date.FromDatetime(now.get())
-        # No need to pollute our DB with super precise timestamps.
-        user_proto_copy.requested_by_user_at_date.nanos = 0
-        _save_user(user_proto_copy, is_new_user=False)
 
     _populate_feature_flags(user_proto)
 
@@ -346,7 +358,8 @@ def chantiers():
     return result
 
 
-# TODO(stephan): Split this into separate endpoints for registration and login.
+# TODO: Split this into separate endpoints for registration and login.
+# Having both in the same endpoint makes refactoring the frontend more difficult.
 @app.route('/api/user/authenticate', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.AuthRequest, out_type=user_pb2.AuthResponse)
 def authenticate(auth_request):
@@ -377,6 +390,9 @@ def _job_groups_info():
 
 
 def _maybe_generate_new_action_plan(user_proto, project):
+    if project.is_incomplete:
+        return False
+
     if _project_in_advisor(project):
         # Do not generate actions for projects handled by the Advisor.
         return False
@@ -681,15 +697,16 @@ def _create_dashboard_export(user_id):
     dashboard_export = export_pb2.DashboardExport()
     all_chantiers = _chantiers()
     for project in user_proto.projects:
-        dashboard_export.projects.add().CopyFrom(project)
-        for chantier_id, active in project.activated_chantiers.items():
-            if not active or chantier_id in dashboard_export.chantiers:
-                continue
-            chantier = all_chantiers.get(chantier_id)
-            if chantier:
-                dashboard_export.chantiers[chantier_id].CopyFrom(chantier)
+        if not project.is_incomplete:
+            dashboard_export.projects.add().CopyFrom(project)
+            for chantier_id, active in project.activated_chantiers.items():
+                if not active or chantier_id in dashboard_export.chantiers:
+                    continue
+                chantier = all_chantiers.get(chantier_id)
+                if chantier:
+                    dashboard_export.chantiers[chantier_id].CopyFrom(chantier)
     dashboard_export.created_at.FromDatetime(now.get())
-    export_json = json.loads(json_format.MessageToJson(dashboard_export))
+    export_json = json_format.MessageToDict(dashboard_export)
     export_json['_id'] = _get_unguessable_object_id()
     result = _DB.dashboard_exports.insert_one(export_json)
     dashboard_export.dashboard_export_id = str(result.inserted_id)
@@ -749,6 +766,30 @@ def _populate_feature_flags(user_proto):
 
     if _ALPHA_USER_REGEXP.search(user_proto.profile.email):
         user_proto.features_enabled.alpha = True
+
+
+@app.before_request
+def _before_request():
+    flask.g.start = time.time()
+    flask.g.ticks = []
+
+
+def _tick(tick_name):
+    flask.g.ticks.append(_Tick(tick_name, time.time()))
+
+
+@app.teardown_request
+def _teardown_request(unused_exception=None):
+    total_duration = time.time() - flask.g.start
+    if total_duration <= _LONG_REQUEST_DURATION_SECONDS:
+        return
+    logging.warning('Long request: %d seconds', total_duration)
+    last_tick_time = flask.g.start
+    for tick in sorted(flask.g.ticks, key=lambda t: t.time):
+        logging.warning(
+            '%.4f: Tick %s (%.4f since last tick)',
+            tick.time - flask.g.start, tick.name, tick.time - last_tick_time)
+        last_tick_time = tick.time
 
 
 if __name__ == "__main__":

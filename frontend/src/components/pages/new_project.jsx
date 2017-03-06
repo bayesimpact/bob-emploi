@@ -5,20 +5,22 @@ import {CircularProgress} from 'components/progress'
 
 import {Colors} from 'components/theme'
 import {PageWithNavigationBar} from 'components/navigation'
-import {createNewProject, CREATE_PROJECT_SAVE} from 'store/actions'
+import {createFirstProject, editFirstProject, CREATE_PROJECT_SAVE,
+        FINISH_PROJECT_GOAL, FINISH_PROJECT_CRITERIA,
+        FINISH_PROJECT_EXPERIENCE} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {Routes} from 'components/url'
-import {NewProjectGoalStep} from './new_project/goal'
-import {NewProjectCriteriaStep} from './new_project/criteria'
-import {NewProjectExperienceStep} from './new_project/experience'
-import {NewProjectJobsearchStep} from './new_project/jobsearch'
+import {NewProjectGoalStep} from './profile/goal'
+import {NewProjectCriteriaStep} from './profile/criteria'
+import {NewProjectExperienceStep} from './profile/experience'
+import {NewProjectJobsearchStep} from './profile/jobsearch'
 
 export const NEW_PROJECT_ID = 'nouveau'
 
 const STEPS = [
-  {component: NewProjectGoalStep},
-  {component: NewProjectCriteriaStep},
-  {component: NewProjectExperienceStep},
+  {component: NewProjectGoalStep, type: FINISH_PROJECT_GOAL},
+  {component: NewProjectCriteriaStep, type: FINISH_PROJECT_CRITERIA},
+  {component: NewProjectExperienceStep, type: FINISH_PROJECT_EXPERIENCE},
   {component: NewProjectJobsearchStep},
 ]
 
@@ -34,15 +36,25 @@ class NewProjectPageBase extends React.Component {
     isMobileVersion: React.PropTypes.bool.isRequired,
   }
 
-  state = {
-    currentStep: 1,
-  }
-
   componentWillMount() {
     const {existingProject} = this.props
+    this.setState({
+      areaType: 'CITY',
+      city: null,
+      currentStep: 1,
+      employmentTypes: ['CDI'],
+      isIncomplete: true,
+      kind: 'FIND_JOB',
+      minSalary: null,
+      previousJobSimilarity: 'DONE_THIS',
+      targetJob: null,
+      workloads: ['FULL_TIME'],
+      ...existingProject,
+    })
     // Prevent people from manually going back and creating another project.
-    if (existingProject) {
+    if (existingProject && !existingProject.isIncomplete) {
       browserHistory.push(Routes.PROJECT_PAGE + '/' + existingProject.projectId)
+      return
     }
   }
 
@@ -57,13 +69,16 @@ class NewProjectPageBase extends React.Component {
     const isLastStep = currentStep === STEPS.length
     if (isLastStep) {
       this.setState(newProjectUpdates, () => {
-        this.props.dispatch(createNewProject(this.state))
+        this.props.dispatch(createFirstProject(this.state))
         browserHistory.push(Routes.PROJECT_PAGE + '/' + NEW_PROJECT_ID)
       })
     } else {
+      const currentStepItem = STEPS[currentStep-1]
       this.setState({
         currentStep: currentStep + 1,
         ...newProjectUpdates,
+      }, () => {
+        this.props.dispatch(editFirstProject(this.state, currentStepItem.type))
       })
     }
   }
@@ -75,20 +90,7 @@ class NewProjectPageBase extends React.Component {
     }
   }
 
-  state = {
-    areaType: 'CITY',
-    city: null,
-    currentStep: 1,
-    employmentTypes: ['CDI'],
-    jobs: [],
-    kind: 'FIND_JOB',
-    minSalary: null,
-    previousJobSimilarity: 'DONE_THIS',
-    targetJob: null,
-    workloads: ['FULL_TIME'],
-  }
-
-  render () {
+  render() {
     const {isCreatingProject, userProfile} = this.props
     const {isMobileVersion} = this.context
     const {currentStep} = this.state
@@ -102,7 +104,7 @@ class NewProjectPageBase extends React.Component {
       alignItems: 'center',
       display: 'flex',
       justifyContent: 'center',
-      paddingBottom: 90,
+      paddingBottom: isMobileVersion ? 0 : 90,
       paddingTop: isMobileVersion ? 0 : 90,
     }
     const newProject = {...this.state}
@@ -114,12 +116,9 @@ class NewProjectPageBase extends React.Component {
       const CurrentStepComponent = currentStepItem && currentStepItem.component
       content = <CurrentStepComponent
           onSubmit={this.handleSubmit}
-          onPreviousButtonClick={currentStep > 1 ? this.handleBack : null}
-          userProfile={userProfile}
-          newProject={newProject}
-          jobs={[]}
-          onClose={this.handleClose}
-          style={{width: 945}} />
+          onBack={currentStep > 1 ? this.handleBack : null}
+          profile={userProfile}
+          newProject={newProject} />
     }
     return <PageWithNavigationBar
         style={{backgroundColor: Colors.BACKGROUND_GREY}}

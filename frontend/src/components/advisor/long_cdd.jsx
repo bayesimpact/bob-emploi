@@ -178,10 +178,4 @@ const RecommendPage =
   connect(({user}) => ({gender: user.profile.gender}))(RecommendPageBase)
 
 
-const AdviceCard = {
-  color: Colors.SKY_BLUE,
-  picto: <img src={require('images/offer-blue.svg')} />,
-}
-
-
-export default {AdviceCard, RecommendPage}
+export default {RecommendPage}

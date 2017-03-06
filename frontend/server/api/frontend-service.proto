@@ -29,6 +29,10 @@ service FrontendService {
   // Delete the user and all data associated.
   rpc DeleteUser(User) returns (UserId);
 
+  // User accessed our client app (as opposed to a tool accessing the API
+  // directly).
+  rpc UseApp(User) returns (User);
+
   // Creates daily actions for the user if none for today.
   rpc RefreshActionPlan(User) returns (User);
 

@@ -8,7 +8,6 @@ docker-compose run --rm \
     frontend-flask python bob_emploi/frontend/asynchronous/mail_actions.py
 """
 import datetime
-import json
 import logging
 import os
 import signal
@@ -157,7 +156,7 @@ def send_email_to_user(user_id, base_url, weekday):
             'firstName': user.profile.name,
             'frequency': frequency(user.profile.email_days),
             'nextday': see_you_day(user.profile.email_days, weekday),
-            'projects': json.loads(json_format.MessageToJson(user))['projects'],
+            'projects': json_format.MessageToDict(user)['projects'],
         },
         dry_run=DRY_RUN,
     )

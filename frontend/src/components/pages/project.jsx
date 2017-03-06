@@ -5,25 +5,20 @@ moment.locale('fr')
 import {CircularProgress} from 'components/progress'
 import {ShortKey} from 'components/shortkey'
 
-import config from 'config'
 import {fetchPotentialChantiers, updateProjectChantiers, createActionPlan,
-        setProjectProperty, acceptAdvice, declineAdvice} from 'store/actions'
-import {nextAdviceToRecommend, createProjectTitleComponents,
-        hasUserEverAcceptedAdvice} from 'store/project'
+        setProjectProperty} from 'store/actions'
+import {nextAdviceToRecommend, createProjectTitleComponents} from 'store/project'
+import {USER_PROFILE_SHAPE} from 'store/user'
 import {Routes} from 'components/url'
 
 import {PageWithNavigationBar} from 'components/navigation'
 import {PotentialChantiersLists} from './project/chantiers'
 import {IntensityChangeButton, IntensityModal} from './project/intensity'
 import {EditProjectModal} from './project/edit_project'
-import {AdviceCard, AdvisorPage} from './project/advisor'
-import {Modal} from 'components/modal'
+import {AdviceCard} from 'components/advisor'
 
-import {JobGroupCoverImage, Colors, RoundButton, SmoothTransitions, Styles,
+import {JobGroupCoverImage, Colors, SmoothTransitions, Styles,
         SettingsButton} from 'components/theme'
-
-// TODO(guillaume): Refactor that. Seriously.
-const maybeS = count => count > 1 ? 's' : ''
 
 class SummaryBox extends React.Component {
   static propTypes = {
@@ -108,63 +103,6 @@ const waitingTexts = [
 ]
 
 const TOTAL_WAITING_TIME_MILLISEC = 8000
-
-
-class NumberOfRecommendationsModal extends React.Component {
-  static propTypes = {
-    numRecommendations: React.PropTypes.number.isRequired,
-    onSubmit: React.PropTypes.func.isRequired,
-    project: React.PropTypes.object.isRequired,
-  }
-
-  state = {
-    isShown: false,
-  }
-
-  componentDidMount() {
-    if (!this.isShown) {
-      this.setState({isShown: true})
-    }
-  }
-
-  render() {
-    const {numRecommendations, onSubmit, project, ...extraProps} = this.props
-    const style = {
-      fontSize: 14,
-      lineHeight: 1.57,
-      maxWidth: 480,
-      padding: '0 60px 50px',
-      textAlign: 'center',
-    }
-    return <div>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onSubmit} />
-      <JobGroupCoverImage romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}} />
-      <Modal {...extraProps} style={style} isShown={this.state.isShown} backgroundCoverOpacity={0}>
-        <div style={{fontSize: 23, marginTop: 40}}>
-          <strong>{numRecommendations}&nbsp;
-          solution{maybeS(numRecommendations)}</strong> identifiée{maybeS(numRecommendations)}
-        </div>
-        <img src={require('images/bayes-picto.svg')} style={{marginBottom: 15, marginTop: 30}} />
-        <div>
-          <p>
-            Nous avons analysé vos critères, votre profil ainsi que votre marché
-            pour <strong>déterminer les meilleures solutions</strong> pour
-            accélérer votre recherche d'emploi.
-          </p>
-          <p>
-            <strong>Consultez l'ensemble des solutions</strong> et sélectionnez les nouvelles
-            pistes que vous souhaitez explorer. Nous vous aiderons ensuite à évaluer et saisir
-            ces opportunités.
-          </p>
-        </div>
-        <RoundButton
-            onClick={onSubmit} type="validation" style={{marginTop: 25}}>
-          Découvrir les solutions
-        </RoundButton>
-      </Modal>
-    </div>
-  }
-}
 
 
 class WaitingProjectPage extends React.Component {
@@ -273,18 +211,7 @@ class ProjectPage extends React.Component {
   state = {
     isEditProjectModalShown: false,
     isIntensityModalShown: false,
-    isNumberOfRecommendationsModalDismissed: false,
     isWaitingInterstitialShown: false,
-    newRecommendations: [],
-    numRecommendationsAcceptedOrDeclined: 0,
-  }
-
-  updateRecommendationList(project) {
-    this.setState({
-      newRecommendations: (project.advices || []).
-          filter(advice => advice.status === 'ADVICE_RECOMMENDED'),
-      numRecommendationsAcceptedOrDeclined: 0,
-    })
   }
 
   componentWillMount() {
@@ -313,7 +240,6 @@ class ProjectPage extends React.Component {
       // intensity) but it happened at least once, so we catch the case.
       this.setState({isIntensityModalShown: true})
     }
-    this.updateRecommendationList(project)
   }
 
   componentWillReceiveProps(nextProps) {
@@ -324,13 +250,6 @@ class ProjectPage extends React.Component {
     if (projectId !== nextProps.params.projectId) {
       browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId)
       this.loadPotentialChantiers(projectId)
-    }
-    const project = getProjectFromProps(this.props)
-    const nextProject = getProjectFromProps(nextProps)
-    if (nextProject && nextProject.advices) {
-      if (!project || !project.advices || project.advices.length !== nextProject.advices.length) {
-        this.updateRecommendationList(nextProject)
-      }
     }
   }
 
@@ -375,24 +294,11 @@ class ProjectPage extends React.Component {
     return !Object.keys(project.activatedChantiers || {}).length
   }
 
-  handleAcceptAdvice(project, advice) {
-    const {numRecommendationsAcceptedOrDeclined} = this.state
-    this.setState({numRecommendationsAcceptedOrDeclined: numRecommendationsAcceptedOrDeclined + 1})
-    this.props.dispatch(acceptAdvice(project, advice))
-  }
-
-  handleDeclineAdvice(project, reason, advice) {
-    const {numRecommendationsAcceptedOrDeclined} = this.state
-    this.setState({numRecommendationsAcceptedOrDeclined: numRecommendationsAcceptedOrDeclined + 1})
-    this.props.dispatch(declineAdvice(project, reason, advice))
-  }
-
   render() {
     const project = getProjectFromProps(this.props)
     const {app, user} = this.props
-    const {numRecommendationsAcceptedOrDeclined, isEditProjectModalShown, isIntensityModalShown,
-        isLoadingPotentialChantiers, isNumberOfRecommendationsModalDismissed,
-        isWaitingInterstitialShown, newRecommendations} = this.state
+    const {isEditProjectModalShown, isIntensityModalShown,
+        isLoadingPotentialChantiers, isWaitingInterstitialShown} = this.state
 
     const isFirstTime = this.getIsFirstTime()
 
@@ -403,30 +309,7 @@ class ProjectPage extends React.Component {
     }
 
     if (user.featuresEnabled && user.featuresEnabled.advisor) {
-      if (newRecommendations.length &&
-          numRecommendationsAcceptedOrDeclined < newRecommendations.length) {
-        const isFirstRecommendation = !hasUserEverAcceptedAdvice(project)
-        const hasMultipleRecommendations = newRecommendations.length > 1
-        const advice = newRecommendations[numRecommendationsAcceptedOrDeclined]
-        if (!isNumberOfRecommendationsModalDismissed) {
-          return <NumberOfRecommendationsModal numRecommendations={newRecommendations.length}
-              onSubmit={() => this.setState({isNumberOfRecommendationsModalDismissed: true})}
-              project={project} />
-        }
-
-        return <AdvisorPage
-            {...this.props} project={project} advice={advice}
-            recommendationNumber={numRecommendationsAcceptedOrDeclined + 1}
-            numRecommendations={newRecommendations.length}
-            onAccept={() => this.handleAcceptAdvice(project, advice)}
-            showAckModalOnAccept={isFirstRecommendation && hasMultipleRecommendations}
-            onDecline={reason => this.handleDeclineAdvice(project, reason, advice)} />
-      }
-      return <ProjectDashboardPage
-          project={project} gender={user.profile && user.profile.gender}
-          onSelectAdvice={advice => browserHistory.push(
-            Routes.PROJECT_PAGE + '/' + project.projectId +
-            Routes.ADVICE_SUB_PAGE + '/' + advice.adviceId)} />
+      return <ProjectDashboardPage project={project} profile={user.profile} />
     }
 
     let innerPage
@@ -498,49 +381,18 @@ class ProjectPage extends React.Component {
 }
 
 
-const inactiveAdviceStatus = {
-  ADVICE_CANCELED: true,
-  ADVICE_DECLINED: true,
-  ADVICE_NOT_RECOMMENDED: true,
-}
-
 class ProjectDashboardPage extends React.Component {
   static propTypes = {
-    gender: React.PropTypes.string,
     onSelectAdvice: React.PropTypes.func.isRequired,
+    profile: USER_PROFILE_SHAPE.isRequired,
     project: React.PropTypes.object.isRequired,
   }
   static contextTypes = {
     isMobileVersion: React.PropTypes.bool,
   }
 
-  state = {
-    activeAdvices: [],
-    areInactiveAdvicesShown: false,
-    inactiveAdvices: [],
-  }
-
-  componentWillMount() {
-    this.updateAdvices(this.props.project)
-  }
-
-  componentWillReceiveProps(props) {
-    this.updateAdvices(props.project)
-  }
-
-  updateAdvices(project) {
-    const adviceWithEngagement = (project.advices || []).
-      filter(advice => advice.engagementAction && advice.engagementAction.title)
-    this.setState({
-      activeAdvices: adviceWithEngagement.
-        filter(advice => advice.status === 'ADVICE_ACCEPTED' || advice.status === 'ADVICE_ENGAGED'),
-      inactiveAdvices: adviceWithEngagement.filter(advice => inactiveAdviceStatus[advice.status]),
-    })
-  }
-
-  renderHeader(innerStyle) {
-    const {gender, project} = this.props
-    const {activeAdvices} = this.state
+  renderHeader() {
+    const {profile, project} = this.props
     const style = {
       backgroundColor: Colors.CHARCOAL_GREY,
       color: '#fff',
@@ -549,20 +401,7 @@ class ProjectDashboardPage extends React.Component {
       textAlign: 'center',
       zIndex: 0,
     }
-    const boxStyle = {
-      backgroundColor: 'rgba(255, 255, 255, .15)',
-      borderRadius: '4px 0 0 4px',
-      display: 'inline-box',
-      fontSize: 13,
-      fontStyle: 'italic',
-      lineHeight: '30px',
-      padding: '6px 12px',
-    }
-    const numAdvices = activeAdvices.length
-    const numSteps = activeAdvices.
-      reduce((sum, advice) =>
-        sum + (advice.engagementAction && advice.engagementAction.steps || []).length, 0)
-    const {what, where} = createProjectTitleComponents(project, gender)
+    const {what, where} = createProjectTitleComponents(project, profile.gender)
     return <header style={style}>
       <JobGroupCoverImage
           romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
@@ -571,116 +410,36 @@ class ProjectDashboardPage extends React.Component {
             left: Colors.CHARCOAL_GREY,
             middle: Colors.CHARCOAL_GREY,
             right: 'rgba(56, 63, 81, 0.7)'}} />
-      <div style={{fontSize: 33, lineHeight: '36px', ...innerStyle}}>
+      <div style={{fontSize: 33, lineHeight: '36px'}}>
         <strong>{what}</strong> <span style={{fontStyle: 'italic'}}>{where}</span>
       </div>
-      {numAdvices ? <div style={{marginTop: 10, ...innerStyle}}>
-        <span style={boxStyle}>
-          {numAdvices} solution{maybeS(numAdvices)}
-        </span>
-        <span style={{...boxStyle, borderRadius: '0 4px 4px 0', marginLeft: 1}}>
-          {numSteps || 0} conseil{maybeS(numSteps)}
-        </span>
-      </div> : null}
     </header>
   }
 
-  renderSectionTitle(children) {
-    const titleStyle = {
-      color: Colors.DARK,
-      fontSize: 18,
-      fontStyle: 'italic',
-      fontWeight: 'bold',
-      margin: '45px 0 15px',
-      padding: '0 20px',
-    }
-    return <div style={titleStyle}>
-      {children}
-    </div>
-  }
-
-  renderNoAdvice(style) {
-    return <div style={{textAlign: 'center', ...style}}>
-      {this.renderSectionTitle('Plus de conseil disponible pour votre situation')}
-      <img src={require('images/empty-tray-picto.svg')} style={{marginTop: 30}} />
-    </div>
-  }
-
-  renderAdviceCards(advices, extraProps) {
-    const {onSelectAdvice} = this.props
+  renderAdviceCards(advices) {
+    const {onSelectAdvice, ...extraProps} = this.props
     const {isMobileVersion} = this.context
     const cardsContainerStyle = {
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'initial',
-      flexWrap: isMobileVersion ? 'initial' : 'wrap',
       margin: isMobileVersion ? '10px auto' : '25px auto',
     }
     const cardStyle = {
-      flexShrink: 0,
       margin: isMobileVersion ? '15px 10px' : '25px 20px',
-      width: isMobileVersion ? 'initial' : 460,
     }
     return <div style={cardsContainerStyle}>
-      {advices.map(advice =>
+      {advices.map((advice, index) =>
         <AdviceCard
-            key={advice.adviceId} advice={advice} style={cardStyle}
-            onSelect={() => onSelectAdvice(advice)} {...extraProps} />
+            priority={index + 1} key={advice.adviceId} advice={advice} style={cardStyle}
+            onSelect={advice.engagementAction ? (() => onSelectAdvice(advice)) : null}
+            {...extraProps} />
       )}
     </div>
   }
 
-  renderInactiveAdviceCards() {
-    const {areInactiveAdvicesShown, inactiveAdvices} = this.state
-    if (!inactiveAdvices.length) {
-      return null
-    }
-    if (!areInactiveAdvicesShown) {
-      return <div style={{textAlign: 'center'}}>
-        <RoundButton type="back" onClick={() => this.setState({areInactiveAdvicesShown: true})}>
-          Afficher les autres solutions
-        </RoundButton>
-      </div>
-    }
-    const noticeStyle = {
-      color: Colors.COOL_GREY,
-      fontSize: 15,
-      fontStyle: 'italic',
-      lineHeight: 1.4,
-      padding: '0 20px',
-    }
-    return <div>
-      {this.renderSectionTitle(
-          `Accèder à l'ensemble des solutions disponibles sur ${config.productName}.`)}
-      <div style={noticeStyle}>
-        Ces différentes solutions ne vous ont pas été proposées car nous estimions
-        qu'elles n'étaient pas forcément utiles pour vous. Mais nous pouvons nous
-        tromper ! Dites-nous si l'une de ces solutions vous aurait été utile afin
-        que nous puissions nous améliorer.
-      </div>
-      {this.renderAdviceCards(inactiveAdvices)}
-    </div>
-  }
-
-  renderActiveAdviceCards() {
-    const {activeAdvices} = this.state
-    if (!activeAdvices) {
-      return this.renderNoAdvice()
-    }
-    return this.renderAdviceCards(activeAdvices, {isRecommended: true})
-  }
-
   render() {
-    const innerStyle = {
-      marginLeft: 'auto',
-      marginRight: 'auto',
-      maxWidth: 1000,
-    }
+    const {project} = this.props
     return <PageWithNavigationBar page="project"  isContentScrollable={true}>
-      {this.renderHeader(innerStyle)}
-      <div style={innerStyle}>
-        {this.renderActiveAdviceCards()}
-        {this.renderInactiveAdviceCards()}
-      </div>
+      {this.renderHeader()}
+      {this.renderAdviceCards(project.advices || [])}
     </PageWithNavigationBar>
   }
 }

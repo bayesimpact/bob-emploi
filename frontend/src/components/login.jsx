@@ -92,8 +92,7 @@ class LoginFormBase extends React.Component {
   }
 
   fastForward = () => {
-    // TODO(stephan): Fix fastforward triggering when a text input is selected
-    // on Mac in Chrome.
+    // TODO: Fix fastforward triggering when a text input is selected on Mac in Chrome.
     const {email, password} = this.state
     if (this.isFormValid()) {
       this.handleLogin()
@@ -132,7 +131,8 @@ class LoginFormBase extends React.Component {
           onClick={this.props.onShowRegistrationFormClick} />
       <IconInput
           autofocus={!email}
-          type="text" placeholder="Email" value={email} iconName="email-outline"
+          type="email" placeholder="Email" value={email} iconName="email-outline"
+          applyFunc={email => email.toLocaleLowerCase()}
           onChange={this.handleChange('email')} />
       {isTryingToResetPassword ? null : <IconInput
           type="password" autofocus={!!email}
@@ -174,12 +174,11 @@ class ResetPasswordFormBase extends React.Component {
     onResetPassword: React.PropTypes.func.isRequired,
   }
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      email: props.defaultEmail || '',
+  componentWillMount() {
+    this.setState({
+      email: this.props.defaultEmail || '',
       password: '',
-    }
+    })
   }
 
   handleChange = field => value => {
@@ -216,7 +215,8 @@ class ResetPasswordFormBase extends React.Component {
       <FormHeader title="Changez votre mot de passe" />
       <IconInput
           autofocus={!email}
-          type="text" placeholder="Email" value={email} iconName="email-outline"
+          type="email" placeholder="Email" value={email} iconName="email-outline"
+          applyFunc={email => email.toLocaleLowerCase()}
           onChange={this.handleChange('email')} />
       <IconInput
           type="password" autofocus={!!email}
@@ -284,8 +284,7 @@ class RegistrationFormBase extends React.Component {
   }
 
   fastForward = () => {
-    // TODO(stephan): Fix fastforward triggering when a text input is selected
-    // on Mac in Chrome.
+    // TODO: Fix fastforward triggering when a text input is selected on Mac in Chrome.
     const {email, password, lastName, name} = this.state
     if (this.isFormValid()) {
       this.handleRegister()
@@ -325,7 +324,8 @@ class RegistrationFormBase extends React.Component {
           onChange={this.handleChange('lastName')}
           style={{marginTop: 10}} />
       <IconInput
-          type="text" placeholder="Email" value={email} iconName="email-outline"
+          type="email" placeholder="Email" value={email} iconName="email-outline"
+          applyFunc={email => email.toLocaleLowerCase()}
           onChange={this.handleChange('email')}
           style={{marginTop: 10}} />
       <IconInput
@@ -478,13 +478,13 @@ class LoginModalBase extends React.Component {
     }
   }
 
-  // TODO(stephan): Use different API endpoints for login and registration.
+  // TODO: Use different API endpoints for login and registration.
   handleRegister = (email, password, name, lastName) => {
     const {dispatch} = this.props
     name = upperFirstLetter(name.trim())
     lastName = upperFirstLetter(lastName.trim())
     return dispatch(registerNewUser(email.trim(), password, name, lastName)).then(response => {
-      // TODO(stephan): Handle this more explicitly after switch to two endpoints.
+      // TODO: Handle this more explicitly after switch to two endpoints.
       // User already exists
       if (!response.authenticatedUser) {
         dispatch(displayToasterMessage(
@@ -598,20 +598,22 @@ class LoginButtonBase extends React.Component {
     isLoggedIn: React.PropTypes.bool,
     isSignUpButton: React.PropTypes.bool,
     style: React.PropTypes.object,
+    visualElement: React.PropTypes.string,
   }
 
   handleClick = () => {
-    const {isLoggedIn, isSignUpButton, dispatch} = this.props
+    const {isLoggedIn, isSignUpButton, dispatch, visualElement} = this.props
     if (isLoggedIn) {
       browserHistory.push(Routes.PROJECT_PAGE)
       return
     }
-    dispatch(openLoginModal({isReturningUser: !isSignUpButton}))
+    dispatch(openLoginModal({isReturningUser: !isSignUpButton}, visualElement))
   }
 
   render() {
     // eslint-disable-next-line no-unused-vars
-    const {children, dispatch, isLoggedIn, isSignUpButton, ...extraProps} = this.props
+    const {children, dispatch, isLoggedIn, isSignUpButton, visualElement,
+           ...extraProps} = this.props
     return <RoundButton type="deletion" onClick={this.handleClick} {...extraProps}>
       {children}
     </RoundButton>

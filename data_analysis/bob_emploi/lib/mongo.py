@@ -62,14 +62,14 @@ class Importer(object):
             raise
         real_collection = self._collection_from_flags(collection_name)
         collection.rename(real_collection.name, dropTarget=True)
-        meta = self._collection_from_flags('meta')
+        meta = self._collection_from_flags('meta', collection_name_from_flags=False)
         meta.update_one(
             {'_id': real_collection.name},
             {'$set': {'updated_at': datetime.datetime.now()}},
             upsert=True)
 
-    def _collection_from_flags(self, collection_name, suffix=''):
-        if self.flag_values.mongo_collection:
+    def _collection_from_flags(self, collection_name, suffix='', collection_name_from_flags=True):
+        if collection_name_from_flags and self.flag_values.mongo_collection:
             collection_name = self.flag_values.mongo_collection
         client = pymongo.MongoClient(self.flag_values.mongo_url)
         database = client.get_default_database()

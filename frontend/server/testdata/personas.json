@@ -58,7 +58,6 @@
         "name": "Assistant / Assistante de direction",
         "masculineName": "Assistant de direction"
       },
-      "coverImageUrl": "generic2",
       "minSalary": 35000,
       "title": "Trouver un emploi d'assistante de direction autour de Lyon",
       "createdAt": "2016-09-26T14:02:06.228413Z",
@@ -128,7 +127,6 @@
         "name": "Commercial / Commerciale sédentaire",
         "masculineName": "Commercial sédentaire"
       },
-      "coverImageUrl": "generic3",
       "minSalary": 40000,
       "title": "Trouver un emploi de commercial sédentaire en Auvergne-Rhône-Alpes",
       "createdAt": "2016-09-26T14:12:52.717220Z",
@@ -183,7 +181,6 @@
         "name": "Boucher / Bouchère",
         "masculineName": "Boucher"
       },
-      "coverImageUrl": "generic3",
       "minSalary": 25000,
       "title": "Trouver un emploi de boucher autour de Bourg-en-Bresse",
       "createdAt": "2016-09-26T14:16:32.199172Z",
@@ -253,7 +250,6 @@
         "name": "Responsable marketing",
         "masculineName": "Responsable marketing"
       },
-      "coverImageUrl": "generic2",
       "minSalary": 42000,
       "title": "Trouver un emploi de responsable marketing autour de Lyon",
       "createdAt": "2016-09-26T14:23:39.352518Z",
@@ -273,7 +269,6 @@
   },
   "abdelkrim": {
     "project": {
-      "coverImageUrl": "generic5",
       "createdAt": "2016-09-29T09:28:51.468263Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -328,7 +323,6 @@
   },
   "florian": {
     "project": {
-      "coverImageUrl": "generic5",
       "createdAt": "2016-09-29T07:50:51.689185Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -394,7 +388,6 @@
   },
   "karen": {
     "project": {
-      "coverImageUrl": "generic5",
       "createdAt": "2016-09-29T07:50:51.689185Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -460,7 +453,6 @@
   },
   "fabrice": {
     "project": {
-      "coverImageUrl": "generic3",
       "createdAt": "2016-09-29T07:54:02.514215Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -524,7 +516,6 @@
   },
   "joel": {
     "project": {
-      "coverImageUrl": "generic4",
       "createdAt": "2016-09-29T13:30:04.693286Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -588,7 +579,6 @@
   },
   "jennifer": {
     "project": {
-      "coverImageUrl": "generic5",
       "createdAt": "2016-09-29T07:56:06.227671Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "NEVER_DONE",
@@ -655,7 +645,6 @@
   },
   "joana": {
     "project": {
-      "coverImageUrl": "generic5",
       "createdAt": "2016-09-29T09:25:11.514083Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_SIMILAR",
@@ -720,7 +709,6 @@
   },
   "ludivine": {
     "project": {
-      "coverImageUrl": "generic1",
       "createdAt": "2016-09-29T08:09:43.721509Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -786,7 +774,6 @@
   },
   "malek": {
     "project": {
-      "coverImageUrl": "generic4",
       "createdAt": "2016-09-29T09:42:53.527056Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -846,7 +833,6 @@
   },
   "monxxxxx@laposte.com": {
     "project": {
-      "coverImageUrl": "generic3",
       "createdAt": "2016-09-29T07:58:31.466419Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -911,7 +897,6 @@
   },
   "nassera": {
     "project": {
-      "coverImageUrl": "generic1",
       "createdAt": "2016-09-29T09:40:05.174172Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -977,7 +962,6 @@
   },
   "fabrice2": {
     "project": {
-      "coverImageUrl": "generic1",
       "createdAt": "2016-09-29T07:57:04.125810Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -1032,7 +1016,6 @@
   },
   "richard": {
     "project": {
-      "coverImageUrl": "generic5",
       "createdAt": "2016-09-29T08:08:08.773202Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -1099,7 +1082,6 @@
   },
   "margaux": {
     "project": {
-      "coverImageUrl": "generic2",
       "createdAt": "2016-09-29T09:24:02.698094Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
@@ -1165,7 +1147,6 @@
   },
   "remi": {
     "project": {
-      "coverImageUrl": "generic2",
       "createdAt": "2016-09-29T09:24:02.698094Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",

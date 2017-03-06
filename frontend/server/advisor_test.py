@@ -7,6 +7,8 @@ import mongomock
 
 from bob_emploi.frontend import action
 from bob_emploi.frontend import advisor
+from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -25,6 +27,13 @@ class MaybeAdviseTestCase(unittest.TestCase):
             sticky_actions=user_pb2.ACTIVE,
             advisor=user_pb2.ACTIVE))
         action.clear_cache()
+
+    def test_no_advice_if_project_incomplete(self):
+        """Test that the advice do not get populated when the project is marked as incomplete."""
+        project = project_pb2.Project(is_incomplete=True)
+        advisor.maybe_advise(self.user, project, self.database)
+
+        self.assertEqual(len(project.advices), 0)
 
     def test_populate_engage_action(self):
         """Test that the engage action gets populated when the advice is accepted."""
@@ -45,12 +54,13 @@ class MaybeAdviseTestCase(unittest.TestCase):
 
         self.assertEqual('Reorientation !', project.advices[0].engagement_action.goal)
 
-    def test_not_populate_engage_action_recommended_advice(self):
+    def test_not_repopulate_engage_action(self):
         """Test that the engage action does not get populated when the advice is recommended."""
         project = project_pb2.Project(
             advices=[project_pb2.Advice(
                 advice_id='reorientation',
-                status=project_pb2.ADVICE_RECOMMENDED)])
+                status=project_pb2.ADVICE_RECOMMENDED,
+                engagement_action=action_pb2.Action(action_id='1234'))])
         advisor.maybe_advise(self.user, project, self.database)
 
         self.assertFalse(project.advices[0].engagement_action.goal)
@@ -112,7 +122,7 @@ class MaybeAdviseTestCase(unittest.TestCase):
 
         def _get_scoring_model(model_name):
             model = mock.MagicMock()
-            if model_name != 'chantier-spontaneous-application':
+            if model_name != 'constant(2)':
                 model.score().score = 0
             else:
                 model.score().score = 3
@@ -122,10 +132,8 @@ class MaybeAdviseTestCase(unittest.TestCase):
 
         advisor.maybe_advise(self.user, project, self.database)
 
-        self.assertEqual('spontaneous-application', project.advices[0].advice_id)
+        self.assertEqual(['spontaneous-application'], [a.advice_id for a in project.advices])
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, project.advices[0].status)
-        self.assertEqual(
-            {project_pb2.ADVICE_NOT_RECOMMENDED}, {a.status for a in project.advices[1:]})
 
     @mock.patch(advisor.scoring.__name__ + '.get_scoring_model')
     def test_recommend_advice_none(self, mock_get_scoring_model):
@@ -136,9 +144,31 @@ class MaybeAdviseTestCase(unittest.TestCase):
 
         advisor.maybe_advise(self.user, project, self.database)
 
+        self.assertFalse(project.advices)
+
+    def test_advice_extra_data(self):
+        """Test that the advisor scores all advice modules."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+        )
+        self.user.features_enabled.alpha = True
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'workEnvironmentKeywords': {
+                'structures': ['A', 'B'],
+                'sectors': ['sector Toise', 'sector Gal'],
+            },
+        })
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'other-work-env')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
         self.assertEqual(
-            {project_pb2.ADVICE_NOT_RECOMMENDED},
-            {a.status for a in project.advices})
+            ['A', 'B'], advice.other_work_env_advice_data.work_environment_keywords.structures)
+        self.assertEqual(
+            ['sector Toise', 'sector Gal'],
+            advice.other_work_env_advice_data.work_environment_keywords.sectors)
 
 
 if __name__ == '__main__':

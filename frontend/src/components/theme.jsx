@@ -161,6 +161,7 @@ class RoundButtonBase extends React.Component {
       fontSize: 14,
       fontWeight: 500,
       padding: isNarrow ? '8px 21px 6px' : '10px 39px 8px',
+      textAlign: 'center',
       transition: SmoothTransitions.transition + `, transform ${bounceDurationMs}ms`,
       ...style,
     }
@@ -581,11 +582,8 @@ class CheckboxList extends React.Component {
     values: React.PropTypes.arrayOf(React.PropTypes.string),
   }
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      valuesSelected: arrayToSet(props.values),
-    }
+  componentWillMount() {
+    this.setState({valuesSelected: arrayToSet(this.props.values)})
   }
 
   componentWillReceiveProps(nextProps) {
@@ -722,9 +720,13 @@ class Icon extends React.Component {
     name: React.PropTypes.string.isRequired,
   }
 
+  focus() {
+    this.refs.i.focus()
+  }
+
   render () {
     const {name, ...otherProps} = this.props
-    return <i className={`mdi mdi-${name}`} {...otherProps} />
+    return <i className={`mdi mdi-${name}`} {...otherProps} ref="i" />
   }
 }
 
@@ -800,14 +802,16 @@ class JobSuggestWithNote extends React.Component {
 
 class Input extends React.Component {
   static propTypes = {
+    applyFunc: React.PropTypes.func,
     onChange: React.PropTypes.func,
     style: React.PropTypes.object,
   }
 
   handleChange = event => {
     event.stopPropagation()
-    const {onChange} = this.props
-    onChange && onChange(event.target.value)
+    const {applyFunc, onChange} = this.props
+    const value = applyFunc ? applyFunc(event.target.value) : event.target.value
+    onChange && onChange(value)
   }
 
   focus() {
@@ -815,7 +819,8 @@ class Input extends React.Component {
   }
 
   render() {
-    const {style, ...otherProps} = this.props
+    // eslint-disable-next-line no-unused-vars
+    const {applyFunc, style, ...otherProps} = this.props
     const inputStyle = {
       ...Styles.INPUT,
       ...style,

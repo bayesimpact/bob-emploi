@@ -276,10 +276,4 @@ class MarketStress extends React.Component {
 }
 
 
-const AdviceCard = {
-  color: Colors.GREENISH_TEAL,
-  picto: <img src={require('images/reconversion-picto.svg')} />,
-}
-
-
-export default {AdviceCard, RecommendPage}
+export default {RecommendPage}

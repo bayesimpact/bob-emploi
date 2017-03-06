@@ -43,16 +43,15 @@ class NewProjectJobsearchStep extends React.Component {
     onSubmit: React.PropTypes.func.isRequired,
   }
 
-  constructor(props) {
-    super(props)
+  componentWillMount() {
     const {jobSearchLengthMonths, weeklyOffersEstimate,
-           weeklyApplicationsEstimate, totalInterviewsEstimate} = props.newProject
-    this.state = {
+           weeklyApplicationsEstimate, totalInterviewsEstimate} = this.props.newProject
+    this.setState({
       jobSearchLengthMonths,
       totalInterviewsEstimate,
       weeklyApplicationsEstimate,
       weeklyOffersEstimate,
-    }
+    })
   }
 
 

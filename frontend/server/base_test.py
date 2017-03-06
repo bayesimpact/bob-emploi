@@ -63,7 +63,6 @@ class ServerTestCase(unittest.TestCase):
             {
                 '_id': 'A1234',
                 'romeId': 'A1234',
-                'imageLink': 'http://example.com/myimage',
                 'requirements': {
                     'extras': [{'name': 'foo'}],
                     'diplomas': [{'name': 'bar'}],
@@ -159,7 +158,7 @@ class ServerTestCase(unittest.TestCase):
             for modifier in modifiers:
                 modifier(data)
 
-        server.ADVISOR_DISABLED_FOR_TESTING = not advisor
+        server.ADVISOR_ENABLED_FOR_TESTING = advisor
 
         # Create password.
         user_id = self.authenticate_new_user(email=email)
@@ -171,7 +170,7 @@ class ServerTestCase(unittest.TestCase):
             '/api/user', data=json.dumps(data), content_type='application/json')
         self.assertEqual(200, response.status_code, response.get_data())
 
-        server.ADVISOR_DISABLED_FOR_TESTING = False
+        server.ADVISOR_ENABLED_FOR_TESTING = False
 
         return user_id
 

@@ -10,25 +10,47 @@
 # spawned and old containers to be stopped.
 #
 # The client gets released by deploying static files on OVH storage.
-#
-# TODO(pascal): Decide and document the deployment cycle, for now this is a
-# tool that can be used manually.
 
 set -e
 
-readonly TAG="$1"
-if [ -z "${TAG}" ]; then
+if [ -z "$1" ]; then
   echo -e "ERROR: \033[31mChoose a git tag to deploy.\033[0m"
+  git tag | grep ^20 | sort | tail
   exit 1
+fi
+git fetch origin --tags
+if [ "$1" == "latest" ]; then
+  readonly TAG=$(git tag | grep ^20..-..-.. | sort | tail -n 1)
+else
+  readonly TAG="$1"
+fi
+
+if [ -z "$(git tag -l "${TAG}")" ]; then
+  echo -e "ERROR: \033[31mThe tag ${TAG} does not exist locally.\033[0m"
+  exit 2
 fi
 
 if [ -z "${OS_PASSWORD}" ]; then
   echo -e "ERROR: \033[31mSet up OpenStack credentials first.\033[0m"
-  exit 1
+  echo "* Go to https://www.ovh.com/manager/cloud and select: Servers -> OpenStack"
+  echo "* Create an user if you do not have any, and copy the password"
+  echo "* Click on the little wrench and select 'Downloading an Openstack configuation file'"
+  echo "* Source this file to export the OpenStack environment variables, it will ask for your password."
+  exit 3
+fi
+
+if ! command -v aws >/dev/null 2>&1; then
+  echo -e "ERROR: \033[31mInstall and configure the aws CLI that is necessary for deployment.\033[0m"
+  echo "* Ask your favorite admin for the access to the AWS project if you do not have it yet"
+  echo "* Log into your AWS console and go to IAM (https://console.aws.amazon.com/iam/home)"
+  echo "* Create a new 'Access key ID' and the corresponding 'Secret' if you do not already have one"
+  echo "* Run 'aws configure' and add your credentials (make sure to set the region to 'eu-central-1')"
+  exit 4
 fi
 
 readonly DOCKER_SERVER_REPO="bob-emploi-frontend-server"
 readonly DOCKER_CLIENT_REPO="bob-emploi-frontend"
+rm -f "${RELEASE_NOTES}"
 readonly DOCKER_TAG="tag-${TAG}"
 readonly DOCKER_SERVER_IMAGE="bayesimpact/${DOCKER_SERVER_REPO}:${DOCKER_TAG}"
 readonly DOCKER_CLIENT_IMAGE="bayesimpact/${DOCKER_CLIENT_REPO}:${DOCKER_TAG}"
@@ -37,6 +59,7 @@ readonly ECS_SERVICE="flask-lb"
 # Our OpenStack container, see
 # https://www.ovh.com/manager/cloud/index.html#/iaas/pci/project/7b9ade05d5f84f719adc2cbc76c07eec/storage
 readonly OPEN_STACK_CONTAINER="PE Static Assets"
+readonly GITHUB_URL="$(hub browse -u)"
 
 
 # Deploying the server.
@@ -46,8 +69,29 @@ echo -e "\033[32mChecking that the server Docker image exists…\033[0m"
 docker run --rm harisekhon/pytools dockerhub_show_tags.py "bayesimpact/${DOCKER_SERVER_REPO}" -q | \
   grep "^${DOCKER_TAG}\$" > /dev/null || {
   echo -e "ERROR: \033[31mThe tag \"${DOCKER_TAG}\" does not exist in Docker Registry.\033[0m"
-  exit 2
+  exit 5
 }
+
+# Prepare Release Notes.
+readonly RELEASE_NOTES=$(mktemp)
+if hub release show "${TAG}" 2> /dev/null > "${RELEASE_NOTES}"; then
+  readonly RELEASE_COMMAND="edit"
+else
+  readonly RELEASE_COMMAND="create"
+
+  echo -e "${TAG}\\n" > "${RELEASE_NOTES}"
+  echo -e "# Edit these release notes to make them more readable (lines starting with # are ignored, and an empty file cancels the deployment)." >> "${RELEASE_NOTES}"
+  git log "origin/prod..${TAG}" --format=%B >> "${RELEASE_NOTES}"
+
+  "${EDITOR:-${GIT_EDITOR:-$(git config core.editor || echo 'vim')}}" "${RELEASE_NOTES}"
+
+  sed -i "/^#/d" "${RELEASE_NOTES}"
+  if [ -z "$(grep "^." "${RELEASE_NOTES}")" ]; then
+    echo -e "Canceling deployment due to empty release notes."
+    rm -f "${RELEASE_NOTES}"
+    exit 6
+  fi
+fi
 
 echo -e "\033[32mCreating a new task definition…\033[0m"
 readonly CONTAINERS_DEFINITION=$(
@@ -88,7 +132,7 @@ echo -e "\033[32mDownloading the client Docker Image…\033[0m"
 docker pull "${DOCKER_CLIENT_IMAGE}"
 
 echo -e "\033[32mExtracting the archive from the Docker Image…\033[0m"
-readonly TMP_TAR_FILE=$(mktemp --suffix=.tar)
+readonly TMP_TAR_FILE="$(mktemp).tar"
 readonly TMP_DOCKER_CONTAINER=$(docker create "${DOCKER_CLIENT_IMAGE}")
 docker cp "${TMP_DOCKER_CONTAINER}":/usr/share/bob-emploi/html - > "${TMP_TAR_FILE}"
 docker rm ${TMP_DOCKER_CONTAINER}
@@ -106,15 +150,15 @@ popd
 rm -r "${TMP_DIR}"
 
 echo -e "\033[32mLogging the deployment on GitHub…\033[0m"
-readonly RELEASE_NOTES=$(mktemp)
-if hub release show "${TAG}" 2> /dev/null > "${RELEASE_NOTES}"; then
-  echo "Redeployed on $(date -R -u)" >> "${RELEASE_NOTES}"
-  hub release edit --file="${RELEASE_NOTES}" "${TAG}"
-else
-  echo -e "${TAG}\\n" > "${RELEASE_NOTES}"
-  echo "First deployed on $(date -R -u)" >> "${RELEASE_NOTES}"
-  hub release create --file="${RELEASE_NOTES}" "${TAG}"
-fi
+echo "Deployed on $(date -R -u)" >> "${RELEASE_NOTES}"
+hub release "${RELEASE_COMMAND}" --file="${RELEASE_NOTES}" "${TAG}"
 rm -f "${RELEASE_NOTES}"
+git push -f origin "${TAG}":prod
+# Ping Slack to say the deployment is done.
+# Find private URL for Slack Integration at
+# https://bayesimpact.slack.com/apps/A0F7XDUAZ-incoming-webhooks.
+# TODO(pascal): Embed the release notes directly in slack.
+wget -o /dev/null -O /dev/null --post-data="{\"text\": \"A new version of Bob has been deployed ($TAG). See <$GITHUB_URL/releases/tag/$TAG|release notes>.\"}" "$SLACK_INTEGRATION_URL"
+
 
 echo -e "\033[32mSuccess!\033[0m"

@@ -1,23 +1,28 @@
 import React from 'react'
 
-// TODO: Remove frustrations and flexibilities after the deprecated fields got removed from the
+// TODO: Remove flexibilities after the deprecated fields got removed from the
 // user.proto.
-const USER_PROFILE_SHAPE = React.PropTypes.shape({
+const USER_PROFILE_FIELDS = {
   city: React.PropTypes.object,
   contractTypeFlexibility: React.PropTypes.string,
+  drivingLicenses: React.PropTypes.arrayOf(React.PropTypes.string.isRequired),
   email: React.PropTypes.string.isRequired,
+  englishLevelEstimate: React.PropTypes.number,
   frustrations: React.PropTypes.arrayOf(React.PropTypes.string.isRequired),
   gender: React.PropTypes.string,
   geographicalFlexibility: React.PropTypes.string,
+  highestDegree: React.PropTypes.string,
   lastName: React.PropTypes.string.isRequired,
   latestJob: React.PropTypes.object,
   name: React.PropTypes.string.isRequired,
+  officeSkillsEstimate: React.PropTypes.number,
   professionalFlexibility: React.PropTypes.string,
   salaryRequirementFlexibility: React.PropTypes.string,
   situation: React.PropTypes.string,
   trainingFlexibility: React.PropTypes.string,
   yearOfBirth: React.PropTypes.number,
-})
+}
+const USER_PROFILE_SHAPE = React.PropTypes.shape(USER_PROFILE_FIELDS)
 
 function hasActivelySearchingSinceIfNeeded(activelySearchingSince, jobSearchPhase) {
   return !!(activelySearchingSince || jobSearchPhase === 'PASSIVE')
@@ -58,4 +63,11 @@ function travelInTime(user, delta) {
 }
 
 
-export {hasActivelySearchingSinceIfNeeded, travelInTime, USER_PROFILE_SHAPE}
+function userAge(yearOfBirth) {
+  const todayYear = (new Date()).getFullYear()
+  return todayYear - yearOfBirth
+}
+
+
+export {hasActivelySearchingSinceIfNeeded, travelInTime, USER_PROFILE_FIELDS, USER_PROFILE_SHAPE,
+        userAge}

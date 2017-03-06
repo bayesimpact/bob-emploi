@@ -11,7 +11,6 @@ docker-compose run --rm \
     frontend-flask python bob_emploi/frontend/asynchronous/mail_nps.py 2
 """
 import datetime
-import json
 import logging
 import os
 import signal
@@ -148,7 +147,7 @@ def main(user_db, base_url, now, days_before_sending):
     for user_in_db in _break_on_signal([signal.SIGTERM], user_iterator):
         user = user_pb2.User()
         user_id = user_in_db.pop('_id')
-        json_format.Parse(json.dumps(user_in_db), user)
+        json_format.ParseDict(user_in_db, user)
         if user.features_enabled.net_promoter_score_email != user_pb2.NPS_EMAIL_PENDING:
             # Skip silently: NPS was sent already.
             continue

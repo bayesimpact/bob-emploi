@@ -179,16 +179,16 @@ class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improv
         self.persona = self._random_persona().clone()
 
     def test_strong_network(self):
-        """User already has a strong network."""
-        self.persona.project.network_estimate = 3
+        """User already has a strong or good enough network."""
+        if self.persona.project.network_estimate < 2:
+            self.persona.project.network_estimate = 2
         score = self._score_persona(self.persona)
         self.assertLessEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
 
     def test_network_is_best_application_mode(self):
         """User is in a job that hires a lot through network."""
         self.persona = _PERSONAS['malek'].clone()
-        if self.persona.project.network_estimate >= 3:
-            self.persona.project.network_estimate = 2
+        self.persona.project.network_estimate = 1
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
         self.database.local_diagnosis.insert_one({
@@ -200,12 +200,11 @@ class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improv
             },
         })
         score = self._score_persona(self.persona)
-        self.assertGreater(score, 3, msg='Fail for "%s"' % self.persona.name)
+        self.assertGreaterEqual(score, 3, msg='Fail for "%s"' % self.persona.name)
 
     def test_network_is_not_the_best_application_mode(self):
         """User is in a job that does not use network a lot to hire."""
-        if self.persona.project.network_estimate >= 3:
-            self.persona.project.network_estimate = 2
+        self.persona.project.network_estimate = 1
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
         self.database.local_diagnosis.insert_one({
@@ -217,12 +216,11 @@ class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improv
             },
         })
         score = self._score_persona(self.persona)
-        self.assertLessEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
+        self.assertEqual(score, 2, msg='Fail for "%s"' % self.persona.name)
 
     def test_network_is_not_always_the_best_application_mode(self):
         """User is in a job that does not use only network to hire."""
-        if self.persona.project.network_estimate >= 3:
-            self.persona.project.network_estimate = 2
+        self.persona.project.network_estimate = 1
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
         self.database.local_diagnosis.insert_one({
@@ -235,7 +233,7 @@ class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improv
             },
         })
         score = self._score_persona(self.persona)
-        self.assertLessEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
+        self.assertEqual(score, 2, msg='Fail for "%s"' % self.persona.name)
 
 
 class LearnMoreAboutJobScoringModelTestCase(ScoringModelTestBase('chantier-about-job')):
@@ -1322,6 +1320,46 @@ class AdviceLongCDDScoringModelTestCase(ScoringModelTestBase('advice-long-cdd'))
         })
         score = self._score_persona(persona)
 
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+
+class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
+    """Unit tests for the "Other Work Environments" advice."""
+
+    def test_no_job_group_info(self):
+        """Does not trigger if we are missing environment data."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'M1607'
+        self.database.job_group_info.insert_one({'_id': 'M1607'})
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_with_other_structures(self):
+        """Triggers if multiple structures."""
+        self.database.job_group_info.insert_one({
+            '_id': 'M1607',
+            'workEnvironmentKeywords': {'structures': ['Kmenistan', 'Key']},
+        })
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'M1607'
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 2, msg='Failed for "%s":' % persona.name)
+
+    def test_with_only_one_structure_and_one_sector(self):
+        """Only one structure and one sector."""
+        self.database.job_group_info.insert_one({
+            '_id': 'M1607',
+            'workEnvironmentKeywords': {
+                'structures': ['Kmenistan'],
+                'sector': ['Toise'],
+            },
+        })
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'M1607'
+
+        score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
 
 

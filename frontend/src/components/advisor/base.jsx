@@ -1,4 +1,5 @@
 import React from 'react'
+import {connect} from 'react-redux'
 
 import {Modal} from 'components/modal'
 import {ShortKey} from 'components/shortkey'
@@ -8,8 +9,8 @@ import {CheckboxList, Colors, RoundButton} from 'components/theme'
 class TitleBox extends React.Component {
   static propTypes = {
     children: React.PropTypes.node.isRequired,
-    numRecommendations: React.PropTypes.number.isRequired,
-    recommendationNumber: React.PropTypes.number.isRequired,
+    numRecommendations: React.PropTypes.number,
+    recommendationNumber: React.PropTypes.number,
     style: React.PropTypes.object,
   }
 
@@ -30,9 +31,9 @@ class TitleBox extends React.Component {
       textTransform: 'uppercase',
     }
     return <div style={style}>
-      <header style={headerStyle}>
+      {(numRecommendations && recommendationNumber) ? <header style={headerStyle}>
         Solution n°{recommendationNumber}/{numRecommendations}
-      </header>
+      </header> : null}
       <ul style={{fontSize: 18, lineHeight: '26px', marginBottom: 0}}>
         {children}
       </ul>
@@ -67,6 +68,7 @@ class Section extends React.Component{
     </section>
   }
 }
+
 
 class MarketStressChart extends React.Component {
   static propTypes = {
@@ -198,10 +200,10 @@ class AdvicePage extends React.Component {
     declineCaption: React.PropTypes.string.isRequired,
     declineReasonOptions: React.PropTypes.arrayOf(React.PropTypes.string).isRequired,
     declineReasonTitle: React.PropTypes.string.isRequired,
-    numRecommendations: React.PropTypes.number.isRequired,
-    onAccept: React.PropTypes.func.isRequired,
-    onDecline: React.PropTypes.func.isRequired,
-    recommendationNumber: React.PropTypes.number.isRequired,
+    numRecommendations: React.PropTypes.number,
+    onAccept: React.PropTypes.func,
+    onDecline: React.PropTypes.func,
+    recommendationNumber: React.PropTypes.number,
     showAckModalOnAccept: React.PropTypes.bool,
     style: React.PropTypes.object,
     summary: React.PropTypes.node.isRequired,
@@ -216,6 +218,7 @@ class AdvicePage extends React.Component {
   }
 
   state = {
+    isAccepting: false,
     isAckAcceptModalShown: false,
     isAckDeclineReasonModalShown: false,
     isDeclineModalShown: false,
@@ -227,6 +230,7 @@ class AdvicePage extends React.Component {
     if (showAckModalOnAccept) {
       this.setState({isAckAcceptModalShown: true})
     } else {
+      this.setState({isAccepting: true})
       onAccept()
     }
   }
@@ -238,7 +242,7 @@ class AdvicePage extends React.Component {
       margin: '0 0 20px',
       padding: 20,
     } : {
-      margin: '30px 0',
+      marginBottom: 30,
     }
     return <TitleBox
         recommendationNumber={recommendationNumber} numRecommendations={numRecommendations}
@@ -256,7 +260,10 @@ class AdvicePage extends React.Component {
   }
 
   renderButtons() {
-    const {acceptCaption, declineCaption} = this.props
+    const {acceptCaption, declineCaption, onAccept} = this.props
+    if (!onAccept) {
+      return null
+    }
     const {isMobileVersion} = this.context
     const style = {
       display: 'flex',
@@ -267,7 +274,7 @@ class AdvicePage extends React.Component {
     return <div style={style}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.handleAccept} />
       <RoundButton
-          type="validation" style={{flex: 1}}
+          type="validation" style={{flex: 1}} isProgressShown={this.state.isAccepting}
           onClick={this.handleAccept}>
         {acceptCaption}
       </RoundButton>
@@ -294,12 +301,12 @@ class AdvicePage extends React.Component {
             isDeclineModalShown: false,
             reason,
           })} />
-      <AckDeclineReasonModal
+      {onDecline ? <AckDeclineReasonModal
           isShown={isAckDeclineReasonModalShown}
-          onSubmit={() => onDecline(this.state.reason)} />
-      <AckAcceptModal
+          onSubmit={() => onDecline(this.state.reason)} /> : null}
+      {onAccept ? <AckAcceptModal
           isShown={isAckAcceptModalShown}
-          onSubmit={onAccept} />
+          onSubmit={onAccept} /> : null}
       {this.renderTitleBox()}
       {this.renderDetailedAnalysis()}
       {this.renderButtons()}
@@ -382,6 +389,58 @@ class DeclineModal extends React.Component {
 }
 
 
+class HowToBox extends React.Component {
+  static propTypes = {
+    children: React.PropTypes.node.isRequired,
+    disabled: React.PropTypes.bool,
+    reason: React.PropTypes.string,
+    style: React.PropTypes.object,
+    title: React.PropTypes.string.isRequired,
+  }
+
+  render() {
+    const {children, disabled, reason, title} = this.props
+    if (disabled) {
+      return null
+    }
+    const darkFrameStyle = {
+      backgroundColor: Colors.LIGHT_GREY,
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      borderRadius: 4,
+      marginTop: 30,
+      ...this.props.style,
+    }
+    const reasonStyle = {
+      backgroundColor: Colors.SLATE,
+      borderRadius: '0 0 4px 4px',
+      color: '#fff',
+      fontSize: 13,
+      fontStyle: 'italic',
+      fontWeight: 500,
+      padding: 10,
+      textAlign: 'center',
+    }
+    return <div style={darkFrameStyle}>
+      <div style={{padding: 25}}>
+        <div style={{fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase'}}>
+          {title}
+        </div>
+        <div style={{display: 'flex', marginTop: 20}}>
+          <div style={{fontSize: 40, textAlign: 'center', width: 165}}>
+            👉
+          </div>
+          <div style={{flex: 1}}>
+            {children}
+          </div>
+        </div>
+      </div>
+      {reason ? <div style={reasonStyle}>{reason}</div> : null}
+    </div>
+  }
+}
+
+
+
 // Modal that appears when we validate the choice of the user.
 class ValidationModal extends React.Component {
   static propTypes = {
@@ -448,4 +507,84 @@ class AckDeclineReasonModal extends React.Component {
 }
 
 
-export {AdvicePage, ApplicationModeChart, MarketStressChart, Section, TitleBox}
+class AdviceCardBase extends React.Component {
+  static propTypes = {
+    advice: React.PropTypes.object.isRequired,
+    children: React.PropTypes.node,
+    gender: React.PropTypes.string,
+    goal: React.PropTypes.string,
+    onSelect: React.PropTypes.func,
+    style: React.PropTypes.object,
+    title: React.PropTypes.node.isRequired,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
+
+  renderTitle() {
+    const {title} = this.props
+    const style = {
+      borderBottom: `1px solid ${Colors.BACKGROUND_GREY}`,
+      fontSize: 25,
+      fontStyle: 'italic',
+      fontWeight: 'bold',
+      padding: '30px 30px 20px',
+    }
+    return <header style={style}>
+      {title}
+    </header>
+  }
+
+  renderFooter() {
+    const {advice, gender, goal, onSelect} = this.props
+    const {isMobileVersion} = this.context
+    if (advice.status === 'ADVICE_ACCEPTED') {
+      return null
+    }
+    const style = {
+      alignItems: 'center',
+      borderTop: `1px solid ${Colors.BACKGROUND_GREY}`,
+      color: Colors.COOL_GREY,
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      fontSize: 20,
+      fontStyle: 'italic',
+      lineHeight: 1.45,
+      padding: '20px 30px 30px',
+    }
+    const buttonStyle = isMobileVersion ? {marginTop: 30} : {marginLeft: 30}
+    const maybeE = gender === 'FEMININE' ? 'e' : ''
+    return <footer style={style}>
+      <div style={{flex: 1}}>
+        Si vous êtes convaincu{maybeE}, cliquez sur commencer pour recevoir
+        quotidiennement d'autres conseils concrets
+        {goal ? ` pour ${goal}` : null}.
+      </div>
+
+      <RoundButton onClick={onSelect} type="validation" style={buttonStyle}>
+        Commencer
+      </RoundButton>
+    </footer>
+  }
+
+  render() {
+    const {children, style} = this.props
+    const containerStyle = {
+      backgroundColor: '#fff',
+      color: Colors.CHARCOAL_GREY,
+      ...style,
+    }
+    return <section style={containerStyle}>
+      {this.renderTitle()}
+      <div style={{padding: '25px 30px'}}>
+        {children}
+      </div>
+      {this.renderFooter()}
+    </section>
+  }
+}
+const AdviceCard = connect(({user}) => ({gender: user.profile.gender}))(AdviceCardBase)
+
+
+export {AdvicePage, ApplicationModeChart, MarketStressChart, Section, TitleBox, AdviceCard,
+        HowToBox}
