@@ -307,11 +307,9 @@ class CitySuggest extends React.Component {
     value: React.PropTypes.object,
   }
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      cityName: props.value && props.value.name || '',
-    }
+  componentWillMount() {
+    const {value} = this.props
+    this.setState({cityName: value && value.name || ''})
   }
 
   renderSuggestion = (suggestion) => {

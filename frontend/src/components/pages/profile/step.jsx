@@ -1,52 +1,44 @@
 import React from 'react'
 import _ from 'underscore'
 
-import {RoundButton} from 'components/theme'
+import {Colors, RoundButton} from 'components/theme'
 import {ShortKey} from 'components/shortkey'
-import {USER_PROFILE_SHAPE} from 'store/user'
 
 
-class ProfileStepBaseClass extends React.Component {
-  static propTypes = {
-    fieldnames: React.PropTypes.object,
-    onBack: React.PropTypes.func,
-    onSubmit: React.PropTypes.func.isRequired,
-    profile: USER_PROFILE_SHAPE,
-  }
+class ProfileUpdater {
+  constructor(fieldNames, component, {profile}) {
+    this.fieldNames_ = fieldNames
+    this.requiredFields_ = Object.keys(fieldNames).filter(fieldName => fieldNames[fieldName])
+    this.component_ = component
 
-  constructor(props) {
-    super(props)
-    this.fieldnames = props.fieldnames
-    this.state = _.pick(props.profile, Object.keys(this.fieldnames))
+    this.component_.setState(_.pick(profile, Object.keys(fieldNames)))
   }
 
   isFormValid = () => {
-    const requiredFields = Object.keys(this.fieldnames).
-      filter(fieldname => this.fieldnames[fieldname])
-    return _.all(requiredFields.map(fieldname => this.state[fieldname]))
+    return _.all(this.requiredFields_.map(fieldname => this.component_.state[fieldname]))
   }
 
   handleSubmit = () => {
-    this.setState({isValidated: true})
+    this.component_.setState({isValidated: true})
     if (this.isFormValid()) {
-      const fields = _.pick(this.state, Object.keys(this.fieldnames))
-      this.props.onSubmit(fields)
+      const fields = _.pick(this.component_.state, Object.keys(this.fieldNames_))
+      this.component_.props.onSubmit(fields)
     }
   }
 
   handleBack = () => {
-    const {onBack} = this.props
-    const fields = _.pick(this.state, Object.keys(this.fieldnames))
+    const {onBack} = this.component_.props
+    const fields = _.pick(this.component_.state, Object.keys(this.fieldNames_))
     onBack && onBack(fields)
   }
 
   handleChange = field => value => {
-    this.setState({[field]: value})
+    this.component_.setState({[field]: value})
   }
 }
 
 
-class ProfileStep extends React.Component {
+class Step extends React.Component {
   static propTypes = {
     children: React.PropTypes.node.isRequired,
     contentStyle: React.PropTypes.object,
@@ -62,11 +54,14 @@ class ProfileStep extends React.Component {
   static contextTypes = {
     isMobileVersion: React.PropTypes.bool,
   }
+  static defaultProps = {
+    title: 'Définir mon projet',
+  }
 
   render() {
-    const {children, fastForward, nextButtonContent, onPreviousButtonClick,
-           onNextButtonClick, contentStyle, style, title, explanation,
-           isNextButtonDisabled} = this.props
+    const {children, explanation, fastForward, nextButtonContent, onPreviousButtonClick,
+           onNextButtonClick, contentStyle, style,
+           isNextButtonDisabled, title} = this.props
     const {isMobileVersion} = this.context
     const stepStyle = {
       alignItems: 'center',
@@ -74,11 +69,11 @@ class ProfileStep extends React.Component {
       boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.04)',
       display: 'flex',
       flexDirection: 'column',
-      width: isMobileVersion ? 'initial' : 945,
+      width: 945,
       ...style,
     }
     const titleStyle = {
-      color: '#2c3449',
+      color: Colors.DARK_TWO,
       fontSize: 23,
       fontWeight: 500,
       lineHeight: 1.6,
@@ -94,12 +89,23 @@ class ProfileStep extends React.Component {
     }
     const containerStyle = {
       display: 'flex',
+      flex: 1,
       flexDirection: 'column',
-      marginTop: 40,
-      padding: '0 50px',
-      width: isMobileVersion ? 'initial' : 480,
+      marginTop: 33,
+      maxWidth: 480,
+      padding: '0 20px',
       ...contentStyle,
     }
+    const navigationStyle = {
+      display: 'flex',
+      marginBottom: isMobileVersion ? 20 : 40,
+      marginTop: isMobileVersion ? 20 : 70,
+    }
+    const mobileButtonStyle = {
+      padding: '13px 10px',
+      width: 130,
+    }
+    const buttonStyle = isMobileVersion ? mobileButtonStyle : {}
     return <div style={stepStyle}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={fastForward} />
       <div style={titleStyle}>{title}</div>
@@ -107,12 +113,16 @@ class ProfileStep extends React.Component {
       <div style={containerStyle}>
         {children}
       </div>
-      <div style={{display: 'flex', marginBottom: 40, marginTop: 70}}>
+      <div style={navigationStyle}>
         {onPreviousButtonClick ? <RoundButton
-            type="back" onClick={onPreviousButtonClick} style={{marginRight: 20}}>
+            type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}>
           Précédent
         </RoundButton> : null}
-        <RoundButton type="validation" onClick={onNextButtonClick} disabled={isNextButtonDisabled}>
+        <RoundButton
+          type="validation"
+          onClick={onNextButtonClick}
+          disabled={isNextButtonDisabled}
+          style={buttonStyle}>
           {nextButtonContent || 'Suivant'}
         </RoundButton>
       </div>
@@ -121,4 +131,4 @@ class ProfileStep extends React.Component {
 }
 
 
-export {ProfileStep, ProfileStepBaseClass}
+export {Step, ProfileUpdater}

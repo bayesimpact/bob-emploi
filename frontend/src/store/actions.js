@@ -1,7 +1,7 @@
 import {browserHistory} from 'react-router'
 
 import {api} from './api'
-import {newProject} from 'store/project'
+import {getActionById, newProject} from 'store/project'
 import {splitFullName} from 'store/auth'
 import {Gender, Situation, JobSearchPhase} from 'api/user'
 import {ProjectIntensity} from 'api/project'
@@ -24,12 +24,17 @@ export const SET_USER_PROFILE = 'SET_USER_PROFILE'
 export const ACCEPT_PRIVACY_NOTICE = 'ACCEPT_PRIVACY_NOTICE'
 export const FINISH_PROFILE_SITUATION = 'FINISH_PROFILE_SITUATION'
 export const FINISH_PROFILE_QUALIFICATIONS = 'FINISH_PROFILE_QUALIFICATIONS'
+export const FINISH_PROFILE_FRUSTRATIONS = 'FINISH_PROFILE_FRUSTRATIONS'
 export const FINISH_ACTION = 'FINISH_ACTION'
 export const CANCEL_ACTION = 'CANCEL_ACTION'
 export const READ_ACTION = 'READ_ACTION'
 export const STICK_ACTION = 'STICK_ACTION'
 export const CREATE_PROJECT = 'CREATE_PROJECT'
 export const CREATE_PROJECT_SAVE = 'CREATE_PROJECT_SAVE'
+export const EDIT_FIRST_PROJECT = 'EDIT_FIRST_PROJECT'
+export const FINISH_PROJECT_GOAL = 'FINISH_PROJECT_GOAL'
+export const FINISH_PROJECT_CRITERIA = 'FINISH_PROJECT_CRITERIA'
+export const FINISH_PROJECT_EXPERIENCE = 'FINISH_PROJECT_EXPERIENCE'
 export const SET_PROJECT_PROPERTIES = 'SET_PROJECT_PROPERTIES'
 export const SET_USER_INTERACTION = 'SET_USER_INTERACTION'
 export const CREATE_ACTION_PLAN = 'CREATE_ACTION_PLAN'
@@ -62,14 +67,13 @@ export const LOAD_LANDING_PAGE = 'LOAD_LANDING_PAGE'
 export const REFRESH_USER_DATA = 'REFRESH_USER_DATA'
 export const RESET_USER_PASSWORD = 'RESET_USER_PASSWORD'
 export const OPEN_ACTION_EXTERNAL_LINK = 'OPEN_ACTION_EXTERNAL_LINK'
-export const ADVICE_IS_SHOWN = 'ADVICE_IS_SHOWN'
 export const ENGAGEMENT_ACTION_IS_SHOWN = 'ENGAGEMENT_ACTION_IS_SHOWN'
+export const FINISH_STICKY_ACTION = 'FINISH_STICKY_ACTION'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
   [ACCEPT_ADVICE]: 'Accept suggested advice',
   [ACCEPT_PRIVACY_NOTICE]: 'Accept privacy notice',
-  [ADVICE_IS_SHOWN]: 'Advice suggested',
   [AUTHENTICATE_USER]: 'Log in',
   [CANCEL_ACTION]: 'Close action',
   [CANCEL_ADVICE_ENGAGEMENT]: 'Cancel advice engagement',
@@ -82,8 +86,13 @@ export const actionTypesToLog = {
   [DISPLAY_TOAST_MESSAGE]: 'Display toast message',
   [ENGAGEMENT_ACTION_IS_SHOWN]: 'Advice engagement action shown',
   [FINISH_ACTION]: 'Close action',
+  [FINISH_PROFILE_FRUSTRATIONS]: 'Finish profile frustrations',
   [FINISH_PROFILE_QUALIFICATIONS]: 'Finish profile qualifications',
   [FINISH_PROFILE_SITUATION]: 'Finish profile situation',
+  [FINISH_PROJECT_CRITERIA]: 'Finish project criteria',
+  [FINISH_PROJECT_EXPERIENCE]: 'Finish project experience',
+  [FINISH_PROJECT_GOAL]: 'Finish project goal',
+  [FINISH_STICKY_ACTION]: 'Finish sticky action',
   [FINISH_STICKY_ACTION_STEP]: 'Finish sticky action step',
   [GET_DASHBOARD_EXPORT]: 'View dashbord export',
   [GET_USER_DATA]: 'Load app',
@@ -91,6 +100,7 @@ export const actionTypesToLog = {
   [LOGOUT]: 'Log out',
   [MOVE_USER_DATES_BACK_1_DAY]: 'Time travel!',
   [OPEN_ACTION_EXTERNAL_LINK]: 'Open action external link',
+  [OPEN_LOGIN_MODAL]: 'Open login modal',
   [READ_ACTION]: 'Open new action',
   [REFRESH_ACTION_PLAN]: 'New actions shown',
   [REFRESH_USER_DATA]: 'User data refreshed',
@@ -124,10 +134,6 @@ const switchToMobileVersionAction = {type: SWITCH_TO_MOBILE_VERSION}
 
 // Synchronous action generators, keep them grouped and alpha sorted.
 
-function advisorRecommendationIsShown(project, advice) {
-  return dispatch => dispatch({advice, project, type: ADVICE_IS_SHOWN})
-}
-
 function advisorEngagementActionIsShown(project, advice) {
   return dispatch => dispatch({advice, project, type: ENGAGEMENT_ACTION_IS_SHOWN})
 }
@@ -140,8 +146,8 @@ function openActionExternalLink(action) {
   return dispatch => dispatch({action, type: OPEN_ACTION_EXTERNAL_LINK})
 }
 
-function openLoginModal(defaultValues) {
-  return {defaultValues, type: OPEN_LOGIN_MODAL}
+function openLoginModal(defaultValues, visualElement) {
+  return {defaultValues, type: OPEN_LOGIN_MODAL, visualElement}
 }
 
 // Asynchronous action generators.
@@ -242,11 +248,10 @@ function refreshActionPlan() {
   }
 }
 
-// TODO(pascal): Stop requiring userId and get it from state instead.
 function fetchUser(userId, ignoreFailure) {
   return dispatch => {
     return dispatch(
-        wrapAsyncAction(GET_USER_DATA, () => api.userGet(userId), {ignoreFailure})).
+        wrapAsyncAction(GET_USER_DATA, () => api.markUsedAndRetrievePost(userId), {ignoreFailure})).
         then(response => {
           dispatch(planRefreshActionPlan(refreshActionPlan))
           return response
@@ -455,9 +460,15 @@ function stickAction(action) {
   }
 }
 
-function finishStickyActionStep(step, text) {
+function finishStickyActionStep(step, text, action, advice) {
   return (dispatch, getState) => {
-    dispatch({step, text, type: FINISH_STICKY_ACTION_STEP})
+    dispatch({action, advice, step, text, type: FINISH_STICKY_ACTION_STEP})
+    if (action.status !== 'ACTION_STICKY_DONE') {
+      const updatedAction = getActionById(getState().user.projects, action.actionId)
+      if (updatedAction && updatedAction.status === 'ACTION_STICKY_DONE') {
+        dispatch({action, advice, type: FINISH_STICKY_ACTION})
+      }
+    }
     return dispatch(saveUser(getState().user))
   }
 }
@@ -469,6 +480,7 @@ function stopStickyAction(action, feedback) {
   }
 }
 
+// TODO(pascal): Re-use in new flow or clean-up.
 function stopAdviceEngagement(project, advice, feedback) {
   return (dispatch, getState) => {
     dispatch({advice, feedback, project, type: CANCEL_ADVICE_ENGAGEMENT})
@@ -476,6 +488,7 @@ function stopAdviceEngagement(project, advice, feedback) {
   }
 }
 
+// TODO(pascal): Re-use in new flow or clean-up.
 function acceptAdvice(project, advice) {
   return (dispatch, getState) => {
     dispatch({advice, project, type: ACCEPT_ADVICE})
@@ -483,6 +496,7 @@ function acceptAdvice(project, advice) {
   }
 }
 
+// TODO(pascal): Re-use in new flow or clean-up.
 function declineAdvice(project, reason, advice) {
   return (dispatch, getState) => {
     dispatch({advice, project, reason, type: DECLINE_ADVICE})
@@ -497,7 +511,16 @@ function readAction(action, feedback) {
   }
 }
 
-function createNewProject(newProjectData, options) {
+function editFirstProject(newProjectData, actionType) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    const project = newProject(newProjectData, user.profile && user.profile.gender)
+    dispatch({project, type: actionType || EDIT_FIRST_PROJECT})
+    return dispatch(saveUser(getState().user))
+  }
+}
+
+function createFirstProject(newProjectData, options) {
   return (dispatch, getState) => {
     const {user} = getState()
     const project = newProject(newProjectData, user.profile && user.profile.gender)
@@ -565,8 +588,8 @@ function askPasswordReset(email) {
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         finishAction, cancelAction, readAction, facebookAuthenticateUser,
         googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
-        createNewProject, fetchProjectRequirements, resetPassword, fetchPotentialChantiers,
-        updateProjectChantiers, moveUserDatesBackOneDay,
+        createFirstProject, fetchProjectRequirements, resetPassword, fetchPotentialChantiers,
+        updateProjectChantiers, moveUserDatesBackOneDay, editFirstProject,
         createDashboardExport, getDashboardExport, displayToasterMessage,
         setProjectProperty, closeLoginModalAction, openLoginModal,
         getChantierTitles, acceptCookiesUsageAction, switchToMobileVersionAction,
@@ -575,5 +598,5 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         openActionExternalLink, stickAction, finishStickyActionStep,
         addManualExploration, editManualExploration, deleteManualExploration,
         stopStickyAction, acceptAdvice, declineAdvice,
-        advisorRecommendationIsShown, stopAdviceEngagement, advisorEngagementActionIsShown,
+        stopAdviceEngagement, advisorEngagementActionIsShown,
 }

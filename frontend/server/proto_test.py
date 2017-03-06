@@ -4,6 +4,7 @@ import unittest
 from urllib import parse
 
 import flask
+import mock
 import mongomock
 
 from bob_emploi.frontend import proto
@@ -174,15 +175,20 @@ class ParseFromMongoTestCase(unittest.TestCase):
         self.assertTrue(proto.parse_from_mongo({'createdAt': now}, action))
         self.assertEqual(now, action.created_at.ToDatetime())
 
-    def test_weird_objects(self):
-        """Raises a TypeError when an object is not proto compatible."""
+    @mock.patch(proto.__name__ + '.logging.warning')
+    def test_weird_objects(self, mock_warning):
+        """Raises a TypeError when an object is not of the right type."""
         job_group = job_pb2.JobGroup()
-        self.assertRaises(
-            TypeError,
-            proto.parse_from_mongo,
-            # self is a TestCase which is not compatible with any proto type.
-            {'testCase': self},
-            job_group)
+        self.assertFalse(proto.parse_from_mongo({'romeId': 123}, job_group))
+        mock_warning.assert_called_once()
+        self.assertEqual(
+            'Error %s while parsing a JSON dict for proto type %s:\n%s',
+            mock_warning.call_args[0][0])
+        self.assertEqual(
+            'Failed to parse romeId field: expected string or bytes-like object.',
+            str(mock_warning.call_args[0][1]))
+        self.assertEqual('JobGroup', str(mock_warning.call_args[0][2]))
+        self.assertEqual("{'romeId': 123}", str(mock_warning.call_args[0][3]))
 
 
 if __name__ == '__main__':

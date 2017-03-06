@@ -54,6 +54,10 @@ function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
+function markUsedAndRetrievePost(userId) {
+  return postJson(`/api/app/use/${userId}`)
+}
+
 function projectRequirementsGet(project) {
   return postJson('/api/project/requirements', project)
 }
@@ -118,6 +122,7 @@ const api = {
   dashboardExportGet,
   exploreGet,
   exploreJobGroupGet,
+  markUsedAndRetrievePost,
   projectPotentialChantiersGet,
   projectRequirementsGet,
   projectUpdateChantiersPost,

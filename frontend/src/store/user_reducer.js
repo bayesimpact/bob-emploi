@@ -6,9 +6,12 @@ import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, FINISH_ACTION,
         DELETE_USER_DATA, SET_USER_INTERACTION, CREATE_ACTION_PLAN,
         REFRESH_ACTION_PLAN, STICK_ACTION, FINISH_PROFILE_SITUATION,
         FINISH_PROFILE_QUALIFICATIONS, ACCEPT_PRIVACY_NOTICE,
-        FINISH_STICKY_ACTION_STEP, ADD_MANUAL_EXPLORATION,
+        FINISH_STICKY_ACTION_STEP, ADD_MANUAL_EXPLORATION, EDIT_FIRST_PROJECT,
+        FINISH_PROFILE_FRUSTRATIONS,
         EDIT_MANUAL_EXPLORATION, DELETE_MANUAL_EXPLORATION, STOP_STICKY_ACTION,
-        ACCEPT_ADVICE, DECLINE_ADVICE, CANCEL_ADVICE_ENGAGEMENT} from '../store/actions'
+        ACCEPT_ADVICE, DECLINE_ADVICE, CANCEL_ADVICE_ENGAGEMENT,
+        FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL,
+        FINISH_PROJECT_EXPERIENCE} from '../store/actions'
 import {finishStickyActionStep} from './project'
 import {travelInTime} from './user'
 import Cookies from 'js-cookie'
@@ -114,6 +117,7 @@ function user(state=initialData, action) {
   const success = action.status === 'success'
   switch (action.type) {
     case ACCEPT_PRIVACY_NOTICE:  // Fallthrough intended.
+    case FINISH_PROFILE_FRUSTRATIONS:  // Fallthrough intended.
     case FINISH_PROFILE_QUALIFICATIONS:  // Fallthrough intended.
     case FINISH_PROFILE_SITUATION:  // Fallthrough intended.
     case SET_USER_PROFILE:
@@ -251,13 +255,35 @@ function user(state=initialData, action) {
         }),
       }
     case CREATE_PROJECT: {
+      if (state.projects && state.projects.length && !state.projects[0].isIncomplete) {
+        // Project already exists: we allow only one project for now.
+        return state
+      }
       const project = {
-        status: 'PROJECT_CURRENT',
         ...action.project,
+        isIncomplete: false,
+        status: 'PROJECT_CURRENT',
       }
       return {
         ...state,
-        projects: (state.projects || []).concat([project]),
+        projects: [project],
+      }
+    }
+    case FINISH_PROJECT_CRITERIA:  // Fallthrough intended.
+    case FINISH_PROJECT_GOAL:  // Fallthrough intended.
+    case FINISH_PROJECT_EXPERIENCE:  // Fallthrough intended.
+    case EDIT_FIRST_PROJECT: {
+      if (state.projects && state.projects.length && !state.projects[0].isIncomplete) {
+        // Project already exists: we cannot edit it anymore.
+        return state
+      }
+      const project = {
+        ...action.project,
+        isIncomplete: true,
+      }
+      return {
+        ...state,
+        projects: [project],
       }
     }
     case SET_PROJECT_PROPERTIES:

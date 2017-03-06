@@ -204,17 +204,17 @@ class TransitionBetweenChildren extends React.Component {
     transitionDurationMillisec: 800,
   }
 
-  constructor(props) {
-    super(props)
-    if (!(props.children && props.children.key)) {
+  componentWillMount() {
+    const {children} = this.props
+    if (!(children && children.key)) {
       throw 'Children element needs a `key` for transition.'
     }
-    this.state = {
+    this.setState({
       isFadingIn: false,
       isFadingOut: false,
       isInTransition: false,
-      nodeShown: props.children,
-    }
+      nodeShown: children,
+    })
     // The state will be modified like this during a transition:
     // isFadingIn isFadingOut nodeShown
     //   false       false       1

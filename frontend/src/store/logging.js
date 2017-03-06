@@ -125,6 +125,9 @@ export class Logger {
     if (action.status) {
       properties['Async response'] = action.status
     }
+    if (action.visualElement) {
+      properties['Visual Element Source'] = action.visualElement
+    }
     const restrictJobGroup =
       action.props && action.props.restrictJobGroup ||
       action.options &&  action.options.restrictJobGroup

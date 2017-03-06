@@ -3,6 +3,7 @@
 import datetime
 import hashlib
 import json
+import time
 import unittest
 
 from bson import objectid
@@ -17,6 +18,8 @@ from bob_emploi.frontend.api import chantier_pb2
 
 # TODO(pascal): Split this smaller test modules.
 # pylint: disable=too-many-lines
+
+_TIME = time.time
 
 
 def _set_departement(departement):
@@ -93,41 +96,21 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(id_generation_time < yesterday or id_generation_time > tomorrow)
 
     @mock.patch(now.__name__ + '.get')
-    def test_requested_by_user_at_date(self, mock_now):
-        """Test updating the requested_by_user_at_date field on a user."""
+    def test_app_use_endpoint(self, mock_now):
+        """Test the app/use endpoint."""
         mock_now.side_effect = datetime.datetime.now
-        user_id = self.create_user()
         before = datetime.datetime.now()
-        self.get_user_info(user_id)
-        user_data_from_db1 = self._db.user.find_one({'_id': mongomock.ObjectId(user_id)})
-        self.assertGreaterEqual(
-            user_data_from_db1['requestedByUserAtDate'],
-            before.isoformat())
-        self.assertLessEqual(
-            user_data_from_db1['requestedByUserAtDate'][:16],
-            datetime.datetime.now().isoformat()[:16])
+        user_id = self.create_user()
 
-        # Should not change when requested again on the same day.
-        user_data_api2 = self.get_user_info(user_id)
-        self.assertEqual(
-            user_data_from_db1['requestedByUserAtDate'],
-            user_data_api2['requestedByUserAtDate'])
-        user_data_from_db2 = self._db.user.find_one({'_id': mongomock.ObjectId(user_id)})
-        self.assertEqual(
-            user_data_from_db1['requestedByUserAtDate'],
-            user_data_from_db2['requestedByUserAtDate'])
-
-        # On the next day, return old value but update DB
         mock_now.side_effect = None
-        mock_now.return_value = datetime.datetime.now() + datetime.timedelta(hours=25)
-        user_data_api3 = self.get_user_info(user_id)
-        self.assertEqual(
-            user_data_api3['requestedByUserAtDate'],
-            user_data_api2['requestedByUserAtDate'])
-        user_data_from_db3 = self._db.user.find_one({'_id': mongomock.ObjectId(user_id)})
-        self.assertNotEqual(
-            user_data_from_db3['requestedByUserAtDate'],
-            user_data_from_db1['requestedByUserAtDate'])
+        later = before + datetime.timedelta(hours=25)
+        mock_now.return_value = later
+
+        response = self.app.post('/api/app/use/%s' % user_id)
+        user_info = self.json_from_response(response)
+
+        self.assertGreaterEqual(user_info['requestedByUserAtDate'], before.isoformat())
+        self.assertEqual(user_info['requestedByUserAtDate'][:16], later.isoformat()[:16])
 
     def test_delete_user(self):
         """Test deleting a user and all their data."""
@@ -229,6 +212,31 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         # Check the app is available for user.
         self.assertFalse(user_info.get('appNotAvailable'))
+
+    @mock.patch(server.__name__ + '.advisor.maybe_advise')
+    @mock.patch(server.__name__ + '.time.time')
+    @mock.patch(server.__name__ + '.logging.warning')
+    def test_log_long_requests(self, mock_warning, mock_time, mock_advise):
+        """Log timing for long requests."""
+        # Variable as a list to be used in closures below.
+        time_delay = [0]
+
+        def _delayed_time(*unused_args, **unused_kwargs):
+            return _TIME() + time_delay[0]
+        mock_time.side_effect = _delayed_time
+
+        def _wait_for_it(*unused_args, **unused_kwargs):
+            time_delay[0] += 2
+        mock_advise.side_effect = _wait_for_it
+
+        self.create_user([_add_project], advisor=False)
+        self.assertGreaterEqual(mock_warning.call_count, 10)
+        first_warning_args = mock_warning.call_args_list[0][0]
+        self.assertEqual('Long request: %d seconds', first_warning_args[0])
+        self.assertGreaterEqual(first_warning_args[1], 2)
+        self.assertEqual(
+            {'%.4f: Tick %s (%.4f since last tick)'},
+            set(c[0][0] for c in mock_warning.call_args_list[1:]))
 
     # TODO(pascal): Add a test back (check history before 97d087e for instance)
     # to check that users cannot modify feature flags. For now we do not have a
@@ -332,9 +340,17 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'targetJob': {'jobGroup': {'romeId': 'M1403'}},
         }
         user_id = self.authenticate_new_user(email='foo@bayes.org')
+        self._db.job_group_info.insert_one({
+            '_id': 'M1403',
+            'workEnvironmentKeywords': {
+                'sectors': ['sector Toise', 'sector Gal'],
+                'structures': ['A', 'B'],
+            },
+        })
         response = self.app.post(
             '/api/user',
             data='{"userId": "%s", "profile": {"email":"foo@bayes.org"}, '
+            '"featuresEnabled": {"advisor": "ACTIVE"}, '
             '"projects": [%s]}' % (user_id, json.dumps(project)),
             content_type='application/json')
         user_info = self.json_from_response(response)
@@ -342,11 +358,25 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
         self.assertEqual(
             [
-                {'status': 'ADVICE_RECOMMENDED', 'adviceId': 'reorientation'},
-                {'status': 'ADVICE_RECOMMENDED', 'adviceId': 'organization'},
-                {'status': 'ADVICE_NOT_RECOMMENDED', 'adviceId': 'spontaneous-application'},
-                {'status': 'ADVICE_NOT_RECOMMENDED', 'adviceId': 'network-application'},
-                {'status': 'ADVICE_NOT_RECOMMENDED', 'adviceId': 'long-cdd'},
+                {
+                    'adviceId': 'spontaneous-application',
+                    'numStars': 2,
+                    'status': 'ADVICE_RECOMMENDED',
+                },
+                {
+                    'adviceId': 'other-work-env',
+                    'numStars': 2,
+                    'otherWorkEnvAdviceData': {'workEnvironmentKeywords': {
+                        'sectors': ['sector Toise', 'sector Gal'],
+                        'structures': ['A', 'B'],
+                    }},
+                    'status': 'ADVICE_RECOMMENDED',
+                },
+                {
+                    'adviceId': 'network-application',
+                    'numStars': 2,
+                    'status': 'ADVICE_RECOMMENDED',
+                },
             ],
             project.get('advices'))
 
@@ -462,7 +492,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             .get('unemploymentDuration', {})
             .get('days'))
         self.assertEqual('PROJECT_MANUALLY_CREATED', project['source'])
-        self.assertEqual('http://example.com/myimage', project.get('coverImageUrl'))
+        self.assertFalse(project.get('coverImageUrl'))
 
     def test_create_project_no_data(self):
         """A project with no backend data still gets some basic values."""
@@ -479,7 +509,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertIn('createdAt', project)
         self.assertIn('source', project)
         self.assertEqual('PROJECT_MANUALLY_CREATED', project['source'])
-        self.assertIn('generic', project.get('coverImageUrl'))
 
     def test_stop_actions(self):
         """Complete stopped actions fields on save."""

@@ -46,10 +46,22 @@ function allActionsById(projectList) {
     });
     (project.pastActions || []).forEach(action => {
       allActions[action.actionId] = action
+    });
+    (project.advices || []).forEach(advice => {
+      const action = advice.engagementAction
+      if (action) {
+        allActions[action.actionId] = action
+      }
     })
   })
   return allActions
 }
+
+
+function getActionById(projectList, actionId) {
+  return allActionsById(projectList)[actionId] || null
+}
+
 
 function allActiveActions(projectList) {
   const allActions = [];
@@ -370,4 +382,5 @@ export {
   isAnyActionPlanGeneratedRecently, isNewActionPlanNeeded,
   allStickyActions, findAction, finishStickyActionStep, nextAdviceToRecommend,
   getAdviceById, hasUserEverAcceptedAdvice, createProjectTitleComponents,
+  getActionById,
 }

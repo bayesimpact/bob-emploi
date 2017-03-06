@@ -1,8 +1,7 @@
 import React from 'react'
 
-import {ProfileStep, ProfileStepBaseClass} from 'components/pages/profile/step'
+import {ProfileUpdater, Step} from 'components/pages/profile/step'
 import {CheckboxList, FieldSet, RadioGroup, Select} from 'components/theme'
-import {DrivingLicense} from 'api/job'
 
 
 const degrees = [
@@ -26,29 +25,27 @@ const levelEstimateOptions = [
   {name: 'Fort', value: 3},
 ]
 
-class GeneralSkillsStep extends ProfileStepBaseClass {
-  static propTypes = {
-    drivingLicenses: React.PropTypes.arrayOf(React.PropTypes.oneOf(Object.keys(DrivingLicense))),
-    englishLevelEstimate: React.PropTypes.number,
-    highestDegree: React.PropTypes.string,
-    officeSkillsEstimate: React.PropTypes.number,
+class GeneralSkillsStep extends React.Component {
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
   }
 
-  constructor(props) {
-    super({
-      fieldnames: {
+  componentWillMount() {
+    this.updater_ = new ProfileUpdater(
+      {
         drivingLicenses: false,
         englishLevelEstimate: true,
         highestDegree: true,
         officeSkillsEstimate: true,
       },
-      ...props,
-    })
+      this,
+      this.props,
+    )
   }
 
   fastForward = () => {
-    if (this.isFormValid()) {
-      this.handleSubmit()
+    if (this.updater_.isFormValid()) {
+      this.updater_.handleSubmit()
       return
     }
 
@@ -73,7 +70,7 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
   render() {
     const {drivingLicenses, englishLevelEstimate, isValidated, highestDegree,
            officeSkillsEstimate} = this.state
-    const isMobileVersion = this.context
+    const {isMobileVersion} = this.context
     // TODO(guillaume): Put more space between checkboxes on mobile.
     const checkboxListStyle = {
       display: 'flex',
@@ -84,22 +81,22 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
       flexDirection: isMobileVersion ? 'column' : 'row',
       justifyContent: 'space-between',
     }
-    return <ProfileStep
+    return <Step
         title="Vos qualifications"
         fastForward={this.fastForward}
-        onNextButtonClick={this.handleSubmit}
-        onPreviousButtonClick={this.handleBack}
+        onNextButtonClick={this.updater_.handleSubmit}
+        onPreviousButtonClick={this.updater_.handleBack}
         {...this.props}>
       <FieldSet label="Plus haut niveau de diplôme obtenu"
                 isValid={!!highestDegree} isValidated={isValidated}>
-        <Select onChange={this.handleChange('highestDegree')} value={highestDegree}
+        <Select onChange={this.updater_.handleChange('highestDegree')} value={highestDegree}
                 options={degrees} />
       </FieldSet>
       <FieldSet label="Permis de conduire">
         <CheckboxList
             options={drivingLicensesOptions}
             values={drivingLicenses}
-            onChange={this.handleChange('drivingLicenses')}
+            onChange={this.updater_.handleChange('drivingLicenses')}
             style={checkboxListStyle} />
       </FieldSet>
       <FieldSet
@@ -108,7 +105,7 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
             style={radioGroupStyle}
             options={levelEstimateOptions}
             value={englishLevelEstimate}
-            onChange={this.handleChange('englishLevelEstimate')} />
+            onChange={this.updater_.handleChange('englishLevelEstimate')} />
       </FieldSet>
       <FieldSet
           label="Niveau en suite bureautique (Word, Excel, …)"
@@ -117,9 +114,9 @@ class GeneralSkillsStep extends ProfileStepBaseClass {
             style={radioGroupStyle}
             options={levelEstimateOptions}
             value={officeSkillsEstimate}
-            onChange={this.handleChange('officeSkillsEstimate')} />
+            onChange={this.updater_.handleChange('officeSkillsEstimate')} />
       </FieldSet>
-    </ProfileStep>
+    </Step>
   }
 }
 

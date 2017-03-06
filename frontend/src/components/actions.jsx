@@ -417,7 +417,7 @@ class ActionHowto extends React.Component {
             name={'menu-' + (isExpanded ? 'up' : 'down')}
             style={{color: Colors.COOL_GREY, fontSize: 20, paddingLeft: '.5em'}} />
       </div>
-      {/* TODO(stephan): Only expand the layout downwards instead of
+      {/* TODO: Only expand the layout downwards instead of
           shifting the whole modal so that it stays centered vertically in
           the screen. */}
       {isExpanded ? <Markdown content={howTo} /> : null}

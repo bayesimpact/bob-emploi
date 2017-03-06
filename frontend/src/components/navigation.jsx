@@ -121,6 +121,20 @@ class MobileNavigationBarBase extends React.Component {
     isMenuOpen: false,
   }
 
+  componentDidUpdate(prevProps, prevState) {
+    if (!prevState.isMenuOpen && this.state.isMenuOpen) {
+      this.refs.close.focus()
+    }
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timeout)
+  }
+
+  closeMenu = () => {
+    this.timeout = setTimeout(() => this.setState({isMenuOpen: false}), 50)
+  }
+
   logOut = event => {
     event.stopPropagation()
     this.props.dispatch(logoutAction)
@@ -167,9 +181,9 @@ class MobileNavigationBarBase extends React.Component {
     })
     return <nav style={style}>
       {isMenuOpen ?
-        <div style={menuStyle}>
+        <div style={menuStyle} onBlur={this.closeMenu}>
           <Icon
-              name="close" style={menuIconStyle} tabIndex={0}
+              name="close" style={menuIconStyle} tabIndex={0} ref="close"
               onClick={() => this.setState({isMenuOpen: false})} />
           <Link to={Routes.ROOT} style={linkStyle('landing')}>
             Accueil
@@ -213,6 +227,7 @@ const MobileNavigationBar = connect(({user}) => ({
 class NavigationBarBase extends React.Component {
   static propTypes = {
     dispatch: React.PropTypes.func.isRequired,
+    isAdvisorEnabled: React.PropTypes.bool,
     onboardingComplete: React.PropTypes.bool,
     page: React.PropTypes.string,
     style: React.PropTypes.object,
@@ -241,19 +256,23 @@ class NavigationBarBase extends React.Component {
   }
 
   handleLogoClick = () => {
-    const {page, onboardingComplete} = this.props
+    const {isAdvisorEnabled, page, onboardingComplete} = this.props
     if ((page === 'profile' || page === 'new_project') && !onboardingComplete) {
       return
     }
     if (onboardingComplete) {
-      browserHistory.push(Routes.PROJECT_PAGE)
+      if (isAdvisorEnabled) {
+        browserHistory.push(Routes.PROJECT_PAGE)
+      } else {
+        browserHistory.push(Routes.DASHBOARD_PAGE)
+      }
       return
     }
     browserHistory.push(Routes.ROOT)
   }
 
   render() {
-    const {onboardingComplete, page, style, userProfile} = this.props
+    const {isAdvisorEnabled, onboardingComplete, page, style, userProfile} = this.props
     const {isMobileVersion} = this.context
     const {name} = userProfile
     const {isLogOutDropDownShown} = this.state
@@ -301,7 +320,7 @@ class NavigationBarBase extends React.Component {
         </NavigationLink>
         <LoginButton
             style={{marginLeft: 25, marginRight: 13, textTransform: 'uppercase'}}
-            type="navigationOnImage">
+            type="navigationOnImage" visualElement="navbar">
           Se connecter
         </LoginButton>
       </nav>
@@ -383,10 +402,13 @@ class NavigationBarBase extends React.Component {
       <div style={{flex: 1}} />
 
       {onboardingComplete ? <div>
-        <NavigationLink
+        {isAdvisorEnabled ? <NavigationLink
             to={Routes.PROJECT_PAGE} isSelected={page === 'project'} selectionStyle="bottom">
           Mon projet
-        </NavigationLink>
+        </NavigationLink> : <NavigationLink
+            to={Routes.DASHBOARD_PAGE} isSelected={page === 'dashboard'} selectionStyle="bottom">
+          Mes actions
+        </NavigationLink>}
         <NavigationLink
             to="https://aide.bob-emploi.fr/hc/fr" target="_blank"
             style={{padding: '20px 50px 21px 25px'}} selectionStyle="bottom">
@@ -410,6 +432,7 @@ class NavigationBarBase extends React.Component {
   }
 }
 const NavigationBar = connect(({user}) => ({
+  isAdvisorEnabled: !!(user.featuresEnabled && user.featuresEnabled.advisor === 'ACTIVE'),
   onboardingComplete: onboardingComplete(user),
   userProfile: user.profile,
 }))(Radium(NavigationBarBase))

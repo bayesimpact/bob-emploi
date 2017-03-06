@@ -16,10 +16,9 @@ class NewProjectCriteriaStep extends React.Component {
     isMobileVersion: React.PropTypes.bool.isRequired,
   }
 
-  constructor(props) {
-    super(props)
-    const {employmentTypes, minSalary, workloads} = props.newProject
-    this.state = {employmentTypes, minSalary, workloads}
+  componentWillMount() {
+    const {employmentTypes, minSalary, workloads} = this.props.newProject
+    this.setState({employmentTypes, minSalary, workloads})
   }
 
   handleSubmit = () => {

@@ -8,6 +8,29 @@ import {openLoginModal, loadLandingPageAction} from 'store/actions'
 import {LoginButton} from 'components/login'
 
 
+const emStyle = {
+  color: '#fff',
+}
+
+
+// Kinds of different landing page excluding the default kind.
+const landingPageTitles = {
+  coach: <span>
+    Un <em style={emStyle}>plan d'accompagnement</em> sur-mesure pour
+    <em style={emStyle}> accélérer</em> votre recherche d'emploi
+  </span>,
+  ease: <span>
+    Avancez <em style={emStyle}>plus facilement</em> dans votre recherche
+    d'emploi
+  </span>,
+  '': <span>
+    Les meilleures <em style={emStyle}>recommandations</em> pour
+    <em style={emStyle}> accélérer</em> votre recherche d'emploi
+  </span>,
+}
+const kinds = Object.keys(landingPageTitles)
+
+
 const sectionTitleStyle = isMobileVersion => ({
   color: Colors.SLATE,
   fontSize: isMobileVersion ? 25 : 35,
@@ -21,12 +44,12 @@ class TitleSection extends React.Component {
     style: React.PropTypes.object,
   }
   static contextTypes = {
-    isLandingPageForCoaching: React.PropTypes.bool,
     isMobileVersion: React.PropTypes.bool,
+    landingPageKind: React.PropTypes.oneOf(kinds).isRequired,
   }
 
   render() {
-    const {isLandingPageForCoaching, isMobileVersion} = this.context
+    const {isMobileVersion, landingPageKind} = this.context
     const style = {
       alignItems: 'flex-start',
       color: Colors.COOL_GREY,
@@ -57,9 +80,6 @@ class TitleSection extends React.Component {
       padding: '16px 28px 12px',
       textTransform: 'uppercase',
     }
-    const emStyle = {
-      color: '#fff',
-    }
     const titleStyle = {
       marginBottom: 18,
       marginTop: isMobileVersion ? 0 : 30,
@@ -76,21 +96,15 @@ class TitleSection extends React.Component {
       <div style={backgroundStyle} />
       <div style={{margin: '0 auto', maxWidth: 800, textAlign: 'center'}}>
         <div style={titleStyle}>
-          {isLandingPageForCoaching ? <span>
-            Un <em style={emStyle}>plan d'accompagnement</em> sur-mesure pour
-            <em style={emStyle}> accélérer</em> votre recherche d'emploi
-          </span> : <span>
-            Les meilleures <em style={emStyle}>recommendations</em> pour
-            <em style={emStyle}> accélérer</em> votre recherche d'emploi
-          </span>}
+          {landingPageTitles[landingPageKind] || ''}
         </div>
-        <LoginButton style={buttonStyle} isSignUpButton={true}>
+        <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="title">
           Commencer
         </LoginButton>
-        <div style={byBayesStyle}>
+        {isMobileVersion ? null : <div style={byBayesStyle}>
           un service <em style={strongEmStyle}>gratuit</em> créé par l'association à
           but non lucratif <em style={strongEmStyle}>Bayes Impact</em>
-        </div>
+        </div>}
       </div>
     </section>
   }
@@ -99,13 +113,13 @@ class TitleSection extends React.Component {
 
 class DescriptionSection extends React.Component {
   static contextTypes = {
-    isLandingPageForCoaching: React.PropTypes.bool.isRequired,
     isMobileVersion: React.PropTypes.bool,
+    landingPageKind: React.PropTypes.oneOf(kinds).isRequired,
   }
 
-  renderDescription(isForCoach, picto, children) {
-    const {isLandingPageForCoaching, isMobileVersion} = this.context
-    if (isForCoach !== isLandingPageForCoaching) {
+  renderDescription(kind, picto, children) {
+    const {isMobileVersion, landingPageKind} = this.context
+    if (kind !== landingPageKind) {
       return null
     }
     const style = {
@@ -122,6 +136,7 @@ class DescriptionSection extends React.Component {
       margin: '30px 14px 15px',
       padding: '80px 30px 0',
       position: 'relative',
+      verticalAlign: 'top',
       width: isMobileVersion ? 'initial' : 315,
     }
     const pictoContainerStyle = {
@@ -145,24 +160,35 @@ class DescriptionSection extends React.Component {
 
   render() {
     return <section style={{marginBottom: 15, marginTop: 15, textAlign: 'center'}}>
-      {this.renderDescription(false, require('images/file-search-picto.svg'), <div>
-        <strong>Trouvez les opportunités</strong> grâce à nos algorithmes.
+      {this.renderDescription('', require('images/file-search-picto.svg'), <div>
+        <strong>Trouvez quels conseils suivre en priorité</strong> grâce à nos algorithmes.
       </div>)}
-      {this.renderDescription(false, require('images/file-checks-picto.svg'), <div>
-        <strong>Choisissez les solutions</strong> qui vous correspondent le mieux.
+      {this.renderDescription('', require('images/file-checks-picto.svg'), <div>
+        <strong>Choisissez les solutions pour améliorer votre recherche </strong>
+        qui vous correspondent le mieux.
       </div>)}
-      {this.renderDescription(false, require('images/file-checked-picto.svg'), <div>
+      {this.renderDescription('', require('images/file-checked-picto.svg'), <div>
         <strong>Avancez vers vos objectifs</strong> grâce à un plan d'action détaillé.
       </div>)}
 
-      {this.renderDescription(true, require('images/file-checked-picto.svg'), <div>
+      {this.renderDescription('coach', require('images/file-checked-picto.svg'), <div>
         <strong>Créez votre plan d'action</strong> personnalisé en deux minutes.
       </div>)}
-      {this.renderDescription(true, require('images/file-checks-picto.svg'), <div>
+      {this.renderDescription('coach', require('images/file-checks-picto.svg'), <div>
         <strong>Avancez en restant motivé</strong> avec un accompagnement au quotidien.
       </div>)}
-      {this.renderDescription(true, require('images/light-bulb-picto.svg'), <div>
+      {this.renderDescription('coach', require('images/light-bulb-picto.svg'), <div>
         <strong>Découvrez de nouvelles idées</strong> pour faciliter votre recherche.
+      </div>)}
+
+      {this.renderDescription('ease', require('images/file-search-picto.svg'), <div>
+        <strong>Trouver des solutions</strong> simples et qui vous correspondent.
+      </div>)}
+      {this.renderDescription('ease', require('images/file-checks-picto.svg'), <div>
+        <strong>Avancez rapidement</strong> grâce à un accompagnement pas à pas.
+      </div>)}
+      {this.renderDescription('ease', require('images/light-bulb-picto.svg'), <div>
+        <strong>Découvrez de nouvelles idées</strong> pour étendre votre recherche.
       </div>)}
     </section>
   }
@@ -200,7 +226,7 @@ class BigDataForYouSection extends React.Component {
         Basez vous sur nos données pour prendre
         <strong style={{fontStyle: 'italic'}}> les bonnes décisions</strong>
       </div>
-      <LoginButton style={buttonStyle} isSignUpButton={true}>
+      <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="bigdata">
         Commencer
       </LoginButton>
     </section>
@@ -235,7 +261,7 @@ class BetaSection extends React.Component {
         {config.productName} est actuellement en version Bêta,<br />
         mais vous permet déjà d'<em style={emStyle}>accélérer votre recherche</em>
       </div>
-      <LoginButton style={buttonStyle} isSignUpButton={true}>
+      <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="beta">
         Commencer
       </LoginButton>
     </section>
@@ -524,21 +550,25 @@ class LandingPage extends React.Component {
   }
 
   state = {
-    isLandingPageForCoaching: false,
+    landingPageKind: '',
   }
 
   static childContextTypes = {
-    isLandingPageForCoaching: React.PropTypes.bool,
+    landingPageKind: React.PropTypes.oneOf(kinds).isRequired,
   }
 
   getChildContext() {
-    const {isLandingPageForCoaching} = this.state
-    return {isLandingPageForCoaching}
+    const {landingPageKind} = this.state
+    return {landingPageKind}
   }
 
   componentWillMount() {
     const {query} = this.props.routing.locationBeforeTransitions
-    this.setState({isLandingPageForCoaching: /coach/.test(query['utm_content'] || '')})
+    const isLandingPageForCoaching = /coach/.test(query['utm_content'] || '')
+    const isLandingPageForEase = /ease|simplicity/.test(query['utm_content'] || '')
+    this.setState({landingPageKind:
+      isLandingPageForCoaching ? 'coach' :
+        isLandingPageForEase ? 'ease' : ''})
   }
 
   componentDidMount() {
@@ -546,7 +576,7 @@ class LandingPage extends React.Component {
   }
 
   handleOpenLoginModal = () => {
-    this.props.dispatch(openLoginModal())
+    this.props.dispatch(openLoginModal(undefined, 'fastforward'))
   }
 
   render() {

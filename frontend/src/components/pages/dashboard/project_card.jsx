@@ -19,16 +19,15 @@ class ProjectCard extends React.Component {
     style: React.PropTypes.object,
   }
 
-  constructor(props) {
-    super(props)
-    const {actions, pastActions} = props.project
+  componentWillMount() {
+    const {actions, pastActions} = this.props.project
     const hasPastActions = pastActions && pastActions.length
     const actionRead = action => action.status !== 'ACTION_UNREAD'
     const hasOnlyUnreadActions = !(actions || []).filter(actionRead).length
-    this.state = {
+    this.setState({
       areStatsExpanded: !hasPastActions && hasOnlyUnreadActions,
       height: 0,
-    }
+    })
   }
 
   render() {

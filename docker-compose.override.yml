@@ -3,6 +3,7 @@
 version: "2"
 services:
   frontend-flask:
+    command: python bob_emploi/frontend/server.py
     volumes:
       - ./frontend/server:/work/bob_emploi/frontend
       - ./frontend/server/entrypoint.sh:/work/entrypoint.sh:ro

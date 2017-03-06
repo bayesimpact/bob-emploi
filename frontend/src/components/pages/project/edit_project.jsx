@@ -7,9 +7,9 @@ import {fetchPotentialChantiers, setProjectProperty,
         POST_USER_DATA, GET_POTENTIAL_CHANTIERS} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {Modal} from 'components/modal'
-import {NewProjectCriteriaStep} from 'components/pages/new_project/criteria'
-import {NewProjectExperienceStep} from 'components/pages/new_project/experience'
-import {NewProjectJobsearchStep} from 'components/pages/new_project/jobsearch'
+import {NewProjectCriteriaStep} from 'components/pages/profile/criteria'
+import {NewProjectExperienceStep} from 'components/pages/profile/experience'
+import {NewProjectJobsearchStep} from 'components/pages/profile/jobsearch'
 
 
 const STEPS = [
@@ -28,7 +28,10 @@ class EditProjectModalBase extends React.Component {
     onClose: React.PropTypes.func,
     project: React.PropTypes.object.isRequired,
     userProfile: USER_PROFILE_SHAPE,
-  }
+  };
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  };
 
   state = {
     currentStep: 1,
@@ -84,6 +87,7 @@ class EditProjectModalBase extends React.Component {
 
   render () {
     const {isShown, project, userProfile, isSavingChanges, isFetchingChantiers} = this.props
+    const {isMobileVersion} = this.context
     const {currentStep} = this.state
     const spinnerBoxStyle = {
       alignItems: 'center',
@@ -96,8 +100,7 @@ class EditProjectModalBase extends React.Component {
     const modalStyle = {
       display: 'flex',
       flexDirection: 'column',
-      height: 700,
-      width: 480,
+      width: isMobileVersion ? 'inherit' : 480,
     }
     let content
     if (isSavingChanges || isFetchingChantiers) {
@@ -118,14 +121,15 @@ class EditProjectModalBase extends React.Component {
           isShownDuringEdit={true}
           onSubmit={this.handleSubmit}
           onPreviousButtonClick={currentStep > 1 ? this.handleBack : null}
-          userProfile={userProfile}
+          profile={userProfile}
           newProject={project}
-          subheader={`Étape ${currentStep}/${STEPS.length}`}
+          explanation={`Étape ${currentStep}/${STEPS.length}`}
           onClose={this.handleClose}
-          style={{flex: 1}} />
+          title="Modifier votre plan d'action"
+          style={{flex: 1, width: 'inherit'}} />
     }
     return <Modal
-        isShown={isShown} title="Modifier votre plan d'action"
+        isShown={isShown}
         onClose={this.handleClose} style={modalStyle}>
       {content}
     </Modal>

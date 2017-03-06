@@ -266,13 +266,12 @@ class DashboardMainContent extends React.Component {
     transitionDurationMs: 600,
   }
 
-  constructor(props) {
-    super(props)
-    const projects = projectsWithOpenActions(props.user.projects)
-    this.state = {
+  componentWillMount() {
+    const projects = projectsWithOpenActions(this.props.user.projects)
+    this.setState({
       futureProjects: projectsAsSet(projects),
       previousProjects: projects,
-    }
+    })
   }
 
   componentWillReceiveProps(nextProps) {
@@ -343,7 +342,7 @@ class DashboardMainContent extends React.Component {
           onOpenAction={onOpenAction}
           transitionDurationMs={transitionDurationMs} />)}
 
-      {/* TODO(stephan): Add fade between the interstitial and main content */}
+      {/* TODO: Add fade between the interstitial and main content */}
       {isCreatingActionPlanShown ? <GeneratingActionPlanInterstitial
           isDayOne={isCreatingActionPlanForTheFirstTime} /> : null}
 

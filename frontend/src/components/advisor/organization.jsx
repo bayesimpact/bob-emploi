@@ -4,7 +4,6 @@ import {connect} from 'react-redux'
 import config from 'config'
 
 import {AdvicePage, Section} from './base'
-import {Colors} from 'components/theme'
 
 
 class RecommendPageBase extends React.Component {
@@ -98,10 +97,4 @@ const RecommendPage =
   connect(({user}) => ({gender: user.profile.gender}))(RecommendPageBase)
 
 
-const AdviceCard = {
-  color: Colors.LIGHTER_PURPLE,
-  picto: <img src={require('images/organize-picto.svg')} />,
-}
-
-
-export default {AdviceCard, RecommendPage}
+export default {RecommendPage}

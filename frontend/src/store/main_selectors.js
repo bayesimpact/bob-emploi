@@ -25,7 +25,7 @@ function onboardingComplete(user) {
   const {email, gender, name, city, yearOfBirth, latestJob, situation,
          highestDegree, lastName,
          englishLevelEstimate, officeSkillsEstimate} = user.profile
-  const hasProject = !!(user.projects && user.projects.length)
+  const hasProject = (user.projects || []).some(project => !project.isIncomplete)
   return !!(gender && name && city && yearOfBirth && situation &&
       email && highestDegree && lastName && latestJob &&
       englishLevelEstimate && officeSkillsEstimate && hasProject)

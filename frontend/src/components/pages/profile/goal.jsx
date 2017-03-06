@@ -1,7 +1,6 @@
 import React from 'react'
 
 import {CitySuggest} from 'components/suggestions'
-import {genderizeJob} from 'store/job'
 import {FieldSet, JobSuggestWithNote, Select, Styles} from 'components/theme'
 import {Step} from './step'
 import {PROJECT_LOCATION_AREA_TYPE_OPTIONS} from 'store/project'
@@ -20,12 +19,9 @@ const projectKindOptions = [
 
 class NewProjectGoalStep extends React.Component {
   static propTypes = {
-    // A list of jobs that user may select. If empty, all jobs are allowed.
-    // TODO(stephan): Get rid of the jobs parameter. It's not used anymore.
-    jobs: React.PropTypes.array.isRequired,
     newProject: React.PropTypes.object,
     onSubmit: React.PropTypes.func.isRequired,
-    userProfile: React.PropTypes.shape({
+    profile: React.PropTypes.shape({
       latestJob: React.PropTypes.object,
     }),
   }
@@ -54,24 +50,24 @@ class NewProjectGoalStep extends React.Component {
     }
     if (!city) {
       newState.city = {
-        cityId: '69123',
-        departementId: '69',
-        departementName: 'Rhône',
-        name: 'Lyon',
-        regionId: '84',
-        regionName: 'Auvergne-Rhône-Alpes',
+        cityId: '32700',
+        departementId: '32',
+        departementName: 'Gers',
+        name: 'Lectoure',
+        regionId: '76',
+        regionName: 'Occitanie',
       }
     }
-    if (kind === 'FIND_JOB' && !targetJob) {
+    if (!targetJob) {
       newState.targetJob = {
-        codeOgr: '38972',
-        feminineName: 'Data scientist',
+        codeOgr: '12688',
+        feminineName: 'Coiffeuse',
         jobGroup: {
-          name: 'Études et prospectives socio-économiques',
-          romeId: 'M1403',
+          name: 'Coiffure',
+          romeId: 'D1202',
         },
-        masculineName: 'Data scientist',
-        name: 'Data scientist',
+        masculineName: 'Coiffeur',
+        name: 'Coiffeur / Coiffeuse',
       }
     }
     if (!areaType) {
@@ -81,10 +77,13 @@ class NewProjectGoalStep extends React.Component {
   }
 
   componentWillMount() {
-    const {newProject, userProfile} = this.props
+    const {newProject, profile} = this.props
     if (newProject) {
-      if (!newProject.targetJob && userProfile.latestJob) {
-        newProject.targetJob = userProfile.latestJob
+      if (!newProject.targetJob && profile.latestJob) {
+        newProject.targetJob = profile.latestJob
+      }
+      if (!newProject.city && profile.city) {
+        newProject.city = profile.city
       }
       this.setState({...newProject})
     }
@@ -92,22 +91,21 @@ class NewProjectGoalStep extends React.Component {
 
   isFormValid = () => {
     const {areaType, kind, city, targetJob} = this.state
-    return !!(kind && ((targetJob && city && areaType) || kind !== 'FIND_JOB'))
+    return !!(kind && targetJob && city && areaType)
   }
 
   state = {
     areaType: null,
     city: null,
     isValidated: false,
-    jobs: [],
     kind: '',
     targetJob: null,
   }
 
   render() {
-    const {jobs, userProfile} = this.props
+    const {profile} = this.props
     const {areaType, city, kind, targetJob, isValidated} = this.state
-    const maybeE = userProfile.gender === 'FEMININE' ? 'e' : ''
+    const maybeE = profile.gender === 'FEMININE' ? 'e' : ''
     return <Step {...this.props} fastForward={this.fastForward}
         onNextButtonClick={this.handleSubmit} >
       <FieldSet label="Mon projet est de :"
@@ -118,10 +116,11 @@ class NewProjectGoalStep extends React.Component {
       <FieldSet
           label="Je cherche un emploi de :"
           isValid={!!targetJob} isValidated={isValidated}>
-        <JobSelect
+        <JobSuggestWithNote
+            placeholder="choisir un métier"
             value={targetJob}
             onChange={this.handleChange('targetJob')}
-            jobs={jobs} gender={userProfile.gender} />
+            gender={profile.gender} />
       </FieldSet>
       <FieldSet
           label="Je cherche autour de :" isValid={!!city} isValidated={isValidated}>
@@ -139,36 +138,6 @@ class NewProjectGoalStep extends React.Component {
             onChange={this.handleChange('areaType')} />
       </FieldSet>
     </Step>
-  }
-}
-
-
-class JobSelect extends React.Component {
-  static propTypes = {
-    gender: React.PropTypes.string,
-    jobs: React.PropTypes.arrayOf(React.PropTypes.object.isRequired),
-    onChange: React.PropTypes.func.isRequired,
-    value: React.PropTypes.object,
-  }
-
-  handleEnumJobChange = value => {
-    const {jobs, onChange} = this.props
-    const job = jobs.find(job => job.codeOgr === value)
-    onChange(job)
-  }
-
-  render() {
-    const {gender, jobs, onChange, value} = this.props
-    const jobItems = jobs.map(
-      job => ({name: genderizeJob(job, gender), value: job.codeOgr}))
-    if (jobs.length) {
-      return <Select
-          options={jobItems} value={value && value.codeOgr}
-          onChange={this.handleEnumJobChange} />
-    }
-    return <JobSuggestWithNote
-        onChange={onChange} gender={gender} value={value}
-        placeholder="choisir un métier" />
   }
 }
 

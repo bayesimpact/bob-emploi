@@ -286,17 +286,17 @@ class _ImproveYourNetworkScoringModel(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if project.details.network_estimate >= 3:
-            # No need to improve their network: it is already good.
+        if project.details.network_estimate > 1:
+            # No need to improve their network: it is already good enough.
             return _Score(0)
 
         imt = project.imt_proto()
         first_modes = set(mode.first for mode in imt.application_modes.values())
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
-            return _Score(4)
+            return _Score(3)
 
-        return _Score(0)
+        return _Score(2)
 
 
 class _GetMoreOffersScoringModel(_ScoringModelBase):
@@ -361,7 +361,7 @@ class ConstantScoreModel(_ScoringModelBase):
     """A scoring model that always return the same score."""
 
     def __init__(self, constant_score):
-        self.constant_score = constant_score
+        self.constant_score = float(constant_score)
 
     def score(self, unused_project):
         """Compute a score for the given ScoringProject."""
@@ -979,6 +979,17 @@ class _AdviceLongCDD(_ScoringModelBase):
         return _Score(2 + contract_type_to_increase[job_pb2.CDD_OVER_3_MONTHS])
 
 
+class _AdviceOtherWorkEnv(_ScoringModelBase):
+    """A scoring model to trigger the "Other Work Environment" Advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        work_env = project.job_group_info().work_environment_keywords
+        if len(work_env.structures) > 1 or len(work_env.sectors) > 1:
+            return _Score(2)
+        return _Score(0)
+
+
 _ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'constructor'])
 
 
@@ -991,6 +1002,8 @@ _SCORING_MODEL_REGEXPS = (
     _ScoringModelRegexp(re.compile(r'^not-(.*)$'), _NegateFilter),
     # Matches strings like "for-active-experiment(lbb_integration)".
     _ScoringModelRegexp(re.compile(r'^for-active-experiment\((.*)\)$'), _ActiveExperimentFilter),
+    # Matches strings that are integers.
+    _ScoringModelRegexp(re.compile(r'^constant\((.+)\)$'), ConstantScoreModel),
 )
 
 
@@ -1021,6 +1034,7 @@ SCORING_MODELS = {
     'advice-reorientation': _AdviceReorientation(),
     'advice-improve-network': _ImproveYourNetworkScoringModel(),
     'advice-long-cdd': _AdviceLongCDD(),
+    'advice-other-work-env': _AdviceOtherWorkEnv(),
     'chantier-about-job': _LearnMoreAboutJobScoringModel(),
     'chantier-apprentissage': _ApprentissageScoringModel(),
     'chantier-atypical-profile': _ShowcaseAtypicalProfileScoringModel(),
@@ -1055,8 +1069,6 @@ SCORING_MODELS = {
     'chantier-subsidized-contract': _SubsidizedContractScoringModel(),
     'chantier-training': _TrainingScoringModel(),
     'chantier-use-network': _UseYourNetworkScoringModel(),
-    'constant(0)': ConstantScoreModel(0),
-    'constant(2)': ConstantScoreModel(2),
     'for-complex-application': _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS),
     'for-driver(car)': _UserProfileFilter(lambda user: job_pb2.CAR in user.driving_licenses),
     'for-english-speaker(2)': _UserProfileFilter(lambda user: user.english_level_estimate >= 2),

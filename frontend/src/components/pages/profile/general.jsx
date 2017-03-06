@@ -2,7 +2,7 @@ import React from 'react'
 import _ from 'underscore'
 
 import {CitySuggest} from 'components/suggestions'
-import {ProfileStep, ProfileStepBaseClass} from 'components/pages/profile/step'
+import {Step, ProfileUpdater} from 'components/pages/profile/step'
 import {FieldSet, JobSuggestWithNote, Select, RadioGroup, Styles} from 'components/theme'
 
 
@@ -26,23 +26,24 @@ const latestJobLabel = {
 }
 
 
-class GeneralStep extends ProfileStepBaseClass {
-  constructor(props) {
-    super({
-      fieldnames: {
+class GeneralStep extends React.Component {
+  componentWillMount() {
+    this.updater_ = new ProfileUpdater(
+      {
         city: true,
         gender: true,
         latestJob: true,
         situation: true,
         yearOfBirth: true,
       },
-      ...props,
-    })
+      this,
+      this.props,
+    )
   }
 
   fastForward = () => {
-    if (this.isFormValid()) {
-      this.handleSubmit()
+    if (this.updater_.isFormValid()) {
+      this.updater_.handleSubmit()
       return
     }
 
@@ -59,23 +60,24 @@ class GeneralStep extends ProfileStepBaseClass {
     }
     if (!latestJob) {
       state.latestJob = {
-        codeOgr: '38972',
+        codeOgr: '14967',
+        feminineName: 'Experte-comptable',
         jobGroup: {
-          name: 'Études et prospectives socio-économiques',
-          romeId: 'M1403',
+          name: 'Audit et contrôle comptables et financiers',
+          romeId: 'M1202',
         },
-        masculineName: 'Data scientist',
-        name: 'Data scientist',
+        masculineName: 'Expert-comptable',
+        name: 'Expert-comptable / Experte-comptable',
       }
     }
     if (!city) {
       state.city = {
-        cityId: '69123',
-        departementId: '69',
-        departementName: 'Rhône',
-        name: 'Lyon',
-        regionId: '84',
-        regionName: 'Auvergne-Rhône-Alpes',
+        cityId: '14118',
+        departementId: '14',
+        departementName: 'Calvados',
+        name: 'Caen',
+        regionId: '28',
+        regionName: 'Normandie',
       }
     }
     this.setState(state)
@@ -89,16 +91,16 @@ class GeneralStep extends ProfileStepBaseClass {
   render() {
     const {isMobileVersion} = this.context
     const {city, gender, yearOfBirth, latestJob, situation, isValidated} = this.state
-    return <ProfileStep
+    return <Step
         title="Votre profil"
         fastForward={this.fastForward}
-        onNextButtonClick={this.handleSubmit}
-        onPreviousButtonClick={this.handleBack}
+        onNextButtonClick={this.updater_.handleSubmit}
+        onPreviousButtonClick={this.updater_.handleBack}
         {...this.props}>
       <FieldSet label="Vous êtes" isValid={!!gender} isValidated={isValidated}>
         <RadioGroup
             style={{justifyContent: 'space-around'}}
-            onChange={this.handleChange('gender')}
+            onChange={this.updater_.handleChange('gender')}
             options={genders} value={gender} />
       </FieldSet>
       <FieldSet
@@ -106,13 +108,13 @@ class GeneralStep extends ProfileStepBaseClass {
           isValid={!!situation} isValidated={isValidated}>
         <Select
             name="situation" options={situations} value={situation}
-            onChange={this.handleChange('situation')} />
+            onChange={this.updater_.handleChange('situation')} />
       </FieldSet>
       <FieldSet
           label={latestJobLabel[situation] || 'Votre métier ?'}
           isValid={!!latestJob} isValidated={isValidated}>
         <JobSuggestWithNote
-            onChange={this.handleChange('latestJob')}
+            onChange={this.updater_.handleChange('latestJob')}
             gender={gender}
             value={latestJob}
             placeholder={'Nom du métier'} />
@@ -132,13 +134,13 @@ class GeneralStep extends ProfileStepBaseClass {
             value={city}
             citySuggestStyle={Styles.INPUT}
             isHintShown={this.state.isCityHovered}
-            onChange={this.handleChange('city')}
+            onChange={this.updater_.handleChange('city')}
             placeholder="ville ou code postal">
           Renseignez bien votre ville de résidence, nous vous demanderons plus tard
           si vous cherchez du travail dans d'autres villes.
         </CitySuggestWithTooltip>
       </FieldSet>
-    </ProfileStep>
+    </Step>
   }
 }
 
@@ -149,8 +151,7 @@ class BirthYearSelector extends React.Component {
     value: React.PropTypes.number,
   }
 
-  constructor(props) {
-    super(props)
+  componentWillMount() {
     const currentYear = new Date().getFullYear()
     // We probably don't have any users under the age of 14 or over 100
     const maxBirthYear = currentYear - 14

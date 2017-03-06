@@ -1,6 +1,6 @@
 import React from 'react'
 
-import {ProfileStep} from 'components/pages/profile/step'
+import {Step} from 'components/pages/profile/step'
 import {Colors} from 'components/theme'
 
 
@@ -42,11 +42,8 @@ class NoticeStep extends React.Component {
     this.props.onSubmit({})
   }
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      isNextButtonDisabled: true,
-    }
+  componentWillMount() {
+    this.setState({isNextButtonDisabled: true})
     this.timeout = setTimeout(() => this.setState({isNextButtonDisabled: false}), 3000)
   }
 
@@ -67,7 +64,7 @@ class NoticeStep extends React.Component {
       maxWidth: 450,
       textAlign: 'center',
     }
-    return <ProfileStep
+    return <Step
         title="Vos réponses restent entre nous"
         fastForward={this.handleSubmit}
         onNextButtonClick={this.handleSubmit}
@@ -80,7 +77,8 @@ class NoticeStep extends React.Component {
 
       <div style={textStyle}>
         <p>
-          Nous allons vous poser quelques questions sur vous et vos aspirations.
+          Nous allons vous poser quelques questions sur vous, vos aspirations
+          et vos frustrations.
         </p>
         <p>
           <strong>Toutes vos réponses resteront
@@ -94,7 +92,7 @@ class NoticeStep extends React.Component {
           de façon personnalisée.
         </p>
       </div>
-    </ProfileStep>
+    </Step>
   }
 }
 

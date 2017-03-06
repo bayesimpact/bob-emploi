@@ -28,7 +28,7 @@ class NotebookLintCase(unittest.TestCase):
 
     def test_num_notebooks(self):
         """Check that we are indeed linting notebooks."""
-        self.assertGreater(len(self.__class__.files), 12)
+        self.assertGreater(len(self.__class__.files), 5)
 
     def test_import_in_first_code_cell(self):
         """Check that imports are only in first code cell."""

@@ -40,8 +40,8 @@ if [ -z "$(grep -v ^frontend/ "${DIFF_FILES}")" ] && [ -z "$(grep ^frontend/serv
   touch skip-data-analysis skip-analytics
 fi
 
-if [ -z "$(grep -v ^data_analysis/ "${DIFF_FILES}")" ]; then
-  # Changes are only in data_analysis.
+if [ -z "$(grep -v ^analytics/ "${DIFF_FILES}")" ]; then
+  # Changes are only in analytics.
   touch skip-frontend skip-data-analysis
 fi
 

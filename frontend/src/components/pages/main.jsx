@@ -3,6 +3,7 @@ require('styles/App.css')
 
 import React from 'react'
 import ReactDOM from 'react-dom'
+import _ from 'underscore'
 import {connect, Provider} from 'react-redux'
 import {IndexRoute, Router, Route, browserHistory} from 'react-router'
 import {syncHistoryWithStore, routerReducer} from 'react-router-redux'
@@ -67,7 +68,6 @@ const history = syncHistoryWithStore(browserHistory, store)
 // TODO: Move app into its own component to make this file smaller and more pure in its purpose.
 class App extends React.Component {
   static propTypes = {
-    app: React.PropTypes.object.isRequired,
     asyncState: React.PropTypes.object.isRequired,
     children: React.PropTypes.node,
     dispatch: React.PropTypes.func.isRequired,
@@ -80,8 +80,7 @@ class App extends React.Component {
   }
 
   getChildContext() {
-    const {isMobileVersion} = this.props.app
-    return {isMobileVersion}
+    return {isMobileVersion: isOnSmallScreen()}
   }
 
   componentWillMount() {
@@ -105,7 +104,7 @@ class App extends React.Component {
         email: location.query.email || '',
         isReturningUser: true,
         resetToken,
-      }))
+      }, 'resetpassword'))
       return
     }
     if (!user.userId && userIdFromCookie || userIdFromUrl) {
@@ -118,7 +117,7 @@ class App extends React.Component {
         dispatch(openLoginModal({
           email: location.query.email || '',
           isReturningUser: true,
-        }))
+        }, 'returninguser'))
       })
     }
   }
@@ -187,7 +186,7 @@ class MyRouterBase extends React.Component {
       dispatch(openLoginModal({
         email: nextRouterState.location.query.email || '',
         isReturningUser: true,
-      }))
+      }), 'accessurl')
       return
     }
     // We don't know anything about the user yet (waiting for backend).
@@ -210,8 +209,23 @@ class MyRouterBase extends React.Component {
     }
   }
 
-  // TODO(stephan): Factor with requireAuthAndDesktop and rethink the whole access handling.
+  removeAmpersandDoubleEncoding = (nextRouterState, replace) => {
+    const {query} = nextRouterState.location
+    if (!Object.keys(query).some(key => /^amp;/.test(key))) {
+      return false
+    }
+    replace({
+      ...nextRouterState.location,
+      query: _.object(_.map(query, (value, key) => [key.replace(/^amp;/, ''), value])),
+    })
+    return true
+  }
+
+  // TODO: Factor with requireAuthAndDesktop and rethink the whole access handling.
   requireUserCheck = (nextRouterState, replace) => {
+    if (this.removeAmpersandDoubleEncoding(nextRouterState, replace)) {
+      return
+    }
     // TODO: Also check if we got a userId from the URL.
     // We don't know anything about the user yet (waiting for backend).
     if (this.isUserMissing() && Cookies.get('userId')) {

@@ -184,7 +184,9 @@ def _get_company_from_lbb(project, company, database):
             latitude=city_proto.latitude, longitude=city_proto.longitude,
             rome_codes=[project.target_job.job_group.rome_id])
     except IOError as error:
-        logging.error('Error while calling LBB API: %s\n%s', error, project)
+        logging.error(
+            'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
+            error, city_proto, project.target_job.job_group)
         return False
     apply_to_companies = set(
         action.apply_to_company.siret
@@ -193,10 +195,14 @@ def _get_company_from_lbb(project, company, database):
     try:
         lbb_company = next(c for c in lbb_companies if c.get('siret') not in apply_to_companies)
     except IOError as error:
-        logging.error('Error while calling LBB API: %s\n%s', error, project)
+        logging.error(
+            'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
+            error, city_proto, project.target_job.job_group)
         return False
     except StopIteration:
-        logging.warning('Could not find any companies with LBB:\n%s', project)
+        logging.warning(
+            'Could not find any companies with LBB:\nCity: %s\nJob group: %s\nApplied: %s',
+            city_proto, project.target_job.job_group, apply_to_companies)
         return False
     company.name = lbb_company.get('name', '')
     company.siret = lbb_company.get('siret', '')

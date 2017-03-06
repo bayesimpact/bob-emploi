@@ -1,8 +1,9 @@
 import React from 'react'
 
 import config from 'config'
-import {ProfileStepBaseClass, ProfileStep} from 'components/pages/profile/step'
+import {ProfileUpdater, Step} from 'components/pages/profile/step'
 import {CheckboxList, Colors, FieldSet, LabeledToggle} from 'components/theme'
+import {USER_PROFILE_SHAPE} from 'store/user'
 
 
 const DAY_OPTIONS = [
@@ -16,21 +17,23 @@ const DAY_OPTIONS = [
 ]
 
 
-class NotificationsStep extends ProfileStepBaseClass {
-  constructor(props) {
-    super({
-      fieldnames: {
-        emailDays: false,
-        isNewsletterEnabled: false,
-        isWeeklySummaryEnabled: false,
-      },
-      ...props,
-    })
+class NotificationsStep extends React.Component {
+  static propTypes = {
+    profile: USER_PROFILE_SHAPE.isRequired,
   }
 
   componentWillMount() {
     const {profile} = this.props
     this.setState({alreadyHasEmailNotifications: !!(profile.emailDays || []).length})
+    this.updater_ = new ProfileUpdater(
+      {
+        emailDays: false,
+        isNewsletterEnabled: false,
+        isWeeklySummaryEnabled: false,
+      },
+      this,
+      this.props,
+    )
   }
 
   renderEmailDaysFieldset(detailsStyle) {
@@ -45,7 +48,7 @@ class NotificationsStep extends ProfileStepBaseClass {
       <CheckboxList
           options={DAY_OPTIONS}
           values={emailDays}
-          onChange={this.handleChange('emailDays')} />
+          onChange={this.updater_.handleChange('emailDays')} />
       <LabeledToggle
           label="Recevoir un récapitulatif de mon activité chaque semaine"
           style={{marginTop: 30}} type="checkbox" isSelected={isWeeklySummaryEnabled}
@@ -76,7 +79,7 @@ class NotificationsStep extends ProfileStepBaseClass {
           type="checkbox"
           label={`Suivre l'actualité de ${config.productName}`}
           isSelected={isNewsletterEnabled}
-          onClick={() => this.handleChange('isNewsletterEnabled')(!isNewsletterEnabled)} />
+          onClick={() => this.updater_.handleChange('isNewsletterEnabled')(!isNewsletterEnabled)} />
     </FieldSet>
   }
 
@@ -89,20 +92,20 @@ class NotificationsStep extends ProfileStepBaseClass {
       marginBottom: 20,
       maxWidth: 440,
     }
-    return <ProfileStep
+    return <Step
       title="Vos notifications"
       explanation={alreadyHasEmailNotifications ? <div style={{maxWidth: 440, padding: '0 50px'}}>
         {config.productName} fonctionne en vous accompagnant au quotidien. Pour
         vous faciliter la tâche, nous vous enverrons des emails contenant nos
         conseils du jour <strong>en fonction de vos préférences</strong>.
       </div> : null}
-      fastForward={this.handleSubmit}
-      onNextButtonClick={this.handleSubmit}
+      fastForward={this.updater_.handleSubmit}
+      onNextButtonClick={this.updater_.handleSubmit}
       {...this.props}>
       {alreadyHasEmailNotifications ? this.renderEmailDaysFieldset(detailsStyle) : null}
       {alreadyHasEmailNotifications ? this.renderHorizontalRule() : null}
       {this.renderNewsletterFieldset(detailsStyle)}
-    </ProfileStep>
+    </Step>
   }
 }
 

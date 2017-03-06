@@ -1,7 +1,7 @@
 """Module to help the frontend manipulate protobuffers."""
 import datetime
 import functools
-import json
+import logging
 
 try:
     import flask
@@ -15,23 +15,13 @@ from google.protobuf import json_format
 from google.protobuf import message
 
 
-class _TimestampJSONEncoder(json.JSONEncoder):
-
-    # TODO(pascal): Drop the pylint disabler when
-    # https://github.com/PyCQA/pylint/issues/414 is solved.
-
-    def default(self, obj):  # pylint: disable=method-hidden
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat() + 'Z'
-        return super(_TimestampJSONEncoder, self).default(obj)
-
-
 def parse_from_mongo(mongo_dict, proto):
     """Parse a Protobuf from a dict coming from MongoDB.
 
     Args:
         mongo_dict: a dict coming from MongoDB, or None. This dict will be
-            modified by the function: it removes all the keys prefixed by "_".
+            modified by the function: it removes all the keys prefixed by "_"
+            and convert datetime objects to iso strings.
         proto: a protobuffer to merge data into.
     Returns: a boolean indicating whether the input had actual data.
     """
@@ -40,14 +30,31 @@ def parse_from_mongo(mongo_dict, proto):
     to_delete = [k for k in mongo_dict if k.startswith('_')]
     for key in to_delete:
         del mongo_dict[key]
+    _convert_datetimes_to_string(mongo_dict)
     try:
-        json_format.Parse(
-            json.dumps(mongo_dict, cls=_TimestampJSONEncoder), proto, ignore_unknown_fields=True)
+        json_format.ParseDict(mongo_dict, proto, ignore_unknown_fields=True)
     except json_format.ParseError as error:
-        print("Error %s while parsing a json blob for proto type %s:\n%s" % (
-            error, proto, json.dumps(mongo_dict)))
+        logging.warning(
+            'Error %s while parsing a JSON dict for proto type %s:\n%s',
+            error, proto.__class__.__name__, mongo_dict)
         return False
     return True
+
+
+def _convert_datetimes_to_string(values):
+    if isinstance(values, dict):
+        for key, value in values.items():
+            if isinstance(value, datetime.datetime):
+                values[key] = value.isoformat() + 'Z'
+                continue
+            _convert_datetimes_to_string(value)
+        return
+    if isinstance(values, list):
+        for i, value in enumerate(values):
+            if isinstance(value, datetime.datetime):
+                values[i] = value.isoformat() + 'Z'
+                continue
+            _convert_datetimes_to_string(value)
 
 
 def flask_api(out_type=None, in_type=None):

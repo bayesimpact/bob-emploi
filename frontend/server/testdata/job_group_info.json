@@ -159,6 +159,10 @@
           "percentRequired": 72
         }
       ]
+    },
+    "workEnvironmentKeywords": {
+      "sectors": ["Armée"],
+      "structures": ["Marché, foire exposition", "Boucherie", "Boucherie-charcuteri"]
     }
   },
   {

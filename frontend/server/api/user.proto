@@ -168,8 +168,7 @@ message UserProfile {
   int32 office_skills_estimate = 31;
 
   // User frustration reasons (e.g.: no offers, no answers, single parent, ...).
-  // Not used anymore after we removed asking for it from the onboarding.
-  repeated Frustration frustrations = 32 [deprecated = true];
+  repeated Frustration frustrations = 32;
 
   // Whether the user could imagine to do a training or not.
   // Not used anymore after we removed asking for it from the onboarding (All flexibilities).

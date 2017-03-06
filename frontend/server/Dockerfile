@@ -6,9 +6,9 @@ FROM python:3.5
 EXPOSE 80
 WORKDIR /work
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["python", "bob_emploi/frontend/server.py"]
+CMD ["uwsgi", "--protocol=http", "--socket", "0.0.0.0:80", "-w", "bob_emploi.frontend.server:app"]
 ARG GIT_SHA1=non-git
-ENV PROTOBUF_VERSION=3.0.2 \
+ENV PROTOBUF_VERSION=3.2.0 \
   BIND_HOST=0.0.0.0 \
   PYTHONPATH=/work
 
@@ -16,7 +16,7 @@ ENV PROTOBUF_VERSION=3.0.2 \
 RUN apt-get update -qqy && \
   apt-get install -qqy --no-install-recommends wget unzip && \
   # Install needed Python dependencies.
-  pip install python-emploi-store flask mailjet_rest mongo oauth2client pyfarmhash unidecode && \
+  pip install python-emploi-store flask mailjet_rest mongo oauth2client pyfarmhash unidecode uwsgi && \
   # Install Protobuf compiler.
   wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip && unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto && \
   # Install Python Protobuf runtime.
