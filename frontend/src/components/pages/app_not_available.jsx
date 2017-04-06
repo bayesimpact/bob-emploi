@@ -4,7 +4,7 @@ import {browserHistory} from 'react-router'
 import config from 'config'
 
 import {StaticPage} from 'components/static'
-import {Colors, RoundButton} from 'components/theme'
+import {Colors, Button} from 'components/theme'
 import {Routes} from 'components/url'
 
 class AppNotAvailablePage extends React.Component {
@@ -66,9 +66,9 @@ class AppNotAvailablePage extends React.Component {
           </p>
         </div>
         <div style={{display: 'flex', marginBottom: 40, marginTop: 70}}>
-          <RoundButton type="validation" onClick={this.handleBackClick}>
+          <Button type="validation" onClick={this.handleBackClick}>
             Retourner à la page d'accueil
-          </RoundButton>
+          </Button>
         </div>
       </div>
     </StaticPage>

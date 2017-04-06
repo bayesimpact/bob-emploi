@@ -1,6 +1,8 @@
 import {browserHistory} from 'react-router'
 
+import config from 'config'
 import {api} from './api'
+import {getAdviceScorePriority, isAnyAdviceScored} from 'store/advice'
 import {getActionById, newProject} from 'store/project'
 import {splitFullName} from 'store/auth'
 import {Gender, Situation, JobSearchPhase} from 'api/user'
@@ -26,6 +28,7 @@ export const FINISH_PROFILE_SITUATION = 'FINISH_PROFILE_SITUATION'
 export const FINISH_PROFILE_QUALIFICATIONS = 'FINISH_PROFILE_QUALIFICATIONS'
 export const FINISH_PROFILE_FRUSTRATIONS = 'FINISH_PROFILE_FRUSTRATIONS'
 export const FINISH_ACTION = 'FINISH_ACTION'
+export const SAVE_ACTION = 'SAVE_ACTION'
 export const CANCEL_ACTION = 'CANCEL_ACTION'
 export const READ_ACTION = 'READ_ACTION'
 export const STICK_ACTION = 'STICK_ACTION'
@@ -45,12 +48,12 @@ export const CREATE_DASHBOARD_EXPORT = 'CREATE_DASHBOARD_EXPORT'
 export const GET_DASHBOARD_EXPORT = 'GET_DASHBOARD_EXPORT'
 export const FINISH_STICKY_ACTION_STEP = 'FINISH_STICKY_ACTION_STEP'
 export const STOP_STICKY_ACTION = 'STOP_STICKY_ACTION'
-export const ADD_MANUAL_EXPLORATION = 'ADD_MANUAL_EXPLORATION'
-export const EDIT_MANUAL_EXPLORATION = 'EDIT_MANUAL_EXPLORATION'
-export const DELETE_MANUAL_EXPLORATION = 'DELETE_MANUAL_EXPLORATION'
 export const ACCEPT_ADVICE = 'ACCEPT_ADVICE'
 export const DECLINE_ADVICE = 'DECLINE_ADVICE'
+export const DECLINE_WHOLE_ADVICE = 'DECLINE_WHOLE_ADVICE'
+export const SCORE_ADVICE = 'SCORE_ADVICE'
 export const CANCEL_ADVICE_ENGAGEMENT = 'CANCEL_ADVICE_ENGAGEMENT'
+export const LIKE_OR_DISLIKE_FEATURE = 'LIKE_OR_DISLIKE_FEATURE'
 
 // App actions.
 
@@ -67,13 +70,20 @@ export const LOAD_LANDING_PAGE = 'LOAD_LANDING_PAGE'
 export const REFRESH_USER_DATA = 'REFRESH_USER_DATA'
 export const RESET_USER_PASSWORD = 'RESET_USER_PASSWORD'
 export const OPEN_ACTION_EXTERNAL_LINK = 'OPEN_ACTION_EXTERNAL_LINK'
-export const ENGAGEMENT_ACTION_IS_SHOWN = 'ENGAGEMENT_ACTION_IS_SHOWN'
+export const ADVICE_CARD_IS_SHOWN = 'ADVICE_CARD_IS_SHOWN'
+export const ADVICE_PAGE_IS_SHOWN = 'ADVICE_PAGE_IS_SHOWN'
 export const FINISH_STICKY_ACTION = 'FINISH_STICKY_ACTION'
+export const SAVE_LIKES = 'SAVE_LIKES'
+export const GET_ADVICE_TIPS = 'GET_ADVICE_TIPS'
+export const SEE_ADVICE = 'SEE_ADVICE'
+export const SHOW_ALL_TIPS = 'SHOW_ALL_TIPS'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
   [ACCEPT_ADVICE]: 'Accept suggested advice',
   [ACCEPT_PRIVACY_NOTICE]: 'Accept privacy notice',
+  [ADVICE_CARD_IS_SHOWN]: 'Advice card is shown',
+  [ADVICE_PAGE_IS_SHOWN]: 'Advice page shown',
   [AUTHENTICATE_USER]: 'Log in',
   [CANCEL_ACTION]: 'Close action',
   [CANCEL_ADVICE_ENGAGEMENT]: 'Cancel advice engagement',
@@ -82,9 +92,9 @@ export const actionTypesToLog = {
   [CREATE_PROJECT]: 'Create project',
   [CREATE_PROJECT_SAVE]: 'Save project',
   [DECLINE_ADVICE]: 'Decline suggested advice',
+  [DECLINE_WHOLE_ADVICE]: 'Report the whole advice as useless',
   [DELETE_USER_DATA]: 'Delete user',
   [DISPLAY_TOAST_MESSAGE]: 'Display toast message',
-  [ENGAGEMENT_ACTION_IS_SHOWN]: 'Advice engagement action shown',
   [FINISH_ACTION]: 'Close action',
   [FINISH_PROFILE_FRUSTRATIONS]: 'Finish profile frustrations',
   [FINISH_PROFILE_QUALIFICATIONS]: 'Finish profile qualifications',
@@ -96,6 +106,7 @@ export const actionTypesToLog = {
   [FINISH_STICKY_ACTION_STEP]: 'Finish sticky action step',
   [GET_DASHBOARD_EXPORT]: 'View dashbord export',
   [GET_USER_DATA]: 'Load app',
+  [LIKE_OR_DISLIKE_FEATURE]: 'Like/Dislike feature',
   [LOAD_LANDING_PAGE]: 'Load landing page',
   [LOGOUT]: 'Log out',
   [MOVE_USER_DATES_BACK_1_DAY]: 'Time travel!',
@@ -106,7 +117,11 @@ export const actionTypesToLog = {
   [REFRESH_USER_DATA]: 'User data refreshed',
   [REGISTER_USER]: 'Register new user',
   [RESET_USER_PASSWORD]: 'Ask password email',
+  [SAVE_ACTION]: 'Save action',
+  [SCORE_ADVICE]: 'Score advice',
+  [SEE_ADVICE]: 'See advice in dashboard',
   [SET_USER_PROFILE]: 'Update profile',
+  [SHOW_ALL_TIPS]: 'Show all tips',
   [STICK_ACTION]: 'Close action',
   [STOP_STICKY_ACTION]: 'Stop sticky action',
   [UPDATE_PROJECT_CHANTIERS]: 'Update chantiers selection',
@@ -134,8 +149,12 @@ const switchToMobileVersionAction = {type: SWITCH_TO_MOBILE_VERSION}
 
 // Synchronous action generators, keep them grouped and alpha sorted.
 
-function advisorEngagementActionIsShown(project, advice) {
-  return dispatch => dispatch({advice, project, type: ENGAGEMENT_ACTION_IS_SHOWN})
+function advicePageIsShown(project, advice) {
+  return dispatch => dispatch({advice, project, type: ADVICE_PAGE_IS_SHOWN})
+}
+
+function adviceCardIsShown(project, advice, advicePriority) {
+  return dispatch => dispatch({advice, advicePriority, project, type: ADVICE_CARD_IS_SHOWN})
 }
 
 function displayToasterMessage(error) {
@@ -148,6 +167,14 @@ function openActionExternalLink(action) {
 
 function openLoginModal(defaultValues, visualElement) {
   return {defaultValues, type: OPEN_LOGIN_MODAL, visualElement}
+}
+
+function seeAdvice(project, advice, advicePriority) {
+  return dispatch => dispatch({advice, advicePriority, project, type: SEE_ADVICE})
+}
+
+function showAllTips(project, advice) {
+  return dispatch => dispatch({advice, project, type: SHOW_ALL_TIPS})
 }
 
 // Asynchronous action generators.
@@ -177,6 +204,14 @@ function createDashboardExport() {
     const {user} = getState()
     return dispatch(wrapAsyncAction(
       CREATE_DASHBOARD_EXPORT, () => api.createDashboardExportPost(user.userId)))
+  }
+}
+
+function getAdviceTips(project, advice) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    return dispatch(wrapAsyncAction(
+      GET_ADVICE_TIPS, () => api.adviceTipsGet(user, project, advice), {advice, project}))
   }
 }
 
@@ -374,6 +409,14 @@ function registerNewUser(email, password, firstName, lastName) {
   }
 }
 
+function likeOrDislikeFeature(feature, likeScore) {
+  return (dispatch, getState) => {
+    dispatch({feature, likeScore, type: LIKE_OR_DISLIKE_FEATURE})
+    const {userId} = getState().user
+    dispatch(wrapAsyncAction(SAVE_LIKES, () => api.saveLikes(userId, {[feature]: likeScore})))
+  }
+}
+
 function loginUser(email, password, hashSalt) {
   return dispatch => {
     return dispatch(wrapAsyncAction(
@@ -437,6 +480,13 @@ function finishAction(action, feedback) {
   }
 }
 
+function saveAction(action) {
+  return (dispatch, getState) => {
+    dispatch({action, type: SAVE_ACTION})
+    return dispatch(saveUser(getState().user))
+  }
+}
+
 function cancelAction(action, feedback) {
   return (dispatch, getState) => {
     dispatch({action, feedback, type: CANCEL_ACTION})
@@ -489,9 +539,9 @@ function stopAdviceEngagement(project, advice, feedback) {
 }
 
 // TODO(pascal): Re-use in new flow or clean-up.
-function acceptAdvice(project, advice) {
+function acceptAdvice(project, advice, advicePriority) {
   return (dispatch, getState) => {
-    dispatch({advice, project, type: ACCEPT_ADVICE})
+    dispatch({advice, advicePriority, project, type: ACCEPT_ADVICE})
     return dispatch(saveUser(getState().user))
   }
 }
@@ -504,10 +554,39 @@ function declineAdvice(project, reason, advice) {
   }
 }
 
+function declineWholeAdvice(project, uselessAdviceFeedback) {
+  return (dispatch, getState) => {
+    dispatch({project, type: DECLINE_WHOLE_ADVICE, uselessAdviceFeedback})
+    return dispatch(saveUser(getState().user)).then(() => {
+      if (uselessAdviceFeedback) {
+        dispatch(displayToasterMessage(
+          'Merci pour votre retour ! ' +
+          'Nous allons travailler sur ces améliorations.'))
+      } else {
+        dispatch(displayToasterMessage(
+          `Désolés, nous allons continuer à améliorer ${config.productName} ` +
+          'pour mieux vous aider.'))
+      }
+    })
+  }
+}
+
 function readAction(action, feedback) {
   return (dispatch, getState) => {
     dispatch({action, feedback, type: READ_ACTION})
     return dispatch(saveUser(getState().user))
+  }
+}
+
+function scoreAdvice(project, advice, score) {
+  return (dispatch, getState) => {
+    dispatch({advice, project, score, type: SCORE_ADVICE})
+    return dispatch(saveUser(getState().user)).then(() => {
+      if (isAnyAdviceScored(project)) {
+        dispatch(displayToasterMessage(`Nous avons bien pris en compte que ce sujet
+            est ${getAdviceScorePriority(score)} pour vous`))
+      }
+    })
   }
 }
 
@@ -548,37 +627,10 @@ function setProjectProperty(projectId, projectProperties, shouldAlsoSaveProject)
 function moveUserDatesBackOneDay() {
   return (dispatch, getState) => {
     dispatch({type: MOVE_USER_DATES_BACK_1_DAY})
-    return dispatch(saveUser(getState().user))
+    return dispatch(saveUser(getState().user)).then(() => {
+      dispatch(displayToasterMessage('Debug: Time Travel!'))
+    })
   }
-}
-
-function addManualExploration(sourceJob) {
-  return (dispatch, getState) => {
-    dispatch({
-      exploration: {city: getState().user.profile.city, sourceJob},
-      type: ADD_MANUAL_EXPLORATION},
-    )
-    return dispatch(saveUser(getState().user))
-  }
-}
-
-function deleteManualExploration(index) {
-  return (dispatch, getState) => {
-    dispatch({index, type: DELETE_MANUAL_EXPLORATION})
-    return dispatch(saveUser(getState().user))
-  }
-}
-
-function editManualExploration(index, exploration) {
-  return (dispatch, getState) => {
-    dispatch({exploration, index, type: EDIT_MANUAL_EXPLORATION})
-    return dispatch(saveUser(getState().user))
-  }
-}
-
-// TODO(pascal): Remove this if we do not use it.
-function getChantierTitles() {
-  return wrapAsyncAction(GET_CHANTIER_TITLES, api.chantiersGet)
 }
 
 function askPasswordReset(email) {
@@ -592,11 +644,11 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         updateProjectChantiers, moveUserDatesBackOneDay, editFirstProject,
         createDashboardExport, getDashboardExport, displayToasterMessage,
         setProjectProperty, closeLoginModalAction, openLoginModal,
-        getChantierTitles, acceptCookiesUsageAction, switchToMobileVersionAction,
+        acceptCookiesUsageAction, switchToMobileVersionAction,
         loadLandingPageAction, deleteUser, askPasswordReset,
         setUserInteraction, createActionPlan, refreshActionPlan,
         openActionExternalLink, stickAction, finishStickyActionStep,
-        addManualExploration, editManualExploration, deleteManualExploration,
-        stopStickyAction, acceptAdvice, declineAdvice,
-        stopAdviceEngagement, advisorEngagementActionIsShown,
+        stopStickyAction, acceptAdvice, declineAdvice, declineWholeAdvice,
+        stopAdviceEngagement, advicePageIsShown, seeAdvice, adviceCardIsShown, saveAction,
+        likeOrDislikeFeature, getAdviceTips, scoreAdvice, showAllTips,
 }

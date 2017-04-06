@@ -14,7 +14,6 @@ import unidecode
 from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
 from bob_emploi.frontend.api import action_pb2
-from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import user_pb2
 
 _EMPLOI_STORE_DEV_CLIENT_ID = os.getenv('EMPLOI_STORE_CLIENT_ID')
@@ -27,7 +26,7 @@ _ANY_COMPANY_REGEXP = re.compile('^(.*) une entreprise')
 
 def instantiate(
         action, user_proto, project, template, activated_chantiers, database,
-        all_chantiers):
+        all_chantiers, for_email=False):
     """Instantiate a newly created action from a template.
 
     Args:
@@ -38,6 +37,7 @@ def instantiate(
         activated_chantiers: a set of chantier IDs that are active.
         database: access to the Mongo DB.
         all_chantiers: a dict of all chantiers.
+        for_email: whether the action is to be sent in an email.
     Returns:
         the populated action for chaining.
     """
@@ -56,6 +56,12 @@ def instantiate(
     action.how_to = template.how_to
     action.status = action_pb2.ACTION_UNREAD
     action.created_at.FromDatetime(now.get())
+    action.image_url = template.image_url
+    if for_email:
+        if template.email_title:
+            action.title = template.email_title
+        action.link_label = template.email_link_label
+        action.keyword = template.email_subject_keyword
 
     action.goal = template.goal
     action.short_goal = template.short_goal
@@ -79,7 +85,7 @@ def instantiate(
 
     if (template.special_generator == action_pb2.LA_BONNE_BOITE and
             user_proto.features_enabled.lbb_integration == user_pb2.ACTIVE):
-        _get_company_from_lbb(project, action.apply_to_company, database)
+        _get_company_from_lbb(project, action.apply_to_company)
         if action.apply_to_company.name:
             title_match = _ANY_COMPANY_REGEXP.match(action.title)
             if title_match:
@@ -167,26 +173,21 @@ def clear_cache():
     _STICKY_ACTION_STEPS.clear()
 
 
-def _get_company_from_lbb(project, company, database):
+def _get_company_from_lbb(project, company):
     if not _EMPLOI_STORE_DEV_CLIENT_ID or not _EMPLOI_STORE_DEV_SECRET:
         logging.warning('Missing Emploi Store Dev identifiers.')
         return False
     client = emploi_store.Client(
         client_id=_EMPLOI_STORE_DEV_CLIENT_ID,
         client_secret=_EMPLOI_STORE_DEV_SECRET)
-    city_proto = geo_pb2.FrenchCity()
-    if not proto.parse_from_mongo(
-            database.cities.find_one({'_id': project.mobility.city.city_id}), city_proto):
-        logging.warning('No coordinates for city %s', project.mobility.city.city_id)
-        return False
     try:
         lbb_companies = client.get_lbb_companies(
-            latitude=city_proto.latitude, longitude=city_proto.longitude,
+            city_id=project.mobility.city.city_id,
             rome_codes=[project.target_job.job_group.rome_id])
     except IOError as error:
         logging.error(
             'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
-            error, city_proto, project.target_job.job_group)
+            error, project.mobility.city.city_id, project.target_job.job_group)
         return False
     apply_to_companies = set(
         action.apply_to_company.siret
@@ -197,12 +198,12 @@ def _get_company_from_lbb(project, company, database):
     except IOError as error:
         logging.error(
             'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
-            error, city_proto, project.target_job.job_group)
+            error, project.mobility.city.city_id, project.target_job.job_group)
         return False
     except StopIteration:
         logging.warning(
             'Could not find any companies with LBB:\nCity: %s\nJob group: %s\nApplied: %s',
-            city_proto, project.target_job.job_group, apply_to_companies)
+            project.mobility.city.city_id, project.target_job.job_group, apply_to_companies)
         return False
     company.name = lbb_company.get('name', '')
     company.siret = lbb_company.get('siret', '')

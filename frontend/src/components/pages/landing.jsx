@@ -15,18 +15,49 @@ const emStyle = {
 
 // Kinds of different landing page excluding the default kind.
 const landingPageTitles = {
-  coach: <span>
-    Un <em style={emStyle}>plan d'accompagnement</em> sur-mesure pour
-    <em style={emStyle}> accélérer</em> votre recherche d'emploi
-  </span>,
-  ease: <span>
-    Avancez <em style={emStyle}>plus facilement</em> dans votre recherche
-    d'emploi
-  </span>,
-  '': <span>
-    Les meilleures <em style={emStyle}>recommandations</em> pour
-    <em style={emStyle}> accélérer</em> votre recherche d'emploi
-  </span>,
+  coach: {
+    match: /coach/,
+    title: <span>
+      Un <em style={emStyle}>plan d'accompagnement</em> sur-mesure pour
+      <em style={emStyle}> accélérer</em> votre recherche d'emploi
+    </span>,
+  },
+  ease: {
+    match: /ease|simplicity/,
+    title: <span>
+      Avancez <em style={emStyle}>plus facilement</em> dans votre recherche
+      d'emploi
+    </span>,
+  },
+  personalization: {
+    fontSize: 35,
+    match: /personalization/,
+    subtitle: `${config.productName} analyse votre situation spécifique et ` +
+      'trouve les meilleures solutions concrètes pour vous',
+    title: <span>
+      Qu'est-ce qui a le plus <span style={emStyle}>aidé</span> les gens dans
+      <span style={emStyle}> ma situation</span> à <span style={emStyle}>trouver
+      un emploi</span> ?
+    </span>,
+  },
+  speed: {
+    match: /speed/,
+    subtitle: `${config.productName} analyse votre situation et vous aide à ` +
+      'savoir ce qui marche vraiment',
+    title: <span>
+      Quelle est <span style={emStyle}>la clé</span> pour <span
+      style={emStyle}>trouver rapidement un emploi</span> ?
+    </span>,
+  },
+  '': {
+    match: /prioritization/,
+    subtitle: `${config.productName} analyse votre situation et vous aide à ` +
+      'savoir ce qui est vraiment important',
+    title: <span>
+      Que faire en <span style={emStyle}>priorité</span> pour <span
+      style={emStyle}>trouver un emploi</span> ?
+    </span>,
+  },
 }
 const kinds = Object.keys(landingPageTitles)
 
@@ -50,27 +81,19 @@ class TitleSection extends React.Component {
 
   render() {
     const {isMobileVersion, landingPageKind} = this.context
+    const {fontSize, subtitle, title} = landingPageTitles[landingPageKind] || {}
     const style = {
       alignItems: 'flex-start',
+      backgroundColor: Colors.DARK,
       color: Colors.COOL_GREY,
       display: 'flex',
       flexDirection: 'column',
-      fontSize: isMobileVersion ? 25 : 40,
+      fontSize: isMobileVersion ? 30 : (fontSize || 40),
       justifyContent: 'center',
       lineHeight: 1.15,
       padding: isMobileVersion ? '30px 10px 45px 10px' : '40px 0',
       position: 'relative',
-      zIndex: 0,
       ...this.props.style,
-    }
-    const backgroundStyle = {
-      backgroundColor: Colors.DARK,
-      bottom: isMobileVersion ? 0 : -100,
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      zIndex: -1,
     }
     const buttonStyle = {
       fontSize: 15,
@@ -84,118 +107,101 @@ class TitleSection extends React.Component {
       marginBottom: 18,
       marginTop: isMobileVersion ? 0 : 30,
     }
-    const byBayesStyle = {
-      fontSize: 15,
-      marginTop: 35,
-    }
-    const strongEmStyle = {
-      fontWeight: 500,
-      ...emStyle,
+    const subTitleStyle = {
+      fontSize: isMobileVersion ? 20 : 25,
+      marginBottom: 20,
     }
     return <section style={style}>
-      <div style={backgroundStyle} />
-      <div style={{margin: '0 auto', maxWidth: 800, textAlign: 'center'}}>
-        <div style={titleStyle}>
-          {landingPageTitles[landingPageKind] || ''}
-        </div>
+      <div style={{margin: '0 auto', maxWidth: 950, textAlign: 'center'}}>
+        <div style={titleStyle}>{title}</div>
+        {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : null}
         <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="title">
           Commencer
         </LoginButton>
-        {isMobileVersion ? null : <div style={byBayesStyle}>
-          un service <em style={strongEmStyle}>gratuit</em> créé par l'association à
-          but non lucratif <em style={strongEmStyle}>Bayes Impact</em>
-        </div>}
       </div>
     </section>
   }
 }
 
 
-class DescriptionSection extends React.Component {
+class ScreenshotsSection extends React.Component {
   static contextTypes = {
     isMobileVersion: React.PropTypes.bool,
-    landingPageKind: React.PropTypes.oneOf(kinds).isRequired,
   }
 
-  renderDescription(kind, picto, children) {
-    const {isMobileVersion, landingPageKind} = this.context
-    if (kind !== landingPageKind) {
-      return null
-    }
+  renderScreenshot(description, flexDirection, screenshotSrc) {
+    const {isMobileVersion} = this.context
     const style = {
-      backgroundColor: '#fff',
-      borderRadius: 2,
-      boxShadow: '0 2px 24px 0 rgba(0, 0, 0, 0.05)',
-      color: Colors.CHARCOAL_GREY,
-      display: 'inline-block',
-      fontSize: 16,
-      fontStyle: 'italic',
-      fontWeight: 500,
-      height: 180,
-      lineHeight: 1.56,
-      margin: '30px 14px 15px',
-      padding: '80px 30px 0',
-      position: 'relative',
-      verticalAlign: 'top',
-      width: isMobileVersion ? 'initial' : 315,
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column' : flexDirection,
+      fontSize: isMobileVersion ? 20 : 25,
+      justifyContent: 'space-between',
+      lineHeight: 1.3,
+      margin: 'auto',
+      maxWidth: 1000,
+      paddingBottom: isMobileVersion ? 40 : 100,
     }
-    const pictoContainerStyle = {
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      textAlign: 'center',
-      top: -30,
+    const descriptionStyle = {
+      marginTop: isMobileVersion ? 20 : 0,
+      maxWidth: isMobileVersion ? '90%' : 340,
+      textAlign: isMobileVersion ? 'center' : 'left',
     }
-    const pictoStyle = {
-      borderRadius: '100%',
-      boxShadow: '5px 10px 25px 0 rgba(56, 63, 81, 0.25)',
+    const imageStyle = {
+      boxShadow: '0 0 35px 0 rgba(0, 0, 0, 0.25)',
+      width: isMobileVersion ? '90%' : 570,
     }
     return <div style={style}>
-      <div style={pictoContainerStyle}>
-        <img src={picto} style={pictoStyle} />
-      </div>
-      {children}
+      <img src={screenshotSrc} style={imageStyle} />
+      <div style={descriptionStyle}>{description}</div>
     </div>
   }
 
   render() {
-    return <section style={{marginBottom: 15, marginTop: 15, textAlign: 'center'}}>
-      {this.renderDescription('', require('images/file-search-picto.svg'), <div>
-        <strong>Trouvez quels conseils suivre en priorité</strong> grâce à nos algorithmes.
-      </div>)}
-      {this.renderDescription('', require('images/file-checks-picto.svg'), <div>
-        <strong>Choisissez les solutions pour améliorer votre recherche </strong>
-        qui vous correspondent le mieux.
-      </div>)}
-      {this.renderDescription('', require('images/file-checked-picto.svg'), <div>
-        <strong>Avancez vers vos objectifs</strong> grâce à un plan d'action détaillé.
-      </div>)}
+    const {isMobileVersion} = this.context
+    const style = {
+      backgroundColor: '#fff',
+      color: Colors.SLATE,
+      paddingTop: 50,
+      textAlign: 'center',
+    }
+    const headerStyle = {
+      fontSize: isMobileVersion ? 28 : 35,
+      lineHeight: 1,
+      marginBottom: 50,
+    }
+    return <section style={style}>
+      <header style={headerStyle}>
+        Un service d'accompagnement
+        <div style={{fontStyle: 'italic', fontWeight: 'bold'}}>
+          personnalisé et entièrement gratuit
+        </div>
 
-      {this.renderDescription('coach', require('images/file-checked-picto.svg'), <div>
-        <strong>Créez votre plan d'action</strong> personnalisé en deux minutes.
-      </div>)}
-      {this.renderDescription('coach', require('images/file-checks-picto.svg'), <div>
-        <strong>Avancez en restant motivé</strong> avec un accompagnement au quotidien.
-      </div>)}
-      {this.renderDescription('coach', require('images/light-bulb-picto.svg'), <div>
-        <strong>Découvrez de nouvelles idées</strong> pour faciliter votre recherche.
-      </div>)}
+        <div style={{fontSize: 20, fontStyle: 'italic', marginTop: 15}}>
+          proposé par l'ONG à but non-lucratif Bayes Impact
+        </div>
+      </header>
 
-      {this.renderDescription('ease', require('images/file-search-picto.svg'), <div>
-        <strong>Trouver des solutions</strong> simples et qui vous correspondent.
-      </div>)}
-      {this.renderDescription('ease', require('images/file-checks-picto.svg'), <div>
-        <strong>Avancez rapidement</strong> grâce à un accompagnement pas à pas.
-      </div>)}
-      {this.renderDescription('ease', require('images/light-bulb-picto.svg'), <div>
-        <strong>Découvrez de nouvelles idées</strong> pour étendre votre recherche.
-      </div>)}
+      {this.renderScreenshot(<span>
+        Découvrez ce qui va vraiment <strong>booster votre recherche d'emploi</strong>
+      </span>, 'row-reverse', require('images/screenshot-advisor.png'))}
+
+      {this.renderScreenshot(<span>
+        Nos recommandations utilisent l'analyse <strong>de millions de
+        données</strong> et de <strong>retours du terrain</strong> pour être
+        plus pertinentes
+      </span>, 'row', require('images/screenshot-data.png'))}
+
+      {this.renderScreenshot(<span>
+        <strong>Foncez</strong> vers l'emploi grâce à votre <strong>plan
+        d'action personnalisé</strong>
+      </span>, 'row-reverse', require('images/screenshot-tips.png'))}
     </section>
   }
 }
 
 
-class BigDataForYouSection extends React.Component {
+class BobHelpsYouSection extends React.Component {
   static contextTypes = {
     isMobileVersion: React.PropTypes.bool,
   }
@@ -203,7 +209,7 @@ class BigDataForYouSection extends React.Component {
   render() {
     const {isMobileVersion} = this.context
     const style = {
-      backgroundColor: Colors.SKY_BLUE,
+      backgroundColor: Colors.DARK,
       color: '#fff',
       fontSize: 30,
       lineHeight: 1.33,
@@ -211,10 +217,6 @@ class BigDataForYouSection extends React.Component {
       textAlign: 'center',
     }
     const buttonStyle = {
-      ':hover': {
-        backgroundColor: Colors.SKY_BLUE,
-      },
-      backgroundColor: Colors.SKY_BLUE_HOVER,
       fontSize: 15,
       letterSpacing: 1,
       marginTop: 30,
@@ -223,45 +225,9 @@ class BigDataForYouSection extends React.Component {
     }
     return <section style={style}>
       <div style={{margin: 'auto', maxWidth: 450}}>
-        Basez vous sur nos données pour prendre
-        <strong style={{fontStyle: 'italic'}}> les bonnes décisions</strong>
+        Découvrez comment {config.productName} peut vous aider !
       </div>
-      <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="bigdata">
-        Commencer
-      </LoginButton>
-    </section>
-  }
-}
-
-
-class BetaSection extends React.Component {
-  render() {
-    const style = {
-      backgroundColor: Colors.CHARCOAL_GREY,
-      color: Colors.PINKISH_GREY,
-      fontSize: 22,
-      lineHeight: 1.36,
-      margin: 'auto',
-      padding: '45px 20px',
-      textAlign: 'center',
-    }
-    const emStyle = {
-      color: '#fff',
-      fontWeight: 500,
-    }
-    const buttonStyle = {
-      fontSize: 15,
-      letterSpacing: 1,
-      marginTop: 25,
-      padding: '16px 28px 12px',
-      textTransform: 'uppercase',
-    }
-    return <section style={style}>
-      <div style={{margin: 'auto', maxWidth: 820}}>
-        {config.productName} est actuellement en version Bêta,<br />
-        mais vous permet déjà d'<em style={emStyle}>accélérer votre recherche</em>
-      </div>
-      <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="beta">
+      <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="helpsyou">
         Commencer
       </LoginButton>
     </section>
@@ -273,6 +239,7 @@ class TestimonialCard extends React.Component {
   static propTypes = {
     author: React.PropTypes.string.isRequired,
     children: React.PropTypes.node,
+    isAuthorMan: React.PropTypes.bool,
     style: React.PropTypes.object,
   }
 
@@ -281,42 +248,46 @@ class TestimonialCard extends React.Component {
   }
 
   render() {
-    const {author, children} = this.props
+    const {author, children, isAuthorMan} = this.props
     const {isMobileVersion} = this.context
+    const horizontalPadding = isMobileVersion ? 30 : 75
     const style = {
+      backgroundColor: '#fff',
+      borderRadius: 10,
       color: Colors.DARK_TWO,
       fontSize: 18,
       fontStyle: 'italic',
       lineHeight: 1.44,
-      maxWidth: 500,
-      padding: isMobileVersion ? '30px 30px' : '30px 50px 0',
+      maxWidth: 600,
+      minHeight: 280,
+      padding: isMobileVersion ? '30px 30px' : `60px ${horizontalPadding}px 0`,
       position: 'relative',
       ...this.props.style,
     }
-    const quoteStyle = {
-      color: Colors.MODAL_PROJECT_GREY,
-      fontSize: 120,
-      left: isMobileVersion ? -12 : -15,
-      position: 'absolute',
-      top: isMobileVersion ? -40 : -30,
-    }
     const authorStyle = {
+      alignItems: 'center',
+      bottom: 50,
+      color: Colors.DARK,
+      display: 'flex',
       fontSize: 14,
       fontStyle: 'initial',
       fontWeight: 500,
-      marginTop: 15,
+      left: 0,
+      padding: `0 ${horizontalPadding}px`,
+      position: 'absolute',
     }
+    const authorPicto = <img style={{marginRight: 15}} src={isAuthorMan ?
+      require('images/man-icon.svg') : require('images/woman-icon.svg')} />
     return <div style={style}>
-      <div style={quoteStyle}>“</div>
       {children}
-      <div style={authorStyle}>{author}</div>
+      <div style={authorStyle}>{authorPicto} {author}</div>
     </div>
   }
 }
 
 
 const testimonialCards = [
-  <TestimonialCard author="Jean, 45 ans" style={{margin: 'auto'}}>
+  <TestimonialCard author="Jean, 45 ans" style={{margin: 'auto'}} isAuthorMan={true}>
     Merci ! Grâce aux conseils simples mais avisés de votre site j'ai
     rapidement été contacté par un recruteur.
   </TestimonialCard>,
@@ -324,8 +295,8 @@ const testimonialCards = [
     J'ai été bluffée par la pertinence du plan d'action proposé.
   </TestimonialCard>,
   <TestimonialCard author="Sofiane, 27 ans" style={{margin: 'auto'}}>
-    Organisation, soutien, motivation, Bob Emploi m'a aidée à savoir quoi faire
-    et comment.
+    Organisation, soutien, motivation, {config.productName} m'a aidée à savoir
+    quoi faire et comment.
   </TestimonialCard>,
 ]
 
@@ -408,8 +379,14 @@ class TestimonialsSection extends React.Component {
     const {isMobileVersion} = this.context
     const {isTransitionBlocked, previousTestimonial, previousTestimonialIndex,
       shownTestimonial, shownTestimonialIndex} = this.state
+    const headerStyle = {
+      color: Colors.SLATE,
+      fontSize: isMobileVersion ? 30 : 35,
+      padding: isMobileVersion ? '45px 30px' : '70px 100px',
+      textAlign: 'center',
+    }
     const style = {
-      height: isMobileVersion ? 180 : 180,
+      height: 280,
       margin: 'auto',
       overflow: 'hidden',
       padding: isMobileVersion ? '45px 30px 10px' : '30px 100px 10px',
@@ -434,6 +411,10 @@ class TestimonialsSection extends React.Component {
       ...containerStyle,
     }
     return <section>
+      <header style={headerStyle}>
+        Ils ont essayé {config.productName}, et ont <span style={{color:
+          Colors.SKY_BLUE}}>retrouvé du travail</span>
+      </header>
       <div style={style}>
         {previousTestimonialIndex === shownTestimonialIndex ? null :
         <div style={leavingStyle} key={previousTestimonialIndex}>
@@ -451,27 +432,27 @@ class TestimonialsSection extends React.Component {
 
 const partnersContent = [
   {
-    imageName: 'ple-emploi-ico.png',
+    imageSrc: require('images/ple-emploi-ico.png'),
     name: 'Pôle Emploi',
   },
   {
-    imageName: 'francengage-ico.png',
+    imageSrc: require('images/francengage-ico.png'),
     name: "La France s'engage",
   },
   {
-    imageName: 'snc-ico.png',
+    imageSrc: require('images/snc-ico.png'),
     name: 'Solidarités nouvelles contre le chômage',
   },
   {
-    imageName: 'rco-ico.png',
+    imageSrc: require('images/rco-ico.png'),
     name: 'Réseau des CARIF-OREF',
   },
   {
-    imageName: 'echappee-ico.png',
+    imageSrc: require('images/echappee-ico.png'),
     name: "L'Échappée Volée",
   },
   {
-    imageName: 'etalab-ico.png',
+    imageSrc: require('images/etalab-ico.png'),
     name: 'Etalab',
   },
 ]
@@ -495,16 +476,18 @@ class PartnersSection extends React.Component {
       justifyContent: 'space-around',
       marginTop: 50,
     }
-    return <section style={style}>
-      <div style={sectionTitleStyle(isMobileVersion)}>
-        Nos partenaires
-      </div>
-      <div style={partnerBoxStyle}>
-        {partnersContent.map(partner => {
-          return <PartnerCard
-              name={partner.name} key={partner.name}
-              imageName={partner.imageName} />
-        })}
+    return <section style={{backgroundColor: '#fff'}}>
+      <div style={style}>
+        <div style={sectionTitleStyle(isMobileVersion)}>
+          Nos partenaires
+        </div>
+        <div style={partnerBoxStyle}>
+          {partnersContent.map(partner => {
+            return <PartnerCard
+                name={partner.name} key={partner.name}
+                imageSrc={partner.imageSrc} />
+          })}
+        </div>
       </div>
     </section>
   }
@@ -513,7 +496,7 @@ class PartnersSection extends React.Component {
 
 class PartnerCard extends React.Component {
   static propTypes = {
-    imageName: React.PropTypes.string.isRequired,
+    imageSrc: React.PropTypes.string.isRequired,
     name: React.PropTypes.string.isRequired,
   };
 
@@ -533,10 +516,10 @@ class PartnerCard extends React.Component {
       marginBottom: 45,
       width: 300,
     }
-    const {imageName, name} = this.props
+    const {imageSrc, name} = this.props
     return <div style={containerStyle}>
       <div style={imageContainerStyle}>
-        <img src={require(`images/${imageName}`)} alt={name} title={name} />
+        <img src={imageSrc} alt={name} title={name} />
       </div>
     </div>
   }
@@ -564,11 +547,12 @@ class LandingPage extends React.Component {
 
   componentWillMount() {
     const {query} = this.props.routing.locationBeforeTransitions
-    const isLandingPageForCoaching = /coach/.test(query['utm_content'] || '')
-    const isLandingPageForEase = /ease|simplicity/.test(query['utm_content'] || '')
-    this.setState({landingPageKind:
-      isLandingPageForCoaching ? 'coach' :
-        isLandingPageForEase ? 'ease' : ''})
+    for (const landingPageKind in landingPageTitles) {
+      if (landingPageTitles[landingPageKind].match.test(query['utm_content'] || '')) {
+        this.setState({landingPageKind})
+        break
+      }
+    }
   }
 
   componentDidMount() {
@@ -586,15 +570,13 @@ class LandingPage extends React.Component {
 
       <TitleSection />
 
-      <DescriptionSection />
+      <ScreenshotsSection />
+
+      <BobHelpsYouSection />
 
       <TestimonialsSection />
 
-      <BigDataForYouSection />
-
       <PartnersSection />
-
-      <BetaSection />
     </StaticPage>
   }
 }

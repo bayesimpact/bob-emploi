@@ -1,6 +1,6 @@
 import React from 'react'
 
-import {Icon, RoundButton} from './theme'
+import {Icon, Button} from './theme'
 
 
 class Banner extends React.Component {
@@ -36,13 +36,15 @@ class Banner extends React.Component {
       verticalAlign: 'middle',
     }
     return <div style={boxStyle}>
-      <div style={{flex: 1, margin: 'auto', maxWidth: 900, padding: 15}}>
-        {children}
+      <div style={{flex: 1}}>
+        <div style={{margin: 'auto', maxWidth: 900, padding: 15}}>
+          {children}
+        </div>
       </div>
-      <RoundButton
+      <Button
           type="navigationOnImage" style={buttonStyle} onClick={onClose}>
         <Icon style={closeIconStyle} name="close" /> {isMobileVersion ? null : 'Fermer'}
-      </RoundButton>
+      </Button>
     </div>
   }
 }

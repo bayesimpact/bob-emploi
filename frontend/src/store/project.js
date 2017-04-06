@@ -46,12 +46,6 @@ function allActionsById(projectList) {
     });
     (project.pastActions || []).forEach(action => {
       allActions[action.actionId] = action
-    });
-    (project.advices || []).forEach(advice => {
-      const action = advice.engagementAction
-      if (action) {
-        allActions[action.actionId] = action
-      }
     })
   })
   return allActions
@@ -170,7 +164,6 @@ function createProjectTitle(newProject, gender) {
 
 function newProject(newProjectData, gender) {
   return {
-    diplomaFulfillmentEstimate: newProjectData.diplomaFulfillmentEstimate,
     employmentTypes: newProjectData.employmentTypes,
     jobSearchLengthMonths: newProjectData.jobSearchLengthMonths,
     kind: newProjectData.kind,
@@ -186,6 +179,7 @@ function newProject(newProjectData, gender) {
     targetJob: newProjectData.targetJob,
     title: createProjectTitle(newProjectData, gender),
     totalInterviewsEstimate: newProjectData.totalInterviewsEstimate,
+    trainingFulfillmentEstimate: newProjectData.trainingFulfillmentEstimate,
     weeklyApplicationsEstimate: newProjectData.weeklyApplicationsEstimate,
     weeklyOffersEstimate: newProjectData.weeklyOffersEstimate,
     workloads: newProjectData.workloads,
@@ -287,28 +281,6 @@ function finishStickyActionStep(project, finishedStep, text) {
   const isTargetedAction = action => (action.steps || []).
     some(step => step.stepId === finishedStep.stepId)
 
-  // Let's check if this a sticky from an advice.
-  let inAdvice = false
-  const advices = (project.advices || []).map(advice => {
-    if (!advice.engagementAction || !isTargetedAction(advice.engagementAction)) {
-      return advice
-    }
-    inAdvice = true
-    const engagementAction = finishStickyStepInAction(advice.engagementAction, finishedStep, text)
-    const isActionDone = !engagementAction.steps.some(step => !step.isDone)
-    if (isActionDone) {
-      engagementAction.status = 'ACTION_STICKY_DONE'
-    }
-    return {
-      ...advice,
-      engagementAction,
-      status: isActionDone ? 'ADVICE_ENGAGED' : advice.status,
-    }
-  })
-  if (inAdvice) {
-    return {...project, advices}
-  }
-
   const stepAction = (project.stickyActions || []).find(isTargetedAction)
   if (!stepAction) {
     return project
@@ -329,7 +301,6 @@ function finishStickyActionStep(project, finishedStep, text) {
   // Action is finished.
   return {
     ...project,
-    ...(project.adviceStatus === 'ADVICE_ACCEPTED' ? {adviceStatus: 'ADVICE_ENGAGED'} : {}),
     pastActions: (project.pastActions || []).concat([{
       ...finishedStepAction,
       status: 'ACTION_STICKY_DONE',
@@ -337,25 +308,6 @@ function finishStickyActionStep(project, finishedStep, text) {
     stickyActions: project.stickyActions.filter(
       stickyAction => stickyAction.actionId !== stepAction.actionId),
   }
-}
-
-
-function nextAdviceToRecommend(project) {
-  const isRecommended = ({status, engagementAction}) =>
-    status === 'ADVICE_RECOMMENDED' || status === 'ADVICE_ACCEPTED' && !engagementAction
-
-  if (project.advices) {
-    for (let recommendationNumber = 1;
-        recommendationNumber <= project.advices.length;
-        ++recommendationNumber) {
-      const advice = project.advices[recommendationNumber - 1]
-      if (isRecommended(advice)) {
-        return {advice, recommendationNumber}
-      }
-    }
-  }
-
-  return null
 }
 
 
@@ -368,8 +320,26 @@ function getAdviceById(advice, project) {
 function hasUserEverAcceptedAdvice(project) {
   const wasAcceptedStatus = status =>
     status === 'ADVICE_ACCEPTED' || status === 'ADVICE_ENGAGED' || status === 'ADVICE_CANCELED'
-  return wasAcceptedStatus(project.adviceStatus) ||
-    (project.advices || []).some(advice => wasAcceptedStatus(advice.status))
+  return (project.advices || []).some(advice => wasAcceptedStatus(advice.status))
+}
+
+
+function getEmploymentZone(mobility) {
+  if (!mobility || !mobility.areaType) {
+    return mobility.city.name
+  }
+  switch (mobility.areaType) {
+    case 'WORLD':
+      return 'partout dans le monde'
+    case 'COUNTRY':
+      return 'partout en France'
+    case 'DEPARTEMENT':
+      return mobility.city.departementName
+    case 'REGION':
+      return mobility.city.regionName
+    default:
+      return mobility.city.name
+  }
 }
 
 
@@ -380,7 +350,7 @@ export {
   allDoneAndPastActionsAndProjects, allActionsById, projectsWithOpenActions,
   areAllActionsDoneForToday, allDoneActions, hasActionPlan,
   isAnyActionPlanGeneratedRecently, isNewActionPlanNeeded,
-  allStickyActions, findAction, finishStickyActionStep, nextAdviceToRecommend,
+  allStickyActions, findAction, finishStickyActionStep,
   getAdviceById, hasUserEverAcceptedAdvice, createProjectTitleComponents,
-  getActionById,
+  getActionById, getEmploymentZone,
 }

@@ -1,18 +1,24 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package bayes.bob;
 
 // The definition of an Advice Module. See http://go/bob:advisor-design.
+// Next ID: 14.
 message AdviceModule {
   // Unique readable ID for the module.
   string advice_id = 4;
+
+  // Unique Airtable ID for the module.
+  string airtable_id = 8;
 
   // Name of the scoring model to decide whether to trigger this advice.
   string trigger_scoring_model = 1;
 
   // ID of the sticky action template to engage the user when they have
   // accepted the advice.
-  string engage_sticky_action_template = 2;
+  string engage_sticky_action_template = 2 [deprecated = true];
 
   // Whether this module is fully implemented, otherwise it's only availble to
   // test users.
@@ -21,4 +27,40 @@ message AdviceModule {
   // Name of the Advice message's field to store extra data for this module to
   // render a card in the client.
   string extra_data_field_name = 5;
+
+  // Unordered list of ID of all tips to help apply this advice concretely.
+  repeated string tip_template_ids = 6;
+
+  // A set of airtable IDs of advice modules that should be disabled if this
+  // one triggers.
+  repeated string incompatible_advice_ids = 7;
+
+  // Whether the advice module is easy to tackle and could be prioritize on a
+  // Friday.
+  bool is_easy = 9;
+
+  // String to build the subject of an email sent about this advice module.
+  // i.e. Today your objective: "<email_subject>".
+  string email_subject = 10;
+
+  // Title of the body of the email sent about this advice module.
+  string email_title = 11;
+
+  // The end of a sentence in the email sent about this advice module that
+  // starts with: "We suggest you to…"
+  string email_suggestion_sentence = 12;
+
+  // A list of fact as static sentences that can be used in emails to convince
+  // users to work on the advice we gave.
+  repeated string email_facts = 13;
+}
+
+
+// History of advice sent by email.
+message EmailHistory {
+  // Last time an advice module was sent by email.
+  map<string, google.protobuf.Timestamp> advice_modules = 1;
+
+  // Last time a tip was sent by email.
+  map<string, google.protobuf.Timestamp> tips = 2;
 }

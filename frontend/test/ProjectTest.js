@@ -1,10 +1,9 @@
-/* eslint-env mocha */
 const chai = require('chai')
 chai.config.truncateThreshold = 0
 const expect = chai.expect
 import {createProjectTitle, PROJECT_EMPLOYMENT_TYPE_OPTIONS, allActionsById,
         allActiveActions, areAllActionsDoneForToday, isNewActionPlanNeeded,
-        finishStickyActionStep} from 'store/project'
+        finishStickyActionStep, getEmploymentZone} from 'store/project'
 const {EmploymentType} = require('api/job')
 
 // Polyfill Array.find.
@@ -226,68 +225,41 @@ describe('isNewActionPlanNeeded', () => {
   })
 })
 
+
+describe('employment zone', () => {
+  it('should return the city name when there are no area type in mobility', () => {
+    const mobility = {city: {name: 'Paris'}}
+    const result = getEmploymentZone(mobility)
+    expect(result).to.equal('Paris')
+  })
+
+  it('should return the city when the city area is chosen in mobility', () => {
+    const mobility = {areaType: 'CITY', city: {name: 'Lectoure', regionName: 'Rhône-Alpes'}}
+    const result = getEmploymentZone(mobility)
+    expect(result).to.equal('Lectoure')
+  })
+
+  it('should return the departement when the departement area is chosen in mobility ', () => {
+    const mobility = {areaType: 'DEPARTEMENT', city: {departementName: 'Rhône', name: 'Lyon'}}
+    const result = getEmploymentZone(mobility)
+    expect(result).to.equal('Rhône')
+  })
+
+  it('should return the region when the region area is chosen in mobility', () => {
+    const mobility = {areaType: 'REGION', city: {name: 'Lyon', regionName: 'Rhône-Alpes'}}
+    const result = getEmploymentZone(mobility)
+    expect(result).to.equal('Rhône-Alpes')
+  })
+
+  it('should return "partout en France" when country area is chosen in mobility', () => {
+    const mobility = {areaType: 'COUNTRY', city: {name: 'Lyon', regionName: 'Rhône'}}
+    const result = getEmploymentZone(mobility)
+    expect(result).to.equal('partout en France')
+  })
+})
+
+
 describe('finishStickyActionStep', () => {
-  it('should mark a step as done for sticky action in an advice', () => {
-    const project = {
-      advices: [{
-        adviceId: 'reorientation',
-        engagementAction: {
-          steps: [{stepId: 'first-step'}, {stepId: 'next-step'}],
-        },
-        status: 'ADVICE_ACCEPTED',
-      }],
-    }
-    const updatedProject = finishStickyActionStep(
-      project, {stepId: 'first-step'}, 'Custom notes for the step')
-    expect(updatedProject).to.deep.equal({
-      advices: [{
-        adviceId: 'reorientation',
-        engagementAction: {
-          steps: [{
-            isDone: true,
-            stepId: 'first-step',
-            text: 'Custom notes for the step',
-          }, {stepId: 'next-step'}],
-        },
-        status: 'ADVICE_ACCEPTED',
-      }],
-    })
-  })
-
-  it('should mark the advice action as done when finishing the last step', () => {
-    const project = {
-      advices: [{
-        adviceId: 'reorientation',
-        engagementAction: {
-          status: 'ACTION_STUCK',
-          steps: [{isDone: true, stepId: 'first-step'}, {stepId: 'last-step'}],
-        },
-        status: 'ADVICE_ACCEPTED',
-      }],
-    }
-    const updatedProject = finishStickyActionStep(project, {stepId: 'last-step'})
-    expect(updatedProject).to.deep.equal({
-      advices: [{
-        adviceId: 'reorientation',
-        engagementAction: {
-          status: 'ACTION_STICKY_DONE',
-          steps: [
-            {
-              isDone: true,
-              stepId: 'first-step',
-            },
-            {
-              isDone: true,
-              stepId: 'last-step',
-              text: '',
-            },
-          ],
-        },
-        status: 'ADVICE_ENGAGED',
-      }],
-    })
-  })
-
   it('should mark a step as done for a sticky action', () => {
     const project = {
       stickyActions: [{

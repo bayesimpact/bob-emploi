@@ -21,7 +21,6 @@ from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import discovery_pb2
 from bob_emploi.frontend.api import export_pb2
-from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -56,7 +55,7 @@ IMPORTERS = {
         name='ROME Mobility',
         command="""docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/rome_mobility.py \\
-            --rome_csv_pattern data/rome/csv/unix_%%s_v330_utf8.csv \\
+            --rome_csv_pattern data/rome/csv/unix_%%s_v331_utf8.csv \\
             --mongo_url "%(mongo_url)s""
         """,
         is_imported=True,
@@ -118,11 +117,13 @@ IMPORTERS = {
         key='chantier_id'),
     'job_group_info': Importer(
         name='Job Group Info',
-        command="""docker-compose run --rm data-analysis-prepare \\
+        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
             python bob_emploi/importer/job_group_info.py \\
-            --rome_csv_pattern data/rome/csv/unix_%%s_v330_utf8.csv \\
+            --rome_csv_pattern data/rome/csv/unix_%%s_v331_utf8.csv \\
             --job_requirements_json data/job_offers/job_offers_requirements.json \\
             --job_application_complexity_json data/job_application_complexity.json \\
+            --handcrafted_assets_airtable appMRMtWV61Kibt37:advice:viwJ1OsSqK8YTSoIq \\
             --mongo_url "%(mongo_url)s"
         """,
         is_imported=True,
@@ -138,7 +139,7 @@ IMPORTERS = {
             --unemployment_duration_csv data/fhs_category_a_duration.csv \\
             --job_offers_changes_json data/job_offers/job_offers_changes.json \\
             --job_imt_json data/scraped_imt_local_job_stats.json \\
-            --mobility_csv data/rome/csv/unix_rubrique_mobilite_v330_utf8.csv \\
+            --mobility_csv data/rome/csv/unix_rubrique_mobilite_v331_utf8.csv \\
             --mongo_url "%(mongo_url)s"
         """,
         is_imported=True,
@@ -162,16 +163,6 @@ IMPORTERS = {
         is_imported=True,
         proto_type=user_pb2.UnverifiedDataZone,
         key='default'),
-    'cities': Importer(
-        name='City locations',
-        command="""docker-compose run --rm data-analysis-prepare \\
-            python bob_emploi/importer/city_locations.py \\
-            --stats_filename data/geo/french_cities.csv \\
-            --mongo_url "%(mongo_url)s"
-        """,
-        is_imported=True,
-        proto_type=geo_pb2.FrenchCity,
-        key='Code officiel géographique'),
     'advice_modules': Importer(
         name='Advice modules',
         command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
@@ -181,6 +172,22 @@ IMPORTERS = {
             --proto AdviceModule \\
             --mongo_collection advice_modules \\
             --base_id appXmyc7yYj0pOcae \\
+            --view viwGHHyK2Tc7sNxwv \\
+            --mongo_url "%(mongo_url)s"
+        """,
+        is_imported=True,
+        proto_type=advisor_pb2.AdviceModule,
+        key='AirTable key'),
+    'tip_templates': Importer(
+        name='Tip templates',
+        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/airtable_to_protos.py \\
+            --table tip_templates \\
+            --proto ActionTemplate \\
+            --mongo_collection tip_templates \\
+            --base_id appXmyc7yYj0pOcae \\
+            --view viwPgjqZAa7GcpkU2 \\
             --mongo_url "%(mongo_url)s"
         """,
         is_imported=True,

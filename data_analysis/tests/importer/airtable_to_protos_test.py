@@ -37,20 +37,24 @@ class AirtableTestCase(unittest.TestCase):
 
     def test_missing_required_fields(self):
         """Test that the converter fails when required fields are missing."""
-        converter = airtable_to_protos.PROTO_CLASSES['ActionTemplate']
+        converter = airtable_to_protos.PROTO_CLASSES['AdviceModule']
         self.assertRaises(
             KeyError, converter.convert_record,
-            {'id': 'foobar', 'fields': {'title': 'Foo'}})
+            {'id': 'foobar', 'fields': {'title': 'Foo', 'advice_id': 'bla'}})
 
     def test_convert_all_required_fields(self):
         """Test that the converter succeeds when required fields are there."""
-        converter = airtable_to_protos.PROTO_CLASSES['ActionTemplate']
+        converter = airtable_to_protos.PROTO_CLASSES['AdviceModule']
         record = converter.convert_record(
-            {'id': 'foobar', 'fields': {'chantiers': ['Foo']}})
+            {'id': 'foobar', 'fields': {
+                'advice_id': 'Foo',
+                'trigger_scoring_model': 'constant(2)',
+            }})
         self.assertEqual({
             '_id': 'foobar',
-            'actionTemplateId': 'foobar',
-            'chantiers': ['Foo'],
+            'airtableId': 'foobar',
+            'adviceId': 'Foo',
+            'triggerScoringModel': 'constant(2)',
         }, record)
 
     def test_validate_links(self):
@@ -72,6 +76,21 @@ class AirtableTestCase(unittest.TestCase):
                 'link': 'www.pole-emploi.fr',
             }})
 
+    def test_image_url(self):
+        """Test that the converter retrieves images' URL."""
+        converter = airtable_to_protos.PROTO_CLASSES['ActionTemplate']
+        record = converter.convert_record({'id': 'foobar', 'fields': {
+            'image': [
+                {'url': 'http://example.com/first.png', 'type': 'image/png'},
+                {'url': 'http://example.com/second.jpg', 'type': 'image/jpeg'},
+            ],
+        }})
+        self.assertEqual({
+            '_id': 'foobar',
+            'actionTemplateId': 'foobar',
+            'imageUrl': 'http://example.com/first.png',
+        }, record)
+
     def test_validate_filters(self):
         """Test that the converter accepts a valid filter."""
         converter = airtable_to_protos.PROTO_CLASSES['ActionTemplate']
@@ -89,6 +108,17 @@ class AirtableTestCase(unittest.TestCase):
             {'id': 'foobar', 'fields': {
                 'chantiers': ['Foo'],
                 'filters': ['this is not a filter'],
+            }})
+
+    def test_validate_scoring_model(self):
+        """Test that the converter breaks when a trigger scoring model is not correct."""
+        converter = airtable_to_protos.PROTO_CLASSES['AdviceModule']
+        self.assertRaises(
+            ValueError,
+            converter.convert_record,
+            {'id': 'foobar', 'fields': {
+                'advice_id': 'Foo',
+                'trigger_scoring_model': 'not-implemented-yet',
             }})
 
 

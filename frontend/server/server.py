@@ -72,7 +72,7 @@ _EMAIL_REGEX = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
 # created users.
 # TODO(pascal): Remove that when we stop testing about users that do not have
 # the advisor feature.
-ADVISOR_ENABLED_FOR_TESTING = False
+ADVISOR_DISABLED_FOR_TESTING = False
 
 _Tick = collections.namedtuple('Tick', ['name', 'time'])
 
@@ -135,6 +135,28 @@ def user(user_data):
     return _save_user(user_data, is_new_user=False)
 
 
+@app.route("/api/user/likes", methods=['POST'])
+@proto.flask_api(in_type=user_pb2.User)
+def user_likes(user_data):
+    """Save the user likes sent by client.
+
+    Input:
+        * Body: A dictionary with attributes of the user data.
+    """
+    if not user_data.user_id:
+        flask.abort(400, 'Impossible de sauver les données utilisateur sans ID.')
+    for key in user_data.likes.keys():
+        if '.' in key or '$' in key:
+            flask.abort(422, "Liked feature IDs cannot contain . or $, got \"%s\"" % key)
+    result = _DB.user.update_one(
+        {'_id': _safe_object_id(user_data.user_id)}, {'$set': {
+            'likes.%s' % key: value for key, value in user_data.likes.items()}},
+        upsert=False)
+    if not result.matched_count:
+        flask.abort(404, 'Utilisateur "%s" inconnu.' % user_data.user_id)
+    return ''
+
+
 @app.route("/api/user/refresh-action-plan", methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
 def user_refresh_action_plan(user_data):
@@ -164,19 +186,33 @@ def _generic_image():
 
 def _save_user(user_data, is_new_user):
     _tick('Save user start')
-    if not user_data.registered_at.seconds:
+
+    if is_new_user:
+        previous_user_data = user_data
+    else:
+        _tick('Load old user data')
+        previous_user_data = _get_user_data(user_data.user_id)
+
+    if not previous_user_data.registered_at.seconds:
         user_data.registered_at.FromDatetime(now.get())
         # No need to pollute our DB with super precise timestamps.
         user_data.registered_at.nanos = 0
         # Enable Advisor for new users.
-        if ADVISOR_ENABLED_FOR_TESTING or user_data.profile.email.endswith('@example.com'):
+        if not ADVISOR_DISABLED_FOR_TESTING:
             user_data.features_enabled.advisor = user_pb2.ACTIVE
         # Send an NPS email the next day.
         user_data.features_enabled.net_promoter_score_email = user_pb2.NPS_EMAIL_PENDING
+    else:
+        user_data.registered_at.CopyFrom(previous_user_data.registered_at)
+        if not _TEST_USER_REGEXP.search(previous_user_data.profile.email):
+            user_data.features_enabled.advisor = previous_user_data.features_enabled.advisor
+            user_data.features_enabled.net_promoter_score_email = \
+                previous_user_data.features_enabled.net_promoter_score_email
 
     _tick('Unverified data zone check start')
-    # TODO: Don't do this on every save.
-    if _is_in_unverified_data_zone(user_data.profile):
+    if user_data.HasField('profile') and \
+            (is_new_user or previous_user_data.profile != user_data.profile) and \
+            _is_in_unverified_data_zone(user_data.profile):
         user_data.app_not_available = True
     _tick('Unverified data zone check end')
 
@@ -198,10 +234,6 @@ def _save_user(user_data, is_new_user):
             _populate_job_stats_dict(
                 {rome_id: project.local_stats}, project.mobility.city)
 
-        if project.cover_image_url:
-            _tick('Clean up cover image')
-            project.ClearField('cover_image_url')
-
         _tick('Advisor')
         advisor.maybe_advise(user_data, project, _DB)
 
@@ -218,7 +250,6 @@ def _save_user(user_data, is_new_user):
         _tick('Process project end')
 
     if not is_new_user:
-        previous_user_data = _get_user_data(user_data.user_id)
         _assert_no_credentials_change(previous_user_data, user_data)
         _copy_unmodifiable_fields(previous_user_data, user_data)
         _populate_feature_flags(user_data)
@@ -250,6 +281,8 @@ def _get_unguessable_object_id():
 
 
 def _is_in_unverified_data_zone(user_profile):
+    if not user_profile.latest_job.job_group.rome_id:
+        return False
     data_zone_key = '%s:%s' % (
         user_profile.city.postcodes, user_profile.latest_job.job_group.rome_id)
     hashed_data_zone_key = hashlib.md5(data_zone_key.encode('utf-8')).hexdigest()
@@ -298,6 +331,15 @@ def _safe_object_id(_id):
         flask.abort(400, 'L\'identifiant "%s" n\'est pas un identifiant MongoDB valide.')
 
 
+# Mapping of old diploma estimates to new training estimates.
+TRAINING_ESTIMATION = {
+    project_pb2.FULFILLED: project_pb2.ENOUGH_DIPLOMAS,
+    project_pb2.NOT_FULFILLED: project_pb2.TRAINING_FULFILLMENT_NOT_SURE,
+    project_pb2.FULFILLMENT_NOT_SURE: project_pb2.TRAINING_FULFILLMENT_NOT_SURE,
+    project_pb2.NOTHING_REQUIRED: project_pb2.NO_TRAINING_REQUIRED,
+}
+
+
 def _get_user_data(user_id):
     """Load user data from DB."""
     user_dict = _DB.user.find_one({'_id': _safe_object_id(user_id)})
@@ -308,7 +350,31 @@ def _get_user_data(user_id):
 
     _populate_feature_flags(user_proto)
 
+    # TODO(pascal): Update existing users and get rid of diploma_fulfillment_estimate.
+    for project in user_proto.projects:
+        if not project.training_fulfillment_estimate and project.diploma_fulfillment_estimate:
+            project.training_fulfillment_estimate = TRAINING_ESTIMATION.get(
+                project.diploma_fulfillment_estimate, project_pb2.UNKNOWN_TRAINING_FULFILLMENT)
+
     return user_proto
+
+
+def _get_project_data(user_proto, project_id):
+    try:
+        return next(
+            project for project in user_proto.projects
+            if project.project_id == project_id)
+    except StopIteration:
+        flask.abort(404, 'Projet "%s" inconnu.' % project_id)
+
+
+def _get_advice_data(project, advice_id):
+    try:
+        return next(
+            advice for advice in project.advices
+            if advice.advice_id == advice_id)
+    except StopIteration:
+        flask.abort(404, 'Conseil "%s" inconnu.' % advice_id)
 
 
 _ACTION_STOPPED_STATUSES = frozenset([
@@ -348,23 +414,13 @@ def _white_chantier_ids():
         if chantier.kind == chantier_pb2.CORE_JOB_SEARCH)
 
 
-@app.route('/api/chantiers', methods=['GET'])
-@proto.flask_api(out_type=chantier_pb2.ChantierTitles)
-def chantiers():
-    """Get the title of all existing chantiers keyed by ID."""
-    result = chantier_pb2.ChantierTitles()
-    for name, chantier in _chantiers().items():
-        result.titles[name] = chantier.title
-    return result
-
-
 # TODO: Split this into separate endpoints for registration and login.
 # Having both in the same endpoint makes refactoring the frontend more difficult.
 @app.route('/api/user/authenticate', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.AuthRequest, out_type=user_pb2.AuthResponse)
 def authenticate(auth_request):
     """Authenticate a user."""
-    authenticator = auth.Authenticator(_DB, _save_user)
+    authenticator = auth.Authenticator(_DB, lambda u: _save_user(u, is_new_user=True))
     response = authenticator.authenticate(auth_request)
     if response.authenticated_user.user_id:
         _maybe_generate_new_actions(response.authenticated_user)
@@ -375,7 +431,7 @@ def authenticate(auth_request):
 @proto.flask_api(in_type=user_pb2.AuthRequest)
 def reset_password(auth_request):
     """Sends an email to user with a reset token so that they can reset their password."""
-    authenticator = auth.Authenticator(_DB, _save_user)
+    authenticator = auth.Authenticator(_DB, lambda u: _save_user(u, is_new_user=True))
     authenticator.send_reset_password_token(auth_request.email)
     return '{}'
 
@@ -547,6 +603,22 @@ def _get_project_requirements(project):
     return job_group_info.requirements
 
 
+@app.route('/api/project/<user_id>/<project_id>/advice/<advice_id>/tips', methods=['GET'])
+@proto.flask_api(out_type=action_pb2.AdviceTips)
+def advice_tips(user_id, project_id, advice_id):
+    """Get all available tips for a piece of advice."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+    piece_of_advice = _get_advice_data(project, advice_id)
+
+    all_tips = advisor.list_all_tips(user_proto, project, piece_of_advice, _DB)
+
+    response = action_pb2.AdviceTips()
+    for tip_template in all_tips:
+        action.instantiate(response.tips.add(), user_proto, project, tip_template, set(), _DB, {})
+    return response
+
+
 @app.route('/api/project/<user_id>/<project_id>/potential-chantiers', methods=['GET'])
 @proto.flask_api(out_type=chantier_pb2.PotentialChantiers)
 def project_potential_chantiers(user_id, project_id):
@@ -667,6 +739,7 @@ def clear_cache():
     _JOB_GROUPS_INFO.clear()
     _CHANTIERS.clear()
     action.clear_cache()
+    advisor.clear_cache()
     return 'Server cache cleared.'
 
 

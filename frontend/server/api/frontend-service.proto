@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
+import "bob_emploi/frontend/api/action.proto";
 import "bob_emploi/frontend/api/chantier.proto";
 import "bob_emploi/frontend/api/config.proto";
 import "bob_emploi/frontend/api/export.proto";
@@ -26,6 +27,10 @@ service FrontendService {
   // Save the user's data.
   rpc SaveUser(User) returns (User);
 
+  // Save the user's likes. In the input, only the user_id and the likes field
+  // are required.
+  rpc SaveLikes(User) returns (google.protobuf.Empty);
+
   // Delete the user and all data associated.
   rpc DeleteUser(User) returns (UserId);
 
@@ -43,14 +48,14 @@ service FrontendService {
   // job group.
   rpc ProjectRequirements(Project) returns (JobRequirements);
 
+  // Get all available tips for a piece of advice in a project.
+  rpc ProjectAdviceTips(Advice) returns(AdviceTips);
+
   // Get potential chantiers for a project.
   rpc ProjectPotentialChantiers(Project) returns (PotentialChantiers);
 
   // Update chantiers of a project.
   rpc ProjectUpdateChantiers(ChantiersSet) returns (User);
-
-  // Get the title of all existing chantiers keyed by ID.
-  rpc Chantiers(google.protobuf.Empty) returns (ChantierTitles);
 
   // Create an export of the user's current dashboard (the input is actually only a user's ID).
   rpc CreateDashboardExport(User) returns (DashboardExport);

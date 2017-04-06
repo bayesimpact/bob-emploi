@@ -45,9 +45,9 @@ _SALT_VALIDITY_SECONDS = datetime.timedelta(hours=2).total_seconds()
 class Authenticator(object):
     """An object to authenticate requests."""
 
-    def __init__(self, db, save_user):
+    def __init__(self, db, save_new_user):
         self._db = db
-        self._save_user = save_user
+        self._save_new_user = save_new_user
 
     def authenticate(self, auth_request):
         """Authenticate a user."""
@@ -78,7 +78,7 @@ class Authenticator(object):
             response.authenticated_user.profile.email = id_info['email']
             response.authenticated_user.profile.picture_url = id_info.get('picture', '')
             response.authenticated_user.google_id = id_info['sub']
-            self._save_user(response.authenticated_user, is_new_user=True)
+            self._save_new_user(response.authenticated_user)
             response.is_new_user = True
 
         return response
@@ -111,7 +111,7 @@ class Authenticator(object):
             response.authenticated_user.user_id = user_id
         else:
             response.authenticated_user.facebook_id = data['user_id']
-            self._save_user(response.authenticated_user, is_new_user=True)
+            self._save_new_user(response.authenticated_user)
             response.is_new_user = True
 
         return response
@@ -195,7 +195,7 @@ class Authenticator(object):
             response.authenticated_user.profile.email = auth_request.email
             response.authenticated_user.profile.name = auth_request.first_name
             response.authenticated_user.profile.last_name = auth_request.last_name
-            user_data = self._save_user(response.authenticated_user, is_new_user=True)
+            user_data = self._save_new_user(response.authenticated_user)
 
             object_id = objectid.ObjectId(user_data.user_id)
             self._db.user_auth.insert_one({

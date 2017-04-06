@@ -23,7 +23,7 @@ message Job {
 }
 
 // Description of a job group.
-// Next free ID: 13.
+// Next free ID: 4.
 message JobGroup {
   // Identifier of the group in the ROME index.
   string rome_id = 1;
@@ -36,10 +36,6 @@ message JobGroup {
 
   // All jobs in this group.
   repeated Job jobs = 5;
-
-  // A link to a nice image representing this job group.
-  // TODO(pascal): Clean up, this is not used anymore.
-  string image_link = 4 [deprecated = true];
 
   // Major and minor Holland Codes (e.g A (artistic) or R (realistic)).
   string holland_code_major = 8;
@@ -214,6 +210,18 @@ message JobRequirements {
 
   // A set of required level of office tools skills.
   repeated JobRequirement office_skills = 6;
+
+  // A short text describing most important skills one should highlight when
+  // applying for this job. It uses markdown syntax.
+  string skills_short_text = 7;
+
+  // Extra skills to highlight when applying for this job. Uses markdown
+  // syntax.
+  string bonus_skills_short_text = 8;
+
+  // A short text describing most important diplomas or traninings to have done
+  // when applying for this job. It uses markdown syntax.
+  string trainings_short_text = 9;
 }
 
 message JobRequirement {

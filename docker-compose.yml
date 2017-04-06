@@ -49,13 +49,14 @@ services:
   frontend-dev-webpack:
     image: bayesimpact/bob-emploi-dev-webpack
     build: frontend
+    command: npm start
+    entrypoint: ./entrypoint.sh
     volumes:
       - ./frontend/cfg:/usr/app/cfg:ro
-      - ./frontend/src:/usr/app/src:ro
-      - ./frontend/.babelrc:/usr/app/.babelrc:ro
+      - ./frontend/src:/usr/app/src
+      - ./frontend/download.js:/usr/app/download.js:ro
+      - ./frontend/entrypoint.sh:/usr/app/entrypoint.sh:ro
       - ./frontend/package.json:/usr/app/package.json:ro
-      - ./frontend/server.js:/usr/app/server.js:ro
-      - ./frontend/webpack.config.js:/usr/app/webpack.config.js:ro
       - ./frontend/server/api:/usr/app/bob_emploi/frontend/api
       # For linting.
       - ./.eslintrc.json:/usr/app/.eslintrc.json:ro

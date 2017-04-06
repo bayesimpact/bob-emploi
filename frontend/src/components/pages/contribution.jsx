@@ -3,7 +3,7 @@ import React from 'react'
 import config from 'config'
 
 import {StaticPage, StrongTitle} from 'components/static'
-import {Colors, Markdown, RoundButton, Styles} from 'components/theme'
+import {Colors, Markdown, Button, Styles} from 'components/theme'
 
 class ContributionPage extends React.Component {
   static contextTypes = {
@@ -70,9 +70,9 @@ class ContributionPage extends React.Component {
           Par la communauté,<br />
           pour la communauté
           <a href={config.donationUrl} target="_blank">
-            <RoundButton type="validation" style={{marginTop: 20}}>
+            <Button type="validation" style={{marginTop: 20}}>
               Faire un don
-            </RoundButton>
+            </Button>
           </a>
         </div>
         <div style={{fontSize: 16, lineHeight: 1.44}}>

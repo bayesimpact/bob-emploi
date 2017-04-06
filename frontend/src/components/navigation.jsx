@@ -17,6 +17,16 @@ import {Routes} from './url'
 import {LoginButton} from 'components/login'
 
 
+const navLinkStyle = {
+  color: Colors.COOL_GREY,
+  fontSize: 13,
+  fontWeight: 500,
+  letterSpacing: 1,
+  padding: '20px 25px 21px',
+  textTransform: 'uppercase',
+}
+
+
 class NavigationLink extends React.Component {
   static propTypes = {
     children: React.PropTypes.node,
@@ -36,14 +46,10 @@ class NavigationLink extends React.Component {
     const isHighlighted = isSelected || this.state.isHovered || this.state.isFocused
     const isSelectionOnTop = selectionStyle === 'top'
     const containerStyle = {
-      color: isHighlighted ? '#fff' : Colors.COOL_GREY,
-      fontSize: 13,
-      fontWeight: 500,
-      letterSpacing: 1,
-      padding: '20px 25px 21px',
+      ...navLinkStyle,
+      color: isHighlighted ? '#fff' : navLinkStyle.color,
       position: 'relative',
       textDecoration: 'none',
-      textTransform: 'uppercase',
       ...SmoothTransitions,
       ...style,
       ...(isHighlighted && style && style[':highlight'] || null),
@@ -113,6 +119,7 @@ class MobileNavigationBarBase extends React.Component {
   static propTypes = {
     dispatch: React.PropTypes.func.isRequired,
     isLoggedIn: React.PropTypes.bool.isRequired,
+    onNavigateBack: React.PropTypes.func,
     onboardingComplete: React.PropTypes.bool,
     page: React.PropTypes.string,
   }
@@ -142,7 +149,7 @@ class MobileNavigationBarBase extends React.Component {
   }
 
   render() {
-    const {onboardingComplete, isLoggedIn} = this.props
+    const {onNavigateBack, onboardingComplete, isLoggedIn} = this.props
     const {isMenuOpen} = this.state
     const style = {
       alignItems: 'center',
@@ -155,11 +162,15 @@ class MobileNavigationBarBase extends React.Component {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const menuIconStyle = {
+      alignItems: 'center',
+      display: 'flex',
       fontSize: 20,
+      height: 50,
+      justifyContent: 'center',
       left: 0,
-      padding: 15,
       position: 'absolute',
       top: 0,
+      width: 50,
     }
     const menuStyle = {
       backgroundColor: Colors.CHARCOAL_GREY,
@@ -208,10 +219,13 @@ class MobileNavigationBarBase extends React.Component {
             </Link>
           </div> : null}
         </div>
-      :
-      <Icon
-          name="menu" style={menuIconStyle} tabIndex={0}
-          onClick={() => this.setState({isMenuOpen: true})} />
+      : onNavigateBack ?
+        <Icon
+            name="chevron-left" style={{...menuIconStyle, fontSize: 30}}
+            onClick={onNavigateBack} /> :
+            <Icon
+                name="menu" style={menuIconStyle} tabIndex={0}
+                onClick={() => this.setState({isMenuOpen: true})} />
       }
       <img src={require('images/logo-bob-mobile.svg')} alt={config.productName} />
     </nav>
@@ -277,7 +291,7 @@ class NavigationBarBase extends React.Component {
     const {name} = userProfile
     const {isLogOutDropDownShown} = this.state
     if (isMobileVersion) {
-      return <MobileNavigationBar page={page} />
+      return <MobileNavigationBar {...this.props} />
     }
     const containerStyle = {
       alignItems: 'center',
@@ -303,6 +317,13 @@ class NavigationBarBase extends React.Component {
         style={{cursor: 'pointer', marginLeft: 27}}
         onClick={this.handleLogoClick} />
     if (!name) {
+      const loginButtonStyle = {
+        ...navLinkStyle,
+        ':hover': {
+          backgroundColor: 'initial',
+          color: '#fff',
+        },
+      }
       return <nav style={containerStyle}>
         {logo}
 
@@ -318,9 +339,7 @@ class NavigationBarBase extends React.Component {
             to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'} selectionStyle="top">
           Contribuer
         </NavigationLink>
-        <LoginButton
-            style={{marginLeft: 25, marginRight: 13, textTransform: 'uppercase'}}
-            type="navigationOnImage" visualElement="navbar">
+        <LoginButton style={loginButtonStyle} visualElement="navbar" type="discreet">
           Se connecter
         </LoginButton>
       </nav>
@@ -521,6 +540,7 @@ class PageWithNavigationBar extends React.Component {
   static propTypes = {
     children: React.PropTypes.node,
     isContentScrollable: React.PropTypes.bool,
+    onNavigateBack: React.PropTypes.func,
     page: React.PropTypes.string,
     style: React.PropTypes.object,
   }
@@ -537,7 +557,7 @@ class PageWithNavigationBar extends React.Component {
   }
 
   render() {
-    const {children, isContentScrollable, page, style, ...extraProps} = this.props
+    const {children, isContentScrollable, onNavigateBack, page, style, ...extraProps} = this.props
     let content
     if (isContentScrollable) {
       const scrollContainerStyle = {
@@ -563,7 +583,7 @@ class PageWithNavigationBar extends React.Component {
     return <div style={{display: 'flex', flexDirection: 'column', height: '100vh'}}>
       <CookieMessage />
       <BetaMessage />
-      <NavigationBar page={page} />
+      <NavigationBar onNavigateBack={onNavigateBack} page={page} />
 
       <ShortKey
           keyCode="KeyE" ctrlKey={true} shiftKey={true}

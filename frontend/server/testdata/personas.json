@@ -47,6 +47,8 @@
       "source": "PROJECT_MANUALLY_CREATED",
       "employmentTypes": ["CDI"],
       "networkEstimate": 3,
+      "totalInterviewsEstimate": "SOME",
+      "weeklyApplicationsEstimate": "A_LOT",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "jobGroup": {
@@ -93,8 +95,8 @@
       "name": "Demenageur",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1983,
-      "frustrations": ["HANDICAPED"],
       "gender": "MASCULINE",
+      "hasHandicap": true,
       "drivingLicenses": ["CAR"],
       "latestJob": {
         "jobGroup": {
@@ -231,7 +233,6 @@
       "kind": "FIND_JOB",
       "workloads": ["FULL_TIME"],
       "projectId": "57e92f6b-63df",
-      "jobSearchLengthMonths": 2,
       "source": "PROJECT_MANUALLY_CREATED",
       "employmentTypes": ["CDI"],
       "networkEstimate": 3,
@@ -343,6 +344,7 @@
       "projectId": "57ecc7dc-321cf",
       "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "jobSearchLengthMonths": 2,
+      "totalInterviewsEstimate": "A_LOT",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {

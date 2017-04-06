@@ -3,29 +3,22 @@ import _ from 'underscore'
 import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 
-import {deleteUser, displayToasterMessage, setUserProfile, FINISH_PROFILE_SITUATION,
-        FINISH_PROFILE_QUALIFICATIONS, FINISH_PROFILE_FRUSTRATIONS,
-        ACCEPT_PRIVACY_NOTICE} from 'store/actions'
+import {deleteUser, displayToasterMessage, setUserProfile} from 'store/actions'
 import {USER_PROFILE_FIELDS} from 'store/user'
 import {PageWithNavigationBar} from 'components/navigation'
-import {Colors, RoundButton, Styles} from 'components/theme'
+import {Colors, Button, Styles} from 'components/theme'
 import {Routes} from 'components/url'
 import {Modal, ModalCloseButton, ModalHeader} from 'components/modal'
 import {onboardingComplete} from 'store/main_selectors'
 
+import {PROFILE_ONBOARDING_STEPS, onboardingStepCount} from './profile/onboarding'
 import {AccountStep} from './profile/account'
 import {GeneralStep} from './profile/general'
-import {NoticeStep} from './profile/notice'
 import {GeneralSkillsStep} from './profile/general_skills'
 import {FrustrationsStep} from './profile/frustrations'
 import {NotificationsStep} from './profile/notifications'
 
-const ONBOARDING_STEPS = [
-  {component: NoticeStep, name: 'confidentialite', type: ACCEPT_PRIVACY_NOTICE},
-  {component: GeneralStep, name: 'profil', type: FINISH_PROFILE_SITUATION},
-  {component: GeneralSkillsStep, name: 'qualifications', type: FINISH_PROFILE_QUALIFICATIONS},
-  {component: FrustrationsStep, name: 'frustrations', type: FINISH_PROFILE_FRUSTRATIONS},
-]
+const ONBOARDING_STEPS = PROFILE_ONBOARDING_STEPS
 const ONBOARDING_STEP_INDEX =
   _.object(ONBOARDING_STEPS.map(({name}, stepIndex) => [name, stepIndex]))
 
@@ -93,20 +86,20 @@ class OnboardingView extends React.Component {
     if (!stepName) {
       return null
     }
-    const currentStepItem = ONBOARDING_STEPS.find(step => step.name === stepName)
-    const CurrentStepComponent = currentStepItem && currentStepItem.component
+    const currentStepItem = ONBOARDING_STEPS.find(step => step.name === stepName) || {}
+    const CurrentStepComponent = currentStepItem.component
     const style = {
       alignItems: 'center',
       display: 'flex',
       justifyContent: 'center',
-      paddingBottom: isMobileVersion ? 0 : 90,
-      paddingTop: isMobileVersion ? 0 : 90,
+      paddingBottom: isMobileVersion ? 0 : 70,
+      paddingTop: isMobileVersion ? 0 : 70,
     }
     return <div style={style}>
       <CurrentStepComponent
-          onSubmit={this.handleSubmit}
-          onBack={this.handleStepBack}
+          onSubmit={this.handleSubmit} onBack={this.handleStepBack}
           isShownAsStepsDuringOnboarding={true}
+          stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount}
           profile={userProfile} />
     </div>
   }
@@ -143,11 +136,11 @@ class PageView extends React.Component {
             profile={userProfile} />
       })}
       <div style={{display: 'flex', flexDirection: 'row-reverse', marginTop: 45, width: '100%'}}>
-        <RoundButton
+        <Button
             type="discreet"
             onClick={() => this.setState({isAccountDeletionModalShown: true})}>
           Supprimer mon compte
-        </RoundButton>
+        </Button>
       </div>
     </div>
   }
@@ -251,17 +244,17 @@ class AccountDeletionModalBase extends React.Component {
         </p>
       </div>
       <div style={buttonsBarStyle}>
-        <RoundButton
+        <Button
             onClick={onClose}
             style={{marginRight: 13}}
             type="back">
           Annuler
-        </RoundButton>
-        <RoundButton
+        </Button>
+        <Button
             onClick={this.handleDeletionClick}
             type="deletion">
           Supprimer définitivement mon compte
-        </RoundButton>
+        </Button>
       </div>
     </Modal>
   }

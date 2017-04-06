@@ -23,7 +23,7 @@ import re
 
 import pandas
 
-_ROME_VERSION = 'v330'
+_ROME_VERSION = 'v331'
 
 
 # TODO: Use this function in city suggest importer to read the stats file.

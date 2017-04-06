@@ -1,84 +1,42 @@
 import React from 'react'
-import {connect} from 'react-redux'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import config from 'config'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {AdviceCard, AdvicePage, ApplicationModeChart, HowToBox, Section} from './base'
-import {Colors} from 'components/theme'
+import {Colors, Markdown, Styles} from 'components/theme'
+
+import {AdviceBox, AdviceCard, GrowingNumber, PaddedOnMobile, PersonalizationBoxes} from './base'
 
 
-class RecommendPageBase extends React.Component {
-  static propTypes = {
-    gender: React.PropTypes.string,
-    project: React.PropTypes.object.isRequired,
-  }
-
-  renderDetailedAnalysis() {
-    const {project} = this.props
-    const applicationModes = project.localStats && project.localStats.imt &&
-      project.localStats.imt.applicationModes || null
-    return <div>
-      <Section header="Opportunités proposées en développant son réseau">
-        <p>
-          Le réseau est un levier de retour à l'emploi très puissant.
-          On estime que seulement <strong>40% du marché de l'emploi est
-          visible,</strong> c'est-à-dire que la plupart des embauches
-          ne passe pas par des annonces.
-        </p>
-        <ApplicationModeChart applicationModes={applicationModes} />
-        <p>
-          Dans votre métier cette tendance est particulièrement prononcée.
-          Le réseau est considéré comme le canal numéro 1 pour trouver
-          un emploi devant les candidatures spontanées ou les intermédiaires de
-          placement par exemple.
-        </p>
-      </Section>
-      <Section header="Conclusion">
-        {this.renderConclusion()}
-      </Section>
-    </div>
-  }
-
-  renderConclusion() {
-    return <div>
-      <p><strong>Nous vous encourageons à développer votre réseau.</strong></p>
-      <p>
-        Développer et mobiliser votre réseau en parallèle de vos candidatures
-        vous aidera à affiner vos demandes et trouver un emploi plus
-        facilement.
-      </p>
-      <p>
-        Nous pouvons vous aider à cultiver votre réseau actuel pour
-        l'enrichir, le développer et en faire un véritable atout pour
-        retrouver un emploi.
-      </p>
-    </div>
+class NetworkAdviceCard extends React.Component {
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
   }
 
   render() {
-    const {gender, project, ...extraProps} = this.props
-    const maybeE = gender === 'FEMININE' ? 'e' : ''
-    return <AdvicePage
-      {...extraProps} project={project}
-      summary={<li>
-        Le réseau semble être un atout essentiel pour trouver un emploi dans
-        votre secteur.
-      </li>}
-      declineReasonTitle="Améliorer votre réseau ne vous convient pas&nbsp;?"
-      declineReasonOptions={[
-        'Je préfère passer par un autre canal de recrutement.',
-        "J'ai déjà un très bon réseau et je l'utilise bien.",
-        'Passer par mon réseau ne me convient pas.',
-        `Les conseils de ${config.productName} ne m'ont pas convaincu${maybeE}.`,
-      ]}>
-      {this.renderDetailedAnalysis()}
-    </AdvicePage>
+    const {isMobileVersion} = this.context
+    const reasons = ['NETWORK_ESTIMATE', 'NO_OFFERS', 'ATYPIC_PROFILE', 'NO_OFFER_ANSWERS']
+    const explanationStyle = {
+      flex: 1,
+      fontSize: 16,
+      lineHeight: '21px',
+      marginTop: 15,
+    }
+    return <AdviceCard {...this.props} reasons={reasons}>
+      <section style={{alignItems: 'center', display: 'flex'}}>
+        <div style={explanationStyle}>
+          <strong style={{color: Colors.SKY_BLUE, fontSize: 40}}>
+            <GrowingNumber number={44} isSteady={true} />%
+          </strong> des
+          gens retrouvent un emploi grâce à <strong>leurs contacts</strong> contre
+          seulement <strong>12%</strong> via
+          des offres <strong>sur internet</strong>.
+        </div>
+        {isMobileVersion ? null : <JobOriginChart />}
+      </section>
+    </AdviceCard>
   }
 }
-const RecommendPage =
-  connect(({user}) => ({gender: user.profile.gender}))(RecommendPageBase)
 
 
 // A graph to compare the offers coming from web offers and those coming from network.
@@ -89,6 +47,7 @@ class JobOriginChart extends React.Component {
     barEntranceDurationMillisec: React.PropTypes.number.isRequired,
     // Total duration of appearance animation.
     entranceAnimationDurationMillisec: React.PropTypes.number.isRequired,
+    isLegendShown: React.PropTypes.bool,
     style: React.PropTypes.object,
   }
   static defaultProps = {
@@ -128,14 +87,15 @@ class JobOriginChart extends React.Component {
   }
 
   renderBar({isHighlighted, percentage, title}, indexBar) {
+    const {barEntranceDurationMillisec, isLegendShown} = this.props
     const isShown = indexBar < this.state.numBarShown
     const transition =
-      `all ${this.props.barEntranceDurationMillisec}ms cubic-bezier(0.23, 1, 0.32, 1)`
+      `all ${barEntranceDurationMillisec}ms cubic-bezier(0.23, 1, 0.32, 1)`
     const style = {
       display: 'inline-block',
       textAlign: 'center',
       verticalAlign: 'top',
-      width: 130,
+      width: 100,
     }
     const titleStyle = {
       color: Colors.SLATE,
@@ -158,28 +118,27 @@ class JobOriginChart extends React.Component {
       borderColor: Colors.SILVER,
       display: 'flex',
       flexDirection: 'column',
-      height: 100,
+      height: 140,
       justifyContent: 'flex-end',
+      position: 'relative',
     }
     const coloredBarStyle = {
       backgroundColor: isHighlighted ? Colors.SKY_BLUE : Colors.SILVER,
-      height: isShown ? 2 * percentage : 0,
-      marginLeft: 32,
-      marginRight: 32,
+      height: isShown ? `${percentage * 2}%` : 0,
+      margin: '0 auto',
       transition,
+      width: 65,
     }
     return <div style={style} key={indexBar}>
       <div style={barAndTextStyle}>
         <div style={valueStyle}>
           {percentage} %
         </div>
-        <div>
-          <div style={coloredBarStyle}></div>
-        </div>
+        <div style={coloredBarStyle}></div>
       </div>
-      <div style={titleStyle}>
+      {isLegendShown ? <div style={titleStyle}>
         {title}
-      </div>
+      </div> : null}
     </div>
   }
 
@@ -202,119 +161,209 @@ class JobOriginChart extends React.Component {
 }
 
 
-class FullAdviceCard extends React.Component {
+const MESSAGE_EXAMPLES = require('./data/network_messages.json')
+
+
+const networkPersonalizations = [
+  {
+    filters: ['ATYPIC_PROFILE'],
+    tip: profile => `En passant par le réseau vous serez moins vite
+      catalogué${profile.gender === 'FEMININE' ? 'e' : ''} si vous ne rentrez
+      pas dans les cases`,
+  },
+  {
+    filters: ['TIME_MANAGEMENT'],
+    tip: <span>Donnez-vous des objectifs du type : « cette semaine je vais à
+      deux événements »</span>,
+  },
+  {
+    filters: ['MOTIVATION'],
+    tip: `Commencer par contacter les personnes que vous connaissez le mieux
+      qui vous aideront à retrouver du poil de la bête`,
+  },
+  {
+    filters: ['NO_OFFERS'],
+    tip: 'Attaquez-vous au marché caché en utilisant votre réseau',
+  },
+  {
+    filters: ['SAME_JOB'],
+    tip: `Contactez vos anciens collègues, ils pourraient avoir eu vent de
+      bonnes opportunités qui pourraient vous intéresser`,
+  },
+  {
+    filters: ['GRADUATE'],
+    tip: 'Le réseau des anciens élèves peut vous débloquer',
+  },
+]
+
+
+class NetworkAdvicePage extends React.Component {
   static propTypes = {
+    circle: React.PropTypes.number.isRequired,
+    intro: React.PropTypes.node,
     profile: USER_PROFILE_SHAPE.isRequired,
     project: React.PropTypes.object.isRequired,
   }
-
-  renderNetworkGraph() {
-    const headerStyle = {
-      fontSize: 12,
-      fontWeight: 'bold',
-      padding: 20,
-      textTransform: 'uppercase',
-    }
-    return <section>
-      <header style={headerStyle}>
-        le réseau est le moyen le plus efficace de retour à l'emploi*
-      </header>
-      <JobOriginChart />
-    </section>
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
   }
 
-  renderHow(sectionStyle) {
-    const {profile, project} = this.props
-    const titleStyle = {
-      color: Colors.CHARCOAL_GREY,
-      fontSize: 16,
-      fontStyle: 'italic',
-      lineHeight: 1.31,
-      textTransform: 'uppercase',
+  state = {
+    messageExampleIndex: 0,
+  }
+
+  componentWillMount() {
+    const {circle} = this.props
+    this.setState({messageExampleIndex: MESSAGE_EXAMPLES.findIndex(example => {
+      return example.circles.includes(circle)
+    })})
+  }
+
+  previousExampleHandler = () => {
+    this.increaseMessageExampleIndex(-1)
+  }
+
+  nextExampleHandler = () => {
+    this.increaseMessageExampleIndex(1)
+  }
+
+  increaseMessageExampleIndex(increase) {
+    const {messageExampleIndex} = this.state
+    const numMessages = MESSAGE_EXAMPLES.length
+    this.setState({
+      messageExampleIndex: (messageExampleIndex + increase + numMessages) % numMessages,
+    })
+  }
+
+  renderBackground() {
+    if (this.context.isMobileVersion) {
+      return null
     }
-    return <div style={sectionStyle}>
-      <div style={titleStyle}>Comment&nbsp;:</div>
-      <HowToBox
-          title="Un bon réseau est un réseau gagnant-gagnant"
-          style={{marginTop: 10}}>
-        Indiquez à vos contacts ce qu'ils auraient à gagner en
-        entrant en contact avec vous ou au moins rassurez-les
-        en précisant l'objectif de votre demande.
-      </HowToBox>
-      <HowToBox
-          disabled={project.previousJobSimilarity !== 'DONE_THIS'}
-          title="Revenez vers vos anciens clients"
-          reason="Vous nous avez dit avoir déjà fait un métier similaire">
-        Ils pourraient avoir eu vent de bonnes opportunités qui
-        pourraient vous intéresser.
-      </HowToBox>
-      <HowToBox
-          disabled={(profile.frustrations || []).indexOf('MOTIVATION') < 0}
-          title="Garder le moral au top"
-          reason="Vous nous avez dit ne pas avoir le moral dans votre recherche">
-        Parler de votre situation avec vos proches ou vos
-        contacts vous permettra de faire un point et de récueillir
-        des conseils ou de l'aide en fonction de vos besoin.
-      </HowToBox>
+
+    const containerStyle = {
+      alignItems: 'center',
+      bottom: 0,
+      display: 'flex',
+      left: 0,
+      overflow: 'hidden',
+      position: 'absolute',
+      top: 0,
+    }
+    return <div style={containerStyle}>
+      <img src={require('images/network-circles-background.svg')} />
     </div>
   }
 
-  renderWhy(sectionStyle) {
-    const titleStyle = {
-      color: Colors.CHARCOAL_GREY,
-      fontSize: 16,
-      fontStyle: 'italic',
-      lineHeight: 1.31,
-      textTransform: 'uppercase',
-    }
-    const explanationStyle = {
-      fontSize: 16,
-      lineHeight: 1.31,
-      marginTop: 15,
-      paddingTop: 10,
-    }
-    const boxContentStyle = {
-      border: 'solid 1px',
-      borderColor: Colors.MODAL_PROJECT_GREY,
-      borderRadius: 4,
-      fontSize: 13,
-      marginTop: 10,
-      padding: 5,
-    }
-    const footnoteStyle = {
-      color: Colors.COOL_GREY,
-      fontSize: 13,
-      marginTop: 6,
-    }
-    return <section style={sectionStyle}>
-      <header style={titleStyle}>Pourquoi&nbsp;:</header>
-      <div style={boxContentStyle}>
-        {this.renderNetworkGraph()}
+  renderCircle(number, numberText, style, description) {
+    return <div style={style}>
+      <strong>
+        Votre {numberText} cercle
+        {number === this.props.circle ?
+          <span style={{color: Colors.SKY_BLUE}}> (recommandé pour vous)</span> : null}
+      </strong>
+      <br />
+      {description}
+    </div>
+  }
+
+  renderCirclesBox(style) {
+    return <AdviceBox
+        feature="network-circles" style={style}
+        header={<div>
+          <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
+            <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>3</strong> cercles
+          </div>
+          pour découvrir son réseau
+        </div>}>
+      {this.renderBackground()}
+      <div style={{marginLeft: this.context.isMobileVersion ? 0 : 130}}>
+        {this.renderCircle(
+          1, '1ᵉʳ', {},
+          'Parents, proches de la famille, amis, anciens de votre école, etc.')}
+        {this.renderCircle(
+          2, '2ᵉ', {marginTop: 30},
+          'Les amis et relations de votre 1ᵉʳ cercle et ceux qui vous connaissent de loin.')}
+        {this.renderCircle(
+          3, '3ᵉ', {marginTop: 30},
+          'Toutes les personnes que vous pouvez contacter par le biais du 2ᵉ cercle.')}
       </div>
-      <div style={footnoteStyle}>
-        *source : Enquète IFOP 2016
+    </AdviceBox>
+  }
+
+  renderExamplesBox(style, {circleText, medium, text}) {
+    const footerStyle = {
+      alignItems: 'center',
+      backgroundColor: Colors.SLATE,
+      borderRadius: '0 0 4px 4px',
+      bottom: 0,
+      color: '#fff',
+      display: 'flex',
+      fontWeight: 500,
+      height: 40,
+      left: 0,
+      padding: '0 20px',
+      position: 'absolute',
+      right: 0,
+    }
+    return <AdviceBox
+        style={style} feature="network-examples"
+        header={<div>
+          <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
+            <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>
+              {MESSAGE_EXAMPLES.length}
+            </strong> exemples
+          </div>
+          de demande simple
+        </div>}>
+      <div style={{display: 'flex', flex: 1, flexDirection: 'column'}}>
+        <strong>Exemple pour une demande par {medium}&nbsp;:</strong>
+        <span style={{fontStyle: 'italic', fontWeight: 500}}>
+          Utile pour s'adresser au <strong style={{color: Colors.SKY_BLUE}}>
+            {circleText} cercle
+          </strong>
+        </span>
+        <div style={{lineHeight: 1.69}}>
+          <Markdown content={`« ${text} »`} />
+        </div>
+        <div style={{height: 40}} />
+
+        <footer style={footerStyle}>
+          <span style={{cursor: 'pointer'}} onClick={this.previousExampleHandler}>
+            ◀<span style={{marginLeft: '.5em', ...Styles.CENTER_FONT_VERTICALLY}}>
+              Précédent
+            </span>
+          </span>
+
+          <span style={{flex: 1}} />
+
+          <span style={{cursor: 'pointer'}} onClick={this.nextExampleHandler}>
+            <span style={{marginRight: '.5em', ...Styles.CENTER_FONT_VERTICALLY}}>
+              Suivant
+            </span>▶
+          </span>
+        </footer>
       </div>
-      <div style={explanationStyle}>
-        <strong style={{color: Colors.SKY_BLUE}}>44%</strong> des gens retrouvent
-        un emploi grâce à <strong>leurs contacts</strong> contre
-        seulement <strong style={{color: Colors.SQUASH}}>12%</strong> via des
-        offres sur internet.
-      </div>
-    </section>
+    </AdviceBox>
   }
 
   render() {
-    return <AdviceCard
-        title="Contactez vos proches et vos anciens clients pour booster votre recherche"
-        goal="construire votre réseau"
-        {...this.props}>
-      <div style={{display: 'flex'}}>
-        {this.renderWhy({flex: 1, padding: 25})}
-        {this.renderHow({flex: 2, marginRight: 30, padding: 25})}
+    const {profile, project} = this.props
+    const {isMobileVersion} = this.context
+    const {messageExampleIndex} = this.state
+    return <div>
+      <PaddedOnMobile>{this.props.intro}</PaddedOnMobile>
+      <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
+        {this.renderCirclesBox({flex: 1})}
+        <div style={{height: 30, width: 30}} />
+        {this.renderExamplesBox({flex: 1}, MESSAGE_EXAMPLES[messageExampleIndex])}
       </div>
-    </AdviceCard>
+
+      <PersonalizationBoxes
+          style={{marginTop: 30}} profile={profile} project={project}
+          personalizations={networkPersonalizations} />
+    </div>
   }
 }
 
 
-export default {FullAdviceCard, RecommendPage}
+export {NetworkAdviceCard, NetworkAdvicePage}

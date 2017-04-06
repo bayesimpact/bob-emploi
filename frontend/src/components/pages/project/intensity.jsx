@@ -2,7 +2,7 @@ import React from 'react'
 
 import {ShortKey} from 'components/shortkey'
 import {Modal} from 'components/modal'
-import {Icon, RoundButton, Colors, Styles} from 'components/theme'
+import {Icon, Button, Colors, Styles} from 'components/theme'
 
 
 const LEVEL_OPTIONS = [
@@ -263,9 +263,9 @@ class IntensityLevel extends React.Component {
       <div style={nameStyle}>{name}</div>
       <div style={numRangeStyle}>{text}</div>
       {isButtonVisible ? <div style={buttonBoxStyle}>
-        <RoundButton style={{width: 165}} onClick={onSelect} isNarrow={true} type={buttonType}>
+        <Button style={{width: 165}} onClick={onSelect} isNarrow={true} type={buttonType}>
           {isSelected ? 'Objectif actuel' : 'Choisir cet objectif'}
-        </RoundButton>
+        </Button>
       </div> : null}
     </div>
   }

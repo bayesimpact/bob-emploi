@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="63px" height="63px" viewBox="0 0 63 63" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 42 (36781) - http://www.bohemiancoding.com/sketch -->
+    <title>medium-priority</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="12.8580729%" y1="11.3216146%" x2="83.4505208%" y2="83.7174479%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" stop-opacity="0.2" offset="0%"></stop>
+            <stop stop-color="#FFFFFF" stop-opacity="0" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Product" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Advisor-v5---end-goal" transform="translate(-220.000000, -1094.000000)">
+            <g id="medium-priority" transform="translate(220.000000, 1094.000000)">
+                <rect id="Rectangle" fill-opacity="0.07" fill="#000000" x="3" y="3" width="60" height="60" rx="30"></rect>
+                <rect id="Rectangle" fill="#F5A623" x="0" y="0" width="60" height="60" rx="30"></rect>
+                <polygon id="Star" fill="#FFFFFF" points="19 35.0960533 13.4376941 38 14.5 31.8493422 10 27.4934222 16.2188471 26.5960533 19 21 21.7811529 26.5960533 28 27.4934222 23.5 31.8493422 24.5623059 38"></polygon>
+                <polygon id="Star" fill="#FFFFFF" points="42 35.0960533 36.4376941 38 37.5 31.8493422 33 27.4934222 39.2188471 26.5960533 42 21 44.7811529 26.5960533 51 27.4934222 46.5 31.8493422 47.5623059 38"></polygon>
+                <rect id="Rectangle" fill="url(#linearGradient-1)" x="0" y="0" width="60" height="60" rx="30"></rect>
+                <path d="M30.129128,4.17313019 C30.129128,4.17313019 17.629128,1.67313019 9.62912802,15.6731302 C1.62912802,29.6731302 13.9554229,12.1731302 19.129128,12.1731302 C24.3028331,12.1731302 33.129128,9.84626039 33.129128,7.17313019 C33.129128,4.5 30.129128,4.17313019 30.129128,4.17313019 Z" id="Path-3" fill-opacity="0.200000018" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -39,9 +39,9 @@ DRY_RUN = not bool(os.getenv('NODRY_RUN'))
 if DRY_RUN:
     logging.getLogger().setLevel(logging.INFO)
 
-# ID of the email template in MailJet. See
+# ID of the email template for actions in MailJet. See
 # https://app.mailjet.com/template/71275/build
-_MAILJET_TEMPLATE_ID = '71275'
+_MAILJET_ACTIONS_TEMPLATE_ID = '71275'
 
 # ID of the email template in MailJet to report the final count of the blast. See
 # https://app.mailjet.com/tempate/74071/build
@@ -85,13 +85,18 @@ def prepare_projects_for_email(user):
             if action.status not in (action_pb2.ACTION_UNREAD, action_pb2.ACTION_CURRENT):
                 del project.actions[j]
                 continue
-            if user.profile.gender == user_pb2.FEMININE:
-                if action.title_feminine:
-                    action.title = action.title_feminine
-                if action.short_description_feminine:
-                    action.short_description = action.short_description_feminine
+            _genderize_action(user, action)
         if not project.actions:
             del user.projects[i]
+
+
+def _genderize_action(user, action):
+    if user.profile.gender != user_pb2.FEMININE:
+        return
+    if action.title_feminine:
+        action.title = action.title_feminine
+    if action.short_description_feminine:
+        action.short_description = action.short_description_feminine
 
 
 def see_you_day(days, weekday):
@@ -116,7 +121,7 @@ def see_you_day(days, weekday):
 
 
 def frequency(days):
-    """Get sthe right French wording to say "x times a week".
+    """Gets the right French wording to say "x times a week".
 
     Args:
         days: a list of WeekDay enum proto on which the user receives emails.
@@ -148,8 +153,9 @@ def send_email_to_user(user_id, base_url, weekday):
     prepare_projects_for_email(user)
     if not user.projects:
         return False
+
     mail_result = mail.send_template(
-        _MAILJET_TEMPLATE_ID,
+        _MAILJET_ACTIONS_TEMPLATE_ID,
         user.profile,
         {
             'baseUrl': base_url,

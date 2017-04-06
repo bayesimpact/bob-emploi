@@ -1,0 +1,42 @@
+[
+  {
+    "_id": "a",
+    "adviceId": "spontaneous-application",
+    "triggerScoringModel": "constant(2)",
+    "isReadyForProd": true
+  },
+  {
+    "_id": "b",
+    "adviceId": "network-application",
+    "triggerScoringModel": "advice-improve-network",
+    "isReadyForProd": true
+  },
+  {
+    "_id": "c",
+    "adviceId": "other-work-env",
+    "triggerScoringModel": "advice-other-work-env",
+    "extraDataFieldName": "other_work_env_advice_data",
+    "isReadyForProd": true
+  },
+  {
+    "_id": "d",
+    "adviceId": "improve-resume",
+    "triggerScoringModel": "constant(2)"
+  },
+  {
+    "_id": "e",
+    "adviceId": "improve-interiew",
+    "triggerScoringModel": "constant(2)"
+  },
+  {
+    "_id": "f",
+    "adviceId": "network-application-good",
+    "triggerScoringModel": "constant(2)"
+  },
+  {
+    "_id": "g",
+    "adviceId": "network-application-ok",
+    "triggerScoringModel": "constant(2)"
+  }
+]
+

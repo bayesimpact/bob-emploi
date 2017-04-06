@@ -518,6 +518,7 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
         if persona.project.mobility.city.departement_id == '75':
             persona.project.mobility.city.departement_id = '39'
         del persona.user_profile.frustrations[:]
+        persona.user_profile.has_handicap = False
         del persona.user_profile.driving_licenses[:]
         if persona.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT:
             persona.user_profile.training_flexibility = user_pb2.IF_NEEDED
@@ -613,7 +614,7 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'K2109'
         self._ensure_not_excluded(persona)
-        persona.user_profile.frustrations.append(user_pb2.HANDICAPED)
+        persona.user_profile.has_handicap = True
         self.database.job_group_info.insert_one({
             '_id': 'K2109',
             'requirements': {
@@ -824,47 +825,6 @@ class SpontaneousApplicationScoringModelTestCase(
         ScoringModelTestBase('chantier-spontaneous-application')):
     """Unit tests for the "Send spontaneous applications" chantier."""
 
-    def test_not_frustrated(self):
-        """User is not frustrated."""
-        persona = self._random_persona().clone()
-        del persona.user_profile.frustrations[:]
-        persona.project.weekly_applications_estimate = project_pb2.A_LOT
-
-        score = self._score_persona(persona)
-
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
-    def test_just_started_searching(self):
-        """User has just started searching."""
-        persona = self._random_persona().clone()
-        persona.project.job_search_length_months = 1
-        persona.project.weekly_applications_estimate = project_pb2.A_LOT
-
-        score = self._score_persona(persona)
-
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
-    def test_frustrated_and_searched_for_a_long_time(self):
-        """User gets frustrated and has been searching for a long time."""
-        persona = self._random_persona().clone()
-        persona.user_profile.frustrations.append(user_pb2.NO_OFFERS)
-        persona.project.job_search_length_months = 8
-
-        score = self._score_persona(persona)
-
-        self.assertGreaterEqual(score, 3, msg='Failed for "%s"' % persona.name)
-
-    def test_already_does_spontaneous_applications(self):
-        """User already does spontaneous applications."""
-        persona = self._random_persona().clone()
-        persona.project.job_search_length_months = 2
-        persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
-        persona.project.weekly_offers_estimate = project_pb2.SOME
-
-        score = self._score_persona(persona)
-
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
     def test_best_channel(self):
         """User is in a market where spontaneous application is the best channel."""
         persona = self._random_persona().clone()
@@ -873,14 +833,31 @@ class SpontaneousApplicationScoringModelTestCase(
         persona.project.job_search_length_months = 2
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
         self.database.local_diagnosis.insert_one({
-            '_id': '69123:A1234',
+            '_id': '69:A1234',
             'imt': {'applicationModes': {
                 'FAP': {'first': 'SPONTANEOUS_APPLICATION'},
             }},
         })
         score = self._score_persona(persona)
 
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+        self.assertEqual(score, 3, msg='Failed for "%s"' % persona.name)
+
+    def test_second_best_channel(self):
+        """User is in a market where spontaneous application is the second best channel."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.mobility.city.departement_id = '69'
+        persona.project.job_search_length_months = 2
+        persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
+        self.database.local_diagnosis.insert_one({
+            '_id': '69:A1234',
+            'imt': {'applicationModes': {
+                'FAP': {'second': 'SPONTANEOUS_APPLICATION'},
+            }},
+        })
+        score = self._score_persona(persona)
+
+        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
 
     def test_not_best_channel(self):
         """User is in a market where spontaneous application is not the best channel."""
@@ -890,14 +867,14 @@ class SpontaneousApplicationScoringModelTestCase(
         persona.project.job_search_length_months = 2
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
         self.database.local_diagnosis.insert_one({
-            '_id': '69123:A1234',
+            '_id': '69:A1234',
             'imt': {'applicationModes': {
-                'FAP': {'first': 'SPONTANEOUS_APPLICATION'},
+                'FAP': {'third': 'SPONTANEOUS_APPLICATION'},
             }},
         })
         score = self._score_persona(persona)
 
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+        self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
 
 
 class StayMotivatedScoringModelTestCase(ScoringModelTestBase('chantier-stay-motivated')):
@@ -1235,94 +1212,6 @@ class FreelanceScoringModelTestCase(ScoringModelTestBase('chantier-freelance')):
         self.assertGreaterEqual(score, 3, msg='Failed for "%s"' % persona.name)
 
 
-class AdviceLongCDDScoringModelTestCase(ScoringModelTestBase('advice-long-cdd')):
-    """Unit tests for the advisor of long CDD."""
-
-    def test_cdd_optimal(self):
-        """User searches for CDI that has fewer offers than CDD."""
-        persona = self._random_persona().clone()
-        del persona.project.employment_types[:]
-        persona.project.employment_types.append(job_pb2.CDI)
-        persona.project.mobility.city.departement_id = '77'
-        persona.project.target_job.job_group.rome_id = 'M1607'
-        self.database.local_diagnosis.insert_one({
-            '_id': '77:M1607',
-            "imt": {
-                "employmentTypePercentages": [
-                    {"employmentType": "CDI", "percentage": 5},
-                    {"employmentType": "CDD_OVER_3_MONTHS", "percentage": 95}
-                ]
-            },
-        })
-        score = self._score_persona(persona)
-
-        self.assertGreaterEqual(score, 4, msg='Failed for "%s":' % persona.name)
-
-    def test_cdd_suboptimal(self):
-        """User searches for CDI with more offers than CDD."""
-        persona = self._random_persona().clone()
-        del persona.project.employment_types[:]
-        persona.project.employment_types.append(job_pb2.CDI)
-        persona.project.mobility.city.departement_id = '77'
-        persona.project.target_job.job_group.rome_id = 'M1607'
-        self.database.local_diagnosis.insert_one({
-            '_id': '77:M1607',
-            "imt": {
-                "employmentTypePercentages": [
-                    {"employmentType": "CDI", "percentage": 55},
-                    {"employmentType": "CDD_OVER_3_MONTHS", "percentage": 45}
-                ]
-            },
-        })
-        score = self._score_persona(persona)
-
-        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
-
-    def test_ambiguous_case(self):
-        """The market has a bit of every contract, the user 50% of them."""
-        # TODO(guillaume): Define if we should trigger on this type of cases.
-        persona = self._random_persona().clone()
-        del persona.project.employment_types[:]
-        persona.project.employment_types.append(job_pb2.CDI)
-        persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)
-        persona.project.mobility.city.departement_id = '77'
-        persona.project.target_job.job_group.rome_id = 'M1607'
-        self.database.local_diagnosis.insert_one({
-            '_id': '77:M1607',
-            "imt": {
-                "employmentTypePercentages": [
-                    {"employmentType": "INTERIM", "percentage": 25},
-                    {"employmentType": "CDD_LESS_EQUAL_3_MONTHS", "percentage": 25},
-                    {"employmentType": "CDD_OVER_3_MONTHS", "percentage": 25},
-                    {"employmentType": "CDI", "percentage": 25}
-                ]
-            },
-        })
-        score = self._score_persona(persona)
-
-        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
-
-    def test_missing_info(self):
-        """User has missing IMT info for the current job, so we cannot compute for sure."""
-        # TODO(guillaume): We could deduce that CDD is still optimal if > 50%.
-        persona = self._random_persona().clone()
-        del persona.project.employment_types[:]
-        persona.project.employment_types.append(job_pb2.CDI)
-        persona.project.mobility.city.departement_id = '77'
-        persona.project.target_job.job_group.rome_id = 'M1607'
-        self.database.local_diagnosis.insert_one({
-            '_id': '77:M1607',
-            "imt": {
-                "employmentTypePercentages": [
-                    {"employmentType": "CDD_OVER_3_MONTHS", "percentage": 25}
-                ]
-            },
-        })
-        score = self._score_persona(persona)
-
-        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
-
-
 class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
     """Unit tests for the "Other Work Environments" advice."""
 
@@ -1361,6 +1250,94 @@ class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
 
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+
+class AdviceImproveInterviewTestCase(ScoringModelTestBase('advice-improve-interview')):
+    """Unit tests for the "Improve Your Interview Skills" advice."""
+
+    def test_not_enough_interviews(self):
+        """Users does not get enough interviews."""
+        persona = self._random_persona().clone()
+        if persona.project.job_search_length_months < 3:
+            persona.project.job_search_length_months = 3
+        persona.project.total_interviews_estimate = project_pb2.SOME
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_many_interviews(self):
+        """Users has maximum interviews."""
+        persona = self._random_persona().clone()
+        persona.project.total_interviews_estimate = project_pb2.A_LOT
+        persona.project.job_search_length_months = 2
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
+
+    def test_many_interviews_long_time(self):
+        """Users has maximum interviews."""
+        persona = self._random_persona().clone()
+        persona.project.total_interviews_estimate = project_pb2.A_LOT
+        score = self._score_persona(persona)
+        self.assertGreaterEqual(score, 3, msg='Failed for "%s":' % persona.name)
+
+
+class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume')):
+    """Unit tests for the "Improve Your Resume" advice."""
+
+    def test_not_enough_interviews(self):
+        """Users does not get enough interviews."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'I1202'
+        persona.project.mobility.city.departement_id = '14'
+        if persona.project.job_search_length_months < 3:
+            persona.project.job_search_length_months = 3
+        if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
+            persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
+        persona.project.total_interviews_estimate = project_pb2.SOME
+        self.database.local_diagnosis.insert_one({
+            '_id': '14:I1202',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 2,
+            },
+        })
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
+
+    def test_many_interviews(self):
+        """Users has maximum interviews."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'I1202'
+        persona.project.mobility.city.departement_id = '14'
+        persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
+        persona.project.total_interviews_estimate = project_pb2.A_LOT
+        self.database.local_diagnosis.insert_one({
+            '_id': '14:I1202',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 2,
+            },
+        })
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_no_applications(self):
+        """Users has never sent an application."""
+        persona = self._random_persona().clone()
+        persona.project.total_interviews_estimate = project_pb2.LESS_THAN_2
+        persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_imt_data_missing(self):
+        """Users does not get enough interview although IMT is missing."""
+        persona = self._random_persona().clone()
+        if persona.project.job_search_length_months < 3:
+            persona.project.job_search_length_months = 3
+        if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
+            persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
+        persona.project.total_interviews_estimate = project_pb2.SOME
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
 
 
 class AcceptContractTypeScoringModelTestCase(ScoringModelTestBase('chantier-contract-type(CDD)')):

@@ -12,7 +12,6 @@ Routes.DASHBOARD_PAGE = Routes.ROOT + 'actions'
 Routes.DASHBOARD_ACTION_PAGE = Routes.ROOT + 'actions/:actionId'
 Routes.PROJECT_PAGE = Routes.ROOT + 'projet'
 Routes.PROJECT_PATH = Routes.PROJECT_PAGE + '/:projectId'
-// TODO(pascal): Link it from advice cards.
 Routes.ADVICE_SUB_PAGE = '/conseil'
 Routes.ADVICE_PATH = Routes.PROJECT_PATH + Routes.ADVICE_SUB_PAGE + '/:adviceId'
 Routes.DASHBOARD_EXPORT_FOLDER = Routes.ROOT + 'historique-des-actions'

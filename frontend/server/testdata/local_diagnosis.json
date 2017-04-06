@@ -2,7 +2,9 @@
   {
     "_id": "69:M1604",
     "imt": {
-      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"]
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 2
     }
   },
   {
@@ -20,6 +22,13 @@
   {
     "_id": "77:M1607",
     "imt": {
+      "applicationModes": {
+        "Commercial": {
+          "first": "SPONTANEOUS_APPLICATION",
+          "second": "PLACEMENT_AGENCY",
+          "third": "PERSONAL_OR_PROFESSIONAL_CONTACTS"
+        }
+      },
       "employmentTypePercentages": [
         {"employmentType": "CDI" , "percentage": 5},
         {"employmentType": "CDD_OVER_3_MONTHS" , "percentage": 95}

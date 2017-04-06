@@ -8,31 +8,32 @@ import {fetchProjectRequirements, GET_PROJECT_REQUIREMENTS} from 'store/actions'
 
 const previousJobSimilarityOptions = [
   {name: "Oui, j'ai déjà fait ce métier", value: 'DONE_THIS'},
-  {name: "J'ai fait un métier similaire", value: 'DONE_SIMILAR'},
-  {name: 'Non, ce métier est nouveau pour moi', value: 'NEVER_DONE'},
+  {name: "J'ai déjà fait un métier similaire", value: 'DONE_SIMILAR'},
+  {name: "C'est un nouveau métierpour moi", value: 'NEVER_DONE'},
 ]
 
 const seniorityOptions = [
-  {name: 'Stage seulement', value: 'INTERNSHIP'},
+  {name: 'Stage', value: 'INTERNSHIP'},
   {name: 'Moins de 2 ans', value: 'JUNIOR'},
-  {name: '2-5 ans', value: 'INTERMEDIARY'},
-  {name: '6-10 ans', value: 'SENIOR'},
+  {name: '2 à 5 ans', value: 'INTERMEDIARY'},
+  {name: '6 à 10 ans', value: 'SENIOR'},
   {name: 'Plus de 10 ans', value: 'EXPERT'},
 ]
 
-const getDiplomaFulfillmentEstimateOptions = gender => {
+const getTrainingFulfillmentEstimateOptions = gender => {
   const genderE = gender === 'FEMININE' ? 'e' : ''
   return [
-    {name: "Oui, j'ai des diplômes suffisants", value: 'FULFILLED'},
-    {name: "Non, je n'ai pas les diplômes suffisants", value: 'NOT_FULFILLED'},
-    {name: `Je ne suis pas sûr${genderE}`, value: 'FULFILLMENT_NOT_SURE'},
+    {name: "Oui, j'ai les diplômes suffisants", value: 'ENOUGH_DIPLOMAS'},
+    {name: "Je ne pense pas, mais j'ai beaucoup d'expérience", value: 'ENOUGH_EXPEIRENCE'},
+    {name: 'Bientôt, je fais une formation pour ce poste', value: 'CURRENTLY_IN_TRAINING'},
+    {name: `Je ne suis pas sûr${genderE}`, value: 'TRAINING_FULFILLMENT_NOT_SURE'},
   ]
 }
 
 const networkEstimateOptions = [
   {name: "J'ai de très bons contacts", value: '3'},
   {name: "J'ai quelques personnes en tête", value: '2'},
-  {name: 'Je ne connais personne', value: '1'},
+  {name: 'Je ne pense pas', value: '1'},
 ]
 
 // TODO: Move to store.
@@ -54,14 +55,14 @@ class NewProjectExperienceStepBase extends React.Component {
 
   handleSubmit = () => {
     const {networkEstimate, previousJobSimilarity, seniority,
-           diplomaFulfillmentEstimate} = this.state
+           trainingFulfillmentEstimate} = this.state
     this.setState({isValidated: true})
     if (this.isFormValid()) {
       this.props.onSubmit({
-        diplomaFulfillmentEstimate,
         networkEstimate,
         previousJobSimilarity,
         seniority,
+        trainingFulfillmentEstimate,
       })
     }
   }
@@ -77,7 +78,7 @@ class NewProjectExperienceStepBase extends React.Component {
   }
 
   fastForward = () => {
-    const {diplomaFulfillmentEstimate, networkEstimate, previousJobSimilarity,
+    const {trainingFulfillmentEstimate, networkEstimate, previousJobSimilarity,
            seniority} = this.state
     if (this.isFormValid()) {
       this.handleSubmit()
@@ -90,8 +91,8 @@ class NewProjectExperienceStepBase extends React.Component {
     if (!seniority && isSeniorityRequired(previousJobSimilarity)) {
       newState.seniority = 'EXPERT'
     }
-    if (!diplomaFulfillmentEstimate) {
-      newState.diplomaFulfillmentEstimate = 'FULFILLED'
+    if (!trainingFulfillmentEstimate) {
+      newState.trainingFulfillmentEstimate = 'ENOUGH_DIPLOMAS'
     }
     if (!networkEstimate) {
       newState.networkEstimate = 3
@@ -100,9 +101,9 @@ class NewProjectExperienceStepBase extends React.Component {
   }
 
   isFormValid = () => {
-    const {previousJobSimilarity, networkEstimate, diplomaFulfillmentEstimate,
+    const {previousJobSimilarity, networkEstimate, trainingFulfillmentEstimate,
            seniority} = this.state
-    return !!(previousJobSimilarity && diplomaFulfillmentEstimate &&
+    return !!(previousJobSimilarity && trainingFulfillmentEstimate &&
               (seniority || !isSeniorityRequired(previousJobSimilarity)) &&
               networkEstimate)
   }
@@ -114,7 +115,7 @@ class NewProjectExperienceStepBase extends React.Component {
   componentWillReceiveProps(nextProps) {
     const {isFetchingRequirements} = nextProps
     if (!isFetchingRequirements && !this.getRequiredDiplomaNames().length) {
-      this.setState({diplomaFulfillmentEstimate: 'NOTHING_REQUIRED'})
+      this.setState({trainingFulfillmentEstimate: 'NO_TRAINING_REQUIRED'})
     }
   }
 
@@ -128,7 +129,7 @@ class NewProjectExperienceStepBase extends React.Component {
     const {gender} = this.props.profile
     const {isFetchingRequirements} = this.props
     const {previousJobSimilarity, seniority, isValidated,
-           diplomaFulfillmentEstimate, networkEstimate} = this.state
+           trainingFulfillmentEstimate, networkEstimate} = this.state
     const requiredDiplomaNames = this.getRequiredDiplomaNames()
 
     const networkLabel = <span>
@@ -158,11 +159,11 @@ class NewProjectExperienceStepBase extends React.Component {
               </span> : null}
             </span>}
             style={{maxWidth: 600}}
-            isValid={!!diplomaFulfillmentEstimate} isValidated={isValidated}>
+            isValid={!!trainingFulfillmentEstimate} isValidated={isValidated}>
             <Select
-                options={getDiplomaFulfillmentEstimateOptions(gender)}
-                value={diplomaFulfillmentEstimate}
-                onChange={this.handleChange('diplomaFulfillmentEstimate')} />
+                options={getTrainingFulfillmentEstimateOptions(gender)}
+                value={trainingFulfillmentEstimate}
+                onChange={this.handleChange('trainingFulfillmentEstimate')} />
           </FieldSet>
         ) : null}
         <FieldSet label={networkLabel} isValid={!!networkEstimate} isValidated={isValidated}>

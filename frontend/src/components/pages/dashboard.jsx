@@ -15,7 +15,7 @@ import {Action, ActionDescriptionModal} from 'components/actions'
 import {GamificationModal} from 'components/modal'
 import {PageWithNavigationBar} from 'components/navigation'
 import {StickyActionPane} from 'components/sticky'
-import {Colors, RoundButton, Styles} from 'components/theme'
+import {Colors, Button, Styles} from 'components/theme'
 import {Routes} from 'components/url'
 import {allActionsById, allActiveActions, allDoneAndPastActionsAndProjects,
         projectsWithOpenActions, areAllActionsDoneForToday,
@@ -353,11 +353,11 @@ class DashboardMainContent extends React.Component {
 
       <div style={{flex: 1}} />
 
-      {!isCreatingActionPlanShown && pastActions.length ? <RoundButton
+      {!isCreatingActionPlanShown && pastActions.length ? <Button
           type="discreet" isNarrow={true}
           onClick={onShowActionHistoryClick} style={historyLinkStyle}>
         Mes actions des jours précédents ({pastActions.length})
-      </RoundButton> : null}
+      </Button> : null}
     </div>
   }
 }

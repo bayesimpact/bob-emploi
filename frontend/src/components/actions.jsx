@@ -3,16 +3,13 @@ import {connect} from 'react-redux'
 import {browserHistory} from 'react-router'
 import Radium from 'radium'
 
-import config from 'config'
 import {ActionStatus} from 'api/project'
 import {Modal, ModalHeader} from './modal'
-import {KIND_ICON_SRC} from './chantier'
 import {Routes} from 'components/url'
-import {Colors, ExternalSiteButton, Icon, Markdown, RoundButton,
-        SmoothTransitions, Styles} from './theme'
+import {Colors, ExternalSiteButton, Icon, Markdown, Button, Styles} from './theme'
 import {isActionStuck, stickyProgress} from 'store/action'
 import {finishAction, cancelAction, readAction, stickAction,
-        openActionExternalLink} from 'store/actions'
+        openActionExternalLink, saveAction} from 'store/actions'
 import {extractDomainName} from 'store/link'
 
 
@@ -38,6 +35,8 @@ class ActionDescriptionModalBase extends React.Component {
     dispatch: React.PropTypes.func.isRequired,
     gender: React.PropTypes.string,
     isShown: React.PropTypes.bool,
+    // For tips, show the title without the chantier, and change call to action.
+    isShownAsTip: React.PropTypes.bool,
     onClose: React.PropTypes.func.isRequired,
   }
 
@@ -105,14 +104,83 @@ class ActionDescriptionModalBase extends React.Component {
     }
   }
 
+  handleSaveAction = () => {
+    const {dispatch, action} = this.props
+    this.closeAndDo(() => dispatch(saveAction(action)))
+  }
+
   handleStickAction = () => {
     const {action, dispatch} = this.props
     this.setState({isConfirmStickyActionModalShown: false})
     dispatch(stickAction(action))
   }
 
+  renderAsAction(action) {
+    const isSticky = !!(action && action.goal)
+    const {gender} = this.props
+    if (!action) {
+      return null
+    }
+    return <div>
+      <ActionModalHeader action={action} gender={gender} />
+      <div style={{maxHeight: '80vh', overflow: 'auto'}}>
+        <ActionContent action={action} gender={gender} />
+        {isSticky ?
+          <StickyActionIncentive
+              action={action}
+              onClick={() => this.setState({isConfirmStickyActionModalShown: true})} /> :
+              <ActionHowto action={action} />}
+      </div>
+      <ButtonsBar
+          action={action}
+          onCancelAction={this.handleCancelAction}
+          onFinishAction={this.handleFinishAction} />
+    </div>
+  }
+
+  handleLinkClick = () => {
+    const {action, dispatch} = this.props
+    dispatch(openActionExternalLink(action))
+  }
+
+  renderAsTip(action) {
+    if (!action) {
+      return null
+    }
+    const {gender} = this.props
+    const shortDescription =
+        gender === 'FEMININE' && action.shortDescriptionFeminine || action.shortDescription
+    const titleStyle = {
+      fontSize: 14,
+      fontWeight: 'bold',
+      marginTop: 30,
+    }
+    const contentStyle = {
+      maxHeight: '80vh',
+      overflow: 'auto',
+      padding: 35,
+    }
+    const linkStyle = {
+      color: Colors.SKY_BLUE,
+      fontWeight: 'bold',
+    }
+    return <div>
+      <ActionModalHeader action={action} gender={gender} isShownAsTip={true} />
+      <div style={contentStyle}>
+        <Markdown content={shortDescription} />
+        <div style={titleStyle}>
+          Vous ne savez pas par où commencer ?
+        </div>
+        <div style={{marginBottom: 15, marginTop: 5}}>
+          <a style={linkStyle} target="_blank" href={action.link} onClick={this.handleLinkClick}>
+          Cliquez ici</a> pour avoir un coup de pouce.
+        </div>
+      </div>
+    </div>
+  }
+
   render() {
-    const {action, gender, isShown, onClose} = this.props
+    const {action, isShown, isShownAsTip, onClose} = this.props
     const {isConfirmStickyActionModalShown, isNegativeFeedbackModalShown,
            isPositiveFeedbackModalShown, onHidden} = this.state
     const style = {
@@ -122,24 +190,9 @@ class ActionDescriptionModalBase extends React.Component {
     const isMainModalShown =
       isShown && !isPositiveFeedbackModalShown && !isNegativeFeedbackModalShown &&
       !isConfirmStickyActionModalShown
-    const isSticky = !!(action && action.goal)
     return <div>
       <Modal isShown={isMainModalShown} onClose={onClose} onHidden={onHidden} style={style}>
-        {action ? <div>
-          <ActionModalHeader action={action} gender={gender} />
-          <div style={{maxHeight: '80vh', overflow: 'auto'}}>
-            <ActionContent action={action} gender={gender} />
-            {isSticky ?
-              <StickyActionIncentive
-                  action={action}
-                  onClick={() => this.setState({isConfirmStickyActionModalShown: true})} /> :
-                  <ActionHowto action={action} />}
-          </div>
-          <ButtonsBar
-              action={action}
-              onCancelAction={this.handleCancelAction}
-              onFinishAction={this.handleFinishAction} />
-        </div> : null}
+        {isShownAsTip ? this.renderAsTip(action) : this.renderAsAction(action)}
       </Modal>
       <PositiveFeedbackModal
           isShown={isShown && isPositiveFeedbackModalShown} onHidden={onHidden}
@@ -161,18 +214,26 @@ class ActionModalHeader extends React.Component {
   static propTypes = {
     action: ACTION_SHAPE,
     gender: React.PropTypes.string,
+    isShownAsTip: React.PropTypes.bool,
   }
 
+
   render() {
-    const {action, gender} = this.props
+    const {action, gender, isShownAsTip} = this.props
     const title = gender === 'FEMININE' && action.titleFeminine || action.title
     const chantierTitles = (action.chantiers || []).map(
         chantier => chantier.titleFirstPerson || chantier.title)
     const subHeaderStyle = {
+      display: isShownAsTip ? 'none' : 'block',
       fontSize: 14,
       fontWeight: 'normal',
     }
-    return <ModalHeader style={{display: 'block', fontSize: 17, padding: '25px 35px'}}>
+    const headerStyle = {
+      display: 'block',
+      fontSize: 17,
+      padding: isShownAsTip ? 35 : '25px 35px',
+    }
+    return <ModalHeader style={headerStyle}>
       <div style={subHeaderStyle}>
         Action pour {chantierTitles.join(' et pour ')}&nbsp;:
       </div>
@@ -211,9 +272,9 @@ class StickyActionIncentive extends React.Component {
       <div style={{fontWeight: 'bold', marginBottom: 15}}>{action.goal}</div>
       <div>{action.stickyActionIncentive}</div>
       <div style={{marginTop: 25, textAlign: 'center'}}>
-        <RoundButton onClick={onClick}>
+        <Button onClick={onClick}>
           Faire cette action en plusieurs étapes
-        </RoundButton>
+        </Button>
       </div>
     </div>
   }
@@ -247,12 +308,12 @@ class StickyActionConfirmModal extends React.Component {
         réussir cette action.
       </div>
       <div style={{marginTop: 40}}>
-        <RoundButton onClick={onCancel} style={buttonStyle}>
+        <Button onClick={onCancel} style={buttonStyle}>
           Pas maintenant
-        </RoundButton>
-        <RoundButton type="validation" onClick={onConfirm} style={buttonStyle}>
+        </Button>
+        <Button type="validation" onClick={onConfirm} style={buttonStyle}>
           Je me lance
-        </RoundButton>
+        </Button>
       </div>
     </Modal>
   }
@@ -273,6 +334,7 @@ class ActionContentBase extends React.Component {
 
   render() {
     const {action, gender} = this.props
+
     const shortDescription = (
         gender === 'FEMININE' && action.shortDescriptionFeminine || action.shortDescription)
     const contentStyle = {
@@ -392,35 +454,21 @@ class ActionHowto extends React.Component {
   }
 
   render() {
-    const {action} = this.props
-    const {isExpanded} = this.state
+    const howTo = this.props.action.howTo
+    if (!howTo) {
+      return null
+    }
     const howToStyle = {
       borderTop: 'solid 1px ' + Colors.MODAL_PROJECT_GREY,
       padding: '15px 35px',
     }
-    const howToLinkStyle = {
-      color: Colors.SLATE,
-      cursor: 'pointer',
-      display: 'flex',
-      fontWeight: 500,
+    const titleStyle = {
+      fontSize: 14,
+      fontWeight: 'bold',
     }
-    const howTo = action.howTo || (
-      "Nous n'avons pas encore d'astuce pour ce conseil. Vous avez une idée " +
-      'pour aider les prochaines personnes faisant cette action ? Envoyez-la ' +
-      `nous à [contribuer@bob-emploi.fr](${config.helpRequestUrl}).`)
     return <div style={howToStyle}>
-      <div
-          tabIndex={0} style={howToLinkStyle}
-          onClick={() => this.setState({isExpanded: !isExpanded})}>
-        Afficher les astuces pour cette action
-        <Icon
-            name={'menu-' + (isExpanded ? 'up' : 'down')}
-            style={{color: Colors.COOL_GREY, fontSize: 20, paddingLeft: '.5em'}} />
-      </div>
-      {/* TODO: Only expand the layout downwards instead of
-          shifting the whole modal so that it stays centered vertically in
-          the screen. */}
-      {isExpanded ? <Markdown content={howTo} /> : null}
+      <div style={titleStyle}>Astuce de la communauté</div>
+      <Markdown content={howTo} />
     </div>
   }
 }
@@ -458,23 +506,23 @@ class ButtonsBar extends React.Component {
       opacity: .5,
     }
     return <div style={style}>
-      <RoundButton
+      <Button
           type="discreet" isNarrow={true}
           onClick={() => onCancelAction({status: 'ACTION_DECLINED'})}>
         Ne pas faire cette action
-      </RoundButton>
+      </Button>
       <span style={separatorStyle} />
-      <RoundButton
+      <Button
           type="discreet" isNarrow={true}
           onClick={() => onCancelAction({status: 'ACTION_SNOOZED'})}>
         La faire un autre jour
-      </RoundButton>
+      </Button>
       <span style={{flex: 1}} />
-      <RoundButton
+      <Button
           type="validation" isNarrow={true}
           onClick={onFinishAction}>
         <Icon name="check" /> J'ai fait cette action
-      </RoundButton>
+      </Button>
     </div>
   }
 }
@@ -489,6 +537,7 @@ class ActionBase extends React.Component {
     project: React.PropTypes.object,
     style: React.PropTypes.object,
   }
+
 
   renderRightButton() {
     const {action} = this.props
@@ -516,9 +565,9 @@ class ActionBase extends React.Component {
       fontSize: 20,
       verticalAlign: 'middle',
     }
-    return <RoundButton isNarrow={true} type="discreet" style={buttonStyle}>
+    return <Button isNarrow={true} type="discreet" style={buttonStyle}>
       <Icon name="chevron-right" style={chevronStyle} />
-    </RoundButton>
+    </Button>
   }
 
   handleProjectClick = event => {
@@ -526,52 +575,25 @@ class ActionBase extends React.Component {
     browserHistory.push(Routes.PROJECT_PAGE + '/' + this.props.project.projectId)
   }
 
-  renderIcon() {
-    const {action, project} = this.props
-    const chantiersWithKind = (action.chantiers || []).filter(chantier => chantier.kind)
-    if (!chantiersWithKind.length) {
-      return null
+  getBulletColor(actionStatus) {
+    if (actionStatus === 'ACTION_SAVED') {
+      return Colors.GREENISH_TEAL
     }
-    const chantier = chantiersWithKind[0]
-    const style = {
-      alignItems: 'center',
-      display: 'flex',
-      marginRight: 14,
+    if (actionStatus === 'ACTION_UNREAD') {
+      return Colors.SKY_BLUE
     }
-    const iconStyle = {
-      ':hover': {opacity: 1},
-      height: 26,
-      opacity: .7,
-      width: 26,
-      ...SmoothTransitions,
+    return Colors.SILVER
+  }
+
+  renderBullet() {
+    const bulletStyle = {
+      backgroundColor: this.getBulletColor(this.props.action.status),
+      borderRadius: '50%',
+      height: 10,
+      margin: '0 20px 0 5px',
+      width: 10,
     }
-    const tooltipStyle = {
-      padding: 20,
-      textAlign: 'left',
-      width: 300,
-    }
-    const linkStyle = {
-      color: Colors.SKY_BLUE,
-      display: 'block',
-      textDecoration: 'underline',
-    }
-    const rationale = chantier.kind === 'CORE_JOB_SEARCH' ?
-      (`Nous vous proposons cette action car ${config.productName} vous aide à ` +
-      'avancer quotidiennement dans vos candidatures.') :
-      ('Cette action vous a été proposée car vous avez choisi comme solution ' +
-      `"${chantier.title}" dans votre projet.`)
-    return <div className="tooltip" style={style}>
-      <img ref="chantier-icon" src={KIND_ICON_SRC[chantier.kind]} style={iconStyle} />
-      <div className="tooltiptext tooltip-bottom-right" style={tooltipStyle}>
-        {rationale}
-        {chantier.kind === 'CORE_JOB_SEARCH' ? null : <a
-            href={Routes.PROJECT_PAGE + '/' + project.projectId}
-            onClick={this.handleProjectClick} style={linkStyle}>
-          Voir les solutions pour ce projet
-        </a>}
-        {/* TODO(pascal): Add a link to the Control Tower. */}
-      </div>
-    </div>
+    return <div style={bulletStyle} />
   }
 
   renderProgress() {
@@ -604,10 +626,10 @@ class ActionBase extends React.Component {
     </div>
   }
 
-  renderStar() {
+  renderStarOrBullet() {
     const {action} = this.props
     if (!action.goal) {
-      return null
+      return this.renderBullet()
     }
     const isStuck = isActionStuck(action)
     const style = {
@@ -658,13 +680,13 @@ class ActionBase extends React.Component {
     const contextText = context === 'project' ? project.title : ''
     return <div style={style}>
       <div style={contentStyle} onClick={onOpen}>
-        {this.renderIcon()}
-        {this.renderStar()}
+        {this.renderStarOrBullet()}
         <div style={titleStyle}>
           {title} {contextText ? <span style={contextStyle}>
             - {contextText}
           </span> : null}
         </div>
+
         {this.renderProgress()}
         {this.renderRightButton()}
       </div>
@@ -749,11 +771,11 @@ class PositiveFeedbackModal extends React.Component {
             placeholder="Donnez-nous votre avis (Facultatif)" />
       </div>
 
-      <RoundButton
+      <Button
           type="validation" disabled={!isUseful && !isNotUseful}
           style={{margin: '25px 0 40px'}} onClick={this.handleSubmit}>
         Envoyer
-      </RoundButton>
+      </Button>
     </Modal>
   }
 }
@@ -788,10 +810,10 @@ class IconSelectButton extends React.Component {
       position: 'absolute',
       top: 14,
     }
-    return <RoundButton {...extraProps} style={buttonStyle}>
+    return <Button {...extraProps} style={buttonStyle}>
       <Icon name={iconName} style={iconStyle} />
       {children}
-    </RoundButton>
+    </Button>
   }
 }
 
@@ -840,11 +862,11 @@ class NegativeFeedbackModal extends React.Component {
             placeholder="Donnez-nous votre avis (Facultatif)" />
       </div>
 
-      <RoundButton
+      <Button
           type="validation"
           style={{margin: '0 0 40px'}} onClick={this.handleSubmit}>
         Envoyer
-      </RoundButton>
+      </Button>
     </Modal>
   }
 }

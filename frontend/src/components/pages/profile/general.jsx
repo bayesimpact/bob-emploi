@@ -7,8 +7,8 @@ import {FieldSet, JobSuggestWithNote, Select, RadioGroup, Styles} from 'componen
 
 
 const genders = [
-  {name: 'un homme', value: 'MASCULINE'},
   {name: 'une femme', value: 'FEMININE'},
+  {name: 'un homme', value: 'MASCULINE'},
 ]
 
 const situations = [
@@ -25,6 +25,11 @@ const latestJobLabel = {
   LOST_QUIT: 'Quel était ce métier ?',
 }
 
+const hasHandicapOptions = [
+  {name: 'oui', value: true},
+  {name: 'non', value: false},
+]
+
 
 class GeneralStep extends React.Component {
   componentWillMount() {
@@ -32,6 +37,7 @@ class GeneralStep extends React.Component {
       {
         city: true,
         gender: true,
+        hasHandicap: false,
         latestJob: true,
         situation: true,
         yearOfBirth: true,
@@ -61,13 +67,13 @@ class GeneralStep extends React.Component {
     if (!latestJob) {
       state.latestJob = {
         codeOgr: '14967',
-        feminineName: 'Experte-comptable',
+        feminineName: 'Comptable',
         jobGroup: {
-          name: 'Audit et contrôle comptables et financiers',
-          romeId: 'M1202',
+          name: 'Comptabilité',
+          romeId: 'M1203',
         },
-        masculineName: 'Expert-comptable',
-        name: 'Expert-comptable / Experte-comptable',
+        masculineName: 'Comptable',
+        name: 'Comptable',
       }
     }
     if (!city) {
@@ -90,7 +96,8 @@ class GeneralStep extends React.Component {
 
   render() {
     const {isMobileVersion} = this.context
-    const {city, gender, yearOfBirth, latestJob, situation, isValidated} = this.state
+    const {city, gender, hasHandicap, yearOfBirth, latestJob, situation, isValidated} = this.state
+    const isFeminine = gender === 'FEMININE'
     return <Step
         title="Votre profil"
         fastForward={this.fastForward}
@@ -140,6 +147,15 @@ class GeneralStep extends React.Component {
           si vous cherchez du travail dans d'autres villes.
         </CitySuggestWithTooltip>
       </FieldSet>
+      <FieldSet
+          label={`Vous êtes reconnu${isFeminine ? 'e' : ''} comme
+            travailleu${isFeminine ? 'se' : 'r'} handicapé${isFeminine ? 'e' : ''}`}
+          isValid={!!latestJob} isValidated={isValidated}>
+        <RadioGroup
+            style={{justifyContent: 'space-around'}}
+            onChange={this.updater_.handleChange('hasHandicap')}
+            options={hasHandicapOptions} value={!!hasHandicap} />
+      </FieldSet>
     </Step>
   }
 }
@@ -155,8 +171,8 @@ class BirthYearSelector extends React.Component {
     const currentYear = new Date().getFullYear()
     // We probably don't have any users under the age of 14 or over 100
     const maxBirthYear = currentYear - 14
-    const minBirthYear = currentYear - 100
-    this.yearOfBirthRange = _.range(maxBirthYear, minBirthYear, -1)
+    const minBirthYear = currentYear - 70
+    this.yearOfBirthRange = _.range(minBirthYear, maxBirthYear, 1)
   }
 
   state = {

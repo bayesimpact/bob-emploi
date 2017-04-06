@@ -5,12 +5,14 @@ import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE,
         UPDATE_PROJECT_CHANTIERS, GET_DASHBOARD_EXPORT, CREATE_DASHBOARD_EXPORT,
         OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_CHANTIER_TITLES,
         ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, REFRESH_USER_DATA,
-        LOGOUT, DELETE_USER_DATA, CREATE_ACTION_PLAN} from './actions'
+        LOGOUT, DELETE_USER_DATA, CREATE_ACTION_PLAN, GET_ADVICE_TIPS} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 
 const appInitialData = {
+  // Cache for advice tips for each advice module for each project.
+  adviceTips: {},
   chantierTitles: {},
   // Cache for dashboard exports.
   dashboardExports: {},
@@ -124,6 +126,20 @@ function app(state=appInitialData, action) {
       return {
         ...state,
         scheduledUserDataRefreshTimeout: null,
+      }
+    case GET_ADVICE_TIPS:
+      if (action.status !== 'success' || !action.advice || !action.project) {
+        return state
+      }
+      return {
+        ...state,
+        adviceTips: {
+          ...state.adviceTips,
+          [action.project.projectId]: {
+            ...(state.adviceTips[action.project.projectId] || {}),
+            [action.advice.adviceId]: action.response,
+          },
+        },
       }
   }
   return state

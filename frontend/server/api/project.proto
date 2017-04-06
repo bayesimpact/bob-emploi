@@ -8,7 +8,7 @@ import "bob_emploi/frontend/api/job.proto";
 
 package bayes.bob;
 
-// Next available tag: 11.
+// Next available tag: 12.
 message Project {
   // A unique identifier for this project.
   string project_id = 1;
@@ -22,11 +22,6 @@ message Project {
   // A short description of the project in the user's language. It uses markdown
   // syntax. It summarizes the parameters below.
   string short_description = 4 [deprecated = true];
-
-  // URL of the cover image for this project. It can also be the name of a
-  // hard-coded cover image (e.g. "cake").
-  // TODO(pascal): Clean up, this is not used anymore.
-  string cover_image_url = 17 [deprecated = true];
 
   // Job targeted by this project.
   Job target_job = 6;
@@ -83,7 +78,12 @@ message Project {
 
   // The user's estimate whether they have all the required diplomas,
   // together with a list of the asked diplomas.
-  RequirementFulfillmentEstimate diploma_fulfillment_estimate = 29;
+  // DEPRECATED: Use training_fulfillment_estimate below.
+  RequirementFulfillmentEstimate diploma_fulfillment_estimate = 29 [deprecated = true];
+
+  // The user's estimate whether they have all the required diplomas,
+  // together with a list of the asked diplomas.
+  TrainingFulfillmentEstimate training_fulfillment_estimate = 12;
 
   // A set of workload types that the user could accept (e.g. full time).
   repeated ProjectWorkload workloads = 37;
@@ -125,8 +125,12 @@ message Project {
 
   // Tells whether the project is missing information and needs more information by the user.
   bool is_incomplete = 23;
+
+  // Feedback from user when the advice given for this project was useless to them.
+  string useless_advice_feedback = 11;
 }
 
+// Next ID: 12.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -139,19 +143,47 @@ message Advice {
   string declined_reason = 3;
 
   // Engagement "sticky" action to start if the user accepts the advice.
-  Action engagement_action = 4;
+  Action engagement_action = 4 [deprecated = true];
 
   // Number of stars (1 to 3) assigned to this advice when first scored.
   float num_stars = 5;
 
-  // Extra data needed to recommend the "Other work environments" pieces of
+  // Extra data needed to recommend the "Other work environments" piece of
   // advice.
   OtherWorkEnvAdviceData other_work_env_advice_data = 6;
+
+  // Extra data needed to recommend the "Improve success rate" piece of advice.
+  ImproveSuccessRateData improve_success_rate_data = 8;
+
+  // Goal expressed as the end of the sentence "We will give you advice to…".
+  // TODO(pascal): Clean up when fields have been cleaned up in users.
+  string goal = 9 [deprecated = true];
+
+  // Title of the advice module to be displayed at the top of the Advice Page.
+  // By convention it refers to the user as "you", e.g. "Improve Your Resume".
+  // It is also displayed as the title of the Advice Card in the Dashboard.
+  // TODO(pascal): Clean up when fields have been cleaned up in users.
+  string title = 10 [deprecated = true];
+
+  // The score the user gave to the piece of advice. A low score means they do
+  // not think it was a good advice, for any reasons. A high score means they
+  // think the advice was good and they need to work on it.
+  int32 score = 11;
 }
 
 message OtherWorkEnvAdviceData {
   // Work environment for the targeted job group.
   WorkEnvironment work_environment_keywords = 1;
+}
+
+message ImproveSuccessRateData {
+  // Increase (in percent) of the number of interviews that one could hope for.
+  // For instance: 1 is no increase in interviews, and 2 means interviews could be doubled.
+  float num_interviews_increase = 1;
+
+  // Job requirements, or assets that we could recommend to the user to improve
+  // their success rate.
+  JobRequirements requirements = 2;
 }
 
 enum NumberOfferEstimateOption {
@@ -176,6 +208,16 @@ enum RequirementFulfillmentEstimate {
   NOT_FULFILLED = 2;
   FULFILLMENT_NOT_SURE = 3;
   NOTHING_REQUIRED = 4;
+}
+
+// The estimate of the user regarding the training fulfillment.
+enum TrainingFulfillmentEstimate {
+  UNKNOWN_TRAINING_FULFILLMENT = 0;
+  ENOUGH_DIPLOMAS = 1;
+  ENOUGH_EXPERIENCE = 2;
+  CURRENTLY_IN_TRAINING = 3;
+  TRAINING_FULFILLMENT_NOT_SURE = 4;
+  NO_TRAINING_REQUIRED = 5;
 }
 
 enum ProjectSeniority {
@@ -267,20 +309,23 @@ enum AdviceStatus {
   ADVICE_RECOMMENDED = 1;
 
   // The user has accepted the piece of advice and is starting to engage.
-  ADVICE_ACCEPTED = 2;
+  ADVICE_ACCEPTED = 2 [deprecated = true];
 
   // The user has declined the piece of advice that was recommended.
-  ADVICE_DECLINED = 3;
+  ADVICE_DECLINED = 3 [deprecated = true];
 
   // The user has finished all steps of the sticky action to engage into the
   // advice.
-  ADVICE_ENGAGED = 4;
+  ADVICE_ENGAGED = 4 [deprecated = true];
 
   // The piece of advice was accepted but then canceled during the engagement
   // part (the Sticky Action).
-  ADVICE_CANCELED = 5;
+  ADVICE_CANCELED = 5 [deprecated = true];
 
   // The Advisor never recommended that (but we might still show it to user as
   // an example of things Bob can advise on).
-  ADVICE_NOT_RECOMMENDED = 6;
+  ADVICE_NOT_RECOMMENDED = 6 [deprecated = true];
+
+  // The user has entered the Advice Page at least once.
+  ADVICE_READ = 7;
 }

@@ -1,0 +1,47 @@
+{
+  "fresh-resume": {
+    "callToAction": "Accédez à notre outil sur les CVs",
+    "goal": "mettre en valeur votre profil",
+    "title": "Décrochez des entretiens"
+  },
+  "improve-interview": {
+    "callToAction": "Accédez à notre outil sur les entretiens",
+    "goal": "réussir vos entretiens",
+    "title": "Préparez mieux vos entretiens"
+  },
+  "improve-resume": {
+    "callToAction": "Accédez à notre outil sur les CVs",
+    "goal": "obtenir plus d'entretiens",
+    "title": "Décrochez plus d'entretiens"
+  },
+  "life-balance": {
+    "callToAction": "Voir des astuces pour votre bien-être",
+    "goal": "trouver une association",
+    "title": "Préservez votre équilibre de vie"
+  },
+  "network-application": {
+    "callToAction": "Accédez à notre outil sur le réseau",
+    "goal": "améliorer votre réseau",
+    "title": "Construisez et développez votre réseau"
+  },
+  "network-application-good": {
+    "callToAction": "Accédez à notre outil sur le réseau",
+    "goal": "utiliser votre réseau de manière efficace",
+    "title": "Utilisez à fond votre réseau"
+  },
+  "network-application-medium": {
+    "callToAction": "Accédez à notre outil sur le réseau",
+    "goal": "améliorer votre réseau",
+    "title": "Développez votre réseau"
+  },
+  "other-work-env": {
+    "callToAction": "Accédez à notre outil sur les structures et secteurs",
+    "goal": "trouver d'autres secteurs",
+    "title": "Explorez de nouveaux horizons"
+  },
+  "spontaneous-application": {
+    "callToAction": "Accédez à notre outil sur les candidatures spontanées",
+    "goal": "faire de bonnes candidatures spontanées",
+    "title": "Pensez aux candidatures spontanées"
+  }
+}

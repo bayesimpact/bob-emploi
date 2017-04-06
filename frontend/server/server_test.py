@@ -340,13 +340,19 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'targetJob': {'jobGroup': {'romeId': 'M1403'}},
         }
         user_id = self.authenticate_new_user(email='foo@bayes.org')
-        self._db.job_group_info.insert_one({
-            '_id': 'M1403',
-            'workEnvironmentKeywords': {
-                'sectors': ['sector Toise', 'sector Gal'],
-                'structures': ['A', 'B'],
+        self._db.advice_modules.insert_many([
+            {
+                'adviceId': 'spontaneous-application',
+                'isReadyForProd': True,
+                'triggerScoringModel': 'constant(3)',
             },
-        })
+            {
+                'adviceId': 'network-application',
+                'isReadyForProd': True,
+                'triggerScoringModel': 'constant(2)',
+            },
+        ])
+        server.clear_cache()
         response = self.app.post(
             '/api/user',
             data='{"userId": "%s", "profile": {"email":"foo@bayes.org"}, '
@@ -356,29 +362,19 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info = self.json_from_response(response)
         project = user_info['projects'][0]
         self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
-        self.assertEqual(
-            [
-                {
-                    'adviceId': 'spontaneous-application',
-                    'numStars': 2,
-                    'status': 'ADVICE_RECOMMENDED',
-                },
-                {
-                    'adviceId': 'other-work-env',
-                    'numStars': 2,
-                    'otherWorkEnvAdviceData': {'workEnvironmentKeywords': {
-                        'sectors': ['sector Toise', 'sector Gal'],
-                        'structures': ['A', 'B'],
-                    }},
-                    'status': 'ADVICE_RECOMMENDED',
-                },
-                {
-                    'adviceId': 'network-application',
-                    'numStars': 2,
-                    'status': 'ADVICE_RECOMMENDED',
-                },
-            ],
-            project.get('advices'))
+        all_advices = [
+            {
+                'adviceId': 'spontaneous-application',
+                'numStars': 3,
+                'status': 'ADVICE_RECOMMENDED',
+            },
+            {
+                'adviceId': 'network-application',
+                'numStars': 2,
+                'status': 'ADVICE_RECOMMENDED',
+            },
+        ]
+        self.assertEqual(all_advices, project.get('advices'))
 
         project_actions = self._refresh_action_plan(user_id)
         self.assertEqual([], project_actions, msg='No actions generated for projects in Advisor')
@@ -758,11 +754,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'specialGenerator': 'LA_BONNE_BOITE',
             'title': 'Essayer une entreprise',
         })
-        self._db.cities.insert_one({
-            '_id': '69123',
-            'latitude': 45.678,
-            'longitude': 1.234,
-        })
         server.clear_cache()
         mock_es_client().get_lbb_companies.return_value = iter([{
             'name': 'Bayes Impact',
@@ -784,7 +775,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(
             'Startup caritative',
             project_actions[0].get('applyToCompany', {}).get('activitySectorName'))
-        self.assertAlmostEqual(45.678, mock_es_client().get_lbb_companies.call_args[1]['latitude'])
+        self.assertEqual('69123', mock_es_client().get_lbb_companies.call_args[1]['city_id'])
 
     @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_CLIENT_ID')
     @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_SECRET')
@@ -844,11 +835,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'actionTemplateId': 'lbb',
             'chantiers': ['c1'],
             'specialGenerator': 'LA_BONNE_BOITE',
-        })
-        self._db.cities.insert_one({
-            '_id': '69123',
-            'latitude': 45.678,
-            'longitude': 1.234,
         })
         server.clear_cache()
         mock_es_client().get_lbb_companies.return_value = iter([
@@ -1053,6 +1039,67 @@ class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(set(['skills', 'diplomas', 'extras']), set(requirements))
         # Point check.
         self.assertEqual('1235', requirements['skills'][1]['skill']['skillId'])
+
+
+class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../advice/.../tips endpoint."""
+
+    def setUp(self):
+        super(ProjectAdviceTipsTestCase, self).setUp()
+        self._db.advice_modules.insert_one({
+            'adviceId': 'other-work-env',
+            'isReadyForProd': True,
+            'triggerScoringModel': 'constant(3)',
+            'tipTemplateIds': ['tip1', 'tip2'],
+        })
+        self._db.tip_templates.insert_many([
+            {
+                '_id': 'tip1',
+                'actionTemplateId': 'tip1',
+                'title': 'First tip',
+            },
+            {
+                '_id': 'tip2',
+                'actionTemplateId': 'tip2',
+                'title': 'Second tip',
+            },
+        ])
+        server.clear_cache()
+        self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+        user_info['projects'][0]['advices'][0]['status'] = 'ADVICE_ACCEPTED'
+        self.json_from_response(self.app.post(
+            '/api/user', data=json.dumps(user_info), content_type='application/json'))
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/advice/other-work-env/tips' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_bad_advice_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get(
+            '/api/project/%s/%s/advice/unknown-advice/tips' % (
+                self.user_id, self.project_id))
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn(
+            'Conseil &quot;unknown-advice&quot; inconnu.',
+            response.get_data(as_text=True))
+
+    def test_get_tips(self):
+        """Test with a non existing project ID."""
+        response = self.app.get(
+            '/api/project/%s/%s/advice/other-work-env/tips' % (
+                self.user_id, self.project_id))
+        advice_tips = self.json_from_response(response)
+
+        self.assertEqual(
+            ['First tip', 'Second tip'],
+            [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
 
 
 class ProjectPotentialChantiersTestCase(base_test.ServerTestCase):
@@ -1404,29 +1451,6 @@ class CacheClearEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(['6789'], self._get_requirements('A1234'))
 
 
-class ChantiersEndpointTestCase(base_test.ServerTestCase):
-    """Unit test for the chantiers endpoint."""
-
-    def test_get(self):
-        """Simple call to the /api/chantiers endpoint."""
-        self._db.chantiers.drop()
-        self._db.chantiers.insert_many([
-            {
-                '_id': 'c1',
-                'chantierId': 'c1',
-                'title': 'Chantier 1',
-            },
-            {
-                '_id': 'c2',
-                'chantierId': 'c2',
-                'title': 'Chantier 2',
-            }
-        ])
-        response = self.app.get('/api/chantiers')
-        chantiers = self.json_from_response(response)
-        self.assertEqual({'titles': {'c1': 'Chantier 1', 'c2': 'Chantier 2'}}, chantiers)
-
-
 class CreateDashboardExportTestCase(base_test.ServerTestCase):
     """Unit test for create_dashboard_export endpoint."""
 
@@ -1557,6 +1581,66 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
         self.assertRegex(
             creation_response.location,
             r'^http://localhost/historique-des-actions/[a-f0-9]+$')
+
+
+class LikesEndpointTestCase(base_test.ServerTestCase):
+    """Unit tests for the user/likes endpoint."""
+
+    def test_save_likes(self):
+        """Test saving likes."""
+        user_id = self.create_user()
+        response = self.app.post(
+            '/api/user/likes',
+            data='{"userId": "%s", "likes": {"landing": 1, "dashboard": -1}}' % user_id,
+            content_type='application/json')
+        self.assertEqual(200, response.status_code)
+
+        user_info = self.get_user_info(user_id)
+        self.assertEqual({'landing': 1, 'dashboard': -1}, user_info.get('likes'))
+        self.assertTrue(user_info.get('profile', {}).get('email'))
+
+    def test_save_only_likes(self):
+        """Test that saving likes does not save the city profile."""
+        user_id = self.create_user(data={'profile': {'city': {'name': 'old-city'}}})
+        response = self.app.post(
+            '/api/user/likes',
+            data='{"userId": "%s", "likes": {"landing": 1}, '
+            '"profile": {"city": {"name": "new-city"}}}' % user_id,
+            content_type='application/json')
+        self.assertEqual(200, response.status_code)
+
+        user_info = self.get_user_info(user_id)
+        self.assertEqual({'landing': 1}, user_info.get('likes'))
+        self.assertEqual('old-city', user_info.get('profile', {}).get('city', {}).get('name'))
+
+    def test_missing_id(self):
+        """Save likes without a user ID."""
+        response = self.app.post(
+            '/api/user/likes',
+            data='{"likes": {"landing": 1, "dashboard": -1}}',
+            content_type='application/json')
+        self.assertEqual(400, response.status_code)
+
+    def test_missing_user(self):
+        """Save likes with the ID that does not correspond to any user."""
+        user_id = self.create_user()
+        # Change the last digit.
+        fake_user_id = user_id[:-1] + ('1' if user_id[-1:] != '1' else '0')
+
+        response = self.app.post(
+            '/api/user/likes',
+            data='{"userId": "%s", "likes": {"landing": 1, "dashboard": -1}}' % fake_user_id,
+            content_type='application/json')
+        self.assertEqual(404, response.status_code)
+
+    def test_feature_with_dot(self):
+        """Test saving a liked feature that has an ID with a "."."""
+        user_id = self.create_user()
+        response = self.app.post(
+            '/api/user/likes',
+            data='{"userId": "%s", "likes": {"landing.dashboard": -1}}' % user_id,
+            content_type='application/json')
+        self.assertEqual(422, response.status_code)
 
 
 if __name__ == '__main__':

@@ -1,17 +1,16 @@
 import React from 'react'
 import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, FINISH_ACTION,
-        CANCEL_ACTION, AUTHENTICATE_USER, LOGOUT,
+        CANCEL_ACTION, AUTHENTICATE_USER, LOGOUT, ADVICE_PAGE_IS_SHOWN,
         CREATE_PROJECT, UPDATE_PROJECT_CHANTIERS, CREATE_PROJECT_SAVE,
         MOVE_USER_DATES_BACK_1_DAY, READ_ACTION, SET_PROJECT_PROPERTIES,
         DELETE_USER_DATA, SET_USER_INTERACTION, CREATE_ACTION_PLAN,
         REFRESH_ACTION_PLAN, STICK_ACTION, FINISH_PROFILE_SITUATION,
         FINISH_PROFILE_QUALIFICATIONS, ACCEPT_PRIVACY_NOTICE,
-        FINISH_STICKY_ACTION_STEP, ADD_MANUAL_EXPLORATION, EDIT_FIRST_PROJECT,
-        FINISH_PROFILE_FRUSTRATIONS,
-        EDIT_MANUAL_EXPLORATION, DELETE_MANUAL_EXPLORATION, STOP_STICKY_ACTION,
-        ACCEPT_ADVICE, DECLINE_ADVICE, CANCEL_ADVICE_ENGAGEMENT,
-        FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL,
-        FINISH_PROJECT_EXPERIENCE} from '../store/actions'
+        FINISH_STICKY_ACTION_STEP, EDIT_FIRST_PROJECT,
+        FINISH_PROFILE_FRUSTRATIONS, DECLINE_WHOLE_ADVICE, STOP_STICKY_ACTION,
+        ACCEPT_ADVICE, DECLINE_ADVICE, CANCEL_ADVICE_ENGAGEMENT, SCORE_ADVICE,
+        FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL, LIKE_OR_DISLIKE_FEATURE,
+        FINISH_PROJECT_EXPERIENCE, SAVE_ACTION} from '../store/actions'
 import {finishStickyActionStep} from './project'
 import {travelInTime} from './user'
 import Cookies from 'js-cookie'
@@ -42,6 +41,9 @@ function updateAction(state, action) {
   // TODO(pascal): Fix this hack where we modify the action object.
   // eslint-disable-next-line no-unused-vars
   const {project, ...actionProps} = action
+  if (!state.projects) {
+    return state
+  }
   const updateActions = actions => (actions || []).map(chantierAction => {
     if (chantierAction.actionId !== action.actionId) {
       return chantierAction
@@ -50,12 +52,15 @@ function updateAction(state, action) {
   })
   return {
     ...state,
-    projects: (state.projects || []).map(project => {
-      return {
-        ...project,
-        actions: updateActions(project.actions),
-        pastActions: updateActions(project.pastActions),
+    projects: state.projects.map(project => {
+      const newProjectState = {...project}
+      if (project.actions) {
+        newProjectState.actions = updateActions(project.actions)
       }
+      if (project.pastActions) {
+        newProjectState.pastActions = updateActions(project.pastActions)
+      }
+      return newProjectState
     }),
   }
 }
@@ -184,6 +189,13 @@ function user(state=initialData, action) {
       }
       return updateAction(state, finishedAction)
     }
+    case SAVE_ACTION: {
+      const savedAction = {
+        ...action.action,
+        status: 'ACTION_SAVED',
+      }
+      return updateAction(state, savedAction)
+    }
     case READ_ACTION:
       if (action.action.status !== 'ACTION_UNREAD') {
         return state
@@ -290,23 +302,6 @@ function user(state=initialData, action) {
       return updateProject(state, {...action.projectProperties, projectId: action.projectId})
     case MOVE_USER_DATES_BACK_1_DAY:
       return travelInTime({...state}, -24 * 60 * 60 * 1000)
-    case ADD_MANUAL_EXPLORATION:
-      return {
-        ...state,
-        manualExplorations: [action.exploration].concat(state.manualExplorations || []),
-      }
-    case EDIT_MANUAL_EXPLORATION:
-      return {
-        ...state,
-        manualExplorations: state.manualExplorations.slice(0, action.index).concat(
-          [action.exploration], state.manualExplorations.slice(action.index + 1)),
-      }
-    case DELETE_MANUAL_EXPLORATION:
-      return {
-        ...state,
-        manualExplorations: state.manualExplorations.slice(0, action.index).concat(
-          state.manualExplorations.slice(action.index + 1)),
-      }
     case ACCEPT_ADVICE:
       return updateAdvice(state, action.project, {
         adviceId: action.advice.adviceId,
@@ -318,11 +313,34 @@ function user(state=initialData, action) {
         declinedReason: action.reason || '',
         status: 'ADVICE_DECLINED',
       })
+    case ADVICE_PAGE_IS_SHOWN:
+      return updateAdvice(state, action.project, {
+        adviceId: action.advice.adviceId,
+        status: 'ADVICE_READ',
+      })
+    case SCORE_ADVICE:
+      return updateAdvice(state, action.project, {
+        adviceId: action.advice.adviceId,
+        score: action.score || 0,
+      })
     case CANCEL_ADVICE_ENGAGEMENT:
       return updateAdvice(state, action.project, {
         adviceId: action.advice.adviceId,
         status: 'ADVICE_CANCELED',
       })
+    case DECLINE_WHOLE_ADVICE:
+      return updateProject(state, {
+        projectId: action.project.projectId,
+        uselessAdviceFeedback: action.uselessAdviceFeedback || 'aucun commentaire',
+      })
+    case LIKE_OR_DISLIKE_FEATURE:
+      return {
+        ...state,
+        likes: {
+          ...(state.likes || {}),
+          [action.feature]: action.likeScore,
+        },
+      }
     default:
       return state
   }

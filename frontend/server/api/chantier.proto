@@ -36,10 +36,6 @@ message ChantiersSet {
   map<string, bool> chantier_ids = 1;
 }
 
-message ChantierTitles {
-  map<string, string> titles = 1;
-}
-
 enum ChantierKind {
   UNKNOWN_CHANTIER_KIND = 0;
 

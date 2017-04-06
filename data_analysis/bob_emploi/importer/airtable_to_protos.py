@@ -90,6 +90,8 @@ class _ActionTemplateConverter(_ProtoAirtableConverter):
 
     def convert_record(self, airtable_record):
         """Convert an AirTable record to a dict proto-Json ready."""
+        if 'image' in airtable_record['fields'] and airtable_record['fields']['image']:
+            airtable_record['fields']['image_url'] = airtable_record['fields']['image'][0]['url']
         fields = super(_ActionTemplateConverter, self).convert_record(airtable_record)
         link = fields.get('link')
         if link and not _LINK_REGEXP.match(link):
@@ -103,15 +105,31 @@ class _ActionTemplateConverter(_ProtoAirtableConverter):
         return fields
 
 
+class _AdviceModuleConverter(_ProtoAirtableConverter):
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+        fields = super(_AdviceModuleConverter, self).convert_record(airtable_record)
+        trigger_scoring_model = fields.get('triggerScoringModel')
+        if not scoring.get_scoring_model(trigger_scoring_model):
+            raise ValueError(
+                'Advice module "%s" uses the scoring model "%s" that is not implemented yet'
+                % (fields['_id'], trigger_scoring_model))
+        if 'emailFacts' in fields:
+            fields['emailFacts'] = fields['emailFacts'].split('\n')
+        return fields
+
+
 PROTO_CLASSES = {
     'Chantier': _ProtoAirtableConverter(
         chantier_pb2.Chantier, 'chantier_id', required_fields=[]),
     'ActionTemplate': _ActionTemplateConverter(
-        action_pb2.ActionTemplate, 'action_template_id', required_fields=['chantiers']),
+        action_pb2.ActionTemplate, 'action_template_id', required_fields=[]),
     'StickyActionStep': _ProtoAirtableConverter(
         action_pb2.StickyActionStep, None, required_fields=['title']),
-    'AdviceModule': _ProtoAirtableConverter(
-        advisor_pb2.AdviceModule, None, required_fields=['advice_id', 'trigger_scoring_model']),
+    'AdviceModule': _AdviceModuleConverter(
+        advisor_pb2.AdviceModule, 'airtable_id',
+        required_fields=['advice_id', 'trigger_scoring_model']),
 }
 
 

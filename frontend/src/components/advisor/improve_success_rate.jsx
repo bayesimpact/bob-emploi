@@ -1,104 +1,164 @@
 import React from 'react'
 
-import {Colors} from 'components/theme'
+import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {AdviceCard, HowToBox} from './base'
+import {FeatureLikeDislikeButtons} from 'components/like'
+import {Colors, Markdown} from 'components/theme'
+
+import {PaddedOnMobile, PersonalizationBoxes} from './base'
 
 
-class FullAdviceCard extends React.Component {
-  renderTitle(title) {
-    const style = {
-      fontSize: 16,
-      fontStyle: 'italic',
-      fontWeight: 500,
-      marginBottom: 10,
-      textTransform: 'uppercase',
-    }
-    return <header style={style}>
-      {title}
-    </header>
-  }
+function countMainBullets(markdownContent) {
+  return markdownContent.split('\n* ').length
+}
 
-  renderHow(style) {
-    // TODO(guillaume) : Make advice personalized.
-    return <div style={style}>
-      {this.renderTitle('Comment :')}
-      <HowToBox
-          title="Mettez en avant les bonnes compétences"
-          style={{marginTop: 10}}>
-        <div style={{fontStyle: 'italic'}}>
-          Par exemple en fonction des entreprises que vous visez
-          certains logiciels seront plus ou moins demandés&nbsp;:
-        </div>
-        <ul style={{fontSize: 15, lineHeight: 1.47, marginBottom: 0}}>
-          <li>
-            <strong>En cabinet d'expertise comptable : </strong>
-            SAGE, Cegid, Coala, CCMX, Quadratus, Pegase, Silae.
-          </li>
-          <li style={{marginTop: 10}}>
-            <strong>En entreprise PME : </strong>
-            SAGE, Hypervision, l'outil d'ADP GSI, le groupe Cegid/ CCMX.
-          </li>
-          <li style={{marginTop: 10}}>
-            <strong>Grande entreprise : </strong>
-            HRAccess, Pléiades et GXP d'ADP.
-          </li>
-        </ul>
-      </HowToBox>
 
-      <HowToBox
-          title="Faites une formation pour acquérir de nouvelles compétences"
-          reason="Vous nous avez dit ne pas trouver assez d'offres">
-        <div style={{fontStyle: 'italic'}}>
-          Vous pourriez par exemple apprendre à&nbsp;:
-        </div>
-        <ul style={{fontSize: 15, lineHeight: 1.47, marginBottom: 0}}>
-          <li>Établir les déclarations fiscales et sociales</li>
-          <li>Établir un rapprochement bancaire</li>
-          <li>Réaliser un suivi des dossiers clients et fournisseurs</li>
-        </ul>
-      </HowToBox>
-      <HowToBox
-          title="Compenser votre manque d'expérience dans ce métier avec vos expériences sociales"
-          reason="Vous nous avez dit que votre âge était un obstacle">
-        <span style={{fontStyle: 'italic'}}>
-          Même si cela ne correspond pas au job recherché, cela
-          montre que l'on est actif, débrouillard et curieux.
-        </span>
-      </HowToBox>
-    </div>
-  }
-
-  renderWhy(style) {
-    const frameStyle = {
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      borderRadius: 4,
-      padding: '30px 0',
-      textAlign: 'center',
-    }
-    return <div style={style}>
-      {this.renderTitle('Pourquoi :')}
-      <div style={frameStyle}>
-        Vous auriez pu obtenir
-        <div style={{fontSize: 30, marginBottom: 10}}>
-          <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>4X</strong> plus d'entretiens
-        </div>
-      </div>
-    </div>
+class WorkBox extends React.Component {
+  static propTypes = {
+    featureId: React.PropTypes.string.isRequired,
+    featureName: React.PropTypes.node.isRequired,
+    features: React.PropTypes.string.isRequired,
+    style: React.PropTypes.object,
+    subTitle: React.PropTypes.node.isRequired,
   }
 
   render() {
-    return <AdviceCard
-        title="Mettez plus en valeur votre profil pour obtenir plus d'entretiens"
-        goal="obtenir d'autres secteurs"
-        {...this.props}>
-      <div style={{display: 'flex'}}>
-        {this.renderWhy({flex: 1, marginRight: 30})}
-        {this.renderHow({flex: 2, marginRight: 30})}
+    const {featureId, featureName, subTitle, features, style} = this.props
+    if (!features || !features.length) {
+      return null
+    }
+    const containerStyle = {
+      backgroundColor: Colors.LIGHT_GREY,
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      borderRadius: 4,
+      ...style,
+    }
+    const headerStyle = {
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      display: 'flex',
+      padding: 30,
+    }
+    const contentStyle = {
+      fontSize: 13,
+      fontWeight: 500,
+      lineHeight: 2,
+      padding: 20,
+      position: 'relative',
+    }
+    return <div style={containerStyle}>
+      <header style={headerStyle}>
+        <img src={require('images/work-picto.svg')} style={{marginRight: 40}} />
+        <div style={{flex: 1}}>
+          <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
+            <strong style={{color: Colors.GREENISH_TEAL, fontSize:
+              40}}>{countMainBullets(features)}</strong> {featureName}
+          </div>
+          <div style={{color: Colors.CHARCOAL_GREY, fontSize: 16}}>
+            {subTitle}
+          </div>
+        </div>
+      </header>
+
+      <div style={contentStyle}>
+        <FeatureLikeDislikeButtons
+            style={{position: 'absolute', right: 30, top: -16}}
+            feature={`improve-interview-${featureId}`} />
+        <Markdown content={features} />
       </div>
-    </AdviceCard>
+    </div>
   }
 }
 
 
-export default {FullAdviceCard}
+const defaultMeans =
+  '* Faites relire votre CV par un proche\n' +
+  '* Réutilisez les mots-clés des fiches de postes dans vos CV\n' +
+  '* Envoyez des emails de relance aux recruteurs'
+
+
+const resumePersonalizations = [
+  {
+    filters: ['ATYPIC_PROFILE'],
+    tip: "Reprenez des mots-clés de l'offre pour mieux coller aux attentes des recruteurs",
+  },
+  {
+    filters: ['TIME_MANAGEMENT'],
+    tip: <span>Donnez-vous une objectif du type : « chaque candidature ne doit pas me
+      prendre plus de x heures »</span>,
+  },
+  {
+    filters: ['MOTIVATION'],
+    tip: <span>Donnez-vous un objectif du type : « cette semaine je veux faire x
+      candidatures » et essayez de le tenir</span>,
+  },
+  {
+    filters: ['RESUME'],
+    tip: `Créez plusieurs versions de votre CV, pour pouvoir les combiner
+      rapidement quand vous répondez à une nouvelle offre`,
+  },
+  {
+    filters: ['NO_OFFER_ANSWERS'],
+    tip: `Faites des relances une semaine après avoir envoyé votre candidature
+      pour montrer votre motivation`,
+  },
+  {
+    filters: ['NEW_JOB', 'FIRST_JOB_SEARCH', 'YOUNG_AGE'],
+    tip: 'Montrez que vous êtes flexible et enthousiaste et que vous apprenez vite',
+  },
+]
+
+
+class ResumeAdvicePageContent extends React.Component {
+  static propTypes = {
+    advice: React.PropTypes.object.isRequired,
+    profile: USER_PROFILE_SHAPE.isRequired,
+    project: React.PropTypes.object.isRequired,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
+
+  render() {
+    const {advice, profile, project} = this.props
+    const {isMobileVersion} = this.context
+    const {improveSuccessRateData} = advice
+    const isFeminine = profile.gender === 'FEMININE'
+    const skills =
+      improveSuccessRateData && improveSuccessRateData.requirements &&
+      improveSuccessRateData.requirements.skillsShortText ||
+      (`* Vous êtes organisé${isFeminine ? 'e' : ''} et ` +
+      `travailleu${isFeminine ? 'r' : 'se'}\n` +
+      '* Vous savez vous adapter et trouver des solutions\n' +
+      '* Vous savez gérer votre stress et garder le sourire')
+    const trainings =
+      improveSuccessRateData && improveSuccessRateData.requirements &&
+      improveSuccessRateData.requirements.trainingsShortText || ''
+    return <div>
+      <PaddedOnMobile>Nos conseils</PaddedOnMobile>
+      <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
+        <WorkBox
+            featureId="improve-resume-qualities"
+            featureName="qualités" subTitle="incontournables à mettre dans votre CV"
+            features={skills} style={{flex: 1}} />
+        <div style={{height: 30, width: 30}} />
+        {trainings ? <WorkBox
+            featureId="improve-resume-trainings"
+            featureName="compétences" subTitle="nouvelles à apprendre facilement"
+            features={trainings} style={{flex: 1}} />
+        : <WorkBox
+            featureId="improve-resume-means"
+            featureName="moyens" subTitle="incontournables pour ne rien laisser passer"
+            features={defaultMeans} style={{flex: 1}} />}
+      </div>
+
+      <PersonalizationBoxes
+          style={{marginTop: 30}} profile={profile} project={project}
+          personalizations={resumePersonalizations} />
+    </div>
+  }
+}
+
+
+export {ResumeAdvicePageContent, WorkBox}

@@ -7,7 +7,7 @@ import {finishStickyActionStep, stopStickyAction} from 'store/actions'
 import {Modal} from 'components/modal'
 import {Pane} from 'components/pane'
 import {Colors, ExternalSiteButton, Icon, Input, LabeledToggle, Markdown,
-        RoundButton, SmoothTransitions, Styles} from 'components/theme'
+        Button, SmoothTransitions, Styles} from 'components/theme'
 
 
 class StickyActionPaneBase extends React.Component {
@@ -176,12 +176,12 @@ class StickyActionBase extends React.Component {
       </div>
       {/* TODO(pascal): If action is stopped, allow to start it again. */}
       {canStop ? <div style={stopContainerStyle}>
-        <RoundButton
+        <Button
             onClick={() => this.setState({isConfirmStopModalShown: true})}
             type="discreet"
             style={stopButtonStyle}>
           Arrêter cette solution
-        </RoundButton>
+        </Button>
       </div> : null}
     </section>
   }
@@ -240,12 +240,12 @@ class ConfirmStopModal extends React.Component {
       Si vous vous arrêtez maintenant, les conseils que vous avez
       commencés {actionGoal} seront perdus.
       <div style={{marginTop: 35, textAlign: 'right'}}>
-        <RoundButton type="discreet" onClick={onClose} style={{marginRight: 15}}>
+        <Button type="discreet" onClick={onClose} style={{marginRight: 15}}>
           Annuler
-        </RoundButton>
-        <RoundButton type="deletion" onClick={onStop}>
+        </Button>
+        <Button type="deletion" onClick={onStop}>
           Oui, je veux arrêter
-        </RoundButton>
+        </Button>
       </div>
     </Modal>
   }
@@ -393,9 +393,9 @@ class Step extends React.Component {
          style={textareaStyle}
           value={this.state.text} onChange={event => this.setState({text: event.target.value})} />
       <div style={{textAlign: 'right'}}>
-        <RoundButton style={buttonStyle} onClick={this.handleValidate} disabled={!this.state.text}>
+        <Button style={buttonStyle} onClick={this.handleValidate} disabled={!this.state.text}>
           Valider
-        </RoundButton>
+        </Button>
       </div>
     </div>
   }
@@ -412,9 +412,9 @@ class Step extends React.Component {
       <Input
           style={{backgroundColor: '#fff', height: 56, paddingRight: 100}}
           value={this.state.text} onChange={text => this.setState({text})} />
-      <RoundButton style={buttonStyle} onClick={this.handleValidate} disabled={!this.state.text}>
+      <Button style={buttonStyle} onClick={this.handleValidate} disabled={!this.state.text}>
         Valider
-      </RoundButton>
+      </Button>
     </div>
   }
 
@@ -521,12 +521,12 @@ class StopStickyActionModal extends React.Component {
           style={textareaStyle} placeholder="Donnez-nous votre avis" value={feedback}
           onChange={event => this.setState({feedback: event.target.value})}  />
       <div style={{textAlign: 'right'}}>
-        <RoundButton type="discreet" onClick={onClose} style={{marginRight: 20}}>
+        <Button type="discreet" onClick={onClose} style={{marginRight: 20}}>
           Annuler
-        </RoundButton>
-        <RoundButton type="deletion" onClick={() => onStop(feedback)} disabled={!feedback}>
+        </Button>
+        <Button type="deletion" onClick={() => onStop(feedback)} disabled={!feedback}>
           Arrêter
-        </RoundButton>
+        </Button>
       </div>
     </Modal>
   }
@@ -560,9 +560,9 @@ class Congratulations extends React.Component {
         {children}
       </div>
       <div>
-        <RoundButton type="validation" onClick={onSubmit}>
+        <Button type="validation" onClick={onSubmit}>
           {submitCaption}
-        </RoundButton>
+        </Button>
       </div>
     </div>
   }

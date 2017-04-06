@@ -1,7 +1,86 @@
-/* eslint-env mocha */
 var chai = require('chai')
 var expect = chai.expect
-import {hasActivelySearchingSinceIfNeeded, travelInTime} from 'store/user'
+import {hasActivelySearchingSinceIfNeeded, travelInTime, isOldAndDiscriminated,
+        isYoungAndDiscriminated, getUserFrustrationTags,
+        getHighestDegreeDescription} from 'store/user'
+
+
+describe('age discrimination', () => {
+  const thisYear = (new Date()).getFullYear()
+
+  it('should match an old frustrated user', () => {
+    const profile = {
+      frustrations: ['AGE_DISCRIMINATION'],
+      yearOfBirth: 1920,
+    }
+    expect(isOldAndDiscriminated(profile)).to.be.true
+  })
+
+  it('should match a young frustrated user', () => {
+    const profile = {
+      frustrations: ['AGE_DISCRIMINATION'],
+      yearOfBirth: thisYear - 20}
+    expect(isYoungAndDiscriminated(profile)).to.be.true
+  })
+
+  it('should not match a middle age person', () => {
+    const profile = {
+      frustrations: ['AGE_DISCRIMINATION'],
+      yearOfBirth: thisYear - 35,
+    }
+    expect(isYoungAndDiscriminated(profile)).to.be.false
+    expect(isOldAndDiscriminated(profile)).to.be.false
+  })
+
+  it('should not match a non-frustrated user', () => {
+    const profile = {
+      frustrations: ['PAS_DE_MACHINE_A_CAFE'],
+      yearOfBirth: thisYear - 65,
+    }
+    expect(isOldAndDiscriminated(profile)).to.be.false
+  })
+})
+
+
+describe('frustrations', () => {
+  it('should not return any frustrations if unknown', () => {
+    const profile = {frustrations: ['UNKNOWN_JOB_SEARCH_FRUSTRATION']}
+    const result = getUserFrustrationTags(profile)
+    expect(result.length).to.equal(0)
+  })
+
+  it('should return the good number of frustrations for the most important ones', () => {
+    const profile = {frustrations: [
+      'NO_OFFERS', 'NO_OFFER_ANSWERS', 'MOTIVATION', 'TRAINING']}
+    const result = getUserFrustrationTags(profile)
+    expect(result.length).to.equal(4)
+  })
+
+  it('should not return any frustrations if frustrations undefined', () => {
+    const profile = {}
+    const result = getUserFrustrationTags(profile)
+    expect(result.length).to.equal(0)
+  })
+})
+
+
+describe('getHighestDegreeDescription', () => {
+  it('should not return any description if there is no degree', () => {
+    const profile = {highestDegree: 'NO_DEGREE'}
+    expect(getHighestDegreeDescription(profile)).undefined
+  })
+
+  it('should not return any description if there is an unknown degree', () => {
+    const profile = {highestDegree: 'random'}
+    expect(getHighestDegreeDescription(profile)).undefined
+  })
+
+  it('should return the right degree', () => {
+    const profile = {highestDegree: 'DEA_DESS_MASTER_PHD'}
+    expect(getHighestDegreeDescription(profile)).to.equal('DEA - DESS - Master - PhD')
+  })
+})
+
 
 describe('user helpers', () => {
   it('should need a activelySearchingSince date if actively searching', () => {
