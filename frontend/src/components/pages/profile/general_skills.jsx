@@ -71,7 +71,6 @@ class GeneralSkillsStep extends React.Component {
     const {drivingLicenses, englishLevelEstimate, isValidated, highestDegree,
            officeSkillsEstimate} = this.state
     const {isMobileVersion} = this.context
-    // TODO(guillaume): Put more space between checkboxes on mobile.
     const checkboxListStyle = {
       display: 'flex',
       flexDirection: isMobileVersion ? 'column' : 'row',

@@ -9,6 +9,8 @@
 .algolia-autocomplete .aa-input, .algolia-autocomplete .aa-hint {
   width: 100%;
   padding: .5em 1em;
+     -moz-transition: border 0.2s, box-shadow 0.2s;
+       -o-transition: border 0.2s, box-shadow 0.2s;
   -webkit-transition: border 0.2s, box-shadow 0.2s;
           transition: border 0.2s, box-shadow 0.2s;
 }

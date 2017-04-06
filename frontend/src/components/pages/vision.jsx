@@ -3,7 +3,7 @@ import {browserHistory} from 'react-router'
 
 import {StaticPage, StrongTitle} from 'components/static'
 import {Routes} from 'components/url'
-import {Colors, Icon, Markdown, RoundButton} from 'components/theme'
+import {Colors, Icon, Markdown, Button} from 'components/theme'
 
 class VisionPage extends React.Component {
   static contextTypes = {
@@ -44,7 +44,7 @@ class VisionPage extends React.Component {
         <Markdown content={require('./vision/content.txt')} />
 
         <div style={{margin: '50px 0', textAlign: 'right'}}>
-          <RoundButton
+          <Button
               style={{fontSize: 17, padding: '10px 12px 8px 39px'}}
               onClick={() => browserHistory.push(Routes.CONTRIBUTION_PAGE)}>
             <span style={{paddingRight: '1em'}}>
@@ -53,7 +53,7 @@ class VisionPage extends React.Component {
             <Icon
                 name="chevron-right"
                 style={{fontSize: 24, paddingBottom: 2, verticalAlign: 'middle'}} />
-          </RoundButton>
+          </Button>
         </div>
 
         <div style={{fontWeight: 'bold'}}>

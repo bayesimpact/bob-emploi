@@ -2,6 +2,8 @@
 from os import path
 import unittest
 
+import mock
+
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.lib import mongo
 from bob_emploi.importer import job_group_info
@@ -17,10 +19,28 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
     job_application_complexity_json = path.join(
         path.dirname(__file__), 'testdata/job_application_complexity.json')
 
-    def test_make_dicts(self):
+    @mock.patch(job_group_info.__name__ + '.airtable')
+    def test_make_dicts(self, mock_airtable):
         """Test basic usage of the csv2dicts function."""
+        job_group_info.AIRTABLE_API_KEY = 'key01234567'
+        mock_airtable.Airtable().iterate.return_value = [
+            {'_id': 'aa', 'fields': {
+                'code_rome': 'D1501',
+                'SKILLS': '* Être créatif',
+                'BONUS SKILLS': "* Avoir le sens de l'humour",
+                'TRAINING': '* Maîtriser des logiciels',
+                'other': 'foo',
+            }},
+        ]
+        mock_airtable.Airtable.reset_mock()
         collection = job_group_info.make_dicts(
-            self.rome_csv_pattern, self.job_requirements_json, self.job_application_complexity_json)
+            self.rome_csv_pattern,
+            self.job_requirements_json,
+            self.job_application_complexity_json,
+            'app01234567:advice:viw012345')
+
+        mock_airtable.Airtable.assert_called_once_with('app01234567', 'key01234567')
+        mock_airtable.Airtable().iterate.assert_called_once_with('advice', view='viw012345')
 
         self.assertEqual(531, len(collection))
         for info in collection:
@@ -41,6 +61,9 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual(
             ['Anglais courant'],
             [e.name for e in d1501.requirements.extras])
+        self.assertEqual('* Être créatif', d1501.requirements.skills_short_text)
+        self.assertEqual("* Avoir le sens de l'humour", d1501.requirements.bonus_skills_short_text)
+        self.assertEqual('* Maîtriser des logiciels', d1501.requirements.trainings_short_text)
         self.assertEqual('E', d1501.holland_code_major)
         self.assertEqual('R', d1501.holland_code_minor)
         self.assertTrue(d1501.description.startswith(

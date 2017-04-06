@@ -44,6 +44,7 @@ input:focus, select:focus, textarea:focus {
 
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
+  -moz-appearance: none;
   -webkit-appearance: none;
   margin: 0;
 }
@@ -146,8 +147,8 @@ button.login .fa {
     top: 100%;
     left: 50%;
     background-color: #fff;
-    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.3);
-    transform: rotate(45deg) translate(0, -6.5px);
+    box-shadow: 0 1 20px 0 rgba(0, 0, 0, 0.4);
+    transform: translate(-6.07px, -6.07px) rotate(45deg);
     width: 10px;
     height: 10px;
     z-index: -1;

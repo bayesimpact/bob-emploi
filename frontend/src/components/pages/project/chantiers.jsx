@@ -3,7 +3,7 @@ import Radium from 'radium'
 
 import {ChantierKind} from 'api/chantier'
 import {Modal, ModalCloseButton} from 'components/modal'
-import {Colors, Icon, RoundButton, SmoothTransitions} from 'components/theme'
+import {Colors, Icon, Button, SmoothTransitions} from 'components/theme'
 import {ShortKey} from 'components/shortkey'
 import {KIND_ICON_SRC} from 'components/chantier'
 
@@ -263,9 +263,9 @@ class PotentialChantiersGroupModal extends React.Component {
           {numActivatedChantiers}
         </div>
         <div>solution{maybeS} sélectionnée{maybeS}</div>
-        <RoundButton type="validation" style={buttonStyle} onClick={() => onSubmit(selected)}>
+        <Button type="validation" style={buttonStyle} onClick={() => onSubmit(selected)}>
           Valider ma sélection
-        </RoundButton>
+        </Button>
       </div>
 
       <div style={rightPaneStyle}>
@@ -509,9 +509,9 @@ class PotentialChantiersLists extends React.Component {
           selected={areChantiersSelected}
           onUpdateSelection={this.handleUpdatePartialSelection}
           style={{margin: '0 auto 30px', width: 590}} />)}
-      <RoundButton onClick={this.handleSubmit} type="validation" style={{margin: '20px 0 50px'}}>
+      <Button onClick={this.handleSubmit} type="validation" style={{margin: '20px 0 50px'}}>
         {submitCaption || 'Enregistrer'}
-      </RoundButton>
+      </Button>
     </div>
   }
 }

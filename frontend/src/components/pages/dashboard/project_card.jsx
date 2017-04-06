@@ -5,7 +5,7 @@ import {browserHistory} from 'react-router'
 import {JobGroupStats} from 'components/job'
 import {Routes} from 'components/url'
 
-import {Colors, Icon, RoundButton, Styles} from 'components/theme'
+import {Colors, Icon, Button, Styles} from 'components/theme'
 
 
 class ProjectCard extends React.Component {
@@ -77,11 +77,11 @@ class ProjectCard extends React.Component {
     return <div style={containerStyle}>
       <div style={headlineStyle}>
         <div style={{flex: 1, ...Styles.CENTER_FONT_VERTICALLY}}>{project.title}</div>
-        <RoundButton
+        <Button
             isNarrow={true}
             onClick={() => browserHistory.push(Routes.PROJECT_PAGE + '/' + project.projectId)}>
           Voir
-        </RoundButton>
+        </Button>
       </div>
 
       {project.localStats ? <div style={blockStyle}>

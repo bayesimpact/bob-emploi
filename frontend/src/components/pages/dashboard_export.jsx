@@ -16,9 +16,7 @@ const workloadOptions = _.indexBy(PROJECT_WORKLOAD_OPTIONS, 'value')
 class ProjectSummary extends React.Component {
   static propTypes = {
     allChantiers: React.PropTypes.object.isRequired,
-    project: React.PropTypes.shape({
-      coverImageUrl: React.PropTypes.string.isRequired,
-    }).isRequired,
+    project: React.PropTypes.object.isRequired,
   }
 
   render() {

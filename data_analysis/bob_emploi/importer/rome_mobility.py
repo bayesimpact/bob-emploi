@@ -15,7 +15,7 @@ You can try it out on a local instance:
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/importer/rome_mobility.py \
-        --rome_csv_pattern data/rome/csv/unix_%s_v330_utf8.csv \
+        --rome_csv_pattern data/rome/csv/unix_%s_v331_utf8.csv \
         --mongo_url mongodb://frontend-db/test
 """
 import locale

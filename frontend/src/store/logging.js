@@ -118,6 +118,27 @@ export class Logger {
     }
     if (action.advice && action.advice.adviceId) {
       properties['Advice'] = action.advice.adviceId
+      if (action.advice.numStars) {
+        properties['Advice Star Count'] = action.advice.numStars
+      }
+      if (action.advicePriority) {
+        properties['Advice Priority'] = action.advicePriority
+      }
+      if (action.project && action.project.advices) {
+        properties['Advice Card Count'] = action.project.advices.length
+      }
+      if (action.advice.score) {
+        properties['Advice Score'] = action.score || action.advice.score
+        if (action.score !== action.advice.score) {
+          properties['Previous Advice Score'] = action.advice.score || 0
+        }
+      }
+    }
+    if (action.feature) {
+      properties['Feature'] = action.feature
+    }
+    if (action.likeScore) {
+      properties['Like Score'] = action.likeScore
     }
     if (action.error) {
       properties['Error'] = action.error

@@ -157,6 +157,24 @@ class JobSeeker(object):
         self._data.get('e0', []).sort(key=lambda e0: e0['MOIS'])
         self._data.get('rome', []).sort(key=lambda rome: rome['JOURFV'])
 
+    def _unemployment_periods(self, cover_holes_up_to, period_type):
+        # Category A, B and C are defined by: CATREGR being 1, 2 or 3.
+
+        # Find disjoint periods from "de" table which have CATREGR 1, 2, or 3.
+        periods = DateIntervals([
+            (de['DATINS'], de['DATANN'] if de['DATANN'] else None, de)
+            for de in self._data[UNEMPLOYMENT_PERIOD_TABLE]
+            if de['CATREGR'] in {'1', '2', '3'}])
+
+        if period_type == 'a':
+            self._exclude_worked_months(periods)
+
+        periods.cover_holes(
+            datetime.timedelta(days=cover_holes_up_to),
+            lambda m1, m2: dict(m2, MOTINS=m1['MOTINS'], DATINS=m1['DATINS']))
+
+        return periods
+
     def unemployment_abc_periods(self, cover_holes_up_to=0):
         """Periods of category ABC unemployment for this job seeker.
 
@@ -175,19 +193,7 @@ class JobSeeker(object):
             coming from the "de" table and as such contain all the fields like
             DATINS, DATANN, MOTINS, MOTANN, CATREGR, etc.
         """
-        # Category A, B and C are defined by: CATREGR being 1, 2 or 3.
-
-        # Find disjoint periods from "de" table which have CATREGR 1, 2, or 3.
-        periods = DateIntervals([
-            (de['DATINS'], de['DATANN'] if de['DATANN'] else None, de)
-            for de in self._data[UNEMPLOYMENT_PERIOD_TABLE]
-            if de['CATREGR'] in {'1', '2', '3'}])
-
-        periods.cover_holes(
-            datetime.timedelta(days=cover_holes_up_to),
-            lambda m1, m2: dict(m2, MOTINS=m1['MOTINS'], DATINS=m1['DATINS']))
-
-        return periods
+        return self._unemployment_periods(cover_holes_up_to, 'abc')
 
     def unemployment_a_periods(self, cover_holes_up_to=0):
         """Periods of category A unemployment for this job seeker.
@@ -207,16 +213,10 @@ class JobSeeker(object):
             from the "de" table and as such contain all the fields like DATINS,
             DATANN, MOTINS, MOTANN, CATREGR, etc.
         """
-        # Category A is defined by: CATREGR being 1, 2 or 3 and no part time
-        # work (in e0 table).
+        return self._unemployment_periods(cover_holes_up_to, 'a')
 
-        # Find disjoint periods from "de" table which have CATREGR 1, 2, or 3.
-        periods = DateIntervals([
-            (de['DATINS'], de['DATANN'] if de['DATANN'] else None, de)
-            for de in self._data[UNEMPLOYMENT_PERIOD_TABLE]
-            if de['CATREGR'] in {'1', '2', '3'}])
-
-        # Exlude months where the job seeker worked at least one hour.
+    def _exclude_worked_months(self, periods):
+        """Exlude months where the job seeker worked at least one hour."""
         for work_time_month in self._data[PART_TIME_WORK_TABLE]:
             begin, end = _month_bounds(work_time_month['MOIS'])
             periods.exclude_period(
@@ -228,12 +228,6 @@ class JobSeeker(object):
                 lambda m: dict(
                     m, MOTANN=CancellationReason.STARTING_PART_TIME_WORK,
                     DATANN=begin))  # pylint: disable=cell-var-from-loop
-
-        periods.cover_holes(
-            datetime.timedelta(days=cover_holes_up_to),
-            lambda m1, m2: dict(m2, MOTINS=m1['MOTINS'], DATINS=m1['DATINS']))
-
-        return periods
 
     def state_at_date(self, when):
         """Computes the state of the job seeker at a given date.

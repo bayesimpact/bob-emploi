@@ -60,36 +60,32 @@ class NoticeStep extends React.Component {
       fontSize: 15,
       fontWeight: 'normal',
       lineHeight: '20px',
-      marginTop: 70,
+      marginTop: 33,
       maxWidth: 450,
       textAlign: 'center',
     }
     return <Step
-        title="Vos réponses restent entre nous"
+        title="Commençons par nous connaître un peu mieux"
         fastForward={this.handleSubmit}
         onNextButtonClick={this.handleSubmit}
         {...this.props}
         isNextButtonDisabled={isNextButtonDisabled}
         nextButtonContent={isNextButtonDisabled ? <CountDown seconds={3} /> : null}>
-      <div style={{textAlign: 'center'}}>
-        <img src={require('images/lock-logo.png')} />
+      <div style={{margin: 20, textAlign: 'center'}}>
+        <img src={require('images/bob-circle-picto.svg')} />
       </div>
 
       <div style={textStyle}>
         <p>
-          Nous allons vous poser quelques questions sur vous, vos aspirations
-          et vos frustrations.
+          Nous sommes une association indépendante à but non-lucratif. Notre
+          but est d'utiliser le big data pour donner à chacun le pouvoir de
+          s'appuyer sur l'expérience combinée de tous les demandeurs d'emploi
+          afin de booster sa recherche.
         </p>
-        <p>
-          <strong>Toutes vos réponses resteront
-          entièrement privées</strong> : elles ne seront pas partagées derrière
-          votre dos, que ce soit avec les entreprises ou avec Pôle Emploi.
-        </p>
-        <p>
-          Nous sommes une association indépendante à but non-lucratif et notre
-          unique mission est d'essayer de vous être utile. Ces questions nous
-          serviront à mieux vous connaître afin de <strong>vous</strong> aider
-          de façon personnalisée.
+        <p style={{marginTop: '2em'}}>
+          Nous allons vous poser quelques questions pour mieux vous connaître
+          et vous aider de façon personnalisée, cela prendra quelques minutes
+          mais c'est important.
         </p>
       </div>
     </Step>

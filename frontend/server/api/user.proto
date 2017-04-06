@@ -53,8 +53,8 @@ message User {
   // password recovery emails.
   google.protobuf.Timestamp last_email_sent_at = 11;
 
-  // A list of explorations manually added by the user.
-  repeated JobExplorationRequest manual_explorations = 13;
+  // A map of likes (+1) and dislikes (-1) per feature.
+  map<string, int32> likes = 13;
 }
 
 message UserInteractions {
@@ -122,7 +122,7 @@ message AuthResponse {
 }
 
 // Profile of a user, a job seeker.
-// Next ID: 19.
+// Next ID: 20.
 message UserProfile {
   // Where the user is living.
   FrenchCity city = 1;
@@ -145,6 +145,9 @@ message UserProfile {
 
   // User's year of birth.
   uint32 year_of_birth = 9;
+
+  // Whether the user has a recognized handicaped.
+  bool has_handicap = 19;
 
   // URL of a picture of the user.
   string picture_url = 12;
@@ -325,6 +328,9 @@ message Features {
 
   // Whether the user should receive the Net Promoter Score email.
   NPSEmailStatus net_promoter_score_email = 16;
+
+  // Whether we send advice by email to this user.
+  BinaryExperiment advisor_email = 17;
 }
 
 enum Gender {
@@ -380,7 +386,8 @@ enum Frustration {
   SINGLE_PARENT = 8;
 
   // User is handicaped.
-  HANDICAPED = 9;
+  // DEPRECATED: Use has_handicap boolean in profile instead.
+  HANDICAPED = 9 [deprecated = true];
 
   // The users profile does not fit what recruters have in mind.
   ATYPIC_PROFILE = 10;

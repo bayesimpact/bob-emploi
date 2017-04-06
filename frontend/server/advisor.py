@@ -3,54 +3,20 @@
 See http://go/bob:advisor-design.
 """
 import collections
+import datetime
 import logging
+import random
+
+from bson import objectid
 
 from bob_emploi.frontend import action
+from bob_emploi.frontend import now
+from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
-
-# TODO(pascal): Import from AirTable.
-_ADVICE_MODULES = [
-    # TODO(pascal): Clean up scoring model then remove.
-    advisor_pb2.AdviceModule(
-        advice_id='reorientation',
-        trigger_scoring_model='advice-reorientation',
-        # https://airtable.com/tblsScCB9ouUfiQ8q/viwBc6UUcEcxN2wC4/rec1CWahSiEtlwEHW
-        engage_sticky_action_template='rec1CWahSiEtlwEHW'),
-    advisor_pb2.AdviceModule(
-        advice_id='spontaneous-application',
-        trigger_scoring_model='constant(2)',
-        # https://airtable.com/tblsScCB9ouUfiQ8q/viwBc6UUcEcxN2wC4/recx1jyNbJWmcK7XP
-        engage_sticky_action_template='recx1jyNbJWmcK7XP',
-        is_ready_for_prod=True),
-    advisor_pb2.AdviceModule(
-        advice_id='network-application',
-        trigger_scoring_model='advice-improve-network',
-        # https://airtable.com/tblsScCB9ouUfiQ8q/viwBc6UUcEcxN2wC4/recmBrBpGNTaF6CPA
-        engage_sticky_action_template='recmBrBpGNTaF6CPA',
-        is_ready_for_prod=True),
-    # TODO(pascal): Clean up scoring model then remove.
-    advisor_pb2.AdviceModule(
-        advice_id='long-cdd',
-        trigger_scoring_model='advice-long-cdd',
-        engage_sticky_action_template='recWvSwLhhlIpVyJl'),
-    advisor_pb2.AdviceModule(
-        advice_id='other-work-env',
-        trigger_scoring_model='advice-other-work-env',
-        # TODO(pascal): Fix when ready.
-        engage_sticky_action_template='reciXQKXyZb1beHXz',
-        extra_data_field_name='other_work_env_advice_data',
-        is_ready_for_prod=True),
-    advisor_pb2.AdviceModule(
-        advice_id='improve-success',
-        # TODO(guillaume): Fix with correct model.
-        trigger_scoring_model='constant(2)',
-        # TODO(guillaume): Fix with correct sticky.
-        engage_sticky_action_template='reciXQKXyZb1beHXz'),
-]
 
 _ScoredAdvice = collections.namedtuple('ScoredAdvice', ['advice', 'score'])
 
@@ -65,7 +31,6 @@ def maybe_advise(user, project, database):
     if project.is_incomplete:
         return
     _maybe_recommend_advice(user, project, database)
-    _maybe_populate_engage_action(user, project, database)
 
 
 def _maybe_recommend_advice(user, project, database):
@@ -75,7 +40,8 @@ def _maybe_recommend_advice(user, project, database):
     scoring_project = scoring.ScoringProject(
         project, user.profile, user.features_enabled, database)
     scores = {}
-    for module in _ADVICE_MODULES:
+    advice_modules = _advice_modules(database)
+    for module in advice_modules:
         if not module.is_ready_for_prod and not user.features_enabled.alpha:
             continue
         scoring_model = scoring.get_scoring_model(module.trigger_scoring_model)
@@ -87,59 +53,230 @@ def _maybe_recommend_advice(user, project, database):
         scores[module.advice_id] = scoring_model.score(scoring_project).score
 
     modules = sorted(
-        _ADVICE_MODULES,
+        advice_modules,
         key=lambda m: (scores.get(m.advice_id, 0), m.advice_id),
         reverse=True)
+    incompatible_modules = set()
     for module in modules:
-        if not scores.get(module.advice_id):
+        if not scores.get(module.advice_id) or module.airtable_id in incompatible_modules:
             break
         piece_of_advice = project.advices.add()
         piece_of_advice.advice_id = module.advice_id
         piece_of_advice.status = project_pb2.ADVICE_RECOMMENDED
         piece_of_advice.num_stars = scores.get(module.advice_id)
 
-        # TODO(pascal): Refactor with a cleaner pattern when/if we have more fields.
-        if module.extra_data_field_name == 'other_work_env_advice_data':
-            job_group_info = scoring_project.job_group_info()
-            if job_group_info.HasField('work_environment_keywords'):
-                piece_of_advice.other_work_env_advice_data.work_environment_keywords.CopyFrom(
-                    job_group_info.work_environment_keywords)
+        incompatible_modules.update(module.incompatible_advice_ids)
+
+        _compute_extra_data(piece_of_advice, module, scoring_project)
 
     return True
 
 
-def _maybe_populate_engage_action(user, project, database):
-    for advice in project.advices:
-        if not _advice_need_engage_action(advice):
-            continue
-        template = _get_engagement_action_template(advice.advice_id, database)
-        if template:
-            engagement_action = action.instantiate(
-                advice.engagement_action, user, project, template, set(), database, {})
-            engagement_action.status = action_pb2.ACTION_STUCK
-
-
-def _advice_need_engage_action(advice):
-    return advice.advice_id and not advice.engagement_action.action_id
-
-
-def _get_engagement_action_template(advice_id, database):
+def _compute_extra_data(piece_of_advice, module, scoring_project):
+    if not module.extra_data_field_name:
+        return
+    scoring_model = scoring.get_scoring_model(module.trigger_scoring_model)
     try:
-        module = next(m for m in _ADVICE_MODULES if m.advice_id == advice_id)
+        compute_extra_data = scoring_model.compute_extra_data
+    except AttributeError:
+        logging.warning(
+            'The scoring model %s has no compute_extra_data method', module.trigger_scoring_model)
+        return
+    extra_data = compute_extra_data(scoring_project)
+    if not extra_data:
+        return
+    try:
+        data_field = getattr(piece_of_advice, module.extra_data_field_name)
+    except NameError:
+        logging.warning(
+            'The Advice proto does not have a %s field as requested by the module %s',
+            module.extra_data_field_name, module.advice_id)
+        return
+    data_field.CopyFrom(extra_data)
+
+
+def list_all_tips(user, project, piece_of_advice, database, cache=None, filter_tip=None):
+    """List all available tips for a piece of advice.
+
+    Args:
+        user: the full user info.
+        project: the project to give tips for.
+        piece_of_advice: the piece of advice to give tips for.
+        database: access to the database to get modules and tips.
+        cache: an optional dict that is used across calls to this function to
+            cache data when scoring tips.
+        filter_tip: a function to select which tips to keep, by default (None)
+            keeps all of them.
+    Returns:
+        An iterable of tips for this module.
+    """
+    if not cache:
+        cache = {}
+
+    try:
+        module = next(
+            m for m in _advice_modules(database)
+            if m.advice_id == piece_of_advice.advice_id)
     except StopIteration:
-        logging.error('The Advice Module "%s" is gone.', advice_id)
-        return None
-    if not module.engage_sticky_action_template:
-        logging.error(
-            'The Advice Module "%s" is missing an engage sticky action.',
-            advice_id)
+        logging.warning('Advice module %s does not exist anymore', piece_of_advice.advice_id)
+        return []
+
+    # Get tip templates.
+    all_tip_templates = _tip_templates(database)
+    tip_templates = filter(None, (all_tip_templates.get(t) for t in module.tip_template_ids))
+
+    # Additional filter from caller.
+    if filter_tip:
+        tip_templates = filter(filter_tip, tip_templates)
+
+    # Filter tips.
+    scoring_project = cache.get('scoring_project')
+    if not scoring_project:
+        scoring_project = scoring.ScoringProject(
+            project, user.profile, user.features_enabled, database)
+        cache['scoring_project'] = scoring_project
+    filtered_tips = scoring.filter_using_score(
+        tip_templates, lambda t: t.filters, scoring_project)
+
+    return filtered_tips
+
+
+def select_advice_for_email(user, weekday, database):
+    """Select an advice to promote in a follow-up email."""
+    if not user.projects:
         return None
 
-    template = action.templates(database).get(module.engage_sticky_action_template)
-    if not template:
-        logging.error(
-            'The Advice Module (%s) engage sticky action "%s" is missing.',
-            advice_id, module.engage_sticky_action_template)
+    project = user.projects[0]
+    if not project.advices:
         return None
 
-    return template
+    easy_advice_modules = _easy_advice_modules(database)
+    history = advisor_pb2.EmailHistory()
+    history_dict = database.email_history.find_one({'_id': objectid.ObjectId(user.user_id)})
+    proto.parse_from_mongo(history_dict, history)
+
+    today = now.get()
+    last_monday = today - datetime.timedelta(days=today.weekday())
+
+    def _score_advice(priority_and_advice):
+        """Score piece of advice to compare to others, the higher the better."""
+        priority, advice = priority_and_advice
+        score = 0
+
+        # Enforce priority advice on Mondays (between -10 and +10).
+        if weekday == user_pb2.MONDAY:
+            priority_score = (advice.score or 5) - 10 * priority / len(project.advices)
+            score += priority_score
+
+        # Enforce easy advice on Fridays (between +0 and +1).
+        if weekday == user_pb2.FRIDAY and advice.advice_id in easy_advice_modules:
+            score += 1
+
+        random_factor = (advice.score or 5) / 10
+
+        last_sent = history.advice_modules[advice.advice_id].ToDatetime()
+        last_sent_monday = last_sent - datetime.timedelta(days=last_sent.weekday())
+
+        # Do not send the same advice in the same week (+0 or -20).
+        if last_sent_monday >= last_monday:
+            score -= 20
+        # Reduce the random boost if advice was sent in past weeks (*0.2 the
+        # week just before, *0.45 the week before that, *0.585, *0.669, …) .
+        else:
+            num_weeks_since_last_sent = (last_monday - last_sent_monday).days / 7
+            random_factor *= .2**(1 / num_weeks_since_last_sent)
+
+        # Randomize pieces of advice with the same score (between +0 and +1).
+        score += random.random() * random_factor
+
+        return score
+
+    candidates = sorted(enumerate(project.advices), key=_score_advice, reverse=True)
+    return next(advice for priority, advice in candidates)
+
+
+def select_tips_for_email(user, project, piece_of_advice, database, num_tips=3):
+    """Select tips to promote an advice in a follow-up email."""
+    all_templates = list_all_tips(
+        user, project, piece_of_advice, database, filter_tip=lambda t: t.is_ready_for_email)
+
+    # TODO(pascal): Factorize with above.
+    history = advisor_pb2.EmailHistory()
+    history_dict = database.email_history.find_one({'_id': objectid.ObjectId(user.user_id)})
+    proto.parse_from_mongo(history_dict, history)
+
+    today = now.get()
+
+    def _score_tip_template(tip_template):
+        """Score tip template to compare to others, the higher the better."""
+        score = 0
+
+        last_sent = history.tips[tip_template.action_template_id].ToDatetime()
+        # Score higher the tips that have not been sent for longer time.
+        score += (today - last_sent).days
+
+        # Randomize tips with the same score.
+        score += random.random()
+
+        return score
+
+    selected_templates = sorted(all_templates, key=_score_tip_template)[-num_tips:]
+    if not selected_templates:
+        return None
+
+    # Instantiate actual tips.
+    selected_tips = [
+        action.instantiate(
+            action_pb2.Action(), user, project, template, set(), database,
+            None, for_email=True)
+        for template in selected_templates]
+
+    # Replicate tips if we do not have enough.
+    while len(selected_tips) < num_tips:
+        selected_tips.extend(selected_tips)
+
+    return selected_tips[:num_tips]
+
+
+# Cache (from MongoDB) of known advice module.
+_ADVICE_MODULES = []
+_EASY_ADVICE_MODULES = set()
+
+
+def _advice_modules(database):
+    return proto.cache_mongo_collection(
+        database.advice_modules.find, _ADVICE_MODULES, advisor_pb2.AdviceModule)
+
+
+def get_advice_module(advice_id, database):
+    """Get a module by its ID."""
+    try:
+        return next(a for a in _advice_modules(database) if a.advice_id == advice_id)
+    except StopIteration:
+        return None
+
+
+def _easy_advice_modules(database):
+    if _EASY_ADVICE_MODULES:
+        return _EASY_ADVICE_MODULES
+    _EASY_ADVICE_MODULES.update(
+        a.advice_id for a in _advice_modules(database)
+        if a.is_easy)
+    return _EASY_ADVICE_MODULES
+
+
+# Cache (from MongoDB) of known tip templates.
+_TIP_TEMPLATES = {}
+
+
+def _tip_templates(database):
+    """Returns a list of known tip templates as protos."""
+    return proto.cache_mongo_collection(
+        database.tip_templates.find, _TIP_TEMPLATES, action_pb2.ActionTemplate)
+
+
+def clear_cache():
+    """Clear all caches for this module."""
+    del _ADVICE_MODULES[:]
+    _EASY_ADVICE_MODULES.clear()
+    _TIP_TEMPLATES.clear()

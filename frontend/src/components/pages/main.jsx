@@ -79,12 +79,20 @@ class App extends React.Component {
     isMobileVersion: React.PropTypes.bool,
   }
 
+  constructor(props) {
+    super(props)
+    this.state = {
+      isMobileVersion: isOnSmallScreen(),
+    }
+  }
+
   getChildContext() {
-    return {isMobileVersion: isOnSmallScreen()}
+    const {isMobileVersion} = this.state
+    return {isMobileVersion}
   }
 
   componentWillMount() {
-    if (isOnSmallScreen()) {
+    if (this.state.isOnSmallScreen) {
       this.props.dispatch(switchToMobileVersionAction)
       document.getElementById('viewport').setAttribute('content', 'width=320')
     }

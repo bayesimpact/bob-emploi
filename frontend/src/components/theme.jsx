@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import Radium from 'radium'
+import VisibilitySensor from 'react-visibility-sensor'
 require('styles/fonts/GTWalsheim/font.css')
 require('mdi/css/materialdesignicons.min.css')
 import _ from 'underscore'
@@ -22,7 +23,9 @@ export const Colors = {
   HOVER_GREEN: '#31bd59',
   LIGHTER_PURPLE: '#b755f2',
   LIGHT_GREY: '#f9fafd',
+  LIGHT_NAVY_BLUE: '#2b5c7b',
   MODAL_PROJECT_GREY: '#e8eaf0',
+  PALE_GREY_TWO: '#eceef2',
   PINKISH_GREY: '#cbcbd5',
   RED_PINK: '#ee4266',
   RED_PINK_HOVER: '#dc3457',
@@ -35,15 +38,33 @@ export const Colors = {
   SUN_YELLOW: '#ffd930',
   WARM_GREY: '#858585',
   WHITE_HALO: '#dcdcdc',
+  WINDOWS_BLUE: '#4695c8',
 }
-// TODO(guillaume): Add WHITE color everywhere in the app.
 
 export const SmoothTransitions = {
   transition: 'all 450ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms',
 }
+export const FastTransitions = {
+  transition: 'all 300ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms',
+}
 
 
 export const Styles = {
+  // Style for the sticker on top of a box that tells the users why we show them this box.
+  BOX_EXPLANATION: {
+    backgroundColor: Colors.SKY_BLUE,
+    borderRadius: 4,
+    color: '#fff',
+    display: 'inline-block',
+    fontSize: 13,
+    fontStyle: 'italic',
+    fontWeight: 500,
+    left: -12,
+    padding: 10,
+    position: 'absolute',
+    textAlign: 'center',
+    top: -12,
+  },
   CENTERED_COLUMN: {
     alignItems: 'center',
     display: 'flex',
@@ -52,7 +73,13 @@ export const Styles = {
   // Style to compensate our font (GTWalsheim), that have a lot of space below
   // the baseline, when centering vertically.
   CENTER_FONT_VERTICALLY: {
-    paddingTop: '.25em',
+    paddingTop: '.22em',
+  },
+  // Style to compensate our italic font (GTWalsheim), that have a lot of space
+  // below the baseline, when centering vertically.
+  CENTER_ITALIC_FONT: {
+    paddingRight: '.08em',
+    paddingTop: '.08em',
   },
   // Style for text input.
   // ! Border color is handled in App.css !
@@ -113,7 +140,7 @@ const BUTTON_TYPE_STYLES = {
   },
 }
 
-class RoundButtonBase extends React.Component {
+class ButtonBase extends React.Component {
   static propTypes = {
     bounceDurationMs: React.PropTypes.number,
     children: React.PropTypes.node.isRequired,
@@ -159,6 +186,7 @@ class RoundButtonBase extends React.Component {
       cursor: 'pointer',
       flexShrink: 0,
       fontSize: 14,
+      fontStyle: 'normal',
       fontWeight: 500,
       padding: isNarrow ? '8px 21px 6px' : '10px 39px 8px',
       textAlign: 'center',
@@ -192,7 +220,7 @@ class RoundButtonBase extends React.Component {
 
   }
 }
-const RoundButton = Radium(RoundButtonBase)
+const Button = Radium(ButtonBase)
 
 
 class SettingsButtonBase extends React.Component {
@@ -395,24 +423,40 @@ class RadioGroup extends React.Component {
     onChange: React.PropTypes.func.isRequired,
     options: React.PropTypes.arrayOf(React.PropTypes.shape({
       name: React.PropTypes.string.isRequired,
-      value: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.number]).isRequired,
+      value: React.PropTypes.oneOfType([
+        React.PropTypes.bool,
+        React.PropTypes.number,
+        React.PropTypes.string,
+      ]).isRequired,
     })).isRequired,
     style: React.PropTypes.object,
-    value: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.number]),
+    value: React.PropTypes.oneOfType([
+      React.PropTypes.bool,
+      React.PropTypes.number,
+      React.PropTypes.string,
+    ]),
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
   }
 
   render() {
     const {options, style, value} = this.props
+    const {isMobileVersion} = this.context
     const containerStyle = {
       display: 'flex',
       flexWrap: 'wrap',
       ...style,
     }
+    const radioStyle = {
+      marginTop: isMobileVersion ? 10 : 0,
+    }
+
     return <div style={containerStyle}>
       {options.map(option => {
         return <LabeledToggle
             key={option.value} label={option.name} type="radio"
-            isSelected={option.value === value}
+            isSelected={option.value === value} style={radioStyle}
             onClick={() => this.props.onChange(option.value)} />
       })}
     </div>
@@ -581,6 +625,9 @@ class CheckboxList extends React.Component {
     style: React.PropTypes.object,
     values: React.PropTypes.arrayOf(React.PropTypes.string),
   }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
 
   componentWillMount() {
     this.setState({valuesSelected: arrayToSet(this.props.values)})
@@ -607,12 +654,17 @@ class CheckboxList extends React.Component {
   render() {
      // eslint-disable-next-line no-unused-vars
     const {options, values, ...extraProps} = this.props
+    const {isMobileVersion} = this.context
     const {valuesSelected} = this.state
+    const checkboxStyle = {
+      marginTop: isMobileVersion ? 10 : 0,
+    }
+
     return <div {...extraProps}>
       {(options || []).map(option => {
         const isSelected = valuesSelected[option.value]
         return <LabeledToggle
-            key={option.value} label={option.name} type="checkbox"
+            key={option.value} label={option.name} type="checkbox" style={checkboxStyle}
             isSelected={isSelected} onClick={() => this.handleChange(option.value)} />
       })}
     </div>
@@ -832,8 +884,76 @@ class Input extends React.Component {
 }
 
 
+class PieChart extends React.Component {
+  static propTypes = {
+    backgroundColor: React.PropTypes.string,
+    children: React.PropTypes.node,
+    durationMillisec: React.PropTypes.number.isRequired,
+    percentage: React.PropTypes.number.isRequired,
+    size: React.PropTypes.number.isRequired,
+    strokeWidth: React.PropTypes.number.isRequired,
+    style: React.PropTypes.object,
+  }
+  static defaultProps = {
+    durationMillisec: 1000,
+    size: 60,
+    strokeWidth: 15,
+  }
+
+  componentWillMount() {
+    this.setState({hasStartedGrowing: false})
+  }
+
+  startGrowing = isVisible => {
+    if (!isVisible) {
+      return
+    }
+    this.setState({
+      hasStartedGrowing: true,
+    })
+  }
+
+  render() {
+    const {backgroundColor, children, durationMillisec, percentage, size,
+           strokeWidth, style} = this.props
+    const {hasStartedGrowing} = this.state
+    const containerStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      fontSize: 28,
+      fontWeight: 'bold',
+      height: 2 * size,
+      justifyContent: 'center',
+      position: 'relative',
+      width: 2 * size,
+      ...Styles.CENTER_FONT_VERTICALLY,
+      ...style,
+    }
+    const currentPercentage = hasStartedGrowing ? percentage : 0
+    const radius = size - strokeWidth / 2
+    const perimeter = radius * 2 * Math.PI
+    const strokeLength = perimeter * currentPercentage / 100
+    return <span style={containerStyle}>
+      <VisibilitySensor
+          active={!hasStartedGrowing} intervalDelay={250}
+          onChange={this.startGrowing} />
+      <svg style={{left: 0, position: 'absolute', top: 0}} viewBox={`0 0 ${2 * size} ${2 * size}`}>
+        <circle
+            cx={size} cy={size} r={radius} fill="none"
+            stroke={backgroundColor} strokeWidth={strokeWidth} />
+        <circle
+            cx={size} cy={size} r={radius} fill="none"
+            stroke={style.color} strokeDashoffset={perimeter / 4}
+            strokeDasharray={`${strokeLength},${perimeter -strokeLength}`}
+            strokeWidth={strokeWidth} style={{transition: `${durationMillisec}ms`}} />
+      </svg>
+      {children}
+    </span>
+  }
+}
+
 export {
   Markdown, PartnerLogos, HorizontalRule, CoverImage, FieldSet, LabeledToggle,
-  Select, CheckboxList, Icon, RoundButton, IconInput, RadioGroup, ExternalSiteButton,
-  SettingsButton, JobSuggestWithNote, Input, JobGroupCoverImage,
+  Select, CheckboxList, Icon, Button, IconInput, RadioGroup, ExternalSiteButton,
+  SettingsButton, JobSuggestWithNote, Input, JobGroupCoverImage, PieChart,
 }

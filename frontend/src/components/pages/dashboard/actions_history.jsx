@@ -5,7 +5,7 @@ import _ from 'underscore'
 import {actionHistoryDate} from 'store/action'
 import {readableDay} from 'store/french'
 
-import {Colors, RoundButton} from 'components/theme'
+import {Colors, Button} from 'components/theme'
 import {DashboardExportCreator} from 'components/dashboard_export_creator'
 import {Modal, ModalHeader} from 'components/modal'
 import {Action} from 'components/actions'
@@ -68,9 +68,9 @@ class ActionsHistory extends React.Component {
       </Scrollbars>
       <footer style={{display: 'flex', flexDirection: 'row-reverse'}}>
         <DashboardExportCreator style={footerStyle}>
-          <RoundButton type="discreet" isNarrow={true}>
+          <Button type="discreet" isNarrow={true}>
             Partager mon activité
-          </RoundButton>
+          </Button>
         </DashboardExportCreator>
       </footer>
     </Modal>

@@ -2,7 +2,7 @@ import React from 'react'
 import Radium from 'radium'
 import ReactHeight from 'react-height'
 
-import {Colors, Icon, RoundButton, SmoothTransitions, Styles} from './theme'
+import {Colors, Icon, Button, SmoothTransitions, Styles} from './theme'
 import {ShortKey} from 'components/shortkey'
 
 
@@ -171,7 +171,7 @@ class Modal extends React.Component {
       fontSize: 22,
       fontWeight: 500,
       letterSpacing: 0.6,
-      lineHeight: 1.64,
+      lineHeight: 1.3,
       margin: '40px 27px 0',
       textAlign: 'center',
       ...this.props.titleStyle,
@@ -290,9 +290,9 @@ class GamificationModal extends React.Component {
     return <Modal style={style} isShown={isShown} title={title}>
       <img style={{height: 98, marginTop: 40, width: 98}} src={imageSrc} />
       <div style={textBoxStyle}>{children}</div>
-      <RoundButton style={{marginTop: 42}} type="validation" onClick={onClose}>
+      <Button style={{marginTop: 42}} type="validation" onClick={onClose}>
         {buttonText}
-      </RoundButton>
+      </Button>
     </Modal>
   }
 }

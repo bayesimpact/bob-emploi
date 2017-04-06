@@ -17,16 +17,20 @@ function handleJsonResponse(response) {
   return response.json()
 }
 
-function postJson(path, data) {
+function postJson(path, data, isExpectingResponse) {
   const url = config.backendHostName + path
-  return fetch(url, {
+  const fetchPromise = fetch(url, {
     body: JSON.stringify(data),
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     },
     method: 'post',
-  }).then(handleJsonResponse)
+  })
+  if (isExpectingResponse) {
+    return fetchPromise.then(handleJsonResponse)
+  }
+  return fetchPromise
 }
 
 function deleteJson(path, data) {
@@ -46,8 +50,13 @@ function getJson(path) {
   return fetch(url).then(handleJsonResponse)
 }
 
+function adviceTipsGet({userId}, {projectId}, {adviceId}) {
+  return getJson(`/api/project/${userId}/${projectId}/advice/${adviceId}/tips`).
+    then(response => response.tips)
+}
+
 function createDashboardExportPost(userId) {
-  return postJson('/api/dashboard-export/create', {userId})
+  return postJson('/api/dashboard-export/create', {userId}, true)
 }
 
 function dashboardExportGet(dashboardExportId) {
@@ -55,11 +64,11 @@ function dashboardExportGet(dashboardExportId) {
 }
 
 function markUsedAndRetrievePost(userId) {
-  return postJson(`/api/app/use/${userId}`)
+  return postJson(`/api/app/use/${userId}`, undefined, true)
 }
 
 function projectRequirementsGet(project) {
-  return postJson('/api/project/requirements', project)
+  return postJson('/api/project/requirements', project, true)
 }
 
 function projectPotentialChantiersGet(userId, projectId) {
@@ -69,22 +78,26 @@ function projectPotentialChantiersGet(userId, projectId) {
 function projectUpdateChantiersPost(userId, projectId, chantierIds) {
   return postJson(
       `/api/project/${userId}/${projectId}/update-chantiers`,
-      {chantierIds})
+      {chantierIds}, true)
 }
 
 function refreshActionPlanPost(userId) {
-  return postJson('/api/user/refresh-action-plan', {userId})
+  return postJson('/api/user/refresh-action-plan', {userId}, true)
 }
 
 function resetPasswordPost(email) {
-  return postJson('/api/user/reset-password', {email})
+  return postJson('/api/user/reset-password', {email}, true)
+}
+
+function saveLikes(userId, likes) {
+  return postJson('/api/user/likes', {likes, userId}, false)
 }
 
 function userPost(user) {
   const {onboardingComplete, ...protoUser} = user
   // Unused.
   onboardingComplete
-  return postJson('/api/user', {...protoUser})
+  return postJson('/api/user', {...protoUser}, true)
 }
 
 function userGet(userId) {
@@ -96,7 +109,7 @@ function userDelete(user) {
 }
 
 function userAuthenticate(authRequest) {
-  return postJson('/api/user/authenticate', authRequest)
+  return postJson('/api/user/authenticate', authRequest, true)
 }
 
 function exploreGet(city, sourceJob) {
@@ -112,12 +125,8 @@ function exploreJobGroupGet(city, jobGroupRomeId) {
   return getJson(`/api/explore/job/stats?data=${encodeURIComponent(JSON.stringify(data))}`)
 }
 
-function chantiersGet() {
-  return getJson('/api/chantiers')
-}
-
 const api = {
-  chantiersGet,
+  adviceTipsGet,
   createDashboardExportPost,
   dashboardExportGet,
   exploreGet,
@@ -128,6 +137,7 @@ const api = {
   projectUpdateChantiersPost,
   refreshActionPlanPost,
   resetPasswordPost,
+  saveLikes,
   userAuthenticate,
   userDelete,
   userGet,

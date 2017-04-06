@@ -12,7 +12,7 @@ import {facebookAuthenticateUser, googleAuthenticateUser, emailCheck,
         registerNewUser, loginUser, displayToasterMessage, resetPassword,
         askPasswordReset, openLoginModal, closeLoginModalAction,
         AUTHENTICATE_USER, EMAIL_CHECK, RESET_USER_PASSWORD} from 'store/actions'
-import {Colors, Icon, IconInput, LabeledToggle, RoundButton, Styles} from 'components/theme'
+import {Colors, Icon, IconInput, LabeledToggle, Button, Styles} from 'components/theme'
 import {upperFirstLetter} from 'store/french'
 import {Modal} from 'components/modal'
 import {Routes} from 'components/url'
@@ -149,7 +149,7 @@ class LoginFormBase extends React.Component {
           Un email a été envoyé à {passwordResetRequestedEmail}
         </span>
       :
-      <RoundButton
+      <Button
           disabled={!this.isFormValid()}
           onClick={isTryingToResetPassword ? this.handleLostPasswordClick : this.handleLogin}
           style={{alignSelf: 'center', marginTop: 30}}
@@ -157,7 +157,7 @@ class LoginFormBase extends React.Component {
           isProgressShown={(isAuthenticating || isAskingForPasswordReset)}
           type="validation">
         {isTryingToResetPassword ? 'Récupérer son mot de passe' : 'Se connecter'}
-      </RoundButton>}
+      </Button>}
     </form>
   }
 }
@@ -223,7 +223,7 @@ class ResetPasswordFormBase extends React.Component {
           placeholder="Nouveau mot de passe" value={password} iconName="lock-outline"
           onChange={this.handleChange('password')}
           style={{marginTop: 10}} />
-      <RoundButton
+      <Button
           disabled={!this.isFormValid()}
           onClick={this.handleResetPassword}
           style={{alignSelf: 'center', marginTop: 30}}
@@ -231,7 +231,7 @@ class ResetPasswordFormBase extends React.Component {
           isNarrow={true}
           type="validation">
         Changer le mot de passe
-      </RoundButton>
+      </Button>
     </form>
   }
 }
@@ -344,7 +344,7 @@ class RegistrationFormBase extends React.Component {
           style={{fontSize: 12, marginTop: 10}}
           isSelected={hasAcceptedTerms}
           onClick={() => this.setState({hasAcceptedTerms: !hasAcceptedTerms})} />
-      <RoundButton
+      <Button
           disabled={!this.isFormValid()}
           onClick={this.handleRegister}
           style={{alignSelf: 'center', marginTop: 30}}
@@ -352,7 +352,7 @@ class RegistrationFormBase extends React.Component {
           isProgressShown={isAuthenticating}
           type="validation">
         S'inscrire
-      </RoundButton>
+      </Button>
     </form>
   }
 }
@@ -614,9 +614,9 @@ class LoginButtonBase extends React.Component {
     // eslint-disable-next-line no-unused-vars
     const {children, dispatch, isLoggedIn, isSignUpButton, visualElement,
            ...extraProps} = this.props
-    return <RoundButton type="deletion" onClick={this.handleClick} {...extraProps}>
+    return <Button type="deletion" onClick={this.handleClick} {...extraProps}>
       {children}
-    </RoundButton>
+    </Button>
   }
 }
 const LoginButton = connect(({user}) => ({

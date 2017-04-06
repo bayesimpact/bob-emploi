@@ -1,4 +1,3 @@
-/* eslint-env mocha */
 var chai = require('chai')
 var expect = chai.expect
 import {actionHistoryDate, stickyProgress} from 'store/action'

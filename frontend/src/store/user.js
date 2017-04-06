@@ -11,6 +11,7 @@ const USER_PROFILE_FIELDS = {
   frustrations: React.PropTypes.arrayOf(React.PropTypes.string.isRequired),
   gender: React.PropTypes.string,
   geographicalFlexibility: React.PropTypes.string,
+  hasHandicap: React.PropTypes.bool,
   highestDegree: React.PropTypes.string,
   lastName: React.PropTypes.string.isRequired,
   latestJob: React.PropTypes.object,
@@ -62,12 +63,59 @@ function travelInTime(user, delta) {
   return recursivelyUpdateDates(user, delta)
 }
 
-
 function userAge(yearOfBirth) {
   const todayYear = (new Date()).getFullYear()
   return todayYear - yearOfBirth
 }
 
+// Return true if the user could be discriminated against because he is too young.
+function isYoungAndDiscriminated(profile) {
+  return (profile.frustrations || []).indexOf('AGE_DISCRIMINATION') >= 0 &&
+      userAge(profile.yearOfBirth) < 30
+}
 
-export {hasActivelySearchingSinceIfNeeded, travelInTime, USER_PROFILE_FIELDS, USER_PROFILE_SHAPE,
-        userAge}
+// Return true if the user could be discriminated against because he is too young.
+function isOldAndDiscriminated(profile) {
+  return (profile.frustrations || []).indexOf('AGE_DISCRIMINATION') >= 0 &&
+      userAge(profile.yearOfBirth) > 40
+}
+
+// Returns a list of all frustrations of a user, as tags.
+// TODO(guillaume): Pull directly from Airtable when we know for sure the shape.
+function getUserFrustrationTags(profile) {
+  const maybeE = profile.gender === 'FEMININE' ? 'e': ''
+  const frustrationsToTag = {
+    AGE_DISCRIMINATION: 'Discriminations (âge)',
+    ATYPIC_PROFILE: 'Profile atypique',
+    HANDICAPED: 'Handicap non adapté',
+    INTERVIEW: "Entretiens d'embauche",
+    MOTIVATION: `Rester motivé${maybeE}`,
+    NO_OFFERS: "Pas assez d'offres",
+    NO_OFFER_ANSWERS: 'Pas assez de réponses',
+    RESUME: 'Rédaction CVs et lettres de motivation',
+    SEX_DISCRIMINATION: 'Discriminations (H/F)',
+    SINGLE_PARENT: 'Situation familiale compliquée',
+    TIME_MANAGEMENT: 'Gestion de mon temps',
+    TRAINING: 'Formations professionnelles',
+  }
+  return (profile.frustrations || []).filter(
+    f => frustrationsToTag[f]).map(f => frustrationsToTag[f])
+}
+
+// A function that returns a description for a degree.
+// If no degree, we do not return any a description.
+function getHighestDegreeDescription(userProfile) {
+  const degreeToText = {
+    BAC_BACPRO: 'Bac professionnel',
+    BTS_DUT_DEUG: 'BTS - DUT - DEUG',
+    CAP_BEP: 'CAP - BEP',
+    DEA_DESS_MASTER_PHD: 'DEA - DESS - Master - PhD',
+    LICENCE_MAITRISE: 'Licence - Maîtrise',
+  }
+  return degreeToText[userProfile.highestDegree]
+}
+
+
+export {hasActivelySearchingSinceIfNeeded, getUserFrustrationTags, travelInTime,
+        USER_PROFILE_FIELDS, USER_PROFILE_SHAPE, userAge, isYoungAndDiscriminated,
+        isOldAndDiscriminated, getHighestDegreeDescription}

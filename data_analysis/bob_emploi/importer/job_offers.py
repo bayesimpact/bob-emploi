@@ -31,14 +31,12 @@ def csv2dicts(job_offers_csv, colnames_csv=None):
     res = []
     offers = cleaned_data.job_offers(
         filename_offers=job_offers_csv, filename_colnames=colnames_csv)
+    # Fix data to make sure every `_code` only has one `_name`.
+    offers.loc[offers.departement_code == '988', 'departement_name'] = 'Nouvelle-Calédonie'
 
     # WARNING: This could cause trouble in case our dataset has an outlier.
     thirty_days_ago = offers.creation_date.max() - pd.Timedelta(days=30)
     recent_offers = offers[thirty_days_ago <= offers.creation_date]
-
-    # Fix data to make sure every `_code` only has one `_name`.
-    recent_offers.loc[
-        recent_offers.departement_code == '988', 'departement_name'] = 'Nouvelle-Calédonie'
     group_cols = [
         'rome_id', 'city_code', 'departement_code', 'region_code',
         'city_name', 'departement_name', 'region_name',

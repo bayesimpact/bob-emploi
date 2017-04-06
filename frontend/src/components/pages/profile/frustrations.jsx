@@ -25,7 +25,6 @@ const jobSearchFrustrationOptions = [
 
 const personalFrustrationOptions = [
   {name: () => 'Une situation familiale compliquée', value: 'SINGLE_PARENT'},
-  {name: () => 'Le marché du travail non adapté à mon handicap', value: 'HANDICAPED'},
   {name: () => 'Ne pas rentrer dans les cases des recruteurs', value: 'ATYPIC_PROFILE'},
   {name: () => 'Des discriminations liées à mon âge', value: 'AGE_DISCRIMINATION'},
   {name: () => 'Des discriminations liées à mon sexe', value: 'SEX_DISCRIMINATION'},
@@ -46,6 +45,20 @@ class FrustrationsStep extends React.Component {
     this.updater_ = new ProfileUpdater({frustrations: false}, this, this.props)
   }
 
+  fastForward = () => {
+    if ((this.state.frustrations || []).length) {
+      this.updater_.handleSubmit()
+      return
+    }
+    const frustrations = []
+    jobSearchFrustrationOptions.concat(personalFrustrationOptions).forEach(frustration => {
+      if (Math.random() > .5) {
+        frustrations.push(frustration.value)
+      }
+    })
+    this.setState({frustrations})
+  }
+
   render() {
     const {frustrations} = this.state
     const {gender} = this.props.profile
@@ -58,7 +71,7 @@ class FrustrationsStep extends React.Component {
     return <Step
         title="Vos frustrations"
         explanation={explanation}
-        fastForward={this.updater_.handleSubmit}
+        fastForward={this.fastForward}
         onNextButtonClick={this.updater_.handleSubmit}
         onPreviousButtonClick={this.updater_.handleBack}
         {...this.props}>

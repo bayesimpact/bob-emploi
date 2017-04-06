@@ -1,9 +1,9 @@
-/* eslint-env mocha */
 var chai = require('chai')
 var expect = chai.expect
 chai.config.truncateThreshold = 0
 import {user} from 'store/user_reducer'
-import {CREATE_PROJECT, DECLINE_ADVICE, EDIT_FIRST_PROJECT, STOP_STICKY_ACTION} from 'store/actions'
+import {CREATE_PROJECT, DECLINE_ADVICE, EDIT_FIRST_PROJECT, READ_ACTION, SAVE_ACTION,
+        STOP_STICKY_ACTION} from 'store/actions'
 
 describe('user reducer', () => {
   it('should return unchanged state for an unknown action', () => {
@@ -109,6 +109,36 @@ describe('user reducer', () => {
         ],
         projectId: 'foo',
       }],
+    })
+  })
+
+  it('should read an action', () => {
+    const oldState = {
+      projects: [
+        {actions: [{actionId: 'to-read'}]},
+      ],
+    }
+    const action = {action: {actionId: 'to-read', status: 'ACTION_UNREAD'}, type: READ_ACTION}
+    const newState = user(oldState, action)
+    expect(newState).to.deep.equal({
+      projects: [
+        {actions: [{actionId: 'to-read', status: 'ACTION_CURRENT'}]},
+      ],
+    })
+  })
+
+  it('should save an action', () => {
+    const oldState = {
+      projects: [
+        {actions: [{actionId: 'to-save'}]},
+      ],
+    }
+    const action = {action: {actionId: 'to-save', status: 'ACTION_UNREAD'}, type: SAVE_ACTION}
+    const newState = user(oldState, action)
+    expect(newState).to.deep.equal({
+      projects: [
+        {actions: [{actionId: 'to-save', status: 'ACTION_SAVED'}]},
+      ],
     })
   })
 })

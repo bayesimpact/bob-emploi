@@ -1,7 +1,7 @@
 import React from 'react'
 import _ from 'underscore'
 
-import {Colors, RoundButton} from 'components/theme'
+import {Colors, Button} from 'components/theme'
 import {ShortKey} from 'components/shortkey'
 
 
@@ -48,8 +48,10 @@ class Step extends React.Component {
     nextButtonContent: React.PropTypes.node,
     onNextButtonClick: React.PropTypes.func.isRequired,
     onPreviousButtonClick: React.PropTypes.func,
+    stepNumber: React.PropTypes.number,
     style: React.PropTypes.object,
     title: React.PropTypes.string.isRequired,
+    totalStepCount: React.PropTypes.number,
   }
   static contextTypes = {
     isMobileVersion: React.PropTypes.bool,
@@ -60,7 +62,7 @@ class Step extends React.Component {
 
   render() {
     const {children, explanation, fastForward, nextButtonContent, onPreviousButtonClick,
-           onNextButtonClick, contentStyle, style,
+           onNextButtonClick, contentStyle, style, stepNumber, totalStepCount,
            isNextButtonDisabled, title} = this.props
     const {isMobileVersion} = this.context
     const stepStyle = {
@@ -87,9 +89,17 @@ class Step extends React.Component {
       marginTop: 10,
       textAlign: 'center',
     }
+    const stepNumberStyle = {
+      color: Colors.SKY_BLUE,
+      fontSize: 13,
+      fontStyle: 11,
+      fontWeight: 'bold',
+      letterSpacing: 1.2,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+    }
     const containerStyle = {
       display: 'flex',
-      flex: 1,
       flexDirection: 'column',
       marginTop: 33,
       maxWidth: 480,
@@ -109,22 +119,25 @@ class Step extends React.Component {
     return <div style={stepStyle}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={fastForward} />
       <div style={titleStyle}>{title}</div>
+      {stepNumber && totalStepCount ? <div style={stepNumberStyle}>
+        Étape {stepNumber} / {totalStepCount}
+      </div> : null}
       {explanation ? <div style={explanationStyle}>{explanation}</div> : null}
       <div style={containerStyle}>
         {children}
       </div>
       <div style={navigationStyle}>
-        {onPreviousButtonClick ? <RoundButton
+        {onPreviousButtonClick ? <Button
             type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}>
           Précédent
-        </RoundButton> : null}
-        <RoundButton
+        </Button> : null}
+        <Button
           type="validation"
           onClick={onNextButtonClick}
           disabled={isNextButtonDisabled}
           style={buttonStyle}>
           {nextButtonContent || 'Suivant'}
-        </RoundButton>
+        </Button>
       </div>
     </div>
   }

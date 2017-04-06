@@ -6,23 +6,14 @@ import {CircularProgress} from 'components/progress'
 import {Colors} from 'components/theme'
 import {PageWithNavigationBar} from 'components/navigation'
 import {createFirstProject, editFirstProject, CREATE_PROJECT_SAVE,
-        FINISH_PROJECT_GOAL, FINISH_PROJECT_CRITERIA,
-        FINISH_PROJECT_EXPERIENCE} from 'store/actions'
+        } from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {Routes} from 'components/url'
-import {NewProjectGoalStep} from './profile/goal'
-import {NewProjectCriteriaStep} from './profile/criteria'
-import {NewProjectExperienceStep} from './profile/experience'
-import {NewProjectJobsearchStep} from './profile/jobsearch'
+import {PROJECT_ONBOARDING_STEPS, onboardingStepCount} from './profile/onboarding'
 
 export const NEW_PROJECT_ID = 'nouveau'
 
-const STEPS = [
-  {component: NewProjectGoalStep, type: FINISH_PROJECT_GOAL},
-  {component: NewProjectCriteriaStep, type: FINISH_PROJECT_CRITERIA},
-  {component: NewProjectExperienceStep, type: FINISH_PROJECT_EXPERIENCE},
-  {component: NewProjectJobsearchStep},
-]
+const STEPS = PROJECT_ONBOARDING_STEPS
 
 
 class NewProjectPageBase extends React.Component {
@@ -104,8 +95,8 @@ class NewProjectPageBase extends React.Component {
       alignItems: 'center',
       display: 'flex',
       justifyContent: 'center',
-      paddingBottom: isMobileVersion ? 0 : 90,
-      paddingTop: isMobileVersion ? 0 : 90,
+      paddingBottom: isMobileVersion ? 0 : 70,
+      paddingTop: isMobileVersion ? 0 : 70,
     }
     const newProject = {...this.state}
     let content
@@ -115,10 +106,9 @@ class NewProjectPageBase extends React.Component {
       const currentStepItem = STEPS[currentStep-1]
       const CurrentStepComponent = currentStepItem && currentStepItem.component
       content = <CurrentStepComponent
-          onSubmit={this.handleSubmit}
-          onBack={currentStep > 1 ? this.handleBack : null}
-          profile={userProfile}
-          newProject={newProject} />
+          onSubmit={this.handleSubmit} onBack={currentStep > 1 ? this.handleBack : null}
+          profile={userProfile} newProject={newProject}
+          stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount} />
     }
     return <PageWithNavigationBar
         style={{backgroundColor: Colors.BACKGROUND_GREY}}

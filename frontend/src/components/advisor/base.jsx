@@ -1,590 +1,468 @@
 import React from 'react'
 import {connect} from 'react-redux'
+import {browserHistory} from 'react-router'
+import VisibilitySensor from 'react-visibility-sensor'
 
-import {Modal} from 'components/modal'
-import {ShortKey} from 'components/shortkey'
-import {CheckboxList, Colors, RoundButton} from 'components/theme'
+import {adviceCardIsShown, seeAdvice} from 'store/actions'
+import {PERSONALIZATION_IDS, filterPersonalizations,
+        getPersonalizations} from 'store/personalizations'
+import {USER_PROFILE_SHAPE} from 'store/user'
 
+import {FeatureLikeDislikeButtons} from 'components/like'
+import {Colors, Icon, SmoothTransitions, Styles} from 'components/theme'
+import {Routes} from 'components/url'
 
-class TitleBox extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node.isRequired,
-    numRecommendations: React.PropTypes.number,
-    recommendationNumber: React.PropTypes.number,
-    style: React.PropTypes.object,
-  }
-
-  render() {
-    const {children, numRecommendations, recommendationNumber} = this.props
-    const style = {
-      backgroundColor: '#fff',
-      boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
-      color: Colors.DARK,
-      padding: '40px 50px',
-      ...this.props.style,
-    }
-    const headerStyle = {
-      color: Colors.SKY_BLUE,
-      fontSize: 15,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      textTransform: 'uppercase',
-    }
-    return <div style={style}>
-      {(numRecommendations && recommendationNumber) ? <header style={headerStyle}>
-        Solution n°{recommendationNumber}/{numRecommendations}
-      </header> : null}
-      <ul style={{fontSize: 18, lineHeight: '26px', marginBottom: 0}}>
-        {children}
-      </ul>
-    </div>
-  }
-}
-
-
-class Section extends React.Component{
-  static propTypes = {
-    children: React.PropTypes.node.isRequired,
-    header: React.PropTypes.node.isRequired,
-    style: React.PropTypes.object,
-  }
-
-  render() {
-    const {children, header, style} = this.props
-    const sectionStyle = {
-      color: Colors.DARK_TWO,
-      fontSize: 16,
-      lineHeight: '26px',
-      padding: '30px 0',
-      ...style,
-    }
-    const sectionHeaderStyle = {
-      fontSize: 20,
-      fontWeight: 'bold',
-    }
-    return <section style={sectionStyle}>
-      <header style={sectionHeaderStyle}>{header}</header>
-      {children}
-    </section>
-  }
-}
-
-
-class MarketStressChart extends React.Component {
-  static propTypes = {
-    maxNumOffersShown: React.PropTypes.number,
-    numCandidates: React.PropTypes.number.isRequired,
-    numOffers: React.PropTypes.number.isRequired,
-  }
-
-  static defaultProps = {
-    maxNumOffersShown: 18,
-  }
-
-  render() {
-    const {numCandidates, numOffers, maxNumOffersShown, ...extraProps} = this.props
-    const numOffersToShow = Math.min(numOffers, maxNumOffersShown)
-    const arrayOfLength = length => new Array(length).fill(undefined)
-    let offerImage
-    if (numCandidates > 0 && numOffers/numCandidates > .7) {
-      offerImage = require('images/offer-green.svg')
-    } else if (numCandidates > 0 && numOffers/numCandidates > .4) {
-      offerImage = require('images/offer-orange.svg')
-    } else {
-      offerImage = require('images/offer-red.svg')
-    }
-    const additionalOffers = numOffersToShow < numOffers ? '+' + (numOffers - numOffersToShow) : ''
-    const additionalOffersStyle = {
-      fontWeight: 'bold',
-      lineHeight: '27px',
-      marginTop: 15,
-      verticalAlign: 'middle',
-    }
-
-    return <div {...extraProps}>
-      <div>
-        {arrayOfLength(numCandidates).map((unused, index) =>
-          <img
-              key={`candidate-${index}`} src={require('images/jobseeker.svg')}
-              style={{marginRight: 10}} />)}
-      </div>
-      <div style={{display: 'flex', flexWrap: 'wrap', maxWidth: 360}}>
-        {arrayOfLength(numOffersToShow).map((unused, index) =>
-          <img
-              key={`offer-${index}`} src={offerImage}
-              style={{marginLeft: 1, marginRight: 11, marginTop: 10}} />)}
-        <span style={additionalOffersStyle}>{additionalOffers}</span>
-      </div>
-    </div>
-  }
-}
-
-
-const APPLICATION_TITLES = {
-  PERSONAL_OR_PROFESSIONAL_CONTACTS: 'Réseau personnel ou professionnel',
-  PLACEMENT_AGENCY: 'Intermédiaires du placement',
-  SPONTANEOUS_APPLICATION: 'Candidature spontanée',
-  '': 'Autres canaux',
-}
-
-
-class ApplicationModeChart extends React.Component {
-  static propTypes = {
-    applicationModes: React.PropTypes.object,
-  }
-
-  getModeTitle(mode) {
-    return APPLICATION_TITLES[mode] || APPLICATION_TITLES['']
-  }
-
-  renderBar(number, mode, isHighlighted) {
-    const style = {
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'flex-end',
-      margin: '0 5px',
-      textAlign: 'center',
-      width: 130,
-    }
-    const titleStyle = {
-      color: isHighlighted ? Colors.SLATE : Colors.COOL_GREY,
-      fontSize: 16,
-      fontStyle: 'italic',
-      lineHeight: 1.19,
-      marginBottom: 15,
-    }
-    const barStyle = {
-      backgroundColor: isHighlighted ? Colors.SLATE : Colors.SILVER,
-      color: isHighlighted ? '#fff' : Colors.COOL_GREY,
-      fontSize: 35 - number * 5,
-      fontWeight: 'bold',
-      height: 125 - number * 25,
-      lineHeight: 1,
-      paddingTop: 22.5 - number * 2.5,
-    }
-    return <div style={style}>
-      <div style={titleStyle}>
-        {this.getModeTitle(mode)}
-      </div>
-      <div style={barStyle}>
-        {number}
-      </div>
-    </div>
-  }
-
-  render() {
-    const {applicationModes} = this.props
-    // Select the first FAP available.
-    let fapModes = null
-    for (const fap in applicationModes) {
-      fapModes = applicationModes[fap]
-      break
-    }
-    if (!fapModes) {
-      return null
-    }
-
-    return <div style={{display: 'flex', justifyContent: 'center'}}>
-      {this.renderBar(2, fapModes.second, false)}
-      {this.renderBar(1, fapModes.first, true)}
-      {this.renderBar(3, fapModes.third, false)}
-    </div>
-  }
-}
-
-
-class AdvicePage extends React.Component {
-  static propTypes = {
-    acceptCaption: React.PropTypes.string.isRequired,
-    children: React.PropTypes.node.isRequired,
-    declineCaption: React.PropTypes.string.isRequired,
-    declineReasonOptions: React.PropTypes.arrayOf(React.PropTypes.string).isRequired,
-    declineReasonTitle: React.PropTypes.string.isRequired,
-    numRecommendations: React.PropTypes.number,
-    onAccept: React.PropTypes.func,
-    onDecline: React.PropTypes.func,
-    recommendationNumber: React.PropTypes.number,
-    showAckModalOnAccept: React.PropTypes.bool,
-    style: React.PropTypes.object,
-    summary: React.PropTypes.node.isRequired,
-  }
-  static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
-  }
-
-  static defaultProps = {
-    acceptCaption: "Ça m'intéresse",
-    declineCaption: "Ça ne m'intéresse pas",
-  }
-
-  state = {
-    isAccepting: false,
-    isAckAcceptModalShown: false,
-    isAckDeclineReasonModalShown: false,
-    isDeclineModalShown: false,
-    reason: '',
-  }
-
-  handleAccept = () => {
-    const {onAccept, showAckModalOnAccept} = this.props
-    if (showAckModalOnAccept) {
-      this.setState({isAckAcceptModalShown: true})
-    } else {
-      this.setState({isAccepting: true})
-      onAccept()
-    }
-  }
-
-  renderTitleBox() {
-    const {recommendationNumber, summary, numRecommendations} = this.props
-    const {isMobileVersion} = this.context
-    const style = isMobileVersion ?  {
-      margin: '0 0 20px',
-      padding: 20,
-    } : {
-      marginBottom: 30,
-    }
-    return <TitleBox
-        recommendationNumber={recommendationNumber} numRecommendations={numRecommendations}
-        style={style}>
-      {summary}
-    </TitleBox>
-  }
-
-  renderDetailedAnalysis() {
-    const {children} = this.props
-    const {isMobileVersion} = this.context
-    return <div style={{padding: isMobileVersion ? '0 30px' : '0 50px'}}>
-      {children}
-    </div>
-  }
-
-  renderButtons() {
-    const {acceptCaption, declineCaption, onAccept} = this.props
-    if (!onAccept) {
-      return null
-    }
-    const {isMobileVersion} = this.context
-    const style = {
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'initial',
-      marginBottom: 100,
-      padding: '0 50px',
-    }
-    return <div style={style}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.handleAccept} />
-      <RoundButton
-          type="validation" style={{flex: 1}} isProgressShown={this.state.isAccepting}
-          onClick={this.handleAccept}>
-        {acceptCaption}
-      </RoundButton>
-      <span style={{height: 20, width: 20}} />
-      <RoundButton
-          type="validation" style={{flex: 1}}
-          onClick={() => this.setState({isDeclineModalShown: true})}>
-        {declineCaption}
-      </RoundButton>
-    </div>
-  }
-
-  render() {
-    const {declineReasonOptions, declineReasonTitle, onDecline, onAccept, style} = this.props
-    const {isDeclineModalShown, isAckAcceptModalShown, isAckDeclineReasonModalShown} = this.state
-    return <div style={style}>
-      <DeclineModal
-          onClose={() => this.setState({isDeclineModalShown: false})}
-          isShown={isDeclineModalShown}
-          title={declineReasonTitle}
-          options={declineReasonOptions}
-          onSubmit={reason => this.setState({
-            isAckDeclineReasonModalShown: true,
-            isDeclineModalShown: false,
-            reason,
-          })} />
-      {onDecline ? <AckDeclineReasonModal
-          isShown={isAckDeclineReasonModalShown}
-          onSubmit={() => onDecline(this.state.reason)} /> : null}
-      {onAccept ? <AckAcceptModal
-          isShown={isAckAcceptModalShown}
-          onSubmit={onAccept} /> : null}
-      {this.renderTitleBox()}
-      {this.renderDetailedAnalysis()}
-      {this.renderButtons()}
-    </div>
-  }
-}
-
-
-class DeclineModal extends React.Component {
-  static propTypes = {
-    onClose: React.PropTypes.func.isRequired,
-    onSubmit: React.PropTypes.func.isRequired,
-    options: React.PropTypes.arrayOf(React.PropTypes.string).isRequired,
-  }
-
-  state = {
-    reasons: [],
-  }
-
-  handleSubmit = () => {
-    const {onSubmit} = this.props
-    let {reasons} = this.state
-    if (this.refs.others.value) {
-      reasons = reasons.concat([this.refs.others.value])
-    }
-    onSubmit(reasons.join(', '))
-  }
-
-  render() {
-    // eslint-disable-next-line no-unused-vars
-    const {onClose, onSubmit, options, ...extraProps} = this.props
-    const {reasons} = this.state
-    const noticeStyle = {
-      color: Colors.SLATE,
-      fontSize: 14,
-      lineHeight: 1.21,
-      margin: '20px auto 35px',
-      maxWidth: 360,
-      textAlign: 'center',
-    }
-    const textareaStyle = {
-      display: 'block',
-      height: 130,
-      margin: '10px 0 25px',
-      padding: 15,
-      width: '100%',
-    }
-    return <Modal
-        {...extraProps} titleStyle={{lineHeight: 1}} onClose={onClose}
-        style={{fontSize: 15, maxWidth: 480, padding: '0 60px 35px'}}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.handleSubmit} />
-      <div style={noticeStyle}>
-        Nous essayons de mieux comprendre vos motivations
-        et votre parcours afin de vous aider au mieux.
-      </div>
-
-      <CheckboxList
-          style={{color: Colors.DARK_TWO, fontSize: 15}}
-          onChange={reasons => this.setState({reasons})}
-          options={options.map(reason => ({name: reason, value: reason}))}
-          values={reasons} />
-
-      <div style={{color: Colors.DARK_TWO}}>
-        Autres :
-        <textarea
-            style={textareaStyle} ref="others"
-            placeholder="Dites-nous ce qui ne vous a pas plu." />
-      </div>
-
-      <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: 25}}>
-        <RoundButton onClick={onClose} type="discreet" style={{marginRight: 15}}>
-          Annuler
-        </RoundButton>
-        <RoundButton onClick={this.handleSubmit} type="validation">
-          Envoyer
-        </RoundButton>
-      </div>
-    </Modal>
-  }
-}
-
-
-class HowToBox extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node.isRequired,
-    disabled: React.PropTypes.bool,
-    reason: React.PropTypes.string,
-    style: React.PropTypes.object,
-    title: React.PropTypes.string.isRequired,
-  }
-
-  render() {
-    const {children, disabled, reason, title} = this.props
-    if (disabled) {
-      return null
-    }
-    const darkFrameStyle = {
-      backgroundColor: Colors.LIGHT_GREY,
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      borderRadius: 4,
-      marginTop: 30,
-      ...this.props.style,
-    }
-    const reasonStyle = {
-      backgroundColor: Colors.SLATE,
-      borderRadius: '0 0 4px 4px',
-      color: '#fff',
-      fontSize: 13,
-      fontStyle: 'italic',
-      fontWeight: 500,
-      padding: 10,
-      textAlign: 'center',
-    }
-    return <div style={darkFrameStyle}>
-      <div style={{padding: 25}}>
-        <div style={{fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase'}}>
-          {title}
-        </div>
-        <div style={{display: 'flex', marginTop: 20}}>
-          <div style={{fontSize: 40, textAlign: 'center', width: 165}}>
-            👉
-          </div>
-          <div style={{flex: 1}}>
-            {children}
-          </div>
-        </div>
-      </div>
-      {reason ? <div style={reasonStyle}>{reason}</div> : null}
-    </div>
-  }
-}
-
-
-
-// Modal that appears when we validate the choice of the user.
-class ValidationModal extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node.isRequired,
-    onSubmit: React.PropTypes.func.isRequired,
-    submitButtonCaption: React.PropTypes.string.isRequired,
-  }
-
-  state = {
-    isSubmitted: false,
-  }
-
-  render() {
-    const {children, onSubmit, submitButtonCaption, ...extraProps} = this.props
-    const style = {
-      fontSize: 14,
-      lineHeight: 1.57,
-      maxWidth: 480,
-      padding: '0 60px 50px',
-      textAlign: 'center',
-    }
-    const handleSubmit = () => {
-      this.setState({isSubmitted: true})
-      onSubmit && onSubmit()
-    }
-    return <Modal {...extraProps} style={style}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={handleSubmit} />
-      <img src={require('images/thumb-up.svg')} style={{margin: 40}} />
-      <div>
-        {children}
-      </div>
-      <RoundButton
-          onClick={handleSubmit} type="validation" style={{marginTop: 40}}
-          isProgressShown={this.state.isSubmitted} >
-        {submitButtonCaption}
-      </RoundButton>
-    </Modal>
-  }
-}
-
-
-class AckAcceptModal extends React.Component {
-  render() {
-    return <ValidationModal
-        title="Solution ajoutée&nbsp;!"
-        submitButtonCaption="Voir les autres solutions" {...this.props}>
-      Cette solution a été ajoutée à votre plan d'action. Nous vous aiderons
-      par la suite à <strong>évaluer et saisir</strong> cette opportunité.
-    </ValidationModal>
-  }
-}
-
-
-class AckDeclineReasonModal extends React.Component {
-  render() {
-    return <ValidationModal
-        title="Merci pour votre aide"
-        submitButtonCaption="Continuer" {...this.props}>
-      Nous avons bien pris en compte votre retour.
-      Nos algorithmes adapterons les solutions que
-      nous vous proposerons à l'avenir.
-    </ValidationModal>
-  }
-}
+import adviceModuleProperties from './data/advice_modules.json'
 
 
 class AdviceCardBase extends React.Component {
   static propTypes = {
     advice: React.PropTypes.object.isRequired,
     children: React.PropTypes.node,
-    gender: React.PropTypes.string,
-    goal: React.PropTypes.string,
-    onSelect: React.PropTypes.func,
+    dispatch: React.PropTypes.func.isRequired,
+    isInAdvicePage: React.PropTypes.bool,
+    onShow: React.PropTypes.func,
+    priority: React.PropTypes.number.isRequired,
+    profile: USER_PROFILE_SHAPE.isRequired,
+    project: React.PropTypes.object.isRequired,
+    reasons: React.PropTypes.arrayOf(React.PropTypes.oneOf(PERSONALIZATION_IDS).isRequired),
     style: React.PropTypes.object,
-    title: React.PropTypes.node.isRequired,
   }
   static contextTypes = {
     isMobileVersion: React.PropTypes.bool,
   }
 
+  state = {
+    hasBeenSeen: false,
+    isHovered: false,
+    reasons: [],
+  }
+
+  componentWillMount() {
+    const {advice, dispatch, priority, project, reasons} = this.props
+    dispatch(adviceCardIsShown(project, advice, priority))
+    this.updateReasons(reasons)
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const {reasons} = nextProps
+    if (reasons !== this.props.reasons) {
+      this.updateReasons(reasons)
+    }
+  }
+
+  updateReasons(reasons) {
+    const {project, profile} = this.props
+    this.setState({
+      reasons: getPersonalizations(reasons, profile, project).
+        map(({youToldUs}) => youToldUs),
+    })
+  }
+
+  gotoAdvicePage = () => {
+    const {advice, project} = this.props
+    browserHistory.push(`${Routes.PROJECT_PAGE}/${project.projectId}/conseil/${advice.adviceId}`)
+  }
+
+  handleVisibilityChange = isVisible => {
+    if (!isVisible) {
+      return
+    }
+    const {advice, dispatch, onShow, priority, project} = this.props
+    this.setState({hasBeenSeen: true})
+    dispatch(seeAdvice(project, advice, priority))
+    onShow && onShow()
+  }
+
   renderTitle() {
-    const {title} = this.props
+    const {advice} = this.props
     const style = {
-      borderBottom: `1px solid ${Colors.BACKGROUND_GREY}`,
+      color: Colors.CHARCOAL_GREY,
       fontSize: 25,
       fontStyle: 'italic',
       fontWeight: 'bold',
-      padding: '30px 30px 20px',
+      padding: '15px 0 0',
     }
+    const {title} = adviceModuleProperties[advice.adviceId] || {}
     return <header style={style}>
       {title}
     </header>
   }
 
-  renderFooter() {
-    const {advice, gender, goal, onSelect} = this.props
-    const {isMobileVersion} = this.context
-    if (advice.status === 'ADVICE_ACCEPTED') {
-      return null
+  renderTags() {
+    const {reasons} = this.state
+    const tagStyle = {
+      backgroundColor: Colors.SOFT_BLUE,
+      borderRadius: 100,
+      color: '#fff',
+      display: 'inline-block',
+      fontSize: 13,
+      margin: '4px 4px 0 0',
+      padding: '2px 8px',
     }
-    const style = {
-      alignItems: 'center',
-      borderTop: `1px solid ${Colors.BACKGROUND_GREY}`,
-      color: Colors.COOL_GREY,
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      fontSize: 20,
-      fontStyle: 'italic',
-      lineHeight: 1.45,
-      padding: '20px 30px 30px',
-    }
-    const buttonStyle = isMobileVersion ? {marginTop: 30} : {marginLeft: 30}
-    const maybeE = gender === 'FEMININE' ? 'e' : ''
-    return <footer style={style}>
-      <div style={{flex: 1}}>
-        Si vous êtes convaincu{maybeE}, cliquez sur commencer pour recevoir
-        quotidiennement d'autres conseils concrets
-        {goal ? ` pour ${goal}` : null}.
-      </div>
+    return <div style={{margin: '2px 0 17px'}}>
+      {reasons.map((reason, index) => <span key={index} style={tagStyle}>
+        <span style={Styles.CENTER_FONT_VERTICALLY}>{reason}</span>
+      </span>)}
+    </div>
+  }
 
-      <RoundButton onClick={onSelect} type="validation" style={buttonStyle}>
-        Commencer
-      </RoundButton>
-    </footer>
+  renderButtonBar() {
+    const {advice} = this.props
+    const {callToAction} = adviceModuleProperties[advice.adviceId] || {}
+    const {isHovered} = this.state
+    const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
+    const unreadStyle = {
+      backgroundColor: 'rgba(0, 0, 0, .4)',
+      borderRadius: 2,
+      fontWeight: 500,
+      marginRight: 20,
+      padding: '2px 6px',
+    }
+    const tooltipStyle = {
+      color: Colors.DARK,
+      fontSize: 13,
+      fontStyle: 'italic',
+      fontWeight: 'normal',
+      padding: 20,
+      width: 200,
+    }
+    const buttonBarStyle = {
+      alignItems: 'center',
+      backgroundColor: isHovered ? Colors.LIGHT_NAVY_BLUE : Colors.WINDOWS_BLUE,
+      borderRadius: 0,
+      color: '#fff',
+      display: 'flex',
+      fontSize: 14,
+      fontWeight: 'bold',
+      height: 40,
+      padding: '0 20px',
+      ...SmoothTransitions,
+    }
+    const chevronStyle = {
+      fontSize: 25,
+    }
+    return <div style={buttonBarStyle}>
+      <span>
+        {callToAction || "Accédez à l'outil"}
+      </span>
+      <span style={{flex: 1}} />
+      {isAdviceUnread ? <span style={unreadStyle} className="tooltip">
+        {/* TODO(pascal): Show this tooltip when scrolling if it was not shown yet. */}
+        <div className="tooltiptext" style={tooltipStyle}>
+          Cliquez sur sur la carte pour découvrir notre outil dédié à ce sujet.
+        </div>
+        <div style={Styles.CENTER_FONT_VERTICALLY}>Non vu</div>
+      </span> : null}
+      <Icon name="chevron-right" style={chevronStyle} />
+    </div>
+  }
+
+  renderTitleAndTags(style) {
+    return <div style={style}>
+      {this.renderTitle()}
+      {this.renderTags()}
+    </div>
   }
 
   render() {
-    const {children, style} = this.props
-    const containerStyle = {
+    const {children, isInAdvicePage, style} = this.props
+    const {isHovered} = this.state
+    const {isMobileVersion} = this.context
+    const cardStyle = {
       backgroundColor: '#fff',
+      boxShadow: isHovered && !isInAdvicePage ? '0 5px 25px 0 rgba(0, 0, 0, 0.1)' : 'initial',
       color: Colors.CHARCOAL_GREY,
-      ...style,
+      cursor: isInAdvicePage ? 'default' : 'pointer',
     }
-    return <section style={containerStyle}>
-      {this.renderTitle()}
-      <div style={{padding: '25px 30px'}}>
-        {children}
-      </div>
-      {this.renderFooter()}
-    </section>
+    const contentStyle = {
+      borderBottom: isMobileVersion ? `solid 1px ${Colors.BACKGROUND_GREY}` : 'initial',
+      borderRight: isMobileVersion ? 'initial' : `solid 1px ${Colors.BACKGROUND_GREY}`,
+      flex: 2,
+      padding: '35px 40px',
+    }
+    const titleInCardStyle = {
+      borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      padding: '0 25px 10px',
+    }
+    return <div style={style}>
+      {isInAdvicePage ? null : this.renderTitleAndTags({})}
+      <section
+        style={cardStyle} onClick={this.gotoAdvicePage}
+        onMouseEnter={() => this.setState({isHovered: true})}
+        onMouseLeave={() => this.setState({isHovered: false})}>
+        <div style={{flex: 1}}>
+          {isInAdvicePage ? this.renderTitleAndTags(titleInCardStyle) : null}
+          <VisibilitySensor
+              active={!this.state.hasBeenSeen} intervalDelay={250} minTopValue={50}
+              partialVisibility={true} onChange={this.handleVisibilityChange}>
+            <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
+              <div style={contentStyle}>
+                {children}
+              </div>
+            </div>
+          </VisibilitySensor>
+        </div>
+        {isInAdvicePage ? null : this.renderButtonBar()}
+      </section>
+    </div>
   }
 }
 const AdviceCard = connect(({user}) => ({gender: user.profile.gender}))(AdviceCardBase)
 
 
-export {AdvicePage, ApplicationModeChart, MarketStressChart, Section, TitleBox, AdviceCard,
-        HowToBox}
+class GrowingNumber extends React.Component {
+  static propTypes = {
+    durationMillisec: React.PropTypes.number.isRequired,
+    isSteady: React.PropTypes.bool,
+    number: React.PropTypes.number.isRequired,
+    style: React.PropTypes.object,
+  }
+  static defaultProps = {
+    durationMillisec: 1000,
+  }
+
+  componentWillMount() {
+    this.setState({growingForMillisec: 0, hasGrown: false, hasStartedGrowing: false})
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timeout)
+  }
+
+  startGrowing = isVisible => {
+    if (!isVisible) {
+      return
+    }
+    this.grow(0)
+  }
+
+  grow(growingForMillisec) {
+    clearTimeout(this.timeout)
+    if (growingForMillisec >= this.props.durationMillisec) {
+      this.setState({hasGrown: true})
+      return
+    }
+    this.setState({
+      growingForMillisec,
+      hasStartedGrowing: true,
+    })
+    this.timeout = setTimeout(() => this.grow(growingForMillisec + 50), 50)
+  }
+
+  render() {
+    const {durationMillisec, isSteady, number, style} = this.props
+    const {growingForMillisec, hasGrown, hasStartedGrowing} = this.state
+    const maxNumDigits = Math.floor(Math.log10(number)) + 1
+    const containerStyle = isSteady ? {
+      display: 'inline-block',
+      textAlign: 'right',
+      // 0.625 was found empirically.
+      width: `${maxNumDigits * 0.625}em`,
+      ...style,
+    } : style
+    return <span style={containerStyle}>
+      <VisibilitySensor
+          active={!hasStartedGrowing} intervalDelay={250}
+          onChange={this.startGrowing} />
+      {hasGrown ? number :
+        Math.round(growingForMillisec / durationMillisec * number)}
+    </span>
+  }
+}
+
+
+class PersonalizationBox extends React.Component {
+  static propTypes = {
+    children: React.PropTypes.node,
+    header: React.PropTypes.node,
+    style: React.PropTypes.object,
+  }
+
+  render() {
+    const {children, header, style} = this.props
+    const containerStyle = {
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      borderRadius: 4,
+      display: 'flex',
+      flexDirection: 'column',
+      fontSize: 13,
+      maxWidth: 300,
+      ...style,
+    }
+    const headerStyle = {
+      alignItems: 'center',
+      backgroundColor: Colors.SKY_BLUE,
+      borderRadius: '4px 4px 0 0',
+      color: '#fff',
+      display: 'flex',
+      fontStyle: 'italic',
+      fontWeight: 500,
+      padding: 15,
+      position: 'relative',
+    }
+    const contentStyle = {
+      backgroundColor: '#fff',
+      borderRadius: '0 0 4px 4px',
+      flex: 1,
+      lineHeight: 1.7,
+      padding: 20,
+    }
+    const notchContainerStyle = {
+      left: 15,
+      position: 'absolute',
+      top: '100%',
+      width: 29,
+    }
+    const notchStyle = {
+      borderLeft: 'solid 5px transparent',
+      borderRight: 'solid 5px transparent',
+      borderTop: `solid 5px ${Colors.SKY_BLUE}`,
+      margin: 'auto',
+      width: 1,
+    }
+    return <div style={containerStyle}>
+      <header style={headerStyle}>
+        <img src={require('images/user-picto.svg')} style={{paddingRight: 15}} />
+        {header}
+        <div style={notchContainerStyle}>
+          <div style={notchStyle} />
+        </div>
+      </header>
+      <div style={contentStyle}>
+        {children}
+      </div>
+    </div>
+  }
+}
+
+
+// This component avoids that the element touches the border when on mobile.
+// For now, we only use is for text, hence a solution that does not require a component would be,
+// better, but we didn't find one yet.
+class PaddedOnMobile extends React.Component {
+  static propTypes = {
+    children: React.PropTypes.node,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
+
+  render() {
+    const style = {
+      padding: this.context.isMobileVersion ? '0 20px' : 0,
+    }
+    return <div style={style}>{this.props.children}</div>
+  }
+}
+
+
+class PersonalizationBoxes extends React.Component {
+  static propTypes = {
+    maxNumberBoxes: React.PropTypes.number,
+    personalizations: React.PropTypes.arrayOf(React.PropTypes.shape({
+      filters: React.PropTypes.arrayOf(React.PropTypes.string.isRequired).isRequired,
+      tip: React.PropTypes.oneOfType([React.PropTypes.node, React.PropTypes.func]).isRequired,
+    }).isRequired).isRequired,
+    profile: USER_PROFILE_SHAPE.isRequired,
+    project: React.PropTypes.object.isRequired,
+    style: React.PropTypes.object,
+  }
+  static defaultProps = {
+    maxNumberBoxes: 3,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
+
+  render() {
+    const {maxNumberBoxes, personalizations, profile, project, style} = this.props
+    const {isMobileVersion} = this.context
+    const personalizationCards = filterPersonalizations(personalizations, profile, project)
+    if (maxNumberBoxes) {
+      personalizationCards.splice(maxNumberBoxes)
+    }
+
+    if (!personalizationCards.length) {
+      return null
+    }
+
+    const cardsContainerStyle = {
+      alignItems: isMobileVersion ? 'center' : 'initial',
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      flexWrap: isMobileVersion ? 'initial' : 'wrap',
+    }
+
+    const cardStyle = index => ({
+      marginBottom: 30,
+      marginRight: (isMobileVersion || index === personalizationCards.length -1) ? 'initial' : 25,
+    })
+
+    return <div style={style}>
+      <PaddedOnMobile>Pour vous&nbsp;:</PaddedOnMobile>
+      <div style={cardsContainerStyle}>
+        {personalizationCards.map(({tip, title}, index) => <PersonalizationBox
+            header={title} key={index} style={cardStyle(index)}>
+          {typeof(tip) === 'function' ? tip(profile, project) : tip}
+        </PersonalizationBox>)}
+      </div>
+    </div>
+  }
+}
+
+
+class AdviceBox extends React.Component {
+  static propTypes = {
+    children: React.PropTypes.node,
+    feature: React.PropTypes.string.isRequired,
+    header: React.PropTypes.node,
+    style: React.PropTypes.object,
+  }
+
+  render() {
+    const {children, feature, header, style} = this.props
+    const containerStyle = {
+      backgroundColor: Colors.LIGHT_GREY,
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      borderRadius: 4,
+      display: 'flex',
+      flexDirection: 'column',
+      ...style,
+    }
+    const headerStyle = {
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      borderRadius: '4px 4px 0 0',
+      display: 'flex',
+      fontSize: 16,
+      justifyContent: 'center',
+      padding: 30,
+      textAlign: 'center',
+    }
+    const contentStyle = {
+      display: 'flex',
+      flex: 1,
+      flexDirection: 'column',
+      fontSize: 13,
+      padding: '20px 35px',
+      position: 'relative',
+    }
+    return <div style={containerStyle}>
+      <header style={headerStyle}>
+        {header}
+      </header>
+
+      <div style={contentStyle}>
+        <FeatureLikeDislikeButtons
+            style={{position: 'absolute', right: 30, top: -16}}
+            feature={feature} />
+        {children}
+      </div>
+    </div>
+  }
+}
+
+
+export {AdviceCard, AdviceBox, PaddedOnMobile, PersonalizationBoxes, GrowingNumber}

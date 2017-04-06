@@ -4,7 +4,7 @@ import {connect} from 'react-redux'
 import {displayToasterMessage, saveUser} from 'store/actions'
 
 import {Modal} from './modal'
-import {RoundButton} from './theme'
+import {Button} from './theme'
 
 
 class DebugModalBase extends React.Component {
@@ -61,9 +61,9 @@ class DebugModalBase extends React.Component {
       <textarea
           style={{flex: 1, fontFamily: 'Monospace', fontSize: 12}}
           defaultValue={this.state.initialUserJson} ref="userJson" />
-      <RoundButton type="validation" onClick={this.saveAndClose} style={buttonStyle}>
+      <Button type="validation" onClick={this.saveAndClose} style={buttonStyle}>
         Enregistrer
-      </RoundButton>
+      </Button>
     </Modal>
   }
 }
