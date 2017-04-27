@@ -1,29 +1,17 @@
 import React from 'react'
 import _ from 'underscore'
 
-import {CitySuggest} from 'components/suggestions'
+import {DEGREE_OPTIONS, getFamilySituationOptions} from 'store/user'
+
+import {DashboardExportCreator} from 'components/dashboard_export_creator'
 import {Step, ProfileUpdater} from 'components/pages/profile/step'
-import {FieldSet, JobSuggestWithNote, Select, RadioGroup, Styles} from 'components/theme'
+import {Colors, FieldSet, RadioGroup, Select, Styles} from 'components/theme'
 
 
 const genders = [
   {name: 'une femme', value: 'FEMININE'},
   {name: 'un homme', value: 'MASCULINE'},
 ]
-
-const situations = [
-  {name: 'Étudiant / première recherche', value: 'FIRST_TIME'},
-  {name: 'Perdu / quitté mon emploi', value: 'LOST_QUIT'},
-  {name: 'Actuellement en poste', value: 'EMPLOYED'},
-  {name: 'En formation professionnelle', value: 'IN_TRAINING'},
-]
-
-const latestJobLabel = {
-  EMPLOYED: 'Quel est votre métier ?',
-  FIRST_TIME: 'Avez-vous un métier en tête ?',
-  IN_TRAINING: 'Pour quel métier ?',
-  LOST_QUIT: 'Quel était ce métier ?',
-}
 
 const hasHandicapOptions = [
   {name: 'oui', value: true},
@@ -32,14 +20,18 @@ const hasHandicapOptions = [
 
 
 class GeneralStep extends React.Component {
+  static propTypes = {
+    featuresEnabled: React.PropTypes.object,
+    isShownAsStepsDuringOnboarding: React.PropTypes.bool,
+  }
+
   componentWillMount() {
     this.updater_ = new ProfileUpdater(
       {
-        city: true,
+        familySituation: true,
         gender: true,
         hasHandicap: false,
-        latestJob: true,
-        situation: true,
+        highestDegree: true,
         yearOfBirth: true,
       },
       this,
@@ -53,38 +45,22 @@ class GeneralStep extends React.Component {
       return
     }
 
-    const {city, gender, latestJob, situation, yearOfBirth} = this.state
+    const {familySituation, gender, highestDegree, yearOfBirth} = this.state
     const state = {}
     if (!gender) {
-      state.gender = 'FEMININE'
+      state.gender = Math.random() > .5 ? 'FEMININE' : 'MASCULINE'
+    }
+    if (!familySituation) {
+      const familySituations = getFamilySituationOptions()
+      const familySituationIndex = Math.floor(Math.random() * familySituations.length)
+      state.familySituation = familySituations[familySituationIndex].value
+    }
+    if (!highestDegree) {
+      const degrees = DEGREE_OPTIONS
+      state.highestDegree = degrees[Math.floor(Math.random() * degrees.length)].value
     }
     if (!yearOfBirth) {
-      state.yearOfBirth = 1982
-    }
-    if (!situation) {
-      state.situation = 'LOST_QUIT'
-    }
-    if (!latestJob) {
-      state.latestJob = {
-        codeOgr: '14967',
-        feminineName: 'Comptable',
-        jobGroup: {
-          name: 'Comptabilité',
-          romeId: 'M1203',
-        },
-        masculineName: 'Comptable',
-        name: 'Comptable',
-      }
-    }
-    if (!city) {
-      state.city = {
-        cityId: '14118',
-        departementId: '14',
-        departementName: 'Calvados',
-        name: 'Caen',
-        regionId: '28',
-        regionName: 'Normandie',
-      }
+      state.yearOfBirth = Math.round(1950 + 50 * Math.random())
     }
     this.setState(state)
   }
@@ -96,10 +72,19 @@ class GeneralStep extends React.Component {
 
   render() {
     const {isMobileVersion} = this.context
-    const {city, gender, hasHandicap, yearOfBirth, latestJob, situation, isValidated} = this.state
+    const {isShownAsStepsDuringOnboarding} = this.props
+    const {familySituation, gender, hasHandicap, highestDegree, yearOfBirth,
+           isValidated} = this.state
+    const featuresEnabled = this.props.featuresEnabled || {}
     const isFeminine = gender === 'FEMININE'
+    const exportOldDataLinkStyle = {
+      color: Colors.SKY_BLUE,
+      cursor: 'pointer',
+      fontSize: 15,
+      textDecoration: 'underline',
+    }
     return <Step
-        title="Votre profil"
+        title={isShownAsStepsDuringOnboarding ? 'À propos de vous' : 'Votre profil'}
         fastForward={this.fastForward}
         onNextButtonClick={this.updater_.handleSubmit}
         onPreviousButtonClick={this.updater_.handleBack}
@@ -111,20 +96,12 @@ class GeneralStep extends React.Component {
             options={genders} value={gender} />
       </FieldSet>
       <FieldSet
-          label="Votre situation actuelle"
-          isValid={!!situation} isValidated={isValidated}>
+          label="Votre situation familiale" isValid={!!familySituation}
+          isValidated={isValidated}>
         <Select
-            name="situation" options={situations} value={situation}
-            onChange={this.updater_.handleChange('situation')} />
-      </FieldSet>
-      <FieldSet
-          label={latestJobLabel[situation] || 'Votre métier ?'}
-          isValid={!!latestJob} isValidated={isValidated}>
-        <JobSuggestWithNote
-            onChange={this.updater_.handleChange('latestJob')}
-            gender={gender}
-            value={latestJob}
-            placeholder={'Nom du métier'} />
+            onChange={this.updater_.handleChange('familySituation')}
+            options={getFamilySituationOptions(gender)}
+            value={familySituation} />
       </FieldSet>
       <FieldSet
           label="Année de naissance"
@@ -132,30 +109,28 @@ class GeneralStep extends React.Component {
           style={{width: isMobileVersion ? 'inherit' : 140}}>
         <BirthYearSelector onChange={this.handleYearOfBirthChange} value={yearOfBirth} />
       </FieldSet>
-      {/* TODO(pasal): Please remove the left padding on the fieldset, I can't get rid of it */}
-      <FieldSet label="Ville de résidence actuelle"
-                isValid={!!city} isValidated={isValidated}
-                onMouseOver={() => this.setState({isCityHovered: true})}
-                onMouseOut={() => this.setState({isCityHovered: false})} >
-        <CitySuggestWithTooltip
-            value={city}
-            citySuggestStyle={Styles.INPUT}
-            isHintShown={this.state.isCityHovered}
-            onChange={this.updater_.handleChange('city')}
-            placeholder="ville ou code postal">
-          Renseignez bien votre ville de résidence, nous vous demanderons plus tard
-          si vous cherchez du travail dans d'autres villes.
-        </CitySuggestWithTooltip>
+      <FieldSet
+          label="Dernier diplôme obtenu"
+          isValid={!!highestDegree} isValidated={isValidated}>
+        <Select
+            onChange={this.updater_.handleChange('highestDegree')} value={highestDegree}
+            options={DEGREE_OPTIONS} />
       </FieldSet>
+      {/* TODO(pasal): Please remove the left padding on the fieldset, I can't get rid of it */}
       <FieldSet
           label={`Vous êtes reconnu${isFeminine ? 'e' : ''} comme
             travailleu${isFeminine ? 'se' : 'r'} handicapé${isFeminine ? 'e' : ''}`}
-          isValid={!!latestJob} isValidated={isValidated}>
+          isValid={true} isValidated={isValidated} style={{minWidth: 350}}>
         <RadioGroup
             style={{justifyContent: 'space-around'}}
             onChange={this.updater_.handleChange('hasHandicap')}
             options={hasHandicapOptions} value={!!hasHandicap} />
       </FieldSet>
+
+      {featuresEnabled.switchedFromMashupToAdvisor ? <DashboardExportCreator
+          style={exportOldDataLinkStyle}>
+        Accèder aux données de l'ancien Bob Emploi
+      </DashboardExportCreator> : null}
     </Step>
   }
 }
@@ -192,40 +167,6 @@ class BirthYearSelector extends React.Component {
         return <option key={year} value={year}>{year}</option>
       })}
     </select>
-  }
-}
-
-
-class CitySuggestWithTooltip extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node,
-    citySuggestStyle: React.PropTypes.object,
-    isHintShown: React.PropTypes.bool,
-    onChange: React.PropTypes.func,
-    style: React.PropTypes.object,
-    value: React.PropTypes.object,
-  }
-
-  state = {
-    isCityFocused: false,
-  }
-
-  render() {
-    const {children, citySuggestStyle, isHintShown, style, value,
-           onChange, ...otherProps} = this.props
-    return <div style={{position: 'relative', ...style}} {...otherProps}>
-      <div className={`tooltip${this.state.isCityFocused || isHintShown ? ' forced' : ''}`}>
-        <CitySuggest
-            onChange={onChange} value={value}
-            style={{padding: 1, ...citySuggestStyle}}
-            onFocus={() => this.setState({isCityFocused: true})}
-            onBlur={() => this.setState({isCityFocused: false})}
-            placeholder="ville ou code postal" />
-        <span className="tooltiptext tooltip-top">
-          {children}
-        </span>
-      </div>
-    </div>
   }
 }
 

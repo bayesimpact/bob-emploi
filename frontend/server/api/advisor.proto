@@ -5,13 +5,19 @@ import "google/protobuf/timestamp.proto";
 package bayes.bob;
 
 // The definition of an Advice Module. See http://go/bob:advisor-design.
-// Next ID: 14.
+// Next ID: 16.
 message AdviceModule {
   // Unique readable ID for the module.
   string advice_id = 4;
 
   // Unique Airtable ID for the module.
   string airtable_id = 8;
+
+  // Title for the advice module.
+  string title = 14;
+
+  // Adapted title corresponding to x stars.
+  map<int32, string> title_x_stars = 15;
 
   // Name of the scoring model to decide whether to trigger this advice.
   string trigger_scoring_model = 1;

@@ -1,9 +1,9 @@
 import React from 'react'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {Colors, Icon} from 'components/theme'
+import {Colors, GrowingNumber, Icon} from 'components/theme'
 
-import {AdviceCard, GrowingNumber} from './base'
+import {AdviceCard} from './base'
 import {ResumeAdvicePageContent} from './improve_success_rate'
 
 

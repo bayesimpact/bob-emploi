@@ -14,6 +14,7 @@ from bob_emploi.frontend import proto
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -36,18 +37,6 @@ _DAYS_PER_MONTH = 365.25 / 12
 
 # Average number of weeks per month.
 _WEEKS_PER_MONTH = 52 / 12
-
-# Increase in job offers (in percent) for red chantiers that is roughly
-# equivalent to a 1 point target for blue or green chantiers.
-JOB_OFFERS_INCREASE_PER_TARGET = 10
-
-# Number of accessible offers that we consider enough: if there are already
-# that many offers, we deprioritize chantiers that increase number of available
-# offers.
-#
-# This number is a guestimate based on 10 new job offers per week, staying
-# around for 2 months in average, and Pôle Emploi only having 30% of them.
-_MAX_NUM_OFFERS_NEEDED = 24
 
 # Maximum of the estimation scale for English skills, or office tools.
 _ESTIMATION_SCALE_MAX = 3
@@ -72,6 +61,7 @@ class ScoringProject(object):
         self._job_group_info = None
         self._unemployment_durations = None
         self._local_diagnosis = None
+        self._jobboards = None
 
     # When scoring models need it, add methods to access data from DB:
     # project requirements from job offers, IMT, median unemployment duration
@@ -218,6 +208,16 @@ class ScoringProject(object):
             stats[emp.employment_type] = emp.percentage
 
         return stats
+
+    def list_jobboards(self):
+        """List all job boards for this project."""
+        if self._jobboards:
+            return self._jobboards
+
+        all_job_boards = proto.cache_mongo_collection(
+            self._db.jobboards.find, [], jobboard_pb2.JobBoard)
+        self._jobboards = list(filter_using_score(all_job_boards, lambda j: j.filters, self))
+        return self._jobboards
 
 
 class _Score(collections.namedtuple('Score', ['score', 'additional_job_offers'])):
@@ -426,7 +426,6 @@ class _ObtainDrivingLicenseScoringModel(_IncreaseJobOffersScoringModel):
     def additional_job_offers_percent(self, project):
         """Compute raise in number of job offers."""
         if (self.driving_license in project.user_profile.driving_licenses or
-                project.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT or
                 user_pb2.HANDICAPED in project.user_profile.frustrations or
                 project.user_profile.has_handicap or
                 (project.details.mobility.city.departement_id == '75' and
@@ -456,8 +455,7 @@ class _OfficeToolsScoringModel(_IncreaseJobOffersScoringModel):
 
     def additional_job_offers_percent(self, project):
         """Compute raise in number of job offers."""
-        if (project.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT or
-                project.user_profile.office_skills_estimate >= _ESTIMATION_SCALE_MAX):
+        if project.user_profile.office_skills_estimate >= _ESTIMATION_SCALE_MAX:
             return 0
         try:
             requirement = next(
@@ -478,8 +476,7 @@ class _PartTimeScoringModel(_IncreaseJobOffersScoringModel):
 
     def additional_job_offers_percent(self, project):
         """Compute raise in number of job offers."""
-        if (project.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT or
-                project_pb2.PART_TIME in project.details.workloads):
+        if project_pb2.PART_TIME in project.details.workloads:
             return 0
         return super(_PartTimeScoringModel, self).additional_job_offers_percent(project)
 
@@ -494,8 +491,7 @@ class _ImproveEnglishScoringModel(_IncreaseJobOffersScoringModel):
 
     def additional_job_offers_percent(self, project):
         """Compute raise in number of job offers."""
-        if (project.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT or
-                project.user_profile.english_level_estimate >= _ESTIMATION_SCALE_MAX):
+        if project.user_profile.english_level_estimate >= _ESTIMATION_SCALE_MAX:
             return 0
         return super(_ImproveEnglishScoringModel, self).additional_job_offers_percent(project)
 
@@ -510,9 +506,10 @@ class _TrainingScoringModel(_IncreaseJobOffersScoringModel):
 
     def additional_job_offers_percent(self, project):
         """Compute raise in number of job offers."""
-        if (project.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT or
-                project.details.training_fulfillment_estimate == project_pb2.ENOUGH_DIPLOMAS or
+        if (project.details.training_fulfillment_estimate == project_pb2.ENOUGH_DIPLOMAS or
                 project.details.training_fulfillment_estimate == project_pb2.ENOUGH_EXPERIENCE or
+                project.details.training_fulfillment_estimate ==
+                project_pb2.CURRENTLY_IN_TRAINING or
                 project.details.diploma_fulfillment_estimate == project_pb2.FULFILLED or
                 project.user_profile.situation == user_pb2.IN_TRAINING):
             return 0
@@ -529,8 +526,7 @@ class _ReduceSalaryScoringModel(_IncreaseJobOffersScoringModel):
 
     def additional_job_offers_percent(self, project):
         """Compute raise in number of job offers."""
-        if (project.user_profile.salary_requirement_flexibility == user_pb2.ABSOLUTELY_NOT or
-                project.details.min_salary == 0):
+        if project.details.min_salary == 0:
             return 0
         return super(_ReduceSalaryScoringModel, self).additional_job_offers_percent(project)
 
@@ -547,13 +543,9 @@ class _MobilityWithoutMoveScoringModel(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if project.user_profile.geographical_flexibility == user_pb2.ABSOLUTELY_NOT:
-            return _Score(0)
         if project.median_unemployment_time() < 90:
             return _Score(0)
         score = 2
-        if project.user_profile.geographical_flexibility == user_pb2.YES:
-            score += 1
         return _Score(score * self.scaling_factor * (
             project.median_unemployment_time(area_type=geo_pb2.CITY) /
             project.median_unemployment_time(area_type=self.target_area_type) - 1))
@@ -571,8 +563,6 @@ class _RelocateScoringModel(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if project.user_profile.geographical_flexibility == user_pb2.ABSOLUTELY_NOT:
-            return _Score(0)
         median_unemployment_time = project.median_unemployment_time()
         if median_unemployment_time < 180:
             return _Score(0)
@@ -580,8 +570,6 @@ class _RelocateScoringModel(_ScoringModelBase):
             project.median_unemployment_time(area_type=geo_pb2.CITY) /
             project.median_unemployment_time(area_type=self.target_area_type) - 1)
         if median_unemployment_time >= 365:
-            score += 1
-        if project.user_profile.geographical_flexibility == user_pb2.YES:
             score += 1
         return _Score(score)
 
@@ -596,7 +584,8 @@ class _ImproveCVScoringModel(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         if user_pb2.RESUME in project.user_profile.frustrations:
             return _Score(4)
-        if (project.details.total_interviews_estimate >= project_pb2.DECENT_AMOUNT and
+        if ((project.details.total_interviews_estimate >= project_pb2.DECENT_AMOUNT or
+             project.details.total_interview_count > 1) and
                 project.details.job_search_length_months < 6):
             return _Score(0)
         score = 2
@@ -630,13 +619,20 @@ class _ImproveInterviewScoringModel(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         if user_pb2.INTERVIEW in project.user_profile.frustrations:
             return _Score(4)
-        if not project.details.total_interviews_estimate:
+        if not project.details.total_interviews_estimate and \
+                not project.details.total_interview_count:
             # Unknown interviews.
             return _Score(0)
         job_search_length_weeks = project.details.job_search_length_months * 52 / 12
+        if project.details.total_interview_count < 0:
+            interview_level = 1
+        elif not project.details.total_interview_count:
+            interview_level = project.details.total_interviews_estimate
+        else:
+            interview_level = project.details.total_interview_count + 1
         return _Score(
             project.details.weekly_applications_estimate * job_search_length_weeks /
-            project.details.total_interviews_estimate / 15)
+            interview_level / 15)
 
 
 class _ImproveOrganization(_ScoringModelBase):
@@ -689,14 +685,11 @@ class _JobDiscoveryScoringModel(_ScoringModelBase):
         if project.details.intensity == project_pb2.PROJECT_FIGURING_INTENSITY:
             # User is in a discovery mode, this is the perfect chantier for them.
             return _Score(10)
-        if (project.details.target_job.job_group.rome_id !=
-                project.user_profile.latest_job.job_group.rome_id):
+        if (project.user_profile.HasField('latest_job') and (
+                project.details.target_job.job_group.rome_id !=
+                project.user_profile.latest_job.job_group.rome_id)):
             # User already targets a different job than his, discover more!
             return _Score(3)
-        if project.user_profile.professional_flexibility == user_pb2.YES:
-            return _Score(2)
-        if project.user_profile.professional_flexibility == user_pb2.IF_NEEDED:
-            return _Score(1)
         return _Score(0)
 
 
@@ -724,12 +717,9 @@ class _InternationalJobScoringModel(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if (project.user_profile.geographical_flexibility == user_pb2.ABSOLUTELY_NOT or
-                project.user_profile.english_level_estimate <= 1):
+        if project.user_profile.english_level_estimate <= 1:
             return _Score(0)
         score = 1
-        if project.user_profile.geographical_flexibility == user_pb2.YES:
-            score += 1
         if project.user_profile.english_level_estimate >= _ESTIMATION_SCALE_MAX:
             score += 1
         if project.details.mobility.area_type >= geo_pb2.WORLD:
@@ -754,7 +744,8 @@ class _ProfessionnalisationScoringModel(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if (project.user_profile.situation == user_pb2.IN_TRAINING or
-                project.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT):
+                project.details.training_fulfillment_estimate ==
+                project_pb2.CURRENTLY_IN_TRAINING):
             return _Score(0)
         return _Score(self._seniority_to_score.get(project.details.seniority, 0))
 
@@ -768,9 +759,10 @@ class _ApprentissageScoringModel(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if (project.user_profile.situation == user_pb2.IN_TRAINING or
+                project.details.training_fulfillment_estimate ==
+                project_pb2.CURRENTLY_IN_TRAINING or
                 datetime.date.today().year - project.user_profile.year_of_birth > 25 or
-                project.details.seniority >= project_pb2.INTERMEDIARY or
-                project.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT):
+                project.details.seniority >= project_pb2.INTERMEDIARY):
             return _Score(0)
         return _Score(3)
 
@@ -783,11 +775,7 @@ class _FreelanceScoringModel(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if project.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT:
-            return _Score(0)
         score = 1
-        if project.user_profile.contract_type_flexibility == user_pb2.YES:
-            score += 1
         if project.details.seniority >= project_pb2.INTERMEDIARY:
             score += 1
         return _Score(score)
@@ -808,12 +796,20 @@ class _BlueTargetScoringModel(_ScoringModelBase):
         num_weeks = _WEEKS_PER_MONTH * project.details.job_search_length_months
         if num_weeks <= 9:
             return _Score(5)
+
+        # Number of interviews
+        if project.details.total_interview_count < 0:
+            num_interviews = 0
+        elif project.details.total_interview_count > 0:
+            num_interviews = project.details.total_interview_count
+        else:
+            num_interviews = self.estimates.get(project.details.total_interviews_estimate, 0)
+
         # Number of applications to get one interview.
         ratio_interviews = (
             self.estimates.get(project.details.weekly_applications_estimate, 0) * num_weeks /
-            self.estimates.get(project.details.total_interviews_estimate, 1))
-        failed_interviews = self.estimates.get(project.details.total_interviews_estimate, 0)
-        return _Score(ratio_interviews * _SCORE_PER_INTERVIEW_RATIO + failed_interviews)
+            (num_interviews or 1))
+        return _Score(ratio_interviews * _SCORE_PER_INTERVIEW_RATIO + num_interviews)
 
 
 class _GreenTargetScoringModel(_ScoringModelBase):
@@ -975,7 +971,12 @@ class _AdviceImproveInterview(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        num_interviews = self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
+        if project.details.total_interview_count < 0:
+            num_interviews = 0
+        elif project.details.total_interview_count > 0:
+            num_interviews = project.details.total_interview_count
+        else:
+            num_interviews = self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
         num_monthly_interviews = num_interviews / (project.details.job_search_length_months or 1)
         if num_monthly_interviews > self._max_monthly_interviews(project):
             return _Score(3)
@@ -1002,9 +1003,17 @@ class _AdviceImproveResume(_ScoringModelBase):
         project_pb2.A_LOT: 10,
     }
 
+    def _num_interviews(self, project):
+        if project.details.total_interview_count < 0:
+            return 0
+        if project.details.total_interview_count:
+            return project.details.total_interview_count
+        return self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
+
     def _num_interviews_increase(self, project):
         """Compute the increase (in ratio) of # of interviews that one could hope for."""
-        if project.details.total_interviews_estimate >= project_pb2.A_LOT:
+        if project.details.total_interviews_estimate >= project_pb2.A_LOT or \
+                project.details.total_interview_count > 20:
             return 0
 
         job_search_length_weeks = project.details.job_search_length_months * 52 / 12
@@ -1013,8 +1022,7 @@ class _AdviceImproveResume(_ScoringModelBase):
             project.details.weekly_applications_estimate, 0)
         num_applications = job_search_length_weeks * weekly_applications
         num_potential_interviews = num_applications / num_applicants_per_offer
-        num_interviews = self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0) or 1
-        return num_potential_interviews / num_interviews
+        return num_potential_interviews / (self._num_interviews(project) or 1)
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
@@ -1043,6 +1051,24 @@ class _AdviceFreshResume(_ProjectFilter):
         """Compute extra data for this module to render a card in the client."""
         return project_pb2.ImproveSuccessRateData(
             requirements=project.handcrafted_job_requirements())
+
+
+class _AdviceJobBoards(_ScoringModelBase):
+    """A scoring model to trigger the "Find job boards" advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        if user_pb2.NO_OFFERS in project.user_profile.frustrations:
+            return _Score(2)
+        return _Score(1)
+
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        jobboards = project.list_jobboards()
+        if not jobboards:
+            return None
+        sorted_jobboards = sorted(jobboards, key=lambda j: (-len(j.filters), random.random()))
+        return project_pb2.JobBoardsData(job_board_title=sorted_jobboards[0].title)
 
 
 _ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'constructor'])
@@ -1091,6 +1117,7 @@ SCORING_MODELS = {
     'advice-improve-interview': _AdviceImproveInterview(),
     'advice-improve-network': _ImproveYourNetworkScoringModel(1),
     'advice-improve-resume': _AdviceImproveResume(),
+    'advice-job-boards': _AdviceJobBoards(),
     'advice-other-work-env': _AdviceOtherWorkEnv(),
     'advice-use-good-network': _ImproveYourNetworkScoringModel(3),
     'chantier-about-job': _LearnMoreAboutJobScoringModel(),
@@ -1152,8 +1179,10 @@ SCORING_MODELS = {
         lambda project: project.job_search_length_months >= 19),
     'for-simple-application': _ApplicationComplexityFilter(job_pb2.SIMPLE_APPLICATION_PROCESS),
     'for-single-parent': _UserProfileFilter(
-        lambda user: user_pb2.SINGLE_PARENT in user.frustrations),
-    'for-unemployed': _UserProfileFilter(lambda user: user.situation != user_pb2.EMPLOYED),
+        lambda user: user_pb2.SINGLE_PARENT in user.frustrations or
+        user.family_situation == user_pb2.SINGLE_PARENT_SITUATION),
+    'for-unemployed': _UserProfileFilter(
+        lambda user: user.situation and user.situation != user_pb2.EMPLOYED),
     'for-unqualified(bac)': _UserProfileFilter(
         lambda user: user.highest_degree <= job_pb2.BAC_BACPRO),
     'for-women': _UserProfileFilter(lambda user: user.gender == user_pb2.FEMININE),
@@ -1165,11 +1194,6 @@ SCORING_MODELS = {
 
 
 _ScoreAndReasons = collections.namedtuple('ScoreAndReasons', ['score', 'additional_job_offers'])
-
-
-# A simple namedtuple holding a chantier and its score for a given project.
-ScoredChantier = collections.namedtuple(
-    'ScoredChantier', ['chantier', 'score', 'additional_job_offers'])
 
 
 class _Scorer(object):
@@ -1196,79 +1220,6 @@ class _Scorer(object):
         if scoring_model_name:
             self._scores[scoring_model_name] = score
         return score
-
-
-class _ChantierScorer(_Scorer):
-    """Helper object to score chantiers for a given project."""
-
-    def __init__(self, chantiers, project):
-        """Initialize the _ChantierScorer.
-
-        Args:
-            chantiers: A list of chantiers.
-            project: A ScoringProject to be passed to the model.
-        """
-        super(_ChantierScorer, self).__init__(project)
-        self._chantiers = chantiers
-        # A cache of sorted scored chantiers (ScoredChantier).
-        self._scored_chantiers = None
-
-    def _get_scored_chantiers(self):
-        if self._scored_chantiers is not None:
-            return self._scored_chantiers
-
-        # Score all chantiers.
-        self._scored_chantiers = [
-            ScoredChantier(c, **self._get_score(c.scoring_model)._asdict())
-            for c in self._chantiers]
-
-        # Sort by best score first, and then randomly sort chantiers with
-        # the same scores.
-        self._scored_chantiers.sort(reverse=True, key=lambda c: (c[1], random.random()))
-
-        return self._scored_chantiers
-
-    def get_best_chantiers(self, n_best, min_score=0):
-        """Pick the n best scored chantiers above a given score."""
-        return [
-            c for i, c in enumerate(self._get_scored_chantiers())
-            if i < n_best and c.score > min_score]
-
-    def _get_red_chantiers_target(self):
-        total_offers_increase = 0
-        for scored_chantier in self._get_scored_chantiers():
-            if scored_chantier.chantier.kind != chantier_pb2.INCREASE_AVAILABLE_OFFERS:
-                continue
-            offers_increase = scored_chantier.additional_job_offers
-            # TODO(pascal): Remove this hack when all red chantiers send job
-            # offers properly.
-            if not offers_increase:
-                offers_increase = scored_chantier.score * JOB_OFFERS_INCREASE_PER_TARGET
-            total_offers_increase += offers_increase
-
-        total_offers = self._project.max_num_offers()
-        if total_offers > _MAX_NUM_OFFERS_NEEDED:
-            # There are tons of offers available at maximum, so there's no need
-            # for the user to increase their available offers to that point:
-            # they only need to extend it up to the max offers.
-            num_user_offers = total_offers * 100 / (total_offers_increase + 100)
-            total_offers_increase = _MAX_NUM_OFFERS_NEEDED * 100 / num_user_offers - 100
-
-        return total_offers_increase / JOB_OFFERS_INCREASE_PER_TARGET
-
-    def get_group_targets(self):
-        """Get the impact target for each group of chantiers."""
-        # Set target for chantier kinds.
-        targets = {}
-        for kind, model_name in GROUP_SCORING_MODELS.items():
-            targets[kind] = self._get_score(model_name).score
-        targets[chantier_pb2.INCREASE_AVAILABLE_OFFERS] = self._get_red_chantiers_target()
-        return targets
-
-
-def score_chantiers(chantiers, project):
-    """Score chantiers for a given project."""
-    return _ChantierScorer(chantiers, project)
 
 
 class _FilterHelper(_Scorer):

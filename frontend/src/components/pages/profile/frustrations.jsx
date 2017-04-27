@@ -7,27 +7,75 @@ import {CheckboxList, FieldSet} from 'components/theme'
 
 
 const maybeE = gender => gender === 'FEMININE' ? 'e' : ''
+// This is a stunt to acknowledge that we do not name what could be a named
+// React component (an alternative would be to systimatically disable the
+// react/display-name rule).
+const unnamedComponent = c => c
 
 
 // TODO: Highlight some of the terms according to mocks.
 const jobSearchFrustrationOptions = [
-  {name: () => "Le manque d'offres correspondant à mes critères", value: 'NO_OFFERS'},
-  {name: () => 'Le manque de réponses des recruteurs, même négatives', value: 'NO_OFFER_ANSWERS'},
-  {name: () => 'La rédaction des CVs et lettres de motivation', value: 'RESUME'},
-  {name: () => "Les entretiens d'embauche", value: 'INTERVIEW'},
-  {name: () => 'Le système des formations professionnelles', value: 'TRAINING'},
   {
-    name: gender => `La difficulté de rester motivé${maybeE(gender)} dans ma recherche`,
+    name: () => unnamedComponent(<span>
+      Le <strong>manque d'offres</strong>, correspondant à mes critères
+    </span>),
+    value: 'NO_OFFERS',
+  },
+  {
+    name: () => unnamedComponent(<span>
+      Le <strong>manque de réponses</strong> des recruteurs, même négatives
+    </span>),
+    value: 'NO_OFFER_ANSWERS',
+  },
+  {
+    name: () => unnamedComponent(<span>
+      La rédaction des <strong>CVs</strong> et <strong>lettres de motivation</strong>
+    </span>),
+    value: 'RESUME',
+  },
+  {
+    name: () => unnamedComponent(<span>Les <strong>entretiens</strong> d'embauche</span>),
+    value: 'INTERVIEW',
+  },
+  {
+    name: () => unnamedComponent(<span>
+      Le système des <strong>formations</strong> professionnelles
+    </span>),
+    value: 'TRAINING',
+  },
+  {
+    name: gender => unnamedComponent(<span>
+      La difficulté de <strong>rester motivé{maybeE(gender)}</strong> dans ma recherche
+    </span>),
     value: 'MOTIVATION',
   },
-  {name: () => 'La gestion de mon temps pour être efficace', value: 'TIME_MANAGEMENT'},
+  {
+    name: () => unnamedComponent(<span>
+      La gestion de mon temps pour être <strong>efficace</strong>
+    </span>),
+    value: 'TIME_MANAGEMENT',
+  },
 ]
 
 const personalFrustrationOptions = [
-  {name: () => 'Une situation familiale compliquée', value: 'SINGLE_PARENT'},
-  {name: () => 'Ne pas rentrer dans les cases des recruteurs', value: 'ATYPIC_PROFILE'},
-  {name: () => 'Des discriminations liées à mon âge', value: 'AGE_DISCRIMINATION'},
-  {name: () => 'Des discriminations liées à mon sexe', value: 'SEX_DISCRIMINATION'},
+  {
+    name: () => unnamedComponent(<span>
+      <strong>Ne pas rentrer dans les cases</strong> des recruteurs
+    </span>),
+    value: 'ATYPIC_PROFILE',
+  },
+  {
+    name: () => unnamedComponent(<span>
+      Des discriminations liées à mon <strong>âge</strong>
+    </span>),
+    value: 'AGE_DISCRIMINATION',
+  },
+  {
+    name: () => unnamedComponent(<span>
+      Des discriminations liées à mon <strong>sexe</strong>
+    </span>),
+    value: 'SEX_DISCRIMINATION',
+  },
 ]
 
 
@@ -38,6 +86,7 @@ const genderizedOptions = (options, gender) => options.map(
 
 class FrustrationsStep extends React.Component {
   static propTypes = {
+    isShownAsStepsDuringOnboarding: React.PropTypes.bool,
     profile: USER_PROFILE_SHAPE,
   }
 
@@ -60,16 +109,19 @@ class FrustrationsStep extends React.Component {
   }
 
   render() {
+    const {isShownAsStepsDuringOnboarding, profile} = this.props
     const {frustrations} = this.state
-    const {gender} = this.props.profile
+    const {gender} = profile
     const genderizedFrustrationOptions = genderizedOptions(
       jobSearchFrustrationOptions.concat(personalFrustrationOptions), gender)
     const explanation = <div>
-      Y a-t-il des choses qui vous frustrent dans votre recherche d'emploi ?<br />
-      Nous sommes là pour vous écouter et voir si nous pouvons aider.
+      Nous sommes là pour vous écouter et pour vous aider en fonction de vos
+      besoins.
     </div>
     return <Step
-        title="Vos frustrations"
+        title={isShownAsStepsDuringOnboarding ?
+          "Qu'est ce qui vous bloque dans votre recherche ?" :
+          'Ce qui vous bloque dans votre recherche'}
         explanation={explanation}
         fastForward={this.fastForward}
         onNextButtonClick={this.updater_.handleSubmit}

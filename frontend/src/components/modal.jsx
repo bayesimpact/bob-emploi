@@ -2,7 +2,7 @@ import React from 'react'
 import Radium from 'radium'
 import ReactHeight from 'react-height'
 
-import {Colors, Icon, Button, SmoothTransitions, Styles} from './theme'
+import {Colors, Icon, SmoothTransitions} from './theme'
 import {ShortKey} from 'components/shortkey'
 
 
@@ -261,41 +261,4 @@ class ModalHeader extends React.Component {
 }
 
 
-class GamificationModal extends React.Component {
-  static propTypes = {
-    buttonText: React.PropTypes.string.isRequired,
-    children: React.PropTypes.node.isRequired,
-    imageSrc: React.PropTypes.string.isRequired,
-    isShown: React.PropTypes.bool,
-    onClose: React.PropTypes.func.isRequired,
-    title: React.PropTypes.string.isRequired,
-  }
-
-  render() {
-    const {buttonText, children, imageSrc, isShown, onClose, title} = this.props
-    const style = {
-      borderRadius: 10,
-      boxShadow: '0 0 4px 0 rgba(0, 0, 0, 0.5)',
-      padding: '0 60px 55px',
-      ...Styles.CENTERED_COLUMN,
-    }
-    const textBoxStyle = {
-      color: Colors.DARK_TWO,
-      fontSize: 15,
-      lineHeight: 1.53,
-      marginTop: 40,
-      textAlign: 'center',
-      width: 355 ,
-    }
-    return <Modal style={style} isShown={isShown} title={title}>
-      <img style={{height: 98, marginTop: 40, width: 98}} src={imageSrc} />
-      <div style={textBoxStyle}>{children}</div>
-      <Button style={{marginTop: 42}} type="validation" onClick={onClose}>
-        {buttonText}
-      </Button>
-    </Modal>
-  }
-}
-
-
-export {Modal, ModalHeader, ModalCloseButton, GamificationModal}
+export {Modal, ModalHeader, ModalCloseButton}

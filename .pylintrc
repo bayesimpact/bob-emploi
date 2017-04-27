@@ -1,5 +1,7 @@
 [REPORTS]
 output=colorized
+# TODO(pascal): Enable no-member when
+# https://github.com/PyCQA/pylint/issues/1276 is solved.
 disable=I,R,no-member
 reports=no
 

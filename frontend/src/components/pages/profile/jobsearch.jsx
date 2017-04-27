@@ -28,27 +28,19 @@ const weeklyApplicationOptions = [
   {name: 'Plus de 15 candidatures par semaine', value: 'A_LOT'},
 ]
 
-const interviewOptions = [
-  {name: 'Aucun entretien', value: 'LESS_THAN_2'},
-  {name: '1 entretien', value: 'SOME'},
-  {name: '2 à 5 entretiens', value: 'DECENT_AMOUNT'},
-  {name: 'Plus de 5 entretiens', value: 'A_LOT'},
-]
-
 
 class NewProjectJobsearchStep extends React.Component {
   static propTypes = {
-    isShownDuringEdit: React.PropTypes.bool,
     newProject: React.PropTypes.object,
     onSubmit: React.PropTypes.func.isRequired,
   }
 
   componentWillMount() {
     const {jobSearchLengthMonths, weeklyOffersEstimate,
-           weeklyApplicationsEstimate, totalInterviewsEstimate} = this.props.newProject
+           weeklyApplicationsEstimate, totalInterviewCount} = this.props.newProject
     this.setState({
       jobSearchLengthMonths,
-      totalInterviewsEstimate,
+      totalInterviewCount,
       weeklyApplicationsEstimate,
       weeklyOffersEstimate,
     })
@@ -56,13 +48,13 @@ class NewProjectJobsearchStep extends React.Component {
 
 
   handleSubmit = () => {
-    const {jobSearchLengthMonths, totalInterviewsEstimate,
+    const {jobSearchLengthMonths, totalInterviewCount,
            weeklyApplicationsEstimate, weeklyOffersEstimate} = this.state
     this.setState({isValidated: true})
     if (this.isFormValid()) {
       this.props.onSubmit({
         jobSearchLengthMonths,
-        totalInterviewsEstimate,
+        totalInterviewCount,
         weeklyApplicationsEstimate,
         weeklyOffersEstimate,
       })
@@ -70,7 +62,7 @@ class NewProjectJobsearchStep extends React.Component {
   }
 
   fastForward = () => {
-    const {jobSearchLengthMonths, totalInterviewsEstimate,
+    const {jobSearchLengthMonths, totalInterviewCount,
            weeklyApplicationsEstimate, weeklyOffersEstimate} = this.state
     if (this.isFormValid()) {
       this.handleSubmit()
@@ -80,8 +72,8 @@ class NewProjectJobsearchStep extends React.Component {
     if (!jobSearchLengthMonths) {
       newState.jobSearchLengthMonths = '11'
     }
-    if (!totalInterviewsEstimate) {
-      newState.totalInterviewsEstimate = 'SOME'
+    if (!totalInterviewCount) {
+      newState.totalInterviewCount = Math.floor(Math.random() * 22) || -1
     }
     if (!weeklyApplicationsEstimate) {
       newState.weeklyApplicationsEstimate = 'SOME'
@@ -93,9 +85,9 @@ class NewProjectJobsearchStep extends React.Component {
   }
 
   isFormValid = () => {
-    const {jobSearchLengthMonths, totalInterviewsEstimate,
+    const {jobSearchLengthMonths, totalInterviewCount,
            weeklyApplicationsEstimate, weeklyOffersEstimate} = this.state
-    return !!(totalInterviewsEstimate && weeklyApplicationsEstimate &&
+    return !!(totalInterviewCount && weeklyApplicationsEstimate &&
               weeklyOffersEstimate && jobSearchLengthMonths ||
               (jobSearchLengthMonths === -1))
   }
@@ -105,7 +97,7 @@ class NewProjectJobsearchStep extends React.Component {
   }
 
   render() {
-    const {isValidated, jobSearchLengthMonths, totalInterviewsEstimate,
+    const {isValidated, jobSearchLengthMonths, totalInterviewCount,
            weeklyApplicationsEstimate, weeklyOffersEstimate} = this.state
     const interviewsLabel = <span>
       Combien d'entretiens d'embauche avez-vous obtenus
@@ -115,7 +107,7 @@ class NewProjectJobsearchStep extends React.Component {
     return <Step
         {...this.props} fastForward={this.fastForward}
         onNextButtonClick={this.handleSubmit}
-        nextButtonContent={this.props.isShownDuringEdit ? 'Sauvegarder' : 'Créer'}>
+        title="Où en êtes-vous dans votre recherche ?">
       <FieldSet
           label={`Depuis combien de temps avez-vous commencé à postuler à des offres pour
             ce métier ?`}
@@ -141,10 +133,17 @@ class NewProjectJobsearchStep extends React.Component {
       </FieldSet>
       <FieldSet
           label={interviewsLabel}
-          isValid={!!totalInterviewsEstimate} isValidated={isValidated}
+          isValid={!!totalInterviewCount} isValidated={isValidated}
           disabled={jobSearchLengthMonths === -1}>
-        <Select options={interviewOptions} value={totalInterviewsEstimate}
-                onChange={this.handleChange('totalInterviewsEstimate')} />
+        <Select
+            onChange={value => this.handleChange('totalInterviewCount')(parseInt(value, 10))}
+            value={totalInterviewCount}
+            options={[{name: "Aucun pour l'instant", value: -1}].
+              concat(new Array(20).fill().map((unused, index) => ({
+                name: (index + 1) + '',
+                value: index + 1,
+              }))).
+              concat([{name: 'Plus de 20', value: 21}])} />
       </FieldSet>
     </Step>
   }

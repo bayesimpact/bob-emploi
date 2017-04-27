@@ -40,6 +40,7 @@ from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import chantier_pb2
+from bob_emploi.frontend.api import jobboard_pb2
 
 # Regular expression to validate links, e.g http://bayesimpact.org. Keep in
 # sync with frontend/src/store/link.js.
@@ -120,6 +121,29 @@ class _AdviceModuleConverter(_ProtoAirtableConverter):
         return fields
 
 
+class _JobBoardConverter(_ProtoAirtableConverter):
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+        fields = super(_JobBoardConverter, self).convert_record(airtable_record)
+
+        # Populate filters.
+        filters = []
+        for filter_type in ('for-departement', 'for-job-group'):
+            filter_value = airtable_record['fields'].get(filter_type)
+            if filter_value:
+                filters.append('%s(%s)' % (filter_type, filter_value))
+        if filters:
+            fields['filters'] = filters
+
+        # Check link.
+        link = fields.get('link')
+        if link and not _LINK_REGEXP.match(link):
+            raise ValueError(
+                'Job Board "%s" has an irregular link: %s.' % (fields['_id'], link))
+        return fields
+
+
 PROTO_CLASSES = {
     'Chantier': _ProtoAirtableConverter(
         chantier_pb2.Chantier, 'chantier_id', required_fields=[]),
@@ -130,6 +154,8 @@ PROTO_CLASSES = {
     'AdviceModule': _AdviceModuleConverter(
         advisor_pb2.AdviceModule, 'airtable_id',
         required_fields=['advice_id', 'trigger_scoring_model']),
+    'JobBoard': _JobBoardConverter(
+        jobboard_pb2.JobBoard, None, required_fields=['title', 'link']),
 }
 
 

@@ -1,8 +1,8 @@
 import React from 'react'
 
-import {Colors, Icon, PieChart} from 'components/theme'
+import {Colors, GrowingNumber, Icon, PaddedOnMobile, PieChart} from 'components/theme'
 
-import {AdviceCard, GrowingNumber, PaddedOnMobile, PersonalizationBoxes} from './base'
+import {AdviceCard, PersonalizationBoxes} from './base'
 
 
 const columnStyle = {
@@ -302,8 +302,7 @@ class AdvicePageContent extends React.Component {
             style={{marginBottom: 15}} key={index}
             step={index + 1} action={line.action} how={line.how} why={line.why} />)}
         </div>
-      :
-      <div style={{display: 'flex', position: 'relative'}}>
+      : <div style={{display: 'flex', position: 'relative'}}>
         <table cellSpacing="10" style={tableStyle}>
           <thead>
             <tr>

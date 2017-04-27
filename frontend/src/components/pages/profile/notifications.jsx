@@ -23,8 +23,6 @@ class NotificationsStep extends React.Component {
   }
 
   componentWillMount() {
-    const {profile} = this.props
-    this.setState({alreadyHasEmailNotifications: !!(profile.emailDays || []).length})
     this.updater_ = new ProfileUpdater(
       {
         emailDays: false,
@@ -84,7 +82,6 @@ class NotificationsStep extends React.Component {
   }
 
   render() {
-    const {alreadyHasEmailNotifications} = this.state
     const detailsStyle = {
       color: Colors.COOL_GREY,
       fontSize: 14,
@@ -94,16 +91,16 @@ class NotificationsStep extends React.Component {
     }
     return <Step
       title="Vos notifications"
-      explanation={alreadyHasEmailNotifications ? <div style={{maxWidth: 440, padding: '0 50px'}}>
+      explanation={<div style={{maxWidth: 440, padding: '0 50px'}}>
         {config.productName} fonctionne en vous accompagnant au quotidien. Pour
         vous faciliter la tâche, nous vous enverrons des emails contenant nos
         conseils du jour <strong>en fonction de vos préférences</strong>.
-      </div> : null}
+      </div>}
       fastForward={this.updater_.handleSubmit}
       onNextButtonClick={this.updater_.handleSubmit}
       {...this.props}>
-      {alreadyHasEmailNotifications ? this.renderEmailDaysFieldset(detailsStyle) : null}
-      {alreadyHasEmailNotifications ? this.renderHorizontalRule() : null}
+      {this.renderEmailDaysFieldset(detailsStyle)}
+      {this.renderHorizontalRule()}
       {this.renderNewsletterFieldset(detailsStyle)}
     </Step>
   }

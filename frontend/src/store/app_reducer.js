@@ -1,11 +1,10 @@
 import Cookies from 'js-cookie'
 
-import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE,
-        GET_PROJECT_REQUIREMENTS, GET_POTENTIAL_CHANTIERS,
-        UPDATE_PROJECT_CHANTIERS, GET_DASHBOARD_EXPORT, CREATE_DASHBOARD_EXPORT,
-        OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_CHANTIER_TITLES,
+import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
+        GET_DASHBOARD_EXPORT, CREATE_DASHBOARD_EXPORT, GET_JOB_BOARDS,
+        OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL,
         ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, REFRESH_USER_DATA,
-        LOGOUT, DELETE_USER_DATA, CREATE_ACTION_PLAN, GET_ADVICE_TIPS} from './actions'
+        LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
@@ -13,17 +12,15 @@ const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 const appInitialData = {
   // Cache for advice tips for each advice module for each project.
   adviceTips: {},
-  chantierTitles: {},
   // Cache for dashboard exports.
   dashboardExports: {},
   isMobileVersion: false,
-  isNewProjectModalOpen: false,
+  // Cache of job boards.
+  jobBoards: {},
   // Cache of job requirements.
   jobRequirements: {},
   loginModal: null,
   newProjectProps: {},
-  // Cache of potential chantiers per project.
-  projectsPotentialChantiers: {},
   scheduledUserDataRefreshTimeout: null,
   userHasAcceptedCookiesUsage: Cookies.get(ACCEPT_COOKIES_COOKIE_NAME),
 }
@@ -34,6 +31,17 @@ function app(state=appInitialData, action) {
       return {...state, loginModal: {defaultValues: action.defaultValues || {}}}
     case CLOSE_LOGIN_MODAL:
       return {...state, loginModal: null}
+    case GET_JOB_BOARDS:
+      if (action.status === 'success' && action.project) {
+        return {
+          ...state,
+          jobBoards: {
+            ...state.jobBoards,
+            [action.project.projectId]: action.response,
+          },
+        }
+      }
+      break
     case GET_PROJECT_REQUIREMENTS:
       if (action.status === 'success' && action.project) {
         return {
@@ -41,38 +49,6 @@ function app(state=appInitialData, action) {
           jobRequirements: {
             ...state.jobRequirements,
             [action.project.targetJob.codeOgr]: action.response,
-          },
-        }
-      }
-      break
-    case GET_POTENTIAL_CHANTIERS:
-      if (action.status === 'success' && action.projectId) {
-        return {
-          ...state,
-          projectsPotentialChantiers: {
-            ...state.projectsPotentialChantiers,
-            [action.projectId]: action.response,
-          },
-        }
-      }
-      break
-    case CREATE_ACTION_PLAN:  // Fallthrough intended.
-    case UPDATE_PROJECT_CHANTIERS:
-      if (action.ASYNC_MARKER && !action.status && action.chantierIds && action.projectId &&
-          state.projectsPotentialChantiers[action.projectId] &&
-          state.projectsPotentialChantiers[action.projectId].chantiers) {
-        return {
-          ...state,
-          projectsPotentialChantiers: {
-            ...state.projectsPotentialChantiers,
-            [action.projectId]: {
-              ...state.projectsPotentialChantiers[action.projectId],
-              chantiers: state.projectsPotentialChantiers[action.projectId].chantiers.map(
-                chantier => ({
-                  ...chantier,
-                  userHasStarted: !!action.chantierIds[chantier.template.chantierId],
-                })),
-            },
           },
         }
       }
@@ -85,17 +61,6 @@ function app(state=appInitialData, action) {
           dashboardExports: {
             ...state.dashboardExports,
             [action.response.dashboardExportId]: action.response,
-          },
-        }
-      }
-      break
-    case GET_CHANTIER_TITLES:
-      if (action.status === 'success') {
-        return {
-          ...state,
-          chantierTitles: {
-            ...state.chantierTitles,
-            ...action.response.titles,
           },
         }
       }

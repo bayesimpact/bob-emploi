@@ -1,7 +1,8 @@
 var chai = require('chai')
 var expect = chai.expect
+import {FamilySituation} from 'api/user'
 import {hasActivelySearchingSinceIfNeeded, travelInTime, isOldAndDiscriminated,
-        isYoungAndDiscriminated, getUserFrustrationTags,
+        isYoungAndDiscriminated, getUserFrustrationTags, getFamilySituationOptions,
         getHighestDegreeDescription} from 'store/user'
 
 
@@ -148,4 +149,16 @@ describe('travelInTime', () => {
       expect(value).to.eql(travelInTime(value, 42 * 1000))
     })
   })
+})
+
+
+describe('getFamilySituationOptions', () => {
+  const familySituations = getFamilySituationOptions()
+  familySituations.forEach(situation => it(`"${situation.name}" should have correct values`, () => {
+    expect(situation).to.contain.all.keys('name', 'value')
+    const {name, value} = situation
+    expect(name).to.be.ok
+    expect(value).to.be.ok
+    expect(FamilySituation).to.contain.keys(value)
+  }))
 })

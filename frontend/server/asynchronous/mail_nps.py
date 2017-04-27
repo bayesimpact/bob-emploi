@@ -177,4 +177,5 @@ def main(user_db, base_url, now, days_before_sending):
 
 
 if __name__ == '__main__':
-    main(_DB.user, _BASE_URL, datetime.datetime.utcnow(), *sys.argv[1:])
+    _DAYS_BEFORE_SENDING, = sys.argv[1:]  # pylint: disable=unbalanced-tuple-unpacking
+    main(_DB.user, _BASE_URL, datetime.datetime.utcnow(), _DAYS_BEFORE_SENDING)

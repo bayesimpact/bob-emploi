@@ -120,18 +120,24 @@ def send_email_to_user(user, base_url, weekday, database):
 
     advice_module = advisor.get_advice_module(advice.advice_id, database)
     if not advice_module:
-        logging.warning('Module for advice "%s" not found in DB.'. advice.advice_id)
+        logging.warning('Module for advice "%s" not found in DB.', advice.advice_id)
         return False
 
     tips = advisor.select_tips_for_email(user, user.projects[0], advice, database)
     if not tips:
         logging.warning('No tips for advice "%s".', advice.advice_id)
 
+    advice_modules = [
+        advisor.get_advice_module(a.advice_id, database)
+        for a in user.projects[0].advices]
+
     mail_result = mail.send_template(
         _MAILJET_ADVICE_TEMPLATE_ID,
         user.profile,
         dict({
-            'advices': json_format.MessageToDict(user.projects[0]).get('advices', []),
+            'advices': [
+                {'adviceId': a.advice_id, 'title': a.title}
+                for a in advice_modules if a],
             'baseUrl': base_url,
             'fact': random.choice(advice_module.email_facts),
             'firstName': user.profile.name,
@@ -181,7 +187,11 @@ def _deactivate_if_never_opened(user_id, user, user_db):
     # TODO(pascal): Store the fact that the user has already been checked
     # in our DB to avoid the extra call to MailJet API.
     counts = mail.count_sent_to(email)
-    if counts['DeliveredCount'] < 5 or counts['OpenedCount']:
+    delivered_count = counts.get('DeliveredCount', 0)
+    opened_count = counts.get('OpenedCount', 0)
+    if delivered_count < 5:
+        return False
+    if opened_count >= int(delivered_count / 5):
         return False
 
     logging.info('Disable sending email to %s', user_id)
@@ -230,7 +240,7 @@ def main(database, base_url, now):
     weekday = now.weekday() + 1
     query = {
         'profile.emailDays': user_pb2.WeekDay.Name(weekday),
-        'projects': {'$exists': True},
+        'projects.advices.score': {'$gt': 0},
         'featuresEnabled.advisorEmail': 'ACTIVE',
     }
     count = 0

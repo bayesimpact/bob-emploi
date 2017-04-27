@@ -3,9 +3,9 @@ import React from 'react'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
 import {FeatureLikeDislikeButtons} from 'components/like'
-import {Colors, Markdown} from 'components/theme'
+import {Colors, Markdown, PaddedOnMobile} from 'components/theme'
 
-import {PaddedOnMobile, PersonalizationBoxes} from './base'
+import {PersonalizationBoxes} from './base'
 
 
 function countMainBullets(markdownContent) {

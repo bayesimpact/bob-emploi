@@ -2,9 +2,9 @@ import React from 'react'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {Colors, Styles} from 'components/theme'
+import {Colors, GrowingNumber, PaddedOnMobile, Styles} from 'components/theme'
 
-import {AdviceCard, GrowingNumber, PaddedOnMobile, PersonalizationBoxes} from './base'
+import {AdviceCard, PersonalizationBoxes} from './base'
 import {WorkBox} from './improve_success_rate'
 
 class FullAdviceCard extends React.Component {

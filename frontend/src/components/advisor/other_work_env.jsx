@@ -1,9 +1,9 @@
 import React from 'react'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {Colors} from 'components/theme'
+import {Colors, GrowingNumber, PaddedOnMobile} from 'components/theme'
 
-import {AdviceBox, AdviceCard, GrowingNumber, PaddedOnMobile, PersonalizationBoxes} from './base'
+import {AdviceBox, AdviceCard, PersonalizationBoxes} from './base'
 
 
 function getSectorsAndStructures({otherWorkEnvAdviceData}) {

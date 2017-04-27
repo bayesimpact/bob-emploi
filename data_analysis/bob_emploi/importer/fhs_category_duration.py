@@ -85,11 +85,11 @@ def job_seeker_rows(job_seeker, now, categories, only_last):
             return
 
         yield (
-            state['ROME'],
-            state['DEPCOM'],
-            state['SEXE'],
-            state['MOTINS'],
-            state['MOTANN'],
+            state[fhs.JOB_GROUP_ID_FIELD],
+            state[fhs.CITY_ID_FIELD],
+            state[fhs.GENDER_FIELD],
+            state[fhs.REGISTRATION_REASON_FIELD],
+            state[fhs.CANCELATION_REASON_FIELD],
             period.begin,
             period.end,
             period.duration_days(),

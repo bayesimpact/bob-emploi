@@ -3,8 +3,8 @@ import {connect} from 'react-redux'
 import _ from 'underscore'
 import {CircularProgress} from 'components/progress'
 
-import {Action, GET_DASHBOARD_EXPORT} from 'components/actions'
-import {getDashboardExport} from 'store/actions'
+import {Action} from 'components/actions'
+import {getDashboardExport, GET_DASHBOARD_EXPORT} from 'store/actions'
 import {allDoneActions, PROJECT_LOCATION_AREA_TYPE_OPTIONS,
         PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
 import {JobGroupCoverImage, HorizontalRule} from 'components/theme'

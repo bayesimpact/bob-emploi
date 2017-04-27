@@ -1,16 +1,12 @@
 import React from 'react'
 import {connect} from 'react-redux'
 
+import {fetchProjectRequirements, GET_PROJECT_REQUIREMENTS} from 'store/actions'
+import {PROJECT_EXPERIENCE_OPTIONS, getTrainingFulfillmentEstimateOptions} from 'store/project'
+
 import {FieldSet, Select} from 'components/theme'
 import {Step} from './step'
-import {fetchProjectRequirements, GET_PROJECT_REQUIREMENTS} from 'store/actions'
 
-
-const previousJobSimilarityOptions = [
-  {name: "Oui, j'ai déjà fait ce métier", value: 'DONE_THIS'},
-  {name: "J'ai déjà fait un métier similaire", value: 'DONE_SIMILAR'},
-  {name: "C'est un nouveau métierpour moi", value: 'NEVER_DONE'},
-]
 
 const seniorityOptions = [
   {name: 'Stage', value: 'INTERNSHIP'},
@@ -19,16 +15,6 @@ const seniorityOptions = [
   {name: '6 à 10 ans', value: 'SENIOR'},
   {name: 'Plus de 10 ans', value: 'EXPERT'},
 ]
-
-const getTrainingFulfillmentEstimateOptions = gender => {
-  const genderE = gender === 'FEMININE' ? 'e' : ''
-  return [
-    {name: "Oui, j'ai les diplômes suffisants", value: 'ENOUGH_DIPLOMAS'},
-    {name: "Je ne pense pas, mais j'ai beaucoup d'expérience", value: 'ENOUGH_EXPEIRENCE'},
-    {name: 'Bientôt, je fais une formation pour ce poste', value: 'CURRENTLY_IN_TRAINING'},
-    {name: `Je ne suis pas sûr${genderE}`, value: 'TRAINING_FULFILLMENT_NOT_SURE'},
-  ]
-}
 
 const networkEstimateOptions = [
   {name: "J'ai de très bons contacts", value: '3'},
@@ -85,17 +71,21 @@ class NewProjectExperienceStepBase extends React.Component {
       return
     }
     const newState = {}
+    const pickRandomFromList = list => {
+      return list[Math.floor(Math.random() * list.length)]
+    }
     if (!previousJobSimilarity) {
-      newState.previousJobSimilarity = 'DONE_THIS'
+      newState.previousJobSimilarity = pickRandomFromList(PROJECT_EXPERIENCE_OPTIONS).value
     }
     if (!seniority && isSeniorityRequired(previousJobSimilarity)) {
-      newState.seniority = 'EXPERT'
+      newState.seniority = pickRandomFromList(seniorityOptions).value
     }
     if (!trainingFulfillmentEstimate) {
-      newState.trainingFulfillmentEstimate = 'ENOUGH_DIPLOMAS'
+      newState.trainingFulfillmentEstimate = pickRandomFromList(
+        getTrainingFulfillmentEstimateOptions()).value
     }
     if (!networkEstimate) {
-      newState.networkEstimate = 3
+      newState.networkEstimate = Math.floor(Math.random() * 3) + 1
     }
     this.setState(newState)
   }
@@ -136,12 +126,14 @@ class NewProjectExperienceStepBase extends React.Component {
       Avez-vous un bon réseau&nbsp;?
       Connaissez-vous des gens qui pourraient vous aider à obtenir ce métier&nbsp;?
     </span>
-    return <Step {...this.props} fastForward={this.fastForward}
-                      onNextButtonClick={this.handleSubmit}>
+    return <Step
+        {...this.props} fastForward={this.fastForward}
+        title="Comment vous placez-vous sur votre marché ?"
+        onNextButtonClick={this.handleSubmit}>
       <div>
         <FieldSet label="Avez-vous déjà fait ce métier&nbsp;?"
                   isValid={!!previousJobSimilarity} isValidated={isValidated}>
-          <Select options={previousJobSimilarityOptions} value={previousJobSimilarity}
+          <Select options={PROJECT_EXPERIENCE_OPTIONS} value={previousJobSimilarity}
                   onChange={this.handleChange('previousJobSimilarity')} />
         </FieldSet>
         <FieldSet label="Quel est votre niveau d'expérience&nbsp;?"

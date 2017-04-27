@@ -1,16 +1,16 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import {browserHistory} from 'react-router'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {adviceCardIsShown, seeAdvice} from 'store/actions'
+import {adviceCardIsShown, selectAdvice, seeAdvice} from 'store/actions'
+import {getAdviceTitle} from 'store/advice'
+import {maybeContractPrefix} from 'store/french'
 import {PERSONALIZATION_IDS, filterPersonalizations,
         getPersonalizations} from 'store/personalizations'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
 import {FeatureLikeDislikeButtons} from 'components/like'
-import {Colors, Icon, SmoothTransitions, Styles} from 'components/theme'
-import {Routes} from 'components/url'
+import {Colors, Icon, PaddedOnMobile, SmoothTransitions, Styles} from 'components/theme'
 
 import adviceModuleProperties from './data/advice_modules.json'
 
@@ -21,8 +21,10 @@ class AdviceCardBase extends React.Component {
     children: React.PropTypes.node,
     dispatch: React.PropTypes.func.isRequired,
     isInAdvicePage: React.PropTypes.bool,
+    isUnreadTooltipForced: React.PropTypes.bool,
+    onHoverChanged: React.PropTypes.func,
     onShow: React.PropTypes.func,
-    priority: React.PropTypes.number.isRequired,
+    onUnreadTooltipShown: React.PropTypes.func,
     profile: USER_PROFILE_SHAPE.isRequired,
     project: React.PropTypes.object.isRequired,
     reasons: React.PropTypes.arrayOf(React.PropTypes.oneOf(PERSONALIZATION_IDS).isRequired),
@@ -39,8 +41,10 @@ class AdviceCardBase extends React.Component {
   }
 
   componentWillMount() {
-    const {advice, dispatch, priority, project, reasons} = this.props
-    dispatch(adviceCardIsShown(project, advice, priority))
+    const {advice, dispatch, isInAdvicePage, project, reasons} = this.props
+    if (!isInAdvicePage) {
+      dispatch(adviceCardIsShown(project, advice))
+    }
     this.updateReasons(reasons)
   }
 
@@ -51,6 +55,10 @@ class AdviceCardBase extends React.Component {
     }
   }
 
+  componentWillUnmount() {
+    clearTimeout(this.unreadTooltipTimeout)
+  }
+
   updateReasons(reasons) {
     const {project, profile} = this.props
     this.setState({
@@ -59,19 +67,44 @@ class AdviceCardBase extends React.Component {
     })
   }
 
-  gotoAdvicePage = () => {
-    const {advice, project} = this.props
-    browserHistory.push(`${Routes.PROJECT_PAGE}/${project.projectId}/conseil/${advice.adviceId}`)
+  changeHover = isHovered => {
+    const {onHoverChanged} = this.props
+    this.setState({isHovered})
+    onHoverChanged && onHoverChanged(isHovered)
+  }
+
+  gotoAdvicePage = visualElement => event => {
+    const {advice, dispatch, isInAdvicePage, project} = this.props
+    if (isInAdvicePage) {
+      return
+    }
+    event.stopPropagation()
+    dispatch(selectAdvice(project, advice, visualElement))
   }
 
   handleVisibilityChange = isVisible => {
     if (!isVisible) {
       return
     }
-    const {advice, dispatch, onShow, priority, project} = this.props
+    const {advice, dispatch, isInAdvicePage, onShow, project} = this.props
     this.setState({hasBeenSeen: true})
-    dispatch(seeAdvice(project, advice, priority))
+    if (!isInAdvicePage) {
+      dispatch(seeAdvice(project, advice))
+    }
     onShow && onShow()
+  }
+
+  handleHoverUnreadTag = () => {
+    const {onUnreadTooltipShown} = this.props
+    // Signal to parent that the tooltip has been shown if the tag is hovered
+    // for more than 1 second.
+    this.unreadTooltipTimeout = setTimeout(() => {
+      onUnreadTooltipShown && onUnreadTooltipShown()
+    }, 1000)
+  }
+
+  handleLeaveUnreadTag = () => {
+    clearTimeout(this.unreadTooltipTimeout)
   }
 
   renderTitle() {
@@ -83,22 +116,21 @@ class AdviceCardBase extends React.Component {
       fontWeight: 'bold',
       padding: '15px 0 0',
     }
-    const {title} = adviceModuleProperties[advice.adviceId] || {}
     return <header style={style}>
-      {title}
+      {getAdviceTitle(advice)}
     </header>
   }
 
   renderTags() {
     const {reasons} = this.state
     const tagStyle = {
-      backgroundColor: Colors.SOFT_BLUE,
+      backgroundColor: Colors.SKY_BLUE,
       borderRadius: 100,
       color: '#fff',
       display: 'inline-block',
       fontSize: 13,
       margin: '4px 4px 0 0',
-      padding: '2px 8px',
+      padding: '5px 10px',
     }
     return <div style={{margin: '2px 0 17px'}}>
       {reasons.map((reason, index) => <span key={index} style={tagStyle}>
@@ -108,7 +140,7 @@ class AdviceCardBase extends React.Component {
   }
 
   renderButtonBar() {
-    const {advice} = this.props
+    const {advice, isUnreadTooltipForced} = this.props
     const {callToAction} = adviceModuleProperties[advice.adviceId] || {}
     const {isHovered} = this.state
     const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
@@ -116,7 +148,7 @@ class AdviceCardBase extends React.Component {
       backgroundColor: 'rgba(0, 0, 0, .4)',
       borderRadius: 2,
       fontWeight: 500,
-      marginRight: 20,
+      marginRight: 15,
       padding: '2px 6px',
     }
     const tooltipStyle = {
@@ -135,20 +167,22 @@ class AdviceCardBase extends React.Component {
       display: 'flex',
       fontSize: 14,
       fontWeight: 'bold',
-      height: 40,
-      padding: '0 20px',
+      height: 50,
+      padding: '0 15px 0 20px',
       ...SmoothTransitions,
     }
     const chevronStyle = {
       fontSize: 25,
     }
-    return <div style={buttonBarStyle}>
+    return <div style={buttonBarStyle} onClick={this.gotoAdvicePage('advice-card-button')}>
       <span>
         {callToAction || "Accédez à l'outil"}
       </span>
       <span style={{flex: 1}} />
-      {isAdviceUnread ? <span style={unreadStyle} className="tooltip">
-        {/* TODO(pascal): Show this tooltip when scrolling if it was not shown yet. */}
+      {isAdviceUnread ? <span
+          style={unreadStyle} className={isUnreadTooltipForced ? 'tooltip forced' : 'tooltip'}
+          onMouseEnter={this.handleHoverUnreadTag}
+          onMouseLeave={this.handleLeaveUnreadTag}>
         <div className="tooltiptext" style={tooltipStyle}>
           Cliquez sur sur la carte pour découvrir notre outil dédié à ce sujet.
         </div>
@@ -162,6 +196,22 @@ class AdviceCardBase extends React.Component {
     return <div style={style}>
       {this.renderTitle()}
       {this.renderTags()}
+    </div>
+  }
+
+  renderPrioritySubtitle() {
+    const {advice} = this.props
+    const starsToText = {
+      '1': 'intéressant',
+      '2': 'important',
+      '3': 'prioritaire',
+    }
+    const {goal} = adviceModuleProperties[advice.adviceId] || {}
+    return <div style={{fontSize: 13, fontStyle: 'italic', padding: '25px 0 0 40px'}}>
+       Pourquoi nous
+       pensons {maybeContractPrefix('que ', "qu'", goal)} est
+       <strong> {starsToText[advice.numStars] || 'intéressant'}</strong> pour
+       vous&nbsp;:
     </div>
   }
 
@@ -185,93 +235,34 @@ class AdviceCardBase extends React.Component {
       borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
       padding: '0 25px 10px',
     }
-    return <div style={style}>
-      {isInAdvicePage ? null : this.renderTitleAndTags({})}
-      <section
-        style={cardStyle} onClick={this.gotoAdvicePage}
-        onMouseEnter={() => this.setState({isHovered: true})}
-        onMouseLeave={() => this.setState({isHovered: false})}>
-        <div style={{flex: 1}}>
-          {isInAdvicePage ? this.renderTitleAndTags(titleInCardStyle) : null}
-          <VisibilitySensor
-              active={!this.state.hasBeenSeen} intervalDelay={250} minTopValue={50}
-              partialVisibility={true} onChange={this.handleVisibilityChange}>
+    return <VisibilitySensor
+        active={!this.state.hasBeenSeen} intervalDelay={250} minTopValue={50}
+        partialVisibility={true} onChange={this.handleVisibilityChange}>
+      <section style={style}>
+        {isInAdvicePage ? null : this.renderTitleAndTags({})}
+        <div
+            style={cardStyle} onClick={this.gotoAdvicePage('advice-card')}
+            onMouseEnter={() => this.changeHover(true)}
+            onMouseLeave={() => this.changeHover(false)}>
+          <div style={{flex: 1}}>
+            {isInAdvicePage ? this.renderTitleAndTags(titleInCardStyle) : null}
+            {this.renderPrioritySubtitle()}
             <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
               <div style={contentStyle}>
                 {children}
               </div>
             </div>
-          </VisibilitySensor>
+          </div>
+          {isInAdvicePage ? null : this.renderButtonBar()}
         </div>
-        {isInAdvicePage ? null : this.renderButtonBar()}
       </section>
-    </div>
+    </VisibilitySensor>
   }
 }
 const AdviceCard = connect(({user}) => ({gender: user.profile.gender}))(AdviceCardBase)
 
 
-class GrowingNumber extends React.Component {
-  static propTypes = {
-    durationMillisec: React.PropTypes.number.isRequired,
-    isSteady: React.PropTypes.bool,
-    number: React.PropTypes.number.isRequired,
-    style: React.PropTypes.object,
-  }
-  static defaultProps = {
-    durationMillisec: 1000,
-  }
-
-  componentWillMount() {
-    this.setState({growingForMillisec: 0, hasGrown: false, hasStartedGrowing: false})
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.timeout)
-  }
-
-  startGrowing = isVisible => {
-    if (!isVisible) {
-      return
-    }
-    this.grow(0)
-  }
-
-  grow(growingForMillisec) {
-    clearTimeout(this.timeout)
-    if (growingForMillisec >= this.props.durationMillisec) {
-      this.setState({hasGrown: true})
-      return
-    }
-    this.setState({
-      growingForMillisec,
-      hasStartedGrowing: true,
-    })
-    this.timeout = setTimeout(() => this.grow(growingForMillisec + 50), 50)
-  }
-
-  render() {
-    const {durationMillisec, isSteady, number, style} = this.props
-    const {growingForMillisec, hasGrown, hasStartedGrowing} = this.state
-    const maxNumDigits = Math.floor(Math.log10(number)) + 1
-    const containerStyle = isSteady ? {
-      display: 'inline-block',
-      textAlign: 'right',
-      // 0.625 was found empirically.
-      width: `${maxNumDigits * 0.625}em`,
-      ...style,
-    } : style
-    return <span style={containerStyle}>
-      <VisibilitySensor
-          active={!hasStartedGrowing} intervalDelay={250}
-          onChange={this.startGrowing} />
-      {hasGrown ? number :
-        Math.round(growingForMillisec / durationMillisec * number)}
-    </span>
-  }
-}
-
-
+// TODO(pascal): Move to theme.
 class PersonalizationBox extends React.Component {
   static propTypes = {
     children: React.PropTypes.node,
@@ -333,26 +324,6 @@ class PersonalizationBox extends React.Component {
         {children}
       </div>
     </div>
-  }
-}
-
-
-// This component avoids that the element touches the border when on mobile.
-// For now, we only use is for text, hence a solution that does not require a component would be,
-// better, but we didn't find one yet.
-class PaddedOnMobile extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node,
-  }
-  static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
-  }
-
-  render() {
-    const style = {
-      padding: this.context.isMobileVersion ? '0 20px' : 0,
-    }
-    return <div style={style}>{this.props.children}</div>
   }
 }
 
@@ -422,13 +393,14 @@ class AdviceBox extends React.Component {
 
   render() {
     const {children, feature, header, style} = this.props
+    const {padding, ...outerStyle} = style
     const containerStyle = {
       backgroundColor: Colors.LIGHT_GREY,
       border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
       borderRadius: 4,
       display: 'flex',
       flexDirection: 'column',
-      ...style,
+      ...outerStyle,
     }
     const headerStyle = {
       alignItems: 'center',
@@ -446,7 +418,7 @@ class AdviceBox extends React.Component {
       flex: 1,
       flexDirection: 'column',
       fontSize: 13,
-      padding: '20px 35px',
+      padding: (padding || padding === 0) ? padding : '20px 35px',
       position: 'relative',
     }
     return <div style={containerStyle}>
@@ -465,4 +437,4 @@ class AdviceBox extends React.Component {
 }
 
 
-export {AdviceCard, AdviceBox, PaddedOnMobile, PersonalizationBoxes, GrowingNumber}
+export {AdviceCard, AdviceBox, PersonalizationBoxes}

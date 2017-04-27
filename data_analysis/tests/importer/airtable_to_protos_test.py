@@ -121,6 +121,41 @@ class AirtableTestCase(unittest.TestCase):
                 'trigger_scoring_model': 'not-implemented-yet',
             }})
 
+    def test_job_board(self):
+        """Convert a job board."""
+        converter = airtable_to_protos.PROTO_CLASSES['JobBoard']
+        jobboard = converter.convert_record({
+            'id': 'foobar',
+            'fields': {
+                'title': 'Pôle emploi',
+                'link': 'https://candidat.pole-emploi.fr/offres/recherche',
+            },
+        })
+        self.assertEqual(jobboard, {
+            '_id': 'foobar',
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche',
+        })
+
+    def test_job_board_filters(self):
+        """Convert a job board and add filters."""
+        converter = airtable_to_protos.PROTO_CLASSES['JobBoard']
+        jobboard = converter.convert_record({
+            'id': 'foobar',
+            'fields': {
+                'title': 'Pôle emploi',
+                'link': 'https://candidat.pole-emploi.fr/offres/recherche',
+                'for-departement': '49',
+                'for-job-group': 'A12,B',
+            },
+        })
+        self.assertEqual(jobboard, {
+            '_id': 'foobar',
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche',
+            'filters': ['for-departement(49)', 'for-job-group(A12,B)'],
+        })
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

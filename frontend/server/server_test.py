@@ -14,7 +14,6 @@ from bob_emploi.frontend import base_test
 from bob_emploi.frontend import now
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend import server
-from bob_emploi.frontend.api import chantier_pb2
 
 # TODO(pascal): Split this smaller test modules.
 # pylint: disable=too-many-lines
@@ -997,7 +996,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(['d1'], [t.action_template_id for t in call_args[0]])
         self.assertEqual(['foo', 'bar'], call_args[1](call_args[0][0]))
 
-    def test_unverified_data_zone(self):
+    def test_unverified_data_zone_on_profile(self):
         """Called with a user in an unverified data zone."""
         self._db.unverified_data_zones.insert_one({
             '_id': hashlib.md5('12345:A1234'.encode('utf-8')).hexdigest(),
@@ -1013,9 +1012,114 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '"email": "foo@bar.fr"}, "userId": "%s"}' % user_id,
             content_type='application/json')
         user_info = self.json_from_response(response)
-        self.assertEqual(True, user_info.get('appNotAvailable'))
+        self.assertTrue(user_info.get('appNotAvailable'))
         user_in_db = self.user_info_from_db(user_id)
-        self.assertEqual(True, user_in_db.get('appNotAvailable'))
+        self.assertTrue(user_in_db.get('appNotAvailable'))
+
+    def test_unverified_data_zone_regexp(self):
+        """Called with a user in an unverified data zone but in the allowed regex."""
+        self._db.unverified_data_zones.insert_one({
+            '_id': hashlib.md5('12345:A1234'.encode('utf-8')).hexdigest(),
+            'postcodes': '12345',
+            'romeId': 'A1234',
+        })
+        user_id = self.create_user(email='foo@pole-emploi.fr')
+
+        response = self.app.post(
+            '/api/user',
+            data='{"profile": {"city": {"postcodes": "12345"}, '
+            '"latestJob": {"jobGroup": {"romeId": "A1234"}}, '
+            '"email": "foo@pole-emploi.fr"}, "userId": "%s"}' % user_id,
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        self.assertFalse(user_info.get('appNotAvailable'))
+        user_in_db = self.user_info_from_db(user_id)
+        self.assertFalse(user_in_db.get('appNotAvailable'))
+
+    def test_unverified_data_zone_whitelist(self):
+        """Called with a user in an unverified data zone but in the whitelist."""
+        self._db.unverified_data_zones.insert_one({
+            '_id': hashlib.md5('12345:A1234'.encode('utf-8')).hexdigest(),
+            'postcodes': '12345',
+            'romeId': 'A1234',
+        })
+        self._db.show_unverified_data_users.insert_one({'_id': 'foo@bar.fr'})
+        user_id = self.create_user(email='foo@bar.fr')
+
+        response = self.app.post(
+            '/api/user',
+            data='{"profile": {"city": {"postcodes": "12345"}, '
+            '"latestJob": {"jobGroup": {"romeId": "A1234"}}, '
+            '"email": "foo@bar.fr"}, "userId": "%s"}' % user_id,
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        self.assertFalse(user_info.get('appNotAvailable'))
+        user_in_db = self.user_info_from_db(user_id)
+        self.assertFalse(user_in_db.get('appNotAvailable'))
+
+    def test_unverified_data_zone_on_project(self):
+        """Called with a user with no latest job and a project in an unverified data zone."""
+        self._db.unverified_data_zones.insert_one({
+            '_id': hashlib.md5('12345:A1234'.encode('utf-8')).hexdigest(),
+            'postcodes': '12345',
+            'romeId': 'A1234',
+        })
+        user_id = self.create_user(email='foo@bar.fr')
+
+        response = self.app.post(
+            '/api/user',
+            data='{"projects": [{"targetJob": {"jobGroup": {"romeId": "A1234"}},'
+            '"mobility": {"city": {"postcodes": "12345"}}}],'
+            '"profile": {"email": "foo@bar.fr"}, "userId": "%s"}' % user_id,
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        self.assertTrue(user_info.get('appNotAvailable'))
+        user_in_db = self.user_info_from_db(user_id)
+        self.assertTrue(user_in_db.get('appNotAvailable'))
+
+    def test_unverified_data_zone_on_profile_not_project(self):
+        """Called with a user with profile in unverified data zone but not project."""
+        self._db.unverified_data_zones.insert_one({
+            '_id': hashlib.md5('12345:A1234'.encode('utf-8')).hexdigest(),
+            'postcodes': '12345',
+            'romeId': 'A1234',
+        })
+        user_id = self.create_user(email='foo@bar.fr')
+
+        response = self.app.post(
+            '/api/user',
+            data='{"projects": [{"targetJob": {"jobGroup": {"romeId": "A6789"}},'
+            '"mobility": {"city": {"postcodes": "67890"}}}],'
+            '"profile": {"city": {"postcodes": "12345"}, '
+            '"latestJob": {"jobGroup": {"romeId": "A1234"}}, '
+            '"email": "foo@bar.fr"}, "userId": "%s"}' % user_id,
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        self.assertTrue(user_info.get('appNotAvailable'))
+        user_in_db = self.user_info_from_db(user_id)
+        self.assertTrue(user_in_db.get('appNotAvailable'))
+
+    def test_unverified_data_zone_on_project_not_profile(self):
+        """Called with a user with project in unverified data zone but not profile."""
+        self._db.unverified_data_zones.insert_one({
+            '_id': hashlib.md5('12345:A1234'.encode('utf-8')).hexdigest(),
+            'postcodes': '12345',
+            'romeId': 'A1234',
+        })
+        user_id = self.create_user(email='foo@bar.fr')
+
+        response = self.app.post(
+            '/api/user',
+            data='{"projects": [{"targetJob": {"jobGroup": {"romeId": "A1234"}},'
+            '"mobility": {"city": {"postcodes": "12345"}}}],'
+            '"profile": {"city": {"postcodes": "67890"}, '
+            '"latestJob": {"jobGroup": {"romeId": "A6789"}}, '
+            '"email": "foo@bar.fr"}, "userId": "%s"}' % user_id,
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        self.assertFalse(user_info.get('appNotAvailable'))
+        user_in_db = self.user_info_from_db(user_id)
+        self.assertFalse(user_in_db.get('appNotAvailable'))
 
 
 class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
@@ -1039,6 +1143,58 @@ class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(set(['skills', 'diplomas', 'extras']), set(requirements))
         # Point check.
         self.assertEqual('1235', requirements['skills'][1]['skill']['skillId'])
+
+
+class ProjectJobBoardsTipsTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../jobboards endpoint."""
+
+    def setUp(self):
+        super(ProjectJobBoardsTipsTestCase, self).setUp()
+        self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/jobboards' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_one_jobboard(self):
+        """Basic test with one job board only."""
+        self._db.jobboards.insert_one({'title': 'Indeed'})
+        response = self.app.get('/api/project/%s/%s/jobboards' % (self.user_id, self.project_id))
+
+        jobboards = self.json_from_response(response)
+        self.assertEqual({'jobBoards': [{'title': 'Indeed'}]}, jobboards)
+
+    def test_filtered_jobboards(self):
+        """Job board not useful for this project is filtered."""
+        self._db.jobboards.insert_many([
+            {'title': 'Not a good one', 'filters': ['constant(0)']},
+            {'title': 'Keep this one', 'filters': ['constant(1)']},
+        ])
+        response = self.app.get('/api/project/%s/%s/jobboards' % (self.user_id, self.project_id))
+
+        jobboards = self.json_from_response(response)
+        self.assertEqual(
+            {'jobBoards': [{'title': 'Keep this one', 'filters': ['constant(1)']}]},
+            jobboards)
+
+    def test_sorted_jobboards(self):
+        """More specialized job boards come first."""
+        self._db.jobboards.insert_many([
+            {'title': 'Specialized', 'filters': ['constant(2)']},
+            {'title': 'Generic'},
+            {'title': 'Very specialized', 'filters': ['constant(1)', 'constant(1)']},
+        ])
+        response = self.app.get('/api/project/%s/%s/jobboards' % (self.user_id, self.project_id))
+
+        jobboards = self.json_from_response(response)
+        self.assertEqual(
+            ['Very specialized', 'Specialized', 'Generic'],
+            [j.get('title') for j in jobboards.get('jobBoards', [])])
 
 
 class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
@@ -1100,311 +1256,6 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
         self.assertEqual(
             ['First tip', 'Second tip'],
             [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
-
-
-class ProjectPotentialChantiersTestCase(base_test.ServerTestCase):
-    """Unit tests for the project/.../potential-chantiers endpoint."""
-
-    def test_bad_project_id(self):
-        """Test with an unknonwn project ID."""
-        user_id = self.create_user(modifiers=[_add_project])
-        response = self.app.get('/api/project/%s/foo/potential-chantiers' % user_id)
-        self.assertEqual(404, response.status_code)
-        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
-
-    @mock.patch(scoring.__name__ + '.score_chantiers')
-    def test_potential_chantiers(self, mock_score_chantiers):
-        """Get all potential chantiers."""
-        # Prepare User.
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'second'),
-            _add_chantier(0, 'c1'),
-            _add_chantier(0, 'c2'),
-        ])
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-        # Mock chantiers scoring.
-        mock_score_chantiers().get_best_chantiers.return_value = [
-            scoring.ScoredChantier(
-                chantier=chantier_pb2.Chantier(
-                    chantier_id='best', title='First',
-                    kind=chantier_pb2.INCREASE_AVAILABLE_OFFERS),
-                score=3, additional_job_offers=0),
-            scoring.ScoredChantier(
-                chantier=chantier_pb2.Chantier(
-                    chantier_id='second', title='Second',
-                    kind=chantier_pb2.INCREASE_AVAILABLE_OFFERS),
-                score=2, additional_job_offers=0),
-        ]
-        # Mock targets setting.
-        mock_score_chantiers().get_group_targets.return_value = {
-            chantier_pb2.IMPROVE_SUCCESS_RATE: 4,
-            chantier_pb2.INCREASE_AVAILABLE_OFFERS: 7,
-            chantier_pb2.UNLOCK_NEW_LEADS: 1,
-        }
-
-        response = self.app.get('/api/project/%s/%s/potential-chantiers' % (user_id, project_id))
-        potential_chantiers = self.json_from_response(response)
-        self.assertEqual(set(['chantiers', 'groups']), set(potential_chantiers))
-
-        chantier_ids = [
-            c['template'].get('chantierId')
-            for c in potential_chantiers['chantiers']]
-        self.assertEqual(['best', 'second'], chantier_ids[:2])
-        self.assertEqual(['c1', 'c2'], sorted(chantier_ids[2:]))
-        self.assertEqual(
-            [False, True, True, True],
-            [c.get('userHasStarted', False)
-             for c in potential_chantiers['chantiers']])
-
-        self.assertEqual(
-            ['IMPROVE_SUCCESS_RATE', 'INCREASE_AVAILABLE_OFFERS', 'UNLOCK_NEW_LEADS'],
-            [g.get('kind') for g in potential_chantiers['groups']])
-        self.assertEqual('REALLY_NEEDED', potential_chantiers['groups'][1]['need'])
-
-    @mock.patch(scoring.__name__ + '.score_chantiers')
-    def test_preselect_chantiers(self, mock_score_chantiers):
-        """Preselect chantiers on first get."""
-        # Prepare User.
-        user_id = self.create_user(modifiers=[_add_project])
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-        # Mock chantiers scoring: only green chantiers.
-        mock_score_chantiers().get_best_chantiers.return_value = [
-            scoring.ScoredChantier(
-                chantier=chantier_pb2.Chantier(
-                    chantier_id='best %d' % i, kind=chantier_pb2.UNLOCK_NEW_LEADS),
-                score=3, additional_job_offers=0)
-            for i in range(15)]
-        # Mock targets setting.
-        mock_score_chantiers().get_group_targets.return_value = {
-            chantier_pb2.IMPROVE_SUCCESS_RATE: 4,
-            chantier_pb2.INCREASE_AVAILABLE_OFFERS: 7,
-            chantier_pb2.UNLOCK_NEW_LEADS: 2,
-        }
-
-        response = self.app.get('/api/project/%s/%s/potential-chantiers' % (user_id, project_id))
-        potential_chantiers = self.json_from_response(response)
-        self.assertEqual(15, len(potential_chantiers['chantiers']))
-        selected = [c.get('userHasStarted', False) for c in potential_chantiers['chantiers']]
-        self.assertEqual([True, True] + [False] * 13, selected, msg='Target is 2')
-
-    @mock.patch(scoring.__name__ + '.score_chantiers')
-    def test_preselect_red_chantiers(self, mock_score_chantiers):
-        """Preselect red chantiers based on their additional job offers."""
-        # Prepare User.
-        user_id = self.create_user(modifiers=[_add_project])
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-        # Mock chantiers scoring: 3 red chantiers with +60% for each.
-        mock_score_chantiers().get_best_chantiers.return_value = [
-            scoring.ScoredChantier(
-                chantier=chantier_pb2.Chantier(
-                    chantier_id='best %d' % i, kind=chantier_pb2.INCREASE_AVAILABLE_OFFERS),
-                score=3, additional_job_offers=60)
-            for i in range(3)]
-        # Mock targets setting.
-        mock_score_chantiers().get_group_targets.return_value = {
-            # The target for red chantier is +70%
-            chantier_pb2.INCREASE_AVAILABLE_OFFERS: 7,
-        }
-
-        response = self.app.get('/api/project/%s/%s/potential-chantiers' % (user_id, project_id))
-        potential_chantiers = self.json_from_response(response)
-        selected = [c.get('userHasStarted', False) for c in potential_chantiers['chantiers']]
-        self.assertEqual([True, True, False], selected)
-
-
-class ProjectUpdateChantiersTestCase(base_test.ServerTestCase):
-    """Unit tests for the project/.../update-chantiers endpoint."""
-
-    def test_bad_project_id(self):
-        """Test with an unknonwn project ID."""
-        user_id = self.create_user(modifiers=[_add_project])
-        response = self.app.post(
-            '/api/project/%s/foo/update-chantiers' % user_id,
-            data='{}',
-            content_type='application/json')
-        self.assertEqual(404, response.status_code)
-        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
-
-    def test_remove_all_chantiers(self):
-        """Remove all chantiers."""
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'a'),
-            _add_chantier(0, 'b'),
-            _add_chantier(0, 'c'),
-            _add_chantier(0, 'd'),
-        ])
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-
-        response = self.app.post(
-            '/api/project/%s/%s/update-chantiers' % (user_id, project_id),
-            data='{"chantierIds":{'
-            '"a":false,"b": false,"c": false,"d":false}}',
-            content_type='application/json')
-        user_after = self.json_from_response(response)
-
-        chantiers_after = set(
-            chantier for chantier, activated in
-            user_after['projects'][0].get('activatedChantiers', {}).items()
-            if activated)
-        self.assertEqual(0, len(chantiers_after))
-
-        # Check that the changes was stored in the DB as well.
-        user_in_db = self.user_info_from_db(user_id)
-        self.assertEqual(user_after, user_in_db)
-
-    def test_set_first_chantiers(self):
-        """Set the first chantiers for a project."""
-        user_id = self.create_user(modifiers=[_add_project])
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-        self._db.chantiers.insert_one({
-            '_id': 'd',
-            'chantierId': 'd',
-        })
-        self._db.action_templates.insert_one({
-            '_id': 'd1',
-            'actionTemplateId': 'd1',
-            'chantiers': ['d'],
-        })
-        server.clear_cache()
-
-        response = self.app.post(
-            '/api/project/%s/%s/update-chantiers' % (user_id, project_id),
-            data='{"chantierIds":{"d":true}}',
-            content_type='application/json')
-        user_after = self.json_from_response(response)
-
-        chantiers_after = user_after['projects'][0]['activatedChantiers']
-        self.assertEqual(1, len(chantiers_after))
-        self.assertEqual(
-            0, len(user_after['projects'][0].get('actions', [])), msg=user_after['projects'][0])
-
-        # Check that the changes was stored in the DB as well.
-        user_in_db = self.user_info_from_db(user_id)
-        self.assertEqual(user_after, user_in_db)
-
-    @mock.patch(server.__name__ + '.random.randint')
-    def test_first_chantiers_intense_project(self, mock_randint):
-        """Populate project with many actions for an intense project."""
-        mock_randint.side_effect = lambda min_int, max_int: max_int
-
-        def _set_intense_project(user):
-            user['projects'][0]['intensity'] = 'PROJECT_EXTREMELY_INTENSE'
-
-        user_id = self.create_user(modifiers=[_add_project, _set_intense_project], advisor=False)
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-        self._db.chantiers.insert_one({
-            '_id': 'd',
-            'chantierId': 'd',
-        })
-        self._db.action_templates.insert_many([{
-            '_id': 'd%d' % i,
-            'actionTemplateId': 'd%d' % i,
-            'chantiers': ['d'],
-        } for i in range(25)])
-        server.clear_cache()
-
-        response = self.app.post(
-            '/api/project/%s/%s/update-chantiers' % (user_id, project_id),
-            data='{"chantierIds":{"d":true}}',
-            content_type='application/json')
-        self.json_from_response(response)
-
-        actions = self._refresh_action_plan(user_id)
-        self.assertEqual(4, len(actions), msg=actions)
-
-    @mock.patch(server.__name__ + '.random.randint')
-    def test_first_chantiers_and_white_actions(self, mock_randint):
-        """Populate project with many actions for an intense project."""
-        mock_randint.side_effect = lambda min_int, max_int: max_int
-
-        user_id = self.create_user(modifiers=[_add_project], advisor=False)
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-        self._db.chantiers.insert_many([
-            {
-                '_id': 'd',
-                'chantierId': 'd',
-            },
-            {
-                '_id': 'w',
-                'chantierId': 'w',
-                'kind': 'CORE_JOB_SEARCH',
-            },
-        ])
-        self._db.action_templates.insert_many([{
-            '_id': 'd%d' % i,
-            'actionTemplateId': 'd%d' % i,
-            'chantiers': ['d'],
-        } for i in range(25)] + [{
-            '_id': 'w%d' % i,
-            'actionTemplateId': 'w%d' % i,
-            'chantiers': ['w'],
-        } for i in range(10)])
-        server.clear_cache()
-
-        response = self.app.post(
-            '/api/project/%s/%s/update-chantiers' % (user_id, project_id),
-            data='{"chantierIds":{"d":true}}',
-            content_type='application/json')
-        self.json_from_response(response)
-
-        actions = self._refresh_action_plan(user_id)
-
-        self.assertEqual(4, len(actions), msg=actions)
-        self.assertEqual(
-            1, sum(
-                1 for a in actions
-                if a.get('actionTemplateId', '').startswith('w')),
-            msg=actions)
-
-    def test_add_chantiers(self):
-        """Add more chantiers."""
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'a'),
-            _add_chantier(0, 'b'),
-            _add_chantier(0, 'c1'),
-        ])
-        user_info = self.get_user_info(user_id)
-        project_id = user_info['projects'][0]['projectId']
-        self._db.chantiers.insert_one({
-            '_id': 'd',
-            'chantierId': 'd',
-        })
-        self._db.action_templates.insert_one({
-            '_id': 'd1',
-            'actionTemplateId': 'd1',
-            'chantiers': ['d'],
-        })
-        server.clear_cache()
-
-        response = self.app.post(
-            '/api/project/%s/%s/update-chantiers' % (user_id, project_id),
-            data='{"chantierIds":{"a":true,"b":true,"c1":true,'
-            '"d":true}}',
-            content_type='application/json')
-        user_after = self.json_from_response(response)
-
-        chantiers_after = user_after['projects'][0]['activatedChantiers']
-        self.assertEqual(4, len(chantiers_after))
-        self.assertTrue(all(chantiers_after.values()), chantiers_after)
-        self.assertIn('d', chantiers_after)
-        # No action plan created as it's just an update of the chantier.
-        self.assertEqual(
-            user_info['projects'][0].get('actions'),
-            user_after['projects'][0].get('actions'))
-
-        # Check that the changes was stored in the DB as well.
-        user_in_db = self.user_info_from_db(user_id)
-        self.assertEqual(user_after, user_in_db)
 
 
 class CacheClearEndpointTestCase(base_test.ServerTestCase):
@@ -1641,6 +1492,56 @@ class LikesEndpointTestCase(base_test.ServerTestCase):
             data='{"userId": "%s", "likes": {"landing.dashboard": -1}}' % user_id,
             content_type='application/json')
         self.assertEqual(422, response.status_code)
+
+
+class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
+    """Unit tests for the user/migrate-to-advisor endpoint."""
+
+    def setUp(self):
+        super(MigrateAdvisorEndpointTestCase, self).setUp()
+        self._db.advice_modules.insert_many([
+            {
+                'adviceId': 'spontaneous-application',
+                'isReadyForProd': True,
+                'triggerScoringModel': 'constant(3)',
+            },
+        ])
+        server.clear_cache()
+
+    def test_migrate_user(self):
+        """Test a simple user migration."""
+        user_id = self.create_user([_add_project], advisor=False)
+        response = self.app.post('/api/user/%s/migrate-to-advisor' % user_id)
+        self.assertEqual(200, response.status_code)
+
+        user_info = self.get_user_info(user_id)
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisorEmail'))
+        self.assertTrue(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
+        self.assertTrue(user_info['projects'][0].get('advices'))
+
+    def test_migrate_user_already_in_advisor(self):
+        """Test a user migration for a user already in advisor."""
+        user_id = self.create_user(advisor=True)
+        response = self.app.post('/api/user/%s/migrate-to-advisor' % user_id)
+        self.assertEqual(200, response.status_code)
+
+        user_info = self.get_user_info(user_id)
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisorEmail'))
+        self.assertFalse(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
+
+    def test_migrate_user_multiple_projects(self):
+        """Test a migration for a user with multiple projects."""
+        user_id = self.create_user([_add_project, _add_project], advisor=True)
+        response = self.app.post('/api/user/%s/migrate-to-advisor' % user_id)
+        self.assertEqual(200, response.status_code)
+
+        user_info = self.get_user_info(user_id)
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
+        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisorEmail'))
+        self.assertTrue(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
+        self.assertTrue(user_info['projects'][0].get('advices'))
 
 
 if __name__ == '__main__':

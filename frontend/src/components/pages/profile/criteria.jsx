@@ -72,6 +72,7 @@ class NewProjectCriteriaStep extends React.Component {
       justifyContent: 'space-between',
     }
     return <Step
+        title="Quels sont vos critères ?"
         {...this.props} fastForward={this.fastForward}
         onNextButtonClick={this.handleSubmit}>
       <FieldSet

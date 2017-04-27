@@ -101,6 +101,35 @@ class MailingTestCase(unittest.TestCase):
             template_vars)
         self.assertTrue(mock_mail.send_template_to_admins.called)
 
+    def test_advisor_email(self, mock_mail, mock_requests_post):
+        """Do not send to users of the advisor."""
+        mock_requests_post.side_effect = self._mock_post
+        self._db.user.insert_one({
+            'profile': {
+                'name': 'Pascal',
+                'lastName': 'Corpet',
+                'email': 'pascal@bayes.org',
+                'emailDays': ['MONDAY', 'THURSDAY'],
+            },
+            'projects': [{
+                'actions': [{
+                    'actionId': 'foo-bar-id',
+                    'status': 'ACTION_UNREAD',
+                    'title': 'Action Title',
+                    'shortDescription': 'Short description of the action.',
+                }],
+                'title': 'Project Title',
+            }],
+            'featuresEnabled': {
+                'emailAdvisor': 'ACTIVE',
+            },
+        })
+        mock_mail.send_template.return_value.status_code = 200
+        mock_mail.send_template_to_admins.return_value.status_code = 200
+
+        mail_actions.main(self._db.user, 'http://localhost:3000', self._now)
+        self.assertFalse(mock_mail.send_template.called)
+
     def test_server_failure(self, mock_mail, mock_requests_post):
         """Test that we catch our own server's failure."""
         mock_requests_post.side_effect = error.HTTPError(
@@ -186,6 +215,36 @@ class MailingTestCase(unittest.TestCase):
         user_in_db = self._db.user.find_one({})
         self.assertEqual([], user_in_db['profile'].get('emailDays', []))
         self.assertTrue(user_in_db['featuresEnabled'].get('autoStopEmails'))
+
+    def _assert_disable_sending(self, mock_mail, delivered, opened, disabled):
+        self._db.user.drop()
+        self._db.user.insert_one(dict(
+            _USER_WITH_UNREAD_ACTION_DICT,
+            lastEmailSentAt=self._now - datetime.timedelta(hours=24)))
+
+        mock_mail.count_sent_to.return_value = {'DeliveredCount': delivered, 'OpenedCount': opened}
+        mail_actions.main(self._db.user, 'http://localhost:3000', self._now)
+
+        if disabled:
+            self.assertFalse(mock_mail.send_template.called)
+            user_in_db = self._db.user.find_one({})
+            self.assertEqual([], user_in_db['profile'].get('emailDays', []))
+            self.assertTrue(user_in_db['featuresEnabled'].get('autoStopEmails'))
+        else:
+            self.assertTrue(mock_mail.send_template.called)
+        mock_mail.send_template.reset_mock()
+
+    def test_open_but_not_enough(self, mock_mail, mock_requests_post):
+        """Test that we disable emailing if users has opened email but received way more."""
+        mock_requests_post.side_effect = self._mock_post
+        # Do not disable for 1/6 ratio.
+        self._assert_disable_sending(mock_mail, delivered=6, opened=1, disabled=False)
+        # Disable for 1/11 ratio.
+        self._assert_disable_sending(mock_mail, delivered=11, opened=1, disabled=True)
+        # Do not disable for 2/11 ratio.
+        self._assert_disable_sending(mock_mail, delivered=11, opened=2, disabled=False)
+        # Disable for 2/100 ratio.
+        self._assert_disable_sending(mock_mail, delivered=100, opened=2, disabled=True)
 
 
 class _SigtermAfterNItems(object):

@@ -37,8 +37,7 @@ class AppNotAvailablePage extends React.Component {
       flexDirection: 'column',
       fontSize: 15,
       lineHeight: 1.3,
-      marginBottom: 215,
-      marginTop: 150,
+      marginTop: 20,
       textAlign: 'center',
       width: 440,
     }
@@ -65,7 +64,7 @@ class AppNotAvailablePage extends React.Component {
             service sera disponible pour vous.
           </p>
         </div>
-        <div style={{display: 'flex', marginBottom: 40, marginTop: 70}}>
+        <div style={{display: 'flex', marginBottom: 40, marginTop: 10}}>
           <Button type="validation" onClick={this.handleBackClick}>
             Retourner à la page d'accueil
           </Button>

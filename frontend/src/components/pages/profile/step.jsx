@@ -116,6 +116,7 @@ class Step extends React.Component {
       width: 130,
     }
     const buttonStyle = isMobileVersion ? mobileButtonStyle : {}
+    const isLastOnboardingStep = totalStepCount && totalStepCount === stepNumber
     return <div style={stepStyle}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={fastForward} />
       <div style={titleStyle}>{title}</div>
@@ -136,7 +137,7 @@ class Step extends React.Component {
           onClick={onNextButtonClick}
           disabled={isNextButtonDisabled}
           style={buttonStyle}>
-          {nextButtonContent || 'Suivant'}
+          {nextButtonContent || (isLastOnboardingStep ? 'Créer' : 'Suivant')}
         </Button>
       </div>
     </div>

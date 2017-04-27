@@ -1,5 +1,4 @@
 import React from 'react'
-import _ from 'underscore'
 import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 
@@ -11,28 +10,24 @@ import {Routes} from 'components/url'
 import {Modal, ModalCloseButton, ModalHeader} from 'components/modal'
 import {onboardingComplete} from 'store/main_selectors'
 
-import {PROFILE_ONBOARDING_STEPS, onboardingStepCount} from './profile/onboarding'
+import {getOnboardingStep, gotoNextStep, gotoPreviousStep,
+        onboardingStepCount} from './profile/onboarding'
 import {AccountStep} from './profile/account'
 import {GeneralStep} from './profile/general'
-import {GeneralSkillsStep} from './profile/general_skills'
 import {FrustrationsStep} from './profile/frustrations'
 import {NotificationsStep} from './profile/notifications'
-
-const ONBOARDING_STEPS = PROFILE_ONBOARDING_STEPS
-const ONBOARDING_STEP_INDEX =
-  _.object(ONBOARDING_STEPS.map(({name}, stepIndex) => [name, stepIndex]))
 
 const PAGE_VIEW_STEPS = [
   {component: AccountStep},
   {component: NotificationsStep},
   {component: GeneralStep},
-  {component: GeneralSkillsStep},
   {component: FrustrationsStep},
 ]
 
 
 class OnboardingView extends React.Component {
   static propTypes = {
+    dispatch: React.PropTypes.func.isRequired,
     onNewPage: React.PropTypes.func.isRequired,
     onProfileSave: React.PropTypes.func.isRequired,
     stepName: React.PropTypes.string,
@@ -42,8 +37,16 @@ class OnboardingView extends React.Component {
     isMobileVersion: React.PropTypes.bool.isRequired,
   }
 
-  maybeUpdateProfile(stepUpdates, actionType) {
-    const {onProfileSave} = this.props
+  componentWillReceiveProps(nextProps) {
+    const {onNewPage, stepName} = nextProps
+    if (stepName !== this.props.stepName) {
+      onNewPage()
+    }
+  }
+
+  maybeUpdateProfile(stepUpdates) {
+    const {onProfileSave, stepName} = this.props
+    const {type} = getOnboardingStep(Routes.PROFILE_PAGE, stepName)
     const profileUpdates = {}
     // Filter fields of stepUpdates to keep only the ones that are part of the profile.
     for (const field in USER_PROFILE_FIELDS) {
@@ -51,33 +54,18 @@ class OnboardingView extends React.Component {
         profileUpdates[field] = stepUpdates[field]
       }
     }
-    onProfileSave(profileUpdates, actionType)
+    onProfileSave(profileUpdates, type)
   }
 
   handleSubmit = stepUpdates => {
-    const {stepName, onNewPage} = this.props
-    const currentStepIndex = ONBOARDING_STEP_INDEX[stepName] || 0
-    const isLastStep = currentStepIndex === ONBOARDING_STEPS.length - 1
-    this.maybeUpdateProfile(stepUpdates, ONBOARDING_STEPS[currentStepIndex].type)
-    if (isLastStep) {
-      browserHistory.push(Routes.NEW_PROJECT_PAGE)
-    } else {
-      const nextStep = ONBOARDING_STEPS[currentStepIndex + 1]
-      browserHistory.push(Routes.PROFILE_PAGE + '/' + nextStep.name)
-      onNewPage()
-    }
+    const {dispatch, stepName} = this.props
+    this.maybeUpdateProfile(stepUpdates)
+    gotoNextStep(Routes.PROFILE_PAGE, stepName, dispatch)
   }
 
   handleStepBack = stepUpdates => {
-    const {stepName, onNewPage} = this.props
-    const currentStepIndex = ONBOARDING_STEP_INDEX[stepName] || 0
     this.maybeUpdateProfile(stepUpdates)
-    if (currentStepIndex > 0) {
-      const previousStep = ONBOARDING_STEPS[currentStepIndex - 1]
-      // TODO: Make it go backwards in browser history if possible.
-      browserHistory.push(Routes.PROFILE_PAGE + '/' + previousStep.name)
-      onNewPage()
-    }
+    gotoPreviousStep(Routes.PROFILE_PAGE, this.props.stepName)
   }
 
   render() {
@@ -86,7 +74,7 @@ class OnboardingView extends React.Component {
     if (!stepName) {
       return null
     }
-    const currentStepItem = ONBOARDING_STEPS.find(step => step.name === stepName) || {}
+    const currentStepItem = getOnboardingStep(Routes.PROFILE_PAGE, stepName)
     const CurrentStepComponent = currentStepItem.component
     const style = {
       alignItems: 'center',
@@ -108,6 +96,7 @@ class OnboardingView extends React.Component {
 
 class PageView extends React.Component {
   static propTypes = {
+    featuresEnabled: React.PropTypes.object,
     onChange: React.PropTypes.func.isRequired,
     userProfile: React.PropTypes.object.isRequired,
   }
@@ -117,7 +106,7 @@ class PageView extends React.Component {
   }
 
   render() {
-    const {onChange, userProfile} = this.props
+    const {featuresEnabled, onChange, userProfile} = this.props
     const {isAccountDeletionModalShown} = this.state
     return <div style={{...Styles.CENTERED_COLUMN, paddingBottom: 100}}>
       <AccountDeletionModal
@@ -133,7 +122,8 @@ class PageView extends React.Component {
             // Hide previous button.
             onPreviousButtonClick={null}
             nextButtonContent="Sauvegarder"
-            profile={userProfile} />
+            profile={userProfile}
+            featuresEnabled={featuresEnabled} />
       })}
       <div style={{display: 'flex', flexDirection: 'row-reverse', marginTop: 45, width: '100%'}}>
         <Button
@@ -175,7 +165,7 @@ class ProfilePage extends React.Component {
   }
 
   render() {
-    const {params, user} = this.props
+    const {dispatch, params, user} = this.props
     const {isShownAsStepsDuringOnboarding} = this.state
     const style = {
       backgroundColor: Colors.BACKGROUND_GREY,
@@ -184,12 +174,14 @@ class ProfilePage extends React.Component {
           style={style} page="profile" isContentScrollable={true} ref="page">
       {isShownAsStepsDuringOnboarding ? (
         <OnboardingView
+            dispatch={dispatch}
             onProfileSave={this.handleProfileSave}
             onNewPage={() => this.refs.page.scrollTo(0)}
             stepName={params.stepName}
             userProfile={user.profile} />
-      ) :
-      <PageView userProfile={user.profile} onChange={this.handleProfileSave} />
+      ) : <PageView
+          userProfile={user.profile} onChange={this.handleProfileSave}
+          featuresEnabled={user.featuresEnabled} />
       }
     </PageWithNavigationBar>
   }

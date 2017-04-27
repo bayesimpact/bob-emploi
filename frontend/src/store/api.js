@@ -63,22 +63,21 @@ function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
+function jobBoardsGet({userId}, {projectId}) {
+  return getJson(`/api/project/${userId}/${projectId}/jobboards`).
+    then(response => response.jobBoards || [])
+}
+
 function markUsedAndRetrievePost(userId) {
   return postJson(`/api/app/use/${userId}`, undefined, true)
 }
 
+function migrateUserToAdvisor({userId}) {
+  return postJson(`/api/user/${userId}/migrate-to-advisor`, undefined, true)
+}
+
 function projectRequirementsGet(project) {
   return postJson('/api/project/requirements', project, true)
-}
-
-function projectPotentialChantiersGet(userId, projectId) {
-  return getJson(`/api/project/${userId}/${projectId}/potential-chantiers`)
-}
-
-function projectUpdateChantiersPost(userId, projectId, chantierIds) {
-  return postJson(
-      `/api/project/${userId}/${projectId}/update-chantiers`,
-      {chantierIds}, true)
 }
 
 function refreshActionPlanPost(userId) {
@@ -131,10 +130,10 @@ const api = {
   dashboardExportGet,
   exploreGet,
   exploreJobGroupGet,
+  jobBoardsGet,
   markUsedAndRetrievePost,
-  projectPotentialChantiersGet,
+  migrateUserToAdvisor,
   projectRequirementsGet,
-  projectUpdateChantiersPost,
   refreshActionPlanPost,
   resetPasswordPost,
   saveLikes,

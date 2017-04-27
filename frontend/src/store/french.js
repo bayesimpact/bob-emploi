@@ -1,6 +1,3 @@
-import moment from 'moment'
-moment.locale('fr')
-
 // Module to help with phrasing French sentences.
 
 
@@ -60,10 +57,4 @@ export const inCityPrefix = fullName => {
     cityName: fullName,
     prefix: 'à ',
   }
-}
-
-
-// A readable day in french localization.
-export const readableDay = day => {
-  return moment(day || new Date()).format('dddd Do MMMM YYYY')
 }

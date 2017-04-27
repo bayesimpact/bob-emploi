@@ -18,7 +18,7 @@ function listAllImages(callback) {
 
 
 function listUsedImages(callback) {
-  glob(path.join(__dirname, '../src/components/**/*.js*'), (err, files) => {
+  glob(path.join(__dirname, '../src/**/*.js*'), (err, files) => {
     if (err) {
       throw err
     }

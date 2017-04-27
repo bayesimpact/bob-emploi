@@ -1,8 +1,8 @@
 // This file is the base configuration for the [webpack module bundler](https://webpack.github.io/).
 // Use this file to edit settings that are the same for all environments (dev, test, prod).
-
 var path = require('path')
 var webpack = require('webpack')
+const {UnusedFilesWebpackPlugin} = require('unused-files-webpack-plugin')
 
 var port = 80
 var srcPath = path.join(__dirname, '/../src')
@@ -14,6 +14,7 @@ module.exports = {
     hot: true,
     noInfo: false,
     port: port,
+    public: 'localhost.bayes.org:3000',
     publicPath: '/',
   },
   module: {
@@ -54,7 +55,11 @@ module.exports = {
   plugins: [
     // fetch polyfill
     new webpack.ProvidePlugin({
-      'fetch': 'imports-loader?this=>global!exports-loader?global.fetch!whatwg-fetch',
+      fetch: 'imports-loader?this=>global!exports-loader?global.fetch!whatwg-fetch',
+    }),
+    new UnusedFilesWebpackPlugin({
+      globOptions: {ignore: ['**/README.md', 'src/config/*.*']},
+      pattern: 'src/**/*.*',
     }),
   ],
   resolve: {

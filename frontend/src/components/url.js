@@ -6,10 +6,9 @@ Routes.COOKIES_PAGE = Routes.ROOT + 'cookies'
 Routes.VISION_PAGE = Routes.ROOT + 'notre-mission'
 Routes.CONTRIBUTION_PAGE = Routes.ROOT + 'contribuer'
 Routes.PROFILE_PAGE = Routes.ROOT + 'profil'
-Routes.PROFILE_ONBOARDING_PAGES = Routes.ROOT + 'profil/:stepName'
+Routes.PROFILE_ONBOARDING_PAGES = Routes.PROFILE_PAGE + '/:stepName'
 Routes.NEW_PROJECT_PAGE = Routes.ROOT + 'nouveau-projet'
-Routes.DASHBOARD_PAGE = Routes.ROOT + 'actions'
-Routes.DASHBOARD_ACTION_PAGE = Routes.ROOT + 'actions/:actionId'
+Routes.NEW_PROJECT_ONBOARDING_PAGES = Routes.NEW_PROJECT_PAGE + '/:stepName'
 Routes.PROJECT_PAGE = Routes.ROOT + 'projet'
 Routes.PROJECT_PATH = Routes.PROJECT_PAGE + '/:projectId'
 Routes.ADVICE_SUB_PAGE = '/conseil'
@@ -21,6 +20,9 @@ Routes.WAITING_PAGE = Routes.ROOT + 'chargement'
 Routes.TERMS_AND_CONDITIONS_PAGE = Routes.ROOT + 'conditions-generales'
 Routes.PRIVACY_PAGE = Routes.ROOT + 'vie-privee'
 Routes.APP_NOT_AVAILABLE_PAGE = Routes.ROOT + 'indisponible'
+Routes.APP_UPDATED_PAGE = Routes.ROOT + 'mise-a-jour'
+
+export const NEW_PROJECT_ID = 'nouveau'
 
 
 export {Routes}

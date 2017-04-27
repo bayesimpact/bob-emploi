@@ -47,13 +47,17 @@ class LikeDislikeButtonsBase extends React.Component {
       border: 'solid 1px',
       borderRadius: 3,
       color: borderColor,
-      display: 'inline-block',
+      display: 'flex',
       ...SmoothTransitions,
       ...style,
     }
     const buttonStyle = {
+      alignItems: 'center',
       cursor: 'pointer',
-      padding: 8,
+      display: 'flex',
+      height: 30,
+      justifyContent: 'center',
+      width: 30,
     }
     const selectedStyle = score => ({
       backgroundColor: score > 0 ? Colors.SKY_BLUE : 'initial',

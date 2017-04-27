@@ -23,13 +23,14 @@ import sys
 import numpy
 import pandas
 
+from bob_emploi.lib import fhs
 from bob_emploi.lib import migration_helpers
 
 # Field in the FHS "de" table for the end date of the job request.
-_END_DATE_FIELD = 'DATANN'
+_END_DATE_FIELD = fhs.CANCELATION_REASON_FIELD
 
 # Field in the FHS "de" table for the OGR code of the job requested.
-_JOB_CODE_FIELD = 'ROMEAPL'
+_JOB_CODE_FIELD = fhs.JOB_ID_FIELD
 
 
 def _print_progress(value, total, bar_length=100):

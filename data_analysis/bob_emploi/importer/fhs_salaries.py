@@ -22,7 +22,7 @@ from bob_emploi.lib import fhs
 from bob_emploi.lib import migration_helpers
 
 # Field in the FHS "de" table for the end date of the job request.
-_END_DATE_FIELD = 'DATANN'
+_END_DATE_FIELD = fhs.CANCELATION_DATE_FIELD
 
 # Range of salaries for which we have the same size of buckets.
 _BucketRange = collections.namedtuple(
@@ -94,8 +94,8 @@ def bucketize_salary(de_dict):
         in which the job seeker's salary is. The amount are in euros per year
         before taxes.
     """
-    amt = de_dict['SALMT']
-    unit = de_dict['SALUNIT']
+    amt = de_dict[fhs.SALARY_AMOUNT_FIELD]
+    unit = de_dict[fhs.SALARY_UNIT_FIELD]
     salary = compute_annual_salary(amt, unit)
 
     if salary == 0:
@@ -124,9 +124,9 @@ def job_seeker_criteria(de_dict):
     """
     salary_low, salary_high = bucketize_salary(de_dict)
     return (
-        de_dict['ROME'],
-        fhs.extract_departement_id(de_dict['DEPCOM']),
-        de_dict['SALUNIT'],
+        de_dict[fhs.JOB_GROUP_ID_FIELD],
+        fhs.extract_departement_id(de_dict[fhs.CITY_ID_FIELD]),
+        de_dict[fhs.SALARY_UNIT_FIELD],
         salary_low,
         salary_high)
 

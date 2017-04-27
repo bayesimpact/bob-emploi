@@ -3,9 +3,9 @@ import VisibilitySensor from 'react-visibility-sensor'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {Colors, Markdown, Styles} from 'components/theme'
+import {Colors, GrowingNumber, Markdown, PaddedOnMobile, Styles} from 'components/theme'
 
-import {AdviceBox, AdviceCard, GrowingNumber, PaddedOnMobile, PersonalizationBoxes} from './base'
+import {AdviceBox, AdviceCard, PersonalizationBoxes} from './base'
 
 
 class NetworkAdviceCard extends React.Component {

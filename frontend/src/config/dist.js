@@ -20,6 +20,9 @@ const config = {
   // TODO(pascal): Add a way to use a different one on the demo
   // (1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com),
   googleSSOClientId: '524962411351-hl5h7ap6mbvsj4of7pl6i51heqsuqtgo.apps.googleusercontent.com',
+  // This is configured in:
+  // https://analytics.google.com/analytics/web
+  googleUAID: 'UA-97637389-1',
   helpRequestUrl: 'https://aide.bob-emploi.fr/hc/fr/requests/new',
   jobGroupImageUrl: 'https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/ROME_ID.jpg',
   productName: 'Bob Emploi',

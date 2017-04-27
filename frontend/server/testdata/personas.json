@@ -3,12 +3,6 @@
     "user": {},
     "project": {}
   },
-  "inflexible": {
-    "user": {
-      "contractTypeFlexibility": "ABSOLUTELY_NOT"
-    },
-    "project": {}
-  },
   "evolueuse": {
     "user": {
       "highestDegree": "BTS_DUT_DEUG",
@@ -47,7 +41,7 @@
       "source": "PROJECT_MANUALLY_CREATED",
       "employmentTypes": ["CDI"],
       "networkEstimate": 3,
-      "totalInterviewsEstimate": "SOME",
+      "totalInterviewCount": 1,
       "weeklyApplicationsEstimate": "A_LOT",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -236,7 +230,7 @@
       "source": "PROJECT_MANUALLY_CREATED",
       "employmentTypes": ["CDI"],
       "networkEstimate": 3,
-      "totalInterviewsEstimate": "A_LOT",
+      "totalInterviewCount": 21,
       "weeklyApplicationsEstimate": "SOME",
       "jobSearchLengthMonths": 18,
       "status": "PROJECT_CURRENT",
@@ -344,7 +338,7 @@
       "projectId": "57ecc7dc-321cf",
       "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "jobSearchLengthMonths": 2,
-      "totalInterviewsEstimate": "A_LOT",
+      "totalInterviewCount": 21,
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -383,7 +377,6 @@
         "name": "Secrétaire de direction"
       },
       "name": "karen",
-      "salaryRequiremenFlexibility": "ABSOLUTELY_NOT",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1971
     }
@@ -448,7 +441,6 @@
         "name": "Secrétaire de direction"
       },
       "name": "karen",
-      "salaryRequiremenFlexibility": "ABSOLUTELY_NOT",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1971
     }
@@ -1120,7 +1112,6 @@
     },
     "user": {
       "drivingLicenses": ["CAR"],
-      "contractTypeFlexibility": "IF_NEEDED",
       "city": {
         "cityId": "93050",
         "departementId": "93",
@@ -1181,7 +1172,7 @@
         "name": "Acheteur / Acheteuse"
       },
       "title": "Trouver un emploi d'acheteur en Île-de-France",
-      "workloads": ["FULL_TIME"]
+      "workloads": ["FULL_TIME", "PART_TIME"]
     },
     "user": {
       "drivingLicenses": ["CAR"],

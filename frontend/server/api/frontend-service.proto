@@ -3,10 +3,10 @@ syntax = "proto3";
 import "google/protobuf/empty.proto";
 
 import "bob_emploi/frontend/api/action.proto";
-import "bob_emploi/frontend/api/chantier.proto";
 import "bob_emploi/frontend/api/config.proto";
 import "bob_emploi/frontend/api/export.proto";
 import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/jobboard.proto";
 import "bob_emploi/frontend/api/project.proto";
 import "bob_emploi/frontend/api/user.proto";
 
@@ -48,14 +48,11 @@ service FrontendService {
   // job group.
   rpc ProjectRequirements(Project) returns (JobRequirements);
 
+  // Retrieve a list of job boards for a project.
+  rpc ProjectJobBoards(Project) returns (JobBoards);
+
   // Get all available tips for a piece of advice in a project.
   rpc ProjectAdviceTips(Advice) returns(AdviceTips);
-
-  // Get potential chantiers for a project.
-  rpc ProjectPotentialChantiers(Project) returns (PotentialChantiers);
-
-  // Update chantiers of a project.
-  rpc ProjectUpdateChantiers(ChantiersSet) returns (User);
 
   // Create an export of the user's current dashboard (the input is actually only a user's ID).
   rpc CreateDashboardExport(User) returns (DashboardExport);
@@ -63,4 +60,7 @@ service FrontendService {
   // Retrieve an export of the user's current dashboard
   // (the input is actually only an dashboard export's ID).
   rpc GetDashboardExport(DashboardExport) returns (DashboardExport);
+
+  // Migrate a user from Mashup to Advisor (the input is actually only a user's ID).
+  rpc MigrateToAdvisor(User) returns (User);
 }

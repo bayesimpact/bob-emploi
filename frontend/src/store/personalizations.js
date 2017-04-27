@@ -1,4 +1,5 @@
 // Module to define all personalizations.
+import {totalInterviewsDisplay} from 'store/project'
 import {isYoungAndDiscriminated, isOldAndDiscriminated} from 'store/user'
 
 const hasFrustration = frustration => profile =>
@@ -10,14 +11,6 @@ const OFFERS_ESTIMATE = {
   DECENT_AMOUNT: '6 à 15 offres',
   LESS_THAN_2: '0 ou 1 offre',
   SOME: '2 à 5 offres',
-}
-
-
-const INTERVIEWS_ESTIMATE = {
-  A_LOT: 'plus de 5 entretiens',
-  DECENT_AMOUNT: 'entre 2 et 5 entretiens',
-  LESS_THAN_2: 'aucun entretien',
-  SOME: 'un entretien',
 }
 
 
@@ -34,9 +27,9 @@ const allPersonalizations = {
       `par semaines depuis ${jobSearchLengthMonths} mois`,
   },
   COUNT_INTERVIEWS: {
-    test: (profile, {totalInterviewsEstimate}) => !!INTERVIEWS_ESTIMATE[totalInterviewsEstimate],
-    youToldUs: (profile, {totalInterviewsEstimate}) =>
-      `Vous avez passé ${INTERVIEWS_ESTIMATE[totalInterviewsEstimate]}`,
+    test: (profile, project) => !!totalInterviewsDisplay(project),
+    youToldUs: (profile, project) =>
+      `Vous avez passé ${totalInterviewsDisplay(project).toLocaleLowerCase()}`,
   },
   COUNT_MONTHS: {
     test: (profile, {jobSearchLengthMonths}) => jobSearchLengthMonths > 2,
@@ -118,7 +111,9 @@ const allPersonalizations = {
     youToldUs: 'Vous avez déjà fait ce métier',
   },
   SINGLE_PARENT: {
-    test: hasFrustration('SINGLE_PARENT'),
+    test: profile =>
+      hasFrustration('SINGLE_PARENT')(profile) ||
+      profile.familySituation === 'SINGLE_PARENT_SITUATION',
     title: 'Vous nous avez dit que vous aviez une situation familiale compliquée',
     youToldUs: 'Vous avez une situation familiale compliquée',
   },

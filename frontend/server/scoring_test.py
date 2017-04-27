@@ -6,12 +6,10 @@ from os import path
 import random
 import unittest
 
-import mock
 import mongomock
 
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend import proto
-from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -286,8 +284,6 @@ class MobilityWithoutMoveScoringModelTestCase(ScoringModelTestBase(
         self.persona.project.mobility.city.city_id = '69123'
         self.persona.project.mobility.city.departement_id = '69'
         self.persona.project.mobility.city.region_id = '84'
-        if self.persona.user_profile.geographical_flexibility == user_pb2.ABSOLUTELY_NOT:
-            self.persona.user_profile.geographical_flexibility = user_pb2.IF_NEEDED
 
     def test_easy_market(self):
         """User has already a very nice outlook locally."""
@@ -329,27 +325,6 @@ class MobilityWithoutMoveScoringModelTestCase(ScoringModelTestBase(
         score = self._score_persona(self.persona)
         self.assertGreater(score, 2, msg='Fail for "%s"' % self.persona.name)
 
-    def test_should_commute_longer_but_not_flexible(self):
-        """User should really try to commute for a bit longer but does not want to."""
-        self.database.fhs_local_diagnosis.insert_many([
-            {
-                '_id': '69123:A1234',
-                'unemploymentDuration': {
-                    'days': 180,
-                },
-            },
-            {
-                '_id': 'd69:A1234',
-                'unemploymentDuration': {
-                    'days': 20,
-                },
-            },
-        ])
-        self.persona.user_profile.geographical_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        score = self._score_persona(self.persona)
-        self.assertLessEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
-
     def test_no_benefits_for_long_commute(self):
         """Outlook is not much better at the département level."""
         self.database.fhs_local_diagnosis.insert_many([
@@ -382,7 +357,6 @@ class RelocateScoringModelTestCase(ScoringModelTestBase('chantier-relocate(fra)'
         self.persona.project.mobility.city.city_id = '69123'
         self.persona.project.mobility.city.departement_id = '69'
         self.persona.project.mobility.city.region_id = '84'
-        self.persona.user_profile.geographical_flexibility = user_pb2.IF_NEEDED
 
     def test_easy_market(self):
         """User is already quite OK."""
@@ -423,27 +397,6 @@ class RelocateScoringModelTestCase(ScoringModelTestBase('chantier-relocate(fra)'
 
         score = self._score_persona(self.persona)
         self.assertGreater(score, 2, msg='Fail for "%s"' % self.persona.name)
-
-    def test_should_move_but_does_not_want(self):
-        """User should really try to go for a move but does not want to."""
-        self.database.fhs_local_diagnosis.insert_many([
-            {
-                '_id': '69123:A1234',
-                'unemploymentDuration': {
-                    'days': 370,
-                },
-            },
-            {
-                '_id': 'A1234',
-                'unemploymentDuration': {
-                    'days': 20,
-                },
-            },
-        ])
-        self.persona.user_profile.geographical_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        score = self._score_persona(self.persona)
-        self.assertLessEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
 
     def test_almost_no_benefits_for_moving(self):
         """Outlook is not much better at the country level."""
@@ -520,8 +473,6 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
         del persona.user_profile.frustrations[:]
         persona.user_profile.has_handicap = False
         del persona.user_profile.driving_licenses[:]
-        if persona.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.training_flexibility = user_pb2.IF_NEEDED
 
     def test_license_required(self):
         """> 33% when license is required."""
@@ -565,28 +516,6 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
         job_offers_increase = self.model.score(project).additional_job_offers
         self.assertGreaterEqual(job_offers_increase, 1, msg='Failed for "%s"' % persona.name)
         self.assertLessEqual(job_offers_increase, 39, msg='Failed for "%s"' % persona.name)
-
-    def test_not_willing(self):
-        """0 when user does not want to train."""
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'K2109'
-        self._ensure_not_excluded(persona)
-        del persona.user_profile.driving_licenses[:]
-        persona.user_profile.training_flexibility = user_pb2.ABSOLUTELY_NOT
-        self.database.job_group_info.insert_one({
-            '_id': 'K2109',
-            'requirements': {
-                'drivingLicenses': [{
-                    'drivingLicense': 'CAR',
-                    'name': 'Permis B - Véhicule léger',
-                    'percentSuggested': 50,
-                    'percentRequired': 50,
-                }],
-            },
-        })
-
-        score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
 
     def test_user_has_license_already(self):
         """0 when user already has this license."""
@@ -670,7 +599,7 @@ class ImproveCVScoringModelTestCase(ScoringModelTestBase('chantier-resume')):
         persona = self._random_persona().clone()
         del persona.user_profile.frustrations[:]
         persona.project.job_search_length_months = 1
-        persona.project.total_interviews_estimate = project_pb2.A_LOT
+        persona.project.total_interview_count = 21
 
         score = self._score_persona(persona)
 
@@ -681,7 +610,7 @@ class ImproveCVScoringModelTestCase(ScoringModelTestBase('chantier-resume')):
         persona = self._random_persona().clone()
         del persona.user_profile.frustrations[:]
         persona.project.job_search_length_months = 8
-        persona.project.total_interviews_estimate = project_pb2.SOME
+        persona.project.total_interview_count = 4
 
         score = self._score_persona(persona)
 
@@ -738,7 +667,7 @@ class ImproveInterviewScoringModelTestCase(ScoringModelTestBase('chantier-interv
         """Did not specify number of interviews done."""
         persona = self._random_persona().clone()
         del persona.user_profile.frustrations[:]
-        persona.project.total_interviews_estimate = project_pb2.UNKNOWN_NUMBER_ESTIMATE_OPTION
+        persona.project.total_interview_count = 0
 
         score = self._score_persona(persona)
 
@@ -748,7 +677,7 @@ class ImproveInterviewScoringModelTestCase(ScoringModelTestBase('chantier-interv
         """User never got an interview in 1.5 years."""
         persona = self._random_persona().clone()
         del persona.user_profile.frustrations[:]
-        persona.project.total_interviews_estimate = project_pb2.LESS_THAN_2
+        persona.project.total_interview_count = -1
         persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.job_search_length_months = 18
 
@@ -991,31 +920,6 @@ class JobDiscoveryScoringModelTestCase(ScoringModelTestBase('chantier-job-discov
 
         self.assertGreaterEqual(score, 10, msg='Failed for "%s"' % persona.name)
 
-    def test_scared_user(self):
-        """User is afraid of trying anything new."""
-        persona = self._random_persona().clone()
-        persona.project.intensity = project_pb2.PROJECT_NORMALLY_INTENSE
-        persona.project.target_job.job_group.rome_id = (
-            persona.user_profile.latest_job.job_group.rome_id)
-        persona.user_profile.professional_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        score = self._score_persona(persona)
-
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
-    def test_adventurous_user(self):
-        """User is OK to try a new job."""
-        persona = self._random_persona().clone()
-        persona.project.intensity = project_pb2.PROJECT_NORMALLY_INTENSE
-        persona.project.target_job.job_group.rome_id = (
-            persona.user_profile.latest_job.job_group.rome_id)
-        persona.user_profile.professional_flexibility = user_pb2.YES
-
-        score = self._score_persona(persona)
-
-        self.assertGreater(score, 0, msg='Failed for "%s"' % persona.name)
-        self.assertLess(score, 3, msg='Failed for "%s"' % persona.name)
-
 
 class SubsidizedContractScoringModelTestCase(ScoringModelTestBase('chantier-subsidized-contract')):
     """Unit tests for the "Learn about subsidized contracts" chantier."""
@@ -1053,15 +957,6 @@ class SubsidizedContractScoringModelTestCase(ScoringModelTestBase('chantier-subs
 class InternationalJobsScoringModelTestCase(ScoringModelTestBase('chantier-international')):
     """Unit tests for the "International Jobs" chantier."""
 
-    def test_wont_move(self):
-        """User does not want to move."""
-        persona = self._random_persona().clone()
-        persona.user_profile.geographical_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        score = self._score_persona(persona)
-
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
     def test_does_not_speak_english(self):
         """User does not speak english well."""
         persona = self._random_persona().clone()
@@ -1071,26 +966,15 @@ class InternationalJobsScoringModelTestCase(ScoringModelTestBase('chantier-inter
 
         self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
 
-    def test_english_speaker_ready_to_move(self):
-        """User speaks English fluently and is ready to move."""
-        persona = self._random_persona().clone()
-        persona.user_profile.geographical_flexibility = user_pb2.YES
-        persona.user_profile.english_level_estimate = 3
-
-        score = self._score_persona(persona)
-
-        self.assertGreaterEqual(score, 3, msg='Failed for "%s"' % persona.name)
-
     def test_english_speaker_ready_to_go_international(self):
         """User speaks English fluently and wants to go abroad."""
         persona = self._random_persona().clone()
-        persona.user_profile.geographical_flexibility = user_pb2.YES
         persona.user_profile.english_level_estimate = 3
         persona.project.mobility.area_type = geo_pb2.WORLD
 
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 5, msg='Failed for "%s"' % persona.name)
+        self.assertGreaterEqual(score, 4, msg='Failed for "%s"' % persona.name)
 
 
 class ProfessionnalisationScoringModelTestCase(ScoringModelTestBase(
@@ -1103,8 +987,9 @@ class ProfessionnalisationScoringModelTestCase(ScoringModelTestBase(
         persona.project.seniority = project_pb2.INTERNSHIP
         if persona.user_profile.situation == user_pb2.IN_TRAINING:
             persona.user_profile.situation = user_pb2.LOST_QUIT
-        if persona.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.contract_type_flexibility = user_pb2.IF_NEEDED
+        if persona.project.training_fulfillment_estimate == project_pb2.CURRENTLY_IN_TRAINING:
+            persona.project.training_fulfillment_estimate = \
+                project_pb2.TRAINING_FULFILLMENT_NOT_SURE
 
         score = self._score_persona(persona)
 
@@ -1116,8 +1001,9 @@ class ProfessionnalisationScoringModelTestCase(ScoringModelTestBase(
         persona.project.seniority = project_pb2.EXPERT
         if persona.user_profile.situation == user_pb2.IN_TRAINING:
             persona.user_profile.situation = user_pb2.LOST_QUIT
-        if persona.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.contract_type_flexibility = user_pb2.IF_NEEDED
+        if persona.project.training_fulfillment_estimate == project_pb2.CURRENTLY_IN_TRAINING:
+            persona.project.training_fulfillment_estimate = \
+                project_pb2.TRAINING_FULFILLMENT_NOT_SURE
 
         score = self._score_persona(persona)
 
@@ -1128,7 +1014,7 @@ class ProfessionnalisationScoringModelTestCase(ScoringModelTestBase(
         """User is an intern in training."""
         persona = self._random_persona().clone()
         persona.project.seniority = project_pb2.INTERNSHIP
-        persona.user_profile.situation = user_pb2.IN_TRAINING
+        persona.project.training_fulfillment_estimate = project_pb2.CURRENTLY_IN_TRAINING
 
         score = self._score_persona(persona)
 
@@ -1141,16 +1027,7 @@ class ApprentissageScoringModelTestCase(ScoringModelTestBase('chantier-apprentis
     def test_in_training(self):
         """User is already in training."""
         persona = self._random_persona().clone()
-        persona.user_profile.situation = user_pb2.IN_TRAINING
-
-        score = self._score_persona(persona)
-
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
-    def test_not_flexible(self):
-        """User does not want weird contracts."""
-        persona = self._random_persona().clone()
-        persona.user_profile.contract_type_flexibility = user_pb2.ABSOLUTELY_NOT
+        persona.project.training_fulfillment_estimate = project_pb2.CURRENTLY_IN_TRAINING
 
         score = self._score_persona(persona)
 
@@ -1180,7 +1057,6 @@ class ApprentissageScoringModelTestCase(ScoringModelTestBase('chantier-apprentis
         persona = self._random_persona().clone()
         persona.project.seniority = project_pb2.JUNIOR
         persona.user_profile.situation = user_pb2.FIRST_TIME
-        persona.user_profile.contract_type_flexibility = user_pb2.IF_NEEDED
         year = datetime.date.today().year
         persona.user_profile.year_of_birth = year - 22
 
@@ -1192,24 +1068,61 @@ class ApprentissageScoringModelTestCase(ScoringModelTestBase('chantier-apprentis
 class FreelanceScoringModelTestCase(ScoringModelTestBase('chantier-freelance')):
     """Unit tests for the "Freelance" chantier scoring model."""
 
-    def test_not_flexible(self):
-        """User does not want to change their contract type."""
-        persona = self._random_persona().clone()
-        persona.user_profile.contract_type_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        score = self._score_persona(persona)
-
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
     def test_flexible_expert(self):
         """User is an expert and ready to try another contract type."""
         persona = self._random_persona().clone()
         persona.project.seniority = project_pb2.EXPERT
-        persona.user_profile.contract_type_flexibility = user_pb2.YES
 
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 3, msg='Failed for "%s"' % persona.name)
+        self.assertGreaterEqual(score, 2, msg='Failed for "%s"' % persona.name)
+
+
+class AdviceJobBoardsTestCase(ScoringModelTestBase('advice-job-boards')):
+    """Unit tests for the "Other Work Environments" advice."""
+
+    def test_frustrated(self):
+        """Frustrated by not enough offers."""
+        persona = self._random_persona().clone()
+        persona.user_profile.frustrations.append(user_pb2.NO_OFFERS)
+
+        score = self._score_persona(persona)
+
+        self.assertGreaterEqual(score, 2, msg='Failed for "%s"' % persona.name)
+
+    def test_lot_of_offers(self):
+        """User has many offers already."""
+        persona = self._random_persona().clone()
+        del persona.user_profile.frustrations[:]
+        persona.project.weekly_offers_estimate = project_pb2.A_LOT
+
+        score = self._score_persona(persona)
+
+        # We do want to show the chantier but not pre-select it.
+        self.assertEqual(1, score, msg='Failed for "%s"' % persona.name)
+
+    def test_extra_data(self):
+        """Compute extra data."""
+        persona = self._random_persona().clone()
+        project = persona.scoring_project(self.database)
+        self.database.jobboards.insert_one({'title': 'Remix Jobs'})
+        result = self.model.compute_extra_data(project)
+        self.assertTrue(result, msg='Failed for "%s"' % persona.name)
+        self.assertEqual('Remix Jobs', result.job_board_title, msg='Failedfor "%s"' % persona.name)
+
+    def test_filter_data(self):
+        """Get the job board with the most filters."""
+        persona = self._random_persona().clone()
+        persona.project.mobility.city.departement_id = '69'
+        project = persona.scoring_project(self.database)
+        self.database.jobboards.insert_many([
+            {'title': 'Remix Jobs'},
+            {'title': 'Specialized for me', 'filters': ['for-departement(69)']},
+            {'title': 'Specialized NOT for me', 'filters': ['for-departement(31)']},
+        ])
+        result = self.model.compute_extra_data(project)
+        self.assertTrue(result)
+        self.assertEqual('Specialized for me', result.job_board_title)
 
 
 class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
@@ -1260,14 +1173,14 @@ class AdviceImproveInterviewTestCase(ScoringModelTestBase('advice-improve-interv
         persona = self._random_persona().clone()
         if persona.project.job_search_length_months < 3:
             persona.project.job_search_length_months = 3
-        persona.project.total_interviews_estimate = project_pb2.SOME
+        persona.project.total_interview_count = 1
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
 
     def test_many_interviews(self):
         """Users has maximum interviews."""
         persona = self._random_persona().clone()
-        persona.project.total_interviews_estimate = project_pb2.A_LOT
+        persona.project.total_interview_count = 21
         persona.project.job_search_length_months = 2
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
@@ -1275,7 +1188,7 @@ class AdviceImproveInterviewTestCase(ScoringModelTestBase('advice-improve-interv
     def test_many_interviews_long_time(self):
         """Users has maximum interviews."""
         persona = self._random_persona().clone()
-        persona.project.total_interviews_estimate = project_pb2.A_LOT
+        persona.project.total_interview_count = 21
         score = self._score_persona(persona)
         self.assertGreaterEqual(score, 3, msg='Failed for "%s":' % persona.name)
 
@@ -1292,7 +1205,7 @@ class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume'))
             persona.project.job_search_length_months = 3
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
-        persona.project.total_interviews_estimate = project_pb2.SOME
+        persona.project.total_interview_count = 1
         self.database.local_diagnosis.insert_one({
             '_id': '14:I1202',
             'imt': {
@@ -1309,7 +1222,7 @@ class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume'))
         persona.project.target_job.job_group.rome_id = 'I1202'
         persona.project.mobility.city.departement_id = '14'
         persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
-        persona.project.total_interviews_estimate = project_pb2.A_LOT
+        persona.project.total_interview_count = 21
         self.database.local_diagnosis.insert_one({
             '_id': '14:I1202',
             'imt': {
@@ -1323,7 +1236,7 @@ class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume'))
     def test_no_applications(self):
         """Users has never sent an application."""
         persona = self._random_persona().clone()
-        persona.project.total_interviews_estimate = project_pb2.LESS_THAN_2
+        persona.project.total_interview_count = -1
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
@@ -1335,7 +1248,7 @@ class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume'))
             persona.project.job_search_length_months = 3
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
-        persona.project.total_interviews_estimate = project_pb2.SOME
+        persona.project.total_interview_count = 1
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
 
@@ -1422,28 +1335,6 @@ class AcceptContractTypeScoringModelTestCase(ScoringModelTestBase('chantier-cont
 class OfficeToolsScoringTestCase(ScoringModelTestBase('chantier-office-tools')):
     """Unit tests for the "Master Office Tools" chantier."""
 
-    def test_no_training(self):
-        """User does not want to train."""
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'I1202'
-        self.database.job_group_info.insert_one({
-            '_id': 'I1202',
-            'requirements': {
-                'officeSkills': [
-                    {
-                        'percentSuggested': 80,
-                        'officeSkillsLevel': 2,
-                    },
-                ],
-            },
-        })
-        persona.user_profile.training_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
     def test_office_noob(self):
         """User has never used Office."""
         persona = self._random_persona().clone()
@@ -1459,8 +1350,6 @@ class OfficeToolsScoringTestCase(ScoringModelTestBase('chantier-office-tools')):
                 ],
             },
         })
-        if persona.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.training_flexibility = user_pb2.IF_NEEDED
         persona.user_profile.office_skills_estimate = 1
 
         project = persona.scoring_project(self.database)
@@ -1494,8 +1383,6 @@ class OfficeToolsScoringTestCase(ScoringModelTestBase('chantier-office-tools')):
         """The job does not require the use of Office at all."""
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'I1202'
-        if persona.user_profile.training_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.training_flexibility = user_pb2.IF_NEEDED
         persona.user_profile.office_skills_estimate = 1
 
         project = persona.scoring_project(self.database)
@@ -1506,16 +1393,6 @@ class OfficeToolsScoringTestCase(ScoringModelTestBase('chantier-office-tools')):
 
 class PartTimeScoringTestCase(ScoringModelTestBase('chantier-part-time')):
     """Unit tests for the "Try a Part Time Job" chantier."""
-
-    def test_not_flexible(self):
-        """User does not want to try other types of contract."""
-        persona = self._random_persona().clone()
-        persona.user_profile.contract_type_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
 
     def test_already_part_time(self):
         """User already accepts part-time jobs."""
@@ -1532,8 +1409,6 @@ class PartTimeScoringTestCase(ScoringModelTestBase('chantier-part-time')):
         persona = self._random_persona().clone()
         del persona.project.workloads[:]
         persona.project.workloads.append(project_pb2.FULL_TIME)
-        if persona.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.contract_type_flexibility = user_pb2.IF_NEEDED
 
         project = persona.scoring_project(self.database)
         additional_offers = self.model.score(project).additional_job_offers
@@ -1556,16 +1431,6 @@ class PartTimeScoringTestCase(ScoringModelTestBase('chantier-part-time')):
 class ImproveEnglishScoringTestCase(ScoringModelTestBase('chantier-english')):
     """Unit tests for the "Improve your English" chantier."""
 
-    def test_not_flexible(self):
-        """User does not want to train."""
-        persona = self._random_persona().clone()
-        persona.user_profile.training_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
     def test_already_fluent(self):
         """User already speaks English fluently."""
         persona = self._random_persona().clone()
@@ -1579,8 +1444,6 @@ class ImproveEnglishScoringTestCase(ScoringModelTestBase('chantier-english')):
     def test_basic_user(self):
         """User should try to learn English."""
         persona = self._random_persona().clone()
-        if persona.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.contract_type_flexibility = user_pb2.IF_NEEDED
         if persona.user_profile.english_level_estimate >= 3:
             persona.user_profile.english_level_estimate = 2
 
@@ -1605,16 +1468,6 @@ class ImproveEnglishScoringTestCase(ScoringModelTestBase('chantier-english')):
 class TrainingScoringTestCase(ScoringModelTestBase('chantier-training')):
     """Unit tests for the "Plan a Training" chantier."""
 
-    def test_not_flexible(self):
-        """User does not want to train."""
-        persona = self._random_persona().clone()
-        persona.user_profile.training_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
     def test_already_certified(self):
         """User already has all required certifications."""
         persona = self._random_persona().clone()
@@ -1628,12 +1481,13 @@ class TrainingScoringTestCase(ScoringModelTestBase('chantier-training')):
     def test_basic_user(self):
         """User should try to train."""
         persona = self._random_persona().clone()
-        if persona.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.contract_type_flexibility = user_pb2.IF_NEEDED
         if persona.project.diploma_fulfillment_estimate == project_pb2.FULFILLED:
             persona.user_profile.diploma_fulfillment_estimate = project_pb2.FULFILLMENT_NOT_SURE
         if persona.user_profile.situation == user_pb2.IN_TRAINING:
             persona.user_profile.situation = user_pb2.LOST_QUIT
+        if persona.project.training_fulfillment_estimate == project_pb2.CURRENTLY_IN_TRAINING:
+            persona.project.training_fulfillment_estimate = \
+                project_pb2.TRAINING_FULFILLMENT_NOT_SURE
 
         project = persona.scoring_project(self.database)
         additional_offers = self.model.score(project).additional_job_offers
@@ -1643,11 +1497,9 @@ class TrainingScoringTestCase(ScoringModelTestBase('chantier-training')):
     def test_in_training(self):
         """User is already in training."""
         persona = self._random_persona().clone()
-        if persona.user_profile.contract_type_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.contract_type_flexibility = user_pb2.IF_NEEDED
         if persona.project.diploma_fulfillment_estimate == project_pb2.FULFILLED:
             persona.user_profile.diploma_fulfillment_estimate = project_pb2.FULFILLMENT_NOT_SURE
-        persona.user_profile.situation = user_pb2.IN_TRAINING
+        persona.project.training_fulfillment_estimate = project_pb2.CURRENTLY_IN_TRAINING
 
         project = persona.scoring_project(self.database)
         additional_offers = self.model.score(project).additional_job_offers
@@ -1670,16 +1522,6 @@ class TrainingScoringTestCase(ScoringModelTestBase('chantier-training')):
 class ReduceSalaryScoringTestCase(ScoringModelTestBase('chantier-reduce-salary')):
     """Unit tests for the "Reduce your Salary Expectation" chantier."""
 
-    def test_not_flexible(self):
-        """User does not want to reduce their salary."""
-        persona = self._random_persona().clone()
-        persona.user_profile.salary_requirement_flexibility = user_pb2.ABSOLUTELY_NOT
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
     def test_no_salary_expectations(self):
         """User does not have any salary expectations."""
         persona = self._random_persona().clone()
@@ -1693,8 +1535,6 @@ class ReduceSalaryScoringTestCase(ScoringModelTestBase('chantier-reduce-salary')
     def test_basic_user(self):
         """User should try to reduce their salary."""
         persona = self._random_persona().clone()
-        if persona.user_profile.salary_requirement_flexibility == user_pb2.ABSOLUTELY_NOT:
-            persona.user_profile.salary_requirement_flexibility = user_pb2.IF_NEEDED
         if persona.project.min_salary == 0:
             persona.project.min_salary = 35000
 
@@ -1714,223 +1554,6 @@ class ReduceSalaryScoringTestCase(ScoringModelTestBase('chantier-reduce-salary')
         other_additional_offers = self.model.score(other_project).additional_job_offers
 
         self.assertEqual(additional_offers, other_additional_offers)
-
-
-def _random_scoring_project():
-    return scoring.ScoringProject(
-        project=project_pb2.Project(
-            project_id='%x-%x' % (random.randrange(0x1000), random.randrange(0x1000))),
-        user_profile=user_pb2.UserProfile(),
-        features_enabled=user_pb2.Features(),
-        database=mongomock.MongoClient().test)
-
-
-class ChooseBestChantiers(unittest.TestCase):
-    """Unit tests for the choose_best_chantiers."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Test setup."""
-        super(ChooseBestChantiers, cls).setUpClass()
-        scoring.SCORING_MODELS['test-zero'] = scoring.ConstantScoreModel(0)
-        scoring.SCORING_MODELS['test-minus-one'] = scoring.ConstantScoreModel(-1)
-        scoring.SCORING_MODELS['test-one'] = scoring.ConstantScoreModel(1)
-        scoring.SCORING_MODELS['test-two'] = scoring.ConstantScoreModel(2)
-        scoring.SCORING_MODELS['test-three'] = scoring.ConstantScoreModel(3)
-
-    def test_no_chantiers(self):
-        """Check that the function does not crash with an empty list."""
-        scorer = scoring.score_chantiers([], _random_scoring_project())
-        best = scorer.get_best_chantiers(5)
-        self.assertEqual([], best)
-
-    def test_empty_scoring_models(self):
-        """Check that the empty scoring model's result is not cached."""
-        # The empty scoring model should give a different random number on each
-        # call. We had a bug earlier where all chantiers would be scored the
-        # same so we would get either all of them (7 chantiers) or none (0
-        # chantiers).
-        num_best_per_draw = []
-        for unused_i in range(40):
-            scorer = scoring.score_chantiers(
-                [chantier_pb2.Chantier()] * 7, _random_scoring_project())
-            best = scorer.get_best_chantiers(7, min_score=1.5)
-            num_best_per_draw.append(len(best))
-        self.assertLess(2, len(set(num_best_per_draw)), num_best_per_draw)
-
-    def test_filter_zero(self):
-        """Check that chantiers scoring 0 or below are dropped."""
-        scorer = scoring.score_chantiers([
-            chantier_pb2.Chantier(title='foo', scoring_model='test-zero'),
-            chantier_pb2.Chantier(title='blah', scoring_model='test-minus-one'),
-            chantier_pb2.Chantier(title='bar', scoring_model='test-three'),
-        ], None)
-        best = scorer.get_best_chantiers(5)
-        self.assertEqual(['bar'], [t.chantier.title for t in best])
-
-    @mock.patch(scoring.__name__ + '.logging.warning')
-    def test_unknown_scoring_model(self, mock_warning):
-        """Check that the function does not crash with an unknown model."""
-        scorer = scoring.score_chantiers([
-            chantier_pb2.Chantier(title='foo', scoring_model='test-unknown-scoring-model'),
-        ], None)
-        best = scorer.get_best_chantiers(5)
-        self.assertEqual(['foo'], [t.chantier.title for t in best])
-        mock_warning.assert_called_with(
-            'Scoring model "%s" unknown, falling back to default.',
-            'test-unknown-scoring-model')
-
-    @mock.patch(scoring.__name__ + '.logging.warning')
-    def test_unknown_negated_scoring_model(self, mock_warning):
-        """Check that the function does not crash with a negated unknown model."""
-        scorer = scoring.score_chantiers([
-            chantier_pb2.Chantier(title='foo', scoring_model='not-test-unknown-scoring-model'),
-        ], None)
-        best = scorer.get_best_chantiers(5)
-        self.assertEqual(['foo'], [t.chantier.title for t in best])
-        mock_warning.assert_called_with(
-            'Scoring model "%s" unknown, falling back to default.',
-            'not-test-unknown-scoring-model')
-
-    def test_rank_before_cutting(self):
-        """Check that the best chantiers are chosen."""
-        scorer = scoring.score_chantiers([
-            chantier_pb2.Chantier(title='foo', scoring_model='test-three'),
-            chantier_pb2.Chantier(title='blah', scoring_model='test-two'),
-            chantier_pb2.Chantier(title='bar', scoring_model='test-three'),
-        ], None)
-        best = scorer.get_best_chantiers(2)
-        self.assertEqual(set(['foo', 'bar']), set(t.chantier.title for t in best))
-
-    def test_integration(self):
-        """Real check on a fixed persona."""
-        database = mongomock.MongoClient().test
-        scorer = scoring.score_chantiers([
-            chantier_pb2.Chantier(title='About Job', scoring_model='chantier-about-job'),
-            chantier_pb2.Chantier(title='Apply More', scoring_model='constant(2)'),
-            chantier_pb2.Chantier(
-                title='Use Your Network',
-                scoring_model='chantier-use-network'),
-        ], _PERSONAS['empty'].scoring_project(database))
-        best = scorer.get_best_chantiers(2)
-        self.assertEqual(['Apply More', 'Use Your Network'], [t.chantier.title for t in best])
-
-    def test_cache_score_min(self):
-        """Check that min_score param does not get cached."""
-        scorer = scoring.score_chantiers([
-            chantier_pb2.Chantier(title='foo', scoring_model='test-two'),
-            chantier_pb2.Chantier(title='bar', scoring_model='test-three'),
-        ], None)
-        best = scorer.get_best_chantiers(5, min_score=2.5)
-        self.assertEqual(['bar'], [t.chantier.title for t in best])
-
-        all_chantiers = scorer.get_best_chantiers(5, min_score=0)
-        self.assertEqual(['bar', 'foo'], [t.chantier.title for t in all_chantiers])
-
-
-class GroupTargetsTestCase(unittest.TestCase):
-    """Unit tests for computing the chantiers groups targets."""
-
-    def setUp(self):
-        super(GroupTargetsTestCase, self).setUp()
-        self._database = mongomock.MongoClient().test
-        self._persona = _PERSONAS[random.choice(list(_PERSONAS))].clone()
-
-    def test_score_blue_really_needed(self):
-        """Test the target for blue chantiers."""
-        self._persona.project.weekly_applications_estimate = project_pb2.A_LOT
-        self._persona.project.total_interviews_estimate = project_pb2.SOME
-        self._persona.project.job_search_length_months = 24
-        scorer = scoring.score_chantiers([], self._persona.scoring_project(self._database))
-        targets = scorer.get_group_targets()
-        blue_target = targets[chantier_pb2.IMPROVE_SUCCESS_RATE]
-        self.assertGreaterEqual(blue_target, 10, msg='Failed for "%s"' % self._persona.name)
-
-    def test_score_blue_when_just_started(self):
-        """Test the target for blue chantiers when user just started searching."""
-        self._persona.project.job_search_length_months = 2
-        scorer = scoring.score_chantiers([], self._persona.scoring_project(self._database))
-        targets = scorer.get_group_targets()
-        blue_target = targets[chantier_pb2.IMPROVE_SUCCESS_RATE]
-        self.assertGreaterEqual(blue_target, 5, msg='Failed for "%s"' % self._persona.name)
-
-    def test_score_blue_not_needed(self):
-        """Test the target for blue chantiers."""
-        self._persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
-        self._persona.project.total_interviews_estimate = project_pb2.LESS_THAN_2
-        self._persona.project.job_search_length_months = 3
-        scorer = scoring.score_chantiers([], self._persona.scoring_project(self._database))
-        targets = scorer.get_group_targets()
-        blue_target = targets[chantier_pb2.IMPROVE_SUCCESS_RATE]
-        self.assertLessEqual(blue_target, 4, msg='Failed for "%s"' % self._persona.name)
-
-    def test_score_green(self):
-        """Test the target for green chantiers."""
-        self._persona.project.mobility.city.city_id = '69123'
-        self._persona.project.target_job.job_group.rome_id = 'A1234'
-        self._database.fhs_local_diagnosis.insert_one({
-            '_id': '69123:A1234',
-            'unemploymentDuration': {
-                'days': 80,
-            },
-        })
-        scorer = scoring.score_chantiers([], self._persona.scoring_project(self._database))
-        targets = scorer.get_group_targets()
-        green_target = targets[chantier_pb2.UNLOCK_NEW_LEADS]
-        self.assertGreaterEqual(green_target, 2, msg='Failed for "%s"' % self._persona.name)
-        self.assertLessEqual(green_target, 3, msg='Failed for "%s"' % self._persona.name)
-
-    def test_score_red_tons_of_offers(self):
-        """Test the target for red chantiers."""
-        self._persona.project.mobility.city.departement_id = '69'
-        self._persona.project.target_job.job_group.rome_id = 'A1234'
-        self._database.recent_job_offers.insert_one({
-            '_id': '69:A1234',
-            'numAvailableJobOffers': 240,
-        })
-
-        scorer = scoring.score_chantiers(
-            [
-                chantier_pb2.Chantier(
-                    chantier_id='a', scoring_model='constant(2)',
-                    kind=chantier_pb2.INCREASE_AVAILABLE_OFFERS),
-            ] * 5 + [
-                chantier_pb2.Chantier(
-                    chantier_id='c', scoring_model='constant(2)',
-                    kind=chantier_pb2.IMPROVE_SUCCESS_RATE),
-            ] * 10,
-            self._persona.scoring_project(self._database))
-        targets = scorer.get_group_targets()
-        red_target = targets[chantier_pb2.INCREASE_AVAILABLE_OFFERS]
-        self.assertLessEqual(red_target, 0, msg='Failed for "%s"' % self._persona.name)
-
-    def test_score_red_not_many_offers(self):
-        """Test the target for red chantiers."""
-        self._persona.project.mobility.city.departement_id = '69'
-        self._persona.project.target_job.job_group.rome_id = 'A1234'
-        self._database.recent_job_offers.insert_one({
-            '_id': '69:A1234',
-            'numAvailableJobOffers': 32,
-        })
-
-        scorer = scoring.score_chantiers(
-            [
-                chantier_pb2.Chantier(
-                    chantier_id='a', scoring_model='constant(2)',
-                    kind=chantier_pb2.INCREASE_AVAILABLE_OFFERS),
-            ] * 5 + [
-                chantier_pb2.Chantier(
-                    chantier_id='c', scoring_model='constant(2)',
-                    kind=chantier_pb2.IMPROVE_SUCCESS_RATE),
-            ] * 10,
-            self._persona.scoring_project(self._database))
-        targets = scorer.get_group_targets()
-        red_target = targets[chantier_pb2.INCREASE_AVAILABLE_OFFERS]
-        # User gets 5 chantier that could make them +20% each, so in total they
-        # could get +100%. However the max is 32, so it means they have access
-        # to 16 job offers for now. As the target is 24, they need a +50%
-        # increase which translates in 5 target points.
-        self.assertEqual(5, red_target, msg='Failed for "%s"' % self._persona.name)
 
 
 if __name__ == '__main__':

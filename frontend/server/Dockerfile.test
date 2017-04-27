@@ -5,7 +5,7 @@ RUN pip install -r requirements-testing.txt
 
 COPY frontend/server/lint_and_test.sh .pylintrc .pep8 /work/
 COPY frontend/server/*_test.py /work/bob_emploi/frontend/
-COPY frontend/server/asynchronous/*.py /work/bob_emploi/frontend/asynchronous/
+COPY frontend/server/asynchronous/*_test.py /work/bob_emploi/frontend/asynchronous/
 COPY frontend/server/testdata /work/bob_emploi/frontend/testdata
 
 CMD ["nosetests", "--with-watch"]

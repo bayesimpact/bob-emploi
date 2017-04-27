@@ -10,6 +10,7 @@ import {Button} from './theme'
 class DebugModalBase extends React.Component {
   static propTypes = {
     dispatch: React.PropTypes.func.isRequired,
+    email: React.PropTypes.string,
     onClose: React.PropTypes.func.isRequired,
     user: React.PropTypes.object.isRequired,
     userId: React.PropTypes.string,
@@ -30,7 +31,7 @@ class DebugModalBase extends React.Component {
   }
 
   saveAndClose = () => {
-    const {dispatch, onClose, userId} = this.props
+    const {dispatch, email, onClose, userId} = this.props
     const {initialUserJson} = this.state
     const userJson = this.refs.userJson.value
     if (userJson === initialUserJson) {
@@ -38,12 +39,22 @@ class DebugModalBase extends React.Component {
     }
     let user
     try {
-      user = JSON.parse(userJson)
+      user = JSON.parse(userJson.replace(/ObjectId\(("[a-f0-9]+")\)/, '$1'))
     } catch (error) {
       dispatch(displayToasterMessage(error.toString()))
       return
     }
-    dispatch(saveUser({...user, userId})).then(onClose)
+
+    // Delete fields starting with "_".
+    const fieldsToDelete = []
+    for (const key in user) {
+      if (key && key[0] === '_') {
+        fieldsToDelete.push(key)
+      }
+    }
+    fieldsToDelete.forEach(field => delete user[field])
+
+    dispatch(saveUser({...user, profile: {...user.profile, email}, userId})).then(onClose)
   }
 
   render() {
@@ -70,6 +81,7 @@ class DebugModalBase extends React.Component {
 export const DebugModal = connect(({user}) => {
   const {userId, ...userProps} = user
   return {
+    email: user.profile.email,
     user: userProps,
     userId,
   }

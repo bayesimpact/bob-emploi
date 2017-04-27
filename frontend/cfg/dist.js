@@ -7,9 +7,8 @@ var baseConfig = require('./base')
 
 var config = _.merge({
   cache: false,
-  devtool: 'sourcemap',
+  devtool: 'hidden-source-map',
   entry: [
-    // TODO(stephan): Move it somehow to base to make it available in dev as well.
     'babel-polyfill',
     path.join(__dirname, '../src/components/pages/main'),
   ],
@@ -26,7 +25,7 @@ Array.prototype.push.apply(config.plugins, [
     'process.env.NODE_ENV': '"production"',
   }),
   // Minimize all JavaScript files to reduce their size (renames variable names, etc).
-  new webpack.optimize.UglifyJsPlugin(),
+  new webpack.optimize.UglifyJsPlugin({sourceMap: true}),
   // Only keep the fr locale from the moment library.
   new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /fr/),
   // Embed the JavaScript in the index.html page.

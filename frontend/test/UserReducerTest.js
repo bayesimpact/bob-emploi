@@ -2,8 +2,7 @@ var chai = require('chai')
 var expect = chai.expect
 chai.config.truncateThreshold = 0
 import {user} from 'store/user_reducer'
-import {CREATE_PROJECT, DECLINE_ADVICE, EDIT_FIRST_PROJECT, READ_ACTION, SAVE_ACTION,
-        STOP_STICKY_ACTION} from 'store/actions'
+import {CREATE_PROJECT, EDIT_FIRST_PROJECT} from 'store/actions'
 
 describe('user reducer', () => {
   it('should return unchanged state for an unknown action', () => {
@@ -61,85 +60,6 @@ describe('user reducer', () => {
     expect(newState.projects[0].title).to.equal('new project')
     expect(newState.projects[0].isIncomplete).to.equal(true)
     expect(newState.foo).to.equal('bar')
-  })
-
-  it('should stop a sticky action', () => {
-    const oldState = {
-      projects: [
-        {stickyActions: [{actionId: 'active'}]},
-        {stickyActions: [{actionId: 'to-stop'}]},
-      ],
-    }
-    const action = {action: {actionId: 'to-stop'}, type: STOP_STICKY_ACTION}
-    const newState = user(oldState, action)
-    expect(newState).to.deep.equal({
-      projects: [
-        {stickyActions: [{actionId: 'active'}]},
-        {pastActions: [{actionId: 'to-stop'}], stickyActions: []},
-      ],
-    })
-  })
-
-  it('should decline an advice', () => {
-    const oldState = {
-      projects: [{
-        advices: [
-          {adviceId: 'organize', status: 'ADVICE_ACCEPTED'},
-          {adviceId: 'reorientation', status: 'ADVICE_RECOMMENDED'},
-        ],
-        projectId: 'foo',
-      }],
-    }
-    const action = {
-      advice: {adviceId: 'reorientation'},
-      project: {projectId: 'foo'},
-      reason: 'boooring',
-      type: DECLINE_ADVICE,
-    }
-    const newState = user(oldState, action)
-    expect(newState).to.deep.equal({
-      projects: [{
-        advices: [
-          {adviceId: 'organize', status: 'ADVICE_ACCEPTED'},
-          {
-            adviceId: 'reorientation',
-            declinedReason: 'boooring',
-            status: 'ADVICE_DECLINED',
-          },
-        ],
-        projectId: 'foo',
-      }],
-    })
-  })
-
-  it('should read an action', () => {
-    const oldState = {
-      projects: [
-        {actions: [{actionId: 'to-read'}]},
-      ],
-    }
-    const action = {action: {actionId: 'to-read', status: 'ACTION_UNREAD'}, type: READ_ACTION}
-    const newState = user(oldState, action)
-    expect(newState).to.deep.equal({
-      projects: [
-        {actions: [{actionId: 'to-read', status: 'ACTION_CURRENT'}]},
-      ],
-    })
-  })
-
-  it('should save an action', () => {
-    const oldState = {
-      projects: [
-        {actions: [{actionId: 'to-save'}]},
-      ],
-    }
-    const action = {action: {actionId: 'to-save', status: 'ACTION_UNREAD'}, type: SAVE_ACTION}
-    const newState = user(oldState, action)
-    expect(newState).to.deep.equal({
-      projects: [
-        {actions: [{actionId: 'to-save', status: 'ACTION_SAVED'}]},
-      ],
-    })
   })
 })
 

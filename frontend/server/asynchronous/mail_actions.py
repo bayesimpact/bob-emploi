@@ -203,7 +203,11 @@ def _deactivate_if_never_opened(user_in_db, user_db):
     # TODO(pascal): Store the fact that the user has already been checked
     # in our DB to avoid the extra call to MailJet API.
     counts = mail.count_sent_to(email)
-    if counts['DeliveredCount'] < 5 or counts['OpenedCount']:
+    delivered_count = counts.get('DeliveredCount', 0)
+    opened_count = counts.get('OpenedCount', 0)
+    if delivered_count < 5:
+        return False
+    if opened_count >= int(delivered_count / 5):
         return False
 
     logging.info('Disable sending email to %s', user_id)
@@ -252,6 +256,7 @@ def main(user_db, base_url, now):
     weekday = now.weekday() + 1
     query = {
         'profile.emailDays': user_pb2.WeekDay.Name(weekday),
+        'featuresEnabled.emailAdvisor': {'$ne': 'ACTIVE'},
         'projects': {'$exists': True},
     }
     count = 0

@@ -7,95 +7,19 @@ import _ from 'underscore'
 import {CircularProgress} from 'components/progress'
 import {ShortKey} from 'components/shortkey'
 
-import {fetchPotentialChantiers, updateProjectChantiers, createActionPlan,
-        setProjectProperty, declineWholeAdvice} from 'store/actions'
+import {declineWholeAdvice} from 'store/actions'
 import {getAdviceScorePriority, isAnyAdviceScored} from 'store/advice'
 import {genderizeJob} from 'store/job'
-import {createProjectTitleComponents, getEmploymentZone} from 'store/project'
+import {createProjectTitleComponents, getEmploymentZone, getSeniorityText} from 'store/project'
+import {computeBobScore} from 'store/score'
 import {getHighestDegreeDescription, getUserFrustrationTags, USER_PROFILE_SHAPE} from 'store/user'
-import {Routes} from 'components/url'
+import {NEW_PROJECT_ID, Routes} from 'components/url'
 
 import {PageWithNavigationBar} from 'components/navigation'
-import {NEW_PROJECT_ID} from './new_project'
-import {PotentialChantiersLists} from './project/chantiers'
-import {IntensityChangeButton, IntensityModal} from './project/intensity'
-import {EditProjectModal} from './project/edit_project'
 import {AdviceCard} from 'components/advisor'
 import {Modal} from 'components/modal'
-import {JobGroupCoverImage, Colors, Button, SmoothTransitions, Styles,
-        SettingsButton} from 'components/theme'
-
-
-// TODO(guillaume): Add all theses to the store.
-const seniorityToText = {
-  EXPERT: 'plus de 10 ans',
-  INTERMEDIARY: 'entre 2 et 5 ans',
-  INTERNSHIP: 'stage',
-  JUNIOR: 'moins de deux ans',
-  SENIOR: 'entre 5 et 10 ans',
-  UNKNOWN_PROJECT_SENIORITY: '',
-}
-
-
-class SummaryBox extends React.Component {
-  static propTypes = {
-    onEditProjectClick: React.PropTypes.func.isRequired,
-    onIntensityButtonClick: React.PropTypes.func.isRequired,
-    project: React.PropTypes.object.isRequired,
-    style: React.PropTypes.object,
-  }
-
-  render() {
-    const {onEditProjectClick, onIntensityButtonClick, project, style} = this.props
-    const containerStyle = {
-      backgroundColor: Colors.DARK,
-      color: '#fff',
-      padding: 65,
-      position: 'relative',
-      textAlign: 'center',
-      zIndex: 0,
-      ...SmoothTransitions,
-      ...Styles.CENTERED_COLUMN,
-      ...style,
-    }
-    const headingStyle = {
-      fontSize: 37,
-      fontWeight: 'bold',
-      letterSpacing: 1,
-      textShadow: '0 0 10px rgba(0, 0, 0, 0.3)',
-      textTransform: 'uppercase',
-      ...Styles.CENTER_FONT_VERTICALLY,
-    }
-    const settingsButtonStyle = {
-      position: 'absolute',
-      right: 20,
-      top: 20,
-    }
-    const intensityButtonStyle = {
-      left: '50%',
-      position: 'absolute',
-      top: '100%',
-      transform: 'translateX(-50%) translateY(-50%)',
-    }
-    return <div style={containerStyle}>
-      <JobGroupCoverImage romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}} />
-      <SettingsButton
-          onClick={onEditProjectClick}
-          style={settingsButtonStyle}>
-        Éditer
-      </SettingsButton>
-      <div style={headingStyle}>
-        <div style={{fontSize: 15}}>Mon plan d'action sur mesure</div>
-        <div>{project.title}</div>
-      </div>
-      {project.intensity ? (
-        <IntensityChangeButton
-            projectIntensity={project.intensity} onClick={onIntensityButtonClick}
-            style={intensityButtonStyle} />
-      ) : null}
-    </div>
-  }
-}
+import {JobGroupCoverImage, Colors, Button, GrowingNumber, Icon,
+        SmoothTransitions, Styles} from 'components/theme'
 
 
 function getProjectFromProps(props) {
@@ -347,7 +271,9 @@ class SumUpProfileModal extends React.Component {
                   <span style={infoStyle}> {highestDegreeDescription}</span>
               </div> : null}
             <div>
-              Expérience&nbsp;: <span style={infoStyle}>{seniorityToText[project.seniority]}</span>
+              Expérience&nbsp;: <span style={infoStyle}>
+                {getSeniorityText(project.seniority).toLocaleLowerCase()}
+              </span>
             </div>
             {frustrationsTags.length ? <div>
               Frustrations&nbsp;: {frustrationsTags.map(
@@ -373,10 +299,6 @@ class SumUpProfileModal extends React.Component {
           <img src={require('images/localisation-picto.svg')} style={pictoStyle} />
           <div style={{flex: 1}}>
             <div>
-              Ville&nbsp;:
-              <span style={infoStyle}> {userProfile.city.name}</span>
-            </div>
-            <div>
               Zone de recherche&nbsp;:
               <span style={infoStyle}> {getEmploymentZone(project.mobility)}</span>
             </div>
@@ -395,8 +317,6 @@ class SumUpProfileModal extends React.Component {
 
 class ProjectPage extends React.Component {
   static propTypes = {
-    app: React.PropTypes.object.isRequired,
-    dispatch: React.PropTypes.func.isRequired,
     params: React.PropTypes.shape({
       projectId: React.PropTypes.string,
     }),
@@ -404,35 +324,20 @@ class ProjectPage extends React.Component {
   }
 
   state = {
-    isEditProjectModalShown: false,
-    isIntensityModalShown: false,
     isSumUpProfileModalShown: false,
     isWaitingInterstitialShown: false,
   }
 
   componentWillMount() {
-    const {params, user} = this.props
+    const {params} = this.props
+    this.setState({
+      isSumUpProfileModalShown: this.props.params.projectId === NEW_PROJECT_ID,
+      isWaitingInterstitialShown: this.props.params.projectId === NEW_PROJECT_ID,
+    })
     const project = getProjectFromProps(this.props)
     const {projectId} = project
-    if (!projectId) {
-      this.setState({
-        isLoadingPotentialChantiers: true,
-        isSumUpProfileModalShown: this.props.params.projectId === NEW_PROJECT_ID,
-        isWaitingInterstitialShown: this.props.params.projectId === NEW_PROJECT_ID,
-      })
-    } else {
-      if (projectId !== params.projectId) {
-        browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId)
-      }
-      this.loadPotentialChantiers(projectId)
-    }
-    const mightShowChantier = !user.featuresEnabled || !user.featuresEnabled.advisor
-    if (mightShowChantier && !Object.keys(project.activatedChantiers || {}).length) {
-      this.setState({isWaitingInterstitialShown: true})
-    } else if (!project.intensity) {
-      // This should not happen (having activated chantiers without an
-      // intensity) but it happened at least once, so we catch the case.
-      this.setState({isIntensityModalShown: true})
+    if (projectId && projectId !== params.projectId) {
+      browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId)
     }
   }
 
@@ -443,137 +348,28 @@ class ProjectPage extends React.Component {
     }
     if (projectId !== nextProps.params.projectId) {
       browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId)
-      this.loadPotentialChantiers(projectId)
     }
-  }
-
-  loadPotentialChantiers(projectId) {
-    const {app, dispatch} = this.props
-    if (app.projectsPotentialChantiers[projectId || '']) {
-      return
-    }
-    this.setState(
-      {isLoadingPotentialChantiers: true},
-      () => dispatch(fetchPotentialChantiers(projectId)).then(
-        () => this.setState({isLoadingPotentialChantiers: false})))
-  }
-
-  handleUpdateChantiersSet = chantierIds => {
-    const {dispatch, params} = this.props
-    // TODO(pascal): Handle the case where no chantiers are selected (prevent
-    // from saving maybe?).
-    if (this.getIsFirstTime()) {
-      dispatch(createActionPlan(params.projectId || '', chantierIds))
-    } else {
-      dispatch(updateProjectChantiers(params.projectId || '', chantierIds))
-    }
-  }
-
-  handleIntensityChange = intensityLevel => {
-    const {dispatch, params} = this.props
-    this.setState({isIntensityModalShown: false})
-    dispatch(setProjectProperty(params.projectId || '', {intensity: intensityLevel}, true))
   }
 
   handleWaitingInterstitialDone = () => {
-    const project = getProjectFromProps(this.props)
-    this.setState({
-      isIntensityModalShown: !project.intensity,
-      isWaitingInterstitialShown: false,
-    })
-  }
-
-  getIsFirstTime = () => {
-    const project = getProjectFromProps(this.props)
-    return !Object.keys(project.activatedChantiers || {}).length
+    this.setState({isWaitingInterstitialShown: false})
   }
 
   render() {
     const project = getProjectFromProps(this.props)
-    const {app, user} = this.props
-    const {isEditProjectModalShown, isIntensityModalShown,
-           isLoadingPotentialChantiers, isWaitingInterstitialShown} = this.state
+    const {user} = this.props
+    const {isWaitingInterstitialShown} = this.state
     const closeSumUpProfileModal = () => this.setState({isSumUpProfileModalShown: false})
 
-    const isFirstTime = this.getIsFirstTime()
-
-    if (isWaitingInterstitialShown) {
+    if (isWaitingInterstitialShown || !project.advices) {
       return <WaitingProjectPage
           userProfile={user.profile} style={{flex: 1}} project={project}
           onDone={this.handleWaitingInterstitialDone} />
     }
 
-    if (user.featuresEnabled && user.featuresEnabled.advisor) {
-      return <ProjectDashboardPage
-          project={project} onCloseSumUpProfileModal={closeSumUpProfileModal}
-          isSumUpProfileModalShown={this.state.isSumUpProfileModalShown} />
-    }
-
-    let innerPage
-    const innerPageStyle = {
-      backgroundColor: Colors.BACKGROUND_GREY,
-      flex: '1 0',
-      paddingTop: 50,
-      textAlign: 'center',
-    }
-    const potentialChantiers = app.projectsPotentialChantiers[project.projectId]
-    if (isLoadingPotentialChantiers || !potentialChantiers) {
-      innerPage = <div style={innerPageStyle}>
-        <CircularProgress />
-      </div>
-    } else {
-      const hasActions = !!(project.actions && project.actions.length)
-      const introStyle = {
-        color: Colors.CHARCOAL_GREY,
-        lineHeight: 1.4,
-        margin: 'auto',
-        maxWidth: 590,
-        paddingBottom: 50,
-        textAlign: 'left',
-      }
-      innerPage = <div style={innerPageStyle}>
-        {isFirstTime ? <div style={introStyle}>
-          <div style={{fontSize: 16, fontWeight: 500, paddingBottom: 18}}>
-            Voici les solutions possibles que nous avons identifiées afin de booster
-            votre recherche d'emploi.
-          </div>
-          <div style={{fontSize: 14}}>
-            En fonction des solutions que vous ajoutez à votre plan, nous vous proposerons
-            chaque jour des actions concrètes pour avancer. Cliquez sur "Commencer mon
-            plan d'action" en bas de page lorsque vous avez fini.
-          </div>
-        </div> : null}
-        <PotentialChantiersLists potentialChantiers={potentialChantiers || {}}
-            submitCaption={hasActions ? 'Enregistrer' : "Commencer mon plan d'action"}
-            onUpdateSelection={this.handleUpdateChantiersSet} isFirstTime={isFirstTime}
-            isIntensitySet={!!project.intensity}
-            onDone={() => browserHistory.push(Routes.DASHBOARD_PAGE)} />
-      </div>
-    }
-
-    const style = {
-      backgroundColor: Colors.BACKGROUND_GREY,
-      display: 'flex',
-      flexDirection: 'column',
-    }
-    return <PageWithNavigationBar page="project" style={style} isContentScrollable={true}>
-      <IntensityModal
-          isShown={isIntensityModalShown}
-          onClose={project.intensity ? () => this.setState({isIntensityModalShown: false}) : null}
-          onChange={this.handleIntensityChange}
-          projectIntensity={project.intensity} />
-      <EditProjectModal
-          isShown={isEditProjectModalShown}
-          onClose={() => this.setState({isEditProjectModalShown: false})}
-          project={project} />
-      <div style={{display: 'flex', flex: 1, flexDirection: 'column'}}>
-        <SummaryBox
-            project={project} style={{flexShrink: 0}}
-            onIntensityButtonClick={() => this.setState({isIntensityModalShown: true})}
-            onEditProjectClick={() => this.setState({isEditProjectModalShown: true})} />
-        {innerPage}
-      </div>
-    </PageWithNavigationBar>
+    return <ProjectDashboardPage
+        project={project} onCloseSumUpProfileModal={closeSumUpProfileModal}
+        isSumUpProfileModalShown={this.state.isSumUpProfileModalShown} />
   }
 }
 
@@ -608,7 +404,9 @@ class ProjectDashboardPageBase extends React.Component {
 
   state = {
     adviceConfirmationModalText: null,
+    hasUnreadTooltipBeenSeen: false,
     isAdviceUselessFeedbackModalShown: false,
+    isScoreTooltipShown: false,
   }
 
   markFeedbackAsUseless = () => {
@@ -628,12 +426,112 @@ class ProjectDashboardPageBase extends React.Component {
     this.setState({adviceConfirmationModalText: null})
   }
 
-  // TODO(guillaume): Move to the store.
-  getExperience() {
-    const {project} = this.props
-    return project.seniority === 'INTERNSHIP' ? '' : <span>
-        avec {seniorityToText[project.seniority]} d'expérience
-    </span>
+  toggleScoreTooltip = () => {
+    this.setState({isScoreTooltipShown: !this.state.isScoreTooltipShown})
+  }
+
+  renderDiagnostic(style) {
+    const {profile, project} = this.props
+    const {isMobileVersion} = this.context
+    const bobScoreStyle = {
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      border: 'solid 1px rgba(255, 255, 255, 0.5)',
+      borderRadius: 2,
+      display: 'flex',
+      flexDirection: 'column',
+      fontSize: 16,
+      fontWeight: 'bold',
+      margin: 10,
+      padding: 20,
+      width: 300,
+    }
+    const {components, percent} = computeBobScore(profile, project)
+    return <div style={style}>
+      <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column': 'row'}}>
+        <div style={bobScoreStyle}>
+          <div>Bob Score</div>
+          <Gauge percent={percent} style={{margin: 10}} />
+          <div style={{fontSize: 17}}>
+            <GrowingNumber number={Math.round(percent)} isSteady={true} />%
+            <span style={{fontSize: 12}}> de favorabilité</span>
+          </div>
+          <div
+              className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
+              style={{fontSize: 13, fontWeight: 'normal'}}>
+            <span
+                style={{cursor: 'pointer', textDecoration: 'underline'}}
+                onClick={this.toggleScoreTooltip}>
+              Que veut dire ce score&nbsp;?
+            </span>
+            <div
+                className="tooltiptext"
+                style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
+              <p>
+                Ce score représente notre avis sur la façon dont les facteurs
+                liés au marché et à votre recherche affectent vos chances de
+                retrouver un emploi. Par exemple, un score proche de 100% indique
+                que tous les feux sont au vert&nbsp;!
+              </p>
+
+              <p>
+                En fonction de vos caractéristiques personnelles vos chances
+                individuelles peuvent varier, mais ce score nous donne un point de
+                départ pour vous aider.
+              </p>
+            </div>
+          </div>
+        </div>
+        {this.renderDiagnosticComponents(
+          components.filter(({category, score}) => Math.round(score) && category === 'market'),
+          maybeS => `Facteur${maybeS} lié${maybeS} au marché`)}
+        {this.renderDiagnosticComponents(
+          components.filter(({category, score}) => Math.round(score) && category === 'user'),
+          maybeS => `Information${maybeS} sur votre profil`)}
+      </div>
+    </div>
+  }
+
+  renderDiagnosticComponents(components, title) {
+    if (!components.length) {
+      return null
+    }
+    const maybeS = components.length > 1 ? 's' : ''
+    const containerStyle = {
+      fontSize: 12,
+      margin: 10,
+      textAlign: 'left',
+    }
+    const listItemStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      marginTop: 15,
+    }
+    const iconStyle = {
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, .3)',
+      borderRadius: 35,
+      display: 'flex',
+      height: 35,
+      justifyContent: 'center',
+      marginRight: 12,
+      width: 35,
+    }
+    return <div style={containerStyle}>
+      <strong>{title(maybeS)}</strong>
+      <ol style={{fontSize: 14, listStyleType: 'none', padding: 0}}>
+        {components.map(({display, iconSrc, score, scorePartId}) => <li
+            key={scorePartId} style={listItemStyle}>
+          <div style={iconStyle}>
+            <img src={iconSrc} />
+          </div>
+          <div style={{flex: 1}}>
+            {display}
+            <ArrowsUpOrDown number={Math.round(score)} />
+          </div>
+        </li>)}
+      </ol>
+    </div>
   }
 
   renderHeader() {
@@ -651,7 +549,7 @@ class ProjectDashboardPageBase extends React.Component {
       textAlign: 'center',
       zIndex: 0,
     }
-    const {what, where} = createProjectTitleComponents(project, profile.gender)
+    const {what, experience, where} = createProjectTitleComponents(project, profile.gender)
     return <header style={style}>
       <JobGroupCoverImage
           romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
@@ -660,9 +558,15 @@ class ProjectDashboardPageBase extends React.Component {
             left: Colors.CHARCOAL_GREY,
             middle: Colors.CHARCOAL_GREY,
             right: 'rgba(56, 63, 81, 0.7)'}} />
-      <div style={{fontSize: 23, fontStyle: 'italic'}}>
-        <strong>{what} </strong>{this.getExperience()}<strong> {where}</strong>
+
+      <div style={{fontSize: 33, fontWeight: 'bold'}}>
+        Notre diagnostic
       </div>
+      <div style={{fontSize: 23, fontStyle: 'italic'}}>
+        <strong>{what} </strong>{experience}<strong> {where}</strong>
+      </div>
+
+      {this.renderDiagnostic({marginTop: 15})}
     </header>
   }
 
@@ -697,7 +601,10 @@ class ProjectDashboardPageBase extends React.Component {
       {Object.keys(adviceGroups).sort().reverse().map((numStars, index) =>
         this.renderAdviceCardGroup(
           numStars, adviceGroups[numStars],
-          {backgroundColor: index % 2 ? Colors.PALE_GREY_TWO : 'transparent'},
+          {
+            backgroundColor: index % 2 ? Colors.PALE_GREY_TWO : 'transparent',
+            paddingTop: index ? 20 : 0,
+          },
         )
       )}
     </div>
@@ -705,8 +612,9 @@ class ProjectDashboardPageBase extends React.Component {
 
   renderAdviceCardGroup(numStars, advices, style) {
     const {isMobileVersion} = this.context
+    const allAdvices = this.props.project.advices || []
     const cardStyle = {
-      padding: isMobileVersion ? '15px 10px' : '25px 0',
+      padding: isMobileVersion ? '15px 10px' : '0 0 25px',
     }
     const titleLinestyle = {
       alignItems: 'center',
@@ -718,16 +626,28 @@ class ProjectDashboardPageBase extends React.Component {
       height: 60,
       padding: '0 10px',
     }
+    const verticalLineStyle = {
+      borderLeft: `solid 2px ${Colors.SILVER}`,
+      height: 20,
+      marginLeft: 40,
+      marginTop: 10,
+    }
     const {image, title} = ADVICE_CARD_GROUP_PROPS[numStars] || ADVICE_CARD_GROUP_PROPS['1']
+    const hasAnyAdviceBeenRead = allAdvices.some(a => a.status !== 'ADVICE_RECOMMENDED')
     return <div key={`advices-${numStars}-star`} style={style}>
       <div style={{margin: 'auto', maxWidth: 960}}>
         <div style={titleLinestyle}>
           <img src={image} style={{marginRight: 20}} />
           {title(advices.length > 1 ? 's' : '')}
         </div>
-        {advices.map((advice, index) => <AdviceCard
-            priority={index + 1} key={advice.adviceId} advice={advice} style={cardStyle}
+        <div style={verticalLineStyle} />
+        {advices.map(advice => <AdviceCard
+            key={advice.adviceId} advice={advice} style={cardStyle}
             onScoreAdvice={this.onScoreAdvice}
+            onUnreadTooltipShown={() => this.setState({hasUnreadTooltipBeenSeen: true})}
+            isUnreadTooltipForced={
+              !hasAnyAdviceBeenRead && !this.state.hasUnreadTooltipBeenSeen &&
+              allAdvices.indexOf(advice) === 2}
             {...this.props} />
         )}
       </div>
@@ -788,6 +708,138 @@ class ProjectDashboardPageBase extends React.Component {
 }
 const ProjectDashboardPage = connect(({user}) => ({profile: user.profile}))(
   ProjectDashboardPageBase)
+
+
+class Gauge extends React.Component {
+  static propTypes = {
+    halfAngleDeg: React.PropTypes.number.isRequired,
+    percent: React.PropTypes.number.isRequired,
+    radius: React.PropTypes.number.isRequired,
+    scaleY: React.PropTypes.number.isRequired,
+    strokeWidth: React.PropTypes.number.isRequired,
+    style: React.PropTypes.object,
+  }
+  static defaultProps = {
+    halfAngleDeg: 60,
+    radius: 100,
+    scaleY: .8,
+    strokeWidth: 40,
+  }
+
+  componentWillMount() {
+    this.setState({isMounting: true})
+    this.timeout = setTimeout(() => this.setState({isMounting: false}), 10)
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timeout)
+  }
+
+  renderMark(rad, delta) {
+    const {radius, strokeWidth} = this.props
+    const style = {
+      backgroundColor: '#fff',
+      height: strokeWidth,
+      left: '50%',
+      position: 'absolute',
+      top: strokeWidth / 2,
+      transform: `rotate(${rad}rad) translate(${delta-2}px, ${-strokeWidth/2}px)`,
+      transformOrigin: `0 ${radius}px`,
+      width: 4,
+    }
+    return <div style={style} />
+  }
+
+  renderNeedle(rad) {
+    const {radius, strokeWidth, style} = this.props
+    const needleStyle = {
+      backgroundColor: '#fff',
+      borderRadius: '50% 50% 2px 2px',
+      boxShadow: '1px -8px 5px 0 rgba(0, 0, 0, 0.6)',
+      height: strokeWidth / 2 + 5 + radius,
+      left: '50%',
+      position: 'absolute',
+      top: strokeWidth / 2,
+      transform: `rotate(${rad}rad) translate(-2px, ${-strokeWidth/2 - 5}px)`,
+      transformOrigin: `0 ${radius}px`,
+      transition: style.transition || '1000ms',
+      width: 4,
+    }
+    return <div style={needleStyle} />
+  }
+
+  render() {
+    const {halfAngleDeg, percent, radius, scaleY, style, strokeWidth, ...extraProps} = this.props
+    const {isMounting} = this.state
+    const squeezedHalfAngle = Math.atan(Math.tan(halfAngleDeg * Math.PI / 180) * scaleY)
+    const deltaY = Math.cos(squeezedHalfAngle) * radius
+    const halfWidth = Math.sin(squeezedHalfAngle) * radius
+    const containerStyle = {
+      height: (radius + strokeWidth / 2 + 5) * scaleY,
+      width: 2 * (halfWidth + 20),
+      ...style,
+    }
+    const squeezedContainerStyle = {
+      position: 'relative',
+      transform: `scaleY(${scaleY})`,
+    }
+    const svgStyle = {
+      left: '50%',
+      position: 'absolute',
+      transform: `translateX(${-20-halfWidth}px)`,
+      transformOrigin: '50% 0',
+      width: 2 * (20 + halfWidth),
+    }
+    return <div {...extraProps} style={containerStyle}>
+      <div style={squeezedContainerStyle}>
+        <svg
+            strokeWidth={strokeWidth} style={svgStyle}
+            fill="none" viewBox={`-20 0 ${2 * halfWidth + 40} ${deltaY + strokeWidth / 2 + 20}`}>
+          <defs>
+            <linearGradient
+                id="gradient" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={Colors.RED_PINK} />
+              <stop offset="50%" stopColor={Colors.SQUASH} />
+              <stop offset="100%" stopColor={Colors.GREENISH_TEAL} />
+            </linearGradient>
+          </defs>
+          <g transform={`translate(${halfWidth}, ${strokeWidth / 2 + radius})`}>
+            <path
+                d={`M ${-halfWidth},-${deltaY} A ${radius},${radius} 0 0,1 ${halfWidth},-${deltaY}`}
+                stroke="url(#gradient)" />
+          </g>
+        </svg>
+        {this.renderMark(-squeezedHalfAngle, -4)}
+        {this.renderMark(squeezedHalfAngle, 4)}
+        {this.renderNeedle(
+          -squeezedHalfAngle + (isMounting ? 0 : percent) * 2 * squeezedHalfAngle / 100)}
+      </div>
+    </div>
+  }
+}
+
+
+class ArrowsUpOrDown extends React.Component {
+  static propTypes = {
+    number: React.PropTypes.number.isRequired,
+    style: React.PropTypes.object,
+  }
+
+  render() {
+    const {number, style, ...extraProps} = this.props
+    if (!number) {
+      return null
+    }
+    const containerStyle = {
+      color: number > 0 ? Colors.GREENISH_TEAL : Colors.RED_PINK,
+      ...style,
+    }
+    return <div {...extraProps} style={containerStyle}>
+      {new Array(Math.abs(number)).fill(null).map((unused, index) => <Icon
+        key={index} name={number > 0 ? 'arrow-up' : 'arrow-down'} />)}
+    </div>
+  }
+}
 
 
 export {ProjectPage}

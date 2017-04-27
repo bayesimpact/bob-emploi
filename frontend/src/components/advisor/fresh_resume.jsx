@@ -1,8 +1,8 @@
 import React from 'react'
 
-import {Colors, Styles} from 'components/theme'
+import {Colors, GrowingNumber, Styles} from 'components/theme'
 
-import {AdviceCard, GrowingNumber} from './base'
+import {AdviceCard} from './base'
 import {ResumeAdvicePageContent} from './improve_success_rate'
 
 
@@ -49,7 +49,7 @@ class FullAdviceCard extends React.Component {
       <div style={style}>
         {this.renderNumber(3)}
         <div style={textStyle}>
-          C'est le nombre d'entretiens que vous pouriez obtenir avec votre
+          C'est le nombre d'entretiens que vous pourriez obtenir avec votre
           profil.
         </div>
       </div>

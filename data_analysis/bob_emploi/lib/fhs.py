@@ -21,6 +21,51 @@ PART_TIME_WORK_TABLE = 'e0'
 # change during one unemployment period.
 TARGETED_JOB_TABLE = 'rome'
 
+
+# The fields in FHS.
+
+# Unique ID per job seeker: it can only be used as join key between tables as
+# it is recreated on each export from Pôle Emploi data.
+JOBSEEKER_ID_FIELD = 'IDX'
+
+# Date at which a job seeker registered at Pôle Emploi.
+REGISRATION_DATE_FIELD = 'DATINS'
+
+# Reason the job seeker registered at Pôle Emploi. See RegistrationReason.
+REGISTRATION_REASON_FIELD = 'MOTINS'
+
+# Date at which the job seeker canceled their Pôle Emploi registration.
+CANCELATION_DATE_FIELD = 'DATANN'
+
+# Reason the job seeker canceled their Pôle Emploi registration. See
+# CancellationReason.
+CANCELATION_REASON_FIELD = 'MOTANN'
+
+# Category of unemployment for a period.
+PERIOD_CATEGORY_FIELD = 'CATREGR'
+
+# INSEE ID of the city in which the job seeker is looking for a job.
+CITY_ID_FIELD = 'DEPCOM'
+
+# ID of the job group (ROME) of the job that the job seeker is looking for.
+JOB_GROUP_ID_FIELD = 'ROME'
+
+# ID of the job (ROME appelation) that the job seeker is looking for.
+JOB_ID_FIELD = 'ROMEAPL'
+
+# Month on which a job seeker worked partially.
+PART_TIME_WORK_MONTH_FIELD = 'MOIS'
+
+# Amount of the salary that the job seeker is looking for.
+SALARY_AMOUNT_FIELD = 'SALMT'
+
+# Unit for the salary in SALARY_AMOUNT_FIELD.
+SALARY_UNIT_FIELD = 'SALUNIT'
+
+# Gender of the job seeker.
+GENDER_FIELD = 'SEXE'
+
+
 # Regular expression to search the number of the region in an FHS filename.
 # E.g. in "data/pole_emploi/FHS/FHS\ 201512/Reg27/de_201512_echant.csv",
 # it isolates "27" as the first group.
@@ -68,7 +113,7 @@ def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
                 values.append(current)
                 next(i)
             job_seeker[table] = values
-        job_seeker['IDX'] = str(key.IDX)
+        job_seeker[JOBSEEKER_ID_FIELD] = str(key.IDX)
         yield JobSeeker(job_seeker)
 
 
@@ -89,7 +134,7 @@ _JobSeekerKey = collections.namedtuple('JobSeekerKey', ['region', 'IDX'])
 def job_seeker_key(row):
     """Compute the key from some job seeker's data."""
     return _JobSeekerKey(
-        extract_region(row['__file__']), int(float(row['IDX'])))
+        extract_region(row['__file__']), int(float(row[JOBSEEKER_ID_FIELD])))
 
 
 def extract_region(filename):
@@ -153,8 +198,8 @@ class JobSeeker(object):
 
     def __init__(self, data):
         self._data = data
-        self._data['de'].sort(key=lambda de: de['DATINS'])
-        self._data.get('e0', []).sort(key=lambda e0: e0['MOIS'])
+        self._data['de'].sort(key=lambda de: de[REGISRATION_DATE_FIELD])
+        self._data.get('e0', []).sort(key=lambda e0: e0[PART_TIME_WORK_MONTH_FIELD])
         self._data.get('rome', []).sort(key=lambda rome: rome['JOURFV'])
 
     def _unemployment_periods(self, cover_holes_up_to, period_type):
@@ -162,16 +207,19 @@ class JobSeeker(object):
 
         # Find disjoint periods from "de" table which have CATREGR 1, 2, or 3.
         periods = DateIntervals([
-            (de['DATINS'], de['DATANN'] if de['DATANN'] else None, de)
+            (de[REGISRATION_DATE_FIELD],
+             de[CANCELATION_DATE_FIELD] if de[CANCELATION_DATE_FIELD] else None, de)
             for de in self._data[UNEMPLOYMENT_PERIOD_TABLE]
-            if de['CATREGR'] in {'1', '2', '3'}])
+            if de[PERIOD_CATEGORY_FIELD] in {'1', '2', '3'}])
 
         if period_type == 'a':
             self._exclude_worked_months(periods)
 
         periods.cover_holes(
             datetime.timedelta(days=cover_holes_up_to),
-            lambda m1, m2: dict(m2, MOTINS=m1['MOTINS'], DATINS=m1['DATINS']))
+            lambda m1, m2: dict(m2, **{
+                REGISTRATION_REASON_FIELD: m1[REGISTRATION_REASON_FIELD],
+                REGISRATION_DATE_FIELD: m1[REGISRATION_DATE_FIELD]}))
 
         return periods
 
@@ -218,16 +266,17 @@ class JobSeeker(object):
     def _exclude_worked_months(self, periods):
         """Exlude months where the job seeker worked at least one hour."""
         for work_time_month in self._data[PART_TIME_WORK_TABLE]:
-            begin, end = _month_bounds(work_time_month['MOIS'])
+            begin, end = _month_bounds(work_time_month[PART_TIME_WORK_MONTH_FIELD])
             periods.exclude_period(
                 begin,
                 end,
-                lambda m: dict(
-                    m, MOTINS=RegistrationReason.END_OF_PART_TIME_WORK,
-                    DATINS=end),  # pylint: disable=cell-var-from-loop
-                lambda m: dict(
-                    m, MOTANN=CancellationReason.STARTING_PART_TIME_WORK,
-                    DATANN=begin))  # pylint: disable=cell-var-from-loop
+                lambda m: dict(m, **{
+                    REGISTRATION_REASON_FIELD: RegistrationReason.END_OF_PART_TIME_WORK,
+                    REGISRATION_DATE_FIELD: end}),  # pylint: disable=cell-var-from-loop
+                lambda m: dict(m, **{
+                    CANCELATION_REASON_FIELD: CancellationReason.STARTING_PART_TIME_WORK,
+                    CANCELATION_DATE_FIELD: begin}),  # pylint: disable=cell-var-from-loop
+            )
 
     def state_at_date(self, when):
         """Computes the state of the job seeker at a given date.
@@ -240,9 +289,9 @@ class JobSeeker(object):
                 dictionary like the "de" table.
         """
         for period in self._data[UNEMPLOYMENT_PERIOD_TABLE]:
-            if period['DATANN'] and period['DATANN'] <= when:
+            if period[CANCELATION_DATE_FIELD] and period[CANCELATION_DATE_FIELD] <= when:
                 continue
-            if period['DATINS'] > when:
+            if period[REGISRATION_DATE_FIELD] > when:
                 return None
             # TODO: Handle updates of variables that have history in other
             # tables.
@@ -280,6 +329,7 @@ class RegistrationReason(object):
     END_OF_PART_TIME_WORK = 'Y'
 
 
+# TODO(pascal): Rename to CancelationReason (US spelling).
 class CancellationReason(object):
     """Class enumerating the reason for job seeker cancellation.
 

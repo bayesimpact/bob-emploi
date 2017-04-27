@@ -58,8 +58,11 @@ def _maybe_recommend_advice(user, project, database):
         reverse=True)
     incompatible_modules = set()
     for module in modules:
-        if not scores.get(module.advice_id) or module.airtable_id in incompatible_modules:
+        if not scores.get(module.advice_id):
+            # We can break as others will have 0 score as well.
             break
+        if module.airtable_id in incompatible_modules:
+            continue
         piece_of_advice = project.advices.add()
         piece_of_advice.advice_id = module.advice_id
         piece_of_advice.status = project_pb2.ADVICE_RECOMMENDED

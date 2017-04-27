@@ -1,8 +1,7 @@
-function priorityTitle({numStars}, priority) {
-  return ((numStars || 1) >= 2) ? `Priorité n°${priority}` : 'À regarder'
-}
+// TODO(pascal): Move this file to the store.
+import adviceModuleProperties from 'components/advisor/data/advice_modules.json'
 
-// TODO(guillaume): Put simple tests for the following two functions.
+
 function isAnyAdviceScored(project) {
   return (project.advices || []).filter(advice => advice.score).length > 0
 }
@@ -13,4 +12,11 @@ function getAdviceScorePriority(score) {
 }
 
 
-export {priorityTitle, isAnyAdviceScored, getAdviceScorePriority}
+function getAdviceTitle(advice) {
+  const {adviceId, numStars} = advice
+  const {title, titleXStars} = adviceModuleProperties[adviceId] || {}
+  return titleXStars[numStars] || title
+}
+
+
+export {isAnyAdviceScored, getAdviceScorePriority, getAdviceTitle}

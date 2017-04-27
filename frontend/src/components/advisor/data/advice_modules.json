@@ -1,47 +1,142 @@
 {
+  "events": {
+    "callToAction": "Accédez à nos outils pour trouver des événements",
+    "goal": "trouver et vous préparer à aller à des événements",
+    "title": "Allez à des événements",
+    "titleXStars": {
+      "1": "Allez parfois à des événements professionnels",
+      "2": "C'était quand votre dernier salon professionnel ?",
+      "3": "Passez plus de temps dans les évènements d'emploi"
+    }
+  },
+  "find-a-jobboard": {
+    "callToAction": "Accédez à notre liste de portails d'offres spécialisés",
+    "goal": "trouver des offres qui vous correspondent",
+    "title": "Trouvez des offres qui vous correspondent",
+    "titleXStars": {
+      "1": "N'oubliez pas les portails d'offres spécialisés",
+      "2": "Avez-vous essayé des portails d'offres spécialisés",
+      "3": "Explorez à fond des portails d'offres spécialisés"
+    }
+  },
+  "flow-to-apply": {
+    "callToAction": "Accédez à nos combinaisons d'applications",
+    "goal": "utiliser les bons outils pour postuler",
+    "title": "Adoptez les bons outils pour postuler plus vite",
+    "titleXStars": {
+      "1": "Découvrez de nouveaux outils pour postuler",
+      "2": "Vos outils de recherche sont-il adaptés ?",
+      "3": "Utilisez de meilleurs outils de recherche"
+    }
+  },
   "fresh-resume": {
     "callToAction": "Accédez à notre outil sur les CVs",
     "goal": "mettre en valeur votre profil",
-    "title": "Décrochez des entretiens"
+    "title": "Décrochez des entretiens",
+    "titleXStars": {
+      "1": "N'oubliez pas de revoir vos candidatures",
+      "2": "Etes-vous sûr d'avoir un CV au top ?",
+      "3": "Concentrez-vous sur la préparation de vos candidatures"
+    }
   },
   "improve-interview": {
     "callToAction": "Accédez à notre outil sur les entretiens",
     "goal": "réussir vos entretiens",
-    "title": "Préparez mieux vos entretiens"
+    "title": "Préparez mieux vos entretiens",
+    "titleXStars": {
+      "1": "Entraînez vous aux entretiens de temps en temps",
+      "2": "Etes-vous sûr de bien préparer vos entretiens ?",
+      "3": "Mettez plus l'accent sur la préparation de vos entretiens"
+    }
   },
   "improve-resume": {
     "callToAction": "Accédez à notre outil sur les CVs",
     "goal": "obtenir plus d'entretiens",
-    "title": "Décrochez plus d'entretiens"
+    "title": "Décrochez plus d'entretiens",
+    "titleXStars": {
+      "1": "N'oubliez pas de revoir vos candidatures",
+      "2": "Etes-vous sûr d'avoir un CV au top ?",
+      "3": "Concentrez-vous sur la préparation de vos candidatures"
+    }
+  },
+  "keywords-cv": {
+    "callToAction": "Accédez à nos mots-clés pour votre CV",
+    "goal": "utiliser les bons mots-clés dans votre CV",
+    "title": "Utilisez les bons mots-clés",
+    "titleXStars": {
+      "1": "Ne négligez pas les mots-clés dans votre CV",
+      "2": "Êtes-vous sûr d'utiliser les bons mots-clés dans votre dossier ?",
+      "3": "Différenciez-vous des autres avec les bons mots-clés"
+    }
   },
   "life-balance": {
     "callToAction": "Voir des astuces pour votre bien-être",
     "goal": "trouver une association",
-    "title": "Préservez votre équilibre de vie"
+    "title": "Préservez votre équilibre de vie",
+    "titleXStars": {
+      "1": "Pensez à vous aérer l'esprit",
+      "2": "Pensez à ménager votre équilibre de vie",
+      "3": "Faites surtout attention à ne pas perdre la santé !"
+    }
+  },
+  "motivation-email": {
+    "callToAction": "Accédez à nos exemples de mail de motivation",
+    "goal": "travailler sur votre mail de motivation",
+    "title": "Soignez votre mail de motivation",
+    "titleXStars": {
+      "1": "N'oubliez pas de soigner vos emails de motivation",
+      "2": "Pourquoi ne pas retravailler vos emails de motivation ?",
+      "3": "Concentrez-vous surtout sur vos emails de motivations"
+    }
   },
   "network-application": {
     "callToAction": "Accédez à notre outil sur le réseau",
     "goal": "améliorer votre réseau",
-    "title": "Construisez et développez votre réseau"
+    "title": "Construisez et développez votre réseau",
+    "titleXStars": {
+      "1": "N'oubliez pas de cultiver votre réseau",
+      "2": "N'est-ce pas le bon moment pour développer votre réseau ?",
+      "3": "Développez votre réseau en priorité"
+    }
   },
   "network-application-good": {
     "callToAction": "Accédez à notre outil sur le réseau",
     "goal": "utiliser votre réseau de manière efficace",
-    "title": "Utilisez à fond votre réseau"
+    "title": "Utilisez à fond votre réseau",
+    "titleXStars": {
+      "1": "N'oubliez pas de cultiver votre réseau",
+      "2": "N'est-ce pas le bon moment pour développer votre réseau ?",
+      "3": "Développez votre réseau en priorité"
+    }
   },
   "network-application-medium": {
     "callToAction": "Accédez à notre outil sur le réseau",
     "goal": "améliorer votre réseau",
-    "title": "Développez votre réseau"
+    "title": "Développez votre réseau",
+    "titleXStars": {
+      "1": "N'oubliez pas de cultiver votre réseau",
+      "2": "N'est-ce pas le bon moment pour développer votre réseau ?",
+      "3": "Développez votre réseau en priorité"
+    }
   },
   "other-work-env": {
     "callToAction": "Accédez à notre outil sur les structures et secteurs",
     "goal": "trouver d'autres secteurs",
-    "title": "Explorez de nouveaux horizons"
+    "title": "Explorez de nouveaux horizons",
+    "titleXStars": {
+      "1": "N'hésitez pas à postuler dans d'autres secteurs d'activité",
+      "2": "Avez-vous postulé dans d'autres secteurs d'activité ?",
+      "3": "Tournez-vous aussi vers d'autres secteurs d'activité"
+    }
   },
   "spontaneous-application": {
     "callToAction": "Accédez à notre outil sur les candidatures spontanées",
     "goal": "faire de bonnes candidatures spontanées",
-    "title": "Pensez aux candidatures spontanées"
+    "title": "Pensez aux candidatures spontanées",
+    "titleXStars": {
+      "1": "Pensez aussi aux candidatures spontanées",
+      "2": "Pourquoi ne pas envoyer de candidatures spontanées ?",
+      "3": "Privilégiez les candidatures spontanées sur le reste"
+    }
   }
 }

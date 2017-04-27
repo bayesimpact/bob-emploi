@@ -22,6 +22,7 @@ from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import discovery_pb2
 from bob_emploi.frontend.api import export_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import user_pb2
 
 
@@ -193,6 +194,32 @@ IMPORTERS = {
         is_imported=True,
         proto_type=advisor_pb2.AdviceModule,
         key='AirTable key'),
+    'show_unverified_data_users': Importer(
+        name='Show unverified data Users',
+        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/show_unverified_data_users.py \\
+            --base_id appvjPDlByLmGbjaE \\
+            --table whitelist \\
+            --mongo_url "%(mongo_url)s"
+        """,
+        is_imported=True,
+        proto_type=None,
+        key='User Email'),
+    'jobboards': Importer(
+        name='Job Boards',
+        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/airtable_to_protos.py \\
+            --table jobboards \\
+            --proto JobBoard \\
+            --mongo_collection jobboards \\
+            --base_id appXmyc7yYj0pOcae \\
+            --mongo_url "%(mongo_url)s"
+        """,
+        is_imported=True,
+        proto_type=jobboard_pb2.JobBoard,
+        key='Airtable key'),
 }
 
 

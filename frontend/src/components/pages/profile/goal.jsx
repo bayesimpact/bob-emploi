@@ -7,8 +7,10 @@ import {PROJECT_LOCATION_AREA_TYPE_OPTIONS} from 'store/project'
 
 
 const projectKindOptions = [
-  {name: 'Trouver un emploi', value: 'FIND_JOB'},
-  {name: 'Me réorienter', value: 'REORIENTATION'},
+  {name: 'Retrouver un emploi', value: 'FIND_A_NEW_JOB'},
+  {name: 'Me reconvertir', value: 'REORIENTATION'},
+  {name: 'Trouver mon premier emploi', value: 'FIND_A_FIRST_JOB'},
+  {name: 'Trouver un autre emploi (je suis en poste)', value: 'FIND_ANOTHER_JOB'},
   {
     disabled: true,
     name: 'Développer une activité (bientôt disponible)',
@@ -21,9 +23,7 @@ class NewProjectGoalStep extends React.Component {
   static propTypes = {
     newProject: React.PropTypes.object,
     onSubmit: React.PropTypes.func.isRequired,
-    profile: React.PropTypes.shape({
-      latestJob: React.PropTypes.object,
-    }),
+    profile: React.PropTypes.object,
   }
 
   handleSubmit = () => {
@@ -46,7 +46,7 @@ class NewProjectGoalStep extends React.Component {
     }
     const newState = {}
     if (!kind) {
-      newState.kind = 'FIND_JOB'
+      newState.kind = 'FIND_A_NEW_JOB'
     }
     if (!city) {
       newState.city = {
@@ -77,15 +77,9 @@ class NewProjectGoalStep extends React.Component {
   }
 
   componentWillMount() {
-    const {newProject, profile} = this.props
+    const {newProject} = this.props
     if (newProject) {
-      if (!newProject.targetJob && profile.latestJob) {
-        newProject.targetJob = profile.latestJob
-      }
-      if (!newProject.city && profile.city) {
-        newProject.city = profile.city
-      }
-      this.setState({...newProject})
+      this.setState(newProject)
     }
   }
 
@@ -106,7 +100,9 @@ class NewProjectGoalStep extends React.Component {
     const {profile} = this.props
     const {areaType, city, kind, targetJob, isValidated} = this.state
     const maybeE = profile.gender === 'FEMININE' ? 'e' : ''
-    return <Step {...this.props} fastForward={this.fastForward}
+    return <Step
+        title="Entrons dans le vif du sujet : votre projet !"
+        {...this.props} fastForward={this.fastForward}
         onNextButtonClick={this.handleSubmit} >
       <FieldSet label="Mon projet est de :"
                 isValid={!!kind} isValidated={isValidated}>

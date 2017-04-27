@@ -148,8 +148,7 @@ class LoginFormBase extends React.Component {
         <span style={lostPasswordLinkStyle}>
           Un email a été envoyé à {passwordResetRequestedEmail}
         </span>
-      :
-      <Button
+      : <Button
           disabled={!this.isFormValid()}
           onClick={isTryingToResetPassword ? this.handleLostPasswordClick : this.handleLogin}
           style={{alignSelf: 'center', marginTop: 30}}
@@ -478,6 +477,11 @@ class LoginModalBase extends React.Component {
     }
   }
 
+  handleGoogleFailure = ({details}) => {
+    const {dispatch} = this.props
+    dispatch(displayToasterMessage(details))
+  }
+
   // TODO: Use different API endpoints for login and registration.
   handleRegister = (email, password, name, lastName) => {
     const {dispatch} = this.props
@@ -570,8 +574,9 @@ class LoginModalBase extends React.Component {
               style={{borderRadius: 100}} />
           <GoogleLogin
               clientId={config.googleSSOClientId} offline={false}
-              callback={this.handleGoogleLogin}
-              cssClass="login google-login">
+              onSuccess={this.handleGoogleLogin}
+              onFailure={this.handleGoogleFailure}
+              className="login google-login">
             <Icon name="google" /> {`${socialLoginPrefix} avec Google`}
           </GoogleLogin>
         </div>}

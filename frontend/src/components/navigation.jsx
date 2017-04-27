@@ -222,10 +222,10 @@ class MobileNavigationBarBase extends React.Component {
       : onNavigateBack ?
         <Icon
             name="chevron-left" style={{...menuIconStyle, fontSize: 30}}
-            onClick={onNavigateBack} /> :
-            <Icon
-                name="menu" style={menuIconStyle} tabIndex={0}
-                onClick={() => this.setState({isMenuOpen: true})} />
+            onClick={onNavigateBack} />
+        : <Icon
+            name="menu" style={menuIconStyle} tabIndex={0}
+            onClick={() => this.setState({isMenuOpen: true})} />
       }
       <img src={require('images/logo-bob-mobile.svg')} alt={config.productName} />
     </nav>
@@ -241,7 +241,6 @@ const MobileNavigationBar = connect(({user}) => ({
 class NavigationBarBase extends React.Component {
   static propTypes = {
     dispatch: React.PropTypes.func.isRequired,
-    isAdvisorEnabled: React.PropTypes.bool,
     onboardingComplete: React.PropTypes.bool,
     page: React.PropTypes.string,
     style: React.PropTypes.object,
@@ -270,23 +269,15 @@ class NavigationBarBase extends React.Component {
   }
 
   handleLogoClick = () => {
-    const {isAdvisorEnabled, page, onboardingComplete} = this.props
+    const {page, onboardingComplete} = this.props
     if ((page === 'profile' || page === 'new_project') && !onboardingComplete) {
-      return
-    }
-    if (onboardingComplete) {
-      if (isAdvisorEnabled) {
-        browserHistory.push(Routes.PROJECT_PAGE)
-      } else {
-        browserHistory.push(Routes.DASHBOARD_PAGE)
-      }
       return
     }
     browserHistory.push(Routes.ROOT)
   }
 
   render() {
-    const {isAdvisorEnabled, onboardingComplete, page, style, userProfile} = this.props
+    const {onboardingComplete, page, style, userProfile} = this.props
     const {isMobileVersion} = this.context
     const {name} = userProfile
     const {isLogOutDropDownShown} = this.state
@@ -421,13 +412,10 @@ class NavigationBarBase extends React.Component {
       <div style={{flex: 1}} />
 
       {onboardingComplete ? <div>
-        {isAdvisorEnabled ? <NavigationLink
+        <NavigationLink
             to={Routes.PROJECT_PAGE} isSelected={page === 'project'} selectionStyle="bottom">
           Mon projet
-        </NavigationLink> : <NavigationLink
-            to={Routes.DASHBOARD_PAGE} isSelected={page === 'dashboard'} selectionStyle="bottom">
-          Mes actions
-        </NavigationLink>}
+        </NavigationLink>
         <NavigationLink
             to="https://aide.bob-emploi.fr/hc/fr" target="_blank"
             style={{padding: '20px 50px 21px 25px'}} selectionStyle="bottom">
@@ -451,7 +439,6 @@ class NavigationBarBase extends React.Component {
   }
 }
 const NavigationBar = connect(({user}) => ({
-  isAdvisorEnabled: !!(user.featuresEnabled && user.featuresEnabled.advisor === 'ACTIVE'),
   onboardingComplete: onboardingComplete(user),
   userProfile: user.profile,
 }))(Radium(NavigationBarBase))

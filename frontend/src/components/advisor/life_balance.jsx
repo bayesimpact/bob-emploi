@@ -1,8 +1,8 @@
 import React from 'react'
 
-import {Colors, PieChart} from 'components/theme'
+import {Colors, GrowingNumber, PaddedOnMobile, PieChart} from 'components/theme'
 
-import {AdviceCard, GrowingNumber, PaddedOnMobile, PersonalizationBoxes} from './base'
+import {AdviceCard, PersonalizationBoxes} from './base'
 
 
 class FullAdviceCard extends React.Component {
@@ -23,7 +23,7 @@ class FullAdviceCard extends React.Component {
           <strong style={strongStyle}>
             <GrowingNumber number={80} isSteady={true} />%
           </strong> des accompagnateurs
-          SNC pensent que le bénévolat contribue au <strong>retour a l'emploi</strong> et valorise
+          SNC pensent que le bénévolat contribue au <strong>retour à l'emploi</strong> et valorise
           votre profil.
         </div>
         {isMobileVersion ? null : <PieChart

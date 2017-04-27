@@ -21,7 +21,7 @@ _USER_READY_FOR_EMAIL = {
         'email': 'pascal@bayes.org',
         'emailDays': ['THURSDAY'],
     },
-    'projects': [{'title': 'Project Title'}],
+    'projects': [{'title': 'Project Title', 'advices': [{'score': 1}]}],
 }
 
 
@@ -45,9 +45,10 @@ class MailingTestCase(unittest.TestCase):
             'emailTitle': 'Advice Email Title',
         })
         self._now = datetime.datetime(2016, 11, 24, 10, 0, 0)
+        advisor.clear_cache()
 
-    def test_main(self, mock_select_advice, mock_select_tips, mock_mail):
-        """Overall test."""
+    def test_need_score(self, mock_select_advice, mock_select_tips, mock_mail):
+        """Do not send if user never scored any piece of advice."""
         mock_select_advice.return_value = project_pb2.Advice(
             advice_id='advice-to-send',
             num_stars=2,
@@ -57,6 +58,10 @@ class MailingTestCase(unittest.TestCase):
             action_pb2.Action(title='Second tip'),
             action_pb2.Action(title='Third tip'),
         ]
+        self._db.advice_modules.insert_many([
+            {'adviceId': 'a', 'title': 'Advice A'},
+            {'adviceId': 'b', 'title': 'Advice B'},
+        ])
         self._db.user.insert_one({
             'featuresEnabled': {'advisorEmail': 'ACTIVE'},
             'profile': {
@@ -76,13 +81,52 @@ class MailingTestCase(unittest.TestCase):
         mock_mail.count_sent_to.return_value = {'DeliveredCount': 0, 'OpenedCount': 0}
 
         mail_advice.main(self._db, 'http://localhost:3000', self._now)
+        self.assertFalse(mock_mail.send_template.called)
+
+    def test_main(self, mock_select_advice, mock_select_tips, mock_mail):
+        """Overall test."""
+        mock_select_advice.return_value = project_pb2.Advice(
+            advice_id='advice-to-send',
+            num_stars=2,
+        )
+        mock_select_tips.return_value = [
+            action_pb2.Action(title='First tip'),
+            action_pb2.Action(title='Second tip'),
+            action_pb2.Action(title='Third tip'),
+        ]
+        self._db.advice_modules.insert_many([
+            {'adviceId': 'a', 'title': 'Advice A'},
+            {'adviceId': 'b', 'title': 'Advice B'},
+        ])
+        self._db.user.insert_one({
+            'featuresEnabled': {'advisorEmail': 'ACTIVE'},
+            'profile': {
+                'name': 'Pascal',
+                'lastName': 'Corpet',
+                'email': 'pascal@bayes.org',
+                'emailDays': ['MONDAY', 'THURSDAY'],
+            },
+            'projects': [{
+                'advices': [{'adviceId': 'a', 'score': 1}, {'adviceId': 'b'}],
+                'projectId': 'project-id-123',
+                'title': 'Project Title',
+            }],
+        })
+        mock_mail.send_template.return_value.status_code = 200
+        mock_mail.send_template_to_admins.return_value.status_code = 200
+        mock_mail.count_sent_to.return_value = {'DeliveredCount': 0, 'OpenedCount': 0}
+
+        mail_advice.main(self._db, 'http://localhost:3000', self._now)
         self.assertTrue(mock_mail.send_template.called)
         template_id, profile, template_vars = mock_mail.send_template.call_args[0]
         self.assertEqual('132388', template_id)
         self.assertEqual('pascal@bayes.org', profile.email)
         self.assertEqual(
             {
-                'advices': [{'adviceId': 'a'}, {'adviceId': 'b'}],
+                'advices': [
+                    {'adviceId': 'a', 'title': 'Advice A'},
+                    {'adviceId': 'b', 'title': 'Advice B'},
+                ],
                 'baseUrl': 'http://localhost:3000',
                 'fact': 'Inbox 0 is awesome',
                 'firstName': 'Pascal',
@@ -188,6 +232,39 @@ class MailingTestCase(unittest.TestCase):
         user_in_db = self._db.user.find_one({})
         self.assertEqual([], user_in_db['profile'].get('emailDays', []))
         self.assertTrue(user_in_db['featuresEnabled'].get('autoStopEmails'))
+
+    def _assert_disable_sending(self, mock_mail, delivered, opened, disabled):
+        mock_mail.send_template.return_value.status_code = 200
+        mock_mail.send_template_to_admins.return_value.status_code = 200
+        self._db.user.drop()
+        self._db.user.insert_one(_USER_READY_FOR_EMAIL)
+
+        mock_mail.count_sent_to.return_value = {'DeliveredCount': delivered, 'OpenedCount': opened}
+        mail_advice.main(self._db, 'http://localhost:3000', self._now)
+
+        if disabled:
+            self.assertFalse(mock_mail.send_template.called)
+            user_in_db = self._db.user.find_one({})
+            self.assertEqual([], user_in_db['profile'].get('emailDays', []))
+            self.assertTrue(user_in_db['featuresEnabled'].get('autoStopEmails'))
+        else:
+            self.assertTrue(mock_mail.send_template.called)
+        mock_mail.send_template.reset_mock()
+
+    def test_open_but_not_enough(self, mock_select_advice, unused_mock_select_tips, mock_mail):
+        """Test that we disable emailing if users has opened email but received way more."""
+        mock_select_advice.return_value = project_pb2.Advice(
+            advice_id='advice-to-send',
+            num_stars=2,
+        )
+        # Do not disable for 1/6 ratio.
+        self._assert_disable_sending(mock_mail, delivered=6, opened=1, disabled=False)
+        # Disable for 1/11 ratio.
+        self._assert_disable_sending(mock_mail, delivered=11, opened=1, disabled=True)
+        # Do not disable for 2/11 ratio.
+        self._assert_disable_sending(mock_mail, delivered=11, opened=2, disabled=False)
+        # Disable for 2/100 ratio.
+        self._assert_disable_sending(mock_mail, delivered=100, opened=2, disabled=True)
 
 
 class _SigtermAfterNItems(object):

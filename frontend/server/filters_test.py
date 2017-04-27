@@ -34,12 +34,18 @@ class SingleParentFilterTestCase(_FilterTestBase('for-single-parent')):
 
     def test_single_parent(self):
         """Single parent."""
+        self.persona.user_profile.family_situation = user_pb2.SINGLE_PARENT_SITUATION
+        self._assert_pass_filter()
+
+    def test_single_parent_old_field(self):
+        """Single parent using the old field."""
         self.persona.user_profile.frustrations.append(user_pb2.SINGLE_PARENT)
         self._assert_pass_filter()
 
     def test_non_single_parent(self):
         """Non single parent."""
         del self.persona.user_profile.frustrations[:]
+        self.persona.user_profile.family_situation = user_pb2.IN_A_RELATIONSHIP
         self._assert_fail_filter()
 
 

@@ -32,10 +32,6 @@ message Chantier {
   string scoring_model = 5;
 }
 
-message ChantiersSet {
-  map<string, bool> chantier_ids = 1;
-}
-
 enum ChantierKind {
   UNKNOWN_CHANTIER_KIND = 0;
 
@@ -60,50 +56,4 @@ enum ChantierKind {
   // is internally called "White. E.g. apply to job offers, send spontaneous
   // applications.
   CORE_JOB_SEARCH = 4;
-}
-
-message PotentialChantiers {
-  // A sorted list of repeated potential chantiers. The first ones are the ones
-  // that should help the most the user. Note that it also includes the
-  // chantiers that the user has already started for this project if any.
-  repeated PotentialChantier chantiers = 1;
-
-  // Sorted list of groups of chantiers.
-  repeated ChantierGroupScore groups = 2;
-}
-
-message PotentialChantier {
-  // The chantier template that would be used to generate a chantier if selected.
-  Chantier template = 1;
-
-  // Whether the user has already started such a chantier for the current
-  // project.
-  bool user_has_started = 2;
-
-  // Percentage of additional job offers that this chantier could unlock.
-  // Usually only available for INCREASE_AVAILABLE_OFFERS chantiers.
-  float additional_job_offers_percent = 3;
-}
-
-message ChantierGroupScore {
-  // The kind of chantiers in this group e.g. IMPROVE_SUCCESS_RATE,
-  // INCREASE_AVAILABLE_OFFERS.
-  ChantierKind kind = 1;
-
-  // How much chantiers of this group are needed.
-  ChantierNeed need = 2;
-}
-
-enum ChantierNeed {
-  UNKNOWN_NEED = 0;
-
-  // Chantier could be useful but this will probably not unblock the user.
-  NOT_NEEDED = 1;
-
-  // Chantier will make a difference.
-  SOMEHOW_NEEDED = 2;
-
-  // Chantier is almost required, user will have trouble finding a job without
-  // addressing those.
-  REALLY_NEEDED = 3;
 }

@@ -59,6 +59,13 @@ fi
 if ! command -v swift >/dev/null 2>&1; then
   echo -e "ERROR: \033[31mSet up the OpenStack Swift tool first.\033[0m"
   echo "* Installation is probably as simple as \`pip install python-swiftclient\`"
+  exit 7
+fi
+
+if ! pip show python-keystoneclient > /dev/null; then
+  echo -e "ERROR: \033[31mSet up the keystoneclient first.\033[0m"
+  echo "* Installation is probably as simple as \`pip install python-keystoneclient\`"
+  exit 8
 fi
 
 readonly DOCKER_SERVER_REPO="bob-emploi-frontend-server"
@@ -103,7 +110,7 @@ else
   if [ -z "$(grep "^." "${RELEASE_NOTES}")" ]; then
     echo -e "Canceling deployment due to empty release notes."
     rm -f "${RELEASE_NOTES}"
-    exit 6
+    exit 9
   fi
 fi
 

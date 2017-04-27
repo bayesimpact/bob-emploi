@@ -5,7 +5,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import _ from 'underscore'
 import {connect, Provider} from 'react-redux'
-import {IndexRoute, Router, Route, browserHistory} from 'react-router'
+import {IndexRoute, Redirect, Router, Route, browserHistory} from 'react-router'
 import {syncHistoryWithStore, routerReducer} from 'react-router-redux'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import thunk from 'redux-thunk'
@@ -18,7 +18,6 @@ import {Routes} from 'components/url'
 import {Colors} from 'components/theme'
 import {AdvicePage} from './advice'
 import {CookiesPage} from './cookies'
-import {DashboardPage} from './dashboard'
 import {LandingPage} from './landing'
 import {NewProjectPage} from './new_project'
 import {ProfilePage} from './profile'
@@ -26,6 +25,7 @@ import {ProjectPage} from './project'
 import {DashboardExportPage} from './dashboard_export'
 import {PrivacyPage} from './privacy'
 import {TermsAndConditionsPage} from './terms'
+import {UpdatePage} from './update'
 import {VisionPage} from './vision'
 import {WaitingPage} from './waiting'
 import {ContributionPage} from './contribution'
@@ -35,10 +35,11 @@ import {AppNotAvailablePage} from './app_not_available'
 import {isOnSmallScreen} from 'store/mobile'
 import {user} from 'store/user_reducer'
 import {actionTypesToLog, hideToasterMessageAction, fetchUser, logoutAction,
-        openLoginModal, switchToMobileVersionAction} from 'store/actions'
+        openLoginModal, switchToMobileVersionAction, migrateUserToAdvisor} from 'store/actions'
 import {app, asyncState} from 'store/app_reducer'
 import {mainSelector, onboardingComplete} from 'store/main_selectors'
 import {createAmplitudeMiddleware} from 'store/amplitude'
+import {createPageviewTracker} from 'store/google_analytics'
 
 // Needed for onTouchTap
 // Can go away when react 1.0 release
@@ -137,6 +138,13 @@ class App extends React.Component {
   handleLogin = user => {
     if (!onboardingComplete(user)) {
       browserHistory.push(Routes.PROFILE_PAGE)
+      return
+    }
+    const featuresEnabled = user.featuresEnabled || {}
+    if ((!featuresEnabled.advisor || (user.projects || []).length > 1) &&
+      !featuresEnabled.switchedFromMashupToAdvisor) {
+      browserHistory.push(Routes.APP_UPDATED_PAGE)
+      this.props.dispatch(migrateUserToAdvisor())
       return
     }
     const location = this.props.routing.locationBeforeTransitions
@@ -250,11 +258,16 @@ class MyRouterBase extends React.Component {
   render() {
     const mainConnect = connect(mainSelector)
     if (!this.routesCache) {
+      const trackPageview = createPageviewTracker()
       // Cache for the Routes: our routes are not dynamic, and the Hot Module
       // Replacement chokes on it when we do not render the exact same object,
       // so we cache it here.
-      this.routesCache = <Router history={history} onUpdate={() => window.scrollTo(0, 0)}
-        createElement={this.createElement}>
+      this.routesCache = <Router
+          history={history} onUpdate={() => {
+            window.scrollTo(0, 0)
+            trackPageview()
+          }}
+          createElement={this.createElement}>
         <Route path={Routes.ROOT} component={AppWrapped}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
           <Route onEnter={this.requireUserCheck}>
@@ -270,11 +283,12 @@ class MyRouterBase extends React.Component {
               <Route path={Routes.PROFILE_PAGE} component={mainConnect(ProfilePage)} />
               <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={mainConnect(ProfilePage)} />
               <Route path={Routes.NEW_PROJECT_PAGE} component={NewProjectPage} />
-              <Route path={Routes.DASHBOARD_PAGE} component={DashboardPage} />
-              <Route path={Routes.DASHBOARD_ACTION_PAGE} component={DashboardPage} />
+              <Route path={Routes.NEW_PROJECT_ONBOARDING_PAGES} component={NewProjectPage} />
               <Route path={Routes.PROJECT_PAGE} component={mainConnect(ProjectPage)} />
               <Route path={Routes.PROJECT_PATH} component={mainConnect(ProjectPage)} />
               <Route path={Routes.ADVICE_PATH} component={mainConnect(AdvicePage)} />
+              <Route path={Routes.APP_UPDATED_PAGE} component={UpdatePage} />
+              <Redirect from="*" to={Routes.PROJECT_PAGE} />
             </Route>
           </Route>
         </Route>

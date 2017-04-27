@@ -107,11 +107,19 @@ class MaybeAdviseTestCase(unittest.TestCase):
                 'isReadyForProd': True,
                 'incompatibleAdviceIds': ['abc'],
             },
+            {
+                'adviceId': 'final-one',
+                'airtableId': 'ghi',
+                'triggerScoringModel': 'constant(1)',
+                'isReadyForProd': True,
+            },
         ])
 
         advisor.maybe_advise(self.user, project, self.database)
 
-        self.assertEqual(['spontaneous-application'], [a.advice_id for a in project.advices])
+        self.assertEqual(
+            ['spontaneous-application', 'final-one'],
+            [a.advice_id for a in project.advices])
 
     def test_advice_other_work_env_extra_data(self):
         """Test that the advisor computes extra data for the work environment advice."""
@@ -150,7 +158,7 @@ class MaybeAdviseTestCase(unittest.TestCase):
             mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
             job_search_length_months=7,
             weekly_applications_estimate=project_pb2.A_LOT,
-            total_interviews_estimate=project_pb2.SOME,
+            total_interview_count=1,
         )
         self.database.local_diagnosis.insert_one({
             '_id': '14:A1234',
@@ -183,6 +191,30 @@ class MaybeAdviseTestCase(unittest.TestCase):
         self.assertEqual(
             '**Humour** et **empathie**',
             advice.improve_success_rate_data.requirements.skills_short_text)
+
+    def test_advice_job_boards_extra_data(self):
+        """Test that the advisor computes extra data for the "Find a Job Board" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.jobboards.insert_one({'title': 'Indeed'})
+        self.database.advice_modules.insert_one({
+            'adviceId': 'job-boards',
+            'triggerScoringModel': 'advice-job-boards',
+            'extraDataFieldName': 'job_boards_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'job-boards')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('Indeed', advice.job_boards_data.job_board_title)
 
 
 class SelectAdviceForEmailTestCase(unittest.TestCase):

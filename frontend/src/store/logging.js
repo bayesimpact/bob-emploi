@@ -1,7 +1,7 @@
 import browser from 'detect-browser'
 import moment from 'moment'
 
-import {AUTHENTICATE_USER, REFRESH_ACTION_PLAN, REGISTER_USER, STICK_ACTION} from './actions'
+import {AUTHENTICATE_USER, REFRESH_ACTION_PLAN, REGISTER_USER} from './actions'
 import {upperFirstLetter} from './french'
 import {isAnyActionPlanGeneratedRecently} from './project'
 
@@ -94,9 +94,7 @@ export class Logger {
     if (action.action) {
       properties['Action Title'] = action.action.title
     }
-    if (action.type === STICK_ACTION) {
-      properties['Action Closed as'] = 'Sticky'
-    } else if (action.feedback) {
+    if (action.feedback) {
       if (action.feedback.caption) {
         properties['Feedback'] = action.feedback.caption
       }
@@ -121,13 +119,15 @@ export class Logger {
       if (action.advice.numStars) {
         properties['Advice Star Count'] = action.advice.numStars
       }
-      if (action.advicePriority) {
-        properties['Advice Priority'] = action.advicePriority
-      }
       if (action.project && action.project.advices) {
         properties['Advice Card Count'] = action.project.advices.length
+        properties['Advice Position'] = action.project.advices.findIndex(
+          advice => advice.adviceId === action.advice.adviceId) + 1
       }
-      if (action.advice.score) {
+      if (action.advice.score || action.score) {
+        // advice.score is the current score of the advice if it has been
+        // scored before the action; action.score is the new one if the action
+        // is the scoring action.
         properties['Advice Score'] = action.score || action.advice.score
         if (action.score !== action.advice.score) {
           properties['Previous Advice Score'] = action.advice.score || 0
@@ -185,10 +185,6 @@ export class Logger {
     }
     if (/@(bayes.org|example.com|bayesimpact.org)$/.test(email)) {
       profileData['Is Test User?'] = true
-    }
-    if (profile.latestJob) {
-      profileData['Last Job Group ROME ID'] = profile.latestJob.jobGroup.romeId
-      profileData['Last Job Name'] = profile.latestJob.masculineName
     }
     if (featuresEnabled) {
       Object.assign(profileData, flattenFeatureFlags(featuresEnabled))

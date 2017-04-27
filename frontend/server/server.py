@@ -33,6 +33,7 @@ from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import export_pb2
@@ -49,6 +50,8 @@ _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
 _ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
+_SHOW_UNVERIFIED_DATA_USER_REGEXP = \
+    re.compile(os.getenv('SHOW_UNVERIFIED_DATA_USER_REGEXP', r'@pole-emploi.fr$'))
 
 _ProjectIntensityDefinition = collections.namedtuple(
     'ProjetIntensityDefinition', [
@@ -166,6 +169,26 @@ def user_refresh_action_plan(user_data):
     return user_proto
 
 
+@app.route("/api/user/<user_id>/migrate-to-advisor", methods=['POST'])
+@proto.flask_api(out_type=user_pb2.User)
+def migrate_to_advisor(user_id):
+    """Migrate a user of the Mashup to use the Advisor."""
+    user_proto = _get_user_data(user_id)
+    has_multiple_projects = len(user_proto.projects) > 1
+    was_using_mashup = \
+        user_proto.features_enabled.advisor != user_pb2.ACTIVE or has_multiple_projects
+
+    user_proto.features_enabled.advisor = user_pb2.ACTIVE
+    user_proto.features_enabled.advisor_email = user_pb2.ACTIVE
+    user_proto.features_enabled.switched_from_mashup_to_advisor = was_using_mashup
+    _DB.user.update_one(
+        {'_id': _safe_object_id(user_id)}, {'$set': {
+            'featuresEnabled': json_format.MessageToDict(user_proto.features_enabled)}},
+        upsert=False)
+
+    return _save_user(user_proto, is_new_user=False)
+
+
 @app.route('/api/app/use/<user_id>', methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
 def use_app(user_id):
@@ -200,6 +223,9 @@ def _save_user(user_data, is_new_user):
         # Enable Advisor for new users.
         if not ADVISOR_DISABLED_FOR_TESTING:
             user_data.features_enabled.advisor = user_pb2.ACTIVE
+            user_data.features_enabled.advisor_email = user_pb2.ACTIVE
+            user_data.profile.email_days.extend([
+                user_pb2.MONDAY, user_pb2.WEDNESDAY, user_pb2.FRIDAY])
         # Send an NPS email the next day.
         user_data.features_enabled.net_promoter_score_email = user_pb2.NPS_EMAIL_PENDING
     else:
@@ -210,9 +236,8 @@ def _save_user(user_data, is_new_user):
                 previous_user_data.features_enabled.net_promoter_score_email
 
     _tick('Unverified data zone check start')
-    if user_data.HasField('profile') and \
-            (is_new_user or previous_user_data.profile != user_data.profile) and \
-            _is_in_unverified_data_zone(user_data.profile):
+    # TODO(guillaume): Check out how we could not recompute that every time gracefully.
+    if _is_in_unverified_data_zone(user_data.profile, user_data.projects):
         user_data.app_not_available = True
     _tick('Unverified data zone check end')
 
@@ -280,11 +305,41 @@ def _get_unguessable_object_id():
     return objectid.ObjectId(salter.hexdigest()[:24])
 
 
-def _is_in_unverified_data_zone(user_profile):
-    if not user_profile.latest_job.job_group.rome_id:
+_SHOW_UNVERIFIED_DATA_USERS = set()
+
+
+def _show_unverified_data_users():
+    if not _SHOW_UNVERIFIED_DATA_USERS:
+        for document in _DB.show_unverified_data_users.find():
+            _SHOW_UNVERIFIED_DATA_USERS.add(document['_id'])
+    return _SHOW_UNVERIFIED_DATA_USERS
+
+
+def _is_in_unverified_data_zone(user_profile, user_projects):
+    if _SHOW_UNVERIFIED_DATA_USER_REGEXP.search(user_profile.email):
         return False
-    data_zone_key = '%s:%s' % (
-        user_profile.city.postcodes, user_profile.latest_job.job_group.rome_id)
+    if user_profile.email in _show_unverified_data_users():
+        return False
+
+    has_valid_project_job = user_projects and user_projects[0].target_job.job_group.rome_id
+    has_valid_latest_job = user_profile.latest_job.job_group.rome_id
+    if has_valid_latest_job:
+        job = user_profile.latest_job
+    elif has_valid_project_job:
+        job = user_projects[0].target_job
+    else:
+        return False
+
+    has_valid_project_city = user_projects and user_projects[0].mobility.city.postcodes
+    has_valid_profile_city = user_profile.city.postcodes
+    if has_valid_profile_city:
+        city = user_profile.city
+    elif has_valid_project_city:
+        city = user_projects[0].mobility.city
+    else:
+        return False
+
+    data_zone_key = '%s:%s' % (city.postcodes, job.job_group.rome_id)
     hashed_data_zone_key = hashlib.md5(data_zone_key.encode('utf-8')).hexdigest()
     return bool(_DB.unverified_data_zones.find(
         {'_id': hashed_data_zone_key}, {'_id': 1}).limit(1).count())
@@ -350,11 +405,19 @@ def _get_user_data(user_id):
 
     _populate_feature_flags(user_proto)
 
-    # TODO(pascal): Update existing users and get rid of diploma_fulfillment_estimate.
     for project in user_proto.projects:
+        # TODO(pascal): Update existing users and get rid of diploma_fulfillment_estimate.
         if not project.training_fulfillment_estimate and project.diploma_fulfillment_estimate:
             project.training_fulfillment_estimate = TRAINING_ESTIMATION.get(
                 project.diploma_fulfillment_estimate, project_pb2.UNKNOWN_TRAINING_FULFILLMENT)
+        # TODO(pascal): Update existing users and get rid of FIND_JOB.
+        if project.kind == project_pb2.FIND_JOB:
+            if user_proto.profile.situation == user_pb2.LOST_QUIT:
+                project.kind = project_pb2.FIND_A_NEW_JOB
+            elif user_proto.profile.situation == user_pb2.FIRST_TIME:
+                project.kind = project_pb2.FIND_A_FIRST_JOB
+            else:
+                project.kind = project_pb2.FIND_ANOTHER_JOB
 
     return user_proto
 
@@ -603,6 +666,19 @@ def _get_project_requirements(project):
     return job_group_info.requirements
 
 
+@app.route('/api/project/<user_id>/<project_id>/jobboards', methods=['GET'])
+@proto.flask_api(out_type=jobboard_pb2.JobBoards)
+def project_jobboards(user_id, project_id):
+    """Retrieve a list of job boards for a project."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, _DB)
+    jobboards = scoring_project.list_jobboards()
+    sorted_jobboards = sorted(jobboards, key=lambda j: (-len(j.filters), random.random()))
+    return jobboard_pb2.JobBoards(job_boards=sorted_jobboards)
+
+
 @app.route('/api/project/<user_id>/<project_id>/advice/<advice_id>/tips', methods=['GET'])
 @proto.flask_api(out_type=action_pb2.AdviceTips)
 def advice_tips(user_id, project_id, advice_id):
@@ -617,97 +693,6 @@ def advice_tips(user_id, project_id, advice_id):
     for tip_template in all_tips:
         action.instantiate(response.tips.add(), user_proto, project, tip_template, set(), _DB, {})
     return response
-
-
-@app.route('/api/project/<user_id>/<project_id>/potential-chantiers', methods=['GET'])
-@proto.flask_api(out_type=chantier_pb2.PotentialChantiers)
-def project_potential_chantiers(user_id, project_id):
-    """Get all available chantiers for a project."""
-    # TODO(pascal): Split this function it's starting to get big.
-
-    user_proto = _get_user_data(user_id)
-    try:
-        project = next(
-            project for project in user_proto.projects
-            if project.project_id == project_id)
-    except StopIteration:
-        flask.abort(404, 'Projet "%s" inconnu.' % project_id)
-
-    response = chantier_pb2.PotentialChantiers()
-
-    # Score all existing chantiers.
-    all_chantiers = _chantiers()
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    scorer = scoring.score_chantiers(all_chantiers.values(), scoring_project)
-    best_scored_chantiers = scorer.get_best_chantiers(len(all_chantiers))
-    best_chantier_ids = set(t.chantier.chantier_id for t in best_scored_chantiers)
-
-    # Set a target of # of chantiers per group that the user should select.
-    # This defines how much each group is needed.
-    targets = scorer.get_group_targets()
-    for kind, target in targets.items():
-        group = response.groups.add()
-        group.kind = kind
-        if target >= 6:
-            group.need = chantier_pb2.REALLY_NEEDED
-        elif target >= 3:
-            group.need = chantier_pb2.SOMEHOW_NEEDED
-        else:
-            group.need = chantier_pb2.NOT_NEEDED
-    response.groups.sort(key=lambda group: group.kind)
-
-    # If this is the first time the user will see chantiers for this project we
-    # preselect some of them. The # of chantiers selected in each group depend
-    # on the target we have set.
-    needs_preselection = not project.activated_chantiers
-
-    # Add best chantiers.
-    for scored_chantier in best_scored_chantiers:
-        if needs_preselection:
-            if targets.get(scored_chantier.chantier.kind, 0) <= 0:
-                selected = False
-            else:
-                selected = True
-                # TODO(pascal): Compute impact while scoring.
-                impact = 1
-                if scored_chantier.additional_job_offers:
-                    impact = (
-                        scored_chantier.additional_job_offers /
-                        scoring.JOB_OFFERS_INCREASE_PER_TARGET)
-                targets[scored_chantier.chantier.kind] -= impact
-        else:
-            selected = project.activated_chantiers.get(scored_chantier.chantier.chantier_id)
-        response.chantiers.add(
-            template=scored_chantier.chantier,
-            user_has_started=selected,
-            additional_job_offers_percent=scored_chantier.additional_job_offers)
-
-    # Append chantiers that user has started and that are not already listed.
-    for chantier_id, chantier in all_chantiers.items():
-        if chantier_id in best_chantier_ids:
-            continue
-        if project.activated_chantiers.get(chantier_id):
-            response.chantiers.add(template=chantier, user_has_started=True)
-
-    return response
-
-
-@app.route('/api/project/<user_id>/<project_id>/update-chantiers', methods=['POST'])
-@proto.flask_api(in_type=chantier_pb2.ChantiersSet, out_type=user_pb2.User)
-def project_update_chantiers(templates_set, user_id, project_id):
-    """Update chantiers of a project."""
-    user_proto = _get_user_data(user_id)
-    try:
-        project = next(
-            project for project in user_proto.projects
-            if project.project_id == project_id)
-    except StopIteration:
-        flask.abort(404, 'Projet "%s" inconnu.' % project_id)
-
-    project.activated_chantiers.update(templates_set.chantier_ids)
-
-    return _save_user(user_proto, is_new_user=False)
 
 
 def _populate_job_stats_dict(local_job_stats, city):
@@ -738,6 +723,7 @@ def clear_cache():
     """
     _JOB_GROUPS_INFO.clear()
     _CHANTIERS.clear()
+    _SHOW_UNVERIFIED_DATA_USERS.clear()
     action.clear_cache()
     advisor.clear_cache()
     return 'Server cache cleared.'
@@ -832,6 +818,8 @@ def _populate_feature_flags(user_proto):
     user_proto.features_enabled.ClearField('sticky_actions')
 
     user_proto.features_enabled.ClearField('hide_discovery_nav')
+
+    user_proto.features_enabled.ClearField('show_diagnostic')
 
     lbb_integration = bool(farmhash.hash32(user_proto.user_id + 'lbb_integration') % 2)
     user_proto.features_enabled.lbb_integration = (

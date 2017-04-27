@@ -1,26 +1,23 @@
 import React from 'react'
+import {FamilySituation} from 'api/user'
 
-// TODO: Remove flexibilities after the deprecated fields got removed from the
+// TODO: Remove situation after the deprecated fields got removed from the
 // user.proto.
 const USER_PROFILE_FIELDS = {
   city: React.PropTypes.object,
-  contractTypeFlexibility: React.PropTypes.string,
   drivingLicenses: React.PropTypes.arrayOf(React.PropTypes.string.isRequired),
   email: React.PropTypes.string.isRequired,
   englishLevelEstimate: React.PropTypes.number,
+  familySituation: React.PropTypes.oneOf(Object.keys(FamilySituation)),
   frustrations: React.PropTypes.arrayOf(React.PropTypes.string.isRequired),
   gender: React.PropTypes.string,
-  geographicalFlexibility: React.PropTypes.string,
   hasHandicap: React.PropTypes.bool,
   highestDegree: React.PropTypes.string,
   lastName: React.PropTypes.string.isRequired,
   latestJob: React.PropTypes.object,
   name: React.PropTypes.string.isRequired,
   officeSkillsEstimate: React.PropTypes.number,
-  professionalFlexibility: React.PropTypes.string,
-  salaryRequirementFlexibility: React.PropTypes.string,
   situation: React.PropTypes.string,
-  trainingFlexibility: React.PropTypes.string,
   yearOfBirth: React.PropTypes.number,
 }
 const USER_PROFILE_SHAPE = React.PropTypes.shape(USER_PROFILE_FIELDS)
@@ -86,7 +83,7 @@ function getUserFrustrationTags(profile) {
   const maybeE = profile.gender === 'FEMININE' ? 'e': ''
   const frustrationsToTag = {
     AGE_DISCRIMINATION: 'Discriminations (âge)',
-    ATYPIC_PROFILE: 'Profile atypique',
+    ATYPIC_PROFILE: 'Profil atypique',
     HANDICAPED: 'Handicap non adapté',
     INTERVIEW: "Entretiens d'embauche",
     MOTIVATION: `Rester motivé${maybeE}`,
@@ -102,20 +99,46 @@ function getUserFrustrationTags(profile) {
     f => frustrationsToTag[f]).map(f => frustrationsToTag[f])
 }
 
+
+const DEGREE_OPTIONS = [
+  {name: '--', value: 'NO_DEGREE'},
+  {name: 'CAP - BEP', value: 'CAP_BEP'},
+  {name: 'Bac - Bac Pro', value: 'BAC_BACPRO'},
+  {name: 'BTS - DUT - DEUG', value: 'BTS_DUT_DEUG'},
+  {name: 'Licence - Maîtrise', value: 'LICENCE_MAITRISE'},
+  {name: 'DEA - DESS - Master - PhD', value: 'DEA_DESS_MASTER_PHD'},
+]
+
+
 // A function that returns a description for a degree.
 // If no degree, we do not return any a description.
 function getHighestDegreeDescription(userProfile) {
-  const degreeToText = {
-    BAC_BACPRO: 'Bac professionnel',
-    BTS_DUT_DEUG: 'BTS - DUT - DEUG',
-    CAP_BEP: 'CAP - BEP',
-    DEA_DESS_MASTER_PHD: 'DEA - DESS - Master - PhD',
-    LICENCE_MAITRISE: 'Licence - Maîtrise',
+  if(userProfile.highestDegree === 'NO_DEGREE') {
+    // Exception where we do not want to show the option's name.
+    return
   }
-  return degreeToText[userProfile.highestDegree]
+  const {name} = DEGREE_OPTIONS.find(({value}) => value === userProfile.highestDegree) || {}
+  return name
+}
+
+
+// Returns a list of options for family situation depending on gender.
+function getFamilySituationOptions(gender) {
+  return [
+    {name: 'Célibataire', value: 'SINGLE'},
+    {name: 'En couple', value: 'IN_A_RELATIONSHIP'},
+    {name: 'Famille avec enfants', value: 'FAMILY_WITH_KIDS'},
+    {
+      name:
+        `${gender === 'FEMININE' ? 'Mère' :
+          gender === 'MASCULINE' ? 'Père' : 'Parent'} seul${gender === 'FEMININE' ? 'e' : ''}`,
+      value: 'SINGLE_PARENT_SITUATION',
+    },
+  ]
 }
 
 
 export {hasActivelySearchingSinceIfNeeded, getUserFrustrationTags, travelInTime,
         USER_PROFILE_FIELDS, USER_PROFILE_SHAPE, userAge, isYoungAndDiscriminated,
-        isOldAndDiscriminated, getHighestDegreeDescription}
+        isOldAndDiscriminated, getHighestDegreeDescription, getFamilySituationOptions,
+        DEGREE_OPTIONS}

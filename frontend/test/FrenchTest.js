@@ -1,13 +1,6 @@
 const chai = require('chai')
 const expect = chai.expect
-import {lowerFirstLetter, maybeContract, maybeContractPrefix,
-        readableDay} from 'store/french'
-
-
-describe('readableDay', () => {
-  const day = readableDay(new Date(2016, 10, 24))
-  expect(day).to.equal('jeudi 24 novembre 2016')
-})
+import {lowerFirstLetter, maybeContract, maybeContractPrefix} from 'store/french'
 
 
 describe('maybeContract', () => {

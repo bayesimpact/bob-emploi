@@ -33,7 +33,6 @@ export const Colors = {
   SKY_BLUE: '#58bbfb',
   SKY_BLUE_HOVER: '#40a2e1',
   SLATE: '#4e5972',
-  SOFT_BLUE: '#78b6e8',
   SQUASH: '#f5a623',
   SUN_YELLOW: '#ffd930',
   WARM_GREY: '#858585',
@@ -223,6 +222,7 @@ class ButtonBase extends React.Component {
 const Button = Radium(ButtonBase)
 
 
+// TODO(pascal): Check if it is still used and clean up.
 class SettingsButtonBase extends React.Component {
   static propTypes = {
     children: React.PropTypes.node.isRequired,
@@ -258,36 +258,6 @@ class SettingsButtonBase extends React.Component {
   }
 }
 const SettingsButton = Radium(SettingsButtonBase)
-
-
-class ExternalSiteButtonBase extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node,
-    style: React.PropTypes.object,
-  }
-
-  render() {
-    const {children, style, ...extraProps} = this.props
-    const linkStyle = {
-      ':hover': {backgroundColor: Colors.SKY_BLUE_HOVER, color: '#fff'},
-      border: 'solid 2px',
-      borderRadius: 100,
-      color: Colors.SKY_BLUE,
-      display: 'inline-block',
-      fontSize: 14,
-      fontWeight: 'bold',
-      letterSpacing: .3,
-      margin: 9,
-      padding: '11px 18px 8px',
-      textDecoration: 'none',
-      ...style,
-    }
-    return <a target="_blank" {...extraProps} style={linkStyle}>
-      {children} <Icon name="open-in-new" />
-    </a>
-  }
-}
-const ExternalSiteButton = Radium(ExternalSiteButtonBase)
 
 
 class Markdown extends React.Component {
@@ -619,7 +589,7 @@ class CheckboxList extends React.Component {
     onChange: React.PropTypes.func.isRequired,
     // The sorted list of selectable options.
     options: React.PropTypes.arrayOf(React.PropTypes.shape({
-      name: React.PropTypes.string,
+      name: React.PropTypes.node.isRequired,
       value: React.PropTypes.string,
     })),
     style: React.PropTypes.object,
@@ -952,8 +922,94 @@ class PieChart extends React.Component {
   }
 }
 
+
+class GrowingNumber extends React.Component {
+  static propTypes = {
+    durationMillisec: React.PropTypes.number.isRequired,
+    isSteady: React.PropTypes.bool,
+    number: React.PropTypes.number.isRequired,
+    style: React.PropTypes.object,
+  }
+  static defaultProps = {
+    durationMillisec: 1000,
+  }
+
+  componentWillMount() {
+    this.setState({growingForMillisec: 0, hasGrown: false, hasStartedGrowing: false})
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timeout)
+  }
+
+  startGrowing = isVisible => {
+    if (!isVisible) {
+      return
+    }
+    this.grow(0)
+  }
+
+  grow(growingForMillisec) {
+    clearTimeout(this.timeout)
+    if (growingForMillisec >= this.props.durationMillisec) {
+      this.setState({hasGrown: true})
+      return
+    }
+    this.setState({
+      growingForMillisec,
+      hasStartedGrowing: true,
+    })
+    this.timeout = setTimeout(() => this.grow(growingForMillisec + 50), 50)
+  }
+
+  render() {
+    const {durationMillisec, isSteady, number, style} = this.props
+    const {growingForMillisec, hasGrown, hasStartedGrowing} = this.state
+    const maxNumDigits = Math.floor(Math.log10(number)) + 1
+    const containerStyle = isSteady ? {
+      display: 'inline-block',
+      textAlign: 'right',
+      // 0.625 was found empirically.
+      width: `${maxNumDigits * 0.625}em`,
+      ...style,
+    } : style
+    return <span style={containerStyle}>
+      <VisibilitySensor
+          active={!hasStartedGrowing} intervalDelay={250}
+          onChange={this.startGrowing} />
+      {hasGrown ? number :
+        Math.round(growingForMillisec / durationMillisec * number)}
+    </span>
+  }
+}
+
+
+// This component avoids that the element touches the border when on mobile.
+// For now, we only use is for text, hence a solution that does not require a component would be,
+// better, but we didn't find one yet.
+class PaddedOnMobile extends React.Component {
+  static propTypes = {
+    children: React.PropTypes.node,
+    style: React.PropTypes.object,
+  }
+  static contextTypes = {
+    isMobileVersion: React.PropTypes.bool,
+  }
+
+  render() {
+    const {children, style} = this.props
+    const containerStyle = {
+      ...style,
+      padding: this.context.isMobileVersion ? '0 20px' : 0,
+    }
+    return <div style={containerStyle}>{children}</div>
+  }
+}
+
+
 export {
   Markdown, PartnerLogos, HorizontalRule, CoverImage, FieldSet, LabeledToggle,
-  Select, CheckboxList, Icon, Button, IconInput, RadioGroup, ExternalSiteButton,
+  Select, CheckboxList, Icon, Button, IconInput, RadioGroup,
   SettingsButton, JobSuggestWithNote, Input, JobGroupCoverImage, PieChart,
+  GrowingNumber, PaddedOnMobile,
 }

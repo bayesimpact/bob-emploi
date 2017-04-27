@@ -5,15 +5,11 @@ import {CircularProgress} from 'components/progress'
 
 import {Colors} from 'components/theme'
 import {PageWithNavigationBar} from 'components/navigation'
-import {createFirstProject, editFirstProject, CREATE_PROJECT_SAVE,
-        } from 'store/actions'
+import {editFirstProject, CREATE_PROJECT_SAVE} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {Routes} from 'components/url'
-import {PROJECT_ONBOARDING_STEPS, onboardingStepCount} from './profile/onboarding'
-
-export const NEW_PROJECT_ID = 'nouveau'
-
-const STEPS = PROJECT_ONBOARDING_STEPS
+import {getOnboardingStep, gotoNextStep, gotoPreviousStep,
+        onboardingStepCount} from './profile/onboarding'
 
 
 class NewProjectPageBase extends React.Component {
@@ -21,6 +17,9 @@ class NewProjectPageBase extends React.Component {
     dispatch: React.PropTypes.func.isRequired,
     existingProject: React.PropTypes.object,
     isCreatingProject: React.PropTypes.bool,
+    params: React.PropTypes.shape({
+      stepName: React.PropTypes.string,
+    }).isRequired,
     userProfile: USER_PROFILE_SHAPE,
   }
   static contextTypes = {
@@ -29,18 +28,18 @@ class NewProjectPageBase extends React.Component {
 
   componentWillMount() {
     const {existingProject} = this.props
+    const {mobility, ...overrideState} = existingProject || {}
     this.setState({
-      areaType: 'CITY',
-      city: null,
-      currentStep: 1,
+      areaType: mobility && mobility.areaType || 'CITY',
+      city: mobility && mobility.city || null,
       employmentTypes: ['CDI'],
       isIncomplete: true,
-      kind: 'FIND_JOB',
+      kind: 'FIND_A_NEW_JOB',
       minSalary: null,
       previousJobSimilarity: 'DONE_THIS',
       targetJob: null,
       workloads: ['FULL_TIME'],
-      ...existingProject,
+      ...overrideState,
     })
     // Prevent people from manually going back and creating another project.
     if (existingProject && !existingProject.isIncomplete) {
@@ -49,42 +48,31 @@ class NewProjectPageBase extends React.Component {
     }
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.currentStep !== prevState.currentStep) {
-      this.refs.page.scrollTo(0)
+  componentDidUpdate(prevProps) {
+    if (prevProps.params.stepName === this.props.params.stepName) {
+      return
     }
+    this.refs.page.scrollTo(0)
   }
 
   handleSubmit = newProjectUpdates => {
-    const {currentStep} = this.state
-    const isLastStep = currentStep === STEPS.length
-    if (isLastStep) {
-      this.setState(newProjectUpdates, () => {
-        this.props.dispatch(createFirstProject(this.state))
-        browserHistory.push(Routes.PROJECT_PAGE + '/' + NEW_PROJECT_ID)
-      })
-    } else {
-      const currentStepItem = STEPS[currentStep-1]
-      this.setState({
-        currentStep: currentStep + 1,
-        ...newProjectUpdates,
-      }, () => {
-        this.props.dispatch(editFirstProject(this.state, currentStepItem.type))
-      })
-    }
+    const {dispatch, params} = this.props
+    const {type} = getOnboardingStep(Routes.NEW_PROJECT_PAGE, params.stepName)
+    this.setState(newProjectUpdates, () => {
+      dispatch(editFirstProject(this.state, type))
+      gotoNextStep(Routes.NEW_PROJECT_PAGE, params.stepName, dispatch)
+    })
   }
 
   handleBack = () => {
-    const {currentStep} = this.state
-    if (currentStep > 1) {
-      this.setState({currentStep: currentStep - 1})
-    }
+    const {stepName} = this.props.params
+    // TODO(pascal): Save state when going back as well.
+    gotoPreviousStep(Routes.NEW_PROJECT_PAGE, stepName)
   }
 
   render() {
-    const {isCreatingProject, userProfile} = this.props
+    const {isCreatingProject, params, userProfile} = this.props
     const {isMobileVersion} = this.context
-    const {currentStep} = this.state
     const spinnerBoxStyle = {
       alignItems: 'center',
       display: 'flex',
@@ -103,10 +91,11 @@ class NewProjectPageBase extends React.Component {
     if (isCreatingProject) {
       content = <div style={spinnerBoxStyle}><CircularProgress /></div>
     } else {
-      const currentStepItem = STEPS[currentStep-1]
-      const CurrentStepComponent = currentStepItem && currentStepItem.component
+      const currentStepItem = getOnboardingStep(Routes.NEW_PROJECT_PAGE, params.stepName)
+      const CurrentStepComponent = currentStepItem.component
       content = <CurrentStepComponent
-          onSubmit={this.handleSubmit} onBack={currentStep > 1 ? this.handleBack : null}
+          onSubmit={this.handleSubmit}
+          onPreviousButtonClick={this.handleBack}
           profile={userProfile} newProject={newProject}
           stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount} />
     }

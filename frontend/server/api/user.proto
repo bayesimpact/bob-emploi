@@ -43,7 +43,8 @@ message User {
 
   // Interactions with the User that we need to record (e.g. whether a user has seen the
   // WelcomeBackModal or not).
-  UserInteractions interactions = 5;
+  // TODO(pascal): Clean it up.
+  UserInteractions interactions = 5 [deprecated = true];
 
   // The last date on which the user loaded their information through the API.
   // We only look at the date of this value, not at the time.
@@ -122,13 +123,18 @@ message AuthResponse {
 }
 
 // Profile of a user, a job seeker.
-// Next ID: 20.
+// Next ID: 21.
 message UserProfile {
   // Where the user is living.
-  FrenchCity city = 1;
+  // We wanted to distinguish where the user is living from where they search
+  // for a job, but we've simplified the onboarding.
+  // TODO(pascal): Clean up completely.
+  FrenchCity city = 1 [deprecated = true];
 
   // The job, the user had just before being unemployed.
-  Job latest_job = 3;
+  // We wanted to know the previous job of the user, but we simplified the onboarding.
+  // TODO(guillaume): Clean up completely.
+  Job latest_job = 3 [deprecated = true];
 
   // The gender of the user, at least the one they prefer when we have to use a
   // masculine or feminine grammatical form.
@@ -153,41 +159,29 @@ message UserProfile {
   string picture_url = 12;
 
   // The current situation of the user (e.g.: Fresh graduate, lost job, etc...).
-  Situation situation = 10;
+  // TODO(pascal): Clean up old users and remove completly.
+  Situation situation = 10 [deprecated = true];
+
+  // The current family situation of the user (e.g.: single, with kids, etc.).
+  FamilySituation family_situation = 20;
 
   // All driving license types of a user (e.g. truck and car).
-  repeated DrivingLicense driving_licenses = 23;
+  repeated DrivingLicense driving_licenses = 23 [deprecated = true];
 
   // The users highest school degree.
   DegreeLevel highest_degree = 18;
 
   // How good the user rated their English skills on a 3 value scale.
   // (i.e. `-1 is undecided, 1: worst, 3: best)
-  int32 english_level_estimate = 30;
+  int32 english_level_estimate = 30 [deprecated = true];
 
   // How good the user rated their office software skills on a 3 value scale.
   // (i.e. `-1 is undecided, 1: worst, 3: best).
   // Keep in sync with JobRequirement.office_skills_level
-  int32 office_skills_estimate = 31;
+  int32 office_skills_estimate = 31 [deprecated = true];
 
   // User frustration reasons (e.g.: no offers, no answers, single parent, ...).
   repeated Frustration frustrations = 32;
-
-  // Whether the user could imagine to do a training or not.
-  // Not used anymore after we removed asking for it from the onboarding (All flexibilities).
-  FlexibilityOption training_flexibility = 34 [deprecated = true];
-
-  // Whether the user could imagine to lower their salary requirements.
-  FlexibilityOption salary_requirement_flexibility = 35 [deprecated = true];
-
-  // Whether the user could imagine to work on a less desirable contract type.
-  FlexibilityOption contract_type_flexibility = 36 [deprecated = true];
-
-  // Whether the user could imagine to move to a different city in order to get a job.
-  FlexibilityOption geographical_flexibility = 37 [deprecated = true];
-
-  // Whether the user could imagine to work in a different field.
-  FlexibilityOption professional_flexibility = 38 [deprecated = true];
 
   // The preferred salary unit of the user.
   SalaryUnit preferred_salary_unit = 39;
@@ -331,6 +325,15 @@ message Features {
 
   // Whether we send advice by email to this user.
   BinaryExperiment advisor_email = 17;
+
+  // Whether we display the advisor diagnostic for the user.
+  // Never launched as an experiment: we went directly from alpha to all users.
+  // The feature is now enabled to all advisor users.
+  // TODO(pascal): Clear up usage in DB and remove.
+  BinaryExperiment show_diagnostic = 18 [deprecated = true];
+
+  // Whether the user switched from mashup to advisor.
+  bool switched_from_mashup_to_advisor = 19;
 }
 
 enum Gender {
@@ -358,6 +361,16 @@ enum Situation {
   EMPLOYED = 5;
 }
 
+// Family situation of a user.
+enum FamilySituation {
+  UNKNOWN_FAMILY_SITUATION = 0;
+  SINGLE = 1;
+  IN_A_RELATIONSHIP = 2;
+  FAMILY_WITH_KIDS = 3;
+  // The suffix below is needed because of a conflict with frustration.
+  SINGLE_PARENT_SITUATION = 4;
+}
+
 enum Frustration {
   UNKNOWN_JOB_SEARCH_FRUSTRATION = 0;
 
@@ -383,7 +396,7 @@ enum Frustration {
   TIME_MANAGEMENT = 7;
 
   // User is a single parent.
-  SINGLE_PARENT = 8;
+  SINGLE_PARENT = 8 [deprecated = true];
 
   // User is handicaped.
   // DEPRECATED: Use has_handicap boolean in profile instead.
@@ -397,21 +410,6 @@ enum Frustration {
 
   // The user feels discriminated for their sex.
   SEX_DISCRIMINATION = 12;
-}
-
-// The order and the values of the enum matter as we use a LikertScale
-// to edit them in on of the profile steps.
-enum FlexibilityOption {
-  UNKNOWN_FLEXIBILITY_OPTION = 0;
-
-  // User can't imagine any change here.
-  ABSOLUTELY_NOT = 1;
-
-  // User could imagine flexibility if the improvement is enormous.
-  IF_NEEDED = 2;
-
-  // User is flexible.
-  YES = 3;
 }
 
 // Day of the week.

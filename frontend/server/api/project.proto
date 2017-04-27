@@ -8,7 +8,7 @@ import "bob_emploi/frontend/api/job.proto";
 
 package bayes.bob;
 
-// Next available tag: 12.
+// Next available tag: 17.
 message Project {
   // A unique identifier for this project.
   string project_id = 1;
@@ -112,6 +112,11 @@ message Project {
   // We are re-using the weekly_offers_estimate options here as they are roughly the same.
   NumberOfferEstimateOption total_interviews_estimate = 34;
 
+  // User estimate of how many interviews they had in total. 0 actually means
+  // unknown, and the -1 means the user specified they never did any
+  // interviews.
+  int32 total_interview_count = 13;
+
   // When actions were last generated for this project. Note that if too many
   // actions were there so that we could not generate new ones we still update
   // this timestamp when we try.
@@ -130,7 +135,7 @@ message Project {
   string useless_advice_feedback = 11;
 }
 
-// Next ID: 12.
+// Next ID: 13.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -154,6 +159,9 @@ message Advice {
 
   // Extra data needed to recommend the "Improve success rate" piece of advice.
   ImproveSuccessRateData improve_success_rate_data = 8;
+
+  // Extra data needed to recommend the "find a job board" piece of advice.
+  JobBoardsData job_boards_data = 12;
 
   // Goal expressed as the end of the sentence "We will give you advice to…".
   // TODO(pascal): Clean up when fields have been cleaned up in users.
@@ -184,6 +192,11 @@ message ImproveSuccessRateData {
   // Job requirements, or assets that we could recommend to the user to improve
   // their success rate.
   JobRequirements requirements = 2;
+}
+
+message JobBoardsData {
+  // A specific job board title, the user probably does not know about.
+  string job_board_title = 1;
 }
 
 enum NumberOfferEstimateOption {
@@ -253,11 +266,14 @@ enum PreviousJobSimilarity {
 enum ProjectKind {
   option allow_alias = true;
   UNKNOWN_PROJECT_KIND = 0;
-  FIND_JOB = 1;
+  FIND_JOB = 1 [deprecated = true];
   CREATE_COMPANY = 2 [deprecated = true];
   CREATE_OR_TAKE_OVER_COMPANY = 2;
   TAKE_OVER_COMPANY = 3 [deprecated = true];
   REORIENTATION = 4;
+  FIND_A_FIRST_JOB = 5;
+  FIND_A_NEW_JOB = 6;
+  FIND_ANOTHER_JOB = 7;
 }
 
 enum ProjectStatus {
