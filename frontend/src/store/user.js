@@ -1,31 +1,26 @@
-import React from 'react'
+import PropTypes from 'prop-types'
 import {FamilySituation} from 'api/user'
 
 // TODO: Remove situation after the deprecated fields got removed from the
 // user.proto.
 const USER_PROFILE_FIELDS = {
-  city: React.PropTypes.object,
-  drivingLicenses: React.PropTypes.arrayOf(React.PropTypes.string.isRequired),
-  email: React.PropTypes.string.isRequired,
-  englishLevelEstimate: React.PropTypes.number,
-  familySituation: React.PropTypes.oneOf(Object.keys(FamilySituation)),
-  frustrations: React.PropTypes.arrayOf(React.PropTypes.string.isRequired),
-  gender: React.PropTypes.string,
-  hasHandicap: React.PropTypes.bool,
-  highestDegree: React.PropTypes.string,
-  lastName: React.PropTypes.string.isRequired,
-  latestJob: React.PropTypes.object,
-  name: React.PropTypes.string.isRequired,
-  officeSkillsEstimate: React.PropTypes.number,
-  situation: React.PropTypes.string,
-  yearOfBirth: React.PropTypes.number,
+  city: PropTypes.object,
+  drivingLicenses: PropTypes.arrayOf(PropTypes.string.isRequired),
+  email: PropTypes.string.isRequired,
+  englishLevelEstimate: PropTypes.number,
+  familySituation: PropTypes.oneOf(Object.keys(FamilySituation)),
+  frustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
+  gender: PropTypes.string,
+  hasHandicap: PropTypes.bool,
+  highestDegree: PropTypes.string,
+  lastName: PropTypes.string.isRequired,
+  latestJob: PropTypes.object,
+  name: PropTypes.string.isRequired,
+  officeSkillsEstimate: PropTypes.number,
+  situation: PropTypes.string,
+  yearOfBirth: PropTypes.number,
 }
-const USER_PROFILE_SHAPE = React.PropTypes.shape(USER_PROFILE_FIELDS)
-
-function hasActivelySearchingSinceIfNeeded(activelySearchingSince, jobSearchPhase) {
-  return !!(activelySearchingSince || jobSearchPhase === 'PASSIVE')
-
-}
+const USER_PROFILE_SHAPE = PropTypes.shape(USER_PROFILE_FIELDS)
 
 function recursivelyUpdateDates(root, delta) {
   if (!root) {
@@ -138,7 +133,7 @@ function getFamilySituationOptions(gender) {
 }
 
 
-export {hasActivelySearchingSinceIfNeeded, getUserFrustrationTags, travelInTime,
-        USER_PROFILE_FIELDS, USER_PROFILE_SHAPE, userAge, isYoungAndDiscriminated,
-        isOldAndDiscriminated, getHighestDegreeDescription, getFamilySituationOptions,
-        DEGREE_OPTIONS}
+export {getUserFrustrationTags, travelInTime, USER_PROFILE_FIELDS,
+        USER_PROFILE_SHAPE, userAge, isYoungAndDiscriminated,
+        isOldAndDiscriminated, getHighestDegreeDescription,
+        getFamilySituationOptions, DEGREE_OPTIONS}

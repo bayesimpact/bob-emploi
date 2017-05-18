@@ -1,40 +1,41 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
+import networkCirclesBackground from 'images/network-circles-background.svg'
 import {Colors, GrowingNumber, Markdown, PaddedOnMobile, Styles} from 'components/theme'
 
-import {AdviceBox, AdviceCard, PersonalizationBoxes} from './base'
+import {AdviceBox, PersonalizationBoxes} from './base'
+import MESSAGE_EXAMPLES from './data/network_messages.json'
+
 
 
 class NetworkAdviceCard extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
     const {isMobileVersion} = this.context
-    const reasons = ['NETWORK_ESTIMATE', 'NO_OFFERS', 'ATYPIC_PROFILE', 'NO_OFFER_ANSWERS']
     const explanationStyle = {
       flex: 1,
       fontSize: 16,
       lineHeight: '21px',
       marginTop: 15,
     }
-    return <AdviceCard {...this.props} reasons={reasons}>
-      <section style={{alignItems: 'center', display: 'flex'}}>
-        <div style={explanationStyle}>
-          <strong style={{color: Colors.SKY_BLUE, fontSize: 40}}>
-            <GrowingNumber number={44} isSteady={true} />%
-          </strong> des
-          gens retrouvent un emploi grâce à <strong>leurs contacts</strong> contre
-          seulement <strong>12%</strong> via
-          des offres <strong>sur internet</strong>.
-        </div>
-        {isMobileVersion ? null : <JobOriginChart />}
-      </section>
-    </AdviceCard>
+    return <section style={{alignItems: 'center', display: 'flex'}}>
+      <div style={explanationStyle}>
+        <strong style={{color: Colors.SKY_BLUE, fontSize: 40}}>
+          <GrowingNumber number={44} isSteady={true} />%
+        </strong> des
+        gens retrouvent un emploi grâce à <strong>leurs contacts</strong> contre
+        seulement <strong>12%</strong> via
+        des offres <strong>sur internet</strong>.
+      </div>
+      {isMobileVersion ? null : <JobOriginChart />}
+    </section>
   }
 }
 
@@ -44,11 +45,11 @@ class NetworkAdviceCard extends React.Component {
 class JobOriginChart extends React.Component {
   static propTypes = {
     // Duration of appearance of one bar.
-    barEntranceDurationMillisec: React.PropTypes.number.isRequired,
+    barEntranceDurationMillisec: PropTypes.number.isRequired,
     // Total duration of appearance animation.
-    entranceAnimationDurationMillisec: React.PropTypes.number.isRequired,
-    isLegendShown: React.PropTypes.bool,
-    style: React.PropTypes.object,
+    entranceAnimationDurationMillisec: PropTypes.number.isRequired,
+    isLegendShown: PropTypes.bool,
+    style: PropTypes.object,
   }
   static defaultProps = {
     barEntranceDurationMillisec: 500,
@@ -161,9 +162,6 @@ class JobOriginChart extends React.Component {
 }
 
 
-const MESSAGE_EXAMPLES = require('./data/network_messages.json')
-
-
 const networkPersonalizations = [
   {
     filters: ['ATYPIC_PROFILE'],
@@ -174,7 +172,7 @@ const networkPersonalizations = [
   {
     filters: ['TIME_MANAGEMENT'],
     tip: <span>Donnez-vous des objectifs du type : « cette semaine je vais à
-      deux événements »</span>,
+      deux évènements »</span>,
   },
   {
     filters: ['MOTIVATION'],
@@ -199,13 +197,13 @@ const networkPersonalizations = [
 
 class NetworkAdvicePage extends React.Component {
   static propTypes = {
-    circle: React.PropTypes.number.isRequired,
-    intro: React.PropTypes.node,
+    circle: PropTypes.number.isRequired,
+    intro: PropTypes.node,
     profile: USER_PROFILE_SHAPE.isRequired,
-    project: React.PropTypes.object.isRequired,
+    project: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   state = {
@@ -250,7 +248,7 @@ class NetworkAdvicePage extends React.Component {
       top: 0,
     }
     return <div style={containerStyle}>
-      <img src={require('images/network-circles-background.svg')} />
+      <img src={networkCirclesBackground} />
     </div>
   }
 

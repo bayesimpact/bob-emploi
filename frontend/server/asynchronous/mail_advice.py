@@ -6,7 +6,6 @@ docker-compose run --rm \
     -e MONGO_URL ... \
     frontend-flask python bob_emploi/frontend/asynchronous/mail_advice.py
 """
-# TODO(pascal): Factorize with mail_actions if both stick around.
 import datetime
 import logging
 import os
@@ -150,6 +149,7 @@ def send_email_to_user(user, base_url, weekday, database):
             'title': advice_module.email_title,
         }, **_flatten([json_format.MessageToDict(t) for t in tips], prefix='tips')),
         dry_run=DRY_RUN,
+        monitoring_category='daily_notification',
     )
     mail_result.raise_for_status()
     return True

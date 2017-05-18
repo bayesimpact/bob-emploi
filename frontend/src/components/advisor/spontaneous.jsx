@@ -1,42 +1,34 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+import Radium from 'radium'
 
-import {Colors, GrowingNumber, Icon, PaddedOnMobile, PieChart} from 'components/theme'
+import {genderizeJob} from 'store/job'
+import {lowerFirstLetter, ofCityPrefix} from 'store/french'
+import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {AdviceCard, PersonalizationBoxes} from './base'
+import laBonneBoiteImage from 'images/labonneboite-picto.png'
+import {AppearingList, Colors, GrowingNumber, Icon, PaddedOnMobile, PieChart,
+  SmoothTransitions, Styles} from 'components/theme'
 
-
-const columnStyle = {
-  backgroundColor: '#fff',
-  margin: 20,
-  padding: 20,
-  textAlign: 'center',
-}
-const indexColumnStyle = {
-  ...columnStyle,
-  fontWeight: 'bold',
-  width: '10%',
-}
-const actionColumnStyle = {
-  ...columnStyle,
-  fontStyle: 'italic',
-  fontWeight: 'bold',
-  width: '30%',
-}
-const explanationColumnStyle = {
-  ...columnStyle,
-  height: '100%',
-  padding: '20px 20px 0 20px',
-  width: '30%',
-}
+import {PersonalizationBoxes, ToolCard} from './base'
 
 
 class FullAdviceCard extends React.Component {
+  static propTypes = {
+    advice: PropTypes.object.isRequired,
+  }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
-  renderWhy() {
+  render() {
     const {isMobileVersion} = this.context
+    const {companies} = this.props.advice.spontaneousApplicationData || {}
+    if (companies) {
+      return <div style={{fontSize: 30}}>
+        Postulez dès maintenant chez {companies.map(({name}) => name).filter(n => n).join(', ')}…
+      </div>
+    }
     const strongStyle = {
       color: Colors.SKY_BLUE,
       fontSize: 40,
@@ -52,129 +44,6 @@ class FullAdviceCard extends React.Component {
         <GrowingNumber number={66} />%
       </PieChart>}
     </div>
-  }
-
-  render() {
-    const reasons = ['NO_OFFERS', 'ATYPIC_PROFILE', 'LESS_THAN_15_OFFERS']
-    return <AdviceCard {...this.props} reasons={reasons}>
-      {this.renderWhy()}
-    </AdviceCard>
-  }
-}
-
-
-class SpontaneousTipCard extends React.Component {
-  static propTypes = {
-    action: React.PropTypes.node,
-    how: React.PropTypes.node,
-    step: React.PropTypes.number.isRequired,
-    style: React.PropTypes.object,
-    why: React.PropTypes.node,
-  }
-  state = {
-    isCollapsed: true,
-  }
-
-  toggleCollapse = () => this.setState({isCollapsed: !this.state.isCollapsed})
-
-  render() {
-    const {action, how, step, style, why} = this.props
-    const {isCollapsed} = this.state
-    const actionStyle = {
-      alignItems: 'center',
-      backgroundColor: Colors.SKY_BLUE,
-      color: 'white',
-      cursor: 'pointer',
-      display: 'flex',
-      fontWeight: 'bold',
-      padding: '5px 5px 5px 15px',
-      textAlign: 'left',
-    }
-    const explanationStyle = {
-      backgroundColor: '#fff',
-      padding: '18px 20px 18px 20px',
-      textAlign: 'left',
-    }
-    const chevronStyle = {
-      fontSize: 30,
-      lineHeight: 1,
-    }
-    return <div style={style}>
-      <header style={actionStyle} onClick={this.toggleCollapse}>
-        <div style={{flex: 1, paddingLeft: 22, textIndent: -22}}>
-          {step} - {action}
-        </div>
-        <Icon name={isCollapsed ? 'chevron-down' : 'chevron-up'} style={chevronStyle} />
-      </header>
-      {isCollapsed ? null : <div>
-        <div style={explanationStyle}>{how}</div>
-        <div style={explanationStyle}>{why}</div>
-      </div>}
-    </div>
-  }
-}
-
-
-class SpontaneousTipLine extends React.Component {
-  static propTypes = {
-    action: React.PropTypes.node,
-    how: React.PropTypes.node,
-    step: React.PropTypes.number.isRequired,
-    why: React.PropTypes.node,
-  }
-
-  state = {
-    isCollapsed: true,
-  }
-
-  renderExpandLink() {
-    const {isCollapsed} = this.state
-    const btnStyle = {
-      backgroundColor: '#fff',
-      bottom: 7,
-      color: Colors.SKY_BLUE,
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      position: 'absolute',
-      right: 0,
-    }
-    return <a onClick={() => this.setState({isCollapsed: !isCollapsed})} style={btnStyle}>
-      {isCollapsed ? <span>...voir plus</span> : <span>réduire</span>}
-    </a>
-  }
-
-  render() {
-    const {action, how, step, why} = this.props
-    const {isCollapsed} = this.state
-    const flexibleRowContainer = {
-      height: '100%',
-      paddingBottom: 35,
-      position: 'relative',
-    }
-    const flexibleRow = {
-      maxHeight: isCollapsed ? 40 : 1000,
-      overflow: 'hidden',
-    }
-    return <tr>
-      <td style={indexColumnStyle}>{step}</td>
-      <td style={actionColumnStyle}>{action}</td>
-      <td style={explanationColumnStyle}>
-        <div style={flexibleRowContainer}>
-          {this.renderExpandLink()}
-          <div style={flexibleRow}>
-            {how}
-          </div>
-        </div>
-      </td>
-      <td style={explanationColumnStyle}>
-        <div style={flexibleRowContainer}>
-          {this.renderExpandLink()}
-          <div style={flexibleRow}>
-            {why}
-          </div>
-        </div>
-      </td>
-    </tr>
   }
 }
 
@@ -212,112 +81,58 @@ const personalizations = [
 
 
 class AdvicePageContent extends React.Component {
-  static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+  static propTypes = {
+    advice: PropTypes.object.isRequired,
+    profile: USER_PROFILE_SHAPE.isRequired,
+    project: PropTypes.object.isRequired,
   }
 
-  state = {
-    spontaneousTipLines: [
-      {
-        action: 'Cibler les entreprises',
-        how:
-          `Cherchez toutes les entreprises
-          qui correspondent à vos critères et qui peuvent s'adapter à vos contraintes
-          (métiers, conditions de travail, mobilité, etc …).`,
-        why:
-          `Mieux vous ciblez les entreprises
-          que vous contactez plus vous aurez de chances de sortir du lot. En plus si vous
-          trouvez des entreprises qui vous plaisent vraiment vos candidatures seront plus
-          sincères et plus réussies.`,
-      },
-      {
-        action: 'Personnaliser votre candidature',
-        how:
-          `Consultez le site de l'entreprise,
-          ses pages sur les réseaux sociaux ou les offres postées pour reprendre des mots
-          clés dans votre CV et votre lettre de motivation.`,
-        why:
-          `Le but est de montrer que vous avez bien compris
-          l'esprit de l'entreprise et que vous avez les compétences dont l'entreprise
-          a besoin.`,
-      },
-      {
-        action: 'Trouver la bonne façon de candidater',
-        how:
-          `Si vous postulez dans une petite entreprise c'est toujours bien de déposer votre
-          candidature en personne, demandez bien son nom à la personne que vous rencontrerez
-          pour le préciser dans vos relances. Vous pouvez aussi envoyer votre candidature
-          spontanée par mail, idéalement essayer de l'envoyer au responsable de service et
-          pas seulement au service de recrutement.`,
-        why:
-          `En adaptant votre méthode pour postuler à l'entreprise vous montrez que vous avez
-          pris le temps de comprendre le fonctionnement et l'esprit de l'entreprise avant
-          de postuler.`,
-      },
-      {
-        action: 'Trouver la bonne personne à contacter',
-        how:
-          `Cherchez des indices sur internet pour trouver la bonne personne à contacter :
-          le chef du service, le directeur de la branche, le responsable du projet...
-          Vous pouvez par exemple utiliser le site de l'entreprise ou Linkedin pour
-          retrouver le nom de la personne et son titre.`,
-        why:
-          `Vous serez directement en contact avec une des personnes qui peut prendre la
-          décision d'embaucher et qui est très au courant des besoins de l'équipe.`,
-      },
-      {
-        action: 'Faites des relances',
-        how:
-          `Envoyez un email clair et concis deux semaines après. L'objectif est de
-          vérifier que votre candidature a bien été reçue et de mieux cibler les besoins de
-          l'entreprise et les potentiels recrutements à venir.`,
-        why:
-          `Cela permet de montrer votre motivation et de vous faire remarquer
-          positivement. Beaucoup de recruteurs ne regardent les candidatures spontanées
-          qu'après avoir reçu une ou deux relances.`,
-      }],
+  renderCompanies(companies) {
+    const {profile, project} = this.props
+    if (!companies || !companies.length) {
+      return null
+    }
+
+    const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
+
+    return <div style={{marginBottom: 50}}>
+      <PaddedOnMobile style={{fontSize: 21, marginBottom: 15}}>
+        <strong>{companies.length} entreprise{companies.length > 1 ? 's' : ''}</strong> à
+        fort potentiel d'embauche pour {profile.gender === 'FEMININE' ? 'une ' : 'un '}
+        {lowerFirstLetter(genderizeJob(project.targetJob, profile.gender))} près {prefix}{cityName}
+      </PaddedOnMobile>
+      <AppearingList>
+        {companies.map((company, index) => <CompanyLink
+            key={`company-${index}`} style={{marginTop: index ? -1 : 0}} {...company} />)}
+      </AppearingList>
+    </div>
   }
 
   render() {
-    const {isMobileVersion} = this.context
-    const tableStyle = {
-      textAlign: 'center',
-      width: '100%',
-    }
-    const headerStyle = {
-      backgroundColor: Colors.SKY_BLUE,
-      color: '#fff',
-      fontStyle: 'normal',
-      fontWeight: 'normal',
-      margin: 10,
-      padding: 5,
+    const {advice, project} = this.props
+    const {companies} = advice.spontaneousApplicationData || {}
+    const {cityId} = project.mobility.city || {}
+    const {romeId} = project.targetJob.jobGroup || {}
+    const link = `https://labonneboite.pole-emploi.fr/entreprises/commune/${cityId}/rome/${romeId}?utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-rech`
+    const toolCardStyle = {
+      maxWidth: 470,
     }
     return <div>
-      <PaddedOnMobile>
-        Des étapes de candidature réussie adaptée à votre profil&nbsp;:
-      </PaddedOnMobile>
-      {isMobileVersion ?
-        <div style={{display: 'flex', flexDirection: 'column', position: 'relative'}}>
-          {this.state.spontaneousTipLines.map((line, index) => <SpontaneousTipCard
-            style={{marginBottom: 15}} key={index}
-            step={index + 1} action={line.action} how={line.how} why={line.why} />)}
-        </div>
-      : <div style={{display: 'flex', position: 'relative'}}>
-        <table cellSpacing="10" style={tableStyle}>
-          <thead>
-            <tr>
-              <td style={indexColumnStyle, headerStyle}>Étape</td>
-              <td style={actionColumnStyle, headerStyle}>Action</td>
-              <td style={explanationColumnStyle, headerStyle}>Comment faire&nbsp;?</td>
-              <td style={explanationColumnStyle, headerStyle}>Pourquoi est-ce utile&nbsp;?</td>
-            </tr>
-          </thead>
-          <tbody>
-            {this.state.spontaneousTipLines.map((line, index) => <SpontaneousTipLine
-                step={index + 1} action={line.action} how={line.how} why={line.why} key={index} />)}
-          </tbody>
-        </table>
-      </div>}
+      {this.renderCompanies(companies)}
+
+      <div>
+        <PaddedOnMobile style={{fontSize: 21}}>
+          {companies && companies.length ? "Voir d'autres" : 'Trouver des'} entreprises sur&nbsp;:
+          <div style={toolCardStyle}>
+            <ToolCard imageSrc={laBonneBoiteImage} href={link}>
+              La Bonne Boite
+              <div style={{fontSize: 13, fontWeight: 'normal'}}>
+                pour trouver des entreprises à fort potentiel d'embauche
+              </div>
+            </ToolCard>
+          </div>
+        </PaddedOnMobile>
+      </div>
 
       <PersonalizationBoxes
           {...this.props} style={{marginTop: 30}}
@@ -325,6 +140,75 @@ class AdvicePageContent extends React.Component {
     </div>
   }
 }
+
+
+class CompanyLinkBase extends React.Component {
+  static propTypes = {
+    cityName: PropTypes.string,
+    hiringPotential: PropTypes.number,
+    name: PropTypes.string.isRequired,
+    siret: PropTypes.string,
+    style: PropTypes.object,
+  }
+
+  open = () => {
+    const {siret} = this.props
+    const tracking = 'utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-ent'
+    window.open(`https://labonneboite.pole-emploi.fr/${siret}/details?${tracking}`, '_blank')
+  }
+
+  renderStars() {
+    const {hiringPotential} = this.props
+    if (!hiringPotential) {
+      return null
+    }
+    const titleStyle = {
+      color: Colors.COOL_GREY,
+      fontWeight: 500,
+      ...Styles.CENTER_FONT_VERTICALLY,
+    }
+    const starStyle = starIndex => ({
+      color: starIndex < hiringPotential - 1 ? Colors.GREENISH_TEAL : Colors.PINKISH_GREY,
+    })
+    return <span style={{alignItems: 'center', display: 'flex'}}>
+      <span style={titleStyle}>
+        Potentiel d'embauche&nbsp;:
+      </span>
+      <span style={{fontSize: 20}}>
+        {new Array(4).fill(null).map((unused, index) =>
+          <Icon name="star" style={starStyle(index)} key={`star-${index}`} />)}
+      </span>
+    </span>
+  }
+
+  render() {
+    const {cityName, siret, name, style} = this.props
+    const containerStyle = {
+      ':hover': siret ? {
+        background: Colors.LIGHT_GREY,
+      } : {},
+      alignItems: 'center',
+      background: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      cursor: siret ? 'pointer' : 'initial',
+      display: 'flex',
+      height: 50,
+      paddingLeft: 20,
+      ...SmoothTransitions,
+      ...style,
+    }
+    return <div style={containerStyle} onClick={siret ? this.open : null}>
+      <strong style={Styles.CENTER_FONT_VERTICALLY}>{name}</strong>
+      {cityName ? <span style={{paddingLeft: '.3em', ...Styles.CENTER_FONT_VERTICALLY}}>
+        - {cityName}
+      </span> : null}
+      <span style={{flex: 1}} />
+      {this.renderStars()}
+      <Icon name="chevron-right" style={{fontSize: 25, opacity: siret ? 1 : 0, paddingRight: 10}} />
+    </div>
+  }
+}
+const CompanyLink = Radium(CompanyLinkBase)
 
 
 export default {AdvicePageContent, FullAdviceCard}

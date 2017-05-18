@@ -1,6 +1,7 @@
 import React from 'react'
-import {connect} from 'react-redux'
+import PropTypes from 'prop-types'
 import Radium from 'radium'
+import {connect} from 'react-redux'
 
 import {likeOrDislikeFeature} from 'store/actions'
 
@@ -10,9 +11,9 @@ import {Colors, Icon, SmoothTransitions} from './theme'
 class LikeDislikeButtonsBase extends React.Component {
   static propTypes = {
     // Will show dislike if negative, like if positive and neutral if 0.
-    likeScore: React.PropTypes.number,
-    onChange: React.PropTypes.func,
-    style: React.PropTypes.object,
+    likeScore: PropTypes.number,
+    onChange: PropTypes.func,
+    style: PropTypes.object,
   }
 
   componentWillMount() {
@@ -74,10 +75,10 @@ class LikeDislikeButtonsBase extends React.Component {
     }
     return <div style={containerStyle} {...extraProps}>
       <Icon
-          name="thumb-up" style={likeStyle} ref="like"
+          name="thumb-up" style={likeStyle}
           onClick={this.getLikeScoreSetter(1)} />
       <Icon
-          name="thumb-down" style={dislikeStyle} ref="dislike"
+          name="thumb-down" style={dislikeStyle}
           onClick={this.getLikeScoreSetter(-1)} />
     </div>
   }
@@ -87,9 +88,9 @@ const LikeDislikeButtons = Radium(LikeDislikeButtonsBase)
 
 class FeatureLikeDislikeButtonsBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    feature: React.PropTypes.string.isRequired,
-    likes: React.PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    feature: PropTypes.string.isRequired,
+    likes: PropTypes.object.isRequired,
   }
 
   change = likeScore => {

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+message Feedback {
+  // ID of the user that sent the feedback.
+  string user_id = 1;
+
+  // ID of the project for which the feedback was sent.
+  string project_id = 2;
+
+  // ID of the advice module for which the feedback was sent.
+  string advice_id = 3;
+
+  // Actual feedback.
+  string feedback = 4;
+
+  // Source of the feedback.
+  FeedbackSource source = 5;
+}
+
+enum FeedbackSource {
+  UNKNOWN_SOURCE = 0;
+
+  // Feedback on a specific advice.
+  ADVICE_FEEDBACK = 1;
+
+  // General feedback in the "professionals" page.
+  PROFESSIONAL_PAGE_FEEDBACK = 2;
+}

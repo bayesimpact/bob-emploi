@@ -1,12 +1,14 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
+import bobCircleImage from 'images/bob-circle-picto.svg'
 import {Step} from 'components/pages/profile/step'
 import {Colors} from 'components/theme'
 
 
 class CountDown extends React.Component {
   static propTypes = {
-    seconds: React.PropTypes.number.isRequired,
+    seconds: PropTypes.number.isRequired,
   }
 
   componentWillMount() {
@@ -35,7 +37,7 @@ class CountDown extends React.Component {
 // TODO(pascal): Don't show the notice after back-navigation from the succeeding step.
 class NoticeStep extends React.Component {
   static propTypes = {
-    onSubmit: React.PropTypes.func.isRequired,
+    onSubmit: PropTypes.func.isRequired,
   }
 
   handleSubmit = () => {
@@ -72,7 +74,7 @@ class NoticeStep extends React.Component {
         isNextButtonDisabled={isNextButtonDisabled}
         nextButtonContent={isNextButtonDisabled ? <CountDown seconds={3} /> : null}>
       <div style={{margin: 20, textAlign: 'center'}}>
-        <img src={require('images/bob-circle-picto.svg')} />
+        <img src={bobCircleImage} />
       </div>
 
       <div style={textStyle}>

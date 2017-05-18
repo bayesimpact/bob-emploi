@@ -222,6 +222,11 @@ message JobRequirements {
   // A short text describing most important diplomas or traninings to have done
   // when applying for this job. It uses markdown syntax.
   string trainings_short_text = 9;
+
+  // Sorted list of job with offers within this job group: the ones with more
+  // offers come first. This excludes the jobs that have less than 1% of the
+  // job offers of the job group.
+  repeated JobRequirement specific_jobs = 16;
 }
 
 message JobRequirement {
@@ -254,7 +259,16 @@ message JobRequirement {
     // the best. Keep in sync with scale for the
     // UserProfile.office_skills_estimate.
     int32 office_skills_level = 8;
+
+    // OGR code identifying the job more precisely.
+    string code_ogr = 9;
   }
+}
+
+message WeightedJob {
+  Job job = 1;
+
+  float weight = 2;
 }
 
 message Skill {

@@ -7,6 +7,7 @@ import mongomock
 
 from bob_emploi.frontend import action
 from bob_emploi.frontend import advisor
+from bob_emploi.frontend import companies
 from bob_emploi.frontend import now
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import geo_pb2
@@ -25,9 +26,7 @@ class MaybeAdviseTestCase(unittest.TestCase):
             '_id': 'rec1CWahSiEtlwEHW',
             'goal': 'Reorientation !',
         })
-        self.user = user_pb2.User(features_enabled=user_pb2.Features(
-            sticky_actions=user_pb2.ACTIVE,
-            advisor=user_pb2.ACTIVE))
+        self.user = user_pb2.User(features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE))
         action.clear_cache()
         advisor.clear_cache()
 
@@ -215,6 +214,84 @@ class MaybeAdviseTestCase(unittest.TestCase):
         advice = next(a for a in project.advices if a.advice_id == 'job-boards')
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
         self.assertEqual('Indeed', advice.job_boards_data.job_board_title)
+
+    @mock.patch(companies.__name__ + '.get_lbb_companies')
+    def test_advice_spontaneous_application_extra_data(self, mock_get_lbb_companies):
+        """Test that the advisor computes extra data for the "Spontaneous Application" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.local_diagnosis.insert_one({
+            '_id': '14:A1234',
+            'imt': {'applicationModes': {'Foo': {'first': 'SPONTANEOUS_APPLICATION'}}},
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'chantier-spontaneous-application',
+            'extraDataFieldName': 'spontaneous_application_data',
+            'isReadyForProd': True,
+        })
+        mock_get_lbb_companies.return_value = iter([
+            {'name': 'EX NIHILO'},
+            {'name': 'M.F.P MULTIMEDIA FRANCE PRODUCTIONS'},
+        ])
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(
+            ['EX NIHILO', 'M.F.P MULTIMEDIA FRANCE PRODUCTIONS'],
+            [c.name for c in advice.spontaneous_application_data.companies])
+
+    def test_advice_better_job_in_group_extra_data(self):
+        """Test that the advisor computes extra data for the "Better Job in Group" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(code_ogr='1234', job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'jobs': [
+                {'codeOgr': '1234', 'name': 'Pilote'},
+                {'codeOgr': '5678', 'name': 'Pompier'},
+                {'codeOgr': '9012', 'name': 'Facteur'},
+            ],
+            'requirements': {
+                'specificJobs': [
+                    {
+                        'codeOgr': "5678",
+                        'percentSuggested': 55,
+                    },
+                    {
+                        'codeOgr': "1234",
+                        'percentSuggested': 45,
+                    },
+                ],
+            },
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-better-job-in-group',
+            'extraDataFieldName': 'better_job_in_group_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('Pompier', advice.better_job_in_group_data.better_job.name)
+        self.assertEqual(1, advice.better_job_in_group_data.num_better_jobs)
 
 
 class SelectAdviceForEmailTestCase(unittest.TestCase):

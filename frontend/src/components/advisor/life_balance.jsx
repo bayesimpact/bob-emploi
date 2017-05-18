@@ -1,13 +1,15 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
+import lifeActivitiesImage from 'images/life-activities.svg'
 import {Colors, GrowingNumber, PaddedOnMobile, PieChart} from 'components/theme'
 
-import {AdviceCard, PersonalizationBoxes} from './base'
+import {PersonalizationBoxes} from './base'
 
 
 class FullAdviceCard extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -16,23 +18,20 @@ class FullAdviceCard extends React.Component {
       color: Colors.SKY_BLUE,
       fontSize: 40,
     }
-    const reasons = ['COUNT_MONTHS', 'SINGLE_PARENT', 'TIME_MANAGEMENT', 'MOTIVATION']
-    return <AdviceCard {...this.props} reasons={reasons}>
-      <div style={{alignItems: 'center', display: 'flex'}}>
-        <div style={{flex: 1, lineHeight: '21px'}}>
-          <strong style={strongStyle}>
-            <GrowingNumber number={80} isSteady={true} />%
-          </strong> des accompagnateurs
-          SNC pensent que le bénévolat contribue au <strong>retour à l'emploi</strong> et valorise
-          votre profil.
-        </div>
-        {isMobileVersion ? null : <PieChart
-            style={{color: Colors.SKY_BLUE, marginLeft: 50}} percentage={80}
-            backgroundColor={Colors.MODAL_PROJECT_GREY}>
-          <GrowingNumber number={80} />
-        </PieChart>}
+    return <div style={{alignItems: 'center', display: 'flex'}}>
+      <div style={{flex: 1, lineHeight: '21px'}}>
+        <strong style={strongStyle}>
+          <GrowingNumber number={80} isSteady={true} />%
+        </strong> des accompagnateurs
+        pensent que le bénévolat contribue au <strong>retour à l'emploi</strong> et valorise
+        votre profil.
       </div>
-    </AdviceCard>
+      {isMobileVersion ? null : <PieChart
+          style={{color: Colors.SKY_BLUE, marginLeft: 50}} percentage={80}
+          backgroundColor={Colors.MODAL_PROJECT_GREY}>
+        <GrowingNumber number={80} />
+      </PieChart>}
+    </div>
   }
 }
 
@@ -41,7 +40,7 @@ const personalizations = [
   {
     filters: ['TIME_MANAGEMENT'],
     tip: <span>Donnez-vous des objectifs du type : « cette semaine je vais à deux
-      événements »</span>,
+      évènements »</span>,
   },
   {
     filters: ['MOTIVATION'],
@@ -59,7 +58,7 @@ class AdvicePageContent extends React.Component {
   render() {
     return <div>
       <PaddedOnMobile>Préservez votre équilibre de vie&nbsp;:</PaddedOnMobile>
-      <img src={require('images/life-activities.svg')} style={{display: 'block', width: '100%'}} />
+      <img src={lifeActivitiesImage} style={{display: 'block', width: '100%'}} />
 
       <PersonalizationBoxes
           {...this.props} style={{marginTop: 30}}

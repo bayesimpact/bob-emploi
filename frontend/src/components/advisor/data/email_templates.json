@@ -1,0 +1,24 @@
+{
+  "motivation-email": [
+    {
+      "content": "**Objet :** Candidature spontanée : (intitulé du poste)\n\n**Corps du message :**\n\nJ'ai récemment appris, via mon réseau professionnel, que vous recherchiez un (intitulé du poste). Passionné depuis toujours par (secteur de l'entreprise), c'est donc naturellement que je vous contacte afin de vous rencontrer pour envisager une collaboration […]\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous motive et pourquoi vous êtes un bon candidat pour ce poste]\n\nQuand seriez-vous disponible pour échanger ?",
+      "title": "Networker en réponse à une offre",
+      "type": "spontaneous-application"
+    },
+    {
+      "content": "**Objet :** Candidature spontanée : (intitulé du poste)\n\n**Corps du message :**\n\nJ'ai lu dans la presse, que vous développiez votre activité. Passionné depuis toujours par (secteur de l'entreprise), c'est donc naturellement que je vous contacte afin de vous rencontrer […]\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous intéresse particulièrement dans cette entreprise et ce que vous pourriez lui apporter]\n\nVous aurez certainement besoin d'un (nom de votre poste) Rencontrons-nous pour en discuter.",
+      "title": "Candidature spontanée bien renseignée",
+      "type": "spontaneous-application"
+    },
+    {
+      "content": "**Objet :** Candidature à l'offre (intitulé de l'offre))\n\n**Corps du message :**\n\nSuite à votre offre diffusée sur... je vous propose ma candidature…\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous motive et pourquoi vous êtes un bon candidat pour ce poste]\n\nVous trouverez en pièce jointe mon CV et je me tiens à votre disposition pour un entretien à votre convenance.",
+      "title": "Réponse classique à une offre (version 1)",
+      "type": "apply-to-offer"
+    },
+    {
+      "content": "**Objet :** Candidature à l'offre (intitulé de l'offre))\n\n**Corps du message :**\n\nJ'ai pris connaissance de votre offre d'emploi pour le poste de … qui m'intéresse beaucoup.\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous motive et pourquoi vous êtes un bon candidat pour ce poste]\n\nEn espérant que ma candidature saura retenir votre attention, je vous adresse, ci-joint, mon CV.",
+      "title": "Réponse classique à une offre (version 2)",
+      "type": "apply-to-offer"
+    }
+  ]
+}

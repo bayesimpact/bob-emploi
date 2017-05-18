@@ -133,50 +133,6 @@ class FrustratedYoungFilterTestCase(_FilterTestBase('for-frustrated-young(25)'))
         self._assert_pass_filter()
 
 
-class EnglishSpeakerFilterTestCase(_FilterTestBase('for-english-speaker(2)')):
-    """Unit tests for the _UserProfileFilter class for english speakers."""
-
-    def test_english_native(self):
-        """English native."""
-        self.persona.user_profile.english_level_estimate = 3
-        self._assert_pass_filter()
-
-    def test_cannot_speak_english(self):
-        """Barely speaks english."""
-        self.persona.user_profile.english_level_estimate = 1
-        self._assert_fail_filter()
-
-
-class DriverFilterTestCase(_FilterTestBase('for-driver(car)')):
-    """Unit tests for the _UserProfileFilter class for drivers."""
-
-    def test_truck_driver(self):
-        """Truck driver."""
-        del self.persona.user_profile.driving_licenses[:]
-        self.persona.user_profile.driving_licenses.append(job_pb2.TRUCK)
-        self._assert_fail_filter()
-
-    def test_car_driver(self):
-        """Car driver."""
-        self.persona.user_profile.driving_licenses.append(job_pb2.CAR)
-        self._assert_pass_filter()
-
-
-class NonDriverFilterTestCase(_FilterTestBase('for-non-driver(car)')):
-    """Unit tests for the _UserProfileFilter class for non drivers."""
-
-    def test_truck_driver(self):
-        """Truck driver."""
-        del self.persona.user_profile.driving_licenses[:]
-        self.persona.user_profile.driving_licenses.append(job_pb2.TRUCK)
-        self._assert_pass_filter()
-
-    def test_car_driver(self):
-        """Car driver."""
-        self.persona.user_profile.driving_licenses.append(job_pb2.CAR)
-        self._assert_fail_filter()
-
-
 class UnemployedFilterTestCase(_FilterTestBase('for-unemployed')):
     """Unit tests for the _UserProfileFilter class for unemployed."""
 
@@ -377,6 +333,19 @@ class FilterActiveExperimentTestCase(_FilterTestBase('for-active-experiment(lbb_
         """User is in the experiment."""
         self.persona.features_enabled.lbb_integration = user_pb2.ACTIVE
         self._assert_pass_filter()
+
+
+class FilterActiveUnknownExperimentTestCase(_FilterTestBase('for-active-experiment(unknown)')):
+    """Unit tests for the _ActiveExperimentFilter class when experiment does not exist."""
+
+    def test_any_persona(self):
+        """Experiment does not exist."""
+        self._assert_fail_filter()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(FilterActiveUnknownExperimentTestCase, cls).tearDownClass()
+        del scoring.SCORING_MODELS[cls.model_id]
 
 
 class FilterUsingScoreTestCase(unittest.TestCase):

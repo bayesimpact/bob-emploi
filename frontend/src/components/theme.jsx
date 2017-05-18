@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import ReactMarkdown from 'react-markdown'
 import Radium from 'radium'
 import VisibilitySensor from 'react-visibility-sensor'
@@ -141,16 +142,16 @@ const BUTTON_TYPE_STYLES = {
 
 class ButtonBase extends React.Component {
   static propTypes = {
-    bounceDurationMs: React.PropTypes.number,
-    children: React.PropTypes.node.isRequired,
-    disabled: React.PropTypes.bool,
-    isHighlighted: React.PropTypes.bool,
-    isNarrow: React.PropTypes.bool,
-    isProgressShown: React.PropTypes.bool,
-    onClick: React.PropTypes.func,
-    onMouseDown: React.PropTypes.func,
-    style: React.PropTypes.object,
-    type: React.PropTypes.oneOf(Object.keys(BUTTON_TYPE_STYLES)),
+    bounceDurationMs: PropTypes.number,
+    children: PropTypes.node.isRequired,
+    disabled: PropTypes.bool,
+    isHighlighted: PropTypes.bool,
+    isNarrow: PropTypes.bool,
+    isProgressShown: PropTypes.bool,
+    onClick: PropTypes.func,
+    onMouseDown: PropTypes.func,
+    style: PropTypes.object,
+    type: PropTypes.oneOf(Object.keys(BUTTON_TYPE_STYLES)),
   }
   static defaultProps = {
     bounceDurationMs: 50,
@@ -225,8 +226,8 @@ const Button = Radium(ButtonBase)
 // TODO(pascal): Check if it is still used and clean up.
 class SettingsButtonBase extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node.isRequired,
-    style: React.PropTypes.object,
+    children: PropTypes.node.isRequired,
+    style: PropTypes.object,
   }
 
   render() {
@@ -262,7 +263,7 @@ const SettingsButton = Radium(SettingsButtonBase)
 
 class Markdown extends React.Component {
   static propTypes = {
-    content: React.PropTypes.string,
+    content: PropTypes.string,
   }
 
   render() {
@@ -270,17 +271,19 @@ class Markdown extends React.Component {
     if (!content) {
       return null
     }
-    return <ReactMarkdown source={content} escapeHtml={true}
-              // eslint-disable-next-line no-unused-vars
-              renderers={{Link: ({literal, nodeKey, ...props}) => <a {...props} target="_blank" />}}
-              {...extraProps} />
+    return <ReactMarkdown
+        source={content} escapeHtml={true}
+        // eslint-disable-next-line no-unused-vars
+        renderers={{Link: ({literal, nodeKey, ...props}) => <a
+            {...props} target="_blank" rel="noopener noreferrer" />}}
+        {...extraProps} />
   }
 }
 
 
 class HorizontalRule extends React.Component {
   static propTypes = {
-    style: React.PropTypes.object,
+    style: PropTypes.object,
   }
 
   render() {
@@ -295,36 +298,18 @@ class HorizontalRule extends React.Component {
 }
 
 
-const COVER_IMAGE_URLS = {
-  generic1: require('images/generic-cover1.jpg'),
-  generic2: require('images/generic-cover2.jpg'),
-  generic3: require('images/generic-cover3.jpg'),
-  generic4: require('images/generic-cover4.jpg'),
-  generic5: require('images/generic-cover5.jpg'),
-}
-
-
-class PartnerLogos extends React.Component {
-  render() {
-    return <div {...this.props}>
-      <img src={require('images/logo-lfse.svg')} style={{height: 50}} />
-    </div>
-  }
-}
-
-
-class CoverImage extends React.Component {
+class JobGroupCoverImage extends React.Component {
   static propTypes = {
-    blur: React.PropTypes.number,
-    coverOpacity: React.PropTypes.number,
-    opaqueCoverColor: React.PropTypes.string,
-    opaqueCoverGradient: React.PropTypes.shape({
-      left: React.PropTypes.string.isRequired,
-      middle: React.PropTypes.string,
-      right: React.PropTypes.string.isRequired,
+    blur: PropTypes.number,
+    coverOpacity: PropTypes.number,
+    opaqueCoverColor: PropTypes.string,
+    opaqueCoverGradient: PropTypes.shape({
+      left: PropTypes.string.isRequired,
+      middle: PropTypes.string,
+      right: PropTypes.string.isRequired,
     }),
-    style: React.PropTypes.object,
-    url: React.PropTypes.string,
+    romeId: PropTypes.string.isRequired,
+    style: PropTypes.object,
   }
 
   static defaultProps = {
@@ -333,8 +318,8 @@ class CoverImage extends React.Component {
   }
 
   render() {
-    const {blur, coverOpacity, opaqueCoverColor, opaqueCoverGradient, style, url} = this.props
-    const coverImageUrl = COVER_IMAGE_URLS[url] || url
+    const {blur, coverOpacity, opaqueCoverColor, opaqueCoverGradient, romeId, style} = this.props
+    const url = config.jobGroupImageUrl.replace('ROME_ID', romeId)
     const coverAll = {
       bottom: 0,
       left: 0,
@@ -344,7 +329,7 @@ class CoverImage extends React.Component {
     }
     const coverImageStyle = {
       ...coverAll,
-      backgroundImage: coverImageUrl ? `url("${coverImageUrl}")` : 'inherit',
+      backgroundImage: url ? `url("${url}")` : 'inherit',
       backgroundPosition: 'center center',
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'cover',
@@ -369,45 +354,33 @@ class CoverImage extends React.Component {
       opaqueCoverStyle.background = `linear-gradient(${gradientParts.join(', ')})`
     }
     return <div style={{...coverAll, ...style}}>
-      {coverImageUrl ? <div style={coverImageStyle} /> : null}
+      {url ? <div style={coverImageStyle} /> : null}
       <div style={opaqueCoverStyle} />
     </div>
   }
 }
 
 
-class JobGroupCoverImage extends React.Component {
-  static propTypes = {
-    romeId: React.PropTypes.string.isRequired,
-  }
-
-  render() {
-    const {romeId, ...extraProps} = this.props
-    return <CoverImage {...extraProps} url={config.jobGroupImageUrl.replace('ROME_ID', romeId)} />
-  }
-}
-
-
 class RadioGroup extends React.Component {
   static propTypes = {
-    onChange: React.PropTypes.func.isRequired,
-    options: React.PropTypes.arrayOf(React.PropTypes.shape({
-      name: React.PropTypes.string.isRequired,
-      value: React.PropTypes.oneOfType([
-        React.PropTypes.bool,
-        React.PropTypes.number,
-        React.PropTypes.string,
+    onChange: PropTypes.func.isRequired,
+    options: PropTypes.arrayOf(PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      value: PropTypes.oneOfType([
+        PropTypes.bool,
+        PropTypes.number,
+        PropTypes.string,
       ]).isRequired,
     })).isRequired,
-    style: React.PropTypes.object,
-    value: React.PropTypes.oneOfType([
-      React.PropTypes.bool,
-      React.PropTypes.number,
-      React.PropTypes.string,
+    style: PropTypes.object,
+    value: PropTypes.oneOfType([
+      PropTypes.bool,
+      PropTypes.number,
+      PropTypes.string,
     ]),
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -436,9 +409,9 @@ class RadioGroup extends React.Component {
 
 class RadioButton extends React.Component {
   static propTypes = {
-    isHovered: React.PropTypes.bool,
-    isSelected: React.PropTypes.bool,
-    onClick: React.PropTypes.func,
+    isHovered: PropTypes.bool,
+    isSelected: PropTypes.bool,
+    onClick: PropTypes.func,
   }
 
   state = {
@@ -489,13 +462,13 @@ class RadioButton extends React.Component {
 
 class FieldSet extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    disabled: React.PropTypes.bool,
-    isInline: React.PropTypes.bool,
-    isValid: React.PropTypes.bool,
-    isValidated: React.PropTypes.bool,
-    label: React.PropTypes.node,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    disabled: PropTypes.bool,
+    isInline: PropTypes.bool,
+    isValid: PropTypes.bool,
+    isValidated: PropTypes.bool,
+    label: PropTypes.node,
+    style: PropTypes.object,
   }
 
   render() {
@@ -545,14 +518,14 @@ class FieldSet extends React.Component {
 // TODO: Set border radius to zero.
 class Select extends React.Component {
   static propTypes = {
-    onChange: React.PropTypes.func.isRequired,
-    options: React.PropTypes.arrayOf(React.PropTypes.shape({
-      disabled: React.PropTypes.bool,
-      name: React.PropTypes.string.isRequired,
-      value: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.number]).isRequired,
+    onChange: PropTypes.func.isRequired,
+    options: PropTypes.arrayOf(PropTypes.shape({
+      disabled: PropTypes.bool,
+      name: PropTypes.string.isRequired,
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     })).isRequired,
-    style: React.PropTypes.object,
-    value: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.number]),
+    style: PropTypes.object,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   }
 
   handleChange = event => {
@@ -586,17 +559,17 @@ const arrayToSet = array => _.reduce(array || [], (set, val) => ({...set, [val]:
 
 class CheckboxList extends React.Component {
   static propTypes = {
-    onChange: React.PropTypes.func.isRequired,
+    onChange: PropTypes.func.isRequired,
     // The sorted list of selectable options.
-    options: React.PropTypes.arrayOf(React.PropTypes.shape({
-      name: React.PropTypes.node.isRequired,
-      value: React.PropTypes.string,
+    options: PropTypes.arrayOf(PropTypes.shape({
+      name: PropTypes.node.isRequired,
+      value: PropTypes.string,
     })),
-    style: React.PropTypes.object,
-    values: React.PropTypes.arrayOf(React.PropTypes.string),
+    style: PropTypes.object,
+    values: PropTypes.arrayOf(PropTypes.string),
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   componentWillMount() {
@@ -644,9 +617,9 @@ class CheckboxList extends React.Component {
 
 class Checkbox extends React.Component {
   static propTypes = {
-    isHovered: React.PropTypes.bool,
-    isSelected: React.PropTypes.bool,
-    onClick: React.PropTypes.func,
+    isHovered: PropTypes.bool,
+    isSelected: PropTypes.bool,
+    onClick: PropTypes.func,
   }
 
   state = {
@@ -701,11 +674,11 @@ const TOGGLE_INPUTS = {
 
 class LabeledToggle extends React.Component {
   static propTypes = {
-    isSelected: React.PropTypes.bool,
-    label: React.PropTypes.node.isRequired,
-    onClick: React.PropTypes.func,
-    style: React.PropTypes.object,
-    type: React.PropTypes.oneOf(Object.keys(TOGGLE_INPUTS)).isRequired,
+    isSelected: PropTypes.bool,
+    label: PropTypes.node.isRequired,
+    onClick: PropTypes.func,
+    style: PropTypes.object,
+    type: PropTypes.oneOf(Object.keys(TOGGLE_INPUTS)).isRequired,
   }
 
   state = {
@@ -739,26 +712,31 @@ class LabeledToggle extends React.Component {
 // Abstraction for Icons from https://materialdesignicons.com/
 class Icon extends React.Component {
   static propTypes = {
-    name: React.PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
   }
 
   focus() {
-    this.refs.i.focus()
+    this.dom && this.dom.focus()
   }
 
   render () {
     const {name, ...otherProps} = this.props
-    return <i className={`mdi mdi-${name}`} {...otherProps} ref="i" />
+    return <i
+        className={`mdi mdi-${name}`} {...otherProps}
+        ref={dom => {
+          this.dom = dom
+        }} />
   }
 }
 
 
 class IconInput extends React.Component {
   static propTypes = {
-    autofocus: React.PropTypes.bool,
-    iconName: React.PropTypes.string.isRequired,
-    inputStyle: React.PropTypes.object,
-    style: React.PropTypes.object,
+    autofocus: PropTypes.bool,
+    iconName: PropTypes.string.isRequired,
+    iconStyle: PropTypes.object,
+    inputStyle: PropTypes.object,
+    style: PropTypes.object,
   }
 
   componentDidMount() {
@@ -769,7 +747,7 @@ class IconInput extends React.Component {
 
   render() {
     // eslint-disable-next-line no-unused-vars
-    const {autofocus, iconName, inputStyle, style, ...otherProps} = this.props
+    const {autofocus, iconName, iconStyle, inputStyle, style, ...otherProps} = this.props
     const iconContainer = {
       alignItems: 'center',
       backgroundColor: 'white',
@@ -784,6 +762,7 @@ class IconInput extends React.Component {
       position: 'absolute',
       right: 0,
       top: 0,
+      ...iconStyle,
     }
     return <div style={{position: 'relative', ...style}}>
       <Input
@@ -813,7 +792,8 @@ class JobSuggestWithNote extends React.Component {
       <JobSuggest {...this.props} style={{padding: 1, ...Styles.INPUT}} />
       <div style={noteStyle}>
         Vous ne trouvez pas votre métier&nbsp;? <a
-            style={linkStyle} href="https://airtable.com/shreUw3GYqAwVAA27" target="_blank">
+            style={linkStyle} href="https://airtable.com/shreUw3GYqAwVAA27"
+            target="_blank" rel="noopener noreferrer">
           Cliquez ici pour l'ajouter
         </a>.
       </div>
@@ -824,9 +804,9 @@ class JobSuggestWithNote extends React.Component {
 
 class Input extends React.Component {
   static propTypes = {
-    applyFunc: React.PropTypes.func,
-    onChange: React.PropTypes.func,
-    style: React.PropTypes.object,
+    applyFunc: PropTypes.func,
+    onChange: PropTypes.func,
+    style: PropTypes.object,
   }
 
   handleChange = event => {
@@ -856,13 +836,13 @@ class Input extends React.Component {
 
 class PieChart extends React.Component {
   static propTypes = {
-    backgroundColor: React.PropTypes.string,
-    children: React.PropTypes.node,
-    durationMillisec: React.PropTypes.number.isRequired,
-    percentage: React.PropTypes.number.isRequired,
-    size: React.PropTypes.number.isRequired,
-    strokeWidth: React.PropTypes.number.isRequired,
-    style: React.PropTypes.object,
+    backgroundColor: PropTypes.string,
+    children: PropTypes.node,
+    durationMillisec: PropTypes.number.isRequired,
+    percentage: PropTypes.number.isRequired,
+    size: PropTypes.number.isRequired,
+    strokeWidth: PropTypes.number.isRequired,
+    style: PropTypes.object,
   }
   static defaultProps = {
     durationMillisec: 1000,
@@ -925,10 +905,10 @@ class PieChart extends React.Component {
 
 class GrowingNumber extends React.Component {
   static propTypes = {
-    durationMillisec: React.PropTypes.number.isRequired,
-    isSteady: React.PropTypes.bool,
-    number: React.PropTypes.number.isRequired,
-    style: React.PropTypes.object,
+    durationMillisec: PropTypes.number.isRequired,
+    isSteady: PropTypes.bool,
+    number: PropTypes.number.isRequired,
+    style: PropTypes.object,
   }
   static defaultProps = {
     durationMillisec: 1000,
@@ -989,11 +969,11 @@ class GrowingNumber extends React.Component {
 // better, but we didn't find one yet.
 class PaddedOnMobile extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -1007,9 +987,39 @@ class PaddedOnMobile extends React.Component {
 }
 
 
+class AppearingList extends React.Component {
+  static propTypes = {
+    children: PropTypes.arrayOf(PropTypes.node.isRequired),
+    maxNumChildren: PropTypes.number,
+  }
+
+  state = {
+    isShown: false,
+  }
+
+  render() {
+    const {children, maxNumChildren, ...extraProps} = this.props
+    const {isShown} = this.state
+    const itemStyle = (index, style) => ({
+      opacity: isShown ? 1 : 0,
+      transition: `opacity 300ms ease-in ${index * 700 / children.length}ms`,
+      ...style,
+    })
+    const shownChildren = maxNumChildren ? children.splice(0, maxNumChildren) : children
+    return <div {...extraProps}>
+      <VisibilitySensor
+          active={!isShown} intervalDelay={250}
+          onChange={isShown => this.setState({isShown})} />
+      {shownChildren.map((item, index) =>
+        React.cloneElement(item, {style: itemStyle(index, item.props.style)}))}
+    </div>
+  }
+}
+
+
 export {
-  Markdown, PartnerLogos, HorizontalRule, CoverImage, FieldSet, LabeledToggle,
+  Markdown, HorizontalRule, FieldSet, LabeledToggle,
   Select, CheckboxList, Icon, Button, IconInput, RadioGroup,
   SettingsButton, JobSuggestWithNote, Input, JobGroupCoverImage, PieChart,
-  GrowingNumber, PaddedOnMobile,
+  GrowingNumber, PaddedOnMobile, AppearingList,
 }

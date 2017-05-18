@@ -4,6 +4,7 @@ import "google/protobuf/empty.proto";
 
 import "bob_emploi/frontend/api/action.proto";
 import "bob_emploi/frontend/api/config.proto";
+import "bob_emploi/frontend/api/feedback.proto";
 import "bob_emploi/frontend/api/export.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/jobboard.proto";
@@ -31,6 +32,9 @@ service FrontendService {
   // are required.
   rpc SaveLikes(User) returns (google.protobuf.Empty);
 
+  // Gives some feedback about the app or a specific part of the app.
+  rpc GiveFeedback(Feedback) returns (google.protobuf.Empty);
+
   // Delete the user and all data associated.
   rpc DeleteUser(User) returns (UserId);
 
@@ -54,13 +58,14 @@ service FrontendService {
   // Get all available tips for a piece of advice in a project.
   rpc ProjectAdviceTips(Advice) returns(AdviceTips);
 
-  // Create an export of the user's current dashboard (the input is actually only a user's ID).
-  rpc CreateDashboardExport(User) returns (DashboardExport);
-
   // Retrieve an export of the user's current dashboard
   // (the input is actually only an dashboard export's ID).
   rpc GetDashboardExport(DashboardExport) returns (DashboardExport);
 
   // Migrate a user from Mashup to Advisor (the input is actually only a user's ID).
   rpc MigrateToAdvisor(User) returns (User);
+
+  // Retrieve information about jobs whithin a job group (the input is actually
+  // only a job group's ROME ID).
+  rpc GetJobs(JobGroup) returns (JobGroup);
 }

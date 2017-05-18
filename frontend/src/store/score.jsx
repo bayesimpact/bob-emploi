@@ -1,5 +1,12 @@
 import React from 'react'
 
+import calendarImage from 'images/calendar-picto.svg'
+import competitionImage from 'images/competition-picto.svg'
+import interviewImage from 'images/interview-picto.svg'
+import jobTypeImage from 'images/job-type-picto.svg'
+import offersEvolutionImage from 'images/offers-evolution-picto.svg'
+import resumeImage from 'images/resume-picto.svg'
+
 import {totalInterviewsDisplay} from './project'
 
 
@@ -51,7 +58,7 @@ const BOB_SCORE_PARTS = [
         score: days ? reScale([150, 30], [-3, 3], days) : 0,
       }
     },
-    iconSrc: require('images/calendar-picto.svg'),
+    iconSrc: calendarImage,
     scorePartId: 'unemployment-duration',
   },
   // Job offers evolution.
@@ -67,7 +74,7 @@ const BOB_SCORE_PARTS = [
         score: roundedChange ? reScale([-40, 40], [-3, 3], jobOffersChange) : 0,
       }
     },
-    iconSrc: require('images/offers-evolution-picto.svg'),
+    iconSrc: offersEvolutionImage,
     scorePartId: 'job-offers-change',
   },
   // Percentage of long-term contracts.
@@ -91,7 +98,7 @@ const BOB_SCORE_PARTS = [
         score: reScale([10, 90], [-3, 3], percentCDI),
       }
     },
-    iconSrc: require('images/job-type-picto.svg'),
+    iconSrc: jobTypeImage,
     scorePartId: 'percent-cdi',
   },
   // IMT market stress.
@@ -115,7 +122,7 @@ const BOB_SCORE_PARTS = [
         score: reScale([.15, 1.5], [-3, 3], marketScore),
       }
     },
-    iconSrc: require('images/competition-picto.svg'),
+    iconSrc: competitionImage,
     scorePartId: 'market-stress',
   },
   // Applications per week.
@@ -128,7 +135,7 @@ const BOB_SCORE_PARTS = [
         score: score || 0,
       }
     },
-    iconSrc: require('images/resume-picto.svg'),
+    iconSrc: resumeImage,
     scorePartId: 'applications-per-week',
   },
   // Number of interviews.
@@ -189,7 +196,7 @@ const BOB_SCORE_PARTS = [
         score: -1,
       }
     },
-    iconSrc: require('images/interview-picto.svg'),
+    iconSrc: interviewImage,
     scorePartId: 'interviews',
   },
 ]

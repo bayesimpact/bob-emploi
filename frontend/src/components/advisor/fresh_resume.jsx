@@ -1,14 +1,14 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import {Colors, GrowingNumber, Styles} from 'components/theme'
 
-import {AdviceCard} from './base'
 import {ResumeAdvicePageContent} from './improve_success_rate'
 
 
 class FullAdviceCard extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   renderNumber(number, style) {
@@ -44,16 +44,13 @@ class FullAdviceCard extends React.Component {
       lineHeight: 1.4,
       marginLeft: 50,
     }
-    const reasons = ['RESUME', 'ATYPIC_PROFILE', 'FIRST_JOB_SEARCH', 'JUST_STARTED_SEARCHING']
-    return <AdviceCard reasons={reasons} {...this.props}>
-      <div style={style}>
-        {this.renderNumber(3)}
-        <div style={textStyle}>
-          C'est le nombre d'entretiens que vous pourriez obtenir avec votre
-          profil.
-        </div>
+    return <div style={style}>
+      {this.renderNumber(3)}
+      <div style={textStyle}>
+        C'est le nombre d'entretiens que vous pourriez obtenir avec votre
+        profil.
       </div>
-    </AdviceCard>
+    </div>
   }
 }
 

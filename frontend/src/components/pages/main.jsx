@@ -2,7 +2,7 @@ require('normalize.css')
 require('styles/App.css')
 
 import React from 'react'
-import ReactDOM from 'react-dom'
+import PropTypes from 'prop-types'
 import _ from 'underscore'
 import {connect, Provider} from 'react-redux'
 import {IndexRoute, Redirect, Router, Route, browserHistory} from 'react-router'
@@ -24,6 +24,7 @@ import {ProfilePage} from './profile'
 import {ProjectPage} from './project'
 import {DashboardExportPage} from './dashboard_export'
 import {PrivacyPage} from './privacy'
+import {ProfessionalsPage} from './professionals'
 import {TermsAndConditionsPage} from './terms'
 import {UpdatePage} from './update'
 import {VisionPage} from './vision'
@@ -41,11 +42,6 @@ import {mainSelector, onboardingComplete} from 'store/main_selectors'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {createPageviewTracker} from 'store/google_analytics'
 
-// Needed for onTouchTap
-// Can go away when react 1.0 release
-const injectTapEventPlugin = require('react-tap-event-plugin')
-injectTapEventPlugin()
-
 const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
 // Enable devTools middleware.
 const finalCreateStore = composeWithDevTools(
@@ -61,23 +57,25 @@ const store = finalCreateStore(
     user,
   })
 )
+// TODO(pascal): Hot reload the store as well, see
+// https://github.com/reactjs/react-redux/releases/tag/v2.0.0.
 
 // Create an enhanced history that syncs navigation events with the store.
 const history = syncHistoryWithStore(browserHistory, store)
 
-// Main application template
-// TODO: Move app into its own component to make this file smaller and more pure in its purpose.
-class App extends React.Component {
+// The main layout containing any page. Especially it handles the error message
+// bar and the login modal.
+class PageHolderBase extends React.Component {
   static propTypes = {
-    asyncState: React.PropTypes.object.isRequired,
-    children: React.PropTypes.node,
-    dispatch: React.PropTypes.func.isRequired,
-    routing: React.PropTypes.object.isRequired,
-    user: React.PropTypes.object.isRequired,
+    asyncState: PropTypes.object.isRequired,
+    children: PropTypes.node,
+    dispatch: PropTypes.func.isRequired,
+    routing: PropTypes.object.isRequired,
+    user: PropTypes.object.isRequired,
   }
 
   static childContextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   constructor(props) {
@@ -163,26 +161,28 @@ class App extends React.Component {
     const errorMessage = this.props.asyncState.errorMessage
     return (
       <MuiThemeProvider>
-        <div>
-          {this.props.children}
-          <LoginModal onLogin={this.handleLogin} />
-          <Snackbar
-              open={!!errorMessage} message={errorMessage || ''}
-              bodyStyle={{maxWidth: 800}}
-              autoHideDuration={4000} onRequestClose={this.hideToasterMessage()} />
-        </div>
+        <StyleRoot>
+          <div style={{backgroundColor: Colors.BACKGROUND_GREY}}>
+            {this.props.children}
+            <LoginModal onLogin={this.handleLogin} />
+            <Snackbar
+                open={!!errorMessage} message={errorMessage || ''}
+                bodyStyle={{maxWidth: 800}}
+                autoHideDuration={4000} onRequestClose={this.hideToasterMessage()} />
+          </div>
+        </StyleRoot>
       </MuiThemeProvider>
     )
   }
 }
 
-const AppWrapped = connect(mainSelector)(App)
+const PageHolder = connect(mainSelector)(PageHolderBase)
 
 
 class MyRouterBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    user: React.PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    user: PropTypes.object.isRequired,
   }
 
   isUserMissing = () => {
@@ -268,7 +268,7 @@ class MyRouterBase extends React.Component {
             trackPageview()
           }}
           createElement={this.createElement}>
-        <Route path={Routes.ROOT} component={AppWrapped}>
+        <Route path={Routes.ROOT} component={PageHolder}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
           <Route onEnter={this.requireUserCheck}>
             <IndexRoute component={mainConnect(LandingPage)} />
@@ -276,6 +276,7 @@ class MyRouterBase extends React.Component {
             <Route path={Routes.CONTRIBUTION_PAGE} component={mainConnect(ContributionPage)} />
             <Route path={Routes.COOKIES_PAGE} component={CookiesPage} />
             <Route path={Routes.PRIVACY_PAGE} component={PrivacyPage} />
+            <Route path={Routes.PROFESSIONALS_PAGE} component={mainConnect(ProfessionalsPage)} />
             <Route path={Routes.TERMS_AND_CONDITIONS_PAGE} component={TermsAndConditionsPage} />
             <Route path={Routes.VISION_PAGE} component={mainConnect(VisionPage)} />
             <Route path={Routes.WAITING_PAGE} component={WaitingPage} />
@@ -299,14 +300,16 @@ class MyRouterBase extends React.Component {
 }
 const MyRouter = connect(({user}) => ({user}))(MyRouterBase)
 
-// Render the main component into the dom.
-// The Provider puts the store on a `Context`, so we can connect other components to it.
-ReactDOM.render(
-  <div style={{backgroundColor: Colors.BACKGROUND_GREY}}>
-    <StyleRoot>
-      <Provider store={store}>
-        <MyRouter />
-      </Provider>
-    </StyleRoot>
-  </div>,
-  document.getElementById('app'))
+
+class App extends React.Component {
+  render() {
+    // The Provider puts the store on a `Context`, so we can connect other
+    // components to it.
+    return <Provider store={store}>
+      <MyRouter />
+    </Provider>
+  }
+}
+
+
+export {App}

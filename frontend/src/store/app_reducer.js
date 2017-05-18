@@ -1,9 +1,9 @@
 import Cookies from 'js-cookie'
 
 import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
-        GET_DASHBOARD_EXPORT, CREATE_DASHBOARD_EXPORT, GET_JOB_BOARDS,
-        OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL,
-        ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, REFRESH_USER_DATA,
+        GET_DASHBOARD_EXPORT, GET_JOB_BOARDS,
+        OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS,
+        ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION,
         LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS} from './actions'
 
 // Name of the cookie to accept cookies.
@@ -21,7 +21,8 @@ const appInitialData = {
   jobRequirements: {},
   loginModal: null,
   newProjectProps: {},
-  scheduledUserDataRefreshTimeout: null,
+  // Cache for specific jobs.
+  specificJobs: {},
   userHasAcceptedCookiesUsage: Cookies.get(ACCEPT_COOKIES_COOKIE_NAME),
 }
 
@@ -42,6 +43,17 @@ function app(state=appInitialData, action) {
         }
       }
       break
+    case GET_JOBS:
+      if (action.status === 'success' && action.romeId) {
+        return {
+          ...state,
+          specificJobs: {
+            ...state.specificJobs,
+            [action.romeId]: action.response,
+          },
+        }
+      }
+      break
     case GET_PROJECT_REQUIREMENTS:
       if (action.status === 'success' && action.project) {
         return {
@@ -53,8 +65,7 @@ function app(state=appInitialData, action) {
         }
       }
       break
-    case GET_DASHBOARD_EXPORT: // Fallthrough intended.
-    case CREATE_DASHBOARD_EXPORT:
+    case GET_DASHBOARD_EXPORT:
       if (action.status === 'success') {
         return {
           ...state,
@@ -76,22 +87,9 @@ function app(state=appInitialData, action) {
         ...state,
         isMobileVersion: true,
       }
-    case REFRESH_USER_DATA:
-      if (!action.timeoutHandle) {
-        return state
-      }
-      clearTimeout(state.scheduledUserDataRefreshTimeout)
-      return {
-        ...state,
-        scheduledUserDataRefreshTimeout: action.timeoutHandle,
-      }
     case LOGOUT:  // Fallthrough intended.
     case DELETE_USER_DATA:
-      clearTimeout(state.scheduledUserDataRefreshTimeout)
-      return {
-        ...state,
-        scheduledUserDataRefreshTimeout: null,
-      }
+      return state
     case GET_ADVICE_TIPS:
       if (action.status !== 'success' || !action.advice || !action.project) {
         return state

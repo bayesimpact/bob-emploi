@@ -1,11 +1,27 @@
 import React from 'react'
-import {ShortKey} from 'components/shortkey'
+import PropTypes from 'prop-types'
+import {Link} from 'react-router'
 
 import config from 'config'
-import {StaticPage} from 'components/static'
-import {Colors, SmoothTransitions} from 'components/theme'
+
 import {openLoginModal, loadLandingPageAction} from 'store/actions'
+
+import advisorScreenshot from 'images/screenshot-advisor.png'
+import dataScreenshot from 'images/screenshot-data.png'
+import echappeeImage from 'images/echappee-ico.png'
+import etalabImage from 'images/etalab-ico.png'
+import franceEngageImage from 'images/francengage-ico.png'
+import poleEmploiImage from 'images/ple-emploi-ico.png'
+import rcoImage from 'images/rco-ico.png'
+import sncImage from 'images/snc-ico.png'
+import tipsScreenshot from 'images/screenshot-tips.png'
+
 import {LoginButton} from 'components/login'
+import {ShortKey} from 'components/shortkey'
+import {StaticPage} from 'components/static'
+import {TestimonialCard, Testimonials} from 'components/testimonials'
+import {Colors} from 'components/theme'
+import {Routes} from 'components/url'
 
 
 const emStyle = {
@@ -72,11 +88,11 @@ const sectionTitleStyle = isMobileVersion => ({
 
 class TitleSection extends React.Component {
   static propTypes = {
-    style: React.PropTypes.object,
+    style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
-    landingPageKind: React.PropTypes.oneOf(kinds).isRequired,
+    isMobileVersion: PropTypes.bool,
+    landingPageKind: PropTypes.oneOf(kinds).isRequired,
   }
 
   render() {
@@ -98,9 +114,8 @@ class TitleSection extends React.Component {
     const buttonStyle = {
       fontSize: 15,
       letterSpacing: 1,
-      marginRight: 15,
       marginTop: isMobileVersion ? 10 : 0,
-      padding: '16px 28px 12px',
+      padding: '14px 28px 12px',
       textTransform: 'uppercase',
     }
     const titleStyle = {
@@ -118,6 +133,11 @@ class TitleSection extends React.Component {
         <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="title">
           Commencer
         </LoginButton>
+        <div style={{fontSize: 15, marginTop: 15}}>
+          <Link to={Routes.PROFESSIONALS_PAGE} style={{color: Colors.COOL_GREY}}>
+            Vous êtes un accompagnant&nbsp;?
+          </Link>
+        </div>
       </div>
     </section>
   }
@@ -126,7 +146,7 @@ class TitleSection extends React.Component {
 
 class ScreenshotsSection extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   renderScreenshot(description, flexDirection, screenshotSrc) {
@@ -184,18 +204,18 @@ class ScreenshotsSection extends React.Component {
 
       {this.renderScreenshot(<span>
         Découvrez ce qui va vraiment <strong>booster votre recherche d'emploi</strong>
-      </span>, 'row-reverse', require('images/screenshot-advisor.png'))}
+      </span>, 'row-reverse', advisorScreenshot)}
 
       {this.renderScreenshot(<span>
         Nos recommandations utilisent l'analyse <strong>de millions de
         données</strong> et de <strong>retours du terrain</strong> pour être
         plus pertinentes
-      </span>, 'row', require('images/screenshot-data.png'))}
+      </span>, 'row', dataScreenshot)}
 
       {this.renderScreenshot(<span>
         <strong>Foncez</strong> vers l'emploi grâce à votre <strong>plan
         d'action personnalisé</strong>
-      </span>, 'row-reverse', require('images/screenshot-tips.png'))}
+      </span>, 'row-reverse', tipsScreenshot)}
     </section>
   }
 }
@@ -203,7 +223,7 @@ class ScreenshotsSection extends React.Component {
 
 class BobHelpsYouSection extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -235,196 +255,34 @@ class BobHelpsYouSection extends React.Component {
 }
 
 
-class TestimonialCard extends React.Component {
-  static propTypes = {
-    author: React.PropTypes.string.isRequired,
-    children: React.PropTypes.node,
-    isAuthorMan: React.PropTypes.bool,
-    style: React.PropTypes.object,
-  }
-
-  static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
-  }
-
-  render() {
-    const {author, children, isAuthorMan} = this.props
-    const {isMobileVersion} = this.context
-    const horizontalPadding = isMobileVersion ? 30 : 75
-    const style = {
-      backgroundColor: '#fff',
-      borderRadius: 10,
-      color: Colors.DARK_TWO,
-      fontSize: 18,
-      fontStyle: 'italic',
-      lineHeight: 1.44,
-      maxWidth: 600,
-      minHeight: 280,
-      padding: isMobileVersion ? '30px 30px' : `60px ${horizontalPadding}px 0`,
-      position: 'relative',
-      ...this.props.style,
-    }
-    const authorStyle = {
-      alignItems: 'center',
-      bottom: 50,
-      color: Colors.DARK,
-      display: 'flex',
-      fontSize: 14,
-      fontStyle: 'initial',
-      fontWeight: 500,
-      left: 0,
-      padding: `0 ${horizontalPadding}px`,
-      position: 'absolute',
-    }
-    const authorPicto = <img style={{marginRight: 15}} src={isAuthorMan ?
-      require('images/man-icon.svg') : require('images/woman-icon.svg')} />
-    return <div style={style}>
-      {children}
-      <div style={authorStyle}>{authorPicto} {author}</div>
-    </div>
-  }
-}
-
-
-const testimonialCards = [
-  <TestimonialCard author="Jean, 45 ans" style={{margin: 'auto'}} isAuthorMan={true}>
-    Merci ! Grâce aux conseils simples mais avisés de votre site j'ai
-    rapidement été contacté par un recruteur.
-  </TestimonialCard>,
-  <TestimonialCard author="Laurie, 36 ans" style={{margin: 'auto'}}>
-    J'ai été bluffée par la pertinence du plan d'action proposé.
-  </TestimonialCard>,
-  <TestimonialCard author="Sofiane, 27 ans" style={{margin: 'auto'}}>
-    Organisation, soutien, motivation, {config.productName} m'a aidée à savoir
-    quoi faire et comment.
-  </TestimonialCard>,
-]
-
-
 class TestimonialsSection extends React.Component {
-  static propTypes = {
-    carouselAutoRotationDurationMs: React.PropTypes.number.isRequired,
-  }
-  static defaultProps = {
-    carouselAutoRotationDurationMs: 5000,
-  }
-  static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
-  }
-
-  state = {
-    isTransitionBlocked: false,
-    previousTestimonial: null,
-    shownTestimonial: null,
-    shownTestimonialIndex: -1,
-  }
-
-  componentWillMount() {
-    this.pickTestimonial(0)
-    this.resetRotationTimer()
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.interval)
-  }
-
-  resetRotationTimer() {
-    const {carouselAutoRotationDurationMs} = this.props
-    clearInterval(this.interval)
-    this.interval = setInterval(
-      () => this.pickTestimonial(this.state.shownTestimonialIndex + 1),
-      carouselAutoRotationDurationMs)
-  }
-
-  pickTestimonial = (index, isManullyPicked) => {
-    const shownTestimonialIndex = (index + testimonialCards.length) % testimonialCards.length
-    if (isManullyPicked) {
-      this.resetRotationTimer()
-    }
-    if (shownTestimonialIndex === this.state.shownTestimonialIndex) {
-      return
-    }
-    this.setState({
-      isTransitionBlocked: true,
-      previousTestimonial: this.state.shownTestimonial,
-      previousTestimonialIndex: this.state.shownTestimonialIndex,
-      shownTestimonial: testimonialCards[shownTestimonialIndex] || null,
-      shownTestimonialIndex,
-    }, () => setTimeout(() => this.setState({isTransitionBlocked: false}), false))
-  }
-
-  renderBullets() {
-    const containerStyle = {
-      marginBottom: 40,
-      padding: 0,
-      textAlign: 'center',
-    }
-    const style = isSelected => ({
-      backgroundColor: isSelected ? Colors.CHARCOAL_GREY : Colors.PINKISH_GREY,
-      borderRadius: 6,
-      cursor: 'pointer',
-      display: 'inline-block',
-      height: 6,
-      margin: 4,
-      width: 6,
-    })
-    return <ol style={containerStyle}>
-      {testimonialCards.map((card, i) => <li
-          key={'bullet-' + i} style={style(i === this.state.shownTestimonialIndex)}
-          onClick={() => this.pickTestimonial(i, true)} />)}
-    </ol>
-  }
-
   render() {
     const {isMobileVersion} = this.context
-    const {isTransitionBlocked, previousTestimonial, previousTestimonialIndex,
-      shownTestimonial, shownTestimonialIndex} = this.state
     const headerStyle = {
       color: Colors.SLATE,
       fontSize: isMobileVersion ? 30 : 35,
       padding: isMobileVersion ? '45px 30px' : '70px 100px',
       textAlign: 'center',
     }
-    const style = {
-      height: 280,
-      margin: 'auto',
-      overflow: 'hidden',
-      padding: isMobileVersion ? '45px 30px 10px' : '30px 100px 10px',
-      position: 'relative',
-    }
-    const containerStyle = {
-      bottom: 0,
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      ...SmoothTransitions,
-    }
-    const leavingStyle = {
-      opacity: isTransitionBlocked ? 1 : 0,
-      transform: `translateX(${isTransitionBlocked ? '0' : '-500px'})`,
-      ...containerStyle,
-    }
-    const arrivingStyle = {
-      opacity: isTransitionBlocked ? 0 : 1,
-      transform: `translateX(${isTransitionBlocked ? '500px' : '0'})`,
-      ...containerStyle,
-    }
-    return <section>
+    return <section style={{paddingBottom: 40}}>
       <header style={headerStyle}>
         Ils ont essayé {config.productName}, et ont <span style={{color:
           Colors.SKY_BLUE}}>retrouvé du travail</span>
       </header>
-      <div style={style}>
-        {previousTestimonialIndex === shownTestimonialIndex ? null :
-        <div style={leavingStyle} key={previousTestimonialIndex}>
-          {previousTestimonial}
-        </div>}
-        <div style={arrivingStyle} key={shownTestimonialIndex}>
-          {shownTestimonial}
-        </div>
-      </div>
-      {this.renderBullets()}
+      <Testimonials>
+        <TestimonialCard author="Jean, 45 ans" isAuthorMan={true}>
+          Merci ! Grâce aux conseils simples mais avisés de votre site j'ai
+          rapidement été contacté par un recruteur.
+        </TestimonialCard>
+        <TestimonialCard author="Laurie, 36 ans">
+          J'ai été bluffée par la pertinence du plan d'action proposé.
+        </TestimonialCard>
+        <TestimonialCard author="Sofiane, 27 ans">
+          Organisation, soutien, motivation, {config.productName} m'a aidée à savoir
+          quoi faire et comment.
+        </TestimonialCard>
+      </Testimonials>
+    ]
     </section>
   }
 }
@@ -432,27 +290,27 @@ class TestimonialsSection extends React.Component {
 
 const partnersContent = [
   {
-    imageSrc: require('images/ple-emploi-ico.png'),
+    imageSrc: poleEmploiImage,
     name: 'Pôle Emploi',
   },
   {
-    imageSrc: require('images/francengage-ico.png'),
+    imageSrc: franceEngageImage,
     name: "La France s'engage",
   },
   {
-    imageSrc: require('images/snc-ico.png'),
+    imageSrc: sncImage,
     name: 'Solidarités nouvelles contre le chômage',
   },
   {
-    imageSrc: require('images/rco-ico.png'),
+    imageSrc: rcoImage,
     name: 'Réseau des CARIF-OREF',
   },
   {
-    imageSrc: require('images/echappee-ico.png'),
+    imageSrc: echappeeImage,
     name: "L'Échappée Volée",
   },
   {
-    imageSrc: require('images/etalab-ico.png'),
+    imageSrc: etalabImage,
     name: 'Etalab',
   },
 ]
@@ -460,7 +318,7 @@ const partnersContent = [
 
 class PartnersSection extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -496,8 +354,8 @@ class PartnersSection extends React.Component {
 
 class PartnerCard extends React.Component {
   static propTypes = {
-    imageSrc: React.PropTypes.string.isRequired,
-    name: React.PropTypes.string.isRequired,
+    imageSrc: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
   };
 
   render() {
@@ -528,8 +386,8 @@ class PartnerCard extends React.Component {
 
 class LandingPage extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    routing: React.PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    routing: PropTypes.object.isRequired,
   }
 
   state = {
@@ -537,7 +395,7 @@ class LandingPage extends React.Component {
   }
 
   static childContextTypes = {
-    landingPageKind: React.PropTypes.oneOf(kinds).isRequired,
+    landingPageKind: PropTypes.oneOf(kinds).isRequired,
   }
 
   getChildContext() {

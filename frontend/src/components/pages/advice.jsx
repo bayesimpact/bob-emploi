@@ -1,81 +1,45 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import {browserHistory} from 'react-router'
-import VisibilitySensor from 'react-visibility-sensor'
 import Radium from 'radium'
 
-import {advicePageIsShown, getAdviceTips, moveUserDatesBackOneDay, selectAdvice,
-        showAllTips} from 'store/actions'
+import {advicePageIsShown, moveUserDatesBackOneDay, selectAdvice} from 'store/actions'
 import {getAdviceById} from 'store/project'
 
-import {Action, ActionDescriptionModal} from 'components/actions'
-import {AdvicePageContent, AdviceCard} from 'components/advisor'
+import {AdvicePageContent} from 'components/advisor'
 import {PageWithNavigationBar} from 'components/navigation'
 import {ShortKey} from 'components/shortkey'
-import {Colors, Icon, JobGroupCoverImage, Button, PaddedOnMobile,
-        SmoothTransitions} from 'components/theme'
+import {Colors, Icon, JobGroupCoverImage, Button, SmoothTransitions} from 'components/theme'
+import {TipsList} from 'components/tips'
 import {Routes} from 'components/url'
 
 import adviceModuleProperties from 'components/advisor/data/advice_modules.json'
 
 const RadiumIcon = Radium(Icon)
 
-const DEFAULT_TIPS_SHOWN = 5
-
-// Delay between showing two tips in ms.
-const DELAY_BETWEEN_TIPS = 150
-
 const redirectToProject = projectId => {
   browserHistory.replace(`${Routes.PROJECT_PAGE}/${projectId}`)
 }
 
 
-class AppearingComponent extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node,
-  }
-  state = {
-    opacity: 0,
-  }
-
-  componentWillMount() {
-    this.timeout = setTimeout(() => this.setState({opacity: 1}), 100)
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.timeout)
-  }
-
-  render() {
-    const style = {
-      opacity: this.state.opacity,
-      transition: 'opacity 300ms ease-in 300ms',
-    }
-    return <div style={style}>{this.props.children}</div>
-  }
-}
-
-
 class AdvicePage extends React.Component {
   static propTypes = {
-    app: React.PropTypes.object.isRequired,
-    dispatch: React.PropTypes.func.isRequired,
-    params: React.PropTypes.shape({
-      adviceId: React.PropTypes.string.isRequired,
-      projectId: React.PropTypes.string.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    params: PropTypes.shape({
+      adviceId: PropTypes.string.isRequired,
+      projectId: PropTypes.string.isRequired,
     }),
-    user: React.PropTypes.object.isRequired,
+    user: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   state = {
     advice: null,
     canSideBarBeHidden: false,
     isSideBarShown: false,
-    numTipsShown: 0,
-    openTip: null,
     project: null,
   }
 
@@ -113,7 +77,6 @@ class AdvicePage extends React.Component {
     if (!this.state.project || !this.state.advice ||
         this.state.project.projectId !== projectId || this.state.advice.adviceId !== adviceId) {
       dispatch(advicePageIsShown(project, advice))
-      dispatch(getAdviceTips(project, advice))
     }
     this.setState({advice, project})
   }
@@ -122,27 +85,8 @@ class AdvicePage extends React.Component {
     redirectToProject(this.state.project.projectId)
   }
 
-  showNTips(totalNumberOfTips) {
-    const {numTipsShown} = this.state
-    if (numTipsShown >= totalNumberOfTips) {
-      return
-    }
-    this.setState({numTipsShown: numTipsShown + 1})
-    clearTimeout(this.timeout)
-    this.timeout = setTimeout(() => {
-      this.showNTips(totalNumberOfTips)
-    }, DELAY_BETWEEN_TIPS)
-  }
-
-  handleShowAllTipsClick = numberTips => () => {
-    const {advice, project} = this.state
-    const {dispatch} = this.props
-    dispatch(showAllTips(project, advice))
-    this.showNTips(numberTips)
-  }
-
   renderBackground() {
-    const {project} = this.state
+    const {advice, project} = this.state
     const {isMobileVersion} = this.context
     if (isMobileVersion || !project) {
       // No background on mobile.
@@ -158,7 +102,7 @@ class AdvicePage extends React.Component {
       justifyContent: 'center',
       minHeight: 140,
       padding: '20px 0',
-      position: 'absolute',
+      position: 'relative',
       textAlign: 'center',
       width: '100%',
       zIndex: 0,
@@ -171,12 +115,15 @@ class AdvicePage extends React.Component {
             left: Colors.CHARCOAL_GREY,
             middle: Colors.CHARCOAL_GREY,
             right: 'rgba(56, 63, 81, 0.7)'}} />
+      <div style={{fontSize: 30, fontStyle: 'italic'}}>
+        {adviceModuleProperties[advice.adviceId].title || ''}
+      </div>
     </div>
   }
 
   renderContent() {
     const {advice, project} = this.state
-    const {user, ...extraProps} = this.props
+    const {user} = this.props
     if (!project || !advice) {
       return null
     }
@@ -189,77 +136,9 @@ class AdvicePage extends React.Component {
     }
 
     return <div style={style}>
-      <AdviceCard
-          {...extraProps} project={project} advice={advice} profile={user.profile}
-          isInAdvicePage={true} />
       <AdvicePageContent
           project={project} advice={advice} profile={user.profile}
           style={{margin: 'auto', maxWidth: 700}} />
-    </div>
-  }
-
-  renderTipListOrText(tips, text) {
-    const {numTipsShown} = this.state
-    if (!tips.length) {
-      const notipsStyle = {
-        color: Colors.CHARCOAL_GREY,
-        fontSize: 13,
-        fontStyle: 'italic',
-      }
-      return <div style={notipsStyle}>{text}</div>
-    }
-    const showMoreTipsStyle = {
-      display: 'flex',
-      justifyContent: 'center',
-      marginTop: 20,
-    }
-    const tipsShown = tips.slice(0, numTipsShown)
-
-    return <div>
-      <VisibilitySensor
-          active={numTipsShown === 0} intervalDelay={250} delayedCall={true}
-          onChange={() => this.showNTips(DEFAULT_TIPS_SHOWN)} />
-      {tipsShown.map(tip => <AppearingComponent key={tip.actionId}><Action
-          action={tip}
-          onOpen={() => this.setState({openTip: tip})} /></AppearingComponent>)}
-      {(numTipsShown === DEFAULT_TIPS_SHOWN && tips.length > DEFAULT_TIPS_SHOWN) ?
-        <div style={showMoreTipsStyle}>
-          <Button onClick={this.handleShowAllTipsClick(tips.length)} type="back">
-            Afficher d'autres astuces
-          </Button>
-        </div> : null
-      }
-    </div>
-  }
-
-  // Tells the users when they will get the next tip.
-  renderNextTipTime() {
-    return <span style={{color: Colors.CHARCOAL_GREY, fontSize: 14}}>Prochaine astuce demain
-        à <strong><em>08h00</em></strong></span>
-  }
-
-  getTips() {
-    const {advice, project} = this.state
-    const {adviceTips} = this.props.app
-    return (adviceTips[project.projectId] || {})[advice.adviceId] || []
-  }
-
-  renderTips(style) {
-    const {advice} = this.state
-    if (!advice) {
-      return null
-    }
-    const titleStyle = {
-      color: Colors.CHARCOAL_GREY,
-      fontSize: 16,
-      marginBottom: 10,
-    }
-    const {goal} = adviceModuleProperties[advice.adviceId] || {}
-    return <div style={style}>
-      <div style={titleStyle}>
-        <PaddedOnMobile>Voici quelques astuces pour {goal}&nbsp;:</PaddedOnMobile>
-      </div>
-      {this.renderTipListOrText(this.getTips(), 'Aucune astuce')}
     </div>
   }
 
@@ -323,7 +202,7 @@ class AdvicePage extends React.Component {
   }
 
   render() {
-    const {canSideBarBeHidden} = this.state
+    const {advice, canSideBarBeHidden, project} = this.state
     const {isMobileVersion} = this.context
     const isSideBarFixed = !canSideBarBeHidden && !isMobileVersion
     const sideBarContainerStyle = isSideBarFixed ? {
@@ -347,13 +226,9 @@ class AdvicePage extends React.Component {
         {this.renderSideBar()}
         <div style={contentStyle}>
           {this.renderBackground()}
-          <ActionDescriptionModal
-              action={this.state.openTip}
-              onClose={() => this.setState({openTip: null})}
-              isShown={!!this.state.openTip} />
           <div style={{margin: 'auto', maxWidth: 950}}>
             {this.renderContent()}
-            {this.renderTips({margin: '60px 0'})}
+            <TipsList advice={advice} project={project} style={{margin: '60px 0'}} />
           </div>
         </div>
       </div>
@@ -364,15 +239,15 @@ class AdvicePage extends React.Component {
 
 class SideBarBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    onBack: React.PropTypes.func.isRequired,
-    onClose: React.PropTypes.func,
-    project: React.PropTypes.object.isRequired,
-    selectedAdviceId: React.PropTypes.string,
-    style: React.PropTypes.object,
+    dispatch: PropTypes.func.isRequired,
+    onBack: PropTypes.func.isRequired,
+    onClose: PropTypes.func,
+    project: PropTypes.object.isRequired,
+    selectedAdviceId: PropTypes.string,
+    style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   goToOtherAdvice = advice => {
@@ -390,6 +265,8 @@ class SideBarBase extends React.Component {
     const containerStyle = {
       backgroundColor: Colors.SLATE,
       boxShadow: '2px 0 0 0 rgba(0, 0, 0, 0.1)',
+      display: 'flex',
+      flexDirection: 'column',
       ...style,
     }
     const backButtonStyle = {
@@ -414,10 +291,12 @@ class SideBarBase extends React.Component {
           <RadiumIcon name="close" onClick={onClose} style={closeButtonStyle} /> :
           <BackButton onClick={onBack} style={backButtonStyle} />}
       </header>
-      {(project.advices || []).map(advice => <SideBarLink
-          key={advice.adviceId} advice={advice}
-          isSelected={selectedAdviceId === advice.adviceId}
-          onClick={() => this.goToOtherAdvice(advice)} />)}
+      <div style={{flex: 1, overflow: 'auto'}}>
+        {(project.advices || []).map(advice => <SideBarLink
+            key={advice.adviceId} advice={advice}
+            isSelected={selectedAdviceId === advice.adviceId}
+            onClick={() => this.goToOtherAdvice(advice)} />)}
+      </div>
     </nav>
   }
 }
@@ -426,7 +305,7 @@ const SideBar = connect()(SideBarBase)
 
 class BackButton extends React.Component {
   static propTypes = {
-    style: React.PropTypes.object,
+    style: PropTypes.object,
   }
 
   render() {
@@ -454,9 +333,9 @@ class BackButton extends React.Component {
 
 class SideBarLinkBase extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
-    isSelected: React.PropTypes.bool,
-    style: React.PropTypes.object,
+    advice: PropTypes.object.isRequired,
+    isSelected: PropTypes.bool,
+    style: PropTypes.object,
   }
 
   state = {

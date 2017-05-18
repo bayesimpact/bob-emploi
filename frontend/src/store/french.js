@@ -58,3 +58,33 @@ export const inCityPrefix = fullName => {
     prefix: 'à ',
   }
 }
+
+
+// Compute the prefix in front of a city name when writing about "of City C",
+// e.g. "Toulouse" => "de ", "Le Mans", "du ". Also return the part of the city
+// name without the prefix.
+export const ofCityPrefix = fullName => {
+  if (fullName.match(/^Le /)) {
+    return {
+      cityName: fullName.substr(3),
+      prefix: 'du ',
+    }
+  }
+  if (fullName.match(/^Les /)) {
+    return {
+      cityName: fullName.substr(4),
+      prefix: 'des ',
+    }
+  }
+  const matches = fullName.match(/^L(a |')(.*)/)
+  if (matches) {
+    return {
+      cityName: matches[2],
+      prefix: 'de l' + lowerFirstLetter(matches[1]),
+    }
+  }
+  return {
+    cityName: fullName,
+    prefix: 'de ',
+  }
+}

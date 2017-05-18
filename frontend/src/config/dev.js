@@ -14,6 +14,7 @@ const config = {
   helpRequestUrl: 'https://aide.bob-emploi.fr/hc/fr/requests/new',
   jobGroupImageUrl: 'https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/ROME_ID.jpg',
   productName: 'Bob emploi DEV',
+  zendeskDomain: 'bob-emploi.zendesk.com',
 }
 
 export default config

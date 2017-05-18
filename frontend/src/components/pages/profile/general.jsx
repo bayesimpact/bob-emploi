@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import _ from 'underscore'
 
 import {DEGREE_OPTIONS, getFamilySituationOptions} from 'store/user'
@@ -21,8 +22,8 @@ const hasHandicapOptions = [
 
 class GeneralStep extends React.Component {
   static propTypes = {
-    featuresEnabled: React.PropTypes.object,
-    isShownAsStepsDuringOnboarding: React.PropTypes.bool,
+    featuresEnabled: PropTypes.object,
+    isShownAsStepsDuringOnboarding: PropTypes.bool,
   }
 
   componentWillMount() {
@@ -138,8 +139,8 @@ class GeneralStep extends React.Component {
 
 class BirthYearSelector extends React.Component {
   static propTypes = {
-    style: React.PropTypes.object,
-    value: React.PropTypes.number,
+    style: PropTypes.object,
+    value: PropTypes.number,
   }
 
   componentWillMount() {

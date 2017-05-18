@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 
@@ -27,14 +28,14 @@ const PAGE_VIEW_STEPS = [
 
 class OnboardingView extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    onNewPage: React.PropTypes.func.isRequired,
-    onProfileSave: React.PropTypes.func.isRequired,
-    stepName: React.PropTypes.string,
-    userProfile: React.PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    onNewPage: PropTypes.func.isRequired,
+    onProfileSave: PropTypes.func.isRequired,
+    stepName: PropTypes.string,
+    userProfile: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   componentWillReceiveProps(nextProps) {
@@ -46,7 +47,7 @@ class OnboardingView extends React.Component {
 
   maybeUpdateProfile(stepUpdates) {
     const {onProfileSave, stepName} = this.props
-    const {type} = getOnboardingStep(Routes.PROFILE_PAGE, stepName)
+    const {isLastProjectStep, type} = getOnboardingStep(Routes.PROFILE_PAGE, stepName)
     const profileUpdates = {}
     // Filter fields of stepUpdates to keep only the ones that are part of the profile.
     for (const field in USER_PROFILE_FIELDS) {
@@ -54,7 +55,7 @@ class OnboardingView extends React.Component {
         profileUpdates[field] = stepUpdates[field]
       }
     }
-    onProfileSave(profileUpdates, type)
+    onProfileSave(profileUpdates, type, isLastProjectStep)
   }
 
   handleSubmit = stepUpdates => {
@@ -96,9 +97,9 @@ class OnboardingView extends React.Component {
 
 class PageView extends React.Component {
   static propTypes = {
-    featuresEnabled: React.PropTypes.object,
-    onChange: React.PropTypes.func.isRequired,
-    userProfile: React.PropTypes.object.isRequired,
+    featuresEnabled: PropTypes.object,
+    onChange: PropTypes.func.isRequired,
+    userProfile: PropTypes.object.isRequired,
   }
 
   state = {
@@ -139,10 +140,10 @@ class PageView extends React.Component {
 
 class ProfilePage extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    location: React.PropTypes.object.isRequired,
-    params: React.PropTypes.object.isRequired,
-    user: React.PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    location: PropTypes.object.isRequired,
+    params: PropTypes.object.isRequired,
+    user: PropTypes.object.isRequired,
   }
 
   componentWillMount() {
@@ -155,9 +156,9 @@ class ProfilePage extends React.Component {
     }
   }
 
-  handleProfileSave = (userProfileUpdates, actionType) => {
+  handleProfileSave = (userProfileUpdates, actionType, shouldNotSaveUser) => {
     const {dispatch} = this.props
-    dispatch(setUserProfile(userProfileUpdates, true, actionType)).then(() => {
+    dispatch(setUserProfile(userProfileUpdates, !shouldNotSaveUser, actionType)).then(() => {
       if (!this.state.isShownAsStepsDuringOnboarding) {
         dispatch(displayToasterMessage('Modifications sauvegardées.'))
       }
@@ -171,12 +172,16 @@ class ProfilePage extends React.Component {
       backgroundColor: Colors.BACKGROUND_GREY,
     }
     return <PageWithNavigationBar
-          style={style} page="profile" isContentScrollable={true} ref="page">
+          style={style} page="profile" isContentScrollable={true}
+          ref={page => {
+            this.page = page
+          }}
+          isChatButtonShown={!isShownAsStepsDuringOnboarding}>
       {isShownAsStepsDuringOnboarding ? (
         <OnboardingView
             dispatch={dispatch}
             onProfileSave={this.handleProfileSave}
-            onNewPage={() => this.refs.page.scrollTo(0)}
+            onNewPage={() => this.page && this.page.scrollTo(0)}
             stepName={params.stepName}
             userProfile={user.profile} />
       ) : <PageView
@@ -190,10 +195,10 @@ class ProfilePage extends React.Component {
 
 class AccountDeletionModalBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    isShown: React.PropTypes.bool,
-    onClose: React.PropTypes.func.isRequired,
-    user: React.PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    isShown: PropTypes.bool,
+    onClose: PropTypes.func.isRequired,
+    user: PropTypes.object.isRequired,
   }
 
   handleDeletionClick = () => {

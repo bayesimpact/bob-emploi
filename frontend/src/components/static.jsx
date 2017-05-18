@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import {Footer, PageWithNavigationBar} from 'components/navigation'
 import {Colors} from 'components/theme'
@@ -6,7 +7,7 @@ import {Colors} from 'components/theme'
 
 class StrongTitle extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
+    children: PropTypes.node,
   }
 
   render() {
@@ -19,13 +20,13 @@ class StrongTitle extends React.Component {
 
 class StaticPage extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    page: React.PropTypes.string.isRequired,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    page: PropTypes.string.isRequired,
+    style: PropTypes.object,
     // The title of the page. If not set, the layout is quite different as we
     // drop not only the title but also the separator and the "paper sheet"
     // style.
-    title: React.PropTypes.node,
+    title: PropTypes.node,
   }
 
   render() {

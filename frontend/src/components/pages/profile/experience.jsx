@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 
 import {fetchProjectRequirements, GET_PROJECT_REQUIREMENTS} from 'store/actions'
@@ -29,13 +30,13 @@ function isSeniorityRequired(previousJobSimilarity) {
 
 class NewProjectExperienceStepBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func,
-    isFetchingRequirements: React.PropTypes.bool,
-    jobRequirements: React.PropTypes.object,
-    newProject: React.PropTypes.object,
-    onSubmit: React.PropTypes.func.isRequired,
-    profile: React.PropTypes.shape({
-      gender: React.PropTypes.string,
+    dispatch: PropTypes.func,
+    isFetchingRequirements: PropTypes.bool,
+    jobRequirements: PropTypes.object,
+    newProject: PropTypes.object,
+    onSubmit: PropTypes.func.isRequired,
+    profile: PropTypes.shape({
+      gender: PropTypes.string,
     }),
   }
 

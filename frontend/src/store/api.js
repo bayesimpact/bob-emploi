@@ -55,10 +55,6 @@ function adviceTipsGet({userId}, {projectId}, {adviceId}) {
     then(response => response.tips)
 }
 
-function createDashboardExportPost(userId) {
-  return postJson('/api/dashboard-export/create', {userId}, true)
-}
-
 function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
@@ -66,6 +62,10 @@ function dashboardExportGet(dashboardExportId) {
 function jobBoardsGet({userId}, {projectId}) {
   return getJson(`/api/project/${userId}/${projectId}/jobboards`).
     then(response => response.jobBoards || [])
+}
+
+function jobsGet(romeId) {
+  return getJson(`/api/jobs/${romeId}`)
 }
 
 function markUsedAndRetrievePost(userId) {
@@ -124,13 +124,18 @@ function exploreJobGroupGet(city, jobGroupRomeId) {
   return getJson(`/api/explore/job/stats?data=${encodeURIComponent(JSON.stringify(data))}`)
 }
 
+function feedbackPost(feedback) {
+  return postJson('/api/feedback', feedback, false)
+}
+
 const api = {
   adviceTipsGet,
-  createDashboardExportPost,
   dashboardExportGet,
   exploreGet,
   exploreJobGroupGet,
+  feedbackPost,
   jobBoardsGet,
+  jobsGet,
   markUsedAndRetrievePost,
   migrateUserToAdvisor,
   projectRequirementsGet,

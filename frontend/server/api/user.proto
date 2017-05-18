@@ -41,11 +41,6 @@ message User {
   // Features enabled for this user.
   Features features_enabled = 9;
 
-  // Interactions with the User that we need to record (e.g. whether a user has seen the
-  // WelcomeBackModal or not).
-  // TODO(pascal): Clean it up.
-  UserInteractions interactions = 5 [deprecated = true];
-
   // The last date on which the user loaded their information through the API.
   // We only look at the date of this value, not at the time.
   google.protobuf.Timestamp requested_by_user_at_date= 10;
@@ -56,16 +51,6 @@ message User {
 
   // A map of likes (+1) and dislikes (-1) per feature.
   map<string, int32> likes = 13;
-}
-
-message UserInteractions {
-  // The modal that we show when the user comes back to the dashboard 12h
-  // or more after account creation.
-  bool hasSeenFirstWelcomeBack = 1;
-
-  // The modal that we show when the user comes back after more than 10 days of inactivity in
-  // in the app, where inactivity is defined as not having loaded the user.
-  bool hasSeenSecondWelcomeBack = 2;
 }
 
 message UserAuth {
@@ -165,20 +150,8 @@ message UserProfile {
   // The current family situation of the user (e.g.: single, with kids, etc.).
   FamilySituation family_situation = 20;
 
-  // All driving license types of a user (e.g. truck and car).
-  repeated DrivingLicense driving_licenses = 23 [deprecated = true];
-
   // The users highest school degree.
   DegreeLevel highest_degree = 18;
-
-  // How good the user rated their English skills on a 3 value scale.
-  // (i.e. `-1 is undecided, 1: worst, 3: best)
-  int32 english_level_estimate = 30 [deprecated = true];
-
-  // How good the user rated their office software skills on a 3 value scale.
-  // (i.e. `-1 is undecided, 1: worst, 3: best).
-  // Keep in sync with JobRequirement.office_skills_level
-  int32 office_skills_estimate = 31 [deprecated = true];
 
   // User frustration reasons (e.g.: no offers, no answers, single parent, ...).
   repeated Frustration frustrations = 32;
@@ -243,42 +216,6 @@ message Features {
   // Started: 2016-11-23.
   bool email_notifications = 1;
 
-  // Action button experiment.
-
-  // In the dashboard, action blocks get a small button with a chevron that
-  // expands when the action is hovered. This should be exclusive with the
-  // action_button_round feature. If both are set, this one has priority.
-  // Started: 2016-11-24.
-  // Graduated: 2016-11-29.
-  bool action_button_chevron = 2 [deprecated = true];
-
-  // In the dashboard, action blocks get a regular round button. This should be
-  // exclusive with the action_button_chevron feature. If both are set, the
-  // chevron has priority.
-  // Started: 2016-11-24.
-  // Stopped: 2016-11-29.
-  bool action_button_round = 3 [deprecated = true];
-
-  // In the dashboard, action blocks get no button. This is used as a control
-  // group for the experiment with action_button_chevron and
-  // action_button_round.
-  // Started: 2016-11-24.
-  // Stopped: 2016-11-29.
-  bool action_button_none = 4 [deprecated = true];
-
-  // Control Tower icons experiment.
-
-  // In the Control Tower and in the dashboard we show an icon that relates to
-  // each other.
-  // Started: 2016-11-28.
-  // Graduated: 2016-12-07.
-  bool chantier_icons = 5 [deprecated = true];
-
-  // Control group for the above experiment (no icons shown).
-  // Started: 2016-11-28.
-  // Stopped: 2016-12-07.
-  bool chantier_icons_control = 6 [deprecated = true];
-
   // Ablation experiment for the "I did this action" button.
 
   // In the Action Modal, make the "I did this" button discreet.
@@ -294,20 +231,6 @@ message Features {
   // Whether we integrate La Bonne Boite results directly into our application.
   // Started: 2016-12-06.
   BinaryExperiment lbb_integration = 9;
-
-  // Whether we show a modal to get more feedback once an action is done.
-  // Started: 2016-12-07.
-  // Graduated: 2016-12-16.
-  BinaryExperiment action_feedback_modal = 10;
-
-  // Whether we hide the Discovery Channel from the top navigation bar.
-  // Started: 2016-12-07.
-  // Stopped: 2017-01-03.
-  BinaryExperiment hide_discovery_nav = 11;
-
-  // Whether we show the "Sticky Action" UX to the user.
-  // Graduated (directly): 2016-12-18.
-  BinaryExperiment sticky_actions = 12 [deprecated = true];
 
   // This is not really an experiment but rather a marker for users for which
   // we have disabled all emailDays because they were not reading their emails.
@@ -325,12 +248,6 @@ message Features {
 
   // Whether we send advice by email to this user.
   BinaryExperiment advisor_email = 17;
-
-  // Whether we display the advisor diagnostic for the user.
-  // Never launched as an experiment: we went directly from alpha to all users.
-  // The feature is now enabled to all advisor users.
-  // TODO(pascal): Clear up usage in DB and remove.
-  BinaryExperiment show_diagnostic = 18 [deprecated = true];
 
   // Whether the user switched from mashup to advisor.
   bool switched_from_mashup_to_advisor = 19;

@@ -2,22 +2,18 @@
 import datetime
 import itertools
 import logging
-import os
 import random
 import re
 import time
 from urllib import parse
 
-import emploi_store
 import unidecode
 
+from bob_emploi.frontend import companies
 from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import user_pb2
-
-_EMPLOI_STORE_DEV_CLIENT_ID = os.getenv('EMPLOI_STORE_CLIENT_ID')
-_EMPLOI_STORE_DEV_SECRET = os.getenv('EMPLOI_STORE_CLIENT_SECRET')
 
 # Matches a title that is about "any company that...", e.g. "Postuler à une
 # entreprise".
@@ -174,42 +170,19 @@ def clear_cache():
 
 
 def _get_company_from_lbb(project, company):
-    if not _EMPLOI_STORE_DEV_CLIENT_ID or not _EMPLOI_STORE_DEV_SECRET:
-        logging.warning('Missing Emploi Store Dev identifiers.')
-        return False
-    client = emploi_store.Client(
-        client_id=_EMPLOI_STORE_DEV_CLIENT_ID,
-        client_secret=_EMPLOI_STORE_DEV_SECRET)
-    try:
-        lbb_companies = client.get_lbb_companies(
-            city_id=project.mobility.city.city_id,
-            rome_codes=[project.target_job.job_group.rome_id])
-    except IOError as error:
-        logging.error(
-            'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
-            error, project.mobility.city.city_id, project.target_job.job_group)
-        return False
+    lbb_companies = companies.get_lbb_companies(project)
     apply_to_companies = set(
         action.apply_to_company.siret
         for action in itertools.chain(project.actions, project.past_actions)
         if action.apply_to_company.siret)
     try:
         lbb_company = next(c for c in lbb_companies if c.get('siret') not in apply_to_companies)
-    except IOError as error:
-        logging.error(
-            'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
-            error, project.mobility.city.city_id, project.target_job.job_group)
-        return False
     except StopIteration:
         logging.warning(
             'Could not find any companies with LBB:\nCity: %s\nJob group: %s\nApplied: %s',
             project.mobility.city.city_id, project.target_job.job_group, apply_to_companies)
         return False
-    company.name = lbb_company.get('name', '')
-    company.siret = lbb_company.get('siret', '')
-    company.city_name = lbb_company.get('city', '')
-    company.activity_sector_name = lbb_company.get('naf_text', '')
-    company.headcount_text = lbb_company.get('headcount_text', '')
+    company.MergeFrom(companies.to_proto(lbb_company))
     return True
 
 

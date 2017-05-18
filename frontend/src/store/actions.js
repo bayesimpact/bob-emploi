@@ -1,14 +1,12 @@
 import {browserHistory} from 'react-router'
+import sha1 from 'sha1'
 
 import config from 'config'
 import {api} from './api'
-import {getAdviceScorePriority, isAnyAdviceScored} from 'store/advice'
 import {newProject} from 'store/project'
 import {splitFullName} from 'store/auth'
 import {Gender, Situation, JobSearchPhase} from 'api/user'
 import {Routes} from 'components/url'
-
-const sha1 = require('sha1')
 
 const ASYNC_MARKER = 'ASYNC_MARKER'
 
@@ -32,14 +30,10 @@ export const EDIT_FIRST_PROJECT = 'EDIT_FIRST_PROJECT'
 export const FINISH_PROJECT_GOAL = 'FINISH_PROJECT_GOAL'
 export const FINISH_PROJECT_CRITERIA = 'FINISH_PROJECT_CRITERIA'
 export const FINISH_PROJECT_EXPERIENCE = 'FINISH_PROJECT_EXPERIENCE'
-export const REFRESH_ACTION_PLAN = 'REFRESH_ACTION_PLAN'
 export const MOVE_USER_DATES_BACK_1_DAY = 'MOVE_USER_DATES_BACK_1_DAY'
-export const CREATE_DASHBOARD_EXPORT = 'CREATE_DASHBOARD_EXPORT'
 export const GET_DASHBOARD_EXPORT = 'GET_DASHBOARD_EXPORT'
-export const FINISH_STICKY_ACTION_STEP = 'FINISH_STICKY_ACTION_STEP'
 export const SELECT_ADVICE = 'SELECT_ADVICE'
 export const DECLINE_WHOLE_ADVICE = 'DECLINE_WHOLE_ADVICE'
-export const SCORE_ADVICE = 'SCORE_ADVICE'
 export const LIKE_OR_DISLIKE_FEATURE = 'LIKE_OR_DISLIKE_FEATURE'
 export const MIGRATE_USER_TO_ADVISOR = 'MIGRATE_USER_TO_ADVISOR'
 
@@ -53,25 +47,28 @@ export const DISPLAY_TOAST_MESSAGE = 'DISPLAY_TOAST_MESSAGE'
 export const ACCEPT_COOKIES_USAGE = 'ACCEPT_COOKIES_USAGE'
 export const SWITCH_TO_MOBILE_VERSION = 'SWITCH_TO_MOBILE_VERSION'
 export const LOAD_LANDING_PAGE = 'LOAD_LANDING_PAGE'
-export const REFRESH_USER_DATA = 'REFRESH_USER_DATA'
 export const RESET_USER_PASSWORD = 'RESET_USER_PASSWORD'
 export const OPEN_TIP_EXTERNAL_LINK = 'OPEN_TIP_EXTERNAL_LINK'
 export const ADVICE_CARD_IS_SHOWN = 'ADVICE_CARD_IS_SHOWN'
 export const ADVICE_PAGE_IS_SHOWN = 'ADVICE_PAGE_IS_SHOWN'
-export const FINISH_STICKY_ACTION = 'FINISH_STICKY_ACTION'
 export const SAVE_LIKES = 'SAVE_LIKES'
 export const GET_ADVICE_TIPS = 'GET_ADVICE_TIPS'
 export const SEE_ADVICE = 'SEE_ADVICE'
 export const SHOW_ALL_TIPS = 'SHOW_ALL_TIPS'
 export const GET_JOB_BOARDS = 'GET_JOB_BOARDS'
+export const GET_JOBS = 'GET_JOBS'
+export const SEND_ADVICE_FEEDBACK = 'SEND_ADVICE_FEEDBACK'
+export const SEND_PROFESSIONAL_FEEDBACK = 'SEND_PROFESSIONAL_FEEDBACK'
+export const ALL_ADVICES_READ = 'ALL_ADVICES_READ'
+export const SHARE_PRODUCT_TO_NETWORK = 'SHARE_PRODUCT_TO_NETWORK'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
   [ACCEPT_PRIVACY_NOTICE]: 'Accept privacy notice',
   [ADVICE_CARD_IS_SHOWN]: 'Advice card is shown',
   [ADVICE_PAGE_IS_SHOWN]: 'Advice page shown',
+  [ALL_ADVICES_READ]: 'All advice cards have been read',
   [AUTHENTICATE_USER]: 'Log in',
-  [CREATE_DASHBOARD_EXPORT]: 'Create dashbord export',
   [CREATE_PROJECT]: 'Create project',
   [CREATE_PROJECT_SAVE]: 'Save project',
   [DECLINE_WHOLE_ADVICE]: 'Report the whole advice as useless',
@@ -82,7 +79,6 @@ export const actionTypesToLog = {
   [FINISH_PROJECT_CRITERIA]: 'Finish project criteria',
   [FINISH_PROJECT_EXPERIENCE]: 'Finish project experience',
   [FINISH_PROJECT_GOAL]: 'Finish project goal',
-  [FINISH_STICKY_ACTION]: 'Finish sticky action',
   [GET_DASHBOARD_EXPORT]: 'View dashbord export',
   [GET_USER_DATA]: 'Load app',
   [LIKE_OR_DISLIKE_FEATURE]: 'Like/Dislike feature',
@@ -93,14 +89,14 @@ export const actionTypesToLog = {
   [OPEN_LOGIN_MODAL]: 'Open login modal',
   [OPEN_TIP_EXTERNAL_LINK]: 'Open tip external link',
   [READ_TIP]: 'Open tip',
-  [REFRESH_ACTION_PLAN]: 'New actions shown',
-  [REFRESH_USER_DATA]: 'User data refreshed',
   [REGISTER_USER]: 'Register new user',
   [RESET_USER_PASSWORD]: 'Ask password email',
-  [SCORE_ADVICE]: 'Score advice',
   [SEE_ADVICE]: 'See advice in dashboard',
   [SELECT_ADVICE]: 'Select advice',
+  [SEND_ADVICE_FEEDBACK]: 'Send advice feedback',
+  [SEND_PROFESSIONAL_FEEDBACK]: 'Send feedback from professional page',
   [SET_USER_PROFILE]: 'Update profile',
+  [SHARE_PRODUCT_TO_NETWORK]: 'Share product to network',
   [SHOW_ALL_TIPS]: 'Show all tips',
 }
 
@@ -118,6 +114,7 @@ export const actionTypesToLog = {
 // Plain actions, keep them grouped and alpha sorted.
 
 const acceptCookiesUsageAction = {type: ACCEPT_COOKIES_USAGE}
+const allAdvicesReadAction = {type: ALL_ADVICES_READ}
 const closeLoginModalAction = {type: CLOSE_LOGIN_MODAL}
 const hideToasterMessageAction = {type: HIDE_TOASTER_MESSAGE}
 const logoutAction = {type: LOGOUT}
@@ -149,12 +146,15 @@ function readTip(action, feedback) {
 function selectAdvice(project, advice, visualElement) {
   return dispatch => {
     dispatch({advice, project, type: SELECT_ADVICE, visualElement})
-    browserHistory.push(`${Routes.PROJECT_PAGE}/${project.projectId}/conseil/${advice.adviceId}`)
   }
 }
 
 function seeAdvice(project, advice) {
   return dispatch => dispatch({advice, project, type: SEE_ADVICE})
+}
+
+function shareProductToNetwork(medium) {
+  return dispatch => dispatch({medium, type: SHARE_PRODUCT_TO_NETWORK})
 }
 
 function showAllTips(project, advice) {
@@ -183,14 +183,6 @@ function wrapAsyncAction(actionType, asyncFunc, options) {
 
 // Asynchronous actions wrapped with the dispatched actions (see wrapAsyncAction).
 
-function createDashboardExport() {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(
-      CREATE_DASHBOARD_EXPORT, () => api.createDashboardExportPost(user.userId)))
-  }
-}
-
 function getAdviceTips(project, advice) {
   return (dispatch, getState) => {
     const {user} = getState()
@@ -211,6 +203,12 @@ function getJobBoards(project) {
   }
 }
 
+function getJobs({romeId}) {
+  return dispatch => {
+    return dispatch(wrapAsyncAction(GET_JOBS, () => api.jobsGet(romeId), {romeId}))
+  }
+}
+
 // TODO: Get rid of the project for this action, it only needs a job. Also update the endpoint.
 function fetchProjectRequirements(project) {
   return wrapAsyncAction(
@@ -224,42 +222,10 @@ function deleteUser(userId) {
   return wrapAsyncAction(DELETE_USER_DATA, () => api.userDelete(userId))
 }
 
-function planRefreshActionPlan(refreshActionPlan) {
-  return (dispatch, getState) => {
-    const action = {ASYNC_MARKER, type: REFRESH_USER_DATA}
-    // TODO(pascal): Update the duration of the timeout to refresh at ~4
-    // o'clock in the morning. For now we refresh every hour.
-    const timeoutHandle = setTimeout(() => {
-      dispatch({...action, status: 'success'})
-      const {user} = getState()
-      if (user && user.userId) {
-        dispatch(refreshActionPlan())
-      }
-    }, 3600000)
-    return dispatch({...action, timeoutHandle})
-  }
-}
-
-function refreshActionPlan() {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    dispatch(
-        wrapAsyncAction(REFRESH_ACTION_PLAN, () => api.refreshActionPlanPost(user.userId))).
-        then(response => {
-          dispatch(planRefreshActionPlan(refreshActionPlan))
-          return response
-        })
-  }
-}
-
 function fetchUser(userId, ignoreFailure) {
   return dispatch => {
     return dispatch(
-        wrapAsyncAction(GET_USER_DATA, () => api.markUsedAndRetrievePost(userId), {ignoreFailure})).
-        then(response => {
-          dispatch(planRefreshActionPlan(refreshActionPlan))
-          return response
-        })
+        wrapAsyncAction(GET_USER_DATA, () => api.markUsedAndRetrievePost(userId), {ignoreFailure}))
   }
 }
 
@@ -280,6 +246,37 @@ function advicePageIsShown(project, advice) {
   return (dispatch, getState) => {
     dispatch({advice, project, type: ADVICE_PAGE_IS_SHOWN})
     return dispatch(saveUser(getState().user))
+  }
+}
+
+function sendAdviceFeedback(project, advice, feedback) {
+  return (dispatch, getState) => {
+    dispatch(wrapAsyncAction(
+      SEND_ADVICE_FEEDBACK,
+      () => api.feedbackPost({
+        adviceId: advice.adviceId,
+        feedback,
+        projectId: project.projectId,
+        source: 'ADVICE_FEEDBACK',
+        userId: getState().user.userId,
+      }),
+      {advice, feedback, project},
+    )).then(() => dispatch(displayToasterMessage(
+      "Merci ! Cela nous permettra d'améliorer nos conseils")))
+  }
+}
+
+function sendProfessionalFeedback(feedback) {
+  return (dispatch, getState) => {
+    dispatch(wrapAsyncAction(
+      SEND_PROFESSIONAL_FEEDBACK,
+      () => api.feedbackPost({
+        feedback,
+        source: 'PROFESSIONAL_PAGE_FEEDBACK',
+        userId: getState().user.userId,
+      }),
+      {feedback},
+    )).then(() => dispatch(displayToasterMessage('Merci pour ce retour')))
   }
 }
 
@@ -377,11 +374,7 @@ function registerNewUser(email, password, firstName, lastName) {
       firstName,
       hashedPassword: sha1(email + password),
       lastName,
-    }))).
-    then(response => {
-      dispatch(planRefreshActionPlan(refreshActionPlan))
-      return response
-    })
+    })))
   }
 }
 
@@ -397,11 +390,7 @@ function loginUser(email, password, hashSalt) {
   return dispatch => {
     return dispatch(wrapAsyncAction(
         AUTHENTICATE_USER, () => api.userAuthenticate({
-          email, hashSalt, hashedPassword: sha1(hashSalt + sha1(email + password))}))).
-        then(response => {
-          dispatch(planRefreshActionPlan(refreshActionPlan))
-          return response
-        })
+          email, hashSalt, hashedPassword: sha1(hashSalt + sha1(email + password))})))
   }
 }
 
@@ -436,9 +425,11 @@ function setUserProfile(userProfile, shouldAlsoSaveUser, type) {
     if (shouldAlsoSaveUser) {
       return dispatch(saveUser(getState().user))
     }
+    return Promise.resolve()
   }
 }
 
+// TODO(pascal): Rename to get rid of "whole" term that confuses some of us.
 function declineWholeAdvice(project, uselessAdviceFeedback) {
   return (dispatch, getState) => {
     dispatch({project, type: DECLINE_WHOLE_ADVICE, uselessAdviceFeedback})
@@ -451,17 +442,6 @@ function declineWholeAdvice(project, uselessAdviceFeedback) {
         dispatch(displayToasterMessage(
           `Désolés, nous allons continuer à améliorer ${config.productName} ` +
           'pour mieux vous aider.'))
-      }
-    })
-  }
-}
-
-function scoreAdvice(project, advice, score) {
-  return (dispatch, getState) => {
-    dispatch({advice, project, score, type: SCORE_ADVICE})
-    return dispatch(saveUser(getState().user)).then(() => {
-      if (isAnyAdviceScored(project)) {
-        dispatch(displayToasterMessage(`Enregistré comme ${getAdviceScorePriority(score)}`))
       }
     })
   }
@@ -500,14 +480,15 @@ function askPasswordReset(email) {
 }
 
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
-        readTip, facebookAuthenticateUser,
+        readTip, facebookAuthenticateUser, sendAdviceFeedback,
         googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
         createFirstProject, fetchProjectRequirements, resetPassword,
-        moveUserDatesBackOneDay, editFirstProject, createDashboardExport,
+        moveUserDatesBackOneDay, editFirstProject, sendProfessionalFeedback,
         getDashboardExport, displayToasterMessage, closeLoginModalAction,
         openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
         loadLandingPageAction, deleteUser, askPasswordReset, selectAdvice,
         openTipExternalLink, declineWholeAdvice, advicePageIsShown, seeAdvice,
-        adviceCardIsShown, likeOrDislikeFeature, getAdviceTips, scoreAdvice,
-        showAllTips, migrateUserToAdvisor, getJobBoards,
+        adviceCardIsShown, likeOrDislikeFeature, getAdviceTips,
+        showAllTips, migrateUserToAdvisor, getJobBoards, getJobs,
+        allAdvicesReadAction, shareProductToNetwork,
 }

@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 
 import {Colors, Select, CheckboxList, FieldSet, IconInput} from 'components/theme'
@@ -9,11 +10,11 @@ import {setUserProfile} from 'store/actions'
 
 class NewProjectCriteriaStep extends React.Component {
   static propTypes = {
-    newProject: React.PropTypes.object,
-    onSubmit: React.PropTypes.func,
+    newProject: PropTypes.object,
+    onSubmit: PropTypes.func,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   componentWillMount() {
@@ -117,13 +118,13 @@ const TO_GROSS_ANNUAL_FACTORS = {
 
 class SalaryInputBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    onChange: React.PropTypes.func,
-    unitValue: React.PropTypes.string.isRequired,
-    value: React.PropTypes.number,
+    dispatch: PropTypes.func.isRequired,
+    onChange: PropTypes.func,
+    unitValue: PropTypes.string.isRequired,
+    value: PropTypes.number,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   state = {
@@ -141,17 +142,13 @@ class SalaryInputBase extends React.Component {
     }
   }
 
-  setSalaryValue = props => {
-    const factor = TO_GROSS_ANNUAL_FACTORS[props.unitValue]
-    if (!props.value) {
+  setSalaryValue = ({unitValue, value}) => {
+    if (!value) {
       this.setState({salaryValue: ''})
       return
     }
-    if (props.value === Math.round(factor * this.state.salaryValue)) {
-      // No need to update the state, it's already good.
-      return
-    }
-    this.setState({salaryValue: (props.value / factor).toLocaleString('fr')})
+    const factor = TO_GROSS_ANNUAL_FACTORS[unitValue]
+    this.setState({salaryValue: (value / factor).toLocaleString('fr')})
   }
 
   handleSalaryValueChange = value => {
@@ -174,9 +171,13 @@ class SalaryInputBase extends React.Component {
       onChange(0)
       return
     }
-    const salaryValue = parseFloat(salaryValueString.replace(' ', '').replace(',', '.'))
+    const cleanSalaryValueString = salaryValueString.replace(/[^0-9,.\xa0]/g, '')
+    const salaryValue = parseFloat(cleanSalaryValueString.replace(/\xa0/g, '').replace(',', '.'))
     const factor = TO_GROSS_ANNUAL_FACTORS[salaryUnit]
     const grossAnnualValue = Math.round(salaryValue * factor)
+    if (salaryValueString !== cleanSalaryValueString) {
+      this.setSalaryValue({unitValue: salaryUnit, value: grossAnnualValue})
+    }
     onChange(grossAnnualValue)
   }
 
@@ -186,14 +187,14 @@ class SalaryInputBase extends React.Component {
     const {salaryValue} = this.state
     return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
       <IconInput
-          iconName="currency-eur"
-          placeholder="Montant"
+          iconName="currency-eur" iconStyle={{paddingTop: 5}}
+          placeholder="Montant" inputStyle={{paddingRight: '2em', textAlign: 'right'}}
           value={salaryValue} onChange={this.handleSalaryValueChange} />
       <Select
           options={SALARY_UNIT_OPTIONS} value={unitValue}
           onChange={this.handleSalaryUnitChange}
           isEmptyDisabled={true}
-          style={{marginLeft: isMobileVersion ? 0 : 10, marginTop: isMobileVersion ? 10 : 0}} />
+          style={{[isMobileVersion ? 'marginTop' : 'marginLeft']: 10}} />
     </div>
   }
 }

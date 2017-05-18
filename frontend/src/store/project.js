@@ -1,6 +1,3 @@
-import moment from 'moment'
-moment.locale('fr')
-
 import {genderizeJob} from 'store/job'
 import {inCityPrefix} from 'store/french'
 
@@ -153,15 +150,6 @@ function newProject(newProjectData, gender) {
 }
 
 
-function isAnyActionPlanGeneratedRecently(projects) {
-  return (projects || []).some(project => {
-    // Can also be implemented without moment.
-    const actionsGeneratedAtMoment = moment(project.actionsGeneratedAt)
-    return moment().diff(actionsGeneratedAtMoment, 'seconds') < 30
-  })
-}
-
-
 function getAdviceById(advice, project) {
   return (project.advices || []).
     find(updatedAdvice => advice.adviceId === updatedAdvice.adviceId)
@@ -219,8 +207,7 @@ const getTrainingFulfillmentEstimateOptions = gender => {
 export {
   PROJECT_EXPERIENCE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
-  PROJECT_WORKLOAD_OPTIONS, createProjectTitle, newProject,
-  allDoneActions, isAnyActionPlanGeneratedRecently,
+  PROJECT_WORKLOAD_OPTIONS, createProjectTitle, newProject, allDoneActions,
   getAdviceById, hasUserEverAcceptedAdvice, createProjectTitleComponents,
   getEmploymentZone, getSeniorityText, totalInterviewsDisplay,
   getTrainingFulfillmentEstimateOptions,

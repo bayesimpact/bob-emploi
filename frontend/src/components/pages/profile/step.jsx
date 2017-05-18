@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import _ from 'underscore'
 
 import {Colors, Button} from 'components/theme'
@@ -40,21 +41,21 @@ class ProfileUpdater {
 
 class Step extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node.isRequired,
-    contentStyle: React.PropTypes.object,
-    explanation: React.PropTypes.node,
-    fastForward: React.PropTypes.func.isRequired,
-    isNextButtonDisabled: React.PropTypes.bool,
-    nextButtonContent: React.PropTypes.node,
-    onNextButtonClick: React.PropTypes.func.isRequired,
-    onPreviousButtonClick: React.PropTypes.func,
-    stepNumber: React.PropTypes.number,
-    style: React.PropTypes.object,
-    title: React.PropTypes.string.isRequired,
-    totalStepCount: React.PropTypes.number,
+    children: PropTypes.node.isRequired,
+    contentStyle: PropTypes.object,
+    explanation: PropTypes.node,
+    fastForward: PropTypes.func.isRequired,
+    isNextButtonDisabled: PropTypes.bool,
+    nextButtonContent: PropTypes.node,
+    onNextButtonClick: PropTypes.func.isRequired,
+    onPreviousButtonClick: PropTypes.func,
+    stepNumber: PropTypes.number,
+    style: PropTypes.object,
+    title: PropTypes.string.isRequired,
+    totalStepCount: PropTypes.number,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
   static defaultProps = {
     title: 'Définir mon projet',
@@ -109,7 +110,7 @@ class Step extends React.Component {
     const navigationStyle = {
       display: 'flex',
       marginBottom: isMobileVersion ? 20 : 40,
-      marginTop: isMobileVersion ? 20 : 70,
+      marginTop: 15,
     }
     const mobileButtonStyle = {
       padding: '13px 10px',

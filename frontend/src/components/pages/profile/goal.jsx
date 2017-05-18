@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import {CitySuggest} from 'components/suggestions'
 import {FieldSet, JobSuggestWithNote, Select, Styles} from 'components/theme'
@@ -21,9 +22,9 @@ const projectKindOptions = [
 
 class NewProjectGoalStep extends React.Component {
   static propTypes = {
-    newProject: React.PropTypes.object,
-    onSubmit: React.PropTypes.func.isRequired,
-    profile: React.PropTypes.object,
+    newProject: PropTypes.object,
+    onSubmit: PropTypes.func.isRequired,
+    profile: PropTypes.object,
   }
 
   handleSubmit = () => {
@@ -50,10 +51,11 @@ class NewProjectGoalStep extends React.Component {
     }
     if (!city) {
       newState.city = {
-        cityId: '32700',
+        cityId: '32208',
         departementId: '32',
         departementName: 'Gers',
         name: 'Lectoure',
+        postcodes: '32700',
         regionId: '76',
         regionName: 'Occitanie',
       }
@@ -119,19 +121,19 @@ class NewProjectGoalStep extends React.Component {
             gender={profile.gender} />
       </FieldSet>
       <FieldSet
+          label={`Je suis prêt${maybeE} à bouger :`} isValid={!!areaType}
+          isValidated={isValidated}>
+        <Select
+            options={PROJECT_LOCATION_AREA_TYPE_OPTIONS} value={areaType}
+            onChange={this.handleChange('areaType')} />
+      </FieldSet>
+      <FieldSet
           label="Je cherche autour de :" isValid={!!city} isValidated={isValidated}>
         <CitySuggest
             onChange={this.handleChange('city')}
             style={{padding: 1, ...Styles.INPUT}}
             value={city}
             placeholder="ville ou code postal" />
-      </FieldSet>
-      <FieldSet
-          label={`Je suis prêt${maybeE} à bouger :`} isValid={!!areaType}
-          isValidated={isValidated}>
-        <Select
-            options={PROJECT_LOCATION_AREA_TYPE_OPTIONS} value={areaType}
-            onChange={this.handleChange('areaType')} />
       </FieldSet>
     </Step>
   }

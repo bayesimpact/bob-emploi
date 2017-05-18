@@ -1,25 +1,46 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+import ReactHeight from 'react-height'
 import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 import moment from 'moment'
 moment.locale('fr')
 import _ from 'underscore'
-import {CircularProgress} from 'components/progress'
-import {ShortKey} from 'components/shortkey'
 
-import {declineWholeAdvice} from 'store/actions'
-import {getAdviceScorePriority, isAnyAdviceScored} from 'store/advice'
+import config from 'config'
+
+import {allAdvicesReadAction, declineWholeAdvice, setUserProfile,
+  shareProductToNetwork} from 'store/actions'
 import {genderizeJob} from 'store/job'
 import {createProjectTitleComponents, getEmploymentZone, getSeniorityText} from 'store/project'
 import {computeBobScore} from 'store/score'
 import {getHighestDegreeDescription, getUserFrustrationTags, USER_PROFILE_SHAPE} from 'store/user'
+import {CircularProgress} from 'components/progress'
+import {ShortKey} from 'components/shortkey'
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 
-import {PageWithNavigationBar} from 'components/navigation'
+import emailGrayIcon from 'images/share/email-gray-ico.svg'
+import emailIcon from 'images/share/email-ico.svg'
+import facebookGrayIcon from 'images/share/facebook-gray-ico.svg'
+import facebookIcon from 'images/share/facebook-ico.svg'
+import linkedinGrayIcon from 'images/share/linkedin-gray-ico.svg'
+import linkedinIcon from 'images/share/linkedin-ico.svg'
+import localisationImage from 'images/localisation-picto.svg'
+import oneStarImage from 'images/1-star-picto.svg'
+import roundUserImage from 'images/round-user-picto.svg'
+import threeStarsImage from 'images/3-stars-picto.svg'
+import twitterGrayIcon from 'images/share/twitter-gray-ico.svg'
+import twitterIcon from 'images/share/twitter-ico.svg'
+import twoStarsImage from 'images/2-stars-picto.svg'
+import victoryImage from 'images/victory-picto.svg'
+import workImage from 'images/work-picto.svg'
+import {NAVIGATION_BAR_HEIGHT, PageWithNavigationBar} from 'components/navigation'
 import {AdviceCard} from 'components/advisor'
 import {Modal} from 'components/modal'
-import {JobGroupCoverImage, Colors, Button, GrowingNumber, Icon,
+import {JobGroupCoverImage, Colors, Button, GrowingNumber, Icon, LabeledToggle,
         SmoothTransitions, Styles} from 'components/theme'
+
+const FIXED_EXPLANATION_BAR_HEIGHT = 56
 
 
 function getProjectFromProps(props) {
@@ -48,11 +69,11 @@ const TOTAL_WAITING_TIME_MILLISEC = 8000
 
 class WaitingProjectPage extends React.Component {
   static propTypes = {
-    fadeOutTransitionDurationMillisec: React.PropTypes.number.isRequired,
-    onDone: React.PropTypes.func,
-    project: React.PropTypes.object.isRequired,
-    style: React.PropTypes.object,
-    userProfile: React.PropTypes.object.isRequired,
+    fadeOutTransitionDurationMillisec: PropTypes.number.isRequired,
+    onDone: PropTypes.func,
+    project: PropTypes.object.isRequired,
+    style: PropTypes.object,
+    userProfile: PropTypes.object.isRequired,
   }
   static defaultProps = {
     fadeOutTransitionDurationMillisec: 600,
@@ -139,60 +160,13 @@ class WaitingProjectPage extends React.Component {
 }
 
 
-class ScoreAdviceConfirmationModal extends React.Component {
-  static propTypes = {
-    adviceConfirmationModalText: React.PropTypes.string,
-    onClose: React.PropTypes.func.isRequired,
-    project: React.PropTypes.object.isRequired,
-    style: React.PropTypes.object,
-    userProfile: React.PropTypes.object.isRequired,
-  }
-
-  render() {
-    const {adviceConfirmationModalText, onClose, style, ...extraProps} = this.props
-    const containerStyle = {
-      alignItems: 'center',
-      borderRadius: 5,
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: 15,
-      justifyContent: 'center',
-      maxWidth: 477,
-      padding: '0 20px 40px 20px',
-      position: 'relative',
-      ...style,
-    }
-    const starStyle = {
-      padding: 20,
-    }
-    return <Modal {...extraProps} isShown={!!adviceConfirmationModalText} style={containerStyle}
-        title={<span>
-          Nous avons bien pris en compte que ce sujet
-          est <strong>{adviceConfirmationModalText}</strong> pour vous
-        </span>}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onClose} />
-      <img src={require('images/circle-star-picto.svg')} style={starStyle} />
-      <div style={{padding: '20px 50px 0 50px', textAlign: 'center'}}>
-        Pour vous aidez à travailler dessus, nous vous enverons des notifications
-        par <strong>email</strong> avec des astuces spécialisés pour ce sujet.
-      </div>
-      <Button
-          type="validation" style={{marginTop: 35}}
-          onClick={onClose}>
-        Voir les autres sujets
-      </Button>
-    </Modal>
-  }
-}
-
-
 class SumUpProfileModal extends React.Component {
   static propTypes = {
-    isShown: React.PropTypes.bool,
-    onClose: React.PropTypes.func.isRequired,
-    project: React.PropTypes.object.isRequired,
-    style: React.PropTypes.object,
-    userProfile: React.PropTypes.object.isRequired,
+    isShown: PropTypes.bool,
+    onClose: PropTypes.func.isRequired,
+    project: PropTypes.object.isRequired,
+    style: PropTypes.object,
+    userProfile: PropTypes.object.isRequired,
   }
 
 
@@ -255,7 +229,7 @@ class SumUpProfileModal extends React.Component {
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onClose} />
       <div style={boxStyle}>
         <div style={sectionWithBorderBottom}>
-          <img src={require('images/round-user-picto.svg')} style={pictoStyle} />
+          <img src={roundUserImage} style={pictoStyle} />
           <div style={{flex: 1}}>
             <div>
               Sexe&nbsp;:
@@ -283,7 +257,7 @@ class SumUpProfileModal extends React.Component {
           </div>
         </div>
         <div style={sectionWithBorderBottom}>
-          <img src={require('images/work-picto.svg')} style={pictoStyle} />
+          <img src={workImage} style={pictoStyle} />
           <div style={{flex: 1}}>
             <div>
               Métier&nbsp;:
@@ -296,7 +270,7 @@ class SumUpProfileModal extends React.Component {
           </div>
         </div>
         <div style={sectionStyle}>
-          <img src={require('images/localisation-picto.svg')} style={pictoStyle} />
+          <img src={localisationImage} style={pictoStyle} />
           <div style={{flex: 1}}>
             <div>
               Zone de recherche&nbsp;:
@@ -315,12 +289,160 @@ class SumUpProfileModal extends React.Component {
 }
 
 
+class TheEndModalBase extends React.Component {
+  static propTypes = {
+    dispatch: PropTypes.func.isRequired,
+    onClose: PropTypes.func.isRequired,
+    userProfile: USER_PROFILE_SHAPE.isRequired,
+  }
+
+  componentWillMount() {
+    this.setState({
+      isNewsletterEnabled: !!this.props.userProfile.isNewsletterEnabled,
+    })
+  }
+
+  handleSubmit = callback => () => {
+    const {dispatch, userProfile} = this.props
+    const {isNewsletterEnabled} = this.state
+    if (isNewsletterEnabled !== !!userProfile.isNewsletterEnabled) {
+      dispatch(setUserProfile({...userProfile, isNewsletterEnabled}, true))
+    }
+    callback()
+  }
+
+  share(medium, shareMethod) {
+    this.props.dispatch(shareProductToNetwork({medium}))
+    shareMethod(
+      config.productName,
+      `Avec ${config.productName}, un super diagnostic et de bon conseils ` +
+      "pour ma recherche d'emploi.",
+      'https://www.bob-emploi.fr/')
+  }
+
+  renderShareButtons() {
+    const style = {
+      color: Colors.DARK_TWO,
+      fontSize: 14,
+      fontStyle: 'italic',
+      margin: 30,
+      textAlign: 'center',
+    }
+    const openURL = (base, urlParams, windowParams) => {
+      const encodedParams = []
+      for (const key in urlParams) {
+        encodedParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key] + '')}`)
+      }
+      window.open(`${base}?${encodedParams.join('&')}`, undefined, windowParams)
+    }
+    return <div style={style}>
+      Si {config.productName} vous a été utile n'hésitez pas à le partager&nbsp;!
+      <div style={{marginTop: 15}}>
+        {this.renderShareButton(
+          'email', emailIcon, emailGrayIcon,
+          (subject, body) => openURL('mailto:', {body, subject}))}
+        {this.renderShareButton(
+          'linkedin', linkedinIcon, linkedinGrayIcon,
+          (title, summary, url) => openURL(
+            'https://www.linkedin.com/shareArticle',
+            {mini: true, summary, title, url},
+            'width=550,height=500'))}
+        {this.renderShareButton(
+          'twitter', twitterIcon, twitterGrayIcon,
+          (title, text, url) => openURL(
+            'https://twitter.com/share', {text, url}, 'width=500,height=300'))}
+        {this.renderShareButton(
+          'facebook', facebookIcon, facebookGrayIcon,
+          (title, summary, href) => openURL(
+            'https://www.facebook.com/dialog/share',
+            {'app_id': config.facebookSSOAppId, display: 'popup', href},
+            'width=500,height=300'))}
+      </div>
+    </div>
+  }
+
+  renderShareButton(shareId, icon, grayIcon, onShare) {
+    const shareIdState = `is${shareId}IconHovered`
+    const isHovered = this.state[shareIdState]
+    const colorIconStyle = {
+      opacity: isHovered ? 1 : 0,
+      position: 'absolute',
+      ...SmoothTransitions,
+    }
+    return <span
+        style={{cursor: 'pointer', margin: '0 5px', position: 'relative'}}
+        onMouseEnter={() => this.setState({[shareIdState]: true})}
+        onMouseLeave={() => this.setState({[shareIdState]: false})}
+        onClick={() => this.share(shareId, onShare)}>
+      <img src={icon} style={colorIconStyle} />
+      <img src={grayIcon} />
+    </span>
+  }
+
+  render() {
+    const {onClose, userProfile, ...extraProps} = this.props
+    const {isNewsletterEnabled} = this.state
+    const maybeE = userProfile.gender === 'FEMININE' ? 'e' : ''
+    const textStyle = {
+      color: Colors.DARK_TWO,
+      fontSize: 15,
+      lineHeight: 1.5,
+      maxWidth: 380,
+      padding: '0 50px',
+    }
+    const hrStyle = {
+      backgroundColor: Colors.SILVER,
+      border: 'none',
+      height: 1,
+      margin: '0 50px',
+    }
+    return <Modal {...extraProps} title="C'est tout pour le moment !">
+      <div style={{padding: 25, textAlign: 'center'}}>
+        <img src={victoryImage} />
+      </div>
+
+      <div style={textStyle}>
+        Vous avez consulté toutes les propositions que nous avons pour vous à
+        ce stade. Nous espérons que certaines vous auront inspiré{maybeE} dans votre
+        recherche !
+
+        <br /><br />
+
+        De nouvelles propositions arriverront bientôt&nbsp;! Nous travaillons
+        dur à améliorer {config.productName}.
+      </div>
+
+      <div style={{padding: '30px 50px 0'}}>
+        <LabeledToggle
+            isSelected={isNewsletterEnabled}
+            onClick={() => this.setState({isNewsletterEnabled: !isNewsletterEnabled})}
+            label={`Me tenir informé${maybeE} des nouvelles fonctionnalités
+              de ${config.productName}`}
+            style={{color: Colors.DARK_TWO, fontSize: 13, fontStyle: 'italic'}}
+            type="checkbox" />
+      </div>
+
+      <div style={{padding: 25, textAlign: 'center'}}>
+        <Button onClick={this.handleSubmit(onClose)} type="validation">
+          Retourner à mon diagnostic
+        </Button>
+      </div>
+
+      <hr style={hrStyle} />
+
+      {this.renderShareButtons()}
+    </Modal>
+  }
+}
+const TheEndModal = connect(({user}) => ({userProfile: user.profile}))(TheEndModalBase)
+
+
 class ProjectPage extends React.Component {
   static propTypes = {
-    params: React.PropTypes.shape({
-      projectId: React.PropTypes.string,
+    params: PropTypes.shape({
+      projectId: PropTypes.string,
     }),
-    user: React.PropTypes.object.isRequired,
+    user: PropTypes.object.isRequired,
   }
 
   state = {
@@ -376,15 +498,15 @@ class ProjectPage extends React.Component {
 
 const ADVICE_CARD_GROUP_PROPS = {
   '1': {
-    image: require('images/1-star-picto.svg'),
+    image: oneStarImage,
     title: maybeS => `Sujet${maybeS} à regarder`,
   },
   '2': {
-    image: require('images/2-stars-picto.svg'),
+    image: twoStarsImage,
     title: maybeS => `Sujet${maybeS} secondaire${maybeS}`,
   },
   '3': {
-    image: require('images/3-stars-picto.svg'),
+    image: threeStarsImage,
     title: maybeS => `Sujet${maybeS} prioritaire${maybeS}`,
   },
 }
@@ -392,42 +514,66 @@ const ADVICE_CARD_GROUP_PROPS = {
 
 class ProjectDashboardPageBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    isSumUpProfileModalShown: React.PropTypes.bool,
-    onCloseSumUpProfileModal: React.PropTypes.func.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    isSumUpProfileModalShown: PropTypes.bool,
+    onCloseSumUpProfileModal: PropTypes.func.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
-    project: React.PropTypes.object.isRequired,
+    project: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   state = {
-    adviceConfirmationModalText: null,
-    hasUnreadTooltipBeenSeen: false,
     isAdviceUselessFeedbackModalShown: false,
+    isFixedExplanationShown: false,
     isScoreTooltipShown: false,
+    isTheEndModalShown: false,
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const {advices} = nextProps.project
+    const oldAdvices = this.props.project.advices
+    const isAdviceUnread = advice => advice.status === 'ADVICE_RECOMMENDED'
+    if (advices === oldAdvices || advices.some(isAdviceUnread) ||
+        !oldAdvices.some(isAdviceUnread)) {
+      return
+    }
+    nextProps.dispatch(allAdvicesReadAction)
+    this.setState({isTheEndModalShown: true})
   }
 
   markFeedbackAsUseless = () => {
     const {dispatch, project} = this.props
-    dispatch(declineWholeAdvice(project, this.refs.uselessAdviceFeedback.value))
+    const feedback = this.uselessAdviceFeedbackDom && this.uselessAdviceFeedbackDom.value || ''
+    dispatch(declineWholeAdvice(project, feedback))
     this.setState({isAdviceUselessFeedbackModalShown: false})
-  }
-
-  onScoreAdvice = (score) => {
-    if (!isAnyAdviceScored(this.props.project)) {
-      this.setState({adviceConfirmationModalText: getAdviceScorePriority(score)})
-    }
-    return
-  }
-
-  dismissScoreAdviceModal = () => {
-    this.setState({adviceConfirmationModalText: null})
   }
 
   toggleScoreTooltip = () => {
     this.setState({isScoreTooltipShown: !this.state.isScoreTooltipShown})
+  }
+
+  handleScroll = event => {
+    const {explanationHeight, headerHeight, isFixedExplanationShown} = this.state
+    if (explanationHeight, headerHeight) {
+      const isExplanationAboveTopScroll =
+        event.target.scrollTop >= headerHeight + explanationHeight
+      if (isExplanationAboveTopScroll !== isFixedExplanationShown) {
+        this.setState({isFixedExplanationShown: !isFixedExplanationShown})
+      }
+    }
+  }
+
+  scrollToUnread = () => {
+    const {advices} = this.props.project
+    const unreadAdvice = advices.find(advice => advice.status === 'ADVICE_RECOMMENDED')
+    if (!unreadAdvice || !this.cards || !this.cards[unreadAdvice.adviceId] || !this.pageDom) {
+      return
+    }
+    const adviceRect = this.cards[unreadAdvice.adviceId].getBoundingClientRect()
+    this.pageDom.scrollDelta(
+      adviceRect.top - NAVIGATION_BAR_HEIGHT - FIXED_EXPLANATION_BAR_HEIGHT - 20)
   }
 
   renderDiagnostic(style) {
@@ -570,23 +716,67 @@ class ProjectDashboardPageBase extends React.Component {
     </header>
   }
 
-  renderExplanation() {
-    const {isMobileVersion} = this.context
+  renderFixedExplanation() {
+    const {isFixedExplanationShown} = this.state
+    const advices = this.props.project.advices || []
+    const numUnreadAdvices = advices.filter(a => a.status === 'ADVICE_RECOMMENDED').length
+    const style = {
+      alignItems: 'center',
+      backgroundColor: Colors.LIGHT_GREY,
+      boxShadow: '0 1px 7px 0 rgba(0, 0, 0, 0.1)',
+      color: Colors.CHARCOAL_GREY,
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 16,
+      height: FIXED_EXPLANATION_BAR_HEIGHT,
+      justifyContent: 'center',
+      left: 0,
+      opacity: (isFixedExplanationShown && numUnreadAdvices) ? 1 : 0,
+      overflow: 'hidden',
+      position: 'fixed',
+      right: 14,
+      textAlign: 'center',
+      top: NAVIGATION_BAR_HEIGHT,
+      zIndex: 1,
+      ...SmoothTransitions,
+    }
+    return <div style={style} onClick={this.scrollToUnread}>
+      <div>
+        <strong style={{fontStyle: 'italic'}}>
+          {numUnreadAdvices} proposition{numUnreadAdvices > 1 ? 's' : ''}
+        </strong> à regarder
+      </div>
+    </div>
+  }
+
+  renderExplanationSection() {
+    const advices = this.props.project.advices || []
+    const numUnreadAdvices = advices.filter(a => a.status === 'ADVICE_RECOMMENDED').length
+    if (!numUnreadAdvices) {
+      return null
+    }
     const style = {
       color: Colors.CHARCOAL_GREY,
-      margin: isMobileVersion ? 0 : 'auto',
-      maxWidth: 960,
-      padding: '30px 0px 10px',
+      fontSize: 26,
+      padding: '30px 0 10px',
       textAlign: 'center',
-      width: 'auto',
+    }
+    const hrStyle = {
+      backgroundColor: Colors.SILVER,
+      border: 'none',
+      height: 2,
+      margin: '25px auto',
+      width: 200,
     }
     return <div style={style}>
-      <div style={{fontSize: 26, fontWeight: 'bold'}}>
-        Voici selon nous vos priorités pour améliorer vos chances
-      </div>
-      <div style={{fontSize: 15, fontStyle: 'italic', lineHeight: 1.2}}>
-        Cliquez sur chacune de ces priorités et nous vous aiderons concrètement.
-      </div>
+      <ReactHeight onHeightReady={explanationHeight => this.setState({explanationHeight})}>
+        <div>
+          <strong style={{fontStyle: 'italic'}}>
+            {numUnreadAdvices} proposition{numUnreadAdvices > 1 ? 's' : ''}
+          </strong> à regarder
+        </div>
+      </ReactHeight>
+      <hr style={hrStyle} />
     </div>
   }
 
@@ -612,7 +802,6 @@ class ProjectDashboardPageBase extends React.Component {
 
   renderAdviceCardGroup(numStars, advices, style) {
     const {isMobileVersion} = this.context
-    const allAdvices = this.props.project.advices || []
     const cardStyle = {
       padding: isMobileVersion ? '15px 10px' : '0 0 25px',
     }
@@ -633,7 +822,6 @@ class ProjectDashboardPageBase extends React.Component {
       marginTop: 10,
     }
     const {image, title} = ADVICE_CARD_GROUP_PROPS[numStars] || ADVICE_CARD_GROUP_PROPS['1']
-    const hasAnyAdviceBeenRead = allAdvices.some(a => a.status !== 'ADVICE_RECOMMENDED')
     return <div key={`advices-${numStars}-star`} style={style}>
       <div style={{margin: 'auto', maxWidth: 960}}>
         <div style={titleLinestyle}>
@@ -643,12 +831,11 @@ class ProjectDashboardPageBase extends React.Component {
         <div style={verticalLineStyle} />
         {advices.map(advice => <AdviceCard
             key={advice.adviceId} advice={advice} style={cardStyle}
-            onScoreAdvice={this.onScoreAdvice}
-            onUnreadTooltipShown={() => this.setState({hasUnreadTooltipBeenSeen: true})}
-            isUnreadTooltipForced={
-              !hasAnyAdviceBeenRead && !this.state.hasUnreadTooltipBeenSeen &&
-              allAdvices.indexOf(advice) === 2}
-            {...this.props} />
+            scrollParent={delta => this.pageDom && this.pageDom.scrollDelta(delta)}
+            refDom={card => {
+              this.cards = this.cards || {}
+              this.cards[advice.adviceId] = card
+            }} {...this.props} />
         )}
       </div>
     </div>
@@ -670,7 +857,9 @@ class ProjectDashboardPageBase extends React.Component {
         </div>
         <textarea
             style={{display: 'block', minHeight: 150, padding: 10, width: '100%'}}
-            ref="uselessAdviceFeedback" />
+            ref={dom => {
+              this.uselessAdviceFeedbackDom = dom
+            }} />
         <div style={{margin: '25px 0 35px'}}>
           <Button type="back" style={{marginRight: 25}} onClick={closeModal}>
             Annuler
@@ -689,18 +878,24 @@ class ProjectDashboardPageBase extends React.Component {
 
   render() {
     const {isSumUpProfileModalShown, onCloseSumUpProfileModal, profile, project} = this.props
-    const {adviceConfirmationModalText} = this.state
+    const {isTheEndModalShown} = this.state
     const advices = project.advices || []
     const isAdviceUseful = advice => advice.status === 'ADVICE_ACCEPTED' || advice.score >= 5
-    return <PageWithNavigationBar page="project"  isContentScrollable={true}>
+    return <PageWithNavigationBar
+        page="project" isContentScrollable={true} ref={dom => {
+          this.pageDom = dom
+        }} isChatButtonShown={true} onScroll={this.handleScroll}>
       <SumUpProfileModal
           isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
           onClose={onCloseSumUpProfileModal} />
-      <ScoreAdviceConfirmationModal
-          adviceConfirmationModalText={adviceConfirmationModalText} project={project}
-          userProfile={profile} onClose={this.dismissScoreAdviceModal} />
-      {this.renderHeader()}
-      {this.renderExplanation()}
+      <TheEndModal
+          isShown={isTheEndModalShown}
+          onClose={() => this.setState({isTheEndModalShown: false})} />
+      <ReactHeight onHeightReady={headerHeight => this.setState({headerHeight})}>
+        {this.renderHeader()}
+      </ReactHeight>
+      {this.renderExplanationSection()}
+      {this.renderFixedExplanation()}
       {this.renderAdviceCards(advices)}
       {advices.some(isAdviceUseful) ? null : this.renderNoAdviceUsefulButton()}
     </PageWithNavigationBar>
@@ -712,12 +907,12 @@ const ProjectDashboardPage = connect(({user}) => ({profile: user.profile}))(
 
 class Gauge extends React.Component {
   static propTypes = {
-    halfAngleDeg: React.PropTypes.number.isRequired,
-    percent: React.PropTypes.number.isRequired,
-    radius: React.PropTypes.number.isRequired,
-    scaleY: React.PropTypes.number.isRequired,
-    strokeWidth: React.PropTypes.number.isRequired,
-    style: React.PropTypes.object,
+    halfAngleDeg: PropTypes.number.isRequired,
+    percent: PropTypes.number.isRequired,
+    radius: PropTypes.number.isRequired,
+    scaleY: PropTypes.number.isRequired,
+    strokeWidth: PropTypes.number.isRequired,
+    style: PropTypes.object,
   }
   static defaultProps = {
     halfAngleDeg: 60,
@@ -821,8 +1016,8 @@ class Gauge extends React.Component {
 
 class ArrowsUpOrDown extends React.Component {
   static propTypes = {
-    number: React.PropTypes.number.isRequired,
-    style: React.PropTypes.object,
+    number: PropTypes.number.isRequired,
+    style: PropTypes.object,
   }
 
   render() {

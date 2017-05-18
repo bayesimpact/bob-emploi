@@ -1,7 +1,9 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
+import {workImage} from 'images/work-picto.svg'
 import {FeatureLikeDislikeButtons} from 'components/like'
 import {Colors, Markdown, PaddedOnMobile} from 'components/theme'
 
@@ -15,15 +17,16 @@ function countMainBullets(markdownContent) {
 
 class WorkBox extends React.Component {
   static propTypes = {
-    featureId: React.PropTypes.string.isRequired,
-    featureName: React.PropTypes.node.isRequired,
-    features: React.PropTypes.string.isRequired,
-    style: React.PropTypes.object,
-    subTitle: React.PropTypes.node.isRequired,
+    featureId: PropTypes.string.isRequired,
+    featureName: PropTypes.node.isRequired,
+    featureNameSingular: PropTypes.node.isRequired,
+    features: PropTypes.string.isRequired,
+    style: PropTypes.object,
+    subTitle: PropTypes.node.isRequired,
   }
 
   render() {
-    const {featureId, featureName, subTitle, features, style} = this.props
+    const {featureId, featureName, featureNameSingular, subTitle, features, style} = this.props
     if (!features || !features.length) {
       return null
     }
@@ -47,13 +50,14 @@ class WorkBox extends React.Component {
       padding: 20,
       position: 'relative',
     }
+    const featureCount = countMainBullets(features)
     return <div style={containerStyle}>
       <header style={headerStyle}>
-        <img src={require('images/work-picto.svg')} style={{marginRight: 40}} />
+        <img src={workImage} style={{marginRight: 40}} />
         <div style={{flex: 1}}>
           <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
             <strong style={{color: Colors.GREENISH_TEAL, fontSize:
-              40}}>{countMainBullets(features)}</strong> {featureName}
+              40}}>{featureCount}</strong> {featureCount > 1 ? featureName : featureNameSingular}
           </div>
           <div style={{color: Colors.CHARCOAL_GREY, fontSize: 16}}>
             {subTitle}
@@ -112,12 +116,12 @@ const resumePersonalizations = [
 
 class ResumeAdvicePageContent extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
+    advice: PropTypes.object.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
-    project: React.PropTypes.object.isRequired,
+    project: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -139,16 +143,16 @@ class ResumeAdvicePageContent extends React.Component {
       <PaddedOnMobile>Nos conseils</PaddedOnMobile>
       <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
         <WorkBox
-            featureId="improve-resume-qualities"
+            featureId="improve-resume-qualities" featureNameSingular="qualité"
             featureName="qualités" subTitle="incontournables à mettre dans votre CV"
             features={skills} style={{flex: 1}} />
         <div style={{height: 30, width: 30}} />
         {trainings ? <WorkBox
-            featureId="improve-resume-trainings"
+            featureId="improve-resume-trainings" featureNameSingular="compétence"
             featureName="compétences" subTitle="nouvelles à apprendre facilement"
             features={trainings} style={{flex: 1}} />
         : <WorkBox
-            featureId="improve-resume-means"
+            featureId="improve-resume-means" featureNameSingular="moyen"
             featureName="moyens" subTitle="incontournables pour ne rien laisser passer"
             features={defaultMeans} style={{flex: 1}} />}
       </div>

@@ -3,12 +3,14 @@
 import datetime
 import hashlib
 import json
+import re
 import time
 import unittest
 
 from bson import objectid
 import mock
 import mongomock
+import requests
 
 from bob_emploi.frontend import base_test
 from bob_emploi.frontend import now
@@ -78,6 +80,32 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         config = self.json_from_response(response)
         self.assertTrue(config.get('googleSSOClientId'))
 
+    @mock.patch(requests.__name__ + '.post')
+    def test_feedback(self, mock_post):
+        """Basic call to "/api/feedback"."""
+        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        response = self.app.post(
+            '/api/feedback',
+            data='{"userId": "my-user", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "source": "ADVICE_FEEDBACK"}',
+            content_type='application/json')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            ['Aaaaaaaaaaaaawesome!\nsecond line'],
+            [d.get('feedback') for d in self._db.feedbacks.find()])
+        feedback_id = str(next(self._db.feedbacks.find())['_id'])
+
+        # Check slack call.
+        mock_post.assert_called_once()
+        self.assertEqual(('https://slack.example.com/url',), mock_post.call_args[0])
+        self.assertEqual({'json'}, set(mock_post.call_args[1]))
+        self.assertEqual({'text'}, set(mock_post.call_args[1]['json']))
+        text = mock_post.call_args[1]['json']['text']
+        self.assertNotIn('my-user', text, msg='Do not leak user ID to slack')
+        self.assertIn('"one-advice"', text)
+        self.assertIn('\n> Aaaaaaaaaaaaawesome!\n> second line', text)
+        self.assertIn(feedback_id, text, msg='Show the MongoDB ID of the feedback in slack')
+
 
 class UserEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the user endpoint to save the profile."""
@@ -140,7 +168,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
     def test_get_user(self):
         """Basic Usage of retrieving a user from DB."""
-        user_info = {'profile': {'city': {'name': 'foobar'}}, 'projects': [{}]}
+        user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{}]}
         user_id = self.create_user(data=user_info)
         user_info['userId'] = user_id
 
@@ -478,7 +506,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info2 = self.json_from_response(response)
         self.assertEqual(1, len(user_info2['projects']))
         project = user_info2['projects'].pop()
-        self.assertIn('projectId', project)
+        self.assertEqual('0', project.get('projectId'))
         self.assertIn('createdAt', project)
         self.assertIn('source', project)
         self.assertEqual(
@@ -730,9 +758,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             ['d1', 'd2'],
             sorted(a.get('actionTemplateId') for a in project_actions[2:]))
 
-    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.action.emploi_store.Client')
+    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_CLIENT_ID')
+    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_SECRET')
+    @mock.patch(server.__name__ + '.action.companies.emploi_store.Client')
     def test_lbb_action(self, mock_es_client, unused_mock_secret, unused_mock_client_id):
         """Add an action using the LBB integration."""
         def _set_project_city(user):
@@ -760,6 +788,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'city': 'Lyon',
             'naf_text': 'Startup caritative',
             'headcount_text': '5 à 10 salariés',
+            'stars': 2.0,
         }])
         mock_es_client.reset_mock()
         project_actions = self._refresh_action_plan(user_id)
@@ -774,11 +803,12 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(
             'Startup caritative',
             project_actions[0].get('applyToCompany', {}).get('activitySectorName'))
+        self.assertEqual(3, project_actions[0].get('applyToCompany', {}).get('hiringPotential'))
         self.assertEqual('69123', mock_es_client().get_lbb_companies.call_args[1]['city_id'])
 
-    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.action.emploi_store.Client')
+    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_CLIENT_ID')
+    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_SECRET')
+    @mock.patch(server.__name__ + '.action.companies.emploi_store.Client')
     def test_lbb_action_not_in_experiment(
             self, mock_es_client, unused_mock_secret, unused_mock_client_id):
         """Add an action without the LBB integration."""
@@ -812,9 +842,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertFalse(project_actions[0].get('applyToCompany'))
         self.assertFalse(mock_es_client.called)
 
-    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '.action._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.action.emploi_store.Client')
+    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_CLIENT_ID')
+    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_SECRET')
+    @mock.patch(server.__name__ + '.action.companies.emploi_store.Client')
     def test_lbb_action_dupes(self, mock_es_client, unused_mock_secret, unused_mock_client_id):
         """Add two actions using the LBB integration with different companies."""
         def _set_project_city(user):
@@ -1323,8 +1353,7 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
 
     def test_user_id_missing(self):
         """Test misssing ID."""
-        response = self.app.post(
-            '/api/dashboard-export/create', data='{}', content_type='application/json')
+        response = self.app.post('/api/dashboard-export/open/.')
         self.assertEqual(400, response.status_code)
 
     def test_create_export(self):
@@ -1340,29 +1369,25 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
             _add_chantier(1, 'c2'),
         ])
         before = datetime.datetime.now()
-        response = self.app.post(
-            '/api/dashboard-export/create', data='{"userId": "%s"}' % user_id,
-            content_type='application/json')
-        dashboard_export = self.json_from_response(response)
-        self.assertIn('dashboardExportId', dashboard_export)
+        response = self.app.post('/api/dashboard-export/open/%s' % user_id)
+        after = datetime.datetime.now()
+        self.assertEqual(302, response.status_code)
+        self.assertRegex(
+            response.location,
+            r'^http://localhost/historique-des-actions/[a-f0-9]+$')
+        dashboard_export_id = re.sub(r'^.*/', '', response.location)
+
+        dashboard_export = self._db.dashboard_exports.find_one({
+            '_id': mongomock.ObjectId(dashboard_export_id)})
+        self.assertGreaterEqual(
+            dashboard_export['createdAt'], before.isoformat(), msg=dashboard_export)
+        self.assertLessEqual(dashboard_export['createdAt'], after.isoformat(), msg=dashboard_export)
         stored_user_info = self.user_info_from_db(user_id)
         self.assertEqual(stored_user_info['projects'], dashboard_export['projects'])
         self.assertEqual(
             set(['Chantier 1', 'Chantier 2']),
             set([c['title'] for c in dashboard_export['chantiers'].values()]))
-        after = datetime.datetime.now()
-        self.assertGreaterEqual(
-            dashboard_export['createdAt'], before.isoformat(), msg=dashboard_export)
-        self.assertLessEqual(dashboard_export['createdAt'], after.isoformat(), msg=dashboard_export)
-
-        # Make sure it got stored in the DB.
-        dashboard_export_db = self._db.dashboard_exports.find_one({
-            '_id': mongomock.ObjectId(dashboard_export['dashboardExportId'])})
-        self.assertEqual(stored_user_info['projects'], dashboard_export_db['projects'])
-        self.assertEqual(
-            set(['Chantier 1', 'Chantier 2']),
-            set([c['title'] for c in dashboard_export_db['chantiers'].values()]))
-        export_object_id = objectid.ObjectId(dashboard_export['dashboardExportId'])
+        export_object_id = objectid.ObjectId(dashboard_export_id)
         id_generation_time = export_object_id.generation_time.replace(tzinfo=None)
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
         tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
@@ -1375,35 +1400,19 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
             _add_chantier(0, 'unknown-chantier-id'),
             _add_chantier(0, 'c1'),
         ])
-        response = self.app.post(
-            '/api/dashboard-export/create', data='{"userId": "%s"}' % user_id,
-            content_type='application/json')
-        dashboard_export = self.json_from_response(response)
-        self.assertIn('dashboardExportId', dashboard_export)
+        response = self.app.post('/api/dashboard-export/open/%s' % user_id)
+        self.assertRegex(
+            response.location,
+            r'^http://localhost/historique-des-actions/[a-f0-9]+$')
+        dashboard_export_id = re.sub(r'^.*/', '', response.location)
+
+        dashboard_export = self._db.dashboard_exports.find_one({
+            '_id': mongomock.ObjectId(dashboard_export_id)})
         stored_user_info = self.user_info_from_db(user_id)
         self.assertEqual(stored_user_info['projects'], dashboard_export['projects'])
         self.assertEqual(
             set(['Chantier 1']),
             set([c['title'] for c in dashboard_export['chantiers'].values()]))
-
-    def test_retrieve_export(self):
-        """Test that the retrieved document is the same as the one that was created."""
-        user_id = self.create_user([
-            _add_project,
-            _add_project,
-            _add_chantier(0, 'c1'),
-            _add_chantier(1, 'c2'),
-        ])
-        creation_response = self.app.post(
-            '/api/dashboard-export/create', data='{"userId": "%s"}' % user_id,
-            content_type='application/json')
-        created_dashboard_export = self.json_from_response(creation_response)
-
-        retrieval_response = self.app.get(
-            '/api/dashboard-export/%s' % created_dashboard_export['dashboardExportId'],
-            content_type='application/json')
-        retrieved_dashboard_export = self.json_from_response(retrieval_response)
-        self.assertEqual(created_dashboard_export, retrieved_dashboard_export)
 
     def test_retrieve_export_missing_id(self):
         """Test to get a 404 when ID does not exist."""
@@ -1451,18 +1460,18 @@ class LikesEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(user_info.get('profile', {}).get('email'))
 
     def test_save_only_likes(self):
-        """Test that saving likes does not save the city profile."""
-        user_id = self.create_user(data={'profile': {'city': {'name': 'old-city'}}})
+        """Test that saving likes does not save the gender."""
+        user_id = self.create_user(data={'profile': {'gender': 'FEMININE'}})
         response = self.app.post(
             '/api/user/likes',
             data='{"userId": "%s", "likes": {"landing": 1}, '
-            '"profile": {"city": {"name": "new-city"}}}' % user_id,
+            '"profile": {"gender": "MASCULINE"}}' % user_id,
             content_type='application/json')
         self.assertEqual(200, response.status_code)
 
         user_info = self.get_user_info(user_id)
         self.assertEqual({'landing': 1}, user_info.get('likes'))
-        self.assertEqual('old-city', user_info.get('profile', {}).get('city', {}).get('name'))
+        self.assertEqual('FEMININE', user_info.get('profile', {}).get('gender'))
 
     def test_missing_id(self):
         """Save likes without a user ID."""
@@ -1542,6 +1551,46 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisorEmail'))
         self.assertTrue(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
         self.assertTrue(user_info['projects'][0].get('advices'))
+
+
+class JobsEndpointTestCase(base_test.ServerTestCase):
+    """Unit tests for the jobs endpoint."""
+
+    def test_unknown_job_group(self):
+        """Get jobs for unknown job group."""
+        response = self.app.get('/api/jobs/Z1234')
+        self.assertEqual(404, response.status_code)
+
+    def test_job_group(self):
+        """Get all jobs info for a job group."""
+        self._db.job_group_info.insert_one({
+            '_id': 'C1234',
+            'romeId': 'C1234',
+            'name': 'unusedName',
+            'jobs': [
+                {'name': 'Pilote', 'codeOgr': '1234'},
+                {'name': 'Pompier', 'codeOgr': '5678'},
+            ],
+            'requirements': {
+                'skillsShortText': 'unused short text',
+                'specificJobs': [
+                    {'percentSuggested': 12, 'codeOgr': '1234'},
+                ],
+            },
+        })
+        response = self.app.get('/api/jobs/C1234')
+        job_group = self.json_from_response(response)
+        self.assertEqual({
+            'jobs': [
+                {'name': 'Pilote', 'codeOgr': '1234'},
+                {'name': 'Pompier', 'codeOgr': '5678'},
+            ],
+            'requirements': {
+                'specificJobs': [
+                    {'percentSuggested': 12, 'codeOgr': '1234'},
+                ],
+            },
+        }, job_group)
 
 
 if __name__ == '__main__':

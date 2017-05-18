@@ -53,7 +53,6 @@ const STEPS = [
   },
   {
     component: NewProjectJobsearchStep,
-    isLastProjectStep: true,
     name: 'recherche',
     path: Routes.NEW_PROJECT_PAGE,
   },
@@ -73,7 +72,8 @@ const NUMBERED_STEPS = _.indexBy(
       return {...step, index}
     }
     ++nextStepNumber
-    return {...step, index, stepNumber}
+    const isLastProjectStep = STEPS.length === index + 1
+    return {...step, index, isLastProjectStep, stepNumber}
   }),
   ({path, name}) => `${path}/${name}`)
 

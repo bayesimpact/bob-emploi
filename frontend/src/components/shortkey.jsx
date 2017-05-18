@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 
 // Stacks of short key listeners. The ones entered last are tried first.
@@ -23,20 +24,20 @@ const handleKeyEvents = {
 // combinations (like Ctrl+Shift+F) work better with a "keypress" event.
 class ShortKey extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    ctrlKey: React.PropTypes.bool,
-    keyCode: React.PropTypes.string.isRequired,
+    children: PropTypes.node,
+    ctrlKey: PropTypes.bool,
+    keyCode: PropTypes.string.isRequired,
     // A function that is called if the short-key is going down. If it returns
     // false, it will consume the event and other ShortKey components will not
     // get called. If it returns true other ShortKey components using the same
     // short-key will be called.
-    onKeyDown: React.PropTypes.func,
+    onKeyDown: PropTypes.func,
     // A function that is called if the short-key is pressed. If it returns
     // false, it will consume the event and other ShortKey components will not
     // get called. If it returns true other ShortKey components using the same
     // short-key will be called.
-    onKeyPress: React.PropTypes.func,
-    shiftKey: React.PropTypes.bool,
+    onKeyPress: PropTypes.func,
+    shiftKey: PropTypes.bool,
   }
 
   listenToEvent = (eventType, onEvent) => {

@@ -1,15 +1,16 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
 import {Colors, GrowingNumber, PaddedOnMobile, Styles} from 'components/theme'
 
-import {AdviceCard, PersonalizationBoxes} from './base'
+import {PersonalizationBoxes} from './base'
 import {WorkBox} from './improve_success_rate'
 
 class FullAdviceCard extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   renderNumber(number, style) {
@@ -40,17 +41,13 @@ class FullAdviceCard extends React.Component {
       lineHeight: 1.4,
       marginLeft: 50,
     }
-    return <AdviceCard
-        {...this.props}
-        reasons={['COUNT_INTERVIEWS', 'ATYPIC_PROFILE', 'INTERVIEW']}>
-      <div style={{alignItems: 'center', display: 'flex'}}>
-        {isMobileVersion ? null : this.renderNumber(5)}
-        <div style={textStyle}>
-          En général il suffit de <strong>5 entretiens</strong> pour retrouver
-          un emploi dans votre métier.
-        </div>
+    return <div style={{alignItems: 'center', display: 'flex'}}>
+      {isMobileVersion ? null : this.renderNumber(5)}
+      <div style={textStyle}>
+        En général il suffit de <strong>5 entretiens</strong> pour retrouver
+        un emploi dans votre métier.
       </div>
-    </AdviceCard>
+    </div>
   }
 }
 
@@ -89,12 +86,12 @@ const personalizations = [
 
 class AdvicePageContent extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
+    advice: PropTypes.object.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
-    project: React.PropTypes.object.isRequired,
+    project: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -119,12 +116,12 @@ class AdvicePageContent extends React.Component {
       <PaddedOnMobile>Pour votre métier :</PaddedOnMobile>
       <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
         <WorkBox
-            featureId="improve-interview-qualities"
+            featureId="improve-interview-qualities" featureNameSingular="qualité"
             featureName="qualités" subTitle="à montrer lors de vos entretiens"
             features={skills} style={{flex: 1}} />
         <div style={{height: 30, width: 30}} />
         <WorkBox
-            featureId="improve-interview-means"
+            featureId="improve-interview-means" featureNameSingular="moyen"
             featureName="moyens" subTitle="efficaces pour réussir vos entretiens"
             features={bonusSkills} style={{flex: 1}} />
       </div>

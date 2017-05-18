@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {Link, browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 import Radium from 'radium'
@@ -8,6 +9,13 @@ import {logoutAction} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {onboardingComplete} from 'store/main_selectors'
 
+import facebookImage from 'images/facebook.svg'
+import logoBobMobileImage from 'images/logo-bob-mobile.svg'
+import logoBobEmploiBetaImage from 'images/logo-bob-emploi-beta.svg'
+import logoBobEmploiBetaMobileImage from 'images/logo-bob-emploi-beta-mobile.svg'
+import logoBobEmploiWhiteImage from 'images/logo-bob-emploi-white.svg'
+import twitterImage from 'images/twitter.svg'
+
 import {DebugModal} from 'components/debug'
 import {ShortKey} from 'components/shortkey'
 import {CookieMessage} from './cookie_message'
@@ -15,6 +23,9 @@ import {BetaMessage} from './beta_message'
 import {Colors, Icon, SmoothTransitions, Styles} from './theme'
 import {Routes} from './url'
 import {LoginButton} from 'components/login'
+import {ZendeskChatButton} from 'components/zendesk'
+
+export const NAVIGATION_BAR_HEIGHT = 56
 
 
 const navLinkStyle = {
@@ -29,11 +40,11 @@ const navLinkStyle = {
 
 class NavigationLink extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    isSelected: React.PropTypes.bool,
-    selectionStyle: React.PropTypes.oneOf(['bottom', 'top']),
-    style: React.PropTypes.object,
-    to: React.PropTypes.string,
+    children: PropTypes.node,
+    isSelected: PropTypes.bool,
+    selectionStyle: PropTypes.oneOf(['bottom', 'top']),
+    style: PropTypes.object,
+    to: PropTypes.string,
   }
 
   state = {
@@ -82,8 +93,8 @@ const MENU_LINK_HEIGHT = 50
 
 class MenuLinkBase extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    style: PropTypes.object,
   }
 
   render() {
@@ -117,11 +128,11 @@ const MenuLink = Radium(MenuLinkBase)
 
 class MobileNavigationBarBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    isLoggedIn: React.PropTypes.bool.isRequired,
-    onNavigateBack: React.PropTypes.func,
-    onboardingComplete: React.PropTypes.bool,
-    page: React.PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
+    isLoggedIn: PropTypes.bool.isRequired,
+    onNavigateBack: PropTypes.func,
+    onboardingComplete: PropTypes.bool,
+    page: PropTypes.string,
   }
 
   state = {
@@ -130,7 +141,7 @@ class MobileNavigationBarBase extends React.Component {
 
   componentDidUpdate(prevProps, prevState) {
     if (!prevState.isMenuOpen && this.state.isMenuOpen) {
-      this.refs.close.focus()
+      this.closeIcon && this.closeIcon.focus()
     }
   }
 
@@ -194,8 +205,9 @@ class MobileNavigationBarBase extends React.Component {
       {isMenuOpen ?
         <div style={menuStyle} onBlur={this.closeMenu}>
           <Icon
-              name="close" style={menuIconStyle} tabIndex={0} ref="close"
-              onClick={() => this.setState({isMenuOpen: false})} />
+              name="close" style={menuIconStyle} tabIndex={0} ref={closeIcon => {
+                this.closeIcon = closeIcon
+              }} onClick={() => this.setState({isMenuOpen: false})} />
           <Link to={Routes.ROOT} style={linkStyle('landing')}>
             Accueil
           </Link>
@@ -227,7 +239,7 @@ class MobileNavigationBarBase extends React.Component {
             name="menu" style={menuIconStyle} tabIndex={0}
             onClick={() => this.setState({isMenuOpen: true})} />
       }
-      <img src={require('images/logo-bob-mobile.svg')} alt={config.productName} />
+      <img src={logoBobMobileImage} alt={config.productName} />
     </nav>
   }
 }
@@ -240,14 +252,14 @@ const MobileNavigationBar = connect(({user}) => ({
 
 class NavigationBarBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    onboardingComplete: React.PropTypes.bool,
-    page: React.PropTypes.string,
-    style: React.PropTypes.object,
+    dispatch: PropTypes.func.isRequired,
+    onboardingComplete: PropTypes.bool,
+    page: PropTypes.string,
+    style: PropTypes.object,
     userProfile: USER_PROFILE_SHAPE.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   state = {
@@ -289,7 +301,7 @@ class NavigationBarBase extends React.Component {
       backgroundColor: Colors.DARK,
       color: '#fff',
       display: 'flex',
-      height: 56,
+      height: NAVIGATION_BAR_HEIGHT,
       position: 'relative',
       ...style,
     }
@@ -304,7 +316,7 @@ class NavigationBarBase extends React.Component {
       textDecoration: 'none',
     }
     const logo = <img
-        src={require('images/logo-bob-emploi-beta.svg')}
+        src={logoBobEmploiBetaImage}
         style={{cursor: 'pointer', marginLeft: 27}}
         onClick={this.handleLogoClick} />
     if (!name) {
@@ -426,7 +438,7 @@ class NavigationBarBase extends React.Component {
       <div
           style={menuStyle} onClick={this.toggleMenuDropDown}
           onBlur={this.collapseDropDown} tabIndex="0">
-        <div style={dropDownButtonStyle} ref="menu">
+        <div style={dropDownButtonStyle}>
           {name}&nbsp;<div style={{flex: 1}} /><Icon
             name={'menu-' + (isLogOutDropDownShown ? 'up' : 'down')}
             style={{fontSize: 25, lineHeight: '13px', verticalAlign: 'middle'}} />
@@ -446,11 +458,11 @@ const NavigationBar = connect(({user}) => ({
 
 class Footer extends React.Component {
   static propTypes = {
-    page: React.PropTypes.string,
-    style: React.PropTypes.object,
+    page: PropTypes.string,
+    style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   render() {
@@ -486,9 +498,7 @@ class Footer extends React.Component {
     }
     return <footer style={containerStyle}>
       <img
-          src={isMobileVersion ?
-            require('images/logo-bob-emploi-beta-mobile.svg') :
-            require('images/logo-bob-emploi-white.svg')}
+          src={isMobileVersion ? logoBobEmploiBetaMobileImage : logoBobEmploiWhiteImage}
           style={logoStyle} />
 
       <div style={{flex: 1}} />
@@ -512,11 +522,11 @@ class Footer extends React.Component {
       <div style={{flex: 1}} />
 
       <NavigationLink style={iconStyle} to="https://www.facebook.com/bobemploi" target="_blank">
-        <img src={require('images/facebook.svg')} alt="Facebook" />
+        <img src={facebookImage} alt="Facebook" />
       </NavigationLink>
 
       <NavigationLink style={iconStyle} to="https://twitter.com/bobemploi" target="_blank">
-        <img src={require('images/twitter.svg')} alt="Twitter" />
+        <img src={twitterImage} alt="Twitter" />
       </NavigationLink>
     </footer>
   }
@@ -525,26 +535,45 @@ class Footer extends React.Component {
 
 class PageWithNavigationBar extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    isContentScrollable: React.PropTypes.bool,
-    onNavigateBack: React.PropTypes.func,
-    page: React.PropTypes.string,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    isChatButtonShown: PropTypes.bool,
+    isContentScrollable: PropTypes.bool,
+    onNavigateBack: PropTypes.func,
+    page: PropTypes.string,
+    style: PropTypes.object,
+  }
+  static contextTypes = {
+    store: PropTypes.shape({
+      getState: PropTypes.func.isRequired,
+    }).isRequired,
   }
 
   state = {
     isDebugModalShown: false,
   }
 
-  scrollTo(offsetTop) {
-    const {scrollable} = this.refs
-    if (scrollable) {
-      scrollable.scrollTop = offsetTop
+  scrollDelta(deltaOffsetTop) {
+    if (this.scrollableDom) {
+      this.scrollableDom.scrollTop += deltaOffsetTop
     }
   }
 
+  scrollTo(offsetTop) {
+    if (this.scrollableDom) {
+      this.scrollableDom.scrollTop = offsetTop
+    }
+  }
+
+  getUserProfile() {
+    const {store} = this.context
+    const {profile} = store.getState().user
+    return profile
+  }
+
   render() {
-    const {children, isContentScrollable, onNavigateBack, page, style, ...extraProps} = this.props
+    // eslint-disable-next-line no-unused-vars
+    const {children, isChatButtonShown, isContentScrollable, onNavigateBack,
+      page, style, ...extraProps} = this.props
     let content
     if (isContentScrollable) {
       const scrollContainerStyle = {
@@ -558,7 +587,10 @@ class PageWithNavigationBar extends React.Component {
         ...style,
       }
       content = <div style={{flex: 1, position: 'relative'}}>
-        <div style={scrollContainerStyle} ref="scrollable" {...extraProps}>
+        <div
+            style={scrollContainerStyle} ref={dom => {
+              this.scrollableDom = dom
+            }} {...extraProps}>
           {children}
         </div>
       </div>
@@ -571,6 +603,9 @@ class PageWithNavigationBar extends React.Component {
       <CookieMessage />
       <BetaMessage />
       <NavigationBar onNavigateBack={onNavigateBack} page={page} />
+      <ZendeskChatButton
+          isShown={isChatButtonShown} language="fr"
+          domain={config.zendeskDomain} user={this.getUserProfile()} />
 
       <ShortKey
           keyCode="KeyE" ctrlKey={true} shiftKey={true}
@@ -583,6 +618,8 @@ class PageWithNavigationBar extends React.Component {
     </div>
   }
 }
+// NOTE: Do not wrap the above component (with Radium or React Router)
+// otherwise scroll methods are not accessible anymore.
 
 
 export {Footer, NavigationBar, PageWithNavigationBar}

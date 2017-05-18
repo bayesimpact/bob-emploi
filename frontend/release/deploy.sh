@@ -106,6 +106,8 @@ else
 
   "${EDITOR:-${GIT_EDITOR:-$(git config core.editor || echo 'vim')}}" "${RELEASE_NOTES}"
 
+  echo -e "Release notes are:"
+  cat "${RELEASE_NOTES}"
   sed -i -e "/^#/d" "${RELEASE_NOTES}"
   if [ -z "$(grep "^." "${RELEASE_NOTES}")" ]; then
     echo -e "Canceling deployment due to empty release notes."

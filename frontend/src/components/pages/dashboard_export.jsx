@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import _ from 'underscore'
 import {CircularProgress} from 'components/progress'
@@ -15,8 +16,8 @@ const workloadOptions = _.indexBy(PROJECT_WORKLOAD_OPTIONS, 'value')
 
 class ProjectSummary extends React.Component {
   static propTypes = {
-    allChantiers: React.PropTypes.object.isRequired,
-    project: React.PropTypes.object.isRequired,
+    allChantiers: PropTypes.object.isRequired,
+    project: PropTypes.object.isRequired,
   }
 
   render() {
@@ -101,11 +102,11 @@ class ProjectSummary extends React.Component {
 
 class DashboardExportPageBase extends React.Component {
   static propTypes = {
-    dashboardExport: React.PropTypes.object,
-    dispatch: React.PropTypes.func.isRequired,
-    isFetching: React.PropTypes.bool,
-    params: React.PropTypes.shape({
-      dashboardExportId: React.PropTypes.string.isRequired,
+    dashboardExport: PropTypes.object,
+    dispatch: PropTypes.func.isRequired,
+    isFetching: PropTypes.bool,
+    params: PropTypes.shape({
+      dashboardExportId: PropTypes.string.isRequired,
     }),
   }
 

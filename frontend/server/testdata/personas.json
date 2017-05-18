@@ -91,7 +91,6 @@
       "yearOfBirth": 1983,
       "gender": "MASCULINE",
       "hasHandicap": true,
-      "drivingLicenses": ["CAR"],
       "latestJob": {
         "jobGroup": {
           "name": "Assistanat commercial",
@@ -112,7 +111,6 @@
       "employmentTypes": ["CDI"],
       "networkEstimate": 1,
       "status": "PROJECT_CURRENT",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "targetJob": {
         "jobGroup": {
           "name": "Assistanat commercial",
@@ -155,7 +153,6 @@
       "situation": "FIRST_TIME",
       "yearOfBirth": 1986,
       "gender": "MASCULINE",
-      "englishLevelEstimate": 2,
       "latestJob": null
     },
     "project": {
@@ -166,13 +163,12 @@
       "source": "PROJECT_MANUALLY_CREATED",
       "employmentTypes": ["CDI"],
       "status": "PROJECT_CURRENT",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "targetJob": {
         "jobGroup": {
           "name": "Boucherie",
           "romeId": "D1101"
         },
-        "codeOgr": "11564",
+        "codeOgr": "12005",
         "feminineName": "Bouchère",
         "name": "Boucher / Bouchère",
         "masculineName": "Boucher"
@@ -211,7 +207,6 @@
       "yearOfBirth": 1964,
       "frustrations": ["NO_OFFERS"],
       "gender": "FEMININE",
-      "drivingLicenses": ["CAR"],
       "latestJob": {
         "jobGroup": {
           "name": "Marketing",
@@ -234,7 +229,6 @@
       "weeklyApplicationsEstimate": "SOME",
       "jobSearchLengthMonths": 18,
       "status": "PROJECT_CURRENT",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "targetJob": {
         "jobGroup": {
           "name": "Marketing",
@@ -270,7 +264,7 @@
       "kind": "FIND_JOB",
       "minSalary": 31000.0,
       "mobility": {
-        "areaType": "REGION",
+        "areaType": "WORLD",
         "city": {
           "cityId": "94011",
           "departementId": "94",
@@ -282,7 +276,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecded3-b55b",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -299,7 +292,6 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "drivingLicenses": ["CAR"],
       "city": {
         "cityId": "94011",
         "departementId": "94",
@@ -336,7 +328,6 @@
       },
       "networkEstimate": 2,
       "projectId": "57ecc7dc-321cf",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "jobSearchLengthMonths": 2,
       "totalInterviewCount": 21,
       "source": "PROJECT_MANUALLY_CREATED",
@@ -401,7 +392,6 @@
       },
       "networkEstimate": 2,
       "projectId": "57ecc7dc-695a",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "jobSearchLengthMonths": 2,
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
@@ -465,7 +455,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecc89b-16cf",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -528,7 +517,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57ed175d-215a",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -545,7 +533,6 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "drivingLicenses": ["CAR"],
       "city": {
         "cityId": "75056",
         "departementId": "75",
@@ -593,7 +580,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecc916-88b8",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -631,7 +617,7 @@
         "masculineName": "Contrôleur de gestion",
         "name": "Contrôleur / Contrôleuse de gestion"
       },
-      "frustrations": ["SEX_DISCRIMINATION", "AGE_DISCRIMINATION"],
+      "frustrations": ["SEX_DISCRIMINATION", "AGE_DISCRIMINATION", "NO_OFFER_ANSWERS"],
       "name": "jennifer",
       "situation": "IN_TRAINING",
       "yearOfBirth": 1993
@@ -658,7 +644,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57ecddf8-30ab",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -685,7 +670,6 @@
       },
       "email": "joana.xxxxx@gmail.com",
       "gender": "FEMININE",
-      "drivingLicenses": ["CAR"],
       "latestJob": {
         "codeOgr": "13696",
         "feminineName": "Coordinatrice transit -import/export-",
@@ -721,7 +705,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57eccc48-f767",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -738,7 +721,6 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "drivingLicenses": ["CAR"],
       "city": {
         "cityId": "77468",
         "departementId": "77",
@@ -787,7 +769,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57ece21e-5850",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -846,7 +827,6 @@
       "networkEstimate": 2,
       "projectId": "57ecc9a7-5f0a",
       "seniority": "JUNIOR",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -910,7 +890,6 @@
       "networkEstimate": 1,
       "projectId": "57ece175-df63",
       "seniority": "EXPERT",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -936,7 +915,6 @@
         "regionName": "Île-de-France"
       },
       "email": "nanou-xxxxx@hotmail.fr",
-      "englishLevelEstimate": 3,
       "frustrations": ["ATYPIC_PROFILE"],
       "gender": "FEMININE",
       "latestJob": {
@@ -974,7 +952,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57ecc950-a9a1",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "title": "Me réorienter dans le département Val-de-Marne",
@@ -1003,7 +980,6 @@
         "name": "Régleur / Régleuse sur machine de production"
       },
       "name": "fabrice",
-      "officeSkillsEstimate": 3,
       "situation": "LOST_QUIT",
       "yearOfBirth": 1964
     }
@@ -1029,7 +1005,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57eccbe9-22f1",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -1046,7 +1021,6 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "drivingLicenses": ["CAR"],
       "city": {
         "cityId": "75056",
         "departementId": "75",
@@ -1069,7 +1043,6 @@
         "name": "Juriste d'entreprise"
       },
       "name": "richard",
-      "officeSkillsEstimate": 1,
       "situation": "LOST_QUIT",
       "yearOfBirth": 1982
     }
@@ -1111,7 +1084,6 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "drivingLicenses": ["CAR"],
       "city": {
         "cityId": "93050",
         "departementId": "93",
@@ -1158,7 +1130,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
-      "shortDescription": "This is a dummy short description. We will add something better in the future.",
       "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -1175,7 +1146,6 @@
       "workloads": ["FULL_TIME", "PART_TIME"]
     },
     "user": {
-      "drivingLicenses": ["CAR"],
       "city": {
         "cityId": "93050",
         "departementId": "93",

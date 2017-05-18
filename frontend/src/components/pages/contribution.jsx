@@ -1,13 +1,18 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import config from 'config'
 
+import howtoContent from './contribution/howto.txt'
+import roadmapContent from './contribution/roadmap.txt'
+
+import githubImage from 'images/github.png'
 import {StaticPage, StrongTitle} from 'components/static'
 import {Colors, Markdown, Button, Styles} from 'components/theme'
 
 class ContributionPage extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -58,8 +63,10 @@ class ContributionPage extends React.Component {
     return <StaticPage page="contribution" title={<span>
       Comment <StrongTitle>contribuer</StrongTitle>&nbsp;?
     </span>} style={{padding: 0}}>
-      <a style={githubLinkStyle} href={config.githubSourceLink} target="_blank">
-        <img src={require('images/github.png')} style={{marginRight: 9}} alt="" />
+      <a
+          style={githubLinkStyle} href={config.githubSourceLink}
+          target="_blank" rel="noopener noreferrer">
+        <img src={githubImage} style={{marginRight: 9}} alt="" />
         <span style={Styles.CENTER_FONT_VERTICALLY}>
           Voir le code source sur GitHub
         </span>
@@ -69,14 +76,14 @@ class ContributionPage extends React.Component {
         <div style={leftTitleStyle}>
           Par la communauté,<br />
           pour la communauté
-          <a href={config.donationUrl} target="_blank">
+          <a href={config.donationUrl} target="_blank" rel="noopener noreferrer">
             <Button type="validation" style={{marginTop: 20}}>
               Faire un don
             </Button>
           </a>
         </div>
         <div style={{fontSize: 16, lineHeight: 1.44}}>
-          <Markdown content={require('./contribution/howto.txt')} />
+          <Markdown content={howtoContent} />
         </div>
       </div>
 
@@ -91,7 +98,7 @@ class ContributionPage extends React.Component {
           Nos pistes d'améliorations
         </div>
         <div style={{fontSize: 16, lineHeight: 1.44}}>
-          <Markdown content={require('./contribution/roadmap.txt')} />
+          <Markdown content={roadmapContent} />
         </div>
       </div>
     </StaticPage>

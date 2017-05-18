@@ -35,6 +35,9 @@ _FILTER_DRIVING_LICENSE_RATIO = .05
 # suggestion for the whole job group.
 _FILTER_DESKTOP_TOOLS_RATIO = .05
 
+# Minimum ratio of job offers for a job to be mentionned in the requirements.
+_FILTER_JOB_RATIO = .01
+
 # Job offer fields required by this script.
 _REQUIRED_FIELDS = frozenset([
     'contract_duration',
@@ -57,6 +60,7 @@ _REQUIRED_FIELDS = frozenset([
     'driving_lic_name_1',
     'driving_lic_name_2',
     'rome_profession_card_code',
+    'rome_profession_code',
 ])
 
 # Type of driving license types. List pulled from
@@ -133,6 +137,7 @@ class _RequirementKind(enum.Enum):
     driving_licenses = 2
     desktop_tools = 3
     contract_type = 4
+    job = 5
 
 
 class _RequirementsCollector(object):
@@ -151,6 +156,7 @@ class _RequirementsCollector(object):
         self._collect_driving_license(job_offer)
         self._collect_desktop_tools(job_offer)
         self._collect_employment_type(job_offer)
+        self._collect_job(job_offer)
         # TODO(pascal): Also collect lang.
 
     def _add_suggestion(self, kind, name, required=False):
@@ -239,6 +245,10 @@ class _RequirementsCollector(object):
         kind = _RequirementKind.contract_type
         self._add_suggestion(kind, _employment_type(job_offer))
 
+    def _collect_job(self, job_offer):
+        kind = _RequirementKind.job
+        self._add_suggestion(kind, str(int(job_offer.rome_profession_code)))
+
     def get_proto_dict(self):
         """Gets the requirements collected as a proto compatible dict.
 
@@ -258,6 +268,7 @@ class _RequirementsCollector(object):
                     _FILTER_DESKTOP_TOOLS_RATIO * self.num_offers),
             )),
             'contractTypes': list(self._get_contract_types()),
+            'specificJobs': list(self._get_jobs(_FILTER_JOB_RATIO * self.num_offers)),
         }
 
     def _get_diplomas(self, count_threshold):
@@ -301,6 +312,14 @@ class _RequirementsCollector(object):
                 'percentSuggested': round(100 * count / self.num_offers),
                 'percentRequired': 100,
                 'contractType': job_pb2.EmploymentType.Name(contract_type),
+            }
+
+    def _get_jobs(self, count_threshold):
+        jobs = self._get_sorted_requirements(_RequirementKind.job, count_threshold)
+        for job_id, count, unused_percent_required in jobs:
+            yield {
+                'percentSuggested': round(100 * count / self.num_offers),
+                'codeOgr': job_id,
             }
 
 

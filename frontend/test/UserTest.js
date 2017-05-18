@@ -1,9 +1,9 @@
 var chai = require('chai')
 var expect = chai.expect
 import {FamilySituation} from 'api/user'
-import {hasActivelySearchingSinceIfNeeded, travelInTime, isOldAndDiscriminated,
-        isYoungAndDiscriminated, getUserFrustrationTags, getFamilySituationOptions,
-        getHighestDegreeDescription} from 'store/user'
+import {travelInTime, isOldAndDiscriminated, isYoungAndDiscriminated,
+  getUserFrustrationTags, getFamilySituationOptions,
+  getHighestDegreeDescription} from 'store/user'
 
 
 describe('age discrimination', () => {
@@ -79,19 +79,6 @@ describe('getHighestDegreeDescription', () => {
   it('should return the right degree', () => {
     const profile = {highestDegree: 'DEA_DESS_MASTER_PHD'}
     expect(getHighestDegreeDescription(profile)).to.equal('DEA - DESS - Master - PhD')
-  })
-})
-
-
-describe('user helpers', () => {
-  it('should need a activelySearchingSince date if actively searching', () => {
-    const result = hasActivelySearchingSinceIfNeeded(null, 'ACTIVE')
-    expect(result).to.equal(false)
-  })
-
-  it('should not need a activelySearchingSince date if in passive mode', () => {
-    const result = hasActivelySearchingSinceIfNeeded(null, 'PASSIVE')
-    expect(result).to.equal(true)
   })
 })
 

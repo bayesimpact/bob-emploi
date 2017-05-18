@@ -1,16 +1,17 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import {Icon, Button} from './theme'
 
 
 class Banner extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    onClose: React.PropTypes.func.isRequired,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    onClose: PropTypes.func.isRequired,
+    style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   };
 
   render() {

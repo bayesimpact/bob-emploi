@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 
 
@@ -15,9 +16,9 @@ function postOpen(url, target) {
 
 class DashboardExportCreatorBase extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    dispatch: React.PropTypes.func.isRequired,
-    userId: React.PropTypes.string.isRequired,
+    children: PropTypes.node,
+    dispatch: PropTypes.func.isRequired,
+    userId: PropTypes.string.isRequired,
   }
 
   handleClick = event => {

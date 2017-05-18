@@ -1,4 +1,21 @@
 {
+  "application-flow": {
+    "callToAction": "Accédez à nos combinaisons d'applications",
+    "goal": "utiliser les bons outils pour postuler",
+    "title": "Adoptez les bons outils pour postuler plus vite",
+    "titleXStars": {
+      "1": "Découvrez de nouveaux outils pour postuler",
+      "2": "Vos outils pour postuler sont-il adaptés ?",
+      "3": "Utilisez les meilleurs outils pour postuler "
+    }
+  },
+  "better-job-in-group": {
+    "callToAction": "Accédez aux métiers proches",
+    "goal": "trouver un métier proche",
+    "title": "Regardez les métiers proches du votre",
+    "titleXStars": {
+    }
+  },
   "events": {
     "callToAction": "Accédez à nos outils pour trouver des événements",
     "goal": "trouver et vous préparer à aller à des événements",
@@ -12,21 +29,11 @@
   "find-a-jobboard": {
     "callToAction": "Accédez à notre liste de portails d'offres spécialisés",
     "goal": "trouver des offres qui vous correspondent",
-    "title": "Trouvez des offres qui vous correspondent",
+    "title": "Utilisez les bons sites d'offre en ligne",
     "titleXStars": {
-      "1": "N'oubliez pas les portails d'offres spécialisés",
-      "2": "Avez-vous essayé des portails d'offres spécialisés",
-      "3": "Explorez à fond des portails d'offres spécialisés"
-    }
-  },
-  "flow-to-apply": {
-    "callToAction": "Accédez à nos combinaisons d'applications",
-    "goal": "utiliser les bons outils pour postuler",
-    "title": "Adoptez les bons outils pour postuler plus vite",
-    "titleXStars": {
-      "1": "Découvrez de nouveaux outils pour postuler",
-      "2": "Vos outils de recherche sont-il adaptés ?",
-      "3": "Utilisez de meilleurs outils de recherche"
+      "1": "N'oubliez pas les bons sites d'offre en ligne",
+      "2": "Avez-vous essayé les bons sites d'offre en ligne",
+      "3": "Explorez à fond les bons sites d'offre en ligne"
     }
   },
   "fresh-resume": {

@@ -245,7 +245,8 @@ class Authenticator(object):
             'resetLink': reset_link,
             'firstName': user_profile.name,
         }
-        result = mail.send_template('71254', user_profile, template_vars)
+        result = mail.send_template(
+            '71254', user_profile, template_vars, monitoring_category='reset_password')
         if result.status_code != 200:
             logging.error('Failed to send an email with MailJet:\n %s', result.text)
             flask.abort(result.status_code)

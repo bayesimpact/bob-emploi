@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import Cookies from 'js-cookie'
 
@@ -11,9 +12,9 @@ const HAS_SEEN_BETA_BANNER = 'has-seen-2-beta-banner'
 
 class BetaMessageBase extends React.Component {
   static propTypes = {
-    isLoggedIn: React.PropTypes.bool,
-    registeredAt: React.PropTypes.string,
-    style: React.PropTypes.object,
+    isLoggedIn: PropTypes.bool,
+    registeredAt: PropTypes.string,
+    style: PropTypes.object,
   }
 
   componentWillMount() {
@@ -44,7 +45,8 @@ class BetaMessageBase extends React.Component {
       Grâce à vos retours la nouvelle version de {config.productName} est
       désormais disponible&nbsp;! Si certaines fonctionnalités de l'ancienne
       version vous manquent, n'hésitez pas à nous le signaler en <a
-          style={linkStyle} href="https://bayes.typeform.com/to/ZHuGiM" target="_blank"
+          style={linkStyle} href="https://bayes.typeform.com/to/ZHuGiM"
+          target="_blank" rel="noopener noreferrer"
           >cliquant ici</a>.
     </Banner>
   }

@@ -39,7 +39,7 @@ def count_sent_to(email):
     return result.json()['Data'][0]
 
 
-def send_template(template_id, recipient, template_vars, dry_run=False):
+def send_template(template_id, recipient, template_vars, dry_run=False, monitoring_category=None):
     """Send an email using a template.
 
     Args:
@@ -48,6 +48,7 @@ def send_template(template_id, recipient, template_vars, dry_run=False):
         recipient: a UserProfile proto defining the email recipient.
         vars: a dict of keywords vars to use in the template.
         dry_run: if True, emails are sent to the admins, not to the recipient.
+        monitoring_category: see http://hello.mailjet.com/monitoring-beta/
     """
     mail_client = _mailjet_client()
     data = {
@@ -62,6 +63,8 @@ def send_template(template_id, recipient, template_vars, dry_run=False):
             'Name': '%s %s' % (recipient.name, recipient.last_name),
         }],
     }
+    if monitoring_category:
+        data['MonitoringCategory'] = monitoring_category,
     if dry_run:
         logging.info(data)
         return _FakeResponse(status_code=200, raise_for_status=lambda: None, text='OK')

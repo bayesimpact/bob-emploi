@@ -1,11 +1,10 @@
 // This file is the base configuration for the [webpack module bundler](https://webpack.github.io/).
 // Use this file to edit settings that are the same for all environments (dev, test, prod).
-var path = require('path')
-var webpack = require('webpack')
+const path = require('path')
+const webpack = require('webpack')
 const {UnusedFilesWebpackPlugin} = require('unused-files-webpack-plugin')
 
-var port = 80
-var srcPath = path.join(__dirname, '/../src')
+const srcPath = path.join(__dirname, '../src')
 
 module.exports = {
   devServer: {
@@ -13,7 +12,7 @@ module.exports = {
     historyApiFallback: true,
     hot: true,
     noInfo: false,
-    port: port,
+    port: 80,
     public: 'localhost.bayes.org:3000',
     publicPath: '/',
   },
@@ -21,9 +20,12 @@ module.exports = {
     rules: [
       {
         enforce: 'pre',
-        include: path.join(__dirname, 'src'),
+        include: srcPath,
         test: /\.(js|jsx)$/,
-        use: 'eslint-loader',
+        use: {
+          loader: 'eslint-loader',
+          options: {emitWarning: true},
+        },
       },
       {
         test: /\.css$/,
@@ -31,19 +33,28 @@ module.exports = {
       },
       {
         test: /\.(png|jpg|gif|eot|ttf|woff2?)(\?[a-z0-9=&.]+)?$/,
-        use: 'url-loader?limit=8192',
+        use: {
+          loader: 'url-loader',
+          query: {limit: 8192},
+        },
       },
       {
         test: /\.svg(\?[a-z0-9=&.]+)?$/,
         use: [
-          'url-loader?limit=8192',
-          'svgo-loader?' + JSON.stringify({
-            plugins: [
-              {removeTitle: true},
-              {removeComments: true},
-              {removeDesc: true},
-            ],
-          }),
+          {
+            loader: 'url-loader',
+            query: {limit: 8192},
+          },
+          {
+            loader: 'svgo-loader',
+            query: {
+              plugins: [
+                {removeTitle: true},
+                {removeComments: true},
+                {removeDesc: true},
+              ],
+            },
+          },
         ],
       },
       {
@@ -64,12 +75,12 @@ module.exports = {
   ],
   resolve: {
     alias: {
-      api: srcPath + '/../bob_emploi/frontend/api',
-      components: srcPath + '/components/',
-      config: srcPath + '/config/' + process.env.REACT_WEBPACK_ENV,
-      images: srcPath + '/images/',
-      store: srcPath + '/store/',
-      styles: srcPath + '/styles/',
+      api: path.join(srcPath, '../bob_emploi/frontend/api'),
+      components: path.join(srcPath, 'components'),
+      config: path.join(srcPath, 'config', process.env.REACT_WEBPACK_ENV),
+      images: path.join(srcPath, 'images'),
+      store: path.join(srcPath, 'store'),
+      styles: path.join(srcPath, 'styles'),
     },
     extensions: ['.js', '.jsx', '_pb.js'],
   },

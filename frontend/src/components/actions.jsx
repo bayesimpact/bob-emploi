@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import {browserHistory} from 'react-router'
 import Radium from 'radium'
@@ -11,29 +12,29 @@ import {isActionStuck, stickyProgress} from 'store/action'
 import {readTip, openTipExternalLink} from 'store/actions'
 
 
-const ACTION_SHAPE = React.PropTypes.shape({
-  actionId: React.PropTypes.string.isRequired,
-  doneCaption: React.PropTypes.string,
-  durationSeconds: React.PropTypes.number,
-  extraContent: React.PropTypes.string,
-  goal: React.PropTypes.string,
-  howTo: React.PropTypes.string,
-  justification: React.PropTypes.string,
-  shortDescription: React.PropTypes.string,
-  shortDescriptionFeminine: React.PropTypes.string,
-  status: React.PropTypes.oneOf(Object.keys(ActionStatus)).isRequired,
-  title: React.PropTypes.string,
-  titleFeminine: React.PropTypes.string,
+const ACTION_SHAPE = PropTypes.shape({
+  actionId: PropTypes.string.isRequired,
+  doneCaption: PropTypes.string,
+  durationSeconds: PropTypes.number,
+  extraContent: PropTypes.string,
+  goal: PropTypes.string,
+  howTo: PropTypes.string,
+  justification: PropTypes.string,
+  shortDescription: PropTypes.string,
+  shortDescriptionFeminine: PropTypes.string,
+  status: PropTypes.oneOf(Object.keys(ActionStatus)).isRequired,
+  title: PropTypes.string,
+  titleFeminine: PropTypes.string,
 })
 
 
 class ActionDescriptionModalBase extends React.Component {
   static propTypes = {
     action: ACTION_SHAPE,
-    dispatch: React.PropTypes.func.isRequired,
-    gender: React.PropTypes.string,
-    isShown: React.PropTypes.bool,
-    onClose: React.PropTypes.func.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    gender: PropTypes.string,
+    isShown: PropTypes.bool,
+    onClose: PropTypes.func.isRequired,
   }
 
   componentDidMount() {
@@ -84,7 +85,9 @@ class ActionDescriptionModalBase extends React.Component {
           Vous ne savez pas par où commencer ?
         </div>
         <div style={{marginBottom: 15, marginTop: 5}}>
-          <a style={linkStyle} target="_blank" href={action.link} onClick={this.handleLinkClick}>
+          <a
+              style={linkStyle} target="_blank" rel="noopener noreferrer"
+              href={action.link} onClick={this.handleLinkClick}>
           Cliquez ici</a> pour avoir un coup de pouce.
         </div>
       </div>
@@ -108,7 +111,7 @@ const ActionDescriptionModal = connect()(ActionDescriptionModalBase)
 class ActionModalHeader extends React.Component {
   static propTypes = {
     action: ACTION_SHAPE,
-    gender: React.PropTypes.string,
+    gender: PropTypes.string,
   }
 
 
@@ -130,11 +133,11 @@ class ActionModalHeader extends React.Component {
 class ActionBase extends React.Component {
   static propTypes = {
     action: ACTION_SHAPE,
-    context: React.PropTypes.oneOf(['', 'project']),
-    gender: React.PropTypes.string,
-    onOpen: React.PropTypes.func.isRequired,
-    project: React.PropTypes.object,
-    style: React.PropTypes.object,
+    context: PropTypes.oneOf(['', 'project']),
+    gender: PropTypes.string,
+    onOpen: PropTypes.func.isRequired,
+    project: PropTypes.object,
+    style: PropTypes.object,
   }
 
 
@@ -157,11 +160,15 @@ class ActionBase extends React.Component {
       backgroundColor: Colors.MODAL_PROJECT_GREY,
       color: Colors.COOL_GREY,
       display: 'flex',
+      height: 24,
+      justifyContent: 'center',
       padding: 2,
       transition: 'background-color 450ms, color 450ms',
+      width: 24,
     }
     const chevronStyle = {
       fontSize: 20,
+      lineHeight: 1,
       verticalAlign: 'middle',
     }
     return <Button isNarrow={true} type="discreet" style={buttonStyle}>

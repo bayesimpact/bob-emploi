@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import {browserHistory} from 'react-router'
 
@@ -11,9 +12,9 @@ import {Colors} from './theme'
 
 class CookieMessageBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    isMessageShown: React.PropTypes.bool,
-    style: React.PropTypes.object,
+    dispatch: PropTypes.func.isRequired,
+    isMessageShown: PropTypes.bool,
+    style: PropTypes.object,
   }
 
   state = {

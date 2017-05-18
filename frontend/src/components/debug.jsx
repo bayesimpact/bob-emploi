@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 
 import {displayToasterMessage, saveUser} from 'store/actions'
@@ -9,11 +10,11 @@ import {Button} from './theme'
 
 class DebugModalBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    email: React.PropTypes.string,
-    onClose: React.PropTypes.func.isRequired,
-    user: React.PropTypes.object.isRequired,
-    userId: React.PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
+    email: PropTypes.string,
+    onClose: PropTypes.func.isRequired,
+    user: PropTypes.object.isRequired,
+    userId: PropTypes.string,
   }
 
   componentWillMount() {
@@ -30,10 +31,10 @@ class DebugModalBase extends React.Component {
     })
   }
 
-  saveAndClose = () => {
+  saveAndClose(filterUserFunc) {
     const {dispatch, email, onClose, userId} = this.props
     const {initialUserJson} = this.state
-    const userJson = this.refs.userJson.value
+    const userJson = this.userJsonDom && this.userJsonDom.value || ''
     if (userJson === initialUserJson) {
       onClose()
     }
@@ -54,10 +55,24 @@ class DebugModalBase extends React.Component {
     }
     fieldsToDelete.forEach(field => delete user[field])
 
+    if (filterUserFunc) {
+      filterUserFunc(user)
+    }
+
     dispatch(saveUser({...user, profile: {...user.profile, email}, userId})).then(onClose)
   }
 
+  resetAdvices = () => {
+    this.saveAndClose(user => {
+      if (user.projects && user.projects.length && user.projects[0].advices) {
+        delete user.projects[0].advices
+      }
+    })
+  }
+
   render() {
+    const {projects} = this.props.user
+    const hasAdvices = projects && projects[0] && projects[0].advices
     const buttonStyle = {
       alignSelf: 'flex-end',
       margin: 20,
@@ -71,10 +86,17 @@ class DebugModalBase extends React.Component {
     return <Modal {...this.props} style={style}>
       <textarea
           style={{flex: 1, fontFamily: 'Monospace', fontSize: 12}}
-          defaultValue={this.state.initialUserJson} ref="userJson" />
-      <Button type="validation" onClick={this.saveAndClose} style={buttonStyle}>
-        Enregistrer
-      </Button>
+          defaultValue={this.state.initialUserJson} ref={dom => {
+            this.userJsonDom = dom
+          }} />
+      <div style={buttonStyle}>
+        {hasAdvices ? <Button onClick={this.resetAdvices}>
+          Conseiller à nouveau
+        </Button> : null}
+        <Button type="validation" onClick={() => this.saveAndClose()} style={{marginLeft: 20}}>
+          Enregistrer
+        </Button>
+      </div>
     </Modal>
   }
 }

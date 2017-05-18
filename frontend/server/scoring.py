@@ -5,11 +5,13 @@ See design doc at http://go/pe:scoring-chantiers.
 """
 import collections
 import datetime
+import itertools
 import logging
 import math
 import random
 import re
 
+from bob_emploi.frontend import companies
 from bob_emploi.frontend import proto
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import geo_pb2
@@ -292,6 +294,19 @@ class _UseYourNetworkScoringModel(_ScoringModelBase):
         return _Score(score)
 
 
+class _AdviceEventScoringModel(_ScoringModelBase):
+    """A scoring model for Advice that user needs to go to events."""
+
+    def score(self, project):
+        imt = project.imt_proto()
+        first_modes = set(mode.first for mode in imt.application_modes.values())
+        first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
+        if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
+            return _Score(2)
+
+        return _Score(1)
+
+
 class _ImproveYourNetworkScoringModel(_ScoringModelBase):
     """A scoring model for Advice that user needs to improve their network."""
 
@@ -413,6 +428,12 @@ class _SpontaneousApplicationScoringModel(_ScoringModelBase):
 
         return _Score(0)
 
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        return project_pb2.SpontaneousApplicationData(companies=[
+            companies.to_proto(c)
+            for c in itertools.islice(companies.get_lbb_companies(project.details), 5)])
+
 
 class _ObtainDrivingLicenseScoringModel(_IncreaseJobOffersScoringModel):
     """A scoring model for the "Obtain driving license" chantier.
@@ -425,8 +446,7 @@ class _ObtainDrivingLicenseScoringModel(_IncreaseJobOffersScoringModel):
 
     def additional_job_offers_percent(self, project):
         """Compute raise in number of job offers."""
-        if (self.driving_license in project.user_profile.driving_licenses or
-                user_pb2.HANDICAPED in project.user_profile.frustrations or
+        if (user_pb2.HANDICAPED in project.user_profile.frustrations or
                 project.user_profile.has_handicap or
                 (project.details.mobility.city.departement_id == '75' and
                  project.details.mobility.area_type <= geo_pb2.DEPARTEMENT)):
@@ -447,25 +467,6 @@ class _ObtainDrivingLicenseScoringModel(_IncreaseJobOffersScoringModel):
         return 100 / (1 - min(fake_percent_required, 99)/100) - 100
 
 
-class _OfficeToolsScoringModel(_IncreaseJobOffersScoringModel):
-    """A scoring model for the "Master Office Tools" chantier.
-
-    See http://go/pe:chantiers/recKFsbKerNua8YA9
-    """
-
-    def additional_job_offers_percent(self, project):
-        """Compute raise in number of job offers."""
-        if project.user_profile.office_skills_estimate >= _ESTIMATION_SCALE_MAX:
-            return 0
-        try:
-            requirement = next(
-                r for r in project.requirements().office_skills
-                if r.office_skills_level == project.user_profile.office_skills_estimate + 1)
-        except StopIteration:
-            return 0
-        return 100 / (1 - min(requirement.percent_suggested, 99)/100) - 100
-
-
 class _PartTimeScoringModel(_IncreaseJobOffersScoringModel):
     """A scoring model for the "Try a Part Time Job" chantier.
 
@@ -479,21 +480,6 @@ class _PartTimeScoringModel(_IncreaseJobOffersScoringModel):
         if project_pb2.PART_TIME in project.details.workloads:
             return 0
         return super(_PartTimeScoringModel, self).additional_job_offers_percent(project)
-
-
-class _ImproveEnglishScoringModel(_IncreaseJobOffersScoringModel):
-    """A scoring model for "Improve your English" chantier.
-
-    TODO: Use actual data and don't call the super `additional_job_offers_percent`.
-
-    See http://go/pe:chantiers/rec9W3FpHBsUXADBu
-    """
-
-    def additional_job_offers_percent(self, project):
-        """Compute raise in number of job offers."""
-        if project.user_profile.english_level_estimate >= _ESTIMATION_SCALE_MAX:
-            return 0
-        return super(_ImproveEnglishScoringModel, self).additional_job_offers_percent(project)
 
 
 class _TrainingScoringModel(_IncreaseJobOffersScoringModel):
@@ -717,11 +703,7 @@ class _InternationalJobScoringModel(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if project.user_profile.english_level_estimate <= 1:
-            return _Score(0)
         score = 1
-        if project.user_profile.english_level_estimate >= _ESTIMATION_SCALE_MAX:
-            score += 1
         if project.details.mobility.area_type >= geo_pb2.WORLD:
             score += 2
         return _Score(score)
@@ -828,8 +810,12 @@ class _ActiveExperimentFilter(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if getattr(project.features_enabled, self.feature) == user_pb2.ACTIVE:
-            return _Score(3)
+        try:
+            if getattr(project.features_enabled, self.feature) == user_pb2.ACTIVE:
+                return _Score(3)
+        except AttributeError:
+            logging.warning(
+                'A scoring model is referring to a non existant feature flag: "%s"', self.feature)
         return _Score(0)
 
 
@@ -986,6 +972,58 @@ class _AdviceImproveInterview(_ScoringModelBase):
         return _Score(0)
 
 
+class _AdviceBetterJobInGroup(_ScoringModelBase):
+    """A scoring model to trigger the "Change to better job in your job group" advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        specific_jobs = project.requirements().specific_jobs
+        if not specific_jobs or specific_jobs[0].code_ogr == project.details.target_job.code_ogr:
+            return _Score(0)
+
+        try:
+            target_job_percentage = next(
+                j.percent_suggested for j in specific_jobs
+                if j.code_ogr == project.details.target_job.code_ogr)
+        except StopIteration:
+            target_job_percentage = 0
+
+        if target_job_percentage + 20 < specific_jobs[0].percent_suggested:
+            return _Score(2)
+
+        return _Score(1)
+
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        specific_jobs = project.requirements().specific_jobs
+
+        if not specific_jobs:
+            return None
+
+        extra_data = project_pb2.BetterJobInGroupData()
+        try:
+            extra_data.num_better_jobs = next(
+                i for i, job in enumerate(specific_jobs)
+                if job.code_ogr == project.details.target_job.code_ogr)
+        except StopIteration:
+            # Target job is not mentionned in the specific jobs, do not mention
+            # the number of better jobs.
+            pass
+
+        all_jobs = project.job_group_info().jobs
+        try:
+            best_job = next(
+                job for job in all_jobs
+                if job.code_ogr == specific_jobs[0].code_ogr)
+            extra_data.better_job.CopyFrom(best_job)
+        except StopIteration:
+            logging.warning(
+                'Better job "%s" is not listed in the group "%s"', specific_jobs[0].code_ogr,
+                project.job_group_info().rome_id)
+
+        return extra_data
+
+
 class _AdviceImproveResume(_ScoringModelBase):
     """A scoring model to trigger the "Improve your resume to get more interviews" advice."""
 
@@ -1053,14 +1091,24 @@ class _AdviceFreshResume(_ProjectFilter):
             requirements=project.handcrafted_job_requirements())
 
 
-class _AdviceJobBoards(_ScoringModelBase):
-    """A scoring model to trigger the "Find job boards" advice."""
+class _LowPriorityAdvice(_ScoringModelBase):
+
+    def __init__(self, main_frustration):
+        super(_LowPriorityAdvice, self).__init__()
+        self._main_frustration = main_frustration
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if user_pb2.NO_OFFERS in project.user_profile.frustrations:
+        if self._main_frustration in project.user_profile.frustrations:
             return _Score(2)
         return _Score(1)
+
+
+class _AdviceJobBoards(_LowPriorityAdvice):
+    """A scoring model to trigger the "Find job boards" advice."""
+
+    def __init__(self):
+        super(_AdviceJobBoards, self).__init__(user_pb2.NO_OFFERS)
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
@@ -1112,12 +1160,15 @@ GROUP_SCORING_MODELS = {
 
 SCORING_MODELS = {
     '': _ScoringModelBase(),
+    'advice-better-job-in-group': _AdviceBetterJobInGroup(),
     'advice-better-network': _ImproveYourNetworkScoringModel(2),
+    'advice-event': _AdviceEventScoringModel(),
     'advice-fresh-resume': _AdviceFreshResume(),
     'advice-improve-interview': _AdviceImproveInterview(),
     'advice-improve-network': _ImproveYourNetworkScoringModel(1),
     'advice-improve-resume': _AdviceImproveResume(),
     'advice-job-boards': _AdviceJobBoards(),
+    'advice-more-offer-answers': _LowPriorityAdvice(user_pb2.NO_OFFER_ANSWERS),
     'advice-other-work-env': _AdviceOtherWorkEnv(),
     'advice-use-good-network': _ImproveYourNetworkScoringModel(3),
     'chantier-about-job': _LearnMoreAboutJobScoringModel(),
@@ -1127,7 +1178,6 @@ SCORING_MODELS = {
         job_pb2.CDD_OVER_3_MONTHS, job_pb2.CDD_LESS_EQUAL_3_MONTHS]),
     'chantier-contract-type(interim)': _AcceptContractTypeScoringModel([job_pb2.INTERIM]),
     'chantier-driving-license(B)': _ObtainDrivingLicenseScoringModel(job_pb2.CAR),
-    'chantier-english': _ImproveEnglishScoringModel(),
     'chantier-freelance': _FreelanceScoringModel(),
     'chantier-gender-discriminations': _FightGenderDiscriminationScoringModel(),
     'chantier-get-more-offers': _GetMoreOffersScoringModel(),
@@ -1138,7 +1188,6 @@ SCORING_MODELS = {
         target_area_type=geo_pb2.DEPARTEMENT, scaling_factor=.75),
     'chantier-mobility-without-move(reg)': _MobilityWithoutMoveScoringModel(
         target_area_type=geo_pb2.REGION, scaling_factor=.5),
-    'chantier-office-tools': _OfficeToolsScoringModel(),
     'chantier-organize': _ImproveOrganization(),
     'chantier-part-time': _PartTimeScoringModel(),
     'chantier-professionnalisation': _ProfessionnalisationScoringModel(),
@@ -1155,8 +1204,6 @@ SCORING_MODELS = {
     'chantier-training': _TrainingScoringModel(),
     'chantier-use-network': _UseYourNetworkScoringModel(),
     'for-complex-application': _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS),
-    'for-driver(car)': _UserProfileFilter(lambda user: job_pb2.CAR in user.driving_licenses),
-    'for-english-speaker(2)': _UserProfileFilter(lambda user: user.english_level_estimate >= 2),
     'for-discovery': _ProjectFilter(
         lambda project: project.intensity == project_pb2.PROJECT_FIGURING_INTENSITY),
     'for-frustrated-old(50)': _UserProfileFilter(
@@ -1167,8 +1214,6 @@ SCORING_MODELS = {
         datetime.date.today().year - user.year_of_birth < 25),
     'for-handicaped': _UserProfileFilter(
         lambda user: user_pb2.HANDICAPED in user.frustrations or user.has_handicap),
-    'for-non-driver(car)': _UserProfileFilter(
-        lambda user: job_pb2.CAR not in user.driving_licenses),
     'for-not-employed-anymore': _UserProfileFilter(
         lambda user: user.situation == user_pb2.LOST_QUIT),
     'for-old(50)': _UserProfileFilter(

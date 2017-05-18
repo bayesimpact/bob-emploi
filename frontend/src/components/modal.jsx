@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import Radium from 'radium'
 import ReactHeight from 'react-height'
 
@@ -14,26 +15,26 @@ const closeButtonHeight = 30
 class Modal extends React.Component {
   static propTypes = {
     // Opacity of the black cover on the backround.
-    backgroundCoverOpacity: React.PropTypes.number.isRequired,
+    backgroundCoverOpacity: PropTypes.number.isRequired,
     // Content of the modal box.
-    children: React.PropTypes.node,
+    children: PropTypes.node,
     // Children to set on top of the semi-opaque background but outside of the
     // modal box.
-    externalChildren: React.PropTypes.node,
+    externalChildren: PropTypes.node,
     // Whether the modal is shown.
-    isShown: React.PropTypes.bool,
+    isShown: PropTypes.bool,
     // Callback when the modal is closed (X button is clicked).
     // X button will only be displayed if this function is provided.
-    onClose: React.PropTypes.func,
+    onClose: PropTypes.func,
     // Callback when the modals finishes the hide transition.
-    onHidden: React.PropTypes.func,
+    onHidden: PropTypes.func,
     // Additional styling for the modal box.
-    style: React.PropTypes.object,
-    title: React.PropTypes.node,
+    style: PropTypes.object,
+    title: PropTypes.node,
     // Additionl styling for the title.
-    titleStyle: React.PropTypes.object,
+    titleStyle: PropTypes.object,
     // Duration in milliseconds of the transition to open and close the modal.
-    transitionDurationMilliSec: React.PropTypes.number,
+    transitionDurationMilliSec: PropTypes.number,
   }
 
   static defaultProps = {
@@ -133,7 +134,7 @@ class Modal extends React.Component {
       position: 'fixed',
       top: 0,
       width: '100vw',
-      zIndex: 1,
+      zIndex: 2,
     }
     const backgroundStyle = {
       backgroundColor: '#000',
@@ -191,12 +192,12 @@ class Modal extends React.Component {
 
 class ModalCloseButtonBase extends React.Component {
   static propTypes = {
-    closeOnEscape: React.PropTypes.bool,
-    onClick: React.PropTypes.func.isRequired,
-    style: React.PropTypes.object,
+    closeOnEscape: PropTypes.bool,
+    onClick: PropTypes.func.isRequired,
+    style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   render() {
@@ -236,8 +237,8 @@ const ModalCloseButton = Radium(ModalCloseButtonBase)
 
 class ModalHeader extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    style: PropTypes.object,
   }
 
   render() {

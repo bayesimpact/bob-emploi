@@ -3,6 +3,7 @@ import {browserHistory} from 'react-router'
 
 import config from 'config'
 
+import newAdvisorScreenshot from 'images/screenshot-new-advisor.png'
 import {PageWithNavigationBar} from 'components/navigation'
 import {ShortKey} from 'components/shortkey'
 import {Button, Colors, Styles} from 'components/theme'
@@ -93,7 +94,7 @@ class UpdatePage extends React.Component {
         {config.productName} évolue&nbsp;!
       </header>
 
-      <img style={imageStyle} src={require('images/screenshot-new-advisor.png')} />
+      <img style={imageStyle} src={newAdvisorScreenshot} />
 
       <div style={{margin: '70px auto', maxWidth: 500}}>
         <div style={{color: Colors.DARK_TWO, fontSize: 21, fontWeight: 'bold'}}>

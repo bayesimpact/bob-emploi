@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
@@ -13,7 +14,6 @@ const maybeE = gender => gender === 'FEMININE' ? 'e' : ''
 const unnamedComponent = c => c
 
 
-// TODO: Highlight some of the terms according to mocks.
 const jobSearchFrustrationOptions = [
   {
     name: () => unnamedComponent(<span>
@@ -86,7 +86,7 @@ const genderizedOptions = (options, gender) => options.map(
 
 class FrustrationsStep extends React.Component {
   static propTypes = {
-    isShownAsStepsDuringOnboarding: React.PropTypes.bool,
+    isShownAsStepsDuringOnboarding: PropTypes.bool,
     profile: USER_PROFILE_SHAPE,
   }
 

@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import {browserHistory} from 'react-router'
 import {CircularProgress} from 'components/progress'
@@ -14,16 +15,16 @@ import {getOnboardingStep, gotoNextStep, gotoPreviousStep,
 
 class NewProjectPageBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    existingProject: React.PropTypes.object,
-    isCreatingProject: React.PropTypes.bool,
-    params: React.PropTypes.shape({
-      stepName: React.PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
+    existingProject: PropTypes.object,
+    isCreatingProject: PropTypes.bool,
+    params: PropTypes.shape({
+      stepName: PropTypes.string,
     }).isRequired,
     userProfile: USER_PROFILE_SHAPE,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   componentWillMount() {
@@ -52,7 +53,7 @@ class NewProjectPageBase extends React.Component {
     if (prevProps.params.stepName === this.props.params.stepName) {
       return
     }
-    this.refs.page.scrollTo(0)
+    this.pageDom && this.pageDom.scrollTo(0)
   }
 
   handleSubmit = newProjectUpdates => {
@@ -101,7 +102,9 @@ class NewProjectPageBase extends React.Component {
     }
     return <PageWithNavigationBar
         style={{backgroundColor: Colors.BACKGROUND_GREY}}
-        page="new_project" isContentScrollable={true} ref="page">
+        page="new_project" isContentScrollable={true} ref={page => {
+          this.page = page
+        }}>
       <div style={style}>
         {content}
       </div>

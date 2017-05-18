@@ -102,6 +102,7 @@ def ScoringModelTestBase(model_id):  # pylint: disable=invalid-name
         @classmethod
         def setUpClass(cls):
             super(_TestCase, cls).setUpClass()
+            cls.model_id = model_id
             cls.model = scoring.get_scoring_model(model_id)
 
         def setUp(self):
@@ -167,6 +168,44 @@ class UseYourNetworkScoringModelTestCase(ScoringModelTestBase('chantier-use-netw
         score = self._score_persona(persona)
 
         self.assertLessEqual(5, score)
+
+
+class AdviceEventScoringModelTestCase(ScoringModelTestBase('advice-event')):
+    """Unit test for the "Event Advice" scoring model."""
+
+    def setUp(self):
+        super(AdviceEventScoringModelTestCase, self).setUp()
+        self.persona = self._random_persona().clone()
+
+    def test_important_application(self):
+        """Network is important for the user."""
+        self.persona.project.target_job.job_group.rome_id = 'A1234'
+        self.persona.project.mobility.city.departement_id = '69'
+        self.database.local_diagnosis.insert_one({
+            '_id': '69:A1234',
+            'imt': {
+                'applicationModes': {
+                    'Foo': {'first': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'},
+                },
+            },
+        })
+        score = self._score_persona(self.persona)
+        self.assertGreaterEqual(score, 2, msg='Fail for "%s"' % self.persona.name)
+
+    def test_unimportant_application(self):
+        """Network is important for the user."""
+        self.persona.project.target_job.job_group.rome_id = 'A1234'
+        self.persona.project.mobility.city.departement_id = '69'
+        self.database.local_diagnosis.insert_one({
+            '_id': '69:A1234',
+            'imt': {
+                'applicationModes': {
+                    'Foo': {'second': 'PERSONAL_OR_PROFESSIONAL_CONTACTS', 'first': 'LEVEL'},
+                },
+            },
+        })
+        score = self._score_persona(self.persona)
+        self.assertLessEqual(score, 1, msg='Fail for "%s"' % self.persona.name)
 
 
 class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improve-network')):
@@ -472,7 +511,6 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
             persona.project.mobility.city.departement_id = '39'
         del persona.user_profile.frustrations[:]
         persona.user_profile.has_handicap = False
-        del persona.user_profile.driving_licenses[:]
 
     def test_license_required(self):
         """> 33% when license is required."""
@@ -517,27 +555,6 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
         self.assertGreaterEqual(job_offers_increase, 1, msg='Failed for "%s"' % persona.name)
         self.assertLessEqual(job_offers_increase, 39, msg='Failed for "%s"' % persona.name)
 
-    def test_user_has_license_already(self):
-        """0 when user already has this license."""
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'K2109'
-        self._ensure_not_excluded(persona)
-        persona.user_profile.driving_licenses.append(job_pb2.CAR)
-        self.database.job_group_info.insert_one({
-            '_id': 'K2109',
-            'requirements': {
-                'drivingLicenses': [{
-                    'drivingLicense': 'CAR',
-                    'name': 'Permis B - Véhicule léger',
-                    'percentSuggested': 6,
-                    'percentRequired': 49,
-                }],
-            },
-        })
-
-        score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
-
     def test_handicaped(self):
         """0 when user is handicaped."""
         persona = self._random_persona().clone()
@@ -580,6 +597,93 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
 
         score = self._score_persona(persona)
         self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+
+class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-group')):
+    """Unit tests for the "Find a better job in job group" advice."""
+
+    def test_no_data(self):
+        """No data for job group."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'jobs': [
+                {'codeOgr': '1234', 'name': 'foo'},
+                {'codeOgr': '5678', 'name': 'foo'},
+            ],
+        })
+        score = self._score_persona(persona)
+        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+    def test_should_try_other_job(self):
+        """There's a job with way more offers."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.target_job.code_ogr = '5678'
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'jobs': [
+                {'codeOgr': '1234', 'name': 'foo'},
+                {'codeOgr': '5678', 'name': 'foo'},
+            ],
+            'requirements': {
+                'specificJobs': [{
+                    'codeOgr': "1234",
+                    'percentSuggested': 100,
+                }],
+            },
+        })
+        score = self._score_persona(persona)
+        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
+
+    def test_already_best_job(self):
+        """User is targetting the best job in their group."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.target_job.code_ogr = '1234'
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'jobs': [
+                {'codeOgr': '1234', 'name': 'foo'},
+                {'codeOgr': '5678', 'name': 'foo'},
+            ],
+            'requirements': {
+                'specificJobs': [{
+                    'codeOgr': "1234",
+                    'percentSuggested': 100,
+                }],
+            },
+        })
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+    def test_already_good_job(self):
+        """User is targetting a correct job in their group, but not the best."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.target_job.code_ogr = '1234'
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'jobs': [
+                {'codeOgr': '1234', 'name': 'foo'},
+                {'codeOgr': '5678', 'name': 'foo'},
+            ],
+            'requirements': {
+                'specificJobs': [
+                    {
+                        'codeOgr': "5678",
+                        'percentSuggested': 55,
+                    },
+                    {
+                        'codeOgr': "1234",
+                        'percentSuggested': 45,
+                    },
+                ],
+            },
+        })
+        score = self._score_persona(persona)
+        self.assertEqual(score, 1, msg='Failed for "%s"' % persona.name)
 
 
 class ImproveCVScoringModelTestCase(ScoringModelTestBase('chantier-resume')):
@@ -957,24 +1061,23 @@ class SubsidizedContractScoringModelTestCase(ScoringModelTestBase('chantier-subs
 class InternationalJobsScoringModelTestCase(ScoringModelTestBase('chantier-international')):
     """Unit tests for the "International Jobs" chantier."""
 
-    def test_does_not_speak_english(self):
-        """User does not speak english well."""
+    def test_stays_local(self):
+        """User wants to stay in France."""
         persona = self._random_persona().clone()
-        persona.user_profile.english_level_estimate = 1
+        persona.project.mobility.area_type = geo_pb2.CITY
 
         score = self._score_persona(persona)
 
-        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+        self.assertLessEqual(score, 2, msg='Failed for "%s"' % persona.name)
 
     def test_english_speaker_ready_to_go_international(self):
         """User speaks English fluently and wants to go abroad."""
         persona = self._random_persona().clone()
-        persona.user_profile.english_level_estimate = 3
         persona.project.mobility.area_type = geo_pb2.WORLD
 
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 4, msg='Failed for "%s"' % persona.name)
+        self.assertGreaterEqual(score, 3, msg='Failed for "%s"' % persona.name)
 
 
 class ProfessionnalisationScoringModelTestCase(ScoringModelTestBase(
@@ -1332,65 +1435,6 @@ class AcceptContractTypeScoringModelTestCase(ScoringModelTestBase('chantier-cont
         self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
 
 
-class OfficeToolsScoringTestCase(ScoringModelTestBase('chantier-office-tools')):
-    """Unit tests for the "Master Office Tools" chantier."""
-
-    def test_office_noob(self):
-        """User has never used Office."""
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'I1202'
-        self.database.job_group_info.insert_one({
-            '_id': 'I1202',
-            'requirements': {
-                'officeSkills': [
-                    {
-                        'percentSuggested': 80,
-                        'officeSkillsLevel': 2,
-                    },
-                ],
-            },
-        })
-        persona.user_profile.office_skills_estimate = 1
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertGreaterEqual(additional_offers, 400, msg='Failed for "%s"' % persona.name)
-
-    def test_office_expert(self):
-        """User is an expert of Office."""
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'I1202'
-        self.database.job_group_info.insert_one({
-            '_id': 'I1202',
-            'requirements': {
-                'officeSkills': [
-                    {
-                        'percentSuggested': 80,
-                        'officeSkillsLevel': 2,
-                    },
-                ],
-            },
-        })
-        persona.user_profile.office_skills_estimate = 3
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
-    def test_office_not_needed(self):
-        """The job does not require the use of Office at all."""
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'I1202'
-        persona.user_profile.office_skills_estimate = 1
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
-
 class PartTimeScoringTestCase(ScoringModelTestBase('chantier-part-time')):
     """Unit tests for the "Try a Part Time Job" chantier."""
 
@@ -1409,43 +1453,6 @@ class PartTimeScoringTestCase(ScoringModelTestBase('chantier-part-time')):
         persona = self._random_persona().clone()
         del persona.project.workloads[:]
         persona.project.workloads.append(project_pb2.FULL_TIME)
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertGreater(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
-    def test_not_so_random(self):
-        """The model should be consistant about scoring."""
-        persona = self._random_persona().clone()
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        other_persona = persona.clone()
-        other_project = other_persona.scoring_project(self.database)
-        other_additional_offers = self.model.score(other_project).additional_job_offers
-
-        self.assertEqual(additional_offers, other_additional_offers)
-
-
-class ImproveEnglishScoringTestCase(ScoringModelTestBase('chantier-english')):
-    """Unit tests for the "Improve your English" chantier."""
-
-    def test_already_fluent(self):
-        """User already speaks English fluently."""
-        persona = self._random_persona().clone()
-        persona.user_profile.english_level_estimate = 3
-
-        project = persona.scoring_project(self.database)
-        additional_offers = self.model.score(project).additional_job_offers
-
-        self.assertLessEqual(additional_offers, 0, msg='Failed for "%s"' % persona.name)
-
-    def test_basic_user(self):
-        """User should try to learn English."""
-        persona = self._random_persona().clone()
-        if persona.user_profile.english_level_estimate >= 3:
-            persona.user_profile.english_level_estimate = 2
 
         project = persona.scoring_project(self.database)
         additional_offers = self.model.score(project).additional_job_offers

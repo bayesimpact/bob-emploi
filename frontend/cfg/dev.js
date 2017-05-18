@@ -1,17 +1,18 @@
-var path = require('path')
-var webpack = require('webpack')
-var HtmlWebpackPlugin = require('html-webpack-plugin')
-var _ = require('lodash')
+const path = require('path')
+const webpack = require('webpack')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const _ = require('lodash')
 
-var baseConfig = require('./base')
+const baseConfig = require('./base')
 
-var config = _.merge({
+const config = _.merge({
   cache: true,
   devtool: 'eval-source-map',
   entry: [
+    'react-hot-loader/patch',
     'webpack-dev-server/client?http://0.0.0.0:0',
     'webpack/hot/only-dev-server',
-    './src/components/pages/main',
+    './src/entry',
   ],
   output: {
     filename: 'app.js',
@@ -39,7 +40,13 @@ config.module.rules.push({
     path.join(__dirname, '/../src'),
   ],
   test: /\.(js|jsx)$/,
-  use: ['react-hot-loader', 'babel-loader'],
+  use: {
+    loader: 'babel-loader',
+    options: {
+      plugins: ['react-hot-loader/babel'],
+      presets: [['es2015', {modules: false}], 'react', 'stage-0'],
+    },
+  },
 })
 
 module.exports = config

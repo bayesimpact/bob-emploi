@@ -158,6 +158,36 @@
           "percentSuggested": 12,
           "percentRequired": 72
         }
+      ],
+      "specificJobs": [
+       {
+        "codeOgr": "11564",
+        "percentSuggested": 75
+       },
+       {
+        "codeOgr": "12005",
+        "percentSuggested": 7
+       },
+       {
+        "codeOgr": "11569",
+        "percentSuggested": 6
+       },
+       {
+        "codeOgr": "19351",
+        "percentSuggested": 3
+       },
+       {
+        "codeOgr": "17406",
+        "percentSuggested": 3
+       },
+       {
+        "codeOgr": "11566",
+        "percentSuggested": 2
+       },
+       {
+        "codeOgr": "10867",
+        "percentSuggested": 2
+       }
       ]
     },
     "workEnvironmentKeywords": {

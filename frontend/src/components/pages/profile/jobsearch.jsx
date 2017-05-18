@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import _ from 'underscore'
 
 import {FieldSet, Select} from 'components/theme'
@@ -31,8 +32,8 @@ const weeklyApplicationOptions = [
 
 class NewProjectJobsearchStep extends React.Component {
   static propTypes = {
-    newProject: React.PropTypes.object,
-    onSubmit: React.PropTypes.func.isRequired,
+    newProject: PropTypes.object,
+    onSubmit: PropTypes.func.isRequired,
   }
 
   componentWillMount() {

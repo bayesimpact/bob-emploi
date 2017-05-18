@@ -1,273 +1,20 @@
 import React from 'react'
-import {connect} from 'react-redux'
-import VisibilitySensor from 'react-visibility-sensor'
+import PropTypes from 'prop-types'
+import Radium from 'radium'
 
-import {adviceCardIsShown, selectAdvice, seeAdvice} from 'store/actions'
-import {getAdviceTitle} from 'store/advice'
-import {maybeContractPrefix} from 'store/french'
-import {PERSONALIZATION_IDS, filterPersonalizations,
-        getPersonalizations} from 'store/personalizations'
+import {filterPersonalizations} from 'store/personalizations'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
+import userImage from 'images/user-picto.svg'
 import {FeatureLikeDislikeButtons} from 'components/like'
-import {Colors, Icon, PaddedOnMobile, SmoothTransitions, Styles} from 'components/theme'
-
-import adviceModuleProperties from './data/advice_modules.json'
+import {Colors, Icon, PaddedOnMobile, SmoothTransitions} from 'components/theme'
 
 
-class AdviceCardBase extends React.Component {
-  static propTypes = {
-    advice: React.PropTypes.object.isRequired,
-    children: React.PropTypes.node,
-    dispatch: React.PropTypes.func.isRequired,
-    isInAdvicePage: React.PropTypes.bool,
-    isUnreadTooltipForced: React.PropTypes.bool,
-    onHoverChanged: React.PropTypes.func,
-    onShow: React.PropTypes.func,
-    onUnreadTooltipShown: React.PropTypes.func,
-    profile: USER_PROFILE_SHAPE.isRequired,
-    project: React.PropTypes.object.isRequired,
-    reasons: React.PropTypes.arrayOf(React.PropTypes.oneOf(PERSONALIZATION_IDS).isRequired),
-    style: React.PropTypes.object,
-  }
-  static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
-  }
-
-  state = {
-    hasBeenSeen: false,
-    isHovered: false,
-    reasons: [],
-  }
-
-  componentWillMount() {
-    const {advice, dispatch, isInAdvicePage, project, reasons} = this.props
-    if (!isInAdvicePage) {
-      dispatch(adviceCardIsShown(project, advice))
-    }
-    this.updateReasons(reasons)
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const {reasons} = nextProps
-    if (reasons !== this.props.reasons) {
-      this.updateReasons(reasons)
-    }
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.unreadTooltipTimeout)
-  }
-
-  updateReasons(reasons) {
-    const {project, profile} = this.props
-    this.setState({
-      reasons: getPersonalizations(reasons, profile, project).
-        map(({youToldUs}) => youToldUs),
-    })
-  }
-
-  changeHover = isHovered => {
-    const {onHoverChanged} = this.props
-    this.setState({isHovered})
-    onHoverChanged && onHoverChanged(isHovered)
-  }
-
-  gotoAdvicePage = visualElement => event => {
-    const {advice, dispatch, isInAdvicePage, project} = this.props
-    if (isInAdvicePage) {
-      return
-    }
-    event.stopPropagation()
-    dispatch(selectAdvice(project, advice, visualElement))
-  }
-
-  handleVisibilityChange = isVisible => {
-    if (!isVisible) {
-      return
-    }
-    const {advice, dispatch, isInAdvicePage, onShow, project} = this.props
-    this.setState({hasBeenSeen: true})
-    if (!isInAdvicePage) {
-      dispatch(seeAdvice(project, advice))
-    }
-    onShow && onShow()
-  }
-
-  handleHoverUnreadTag = () => {
-    const {onUnreadTooltipShown} = this.props
-    // Signal to parent that the tooltip has been shown if the tag is hovered
-    // for more than 1 second.
-    this.unreadTooltipTimeout = setTimeout(() => {
-      onUnreadTooltipShown && onUnreadTooltipShown()
-    }, 1000)
-  }
-
-  handleLeaveUnreadTag = () => {
-    clearTimeout(this.unreadTooltipTimeout)
-  }
-
-  renderTitle() {
-    const {advice} = this.props
-    const style = {
-      color: Colors.CHARCOAL_GREY,
-      fontSize: 25,
-      fontStyle: 'italic',
-      fontWeight: 'bold',
-      padding: '15px 0 0',
-    }
-    return <header style={style}>
-      {getAdviceTitle(advice)}
-    </header>
-  }
-
-  renderTags() {
-    const {reasons} = this.state
-    const tagStyle = {
-      backgroundColor: Colors.SKY_BLUE,
-      borderRadius: 100,
-      color: '#fff',
-      display: 'inline-block',
-      fontSize: 13,
-      margin: '4px 4px 0 0',
-      padding: '5px 10px',
-    }
-    return <div style={{margin: '2px 0 17px'}}>
-      {reasons.map((reason, index) => <span key={index} style={tagStyle}>
-        <span style={Styles.CENTER_FONT_VERTICALLY}>{reason}</span>
-      </span>)}
-    </div>
-  }
-
-  renderButtonBar() {
-    const {advice, isUnreadTooltipForced} = this.props
-    const {callToAction} = adviceModuleProperties[advice.adviceId] || {}
-    const {isHovered} = this.state
-    const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
-    const unreadStyle = {
-      backgroundColor: 'rgba(0, 0, 0, .4)',
-      borderRadius: 2,
-      fontWeight: 500,
-      marginRight: 15,
-      padding: '2px 6px',
-    }
-    const tooltipStyle = {
-      color: Colors.DARK,
-      fontSize: 13,
-      fontStyle: 'italic',
-      fontWeight: 'normal',
-      padding: 20,
-      width: 200,
-    }
-    const buttonBarStyle = {
-      alignItems: 'center',
-      backgroundColor: isHovered ? Colors.LIGHT_NAVY_BLUE : Colors.WINDOWS_BLUE,
-      borderRadius: 0,
-      color: '#fff',
-      display: 'flex',
-      fontSize: 14,
-      fontWeight: 'bold',
-      height: 50,
-      padding: '0 15px 0 20px',
-      ...SmoothTransitions,
-    }
-    const chevronStyle = {
-      fontSize: 25,
-    }
-    return <div style={buttonBarStyle} onClick={this.gotoAdvicePage('advice-card-button')}>
-      <span>
-        {callToAction || "Accédez à l'outil"}
-      </span>
-      <span style={{flex: 1}} />
-      {isAdviceUnread ? <span
-          style={unreadStyle} className={isUnreadTooltipForced ? 'tooltip forced' : 'tooltip'}
-          onMouseEnter={this.handleHoverUnreadTag}
-          onMouseLeave={this.handleLeaveUnreadTag}>
-        <div className="tooltiptext" style={tooltipStyle}>
-          Cliquez sur sur la carte pour découvrir notre outil dédié à ce sujet.
-        </div>
-        <div style={Styles.CENTER_FONT_VERTICALLY}>Non vu</div>
-      </span> : null}
-      <Icon name="chevron-right" style={chevronStyle} />
-    </div>
-  }
-
-  renderTitleAndTags(style) {
-    return <div style={style}>
-      {this.renderTitle()}
-      {this.renderTags()}
-    </div>
-  }
-
-  renderPrioritySubtitle() {
-    const {advice} = this.props
-    const starsToText = {
-      '1': 'intéressant',
-      '2': 'important',
-      '3': 'prioritaire',
-    }
-    const {goal} = adviceModuleProperties[advice.adviceId] || {}
-    return <div style={{fontSize: 13, fontStyle: 'italic', padding: '25px 0 0 40px'}}>
-       Pourquoi nous
-       pensons {maybeContractPrefix('que ', "qu'", goal)} est
-       <strong> {starsToText[advice.numStars] || 'intéressant'}</strong> pour
-       vous&nbsp;:
-    </div>
-  }
-
-  render() {
-    const {children, isInAdvicePage, style} = this.props
-    const {isHovered} = this.state
-    const {isMobileVersion} = this.context
-    const cardStyle = {
-      backgroundColor: '#fff',
-      boxShadow: isHovered && !isInAdvicePage ? '0 5px 25px 0 rgba(0, 0, 0, 0.1)' : 'initial',
-      color: Colors.CHARCOAL_GREY,
-      cursor: isInAdvicePage ? 'default' : 'pointer',
-    }
-    const contentStyle = {
-      borderBottom: isMobileVersion ? `solid 1px ${Colors.BACKGROUND_GREY}` : 'initial',
-      borderRight: isMobileVersion ? 'initial' : `solid 1px ${Colors.BACKGROUND_GREY}`,
-      flex: 2,
-      padding: '35px 40px',
-    }
-    const titleInCardStyle = {
-      borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      padding: '0 25px 10px',
-    }
-    return <VisibilitySensor
-        active={!this.state.hasBeenSeen} intervalDelay={250} minTopValue={50}
-        partialVisibility={true} onChange={this.handleVisibilityChange}>
-      <section style={style}>
-        {isInAdvicePage ? null : this.renderTitleAndTags({})}
-        <div
-            style={cardStyle} onClick={this.gotoAdvicePage('advice-card')}
-            onMouseEnter={() => this.changeHover(true)}
-            onMouseLeave={() => this.changeHover(false)}>
-          <div style={{flex: 1}}>
-            {isInAdvicePage ? this.renderTitleAndTags(titleInCardStyle) : null}
-            {this.renderPrioritySubtitle()}
-            <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
-              <div style={contentStyle}>
-                {children}
-              </div>
-            </div>
-          </div>
-          {isInAdvicePage ? null : this.renderButtonBar()}
-        </div>
-      </section>
-    </VisibilitySensor>
-  }
-}
-const AdviceCard = connect(({user}) => ({gender: user.profile.gender}))(AdviceCardBase)
-
-
-// TODO(pascal): Move to theme.
 class PersonalizationBox extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    header: React.PropTypes.node,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    header: PropTypes.node,
+    style: PropTypes.object,
   }
 
   render() {
@@ -314,7 +61,7 @@ class PersonalizationBox extends React.Component {
     }
     return <div style={containerStyle}>
       <header style={headerStyle}>
-        <img src={require('images/user-picto.svg')} style={{paddingRight: 15}} />
+        <img src={userImage} style={{paddingRight: 15}} />
         {header}
         <div style={notchContainerStyle}>
           <div style={notchStyle} />
@@ -330,20 +77,20 @@ class PersonalizationBox extends React.Component {
 
 class PersonalizationBoxes extends React.Component {
   static propTypes = {
-    maxNumberBoxes: React.PropTypes.number,
-    personalizations: React.PropTypes.arrayOf(React.PropTypes.shape({
-      filters: React.PropTypes.arrayOf(React.PropTypes.string.isRequired).isRequired,
-      tip: React.PropTypes.oneOfType([React.PropTypes.node, React.PropTypes.func]).isRequired,
+    maxNumberBoxes: PropTypes.number,
+    personalizations: PropTypes.arrayOf(PropTypes.shape({
+      filters: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+      tip: PropTypes.oneOfType([PropTypes.node, PropTypes.func]).isRequired,
     }).isRequired).isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
-    project: React.PropTypes.object.isRequired,
-    style: React.PropTypes.object,
+    project: PropTypes.object.isRequired,
+    style: PropTypes.object,
   }
   static defaultProps = {
     maxNumberBoxes: 3,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -385,10 +132,10 @@ class PersonalizationBoxes extends React.Component {
 
 class AdviceBox extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    feature: React.PropTypes.string.isRequired,
-    header: React.PropTypes.node,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    feature: PropTypes.string.isRequired,
+    header: PropTypes.node,
+    style: PropTypes.object,
   }
 
   render() {
@@ -437,4 +184,48 @@ class AdviceBox extends React.Component {
 }
 
 
-export {AdviceCard, AdviceBox, PersonalizationBoxes}
+class ToolCardBase extends React.Component {
+  static propTypes = {
+    children: PropTypes.node,
+    href: PropTypes.string.isRequired,
+    imageSrc: PropTypes.string.isRequired,
+    style: PropTypes.object,
+  }
+
+  render() {
+    const {children, imageSrc, href, style} = this.props
+    const cardStyle = {
+      ':hover': {
+        backgroundColor: Colors.LIGHT_GREY,
+      },
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      borderRadius: 4,
+      cursor: 'pointer',
+      display: 'flex',
+      padding: 10,
+      ...SmoothTransitions,
+      ...style,
+    }
+    const titleStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      flex: 1,
+      fontSize: 14,
+      fontWeight: 'bold',
+    }
+    return <div style={cardStyle} onClick={() => window.open(href, '_blank')}>
+      <div style={titleStyle}>
+        <img src={imageSrc}
+          style={{height: 55, width: 55}} />
+        <div style={{paddingLeft: 20}}>{children}</div>
+      </div>
+      <Icon name="chevron-right" style={{fontSize: 20}} />
+    </div>
+  }
+}
+const ToolCard = Radium(ToolCardBase)
+
+
+export {AdviceBox, PersonalizationBoxes, ToolCard}

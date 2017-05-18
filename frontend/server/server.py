@@ -21,6 +21,7 @@ import farmhash
 import flask
 from google.protobuf import json_format
 import pymongo
+import requests
 from werkzeug.contrib import fixers
 
 from bob_emploi.frontend import action
@@ -32,6 +33,7 @@ from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
+from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -47,6 +49,8 @@ _DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
     .get_default_database()
 
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
+
+SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
 _ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
@@ -250,7 +254,7 @@ def _save_user(user_data, is_new_user):
         rome_id = project.target_job.job_group.rome_id
         if not project.project_id:
             # Add ID, timestamp and stats to new projects
-            project.project_id = '%x-%x' % (round(time.time()), random.randrange(0x10000))
+            project.project_id = _create_new_project_id(user_data)
             project.source = project_pb2.PROJECT_MANUALLY_CREATED
             project.created_at.FromDatetime(now.get())
 
@@ -291,6 +295,15 @@ def _save_user(user_data, is_new_user):
         _DB.user.replace_one({'_id': _safe_object_id(user_data.user_id)}, user_dict)
     _tick('Return user proto')
     return user_data
+
+
+def _create_new_project_id(user_data):
+    existing_ids = set(p.project_id for p in user_data.projects) |\
+        set(p.project_id for p in user_data.deleted_projects)
+    for id_candidate in itertools.count():
+        id_string = '%x' % id_candidate
+        if id_string not in existing_ids:
+            return id_string
 
 
 def _get_unguessable_object_id():
@@ -418,6 +431,14 @@ def _get_user_data(user_id):
                 project.kind = project_pb2.FIND_A_FIRST_JOB
             else:
                 project.kind = project_pb2.FIND_ANOTHER_JOB
+
+        project.ClearField('diploma_fulfillment_estimate')
+
+    # TODO(pascal): Remove the fields completely after this has been live for a
+    # week.
+    user_proto.profile.ClearField('city')
+    user_proto.profile.ClearField('latest_job')
+    user_proto.profile.ClearField('situation')
 
     return user_proto
 
@@ -729,16 +750,6 @@ def clear_cache():
     return 'Server cache cleared.'
 
 
-@app.route('/api/dashboard-export/create', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=export_pb2.DashboardExport)
-def create_dashboard_export(user_data):
-    """Create an export of the user's current dashboard.
-
-    http://go/pe:data-export
-    """
-    return _create_dashboard_export(user_data.user_id)
-
-
 @app.route('/api/dashboard-export/open/<user_id>', methods=['POST'])
 def open_dashboard_export(user_id):
     """Create an export of the user's current dashboard.
@@ -785,6 +796,44 @@ def get_dashboard_export(dashboard_export_id):
     return dashboard_export
 
 
+@app.route('/api/jobs/<rome_id>', methods=['GET'])
+@proto.flask_api(out_type=job_pb2.JobGroup)
+def get_job_group_jobs(rome_id):
+    """Retrieve information about jobs whithin a job group."""
+    job_group = _job_groups_info().get(rome_id)
+    if not job_group:
+        flask.abort(404, 'Groupe de métiers "%s" inconnu.' % rome_id)
+
+    result = job_pb2.JobGroup()
+    result.jobs.extend(job_group.jobs)
+    result.requirements.specific_jobs.extend(job_group.requirements.specific_jobs)
+    return result
+
+
+@app.route('/api/feedback', methods=['POST'])
+@proto.flask_api(in_type=feedback_pb2.Feedback)
+def give_feedback(feedback):
+    """Retrieve information about jobs whithin a job group."""
+    result = _DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
+    context = ''
+    if feedback.source == feedback_pb2.ADVICE_FEEDBACK:
+        context = ' on advice "%s"' % feedback.advice_id
+    if feedback.source == feedback_pb2.PROFESSIONAL_PAGE_FEEDBACK:
+        context = ' from the Counselors Page'
+    _tell_slack(
+        ':right_anger_bubble: New user feedback%s:\n'
+        '> %s\n'
+        'To get full context: `db.feedbacks.find(ObjectId("%s"))`' %
+        (context, feedback.feedback.replace('\n', '\n> '), result.inserted_id))
+    return ''
+
+
+def _tell_slack(text):
+    if not SLACK_FEEDBACK_URL:
+        return
+    requests.post(SLACK_FEEDBACK_URL, json={'text': text})
+
+
 @app.route('/', methods=['GET'])
 def health_check():
     """Health Check endpoint.
@@ -806,20 +855,8 @@ def client_config():
 
 def _populate_feature_flags(user_proto):
     """Update the feature flags."""
-    user_proto.features_enabled.action_button_chevron = False
-    user_proto.features_enabled.action_button_round = False
-    user_proto.features_enabled.action_button_none = False
-
-    user_proto.features_enabled.chantier_icons = False
-    user_proto.features_enabled.chantier_icons_control = False
-
-    user_proto.features_enabled.ClearField('action_feedback_modal')
-
-    user_proto.features_enabled.ClearField('sticky_actions')
-
-    user_proto.features_enabled.ClearField('hide_discovery_nav')
-
-    user_proto.features_enabled.ClearField('show_diagnostic')
+    user_proto.features_enabled.ClearField('action_done_button_discreet')
+    user_proto.features_enabled.ClearField('action_done_button_control')
 
     lbb_integration = bool(farmhash.hash32(user_proto.user_id + 'lbb_integration') % 2)
     user_proto.features_enabled.lbb_integration = (

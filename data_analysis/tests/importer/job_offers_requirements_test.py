@@ -44,6 +44,11 @@ class JobOffersRequirementsImporterTestCase(unittest.TestCase):
              job_pb2.CDD_LESS_EQUAL_3_MONTHS],
             [e.contract_type for e in f1106.contract_types])
 
+        self.assertEqual(
+            ['10686', '10688', '11753', '16733', '19658'],
+            [j.code_ogr for j in f1106.specific_jobs])
+        self.assertEqual(20, f1106.specific_jobs[0].percent_suggested)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

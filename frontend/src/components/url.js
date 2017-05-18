@@ -21,6 +21,7 @@ Routes.TERMS_AND_CONDITIONS_PAGE = Routes.ROOT + 'conditions-generales'
 Routes.PRIVACY_PAGE = Routes.ROOT + 'vie-privee'
 Routes.APP_NOT_AVAILABLE_PAGE = Routes.ROOT + 'indisponible'
 Routes.APP_UPDATED_PAGE = Routes.ROOT + 'mise-a-jour'
+Routes.PROFESSIONALS_PAGE = Routes.ROOT + 'professionnels'
 
 export const NEW_PROJECT_ID = 'nouveau'
 

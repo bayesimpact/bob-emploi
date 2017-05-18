@@ -1,5 +1,6 @@
 import React from 'react'
 
+import loadingImage from 'images/logo-bob-emploi-loading.svg'
 import {Colors} from 'components/theme'
 
 // Keep this class in sync with index.html.
@@ -17,7 +18,7 @@ class WaitingPage extends React.Component {
       width: '100vw',
     }
     return <div style={style}>
-      <img src={require('images/logo-bob-emploi-loading.svg')} alt="Chargement…" />
+      <img src={loadingImage} alt="Chargement…" />
     </div>
   }
 }

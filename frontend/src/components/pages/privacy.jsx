@@ -1,5 +1,7 @@
 import React from 'react'
 
+import content from './privacy/content.txt'
+
 import {StaticPage, StrongTitle} from 'components/static'
 import {Markdown} from 'components/theme'
 
@@ -13,7 +15,7 @@ class PrivacyPage extends React.Component {
     return <StaticPage page="privacy" title={<span>
       Vie <StrongTitle>privée</StrongTitle>
     </span>} style={style}>
-      <Markdown content={require('./privacy/content.txt')} />
+      <Markdown content={content} />
     </StaticPage>
   }
 }

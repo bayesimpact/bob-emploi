@@ -8,14 +8,4 @@ function validateEmail(value) {
 }
 
 
-// Check whether a date, specified by year and month, is in the past.
-// The month we are currently in is considered as lying in the past.
-function dateInPast(year, month) {
-  if (!year || month === undefined) {
-    return false
-  }
-  const selectedDate = new Date(year, month)
-  return selectedDate < new Date()
-}
-
-export {validateEmail, dateInPast}
+export {validateEmail}

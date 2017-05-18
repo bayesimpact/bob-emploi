@@ -1,9 +1,8 @@
 import browser from 'detect-browser'
 import moment from 'moment'
 
-import {AUTHENTICATE_USER, REFRESH_ACTION_PLAN, REGISTER_USER} from './actions'
+import {AUTHENTICATE_USER, REGISTER_USER} from './actions'
 import {upperFirstLetter} from './french'
-import {isAnyActionPlanGeneratedRecently} from './project'
 
 
 const daysSince = timestamp => {
@@ -57,12 +56,6 @@ export class Logger {
     if (action.ASYNC_MARKER && !action.status) {
       // For async action, log only when the action returns ie when status is here.
       return false
-    }
-    if (action.type === REFRESH_ACTION_PLAN) {
-      if (!isAnyActionPlanGeneratedRecently(action.response.projects)) {
-        // The Refresh Action Plan action had no effect.
-        return false
-      }
     }
     return true
   }

@@ -1,5 +1,8 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {browserHistory} from 'react-router'
+
+import content from './vision/content.txt'
 
 import {StaticPage, StrongTitle} from 'components/static'
 import {Routes} from 'components/url'
@@ -7,7 +10,7 @@ import {Colors, Icon, Markdown, Button} from 'components/theme'
 
 class VisionPage extends React.Component {
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -41,7 +44,7 @@ class VisionPage extends React.Component {
         Bien commun
       </div>
       <div style={{fontSize: 16, lineHeight: 1.63, maxWidth: 600}}>
-        <Markdown content={require('./vision/content.txt')} />
+        <Markdown content={content} />
 
         <div style={{margin: '50px 0', textAlign: 'right'}}>
           <Button

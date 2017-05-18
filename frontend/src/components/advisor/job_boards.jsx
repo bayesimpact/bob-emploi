@@ -1,30 +1,32 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import Radium from 'radium'
-import VisibilitySensor from 'react-visibility-sensor'
 
 import {getJobBoards} from 'store/actions'
 
 import {CircularProgress} from 'components/progress'
-import {Colors, GrowingNumber, Icon, PaddedOnMobile} from 'components/theme'
-
-import {AdviceCard} from './base'
+import {AppearingList, Colors, GrowingNumber, Icon, PaddedOnMobile, PieChart,
+  Styles} from 'components/theme'
 
 
 class FullAdviceCard extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
+    advice: PropTypes.object.isRequired,
+  }
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
+    const {isMobileVersion} = this.context
     const strongStyle = {
       color: Colors.SKY_BLUE,
       fontSize: 40,
     }
-    const reasons = ['JUST_STARTED_SEARCHING', 'LESS_THAN_15_OFFERS', 'NO_OFFERS']
     const {jobBoardTitle} = this.props.advice.jobBoardsData || {}
-    return <AdviceCard {...this.props} reasons={reasons}>
-      <div style={{alignItems: 'center', fontSize: 30, lineHeight: '1.8em'}}>
+    return <div style={{display: 'flex', fontSize: 13}}>
+      <div style={{alignItems: 'center', flex: 1, fontSize: 30, lineHeight: '1.8em'}}>
         <div>
           Connaissez-vous {jobBoardTitle || 'Régions Jobs'} ?
         </div>
@@ -34,22 +36,38 @@ class FullAdviceCard extends React.Component {
           </strong> Job boards existent en France
         </div>
       </div>
-    </AdviceCard>
+      {isMobileVersion ? null : <div style={{textAlign: 'center', width: 150}}>
+        <PieChart
+            percentage={80} style={{color: Colors.SKY_BLUE, margin: 'auto'}}
+            backgroundColor={Colors.MODAL_PROJECT_GREY}>
+          <GrowingNumber number={80} />%
+        </PieChart>
+        <div style={{color: Colors.DARK_TWO, marginTop: 15}}>
+          des chercheurs consultent des annonces
+        </div>
+      </div>}
+      {isMobileVersion ? null : <div style={{textAlign: 'center', width: 150}}>
+        <PieChart
+            percentage={40} style={{color: Colors.SKY_BLUE, margin: 'auto'}}
+            backgroundColor={Colors.MODAL_PROJECT_GREY}>
+          <GrowingNumber number={40} />%
+        </PieChart>
+        <div style={{color: Colors.DARK_TWO, marginTop: 15}}>
+          y répondent vraiment
+        </div>
+      </div>}
+    </div>
   }
 }
 
 class AdvicePageContentBase extends React.Component {
   static propTypes = {
-    dispatch: React.PropTypes.func.isRequired,
-    jobBoards: React.PropTypes.arrayOf(React.PropTypes.object.isRequired),
-    project: React.PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    jobBoards: PropTypes.arrayOf(PropTypes.object.isRequired),
+    project: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
-  }
-
-  state = {
-    isShown: false,
+    isMobileVersion: PropTypes.bool,
   }
 
   componentWillMount() {
@@ -59,20 +77,12 @@ class AdvicePageContentBase extends React.Component {
 
   renderJobBoards(style) {
     const {jobBoards} = this.props
-    const {isShown} = this.state
-    const jobBoardStyle = index => ({
-      opacity: isShown ? 1 : 0,
-      transition: `opacity 300ms ease-in ${index * 700 / jobBoards.length}ms`,
-    })
-    return <div style={style}>
-      <VisibilitySensor
-          active={!isShown} intervalDelay={250}
-          onChange={isShown => this.setState({isShown})} />
-      {jobBoards.map(({link, title}, index) => <JobBoardLink
-          key={`job-board-${index}`} style={jobBoardStyle(index)} href={link}>
+    return <AppearingList style={style}>
+      {jobBoards.map(({filters, link, title}, index) => <JobBoardLink
+          key={`job-board-${index}`} href={link} filters={filters}>
         {title}
       </JobBoardLink>)}
-    </div>
+    </AppearingList>
   }
 
   render() {
@@ -88,9 +98,9 @@ class AdvicePageContentBase extends React.Component {
         Nous avons trouvé <GrowingNumber
             style={{fontWeight: 'bold'}} number={jobBoards.length} isSteady={true} />
         {' '}site{maybeS(jobBoards.length)} pour vous
-        dont <GrowingNumber
+        {numSpecializedJobBoards > 0 ? <span>dont <GrowingNumber
             style={{fontWeight: 'bold'}} number={numSpecializedJobBoards} isSteady={true} />
-        {' '}spécialisé{maybeS(numSpecializedJobBoards)}
+          {' '}spécialisé{maybeS(numSpecializedJobBoards)}</span> : null}
       </PaddedOnMobile>
 
       {this.renderJobBoards({marginTop: 15})}
@@ -104,14 +114,39 @@ const AdvicePageContent = connect(({app}, {project}) => ({
 
 class JobBoardLinkBase extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node,
-    href: React.PropTypes.string.isRequired,
-    style: React.PropTypes.object,
+    children: PropTypes.node,
+    filters: PropTypes.array,
+    href: PropTypes.string.isRequired,
+    style: PropTypes.object,
   }
 
   handleClick = () => {
     const {href} = this.props
     window.open(href, '_blank')
+  }
+
+  getTags() {
+    const {filters, href} = this.props
+    const tags = []
+    if (/\.pole-emploi\.fr/.test(href)) {
+      tags.push({
+        color: Colors.SQUASH,
+        value: 'officiel',
+      })
+    }
+    if ((filters || []).some(f => /^for-job-group/.test(f))) {
+      tags.push({
+        color: Colors.GREENISH_TEAL,
+        value: 'spécialisé pour votre métier',
+      })
+    }
+    if ((filters || []).some(f => /^for-departement/.test(f))) {
+      tags.push({
+        color: Colors.SKY_BLUE,
+        value: 'spécialisé pour votre région',
+      })
+    }
+    return tags
   }
 
   render() {
@@ -131,11 +166,24 @@ class JobBoardLinkBase extends React.Component {
       padding: '0 20px',
       ...style,
     }
+    const tagStyle = {
+      borderRadius: 2,
+      color: '#fff',
+      display: 'inline-block',
+      fontSize: 9,
+      fontWeight: 'bold',
+      letterSpacing: .3,
+      marginLeft: 15,
+      padding: 6,
+      textTransform: 'uppercase',
+    }
     return <div style={containerStyle} onClick={this.handleClick}>
-      <div style={{flex: 1}}>
-        {children}
-      </div>
-      {/* TODO(pascal): Add tags. */}
+      {children}
+      {this.getTags().map(({color, value}) => <span
+          key={`tag-${value}`} style={{backgroundColor: color, ...tagStyle}}>
+        <div style={Styles.CENTER_FONT_VERTICALLY}>{value}</div>
+      </span>)}
+      <div style={{flex: 1}} />
       <Icon name="chevron-right" style={{fontSize: 20}} />
     </div>
   }

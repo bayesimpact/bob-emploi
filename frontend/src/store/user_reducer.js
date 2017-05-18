@@ -1,10 +1,9 @@
-import React from 'react'
-import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA,
-        AUTHENTICATE_USER, LOGOUT, ADVICE_PAGE_IS_SHOWN,
-        CREATE_PROJECT, CREATE_PROJECT_SAVE,
-        MOVE_USER_DATES_BACK_1_DAY, DELETE_USER_DATA, REFRESH_ACTION_PLAN,
+import PropTypes from 'prop-types'
+import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, AUTHENTICATE_USER,
+        LOGOUT, ADVICE_PAGE_IS_SHOWN, CREATE_PROJECT, CREATE_PROJECT_SAVE,
+        MOVE_USER_DATES_BACK_1_DAY, DELETE_USER_DATA,
         FINISH_PROFILE_SITUATION, ACCEPT_PRIVACY_NOTICE, EDIT_FIRST_PROJECT,
-        FINISH_PROFILE_FRUSTRATIONS, DECLINE_WHOLE_ADVICE, SCORE_ADVICE,
+        FINISH_PROFILE_FRUSTRATIONS, DECLINE_WHOLE_ADVICE,
         FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL, LIKE_OR_DISLIKE_FEATURE,
         FINISH_PROJECT_EXPERIENCE, MIGRATE_USER_TO_ADVISOR} from './actions'
 import {travelInTime} from './user'
@@ -22,13 +21,13 @@ const initialData = {
 }
 
 
-const USER_PROFILE_SHAPE = React.PropTypes.shape({
-  city: React.PropTypes.object,
-  gender: React.PropTypes.string,
-  name: React.PropTypes.string,
-  pictureUrl: React.PropTypes.string,
-  situation: React.PropTypes.string,
-  yearOfBirth: React.PropTypes.number,
+const USER_PROFILE_SHAPE = PropTypes.shape({
+  city: PropTypes.object,
+  gender: PropTypes.string,
+  name: PropTypes.string,
+  pictureUrl: PropTypes.string,
+  situation: PropTypes.string,
+  yearOfBirth: PropTypes.number,
 })
 
 
@@ -99,8 +98,7 @@ function user(state=initialData, action) {
     case CREATE_PROJECT_SAVE: // Fallthrough intended.
     case GET_USER_DATA:  // Fallthrough intended.
     case MIGRATE_USER_TO_ADVISOR:  // Fallthrough intended.
-    case POST_USER_DATA:  // Fallthrough intended.
-    case REFRESH_ACTION_PLAN:
+    case POST_USER_DATA:
       if (success) {
         action.response.userId && Cookies.set('userId', action.response.userId)
         return action.response
@@ -168,11 +166,6 @@ function user(state=initialData, action) {
       return updateAdvice(state, action.project, {
         adviceId: action.advice.adviceId,
         status: 'ADVICE_READ',
-      })
-    case SCORE_ADVICE:
-      return updateAdvice(state, action.project, {
-        adviceId: action.advice.adviceId,
-        score: action.score || 0,
       })
     case DECLINE_WHOLE_ADVICE:
       return updateProject(state, {

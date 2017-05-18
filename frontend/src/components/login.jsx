@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import {Link, browserHistory} from 'react-router'
 
@@ -20,12 +21,12 @@ import {Routes} from 'components/url'
 
 class LoginFormBase extends React.Component {
   static propTypes = {
-    defaultEmail: React.PropTypes.string,
-    dispatch: React.PropTypes.func.isRequired,
-    isAskingForPasswordReset: React.PropTypes.bool,
-    isAuthenticating: React.PropTypes.bool,
-    onLogin: React.PropTypes.func.isRequired,
-    onShowRegistrationFormClick: React.PropTypes.func.isRequired,
+    defaultEmail: PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
+    isAskingForPasswordReset: PropTypes.bool,
+    isAuthenticating: PropTypes.bool,
+    onLogin: PropTypes.func.isRequired,
+    onShowRegistrationFormClick: PropTypes.func.isRequired,
   }
 
   state = {
@@ -168,9 +169,9 @@ const LoginForm = connect(({asyncState}) => ({
 
 class ResetPasswordFormBase extends React.Component {
   static propTypes = {
-    defaultEmail: React.PropTypes.string,
-    isAuthenticating: React.PropTypes.bool,
-    onResetPassword: React.PropTypes.func.isRequired,
+    defaultEmail: PropTypes.string,
+    isAuthenticating: PropTypes.bool,
+    onResetPassword: PropTypes.func.isRequired,
   }
 
   componentWillMount() {
@@ -241,9 +242,9 @@ const ResetPasswordForm = connect(({asyncState}) => ({
 
 class RegistrationFormBase extends React.Component {
   static propTypes = {
-    isAuthenticating: React.PropTypes.bool,
-    onRegister: React.PropTypes.func.isRequired,
-    onShowLoginFormClick: React.PropTypes.func.isRequired,
+    isAuthenticating: PropTypes.bool,
+    onRegister: PropTypes.func.isRequired,
+    onShowLoginFormClick: PropTypes.func.isRequired,
   }
 
   state = {
@@ -362,10 +363,10 @@ const RegistrationForm = connect(({asyncState}) => ({
 
 class FormHeader extends React.Component {
   static propTypes = {
-    linkText: React.PropTypes.string,
-    onClick: React.PropTypes.func,
-    question: React.PropTypes.string,
-    title: React.PropTypes.string.isRequired,
+    linkText: PropTypes.string,
+    onClick: PropTypes.func,
+    question: PropTypes.string,
+    title: PropTypes.string.isRequired,
   }
 
   render() {
@@ -401,15 +402,15 @@ class FormHeader extends React.Component {
 
 class LoginModalBase extends React.Component {
   static propTypes = {
-    defaultEmail: React.PropTypes.string,
-    defaultIsLoginFormShown: React.PropTypes.bool,
-    dispatch: React.PropTypes.func.isRequired,
-    isShown: React.PropTypes.bool,
-    onLogin: React.PropTypes.func,
-    resetToken: React.PropTypes.string,
+    defaultEmail: PropTypes.string,
+    defaultIsLoginFormShown: PropTypes.bool,
+    dispatch: PropTypes.func.isRequired,
+    isShown: PropTypes.bool,
+    onLogin: PropTypes.func,
+    resetToken: PropTypes.string,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool.isRequired,
   }
 
   state = {
@@ -598,12 +599,12 @@ const LoginModal = connect(({app}) => {
 
 class LoginButtonBase extends React.Component {
   static propTypes = {
-    children: React.PropTypes.node.isRequired,
-    dispatch: React.PropTypes.func.isRequired,
-    isLoggedIn: React.PropTypes.bool,
-    isSignUpButton: React.PropTypes.bool,
-    style: React.PropTypes.object,
-    visualElement: React.PropTypes.string,
+    children: PropTypes.node.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    isLoggedIn: PropTypes.bool,
+    isSignUpButton: PropTypes.bool,
+    style: PropTypes.object,
+    visualElement: PropTypes.string,
   }
 
   handleClick = () => {

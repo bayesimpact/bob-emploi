@@ -1,9 +1,9 @@
 import React from 'react'
-import VisibilitySensor from 'react-visibility-sensor'
+import PropTypes from 'prop-types'
 
-import {Colors, GrowingNumber, PaddedOnMobile} from 'components/theme'
+import {AppearingList, Colors, GrowingNumber, PaddedOnMobile} from 'components/theme'
 
-import {AdviceBox, AdviceCard, PersonalizationBoxes} from './base'
+import {PersonalizationBoxes} from './base'
 
 
 function getSectorsAndStructures({otherWorkEnvAdviceData}) {
@@ -16,17 +16,16 @@ function getSectorsAndStructures({otherWorkEnvAdviceData}) {
 
 class FullAdviceCard extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
+    advice: PropTypes.object.isRequired,
   }
 
-  renderWhy(style) {
+  render() {
     const {sectors, structures} = getSectorsAndStructures(this.props.advice)
     const areSectorsShown = (sectors || []).length > 1
     const areStructuresShown = (structures || []).length > 1
     const sectionStyle = {
       alignItems: 'center',
       textAlign: 'center',
-      ...style,
     }
     const explanationStyle = {
       flex: 1,
@@ -42,7 +41,7 @@ class FullAdviceCard extends React.Component {
     return <section style={sectionStyle}>
       <div style={explanationStyle}>
         {areStructuresShown ? <span>
-          <GrowingNumber style={strongStyle} number={structures.length} /> structures
+          <GrowingNumber style={strongStyle} number={structures.length} /> types de structure
         </span> : null}
         {(areStructuresShown && areSectorsShown) ? ' et ' : null}
         {areSectorsShown ? <span>
@@ -51,13 +50,6 @@ class FullAdviceCard extends React.Component {
       </div>
       proposent <strong>des emplois</strong> pour votre métier
     </section>
-  }
-
-  render() {
-    const reasons = ['LESS_THAN_15_OFFERS', 'NO_OFFERS', 'ATYPIC_PROFILE', 'NO_OFFER_ANSWERS']
-    return <AdviceCard {...this.props} reasons={reasons}>
-      {this.renderWhy()}
-    </AdviceCard>
   }
 }
 
@@ -82,32 +74,23 @@ const personalizations = [
 
 class AdvicePageContent extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
-  }
-  static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    advice: PropTypes.object.isRequired,
+    project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {isMobileVersion} = this.context
     const {sectors, structures} = getSectorsAndStructures(this.props.advice)
+    const {project} = this.props
     const areSectorsShown = (sectors || []).length > 1
     const areStructuresShown = (structures || []).length > 1
     const style = {
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
       position: 'relative',
     }
-    const boxStyle = {
-      flex: 1,
-      maxWidth: 465,
-    }
     return <div>
-      <PaddedOnMobile>De belles opportunités s'offrent à vous !</PaddedOnMobile>
       <div style={style}>
-        <Section kind="secteur" items={sectors} style={boxStyle} />
+        <Section kind="secteurs" items={sectors} project={project} />
         {(areSectorsShown && areStructuresShown) ? <div style={{height: 20, width: 35}} /> : null}
-        <Section kind="structure" items={structures} style={boxStyle} />
+        <Section kind="types de structure" items={structures}  project={project} />
       </div>
 
       <PersonalizationBoxes
@@ -118,45 +101,65 @@ class AdvicePageContent extends React.Component {
 }
 
 
-class Section extends React.Component {
+class SearchableElement extends React.Component {
   static propTypes = {
-    items: React.PropTypes.arrayOf(React.PropTypes.node.isRequired),
-    kind: React.PropTypes.oneOf(['secteur', 'structure']).isRequired,
+    project: PropTypes.object.isRequired,
+    style: PropTypes.object.isRequired,
+    title: PropTypes.string.isRequired,
   }
 
-  state = {
-    isShown: false,
+  handleClick = () => {
+    const {project, title} = this.props
+    const url = `https://www.google.fr/search?q=${encodeURIComponent(title + ' ' + project.title)}`
+    window.open(url,'_blank')
   }
 
   render() {
-    const {items, kind, ...extraProps} = this.props
-    const {isShown} = this.state
-    if (!items) {
+    const {title, style} = this.props
+    const fullStyle = {
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      fontWeight: 'bold',
+      height: 50,
+      padding: '0 20px',
+      ...style,
+    }
+
+    return <div style={fullStyle} onClick={this.handleClick}>
+      {title}
+    </div>
+  }
+}
+
+class Section extends React.Component {
+  static propTypes = {
+    items: PropTypes.arrayOf(PropTypes.node.isRequired),
+    kind: PropTypes.oneOf(['secteurs', 'types de structure']).isRequired,
+    project: PropTypes.object.isRequired,
+  }
+
+  render() {
+    const {items, kind, project, ...extraProps} = this.props
+    if (!items || items.length < 2) {
       return null
     }
-    const itemStyle = index => ({
-      opacity: isShown ? 1 : 0,
-      transition: `opacity 300ms ease-in ${index * 700 / items.length}ms`,
-    })
     return <div {...extraProps}>
-      <AdviceBox
-          {...extraProps} feature={`other-work-env-${kind}`}
-          header={<div>
-            Votre métier peut s'exercer dans
-            <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
-              <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>
-                <GrowingNumber number={items.length} />
-              </strong> {kind}{items.length > 1 ? 's' : null}
-            </div>
-          </div>}>
-        <div style={{fontWeight: 500, lineHeight: 2.08, position: 'relative'}}>
-          <VisibilitySensor
-              active={!isShown} intervalDelay={250}
-              onChange={isShown => this.setState({isShown})} />
-          {items.map((item, index) => <li
-              key={`item-${index}`} style={itemStyle(index)}>{item}</li>)}
+      <PaddedOnMobile style={{marginBottom: 5}}>
+        <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '60px'}}>
+          <strong>
+            <GrowingNumber number={items.length} /> {kind}
+          </strong> qui recrutent dans votre métier
         </div>
-      </AdviceBox>
+      </PaddedOnMobile>
+      <AppearingList>
+        {items.map((title, index) => <SearchableElement
+            title={title} project={project} key={`job-board-${index}`}
+            style={index > 0 ? {marginTop: -1} : {}} />)}
+      </AppearingList>
     </div>
   }
 }

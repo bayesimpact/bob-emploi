@@ -1,6 +1,6 @@
 const chai = require('chai')
 const expect = chai.expect
-import {lowerFirstLetter, maybeContract, maybeContractPrefix} from 'store/french'
+import {lowerFirstLetter, ofCityPrefix, maybeContract, maybeContractPrefix} from 'store/french'
 
 
 describe('maybeContract', () => {
@@ -68,5 +68,29 @@ describe('lowerFirstLetter', () => {
   it('should not do anything for an empty string', () => {
     const word = lowerFirstLetter('')
     expect('', word)
+  })
+})
+
+
+describe('ofCityPrefix', () => {
+  it('should add a simple "de" prefix for regular city names', () => {
+    expect(ofCityPrefix('Toulouse')).to.eql({cityName: 'Toulouse', prefix: 'de '})
+  })
+
+  it('should use the "du" contraction when needed', () => {
+    expect(ofCityPrefix('Le Mans')).to.eql({cityName: 'Mans', prefix: 'du '})
+  })
+
+  it('should lowercase "La" as a first word', () => {
+    expect(ofCityPrefix('La Ferté')).to.eql({cityName: 'Ferté', prefix: 'de la '})
+    expect(ofCityPrefix('Laval')).to.eql({cityName: 'Laval', prefix: 'de '})
+  })
+
+  it('should use the "des" contraction when needed', () => {
+    expect(ofCityPrefix('Les Ulis')).to.eql({cityName: 'Ulis', prefix: 'des '})
+  })
+
+  it('should lowercase "L\'" as a first word', () => {
+    expect(ofCityPrefix("L'Arbresle")).to.eql({cityName: 'Arbresle', prefix: "de l'"})
   })
 })

@@ -1,6 +1,6 @@
 const chai = require('chai')
 const expect = chai.expect
-import {genderizeJob, poleEmploiJobOffersUrl} from 'store/job.js'
+import {genderizeJob} from 'store/job.js'
 import {JobSuggest} from 'components/suggestions'
 
 describe('jobFromSuggestion', () => {
@@ -91,12 +91,5 @@ describe('genderizeJob', () => {
       name: 'foo',
     }, 'FEMININE')
     expect('foo', name)
-  })
-})
-
-describe('poleEmploiJobOffersUrl', () => {
-  it('should work against golden value for search by département and ROME ID', () => {
-    const url = poleEmploiJobOffersUrl({departementId: '69', jobGroupId: 'M1201'})
-    expect(url).to.equal('https://candidat.pole-emploi.fr/candidat/rechercheoffres/resultats/A__DEPARTEMENT_69___P__________INDIFFERENT_________________M1201______')
   })
 })

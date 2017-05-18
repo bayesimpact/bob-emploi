@@ -1,21 +1,21 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import {Colors, GrowingNumber, Icon} from 'components/theme'
 
-import {AdviceCard} from './base'
 import {ResumeAdvicePageContent} from './improve_success_rate'
 
 
 class FullAdviceCard extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
+    advice: PropTypes.object.isRequired,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
-  renderWhy() {
+  render() {
     const {advice} = this.props
     const {isMobileVersion} = this.context
 
@@ -48,13 +48,6 @@ class FullAdviceCard extends React.Component {
       {isMobileVersion ? null  : <MultiplierChart multiplier={interviewMultiplier} />}
     </div>
   }
-
-  render() {
-    const reasons = ['NO_OFFER_ANSWERS', 'RESUME', 'ATYPIC_PROFILE', 'COUNT_APPLICATIONS']
-    return <AdviceCard {...this.props} reasons={reasons}>
-      {this.renderWhy()}
-    </AdviceCard>
-  }
 }
 
 
@@ -62,10 +55,10 @@ class FullAdviceCard extends React.Component {
 class MultiplierChart extends React.Component {
   static propTypes = {
     // Duration of appearance of one bar.
-    barEntranceDurationMillisec: React.PropTypes.number.isRequired,
+    barEntranceDurationMillisec: PropTypes.number.isRequired,
     // Total duration of appearance animation.
-    entranceAnimationDurationMillisec: React.PropTypes.number.isRequired,
-    multiplier: React.PropTypes.number.isRequired,
+    entranceAnimationDurationMillisec: PropTypes.number.isRequired,
+    multiplier: PropTypes.number.isRequired,
   }
   static defaultProps = {
     barEntranceDurationMillisec: 500,

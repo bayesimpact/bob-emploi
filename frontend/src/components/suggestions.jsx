@@ -1,46 +1,47 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import algoliasearch from 'algoliasearch/reactnative'
 import autocomplete from 'autocomplete.js/dist/autocomplete.min'
 
 require('styles/algolia.css')
-const algoliaLogoUrl = require('images/algolia.svg')
+import algoliaLogoUrl from 'images/algolia.svg'
 
 // An autocomplete input using Algolia as a backend.
 // TODO: Contribute to autocomplete.js.
 class AlgoliaSuggest extends React.Component {
   static propTypes = {
     // API key of the Algolia app.
-    algoliaApiKey: React.PropTypes.string.isRequired,
+    algoliaApiKey: PropTypes.string.isRequired,
     // ID of the Algolia app.
-    algoliaApp: React.PropTypes.string.isRequired,
+    algoliaApp: PropTypes.string.isRequired,
     // Name of the index to use in the Algolia app.
-    algoliaIndex: React.PropTypes.string.isRequired,
+    algoliaIndex: PropTypes.string.isRequired,
     // A function to use on suggestion to compute the visible input. Overrides
     // displayKey.
-    display: React.PropTypes.func,
+    display: PropTypes.func,
     // Key to use as visible input when a suggestion is selected. Is overriden
     // by display.
-    displayKey: React.PropTypes.string,
+    displayKey: PropTypes.string,
     // A value to set inside the field programatically.
-    displayValue: React.PropTypes.string,
+    displayValue: PropTypes.string,
     // Numbers of suggestions shown when typing.
-    hitsPerPage: React.PropTypes.number,
+    hitsPerPage: PropTypes.number,
     // A callback ref to set on the input field.
-    inputRef: React.PropTypes.func,
+    inputRef: PropTypes.func,
     // Function called when the value changed either when the text changes or
     // when a suggestion is selected. It takes 3 arguments: the browser event,
     // the displayed value, and in the case of a suggestion selected, the
     // suggestion object.
-    onChange: React.PropTypes.func,
+    onChange: PropTypes.func,
     // Function called when a selection is suggested. It takes 3 arguments:
     // the event, the displayed value, and the suggestion object.
-    onSuggestSelect: React.PropTypes.func,
+    onSuggestSelect: PropTypes.func,
     // A string to display in the input field when no text is entered.
-    placeholder: React.PropTypes.string,
+    placeholder: PropTypes.string,
     // Style to use for the input field.
-    style: React.PropTypes.object,
+    style: PropTypes.object,
     // Rendering function for each suggestion.
-    suggestionTemplate: React.PropTypes.func,
+    suggestionTemplate: PropTypes.func,
     // Other props are used as autocomplete options.
   }
 
@@ -158,23 +159,23 @@ class JobSuggest extends React.Component {
   static propTypes = {
     // Delay the calling of `onError` by this amount after the user stopped typing.
     // Defaults to 3 seconds.
-    errorDelaySeconds: React.PropTypes.number,
+    errorDelaySeconds: PropTypes.number,
     // The gender to display only one of the names where job names are
     // genderized.
-    gender: React.PropTypes.oneOf(['FEMININE', 'MASCULINE']),
+    gender: PropTypes.oneOf(['FEMININE', 'MASCULINE']),
     // If true, will display job names starting with a lower case letter
     // instead of upper case. This only changes the display, not the values in
     // the job object if it comes from a suggestion.
-    lowercase: React.PropTypes.bool,
+    lowercase: PropTypes.bool,
     // Function called when the value changed either when the text changes or
     // when a suggestion is selected. It takes 1 argument: the job that is
     // selected if it's a valid job, null otherwise.
-    onChange: React.PropTypes.func.isRequired,
+    onChange: PropTypes.func.isRequired,
     // Function called in case no result could be found after the user stopped typing
     // for `errorDelaySeconds` seconds.
-    onError: React.PropTypes.func,
-    style: React.PropTypes.object,
-    value: React.PropTypes.object,
+    onError: PropTypes.func,
+    style: PropTypes.object,
+    value: PropTypes.object,
   };
   static defaultProps = {
     errorDelaySeconds: 3,
@@ -302,9 +303,9 @@ class JobSuggest extends React.Component {
 // A City autocomplete input.
 class CitySuggest extends React.Component {
   static propTypes = {
-    onChange: React.PropTypes.func.isRequired,
-    style: React.PropTypes.object,
-    value: React.PropTypes.object,
+    onChange: PropTypes.func.isRequired,
+    style: PropTypes.object,
+    value: PropTypes.object,
   }
 
   componentWillMount() {

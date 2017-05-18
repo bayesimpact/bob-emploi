@@ -17,4 +17,7 @@ message Company {
 
   // Text showing how many employees work for the company.
   string headcount_text = 5;
+
+  // Hiring potential: 0 means unknown, then the scale is from 1 to 5.
+  int32 hiring_potential = 6;
 }

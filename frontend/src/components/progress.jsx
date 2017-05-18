@@ -1,12 +1,13 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 
 class CircularProgress extends React.Component {
   static propTypes = {
-    periodMilliseconds: React.PropTypes.number,
-    size: React.PropTypes.number,
-    style: React.PropTypes.object,
-    thickness: React.PropTypes.number,
+    periodMilliseconds: PropTypes.number,
+    size: PropTypes.number,
+    style: PropTypes.object,
+    thickness: PropTypes.number,
   }
   static defaultProps = {
     periodMilliseconds: 1750,
@@ -97,10 +98,10 @@ class CircularProgress extends React.Component {
     }
 
     return <div style={style}>
-      <div style={wrapperStyle} ref="wrapper">
+      <div style={wrapperStyle}>
         <svg viewBox={`0 0 ${size} ${size}`}>
           <circle
-              ref="path" style={pathStyle}
+              style={pathStyle}
               cx={size / 2} cy={size / 2}
               r={(size - thickness) / 2}
               strokeWidth={thickness}

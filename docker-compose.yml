@@ -24,6 +24,7 @@ services:
       - ./data_analysis/data:/data_analysis/data
       - ./.pep8:/data_analysis/.pep8:ro
       - ./.pylintrc:/data_analysis/.pylintrc:ro
+      - ./frontend/server/companies.py:/data_analysis/bob_emploi/frontend/companies.py:ro
       - ./frontend/server/proto.py:/data_analysis/bob_emploi/frontend/proto.py:ro
       - ./frontend/server/scoring.py:/data_analysis/bob_emploi/frontend/scoring.py:ro
       - ./frontend/server/api:/data_analysis/bob_emploi/frontend/api

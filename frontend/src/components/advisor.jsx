@@ -1,12 +1,22 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+import ReactHeight from 'react-height'
 import {connect} from 'react-redux'
-import Radium from 'radium'
+import VisibilitySensor from 'react-visibility-sensor'
 
-import {scoreAdvice} from 'store/actions'
+import {adviceCardIsShown, advicePageIsShown, getAdviceTips, selectAdvice,
+  seeAdvice, sendAdviceFeedback} from 'store/actions'
+import {getAdviceTitle} from 'store/advice'
 import {hasUserEverAcceptedAdvice} from 'store/project'
 
-import {Colors, FastTransitions, SmoothTransitions, Styles} from 'components/theme'
+import constructionImage from 'images/construction-picto.svg'
+import {Modal} from 'components/modal'
+import {Button, Colors, FastTransitions, Icon, SmoothTransitions, Styles} from 'components/theme'
+import {TipsList} from 'components/tips'
 
+import adviceModuleProperties from './advisor/data/advice_modules.json'
+
+import BetterJobInGroup from './advisor/better_job_in_group'
 import Events from './advisor/events'
 import FreshResume from './advisor/fresh_resume'
 import ImproveInterview from './advisor/improve_interview'
@@ -23,6 +33,7 @@ import SpontaneousApplication from './advisor/spontaneous'
 
 // Map of advice recommendation modules keyed by advice module IDs.
 const ADVICE_MODULES = {
+  'better-job-in-group': BetterJobInGroup,
   'events': Events,
   'find-a-jobboard': JobBoards,
   'fresh-resume': FreshResume,
@@ -38,21 +49,217 @@ const ADVICE_MODULES = {
 }
 
 
+class WhiteAdviceCard extends React.Component {
+  static propTypes = {
+    advice: PropTypes.object.isRequired,
+    children: PropTypes.node,
+    dispatch: PropTypes.func.isRequired,
+    onExpandChanged: PropTypes.func,
+    onHoverChanged: PropTypes.func,
+    onShow: PropTypes.func,
+    project: PropTypes.object.isRequired,
+    scrollParent: PropTypes.func,
+    style: PropTypes.object,
+  }
+
+  state = {
+    hasBeenSeen: false,
+    isExpanded: false,
+  }
+
+  componentWillMount() {
+    const {advice, dispatch, project} = this.props
+    dispatch(adviceCardIsShown(project, advice))
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.readingTimeout)
+  }
+
+  changeExpand = isExpanded => {
+    const {onExpandChanged} = this.props
+    this.setState({isExpanded})
+    clearTimeout(this.readingTimeout)
+    onExpandChanged && onExpandChanged(isExpanded)
+  }
+
+  changeHover = isHovered => {
+    const {onHoverChanged} = this.props
+    onHoverChanged && onHoverChanged(isHovered)
+  }
+
+  gotoAdvicePage = visualElement => event => {
+    const {advice, dispatch, project} = this.props
+    event.stopPropagation()
+    this.changeExpand(true)
+    dispatch(selectAdvice(project, advice, visualElement))
+    dispatch(getAdviceTips(project, advice))
+    this.readingTimeout = setTimeout(() => {
+      dispatch(advicePageIsShown(project, advice))
+    }, 5000)
+  }
+
+  handleVisibilityChange = isVisible => {
+    if (!isVisible) {
+      return
+    }
+    const {advice, dispatch, onShow, project} = this.props
+    this.setState({hasBeenSeen: true})
+    dispatch(seeAdvice(project, advice))
+    onShow && onShow()
+  }
+
+  collapse = () => {
+    const {scrollParent} = this.props
+    const {collapsedHeight, expandedHeight} = this.state
+    this.changeExpand(false)
+    if (collapsedHeight && expandedHeight && scrollParent) {
+      scrollParent(collapsedHeight - expandedHeight)
+    }
+  }
+
+  renderTitle() {
+    const {advice, project} = this.props
+    const {isExpanded} = this.state
+    const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
+    const style = {
+      color: isExpanded ? '#fff' : Colors.CHARCOAL_GREY,
+      display: 'flex',
+      fontSize: 25,
+      fontStyle: 'italic',
+      fontWeight: isExpanded ? 'normal': isAdviceUnread ? 'bold' : 500,
+    }
+    return <header style={style}>
+      {getAdviceTitle(advice)}
+      <span style={{flex: 1}} />
+      {isExpanded ? <FeedbackButton advice={advice} project={project} /> : null}
+    </header>
+  }
+
+  renderUnread() {
+    const {advice} = this.props
+    const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
+    if (!isAdviceUnread || this.state.isExpanded) {
+      return null
+    }
+    const buttonBarStyle = {
+      alignItems: 'center',
+      backgroundColor: Colors.SLATE,
+      borderRadius: 0,
+      color: '#fff',
+      display: 'flex',
+      fontSize: 9,
+      fontWeight: 'bold',
+      height: 30,
+      letterSpacing: .3,
+      paddingLeft: 40,
+      textTransform: 'uppercase',
+      ...Styles.CENTER_FONT_VERTICALLY,
+      ...SmoothTransitions,
+    }
+    return <div style={buttonBarStyle}>
+      Non consulté
+    </div>
+  }
+
+  renderExpandButtonBar() {
+    const {advice} = this.props
+    const {callToAction} = adviceModuleProperties[advice.adviceId] || {}
+    const chevronStyle = {
+      display: 'inline-block',
+      fontSize: 20,
+      lineHeight: '14px',
+      marginLeft: 10,
+      verticalAlign: 'middle',
+    }
+    return <Button
+        onClick={this.gotoAdvicePage('advice-card-button')} isNarrow={true}
+        style={{marginTop: 40}}>
+      {callToAction || 'Voir plus'}
+      <Icon name="chevron-down" style={chevronStyle} />
+    </Button>
+  }
+
+  renderCollapseButtonBar() {
+    const buttonBarStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      justifyContent: 'center',
+      padding: 22,
+    }
+    return <div style={buttonBarStyle}>
+      <Button onClick={this.collapse} type="back">
+        Fermer
+      </Button>
+    </div>
+  }
+
+  render() {
+    const {advice, children, project, style} = this.props
+    const {isExpanded} = this.state
+    const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
+    const cardStyle = {
+      backgroundColor: '#fff',
+      boxShadow: isAdviceUnread ? '0 2px 10px 0 rgba(0, 0, 0, .25)' :
+        isExpanded ? '0 2px 14px 0 rgba(0, 0, 0, 0.15)' : 'initial',
+      color: Colors.CHARCOAL_GREY,
+      ...SmoothTransitions,
+      ...style,
+    }
+    const headerStyle = {
+      backgroundColor: isExpanded ? Colors.DARK_TWO : 'transparent',
+      color: isExpanded ? '#fff' : 'initial',
+      padding: '30px 40px',
+      ...SmoothTransitions,
+    }
+    const contentStyle = {
+      backgroundColor: isExpanded ? Colors.LIGHT_GREY : 'transparent',
+      padding: '35px 40px',
+      ...SmoothTransitions,
+    }
+    return <VisibilitySensor
+        active={!this.state.hasBeenSeen} intervalDelay={250} minTopValue={50}
+        partialVisibility={true} onChange={this.handleVisibilityChange}>
+      <ReactHeight
+          onHeightReady={height => this.setState({
+            [isExpanded ? 'expandedHeight' : 'collapsedHeight']: height})}>
+        <section
+            style={cardStyle}
+            onMouseEnter={() => this.changeHover(true)}
+            onMouseLeave={() => this.changeHover(false)}>
+          <header style={headerStyle}>
+            {this.renderTitle()}
+          </header>
+          <div style={contentStyle}>
+            {this.state.isExpanded ? <AdvicePageContent {...this.props} /> : children}
+            {this.state.isExpanded ?
+              <TipsList project={project} advice={advice} /> :
+              this.renderExpandButtonBar()}
+          </div>
+          {this.renderUnread()}
+          {this.state.isExpanded ? this.renderCollapseButtonBar() : null}
+        </section>
+      </ReactHeight>
+    </VisibilitySensor>
+  }
+}
+
+
 class AdviceCardBase extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
-    dispatch: React.PropTypes.func.isRequired,
-    isInAdvicePage: React.PropTypes.bool,
-    onScoreAdvice: React.PropTypes.func,
-    project: React.PropTypes.object.isRequired,
-    style: React.PropTypes.object,
+    advice: PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    project: PropTypes.object.isRequired,
+    refDom: PropTypes.func,
+    style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: React.PropTypes.bool,
+    isMobileVersion: PropTypes.bool,
   }
 
   componentWillMount() {
     this.setState({
+      isExpanded: false,
       isHovered: false,
       isJustMounted: true,
       isVisible: false,
@@ -64,18 +271,11 @@ class AdviceCardBase extends React.Component {
     clearTimeout(this.timeout)
   }
 
-  setScore = score => {
-    const {advice, dispatch, onScoreAdvice, project} = this.props
-    this.setState({isScoreModifierShown: false})
-    dispatch(scoreAdvice(project, advice, score))
-    onScoreAdvice && onScoreAdvice(score)
-  }
-
   renderTimeline(style) {
-    const {advice, isInAdvicePage} = this.props
+    const {advice} = this.props
     const {isMobileVersion} = this.context
     const {isHovered} = this.state
-    if (isInAdvicePage || isMobileVersion) {
+    if (isMobileVersion) {
       return null
     }
     const numStars = advice.numStars || 1
@@ -109,109 +309,16 @@ class AdviceCardBase extends React.Component {
     </header>
   }
 
-  handleSelectScore = event => {
-    if (event.target.value) {
-      this.setScore(parseInt(event.target.value, 10))
-    }
-  }
-
-  renderMobileScoreBar() {
-    const {advice, isInAdvicePage} = this.props
-    const {score} = advice
-    if (isInAdvicePage) {
-      return null
-    }
-    return <div style={{marginTop: 25}}>
-      <label>
-        <div style={{display: 'flex', justifyContent: 'space-between'}}>
-          Ce sujet vous semble-t-il prioritaire&nbsp;?
-          <select value={score} onChange={this.handleSelectScore}>
-            {score ? null : <option></option>}
-            <option value={10}>&nbsp;10 très prioritaire</option>
-            {new Array(8).fill(1).map((unused, index) => <option
-                value={9 - index} key={index}> &nbsp;{9 - index}
-            </option>)}
-            <option value={1}>&nbsp;1 peu prioritaire</option>
-          </select>
-        </div>
-      </label>
-    </div>
-  }
-
-  toggleScoreModifier = () =>
-    this.setState({isScoreModifierShown: !this.state.isScoreModifierShown})
-
-  renderScoreBar() {
-    const {advice, isInAdvicePage} = this.props
-    if (isInAdvicePage) {
-      return null
-    }
-    const {score} = advice
-    const isCardShown = this.isCardShown()
-    const style = {
-      alignItems: 'center',
-      color: Colors.DARK_TWO,
-      display: 'flex',
-      fontSize: 13,
-      opacity: isCardShown ? 1 : 0,
-      overflow: 'hidden',
-      paddingTop: 17,
-      transform: `translateY(${isCardShown ? '0' : '-100%'})`,
-      transition: 'all 300ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 300ms',
-    }
-    const scoreStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      flexWrap: 'wrap',
-      fontWeight: 'bold',
-    }
-
-    if (score && !this.state.isScoreModifierShown) {
-      const modifyStyle = {
-        cursor: 'pointer',
-        fontWeight: 'bold',
-      }
-      return <div style={{...style, justifyContent: 'flex-end'}}>
-        Vous avez noté ce sujet <ScoreButton
-            isSelected={true} onClick={this.toggleScoreModifier}>
-          {score}
-        </ScoreButton>
-        <span onClick={this.toggleScoreModifier} style={modifyStyle}>
-            Modifier
-        </span>
-      </div>
-    }
-
-    return <div style={style}>
-      <div style={{flex: 1}}>
-        Ce sujet vous semble-t-il prioritaire&nbsp;?
-      </div>
-      <div style={scoreStyle}>
-        <span style={Styles.CENTER_FONT_VERTICALLY}>
-          Peu prioritaire
-        </span>
-        {new Array(10).fill(undefined).map((unused, index) => <ScoreButton
-            key={index + 1} onClick={(index + 1 === score) ? this.toggleScoreModifier :
-                () => this.setScore(index + 1)}
-            isSelected={index + 1 === score}>
-          {index + 1}
-        </ScoreButton>)}
-        <span style={Styles.CENTER_FONT_VERTICALLY}>
-          Très prioritaire
-        </span>
-      </div>
-    </div>
-  }
-
   isCardShown() {
-    const {isInAdvicePage, project} = this.props
+    const {project} = this.props
     const {isJustMounted, isVisible} = this.state
-    return isInAdvicePage || hasUserEverAcceptedAdvice(project) || isVisible && !isJustMounted
+    return hasUserEverAcceptedAdvice(project) || isVisible && !isJustMounted
   }
 
   render() {
     // eslint-disable-next-line no-unused-vars
-    const {advice, dispatch, isInAdvicePage, project, style, ...extraProps} = this.props
+    const {advice, dispatch, project, refDom, style, ...extraProps} = this.props
+    const {isExpanded} = this.state
     const {isMobileVersion} = this.context
     const isCardShown = this.isCardShown()
     const module = ADVICE_MODULES[advice.adviceId] || null
@@ -228,76 +335,45 @@ class AdviceCardBase extends React.Component {
     }
     const cardStyle = {
       flex: 1,
-      marginBottom: isInAdvicePage ? 50 : 0,
-      marginLeft: (isMobileVersion || isInAdvicePage) ? 0 : 10,
-      marginTop: (isMobileVersion || !isInAdvicePage) ? 0 : 30,
+      marginLeft: isMobileVersion ? 0 : 10,
       opacity: isCardShown ? 1 : 0,
-      transform: `translateX(${isCardShown ? '0' : '50%'})`,
+      transform: isExpanded ? 'initial' : `translateX(${isCardShown ? '0' : '50%'})`,
       ...FastTransitions,
     }
-    return <div style={containerStyle}>
+    return <div style={containerStyle} ref={refDom}>
       {this.renderTimeline({width: 80})}
       <div style={cardStyle}>
-        <CardComponent
-            {...extraProps} advice={advice} project={project}
-            isInAdvicePage={isInAdvicePage} onShow={() => this.setState({isVisible: true})}
-            onHoverChanged={isHovered => this.setState({isHovered})} />
-        {isMobileVersion ? this.renderMobileScoreBar() : this.renderScoreBar()}
+        <WhiteAdviceCard
+            {...extraProps} advice={advice} dispatch={dispatch} project={project}
+            onShow={() => this.setState({isVisible: true})}
+            onExpandChanged={isExpanded => this.setState({isExpanded})}
+            onHoverChanged={isHovered => this.setState({isHovered})}>
+          <CardComponent {...extraProps} advice={advice} project={project} />
+        </WhiteAdviceCard>
       </div>
     </div>
   }
 }
-const AdviceCard = connect()(AdviceCardBase)
-
-
-class ScoreButtonBase extends React.Component {
-  static propTypes = {
-    children: React.PropTypes.node,
-    isSelected: React.PropTypes.bool,
-    onClick: React.PropTypes.func.isRequired,
-  }
-
-  render() {
-    const {children, isSelected, ...extraProps} = this.props
-    const buttonStyle = {
-      ':hover': isSelected ? {} : {border: `solid 1px ${Colors.GREYISH_BROWN}`},
-      alignItems: 'center',
-      backgroundColor: isSelected ? Colors.SKY_BLUE : 'initial',
-      border: `solid 1px ${isSelected ? Colors.SKY_BLUE : Colors.PINKISH_GREY}`,
-      borderRadius: 100,
-      color: isSelected ? '#fff' : Colors.DARK_TWO,
-      cursor: 'pointer',
-      display: 'flex',
-      height: 25,
-      justifyContent: 'center',
-      margin: 5,
-      width: 25,
-      ...(isSelected ? null : SmoothTransitions),
-      ...Styles.CENTER_FONT_VERTICALLY,
-    }
-    return <span {...extraProps} style={buttonStyle}>
-      {children}
-    </span>
-  }
-}
-const ScoreButton = Radium(ScoreButtonBase)
+const AdviceCard = connect(({app}, {advice, project}) => ({
+  tips: (app.adviceTips[project.projectId] || {})[advice.adviceId] || [],
+}))(AdviceCardBase)
 
 
 class AdvicePageContent extends React.Component {
   static propTypes = {
-    advice: React.PropTypes.object.isRequired,
-    style: React.PropTypes.object,
+    advice: PropTypes.object.isRequired,
+    style: PropTypes.object,
   }
 
-  renderGeneric(style, extraProps) {
+  renderGeneric(style) {
     const containerStyle = {
       alignItems: 'center',
       display: 'flex',
       ...style,
     }
-    return <div style={containerStyle} {...extraProps}>
+    return <div style={containerStyle}>
       <div style={{flex: 1, textAlign: 'center'}}>
-        <img src={require('images/construction-picto.svg')} />
+        <img src={constructionImage} />
         <div style={{fontStyle: 'italic', fontWeight: 500}}>
           Module en construction
         </div>
@@ -313,15 +389,83 @@ class AdvicePageContent extends React.Component {
   }
 
   render() {
-    const {advice, style, ...extraProps} = this.props
+    const {advice, style} = this.props
     const module = ADVICE_MODULES[advice.adviceId] || null
     const PageComponent = module && module.AdvicePageContent || null
     if (PageComponent) {
       return <PageComponent {...this.props} />
     }
-    return this.renderGeneric(style, extraProps)
+    return this.renderGeneric(style)
   }
 }
+
+
+class FeedbackButtonBase extends React.Component {
+  static propTypes = {
+    advice: PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
+    project: PropTypes.object.isRequired,
+    style: PropTypes.object,
+  }
+
+  state = {
+    isFeedbackModalShown: false,
+    isHovered: false,
+  }
+
+  sendFeedback = () => {
+    const {advice, dispatch, project} = this.props
+    const feedback = this.feedbackDom && this.feedbackDom.value
+    dispatch(sendAdviceFeedback(project, advice, feedback))
+    this.setState({isFeedbackModalShown: false})
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (this.state.isFeedbackModalShown && !prevState.isFeedbackModalShown) {
+      this.feedbackDom && this.feedbackDom.focus()
+    }
+  }
+
+  render() {
+    const {style} = this.props
+    const {hasFeedback, isHovered} = this.state
+    const iconStyle = {
+      color: isHovered ? '#fff' : Colors.COOL_GREY,
+      cursor: 'pointer',
+      ...SmoothTransitions,
+      ...style,
+    }
+    return <div
+        style={style}
+        onMouseEnter={() => this.setState({isHovered: true})}
+        onMouseLeave={() => this.setState({isHovered: false})}>
+      <Modal
+          isShown={this.state.isFeedbackModalShown}
+          title="Nous sommes à votre écoute"
+          onClose={() => this.setState({isFeedbackModalShown: false})}
+          style={{fontSize: 14, fontStyle: 'normal'}}>
+        <div style={{display: 'flex', flexDirection: 'column', margin: '25px 50px'}}>
+            Qu'avez vous pensé de ce conseil&nbsp;?
+          <textarea
+              style={{height: 300, marginTop: 5, padding: '15px 12px', width: 380}}
+              onChange={event => this.setState({hasFeedback: !!event.target.value})}
+              placeholder="Écrivez votre commentaire ici" ref={feedbackDom => {
+                this.feedbackDom = feedbackDom
+              }} />
+        </div>
+        <div style={{marginBottom: 25, textAlign: 'center'}}>
+          <Button disabled={!hasFeedback} onClick={hasFeedback ? this.sendFeedback : null}>
+            Envoyer
+          </Button>
+        </div>
+      </Modal>
+      <Icon
+          name="pencil-box-outline" style={iconStyle}
+          onClick={() => this.setState({isFeedbackModalShown: true})} />
+    </div>
+  }
+}
+const FeedbackButton = connect()(FeedbackButtonBase)
 
 
 export {AdviceCard, AdvicePageContent}

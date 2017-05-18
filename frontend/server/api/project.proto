@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/action.proto";
+import "bob_emploi/frontend/api/company.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 
@@ -18,10 +19,6 @@ message Project {
 
   // Current status of this project for the user.
   ProjectStatus status = 3;
-
-  // A short description of the project in the user's language. It uses markdown
-  // syntax. It summarizes the parameters below.
-  string short_description = 4 [deprecated = true];
 
   // Job targeted by this project.
   Job target_job = 6;
@@ -135,7 +132,7 @@ message Project {
   string useless_advice_feedback = 11;
 }
 
-// Next ID: 13.
+// Next ID: 15.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -147,31 +144,26 @@ message Advice {
   // Feedback of the user when they decline an advice.
   string declined_reason = 3;
 
-  // Engagement "sticky" action to start if the user accepts the advice.
-  Action engagement_action = 4 [deprecated = true];
-
   // Number of stars (1 to 3) assigned to this advice when first scored.
   float num_stars = 5;
 
-  // Extra data needed to recommend the "Other work environments" piece of
-  // advice.
-  OtherWorkEnvAdviceData other_work_env_advice_data = 6;
+  oneof extra_data {
+    // Extra data needed to recommend the "Other work environments" piece of
+    // advice.
+    OtherWorkEnvAdviceData other_work_env_advice_data = 6;
 
-  // Extra data needed to recommend the "Improve success rate" piece of advice.
-  ImproveSuccessRateData improve_success_rate_data = 8;
+    // Extra data needed to recommend the "Improve success rate" piece of advice.
+    ImproveSuccessRateData improve_success_rate_data = 8;
 
-  // Extra data needed to recommend the "find a job board" piece of advice.
-  JobBoardsData job_boards_data = 12;
+    // Extra data needed to recommend the "find a job board" piece of advice.
+    JobBoardsData job_boards_data = 12;
 
-  // Goal expressed as the end of the sentence "We will give you advice to…".
-  // TODO(pascal): Clean up when fields have been cleaned up in users.
-  string goal = 9 [deprecated = true];
+    // Extra data needed to recommend the "spontaneous application" piece of advice.
+    SpontaneousApplicationData spontaneous_application_data = 13;
 
-  // Title of the advice module to be displayed at the top of the Advice Page.
-  // By convention it refers to the user as "you", e.g. "Improve Your Resume".
-  // It is also displayed as the title of the Advice Card in the Dashboard.
-  // TODO(pascal): Clean up when fields have been cleaned up in users.
-  string title = 10 [deprecated = true];
+    // Extra data neded to recommend the "better jobs in job group" piece of advice.
+    BetterJobInGroupData better_job_in_group_data = 14;
+  }
 
   // The score the user gave to the piece of advice. A low score means they do
   // not think it was a good advice, for any reasons. A high score means they
@@ -197,6 +189,25 @@ message ImproveSuccessRateData {
 message JobBoardsData {
   // A specific job board title, the user probably does not know about.
   string job_board_title = 1;
+}
+
+message SpontaneousApplicationData {
+  // Specific companies to which the user could apply to.
+  repeated Company companies = 1;
+}
+
+message BetterJobInGroupData {
+  // Sorted list of jobs in the group. The weight is the percentage of job
+  // offers from the group that are for this job.
+  // TODO(pascal): Create an endpoint to get those jobs instead of storing them
+  // in the project's proto.
+  repeated WeightedJob jobs = 1;
+
+  // One job that is better than the target one.
+  Job better_job = 2;
+
+  // Number of jobs that are better than the target one.
+  int32 num_better_jobs = 3;
 }
 
 enum NumberOfferEstimateOption {
