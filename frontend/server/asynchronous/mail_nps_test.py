@@ -83,6 +83,29 @@ class MailingTestCase(unittest.TestCase):
         self.assertFalse(mock_mail.send_template.called)
         self.assertTrue(mock_mail.send_template_to_admins.called)
 
+    def test_no_incomplete(self, mock_mail):
+        """Do not send if project is not complete."""
+        self._db.user.insert_one({
+            'profile': {
+                'name': 'Pascal',
+                'lastName': 'Corpet',
+                'email': 'pascal+test@bayes.org',
+            },
+            'featuresEnabled': {
+                'netPromoterScoreEmail': 'NPS_EMAIL_PENDING',
+            },
+            'registeredAt': datetime.datetime(2016, 11, 22, 10, 0, 0).isoformat() + 'Z',
+            'projects': [{
+                'title': 'Project Title',
+                'isIncomplete': True,
+            }],
+        })
+        mock_mail.send_template.return_value.status_code = 200
+        mock_mail.send_template_to_admins.return_value.status_code = 200
+
+        mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
+        self.assertFalse(mock_mail.send_template.called)
+
     def test_no_dupes(self, mock_mail):
         """Test that we do not send duplicate emails if we run the script twice."""
         mock_mail.send_template.return_value.status_code = 200

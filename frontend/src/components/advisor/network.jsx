@@ -1,206 +1,34 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import VisibilitySensor from 'react-visibility-sensor'
-
-import {USER_PROFILE_SHAPE} from 'store/user'
 
 import networkCirclesBackground from 'images/network-circles-background.svg'
 import {Colors, GrowingNumber, Markdown, PaddedOnMobile, Styles} from 'components/theme'
 
-import {AdviceBox, PersonalizationBoxes} from './base'
+import {AdviceBox} from './base'
 import MESSAGE_EXAMPLES from './data/network_messages.json'
 
 
 
 class NetworkAdviceCard extends React.Component {
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
-    const {isMobileVersion} = this.context
     const explanationStyle = {
-      flex: 1,
-      fontSize: 16,
-      lineHeight: '21px',
-      marginTop: 15,
+      fontSize: 30,
     }
-    return <section style={{alignItems: 'center', display: 'flex'}}>
-      <div style={explanationStyle}>
-        <strong style={{color: Colors.SKY_BLUE, fontSize: 40}}>
-          <GrowingNumber number={44} isSteady={true} />%
-        </strong> des
-        gens retrouvent un emploi grâce à <strong>leurs contacts</strong> contre
-        seulement <strong>12%</strong> via
-        des offres <strong>sur internet</strong>.
-      </div>
-      {isMobileVersion ? null : <JobOriginChart />}
+    return <section style={explanationStyle}>
+      <strong>
+        <GrowingNumber number={44} isSteady={true} />%
+      </strong> des
+      gens retrouvent un emploi grâce à <strong>leurs contacts</strong> contre
+      seulement 12% via des offres sur internet.
     </section>
   }
 }
-
-
-// A graph to compare the offers coming from web offers and those coming from network.
-// For now, we give the same graph to everybody, so the data is not passed by the props.
-class JobOriginChart extends React.Component {
-  static propTypes = {
-    // Duration of appearance of one bar.
-    barEntranceDurationMillisec: PropTypes.number.isRequired,
-    // Total duration of appearance animation.
-    entranceAnimationDurationMillisec: PropTypes.number.isRequired,
-    isLegendShown: PropTypes.bool,
-    style: PropTypes.object,
-  }
-  static defaultProps = {
-    barEntranceDurationMillisec: 500,
-    entranceAnimationDurationMillisec: 500,
-  }
-
-  componentWillMount() {
-    this.graphData = [
-      {percentage: 12, title: 'Retour grâce à des offres internet'},
-      {isHighlighted: true, percentage: 44, title: "Retour grâce à l'etourage et les contacts"},
-    ]
-    this.setState({numBarToShow: 0, shouldAnimateOnVisible: true})
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.timeout)
-  }
-
-  startAppearanceAnimation = isVisible => {
-    if (!isVisible) {
-      return
-    }
-    this.setState({shouldAnimateOnVisible: false})
-    this.showNextBar(0)
-  }
-
-  showNextBar(numBarToShow) {
-    if (numBarToShow > this.graphData.length) {
-      return
-    }
-    this.setState({numBarShown: numBarToShow})
-    this.timeout = setTimeout(
-      () => this.showNextBar(numBarToShow + 1),
-      this.props.entranceAnimationDurationMillisec / this.graphData.length,
-    )
-  }
-
-  renderBar({isHighlighted, percentage, title}, indexBar) {
-    const {barEntranceDurationMillisec, isLegendShown} = this.props
-    const isShown = indexBar < this.state.numBarShown
-    const transition =
-      `all ${barEntranceDurationMillisec}ms cubic-bezier(0.23, 1, 0.32, 1)`
-    const style = {
-      display: 'inline-block',
-      textAlign: 'center',
-      verticalAlign: 'top',
-      width: 100,
-    }
-    const titleStyle = {
-      color: Colors.SLATE,
-      fontSize: 12,
-      lineHeight: 1.19,
-      marginBottom: 5,
-      padding: 5,
-    }
-    const valueStyle = {
-      color: isHighlighted ? Colors.SKY_BLUE : Colors.SILVER,
-      fontSize: 12,
-      fontWeight: 'bold',
-      lineHeight: 1.19,
-      opacity: isShown ? 1 : 0,
-      padding: 5,
-      transition,
-    }
-    const barAndTextStyle = {
-      borderBottom: '1px solid',
-      borderColor: Colors.SILVER,
-      display: 'flex',
-      flexDirection: 'column',
-      height: 140,
-      justifyContent: 'flex-end',
-      position: 'relative',
-    }
-    const coloredBarStyle = {
-      backgroundColor: isHighlighted ? Colors.SKY_BLUE : Colors.SILVER,
-      height: isShown ? `${percentage * 2}%` : 0,
-      margin: '0 auto',
-      transition,
-      width: 65,
-    }
-    return <div style={style} key={indexBar}>
-      <div style={barAndTextStyle}>
-        <div style={valueStyle}>
-          {percentage} %
-        </div>
-        <div style={coloredBarStyle}></div>
-      </div>
-      {isLegendShown ? <div style={titleStyle}>
-        {title}
-      </div> : null}
-    </div>
-  }
-
-  render() {
-    const graphStyle = {
-      display: 'flex',
-      justifyContent: 'center',
-      marginBottom: 0,
-      ...this.props.style,
-    }
-    return <div style={graphStyle}>
-      <VisibilitySensor
-          active={this.state.shouldAnimateOnVisible} intervalDelay={250}
-          onChange={this.startAppearanceAnimation} />
-      <div>
-        {this.graphData.map((barData, indexBar) => this.renderBar(barData, indexBar))}
-      </div>
-    </div>
-  }
-}
-
-
-const networkPersonalizations = [
-  {
-    filters: ['ATYPIC_PROFILE'],
-    tip: profile => `En passant par le réseau vous serez moins vite
-      catalogué${profile.gender === 'FEMININE' ? 'e' : ''} si vous ne rentrez
-      pas dans les cases`,
-  },
-  {
-    filters: ['TIME_MANAGEMENT'],
-    tip: <span>Donnez-vous des objectifs du type : « cette semaine je vais à
-      deux évènements »</span>,
-  },
-  {
-    filters: ['MOTIVATION'],
-    tip: `Commencer par contacter les personnes que vous connaissez le mieux
-      qui vous aideront à retrouver du poil de la bête`,
-  },
-  {
-    filters: ['NO_OFFERS'],
-    tip: 'Attaquez-vous au marché caché en utilisant votre réseau',
-  },
-  {
-    filters: ['SAME_JOB'],
-    tip: `Contactez vos anciens collègues, ils pourraient avoir eu vent de
-      bonnes opportunités qui pourraient vous intéresser`,
-  },
-  {
-    filters: ['GRADUATE'],
-    tip: 'Le réseau des anciens élèves peut vous débloquer',
-  },
-]
 
 
 class NetworkAdvicePage extends React.Component {
   static propTypes = {
     circle: PropTypes.number.isRequired,
     intro: PropTypes.node,
-    profile: USER_PROFILE_SHAPE.isRequired,
-    project: PropTypes.object.isRequired,
   }
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
@@ -345,7 +173,6 @@ class NetworkAdvicePage extends React.Component {
   }
 
   render() {
-    const {profile, project} = this.props
     const {isMobileVersion} = this.context
     const {messageExampleIndex} = this.state
     return <div>
@@ -355,10 +182,6 @@ class NetworkAdvicePage extends React.Component {
         <div style={{height: 30, width: 30}} />
         {this.renderExamplesBox({flex: 1}, MESSAGE_EXAMPLES[messageExampleIndex])}
       </div>
-
-      <PersonalizationBoxes
-          style={{marginTop: 30}} profile={profile} project={project}
-          personalizations={networkPersonalizations} />
     </div>
   }
 }

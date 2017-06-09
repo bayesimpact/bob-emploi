@@ -385,6 +385,36 @@ class MobilityWithoutMoveScoringModelTestCase(ScoringModelTestBase(
         self.assertLessEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
 
 
+class CommuteScoringModelTestCase(ScoringModelTestBase('advice-commute')):
+    """Unit test for the "Commute" scoring model."""
+    # TODO(guillaume): Add more tests when the scoring model takes the city into account.
+
+    def setUp(self):
+        super(CommuteScoringModelTestCase, self).setUp()
+        self.persona = self._random_persona().clone()
+
+    def test_lyon(self):
+        """Test that people in Lyon match for now."""
+        self.persona.project.mobility.city.city_id = '69123'
+        score = self._score_persona(self.persona)
+        self.assertGreater(score, 1, msg='Fail for "%s"' % self.persona.name)
+
+    def test_outside_lyon(self):
+        """Test that people outside of Lyon do not match for now."""
+        self.persona.project.mobility.city.city_id = '69124'
+        score = self._score_persona(self.persona)
+        self.assertEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
+
+    def test_extra_data(self):
+        """Compute extra data."""
+        result = self.model.compute_extra_data(
+            self.persona.scoring_project(mongomock.MongoClient().test))
+        if self.persona.project.mobility.city.city_id == '69123':
+            self.assertEqual(len(result.cities), 2, msg='Failed for "%s"' % self.persona.name)
+        else:
+            self.assertEqual(len(result.cities), 0, msg='Failed for "%s"' % self.persona.name)
+
+
 class RelocateScoringModelTestCase(ScoringModelTestBase('chantier-relocate(fra)')):
     """Unit test for the "Relocate" scoring model."""
 
@@ -467,6 +497,7 @@ class PersonasTestCase(unittest.TestCase):
         _load_json_to_mongo(database, 'job_group_info')
         _load_json_to_mongo(database, 'fhs_local_diagnosis')
         _load_json_to_mongo(database, 'local_diagnosis')
+        _load_json_to_mongo(database, 'associations')
         scores = {}
         # Mock the "now" date so that scoring models that are based on time
         # (like "Right timing") are deterministic.
@@ -597,6 +628,32 @@ class ObtainDrivingLicenseTestCase(ScoringModelTestBase('chantier-driving-licens
 
         score = self._score_persona(persona)
         self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+
+class AdviceAssociationHelpTestCase(ScoringModelTestBase('advice-association-help')):
+    """Unit tests for the "Find an association to help you" advice."""
+
+    def test_no_data(self):
+        """No associations data."""
+        persona = self._random_persona().clone()
+        score = self._score_persona(persona)
+        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+    def test_motivated(self):
+        """User is motivated."""
+        persona = self._random_persona().clone()
+        self.database.associations.insert_one({'name': 'SNC'})
+        del persona.user_profile.frustrations[:]
+        score = self._score_persona(persona)
+        self.assertEqual(2, score, msg='Failed for "%s"' % persona.name)
+
+    def test_need_motivation(self):
+        """User needs motivation."""
+        persona = self._random_persona().clone()
+        self.database.associations.insert_one({'name': 'SNC'})
+        persona.user_profile.frustrations.append(user_pb2.MOTIVATION)
+        score = self._score_persona(persona)
+        self.assertEqual(3, score, msg='Failed for "%s"' % persona.name)
 
 
 class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-group')):
@@ -1352,6 +1409,38 @@ class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume'))
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
+
+
+class AdviceWowBakerTestCase(ScoringModelTestBase('advice-wow-baker')):
+    """Unit tests for the "Wow Baker" advice."""
+
+    def test_not_baker(self):
+        """Does not trigger for non baker."""
+        persona = self._random_persona().clone()
+        if persona.project.target_job.job_group.rome_id == 'D1102':
+            persona.project.target_job.job_group.rome_id = 'M1607'
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_chief_baker(self):
+        """Does not trigger for a chief baker."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'D1102'
+        persona.project.target_job.code_ogr = '12006'
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_baker_not_chief(self):
+        """Does not trigger for a chief baker."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'D1102'
+        if persona.project.target_job.code_ogr == '12006':
+            persona.project.target_job.code_ogr = '10868'
+
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
 

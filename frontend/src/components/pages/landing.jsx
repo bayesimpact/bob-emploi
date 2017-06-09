@@ -6,15 +6,18 @@ import config from 'config'
 
 import {openLoginModal, loadLandingPageAction} from 'store/actions'
 
-import advisorScreenshot from 'images/screenshot-advisor.png'
-import dataScreenshot from 'images/screenshot-data.png'
+import adviceScreenshot from 'images/screenshots/advice.png'
+import arrowLeftImage from 'images/landing-arrow-left.svg'
+import arrowRightImage from 'images/landing-arrow-right.svg'
+import diagnosticScreenshot from 'images/screenshots/diagnostic.png'
 import echappeeImage from 'images/echappee-ico.png'
 import etalabImage from 'images/etalab-ico.png'
 import franceEngageImage from 'images/francengage-ico.png'
+import onboardingScreenshot from 'images/screenshots/onboarding.png'
+import openAdviceScreenshot from 'images/screenshots/open-advice.png'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
 import rcoImage from 'images/rco-ico.png'
 import sncImage from 'images/snc-ico.png'
-import tipsScreenshot from 'images/screenshot-tips.png'
 
 import {LoginButton} from 'components/login'
 import {ShortKey} from 'components/shortkey'
@@ -56,6 +59,15 @@ const landingPageTitles = {
       un emploi</span> ?
     </span>,
   },
+  prioritization: {
+    match: /prioritization/,
+    subtitle: `${config.productName} analyse votre situation et vous aide à ` +
+      'savoir ce qui est vraiment important',
+    title: <span>
+      Que faire en <span style={emStyle}>priorité</span> pour <span
+      style={emStyle}>trouver un emploi</span> ?
+    </span>,
+  },
   speed: {
     match: /speed/,
     subtitle: `${config.productName} analyse votre situation et vous aide à ` +
@@ -66,13 +78,9 @@ const landingPageTitles = {
     </span>,
   },
   '': {
-    match: /prioritization/,
-    subtitle: `${config.productName} analyse votre situation et vous aide à ` +
-      'savoir ce qui est vraiment important',
-    title: <span>
-      Que faire en <span style={emStyle}>priorité</span> pour <span
-      style={emStyle}>trouver un emploi</span> ?
-    </span>,
+    buttonCaption: 'Obtenir mon diagnostic',
+    match: /evaluation/,
+    title: <span>Bob <span style={emStyle}>évalue</span> votre recherche d'emploi</span>,
   },
 }
 const kinds = Object.keys(landingPageTitles)
@@ -97,7 +105,7 @@ class TitleSection extends React.Component {
 
   render() {
     const {isMobileVersion, landingPageKind} = this.context
-    const {fontSize, subtitle, title} = landingPageTitles[landingPageKind] || {}
+    const {buttonCaption, fontSize, subtitle, title} = landingPageTitles[landingPageKind] || {}
     const style = {
       alignItems: 'flex-start',
       backgroundColor: Colors.DARK,
@@ -131,7 +139,7 @@ class TitleSection extends React.Component {
         <div style={titleStyle}>{title}</div>
         {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : null}
         <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="title">
-          Commencer
+          {buttonCaption || 'Commencer'}
         </LoginButton>
         <div style={{fontSize: 15, marginTop: 15}}>
           <Link to={Routes.PROFESSIONALS_PAGE} style={{color: Colors.COOL_GREY}}>
@@ -149,13 +157,13 @@ class ScreenshotsSection extends React.Component {
     isMobileVersion: PropTypes.bool,
   }
 
-  renderScreenshot(description, flexDirection, screenshotSrc) {
+  renderScreenshot(title, description, flexDirection, screenshotSrc, arrowNext) {
     const {isMobileVersion} = this.context
     const style = {
       alignItems: 'center',
       display: 'flex',
       flexDirection: isMobileVersion ? 'column' : flexDirection,
-      fontSize: isMobileVersion ? 20 : 25,
+      fontSize: isMobileVersion ? 16 : 18,
       justifyContent: 'space-between',
       lineHeight: 1.3,
       margin: 'auto',
@@ -167,55 +175,77 @@ class ScreenshotsSection extends React.Component {
       maxWidth: isMobileVersion ? '90%' : 340,
       textAlign: isMobileVersion ? 'center' : 'left',
     }
+    const titleStyle = {
+      fontSize: isMobileVersion ? 20 : 25,
+      fontWeight: 'bold',
+      marginBottom: 25,
+    }
     const imageStyle = {
       boxShadow: '0 0 35px 0 rgba(0, 0, 0, 0.25)',
       width: isMobileVersion ? '90%' : 570,
     }
+    const arrowStyle = {
+      [arrowNext === 'left' ? 'right' : 'left']: '100%',
+      [arrowNext === 'left' ? 'marginRight' : 'marginLeft']: 5,
+      position: 'absolute',
+      top: '100%',
+    }
     return <div style={style}>
-      <img src={screenshotSrc} style={imageStyle} />
-      <div style={descriptionStyle}>{description}</div>
+      <div style={{position: 'relative'}}>
+        <img src={screenshotSrc} style={imageStyle} />
+        {(!isMobileVersion && arrowNext) ? <img
+            style={arrowStyle}
+            src={arrowNext === 'left' ? arrowLeftImage : arrowRightImage} /> : null}
+      </div>
+      <div style={descriptionStyle}>
+        <div style={titleStyle}>{title}</div>
+        <em>{description}</em>
+      </div>
     </div>
   }
 
   render() {
     const {isMobileVersion} = this.context
     const style = {
-      backgroundColor: '#fff',
+      backgroundColor: Colors.BACKGROUND_GREY,
       color: Colors.SLATE,
       paddingTop: 50,
       textAlign: 'center',
     }
     const headerStyle = {
       fontSize: isMobileVersion ? 28 : 35,
+      fontWeight: 'bold',
       lineHeight: 1,
       marginBottom: 50,
     }
     return <section style={style}>
       <header style={headerStyle}>
-        Un service d'accompagnement
-        <div style={{fontStyle: 'italic', fontWeight: 'bold'}}>
-          personnalisé et entièrement gratuit
-        </div>
-
-        <div style={{fontSize: 20, fontStyle: 'italic', marginTop: 15}}>
-          proposé par l'ONG à but non-lucratif Bayes Impact
-        </div>
+        Comment ça marche&nbsp;?
       </header>
 
-      {this.renderScreenshot(<span>
-        Découvrez ce qui va vraiment <strong>booster votre recherche d'emploi</strong>
-      </span>, 'row-reverse', advisorScreenshot)}
+      {this.renderScreenshot(
+        'Vous expliquez votre projet à Bob',
+        "L'application vous pose une série de questions pour situer votre projet.",
+        'row-reverse', onboardingScreenshot, 'left')}
 
-      {this.renderScreenshot(<span>
-        Nos recommandations utilisent l'analyse <strong>de millions de
-        données</strong> et de <strong>retours du terrain</strong> pour être
-        plus pertinentes
-      </span>, 'row', dataScreenshot)}
+      {this.renderScreenshot(
+        'Bob analyse votre situation',
+        `À l'aide du Big data et des données du marché du travail l'application
+        remonte les freins et les facteurs de succès de votre recherche
+        d'emploi.`,
+        'row', diagnosticScreenshot, 'right')}
 
-      {this.renderScreenshot(<span>
-        <strong>Foncez</strong> vers l'emploi grâce à votre <strong>plan
-        d'action personnalisé</strong>
-      </span>, 'row-reverse', tipsScreenshot)}
+      {this.renderScreenshot(
+        'Bob vous propose de nouvelles pistes',
+        `En partant des astuces de centaines de professionnels, l'application
+        trouve les plus adaptées à votre profil.`,
+        'row-reverse', adviceScreenshot, 'left')}
+
+      {this.renderScreenshot(
+        'Vous relancez votre recherche avec de meilleurs outils',
+        `L'application garde vos informations et vous pouvez consulter à tous
+        moments les conseils et astuces.`,
+        'row', openAdviceScreenshot)}
     </section>
   }
 }
@@ -224,10 +254,12 @@ class ScreenshotsSection extends React.Component {
 class BobHelpsYouSection extends React.Component {
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
+    landingPageKind: PropTypes.oneOf(kinds).isRequired,
   }
 
   render() {
-    const {isMobileVersion} = this.context
+    const {isMobileVersion, landingPageKind} = this.context
+    const {buttonCaption} = landingPageTitles[landingPageKind] || {}
     const style = {
       backgroundColor: Colors.DARK,
       color: '#fff',
@@ -244,11 +276,13 @@ class BobHelpsYouSection extends React.Component {
       textTransform: 'uppercase',
     }
     return <section style={style}>
-      <div style={{margin: 'auto', maxWidth: 450}}>
-        Découvrez comment {config.productName} peut vous aider !
+      <div style={{margin: 'auto', maxWidth: 960}}>
+        Seulement 12% des embauches se font en répondant aux offres sur
+        internet. Avec {config.productName}, vous saurez trouver 100% des
+        opportunités&nbsp;!
       </div>
       <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="helpsyou">
-        Commencer
+        {buttonCaption || 'Commencer'}
       </LoginButton>
     </section>
   }
@@ -261,13 +295,13 @@ class TestimonialsSection extends React.Component {
     const headerStyle = {
       color: Colors.SLATE,
       fontSize: isMobileVersion ? 30 : 35,
+      fontWeight: 'bold',
       padding: isMobileVersion ? '45px 30px' : '70px 100px',
       textAlign: 'center',
     }
     return <section style={{paddingBottom: 40}}>
       <header style={headerStyle}>
-        Ils ont essayé {config.productName}, et ont <span style={{color:
-          Colors.SKY_BLUE}}>retrouvé du travail</span>
+        Bob les a aidés à retrouver du travail
       </header>
       <Testimonials>
         <TestimonialCard author="Jean, 45 ans" isAuthorMan={true}>
@@ -282,7 +316,6 @@ class TestimonialsSection extends React.Component {
           quoi faire et comment.
         </TestimonialCard>
       </Testimonials>
-    ]
     </section>
   }
 }
@@ -405,8 +438,9 @@ class LandingPage extends React.Component {
 
   componentWillMount() {
     const {query} = this.props.routing.locationBeforeTransitions
+    const utmContent = query['utm_content'] || ''
     for (const landingPageKind in landingPageTitles) {
-      if (landingPageTitles[landingPageKind].match.test(query['utm_content'] || '')) {
+      if (landingPageTitles[landingPageKind].match.test(utmContent)) {
         this.setState({landingPageKind})
         break
       }

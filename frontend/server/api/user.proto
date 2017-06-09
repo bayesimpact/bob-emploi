@@ -51,6 +51,15 @@ message User {
 
   // A map of likes (+1) and dislikes (-1) per feature.
   map<string, int32> likes = 13;
+
+  // Value of the utm_content parameters the first time the user reached our
+  // website. If it is not empty, it contains an ID that helps us track the
+  // system that recommended the app to the user originally.
+  string initial_utm_content = 14;
+
+  // Response from the user to the survey we send by email to get feedback on the app
+  // and on the relevance of the given advices.
+  NPSSurveyResponse net_promoter_score_survey_response = 15;
 }
 
 message UserAuth {
@@ -372,4 +381,35 @@ enum NPSEmailStatus {
 
   // We sent the NPS email to the user.
   NPS_EMAIL_SENT = 2;
+}
+
+// Responses to the survey sent by email to user to compute the Net Promoter Score
+// and get feedback on the advices (https://bayes.typeform.com/to/uuPH5r?email=me@example.com).
+// Next ID: 7.
+message NPSSurveyResponse {
+  // The email address used to answer the survey.
+  string email = 1;
+
+  // The date and time at which the user has responded to the survey.
+  google.protobuf.Timestamp responded_at = 2;
+
+  // How much (from 0 to 10) the user would recommend the app.
+  // As the score is always supposed to be given, not finding a value for 'score' means
+  // the given score was '0'.
+  uint32 score = 3;
+
+  // Free-form text answer to the question "What did you think about the advices?".
+  string were_advices_useful_comment = 4;
+
+  // Free-form text answer to the question "Which advices have you found useful?".
+  string which_advices_were_useful_comment = 5;
+
+  // Free-form text answer about what the user liked or did not like in the app.
+  string general_feedback_comment = 6;
+
+  // List of advices that we consider have created a spark for the user.
+  // This is manually edited by team members after looking at the user answer
+  // 'which_advices_were_useful_comment' and at the list of advices the app actually
+  // gave to the user.
+  repeated string curated_useful_advice_ids = 7;
 }

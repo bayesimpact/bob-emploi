@@ -1,16 +1,58 @@
 {
-  "A": "au prochain salon de l'agriculture",
-  "B": "à la prochaine biénnale",
-  "C": "au prochain meetup",
-  "D": "au prochain événement de la chambre du commerce et de l'industrie",
-  "E": "au prochain festival",
-  "F": "au prochain salon de l'emploi de la construction et des travaux publics",
-  "G": "aux prochaines journées de recrutement des hôtels et restaurants près de chez vous",
-  "H": "au prochain événement de la chambre du commerce et de l'industrie",
-  "I": "aux prochaines journée de recrutement près de chez vous",
-  "J": "au prochain congrès de médecine",
-  "K": "au prochain événement de votre mairie",
-  "L": "au prochain festival",
-  "M": "au prochain forum de l'entreprise et de l'emploi",
-  "N": "au prochain salon de recrutement Logistique, transport et achats"
+  "A": {
+    "atNext": "au prochain ",
+    "eventLocation": "salon de l'agriculture"
+  },
+  "B": {
+    "atNext": "à la prochaine ",
+    "eventLocation": "biénnale"
+  },
+  "C": {
+    "atNext": "au prochain ",
+    "eventLocation": "meetup"
+  },
+  "D": {
+    "atNext": "au prochain évènement de la ",
+    "eventLocation": "chambre du commerce et de l'industrie"
+  },
+  "E": {
+    "atNext": "au prochain ",
+    "eventLocation": "festival"
+  },
+  "F": {
+    "atNext": "au prochain salon de l'emploi de la ",
+    "eventLocation": "construction et des travaux publics"
+  },
+  "G": {
+    "atNext": "aux prochaines journées de recrutements des ",
+    "eventLocation": "hôtels et restaurants près de chez vous"
+  },
+  "H": {
+    "atNext": "au prochain évènement de la ",
+    "eventLocation": "chambre du commerce et de l'industrie"
+  },
+  "I": {
+    "atNext": "aux prochaines journée de ",
+    "eventLocation": "recrutement près de chez vous"
+  },
+  "J": {
+    "atNext": "au prochain ",
+    "eventLocation": "congrès de médecine"
+  },
+  "K": {
+    "atNext": "au prochain évènement de ",
+    "eventLocation": "votre mairie"
+  },
+  "L": {
+    "atNext": "au prochain ",
+    "eventLocation": "festival"
+  },
+  "M": {
+    "atNext": "au prochain ",
+    "eventLocation": "forum de l'entreprise et de l'emploi"
+  },
+  "N": {
+    "atNext": "au prochain ",
+    "eventLocation": "salon de recrutement logistique, transport et achats"
+  }
 }

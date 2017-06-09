@@ -132,3 +132,6 @@ data/rome/sample_job_names.txt: data/rome/RefRomeCsv.zip
 data/recent_job_offers.csv:
 	mkdir -p $(@D)
 	python bob_emploi/emploi_store_downloader.py offres Offres.*d.emploi $@
+
+data/tous_benevoles.xml:
+	wget http://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml $@

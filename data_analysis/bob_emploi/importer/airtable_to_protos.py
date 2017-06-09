@@ -38,13 +38,14 @@ from google.protobuf import json_format
 from bob_emploi.lib import mongo
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 
 # Regular expression to validate links, e.g http://bayesimpact.org. Keep in
 # sync with frontend/src/store/link.js.
-_LINK_REGEXP = re.compile(r'^[^/]+://[^/]+(?:/|$)')
+_LINK_REGEXP = re.compile(r'^[^/]+://[^/]*[^/.](?:/|$)')
 
 
 class _ProtoAirtableConverter(collections.namedtuple(
@@ -121,20 +122,25 @@ class _AdviceModuleConverter(_ProtoAirtableConverter):
         return fields
 
 
-class _JobBoardConverter(_ProtoAirtableConverter):
+class _FilteredLinkConverter(_ProtoAirtableConverter):
 
     def convert_record(self, airtable_record):
         """Convert an AirTable record to a dict proto-Json ready."""
-        fields = super(_JobBoardConverter, self).convert_record(airtable_record)
+        fields = super(_FilteredLinkConverter, self).convert_record(airtable_record)
 
         # Populate filters.
-        filters = []
+        filters = airtable_record['fields'].get('filters', [])
         for filter_type in ('for-departement', 'for-job-group'):
             filter_value = airtable_record['fields'].get(filter_type)
             if filter_value:
                 filters.append('%s(%s)' % (filter_type, filter_value))
         if filters:
             fields['filters'] = filters
+            for link_filter in filters:
+                if not scoring.get_scoring_model(link_filter):
+                    raise ValueError(
+                        'The link "%s" uses the filter "%s" that is not implemented yet'
+                        % (fields['_id'], link_filter))
 
         # Check link.
         link = fields.get('link')
@@ -149,13 +155,13 @@ PROTO_CLASSES = {
         chantier_pb2.Chantier, 'chantier_id', required_fields=[]),
     'ActionTemplate': _ActionTemplateConverter(
         action_pb2.ActionTemplate, 'action_template_id', required_fields=[]),
-    'StickyActionStep': _ProtoAirtableConverter(
-        action_pb2.StickyActionStep, None, required_fields=['title']),
     'AdviceModule': _AdviceModuleConverter(
         advisor_pb2.AdviceModule, 'airtable_id',
         required_fields=['advice_id', 'trigger_scoring_model']),
-    'JobBoard': _JobBoardConverter(
+    'JobBoard': _FilteredLinkConverter(
         jobboard_pb2.JobBoard, None, required_fields=['title', 'link']),
+    'Association': _FilteredLinkConverter(
+        association_pb2.Association, None, required_fields=['name', 'link']),
 }
 
 

@@ -20,6 +20,30 @@ const projectKindOptions = [
 ]
 
 
+const sampleJobs = [
+  {
+    codeOgr: '12688',
+    feminineName: 'Coiffeuse',
+    jobGroup: {
+      name: 'Coiffure',
+      romeId: 'D1202',
+    },
+    masculineName: 'Coiffeur',
+    name: 'Coiffeur / Coiffeuse',
+  },
+  {
+    codeOgr: '11573',
+    feminineName: 'Boulangère',
+    jobGroup: {
+      name: 'Boulangerie - viennoiserie',
+      romeId: 'D1102',
+    },
+    masculineName: 'Boulanger',
+    name: 'Boulanger / Boulangère',
+  },
+]
+
+
 class NewProjectGoalStep extends React.Component {
   static propTypes = {
     newProject: PropTypes.object,
@@ -61,16 +85,7 @@ class NewProjectGoalStep extends React.Component {
       }
     }
     if (!targetJob) {
-      newState.targetJob = {
-        codeOgr: '12688',
-        feminineName: 'Coiffeuse',
-        jobGroup: {
-          name: 'Coiffure',
-          romeId: 'D1202',
-        },
-        masculineName: 'Coiffeur',
-        name: 'Coiffeur / Coiffeuse',
-      }
+      newState.targetJob = sampleJobs[Math.floor(Math.random() * sampleJobs.length)]
     }
     if (!areaType) {
       newState.areaType = 'CITY'

@@ -59,7 +59,7 @@ class ImportStatusBasicTests(unittest.TestCase):
         """Basic usage."""
         importer = import_status.Importer(
             name="with command",
-            command='run this with --mongo_url "%(mongo_url)s"',
+            command='run this',
             is_imported=True,
             proto_type=None, key=None)
         import_status.print_single_importer(importer, 'foo', 'url')
@@ -67,7 +67,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             'To import "%s" in "%s", run:\n%s',
             'with command',
             'foo',
-            'run this with --mongo_url "url"')
+            'run this \\\n            --mongo_url "url" --mongo_collection "foo"\n')
 
     def test_collection_diff(self):
         """Calculate the difference between mongo collections and importers."""
@@ -165,7 +165,7 @@ class ImportStatusBasicTests(unittest.TestCase):
         import_status.IMPORTERS = {
             'collection_id': import_status.Importer(
                 name="Collection name",
-                command='my-long-command --mongo_url %(mongo_url)s',
+                command='my-long-command',
                 is_imported=True,
                 proto_type=None, key=None),
         }
@@ -177,9 +177,11 @@ class ImportStatusBasicTests(unittest.TestCase):
         mock_log_info.assert_any_call(
             '%s collection%s not imported yet:', _AnyColorText('1'), ' is')
         mock_log_info.assert_any_call(
-            'To import %s, run:\n%s\n',
-            'Collection name',
-            'my-long-command --mongo_url mongodb://test_url/test_db')
+            'To import "%s" in "%s", run:\n%s',
+            'Collection name', 'collection_id',
+            'my-long-command \\\n'
+            '            --mongo_url "mongodb://test_url/test_db" '
+            '--mongo_collection "collection_id"\n')
 
 
 if __name__ == '__main__':

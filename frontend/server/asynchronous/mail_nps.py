@@ -129,6 +129,7 @@ def main(user_db, base_url, now, days_before_sending):
     query = {
         'featuresEnabled.netPromoterScoreEmail': 'NPS_EMAIL_PENDING',
         'projects': {'$exists': True},
+        'projects.isIncomplete': {'$ne': True},
     }
     count = 0
     user_iterator = user_db.find(

@@ -6,7 +6,7 @@ import meetupImage from 'images/meetup-picto.png'
 import poleEmploiEventsImage from 'images/pole-emploi-evenements-picto.png'
 import poleEmploiImage from 'images/pee-picto.png'
 import recrutImage from 'images/recrut-picto.png'
-import {Colors, GrowingNumber, Icon, PaddedOnMobile, PieChart} from 'components/theme'
+import {Icon, PaddedOnMobile} from 'components/theme'
 
 import eventsTypes from './data/events.json'
 
@@ -18,32 +18,14 @@ class FullAdviceCard extends React.Component {
     project: PropTypes.object,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
     const {project} = this.props
-    const {isMobileVersion} = this.context
-    // TODO(guillaume): Add the number of events when we have it.
-    // TODO(guillaume): Remove the fixed width, find a cleaner way to keep the text on one line.
-    const atAnEvent = (eventsTypes || {})[project.targetJob.jobGroup.romeId[0]] || 'à un évènement.'
-
-    return <div style={{alignItems: 'center', display: 'flex', fontSize: 30, lineHeight: '1.2em'}}>
+    const {atNext, eventLocation} = (eventsTypes || {})[project.targetJob.jobGroup.romeId[0]] ||
+      {atNext: 'à ', eventLocation: 'un évènement'}
+    return <div style={{fontSize: 30}}>
       <div>
-        Vous pourriez rencontrer votre nouvel employeur {atAnEvent}.
+        Vous pourriez rencontrer votre nouvel employeur {atNext}<strong>{eventLocation}</strong>.
       </div>
-      {isMobileVersion ? null : <div style={{marginLeft: 50, width: 250}}>
-        <PieChart
-          style={{color: Colors.SKY_BLUE, marginLeft: 'auto', marginRight: 'auto'}}
-          percentage={60}
-          backgroundColor={Colors.MODAL_PROJECT_GREY}>
-          <GrowingNumber number={60} />%
-        </PieChart>
-        <div style={{fontSize: 13, fontWeight: 500, lineHeight: '1em', marginTop: 10}}>
-          des gens ont trouvé ça utile
-        </div>
-      </div>}
     </div>
   }
 }

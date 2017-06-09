@@ -76,6 +76,7 @@ class Modal extends React.Component {
     }
     this.timeout = setTimeout(
         () => {
+          this.resetScroll()
           this.setState({children: null, isContentShown: false})
           onHidden && onHidden()
         },
@@ -95,6 +96,13 @@ class Modal extends React.Component {
       isTooBigToBeCentered: newHeight && newHeight > maxHeight,
       modalHeight: newHeight,
     })
+  }
+
+  resetScroll() {
+    if (!this.page) {
+      return
+    }
+    this.page.scrollTop = 0
   }
 
   componentWillReceiveProps(nextProps) {
@@ -132,6 +140,7 @@ class Modal extends React.Component {
       opacity: isContentShown ? 1 : 0,
       overflow: isTooBigToBeCentered ? 'scroll' : 'hidden',
       position: 'fixed',
+      textAlign: isTooBigToBeCentered ? 'center' : 'initial',
       top: 0,
       width: '100vw',
       zIndex: 2,
@@ -152,12 +161,14 @@ class Modal extends React.Component {
       backgroundColor: '#fff',
       boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.2)',
       color: Colors.GREYISH_BROWN,
+      display: isTooBigToBeCentered ? 'inline-block' : 'block',
       fontSize: 19,
       height: isTooBigToBeCentered ? modalHeight : 'initial',
       lineHeight: 1.7,
       margin: isTooBigToBeCentered ? closeButtonHeight + 'px auto' : 'initial',
       opacity: isShown ? 1 : 0,
       position: 'relative',
+      textAlign: 'left',
       // The transform property creates a new local coordinate system which
       // breaks nested modals or other properties using "fixed" so we get rid
       // of it as soon as the transition is over.
@@ -177,7 +188,9 @@ class Modal extends React.Component {
       textAlign: 'center',
       ...this.props.titleStyle,
     }
-    return <div style={pageStyle}>
+    return <div style={pageStyle} ref={page => {
+      this.page = page
+    }}>
       <div style={backgroundStyle} />
       {externalChildren}
       <ReactHeight onHeightReady={this.handleUpdatedHeight} style={modalStyle}>

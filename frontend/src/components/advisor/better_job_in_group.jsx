@@ -4,7 +4,7 @@ import {connect} from 'react-redux'
 import _ from 'underscore'
 
 import {getJobs} from 'store/actions'
-import {lowerFirstLetter, maybeContractPrefix} from 'store/french'
+import {lowerFirstLetter} from 'store/french'
 import {genderizeJob} from 'store/job'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
@@ -15,29 +15,20 @@ class FullAdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
-    project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {advice, profile, project} = this.props
-    const {betterJob, jobs, numBetterJobs} = advice.betterJobInGroupData || {}
+    const {advice, profile} = this.props
+    const {betterJob} = advice.betterJobInGroupData || {}
     const jobName = job => lowerFirstLetter(genderizeJob(job, profile.gender))
-    if (!numBetterJobs && !(jobs && jobs.length)) {
+    if (!betterJob) {
       return null
     }
-    const targetJobIndex =
-      numBetterJobs || jobs.findIndex(({job}) => job.codeOgr === project.targetJob.codeOgr)
     return <div>
       <div style={{fontSize: 30}}>
-        Et si demain vous postuliez comme {jobName(betterJob || jobs[0].job)}&nbsp;?
+        Certains métiers proches embauchent plus en ce moment&nbsp;:
+        et si demain vous postuliez comme <strong>{jobName(betterJob)}</strong>&nbsp;?
       </div>
-      {targetJobIndex > 0 ? <div style={{marginTop: 40}}>
-        <strong style={{color: Colors.SKY_BLUE}}>
-          {targetJobIndex} métier{targetJobIndex > 1 ? 's' : ''}
-        </strong>
-        {' '}proches {maybeContractPrefix('de', "d'", jobName(project.targetJob))}
-        {' '}propose{targetJobIndex > 1 ? 'nt' : ''} plus d'offres.
-      </div> : null}
     </div>
   }
 }

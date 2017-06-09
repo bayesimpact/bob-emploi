@@ -1,4 +1,5 @@
 // Module to help with phrasing French sentences.
+import _ from 'underscore'
 
 
 // Use contract form of a word if the next word starts
@@ -27,6 +28,26 @@ export const lowerFirstLetter = word => {
 // Upper the first letter of a string.
 export const upperFirstLetter = word => {
   return word.substr(0, 1).toUpperCase() + word.substr(1)
+}
+
+
+// List of keywords that should stay uppercased if we find them. Note that this
+// list is not exhaustive and can be completed when we run in more cases.
+const keywords = _.object(_.map([
+  'IBM', 'SARL', 'SAS', 'DGEA', 'RATP', 'SNCF', 'SNC', 'FNAC', 'SA', 'LCL', 'LIDL',
+], item => [item, true]))
+
+
+// Upper the first letter of each word of a string.
+export const toTitleCase = text => {
+  return text.match(/([\w]+(\W+|$))/g).
+    map(word => {
+      if (keywords[word.trim()]) {
+        return word
+      }
+      return word.substr(0, 1).toLocaleUpperCase() + word.substr(1).toLocaleLowerCase()
+    }).
+    join('')
 }
 
 

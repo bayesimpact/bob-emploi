@@ -32,27 +32,30 @@ module.exports = {
         use: ['style-loader', 'css-loader'],
       },
       {
-        test: /\.(png|jpg|gif|eot|ttf|woff2?)(\?[a-z0-9=&.]+)?$/,
+        test: /\.(eot|ttf|woff2?)(\?[a-z0-9=&.]+)?$/,
         use: {
           loader: 'url-loader',
           query: {limit: 8192},
         },
       },
       {
-        test: /\.svg(\?[a-z0-9=&.]+)?$/,
+        test: /\.(png|jpg|gif|svg)(\?[a-z0-9=&.]+)?$/,
         use: [
           {
             loader: 'url-loader',
             query: {limit: 8192},
           },
           {
-            loader: 'svgo-loader',
-            query: {
-              plugins: [
-                {removeTitle: true},
-                {removeComments: true},
-                {removeDesc: true},
-              ],
+            loader: 'img-loader',
+            options: {
+              enabled: process.env.REACT_WEBPACK_ENV === 'dist',
+              svgo: {
+                plugins: [
+                  {removeTitle: true},
+                  {removeComments: true},
+                  {removeDesc: true},
+                ],
+              },
             },
           },
         ],

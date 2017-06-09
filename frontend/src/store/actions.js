@@ -36,6 +36,7 @@ export const SELECT_ADVICE = 'SELECT_ADVICE'
 export const DECLINE_WHOLE_ADVICE = 'DECLINE_WHOLE_ADVICE'
 export const LIKE_OR_DISLIKE_FEATURE = 'LIKE_OR_DISLIKE_FEATURE'
 export const MIGRATE_USER_TO_ADVISOR = 'MIGRATE_USER_TO_ADVISOR'
+export const MODIFY_PROJECT = 'MODIFY_PROJECT'
 
 // App actions.
 
@@ -55,12 +56,14 @@ export const SAVE_LIKES = 'SAVE_LIKES'
 export const GET_ADVICE_TIPS = 'GET_ADVICE_TIPS'
 export const SEE_ADVICE = 'SEE_ADVICE'
 export const SHOW_ALL_TIPS = 'SHOW_ALL_TIPS'
+export const GET_ASSOCIATIONS = 'GET_ASSOCIATIONS'
 export const GET_JOB_BOARDS = 'GET_JOB_BOARDS'
 export const GET_JOBS = 'GET_JOBS'
 export const SEND_ADVICE_FEEDBACK = 'SEND_ADVICE_FEEDBACK'
 export const SEND_PROFESSIONAL_FEEDBACK = 'SEND_PROFESSIONAL_FEEDBACK'
 export const ALL_ADVICES_READ = 'ALL_ADVICES_READ'
 export const SHARE_PRODUCT_TO_NETWORK = 'SHARE_PRODUCT_TO_NETWORK'
+export const TRACK_INITIAL_UTM_CONTENT = 'TRACK_INITIAL_UTM_CONTENT'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
@@ -85,6 +88,7 @@ export const actionTypesToLog = {
   [LOAD_LANDING_PAGE]: 'Load landing page',
   [LOGOUT]: 'Log out',
   [MIGRATE_USER_TO_ADVISOR]: 'Migrate to advisor',
+  [MODIFY_PROJECT]: 'Modify project',
   [MOVE_USER_DATES_BACK_1_DAY]: 'Time travel!',
   [OPEN_LOGIN_MODAL]: 'Open login modal',
   [OPEN_TIP_EXTERNAL_LINK]: 'Open tip external link',
@@ -161,6 +165,10 @@ function showAllTips(project, advice) {
   return dispatch => dispatch({advice, project, type: SHOW_ALL_TIPS})
 }
 
+function trackInitialUtmContent(utmContent) {
+  return dispatch => dispatch({type: TRACK_INITIAL_UTM_CONTENT, utmContent})
+}
+
 // Asynchronous action generators.
 
 // Wrap an async function by dispatching an action before and after the
@@ -203,6 +211,14 @@ function getJobBoards(project) {
   }
 }
 
+function getAssociations(project) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    return dispatch(wrapAsyncAction(
+      GET_ASSOCIATIONS, () => api.associationsGet(user, project), {project}))
+  }
+}
+
 function getJobs({romeId}) {
   return dispatch => {
     return dispatch(wrapAsyncAction(GET_JOBS, () => api.jobsGet(romeId), {romeId}))
@@ -230,8 +246,12 @@ function fetchUser(userId, ignoreFailure) {
 }
 
 function saveUser(user) {
-  return dispatch => {
-    return dispatch(wrapAsyncAction(POST_USER_DATA, () => api.userPost(user))).
+  return (dispatch, getState) => {
+    const trackedUser = user.initialUtmContent ? user : {
+      ...user,
+      initialUtmContent: getState().app.initialUtmContent || '',
+    }
+    return dispatch(wrapAsyncAction(POST_USER_DATA, () => api.userPost(trackedUser))).
       then(response => {
         if (response.appNotAvailable) {
           browserHistory.push(Routes.APP_NOT_AVAILABLE_PAGE)
@@ -466,6 +486,13 @@ function createFirstProject() {
   }
 }
 
+function modifyProject(project) {
+  return dispatch => {
+    dispatch({project, type: MODIFY_PROJECT})
+    browserHistory.push(`${Routes.PROFILE_PAGE}/profil`)
+  }
+}
+
 function moveUserDatesBackOneDay() {
   return (dispatch, getState) => {
     dispatch({type: MOVE_USER_DATES_BACK_1_DAY})
@@ -480,7 +507,7 @@ function askPasswordReset(email) {
 }
 
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
-        readTip, facebookAuthenticateUser, sendAdviceFeedback,
+        readTip, facebookAuthenticateUser, sendAdviceFeedback, modifyProject,
         googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
         createFirstProject, fetchProjectRequirements, resetPassword,
         moveUserDatesBackOneDay, editFirstProject, sendProfessionalFeedback,
@@ -488,7 +515,7 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
         openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
         loadLandingPageAction, deleteUser, askPasswordReset, selectAdvice,
         openTipExternalLink, declineWholeAdvice, advicePageIsShown, seeAdvice,
-        adviceCardIsShown, likeOrDislikeFeature, getAdviceTips,
+        adviceCardIsShown, likeOrDislikeFeature, getAdviceTips, getAssociations,
         showAllTips, migrateUserToAdvisor, getJobBoards, getJobs,
-        allAdvicesReadAction, shareProductToNetwork,
+        allAdvicesReadAction, shareProductToNetwork, trackInitialUtmContent,
 }

@@ -229,9 +229,7 @@ def select_tips_for_email(user, project, piece_of_advice, database, num_tips=3):
 
     # Instantiate actual tips.
     selected_tips = [
-        action.instantiate(
-            action_pb2.Action(), user, project, template, set(), database,
-            None, for_email=True)
+        action.instantiate(action_pb2.Action(), user, project, template, for_email=True)
         for template in selected_templates]
 
     # Replicate tips if we do not have enough.
@@ -242,13 +240,12 @@ def select_tips_for_email(user, project, piece_of_advice, database, num_tips=3):
 
 
 # Cache (from MongoDB) of known advice module.
-_ADVICE_MODULES = []
+_ADVICE_MODULES = proto.MongoCachedCollection(advisor_pb2.AdviceModule, 'advice_modules')
 _EASY_ADVICE_MODULES = set()
 
 
 def _advice_modules(database):
-    return proto.cache_mongo_collection(
-        database.advice_modules.find, _ADVICE_MODULES, advisor_pb2.AdviceModule)
+    return _ADVICE_MODULES.get_collection(database)
 
 
 def get_advice_module(advice_id, database):
@@ -269,17 +266,16 @@ def _easy_advice_modules(database):
 
 
 # Cache (from MongoDB) of known tip templates.
-_TIP_TEMPLATES = {}
+_TIP_TEMPLATES = proto.MongoCachedCollection(action_pb2.ActionTemplate, 'tip_templates')
 
 
 def _tip_templates(database):
     """Returns a list of known tip templates as protos."""
-    return proto.cache_mongo_collection(
-        database.tip_templates.find, _TIP_TEMPLATES, action_pb2.ActionTemplate)
+    return _TIP_TEMPLATES.get_collection(database)
 
 
 def clear_cache():
     """Clear all caches for this module."""
-    del _ADVICE_MODULES[:]
+    _ADVICE_MODULES.reset_cache()
     _EASY_ADVICE_MODULES.clear()
-    _TIP_TEMPLATES.clear()
+    _TIP_TEMPLATES.reset_cache()

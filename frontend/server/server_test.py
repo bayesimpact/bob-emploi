@@ -14,7 +14,6 @@ import requests
 
 from bob_emploi.frontend import base_test
 from bob_emploi.frontend import now
-from bob_emploi.frontend import scoring
 from bob_emploi.frontend import server
 
 # TODO(pascal): Split this smaller test modules.
@@ -80,14 +79,28 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         config = self.json_from_response(response)
         self.assertTrue(config.get('googleSSOClientId'))
 
+    def _create_user_joe_the_cheminot(self):
+        """Joe is a special user used to analyse feedback."""
+        user_data = {
+            'profile': {"name": 'Joe'},
+            'projects': [
+                {"projectId": "another-id", "title": "Cultivateur d'escargots à Lyon"},
+                {"projectId": "pid", "title": "Cheminot à Caen", "seniority": 1},
+                {"projectId": 'last-id', "title": "Polénisateur à Brest", "seniority": 2}],
+        }
+        return self.create_user(data=user_data, email='foo@bar.fr')
+
     @mock.patch(requests.__name__ + '.post')
     def test_feedback(self, mock_post):
         """Basic call to "/api/feedback"."""
         server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+
+        user_id = self._create_user_joe_the_cheminot()
+
         response = self.app.post(
             '/api/feedback',
-            data='{"userId": "my-user", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
-            '"adviceId": "one-advice", "source": "ADVICE_FEEDBACK"}',
+            data='{"userId": "%s", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "projectId": "pid", "source": "ADVICE_FEEDBACK"}' % user_id,
             content_type='application/json')
         self.assertEqual(200, response.status_code)
         self.assertEqual(
@@ -103,8 +116,169 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         text = mock_post.call_args[1]['json']['text']
         self.assertNotIn('my-user', text, msg='Do not leak user ID to slack')
         self.assertIn('"one-advice"', text)
+        self.assertIn('from Joe, Cheminot à Caen, with experience of "internship"', text)
         self.assertIn('\n> Aaaaaaaaaaaaawesome!\n> second line', text)
         self.assertIn(feedback_id, text, msg='Show the MongoDB ID of the feedback in slack')
+
+    @mock.patch(requests.__name__ + '.post')
+    def test_feedback_no_user(self, mock_post):
+        """Testing /api/feedback with missing user ID."""
+        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+
+        self._create_user_joe_the_cheminot()
+
+        response = self.app.post(
+            '/api/feedback',
+            data='{"feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "projectId": "pid", "source": "ADVICE_FEEDBACK"}',
+            content_type='application/json')
+        self.assertEqual(200, response.status_code)
+        text = mock_post.call_args[1]['json']['text']
+        self.assertIn('\n> Aaaaaaaaaaaaawesome!\n> second line', text)
+        self.assertNotIn('from', text)
+        self.assertNotIn('Cheminot', text)
+        self.assertNotIn('internship', text)
+
+    def test_feedback_wrong_user(self):
+        """Testing /api/feedback with wrong user ID, this should fail."""
+        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        self._create_user_joe_the_cheminot()
+
+        response = self.app.post(
+            '/api/feedback',
+            data='{"userId": "baduserid", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "source": "ADVICE_FEEDBACK"}',
+            content_type='application/json')
+        self.assertEqual(400, response.status_code)
+
+    @mock.patch(requests.__name__ + '.post')
+    def test_feedback_missing_project(self, mock_post):
+        """Testing /api/feedback with missing project ID but correct user ID."""
+        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        user_id = self._create_user_joe_the_cheminot()
+
+        response = self.app.post(
+            '/api/feedback',
+            data='{"userId": "%s", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "projectId": "", "source": "ADVICE_FEEDBACK"}' % user_id,
+            content_type='application/json')
+        text = mock_post.call_args[1]['json']['text']
+        self.assertIn('from Joe', text)
+        self.assertIn('\n> Aaaaaaaaaaaaawesome!\n> second line', text)
+        self.assertEqual(200, response.status_code)
+
+    def test_feedback_wrong_project(self):
+        """Testing /api/feedback with ok user ID and wrong project ID, this should fail."""
+        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        user_id = self._create_user_joe_the_cheminot()
+
+        response = self.app.post(
+            '/api/feedback',
+            data='{"userId": "%s", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "projectId": "nop", "source": "ADVICE_FEEDBACK"}' % user_id,
+            content_type='application/json')
+        self.assertEqual(404, response.status_code)
+
+
+class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
+    """Tests for the /api/user/nps-survey-response endpoint."""
+
+    def setUp(self):
+        super(NPSSurveyEndpointTestCase, self).setUp()
+        server.ADMIN_AUTH_TOKEN = ''
+
+    def test_set_nps_survey_response(self):
+        """Calls to "/api/user/<user_email>/nps-survey-response"."""
+        user_email = 'foo@bar.fr'
+        user_id = self.create_user(email=user_email)
+        old_user_data = self.get_user_info(user_id)
+        # Make sure we actually have some fields in the user data, as we will check later
+        # that old fields are not overridden.
+        self.assertTrue(old_user_data)
+
+        # Simulate when the user fills the survey.
+        response = self.app.post(
+            '/api/user/nps-survey-response',
+            data='{"email": "%s", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            '"whichAdvicesWereUsefulComment": "The CV tip",'
+            '"generalFeedbackComment": "RAS"}' % user_email,
+            content_type='application/json')
+        self.assertEqual(200, response.status_code, response.get_data(as_text=True))
+
+        # Simulate when one team member curates 'which_advices_were_useful_comment' to normalize it
+        # in 'curated_useful_advice_ids'.
+        response = self.app.post(
+            '/api/user/nps-survey-response',
+            data='{"email": "%s", "curatedUsefulAdviceIds":["improve-resume"]}' % user_email,
+            content_type='application/json')
+        self.assertEqual(200, response.status_code, response.get_data(as_text=True))
+
+        # Check the data was correctly saved in the database.
+        new_user_data = self.get_user_info(user_id)
+        nps_survey_response = new_user_data.pop('netPromoterScoreSurveyResponse', None)
+        other_fields_in_new_user_data = new_user_data
+        self.assertEqual({
+            'score': 10,
+            'wereAdvicesUsefulComment': 'So\ncool!',
+            'whichAdvicesWereUsefulComment': 'The CV tip',
+            'generalFeedbackComment': 'RAS',
+            'curatedUsefulAdviceIds': ['improve-resume'],
+        }, nps_survey_response)
+
+        # Check that we did not override any other field than netPromoterScoreSurveyResponse.
+        self.assertEqual(old_user_data, other_fields_in_new_user_data)
+
+    def test_set_nps_survey_response_wrong_email(self):
+        """Testing /api/user/<user_email>/nps-survey-response with wrong user email."""
+        user_email = 'foo@bar.fr'
+        self.create_user(email=user_email)
+
+        response = self.app.post(
+            '/api/user/nps-survey-response',
+            data='{"email": "otherfoo@bar.fr", "score": 10}',
+            content_type='application/json')
+        self.assertEqual(404, response.status_code, response.get_data(as_text=True))
+
+    def test_set_nps_survey_response_missing_auth(self):
+        """Endpoint protected and no auth token sent"."""
+        user_email = 'foo@bar.fr'
+        self.create_user(email=user_email)
+        server.ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
+        response = self.app.post(
+            '/api/user/nps-survey-response',
+            data='{"email": "%s", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            '"whichAdvicesWereUsefulComment": "The CV tip",'
+            '"generalFeedbackComment": "RAS"}' % user_email,
+            content_type='application/json')
+        self.assertEqual(401, response.status_code)
+
+    def test_set_nps_survey_response_wrong_auth(self):
+        """Endpoint protected and wrong auth token sent"."""
+        user_email = 'foo@bar.fr'
+        self.create_user(email=user_email)
+        server.ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
+        response = self.app.post(
+            '/api/user/nps-survey-response',
+            data='{"email": "%s", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            '"whichAdvicesWereUsefulComment": "The CV tip",'
+            '"generalFeedbackComment": "RAS"}' % user_email,
+            content_type='application/json',
+            headers={'Authorization': 'wrong-token'})
+        self.assertEqual(403, response.status_code)
+
+    def test_set_nps_survey_response_correct_auth(self):
+        """Endpoint protected and correct auth token sent"."""
+        user_email = 'foo@bar.fr'
+        self.create_user(email=user_email)
+        server.ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
+        response = self.app.post(
+            '/api/user/nps-survey-response',
+            data='{"email": "%s", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            '"whichAdvicesWereUsefulComment": "The CV tip",'
+            '"generalFeedbackComment": "RAS"}' % user_email,
+            content_type='application/json',
+            headers={'Authorization': 'cryptic-admin-auth-token-123'})
+        self.assertEqual(200, response.status_code)
 
 
 class UserEndpointTestCase(base_test.ServerTestCase):
@@ -296,44 +470,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user = self.get_user_info(user_id)
         self.assertEqual('ACTIVE', user.get('featuresEnabled', {}).get('lbbIntegration'))
 
-    def test_sticky_action(self):
-        """Populate the sticky action fields."""
-        def _set_project_rome(user):
-            user['projects'][0]['targetJob']['jobGroup']['romeId'] = 'A5678'
-        user_id = self.create_user([
-            _add_project, _set_project_rome, _add_chantier(0, 'c1')], advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'sticky',
-            'actionTemplateId': 'sticky',
-            'title': 'foo',
-            'goal': 'My goal',
-            'stepIds': ['step1', 'step2'],
-            'chantiers': ['c1'],
-        })
-        self._db.sticky_action_steps.insert_many([
-            {
-                '_id': 'step1',
-                'title': 'First step',
-                'link': 'http://www.google.com?search=%romeId',
-            },
-            {
-                '_id': 'step2',
-                'title': 'Second step',
-            },
-        ])
-        server.clear_cache()
-
-        actions = self._refresh_action_plan(user_id)
-        self.assertEqual(['sticky'], [action.get('actionTemplateId') for action in actions])
-        self.assertEqual('My goal', actions[0].get('goal'))
-        self.assertEqual(
-            ['First step', 'Second step'],
-            [step.get('title') for step in actions[0].get('steps', [])])
-        self.assertEqual(
-            'http://www.google.com?search=A5678',
-            actions[0]['steps'][0]['link'])
-
     def test_project_diagnosis_added(self):
         """Local diagnosis should be added to a new project."""
         project = {
@@ -403,6 +539,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         ]
         self.assertEqual(all_advices, project.get('advices'))
 
+        # TODO(pascal): Clean it up.
         project_actions = self._refresh_action_plan(user_id)
         self.assertEqual([], project_actions, msg='No actions generated for projects in Advisor')
 
@@ -532,499 +669,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertIn('createdAt', project)
         self.assertIn('source', project)
         self.assertEqual('PROJECT_MANUALLY_CREATED', project['source'])
-
-    def test_stop_actions(self):
-        """Complete stopped actions fields on save."""
-        user_id = self.create_user(email='foo@bar.fr')
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'a1',
-            'actionTemplateId': 'a1',
-            'coolDownDurationDays': 7,
-        })
-        server.clear_cache()
-
-        before = datetime.datetime.now()
-        response = self.app.post(
-            '/api/user', data='{"projects": [{"actions":['
-            '{"status":"ACTION_UNREAD", "actionTemplateId": "a1"},'
-            '{"status":"ACTION_CURRENT", "actionTemplateId": "a1"},'
-            '{"status":"ACTION_DONE", "actionTemplateId": "a1"},'
-            '{"status":"ACTION_SNOOZED", "actionTemplateId": "a1"},'
-            '{"status":"ACTION_DECLINED", "actionTemplateId": "a1"}]}],'
-            '"profile": {"email": "foo@bar.fr"},'
-            '"userId": "%s"}' % user_id,
-            content_type='application/json')
-        after = datetime.datetime.now()
-        user_info = self.json_from_response(response)
-        actions = user_info['projects'][0]['actions']
-        self.assertEqual([False, False, True, True, True], ['stoppedAt' in a for a in actions])
-        for action in actions:
-            if 'stoppedAt' not in action:
-                continue
-            self.assertGreaterEqual(action['stoppedAt'], before.isoformat(), msg=action)
-            self.assertLessEqual(action['stoppedAt'], after.isoformat(), msg=action)
-        self.assertEqual([False, False, True, True, False], ['endOfCoolDown' in a for a in actions])
-        action_done = actions[2]
-        self.assertGreater(action_done['endOfCoolDown'], after.isoformat())
-        self.assertGreaterEqual(
-            action_done['endOfCoolDown'], (before + datetime.timedelta(days=7)).isoformat())
-        self.assertLessEqual(
-            action_done['endOfCoolDown'], (after + datetime.timedelta(days=7)).isoformat())
-        action_snoozed = actions[3]
-        self.assertLessEqual(action_snoozed['endOfCoolDown'], after.isoformat())
-
-    @mock.patch(server.__name__ + '.random.randint')
-    @mock.patch(now.__name__ + '.get')
-    def test_generate_actions_on_next_day(self, mock_now, mock_randint):
-        """Do not generate new actions just when actions are marked as done."""
-        mock_randint.side_effect = lambda min_int, max_int: max_int
-        mock_now.side_effect = datetime.datetime.now
-        self._db.chantiers.insert_one({
-            '_id': 'white',
-            'chantierId': 'white',
-            'kind': 'CORE_JOB_SEARCH',
-        })
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_many([{
-            '_id': 'a%d' % i,
-            'chantiers': ['c1'],
-            'actionTemplateId': 'a%d' % i,
-        } for i in range(25)] + [{
-            '_id': 'w%d' % i,
-            'chantiers': ['white'],
-            'actionTemplateId': 'w%d' % i,
-        } for i in range(25)])
-        server.clear_cache()
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')], advisor=False)
-        user_info = self._refresh_action_plan(user_id, get_user_info=True)
-        initial_actions = user_info['projects'][0]['actions']
-
-        # Mark 1 white action and 1 other action done.
-        white_action = next(
-            a for a in initial_actions if a['actionTemplateId'].startswith('w'))
-        white_action['status'] = 'ACTION_DONE'
-        other_action = next(
-            a for a in initial_actions if not a['actionTemplateId'].startswith('w'))
-        other_action['status'] = 'ACTION_DONE'
-        response = self.app.post(
-            '/api/user', data=json.dumps(user_info), content_type='application/json')
-
-        user_info_after = self.json_from_response(response)
-        self.assertEqual([], user_info_after['projects'][0].get('pastActions', []))
-        self.assertEqual(len(initial_actions), len(user_info_after['projects'][0]['actions']))
-
-        # One day later.
-        mock_now.side_effect = None
-        mock_now.return_value = datetime.datetime.now() + datetime.timedelta(hours=25)
-
-        user_info_next_day = self._refresh_action_plan(user_id, get_user_info=True)
-        actions = user_info_next_day['projects'][0]['actions']
-        self.assertGreaterEqual(len(actions), 3, msg=actions)
-        self.assertLessEqual(len(actions), 4, msg=actions)
-        past_actions = user_info_next_day['projects'][0]['pastActions']
-        self.assertEqual(
-            set(a['actionId'] for a in initial_actions),
-            set(a['actionId'] for a in past_actions))
-
-    @mock.patch(now.__name__ + '.get')
-    def test_generate_actions_same_day(self, mock_now):
-        """Test that we do not generate new actions on the same day."""
-        mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')])
-        initial_actions = self._refresh_action_plan(user_id)
-        # The same day, at 20:00.
-        mock_now.return_value = datetime.datetime(2016, 11, 26, 20, 0, 0)
-        actions = self._refresh_action_plan(user_id)
-        self.assertEqual(initial_actions, actions)
-
-    @mock.patch(now.__name__ + '.get')
-    def test_generate_actions_at_night(self, mock_now):
-        """Test that we do not generate new actions before 3am the next day."""
-        mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')])
-        initial_actions = self._refresh_action_plan(user_id)
-        # The next day, at 2:00.
-        mock_now.return_value = datetime.datetime(2016, 11, 27, 2, 0, 0)
-        actions = self._refresh_action_plan(user_id)
-        self.assertEqual(initial_actions, actions)
-
-    @mock.patch(now.__name__ + '.get')
-    def test_generate_actions_at_late_night(self, mock_now):
-        """Test that we generate new actions after 3am the next day."""
-        mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')], advisor=False)
-        initial_actions = self._refresh_action_plan(user_id)
-        # The next day, at 2:00.
-        mock_now.return_value = datetime.datetime(2016, 11, 27, 4, 0, 0)
-        actions = self._refresh_action_plan(user_id)
-        self.assertNotEqual(initial_actions, actions)
-
-    @mock.patch(now.__name__ + '.get')
-    def test_generate_actions_at_night_next_day(self, mock_now):
-        """Test that we generate new actions at night if more than 24 hours."""
-        mock_now.return_value = datetime.datetime(2016, 11, 26, 14, 0, 0)
-        user_id = self.create_user([_add_project, _add_chantier(0, 'c1')], advisor=False)
-        initial_actions = self._refresh_action_plan(user_id)
-        # Two days later, at 2:00.
-        mock_now.return_value = datetime.datetime(2016, 11, 28, 2, 0, 0)
-        actions = self._refresh_action_plan(user_id)
-        self.assertNotEqual(initial_actions, actions)
-
-    @mock.patch(server.__name__ + '.random.randint')
-    @mock.patch(now.__name__ + '.get')
-    def test_generate_actions_on_next_day_login(self, mock_now, mock_randint):
-        """Generate new actions when logging in the next day."""
-        mock_randint.side_effect = lambda min_int, max_int: max_int
-        mock_now.side_effect = datetime.datetime.now
-        self._db.chantiers.insert_one({
-            '_id': 'white',
-            'chantierId': 'white',
-            'kind': 'CORE_JOB_SEARCH',
-        })
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_many([{
-            '_id': 'a%d' % i,
-            'chantiers': ['c1'],
-            'actionTemplateId': 'a%d' % i,
-        } for i in range(25)] + [{
-            '_id': 'w%d' % i,
-            'chantiers': ['white'],
-            'actionTemplateId': 'w%d' % i,
-        } for i in range(25)])
-        server.clear_cache()
-        user_id = self.create_user(
-            [_add_project, _add_chantier(0, 'c1')], email='nextday@log.in', advisor=False)
-        user_info = self._refresh_action_plan(user_id, get_user_info=True)
-        initial_actions = user_info['projects'][0]['actions']
-
-        # Mark 1 white action and 1 other action done.
-        white_action = next(
-            a for a in initial_actions if a['actionTemplateId'].startswith('w'))
-        white_action['status'] = 'ACTION_DONE'
-        other_action = next(
-            a for a in initial_actions if not a['actionTemplateId'].startswith('w'))
-        other_action['status'] = 'ACTION_DONE'
-        self.app.post('/api/user', data=json.dumps(user_info), content_type='application/json')
-
-        # One day later.
-        mock_now.side_effect = None
-        mock_now.return_value = datetime.datetime.now() + datetime.timedelta(hours=25)
-
-        user_info_next_day = self._refresh_action_plan(user_id, get_user_info=True)
-        self.assertEqual(user_id, user_info_next_day.get('userId'))
-        actions = user_info_next_day['projects'][0]['actions']
-        self.assertGreaterEqual(len(actions), 3, msg=actions)
-        self.assertLessEqual(len(actions), 4, msg=actions)
-        past_actions = user_info_next_day['projects'][0]['pastActions']
-        self.assertEqual(
-            set(a['actionId'] for a in initial_actions),
-            set(a['actionId'] for a in past_actions))
-
-    @mock.patch(server.__name__ + '.random.randint')
-    def test_actions_priority_level(self, mock_randint):
-        """Add actions with higher priority level first."""
-        mock_randint.return_value = 4
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'c1'),
-        ], advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_many([
-            {
-                '_id': 'd%d' % i,
-                'actionTemplateId': 'd%d' % i,
-                'chantiers': ['c1'],
-                'priorityLevel': 1,
-            }
-            for i in range(1, 3)] + [{
-                '_id': 'e%d' % i,
-                'actionTemplateId': 'e%d' % i,
-                'chantiers': ['c1'],
-                'priorityLevel': 2,
-            } for i in range(1, 3)] + [{
-                '_id': 'd42',
-                'actionTemplateId': 'd42',
-                'chantiers': ['c1'],
-            }])
-        server.clear_cache()
-        project_actions = self._refresh_action_plan(user_id)
-
-        self.assertEqual(4, len(project_actions), msg=project_actions)
-        self.assertEqual(
-            ['e1', 'e2'],
-            sorted(a.get('actionTemplateId') for a in project_actions[:2]))
-        self.assertEqual(
-            ['d1', 'd2'],
-            sorted(a.get('actionTemplateId') for a in project_actions[2:]))
-
-    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.action.companies.emploi_store.Client')
-    def test_lbb_action(self, mock_es_client, unused_mock_secret, unused_mock_client_id):
-        """Add an action using the LBB integration."""
-        def _set_project_city(user):
-            user['projects'][0]['mobility']['city']['cityId'] = '69123'
-        user_id = self.create_user_that(
-            lambda user_data: user_data['featuresEnabled']['lbbIntegration'] == 'ACTIVE',
-            modifiers=[
-                _add_project,
-                _add_chantier(0, 'c1'),
-                _set_project_city,
-            ],
-            advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'lbb',
-            'actionTemplateId': 'lbb',
-            'chantiers': ['c1'],
-            'specialGenerator': 'LA_BONNE_BOITE',
-            'title': 'Essayer une entreprise',
-        })
-        server.clear_cache()
-        mock_es_client().get_lbb_companies.return_value = iter([{
-            'name': 'Bayes Impact',
-            'siret': '12345',
-            'city': 'Lyon',
-            'naf_text': 'Startup caritative',
-            'headcount_text': '5 à 10 salariés',
-            'stars': 2.0,
-        }])
-        mock_es_client.reset_mock()
-        project_actions = self._refresh_action_plan(user_id)
-
-        self.assertEqual(['lbb'], [a.get('actionTemplateId') for a in project_actions])
-        self.assertEqual(
-            "Essayer l'entreprise : Bayes Impact (Lyon)",
-            project_actions[0].get('title'))
-        self.assertEqual(
-            'Bayes Impact',
-            project_actions[0].get('applyToCompany', {}).get('name'))
-        self.assertEqual(
-            'Startup caritative',
-            project_actions[0].get('applyToCompany', {}).get('activitySectorName'))
-        self.assertEqual(3, project_actions[0].get('applyToCompany', {}).get('hiringPotential'))
-        self.assertEqual('69123', mock_es_client().get_lbb_companies.call_args[1]['city_id'])
-
-    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.action.companies.emploi_store.Client')
-    def test_lbb_action_not_in_experiment(
-            self, mock_es_client, unused_mock_secret, unused_mock_client_id):
-        """Add an action without the LBB integration."""
-        user_id = self.create_user_that(
-            lambda user_data: user_data['featuresEnabled']['lbbIntegration'] != 'ACTIVE',
-            modifiers=[
-                _add_project,
-                _add_chantier(0, 'c1'),
-            ],
-            advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'lbb',
-            'actionTemplateId': 'lbb',
-            'chantiers': ['c1'],
-            'specialGenerator': 'LA_BONNE_BOITE',
-        })
-        server.clear_cache()
-        mock_es_client().get_lbb_companies.return_value = iter([{
-            'name': 'Bayes Impact',
-            'siret': '12345',
-            'city': 'Lyon',
-            'naf_text': 'Startup caritative',
-            'headcount_text': '5 à 10 salariés',
-        }])
-        mock_es_client.reset_mock()
-
-        project_actions = self._refresh_action_plan(user_id)
-
-        self.assertEqual(['lbb'], [a.get('actionTemplateId') for a in project_actions])
-        self.assertFalse(project_actions[0].get('applyToCompany'))
-        self.assertFalse(mock_es_client.called)
-
-    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_CLIENT_ID')
-    @mock.patch(server.__name__ + '.action.companies._EMPLOI_STORE_DEV_SECRET')
-    @mock.patch(server.__name__ + '.action.companies.emploi_store.Client')
-    def test_lbb_action_dupes(self, mock_es_client, unused_mock_secret, unused_mock_client_id):
-        """Add two actions using the LBB integration with different companies."""
-        def _set_project_city(user):
-            user['projects'][0]['mobility']['city']['cityId'] = '69123'
-        user_id = self.create_user_that(
-            lambda user_data: user_data['featuresEnabled']['lbbIntegration'] == 'ACTIVE',
-            modifiers=[
-                _add_project,
-                _add_chantier(0, 'c1'),
-                _set_project_city,
-                _add_action(0, 'c1', actions_field='pastActions', **{
-                    'applyToCompany': {'siret': '12345'}}),
-            ], advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'lbb',
-            'actionTemplateId': 'lbb',
-            'chantiers': ['c1'],
-            'specialGenerator': 'LA_BONNE_BOITE',
-        })
-        server.clear_cache()
-        mock_es_client().get_lbb_companies.return_value = iter([
-            {
-                'name': 'Bayes Impact',
-                'siret': '12345',
-                'city': 'Lyon',
-                'naf_text': 'Startup caritative',
-                'headcount_text': '5 à 10 salariés',
-            },
-            {
-                'name': 'Liberté Living Lab',
-                'siret': '67890',
-                'city': 'Paris',
-                'naf_text': 'Coworking',
-                'headcount_text': '5 à 10 salariés',
-            },
-        ])
-        mock_es_client.reset_mock()
-        project_actions = self._refresh_action_plan(user_id)
-
-        self.assertEqual(
-            'Liberté Living Lab',
-            project_actions[0].get('applyToCompany', {}).get('name'))
-
-    def test_link_action_template(self):
-        """Use vars in links."""
-
-        def _update_user(user):
-            project = user['projects'][0]
-            project['targetJob']['jobGroup']['romeId'] = 'A1234'
-            project['mobility']['city']['departementId'] = '69'
-
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'c1'),
-            _update_user,
-        ], advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'a',
-            'actionTemplateId': 'a',
-            'link': 'http://go/to/%departementId/%romeId',
-            'chantiers': ['c1'],
-        })
-        server.clear_cache()
-        project_actions = self._refresh_action_plan(user_id)
-
-        self.assertEqual(
-            'http://go/to/69/A1234', project_actions[0].get('link'), msg=project_actions)
-
-    def test_avoid_current_action_templates(self):
-        """Avoid generating an action when the same one is already current."""
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'c1'),
-            _add_action(0, 'd1', status='ACTION_UNREAD'),
-        ], advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_many([
-            {
-                '_id': 'd1',
-                'actionTemplateId': 'd1',
-                'chantiers': ['c1'],
-            },
-        ])
-        server.clear_cache()
-        project_actions = self._refresh_action_plan(user_id)
-        self.assertFalse(project_actions)
-
-    def test_avoid_sticky_action_templates(self):
-        """Avoid generating an action when the same one is already sticky."""
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'c1'),
-            _add_action(0, 'd1', status='ACTION_STUCK', actions_field='stickyActions'),
-        ])
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_many([
-            {
-                '_id': 'd1',
-                'actionTemplateId': 'd1',
-                'chantiers': ['c1'],
-            },
-        ])
-        server.clear_cache()
-        project_actions = self._refresh_action_plan(user_id)
-        self.assertFalse(project_actions)
-
-    def test_block_during_cool_down_time(self):
-        """Block an action generation when an action has just been done."""
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'c1'),
-            _add_action(
-                0, 'd1', status='ACTION_DONE',
-                stoppedAt=yesterday.isoformat()+'Z',
-                endOfCoolDown=tomorrow.isoformat()+'Z',
-                actions_field='pastActions'),
-        ])
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'd1',
-            'actionTemplateId': 'd1',
-            'chantiers': ['c1'],
-        })
-        server.clear_cache()
-        project_actions = self._refresh_action_plan(user_id)
-        self.assertEqual([], project_actions)
-
-    def test_unblock_after_cool_down_time(self):
-        """Generate an action after the end of the cool down time."""
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'c1'),
-            _add_action(
-                0, 'd1', status='ACTION_DONE',
-                stoppedAt=yesterday.isoformat()+'Z',
-                endOfCoolDown=yesterday.isoformat()+'Z',
-                actions_field='pastActions'),
-        ], advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_one({
-            '_id': 'd1',
-            'actionTemplateId': 'd1',
-            'chantiers': ['c1'],
-        })
-        server.clear_cache()
-        project_actions = self._refresh_action_plan(user_id)
-        self.assertEqual(['d1'], [a.get('actionTemplateId') for a in project_actions])
-
-    @mock.patch(scoring.__name__ + '.filter_using_score')
-    def test_filtered_action_templates(self, mock_filter_using_score):
-        """Do not generate actions filtered out by the scoring module."""
-        user_id = self.create_user(modifiers=[
-            _add_project,
-            _add_chantier(0, 'c1'),
-        ], advisor=False)
-        self._db.action_templates.drop()
-        self._db.action_templates.insert_many([
-            {
-                '_id': 'd1',
-                'actionTemplateId': 'd1',
-                'chantiers': ['c1'],
-                'filters': ['foo', 'bar'],
-            },
-        ])
-        server.clear_cache()
-
-        mock_filter_using_score.return_value = iter([])
-
-        project_actions = self._refresh_action_plan(user_id)
-        self.assertEqual([], project_actions)
-
-        self.assertGreaterEqual(mock_filter_using_score.call_count, 1)
-        call_args = mock_filter_using_score.call_args[0]
-        self.assertEqual(['d1'], [t.action_template_id for t in call_args[0]])
-        self.assertEqual(['foo', 'bar'], call_args[1](call_args[0][0]))
 
     def test_unverified_data_zone_on_profile(self):
         """Called with a user in an unverified data zone."""
@@ -1173,6 +817,58 @@ class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(set(['skills', 'diplomas', 'extras']), set(requirements))
         # Point check.
         self.assertEqual('1235', requirements['skills'][1]['skill']['skillId'])
+
+
+class ProjectAssociationsTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../associations endpoint."""
+
+    def setUp(self):
+        super(ProjectAssociationsTestCase, self).setUp()
+        self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/associations' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_one_association(self):
+        """Basic test with one job board only."""
+        self._db.associations.insert_one({'name': 'SNC'})
+        response = self.app.get('/api/project/%s/%s/associations' % (self.user_id, self.project_id))
+
+        associations = self.json_from_response(response)
+        self.assertEqual({'associations': [{'name': 'SNC'}]}, associations)
+
+    def test_filtered_associations(self):
+        """Association not useful for this project is filtered."""
+        self._db.associations.insert_many([
+            {'name': 'Not a good one', 'filters': ['constant(0)']},
+            {'name': 'Keep this one', 'filters': ['constant(1)']},
+        ])
+        response = self.app.get('/api/project/%s/%s/associations' % (self.user_id, self.project_id))
+
+        associations = self.json_from_response(response)
+        self.assertEqual(
+            {'associations': [{'name': 'Keep this one', 'filters': ['constant(1)']}]},
+            associations)
+
+    def test_sorted_associations(self):
+        """More specialized associations come first."""
+        self._db.associations.insert_many([
+            {'name': 'Specialized', 'filters': ['constant(2)']},
+            {'name': 'Generic'},
+            {'name': 'Very specialized', 'filters': ['constant(1)', 'constant(1)']},
+        ])
+        response = self.app.get('/api/project/%s/%s/associations' % (self.user_id, self.project_id))
+
+        associations = self.json_from_response(response)
+        self.assertEqual(
+            ['Very specialized', 'Specialized', 'Generic'],
+            [j.get('name') for j in associations.get('associations', [])])
 
 
 class ProjectJobBoardsTipsTestCase(base_test.ServerTestCase):

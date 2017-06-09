@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+message UsersCount {
+  // Total number of registered users.
+  int32 total_user_count = 1;
+
+  // Number of new registered users since last week (rolling 7 days).
+  int32 weekly_new_user_count = 2;
+}

@@ -55,6 +55,11 @@ function adviceTipsGet({userId}, {projectId}, {adviceId}) {
     then(response => response.tips)
 }
 
+function associationsGet({userId}, {projectId}) {
+  return getJson(`/api/project/${userId}/${projectId}/associations`).
+    then(response => response.associations || [])
+}
+
 function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
@@ -130,6 +135,7 @@ function feedbackPost(feedback) {
 
 const api = {
   adviceTipsGet,
+  associationsGet,
   dashboardExportGet,
   exploreGet,
   exploreJobGroupGet,

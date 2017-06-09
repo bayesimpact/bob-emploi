@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, AUTHENTICATE_USER,
         LOGOUT, ADVICE_PAGE_IS_SHOWN, CREATE_PROJECT, CREATE_PROJECT_SAVE,
-        MOVE_USER_DATES_BACK_1_DAY, DELETE_USER_DATA,
+        MOVE_USER_DATES_BACK_1_DAY, DELETE_USER_DATA, MODIFY_PROJECT,
         FINISH_PROFILE_SITUATION, ACCEPT_PRIVACY_NOTICE, EDIT_FIRST_PROJECT,
         FINISH_PROFILE_FRUSTRATIONS, DECLINE_WHOLE_ADVICE,
         FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL, LIKE_OR_DISLIKE_FEATURE,
@@ -160,6 +160,13 @@ function user(state=initialData, action) {
         projects: [project],
       }
     }
+    case MODIFY_PROJECT:
+      return updateProject(state, {
+        advices: [],
+        isIncomplete: true,
+        localStats: {},
+        projectId: action.project.projectId,
+      })
     case MOVE_USER_DATES_BACK_1_DAY:
       return travelInTime({...state}, -24 * 60 * 60 * 1000)
     case ADVICE_PAGE_IS_SHOWN:

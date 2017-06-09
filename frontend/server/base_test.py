@@ -7,7 +7,6 @@ import unittest
 import mock
 import mongomock
 
-from bob_emploi.frontend import action
 from bob_emploi.frontend import server
 
 
@@ -26,13 +25,12 @@ class ServerTestCase(unittest.TestCase):
         """Set up mock environment."""
         super(ServerTestCase, self).setUp()
         # Simulate a clean load of the modules.
-        server._JOB_GROUPS_INFO = {}  # pylint: disable=protected-access
-        server._CHANTIERS = {}  # pylint: disable=protected-access
-        action.clear_cache()
 
         self.app = server.app.test_client()
         self._db = mongomock.MongoClient().get_database('test')
         server._DB = self._db  # pylint: disable=protected-access
+        server._JOB_GROUPS_INFO.reset_cache()  # pylint: disable=protected-access
+        server._CHANTIERS.reset_cache()  # pylint: disable=protected-access
         self._db.chantiers.insert_many([
             {'_id': 'c1', 'chantierId': 'c1'},
             {'_id': 'c2', 'chantierId': 'c2'},

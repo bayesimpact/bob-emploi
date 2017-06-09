@@ -1,8 +1,8 @@
 import Cookies from 'js-cookie'
 
 import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
-        GET_DASHBOARD_EXPORT, GET_JOB_BOARDS,
-        OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS,
+        GET_DASHBOARD_EXPORT, GET_JOB_BOARDS, TRACK_INITIAL_UTM_CONTENT,
+        OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, GET_ASSOCIATIONS,
         ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION,
         LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS} from './actions'
 
@@ -12,8 +12,11 @@ const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 const appInitialData = {
   // Cache for advice tips for each advice module for each project.
   adviceTips: {},
+  // Cache of associations per project.
+  associations: {},
   // Cache for dashboard exports.
   dashboardExports: {},
+  initialUtmContent: null,
   isMobileVersion: false,
   // Cache of job boards.
   jobBoards: {},
@@ -32,6 +35,17 @@ function app(state=appInitialData, action) {
       return {...state, loginModal: {defaultValues: action.defaultValues || {}}}
     case CLOSE_LOGIN_MODAL:
       return {...state, loginModal: null}
+    case GET_ASSOCIATIONS:
+      if (action.status === 'success' && action.project) {
+        return {
+          ...state,
+          associations: {
+            ...state.associations,
+            [action.project.projectId]: action.response,
+          },
+        }
+      }
+      break
     case GET_JOB_BOARDS:
       if (action.status === 'success' && action.project) {
         return {
@@ -103,6 +117,11 @@ function app(state=appInitialData, action) {
             [action.advice.adviceId]: action.response,
           },
         },
+      }
+    case TRACK_INITIAL_UTM_CONTENT:
+      return {
+        ...state,
+        initialUtmContent: state.initialUtmContent || action.utmContent,
       }
   }
   return state

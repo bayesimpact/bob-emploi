@@ -1,4 +1,5 @@
 """Module to help the frontend manipulate protobuffers."""
+import collections
 import datetime
 import functools
 import logging
@@ -95,7 +96,7 @@ def flask_api(out_type=None, in_type=None):
     return _proto_api_decorator
 
 
-def cache_mongo_collection(mongo_iterator, cache, proto_type, update_func=None):
+def _cache_mongo_collection(mongo_iterator, cache, proto_type, update_func=None):
     """Cache in memory the content of a Mongo request returning protos.
 
     Args:
@@ -121,3 +122,65 @@ def cache_mongo_collection(mongo_iterator, cache, proto_type, update_func=None):
         else:
             cache.append(proto)
     return cache
+
+
+class MongoCachedCollection(object):
+    """Handler for a collection of protobuffers in MongoDB."""
+
+    def __init__(self, proto_type, collection_name, update_func=None):
+        """Creates a new collection.
+
+        Args:
+            proto_type: the python proto class for the expected proto type.
+            collection_name: a MongoDB collection_name that holds he original protobuffers.
+            update_func: an optional function to call on each proto once imported.
+        """
+        self._collection_name = collection_name
+        self._proto_type = proto_type
+        self._update_func = update_func
+
+        self._cache = None
+        self._database = None
+
+    def get_collection(self, database):
+        """Gets access to the collection for a database."""
+        if self._cache and database == self._database:
+            return self._cache
+        self._database = database
+        self._cache = _MongoCachedCollection(self._populate)
+        return self._cache
+
+    def reset_cache(self):
+        """Reset any cache that this function could hold."""
+        self._cache = None
+        self._database = None
+
+    def _populate(self, cache):
+        _cache_mongo_collection(
+            self._database.get_collection(self._collection_name).find, cache,
+            self._proto_type, self._update_func)
+
+
+class _MongoCachedCollection(object):
+
+    def __init__(self, populate):
+        self._populate = populate
+        self._cache = None
+
+    @property
+    def is_cached(self):
+        """Returns whether this object holds some cached data."""
+        return bool(self._cache)
+
+    def _ensure_cache(self):
+        if self._cache:
+            return self._cache
+        self._cache = collections.OrderedDict()
+        self._populate(self._cache)
+        return self._cache
+
+    def __getattr__(self, prop):
+        return getattr(self._ensure_cache(), prop)
+
+    def __iter__(self):
+        return iter(self.values())

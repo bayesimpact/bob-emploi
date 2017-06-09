@@ -16,9 +16,10 @@ import {TipsList} from 'components/tips'
 
 import adviceModuleProperties from './advisor/data/advice_modules.json'
 
+import AssociationHelp from './advisor/association_help'
 import BetterJobInGroup from './advisor/better_job_in_group'
+import Commute from './advisor/commute'
 import Events from './advisor/events'
-import FreshResume from './advisor/fresh_resume'
 import ImproveInterview from './advisor/improve_interview'
 import ImproveResume from './advisor/improve_resume'
 import JobBoards from './advisor/job_boards'
@@ -29,14 +30,18 @@ import NetworkApplicationMedium from './advisor/network_medium'
 import NetworkApplicationGood from './advisor/network_good'
 import OtherWorkEnv from './advisor/other_work_env'
 import SpontaneousApplication from './advisor/spontaneous'
+import WowBaker from './advisor/wow_baker'
+import WowHairdresser from './advisor/wow_hairdresser'
 
 
 // Map of advice recommendation modules keyed by advice module IDs.
 const ADVICE_MODULES = {
+  'association-help': AssociationHelp,
   'better-job-in-group': BetterJobInGroup,
+  'commute': Commute,
   'events': Events,
   'find-a-jobboard': JobBoards,
-  'fresh-resume': FreshResume,
+  'fresh-resume': ImproveResume,
   'improve-interview': ImproveInterview,
   'improve-resume': ImproveResume,
   'life-balance': LifeBalance,
@@ -46,6 +51,8 @@ const ADVICE_MODULES = {
   'network-application-medium': NetworkApplicationMedium,
   'other-work-env': OtherWorkEnv,
   'spontaneous-application': SpontaneousApplication,
+  'wow-baker': WowBaker,
+  'wow-hairdresser': WowHairdresser,
 }
 
 
@@ -65,6 +72,7 @@ class WhiteAdviceCard extends React.Component {
   state = {
     hasBeenSeen: false,
     isExpanded: false,
+    isHovered: false,
   }
 
   componentWillMount() {
@@ -72,19 +80,15 @@ class WhiteAdviceCard extends React.Component {
     dispatch(adviceCardIsShown(project, advice))
   }
 
-  componentWillUnmount() {
-    clearTimeout(this.readingTimeout)
-  }
-
   changeExpand = isExpanded => {
     const {onExpandChanged} = this.props
     this.setState({isExpanded})
-    clearTimeout(this.readingTimeout)
     onExpandChanged && onExpandChanged(isExpanded)
   }
 
   changeHover = isHovered => {
     const {onHoverChanged} = this.props
+    this.setState({isHovered})
     onHoverChanged && onHoverChanged(isHovered)
   }
 
@@ -94,9 +98,7 @@ class WhiteAdviceCard extends React.Component {
     this.changeExpand(true)
     dispatch(selectAdvice(project, advice, visualElement))
     dispatch(getAdviceTips(project, advice))
-    this.readingTimeout = setTimeout(() => {
-      dispatch(advicePageIsShown(project, advice))
-    }, 5000)
+    dispatch(advicePageIsShown(project, advice))
   }
 
   handleVisibilityChange = isVisible => {
@@ -123,61 +125,63 @@ class WhiteAdviceCard extends React.Component {
     const {isExpanded} = this.state
     const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
     const style = {
+      alignItems: 'center',
       color: isExpanded ? '#fff' : Colors.CHARCOAL_GREY,
       display: 'flex',
-      fontSize: 25,
-      fontStyle: 'italic',
+      fontSize: isExpanded ? 25 : 18,
+      fontStyle: isExpanded ? 'italic' : 'normal',
       fontWeight: isExpanded ? 'normal': isAdviceUnread ? 'bold' : 500,
     }
+    const tagStyle = {
+      backgroundColor: Colors.GREENISH_TEAL,
+      borderRadius: 2,
+      color: '#fff',
+      display: 'inline-block',
+      fontSize: 9,
+      fontWeight: 'bold',
+      letterSpacing: .3,
+      marginLeft: 15,
+      padding: 6,
+      textTransform: 'uppercase',
+    }
     return <header style={style}>
-      {getAdviceTitle(advice)}
+      <span style={Styles.CENTER_FONT_VERTICALLY}>
+        {getAdviceTitle(advice)}
+      </span>
+      {(isExpanded || !isAdviceUnread) ? null : <span style={tagStyle}>
+        <div style={Styles.CENTER_FONT_VERTICALLY}>
+          Nouveau
+        </div>
+      </span>}
       <span style={{flex: 1}} />
       {isExpanded ? <FeedbackButton advice={advice} project={project} /> : null}
     </header>
   }
 
-  renderUnread() {
+  renderExpandButtonBar(style) {
     const {advice} = this.props
-    const isAdviceUnread = advice.status === 'ADVICE_RECOMMENDED'
-    if (!isAdviceUnread || this.state.isExpanded) {
-      return null
-    }
-    const buttonBarStyle = {
-      alignItems: 'center',
-      backgroundColor: Colors.SLATE,
-      borderRadius: 0,
-      color: '#fff',
-      display: 'flex',
-      fontSize: 9,
-      fontWeight: 'bold',
-      height: 30,
-      letterSpacing: .3,
-      paddingLeft: 40,
-      textTransform: 'uppercase',
-      ...Styles.CENTER_FONT_VERTICALLY,
+    const {isHovered} = this.state
+    const {callToAction} = adviceModuleProperties[advice.adviceId] || {}
+    const plusStyle = {
+      backgroundColor: isHovered ? Colors.SKY_BLUE : 'transparent',
+      border: `solid 1px ${isHovered ? Colors.SKY_BLUE : Colors.MODAL_PROJECT_GREY}`,
+      borderRadius: 25,
+      color: isHovered ? '#fff' : Colors.CHARCOAL_GREY,
+      display: 'inline-block',
+      height: 25,
+      lineHeight: '25px',
+      marginRight: 15,
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      width: 25,
       ...SmoothTransitions,
     }
-    return <div style={buttonBarStyle}>
-      Non consulté
+    return <div style={{alignItems: 'center', display: 'flex', ...style}}>
+      <span style={plusStyle}>+</span>
+      <span style={Styles.CENTER_FONT_VERTICALLY}>
+        {callToAction || 'Voir plus'}
+      </span>
     </div>
-  }
-
-  renderExpandButtonBar() {
-    const {advice} = this.props
-    const {callToAction} = adviceModuleProperties[advice.adviceId] || {}
-    const chevronStyle = {
-      display: 'inline-block',
-      fontSize: 20,
-      lineHeight: '14px',
-      marginLeft: 10,
-      verticalAlign: 'middle',
-    }
-    return <Button
-        onClick={this.gotoAdvicePage('advice-card-button')} isNarrow={true}
-        style={{marginTop: 40}}>
-      {callToAction || 'Voir plus'}
-      <Icon name="chevron-down" style={chevronStyle} />
-    </Button>
   }
 
   renderCollapseButtonBar() {
@@ -203,18 +207,19 @@ class WhiteAdviceCard extends React.Component {
       boxShadow: isAdviceUnread ? '0 2px 10px 0 rgba(0, 0, 0, .25)' :
         isExpanded ? '0 2px 14px 0 rgba(0, 0, 0, 0.15)' : 'initial',
       color: Colors.CHARCOAL_GREY,
+      cursor: isExpanded ? 'initial' : 'pointer',
       ...SmoothTransitions,
       ...style,
     }
     const headerStyle = {
       backgroundColor: isExpanded ? Colors.DARK_TWO : 'transparent',
       color: isExpanded ? '#fff' : 'initial',
-      padding: '30px 40px',
+      padding: '35px 40px',
       ...SmoothTransitions,
     }
     const contentStyle = {
       backgroundColor: isExpanded ? Colors.LIGHT_GREY : 'transparent',
-      padding: '35px 40px',
+      padding: isExpanded ? 40 : '0 40px 40px',
       ...SmoothTransitions,
     }
     return <VisibilitySensor
@@ -225,6 +230,7 @@ class WhiteAdviceCard extends React.Component {
             [isExpanded ? 'expandedHeight' : 'collapsedHeight']: height})}>
         <section
             style={cardStyle}
+            onClick={isExpanded ? null : this.gotoAdvicePage('advice-card')}
             onMouseEnter={() => this.changeHover(true)}
             onMouseLeave={() => this.changeHover(false)}>
           <header style={headerStyle}>
@@ -234,9 +240,8 @@ class WhiteAdviceCard extends React.Component {
             {this.state.isExpanded ? <AdvicePageContent {...this.props} /> : children}
             {this.state.isExpanded ?
               <TipsList project={project} advice={advice} /> :
-              this.renderExpandButtonBar()}
+              this.renderExpandButtonBar({marginTop: 40})}
           </div>
-          {this.renderUnread()}
           {this.state.isExpanded ? this.renderCollapseButtonBar() : null}
         </section>
       </ReactHeight>

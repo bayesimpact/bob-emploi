@@ -1,6 +1,4 @@
-# TODO(pascal): Switch back to tag 3 only when PyLint supports 3.6
-# (https://github.com/PyCQA/pylint/issues/1113).
-FROM python:3.5
+FROM python:3
 
 # Setup environment.
 EXPOSE 80

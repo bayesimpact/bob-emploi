@@ -36,7 +36,8 @@ import {AppNotAvailablePage} from './app_not_available'
 import {isOnSmallScreen} from 'store/mobile'
 import {user} from 'store/user_reducer'
 import {actionTypesToLog, hideToasterMessageAction, fetchUser, logoutAction,
-        openLoginModal, switchToMobileVersionAction, migrateUserToAdvisor} from 'store/actions'
+  openLoginModal, switchToMobileVersionAction, migrateUserToAdvisor,
+  trackInitialUtmContent} from 'store/actions'
 import {app, asyncState} from 'store/app_reducer'
 import {mainSelector, onboardingComplete} from 'store/main_selectors'
 import {createAmplitudeMiddleware} from 'store/amplitude'
@@ -91,6 +92,11 @@ class PageHolderBase extends React.Component {
   }
 
   componentWillMount() {
+    const {query} = this.props.routing.locationBeforeTransitions
+    const utmContent = query['utm_content'] || ''
+    if (utmContent) {
+      this.props.dispatch(trackInitialUtmContent(utmContent))
+    }
     if (this.state.isOnSmallScreen) {
       this.props.dispatch(switchToMobileVersionAction)
       document.getElementById('viewport').setAttribute('content', 'width=320')
@@ -149,12 +155,13 @@ class PageHolderBase extends React.Component {
     // The `nextPathName` might be set by `requireAuthAndDesktop`, to remember
     // where a user wanted to go before we knew whether they are logged in or
     // not.
+    const hash = location.state && location.state.nextHash || ''
     const route = location.state && location.state.nextPathname || location.pathname
     if (route === Routes.ROOT) {
-      browserHistory.replace(Routes.PROJECT_PAGE)
+      browserHistory.replace(Routes.PROJECT_PAGE + hash)
       return
     }
-    browserHistory.replace(route)
+    browserHistory.replace(route + hash)
   }
 
   render () {
@@ -179,6 +186,21 @@ class PageHolderBase extends React.Component {
 const PageHolder = connect(mainSelector)(PageHolderBase)
 
 
+class HomePage extends React.Component {
+  static propTypes = {
+    user: PropTypes.object.isRequired,
+  }
+
+  render() {
+    const {user} = this.props
+    if (onboardingComplete(user)) {
+      return <ProjectPage {...this.props} />
+    }
+    return <LandingPage {...this.props} />
+  }
+}
+
+
 class MyRouterBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
@@ -197,7 +219,10 @@ class MyRouterBase extends React.Component {
     if (!Cookies.get('userId')) {
       replace({
         pathname: Routes.ROOT,
-        state: {nextPathname: nextRouterState.location.pathname},
+        state: {
+          nextHash: nextRouterState.location.hash,
+          nextPathname: nextRouterState.location.pathname,
+        },
       })
       dispatch(openLoginModal({
         email: nextRouterState.location.query.email || '',
@@ -209,7 +234,10 @@ class MyRouterBase extends React.Component {
     if (this.isUserMissing()) {
       replace({
         pathname: Routes.WAITING_PAGE,
-        state: {nextPathname: nextRouterState.location.pathname},
+        state: {
+          nextHash: nextRouterState.location.hash,
+          nextPathname: nextRouterState.location.pathname,
+        },
       })
       return
     }
@@ -248,7 +276,10 @@ class MyRouterBase extends React.Component {
       if (nextRouterState.location.pathname !== Routes.WAITING_PAGE) {
         replace({
           pathname: Routes.WAITING_PAGE,
-          state: {nextPathname: nextRouterState.location.pathname},
+          state: {
+            nextHash: nextRouterState.location.hash,
+            nextPathname: nextRouterState.location.pathname,
+          },
         })
       }
       return
@@ -271,7 +302,7 @@ class MyRouterBase extends React.Component {
         <Route path={Routes.ROOT} component={PageHolder}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
           <Route onEnter={this.requireUserCheck}>
-            <IndexRoute component={mainConnect(LandingPage)} />
+            <IndexRoute component={mainConnect(HomePage)} />
             <Route path={Routes.APP_NOT_AVAILABLE_PAGE} component={AppNotAvailablePage} />
             <Route path={Routes.CONTRIBUTION_PAGE} component={mainConnect(ContributionPage)} />
             <Route path={Routes.COOKIES_PAGE} component={CookiesPage} />

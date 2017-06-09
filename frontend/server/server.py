@@ -7,7 +7,7 @@ This file contains the JSON API that will provide the
 MyGamePlan web application with data.
 """
 import collections
-import datetime
+import functools
 import hashlib
 import itertools
 import logging
@@ -31,6 +31,7 @@ from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import feedback_pb2
@@ -51,26 +52,12 @@ _DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 
 SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
+ADMIN_AUTH_TOKEN = os.getenv('ADMIN_AUTH_TOKEN')
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
 _ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
 _SHOW_UNVERIFIED_DATA_USER_REGEXP = \
     re.compile(os.getenv('SHOW_UNVERIFIED_DATA_USER_REGEXP', r'@pole-emploi.fr$'))
-
-_ProjectIntensityDefinition = collections.namedtuple(
-    'ProjetIntensityDefinition', [
-        'min_applications_per_day',
-        'max_applications_per_day',
-        'min_actions_per_day',
-        'max_actions_per_day',
-    ])
-
-_PROJECT_INTENSITIES = {
-    project_pb2.PROJECT_FIGURING_INTENSITY: _ProjectIntensityDefinition(0, 0, 1, 3),
-    project_pb2.PROJECT_NORMALLY_INTENSE: _ProjectIntensityDefinition(1, 1, 1, 3),
-    project_pb2.PROJECT_PRETTY_INTENSE: _ProjectIntensityDefinition(1, 1, 2, 3),
-    project_pb2.PROJECT_EXTREMELY_INTENSE: _ProjectIntensityDefinition(2, 2, 2, 4),
-}
 
 # Email regex from http://emailregex.com/
 _EMAIL_REGEX = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
@@ -85,6 +72,19 @@ _Tick = collections.namedtuple('Tick', ['name', 'time'])
 
 # Log timing of requests that take too long to be treated.
 _LONG_REQUEST_DURATION_SECONDS = 1.5
+
+
+def requires_admin_auth(func):
+    """Decorator for a function that requires admin authorization."""
+    def _decorated_fun(*args, **kwargs):
+        if ADMIN_AUTH_TOKEN:
+            request_token = flask.request.headers.get('Authorization')
+            if not request_token:
+                flask.abort(401)
+            if request_token != ADMIN_AUTH_TOKEN:
+                flask.abort(403)
+        return func(*args, **kwargs)
+    return functools.wraps(func)(_decorated_fun)
 
 
 @app.route('/api/user', methods=['DELETE'])
@@ -118,14 +118,6 @@ def get_user(user_id):
     user_proto = _get_user_data(user_id)
     user_proto.user_id = user_id
     return user_proto
-
-
-def _maybe_generate_new_actions(user_proto):
-    updated = False
-    for project in user_proto.projects:
-        updated |= _maybe_generate_new_action_plan(user_proto, project)
-    if updated:
-        _save_user(user_proto, is_new_user=False)
 
 
 @app.route("/api/user", methods=['POST'])
@@ -164,13 +156,12 @@ def user_likes(user_data):
     return ''
 
 
+# TODO(pascal): Clean-up, this has no effect.
 @app.route("/api/user/refresh-action-plan", methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
 def user_refresh_action_plan(user_data):
     """Creates daily actions for the user if none for today."""
-    user_proto = _get_user_data(user_data.user_id)
-    _maybe_generate_new_actions(user_proto)
-    return user_proto
+    return _get_user_data(user_data.user_id)
 
 
 @app.route("/api/user/<user_id>/migrate-to-advisor", methods=['POST'])
@@ -205,6 +196,24 @@ def use_app(user_id):
     # No need to pollute our DB with super precise timestamps.
     user_proto.requested_by_user_at_date.nanos = 0
     return _save_user(user_proto, is_new_user=False)
+
+
+def _get_feedback_context(feedback):
+    if not feedback.user_id:
+        return ''
+
+    user_data = _get_user_data(feedback.user_id)
+    name = ' from %s,' % user_data.profile.name
+
+    if not feedback.project_id:
+        return name
+
+    project = _get_project_data(user_data, feedback.project_id)
+    title = ' %s,' % project.title
+    experience = ' with experience of "%s"' %\
+        project_pb2.ProjectSeniority.Name(project.seniority).lower()
+
+    return '%s%s%s' % (name, title, experience)
 
 
 def _generic_image():
@@ -266,16 +275,6 @@ def _save_user(user_data, is_new_user):
         _tick('Advisor')
         advisor.maybe_advise(user_data, project, _DB)
 
-        _tick('Stop actions')
-        for current_action in project.actions:
-            if current_action.status in _ACTION_STOPPED_STATUSES:
-                action.stop(current_action, _DB)
-        for past_action in project.past_actions:
-            action.stop(past_action, _DB)
-
-        for sticky_action in project.sticky_actions:
-            if not sticky_action.HasField('stuck_at'):
-                sticky_action.stuck_at.FromDatetime(now.get())
         _tick('Process project end')
 
     if not is_new_user:
@@ -396,7 +395,7 @@ def _safe_object_id(_id):
         return objectid.ObjectId(_id)
     except objectid.InvalidId:
         # Switch to raising an error if you move this function in a lib.
-        flask.abort(400, 'L\'identifiant "%s" n\'est pas un identifiant MongoDB valide.')
+        flask.abort(400, 'L\'identifiant "%s" n\'est pas un identifiant MongoDB valide.' % _id)
 
 
 # Mapping of old diploma estimates to new training estimates.
@@ -434,6 +433,15 @@ def _get_user_data(user_id):
 
         project.ClearField('diploma_fulfillment_estimate')
 
+        for project_action in itertools.chain(
+                project.actions, project.past_actions, project.sticky_actions):
+            # TODO(pascal): Remove the fields completely after this has been
+            # live for a week.
+            project_action.ClearField('goal')
+            project_action.ClearField('short_goal')
+            project_action.ClearField('sticky_action_incentive')
+            project_action.ClearField('steps')
+
     # TODO(pascal): Remove the fields completely after this has been live for a
     # week.
     user_proto.profile.ClearField('city')
@@ -469,15 +477,13 @@ _ACTION_STOPPED_STATUSES = frozenset([
 
 
 # Cache (from MongoDB) of known chantiers.
-_CHANTIERS = {}
+_CHANTIERS = proto.MongoCachedCollection(chantier_pb2.Chantier, 'chantiers')
 
 
 def _chantiers():
     """Returns a list of known chantiers as protos."""
-    was_empty = not _CHANTIERS
-    all_chantiers = proto.cache_mongo_collection(
-        _DB.chantiers.find, _CHANTIERS, chantier_pb2.Chantier)
-    if was_empty:
+    all_chantiers = _CHANTIERS.get_collection(_DB)
+    if not all_chantiers.is_cached:
         # Validate chantiers.
         required_models = set(c.scoring_model for c in all_chantiers.values()) | set(
             scoring.GROUP_SCORING_MODELS.values())
@@ -491,13 +497,6 @@ def _chantiers():
     return all_chantiers
 
 
-def _white_chantier_ids():
-    """Returns the set of IDs of white chantiers."""
-    return set(
-        chantier_id for chantier_id, chantier in _chantiers().items()
-        if chantier.kind == chantier_pb2.CORE_JOB_SEARCH)
-
-
 # TODO: Split this into separate endpoints for registration and login.
 # Having both in the same endpoint makes refactoring the frontend more difficult.
 @app.route('/api/user/authenticate', methods=['POST'])
@@ -505,10 +504,7 @@ def _white_chantier_ids():
 def authenticate(auth_request):
     """Authenticate a user."""
     authenticator = auth.Authenticator(_DB, lambda u: _save_user(u, is_new_user=True))
-    response = authenticator.authenticate(auth_request)
-    if response.authenticated_user.user_id:
-        _maybe_generate_new_actions(response.authenticated_user)
-    return response
+    return authenticator.authenticate(auth_request)
 
 
 @app.route('/api/user/reset-password', methods=['POST'])
@@ -521,147 +517,12 @@ def reset_password(auth_request):
 
 
 # Cache (from MongoDB) of job group info.
-_JOB_GROUPS_INFO = {}
+_JOB_GROUPS_INFO = proto.MongoCachedCollection(job_pb2.JobGroup, 'job_group_info')
 
 
 def _job_groups_info():
     """Returns a dict of info of known job groups as protos."""
-    return proto.cache_mongo_collection(_DB.job_group_info.find, _JOB_GROUPS_INFO, job_pb2.JobGroup)
-
-
-def _maybe_generate_new_action_plan(user_proto, project):
-    if project.is_incomplete:
-        return False
-
-    if _project_in_advisor(project):
-        # Do not generate actions for projects handled by the Advisor.
-        return False
-    now_instant = now.get()
-    this_morning = now_instant.replace(hour=3, minute=0, second=0, microsecond=0)
-    if this_morning > now_instant:
-        this_morning -= datetime.timedelta(hours=24)
-    if project.actions_generated_at.ToDatetime() > this_morning:
-        return False
-
-    if not any(project.activated_chantiers.values()):
-        logging.warning('No activated chantiers yet')
-        return False
-
-    intensity_def = _PROJECT_INTENSITIES.get(project.intensity)
-    if not intensity_def:
-        logging.warning('Intensity is not defined properly %s', project.intensity)
-        return False
-
-    # Renew all actions.
-    for old_action in project.actions:
-        action.stop(old_action, _DB)
-    new_past_actions = [a for a in project.actions]
-    new_past_actions.sort(key=lambda action: action.stopped_at.ToDatetime())
-    project.past_actions.extend(new_past_actions)
-    del project.actions[:]
-
-    # Number of white actions to generate.
-    target_white_actions = random.randint(
-        intensity_def.min_applications_per_day, intensity_def.max_applications_per_day)
-    # Number of other actions to generate.
-    target_other_actions = random.randint(
-        intensity_def.min_actions_per_day, intensity_def.max_actions_per_day)
-
-    project.actions_generated_at.FromDatetime(now_instant)
-
-    _add_actions_to_project(
-        user_proto, project, target_white_actions, use_white_chantiers=True)
-    _add_actions_to_project(user_proto, project, target_other_actions)
-
-    return True
-
-
-def _project_in_advisor(project):
-    """Check whether a project is handled by the Advisor."""
-    return bool(project.advices)
-
-
-def _add_actions_to_project(user_proto, project, num_adds, use_white_chantiers=False):
-    if num_adds < 0:
-        return False
-
-    all_chantiers = _chantiers()
-    if use_white_chantiers:
-        activated_chantiers = _white_chantier_ids()
-    else:
-        activated_chantiers = set(
-            chantier_id for chantier_id, activated in project.activated_chantiers.items()
-            if activated and chantier_id in all_chantiers)
-    if not activated_chantiers:
-        logging.warning('No activated chantiers')
-        return False
-
-    # List all action template IDs for which we already had an action in the
-    # near past.
-    now_instant = now.get()
-    still_hot_action_template_ids = set()
-    for hot_action in itertools.chain(
-            project.actions, project.past_actions, project.sticky_actions):
-        if (hot_action.HasField('end_of_cool_down') and
-                hot_action.end_of_cool_down.ToDatetime() < now_instant):
-            continue
-        still_hot_action_template_ids.add(hot_action.action_template_id)
-
-    # List all action templates that are at least in one of the activated
-    # chantiers.
-    actions_pool = [
-        a for action_template_id, a in action.templates(_DB).items()
-        # Do not add an action that was already taken.
-        if action_template_id not in still_hot_action_template_ids and
-        # Only add actions that are meant for these chantiers.
-        activated_chantiers & set(a.chantiers)]
-
-    # Filter action templates using the filters field.
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    filtered_actions_pool = scoring.filter_using_score(
-        actions_pool, lambda a: a.filters, scoring_project)
-
-    # Split action templates by priority.
-    pools = collections.defaultdict(list)
-    for filtered_action in filtered_actions_pool:
-        pools[filtered_action.priority_level].append(filtered_action)
-
-    if not pools:
-        logging.warning(
-            'No action template would match:\n'
-            ' - %d activated chantiers\n'
-            ' - %d total action templates\n'
-            ' - %d action templates still hot\n'
-            ' - %d before filtering',
-            len(activated_chantiers),
-            len(action.templates(_DB)),
-            len(still_hot_action_template_ids),
-            len(actions_pool))
-        return False
-
-    added = False
-
-    for priority in sorted(pools.keys(), reverse=True):
-        pool = pools[priority]
-        # Pick the number of actions to add if enough.
-        if num_adds == 0:
-            return added
-        if len(pool) > num_adds:
-            pool = random.sample(pool, num_adds)
-            num_adds = 0
-        else:
-            num_adds -= len(pool)
-        random.shuffle(pool)
-
-        for template in pool:
-            added = True
-            action.instantiate(
-                project.actions.add(), user_proto, project, template,
-                activated_chantiers, _DB, _chantiers())
-
-    return added
-
+    return _JOB_GROUPS_INFO.get_collection(_DB)
 
 # TODO(pascal): Switch the project/requirements endpoint to be a GET as it does
 # not modify any state.
@@ -685,6 +546,19 @@ def _get_project_requirements(project):
         return no_requirements
 
     return job_group_info.requirements
+
+
+@app.route('/api/project/<user_id>/<project_id>/associations', methods=['GET'])
+@proto.flask_api(out_type=association_pb2.Associations)
+def project_associations(user_id, project_id):
+    """Retrieve a list of associations for a project."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, _DB)
+    associations = scoring_project.list_associations()
+    sorted_associations = sorted(associations, key=lambda j: (-len(j.filters), random.random()))
+    return association_pb2.Associations(associations=sorted_associations)
 
 
 @app.route('/api/project/<user_id>/<project_id>/jobboards', methods=['GET'])
@@ -712,7 +586,7 @@ def advice_tips(user_id, project_id, advice_id):
 
     response = action_pb2.AdviceTips()
     for tip_template in all_tips:
-        action.instantiate(response.tips.add(), user_proto, project, tip_template, set(), _DB, {})
+        action.instantiate(response.tips.add(), user_proto, project, tip_template)
     return response
 
 
@@ -742,10 +616,9 @@ def clear_cache():
     without rebooting it. Anybody can use it, but it doesn't cost much apart
     from 2 or 3 additional MongoDB requests on next queries.
     """
-    _JOB_GROUPS_INFO.clear()
-    _CHANTIERS.clear()
+    _JOB_GROUPS_INFO.reset_cache()
+    _CHANTIERS.reset_cache()
     _SHOW_UNVERIFIED_DATA_USERS.clear()
-    action.clear_cache()
     advisor.clear_cache()
     return 'Server cache cleared.'
 
@@ -815,11 +688,13 @@ def get_job_group_jobs(rome_id):
 def give_feedback(feedback):
     """Retrieve information about jobs whithin a job group."""
     result = _DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
-    context = ''
+
+    context = _get_feedback_context(feedback)
     if feedback.source == feedback_pb2.ADVICE_FEEDBACK:
-        context = ' on advice "%s"' % feedback.advice_id
+        context += ' on advice "%s"' % feedback.advice_id
     if feedback.source == feedback_pb2.PROFESSIONAL_PAGE_FEEDBACK:
-        context = ' from the Counselors Page'
+        context += ' from the Counselors Page'
+
     _tell_slack(
         ':right_anger_bubble: New user feedback%s:\n'
         '> %s\n'
@@ -864,6 +739,32 @@ def _populate_feature_flags(user_proto):
 
     if _ALPHA_USER_REGEXP.search(user_proto.profile.email):
         user_proto.features_enabled.alpha = True
+
+
+@app.route('/api/user/nps-survey-response', methods=['POST'])
+@requires_admin_auth
+@proto.flask_api(in_type=user_pb2.NPSSurveyResponse)
+def set_nps_survey_response(nps_survey_response):
+    """Save user response to the Net Promoter Score survey."""
+    # Note that this endpoint doesn't use authentication: only the email is necessary to
+    # update the user record.
+    user_dict = _DB.user.find_one({'profile.email': nps_survey_response.email}, {'_id': 1})
+    if not user_dict:
+        flask.abort(404, 'Utilisateur "%s" inconnu.' % nps_survey_response.email)
+    user_id = user_dict['_id']
+    user_proto = _get_user_data(user_id)
+    # We use MergeFrom, as 'curated_useful_advice_ids' will likely be set in a second call.
+    user_proto.net_promoter_score_survey_response.MergeFrom(nps_survey_response)
+    # No need to keep the email field in the survey response as it is the same as in profile.email.
+    user_proto.net_promoter_score_survey_response.ClearField('email')
+    _DB.user.update_one(
+        {'_id': _safe_object_id(user_id)},
+        {'$set': {'netPromoterScoreSurveyResponse': json_format.MessageToDict(
+            user_proto.net_promoter_score_survey_response
+        )}},
+        upsert=False
+    )
+    return ''
 
 
 @app.before_request

@@ -9,16 +9,17 @@ import _ from 'underscore'
 
 import config from 'config'
 
-import {allAdvicesReadAction, declineWholeAdvice, setUserProfile,
+import {allAdvicesReadAction, declineWholeAdvice, modifyProject, setUserProfile,
   shareProductToNetwork} from 'store/actions'
 import {genderizeJob} from 'store/job'
 import {createProjectTitleComponents, getEmploymentZone, getSeniorityText} from 'store/project'
 import {computeBobScore} from 'store/score'
 import {getHighestDegreeDescription, getUserFrustrationTags, USER_PROFILE_SHAPE} from 'store/user'
-import {CircularProgress} from 'components/progress'
 import {ShortKey} from 'components/shortkey'
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 
+import bobScoreGrayIcon from 'images/bob-score-grey.svg'
+import bobScoreIcon from 'images/bob-score-color.svg'
 import emailGrayIcon from 'images/share/email-gray-ico.svg'
 import emailIcon from 'images/share/email-ico.svg'
 import facebookGrayIcon from 'images/share/facebook-gray-ico.svg'
@@ -37,8 +38,8 @@ import workImage from 'images/work-picto.svg'
 import {NAVIGATION_BAR_HEIGHT, PageWithNavigationBar} from 'components/navigation'
 import {AdviceCard} from 'components/advisor'
 import {Modal} from 'components/modal'
-import {JobGroupCoverImage, Colors, Button, GrowingNumber, Icon, LabeledToggle,
-        SmoothTransitions, Styles} from 'components/theme'
+import {JobGroupCoverImage, CircularProgress, Colors, Button, GrowingNumber,
+  Icon, LabeledToggle, SmoothTransitions, Styles} from 'components/theme'
 
 const FIXED_EXPLANATION_BAR_HEIGHT = 56
 
@@ -278,9 +279,7 @@ class SumUpProfileModal extends React.Component {
             </div>
           </div>
         </div>
-        <Button
-            type="validation" style={{marginTop: 35}}
-            onClick={onClose}>
+        <Button style={{marginTop: 35}} onClick={onClose}>
           Découvrir mon diagnostic
         </Button>
       </div>
@@ -442,19 +441,27 @@ class ProjectPage extends React.Component {
     params: PropTypes.shape({
       projectId: PropTypes.string,
     }),
+    routing: PropTypes.shape({
+      locationBeforeTransitions: PropTypes.shape({
+        hash: PropTypes.string,
+      }).isRequired,
+    }).isRequired,
     user: PropTypes.object.isRequired,
   }
 
   state = {
+    adviceShownOnMount: null,
     isSumUpProfileModalShown: false,
     isWaitingInterstitialShown: false,
   }
 
   componentWillMount() {
-    const {params} = this.props
+    const {params, routing} = this.props
+    const {hash} = routing.locationBeforeTransitions
     this.setState({
-      isSumUpProfileModalShown: this.props.params.projectId === NEW_PROJECT_ID,
-      isWaitingInterstitialShown: this.props.params.projectId === NEW_PROJECT_ID,
+      adviceShownOnMount: hash && hash.substr(1) || null,
+      isSumUpProfileModalShown: params.projectId === NEW_PROJECT_ID,
+      isWaitingInterstitialShown: params.projectId === NEW_PROJECT_ID,
     })
     const project = getProjectFromProps(this.props)
     const {projectId} = project
@@ -480,7 +487,7 @@ class ProjectPage extends React.Component {
   render() {
     const project = getProjectFromProps(this.props)
     const {user} = this.props
-    const {isWaitingInterstitialShown} = this.state
+    const {adviceShownOnMount, isSumUpProfileModalShown, isWaitingInterstitialShown} = this.state
     const closeSumUpProfileModal = () => this.setState({isSumUpProfileModalShown: false})
 
     if (isWaitingInterstitialShown || !project.advices) {
@@ -491,7 +498,8 @@ class ProjectPage extends React.Component {
 
     return <ProjectDashboardPage
         project={project} onCloseSumUpProfileModal={closeSumUpProfileModal}
-        isSumUpProfileModalShown={this.state.isSumUpProfileModalShown} />
+        isSumUpProfileModalShown={isSumUpProfileModalShown}
+        adviceShownOnMount={adviceShownOnMount} />
   }
 }
 
@@ -514,7 +522,11 @@ const ADVICE_CARD_GROUP_PROPS = {
 
 class ProjectDashboardPageBase extends React.Component {
   static propTypes = {
+    adviceShownOnMount: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
+    featuresEnabled: PropTypes.shape({
+      alpha: PropTypes.bool,
+    }).isRequired,
     isSumUpProfileModalShown: PropTypes.bool,
     onCloseSumUpProfileModal: PropTypes.func.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
@@ -525,8 +537,11 @@ class ProjectDashboardPageBase extends React.Component {
   }
 
   state = {
+    // This can be either false (e.g. removed), 'hidden' or 'shown'.
+    fixedExplanationDisplay: false,
     isAdviceUselessFeedbackModalShown: false,
-    isFixedExplanationShown: false,
+    isBobScoreShown: false,
+    isModifyModalIsShown: false,
     isScoreTooltipShown: false,
     isTheEndModalShown: false,
   }
@@ -539,8 +554,22 @@ class ProjectDashboardPageBase extends React.Component {
         !oldAdvices.some(isAdviceUnread)) {
       return
     }
-    nextProps.dispatch(allAdvicesReadAction)
-    this.setState({isTheEndModalShown: true})
+    clearTimeout(this.readingTimeout)
+    this.readingTimeout = setTimeout(() => {
+      nextProps.dispatch(allAdvicesReadAction)
+      this.setState({isTheEndModalShown: true})
+    }, 5000)
+  }
+
+  componentDidMount() {
+    const {adviceShownOnMount} = this.props
+    if (adviceShownOnMount) {
+      this.scrollToAdvice(adviceShownOnMount)
+    }
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.readingTimeout)
   }
 
   markFeedbackAsUseless = () => {
@@ -555,12 +584,15 @@ class ProjectDashboardPageBase extends React.Component {
   }
 
   handleScroll = event => {
-    const {explanationHeight, headerHeight, isFixedExplanationShown} = this.state
-    if (explanationHeight, headerHeight) {
-      const isExplanationAboveTopScroll =
+    const {explanationHeight, fixedExplanationDisplay, headerHeight} = this.state
+    if (explanationHeight && headerHeight) {
+      const isHeaderAboveTopScroll = event.target.scrollTop >= headerHeight
+      const isExplanationAboveTopScroll = isHeaderAboveTopScroll &&
         event.target.scrollTop >= headerHeight + explanationHeight
-      if (isExplanationAboveTopScroll !== isFixedExplanationShown) {
-        this.setState({isFixedExplanationShown: !isFixedExplanationShown})
+      const display = isExplanationAboveTopScroll ? 'shown' :
+        isHeaderAboveTopScroll ? 'hidden' : false
+      if (display !== fixedExplanationDisplay) {
+        this.setState({fixedExplanationDisplay: display})
       }
     }
   }
@@ -568,10 +600,16 @@ class ProjectDashboardPageBase extends React.Component {
   scrollToUnread = () => {
     const {advices} = this.props.project
     const unreadAdvice = advices.find(advice => advice.status === 'ADVICE_RECOMMENDED')
-    if (!unreadAdvice || !this.cards || !this.cards[unreadAdvice.adviceId] || !this.pageDom) {
+    if (unreadAdvice) {
+      this.scrollToAdvice(unreadAdvice.adviceId)
+    }
+  }
+
+  scrollToAdvice(adviceId) {
+    if (!this.cards  || !this.cards[adviceId] || !this.pageDom) {
       return
     }
-    const adviceRect = this.cards[unreadAdvice.adviceId].getBoundingClientRect()
+    const adviceRect = this.cards[adviceId].getBoundingClientRect()
     this.pageDom.scrollDelta(
       adviceRect.top - NAVIGATION_BAR_HEIGHT - FIXED_EXPLANATION_BAR_HEIGHT - 20)
   }
@@ -579,6 +617,10 @@ class ProjectDashboardPageBase extends React.Component {
   renderDiagnostic(style) {
     const {profile, project} = this.props
     const {isMobileVersion} = this.context
+    const containerStyle = {
+      minWidth: isMobileVersion ? '100%' : 680,
+      ...style,
+    }
     const bobScoreStyle = {
       alignItems: 'center',
       backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -588,52 +630,61 @@ class ProjectDashboardPageBase extends React.Component {
       flexDirection: 'column',
       fontSize: 16,
       fontWeight: 'bold',
-      margin: 10,
+      margin: '20px auto',
       padding: 20,
       width: 300,
     }
+    const onClose = () => this.setState({isBobScoreShown: false})
     const {components, percent} = computeBobScore(profile, project)
-    return <div style={style}>
-      <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column': 'row'}}>
-        <div style={bobScoreStyle}>
-          <div>Bob Score</div>
-          <Gauge percent={percent} style={{margin: 10}} />
-          <div style={{fontSize: 17}}>
-            <GrowingNumber number={Math.round(percent)} isSteady={true} />%
-            <span style={{fontSize: 12}}> de favorabilité</span>
-          </div>
+    return <div style={containerStyle}>
+      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onClose} />
+      <div style={bobScoreStyle}>
+        <div>Bob Score</div>
+        <Gauge percent={percent} style={{margin: 10}} />
+        <div style={{fontSize: 17}}>
+          <GrowingNumber number={Math.round(percent)} isSteady={true} />%
+          <span style={{fontSize: 12}}> de favorabilité</span>
+        </div>
+        <div
+            className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
+            style={{fontSize: 13, fontWeight: 'normal'}}>
+          <span
+              style={{cursor: 'pointer', textDecoration: 'underline'}}
+              onClick={this.toggleScoreTooltip}>
+            Que veut dire ce score&nbsp;?
+          </span>
           <div
-              className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
-              style={{fontSize: 13, fontWeight: 'normal'}}>
-            <span
-                style={{cursor: 'pointer', textDecoration: 'underline'}}
-                onClick={this.toggleScoreTooltip}>
-              Que veut dire ce score&nbsp;?
-            </span>
-            <div
-                className="tooltiptext"
-                style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
-              <p>
-                Ce score représente notre avis sur la façon dont les facteurs
-                liés au marché et à votre recherche affectent vos chances de
-                retrouver un emploi. Par exemple, un score proche de 100% indique
-                que tous les feux sont au vert&nbsp;!
-              </p>
+              className="tooltiptext"
+              style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
+            <p>
+              Ce score représente notre avis sur la façon dont les facteurs
+              liés au marché et à votre recherche affectent vos chances de
+              retrouver un emploi. Par exemple, un score proche de 100% indique
+              que tous les feux sont au vert&nbsp;!
+            </p>
 
-              <p>
-                En fonction de vos caractéristiques personnelles vos chances
-                individuelles peuvent varier, mais ce score nous donne un point de
-                départ pour vous aider.
-              </p>
-            </div>
+            <p>
+              En fonction de vos caractéristiques personnelles vos chances
+              individuelles peuvent varier, mais ce score nous donne un point de
+              départ pour vous aider.
+            </p>
           </div>
         </div>
+      </div>
+
+      <div style={{backgroundColor: '#fff', color: Colors.DARK_TWO, padding: 10}}>
         {this.renderDiagnosticComponents(
           components.filter(({category, score}) => Math.round(score) && category === 'market'),
           maybeS => `Facteur${maybeS} lié${maybeS} au marché`)}
         {this.renderDiagnosticComponents(
           components.filter(({category, score}) => Math.round(score) && category === 'user'),
           maybeS => `Information${maybeS} sur votre profil`)}
+
+        <div style={{paddingBottom: 30, textAlign: 'center'}}>
+          <Button onClick={onClose}>
+            Voir les recommandations
+          </Button>
+        </div>
       </div>
     </div>
   }
@@ -681,7 +732,8 @@ class ProjectDashboardPageBase extends React.Component {
   }
 
   renderHeader() {
-    const {profile, project} = this.props
+    const {isMobileVersion} = this.context
+    const {featuresEnabled, profile, project} = this.props
     const style = {
       alignItems: 'center',
       backgroundColor: Colors.CHARCOAL_GREY,
@@ -695,6 +747,20 @@ class ProjectDashboardPageBase extends React.Component {
       textAlign: 'center',
       zIndex: 0,
     }
+    const bobScoreButtonStyle = {
+      bottom: -35,
+      position: 'absolute',
+      right: isMobileVersion ? 'calc(50% - 35px)' : 0,
+      width: 70,
+    }
+    const modifyButtonStyle = {
+      backgroundColor: 'transparent',
+      border: 'solid 2px rgba(255, 255, 255, .4)',
+      borderRadius: 2,
+      position: 'absolute',
+      right: 20,
+      top: 20,
+    }
     const {what, experience, where} = createProjectTitleComponents(project, profile.gender)
     return <header style={style}>
       <JobGroupCoverImage
@@ -704,20 +770,33 @@ class ProjectDashboardPageBase extends React.Component {
             left: Colors.CHARCOAL_GREY,
             middle: Colors.CHARCOAL_GREY,
             right: 'rgba(56, 63, 81, 0.7)'}} />
-
-      <div style={{fontSize: 33, fontWeight: 'bold'}}>
-        Notre diagnostic
-      </div>
       <div style={{fontSize: 23, fontStyle: 'italic'}}>
         <strong>{what} </strong>{experience}<strong> {where}</strong>
       </div>
 
-      {this.renderDiagnostic({marginTop: 15})}
+      {featuresEnabled.alpha ? <Button
+          type="navigationOnImage" isNarrow={true} style={modifyButtonStyle}
+          onClick={() => this.setState({isModifyModalIsShown: true})}>
+        Modifier mon projet
+      </Button> : null}
+
+      <div style={{bottom: 0, left: 0, position: 'absolute', right: 0}}>
+        <div style={{margin: 'auto', maxWidth: 960, position: 'relative', textAlign: 'center'}}>
+          <BobScoreButton
+              style={bobScoreButtonStyle}
+              onClick={() => this.setState({isBobScoreShown: true})} />
+        </div>
+      </div>
     </header>
   }
 
   renderFixedExplanation() {
-    const {isFixedExplanationShown} = this.state
+    const {fixedExplanationDisplay} = this.state
+    if (!fixedExplanationDisplay) {
+      // NOTE: We remove it from the DOM so that users can click on buttons
+      // underneath when it is completly gone.
+      return null
+    }
     const advices = this.props.project.advices || []
     const numUnreadAdvices = advices.filter(a => a.status === 'ADVICE_RECOMMENDED').length
     const style = {
@@ -731,7 +810,7 @@ class ProjectDashboardPageBase extends React.Component {
       height: FIXED_EXPLANATION_BAR_HEIGHT,
       justifyContent: 'center',
       left: 0,
-      opacity: (isFixedExplanationShown && numUnreadAdvices) ? 1 : 0,
+      opacity: (fixedExplanationDisplay === 'shown' && numUnreadAdvices) ? 1 : 0,
       overflow: 'hidden',
       position: 'fixed',
       right: 14,
@@ -871,14 +950,43 @@ class ProjectDashboardPageBase extends React.Component {
       </Modal>
       <Button
           type="back" onClick={() => this.setState({isAdviceUselessFeedbackModalShown: true})}>
-        Auncun conseil ne me convient
+        Aucun conseil ne me convient
       </Button>
     </div>
   }
 
+  renderModifyModal() {
+    const {dispatch, project} = this.props
+    const noticeStyle = {
+      fontSize: 15,
+      fontStyle: 'italic',
+      lineHeight: 1.33,
+      margin: '35px 0 40px',
+      maxWidth: 400,
+    }
+    const onClose = () => this.setState({isModifyModalIsShown: false})
+    const onModify = () => dispatch(modifyProject(project))
+    return <Modal
+        isShown={this.state.isModifyModalIsShown}
+        style={{padding: '0 50px 40px', textAlign: 'center'}}
+        title="Modifier mes informations"
+        onClose={onClose}>
+      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onModify} />
+      <div style={noticeStyle}>
+        En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.
+      </div>
+      <Button type="back" style={{marginRight: 25}} onClick={onClose}>
+        Annuler
+      </Button>
+      <Button type="validation" onClick={onModify}>
+        Continuer
+      </Button>
+    </Modal>
+  }
+
   render() {
     const {isSumUpProfileModalShown, onCloseSumUpProfileModal, profile, project} = this.props
-    const {isTheEndModalShown} = this.state
+    const {isBobScoreShown, isTheEndModalShown} = this.state
     const advices = project.advices || []
     const isAdviceUseful = advice => advice.status === 'ADVICE_ACCEPTED' || advice.score >= 5
     return <PageWithNavigationBar
@@ -887,10 +995,22 @@ class ProjectDashboardPageBase extends React.Component {
         }} isChatButtonShown={true} onScroll={this.handleScroll}>
       <SumUpProfileModal
           isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
-          onClose={onCloseSumUpProfileModal} />
+          onClose={() => {
+            onCloseSumUpProfileModal()
+            this.setState({isBobScoreShown: true})
+          }} />
       <TheEndModal
           isShown={isTheEndModalShown}
           onClose={() => this.setState({isTheEndModalShown: false})} />
+      <Modal
+          style={{backgroundColor: Colors.CHARCOAL_GREY, color: '#fff'}}
+          titleStyle={{color: '#fff'}}
+          title="Notre diagnostic"
+          isShown={isBobScoreShown}
+          onClose={() => this.setState({isBobScoreShown: false})}>
+        {this.renderDiagnostic()}
+      </Modal>
+      {this.renderModifyModal()}
       <ReactHeight onHeightReady={headerHeight => this.setState({headerHeight})}>
         {this.renderHeader()}
       </ReactHeight>
@@ -901,8 +1021,10 @@ class ProjectDashboardPageBase extends React.Component {
     </PageWithNavigationBar>
   }
 }
-const ProjectDashboardPage = connect(({user}) => ({profile: user.profile}))(
-  ProjectDashboardPageBase)
+const ProjectDashboardPage = connect(({user}) => ({
+  featuresEnabled: user.featuresEnabled || {},
+  profile: user.profile,
+}))(ProjectDashboardPageBase)
 
 
 class Gauge extends React.Component {
@@ -1032,6 +1154,54 @@ class ArrowsUpOrDown extends React.Component {
     return <div {...extraProps} style={containerStyle}>
       {new Array(Math.abs(number)).fill(null).map((unused, index) => <Icon
         key={index} name={number > 0 ? 'arrow-up' : 'arrow-down'} />)}
+    </div>
+  }
+}
+
+
+class BobScoreButton extends React.Component {
+  static propTypes = {
+    style: PropTypes.shape({
+      width: PropTypes.number.isRequired,
+    }).isRequired,
+  }
+
+  state = {
+    isHovered: false,
+  }
+
+  render() {
+    const {style, ...extraProps} = this.props
+    const {isHovered} = this.state
+    const containerStyle = {
+      alignItems: 'center',
+      backgroundColor: Colors.DARK_TWO,
+      borderRadius: 50,
+      boxShadow: '0 3px 5px 0 rgba(0, 0, 0, 0.3)',
+      cursor: 'pointer',
+      display: 'flex',
+      height: style.width,
+      justifyContent: 'center',
+      position: 'relative',
+      transform: `scale(${isHovered ? '1.14' : '1'})`,
+      ...style,
+    }
+    return <div
+        style={containerStyle} className="tooltip"
+        {...extraProps}
+        onMouseEnter={() => this.setState({isHovered: true})}
+        onMouseLeave={() => this.setState({isHovered: false})}>
+      <div style={{position: 'relative'}}>
+        <img src={bobScoreGrayIcon} style={{position: 'absolute'}} />
+        <img
+            src={bobScoreIcon}
+            style={{opacity: isHovered ? 1 : 0, position: 'relative', ...SmoothTransitions}} />
+      </div>
+      <div
+          className="tooltiptext tooltip-bottom"
+          style={{fontSize: 13, padding: '10px 13px', width: 180}}>
+        Revoir mon diagnostic
+      </div>
     </div>
   }
 }

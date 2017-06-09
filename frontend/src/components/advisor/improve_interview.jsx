@@ -3,132 +3,94 @@ import PropTypes from 'prop-types'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {Colors, GrowingNumber, PaddedOnMobile, Styles} from 'components/theme'
+import {AppearingList, Colors, Markdown, PaddedOnMobile} from 'components/theme'
 
-import {PersonalizationBoxes} from './base'
-import {WorkBox} from './improve_success_rate'
 
-class FullAdviceCard extends React.Component {
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
-  renderNumber(number, style) {
-    const containerStyle = {
-      alignItems: 'center',
-      border: 'solid 12px',
-      borderRadius: 100,
-      color: Colors.SQUASH,
-      display: 'flex',
-      fontSize: 70,
-      fontWeight: 'bold',
-      height: 120,
-      justifyContent: 'center',
-      width: 120,
-      ...Styles.CENTER_FONT_VERTICALLY,
-      ...style,
-    }
-    return <div style={containerStyle}>
-      <GrowingNumber number={number} />
-    </div>
-  }
-
-  render() {
-    const {isMobileVersion} = this.context
-    const textStyle = {
-      flex: 1,
-      fontSize: 20,
-      lineHeight: 1.4,
-      marginLeft: 50,
-    }
-    return <div style={{alignItems: 'center', display: 'flex'}}>
-      {isMobileVersion ? null : this.renderNumber(5)}
-      <div style={textStyle}>
-        En général il suffit de <strong>5 entretiens</strong> pour retrouver
-        un emploi dans votre métier.
-      </div>
-    </div>
-  }
+function getSimpleSkills(improveSuccessRateData, numSkills) {
+  const skillsSoup = improveSuccessRateData && improveSuccessRateData.requirements &&
+    improveSuccessRateData.requirements.skillsShortText || ''
+  return skillsSoup.split('\n').filter(skill => skill).slice(0, numSkills).
+    map(skill => skill.replace(/^\* /, '').replace(/, .*$/, '')).
+    map(skill => skill.toLocaleLowerCase())
 }
 
 
-const personalizations = [
-  {
-    filters: ['YOUNG_AGE'],
-    tip: `Quand on est jeune ce qu'il faut mettre en avant c'est son potentiel
-      et sa capacité à apprendre vite`,
-  },
-  {
-    filters: ['ATYPIC_PROFILE'],
-    tip: `Mettez-vous à la place des recruteurs et demandez-vous ce qui dans
-      votre profil pourrait les convaincre`,
-  },
-  {
-    filters: ['OLD_AGE'],
-    tip: `Essayez de rassurer les recruteurs sur vos prétentions salariales car
-      c'est souvent ce qui bloquent`,
-  },
-  {
-    filters: ['INTERVIEW'],
-    tip: 'Entraînez-vous le plus possible pour essayer de dédramatiser les entretiens',
-  },
-  {
-    filters: ['NO_OFFER_ANSWERS'],
-    tip: `Après l'entretien, envoyez toujours un mail pour remercier et
-      profitez-en pour demander les prochaines étapes du recrutement`,
-  },
-  {
-    filters: ['NEW_JOB', 'FIRST_JOB_SEARCH', 'YOUNG_AGE'],
-    tip: 'Montrez que vous êtes flexible et enthousiaste et que vous apprenez vite',
-  },
-]
+class FullAdviceCard extends React.Component {
+  static propTypes = {
+    advice: PropTypes.object.isRequired,
+  }
+
+  render() {
+    const {improveSuccessRateData} = this.props.advice
+    const skills = getSimpleSkills(improveSuccessRateData, 3)
+    if (!skills.length) {
+      return <div style={{fontSize: 30}}>
+        En expliquant bien pourquoi <strong>votre profil est adapté pour
+        le poste</strong> vous augmenterez vos chances en entretien.
+      </div>
+    }
+    return <div style={{fontSize: 30}}>
+      En mettant en avant votre <strong>{skills.join(', ')}…</strong> vous
+      commencez à montrer votre motivation.
+    </div>
+  }
+}
 
 
 class AdvicePageContent extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
-    project: PropTypes.object.isRequired,
   }
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
+
+  renderSection(id, title, content, style) {
+    const items = ('\n' + content).split('\n* ').slice(1)
+    const itemStyle = {
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      display: 'flex',
+      fontSize: 13,
+      minHeight: 50,
+      padding: '10px 20px',
+    }
+    return <section style={style}>
+      <PaddedOnMobile style={{marginBottom: 15}}>{title}</PaddedOnMobile>
+      <AppearingList>
+        {items.map((advice, index) => <div
+            key={`advice-id-${index}`} style={{marginTop: index ? -1 : 0, ...itemStyle}}>
+          <Markdown content={advice} />
+        </div>)}
+      </AppearingList>
+    </section>
   }
 
   render() {
-    const {advice, profile, project} = this.props
-    const {isMobileVersion} = this.context
+    const {advice, profile} = this.props
     const {improveSuccessRateData} = advice
     const isFeminine = profile.gender === 'FEMININE'
+    const personalize =
+      "* Montrez que vous connaissez l'entreprise et ses enjeux\n" +
+      '* Expliquez en quoi le poste est important\n' +
+      '* Expliquez pourquoi votre profil est adapté pour le poste\n' +
+      `* Montrez que l'expérience que vous avez acquise de précédent(s)
+      emploi(s) ou stage(s) sera un atout pour le poste`
+    const bonusSkills =
+      improveSuccessRateData && improveSuccessRateData.requirements &&
+      improveSuccessRateData.requirements.bonusSkillsShortText
     const skills =
       improveSuccessRateData && improveSuccessRateData.requirements &&
       improveSuccessRateData.requirements.skillsShortText ||
       (`* Vous êtes organisé${isFeminine ? 'e' : ''} et ` +
-      `travailleu${isFeminine ? 'r' : 'se'}\n` +
+      `travailleu${isFeminine ? 'se' : 'r'}\n` +
       '* Vous savez vous adapter et trouver des solutions\n' +
-      '* Gérez votre stress et gardez le sourire\n')
-    const bonusSkills =
-      improveSuccessRateData && improveSuccessRateData.requirements &&
-      improveSuccessRateData.requirements.bonusSkillsShortText ||
-      ("* Renseignez-vous sur l'entreprise avant l'entretien\n" +
-      "* Expliquez ce qui vous motive dans l'entreprise\n" +
-      "* Envoyez un email après l'entretien pour redire votre motivation")
+      '* Gérez votre stress et gardez le sourire') + (bonusSkills ? ('\n' + bonusSkills) : '')
     return <div>
-      <PaddedOnMobile>Pour votre métier :</PaddedOnMobile>
-      <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
-        <WorkBox
-            featureId="improve-interview-qualities" featureNameSingular="qualité"
-            featureName="qualités" subTitle="à montrer lors de vos entretiens"
-            features={skills} style={{flex: 1}} />
-        <div style={{height: 30, width: 30}} />
-        <WorkBox
-            featureId="improve-interview-means" featureNameSingular="moyen"
-            featureName="moyens" subTitle="efficaces pour réussir vos entretiens"
-            features={bonusSkills} style={{flex: 1}} />
-      </div>
-
-      <PersonalizationBoxes
-          style={{marginTop: 30}} profile={profile} project={project}
-          personalizations={personalizations} />
+      {this.renderSection(
+        'personalize', 'Pour personnaliser votre candidature', personalize,
+        {marginBottom: 40})}
+      {this.renderSection(
+        'qualities', 'Qualités attendues par les recruteurs pour votre métier', skills)}
     </div>
   }
 }

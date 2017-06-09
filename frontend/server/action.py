@@ -1,5 +1,4 @@
 """Module to handle actions logic."""
-import datetime
 import itertools
 import logging
 import random
@@ -11,7 +10,6 @@ import unidecode
 
 from bob_emploi.frontend import companies
 from bob_emploi.frontend import now
-from bob_emploi.frontend import proto
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -20,9 +18,7 @@ from bob_emploi.frontend.api import user_pb2
 _ANY_COMPANY_REGEXP = re.compile('^(.*) une entreprise')
 
 
-def instantiate(
-        action, user_proto, project, template, activated_chantiers, database,
-        all_chantiers, for_email=False):
+def instantiate(action, user_proto, project, template, for_email=False):
     """Instantiate a newly created action from a template.
 
     Args:
@@ -30,9 +26,6 @@ def instantiate(
         user_proto: the whole user data.
         project: the whole project data.
         template: the action template to instantiate.
-        activated_chantiers: a set of chantier IDs that are active.
-        database: access to the Mongo DB.
-        all_chantiers: a dict of all chantiers.
         for_email: whether the action is to be sent in an email.
     Returns:
         the populated action for chaining.
@@ -59,26 +52,6 @@ def instantiate(
         action.link_label = template.email_link_label
         action.keyword = template.email_subject_keyword
 
-    action.goal = template.goal
-    action.short_goal = template.short_goal
-    action.sticky_action_incentive = template.sticky_action_incentive
-    sticky_action_steps = _sticky_action_steps(database)
-    action.steps.extend([
-        sticky_action_steps.get(step_id)
-        for step_id in template.step_ids
-        if sticky_action_steps.get(step_id)])
-    for i, step in enumerate(action.steps):
-        step.step_id = '%s-%x' % (action.action_id, i)
-        # Populate all string fields as templates.
-        for field_descriptor in step.DESCRIPTOR.fields:
-            if field_descriptor.type != field_descriptor.TYPE_STRING:
-                continue
-            field_name = field_descriptor.name
-            field = getattr(step, field_name)
-            if field:
-                setattr(step, field_name, populate_template(
-                    field, project.mobility.city, project.target_job))
-
     if (template.special_generator == action_pb2.LA_BONNE_BOITE and
             user_proto.features_enabled.lbb_integration == user_pb2.ACTIVE):
         _get_company_from_lbb(project, action.apply_to_company)
@@ -97,13 +70,6 @@ def instantiate(
                 logging.warning(
                     'LBB Action %s does not have a title that can be updated (user %s).',
                     action.action_id, user_proto.user_id)
-
-    for chantier_id in activated_chantiers & set(template.chantiers):
-        chantier = action.chantiers.add()
-        chantier.chantier_id = chantier_id
-        chantier.kind = all_chantiers[chantier_id].kind
-        chantier.title = all_chantiers[chantier_id].title
-        chantier.title_first_person = all_chantiers[chantier_id].title_first_person
 
     return action
 
@@ -140,35 +106,6 @@ def populate_template(template, city, job):
     return pattern.sub(lambda v: project_vars[v.group(0)], template)
 
 
-def stop(action, database):
-    """Mark an action as stopped and handle its cool down time."""
-    if action.HasField('stopped_at'):
-        return
-    action.stopped_at.FromDatetime(now.get())
-    if action.status == action_pb2.ACTION_SNOOZED:
-        action.end_of_cool_down.FromDatetime(now.get())
-        return
-    if action.status in (
-            action_pb2.ACTION_UNREAD, action_pb2.ACTION_CURRENT, action_pb2.ACTION_STUCK):
-        # This action was not completed, so we will show it later, but not for
-        # the next 2 days so that actions change every day.
-        action.end_of_cool_down.FromDatetime(now.get() + datetime.timedelta(days=2))
-        return
-    if action.status not in (action_pb2.ACTION_DONE, action_pb2.ACTION_STICKY_DONE):
-        return
-    action_template = templates(database).get(action.action_template_id)
-    if not action_template or action_template.cool_down_duration_days == 0:
-        return
-    action.end_of_cool_down.FromDatetime(
-        now.get() + datetime.timedelta(days=action_template.cool_down_duration_days))
-
-
-def clear_cache():
-    """Clear all caches for this module."""
-    _ACTION_TEMPLATES.clear()
-    _STICKY_ACTION_STEPS.clear()
-
-
 def _get_company_from_lbb(project, company):
     lbb_companies = companies.get_lbb_companies(project)
     apply_to_companies = set(
@@ -184,23 +121,3 @@ def _get_company_from_lbb(project, company):
         return False
     company.MergeFrom(companies.to_proto(lbb_company))
     return True
-
-
-# Cache (from MongoDB) of known sticky action steps.
-_STICKY_ACTION_STEPS = {}
-
-
-def _sticky_action_steps(database):
-    """Returns a dict of known sticky action steps keyed by ID."""
-    return proto.cache_mongo_collection(
-        database.sticky_action_steps.find, _STICKY_ACTION_STEPS, action_pb2.StickyActionStep)
-
-
-# Cache (from MongoDB) of known action templates.
-_ACTION_TEMPLATES = {}
-
-
-def templates(database):
-    """Returns a list of known action templates as protos."""
-    return proto.cache_mongo_collection(
-        database.action_templates.find, _ACTION_TEMPLATES, action_pb2.ActionTemplate)

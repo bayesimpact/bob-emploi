@@ -8,7 +8,6 @@ import {ActionStatus} from 'api/project'
 import {Modal, ModalHeader} from './modal'
 import {Routes} from 'components/url'
 import {Colors, Icon, Markdown, Button, Styles} from './theme'
-import {isActionStuck, stickyProgress} from 'store/action'
 import {readTip, openTipExternalLink} from 'store/actions'
 
 
@@ -17,7 +16,6 @@ const ACTION_SHAPE = PropTypes.shape({
   doneCaption: PropTypes.string,
   durationSeconds: PropTypes.number,
   extraContent: PropTypes.string,
-  goal: PropTypes.string,
   howTo: PropTypes.string,
   justification: PropTypes.string,
   shortDescription: PropTypes.string,
@@ -202,50 +200,6 @@ class ActionBase extends React.Component {
     return <div style={bulletStyle} />
   }
 
-  renderProgress() {
-    const {action} = this.props
-    if (!isActionStuck(action)) {
-      return null
-    }
-    const style = {
-      backgroundColor: Colors.MODAL_PROJECT_GREY,
-      borderRadius: 100,
-      height: 10,
-      margin: 15,
-      overflow: 'hidden',
-      position: 'relative',
-      // This is a CSS stunt to make the hidden overflow + border-radius
-      // effective on Mac + Chrome.
-      transform: 'scale(1)',
-      width: 100,
-    }
-    const progressStyle = {
-      ...Styles.PROGRESS_GRADIENT,
-      bottom: 0,
-      left: 0,
-      position: 'absolute',
-      top: 0,
-      width: 100 * stickyProgress(action),
-    }
-    return <div style={style}>
-      <div style={progressStyle} />
-    </div>
-  }
-
-  renderStarOrBullet() {
-    const {action} = this.props
-    if (!action.goal) {
-      return this.renderBullet()
-    }
-    const isStuck = isActionStuck(action)
-    const style = {
-      color: isStuck ? Colors.SUN_YELLOW : Colors.PINKISH_GREY,
-      fontSize: 20,
-      paddingRight: 12,
-    }
-    return <Icon name={isStuck ? 'star' : 'star-outline'} style={style} />
-  }
-
   render() {
     const {action, context, gender, onOpen, project} = this.props
     const isRead = action.status === 'ACTION_UNREAD'
@@ -286,14 +240,13 @@ class ActionBase extends React.Component {
     const contextText = context === 'project' ? project.title : ''
     return <div style={style}>
       <div style={contentStyle} onClick={onOpen}>
-        {this.renderStarOrBullet()}
+        {this.renderBullet()}
         <div style={titleStyle}>
           {title} {contextText ? <span style={contextStyle}>
             - {contextText}
           </span> : null}
         </div>
 
-        {this.renderProgress()}
         {this.renderRightButton()}
       </div>
     </div>

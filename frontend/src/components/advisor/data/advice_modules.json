@@ -1,79 +1,57 @@
 {
-  "application-flow": {
-    "callToAction": "Accédez à nos combinaisons d'applications",
-    "goal": "utiliser les bons outils pour postuler",
-    "title": "Adoptez les bons outils pour postuler plus vite",
+  "association-help": {
+    "callToAction": "Voir des exemples d'associations d'accompagnement",
+    "goal": "trouver une association pour vous accompagner",
+    "title": "Trouvez une association pour vous accompagner",
     "titleXStars": {
-      "1": "Découvrez de nouveaux outils pour postuler",
-      "2": "Vos outils pour postuler sont-il adaptés ?",
-      "3": "Utilisez les meilleurs outils pour postuler "
     }
   },
   "better-job-in-group": {
-    "callToAction": "Accédez aux métiers proches",
-    "goal": "trouver un métier proche",
+    "callToAction": "Voir des exemples de métiers proches",
+    "goal": "trouver les meilleurs métier proches",
     "title": "Regardez les métiers proches du votre",
     "titleXStars": {
+      "1": "N'oubliez pas de regarder les métiers proches",
+      "2": "Explorez les métiers proches du votre",
+      "3": "Explorez les métiers proches du votre"
     }
   },
   "events": {
-    "callToAction": "Accédez à nos outils pour trouver des événements",
-    "goal": "trouver et vous préparer à aller à des événements",
-    "title": "Allez à des événements",
+    "callToAction": "Trouver des exemples d'évènements professionnels",
+    "goal": "trouver et vous préparer à aller à des évènements",
+    "title": "Allez à des évènements",
     "titleXStars": {
-      "1": "Allez parfois à des événements professionnels",
-      "2": "C'était quand votre dernier salon professionnel ?",
-      "3": "Passez plus de temps dans les évènements d'emploi"
+      "1": "Explorez les évènements professionnels autour de vous",
+      "2": "Passez plus de temps dans les évènements professionnels",
+      "3": "Passez plus de temps dans les évènements professionnels"
     }
   },
   "find-a-jobboard": {
-    "callToAction": "Accédez à notre liste de portails d'offres spécialisés",
+    "callToAction": "Voir des exemples de portails d'offre en ligne",
     "goal": "trouver des offres qui vous correspondent",
-    "title": "Utilisez les bons sites d'offre en ligne",
+    "title": "Faites le tour des sites d'emploi intéressants pour vous",
     "titleXStars": {
-      "1": "N'oubliez pas les bons sites d'offre en ligne",
-      "2": "Avez-vous essayé les bons sites d'offre en ligne",
-      "3": "Explorez à fond les bons sites d'offre en ligne"
     }
   },
   "fresh-resume": {
-    "callToAction": "Accédez à notre outil sur les CVs",
+    "callToAction": "Voir des exemples de qualités à mettre en avant",
     "goal": "mettre en valeur votre profil",
-    "title": "Décrochez des entretiens",
+    "title": "Personnalisez vos candidatures pour avoir plus d'impact",
     "titleXStars": {
-      "1": "N'oubliez pas de revoir vos candidatures",
-      "2": "Etes-vous sûr d'avoir un CV au top ?",
-      "3": "Concentrez-vous sur la préparation de vos candidatures"
     }
   },
   "improve-interview": {
-    "callToAction": "Accédez à notre outil sur les entretiens",
+    "callToAction": "Voir des exemples de qualités à mettre en avant",
     "goal": "réussir vos entretiens",
-    "title": "Préparez mieux vos entretiens",
+    "title": "Assurez-vous de montrer votre motivation lors de vos entretiens",
     "titleXStars": {
-      "1": "Entraînez vous aux entretiens de temps en temps",
-      "2": "Etes-vous sûr de bien préparer vos entretiens ?",
-      "3": "Mettez plus l'accent sur la préparation de vos entretiens"
     }
   },
   "improve-resume": {
-    "callToAction": "Accédez à notre outil sur les CVs",
+    "callToAction": "Voir des exemples de qualités à mettre en avant",
     "goal": "obtenir plus d'entretiens",
-    "title": "Décrochez plus d'entretiens",
+    "title": "Personnalisez vos candidatures pour avoir plus d'impact",
     "titleXStars": {
-      "1": "N'oubliez pas de revoir vos candidatures",
-      "2": "Etes-vous sûr d'avoir un CV au top ?",
-      "3": "Concentrez-vous sur la préparation de vos candidatures"
-    }
-  },
-  "keywords-cv": {
-    "callToAction": "Accédez à nos mots-clés pour votre CV",
-    "goal": "utiliser les bons mots-clés dans votre CV",
-    "title": "Utilisez les bons mots-clés",
-    "titleXStars": {
-      "1": "Ne négligez pas les mots-clés dans votre CV",
-      "2": "Êtes-vous sûr d'utiliser les bons mots-clés dans votre dossier ?",
-      "3": "Différenciez-vous des autres avec les bons mots-clés"
     }
   },
   "life-balance": {
@@ -87,63 +65,74 @@
     }
   },
   "motivation-email": {
-    "callToAction": "Accédez à nos exemples de mail de motivation",
+    "callToAction": "Voir des exemples de mails de motivation",
     "goal": "travailler sur votre mail de motivation",
-    "title": "Soignez votre mail de motivation",
+    "title": "Attirez tout de suite l'œil du recruteur dans votre email de candidature",
     "titleXStars": {
-      "1": "N'oubliez pas de soigner vos emails de motivation",
-      "2": "Pourquoi ne pas retravailler vos emails de motivation ?",
-      "3": "Concentrez-vous surtout sur vos emails de motivations"
+      "1": "Travaillez vos emails de motivation pour attirer l'œil du recruteur",
+      "2": "Travaillez vos emails de motivation pour attirer l'œil du recruteur",
+      "3": "Concentrez-vous sur vos emails de motivation pour attirer l'œil du recruteur"
     }
   },
   "network-application": {
-    "callToAction": "Accédez à notre outil sur le réseau",
+    "callToAction": "Voir des exemples de mails pour contacter votre réseau",
     "goal": "améliorer votre réseau",
     "title": "Construisez et développez votre réseau",
     "titleXStars": {
-      "1": "N'oubliez pas de cultiver votre réseau",
-      "2": "N'est-ce pas le bon moment pour développer votre réseau ?",
-      "3": "Développez votre réseau en priorité"
+      "1": "Pensez à développer votre réseau",
+      "2": "Construisez d'avantage votre réseau",
+      "3": "Construisez votre réseau en priorité"
     }
   },
   "network-application-good": {
-    "callToAction": "Accédez à notre outil sur le réseau",
+    "callToAction": "Voir des exemples de mails pour contacter votre réseau",
     "goal": "utiliser votre réseau de manière efficace",
     "title": "Utilisez à fond votre réseau",
     "titleXStars": {
       "1": "N'oubliez pas de cultiver votre réseau",
-      "2": "N'est-ce pas le bon moment pour développer votre réseau ?",
-      "3": "Développez votre réseau en priorité"
+      "2": "Vous avez un bon réseau, utilisez-le !",
+      "3": "Vous avez un bon réseau, utilisez-le en priorité !"
     }
   },
   "network-application-medium": {
-    "callToAction": "Accédez à notre outil sur le réseau",
+    "callToAction": "Voir des exemples de mails pour contacter votre réseau",
     "goal": "améliorer votre réseau",
-    "title": "Développez votre réseau",
+    "title": "Utilisez votre réseau",
     "titleXStars": {
       "1": "N'oubliez pas de cultiver votre réseau",
-      "2": "N'est-ce pas le bon moment pour développer votre réseau ?",
-      "3": "Développez votre réseau en priorité"
+      "2": "Passez davantage par votre réseau",
+      "3": "Passez par votre réseau en priorité"
     }
   },
   "other-work-env": {
-    "callToAction": "Accédez à notre outil sur les structures et secteurs",
+    "callToAction": "Voir d'autres secteurs ou types d'organisations",
     "goal": "trouver d'autres secteurs",
-    "title": "Explorez de nouveaux horizons",
+    "title": "Postulez à d'autres types d'entreprises",
     "titleXStars": {
-      "1": "N'hésitez pas à postuler dans d'autres secteurs d'activité",
-      "2": "Avez-vous postulé dans d'autres secteurs d'activité ?",
-      "3": "Tournez-vous aussi vers d'autres secteurs d'activité"
     }
   },
   "spontaneous-application": {
-    "callToAction": "Accédez à notre outil sur les candidatures spontanées",
+    "callToAction": "Trouver des entreprises où postuler",
     "goal": "faire de bonnes candidatures spontanées",
     "title": "Pensez aux candidatures spontanées",
     "titleXStars": {
       "1": "Pensez aussi aux candidatures spontanées",
-      "2": "Pourquoi ne pas envoyer de candidatures spontanées ?",
+      "2": "Faites davantage de candidatures spontanées",
       "3": "Privilégiez les candidatures spontanées sur le reste"
+    }
+  },
+  "wow-baker": {
+    "callToAction": "Voir d'autres astuces pour vous démarquer",
+    "goal": "vous démarquer",
+    "title": "Présentez-vous au chef boulanger dès son arrivée tôt le matin",
+    "titleXStars": {
+    }
+  },
+  "wow-hairdresser": {
+    "callToAction": "Voir d'autres astuces pour vous démarquer",
+    "goal": "vous démarquer",
+    "title": "Assurez-vous de donner votre CV à la bonne personne quand vous postulez",
+    "titleXStars": {
     }
   }
 }

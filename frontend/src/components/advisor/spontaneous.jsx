@@ -3,81 +3,49 @@ import PropTypes from 'prop-types'
 import Radium from 'radium'
 
 import {genderizeJob} from 'store/job'
-import {lowerFirstLetter, ofCityPrefix} from 'store/french'
+import {lowerFirstLetter, ofCityPrefix, toTitleCase} from 'store/french'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
 import laBonneBoiteImage from 'images/labonneboite-picto.png'
-import {AppearingList, Colors, GrowingNumber, Icon, PaddedOnMobile, PieChart,
-  SmoothTransitions, Styles} from 'components/theme'
+import {AppearingList, Colors, Icon, PaddedOnMobile, SmoothTransitions,
+  Styles} from 'components/theme'
 
-import {PersonalizationBoxes, ToolCard} from './base'
+import {ToolCard} from './base'
 
 
 class FullAdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
-  }
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
+    project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {isMobileVersion} = this.context
-    const {companies} = this.props.advice.spontaneousApplicationData || {}
-    if (companies) {
+    const {advice, project} = this.props
+    const {companies} = advice.spontaneousApplicationData || {}
+    if (companies && companies.length) {
+      const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
+      const companiesMap = {}
+      const companyNames = companies.map(({name}) => toTitleCase(name)).filter(name => {
+        if (companiesMap[name]) {
+          return false
+        }
+        companiesMap[name] = true
+        return true
+      })
       return <div style={{fontSize: 30}}>
-        Postulez dès maintenant chez {companies.map(({name}) => name).filter(n => n).join(', ')}…
+        Des entreprises près {prefix}<strong>{cityName}</strong> comme
+        <strong>
+          {' '}{companyNames.slice(0, -1).join(', ')}
+          {companyNames.length > 1 ? ' ou ' : null}{companyNames.slice(-1)[0]}
+        </strong> ont un fort potentiel d'embauche.
       </div>
     }
-    const strongStyle = {
-      color: Colors.SKY_BLUE,
-      fontSize: 40,
-    }
-    return <div style={{alignItems: 'center', display: 'flex'}}>
-      <div style={{flex: 1, lineHeight: '21px'}}>
-        <strong style={strongStyle}><GrowingNumber number={66} isSteady={true} />%</strong> des
-        employeurs recrutent via des <strong>candidatures spontanées</strong>.
-      </div>
-      {isMobileVersion ? null : <PieChart
-          style={{color: Colors.SKY_BLUE, marginLeft: 50}} percentage={66}
-          backgroundColor={Colors.MODAL_PROJECT_GREY}>
-        <GrowingNumber number={66} />%
-      </PieChart>}
+    return <div style={{fontSize: 30}}>
+      Connaissez-vous <strong>La bonne boîte</strong>&nbsp;? Un site spécialisé pour
+      trouver des entreprises où postuler près de chez vous.
     </div>
   }
 }
-
-
-const personalizations = [
-  {
-    filters: ['YOUNG_AGE'],
-    tip: 'Montrez votre côté débrouillard et votre dynamisme',
-  },
-  {
-    filters: ['OLD_AGE'],
-    tip: profile => {
-      const isFeminine = profile.gender === 'FEMININE'
-      return `Montrez que vous êtes stable, expérimenté${isFeminine ? 'e' : ''}(e) et
-        opérationnel${isFeminine ? 'le' : ''}`
-    },
-  },
-  {
-    filters: ['ATYPIC_PROFILE'],
-    tip: `En allant au devant des recruteurs vous pouvez faire valoir vos forces
-      et même celles qui ne rentrent pas exactement dans la description de poste
-      classique`,
-  },
-  {
-    filters: ['TIME_MANAGEMENT'],
-    tip: `Avec les candidatures spontanées c'est vous qui donnez le tempo et vous
-      ne passez pas des heures à chercher les offres postées`,
-  },
-  {
-    filters: ['MOTIVATION'],
-    tip: `Gardez en tête que l'objectif des candidatures spontanées est d'obtenir
-      un premier contact pas décrocher un boulot directement`,
-  },
-]
 
 
 class AdvicePageContent extends React.Component {
@@ -105,6 +73,9 @@ class AdvicePageContent extends React.Component {
         {companies.map((company, index) => <CompanyLink
             key={`company-${index}`} style={{marginTop: index ? -1 : 0}} {...company} />)}
       </AppearingList>
+      <PaddedOnMobile style={{color: Colors.COOL_GREY, fontStyle: 'italic', marginTop: 15}}>
+        Source&nbsp;: La Bonne Boîte / Pôle emploi
+      </PaddedOnMobile>
     </div>
   }
 
@@ -133,10 +104,6 @@ class AdvicePageContent extends React.Component {
           </div>
         </PaddedOnMobile>
       </div>
-
-      <PersonalizationBoxes
-          {...this.props} style={{marginTop: 30}}
-          personalizations={personalizations} />
     </div>
   }
 }
@@ -164,20 +131,18 @@ class CompanyLinkBase extends React.Component {
     }
     const titleStyle = {
       color: Colors.COOL_GREY,
-      fontWeight: 500,
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const starStyle = starIndex => ({
       color: starIndex < hiringPotential - 1 ? Colors.GREENISH_TEAL : Colors.PINKISH_GREY,
+      fontSize: 20,
     })
     return <span style={{alignItems: 'center', display: 'flex'}}>
       <span style={titleStyle}>
         Potentiel d'embauche&nbsp;:
       </span>
-      <span style={{fontSize: 20}}>
-        {new Array(4).fill(null).map((unused, index) =>
-          <Icon name="star" style={starStyle(index)} key={`star-${index}`} />)}
-      </span>
+      {new Array(4).fill(null).map((unused, index) =>
+        <Icon name="star" style={starStyle(index)} key={`star-${index}`} />)}
     </span>
   }
 
@@ -197,14 +162,20 @@ class CompanyLinkBase extends React.Component {
       ...SmoothTransitions,
       ...style,
     }
+    const chevronStyle = {
+      fontSize: 25,
+      lineHeight: 1,
+      opacity: siret ? 1 : 0,
+      paddingRight: 10,
+    }
     return <div style={containerStyle} onClick={siret ? this.open : null}>
-      <strong style={Styles.CENTER_FONT_VERTICALLY}>{name}</strong>
+      <strong style={Styles.CENTER_FONT_VERTICALLY}>{toTitleCase(name)}</strong>
       {cityName ? <span style={{paddingLeft: '.3em', ...Styles.CENTER_FONT_VERTICALLY}}>
-        - {cityName}
+        - {toTitleCase(cityName)}
       </span> : null}
       <span style={{flex: 1}} />
       {this.renderStars()}
-      <Icon name="chevron-right" style={{fontSize: 25, opacity: siret ? 1 : 0, paddingRight: 10}} />
+      <Icon name="chevron-right" style={chevronStyle} />
     </div>
   }
 }

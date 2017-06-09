@@ -4,57 +4,38 @@ import {connect} from 'react-redux'
 import Radium from 'radium'
 
 import {getJobBoards} from 'store/actions'
+import {lowerFirstLetter, ofCityPrefix} from 'store/french'
 
-import {CircularProgress} from 'components/progress'
-import {AppearingList, Colors, GrowingNumber, Icon, PaddedOnMobile, PieChart,
-  Styles} from 'components/theme'
+import {AppearingList, CircularProgress, Colors, GrowingNumber, Icon,
+  PaddedOnMobile, Styles} from 'components/theme'
 
 
 class FullAdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
-  }
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
+    project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {isMobileVersion} = this.context
-    const strongStyle = {
-      color: Colors.SKY_BLUE,
-      fontSize: 40,
-    }
-    const {jobBoardTitle} = this.props.advice.jobBoardsData || {}
-    return <div style={{display: 'flex', fontSize: 13}}>
-      <div style={{alignItems: 'center', flex: 1, fontSize: 30, lineHeight: '1.8em'}}>
-        <div>
-          Connaissez-vous {jobBoardTitle || 'Régions Jobs'} ?
-        </div>
-        <div>
-          Plus de <strong style={strongStyle}>
-            <GrowingNumber number={1500} isSteady={true} />
-          </strong> Job boards existent en France
-        </div>
-      </div>
-      {isMobileVersion ? null : <div style={{textAlign: 'center', width: 150}}>
-        <PieChart
-            percentage={80} style={{color: Colors.SKY_BLUE, margin: 'auto'}}
-            backgroundColor={Colors.MODAL_PROJECT_GREY}>
-          <GrowingNumber number={80} />%
-        </PieChart>
-        <div style={{color: Colors.DARK_TWO, marginTop: 15}}>
-          des chercheurs consultent des annonces
-        </div>
-      </div>}
-      {isMobileVersion ? null : <div style={{textAlign: 'center', width: 150}}>
-        <PieChart
-            percentage={40} style={{color: Colors.SKY_BLUE, margin: 'auto'}}
-            backgroundColor={Colors.MODAL_PROJECT_GREY}>
-          <GrowingNumber number={40} />%
-        </PieChart>
-        <div style={{color: Colors.DARK_TWO, marginTop: 15}}>
-          y répondent vraiment
-        </div>
+    const {advice, project} = this.props
+    const {isSpecificToJobGroup, isSpecificToRegion, jobBoardTitle} = advice.jobBoardsData || {}
+    const {prefix, cityName} = ofCityPrefix(project.mobility.city.name)
+
+    return <div style={{fontSize: 30}}>
+      {jobBoardTitle ? <div>
+        Connaissez-vous <strong>{jobBoardTitle}</strong>&nbsp;?
+        {(isSpecificToJobGroup || isSpecificToRegion) ? <span>
+          {' '}Un portail d'offres spécialisé
+          {isSpecificToJobGroup ? <span>
+            {' '}en <strong>{lowerFirstLetter(project.targetJob.jobGroup.name)}</strong>
+          </span> : null}
+          {isSpecificToRegion ? <span>
+            {' '}dans la région {prefix}<strong>{cityName}</strong>
+          </span> : null}.
+        </span> : null}
+      </div> : <div>
+        Et si <strong>la</strong> bonne offre d'emploi se cachait sur un site
+        que vous ne connaissez pas encore&nbsp;?
       </div>}
     </div>
   }
@@ -79,7 +60,8 @@ class AdvicePageContentBase extends React.Component {
     const {jobBoards} = this.props
     return <AppearingList style={style}>
       {jobBoards.map(({filters, link, title}, index) => <JobBoardLink
-          key={`job-board-${index}`} href={link} filters={filters}>
+          key={`job-board-${index}`} href={link} filters={filters}
+          style={{marginTop: index ? -1 : 0}}>
         {title}
       </JobBoardLink>)}
     </AppearingList>
@@ -92,15 +74,19 @@ class AdvicePageContentBase extends React.Component {
     }
     const numSpecializedJobBoards =
       jobBoards.filter(({filters}) => filters && filters.length).length
+    const hasOnlySpecialized = numSpecializedJobBoards === jobBoards.length
     const maybeS = count => count > 1 ? 's' : ''
+    const specialized = ` spécialisé${maybeS(numSpecializedJobBoards)}`
     return <div>
       <PaddedOnMobile style={{fontSize: 21}}>
         Nous avons trouvé <GrowingNumber
             style={{fontWeight: 'bold'}} number={jobBoards.length} isSteady={true} />
-        {' '}site{maybeS(jobBoards.length)} pour vous
-        {numSpecializedJobBoards > 0 ? <span>dont <GrowingNumber
+        {' '}site{maybeS(jobBoards.length)}
+        {hasOnlySpecialized ? specialized : null} pour vous
+        {(numSpecializedJobBoards > 0 && !hasOnlySpecialized) ? <span>
+          dont <GrowingNumber
             style={{fontWeight: 'bold'}} number={numSpecializedJobBoards} isSteady={true} />
-          {' '}spécialisé{maybeS(numSpecializedJobBoards)}</span> : null}
+          {specialized}</span> : null}
       </PaddedOnMobile>
 
       {this.renderJobBoards({marginTop: 15})}
@@ -153,7 +139,7 @@ class JobBoardLinkBase extends React.Component {
     const {children, style} = this.props
     const containerStyle = {
       ':hover': {
-        border: `solid 1px ${Colors.COOL_GREY}`,
+        backgroundColor: Colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',

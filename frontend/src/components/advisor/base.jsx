@@ -2,132 +2,8 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
 
-import {filterPersonalizations} from 'store/personalizations'
-import {USER_PROFILE_SHAPE} from 'store/user'
-
-import userImage from 'images/user-picto.svg'
 import {FeatureLikeDislikeButtons} from 'components/like'
-import {Colors, Icon, PaddedOnMobile, SmoothTransitions} from 'components/theme'
-
-
-class PersonalizationBox extends React.Component {
-  static propTypes = {
-    children: PropTypes.node,
-    header: PropTypes.node,
-    style: PropTypes.object,
-  }
-
-  render() {
-    const {children, header, style} = this.props
-    const containerStyle = {
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      borderRadius: 4,
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: 13,
-      maxWidth: 300,
-      ...style,
-    }
-    const headerStyle = {
-      alignItems: 'center',
-      backgroundColor: Colors.SKY_BLUE,
-      borderRadius: '4px 4px 0 0',
-      color: '#fff',
-      display: 'flex',
-      fontStyle: 'italic',
-      fontWeight: 500,
-      padding: 15,
-      position: 'relative',
-    }
-    const contentStyle = {
-      backgroundColor: '#fff',
-      borderRadius: '0 0 4px 4px',
-      flex: 1,
-      lineHeight: 1.7,
-      padding: 20,
-    }
-    const notchContainerStyle = {
-      left: 15,
-      position: 'absolute',
-      top: '100%',
-      width: 29,
-    }
-    const notchStyle = {
-      borderLeft: 'solid 5px transparent',
-      borderRight: 'solid 5px transparent',
-      borderTop: `solid 5px ${Colors.SKY_BLUE}`,
-      margin: 'auto',
-      width: 1,
-    }
-    return <div style={containerStyle}>
-      <header style={headerStyle}>
-        <img src={userImage} style={{paddingRight: 15}} />
-        {header}
-        <div style={notchContainerStyle}>
-          <div style={notchStyle} />
-        </div>
-      </header>
-      <div style={contentStyle}>
-        {children}
-      </div>
-    </div>
-  }
-}
-
-
-class PersonalizationBoxes extends React.Component {
-  static propTypes = {
-    maxNumberBoxes: PropTypes.number,
-    personalizations: PropTypes.arrayOf(PropTypes.shape({
-      filters: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-      tip: PropTypes.oneOfType([PropTypes.node, PropTypes.func]).isRequired,
-    }).isRequired).isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
-    project: PropTypes.object.isRequired,
-    style: PropTypes.object,
-  }
-  static defaultProps = {
-    maxNumberBoxes: 3,
-  }
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
-  render() {
-    const {maxNumberBoxes, personalizations, profile, project, style} = this.props
-    const {isMobileVersion} = this.context
-    const personalizationCards = filterPersonalizations(personalizations, profile, project)
-    if (maxNumberBoxes) {
-      personalizationCards.splice(maxNumberBoxes)
-    }
-
-    if (!personalizationCards.length) {
-      return null
-    }
-
-    const cardsContainerStyle = {
-      alignItems: isMobileVersion ? 'center' : 'initial',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      flexWrap: isMobileVersion ? 'initial' : 'wrap',
-    }
-
-    const cardStyle = index => ({
-      marginBottom: 30,
-      marginRight: (isMobileVersion || index === personalizationCards.length -1) ? 'initial' : 25,
-    })
-
-    return <div style={style}>
-      <PaddedOnMobile>Pour vous&nbsp;:</PaddedOnMobile>
-      <div style={cardsContainerStyle}>
-        {personalizationCards.map(({tip, title}, index) => <PersonalizationBox
-            header={title} key={index} style={cardStyle(index)}>
-          {typeof(tip) === 'function' ? tip(profile, project) : tip}
-        </PersonalizationBox>)}
-      </div>
-    </div>
-  }
-}
+import {Colors, Icon, SmoothTransitions} from 'components/theme'
 
 
 class AdviceBox extends React.Component {
@@ -228,4 +104,4 @@ class ToolCardBase extends React.Component {
 const ToolCard = Radium(ToolCardBase)
 
 
-export {AdviceBox, PersonalizationBoxes, ToolCard}
+export {AdviceBox, ToolCard}

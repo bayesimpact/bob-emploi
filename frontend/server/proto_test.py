@@ -110,12 +110,13 @@ class DecoratorTestCase(unittest.TestCase):
 
 
 class CacheMongoTestCase(unittest.TestCase):
-    """Unit tests for the cache_mongo_collection function."""
+    """Unit tests for the MongoCachedCollection class."""
 
     def setUp(self):
         """Set up mock environment."""
         super(CacheMongoTestCase, self).setUp()
         self._db = mongomock.MongoClient().get_database('test')
+        self._collection = proto.MongoCachedCollection(job_pb2.JobGroup, 'basic')
 
     def test_basic(self):
         """Test basic usage."""
@@ -124,11 +125,9 @@ class CacheMongoTestCase(unittest.TestCase):
             {'_id': 'A124', 'romeId': 'A124', 'name': 'Job Group 2'},
         ])
 
-        cache = []
-        proto.cache_mongo_collection(self._db.basic.find, cache, job_pb2.JobGroup)
+        cache = [g for g in self._collection.get_collection(self._db)]
 
         self.assertEqual(['A123', 'A124'], [g.rome_id for g in cache])
-        self.assertEqual('A123', cache[0].rome_id)
         self.assertEqual('Job Group 2', cache[1].name)
 
         # Update the collection behind the scene.
@@ -136,14 +135,13 @@ class CacheMongoTestCase(unittest.TestCase):
 
         # The cache computed before the change should not have changed even if
         # we call the function again.
-        proto.cache_mongo_collection(self._db.basic.find, cache, job_pb2.JobGroup)
+        cache = [g for g in self._collection.get_collection(self._db)]
         self.assertEqual(['A123', 'A124'], [g.rome_id for g in cache])
 
-        # If the function is called with an empty cache it gets populated with
-        # the updated values.
-        cache2 = []
-        proto.cache_mongo_collection(self._db.basic.find, cache2, job_pb2.JobGroup)
-        self.assertEqual(['A124'], [g.rome_id for g in cache2])
+        self._collection.reset_cache()
+
+        cache = [g for g in self._collection.get_collection(self._db)]
+        self.assertEqual(['A124'], [g.rome_id for g in cache])
 
     def test_as_dict(self):
         """Test use with a dict cache."""
@@ -152,11 +150,10 @@ class CacheMongoTestCase(unittest.TestCase):
             {'_id': 'A124', 'romeId': 'A124', 'name': 'Job Group 2'},
         ])
 
-        cache = {}
-        proto.cache_mongo_collection(self._db.basic.find, cache, job_pb2.JobGroup)
+        cache = self._collection.get_collection(self._db)
 
-        self.assertEqual(set(['A123', 'A124']), set(cache))
-        self.assertEqual('Job Group 2', cache['A124'].name)
+        self.assertEqual(set(['A123', 'A124']), set(cache.keys()))
+        self.assertEqual('Job Group 2', cache.get('A124').name)
 
 
 class ParseFromMongoTestCase(unittest.TestCase):

@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import {AppearingList, Colors, GrowingNumber, PaddedOnMobile} from 'components/theme'
+import {lowerFirstLetter} from 'store/french'
 
-import {PersonalizationBoxes} from './base'
+import {AppearingList, Colors, GrowingNumber, PaddedOnMobile} from 'components/theme'
 
 
 function getSectorsAndStructures({otherWorkEnvAdviceData}) {
@@ -21,55 +21,24 @@ class FullAdviceCard extends React.Component {
 
   render() {
     const {sectors, structures} = getSectorsAndStructures(this.props.advice)
-    const areSectorsShown = (sectors || []).length > 1
-    const areStructuresShown = (structures || []).length > 1
-    const sectionStyle = {
-      alignItems: 'center',
-      textAlign: 'center',
-    }
-    const explanationStyle = {
-      flex: 1,
-      fontSize: 16,
-      lineHeight: '40px',
-      marginTop: 15,
-    }
-    const strongStyle = {
-      color: Colors.GREENISH_TEAL,
-      fontSize: 40,
-      fontWeight: 'bold',
-    }
-    return <section style={sectionStyle}>
-      <div style={explanationStyle}>
-        {areStructuresShown ? <span>
-          <GrowingNumber style={strongStyle} number={structures.length} /> types de structure
-        </span> : null}
-        {(areStructuresShown && areSectorsShown) ? ' et ' : null}
-        {areSectorsShown ? <span>
-          <GrowingNumber style={strongStyle} number={sectors.length} /> secteurs
-        </span> : null}
+    if ((structures || []).length > 1) {
+      return <div style={{fontSize: 30}}>
+        Avez-vous déja postulé en <strong>{lowerFirstLetter(structures[0])}</strong> ou
+        en <strong>{lowerFirstLetter(structures[1])}</strong>&nbsp;?
       </div>
-      proposent <strong>des emplois</strong> pour votre métier
-    </section>
+    }
+    if ((sectors || []).length > 1) {
+      return <div style={{fontSize: 30}}>
+        Avez-vous déja postulé dans le secteur <strong>{lowerFirstLetter(sectors[0])}</strong> ou
+        {' '}<strong>{lowerFirstLetter(sectors[1])}</strong>&nbsp;?
+      </div>
+    }
+    return <div style={{fontSize: 30}}>
+      Avez-vous déjà pensé à postuler dans un secteur différent&nbsp;? ou dans un
+      type de structure différent&nbsp;?
+    </div>
   }
 }
-
-
-const personalizations = [
-  {
-    filters: ['NO_OFFERS'],
-    tip: "En élargissant votre recherche vous trouverez plus d'offres",
-  },
-  {
-    filters: ['YOUNG_AGE'],
-    tip: profile => `Vous n'êtes pas encore
-      spécialisé${profile.gender === 'FEMININE' ? 'e' : ''} alors profitez-en et explorez`,
-  },
-  {
-    filters: ['OLD_AGE'],
-    tip: `Mettez en avant que vous pourrez transférer votre expérience et
-      partager les méthodes que vous avez apprises dans un autre secteur`,
-  },
-]
 
 
 class AdvicePageContent extends React.Component {
@@ -92,10 +61,6 @@ class AdvicePageContent extends React.Component {
         {(areSectorsShown && areStructuresShown) ? <div style={{height: 20, width: 35}} /> : null}
         <Section kind="types de structure" items={structures}  project={project} />
       </div>
-
-      <PersonalizationBoxes
-          {...this.props} style={{marginTop: 30}}
-          personalizations={personalizations} />
     </div>
   }
 }

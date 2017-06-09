@@ -13,6 +13,7 @@ import re
 
 from bob_emploi.frontend import companies
 from bob_emploi.frontend import proto
+from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
@@ -43,6 +44,38 @@ _WEEKS_PER_MONTH = 52 / 12
 # Maximum of the estimation scale for English skills, or office tools.
 _ESTIMATION_SCALE_MAX = 3
 
+_JOB_BOARDS = proto.MongoCachedCollection(jobboard_pb2.JobBoard, 'jobboards')
+
+_ASSOCIATIONS = proto.MongoCachedCollection(association_pb2.Association, 'associations')
+
+
+def compute_square_distance(city_a, city_b):
+    """Compute the approximative distance between two cities.
+
+        Since we only look at short distances, we can approximate that, for metropolitan france:
+
+        1° latitude = 111km
+        1° longitude = 73km
+        Caveat: this approximation will be bad for DOM close to the equator, recommending some
+        people to commute up to 2x further than in France.
+        TODO(guillaume): Improve approximation.
+    """
+    delta_y = (city_a.latitude - city_b.latitude) * 111
+    delta_x = (city_a.longitude - city_b.longitude) * 73
+    return delta_x * delta_x + delta_y * delta_y
+
+
+def is_city_quite_close(city_a, city_b):
+    """Return true if the city is not too far for commute, but not too close to be obvious."""
+    square_distance = compute_square_distance(city_a, city_b)
+    return square_distance > 10 * 10 and square_distance < 35 * 35
+
+
+def is_city_very_close(city_a, city_b):
+    """Return true if the city is so close that it is obviously known."""
+    square_distance = compute_square_distance(city_a, city_b)
+    return square_distance <= 10 * 10
+
 
 class ScoringProject(object):
     """The project and its environment for the scoring.
@@ -64,6 +97,8 @@ class ScoringProject(object):
         self._unemployment_durations = None
         self._local_diagnosis = None
         self._jobboards = None
+        self._associations = None
+        self._nearby_cities = None
 
     # When scoring models need it, add methods to access data from DB:
     # project requirements from job offers, IMT, median unemployment duration
@@ -216,10 +251,66 @@ class ScoringProject(object):
         if self._jobboards:
             return self._jobboards
 
-        all_job_boards = proto.cache_mongo_collection(
-            self._db.jobboards.find, [], jobboard_pb2.JobBoard)
+        all_job_boards = _JOB_BOARDS.get_collection(self._db)
         self._jobboards = list(filter_using_score(all_job_boards, lambda j: j.filters, self))
         return self._jobboards
+
+    def list_associations(self):
+        """List all associations for this project."""
+        if self._associations:
+            return self._associations
+
+        all_associations = _ASSOCIATIONS.get_collection(self._db)
+        self._associations = list(filter_using_score(all_associations, lambda j: j.filters, self))
+        return self._associations
+
+    def list_nearby_cities(self):
+        """Computes and stores all interesting cities that are not too close and not too far.
+
+           Those cities will be used by the Commute advice.
+        """
+        if self._nearby_cities is not None:
+            return self._nearby_cities
+        self._nearby_cities = []
+
+        # TODO(guillaume): Get this from db.
+        city_1 = geo_pb2.FrenchCity(
+            name="L'Arbresle",
+            latitude=45.8347,
+            longitude=4.5929)
+        city_2 = geo_pb2.FrenchCity(
+            name='Villefranche-sur-Soane',
+            latitude=45.9915,
+            longitude=4.6483)
+        city_3 = geo_pb2.FrenchCity(
+            name='Lyon',
+            latitude=45.7580538,
+            longitude=4.7649093)
+        interesting_cities_for_rome = [city_1, city_2, city_3]
+
+        # TODO(guillaume): Get this from db.
+        my_city = None
+        if self.details.mobility.city.city_id == '69123':
+            my_city = city_3
+
+        if not interesting_cities_for_rome or not my_city:
+            return []
+
+        nearby_cities = [
+            city.name for city in interesting_cities_for_rome
+            if is_city_quite_close(city, my_city)]
+
+        obvious_cities = [
+            city.name for city in interesting_cities_for_rome
+            if is_city_very_close(city, my_city)]
+
+        # If there is only one city nearby and no obvious city, the nearby city becomes obvious, so
+        # we do not recommend it.
+        if len(nearby_cities) == 1 and not obvious_cities:
+            return self._nearby_cities
+
+        self._nearby_cities = nearby_cities
+        return self._nearby_cities
 
 
 class _Score(collections.namedtuple('Score', ['score', 'additional_job_offers'])):
@@ -878,6 +969,22 @@ class JobGroupFilter(_ProjectFilter):
         return False
 
 
+class _JobFilter(_ProjectFilter):
+    """A scoring model to filter on a job group."""
+
+    def __init__(self, job_groups, exclude_jobs=None):
+        super(_JobFilter, self).__init__(self._filter)
+        self._job_groups = set(job_groups)
+        self._exclude_jobs = set(exclude_jobs) or {}
+
+    def _filter(self, project):
+        if project.target_job.code_ogr in self._exclude_jobs:
+            return False
+        if project.target_job.job_group.rome_id in self._job_groups:
+            return True
+        return False
+
+
 class _DepartementFilter(_ProjectFilter):
     """A scoring model to filter on the département."""
 
@@ -887,6 +994,28 @@ class _DepartementFilter(_ProjectFilter):
 
     def _filter(self, project):
         return project.mobility.city.departement_id in self._departements
+
+
+class _OldUserFilter(_UserProfileFilter):
+    """A scoring model to filter on the age."""
+
+    def __init__(self, min_age):
+        super(_OldUserFilter, self).__init__(self._filter)
+        self._min_age = int(min_age)
+
+    def _filter(self, user):
+        return datetime.date.today().year - user.year_of_birth > self._min_age
+
+
+class _YoungUserFilter(_UserProfileFilter):
+    """A scoring model to filter on the age."""
+
+    def __init__(self, max_age):
+        super(_YoungUserFilter, self).__init__(self._filter)
+        self._max_age = int(max_age)
+
+    def _filter(self, user):
+        return datetime.date.today().year - user.year_of_birth < self._max_age
 
 
 class _NegateFilter(_ScoringModelBase):
@@ -1116,7 +1245,47 @@ class _AdviceJobBoards(_LowPriorityAdvice):
         if not jobboards:
             return None
         sorted_jobboards = sorted(jobboards, key=lambda j: (-len(j.filters), random.random()))
-        return project_pb2.JobBoardsData(job_board_title=sorted_jobboards[0].title)
+        best_job_board = sorted_jobboards[0]
+        return project_pb2.JobBoardsData(
+            job_board_title=best_job_board.title,
+            is_specific_to_job_group=any(
+                f.startswith('for-job') for f in best_job_board.filters),
+            is_specific_to_region=any(
+                f.startswith('for-departement') for f in best_job_board.filters),
+        )
+
+
+class _AdviceCommuteScoringModel(_ScoringModelBase):
+    """A scoring model to trigger the "Commute" advice."""
+
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        return project_pb2.CommuteData(cities=project.list_nearby_cities())
+
+    def score(self, project):
+        if project.list_nearby_cities():
+            return _Score(2)
+        return _Score(0)
+
+
+class _AdviceAssociationHelp(_ScoringModelBase):
+    """A scoring model to trigger the "Find an association to help you" advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        if not project.list_associations():
+            return _Score(0)
+        if user_pb2.MOTIVATION in project.user_profile.frustrations:
+            return _Score(3)
+        return _Score(2)
+
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        associations = project.list_associations()
+        if not associations:
+            return None
+        sorted_associations = sorted(associations, key=lambda j: (-len(j.filters), random.random()))
+        return project_pb2.AssociationsData(association_name=sorted_associations[0].name)
 
 
 _ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'constructor'])
@@ -1133,6 +1302,10 @@ _SCORING_MODEL_REGEXPS = (
     _ScoringModelRegexp(re.compile(r'^for-active-experiment\((.*)\)$'), _ActiveExperimentFilter),
     # Matches strings that are integers.
     _ScoringModelRegexp(re.compile(r'^constant\((.+)\)$'), ConstantScoreModel),
+    # Matches strings like "for-old(50)".
+    _ScoringModelRegexp(re.compile(r'^for-old\(([0-9]+)\)$'), _OldUserFilter),
+    # Matches strings like "for-young(25)".
+    _ScoringModelRegexp(re.compile(r'^for-young\(([0-9]+)\)$'), _YoungUserFilter),
 )
 
 
@@ -1160,6 +1333,7 @@ GROUP_SCORING_MODELS = {
 
 SCORING_MODELS = {
     '': _ScoringModelBase(),
+    'advice-association-help': _AdviceAssociationHelp(),
     'advice-better-job-in-group': _AdviceBetterJobInGroup(),
     'advice-better-network': _ImproveYourNetworkScoringModel(2),
     'advice-event': _AdviceEventScoringModel(),
@@ -1167,10 +1341,12 @@ SCORING_MODELS = {
     'advice-improve-interview': _AdviceImproveInterview(),
     'advice-improve-network': _ImproveYourNetworkScoringModel(1),
     'advice-improve-resume': _AdviceImproveResume(),
+    'advice-commute': _AdviceCommuteScoringModel(),
     'advice-job-boards': _AdviceJobBoards(),
     'advice-more-offer-answers': _LowPriorityAdvice(user_pb2.NO_OFFER_ANSWERS),
     'advice-other-work-env': _AdviceOtherWorkEnv(),
     'advice-use-good-network': _ImproveYourNetworkScoringModel(3),
+    'advice-wow-baker': _JobFilter(job_groups={'D1102'}, exclude_jobs={'12006'}),
     'chantier-about-job': _LearnMoreAboutJobScoringModel(),
     'chantier-apprentissage': _ApprentissageScoringModel(),
     'chantier-atypical-profile': _ShowcaseAtypicalProfileScoringModel(),
@@ -1206,6 +1382,12 @@ SCORING_MODELS = {
     'for-complex-application': _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS),
     'for-discovery': _ProjectFilter(
         lambda project: project.intensity == project_pb2.PROJECT_FIGURING_INTENSITY),
+    'for-experienced(2)': _ProjectFilter(
+        lambda project: project.seniority >= project_pb2.INTERMEDIARY),
+    'for-experienced(6)': _ProjectFilter(
+        lambda project: project.seniority >= project_pb2.SENIOR),
+    'for-experienced(10)': _ProjectFilter(
+        lambda project: project.seniority >= project_pb2.EXPERT),
     'for-frustrated-old(50)': _UserProfileFilter(
         lambda user: user_pb2.AGE_DISCRIMINATION in user.frustrations and
         datetime.date.today().year - user.year_of_birth > 50),
@@ -1216,8 +1398,6 @@ SCORING_MODELS = {
         lambda user: user_pb2.HANDICAPED in user.frustrations or user.has_handicap),
     'for-not-employed-anymore': _UserProfileFilter(
         lambda user: user.situation == user_pb2.LOST_QUIT),
-    'for-old(50)': _UserProfileFilter(
-        lambda user: datetime.date.today().year - user.year_of_birth > 50),
     'for-qualified(bac+3)': _UserProfileFilter(
         lambda user: user.highest_degree >= job_pb2.LICENCE_MAITRISE),
     'for-searching-forever': _ProjectFilter(
@@ -1231,8 +1411,6 @@ SCORING_MODELS = {
     'for-unqualified(bac)': _UserProfileFilter(
         lambda user: user.highest_degree <= job_pb2.BAC_BACPRO),
     'for-women': _UserProfileFilter(lambda user: user.gender == user_pb2.FEMININE),
-    'for-young(25)': _UserProfileFilter(
-        lambda user: datetime.date.today().year - user.year_of_birth < 25),
     GROUP_SCORING_MODELS[chantier_pb2.IMPROVE_SUCCESS_RATE]: _BlueTargetScoringModel(),
     GROUP_SCORING_MODELS[chantier_pb2.UNLOCK_NEW_LEADS]: _GreenTargetScoringModel(),
 }

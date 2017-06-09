@@ -5,7 +5,6 @@ import unittest
 import mock
 import mongomock
 
-from bob_emploi.frontend import action
 from bob_emploi.frontend import advisor
 from bob_emploi.frontend import companies
 from bob_emploi.frontend import now
@@ -27,7 +26,6 @@ class MaybeAdviseTestCase(unittest.TestCase):
             'goal': 'Reorientation !',
         })
         self.user = user_pb2.User(features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE))
-        action.clear_cache()
         advisor.clear_cache()
 
     def test_no_advice_if_project_incomplete(self):
@@ -200,7 +198,7 @@ class MaybeAdviseTestCase(unittest.TestCase):
             weekly_applications_estimate=project_pb2.A_LOT,
             total_interview_count=1,
         )
-        self.database.jobboards.insert_one({'title': 'Indeed'})
+        self.database.jobboards.insert_one({'title': 'Indeed', 'filters': ['for-departement(14)']})
         self.database.advice_modules.insert_one({
             'adviceId': 'job-boards',
             'triggerScoringModel': 'advice-job-boards',
@@ -214,6 +212,8 @@ class MaybeAdviseTestCase(unittest.TestCase):
         advice = next(a for a in project.advices if a.advice_id == 'job-boards')
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
         self.assertEqual('Indeed', advice.job_boards_data.job_board_title)
+        self.assertFalse(advice.job_boards_data.is_specific_to_job_group)
+        self.assertTrue(advice.job_boards_data.is_specific_to_region)
 
     @mock.patch(companies.__name__ + '.get_lbb_companies')
     def test_advice_spontaneous_application_extra_data(self, mock_get_lbb_companies):
@@ -292,6 +292,34 @@ class MaybeAdviseTestCase(unittest.TestCase):
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
         self.assertEqual('Pompier', advice.better_job_in_group_data.better_job.name)
         self.assertEqual(1, advice.better_job_in_group_data.num_better_jobs)
+
+    def test_advice_association_help_extra_data(self):
+        """Test that the advisor computes extra data for the "Find an association" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(code_ogr='1234', job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.associations.insert_many([
+            {'name': 'Pôle emploi'},
+            {'name': 'SNC', 'filters': ['for-departement(14,15,16)']},
+            {'name': 'Ressort', 'filters': ['for-departement(69)']},
+        ])
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-association-help',
+            'extraDataFieldName': 'associations_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('SNC', advice.associations_data.association_name)
 
 
 class SelectAdviceForEmailTestCase(unittest.TestCase):

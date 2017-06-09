@@ -1,6 +1,7 @@
 const chai = require('chai')
 const expect = chai.expect
-import {lowerFirstLetter, ofCityPrefix, maybeContract, maybeContractPrefix} from 'store/french'
+import {lowerFirstLetter, ofCityPrefix, maybeContract, maybeContractPrefix,
+  toTitleCase} from 'store/french'
 
 
 describe('maybeContract', () => {
@@ -92,5 +93,29 @@ describe('ofCityPrefix', () => {
 
   it('should lowercase "L\'" as a first word', () => {
     expect(ofCityPrefix("L'Arbresle")).to.eql({cityName: 'Arbresle', prefix: "de l'"})
+  })
+})
+
+
+describe('toTitleCase', () => {
+  it('should capitalize simple words', () => {
+    expect(toTitleCase('CARREFOUR')).to.eq('Carrefour')
+  })
+
+  it('should capitalize all words', () => {
+    expect(toTitleCase('LES DELICES DE LECTOURE')).to.eq('Les Delices De Lectoure')
+  })
+
+  it('should capitalize after dashes', () => {
+    expect(toTitleCase('LE BON PRET-A-PORTER')).to.eq('Le Bon Pret-A-Porter')
+  })
+
+  it('should capitalize lowercase words', () => {
+    expect(toTitleCase('carrefour')).to.eq('Carrefour')
+  })
+
+  it('should keep some keywords intact', () => {
+    expect(toTitleCase('SARL BOULANGERIE PATISSERIE GRANDE')).
+      to.eq('SARL Boulangerie Patisserie Grande')
   })
 })

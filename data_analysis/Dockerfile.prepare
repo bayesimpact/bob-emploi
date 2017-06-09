@@ -16,6 +16,8 @@ RUN pip install --no-binary pycparser \
   algoliasearch \
   coverage \
   csvkit \
+  google-api-python-client \
+  httplib2 \
   mongomock \
   nbformat \
   nose \

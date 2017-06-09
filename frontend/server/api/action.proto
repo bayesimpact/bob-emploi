@@ -73,19 +73,23 @@ message Action {
   Company apply_to_company = 19;
 
   // Goal if this is a sticky action.
-  string goal = 20;
+  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
+  string goal = 20 [deprecated = true];
 
   // A small piece of sentence that summarize the goal if this is a sticky
   // action. It can be used to complete sentences like: "These are all the
   // steps ...", e.g. "to apply for a work visa".
-  string short_goal = 24;
+  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
+  string short_goal = 24 [deprecated = true];
 
   // A text to explain why one should start a sticky action as a multiple steps
   // process instead of just using the initial action.
-  string sticky_action_incentive = 21;
+  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
+  string sticky_action_incentive = 21 [deprecated = true];
 
   // Detailed steps if this is a sticky action.
-  repeated StickyActionStep steps = 22;
+  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
+  repeated StickyActionStep steps = 22 [deprecated = true];
 
   // Label to set on the link.
   string link_label = 26;

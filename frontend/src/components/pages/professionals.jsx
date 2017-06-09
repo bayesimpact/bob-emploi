@@ -83,7 +83,7 @@ class ProfessionalsPage extends React.Component {
       </header>
       <iframe
           width={isMobileVersion ? '100%' : 560} height={315} frameBorder={0}
-          src="https://www.youtube.com/embed/RFJ_JQMk4NY"
+          src="https://www.youtube.com/embed/ZmOZhDdFrL0"
           allowFullScreen={true} />
     </section>
   }

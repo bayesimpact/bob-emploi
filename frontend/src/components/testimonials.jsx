@@ -10,7 +10,7 @@ class Testimonials extends React.Component {
   static propTypes = {
     cardStyle: PropTypes.object,
     carouselAutoRotationDurationMs: PropTypes.number.isRequired,
-    children: PropTypes.arrayOf(PropTypes.instanceOf(TestimonialCard).isRequired).isRequired,
+    children: PropTypes.arrayOf(PropTypes.node.isRequired).isRequired,
   }
   static defaultProps = {
     carouselAutoRotationDurationMs: 5000,
@@ -132,8 +132,6 @@ class Testimonials extends React.Component {
     </div>
   }
 }
-
-
 
 
 class TestimonialCard extends React.Component {

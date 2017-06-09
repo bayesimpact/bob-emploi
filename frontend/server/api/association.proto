@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+message Association {
+  // Name of the association.
+  string name = 1;
+
+  // Link to the association home page.
+  string link = 2;
+
+  // A set of filter IDs: do not show the association if one these filters
+  // returns false for the project.
+  // See the list of available filters in scoring.py.
+  repeated string filters = 3;
+}
+
+message Associations {
+  // A sorted list of associations. The ones that Bayes thinks are the best
+  // suited are first.
+  repeated Association associations = 1;
+}

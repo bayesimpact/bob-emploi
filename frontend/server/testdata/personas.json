@@ -1110,7 +1110,7 @@
       "yearOfBirth": 1992
     }
   },
-  "remi": {
+  "boulanger": {
     "project": {
       "createdAt": "2016-09-29T09:24:02.698094Z",
       "employmentTypes": ["CDI"],
@@ -1122,6 +1122,68 @@
         "city": {
           "cityId": "93050",
           "departementId": "93",
+          "departementName": "Seine-Saint-Denis",
+          "name": "Neuilly-sur-Marne",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecddb3-bfe8",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "10868",
+        "feminineName": "Aide boulangère",
+        "jobGroup": {
+          "name": "Boulangerie - viennoiserie",
+          "romeId": "D1102"
+        },
+        "masculineName": "Aide boulanger",
+        "name": "Aide boulanger(ère)"
+      },
+      "title": "Trouver un emploi d'aide boulanger en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"]
+    },
+    "user": {
+      "city": {
+        "cityId": "93050",
+        "departementId": "93",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
+      },
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "rxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "latestJob": {
+        "codeOgr": "10241",
+        "feminineName": "Acheteuse",
+        "jobGroup": {
+          "name": "Achats",
+          "romeId": "M1101"
+        },
+        "masculineName": "Acheteur",
+        "name": "Acheteur / Acheteuse"
+      },
+      "name": "Rémi",
+      "situation": "EMPLOYED",
+      "yearOfBirth": 1989
+    }
+  },
+  "remi": {
+    "project": {
+      "createdAt": "2016-09-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "93050",
+          "departementId": "14",
           "departementName": "Seine-Saint-Denis",
           "name": "Neuilly-sur-Marne",
           "regionId": "11",

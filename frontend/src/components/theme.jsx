@@ -10,7 +10,6 @@ import _ from 'underscore'
 import config from 'config'
 
 import {JobSuggest} from 'components/suggestions'
-import {CircularProgress} from 'components/progress'
 
 export const Colors = {
   BACKGROUND_GREY: '#f3f4f7',
@@ -185,6 +184,7 @@ class ButtonBase extends React.Component {
       color: typeStyle.color || '#fff',
       cursor: 'pointer',
       flexShrink: 0,
+      fontFamily: 'GTWalsheim',
       fontSize: 14,
       fontStyle: 'normal',
       fontWeight: 500,
@@ -223,44 +223,6 @@ class ButtonBase extends React.Component {
 const Button = Radium(ButtonBase)
 
 
-// TODO(pascal): Check if it is still used and clean up.
-class SettingsButtonBase extends React.Component {
-  static propTypes = {
-    children: PropTypes.node.isRequired,
-    style: PropTypes.object,
-  }
-
-  render() {
-    const {children, style, ...otherProps} = this.props
-    const buttonStyle = {
-      ':focused': {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      },
-      ':hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      },
-      backgroundColor: 'rgba(255, 255, 255, 0.7)',
-      border: 'none',
-      borderRadius: 2,
-      boxShadow: '0 2px 7px 0 rgba(0, 0, 0, 0.5)',
-      color: Colors.CHARCOAL_GREY,
-      cursor: 'pointer',
-      fontSize: 14,
-      fontWeight: 'normal',
-      height: 35,
-      padding: '4px 14px 2px',
-      ...SmoothTransitions,
-      ...style,
-    }
-
-    return <button {...otherProps} style={buttonStyle}>
-      <Icon name="settings" /> {children}
-    </button>
-  }
-}
-const SettingsButton = Radium(SettingsButtonBase)
-
-
 class Markdown extends React.Component {
   static propTypes = {
     content: PropTypes.string,
@@ -294,6 +256,115 @@ class HorizontalRule extends React.Component {
       ...this.props.style,
     }
     return <hr style={style} />
+  }
+}
+
+
+class CircularProgress extends React.Component {
+  static propTypes = {
+    periodMilliseconds: PropTypes.number,
+    size: PropTypes.number,
+    style: PropTypes.object,
+    thickness: PropTypes.number,
+  }
+  static defaultProps = {
+    periodMilliseconds: 1750,
+    size: 80,
+    thickness: 3.5,
+  }
+
+  state = {
+    isWrapperRotated: false,
+    scalePathStep: 0,
+  }
+
+  componentDidMount() {
+    this.scalePath(0)
+    this.rotateWrapper()
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.scalePathTimer)
+    clearTimeout(this.rotateWrapperTimer1)
+    clearTimeout(this.rotateWrapperTimer2)
+  }
+
+  scalePath(step) {
+    const {periodMilliseconds} = this.props
+    this.setState({scalePathStep: step})
+    this.scalePathTimer = setTimeout(
+      () => this.scalePath((step + 1) % 3),
+      step ? .4 * periodMilliseconds : .2 * periodMilliseconds)
+  }
+
+  rotateWrapper() {
+    const {periodMilliseconds} = this.props
+    this.setState({isWrapperRotated: false})
+
+    this.rotateWrapperTimer1 = setTimeout(() => {
+      this.setState({isWrapperRotated: true})
+    }, 50)
+
+    this.rotateWrapperTimer2 = setTimeout(
+      () => this.rotateWrapper(),
+      50 + periodMilliseconds * 5.7143)
+  }
+
+  render() {
+    const {periodMilliseconds, size, thickness} = this.props
+    const {isWrapperRotated, scalePathStep} = this.state
+    const style = {
+      color: Colors.SKY_BLUE,
+      height: size,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      position: 'relative',
+      width: size,
+      ...this.props.style,
+    }
+    const color = style.color
+    const wrapperStyle = {
+      display: 'inline-block',
+      height: size,
+      transform: `rotate(${isWrapperRotated ? '1800' : '0'}deg)`,
+      transition: `all ${isWrapperRotated ? '10' : '0'}s linear`,
+      width: size,
+    }
+    const getArcLength = fraction => fraction * Math.PI * (size - thickness)
+    let strokeDasharray, strokeDashoffset, transitionDuration
+    if (scalePathStep === 0) {
+      strokeDasharray = `${getArcLength(0)}, ${getArcLength(1)}`
+      strokeDashoffset = 0
+      transitionDuration = '0'
+    } else if (scalePathStep === 1) {
+      strokeDasharray = `${getArcLength(0.7)}, ${getArcLength(1)}`
+      strokeDashoffset = getArcLength(-0.3)
+      transitionDuration = periodMilliseconds * .4
+    } else {
+      strokeDasharray = `${getArcLength(0.7)}, ${getArcLength(1)}`
+      strokeDashoffset = getArcLength(-1)
+      transitionDuration = periodMilliseconds * .4857
+    }
+    const pathStyle = {
+      stroke: color,
+      strokeDasharray,
+      strokeDashoffset,
+      strokeLinecap: 'round',
+      transition: `all ${transitionDuration}ms ease-in-out`,
+    }
+
+    return <div style={style}>
+      <div style={wrapperStyle}>
+        <svg viewBox={`0 0 ${size} ${size}`}>
+          <circle
+              style={pathStyle}
+              cx={size / 2} cy={size / 2}
+              r={(size - thickness) / 2}
+              strokeWidth={thickness}
+              strokeMiterlimit="20" fill="none" />
+        </svg>
+      </div>
+    </div>
   }
 }
 
@@ -1005,13 +1076,16 @@ class AppearingList extends React.Component {
       transition: `opacity 300ms ease-in ${index * 700 / children.length}ms`,
       ...style,
     })
-    const shownChildren = maxNumChildren ? children.splice(0, maxNumChildren) : children
+    const shownChildren = maxNumChildren ? children.slice(0, maxNumChildren) : children
     return <div {...extraProps}>
       <VisibilitySensor
           active={!isShown} intervalDelay={250}
           onChange={isShown => this.setState({isShown})} />
       {shownChildren.map((item, index) =>
-        React.cloneElement(item, {style: itemStyle(index, item.props.style)}))}
+        React.cloneElement(item, {
+          key: item.key || index,
+          style: itemStyle(index, item.props.style),
+        }))}
     </div>
   }
 }
@@ -1020,6 +1094,6 @@ class AppearingList extends React.Component {
 export {
   Markdown, HorizontalRule, FieldSet, LabeledToggle,
   Select, CheckboxList, Icon, Button, IconInput, RadioGroup,
-  SettingsButton, JobSuggestWithNote, Input, JobGroupCoverImage, PieChart,
-  GrowingNumber, PaddedOnMobile, AppearingList,
+  JobSuggestWithNote, Input, JobGroupCoverImage, PieChart,
+  GrowingNumber, PaddedOnMobile, AppearingList, CircularProgress,
 }

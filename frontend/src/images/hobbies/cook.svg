@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="26px" height="26px" viewBox="0 0 26 26" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 44.1 (41455) - http://www.bohemiancoding.com/sketch -->
+    <title>cook_picto</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Dashboard" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Advisor-v5---life-balance" transform="translate(-292.000000, -634.000000)">
+            <g id="cook_picto" transform="translate(292.000000, 634.000000)">
+                <rect id="Rectangle-13" fill="#FCC717" x="0" y="0" width="26" height="26" rx="5"></rect>
+                <path d="M9,10.9499909 C8.83844503,10.9827849 8.67123292,11 8.5,11 C7.11928813,11 6,9.88071187 6,8.5 C6,7.11928813 7.11928813,6 8.5,6 C9.10073465,6 9.65198079,6.21188545 10.0830811,6.56499898 C10.7100833,5.62171384 11.7824371,5 13,5 C13.7817942,5 14.5037202,5.25632597 15.0863214,5.68952119 C15.6056792,5.25887606 16.2726077,5 17,5 C18.6568542,5 20,6.34314575 20,8 C20,9.48649814 18.9188567,10.7204817 17.5,10.9585208 L17.5,18 L9,18 L9,10.9499909 Z M10.5,14 L10.5,18 L11.5,18 L11.5,14 L10.5,14 Z M12.7999878,14 L12.7999878,18 L13.7999878,18 L13.7999878,14 L12.7999878,14 Z M15,14 L15,18 L16,18 L16,14 L15,14 Z M9,18.5 L17.5,18.5 L17.5,20.5 L9,20.5 L9,18.5 Z" id="Combined-Shape" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>

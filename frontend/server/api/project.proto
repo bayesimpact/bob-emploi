@@ -37,21 +37,29 @@ message Project {
   // chantier template ids, values are the activation state of the chantiers.
   // Chantier template missing from this set have never been seen by the user
   // for this project.
-  map<string, bool> activated_chantiers = 18;
+  // TODO(pascal): Find what to do with that, it is still used in the dashboard
+  // export, but nowhere else.
+  map<string, bool> activated_chantiers = 18 [deprecated = true];
 
   // List of current actions for this project. They stay in here until the next
   // generation of new actions and then the finished or declined ones are moved
   // to past_actions. They are sorted by their created_at field: most recent
   // last.
-  repeated Action actions = 25;
+  // NOTE: We do not use it anymore but old projects might still have this
+  // field set from previous versions.
+  repeated Action actions = 25 [deprecated = true];
 
   // List of past actions that were done or declined in previous days. They are
   // sorted by their stopped_at field: most recent last.
-  repeated Action past_actions = 35;
+  // NOTE: We do not use it anymore but old projects might still have this
+  // field set from previous versions.
+  repeated Action past_actions = 35 [deprecated = true];
 
   // List of actions that are stuck by the users. They are sorted by their
   // stucked_at field: most recent last.
-  repeated Action sticky_actions = 10;
+  // NOTE: We do not use it anymore but old projects might still have this
+  // field set from previous versions.
+  repeated Action sticky_actions = 10 [deprecated = true];
 
   // Reason why this project was deleted.
   string deletion_reason = 14;
@@ -90,7 +98,8 @@ message Project {
   int32 network_estimate = 22;
 
   // Effort the user wants to put into this project.
-  ProjectIntensity intensity = 26;
+  // TODO(pascal): Cleanup.
+  ProjectIntensity intensity = 26 [deprecated = true];
 
   // How long the user searches in this field in months. -1 means not started yet.
   // 19 means more than 18 months.
@@ -117,7 +126,8 @@ message Project {
   // When actions were last generated for this project. Note that if too many
   // actions were there so that we could not generate new ones we still update
   // this timestamp when we try.
-  google.protobuf.Timestamp actions_generated_at = 5;
+  // TODO(pascal): Cleanup.
+  google.protobuf.Timestamp actions_generated_at = 5 [deprecated = true];
 
   // Job stats for this specific project.
   LocalJobStats local_stats = 9;
@@ -132,7 +142,7 @@ message Project {
   string useless_advice_feedback = 11;
 }
 
-// Next ID: 15.
+// Next ID: 16.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -163,12 +173,23 @@ message Advice {
 
     // Extra data neded to recommend the "better jobs in job group" piece of advice.
     BetterJobInGroupData better_job_in_group_data = 14;
+
+    // Extra data needed to recommend he "find an association to help you" advice.
+    AssociationsData associations_data = 15;
+
+    // Extra data needed for the "commute" advice.
+    CommuteData commute_data = 16;
   }
 
   // The score the user gave to the piece of advice. A low score means they do
   // not think it was a good advice, for any reasons. A high score means they
   // think the advice was good and they need to work on it.
   int32 score = 11;
+}
+
+message CommuteData {
+  // Cities that the users could consider in their search. We only store the name of the city here.
+  repeated string cities = 1;
 }
 
 message OtherWorkEnvAdviceData {
@@ -189,6 +210,12 @@ message ImproveSuccessRateData {
 message JobBoardsData {
   // A specific job board title, the user probably does not know about.
   string job_board_title = 1;
+
+  // Whether the job board is specific to the project's target job or job group.
+  bool is_specific_to_job_group = 2;
+
+  // Whether the job board is specific to the project's city or region.
+  bool is_specific_to_region = 3;
 }
 
 message SpontaneousApplicationData {
@@ -208,6 +235,11 @@ message BetterJobInGroupData {
 
   // Number of jobs that are better than the target one.
   int32 num_better_jobs = 3;
+}
+
+message AssociationsData {
+  // Name of a specific association that could help the user.
+  string association_name = 1;
 }
 
 enum NumberOfferEstimateOption {

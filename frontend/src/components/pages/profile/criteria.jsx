@@ -188,7 +188,7 @@ class SalaryInputBase extends React.Component {
     return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
       <IconInput
           iconName="currency-eur" iconStyle={{paddingTop: 5}}
-          placeholder="Montant" inputStyle={{paddingRight: '2em', textAlign: 'right'}}
+          placeholder="Montant" inputStyle={{paddingRight: '2.1em', textAlign: 'right'}}
           value={salaryValue} onChange={this.handleSalaryValueChange} />
       <Select
           options={SALARY_UNIT_OPTIONS} value={unitValue}

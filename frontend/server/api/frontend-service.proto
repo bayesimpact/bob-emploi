@@ -9,6 +9,7 @@ import "bob_emploi/frontend/api/export.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/jobboard.proto";
 import "bob_emploi/frontend/api/project.proto";
+import "bob_emploi/frontend/api/stats.proto";
 import "bob_emploi/frontend/api/user.proto";
 
 package bayes.bob;
@@ -34,6 +35,13 @@ service FrontendService {
 
   // Gives some feedback about the app or a specific part of the app.
   rpc GiveFeedback(Feedback) returns (google.protobuf.Empty);
+
+  // Save the response from the user to the survey we send to ask for feedback on the app
+  // and on the advices.
+  rpc SaveNPSSurveyResponse(NPSSurveyResponse) returns (google.protobuf.Empty);
+
+  // Get stats of the app usage.
+  rpc UsageStats(google.protobuf.Empty) returns (UsersCount);
 
   // Delete the user and all data associated.
   rpc DeleteUser(User) returns (UserId);

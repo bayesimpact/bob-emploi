@@ -1,0 +1,6 @@
+[
+  {
+    "name": "SNC",
+    "filters": ["for-departement(69)"]
+  }
+]
