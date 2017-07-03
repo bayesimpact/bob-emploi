@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import {FamilySituation} from 'api/user'
+import {FamilySituation, UserOrigin} from 'api/user'
 
 // TODO: Remove situation after the deprecated fields got removed from the
 // user.proto.
@@ -17,6 +17,7 @@ const USER_PROFILE_FIELDS = {
   latestJob: PropTypes.object,
   name: PropTypes.string.isRequired,
   officeSkillsEstimate: PropTypes.number,
+  origin: PropTypes.oneOf(Object.keys(UserOrigin)),
   situation: PropTypes.string,
   yearOfBirth: PropTypes.number,
 }
@@ -60,18 +61,6 @@ function userAge(yearOfBirth) {
   return todayYear - yearOfBirth
 }
 
-// Return true if the user could be discriminated against because he is too young.
-function isYoungAndDiscriminated(profile) {
-  return (profile.frustrations || []).indexOf('AGE_DISCRIMINATION') >= 0 &&
-      userAge(profile.yearOfBirth) < 30
-}
-
-// Return true if the user could be discriminated against because he is too young.
-function isOldAndDiscriminated(profile) {
-  return (profile.frustrations || []).indexOf('AGE_DISCRIMINATION') >= 0 &&
-      userAge(profile.yearOfBirth) > 40
-}
-
 // Returns a list of all frustrations of a user, as tags.
 // TODO(guillaume): Pull directly from Airtable when we know for sure the shape.
 function getUserFrustrationTags(profile) {
@@ -105,6 +94,16 @@ const DEGREE_OPTIONS = [
 ]
 
 
+const ORIGIN_OPTIONS = [
+  {name: 'Recommandé par un ami', value: 'FROM_A_FRIEND'},
+  {name: "Par un groupe de recherche d'emploi", value: 'FROM_JOBSEEKER_GROUP'},
+  {name: 'Présenté dans une information collective Pôle emploi', value: 'FROM_PE_WORKSHOP'},
+  {name: "Mon conseiller Pôle emploi me l'a recommendé", value: 'FROM_PE_COUNSELOR'},
+  {name: 'Recommandé par un autre site ou moteur de recherche', value: 'FROM_WEBSITE'},
+  {name: 'Autre', value: 'FROM_OTHER'},
+]
+
+
 // A function that returns a description for a degree.
 // If no degree, we do not return any a description.
 function getHighestDegreeDescription(userProfile) {
@@ -133,7 +132,24 @@ function getFamilySituationOptions(gender) {
 }
 
 
-export {getUserFrustrationTags, travelInTime, USER_PROFILE_FIELDS,
-        USER_PROFILE_SHAPE, userAge, isYoungAndDiscriminated,
-        isOldAndDiscriminated, getHighestDegreeDescription,
-        getFamilySituationOptions, DEGREE_OPTIONS}
+function increaseRevision({revision, ...otherFields}) {
+  return {
+    revision: (revision || 0) + 1,
+    ...otherFields,
+  }
+}
+
+
+function keepMostRecentRevision(clientUser, serverUser) {
+  const clientRevision = clientUser.revision || 0
+  const serverRevision = serverUser.revision || 0
+  if (!clientRevision || !serverRevision || clientRevision < serverRevision) {
+    return serverUser
+  }
+  return clientUser
+}
+
+
+export {getUserFrustrationTags, travelInTime, USER_PROFILE_FIELDS, increaseRevision,
+  USER_PROFILE_SHAPE, userAge, getHighestDegreeDescription, keepMostRecentRevision,
+  getFamilySituationOptions, DEGREE_OPTIONS, ORIGIN_OPTIONS}

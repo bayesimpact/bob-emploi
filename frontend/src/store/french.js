@@ -1,4 +1,7 @@
 // Module to help with phrasing French sentences.
+//
+// If you fix any of the functions here, you'll probably want to update
+// frontend/server/french.py as well.
 import _ from 'underscore'
 
 
@@ -31,9 +34,9 @@ export const upperFirstLetter = word => {
 }
 
 
-// List of keywords that should stay uppercased if we find them. Note that this
+// List of keywords that should stay as is if we find them. Note that this
 // list is not exhaustive and can be completed when we run in more cases.
-const keywords = _.object(_.map([
+const alwaysUpperKeywords = _.object(_.map([
   'IBM', 'SARL', 'SAS', 'DGEA', 'RATP', 'SNCF', 'SNC', 'FNAC', 'SA', 'LCL', 'LIDL',
 ], item => [item, true]))
 
@@ -42,7 +45,8 @@ const keywords = _.object(_.map([
 export const toTitleCase = text => {
   return text.match(/([\w]+(\W+|$))/g).
     map(word => {
-      if (keywords[word.trim()]) {
+      const trimmedWord = word.trim()
+      if (alwaysUpperKeywords[trimmedWord]) {
         return word
       }
       return word.substr(0, 1).toLocaleUpperCase() + word.substr(1).toLocaleLowerCase()

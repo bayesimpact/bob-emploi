@@ -73,22 +73,22 @@ class NewProjectCriteriaStep extends React.Component {
       justifyContent: 'space-between',
     }
     return <Step
-        title="Quels sont vos critères ?"
-        {...this.props} fastForward={this.fastForward}
-        onNextButtonClick={this.handleSubmit}>
+      title="Quels sont vos critères ?"
+      {...this.props} fastForward={this.fastForward}
+      onNextButtonClick={this.handleSubmit}>
       <FieldSet
-          label="Je cherche un poste en :"
-          isValid={!!(employmentTypes || []).length && !!(workloads || []).length}
-          isValidated={isValidated}>
+        label="Je cherche un poste en :"
+        isValid={!!(employmentTypes || []).length && !!(workloads || []).length}
+        isValidated={isValidated}>
         <div style={checkboxListContainerStyle}>
           <CheckboxList
-              options={PROJECT_EMPLOYMENT_TYPE_OPTIONS}
-              values={employmentTypes}
-              onChange={this.handleValueChange('employmentTypes')} />
+            options={PROJECT_EMPLOYMENT_TYPE_OPTIONS}
+            values={employmentTypes}
+            onChange={this.handleValueChange('employmentTypes')} />
           <CheckboxList
-              options={PROJECT_WORKLOAD_OPTIONS}
-              values={workloads}
-              onChange={this.handleValueChange('workloads')} />
+            options={PROJECT_WORKLOAD_OPTIONS}
+            values={workloads}
+            onChange={this.handleValueChange('workloads')} />
         </div>
       </FieldSet>
       <FieldSet label="Pour un salaire de :">
@@ -187,14 +187,14 @@ class SalaryInputBase extends React.Component {
     const {salaryValue} = this.state
     return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
       <IconInput
-          iconName="currency-eur" iconStyle={{paddingTop: 5}}
-          placeholder="Montant" inputStyle={{paddingRight: '2.1em', textAlign: 'right'}}
-          value={salaryValue} onChange={this.handleSalaryValueChange} />
+        iconName="currency-eur" iconStyle={{paddingTop: 5}}
+        placeholder="Montant" inputStyle={{paddingRight: '2.1em', textAlign: 'right'}}
+        value={salaryValue} onChange={this.handleSalaryValueChange} />
       <Select
-          options={SALARY_UNIT_OPTIONS} value={unitValue}
-          onChange={this.handleSalaryUnitChange}
-          isEmptyDisabled={true}
-          style={{[isMobileVersion ? 'marginTop' : 'marginLeft']: 10}} />
+        options={SALARY_UNIT_OPTIONS} value={unitValue}
+        onChange={this.handleSalaryUnitChange}
+        isEmptyDisabled={true}
+        style={{[isMobileVersion ? 'marginTop' : 'marginLeft']: 10}} />
     </div>
   }
 }

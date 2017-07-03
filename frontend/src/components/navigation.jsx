@@ -9,6 +9,7 @@ import {logoutAction} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {onboardingComplete} from 'store/main_selectors'
 
+import bellImage from 'images/bell.svg'
 import facebookImage from 'images/facebook.svg'
 import logoBobMobileImage from 'images/logo-bob-mobile.svg'
 import logoBobEmploiBetaImage from 'images/logo-bob-emploi-beta.svg'
@@ -26,6 +27,103 @@ import {LoginButton} from 'components/login'
 import {ZendeskChatButton} from 'components/zendesk'
 
 export const NAVIGATION_BAR_HEIGHT = 56
+
+
+class Notifications extends React.Component {
+  static propTypes= {
+    notifications: PropTypes.arrayOf(PropTypes.shape({
+      href: PropTypes.string,
+      onClick: PropTypes.func,
+      subtitle: PropTypes.string,
+      title: PropTypes.node.isRequired,
+    }).isRequired),
+  }
+
+  state = {
+    isExpanded: false,
+    isHovered: false,
+  }
+
+  render() {
+    const {notifications} = this.props
+    const {isExpanded, isHovered} = this.state
+    if (!notifications || !notifications.length) {
+      return null
+    }
+    const notifHeight = 70
+    const iconStyle = {
+      cursor: 'pointer',
+      opacity: (isExpanded || isHovered) ? 1 : .6,
+      outline: 'none',
+      padding: 15,
+      width: 45,
+      ...SmoothTransitions,
+    }
+    const containerStyle = {
+      maxHeight: isExpanded ? ((notifHeight + 1) * notifications.length) : 0,
+      opacity: isExpanded ? 1 : 0,
+      overflow: 'hidden',
+      position: 'absolute',
+      right: 150,
+      top: '100%',
+      width: 380,
+      ...SmoothTransitions,
+    }
+    const notificationStyle = index => ({
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      borderTop: index ? `solid 1px ${Colors.BACKGROUND_GREY}` : 'initial',
+      color: Colors.DARK_TWO,
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      height: notifHeight,
+      lineHeight: 1.23,
+      paddingLeft: 30,
+    })
+    const triangleContainerStyle = {
+      bottom: 0,
+      lineHeight: '6px',
+      opacity: isExpanded ? 1 : 0,
+      position: 'absolute',
+      textAlign: 'center',
+      width: iconStyle.width,
+      ...SmoothTransitions,
+    }
+    const triangleStyle = {
+      borderBottom: 'solid 6px #fff',
+      borderLeft: 'solid 6px transparent',
+      borderRight: 'solid 6px transparent',
+      display: 'inline-block',
+    }
+    return <div
+      onBlur={() => this.setState({isExpanded: false})}
+      onMouseEnter={() => this.setState({isHovered: true})}
+      onMouseLeave={() => this.setState({isHovered: false})}
+      style={{alignItems: 'center', display: 'flex', width: iconStyle.width}}>
+      <img
+        src={bellImage} style={iconStyle} tabIndex={0}
+        onClick={() => this.setState({isExpanded: true})} />
+
+      <div style={triangleContainerStyle}>
+        <div style={triangleStyle} />
+      </div>
+
+      <div style={containerStyle}>
+        {notifications.map((notification, index) => <div
+          key={`notif-${index}`} style={notificationStyle(index)}
+          onClick={notification.onClick || (() => window.open(notification.href, '_blank'))}>
+          <div style={Styles.CENTER_FONT_VERTICALLY}>
+            <strong>{notification.title}</strong>
+            {notification.subtitle ? <div>{notification.subtitle}</div> : null}
+          </div>
+          <span style={{flex: 1}} />
+          <Icon name="chevron-right" style={{fontSize: 25, marginRight: 20}} />
+        </div>)}
+      </div>
+    </div>
+  }
+}
 
 
 const navLinkStyle = {
@@ -76,11 +174,11 @@ class NavigationLink extends React.Component {
       width: '30%',
     }
     return <Link
-        {...extraProps} style={containerStyle}
-        onMouseOut={() => this.setState({isHovered: false})}
-        onMouseOver={() => this.setState({isHovered: true})}
-        onFocus={() => this.setState({isFocused: true})}
-        onBlur={() => this.setState({isFocused: false})}>
+      {...extraProps} style={containerStyle}
+      onMouseOut={() => this.setState({isHovered: false})}
+      onMouseOver={() => this.setState({isHovered: true})}
+      onFocus={() => this.setState({isFocused: true})}
+      onBlur={() => this.setState({isFocused: false})}>
       {children}
       {(isSelected && selectionStyle) ? <div style={selectMarkStyle} /> : null}
     </Link>
@@ -101,7 +199,7 @@ class MenuLinkBase extends React.Component {
     const {children, style, ...extraProps} = this.props
     const containerStyle = {
       alignItems: 'center',
-      color: '#fff',
+      color: Colors.DARK_TWO,
       display: 'flex',
       fontWeight: 'normal',
       height: MENU_LINK_HEIGHT,
@@ -110,11 +208,13 @@ class MenuLinkBase extends React.Component {
       ...style,
       // eslint-disable-next-line sort-keys
       ':focus': {
-        backgroundColor: Colors.RED_PINK,
+        backgroundColor: Colors.SKY_BLUE,
+        color: '#fff',
         ...(style && style[':hover'] || {}),
       },
       ':hover': {
-        backgroundColor: Colors.RED_PINK,
+        backgroundColor: Colors.SKY_BLUE,
+        color: '#fff',
         ...(style && style[':hover'] || {}),
       },
     }
@@ -205,9 +305,9 @@ class MobileNavigationBarBase extends React.Component {
       {isMenuOpen ?
         <div style={menuStyle} onBlur={this.closeMenu}>
           <Icon
-              name="close" style={menuIconStyle} tabIndex={0} ref={closeIcon => {
-                this.closeIcon = closeIcon
-              }} onClick={() => this.setState({isMenuOpen: false})} />
+            name="close" style={menuIconStyle} tabIndex={0} ref={closeIcon => {
+              this.closeIcon = closeIcon
+            }} onClick={() => this.setState({isMenuOpen: false})} />
           <Link to={Routes.ROOT} style={linkStyle('landing')}>
             Accueil
           </Link>
@@ -231,11 +331,11 @@ class MobileNavigationBarBase extends React.Component {
             </Link>
           </div> : null}
         </div>
-      : onNavigateBack ?
-        <Icon
+        : onNavigateBack ?
+          <Icon
             name="chevron-left" style={{...menuIconStyle, fontSize: 30}}
             onClick={onNavigateBack} />
-        : <Icon
+          : <Icon
             name="menu" style={menuIconStyle} tabIndex={0}
             onClick={() => this.setState({isMenuOpen: true})} />
       }
@@ -253,6 +353,10 @@ const MobileNavigationBar = connect(({user}) => ({
 class NavigationBarBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    featuresEnabled: PropTypes.shape({
+      poleEmploi: PropTypes.bool,
+    }).isRequired,
+    isTransparent: PropTypes.bool,
     onboardingComplete: PropTypes.bool,
     page: PropTypes.string,
     style: PropTypes.object,
@@ -289,7 +393,7 @@ class NavigationBarBase extends React.Component {
   }
 
   render() {
-    const {onboardingComplete, page, style, userProfile} = this.props
+    const {featuresEnabled, isTransparent, page, style, userProfile} = this.props
     const {isMobileVersion} = this.context
     const {name} = userProfile
     const {isLogOutDropDownShown} = this.state
@@ -298,11 +402,14 @@ class NavigationBarBase extends React.Component {
     }
     const containerStyle = {
       alignItems: 'center',
-      backgroundColor: Colors.DARK,
+      backgroundColor: isTransparent ? 'initial' : Colors.DARK,
       color: '#fff',
       display: 'flex',
       height: NAVIGATION_BAR_HEIGHT,
-      position: 'relative',
+      justifyContent: 'flex-end',
+      position: isTransparent ? 'absolute' : 'relative',
+      width: '100%',
+      zIndex: isTransparent ? 2 : 'initial',
       ...style,
     }
     const linkContainerStyle = {
@@ -316,9 +423,9 @@ class NavigationBarBase extends React.Component {
       textDecoration: 'none',
     }
     const logo = <img
-        src={logoBobEmploiBetaImage}
-        style={{cursor: 'pointer', marginLeft: 27}}
-        onClick={this.handleLogoClick} />
+      src={logoBobEmploiBetaImage}
+      style={{cursor: 'pointer'}}
+      onClick={this.handleLogoClick} />
     if (!name) {
       const loginButtonStyle = {
         ...navLinkStyle,
@@ -328,6 +435,8 @@ class NavigationBarBase extends React.Component {
         },
       }
       return <nav style={containerStyle}>
+        <div style={{width: 27}} />
+
         {logo}
 
         <div style={{flex: 1}} />
@@ -339,11 +448,12 @@ class NavigationBarBase extends React.Component {
           Notre mission
         </NavigationLink>
         <NavigationLink
-            to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'} selectionStyle="top">
+          to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'} selectionStyle="top">
           Contribuer
         </NavigationLink>
         <LoginButton style={loginButtonStyle} visualElement="navbar" type="discreet">
-          Se connecter
+          <Icon name="lock" style={{marginRight: 8}} />
+          S'identifier
         </LoginButton>
       </nav>
     }
@@ -356,18 +466,17 @@ class NavigationBarBase extends React.Component {
     }
     const dropDownButtonStyle = {
       ':focus': {
-        backgroundColor: Colors.CHARCOAL_GREY,
-        color: '#fff',
+        backgroundColor: '#fff',
+        color: Colors.DARK_TWO,
       },
       ':hover': {
-        backgroundColor: Colors.CHARCOAL_GREY,
-        color: '#fff',
+        backgroundColor: isLogOutDropDownShown ? '#fff' : 'rgba(255, 255, 255, .2)',
+        color: isLogOutDropDownShown ? Colors.DARK_TWO : '#fff',
       },
       alignItems: 'center',
-      backgroundColor: isLogOutDropDownShown ? Colors.CHARCOAL_GREY : 'initial',
-      borderLeft: `solid 1px ${Colors.SLATE}`,
+      backgroundColor: isLogOutDropDownShown ? '#fff' : 'initial',
       bottom: 0,
-      color: Colors.COOL_GREY,
+      color: isLogOutDropDownShown ? Colors.DARK_TWO : Colors.COOL_GREY,
       display: 'flex',
       justifyContent: 'center',
       left: 0,
@@ -382,14 +491,11 @@ class NavigationBarBase extends React.Component {
       <MenuLink key="profile" onClick={() => browserHistory.push(Routes.PROFILE_PAGE)}>
         Vos informations
       </MenuLink>,
-      <MenuLink key="terms" onClick={() => browserHistory.push(Routes.TERMS_AND_CONDITIONS_PAGE)}>
-        Conditions générales
-      </MenuLink>,
-      <MenuLink key="vision" onClick={() => browserHistory.push(Routes.VISION_PAGE)}>
-        Notre mission
-      </MenuLink>,
       <MenuLink key="contribute" onClick={() => browserHistory.push(Routes.CONTRIBUTION_PAGE)}>
         Contribuer
+      </MenuLink>,
+      <MenuLink key="help" onClick={() => openInNewTab('https://aide.bob-emploi.fr/hc/fr')}>
+        Aide
       </MenuLink>,
       <MenuLink key="contact" onClick={() => {
         openInNewTab(config.helpRequestUrl)
@@ -397,8 +503,8 @@ class NavigationBarBase extends React.Component {
         Nous contacter
       </MenuLink>,
       <MenuLink key="logout"
-          onClick={this.logOut}
-          style={{':hover': {color: '#fff'}, color: Colors.COOL_GREY}}>
+        onClick={this.logOut}
+        style={{':hover': {color: '#fff'}, color: Colors.COOL_GREY}}>
         Déconnexion
       </MenuLink>,
     ]
@@ -407,6 +513,7 @@ class NavigationBarBase extends React.Component {
       alignItems: 'center',
       backgroundColor: dropDownButtonStyle.backgroundColor,
       borderTop: isLogOutDropDownShown ? 'solid 1px rgba(255, 255, 255, .2)' : 'none',
+      fontWeight: isLogOutDropDownShown ? 'bold' : 500,
       height: isLogOutDropDownShown ? menuItems.length * MENU_LINK_HEIGHT : 0,
       justifyContent: 'center',
       left: 0,
@@ -418,26 +525,34 @@ class NavigationBarBase extends React.Component {
       transition: 'height 100ms',
       zIndex: 2,
     }
+    const centerAbsoluteStyle = {
+      alignItems: 'center',
+      bottom: 0,
+      display: 'flex',
+      justifyContent: 'center',
+      left: 0,
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      zIndex: -1,
+    }
     return <nav style={containerStyle}>
-      {logo}
+      <div style={centerAbsoluteStyle}>
+        {logo}
+      </div>
 
-      <div style={{flex: 1}} />
-
-      {onboardingComplete ? <div>
-        <NavigationLink
-            to={Routes.PROJECT_PAGE} isSelected={page === 'project'} selectionStyle="bottom">
-          Mon projet
-        </NavigationLink>
-        <NavigationLink
-            to="https://aide.bob-emploi.fr/hc/fr" target="_blank"
-            style={{padding: '20px 50px 21px 25px'}} selectionStyle="bottom">
-          Aide
-        </NavigationLink>
-      </div> : null}
+      <Notifications
+        notifications={featuresEnabled.poleEmploi ? [
+          {
+            href: 'https://projects.invisionapp.com/boards/SK39VCS276T8J/',
+            subtitle: 'Trouvez ici nos resources pour présenter Bob',
+            title: 'Vous êtes conseiller Pôle emploi ?',
+          },
+        ] : []} />
 
       <div
-          style={menuStyle} onClick={this.toggleMenuDropDown}
-          onBlur={this.collapseDropDown} tabIndex="0">
+        style={menuStyle} onClick={this.toggleMenuDropDown}
+        onBlur={this.collapseDropDown} tabIndex="0">
         <div style={dropDownButtonStyle}>
           {name}&nbsp;<div style={{flex: 1}} /><Icon
             name={'menu-' + (isLogOutDropDownShown ? 'up' : 'down')}
@@ -451,6 +566,7 @@ class NavigationBarBase extends React.Component {
   }
 }
 const NavigationBar = connect(({user}) => ({
+  featuresEnabled: user.featuresEnabled || {},
   onboardingComplete: onboardingComplete(user),
   userProfile: user.profile,
 }))(Radium(NavigationBarBase))
@@ -498,20 +614,20 @@ class Footer extends React.Component {
     }
     return <footer style={containerStyle}>
       <img
-          src={isMobileVersion ? logoBobEmploiBetaMobileImage : logoBobEmploiWhiteImage}
-          style={logoStyle} />
+        src={isMobileVersion ? logoBobEmploiBetaMobileImage : logoBobEmploiWhiteImage}
+        style={logoStyle} />
 
       <div style={{flex: 1}} />
 
       <NavigationLink
-          style={linkStyle} to={Routes.TERMS_AND_CONDITIONS_PAGE}
-          isSelected={page === 'terms'}>
+        style={linkStyle} to={Routes.TERMS_AND_CONDITIONS_PAGE}
+        isSelected={page === 'terms'}>
         Conditions générales
       </NavigationLink>
 
       <NavigationLink
-          style={linkStyle} to={Routes.PRIVACY_PAGE}
-          isSelected={page === 'privacy'}>
+        style={linkStyle} to={Routes.PRIVACY_PAGE}
+        isSelected={page === 'privacy'}>
         Vie privée
       </NavigationLink>
 
@@ -538,7 +654,9 @@ class PageWithNavigationBar extends React.Component {
     children: PropTypes.node,
     isChatButtonShown: PropTypes.bool,
     isContentScrollable: PropTypes.bool,
+    isNavBarTransparent: PropTypes.bool,
     onNavigateBack: PropTypes.func,
+    onScroll: PropTypes.func,
     page: PropTypes.string,
     style: PropTypes.object,
   }
@@ -552,15 +670,37 @@ class PageWithNavigationBar extends React.Component {
     isDebugModalShown: false,
   }
 
+  componentDidMount() {
+    const {isContentScrollable, onScroll} = this.props
+    if (!isContentScrollable && onScroll) {
+      window.addEventListener('scroll', onScroll)
+    }
+  }
+
+  componentWillUnmount() {
+    const {isContentScrollable, onScroll} = this.props
+    if (!isContentScrollable && onScroll) {
+      window.removeEventListener('scroll', onScroll)
+    }
+  }
+
   scrollDelta(deltaOffsetTop) {
-    if (this.scrollableDom) {
-      this.scrollableDom.scrollTop += deltaOffsetTop
+    if (this.props.isContentScrollable) {
+      if (this.scrollableDom) {
+        this.scrollableDom.scrollTop += deltaOffsetTop
+      }
+    } else {
+      window.document.body.scrollTop += deltaOffsetTop
     }
   }
 
   scrollTo(offsetTop) {
-    if (this.scrollableDom) {
-      this.scrollableDom.scrollTop = offsetTop
+    if (this.props.isContentScrollable) {
+      if (this.scrollableDom) {
+        this.scrollableDom.scrollTop = offsetTop
+      }
+    } else {
+      window.document.body.scrollTop = offsetTop
     }
   }
 
@@ -572,10 +712,17 @@ class PageWithNavigationBar extends React.Component {
 
   render() {
     // eslint-disable-next-line no-unused-vars
-    const {children, isChatButtonShown, isContentScrollable, onNavigateBack,
-      page, style, ...extraProps} = this.props
+    const {children, isChatButtonShown, isContentScrollable,
+      isNavBarTransparent, onNavigateBack, onScroll, page, style,
+      ...extraProps} = this.props
     let content
+    const containerStyle = {}
     if (isContentScrollable) {
+      Object.assign(containerStyle, {
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+      })
       const scrollContainerStyle = {
         WebkitOverflowScrolling: 'touch',
         bottom: 0,
@@ -588,9 +735,9 @@ class PageWithNavigationBar extends React.Component {
       }
       content = <div style={{flex: 1, position: 'relative'}}>
         <div
-            style={scrollContainerStyle} ref={dom => {
-              this.scrollableDom = dom
-            }} {...extraProps}>
+          style={scrollContainerStyle} ref={dom => {
+            this.scrollableDom = dom
+          }} onScroll={onScroll} {...extraProps}>
           {children}
         </div>
       </div>
@@ -599,20 +746,21 @@ class PageWithNavigationBar extends React.Component {
         {children}
       </div>
     }
-    return <div style={{display: 'flex', flexDirection: 'column', height: '100vh'}}>
+    return <div style={containerStyle}>
       <CookieMessage />
       <BetaMessage />
-      <NavigationBar onNavigateBack={onNavigateBack} page={page} />
+      <NavigationBar
+        onNavigateBack={onNavigateBack} page={page} isTransparent={isNavBarTransparent} />
       <ZendeskChatButton
-          isShown={isChatButtonShown} language="fr"
-          domain={config.zendeskDomain} user={this.getUserProfile()} />
+        isShown={isChatButtonShown} language="fr"
+        domain={config.zendeskDomain} user={this.getUserProfile()} />
 
       <ShortKey
-          keyCode="KeyE" ctrlKey={true} shiftKey={true}
-          onKeyPress={() => this.setState({isDebugModalShown: true})} />
+        keyCode="KeyE" ctrlKey={true} shiftKey={true}
+        onKeyPress={() => this.setState({isDebugModalShown: true})} />
       <DebugModal
-          onClose={() => this.setState({isDebugModalShown: false})}
-          isShown={this.state.isDebugModalShown} />
+        onClose={() => this.setState({isDebugModalShown: false})}
+        isShown={this.state.isDebugModalShown} />
 
       {content}
     </div>

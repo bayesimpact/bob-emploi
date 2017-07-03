@@ -3,12 +3,12 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 import {AppearingList, Colors, GrowingNumber, Icon, Markdown, PaddedOnMobile,
-  SmoothTransitions, Styles} from 'components/theme'
+  SmoothTransitions, Styles, Tag} from 'components/theme'
 
 import emailTemplates from './data/email_templates.json'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   render() {
     return <div style={{display: 'flex'}}>
       <div style={{flex: 1}}>
@@ -22,7 +22,7 @@ class FullAdviceCard extends React.Component {
 }
 
 
-class AdvicePageContent extends React.Component {
+class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
   }
@@ -44,7 +44,7 @@ class AdvicePageContent extends React.Component {
 
       <AppearingList>
         {templates.map((template, index) => <EmailTemplate
-            {...template} style={boxStyle(index)} key={`template-${index}`} />)}
+          {...template} style={boxStyle(index)} key={`template-${index}`} />)}
       </AppearingList>
     </div>
   }
@@ -83,19 +83,9 @@ class EmailTemplateBase extends React.Component {
     }
     const tagStyle = {
       backgroundColor: color,
-      borderRadius: 2,
-      color: '#fff',
-      display: 'inline-block',
-      fontSize: 9,
-      fontWeight: 500,
-      letterSpacing: .3,
       marginLeft: 10,
-      padding: 6,
-      textTransform: 'uppercase',
     }
-    return <span style={tagStyle}>
-      <div style={Styles.CENTER_FONT_VERTICALLY}>{value}</div>
-    </span>
+    return <Tag style={tagStyle}>{value}</Tag>
   }
 
   render() {
@@ -143,8 +133,8 @@ class EmailTemplateBase extends React.Component {
           Voir {isContentShown ? 'moins ' : "l'email "}
         </span>
         <Icon
-            name={isContentShown ? 'chevron-up' : 'chevron-down'}
-            style={{fontSize: 20, lineHeight: '13px', marginLeft: 5}} />
+          name={isContentShown ? 'chevron-up' : 'chevron-down'}
+          style={{fontSize: 20, lineHeight: '13px', marginLeft: 5}} />
       </header>
 
       <div style={contentStyle}>
@@ -156,4 +146,4 @@ class EmailTemplateBase extends React.Component {
 const EmailTemplate = Radium(EmailTemplateBase)
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

@@ -7,6 +7,7 @@ This file contains the JSON API that will provide the
 MyGamePlan web application with data.
 """
 import collections
+import datetime
 import functools
 import hashlib
 import itertools
@@ -15,11 +16,13 @@ import os
 import random
 import re
 import time
+from urllib import parse
 
 from bson import objectid
 import farmhash
 import flask
 from google.protobuf import json_format
+from google.protobuf import timestamp_pb2
 import pymongo
 import requests
 from werkzeug.contrib import fixers
@@ -31,13 +34,16 @@ from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import export_pb2
 
@@ -51,13 +57,15 @@ _DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
 
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 
-SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
-ADMIN_AUTH_TOKEN = os.getenv('ADMIN_AUTH_TOKEN')
+_SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
+_ADMIN_AUTH_TOKEN = os.getenv('ADMIN_AUTH_TOKEN')
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
 _ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
 _SHOW_UNVERIFIED_DATA_USER_REGEXP = \
     re.compile(os.getenv('SHOW_UNVERIFIED_DATA_USER_REGEXP', r'@pole-emploi.fr$'))
+_POLE_EMPLOI_USER_REGEXP = \
+    re.compile(os.getenv('POLE_EMPLOI_USER_REGEXP', r'@pole-emploi.fr$'))
 
 # Email regex from http://emailregex.com/
 _EMAIL_REGEX = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
@@ -77,11 +85,11 @@ _LONG_REQUEST_DURATION_SECONDS = 1.5
 def requires_admin_auth(func):
     """Decorator for a function that requires admin authorization."""
     def _decorated_fun(*args, **kwargs):
-        if ADMIN_AUTH_TOKEN:
+        if _ADMIN_AUTH_TOKEN:
             request_token = flask.request.headers.get('Authorization')
             if not request_token:
                 flask.abort(401)
-            if request_token != ADMIN_AUTH_TOKEN:
+            if request_token != _ADMIN_AUTH_TOKEN:
                 flask.abort(403)
         return func(*args, **kwargs)
     return functools.wraps(func)(_decorated_fun)
@@ -216,10 +224,6 @@ def _get_feedback_context(feedback):
     return '%s%s%s' % (name, title, experience)
 
 
-def _generic_image():
-    return 'generic%d' % random.randint(1, 5)
-
-
 def _save_user(user_data, is_new_user):
     _tick('Save user start')
 
@@ -228,6 +232,9 @@ def _save_user(user_data, is_new_user):
     else:
         _tick('Load old user data')
         previous_user_data = _get_user_data(user_data.user_id)
+        if user_data.revision and previous_user_data.revision > user_data.revision:
+            # Do not overwrite newer data that was saved already: just return it.
+            return previous_user_data
 
     if not previous_user_data.registered_at.seconds:
         user_data.registered_at.FromDatetime(now.get())
@@ -273,7 +280,23 @@ def _save_user(user_data, is_new_user):
                 {rome_id: project.local_stats}, project.mobility.city)
 
         _tick('Advisor')
-        advisor.maybe_advise(user_data, project, _DB)
+        advisor.maybe_advise(
+            user_data, project, _DB, parse.urljoin(flask.request.base_url, '/')[:-1])
+
+        _tick('New feedback')
+        if not is_new_user and (project.feedback.text or project.feedback.score):
+            previous_project = next(
+                (p for p in previous_user_data.projects if p.project_id == project.project_id),
+                project_pb2.Project())
+            if project.feedback.text and not previous_project.feedback.text:
+                _give_feedback(feedback_pb2.Feedback(
+                    user_id=str(user_data.user_id),
+                    project_id=str(project.project_id),
+                    feedback=project.feedback.text,
+                    source=feedback_pb2.PROJECT_FEEDBACK))
+            if project.feedback.score > 2 and not previous_project.feedback.score:
+                _tell_slack(
+                    ':sparkles: General feedback score: %s' % (':star:' * project.feedback.score))
 
         _tick('Process project end')
 
@@ -281,6 +304,8 @@ def _save_user(user_data, is_new_user):
         _assert_no_credentials_change(previous_user_data, user_data)
         _copy_unmodifiable_fields(previous_user_data, user_data)
         _populate_feature_flags(user_data)
+
+    user_data.revision += 1
 
     # Modifications on user_data after this point will not be saved.
     _tick('Save user')
@@ -350,6 +375,10 @@ def _is_in_unverified_data_zone(user_profile, user_projects):
         city = user_projects[0].mobility.city
     else:
         return False
+
+    # TODO(pascal): Add data for this job group and remove this.
+    if job.job_group.rome_id == 'L1510':
+        return True
 
     data_zone_key = '%s:%s' % (city.postcodes, job.job_group.rome_id)
     hashed_data_zone_key = hashlib.md5(data_zone_key.encode('utf-8')).hexdigest()
@@ -432,15 +461,8 @@ def _get_user_data(user_id):
                 project.kind = project_pb2.FIND_ANOTHER_JOB
 
         project.ClearField('diploma_fulfillment_estimate')
-
-        for project_action in itertools.chain(
-                project.actions, project.past_actions, project.sticky_actions):
-            # TODO(pascal): Remove the fields completely after this has been
-            # live for a week.
-            project_action.ClearField('goal')
-            project_action.ClearField('short_goal')
-            project_action.ClearField('sticky_action_incentive')
-            project_action.ClearField('steps')
+        project.ClearField('intensity')
+        project.ClearField('actions_generated_at')
 
     # TODO(pascal): Remove the fields completely after this has been live for a
     # week.
@@ -482,19 +504,7 @@ _CHANTIERS = proto.MongoCachedCollection(chantier_pb2.Chantier, 'chantiers')
 
 def _chantiers():
     """Returns a list of known chantiers as protos."""
-    all_chantiers = _CHANTIERS.get_collection(_DB)
-    if not all_chantiers.is_cached:
-        # Validate chantiers.
-        required_models = set(c.scoring_model for c in all_chantiers.values()) | set(
-            scoring.GROUP_SCORING_MODELS.values())
-        existing_models = set(scoring.SCORING_MODELS) | set(
-            name for name in required_models if scoring.get_scoring_model(name))
-        if required_models - existing_models:
-            logging.warning(
-                'Some scoring models will be random: %s', required_models - existing_models)
-        if existing_models - required_models:
-            logging.warning('Some scoring models are unused: %s', existing_models - required_models)
-    return all_chantiers
+    return _CHANTIERS.get_collection(_DB)
 
 
 # TODO: Split this into separate endpoints for registration and login.
@@ -561,6 +571,26 @@ def project_associations(user_id, project_id):
     return association_pb2.Associations(associations=sorted_associations)
 
 
+@app.route('/api/project/<user_id>/<project_id>/interview-tips', methods=['GET'])
+@proto.flask_api(out_type=application_pb2.InterviewTips)
+def project_interview_tips(user_id, project_id):
+    """Retrieve a list of interview tips for a project."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, _DB)
+    interview_tips = scoring_project.list_application_tips()
+    sorted_tips = sorted(interview_tips, key=lambda t: (-len(t.filters), random.random()))
+    tips_proto = application_pb2.InterviewTips(
+        qualities=[t for t in sorted_tips if t.type == application_pb2.QUALITY],
+        preparations=[
+            t for t in sorted_tips
+            if t.type == application_pb2.INTERVIEW_PREPARATION])
+    for tip in itertools.chain(tips_proto.qualities, tips_proto.preparations):
+        tip.ClearField('type')
+    return tips_proto
+
+
 @app.route('/api/project/<user_id>/<project_id>/jobboards', methods=['GET'])
 @proto.flask_api(out_type=jobboard_pb2.JobBoards)
 def project_jobboards(user_id, project_id):
@@ -572,6 +602,47 @@ def project_jobboards(user_id, project_id):
     jobboards = scoring_project.list_jobboards()
     sorted_jobboards = sorted(jobboards, key=lambda j: (-len(j.filters), random.random()))
     return jobboard_pb2.JobBoards(job_boards=sorted_jobboards)
+
+
+@app.route('/api/project/<user_id>/<project_id>/resume-tips', methods=['GET'])
+@proto.flask_api(out_type=application_pb2.ResumeTips)
+def project_resume_tips(user_id, project_id):
+    """Retrieve a list of resume tips for a project."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, _DB)
+    resume_tips = scoring_project.list_application_tips()
+    sorted_tips = sorted(resume_tips, key=lambda t: (-len(t.filters), random.random()))
+    tips_proto = application_pb2.ResumeTips(
+        qualities=[t for t in sorted_tips if t.type == application_pb2.QUALITY],
+        improvements=[t for t in sorted_tips if t.type == application_pb2.CV_IMPROVEMENT])
+    for tip in itertools.chain(tips_proto.qualities, tips_proto.improvements):
+        tip.ClearField('type')
+    return tips_proto
+
+
+@app.route('/api/project/<user_id>/<project_id>/volunteer', methods=['GET'])
+@proto.flask_api(out_type=association_pb2.VolunteeringMissions)
+def project_volunteer(user_id, project_id):
+    """Retrieve a list of job boards for a project."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, _DB)
+    return scoring_project.volunteering_missions()
+
+
+@app.route('/api/project/<user_id>/<project_id>/commute', methods=['GET'])
+@proto.flask_api(out_type=commute_pb2.CommutingCities)
+def project_commute(user_id, project_id):
+    """Retrieve a list of commuting cities for a project."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, _DB)
+    return commute_pb2.CommutingCities(cities=scoring_project.list_nearby_cities())
 
 
 @app.route('/api/project/<user_id>/<project_id>/advice/<advice_id>/tips', methods=['GET'])
@@ -687,26 +758,32 @@ def get_job_group_jobs(rome_id):
 @proto.flask_api(in_type=feedback_pb2.Feedback)
 def give_feedback(feedback):
     """Retrieve information about jobs whithin a job group."""
+    _give_feedback(feedback)
+    return ''
+
+
+def _give_feedback(feedback):
     result = _DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
 
     context = _get_feedback_context(feedback)
     if feedback.source == feedback_pb2.ADVICE_FEEDBACK:
         context += ' on advice "%s"' % feedback.advice_id
-    if feedback.source == feedback_pb2.PROFESSIONAL_PAGE_FEEDBACK:
+    elif feedback.source == feedback_pb2.PROFESSIONAL_PAGE_FEEDBACK:
         context += ' from the Counselors Page'
+    elif feedback.source == feedback_pb2.ADVICE_FEEDBACK:
+        context += ' on project "%s"' % feedback.project_id
 
     _tell_slack(
         ':right_anger_bubble: New user feedback%s:\n'
         '> %s\n'
         'To get full context: `db.feedbacks.find(ObjectId("%s"))`' %
         (context, feedback.feedback.replace('\n', '\n> '), result.inserted_id))
-    return ''
 
 
 def _tell_slack(text):
-    if not SLACK_FEEDBACK_URL:
+    if not _SLACK_FEEDBACK_URL:
         return
-    requests.post(SLACK_FEEDBACK_URL, json={'text': text})
+    requests.post(_SLACK_FEEDBACK_URL, json={'text': text})
 
 
 @app.route('/', methods=['GET'])
@@ -739,6 +816,8 @@ def _populate_feature_flags(user_proto):
 
     if _ALPHA_USER_REGEXP.search(user_proto.profile.email):
         user_proto.features_enabled.alpha = True
+    if _POLE_EMPLOI_USER_REGEXP.search(user_proto.profile.email):
+        user_proto.features_enabled.pole_emploi = True
 
 
 @app.route('/api/user/nps-survey-response', methods=['POST'])
@@ -767,6 +846,22 @@ def set_nps_survey_response(nps_survey_response):
     return ''
 
 
+@app.route('/api/usage/stats', methods=['GET'])
+@proto.flask_api(out_type=stats_pb2.UsersCount)
+def get_usage_stats():
+    """Get stats of the app usage."""
+    now_utc = now.get().astimezone(datetime.timezone.utc)
+    start_of_second = now_utc.replace(microsecond=0, tzinfo=None)
+    last_week = start_of_second - datetime.timedelta(days=7)
+    return stats_pb2.UsersCount(
+        total_user_count=_DB.user.count(),
+        weekly_new_user_count=_DB.user.find({'registeredAt': {
+            '$gt': _datetime_to_json_string(last_week),
+            '$lte': _datetime_to_json_string(start_of_second),
+        }}).count(),
+    )
+
+
 @app.before_request
 def _before_request():
     flask.g.start = time.time()
@@ -775,6 +870,12 @@ def _before_request():
 
 def _tick(tick_name):
     flask.g.ticks.append(_Tick(tick_name, time.time()))
+
+
+def _datetime_to_json_string(instant):
+    timestamp = timestamp_pb2.Timestamp()
+    timestamp.FromDatetime(instant)
+    return json_format.MessageToDict(timestamp)
 
 
 @app.teardown_request

@@ -88,18 +88,18 @@ class TipsListBase extends React.Component {
     const tipsShown = tips.slice(0, numTipsShown)
     return <div style={{marginTop: 30, ...style}}>
       <ActionDescriptionModal
-          action={openTip}
-          onClose={() => this.setState({openTip: null})}
-          isShown={!!this.state.openTip} />
+        action={openTip}
+        onClose={() => this.setState({openTip: null})}
+        isShown={!!this.state.openTip} />
       <div style={titleStyle}>
         <PaddedOnMobile>Voici quelques astuces pour {goal}&nbsp;:</PaddedOnMobile>
       </div>
       <VisibilitySensor
-          active={numTipsShown === 0} intervalDelay={250} delayedCall={true}
-          onChange={() => this.showNTips(DEFAULT_TIPS_SHOWN)} />
+        active={numTipsShown === 0} intervalDelay={250} delayedCall={true}
+        onChange={() => this.showNTips(DEFAULT_TIPS_SHOWN)} />
       {tipsShown.map(tip => <AppearingComponent key={tip.actionId}><Action
-          action={tip}
-          onOpen={() => this.setState({openTip: tip})} /></AppearingComponent>)}
+        action={tip}
+        onOpen={() => this.setState({openTip: tip})} /></AppearingComponent>)}
       {(numTipsShown === DEFAULT_TIPS_SHOWN && tips.length > DEFAULT_TIPS_SHOWN) ?
         <div style={showMoreTipsStyle}>
           <Button onClick={this.handleShowAllTipsClick(tips.length)} type="back">

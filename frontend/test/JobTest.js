@@ -1,5 +1,4 @@
-const chai = require('chai')
-const expect = chai.expect
+import {expect} from 'chai'
 import {genderizeJob} from 'store/job.js'
 import {JobSuggest} from 'components/suggestions'
 

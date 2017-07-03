@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/geo.proto";
+
+package bayes.bob;
+
+message HiringCity {
+  // City that is hiring.
+  FrenchCity city = 1;
+
+  // Offers in this city, possibly for a given job group depending on context. Only the comparison
+  // of this number to other cities will be meaningful.
+  float offers = 4;
+}
+
+message HiringCities {
+  // List of cities that hire for a given job group and period.
+  repeated HiringCity hiring_cities = 1;
+}
+
+message CommutingCity {
+  // Name of the city.
+  string name = 1;
+
+  // Number of offers per inhabitants, relative to the home city of the users, for their job group,
+  // on the 2 last years. 0 means undefined.
+  float relative_offers_per_inhabitant = 2;
+
+  // Distance of the commute, from the project's target city.
+  float distance_km = 3;
+}
+
+message CommutingCities {
+  // List of cities to commute to sorted by number of offers per inhabitants.
+  repeated CommutingCity cities = 1;
+}

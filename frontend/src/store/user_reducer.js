@@ -1,12 +1,13 @@
 import PropTypes from 'prop-types'
 import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, AUTHENTICATE_USER,
-        LOGOUT, ADVICE_PAGE_IS_SHOWN, CREATE_PROJECT, CREATE_PROJECT_SAVE,
-        MOVE_USER_DATES_BACK_1_DAY, DELETE_USER_DATA, MODIFY_PROJECT,
-        FINISH_PROFILE_SITUATION, ACCEPT_PRIVACY_NOTICE, EDIT_FIRST_PROJECT,
-        FINISH_PROFILE_FRUSTRATIONS, DECLINE_WHOLE_ADVICE,
-        FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL, LIKE_OR_DISLIKE_FEATURE,
-        FINISH_PROJECT_EXPERIENCE, MIGRATE_USER_TO_ADVISOR} from './actions'
-import {travelInTime} from './user'
+  LOGOUT, ADVICE_PAGE_IS_SHOWN, CREATE_PROJECT, CREATE_PROJECT_SAVE,
+  MOVE_USER_DATES_BACK_1_DAY, DELETE_USER_DATA, MODIFY_PROJECT,
+  FINISH_PROFILE_SITUATION, ACCEPT_PRIVACY_NOTICE, EDIT_FIRST_PROJECT,
+  FINISH_PROFILE_FRUSTRATIONS, SEND_PROJECT_FEEDBACK, MARK_CHANGELOG_AS_SEEN,
+  FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL, LIKE_OR_DISLIKE_FEATURE,
+  FINISH_PROJECT_EXPERIENCE, MIGRATE_USER_TO_ADVISOR, SCORE_ADVICE,
+  MARK_NOTIFICATION_AS_SEEN} from './actions'
+import {increaseRevision, keepMostRecentRevision, travelInTime} from './user'
 import Cookies from 'js-cookie'
 
 // All data for a user of the companion app, a job seeker.
@@ -33,7 +34,7 @@ const USER_PROFILE_SHAPE = PropTypes.shape({
 
 // Updates the given properties of a project.
 function updateProject(state, project) {
-  return {
+  return increaseRevision({
     ...state,
     projects: (state.projects || []).map(stateProject => {
       if (stateProject.projectId === project.projectId) {
@@ -44,7 +45,7 @@ function updateProject(state, project) {
       }
       return stateProject
     }),
-  }
+  })
 }
 
 function updateAdvice(state, project, advice) {
@@ -78,7 +79,7 @@ function updateAdvice(state, project, advice) {
       return updatedProjectState
     }),
   }
-  return projectModified ? updatedState : state
+  return projectModified ? increaseRevision(updatedState) : state
 }
 
 function user(state=initialData, action) {
@@ -88,20 +89,20 @@ function user(state=initialData, action) {
     case FINISH_PROFILE_FRUSTRATIONS:  // Fallthrough intended.
     case FINISH_PROFILE_SITUATION:  // Fallthrough intended.
     case SET_USER_PROFILE:
-      return {
+      return increaseRevision({
         ...state,
         profile: {
           ...state.profile,
           ...action.userProfile,
         },
-      }
+      })
     case CREATE_PROJECT_SAVE: // Fallthrough intended.
     case GET_USER_DATA:  // Fallthrough intended.
     case MIGRATE_USER_TO_ADVISOR:  // Fallthrough intended.
     case POST_USER_DATA:
       if (success) {
         action.response.userId && Cookies.set('userId', action.response.userId)
-        return action.response
+        return keepMostRecentRevision(state, action.response)
       }
       return state
     case AUTHENTICATE_USER: {
@@ -138,10 +139,10 @@ function user(state=initialData, action) {
         isIncomplete: false,
         status: 'PROJECT_CURRENT',
       }
-      return {
+      return increaseRevision({
         ...state,
         projects: [project],
-      }
+      })
     }
     case FINISH_PROJECT_CRITERIA:  // Fallthrough intended.
     case FINISH_PROJECT_GOAL:  // Fallthrough intended.
@@ -155,38 +156,63 @@ function user(state=initialData, action) {
         ...action.project,
         isIncomplete: true,
       }
-      return {
+      return increaseRevision({
         ...state,
         projects: [project],
-      }
+      })
     }
     case MODIFY_PROJECT:
       return updateProject(state, {
         advices: [],
+        feedback: {},
         isIncomplete: true,
         localStats: {},
         projectId: action.project.projectId,
       })
     case MOVE_USER_DATES_BACK_1_DAY:
-      return travelInTime({...state}, -24 * 60 * 60 * 1000)
+      return increaseRevision(travelInTime({...state}, -24 * 60 * 60 * 1000))
     case ADVICE_PAGE_IS_SHOWN:
       return updateAdvice(state, action.project, {
         adviceId: action.advice.adviceId,
         status: 'ADVICE_READ',
       })
-    case DECLINE_WHOLE_ADVICE:
+    case SCORE_ADVICE:
+      return updateAdvice(state, action.project, {
+        adviceId: action.advice.adviceId,
+        score: action.score || 0,
+      })
+    case SEND_PROJECT_FEEDBACK:
       return updateProject(state, {
+        feedback: action.feedback,
         projectId: action.project.projectId,
-        uselessAdviceFeedback: action.uselessAdviceFeedback || 'aucun commentaire',
+      })
+    case MARK_CHANGELOG_AS_SEEN:
+      if (!state.latestChangelogSeen || action.changelog > state.latestChangelogSeen) {
+        return increaseRevision({
+          ...state,
+          latestChangelogSeen: action.changelog,
+        })
+      }
+      return state
+    case MARK_NOTIFICATION_AS_SEEN:
+      if (!action.notification) {
+        return state
+      }
+      return increaseRevision({
+        ...state,
+        notificationsSeen: {
+          ...state.notificationsSeen,
+          [action.notification]: true,
+        },
       })
     case LIKE_OR_DISLIKE_FEATURE:
-      return {
+      return increaseRevision({
         ...state,
         likes: {
           ...(state.likes || {}),
           [action.feature]: action.likeScore,
         },
-      }
+      })
     default:
       return state
   }

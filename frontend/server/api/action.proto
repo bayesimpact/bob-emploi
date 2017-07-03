@@ -72,25 +72,6 @@ message Action {
   // spontaneously apply to a company.
   Company apply_to_company = 19;
 
-  // Goal if this is a sticky action.
-  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
-  string goal = 20 [deprecated = true];
-
-  // A small piece of sentence that summarize the goal if this is a sticky
-  // action. It can be used to complete sentences like: "These are all the
-  // steps ...", e.g. "to apply for a work visa".
-  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
-  string short_goal = 24 [deprecated = true];
-
-  // A text to explain why one should start a sticky action as a multiple steps
-  // process instead of just using the initial action.
-  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
-  string sticky_action_incentive = 21 [deprecated = true];
-
-  // Detailed steps if this is a sticky action.
-  // TODO(pascal): Clean it up, we do not use sticky actions anymore.
-  repeated StickyActionStep steps = 22 [deprecated = true];
-
   // Label to set on the link.
   string link_label = 26;
 
@@ -242,54 +223,6 @@ message ActionTemplate {
   // A short keyword (or keywords) that represent this tip to append to an
   // email's subject.
   string email_subject_keyword = 22;
-}
-
-
-message StickyActionStep {
-  // Unique step ID (unique among all steps for this user).
-  string step_id = 10;
-
-  // Short title for the step.
-  string title = 1;
-
-  // Markdown text describing the full instructions for this step, including
-  // links to external websites.
-  string content = 2;
-
-  // Link to an external website useful for this step.
-  string link = 11;
-
-  // Name of the button with the link.
-  string link_name = 12;
-
-  // Rough number of minutes that the step will take. This is the active part,
-  // requiring the user to actually do something.
-  int32 duration_active_minutes = 3;
-
-  // Rough number of minutes that the user might need to wait before finishing
-  // the step, e.g. waiting for a friend to call them back.
-  int32 duration_waiting_minutes = 4;
-
-  // Caption for the finish checkbox, e.g. "I did that step, and am ready for
-  // the next".
-  string finish_checkbox_caption = 5;
-
-  // Caption for the finish small input text, e.g. "Enter the name of the
-  // friend you want to meet".
-  string finish_text_caption = 6;
-
-  // Caption for the finish comments or large text input, e.g. "Enter what you
-  // learned from that".
-  string finish_long_text_caption = 7;
-
-
-  // USER GENERATED CONTENT.
-
-  // Is this step done.
-  bool is_done = 8;
-
-  // Long or short text entered by user when finishing the step.
-  string text = 9;
 }
 
 

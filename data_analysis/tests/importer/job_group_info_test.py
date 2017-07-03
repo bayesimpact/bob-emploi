@@ -2,7 +2,7 @@
 from os import path
 import unittest
 
-import mock
+import airtablemock
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.lib import mongo
@@ -19,28 +19,34 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
     job_application_complexity_json = path.join(
         path.dirname(__file__), 'testdata/job_application_complexity.json')
 
-    @mock.patch(job_group_info.__name__ + '.airtable')
-    def test_make_dicts(self, mock_airtable):
+    @airtablemock.patch(job_group_info.__name__ + '.airtable')
+    def test_make_dicts(self):
         """Test basic usage of the csv2dicts function."""
         job_group_info.AIRTABLE_API_KEY = 'key01234567'
-        mock_airtable.Airtable().iterate.return_value = [
-            {'_id': 'aa', 'fields': {
-                'code_rome': 'D1501',
-                'SKILLS': '* Être créatif',
-                'BONUS SKILLS': "* Avoir le sens de l'humour",
-                'TRAINING': '* Maîtriser des logiciels',
-                'other': 'foo',
-            }},
-        ]
-        mock_airtable.Airtable.reset_mock()
+        advice_airtable = airtablemock.Airtable('app01234567', 'key01234567')
+        advice_airtable.create('advice', {
+            'code_rome': 'D1501',
+            'SKILLS': '* Être créatif',
+            'BONUS SKILLS': "* Avoir le sens de l'humour",
+            'TRAINING': '* Maîtriser des logiciels',
+            'other': 'foo',
+        })
+        rome_airtable = airtablemock.Airtable('app4242', 'key01234567')
+        rome_airtable.create('domains', {
+            'name': 'Commerce de gros',
+            'domain_name': 'Commerce, négoce et distribution',
+        })
+        rome_airtable.create('domains', {
+            'name': 'Commerce/grande distribution',
+            'domain_name': 'Commerce, négoce et distribution',
+        })
+
         collection = job_group_info.make_dicts(
             self.rome_csv_pattern,
             self.job_requirements_json,
             self.job_application_complexity_json,
-            'app01234567:advice:viw012345')
-
-        mock_airtable.Airtable.assert_called_once_with('app01234567', 'key01234567')
-        mock_airtable.Airtable().iterate.assert_called_once_with('advice', view='viw012345')
+            'app01234567:advice:viw012345',
+            'app4242:domains')
 
         self.assertEqual(531, len(collection))
         for info in collection:
@@ -74,6 +80,12 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual(
             ['Boutique, commerce de détail'],
             d1501.work_environment_keywords.structures)
+        self.assertEqual(
+            ['Commerce, négoce et distribution'],
+            [d.name for d in d1501.work_environment_keywords.domains])
+        self.assertEqual(
+            ['Commerce de gros', 'Commerce/grande distribution'],
+            sorted(d1501.work_environment_keywords.domains[0].sectors))
 
 
 if __name__ == '__main__':

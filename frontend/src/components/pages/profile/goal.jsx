@@ -51,6 +51,21 @@ class NewProjectGoalStep extends React.Component {
     profile: PropTypes.object,
   }
 
+  state = {
+    areaType: null,
+    city: null,
+    isValidated: false,
+    kind: '',
+    targetJob: null,
+  }
+
+  componentWillMount() {
+    const {newProject} = this.props
+    if (newProject) {
+      this.setState(newProject)
+    }
+  }
+
   handleSubmit = () => {
     const {areaType, city, kind, targetJob} = this.state
     this.setState({isValidated: true})
@@ -93,24 +108,9 @@ class NewProjectGoalStep extends React.Component {
     this.setState(newState)
   }
 
-  componentWillMount() {
-    const {newProject} = this.props
-    if (newProject) {
-      this.setState(newProject)
-    }
-  }
-
   isFormValid = () => {
     const {areaType, kind, city, targetJob} = this.state
     return !!(kind && targetJob && city && areaType)
-  }
-
-  state = {
-    areaType: null,
-    city: null,
-    isValidated: false,
-    kind: '',
-    targetJob: null,
   }
 
   render() {
@@ -118,37 +118,37 @@ class NewProjectGoalStep extends React.Component {
     const {areaType, city, kind, targetJob, isValidated} = this.state
     const maybeE = profile.gender === 'FEMININE' ? 'e' : ''
     return <Step
-        title="Entrons dans le vif du sujet : votre projet !"
-        {...this.props} fastForward={this.fastForward}
-        onNextButtonClick={this.handleSubmit} >
+      title="Entrons dans le vif du sujet : votre projet !"
+      {...this.props} fastForward={this.fastForward}
+      onNextButtonClick={this.handleSubmit} >
       <FieldSet label="Mon projet est de :"
-                isValid={!!kind} isValidated={isValidated}>
+        isValid={!!kind} isValidated={isValidated}>
         <Select value={kind} options={projectKindOptions} onChange={this.handleChange('kind')} />
       </FieldSet>
       {/* TODO: Make this sentence depend on `kind` */}
       <FieldSet
-          label="Je cherche un emploi de :"
-          isValid={!!targetJob} isValidated={isValidated}>
+        label="Je cherche un emploi de :"
+        isValid={!!targetJob} isValidated={isValidated}>
         <JobSuggestWithNote
-            placeholder="choisir un métier"
-            value={targetJob}
-            onChange={this.handleChange('targetJob')}
-            gender={profile.gender} />
+          placeholder="choisir un métier"
+          value={targetJob}
+          onChange={this.handleChange('targetJob')}
+          gender={profile.gender} />
       </FieldSet>
       <FieldSet
-          label={`Je suis prêt${maybeE} à bouger :`} isValid={!!areaType}
-          isValidated={isValidated}>
+        label={`Je suis prêt${maybeE} à bouger :`} isValid={!!areaType}
+        isValidated={isValidated}>
         <Select
-            options={PROJECT_LOCATION_AREA_TYPE_OPTIONS} value={areaType}
-            onChange={this.handleChange('areaType')} />
+          options={PROJECT_LOCATION_AREA_TYPE_OPTIONS} value={areaType}
+          onChange={this.handleChange('areaType')} />
       </FieldSet>
       <FieldSet
-          label="Je cherche autour de :" isValid={!!city} isValidated={isValidated}>
+        label="Je cherche autour de :" isValid={!!city} isValidated={isValidated}>
         <CitySuggest
-            onChange={this.handleChange('city')}
-            style={{padding: 1, ...Styles.INPUT}}
-            value={city}
-            placeholder="ville ou code postal" />
+          onChange={this.handleChange('city')}
+          style={{padding: 1, ...Styles.INPUT}}
+          value={city}
+          placeholder="ville ou code postal" />
       </FieldSet>
     </Step>
   }

@@ -1,6 +1,3 @@
-require('normalize.css')
-require('styles/App.css')
-
 import React from 'react'
 import PropTypes from 'prop-types'
 import _ from 'underscore'
@@ -14,6 +11,7 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import {StyleRoot} from 'radium'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import Cookies from 'js-cookie'
+import {polyfill} from 'smoothscroll-polyfill'
 import {Routes} from 'components/url'
 import {Colors} from 'components/theme'
 import {AdvicePage} from './advice'
@@ -42,6 +40,11 @@ import {app, asyncState} from 'store/app_reducer'
 import {mainSelector, onboardingComplete} from 'store/main_selectors'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {createPageviewTracker} from 'store/google_analytics'
+
+require('normalize.css')
+require('styles/App.css')
+
+polyfill()
 
 const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
 // Enable devTools middleware.
@@ -173,9 +176,9 @@ class PageHolderBase extends React.Component {
             {this.props.children}
             <LoginModal onLogin={this.handleLogin} />
             <Snackbar
-                open={!!errorMessage} message={errorMessage || ''}
-                bodyStyle={{maxWidth: 800}}
-                autoHideDuration={4000} onRequestClose={this.hideToasterMessage()} />
+              open={!!errorMessage} message={errorMessage || ''}
+              bodyStyle={{maxWidth: 800}}
+              autoHideDuration={4000} onRequestClose={this.hideToasterMessage()} />
           </div>
         </StyleRoot>
       </MuiThemeProvider>
@@ -294,11 +297,11 @@ class MyRouterBase extends React.Component {
       // Replacement chokes on it when we do not render the exact same object,
       // so we cache it here.
       this.routesCache = <Router
-          history={history} onUpdate={() => {
-            window.scrollTo(0, 0)
-            trackPageview()
-          }}
-          createElement={this.createElement}>
+        history={history} onUpdate={() => {
+          window.scrollTo(0, 0)
+          trackPageview()
+        }}
+        createElement={this.createElement}>
         <Route path={Routes.ROOT} component={PageHolder}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
           <Route onEnter={this.requireUserCheck}>

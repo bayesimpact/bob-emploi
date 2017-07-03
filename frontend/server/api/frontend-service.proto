@@ -3,6 +3,8 @@ syntax = "proto3";
 import "google/protobuf/empty.proto";
 
 import "bob_emploi/frontend/api/action.proto";
+import "bob_emploi/frontend/api/application.proto";
+import "bob_emploi/frontend/api/association.proto";
 import "bob_emploi/frontend/api/config.proto";
 import "bob_emploi/frontend/api/feedback.proto";
 import "bob_emploi/frontend/api/export.proto";
@@ -11,6 +13,7 @@ import "bob_emploi/frontend/api/jobboard.proto";
 import "bob_emploi/frontend/api/project.proto";
 import "bob_emploi/frontend/api/stats.proto";
 import "bob_emploi/frontend/api/user.proto";
+import "bob_emploi/frontend/api/commute.proto";
 
 package bayes.bob;
 
@@ -51,6 +54,7 @@ service FrontendService {
   rpc UseApp(User) returns (User);
 
   // Creates daily actions for the user if none for today.
+  // TODO(pascal): Clean up.
   rpc RefreshActionPlan(User) returns (User);
 
   // Authenticate a user: retrieve a user's data or create a new user.
@@ -60,8 +64,17 @@ service FrontendService {
   // job group.
   rpc ProjectRequirements(Project) returns (JobRequirements);
 
+  // Retrieve a list of tips to prepare for an interivew for a project.
+  rpc ProjectInterviewTips(Project) returns (InterviewTips);
+
   // Retrieve a list of job boards for a project.
   rpc ProjectJobBoards(Project) returns (JobBoards);
+
+  // Retrieve a list of tips to improve a resume for a project.
+  rpc ProjectResumeTips(Project) returns (ResumeTips);
+
+  // Retrieve a list of volunteering missions for a project.
+  rpc ProjectVolunteer(Project) returns (VolunteeringMissions);
 
   // Get all available tips for a piece of advice in a project.
   rpc ProjectAdviceTips(Advice) returns(AdviceTips);
@@ -76,4 +89,7 @@ service FrontendService {
   // Retrieve information about jobs whithin a job group (the input is actually
   // only a job group's ROME ID).
   rpc GetJobs(JobGroup) returns (JobGroup);
+
+  // Retrieve information about possible cities to commute to for this project.
+  rpc GetCommutingCities(Project) returns (CommutingCities);
 }

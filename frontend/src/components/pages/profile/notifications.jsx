@@ -44,13 +44,13 @@ class NotificationsStep extends React.Component {
         sur le site de {config.productName}.
       </div>
       <CheckboxList
-          options={DAY_OPTIONS}
-          values={emailDays}
-          onChange={this.updater_.handleChange('emailDays')} />
+        options={DAY_OPTIONS}
+        values={emailDays}
+        onChange={this.updater_.handleChange('emailDays')} />
       <LabeledToggle
-          label="Recevoir un récapitulatif de mon activité chaque semaine"
-          style={{marginTop: 30}} type="checkbox" isSelected={isWeeklySummaryEnabled}
-          onClick={() => this.setState({isWeeklySummaryEnabled: !isWeeklySummaryEnabled})} />
+        label="Recevoir un récapitulatif de mon activité chaque semaine"
+        style={{marginTop: 30}} type="checkbox" isSelected={isWeeklySummaryEnabled}
+        onClick={() => this.setState({isWeeklySummaryEnabled: !isWeeklySummaryEnabled})} />
     </FieldSet>
   }
 
@@ -74,10 +74,10 @@ class NotificationsStep extends React.Component {
         de {config.productName}&nbsp;: nouvelles fonctionnalités, astuces, …
       </div>
       <LabeledToggle
-          type="checkbox"
-          label={`Suivre l'actualité de ${config.productName}`}
-          isSelected={isNewsletterEnabled}
-          onClick={() => this.updater_.handleChange('isNewsletterEnabled')(!isNewsletterEnabled)} />
+        type="checkbox"
+        label={`Suivre l'actualité de ${config.productName}`}
+        isSelected={isNewsletterEnabled}
+        onClick={() => this.updater_.handleChange('isNewsletterEnabled')(!isNewsletterEnabled)} />
     </FieldSet>
   }
 

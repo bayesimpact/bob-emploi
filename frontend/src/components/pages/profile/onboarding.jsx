@@ -1,10 +1,10 @@
 import _ from 'underscore'
 import {FINISH_PROFILE_SITUATION,
-        FINISH_PROFILE_FRUSTRATIONS,
-        FINISH_PROJECT_GOAL, FINISH_PROJECT_CRITERIA,
-        FINISH_PROJECT_EXPERIENCE,
-        ACCEPT_PRIVACY_NOTICE,
-        createFirstProject} from 'store/actions'
+  FINISH_PROFILE_FRUSTRATIONS,
+  FINISH_PROJECT_GOAL, FINISH_PROJECT_CRITERIA,
+  FINISH_PROJECT_EXPERIENCE,
+  ACCEPT_PRIVACY_NOTICE,
+  createFirstProject} from 'store/actions'
 import {browserHistory} from 'react-router'
 
 import {NEW_PROJECT_ID, Routes} from 'components/url'

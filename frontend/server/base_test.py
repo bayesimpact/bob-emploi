@@ -31,6 +31,7 @@ class ServerTestCase(unittest.TestCase):
         server._DB = self._db  # pylint: disable=protected-access
         server._JOB_GROUPS_INFO.reset_cache()  # pylint: disable=protected-access
         server._CHANTIERS.reset_cache()  # pylint: disable=protected-access
+        server.advisor._EMAIL_ACTIVATION_ENABLED = False  # pylint: disable=protected-access
         self._db.chantiers.insert_many([
             {'_id': 'c1', 'chantierId': 'c1'},
             {'_id': 'c2', 'chantierId': 'c2'},

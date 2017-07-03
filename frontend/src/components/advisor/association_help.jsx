@@ -6,10 +6,10 @@ import Radium from 'radium'
 import {getAssociations} from 'store/actions'
 
 import {AppearingList, CircularProgress, Colors, GrowingNumber, Icon,
-  PaddedOnMobile, Styles} from 'components/theme'
+  PaddedOnMobile, Tag} from 'components/theme'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
   }
@@ -26,7 +26,7 @@ class FullAdviceCard extends React.Component {
   }
 }
 
-class AdvicePageContentBase extends React.Component {
+class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
     associations: PropTypes.arrayOf(PropTypes.object.isRequired),
     dispatch: PropTypes.func.isRequired,
@@ -45,8 +45,8 @@ class AdvicePageContentBase extends React.Component {
     const {associations} = this.props
     return <AppearingList style={style}>
       {associations.map(({filters, link, name}, index) => <AssociationLink
-          key={`association-${index}`} href={link} filters={filters}
-          style={{marginTop: index ? -1 : 0}}>
+        key={`association-${index}`} href={link} filters={filters}
+        style={{marginTop: index ? -1 : 0}}>
         {name}
       </AssociationLink>)}
     </AppearingList>
@@ -65,21 +65,23 @@ class AdvicePageContentBase extends React.Component {
     return <div>
       <PaddedOnMobile style={{fontSize: 21}}>
         Nous avons trouvé <GrowingNumber
-            style={{fontWeight: 'bold'}} number={associations.length} isSteady={true} />
+          style={{fontWeight: 'bold'}} number={associations.length} isSteady={true} />
         {' '}association{maybeS(associations.length)}
         {hasOnlySpecialized ? specialized : null} pour vous
-        {(numSpecializedAssociations > 0 && !hasOnlySpecialized) ? <span> dont <GrowingNumber
+        {(numSpecializedAssociations > 0 && !hasOnlySpecialized) ? <span>
+          {' '}dont <GrowingNumber
             style={{fontWeight: 'bold'}} number={numSpecializedAssociations} isSteady={true} />
-          {specialized}</span> : null}
+          {specialized}
+        </span> : null}
       </PaddedOnMobile>
 
       {this.renderAssociations({marginTop: 15})}
     </div>
   }
 }
-const AdvicePageContent = connect(({app}, {project}) => ({
+const ExpandedAdviceCardContent = connect(({app}, {project}) => ({
   associations: app.associations[project.projectId],
-}))(AdvicePageContentBase)
+}))(ExpandedAdviceCardContentBase)
 
 
 class AssociationLinkBase extends React.Component {
@@ -150,23 +152,12 @@ class AssociationLinkBase extends React.Component {
       padding: '0 20px',
       ...style,
     }
-    const tagStyle = {
-      borderRadius: 2,
-      color: '#fff',
-      display: 'inline-block',
-      fontSize: 9,
-      fontWeight: 'bold',
-      letterSpacing: .3,
-      marginLeft: 15,
-      padding: 6,
-      textTransform: 'uppercase',
-    }
     return <div style={containerStyle} onClick={this.handleClick}>
       {children}
-      {this.getTags().map(({color, value}) => <span
-          key={`tag-${value}`} style={{backgroundColor: color, ...tagStyle}}>
-        <div style={Styles.CENTER_FONT_VERTICALLY}>{value}</div>
-      </span>)}
+      {this.getTags().map(({color, value}) => <Tag
+        key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
+        {value}
+      </Tag>)}
       <div style={{flex: 1}} />
       <Icon name="chevron-right" style={{fontSize: 20}} />
     </div>
@@ -175,4 +166,4 @@ class AssociationLinkBase extends React.Component {
 const AssociationLink = Radium(AssociationLinkBase)
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

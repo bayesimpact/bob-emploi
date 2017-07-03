@@ -50,59 +50,11 @@ class Modal extends React.Component {
     modalHeight: 0,
   }
 
-  show() {
-    if (!numModalsShown++) {
-      // Disable scroll on body.
-      document.body.style.overflow = 'hidden'
-    }
-    this.setState({isContentShown: true})
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.timeout = setTimeout(
-        () => this.setState({isTransitionOver: true}),
-        this.props.transitionDurationMilliSec)
-  }
-
-  hide(onHidden) {
-    if (!--numModalsShown) {
-      // Re-enable scroll on body.
-      document.body.style.overflow = 'visible'
-    }
-    // Keep the current children while disappearing.
-    this.setState({children: this.props.children, isTransitionOver: false})
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.timeout = setTimeout(
-        () => {
-          this.resetScroll()
-          this.setState({children: null, isContentShown: false})
-          onHidden && onHidden()
-        },
-        this.props.transitionDurationMilliSec)
-  }
-
   componentWillMount() {
     const {isShown} = this.props
     if (isShown) {
       this.show()
     }
-  }
-
-  handleUpdatedHeight = newHeight => {
-    const maxHeight = window.innerHeight - (this.props.onClose ? closeButtonHeight : 0)
-    this.setState({
-      isTooBigToBeCentered: newHeight && newHeight > maxHeight,
-      modalHeight: newHeight,
-    })
-  }
-
-  resetScroll() {
-    if (!this.page) {
-      return
-    }
-    this.page.scrollTop = 0
   }
 
   componentWillReceiveProps(nextProps) {
@@ -126,11 +78,59 @@ class Modal extends React.Component {
     }
   }
 
+  show() {
+    if (!numModalsShown++) {
+      // Disable scroll on body.
+      document.body.style.overflow = 'hidden'
+    }
+    this.setState({isContentShown: true})
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
+    this.timeout = setTimeout(
+      () => this.setState({isTransitionOver: true}),
+      this.props.transitionDurationMilliSec)
+  }
+
+  hide(onHidden) {
+    if (!--numModalsShown) {
+      // Re-enable scroll on body.
+      document.body.style.overflow = 'visible'
+    }
+    // Keep the current children while disappearing.
+    this.setState({children: this.props.children, isTransitionOver: false})
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
+    this.timeout = setTimeout(
+      () => {
+        this.resetScroll()
+        this.setState({children: null, isContentShown: false})
+        onHidden && onHidden()
+      },
+      this.props.transitionDurationMilliSec)
+  }
+
+  handleUpdatedHeight = newHeight => {
+    const maxHeight = window.innerHeight - (this.props.onClose ? closeButtonHeight : 0)
+    this.setState({
+      isTooBigToBeCentered: newHeight && newHeight > maxHeight,
+      modalHeight: newHeight,
+    })
+  }
+
+  resetScroll() {
+    if (!this.page) {
+      return
+    }
+    this.page.scrollTop = 0
+  }
+
   render() {
     const {backgroundCoverOpacity, externalChildren, isShown, onClose, style, title,
-           transitionDurationMilliSec} = this.props
+      transitionDurationMilliSec} = this.props
     const {children, isContentShown, isTooBigToBeCentered, isTransitionOver,
-           modalHeight} = this.state
+      modalHeight} = this.state
     const pageStyle = {
       alignItems: 'center',
       display: isTooBigToBeCentered ? 'block' : 'flex',
@@ -224,7 +224,7 @@ class ModalCloseButtonBase extends React.Component {
       backgroundColor: Colors.CHARCOAL_GREY,
       borderRadius: '100%',
       bottom: '100%',
-      boxShadow: '0 3px 5px 0 rgba(0, 0, 0, 0.4)',
+      boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.5)',
       color: '#fff',
       cursor: 'pointer',
       display: 'flex',
@@ -232,7 +232,7 @@ class ModalCloseButtonBase extends React.Component {
       height: 35,
       justifyContent: 'center',
       position: 'absolute',
-      right: isMobileVersion ? 25 : 0,
+      right: isMobileVersion ? 5 : 0,
       transform: 'translate(50%, 50%)',
       width: 35,
       zIndex: 1,

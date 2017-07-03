@@ -75,11 +75,11 @@ class LikeDislikeButtonsBase extends React.Component {
     }
     return <div style={containerStyle} {...extraProps}>
       <Icon
-          name="thumb-up" style={likeStyle}
-          onClick={this.getLikeScoreSetter(1)} />
+        name="thumb-up" style={likeStyle}
+        onClick={this.getLikeScoreSetter(1)} />
       <Icon
-          name="thumb-down" style={dislikeStyle}
-          onClick={this.getLikeScoreSetter(-1)} />
+        name="thumb-down" style={dislikeStyle}
+        onClick={this.getLikeScoreSetter(-1)} />
     </div>
   }
 }
@@ -102,9 +102,9 @@ class FeatureLikeDislikeButtonsBase extends React.Component {
     // eslint-disable-next-line no-unused-vars
     const {dispatch, feature, likes, ...extraProps} = this.props
     return <LikeDislikeButtons
-        likeScore={likes[feature] || 0}
-        onChange={this.change}
-        {...extraProps} />
+      likeScore={likes[feature] || 0}
+      onChange={this.change}
+      {...extraProps} />
   }
 }
 const FeatureLikeDislikeButtons =

@@ -104,23 +104,22 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.info')
     @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
+    @mock.patch(import_status.__name__ + '.IMPORTERS', new={
+        'missing-in-db-importer': import_status.Importer(
+            name="missing in db", command='', is_imported=True,
+            proto_type=None, key=None),
+        'in-both': import_status.Importer(
+            name="in both", command='', is_imported=True,
+            proto_type=None, key=None),
+        'in-both-with-meta': import_status.Importer(
+            name="in both with meta", command='', is_imported=True,
+            proto_type=job_pb2.JobGroup, key=None),
+        'in-both-not-needed': import_status.Importer(
+            name="in both not needed", command='', is_imported=False,
+            proto_type=None, key=None)
+        })
     def test_main_function(self, pymongo_mock, mock_log_info):
         """Basic usage."""
-        import_status.IMPORTERS = {
-            'missing-in-db-importer': import_status.Importer(
-                name="missing in db", command='', is_imported=True,
-                proto_type=None, key=None),
-            'in-both': import_status.Importer(
-                name="in both", command='', is_imported=True,
-                proto_type=None, key=None),
-            'in-both-with-meta': import_status.Importer(
-                name="in both with meta", command='', is_imported=True,
-                proto_type=job_pb2.JobGroup, key=None),
-            'in-both-not-needed': import_status.Importer(
-                name="in both not needed", command='', is_imported=False,
-                proto_type=None, key=None)
-        }
-
         client = mongomock.MongoClient('mongodb://test_url/test_db')
         pymongo_mock.MongoClient.return_value = client
 
@@ -160,16 +159,15 @@ class ImportStatusBasicTests(unittest.TestCase):
 
     @mock.patch(logging.__name__ + '.info')
     @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
+    @mock.patch(import_status.__name__ + '.IMPORTERS', new={
+        'collection_id': import_status.Importer(
+            name="Collection name",
+            command='my-long-command',
+            is_imported=True,
+            proto_type=None, key=None),
+        })
     def test_display_command(self, pymongo_mock, mock_log_info):
         """Display the command to import a missing collection."""
-        import_status.IMPORTERS = {
-            'collection_id': import_status.Importer(
-                name="Collection name",
-                command='my-long-command',
-                is_imported=True,
-                proto_type=None, key=None),
-        }
-
         client = mongomock.MongoClient('mongodb://test_url/test_db')
         pymongo_mock.MongoClient.return_value = client
 
@@ -182,6 +180,22 @@ class ImportStatusBasicTests(unittest.TestCase):
             'my-long-command \\\n'
             '            --mongo_url "mongodb://test_url/test_db" '
             '--mongo_collection "collection_id"\n')
+
+    def test_command_on_one_line(self):
+        """Checks that all importers command are on one line."""
+        for name, importer in import_status.IMPORTERS.items():
+            self.assertTrue(
+                bool(importer.command) == importer.is_imported,
+                msg='Conflicts in command and is_imported field for %s' % name)
+            if not importer.command:
+                continue
+
+            command_lines = importer.command.split('\n')
+            for line in command_lines[:-1]:
+                self.assertTrue(
+                    line.endswith('\\'),
+                    msg='A command line for importer "%s" does not end with "\\":\n%s'
+                    % (name, line))
 
 
 if __name__ == '__main__':

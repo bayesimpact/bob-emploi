@@ -1,5 +1,4 @@
-var chai = require('chai')
-var expect = chai.expect
+import {expect} from 'chai'
 import {splitFullName} from 'store/auth'
 
 describe('split the name into a first and last name', () => {

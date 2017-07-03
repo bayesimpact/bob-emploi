@@ -81,7 +81,7 @@ const personalFrustrationOptions = [
 
 const genderizedOptions = (options, gender) => options.map(
   ({name, value}) => ({name: name(gender), value})).filter(
-    ({value}) => (gender === 'FEMININE' || value !== 'SEX_DISCRIMINATION'))
+  ({value}) => (gender === 'FEMININE' || value !== 'SEX_DISCRIMINATION'))
 
 
 class FrustrationsStep extends React.Component {
@@ -119,19 +119,19 @@ class FrustrationsStep extends React.Component {
       besoins.
     </div>
     return <Step
-        title={isShownAsStepsDuringOnboarding ?
-          "Qu'est ce qui vous bloque dans votre recherche ?" :
-          'Ce qui vous bloque dans votre recherche'}
-        explanation={explanation}
-        fastForward={this.fastForward}
-        onNextButtonClick={this.updater_.handleSubmit}
-        onPreviousButtonClick={this.updater_.handleBack}
-        {...this.props}>
+      title={isShownAsStepsDuringOnboarding ?
+        "Qu'est ce qui vous bloque dans votre recherche ?" :
+        'Ce qui vous bloque dans votre recherche'}
+      explanation={explanation}
+      fastForward={this.fastForward}
+      onNextButtonClick={this.updater_.handleSubmit}
+      onPreviousButtonClick={this.updater_.handleBack}
+      {...this.props}>
       <FieldSet>
         <CheckboxList
-            options={genderizedFrustrationOptions}
-            values={frustrations}
-            onChange={this.updater_.handleChange('frustrations')} />
+          options={genderizedFrustrationOptions}
+          values={frustrations}
+          onChange={this.updater_.handleChange('frustrations')} />
       </FieldSet>
     </Step>
   }

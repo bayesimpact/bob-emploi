@@ -1,0 +1,273 @@
+[
+ {
+  "_id": "rec7cR1ntK7qGosOk",
+  "filters": [
+   "for-job-group(D15)"
+  ],
+  "link": "http://www.emploi-distribution.fr/",
+  "title": "Emploi Distribution"
+ },
+ {
+  "_id": "rec9XDnH5QhmGTeTk",
+  "filters": [
+   "for-job-group(G12)"
+  ],
+  "link": "http://m.jobanim.com/",
+  "title": "Jobanim.com"
+ },
+ {
+  "_id": "rec9ZbXjxpEhkiqjw",
+  "filters": [
+   "for-job-group(G12)"
+  ],
+  "link": "http://www.profession-sport-loisirs.fr/",
+  "title": "Profession-sport-loisirs.fr"
+ },
+ {
+  "_id": "recALdykR4gvJcBA8",
+  "link": "https://candidat.pole-emploi.fr/offres/recherche",
+  "title": "Pôle emploi"
+ },
+ {
+  "_id": "recGRPwZ7nR5rJ2TW",
+  "filters": [
+   "for-job-group(A13)"
+  ],
+  "link": "http://www.emploi-environnement.com/",
+  "title": "Emploi-Environnement"
+ },
+ {
+  "_id": "recGSOLl13fK9kVmP",
+  "filters": [
+   "for-job-group(K19)"
+  ],
+  "link": "http://www.recrulex.com/intl/jobseeker/jobs/jrp.aspx",
+  "title": "Recrulex.com"
+ },
+ {
+  "_id": "recGcL0FHaO1YrE2u",
+  "link": "http://www.regionsjob.com/",
+  "title": "Régions Job"
+ },
+ {
+  "_id": "recICLLnsllWqFAu1",
+  "filters": [
+   "for-job-group(C13)"
+  ],
+  "link": "http://www.linkfinance.fr/",
+  "title": "LinkFinance"
+ },
+ {
+  "_id": "recIidhdKgujrS5C0",
+  "filters": [
+   "for-job-group(H27)"
+  ],
+  "link": "http://www.jobenergies.com/",
+  "title": "Job Energies"
+ },
+ {
+  "_id": "recJ8ycIjnkofulPy",
+  "filters": [
+   "for-job-group(J15)"
+  ],
+  "link": "https://www.appelmedical.com/",
+  "title": "Appel Médical "
+ },
+ {
+  "_id": "recJsW7hNzAestLj2",
+  "filters": [
+   "for-job-group(C12)"
+  ],
+  "link": "http://www.jobanque.com/emploi",
+  "title": "Job-Banque"
+ },
+ {
+  "_id": "recL19bAcAg7zPDeM",
+  "filters": [
+   "for-job-group(L13)"
+  ],
+  "link": "http://www.cnt.asso.fr/metiers_formations/offres_emplois_appels_projets.cfm",
+  "title": "CNT"
+ },
+ {
+  "_id": "recN1YX8WRcpFFpMe",
+  "link": "https://www.indeed.fr/",
+  "title": "Indeed"
+ },
+ {
+  "_id": "recXyVg7ZHF2nwbNi",
+  "filters": [
+   "for-job-group(E13)"
+  ],
+  "link": "http://www.graphic-jobs.com/",
+  "title": "Graphic-Jobs"
+ },
+ {
+  "_id": "recYAs1B9tV26DffV",
+  "filters": [
+   "for-job-group(C13,C14)"
+  ],
+  "link": "http://www.jobfinance.com/index.php",
+  "title": "Job-Finance"
+ },
+ {
+  "_id": "recYSoxzwMbkESRXb",
+  "filters": [
+   "for-job-group(E)"
+  ],
+  "link": "http://www.mediajobs.fr/annonce_candidat_parametres.asp",
+  "title": "Mediajob.fr"
+ },
+ {
+  "_id": "recZJ5MI68pkvV3zx",
+  "filters": [
+   "for-job-group(D15,M11)"
+  ],
+  "link": "http://www.carriere-distribution.com/",
+  "title": "Carrière-Distribution"
+ },
+ {
+  "_id": "recZUwh2LI8dOFjcP",
+  "filters": [
+   "for-job-group(G11,G13,G14)"
+  ],
+  "link": "http://www.ajconseil.fr/",
+  "title": "AJconseil.fr"
+ },
+ {
+  "_id": "recboBIYotb5xwEk2",
+  "filters": [
+   "for-job-group(A,H21)"
+  ],
+  "link": "http://www.apecita.com/",
+  "title": "Apecita"
+ },
+ {
+  "_id": "recc1yLLdJJISvJHS",
+  "filters": [
+   "for-job-group(G12)"
+  ],
+  "link": "https://www.clicandsport.fr/",
+  "title": "Clic-and-Sport"
+ },
+ {
+  "_id": "recc5aYML0MlQJErF",
+  "filters": [
+   "for-job-group(N4,N1,N2)"
+  ],
+  "link": "http://wk-tl.jobtransport.com/emploi/mc/logistique.aspx",
+  "title": "Wk-tl.Jobtransport.com"
+ },
+ {
+  "_id": "reccOLfqWm6NyeECE",
+  "filters": [
+   "for-job-group(H32)"
+  ],
+  "link": "https://www.plasturgierecrute.org/",
+  "title": "Plasturgie recrute"
+ },
+ {
+  "_id": "recdq5j8FkW6oK8P9",
+  "filters": [
+   "for-job-group(G18)"
+  ],
+  "link": "https://www.recrutement-restauration.fr/ad/search",
+  "title": "Recrutement-restauration.fr"
+ },
+ {
+  "_id": "recdsr5Q7BO2ZAUgF",
+  "filters": [
+   "for-job-group(G17)"
+  ],
+  "link": "http://www.resoemploi.fr/",
+  "title": "Reso-Emploi.fr"
+ },
+ {
+  "_id": "rece3bVss5OendTnj",
+  "filters": [
+   "for-job-group(K11)"
+  ],
+  "link": "http://www.staffsocial.fr/",
+  "title": "Staff-Social"
+ },
+ {
+  "_id": "receKDsBvA90U964n",
+  "filters": [
+   "for-job-group(H15)"
+  ],
+  "link": "https://www.emploi-maintenanceindustrielle.com/",
+  "title": "Maintenance Industrielle"
+ },
+ {
+  "_id": "recftHjs5UmrI5F7j",
+  "filters": [
+   "for-job-group(E)"
+  ],
+  "link": "http://www.profilculture.com/",
+  "title": "Profil-Culture"
+ },
+ {
+  "_id": "recgZhiHYoJlCfx1C",
+  "filters": [
+   "for-job-group(N)"
+  ],
+  "link": "http://www.aerocontact.com/emploi-aeronautique/offres-emploi-aeronautique.php",
+  "title": "Aerocontact.com"
+ },
+ {
+  "_id": "reciywWnYeLkYQWHC",
+  "filters": [
+   "for-job-group(G11,G13,G14,G15,G17)"
+  ],
+  "link": "http://www.mstourisme.fr/",
+  "title": "MS-Tourisme"
+ },
+ {
+  "_id": "recjW247XuWEBCfXp",
+  "filters": [
+   "for-job-group(H12)"
+  ],
+  "link": "http://www.ingenieuremploi.com",
+  "title": "Ingénieuremploi.com"
+ },
+ {
+  "_id": "reck6DgIOnz3ObULR",
+  "filters": [
+   "for-job-group(H)"
+  ],
+  "link": "http://www.carriere-industrie.com/",
+  "title": "Carrière Industrie"
+ },
+ {
+  "_id": "reckz42DjLm25rQ59",
+  "filters": [
+   "for-job-group(N)"
+  ],
+  "link": "http://www.supply-chain.fr/",
+  "title": "Supply-chain.fr"
+ },
+ {
+  "_id": "reclOfmd2QHIGYsmP",
+  "filters": [
+   "for-job-group(N44)"
+  ],
+  "link": "http://www.emploi-ferroviaire.com/",
+  "title": "Emploi Ferrovière"
+ },
+ {
+  "_id": "recm5FLMsIsobYD2p",
+  "filters": [
+   "for-job-group(J14)"
+  ],
+  "link": "http://www.staffsante.fr/offres-emploi-de-reeducation-appareillage",
+  "title": "Staff Santé"
+ },
+ {
+  "_id": "reczxezpSK3ocdfdY",
+  "filters": [
+   "for-job-group(K13)"
+  ],
+  "link": "https://www.jobvitae.fr/",
+  "title": "JobVitae"
+ }
+]

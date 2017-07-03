@@ -1,6 +1,6 @@
-const chai = require('chai')
-const expect = chai.expect
+import {expect} from 'chai'
 import {getAdviceTitle} from 'store/advice'
+
 
 describe('getAdviceTitle', () => {
   it('returns a different title depending on the number of stars', () => {

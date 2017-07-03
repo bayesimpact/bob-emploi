@@ -196,3 +196,9 @@ input:-ms-input-placeholder {
 input::-ms-reveal, input::-ms-clear {
   display: none;
 }
+
+@keyframes bounce {
+  from, 10%, 25%, 45%, to {bottom: 0}
+  20%  {bottom: 20px}
+  30%  {bottom: 10px}
+}

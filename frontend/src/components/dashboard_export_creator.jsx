@@ -36,7 +36,7 @@ class DashboardExportCreatorBase extends React.Component {
 
 }
 const DashboardExportCreator = connect(({user}) => ({userId: user.userId}))(
-    DashboardExportCreatorBase)
+  DashboardExportCreatorBase)
 
 
 export {DashboardExportCreator}

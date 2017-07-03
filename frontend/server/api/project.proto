@@ -9,7 +9,7 @@ import "bob_emploi/frontend/api/job.proto";
 
 package bayes.bob;
 
-// Next available tag: 17.
+// Next available tag: 24.
 message Project {
   // A unique identifier for this project.
   string project_id = 1;
@@ -139,10 +139,25 @@ message Project {
   bool is_incomplete = 23;
 
   // Feedback from user when the advice given for this project was useless to them.
+  // TODO(pascal): Convert to full feedback.
   string useless_advice_feedback = 11;
+
+  // User feedback on this project.
+  ProjectFeedback feedback = 17;
 }
 
-// Next ID: 16.
+message ProjectFeedback {
+  // General score: 0 means unknown, and then from 1 to 5.
+  int32 score = 1;
+
+  // Freeform text feedback given by the user.
+  string text = 2;
+
+  // For each advice module whether the user found it useful/interesting.
+  map<string, bool> useful_advice_modules = 3;
+}
+
+// Next ID: 18.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -179,6 +194,9 @@ message Advice {
 
     // Extra data needed for the "commute" advice.
     CommuteData commute_data = 16;
+
+    // Extra data needed for the "volunteer" advice.
+    VolunteerData volunteer_data = 17;
   }
 
   // The score the user gave to the piece of advice. A low score means they do
@@ -240,6 +258,12 @@ message BetterJobInGroupData {
 message AssociationsData {
   // Name of a specific association that could help the user.
   string association_name = 1;
+}
+
+message VolunteerData {
+  // Names of associations that have volunteering missions that the user could
+  // take on.
+  repeated string association_names = 1;
 }
 
 enum NumberOfferEstimateOption {

@@ -13,6 +13,7 @@ RUN apt-get update -qqy && \
 # TODO: Remove the --no-binary pycparser argument when https://github.com/eliben/pycparser/issues/147 is resolved.
 RUN pip install --no-binary pycparser \
   airtable>=0.3.1 \
+  airtablemock \
   algoliasearch \
   coverage \
   csvkit \

@@ -1,5 +1,4 @@
-var chai = require('chai')
-var expect = chai.expect
+import {expect} from 'chai'
 import {onboardingComplete} from 'store/main_selectors'
 
 function getCompleteUser() {
@@ -43,14 +42,25 @@ describe('Onboarding complete', () => {
   it('should return false if the user does not have a project yet', () => {
     const user = getCompleteUser()
     user.projects = []
-    const result = onboardingComplete()
+    const result = onboardingComplete(user)
     expect(result).to.equal(false)
   })
 
   it('should return false if the user has an incomplete project', () => {
     const user = getCompleteUser()
     user.projects[0].isIncomplete = true
-    const result = onboardingComplete()
+    const result = onboardingComplete(user)
+    expect(result).to.equal(false)
+  })
+
+  it('should return false if the user has both a complete and an incomplete project', () => {
+    // See issue #4980 for full context.
+    const user = getCompleteUser()
+    user.projects[0].isIncomplete = true
+    user.projects.push({
+      projectId: '1',
+    })
+    const result = onboardingComplete(user)
     expect(result).to.equal(false)
   })
 })

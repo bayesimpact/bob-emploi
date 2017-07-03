@@ -5,7 +5,7 @@ import {USER_PROFILE_SHAPE} from 'store/user'
 import {AppearingList, Colors} from 'components/theme'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   render() {
     return <div style={{fontSize: 30}}>
       Ne déposez pas juste votre CV : essayez de vous présenter
@@ -15,7 +15,7 @@ class FullAdviceCard extends React.Component {
 }
 
 
-class AdvicePageContent extends React.Component {
+class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     profile: USER_PROFILE_SHAPE.isRequired,
   }
@@ -42,7 +42,7 @@ class AdvicePageContent extends React.Component {
       </div>
       <div style={itemStyle()}>
         La coiffure est un métier d'esthétique, soyez toujours très
-        soigné{maybeE} pour vous présenter au responssable
+        soigné{maybeE} pour vous présenter au responsable
       </div>
       <div style={itemStyle()}>
         Si le responsable n'est pas là, gardez le nom de la personne que vous
@@ -53,4 +53,4 @@ class AdvicePageContent extends React.Component {
 }
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

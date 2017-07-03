@@ -51,8 +51,8 @@ class AdviceBox extends React.Component {
 
       <div style={contentStyle}>
         <FeatureLikeDislikeButtons
-            style={{position: 'absolute', right: 30, top: -16}}
-            feature={feature} />
+          style={{position: 'absolute', right: 30, top: -16}}
+          feature={feature} />
         {children}
       </div>
     </div>

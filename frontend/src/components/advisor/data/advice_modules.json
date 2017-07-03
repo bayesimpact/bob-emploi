@@ -16,6 +16,16 @@
       "3": "Explorez les métiers proches du votre"
     }
   },
+  "commute": {
+    "callToAction": "Regardez quelles villes proches ont de nombreuses offres",
+    "goal": "explorer les villes qui proposent le plus d'emplois",
+    "title": "Explorez les offres dans des villes proches",
+    "titleXStars": {
+      "1": "Considérez les offres dans des villes proches",
+      "2": "Regardez les offres dans des villes proches",
+      "3": "Explorez les offres dans des villes proches"
+    }
+  },
   "events": {
     "callToAction": "Trouver des exemples d'évènements professionnels",
     "goal": "trouver et vous préparer à aller à des évènements",
@@ -119,6 +129,13 @@
       "1": "Pensez aussi aux candidatures spontanées",
       "2": "Faites davantage de candidatures spontanées",
       "3": "Privilégiez les candidatures spontanées sur le reste"
+    }
+  },
+  "volunteer": {
+    "callToAction": "Voir des exemples d'associations près de chez vous",
+    "goal": "trouver des missions de bénévolat",
+    "title": "Restez actif en aidant une association",
+    "titleXStars": {
     }
   },
   "wow-baker": {

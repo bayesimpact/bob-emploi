@@ -1,5 +1,4 @@
-const chai = require('chai')
-const expect = chai.expect
+import {expect} from 'chai'
 import {validateEmail} from 'store/validations.js'
 
 describe('validateEmail', () => {

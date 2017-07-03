@@ -124,6 +124,7 @@ const BOB_SCORE_PARTS = [
     },
     iconSrc: competitionImage,
     scorePartId: 'market-stress',
+    weight: 10,
   },
   // Applications per week.
   {
@@ -208,8 +209,14 @@ function computeBobScore(user, project) {
     ...compute(user, project),
   }))
   const clampScore = score => Math.min(3, Math.max(-3, score))
-  const totalScore = components.reduce((totalScore, {score}) => totalScore + clampScore(score), 0)
-  const percent = reScale([-3, 3], [30, 95], totalScore / components.length)
+  const {totalScore, totalWeight} = components.
+    reduce(({totalScore, totalWeight}, {score, weight}) => {
+      return {
+        totalScore: (totalScore || 0) + clampScore(score) * (weight || 1),
+        totalWeight: (totalWeight || 0) + (weight || 1),
+      }
+    }, {})
+  const percent = reScale([-3, 3], [30, 95], totalScore / totalWeight)
   return {
     components: components.sort(
       ({score: scoreA}, {score: scoreB}) => Math.abs(scoreB) - Math.abs(scoreA)),

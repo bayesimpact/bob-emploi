@@ -1,16 +1,19 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Radium from 'radium'
 import ReactHeight from 'react-height'
+import VisibilitySensor from 'react-visibility-sensor'
 import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
-import moment from 'moment'
-moment.locale('fr')
 import _ from 'underscore'
 
 import config from 'config'
 
-import {allAdvicesReadAction, declineWholeAdvice, modifyProject, setUserProfile,
-  shareProductToNetwork} from 'store/actions'
+import {allAdvicesReadAction, bobScoreIsShown, markNotificationAsSeen, modifyProject,
+  sendProjectFeedback, setUserProfile, shareProductToNetwork} from 'store/actions'
+import {getAdviceTitle} from 'store/advice'
+import {maybeContract, lowerFirstLetter} from 'store/french'
+import {InfoCollNotificationBox} from 'components/info_coll'
 import {genderizeJob} from 'store/job'
 import {createProjectTitleComponents, getEmploymentZone, getSeniorityText} from 'store/project'
 import {computeBobScore} from 'store/score'
@@ -18,8 +21,6 @@ import {getHighestDegreeDescription, getUserFrustrationTags, USER_PROFILE_SHAPE}
 import {ShortKey} from 'components/shortkey'
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 
-import bobScoreGrayIcon from 'images/bob-score-grey.svg'
-import bobScoreIcon from 'images/bob-score-color.svg'
 import emailGrayIcon from 'images/share/email-gray-ico.svg'
 import emailIcon from 'images/share/email-ico.svg'
 import facebookGrayIcon from 'images/share/facebook-gray-ico.svg'
@@ -29,6 +30,8 @@ import linkedinIcon from 'images/share/linkedin-ico.svg'
 import localisationImage from 'images/localisation-picto.svg'
 import oneStarImage from 'images/1-star-picto.svg'
 import roundUserImage from 'images/round-user-picto.svg'
+import starIcon from 'images/star.svg'
+import starOutlineIcon from 'images/star-outline.svg'
 import threeStarsImage from 'images/3-stars-picto.svg'
 import twitterGrayIcon from 'images/share/twitter-gray-ico.svg'
 import twitterIcon from 'images/share/twitter-ico.svg'
@@ -37,9 +40,11 @@ import victoryImage from 'images/victory-picto.svg'
 import workImage from 'images/work-picto.svg'
 import {NAVIGATION_BAR_HEIGHT, PageWithNavigationBar} from 'components/navigation'
 import {AdviceCard} from 'components/advisor'
-import {Modal} from 'components/modal'
-import {JobGroupCoverImage, CircularProgress, Colors, Button, GrowingNumber,
+import {Modal, ModalCloseButton} from 'components/modal'
+import {JobGroupCoverImage, CircularProgress, CheckboxList, Colors, Button, GrowingNumber,
   Icon, LabeledToggle, SmoothTransitions, Styles} from 'components/theme'
+
+import {PoleEmploiChangelogModal} from './project/pole_emploi'
 
 const FIXED_EXPLANATION_BAR_HEIGHT = 56
 
@@ -79,6 +84,9 @@ class WaitingProjectPage extends React.Component {
   static defaultProps = {
     fadeOutTransitionDurationMillisec: 600,
   }
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
 
   state = {
     isFadingOut: false,
@@ -110,12 +118,14 @@ class WaitingProjectPage extends React.Component {
 
   render() {
     const {onDone, project, style, userProfile} = this.props
+    const {isMobileVersion} = this.context
     const {isFadingOut} = this.state
     const containerStyle = {
       alignItems: 'center',
       display: 'flex',
       justifyContent: 'center',
       minHeight: '100vh',
+      padding: 15,
       position: 'relative',
       zIndex: 0,
       ...style,
@@ -124,7 +134,7 @@ class WaitingProjectPage extends React.Component {
       backgroundColor: '#fff',
       borderRadius: 10,
       opacity: isFadingOut ? 0 : 1,
-      padding: '50px 100px',
+      padding: isMobileVersion ? 30 : '50px 100px',
       textAlign: 'center',
       ...SmoothTransitions,
     }
@@ -138,7 +148,6 @@ class WaitingProjectPage extends React.Component {
       fontSize: 13,
       fontWeight: 500,
       lineHeight: 1.5,
-      paddingBottom: 30,
     }
     return <div style={containerStyle}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onDone} />
@@ -147,7 +156,7 @@ class WaitingProjectPage extends React.Component {
         <header style={headerStyle}>{project.title}</header>
         <div style={{margin: 'auto', maxWidth: 360, paddingTop: 23}}>
           Merci {userProfile.name} pour votre patience&nbsp;!<br /><br />
-          Nous analysons vos informations pour créer votre plan d'action sur mesure.
+          Nous analysons vos informations pour créer votre diagnostic personnalisé.
         </div>
         <div style={{padding: 30}}>
           <CircularProgress color={waitingNoticeStyle.color} />
@@ -226,7 +235,7 @@ class SumUpProfileModal extends React.Component {
 
     // TODO(guillaume): Avoid flex when possible.
     return <Modal {...extraProps} style={containerStyle}
-        title="Les données retenues pour établir votre diagnostic">
+      title="Les données retenues pour établir votre diagnostic">
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onClose} />
       <div style={boxStyle}>
         <div style={sectionWithBorderBottom}>
@@ -243,7 +252,7 @@ class SumUpProfileModal extends React.Component {
             {highestDegreeDescription ?
               <div>
                 Qualifications&nbsp;:
-                  <span style={infoStyle}> {highestDegreeDescription}</span>
+                <span style={infoStyle}> {highestDegreeDescription}</span>
               </div> : null}
             <div>
               Expérience&nbsp;: <span style={infoStyle}>
@@ -369,10 +378,10 @@ class TheEndModalBase extends React.Component {
       ...SmoothTransitions,
     }
     return <span
-        style={{cursor: 'pointer', margin: '0 5px', position: 'relative'}}
-        onMouseEnter={() => this.setState({[shareIdState]: true})}
-        onMouseLeave={() => this.setState({[shareIdState]: false})}
-        onClick={() => this.share(shareId, onShare)}>
+      style={{cursor: 'pointer', margin: '0 5px', position: 'relative'}}
+      onMouseEnter={() => this.setState({[shareIdState]: true})}
+      onMouseLeave={() => this.setState({[shareIdState]: false})}
+      onClick={() => this.share(shareId, onShare)}>
       <img src={icon} style={colorIconStyle} />
       <img src={grayIcon} />
     </span>
@@ -413,12 +422,12 @@ class TheEndModalBase extends React.Component {
 
       <div style={{padding: '30px 50px 0'}}>
         <LabeledToggle
-            isSelected={isNewsletterEnabled}
-            onClick={() => this.setState({isNewsletterEnabled: !isNewsletterEnabled})}
-            label={`Me tenir informé${maybeE} des nouvelles fonctionnalités
+          isSelected={isNewsletterEnabled}
+          onClick={() => this.setState({isNewsletterEnabled: !isNewsletterEnabled})}
+          label={`Me tenir informé${maybeE} des nouvelles fonctionnalités
               de ${config.productName}`}
-            style={{color: Colors.DARK_TWO, fontSize: 13, fontStyle: 'italic'}}
-            type="checkbox" />
+          style={{color: Colors.DARK_TWO, fontSize: 13, fontStyle: 'italic'}}
+          type="checkbox" />
       </div>
 
       <div style={{padding: 25, textAlign: 'center'}}>
@@ -466,7 +475,7 @@ class ProjectPage extends React.Component {
     const project = getProjectFromProps(this.props)
     const {projectId} = project
     if (projectId && projectId !== params.projectId) {
-      browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId)
+      browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId + hash)
     }
   }
 
@@ -492,14 +501,14 @@ class ProjectPage extends React.Component {
 
     if (isWaitingInterstitialShown || !project.advices) {
       return <WaitingProjectPage
-          userProfile={user.profile} style={{flex: 1}} project={project}
-          onDone={this.handleWaitingInterstitialDone} />
+        userProfile={user.profile} style={{flex: 1}} project={project}
+        onDone={this.handleWaitingInterstitialDone} />
     }
 
     return <ProjectDashboardPage
-        project={project} onCloseSumUpProfileModal={closeSumUpProfileModal}
-        isSumUpProfileModalShown={isSumUpProfileModalShown}
-        adviceShownOnMount={adviceShownOnMount} />
+      project={project} onCloseSumUpProfileModal={closeSumUpProfileModal}
+      isSumUpProfileModalShown={isSumUpProfileModalShown}
+      adviceShownOnMount={adviceShownOnMount} />
   }
 }
 
@@ -525,9 +534,12 @@ class ProjectDashboardPageBase extends React.Component {
     adviceShownOnMount: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
     featuresEnabled: PropTypes.shape({
-      alpha: PropTypes.bool,
+      poleEmploi: PropTypes.bool,
     }).isRequired,
     isSumUpProfileModalShown: PropTypes.bool,
+    notificationsSeen: PropTypes.shape({
+      infoCollKit: PropTypes.bool,
+    }).isRequired,
     onCloseSumUpProfileModal: PropTypes.func.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
     project: PropTypes.object.isRequired,
@@ -537,13 +549,29 @@ class ProjectDashboardPageBase extends React.Component {
   }
 
   state = {
+    feedbackBarHeight: 0,
     // This can be either false (e.g. removed), 'hidden' or 'shown'.
     fixedExplanationDisplay: false,
-    isAdviceUselessFeedbackModalShown: false,
     isBobScoreShown: false,
+    isFixedFeedbackBarForcedHidden: false,
+    isFixedFeedbackBarShown: false,
     isModifyModalIsShown: false,
+    isOneStarAdviceVisible: false,
+    isPoleEmploiChangelogShown: false,
     isScoreTooltipShown: false,
     isTheEndModalShown: false,
+  }
+
+  componentWillMount() {
+    const {poleEmploi} = this.props.featuresEnabled
+    this.setState({isPoleEmploiChangelogShown: poleEmploi})
+  }
+
+  componentDidMount() {
+    const {adviceShownOnMount} = this.props
+    if (adviceShownOnMount) {
+      this.mountTimeout = setTimeout(() => this.scrollToAdvice(adviceShownOnMount), 1)
+    }
   }
 
   componentWillReceiveProps(nextProps) {
@@ -561,38 +589,37 @@ class ProjectDashboardPageBase extends React.Component {
     }, 5000)
   }
 
-  componentDidMount() {
-    const {adviceShownOnMount} = this.props
-    if (adviceShownOnMount) {
-      this.scrollToAdvice(adviceShownOnMount)
-    }
-  }
-
   componentWillUnmount() {
+    clearTimeout(this.mountTimeout)
     clearTimeout(this.readingTimeout)
-  }
-
-  markFeedbackAsUseless = () => {
-    const {dispatch, project} = this.props
-    const feedback = this.uselessAdviceFeedbackDom && this.uselessAdviceFeedbackDom.value || ''
-    dispatch(declineWholeAdvice(project, feedback))
-    this.setState({isAdviceUselessFeedbackModalShown: false})
   }
 
   toggleScoreTooltip = () => {
     this.setState({isScoreTooltipShown: !this.state.isScoreTooltipShown})
   }
 
-  handleScroll = event => {
-    const {explanationHeight, fixedExplanationDisplay, headerHeight} = this.state
-    if (explanationHeight && headerHeight) {
-      const isHeaderAboveTopScroll = event.target.scrollTop >= headerHeight
-      const isExplanationAboveTopScroll = isHeaderAboveTopScroll &&
-        event.target.scrollTop >= headerHeight + explanationHeight
+  handleScroll = () => {
+    const {feedbackBarHeight, fixedExplanationDisplay,
+      headerHeight, isFixedFeedbackBarForcedHidden, isFixedFeedbackBarShown,
+      isOneStarAdviceVisible} =
+        this.state
+    const {scrollHeight, scrollTop} = window.document.body
+    const {innerHeight} = window
+    if (headerHeight) {
+      const isHeaderAboveTopScroll = scrollTop >= headerHeight
+      const isExplanationAboveTopScroll = isHeaderAboveTopScroll && scrollTop >= headerHeight
       const display = isExplanationAboveTopScroll ? 'shown' :
         isHeaderAboveTopScroll ? 'hidden' : false
       if (display !== fixedExplanationDisplay) {
         this.setState({fixedExplanationDisplay: display})
+      }
+    }
+    if (feedbackBarHeight && !isFixedFeedbackBarForcedHidden) {
+      const bottomOffset = scrollTop + innerHeight
+      const isFeedbackBarBelow = bottomOffset < scrollHeight - feedbackBarHeight
+      const shouldShowFixedFeedbackBar = isOneStarAdviceVisible && isFeedbackBarBelow
+      if (shouldShowFixedFeedbackBar !== isFixedFeedbackBarShown) {
+        this.setState({isFixedFeedbackBarShown: shouldShowFixedFeedbackBar})
       }
     }
   }
@@ -612,6 +639,12 @@ class ProjectDashboardPageBase extends React.Component {
     const adviceRect = this.cards[adviceId].getBoundingClientRect()
     this.pageDom.scrollDelta(
       adviceRect.top - NAVIGATION_BAR_HEIGHT - FIXED_EXPLANATION_BAR_HEIGHT - 20)
+  }
+
+  showBobScore = () => {
+    const {dispatch, project} = this.props
+    dispatch(bobScoreIsShown(project))
+    this.setState({isBobScoreShown: true})
   }
 
   renderDiagnostic(style) {
@@ -634,6 +667,7 @@ class ProjectDashboardPageBase extends React.Component {
       padding: 20,
       width: 300,
     }
+    const roundedBottom = {borderRadius: '0 0 5px 5px'}
     const onClose = () => this.setState({isBobScoreShown: false})
     const {components, percent} = computeBobScore(profile, project)
     return <div style={containerStyle}>
@@ -646,16 +680,16 @@ class ProjectDashboardPageBase extends React.Component {
           <span style={{fontSize: 12}}> de favorabilité</span>
         </div>
         <div
-            className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
-            style={{fontSize: 13, fontWeight: 'normal'}}>
+          className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
+          style={{fontSize: 13, fontWeight: 'normal'}}>
           <span
-              style={{cursor: 'pointer', textDecoration: 'underline'}}
-              onClick={this.toggleScoreTooltip}>
+            style={{cursor: 'pointer', textDecoration: 'underline'}}
+            onClick={this.toggleScoreTooltip}>
             Que veut dire ce score&nbsp;?
           </span>
           <div
-              className="tooltiptext"
-              style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
+            className="tooltiptext"
+            style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
             <p>
               Ce score représente notre avis sur la façon dont les facteurs
               liés au marché et à votre recherche affectent vos chances de
@@ -672,7 +706,7 @@ class ProjectDashboardPageBase extends React.Component {
         </div>
       </div>
 
-      <div style={{backgroundColor: '#fff', color: Colors.DARK_TWO, padding: 10}}>
+      <div style={{backgroundColor: '#fff', color: Colors.DARK_TWO, padding: 10, ...roundedBottom}}>
         {this.renderDiagnosticComponents(
           components.filter(({category, score}) => Math.round(score) && category === 'market'),
           maybeS => `Facteur${maybeS} lié${maybeS} au marché`)}
@@ -680,7 +714,7 @@ class ProjectDashboardPageBase extends React.Component {
           components.filter(({category, score}) => Math.round(score) && category === 'user'),
           maybeS => `Information${maybeS} sur votre profil`)}
 
-        <div style={{paddingBottom: 30, textAlign: 'center'}}>
+        <div style={{paddingBottom: 30, textAlign: 'center', ...roundedBottom}}>
           <Button onClick={onClose}>
             Voir les recommandations
           </Button>
@@ -718,7 +752,7 @@ class ProjectDashboardPageBase extends React.Component {
       <strong>{title(maybeS)}</strong>
       <ol style={{fontSize: 14, listStyleType: 'none', padding: 0}}>
         {components.map(({display, iconSrc, score, scorePartId}) => <li
-            key={scorePartId} style={listItemStyle}>
+          key={scorePartId} style={listItemStyle}>
           <div style={iconStyle}>
             <img src={iconSrc} />
           </div>
@@ -732,8 +766,8 @@ class ProjectDashboardPageBase extends React.Component {
   }
 
   renderHeader() {
+    const {profile, project} = this.props
     const {isMobileVersion} = this.context
-    const {featuresEnabled, profile, project} = this.props
     const style = {
       alignItems: 'center',
       backgroundColor: Colors.CHARCOAL_GREY,
@@ -741,51 +775,59 @@ class ProjectDashboardPageBase extends React.Component {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      minHeight: 140,
-      padding: '20px 0',
       position: 'relative',
       textAlign: 'center',
       zIndex: 0,
     }
-    const bobScoreButtonStyle = {
-      bottom: -35,
-      position: 'absolute',
-      right: isMobileVersion ? 'calc(50% - 35px)' : 0,
-      width: 70,
+    const titleStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      fontSize: isMobileVersion ? 23 : 38,
+      fontWeight: 'bold',
+      marginTop: NAVIGATION_BAR_HEIGHT,
+      minHeight: isMobileVersion ? 200 : 240,
+      padding: '20px 0',
     }
-    const modifyButtonStyle = {
-      backgroundColor: 'transparent',
-      border: 'solid 2px rgba(255, 255, 255, .4)',
-      borderRadius: 2,
-      position: 'absolute',
-      right: 20,
-      top: 20,
+    const subtitleStyle = {
+      color: Colors.MODAL_PROJECT_GREY,
+      fontSize: 16,
+      fontWeight: 'normal',
+      marginTop: 5,
     }
-    const {what, experience, where} = createProjectTitleComponents(project, profile.gender)
+    const buttonBarStyle = {
+      alignSelf: isMobileVersion ? 'center' : 'flex-end',
+      color: Colors.SILVER,
+      display: 'flex',
+      fontSize: 13,
+      marginBottom: 10,
+    }
+    const {what, where} = createProjectTitleComponents(project, profile.gender)
+    const numAdvices = (project.advices || []).length
+    const maybeS = numAdvices > 1 ? 's' : ''
     return <header style={style}>
       <JobGroupCoverImage
-          romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
-          coverOpacity={1}
-          opaqueCoverGradient={{
-            left: Colors.CHARCOAL_GREY,
-            middle: Colors.CHARCOAL_GREY,
-            right: 'rgba(56, 63, 81, 0.7)'}} />
-      <div style={{fontSize: 23, fontStyle: 'italic'}}>
-        <strong>{what} </strong>{experience}<strong> {where}</strong>
+        romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
+        coverOpacity={.6} opaqueCoverColor={Colors.DARK} />
+      <div style={titleStyle}>
+        <div>
+          {numAdvices} conseil{maybeS} personnalisé{maybeS}
+          <div style={subtitleStyle}>
+            pour trouver un emploi {maybeContract('de ', "d'", what)}
+            <strong style={{color: '#fff'}}>
+              {lowerFirstLetter(what)} {where}
+            </strong>
+          </div>
+        </div>
       </div>
 
-      {featuresEnabled.alpha ? <Button
-          type="navigationOnImage" isNarrow={true} style={modifyButtonStyle}
-          onClick={() => this.setState({isModifyModalIsShown: true})}>
-        Modifier mon projet
-      </Button> : null}
-
-      <div style={{bottom: 0, left: 0, position: 'absolute', right: 0}}>
-        <div style={{margin: 'auto', maxWidth: 960, position: 'relative', textAlign: 'center'}}>
-          <BobScoreButton
-              style={bobScoreButtonStyle}
-              onClick={() => this.setState({isBobScoreShown: true})} />
-        </div>
+      <div style={buttonBarStyle}>
+        <HeaderLink onClick={this.showBobScore}>
+          Revoir mon diagnostic
+        </HeaderLink>
+        <div style={{borderLeft: 'solid 1px'}} />
+        <HeaderLink onClick={() => this.setState({isModifyModalIsShown: true})}>
+          Modifier mon projet
+        </HeaderLink>
       </div>
     </header>
   }
@@ -813,9 +855,9 @@ class ProjectDashboardPageBase extends React.Component {
       opacity: (fixedExplanationDisplay === 'shown' && numUnreadAdvices) ? 1 : 0,
       overflow: 'hidden',
       position: 'fixed',
-      right: 14,
+      right: 0,
       textAlign: 'center',
-      top: NAVIGATION_BAR_HEIGHT,
+      top: 0,
       zIndex: 1,
       ...SmoothTransitions,
     }
@@ -828,41 +870,34 @@ class ProjectDashboardPageBase extends React.Component {
     </div>
   }
 
-  renderExplanationSection() {
-    const advices = this.props.project.advices || []
-    const numUnreadAdvices = advices.filter(a => a.status === 'ADVICE_RECOMMENDED').length
-    if (!numUnreadAdvices) {
-      return null
-    }
+  renderFixedFeedbackBar() {
+    const {project} = this.props
+    const {isFixedFeedbackBarShown} = this.state
     const style = {
-      color: Colors.CHARCOAL_GREY,
-      fontSize: 26,
-      padding: '30px 0 10px',
-      textAlign: 'center',
+      bottom: isFixedFeedbackBarShown ? 0 : -150,
+      boxShadow: '0 -10px 25px 0 rgba(0, 0, 0, 0.1)',
+      left: 0,
+      opacity: isFixedFeedbackBarShown ? 1 : 0,
+      padding: '40px 0',
+      position: 'fixed',
+      right: 0,
+      // Keep it above the one from renderFixedExplanation so that the feedback
+      // modal stays above the explanation bar.
+      zIndex: 2,
+      ...SmoothTransitions,
     }
-    const hrStyle = {
-      backgroundColor: Colors.SILVER,
-      border: 'none',
-      height: 2,
-      margin: '25px auto',
-      width: 200,
-    }
-    return <div style={style}>
-      <ReactHeight onHeightReady={explanationHeight => this.setState({explanationHeight})}>
-        <div>
-          <strong style={{fontStyle: 'italic'}}>
-            {numUnreadAdvices} proposition{numUnreadAdvices > 1 ? 's' : ''}
-          </strong> à regarder
-        </div>
-      </ReactHeight>
-      <hr style={hrStyle} />
-    </div>
+    return <FeedbackBar
+      project={project} style={style}
+      onClose={() => this.setState({
+        isFixedFeedbackBarForcedHidden: true,
+        isFixedFeedbackBarShown: false,
+      })} />
   }
 
   renderAdviceCards(advices) {
     const {isMobileVersion} = this.context
     const cardsContainerStyle = {
-      margin: isMobileVersion ? '10px auto' : '25px auto',
+      margin: isMobileVersion ? '10px auto 0' : '25px auto 0',
     }
     const adviceGroups = _.groupBy(advices, 'numStars')
 
@@ -901,58 +936,27 @@ class ProjectDashboardPageBase extends React.Component {
       marginTop: 10,
     }
     const {image, title} = ADVICE_CARD_GROUP_PROPS[numStars] || ADVICE_CARD_GROUP_PROPS['1']
-    return <div key={`advices-${numStars}-star`} style={style}>
-      <div style={{margin: 'auto', maxWidth: 960}}>
-        <div style={titleLinestyle}>
-          <img src={image} style={{marginRight: 20}} />
-          {title(advices.length > 1 ? 's' : '')}
+    return <VisibilitySensor
+      key={`advices-${numStars}-star`}
+      intervalDelay={250} partialVisibility={true} active={numStars === '1'}
+      onChange={isVisible => this.setState({isOneStarAdviceVisible: isVisible})}>
+      <div style={style}>
+        <div style={{margin: 'auto', maxWidth: 960}}>
+          <div style={titleLinestyle}>
+            <img src={image} style={{marginRight: 20}} />
+            {title(advices.length > 1 ? 's' : '')}
+          </div>
+          <div style={verticalLineStyle} />
         </div>
-        <div style={verticalLineStyle} />
         {advices.map(advice => <AdviceCard
-            key={advice.adviceId} advice={advice} style={cardStyle}
-            scrollParent={delta => this.pageDom && this.pageDom.scrollDelta(delta)}
-            refDom={card => {
-              this.cards = this.cards || {}
-              this.cards[advice.adviceId] = card
-            }} {...this.props} />
+          key={advice.adviceId} advice={advice} style={cardStyle} maxWidth={960}
+          refDom={card => {
+            this.cards = this.cards || {}
+            this.cards[advice.adviceId] = card
+          }} {...this.props} />
         )}
       </div>
-    </div>
-  }
-
-  renderNoAdviceUsefulButton() {
-    const closeModal = () => this.setState({isAdviceUselessFeedbackModalShown: false})
-    return <div style={{margin: 50, textAlign: 'center'}}>
-      <Modal
-          isShown={this.state.isAdviceUselessFeedbackModalShown}
-          onClose={closeModal}
-          style={{padding: '0 60px', textAlign: 'center'}}
-          title="Aucun conseil ne vous convient ?">
-        <div style={{fontSize: 14, lineHeight: 1.21, margin: '25px auto 15px', maxWidth: 350}}>
-          Nous cherchons à nous améliorer pour vous proposer le meilleur
-          service possible. Aidez-nous en nous expliquant pourquoi les conseils
-          proposés ne vous sont pas utiles ou en décrivant ce que vous auriez
-          aimé trouver ici. Merci d'avance
-        </div>
-        <textarea
-            style={{display: 'block', minHeight: 150, padding: 10, width: '100%'}}
-            ref={dom => {
-              this.uselessAdviceFeedbackDom = dom
-            }} />
-        <div style={{margin: '25px 0 35px'}}>
-          <Button type="back" style={{marginRight: 25}} onClick={closeModal}>
-            Annuler
-          </Button>
-          <Button type="deletion" onClick={this.markFeedbackAsUseless}>
-            Envoyer
-          </Button>
-        </div>
-      </Modal>
-      <Button
-          type="back" onClick={() => this.setState({isAdviceUselessFeedbackModalShown: true})}>
-        Aucun conseil ne me convient
-      </Button>
-    </div>
+    </VisibilitySensor>
   }
 
   renderModifyModal() {
@@ -967,10 +971,10 @@ class ProjectDashboardPageBase extends React.Component {
     const onClose = () => this.setState({isModifyModalIsShown: false})
     const onModify = () => dispatch(modifyProject(project))
     return <Modal
-        isShown={this.state.isModifyModalIsShown}
-        style={{padding: '0 50px 40px', textAlign: 'center'}}
-        title="Modifier mes informations"
-        onClose={onClose}>
+      isShown={this.state.isModifyModalIsShown}
+      style={{padding: '0 50px 40px', textAlign: 'center'}}
+      title="Modifier mes informations"
+      onClose={onClose}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onModify} />
       <div style={noticeStyle}>
         En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.
@@ -985,46 +989,212 @@ class ProjectDashboardPageBase extends React.Component {
   }
 
   render() {
-    const {isSumUpProfileModalShown, onCloseSumUpProfileModal, profile, project} = this.props
-    const {isBobScoreShown, isTheEndModalShown} = this.state
+    const {dispatch, featuresEnabled, isSumUpProfileModalShown,
+      notificationsSeen, onCloseSumUpProfileModal, profile, project} = this.props
+    const {isBobScoreShown, isPoleEmploiChangelogShown, isTheEndModalShown} = this.state
+    const {isMobileVersion} = this.context
     const advices = project.advices || []
-    const isAdviceUseful = advice => advice.status === 'ADVICE_ACCEPTED' || advice.score >= 5
+    const bobScoreStyle = {
+      backgroundColor: Colors.CHARCOAL_GREY,
+      borderRadius: 5,
+      color: '#fff',
+      margin: isMobileVersion ? 15 : 'inherit',
+    }
+    const isInfoCollKitNotificationShown =
+      featuresEnabled.poleEmploi && !notificationsSeen.infoCollKit &&
+      !isSumUpProfileModalShown && !isBobScoreShown
     return <PageWithNavigationBar
-        page="project" isContentScrollable={true} ref={dom => {
-          this.pageDom = dom
-        }} isChatButtonShown={true} onScroll={this.handleScroll}>
+      page="project" isContentScrollable={false} isNavBarTransparent={true} ref={dom => {
+        this.pageDom = dom
+      }} isChatButtonShown={true} onScroll={this.handleScroll}>
       <SumUpProfileModal
-          isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
-          onClose={() => {
-            onCloseSumUpProfileModal()
-            this.setState({isBobScoreShown: true})
-          }} />
+        isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
+        onClose={() => {
+          onCloseSumUpProfileModal()
+          this.showBobScore()
+        }} />
       <TheEndModal
-          isShown={isTheEndModalShown}
-          onClose={() => this.setState({isTheEndModalShown: false})} />
+        isShown={isTheEndModalShown}
+        onClose={() => this.setState({isTheEndModalShown: false})} />
+      <PoleEmploiChangelogModal
+        isShown={isPoleEmploiChangelogShown} projectCreatedAt={project.createdAt}
+        onClose={() => this.setState({isPoleEmploiChangelogShown: false})} />
       <Modal
-          style={{backgroundColor: Colors.CHARCOAL_GREY, color: '#fff'}}
-          titleStyle={{color: '#fff'}}
-          title="Notre diagnostic"
-          isShown={isBobScoreShown}
-          onClose={() => this.setState({isBobScoreShown: false})}>
+        style={bobScoreStyle}
+        titleStyle={{color: '#fff'}}
+        title="Notre diagnostic"
+        isShown={isBobScoreShown}
+        onClose={() => this.setState({isBobScoreShown: false})}>
         {this.renderDiagnostic()}
       </Modal>
       {this.renderModifyModal()}
       <ReactHeight onHeightReady={headerHeight => this.setState({headerHeight})}>
         {this.renderHeader()}
       </ReactHeight>
-      {this.renderExplanationSection()}
       {this.renderFixedExplanation()}
       {this.renderAdviceCards(advices)}
-      {advices.some(isAdviceUseful) ? null : this.renderNoAdviceUsefulButton()}
+      {this.renderFixedFeedbackBar()}
+      <InfoCollNotificationBox
+        style={{zIndex: 3}} isShown={isInfoCollKitNotificationShown}
+        onClose={() => dispatch(markNotificationAsSeen('infoCollKit'))} />
+      <ReactHeight
+        onHeightReady={feedbackBarHeight => this.setState({feedbackBarHeight})}>
+        <FeedbackBar project={project} style={{padding: '90px 0'}} />
+      </ReactHeight>
     </PageWithNavigationBar>
   }
 }
 const ProjectDashboardPage = connect(({user}) => ({
   featuresEnabled: user.featuresEnabled || {},
+  notificationsSeen: user.notificationsSeen || {},
   profile: user.profile,
 }))(ProjectDashboardPageBase)
+
+
+const feedbackTitle = {
+  '1': 'Mauvais',
+  '2': 'Peu intéressants',
+  '3': 'Intéressants',
+  '4': 'Pertinents',
+  '5': 'Très pertinents',
+}
+
+
+class FeedbackBarBase extends React.Component {
+  static propTypes = {
+    dispatch: PropTypes.func.isRequired,
+    isFeminine: PropTypes.bool,
+    onClose: PropTypes.func,
+    project: PropTypes.object.isRequired,
+    style: PropTypes.object,
+  }
+
+  state = {
+    hoveredStars: 0,
+    isModalShown: false,
+    score: 0,
+    text: '',
+    usefulAdvices: [],
+  }
+
+  saveFeedback = () => {
+    const {dispatch, project} = this.props
+    const {score, text, usefulAdvices} = this.state
+    const usefulAdviceModules = {};
+    (usefulAdvices || []).forEach(adviceId => {
+      usefulAdviceModules[adviceId] = true
+    })
+    dispatch(sendProjectFeedback(project, {score, text, usefulAdviceModules}))
+  }
+
+  openModal = highlightedStars => {
+    const {project} = this.props
+    const usefulAdvices = (project.advices || []).
+      filter(({score}) => score).
+      map(({adviceId}) => adviceId)
+    this.setState({isModalShown: true, score: highlightedStars, usefulAdvices})
+  }
+
+  renderTitle(numStars) {
+    return feedbackTitle[numStars] || 'Que pensez-vous des conseils de Bob ?'
+  }
+
+  renderModal() {
+    const {isFeminine, project} = this.props
+    const {isModalShown, score, usefulAdvices, text} = this.state
+    const isGoodFeedback = score > 2
+    return <Modal
+      isShown={isModalShown} style={{color: Colors.DARK_TWO, padding: 50}}
+      onClose={() => this.setState({isModalShown: false, score: 0})}>
+      <div style={{borderBottom: `solid 2px ${Colors.SILVER}`, paddingBottom: 35}}>
+        {this.renderStars()}
+      </div>
+      <div style={{fontSize: 15, padding: '35px 0', position: 'relative', width: 600}}>
+        <div style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>
+          {isGoodFeedback ? <span>
+            Quels conseils vous ont particulièrement intéressé{isFeminine ? 'e' : ''}&nbsp;?
+          </span> : <span>
+            Pouvez-vous nous dire ce qui vous a gêné{isFeminine ? 'e' : ''}&nbsp;?
+          </span>}
+        </div>
+        {isGoodFeedback ? <CheckboxList
+          onChange={usefulAdvices => this.setState({usefulAdvices})} values={usefulAdvices}
+          options={(project.advices || []).
+            map(advice => ({name: getAdviceTitle(advice), value: advice.adviceId})).
+            filter(({name}) => name)} /> : <textarea
+          style={{height: 180, padding: 10, width: '100%'}}
+          placeholder="Écrivez votre commentaire ici" value={text}
+          onChange={event => this.setState({text: event.target.value})}
+        />}
+      </div>
+      <div style={{textAlign: 'center'}}>
+        <Button type="validation" onClick={this.saveFeedback}>Envoyer</Button>
+      </div>
+    </Modal>
+  }
+
+  renderStars() {
+    const {hoveredStars, score} = this.state
+    const highlightedStars = hoveredStars || score || 0
+    const starStyle = {
+      cursor: 'pointer',
+      height: 40,
+      padding: 5,
+    }
+    return <div style={{textAlign: 'center'}}>
+      <div style={{fontSize: 15, fontWeight: 'bold', marginBottom: 5}}>
+        {this.renderTitle(highlightedStars)}
+      </div>
+      <div>
+        {new Array(5).fill(null).map((unused, index) => <img
+          onMouseEnter={() => this.setState({hoveredStars: index + 1})}
+          onMouseLeave={() => {
+            if (hoveredStars === index + 1) {
+              this.setState({hoveredStars: 0})
+            }
+          }}
+          style={starStyle}
+          onClick={() => this.openModal(highlightedStars)}
+          src={(index < highlightedStars) ? starIcon : starOutlineIcon} key={`star-${index}`} />)}
+      </div>
+    </div>
+  }
+
+  renderCloseButton(onClick) {
+    const style = {
+      ':hover': {
+        opacity: .5,
+      },
+      bottom: 'initial',
+      opacity: .2,
+      right: 10,
+      top: 10,
+      transform: 'initial',
+    }
+    return <ModalCloseButton style={style} onClick={onClick} />
+  }
+
+  render() {
+    const {onClose, project, style} = this.props
+    if (project.feedback && project.feedback.score) {
+      return null
+    }
+    const containerStyle = {
+      backgroundColor: '#fff',
+      color: Colors.DARK_TWO,
+      position: 'relative',
+      ...style,
+    }
+    return <div style={containerStyle}>
+      {onClose ? this.renderCloseButton(onClose) : null}
+      {this.renderModal()}
+      {this.renderStars()}
+    </div>
+  }
+}
+const FeedbackBar = connect(({user}) => ({
+  isFeminine: user.profile.gender === 'FEMININE',
+}))(FeedbackBarBase)
 
 
 class Gauge extends React.Component {
@@ -1110,11 +1280,11 @@ class Gauge extends React.Component {
     return <div {...extraProps} style={containerStyle}>
       <div style={squeezedContainerStyle}>
         <svg
-            strokeWidth={strokeWidth} style={svgStyle}
-            fill="none" viewBox={`-20 0 ${2 * halfWidth + 40} ${deltaY + strokeWidth / 2 + 20}`}>
+          strokeWidth={strokeWidth} style={svgStyle}
+          fill="none" viewBox={`-20 0 ${2 * halfWidth + 40} ${deltaY + strokeWidth / 2 + 20}`}>
           <defs>
             <linearGradient
-                id="gradient" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0">
+              id="gradient" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor={Colors.RED_PINK} />
               <stop offset="50%" stopColor={Colors.SQUASH} />
               <stop offset="100%" stopColor={Colors.GREENISH_TEAL} />
@@ -1122,8 +1292,8 @@ class Gauge extends React.Component {
           </defs>
           <g transform={`translate(${halfWidth}, ${strokeWidth / 2 + radius})`}>
             <path
-                d={`M ${-halfWidth},-${deltaY} A ${radius},${radius} 0 0,1 ${halfWidth},-${deltaY}`}
-                stroke="url(#gradient)" />
+              d={`M ${-halfWidth},-${deltaY} A ${radius},${radius} 0 0,1 ${halfWidth},-${deltaY}`}
+              stroke="url(#gradient)" />
           </g>
         </svg>
         {this.renderMark(-squeezedHalfAngle, -4)}
@@ -1159,52 +1329,30 @@ class ArrowsUpOrDown extends React.Component {
 }
 
 
-class BobScoreButton extends React.Component {
+class HeaderLinkBase extends React.Component {
   static propTypes = {
-    style: PropTypes.shape({
-      width: PropTypes.number.isRequired,
-    }).isRequired,
-  }
-
-  state = {
-    isHovered: false,
+    children: PropTypes.node,
+    style: PropTypes.object,
   }
 
   render() {
-    const {style, ...extraProps} = this.props
-    const {isHovered} = this.state
+    const {children, style, ...extraProps} = this.props
     const containerStyle = {
-      alignItems: 'center',
-      backgroundColor: Colors.DARK_TWO,
-      borderRadius: 50,
-      boxShadow: '0 3px 5px 0 rgba(0, 0, 0, 0.3)',
+      ':hover': {
+        color: '#fff',
+      },
       cursor: 'pointer',
-      display: 'flex',
-      height: style.width,
-      justifyContent: 'center',
-      position: 'relative',
-      transform: `scale(${isHovered ? '1.14' : '1'})`,
+      fontWeight: 'bold',
+      padding: '10px 20px',
+      ...SmoothTransitions,
       ...style,
     }
-    return <div
-        style={containerStyle} className="tooltip"
-        {...extraProps}
-        onMouseEnter={() => this.setState({isHovered: true})}
-        onMouseLeave={() => this.setState({isHovered: false})}>
-      <div style={{position: 'relative'}}>
-        <img src={bobScoreGrayIcon} style={{position: 'absolute'}} />
-        <img
-            src={bobScoreIcon}
-            style={{opacity: isHovered ? 1 : 0, position: 'relative', ...SmoothTransitions}} />
-      </div>
-      <div
-          className="tooltiptext tooltip-bottom"
-          style={{fontSize: 13, padding: '10px 13px', width: 180}}>
-        Revoir mon diagnostic
-      </div>
-    </div>
+    return <span style={containerStyle} {...extraProps}>
+      {children}
+    </span>
   }
 }
+const HeaderLink = Radium(HeaderLinkBase)
 
 
 export {ProjectPage}

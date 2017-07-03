@@ -21,10 +21,10 @@ class AccountStep extends React.Component {
   render() {
     const {email, isValidated, lastName, name} = this.state
     return <Step
-        title="Vos informations"
-        fastForward={this.updater_.handleSubmit}
-        onNextButtonClick={this.updater_.handleSubmit}
-        {...this.props}>
+      title="Vos informations"
+      fastForward={this.updater_.handleSubmit}
+      onNextButtonClick={this.updater_.handleSubmit}
+      {...this.props}>
       <FieldSet label="Prénom" isValid={!!name} isValidated={isValidated}>
         <Input
           type="text" placeholder="Prénom"
@@ -32,15 +32,15 @@ class AccountStep extends React.Component {
       </FieldSet>
       <FieldSet label="Nom" isValid={!!lastName} isValidated={isValidated}>
         <Input
-            type="text" placeholder="Nom"
-            onChange={this.updater_.handleChange('lastName')} value={lastName} />
+          type="text" placeholder="Nom"
+          onChange={this.updater_.handleChange('lastName')} value={lastName} />
       </FieldSet>
       <FieldSet
-          label="Email (non éditable pour l'instant)"
-          isValid={!!email} isValidated={isValidated}>
+        label="Email (non éditable pour l'instant)"
+        isValid={!!email} isValidated={isValidated}>
         <Input
-            type="text" style={{color: Colors.COOL_GREY}}
-            value={email} readOnly={true} />
+          type="text" style={{color: Colors.COOL_GREY}}
+          value={email} readOnly={true} />
       </FieldSet>
     </Step>
   }

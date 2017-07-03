@@ -94,13 +94,13 @@ class NetworkAdvicePage extends React.Component {
 
   renderCirclesBox(style) {
     return <AdviceBox
-        feature="network-circles" style={style}
-        header={<div>
-          <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
-            <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>3</strong> cercles
-          </div>
+      feature="network-circles" style={style}
+      header={<div>
+        <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
+          <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>3</strong> cercles
+        </div>
           pour découvrir son réseau
-        </div>}>
+      </div>}>
       {this.renderBackground()}
       <div style={{marginLeft: this.context.isMobileVersion ? 0 : 130}}>
         {this.renderCircle(
@@ -132,15 +132,15 @@ class NetworkAdvicePage extends React.Component {
       right: 0,
     }
     return <AdviceBox
-        style={style} feature="network-examples"
-        header={<div>
-          <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
-            <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>
-              {MESSAGE_EXAMPLES.length}
-            </strong> exemples
-          </div>
+      style={style} feature="network-examples"
+      header={<div>
+        <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '40px'}}>
+          <strong style={{color: Colors.GREENISH_TEAL, fontSize: 40}}>
+            {MESSAGE_EXAMPLES.length}
+          </strong> exemples
+        </div>
           de demande simple
-        </div>}>
+      </div>}>
       <div style={{display: 'flex', flex: 1, flexDirection: 'column'}}>
         <strong>Exemple pour une demande par {medium}&nbsp;:</strong>
         <span style={{fontStyle: 'italic', fontWeight: 500}}>

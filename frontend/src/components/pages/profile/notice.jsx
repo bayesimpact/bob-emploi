@@ -40,10 +40,6 @@ class NoticeStep extends React.Component {
     onSubmit: PropTypes.func.isRequired,
   }
 
-  handleSubmit = () => {
-    this.props.onSubmit({})
-  }
-
   componentWillMount() {
     this.setState({isNextButtonDisabled: true})
     this.timeout = setTimeout(() => this.setState({isNextButtonDisabled: false}), 3000)
@@ -53,6 +49,10 @@ class NoticeStep extends React.Component {
     if (this.timeout) {
       clearTimeout(this.timeout)
     }
+  }
+
+  handleSubmit = () => {
+    this.props.onSubmit({})
   }
 
   render() {
@@ -67,12 +67,12 @@ class NoticeStep extends React.Component {
       textAlign: 'center',
     }
     return <Step
-        title="Commençons par nous connaître un peu mieux"
-        fastForward={this.handleSubmit}
-        onNextButtonClick={this.handleSubmit}
-        {...this.props}
-        isNextButtonDisabled={isNextButtonDisabled}
-        nextButtonContent={isNextButtonDisabled ? <CountDown seconds={3} /> : null}>
+      title="Commençons par nous connaître un peu mieux"
+      fastForward={this.handleSubmit}
+      onNextButtonClick={this.handleSubmit}
+      {...this.props}
+      isNextButtonDisabled={isNextButtonDisabled}
+      nextButtonContent={isNextButtonDisabled ? <CountDown seconds={3} /> : null}>
       <div style={{margin: 20, textAlign: 'center'}}>
         <img src={bobCircleImage} />
       </div>

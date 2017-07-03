@@ -9,7 +9,7 @@ import {editFirstProject, CREATE_PROJECT_SAVE} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {Routes} from 'components/url'
 import {getOnboardingStep, gotoNextStep, gotoPreviousStep,
-        onboardingStepCount} from './profile/onboarding'
+  onboardingStepCount} from './profile/onboarding'
 
 
 class NewProjectPageBase extends React.Component {
@@ -94,16 +94,16 @@ class NewProjectPageBase extends React.Component {
       const currentStepItem = getOnboardingStep(Routes.NEW_PROJECT_PAGE, params.stepName)
       const CurrentStepComponent = currentStepItem.component
       content = <CurrentStepComponent
-          onSubmit={this.handleSubmit}
-          onPreviousButtonClick={this.handleBack}
-          profile={userProfile} newProject={newProject}
-          stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount} />
+        onSubmit={this.handleSubmit}
+        onPreviousButtonClick={this.handleBack}
+        profile={userProfile} newProject={newProject}
+        stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount} />
     }
     return <PageWithNavigationBar
-        style={{backgroundColor: Colors.BACKGROUND_GREY}}
-        page="new_project" isContentScrollable={true} ref={page => {
-          this.page = page
-        }}>
+      style={{backgroundColor: Colors.BACKGROUND_GREY}}
+      page="new_project" isContentScrollable={true} ref={page => {
+        this.page = page
+      }}>
       <div style={style}>
         {content}
       </div>

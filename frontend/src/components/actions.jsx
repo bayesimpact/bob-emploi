@@ -84,8 +84,8 @@ class ActionDescriptionModalBase extends React.Component {
         </div>
         <div style={{marginBottom: 15, marginTop: 5}}>
           <a
-              style={linkStyle} target="_blank" rel="noopener noreferrer"
-              href={action.link} onClick={this.handleLinkClick}>
+            style={linkStyle} target="_blank" rel="noopener noreferrer"
+            href={action.link} onClick={this.handleLinkClick}>
           Cliquez ici</a> pour avoir un coup de pouce.
         </div>
       </div>

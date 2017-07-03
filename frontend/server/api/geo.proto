@@ -31,6 +31,9 @@ message FrenchCity {
 
   // Longitude of the center of the city (approx) in easting degrees.
   float longitude = 9;
+
+  // The population of the city as of the last known data.
+  int32 population = 10;
 }
 
 // Type of geographical area (order matters).
@@ -53,3 +56,9 @@ message Location {
   // FrenchCity message are relevant.
   AreaType area_type = 3;
 }
+
+// A list of cities.
+message Cities {
+  repeated FrenchCity cities = 1;
+}
+

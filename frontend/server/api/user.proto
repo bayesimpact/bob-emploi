@@ -60,6 +60,18 @@ message User {
   // Response from the user to the survey we send by email to get feedback on the app
   // and on the relevance of the given advices.
   NPSSurveyResponse net_promoter_score_survey_response = 15;
+
+  // Identifier of the latest changelog message seen by the user, e.g. 2017-06-18_00.
+  // TODO(pascal): Move inside notifications.
+  string latest_changelog_seen = 16;
+
+  // The notifications that the user has seen.
+  Notifications notifications_seen = 17;
+
+  // Revision of the user's data. This number should always be increasing, it
+  // helps keep synchronized the client and the server versions of the user's
+  // data. See http://go/bob:revision-design
+  int32 revision = 18;
 }
 
 message UserAuth {
@@ -117,7 +129,7 @@ message AuthResponse {
 }
 
 // Profile of a user, a job seeker.
-// Next ID: 21.
+// Next ID: 22.
 message UserProfile {
   // Where the user is living.
   // We wanted to distinguish where the user is living from where they search
@@ -182,6 +194,9 @@ message UserProfile {
 
   // How the user is OK to give us feedback.
   FeedbackMedium feedback_medium = 17;
+
+  // How did the user found out about the application.
+  UserOrigin origin = 21;
 }
 
 // A lightweight message to reference a user.
@@ -216,6 +231,7 @@ message UnverifiedDataZone {
 //  - The comment describes precisely what is being developped.
 //  - The comment includes the date for when this feature started to be
 //    implemented.
+// Next ID: 21
 message Features {
   // Email notifications can be sent to any user that has checked some days
   // in profile.email_days. The feature here is for users that we opted-in
@@ -252,6 +268,9 @@ message Features {
   // Enable all alpha features (usually for devs and/or user tests).
   bool alpha = 15;
 
+  // Enable specific Pôle Emploi counselor features.
+  bool pole_emploi = 20;
+
   // Whether the user should receive the Net Promoter Score email.
   NPSEmailStatus net_promoter_score_email = 16;
 
@@ -260,6 +279,11 @@ message Features {
 
   // Whether the user switched from mashup to advisor.
   bool switched_from_mashup_to_advisor = 19;
+}
+
+message Notifications {
+  // A notification for PE counselors that shows a kit to prepare info collectives.
+  bool info_coll_kit = 1;
 }
 
 enum Gender {
@@ -369,6 +393,24 @@ enum FeedbackMedium {
   ON_SITE = 2;
 
   PHONE_OR_ON_SITE = 3;
+}
+
+enum UserOrigin {
+  UNKNOWN_ORIGIN = 0;
+
+  FROM_A_FRIEND = 1;
+
+  FROM_JOBSEEKER_GROUP = 2;
+
+  FROM_PE_WORKSHOP = 3;
+
+  FROM_PE_COUNSELOR = 4;
+
+  FROM_PRESS = 5;
+
+  FROM_WEBSITE = 6;
+
+  FROM_OTHER = 7;
 }
 
 // Status of the email sent to user to compute the Net Promoter Score.

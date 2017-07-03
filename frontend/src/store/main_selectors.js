@@ -3,9 +3,10 @@ function onboardingComplete(user) {
     return false
   }
   const {email, gender, name, yearOfBirth, highestDegree, lastName} = user.profile
-  const hasProject = (user.projects || []).some(project => !project.isIncomplete)
+  const hasCompletedFirstProject =
+    user.projects && user.projects[0] && !user.projects[0].isIncomplete
   return !!(gender && name && yearOfBirth && email && highestDegree && lastName
-      && hasProject)
+    && hasCompletedFirstProject)
 }
 
 const mainSelector = function(state) {

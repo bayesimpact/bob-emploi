@@ -14,7 +14,7 @@ function getSectorsAndStructures({otherWorkEnvAdviceData}) {
 }
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
   }
@@ -41,14 +41,14 @@ class FullAdviceCard extends React.Component {
 }
 
 
-class AdvicePageContent extends React.Component {
+class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {sectors, structures} = getSectorsAndStructures(this.props.advice)
+    const {domains, sectors, structures} = getSectorsAndStructures(this.props.advice)
     const {project} = this.props
     const areSectorsShown = (sectors || []).length > 1
     const areStructuresShown = (structures || []).length > 1
@@ -57,7 +57,9 @@ class AdvicePageContent extends React.Component {
     }
     return <div>
       <div style={style}>
-        <Section kind="secteurs" items={sectors} project={project} />
+        {(domains && domains.length > 1) ?
+          <Section kind="secteurs" items={domains.map(({name}) => name)} project={project} /> :
+          <Section kind="secteurs" items={sectors} project={project} />}
         {(areSectorsShown && areStructuresShown) ? <div style={{height: 20, width: 35}} /> : null}
         <Section kind="types de structure" items={structures}  project={project} />
       </div>
@@ -122,12 +124,12 @@ class Section extends React.Component {
       </PaddedOnMobile>
       <AppearingList>
         {items.map((title, index) => <SearchableElement
-            title={title} project={project} key={`job-board-${index}`}
-            style={index > 0 ? {marginTop: -1} : {}} />)}
+          title={title} project={project} key={`job-board-${index}`}
+          style={index > 0 ? {marginTop: -1} : {}} />)}
       </AppearingList>
     </div>
   }
 }
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

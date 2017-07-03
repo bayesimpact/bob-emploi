@@ -7,7 +7,7 @@ import Radium from 'radium'
 import {advicePageIsShown, moveUserDatesBackOneDay, selectAdvice} from 'store/actions'
 import {getAdviceById} from 'store/project'
 
-import {AdvicePageContent} from 'components/advisor'
+import {ExpandedAdviceCardContent} from 'components/advisor'
 import {PageWithNavigationBar} from 'components/navigation'
 import {ShortKey} from 'components/shortkey'
 import {Colors, Icon, JobGroupCoverImage, Button, SmoothTransitions} from 'components/theme'
@@ -50,15 +50,15 @@ class AdvicePage extends React.Component {
     }
   }
 
-  componentWillUnmount() {
-    clearTimeout(this.timeout)
-  }
-
   componentWillReceiveProps(nextProps) {
     this.updateAdvice(nextProps.params, nextProps.user)
     if (nextProps.params.adviceId !== this.props.params.adviceId) {
       this.setState({isSideBarShown: false})
     }
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timeout)
   }
 
   moveToTomorrow = () => {
@@ -109,12 +109,12 @@ class AdvicePage extends React.Component {
     }
     return <div style={style}>
       <JobGroupCoverImage
-          romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
-          coverOpacity={1}
-          opaqueCoverGradient={{
-            left: Colors.CHARCOAL_GREY,
-            middle: Colors.CHARCOAL_GREY,
-            right: 'rgba(56, 63, 81, 0.7)'}} />
+        romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
+        coverOpacity={1}
+        opaqueCoverGradient={{
+          left: Colors.CHARCOAL_GREY,
+          middle: Colors.CHARCOAL_GREY,
+          right: 'rgba(56, 63, 81, 0.7)'}} />
       <div style={{fontSize: 30, fontStyle: 'italic'}}>
         {adviceModuleProperties[advice.adviceId].title || ''}
       </div>
@@ -136,9 +136,9 @@ class AdvicePage extends React.Component {
     }
 
     return <div style={style}>
-      <AdvicePageContent
-          project={project} advice={advice} profile={user.profile}
-          style={{margin: 'auto', maxWidth: 700}} />
+      <ExpandedAdviceCardContent
+        project={project} advice={advice} profile={user.profile}
+        style={{margin: 'auto', maxWidth: 700}} />
     </div>
   }
 
@@ -164,9 +164,9 @@ class AdvicePage extends React.Component {
       })
     }
     return <SideBar
-        project={project} selectedAdviceId={adviceId}
-        onBack={this.redirectToProject} style={sideBarStyle}
-        onClose={canSideBarBeHidden ? (() => this.setState({isSideBarShown: false})) : null} />
+      project={project} selectedAdviceId={adviceId}
+      onBack={this.redirectToProject} style={sideBarStyle}
+      onClose={canSideBarBeHidden ? (() => this.setState({isSideBarShown: false})) : null} />
   }
 
   renderNavigationButtons() {
@@ -195,8 +195,8 @@ class AdvicePage extends React.Component {
     }
     return <div style={buttonsStyle}>
       <RadiumIcon
-          name="menu" onClick={() => this.setState({isSideBarShown: true})}
-          style={menuStyle} />
+        name="menu" onClick={() => this.setState({isSideBarShown: true})}
+        style={menuStyle} />
       <BackButton onClick={this.redirectToProject} style={{marginLeft: 20}} />
     </div>
   }
@@ -219,7 +219,7 @@ class AdvicePage extends React.Component {
       position: 'relative',
     }
     return <PageWithNavigationBar
-        style={{zIndex: 0}} isContentScrollable={true} onNavigateBack={this.redirectToProject}>
+      style={{zIndex: 0}} isContentScrollable={true} onNavigateBack={this.redirectToProject}>
       <ShortKey keyCode="KeyY" ctrlKey={true} shiftKey={true} onKeyPress={this.moveToTomorrow} />
       {this.renderNavigationButtons()}
       <div style={{display: 'flex', position: 'relative', ...sideBarContainerStyle}}>
@@ -293,9 +293,9 @@ class SideBarBase extends React.Component {
       </header>
       <div style={{flex: 1, overflow: 'auto'}}>
         {(project.advices || []).map(advice => <SideBarLink
-            key={advice.adviceId} advice={advice}
-            isSelected={selectedAdviceId === advice.adviceId}
-            onClick={() => this.goToOtherAdvice(advice)} />)}
+          key={advice.adviceId} advice={advice}
+          isSelected={selectedAdviceId === advice.adviceId}
+          onClick={() => this.goToOtherAdvice(advice)} />)}
       </div>
     </nav>
   }
@@ -322,8 +322,8 @@ class BackButton extends React.Component {
       verticalAlign: 'middle',
     }
     return <Button
-        style={backButtonStyle} type="navigationOnImage" isNarrow={true}
-        {...extraProps}>
+      style={backButtonStyle} type="navigationOnImage" isNarrow={true}
+      {...extraProps}>
       <Icon name="chevron-left" style={chevronStyle} />
       Retour
     </Button>
@@ -368,9 +368,9 @@ class SideBarLinkBase extends React.Component {
     }
     const {title} = adviceModuleProperties[advice.adviceId] || {}
     return <div
-        style={containerStyle} {...extraProps}
-        onMouseEnter={() => this.setState({isHovered: true})}
-        onMouseLeave={() => this.setState({isHovered: false})}>
+      style={containerStyle} {...extraProps}
+      onMouseEnter={() => this.setState({isHovered: true})}
+      onMouseLeave={() => this.setState({isHovered: false})}>
       <div style={{flex: 1}}>{title}</div>
       {isSelected ? null : <Icon name="chevron-right" />}
     </div>

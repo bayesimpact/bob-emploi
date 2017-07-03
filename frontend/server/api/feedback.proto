@@ -27,4 +27,10 @@ enum FeedbackSource {
 
   // General feedback in the "professionals" page.
   PROFESSIONAL_PAGE_FEEDBACK = 2;
+
+  // Global feedback on a project.
+  PROJECT_FEEDBACK = 3;
+
+  // Feedback given in the Changelog modals (on specific questions).
+  CHANGELOG_FEEDBACK = 4;
 }

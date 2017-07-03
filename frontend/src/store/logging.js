@@ -2,7 +2,6 @@ import browser from 'detect-browser'
 import moment from 'moment'
 
 import {AUTHENTICATE_USER, REGISTER_USER} from './actions'
-import {upperFirstLetter} from './french'
 
 
 const daysSince = timestamp => {
@@ -74,6 +73,7 @@ export class Logger {
     if (browser.name) {
       properties['$browser'] = browser.name
     }
+    properties['$hostname'] = window.location.hostname
     if (state.app.isMobileVersion) {
       properties['Mobile Version'] = true
     }
@@ -88,20 +88,16 @@ export class Logger {
       properties['Action Title'] = action.action.title
     }
     if (action.feedback) {
-      if (action.feedback.caption) {
-        properties['Feedback'] = action.feedback.caption
+      const {caption, score, text} = action.feedback
+      if (caption || text) {
+        properties['Feedback'] = caption || text
       }
-      let status
-      if (action.feedback.status) {
-        // ACTION_DECLINED -> Declined
-        status = action.feedback.status.substr('ACTION_'.length)
-        status = upperFirstLetter(status.toLowerCase())
-      } else if (action.feedback.good) {
-        status = 'Useful'
-      } else {
-        status = 'Not useful'
+      if (score) {
+        properties['Score'] = score
       }
-      properties['Action Closed as'] =  status
+    }
+    if (action.notification) {
+      properties['Notification'] = action.notification
     }
     if (action.project) {
       properties['Project Job Name'] = action.project.targetJob.masculineName

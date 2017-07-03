@@ -38,6 +38,7 @@ from google.protobuf import json_format
 from bob_emploi.lib import mongo
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
+from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import chantier_pb2
@@ -158,6 +159,8 @@ PROTO_CLASSES = {
     'AdviceModule': _AdviceModuleConverter(
         advisor_pb2.AdviceModule, 'airtable_id',
         required_fields=['advice_id', 'trigger_scoring_model']),
+    'ApplicationTip': _FilteredLinkConverter(
+        application_pb2.ApplicationTip, None, required_fields=['content', 'type']),
     'JobBoard': _FilteredLinkConverter(
         jobboard_pb2.JobBoard, None, required_fields=['title', 'link']),
     'Association': _FilteredLinkConverter(

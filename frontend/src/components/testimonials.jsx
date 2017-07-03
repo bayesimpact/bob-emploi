@@ -84,8 +84,8 @@ class Testimonials extends React.Component {
     })
     return <ol style={containerStyle}>
       {children.map((card, i) => <li
-          key={'bullet-' + i} style={style(i === this.state.shownTestimonialIndex)}
-          onClick={() => this.pickTestimonial(i, true)} />)}
+        key={'bullet-' + i} style={style(i === this.state.shownTestimonialIndex)}
+        onClick={() => this.pickTestimonial(i, true)} />)}
     </ol>
   }
 
@@ -120,8 +120,8 @@ class Testimonials extends React.Component {
     }
     return <div>
       <div style={style}>
-        {previousTestimonialIndex === shownTestimonialIndex ? null :
-        <div style={leavingStyle} key={previousTestimonialIndex}>
+        {previousTestimonialIndex === shownTestimonialIndex ? null : <div
+          style={leavingStyle} key={previousTestimonialIndex}>
           {previousTestimonial}
         </div>}
         <div style={arrivingStyle} key={shownTestimonialIndex}>

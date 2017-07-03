@@ -15,6 +15,8 @@ except ImportError:
 from google.protobuf import json_format
 from google.protobuf import message
 
+_CACHE_DURATION = datetime.timedelta(hours=1)
+
 
 def parse_from_mongo(mongo_dict, proto):
     """Parse a Protobuf from a dict coming from MongoDB.
@@ -163,9 +165,11 @@ class MongoCachedCollection(object):
 
 class _MongoCachedCollection(object):
 
-    def __init__(self, populate):
+    def __init__(self, populate, cache_duration=_CACHE_DURATION):
         self._populate = populate
         self._cache = None
+        self._cached_valid_until = None
+        self._cache_duration = cache_duration
 
     @property
     def is_cached(self):
@@ -173,8 +177,10 @@ class _MongoCachedCollection(object):
         return bool(self._cache)
 
     def _ensure_cache(self):
-        if self._cache:
+        now = datetime.datetime.utcnow()
+        if self._cached_valid_until and self._cached_valid_until >= now:
             return self._cache
+        self._cached_valid_until = now + self._cache_duration
         self._cache = collections.OrderedDict()
         self._populate(self._cache)
         return self._cache

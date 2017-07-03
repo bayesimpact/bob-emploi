@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+message ApplicationTip {
+  // Content of the tip. Using markup language for formatting.
+  string content = 1;
+
+  // Same as content, but a particular version for masculine if it differs from
+  // the feminine version.
+  string content_masculine = 2;
+
+  // A set of filter IDs: do not show the tip if one of these filters return
+  // false for the project.
+  // See the list of available filters in scoring.py.
+  repeated string filters = 3;
+
+  // Type of tip.
+  ApplicationTipType type = 4;
+}
+
+
+enum ApplicationTipType {
+  UNKNOWN_APPLICATION_TIP_TYPE = 0;
+
+  // The tip is a quality the user should mention in their resume or show
+  // during an interview.
+  QUALITY = 1;
+
+  // The tip is an action to improve the user's resume.
+  CV_IMPROVEMENT = 2;
+
+  // The tip is an action to prepare an interview.
+  INTERVIEW_PREPARATION = 3;
+}
+
+message InterviewTips {
+  // A sorted list of qualities the user should mention in an interview.
+  repeated ApplicationTip qualities = 1;
+
+  // A sorted list of actions a user should do to prepare an interview.
+  repeated ApplicationTip preparations = 2;
+}
+
+message ResumeTips {
+  // A sorted list of qualities the user should mention in their resume.
+  repeated ApplicationTip qualities = 1;
+
+  // A sorted list of actions a user should do improve their resume.
+  repeated ApplicationTip improvements = 2;
+}

@@ -30,7 +30,7 @@ class StaticPage extends React.Component {
   }
 
   render() {
-    const {children, page, style, title} = this.props
+    const {children, page, style, title, ...extraProps} = this.props
     const pageStyle = {
       backgroundColor: '#fff',
       color: Colors.CHARCOAL_GREY,
@@ -56,8 +56,8 @@ class StaticPage extends React.Component {
       width: '100%',
     }
     return <PageWithNavigationBar
-        style={{...(title ? {} : style)}}
-        page={page}  isContentScrollable={true}>
+      style={{...(title ? {} : style)}}
+      page={page} isContentScrollable={true} {...extraProps}>
       {title ? (
         <div style={pageStyle}>
           <header style={headerStyle}>

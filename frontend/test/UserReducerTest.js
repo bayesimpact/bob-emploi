@@ -1,8 +1,8 @@
-var chai = require('chai')
-var expect = chai.expect
-chai.config.truncateThreshold = 0
+import {config, expect} from 'chai'
 import {user} from 'store/user_reducer'
 import {CREATE_PROJECT, EDIT_FIRST_PROJECT} from 'store/actions'
+
+config.truncateThreshold = 0
 
 describe('user reducer', () => {
   it('should return unchanged state for an unknown action', () => {
