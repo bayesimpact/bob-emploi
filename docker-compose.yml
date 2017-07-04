@@ -8,12 +8,12 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./data_analysis/data:/home/jovyan/work/data:rw
+      - ./data_analysis/data:/home/jovyan/data:rw
       - ./data_analysis/bob_emploi:/opt/conda/lib/python3.5/bob_emploi:ro
-      - ./data_analysis/bob_emploi:/home/jovyan/work/bob_emploi:ro
-      - ./data_analysis/notebooks:/home/jovyan/work/notebooks
+      - ./data_analysis/bob_emploi:/home/jovyan/bob_emploi:ro
+      - ./data_analysis/notebooks:/home/jovyan/notebooks
     environment:
-      DATA_FOLDER: '/home/jovyan/work/data'
+      DATA_FOLDER: '/home/jovyan/data'
   data-analysis-prepare:
     image: docker.bayesimpact.org/bob-emploi/data-analysis-prepare
     build:
