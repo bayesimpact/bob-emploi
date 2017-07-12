@@ -9,7 +9,7 @@ services:
       - "8888:8888"
     volumes:
       - ./data_analysis/data:/home/jovyan/data:rw
-      - ./data_analysis/bob_emploi:/opt/conda/lib/python3.5/bob_emploi:ro
+      - ./data_analysis/bob_emploi:/opt/conda/lib/python3.6/bob_emploi:ro
       - ./data_analysis/bob_emploi:/home/jovyan/bob_emploi:ro
       - ./data_analysis/notebooks:/home/jovyan/notebooks
     environment:
