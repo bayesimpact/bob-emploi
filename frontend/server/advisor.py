@@ -5,11 +5,15 @@ See http://go/bob:advisor-design.
 import collections
 import datetime
 import logging
+import os
 import random
 
 from bson import objectid
+import mailjet_rest
 
 from bob_emploi.frontend import action
+from bob_emploi.frontend import french
+from bob_emploi.frontend import mail
 from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
@@ -20,8 +24,10 @@ from bob_emploi.frontend.api import user_pb2
 
 _ScoredAdvice = collections.namedtuple('ScoredAdvice', ['advice', 'score'])
 
+_EMAIL_ACTIVATION_ENABLED = not os.getenv('DEBUG', '')
 
-def maybe_advise(user, project, database):
+
+def maybe_advise(user, project, database, base_url='http://localhost:3000'):
     """Check if a project needs advice and populate all advice fields if not.
 
     Args:
@@ -30,7 +36,11 @@ def maybe_advise(user, project, database):
     """
     if project.is_incomplete:
         return
-    _maybe_recommend_advice(user, project, database)
+    if _maybe_recommend_advice(user, project, database) and project.advices:
+        try:
+            _send_activation_email(user, project, database, base_url)
+        except mailjet_rest.client.ApiError as error:
+            logging.warning('Could not send the activation email: %s', error)
 
 
 def _maybe_recommend_advice(user, project, database):
@@ -96,6 +106,42 @@ def _compute_extra_data(piece_of_advice, module, scoring_project):
             module.extra_data_field_name, module.advice_id)
         return
     data_field.CopyFrom(extra_data)
+
+
+def _send_activation_email(user, project, database, base_url):
+    """Send an email to the user just after we have defined their diagnosis."""
+    advice_modules = {a.advice_id: a for a in _advice_modules(database)}
+    advices = [a for a in project.advices if a.advice_id in advice_modules]
+    if not advices:
+        logging.error(  # pragma: no-cover
+            'Weird: the advices that just got created do not exist in DB.')  # pragma: no-cover
+        return  # pragma: no-cover
+    data = {
+        'baseUrl': base_url,
+        'projectId': project.project_id,
+        'firstName': user.profile.name,
+        'ofProjectTitle': french.maybe_contract_prefix(
+            'de ', "d'", french.lower_first_letter(_get_job_name(
+                project.target_job, user.profile.gender))),
+        'advices': [
+            {'adviceId': a.advice_id, 'title': advice_modules[a.advice_id].title}
+            for a in advices
+        ],
+    }
+    response = mail.send_template(
+        # https://app.mailjet.com/template/168827/build
+        '168827', user.profile, data, dry_run=not _EMAIL_ACTIVATION_ENABLED)
+    if response.status_code != 200:
+        logging.warning(
+            'Error while sending diagnostic email: %s\n%s', response.status_code, response.text)
+
+
+def _get_job_name(job, gender):
+    if gender == user_pb2.FEMININE:
+        return job.feminine_name or job.name
+    if gender == user_pb2.MASCULINE:
+        return job.masculine_name or job.name
+    return job.name
 
 
 def list_all_tips(user, project, piece_of_advice, database, cache=None, filter_tip=None):

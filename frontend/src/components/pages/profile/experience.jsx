@@ -40,9 +40,26 @@ class NewProjectExperienceStepBase extends React.Component {
     }),
   }
 
+  componentWillMount() {
+    const {jobRequirements, newProject} = this.props
+    this.setState({...newProject})
+    if (!jobRequirements[newProject.targetJob.codeOgr]) {
+      this.props.dispatch(fetchProjectRequirements({
+        targetJob: newProject.targetJob,
+      }))
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const {isFetchingRequirements} = nextProps
+    if (!isFetchingRequirements && !this.getRequiredDiplomaNames().length) {
+      this.setState({trainingFulfillmentEstimate: 'NO_TRAINING_REQUIRED'})
+    }
+  }
+
   handleSubmit = () => {
     const {networkEstimate, previousJobSimilarity, seniority,
-           trainingFulfillmentEstimate} = this.state
+      trainingFulfillmentEstimate} = this.state
     this.setState({isValidated: true})
     if (this.isFormValid()) {
       this.props.onSubmit({
@@ -54,19 +71,9 @@ class NewProjectExperienceStepBase extends React.Component {
     }
   }
 
-  componentWillMount() {
-    const {jobRequirements, newProject} = this.props
-    this.setState({...newProject})
-    if (!jobRequirements[newProject.targetJob.codeOgr]) {
-      this.props.dispatch(fetchProjectRequirements({
-        targetJob: newProject.targetJob,
-      }))
-    }
-  }
-
   fastForward = () => {
     const {trainingFulfillmentEstimate, networkEstimate, previousJobSimilarity,
-           seniority} = this.state
+      seniority} = this.state
     if (this.isFormValid()) {
       this.handleSubmit()
       return
@@ -93,7 +100,7 @@ class NewProjectExperienceStepBase extends React.Component {
 
   isFormValid = () => {
     const {previousJobSimilarity, networkEstimate, trainingFulfillmentEstimate,
-           seniority} = this.state
+      seniority} = this.state
     return !!(previousJobSimilarity && trainingFulfillmentEstimate &&
               (seniority || !isSeniorityRequired(previousJobSimilarity)) &&
               networkEstimate)
@@ -101,13 +108,6 @@ class NewProjectExperienceStepBase extends React.Component {
 
   handleChange = field => value => {
     this.setState({[field]: value})
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const {isFetchingRequirements} = nextProps
-    if (!isFetchingRequirements && !this.getRequiredDiplomaNames().length) {
-      this.setState({trainingFulfillmentEstimate: 'NO_TRAINING_REQUIRED'})
-    }
   }
 
   getRequiredDiplomaNames = () => {
@@ -120,7 +120,7 @@ class NewProjectExperienceStepBase extends React.Component {
     const {gender} = this.props.profile
     const {isFetchingRequirements} = this.props
     const {previousJobSimilarity, seniority, isValidated,
-           trainingFulfillmentEstimate, networkEstimate} = this.state
+      trainingFulfillmentEstimate, networkEstimate} = this.state
     const requiredDiplomaNames = this.getRequiredDiplomaNames()
 
     const networkLabel = <span>
@@ -128,20 +128,20 @@ class NewProjectExperienceStepBase extends React.Component {
       Connaissez-vous des gens qui pourraient vous aider à obtenir ce métier&nbsp;?
     </span>
     return <Step
-        {...this.props} fastForward={this.fastForward}
-        title="Comment vous placez-vous sur votre marché ?"
-        onNextButtonClick={this.handleSubmit}>
+      {...this.props} fastForward={this.fastForward}
+      title="Comment vous placez-vous sur votre marché ?"
+      onNextButtonClick={this.handleSubmit}>
       <div>
         <FieldSet label="Avez-vous déjà fait ce métier&nbsp;?"
-                  isValid={!!previousJobSimilarity} isValidated={isValidated}>
+          isValid={!!previousJobSimilarity} isValidated={isValidated}>
           <Select options={PROJECT_EXPERIENCE_OPTIONS} value={previousJobSimilarity}
-                  onChange={this.handleChange('previousJobSimilarity')} />
+            onChange={this.handleChange('previousJobSimilarity')} />
         </FieldSet>
         <FieldSet label="Quel est votre niveau d'expérience&nbsp;?"
-                  disabled={!isSeniorityRequired(previousJobSimilarity)}
-                  isValid={!!seniority} isValidated={isValidated}>
+          disabled={!isSeniorityRequired(previousJobSimilarity)}
+          isValid={!!seniority} isValidated={isValidated}>
           <Select options={seniorityOptions} value={seniority}
-                  onChange={this.handleChange('seniority')} />
+            onChange={this.handleChange('seniority')} />
         </FieldSet>
         {requiredDiplomaNames.length || isFetchingRequirements ? (
           <FieldSet
@@ -154,16 +154,16 @@ class NewProjectExperienceStepBase extends React.Component {
             style={{maxWidth: 600}}
             isValid={!!trainingFulfillmentEstimate} isValidated={isValidated}>
             <Select
-                options={getTrainingFulfillmentEstimateOptions(gender)}
-                value={trainingFulfillmentEstimate}
-                onChange={this.handleChange('trainingFulfillmentEstimate')} />
+              options={getTrainingFulfillmentEstimateOptions(gender)}
+              value={trainingFulfillmentEstimate}
+              onChange={this.handleChange('trainingFulfillmentEstimate')} />
           </FieldSet>
         ) : null}
         <FieldSet label={networkLabel} isValid={!!networkEstimate} isValidated={isValidated}>
           <Select
-              options={networkEstimateOptions}
-              value={networkEstimate && networkEstimate.toString()}
-              onChange={this.handleChange('networkEstimate')} />
+            options={networkEstimateOptions}
+            value={networkEstimate && networkEstimate.toString()}
+            onChange={this.handleChange('networkEstimate')} />
         </FieldSet>
       </div>
     </Step>

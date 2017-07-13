@@ -5,6 +5,7 @@ import config from 'config'
 
 import {sendProfessionalFeedback} from 'store/actions'
 
+import {InfoCollNotificationBox} from 'components/info_coll'
 import {PageWithNavigationBar} from 'components/navigation'
 import {TestimonialCard, Testimonials} from 'components/testimonials'
 import {Button, Colors} from 'components/theme'
@@ -27,28 +28,6 @@ class ProfessionalsPage extends React.Component {
     const {feedback} = this.state
     dispatch(sendProfessionalFeedback(feedback))
     this.setState({feedback: ''})
-  }
-
-  render() {
-    const greyBackgroundStyle = {
-      backgroundColor: Colors.BACKGROUND_GREY,
-      color: Colors.DARK,
-      padding: '50px 10px',
-    }
-    const whiteBackgroundStyle = {
-      backgroundColor: '#fff',
-      color: Colors.DARK,
-      padding: '50px 10px',
-    }
-    return <PageWithNavigationBar
-        page="professionals" isContentScrollable={true}
-        style={{fontSize: 27, textAlign: 'center'}}>
-      {this.renderTitle()}
-      {this.renderDemo(greyBackgroundStyle)}
-      {this.renderWhy(whiteBackgroundStyle)}
-      {this.renderFeedback({...greyBackgroundStyle, padding: '50px 10px 0'})}
-      {this.renderFollow(greyBackgroundStyle)}
-    </PageWithNavigationBar>
   }
 
   renderTitle() {
@@ -82,9 +61,9 @@ class ProfessionalsPage extends React.Component {
         Comment faire découvrir {config.productName}
       </header>
       <iframe
-          width={isMobileVersion ? '100%' : 560} height={315} frameBorder={0}
-          src="https://www.youtube.com/embed/ZmOZhDdFrL0"
-          allowFullScreen={true} />
+        width={isMobileVersion ? '100%' : 560} height={315} frameBorder={0}
+        src="https://www.youtube.com/embed/ZmOZhDdFrL0"
+        allowFullScreen={true} />
     </section>
   }
 
@@ -94,8 +73,8 @@ class ProfessionalsPage extends React.Component {
         Pourquoi proposer {config.productName}
       </header>
       <Testimonials
-          cardStyle={{backgroundColor: Colors.BACKGROUND_GREY, minHeight: 320}}
-          carouselAutoRotationDurationMs={8000}>
+        cardStyle={{backgroundColor: Colors.BACKGROUND_GREY, minHeight: 320}}
+        carouselAutoRotationDurationMs={8000}>
         <TestimonialCard author="Sébastien, ancien conseiller Pôle emploi" isAuthorMan={true}>
           J'aurais aimé que cette application existe quand j'étais encore
           conseiller à Pôle emploi. Le fait que les chercheurs d'emploi
@@ -125,8 +104,10 @@ class ProfessionalsPage extends React.Component {
     const {feedback} = this.state
     const width = isMobileVersion ? 300 : 800
     const textareaStyle = {
+      display: 'block',
       fontSize: 14,
       height: 300,
+      margin: 'auto',
       padding: '15px 12px',
       width,
     }
@@ -135,11 +116,11 @@ class ProfessionalsPage extends React.Component {
         Partager des retours et des idées pour améliorer {config.productName}
       </header>
       <textarea
-          style={textareaStyle}
-          onChange={event => this.setState({feedback: event.target.value})}
-          placeholder="Laissez-nous vos commentaires"
-          value={feedback} />
-      <div style={{display: 'inline-block', textAlign: 'right', width}}>
+        style={textareaStyle}
+        onChange={event => this.setState({feedback: event.target.value})}
+        placeholder="Laissez-nous vos commentaires"
+        value={feedback} />
+      <div style={{display: 'block', margin: '20px auto 0', textAlign: 'right', width}}>
         <Button disabled={!feedback} onClick={this.submitFeedback}>
           Envoyer
         </Button>
@@ -160,17 +141,40 @@ class ProfessionalsPage extends React.Component {
       </header>
       <div>
         <a
-            href="https://twitter.com/@BobEmploi" style={linkStyle}
-            target="_blank" rel="noopener noreferrer">
+          href="https://twitter.com/@BobEmploi" style={linkStyle}
+          target="_blank" rel="noopener noreferrer">
           Suivre notre page Twitter
         </a>
         <a
-            href="https://www.facebook.com/groups/bobemploiexperts"
-            style={linkStyle} target="_blank" rel="noopener noreferrer">
+          href="https://www.facebook.com/groups/bobemploiexperts"
+          style={linkStyle} target="_blank" rel="noopener noreferrer">
           Rejoindre le groupe Facebook "Les Experts - {config.productName}"
         </a>
       </div>
     </section>
+  }
+
+  render() {
+    const greyBackgroundStyle = {
+      backgroundColor: Colors.BACKGROUND_GREY,
+      color: Colors.DARK,
+      padding: '50px 10px',
+    }
+    const whiteBackgroundStyle = {
+      backgroundColor: '#fff',
+      color: Colors.DARK,
+      padding: '50px 10px',
+    }
+    return <PageWithNavigationBar
+      page="professionals" isContentScrollable={true}
+      style={{fontSize: 27, paddingBottom: 150, textAlign: 'center'}}>
+      <InfoCollNotificationBox />
+      {this.renderTitle()}
+      {this.renderDemo(greyBackgroundStyle)}
+      {this.renderWhy(whiteBackgroundStyle)}
+      {this.renderFeedback({...greyBackgroundStyle, padding: '50px 10px 0'})}
+      {this.renderFollow(greyBackgroundStyle)}
+    </PageWithNavigationBar>
   }
 }
 

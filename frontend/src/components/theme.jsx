@@ -3,13 +3,14 @@ import PropTypes from 'prop-types'
 import ReactMarkdown from 'react-markdown'
 import Radium from 'radium'
 import VisibilitySensor from 'react-visibility-sensor'
-require('styles/fonts/GTWalsheim/font.css')
-require('mdi/css/materialdesignicons.min.css')
 import _ from 'underscore'
 
 import config from 'config'
 
 import {JobSuggest} from 'components/suggestions'
+
+require('styles/fonts/GTWalsheim/font.css')
+require('mdi/css/materialdesignicons.min.css')
 
 export const Colors = {
   BACKGROUND_GREY: '#f3f4f7',
@@ -164,6 +165,10 @@ class ButtonBase extends React.Component {
     clearTimeout(this.timeout)
   }
 
+  blur() {
+    this.dom && this.dom.blur()
+  }
+
   handleMouseDown = event => {
     const {bounceDurationMs, onMouseDown} = this.props
     this.setState({isBouncing: true})
@@ -173,7 +178,7 @@ class ButtonBase extends React.Component {
 
   render() {
     const {bounceDurationMs, children, disabled, isNarrow, isProgressShown, type, style,
-           isHighlighted, ...otherProps} = this.props
+      isHighlighted, ...otherProps} = this.props
     const {isBouncing} = this.state
     const typeStyle = BUTTON_TYPE_STYLES[type] || BUTTON_TYPE_STYLES.navigation
 
@@ -194,7 +199,8 @@ class ButtonBase extends React.Component {
       ...style,
     }
     if (isBouncing) {
-      buttonStyle.transform = 'scale(.9)'
+      buttonStyle.transform =
+        (buttonStyle.transform ? `${buttonStyle.transform} ` : '') + 'scale(.97)'
     }
     if (!disabled) {
       buttonStyle[':hover'] = {
@@ -211,8 +217,10 @@ class ButtonBase extends React.Component {
       Object.assign(buttonStyle, buttonStyle[':hover'])
     }
     return <button
-        style={buttonStyle} disabled={disabled} {...otherProps}
-        onMouseDown={this.handleMouseDown}>
+      style={buttonStyle} disabled={disabled} {...otherProps}
+      onMouseDown={this.handleMouseDown} ref={dom => {
+        this.dom = dom
+      }}>
       {isProgressShown ?
         <CircularProgress size={23} style={{color: '#fff'}} thickness={2} /> :
         children}
@@ -234,11 +242,11 @@ class Markdown extends React.Component {
       return null
     }
     return <ReactMarkdown
-        source={content} escapeHtml={true}
-        // eslint-disable-next-line no-unused-vars
-        renderers={{Link: ({literal, nodeKey, ...props}) => <a
-            {...props} target="_blank" rel="noopener noreferrer" />}}
-        {...extraProps} />
+      source={content} escapeHtml={true}
+      // eslint-disable-next-line no-unused-vars
+      renderers={{Link: ({literal, nodeKey, ...props}) => <a
+        {...props} target="_blank" rel="noopener noreferrer" />}}
+      {...extraProps} />
   }
 }
 
@@ -357,11 +365,11 @@ class CircularProgress extends React.Component {
       <div style={wrapperStyle}>
         <svg viewBox={`0 0 ${size} ${size}`}>
           <circle
-              style={pathStyle}
-              cx={size / 2} cy={size / 2}
-              r={(size - thickness) / 2}
-              strokeWidth={thickness}
-              strokeMiterlimit="20" fill="none" />
+            style={pathStyle}
+            cx={size / 2} cy={size / 2}
+            r={(size - thickness) / 2}
+            strokeWidth={thickness}
+            strokeMiterlimit="20" fill="none" />
         </svg>
       </div>
     </div>
@@ -373,6 +381,7 @@ class JobGroupCoverImage extends React.Component {
   static propTypes = {
     blur: PropTypes.number,
     coverOpacity: PropTypes.number,
+    grayScale: PropTypes.number,
     opaqueCoverColor: PropTypes.string,
     opaqueCoverGradient: PropTypes.shape({
       left: PropTypes.string.isRequired,
@@ -389,7 +398,8 @@ class JobGroupCoverImage extends React.Component {
   }
 
   render() {
-    const {blur, coverOpacity, opaqueCoverColor, opaqueCoverGradient, romeId, style} = this.props
+    const {blur, coverOpacity, grayScale, opaqueCoverColor,
+      opaqueCoverGradient, romeId, style} = this.props
     const url = config.jobGroupImageUrl.replace('ROME_ID', romeId)
     const coverAll = {
       bottom: 0,
@@ -406,9 +416,20 @@ class JobGroupCoverImage extends React.Component {
       backgroundSize: 'cover',
       zIndex: -2,
     }
+    const containerStyle = {
+      ...coverAll,
+      ...style,
+    }
+    const filters = []
     if (blur) {
-      Object.assign(coverImageStyle, Styles.VENDOR_PREFIXED('filter', `blur(${blur}px)`))
-      coverImageStyle.overflow = 'hidden'
+      filters.push(`blur(${blur}px)`)
+      containerStyle.overflow = 'hidden'
+    }
+    if (grayScale) {
+      filters.push(`grayscale(${grayScale}%)`)
+    }
+    if (filters.length) {
+      Object.assign(coverImageStyle, Styles.VENDOR_PREFIXED('filter', filters.join(' ')))
     }
     const opaqueCoverStyle = {
       ...coverAll,
@@ -424,7 +445,7 @@ class JobGroupCoverImage extends React.Component {
       gradientParts.push(opaqueCoverGradient.right)
       opaqueCoverStyle.background = `linear-gradient(${gradientParts.join(', ')})`
     }
-    return <div style={{...coverAll, ...style}}>
+    return <div style={containerStyle}>
       {url ? <div style={coverImageStyle} /> : null}
       <div style={opaqueCoverStyle} />
     </div>
@@ -462,16 +483,25 @@ class RadioGroup extends React.Component {
       flexWrap: 'wrap',
       ...style,
     }
-    const radioStyle = {
-      marginTop: isMobileVersion ? 10 : 0,
+    const radioStyle = index => {
+      const baseStyle = {
+        marginTop: isMobileVersion ? 10 : 0,
+      }
+      if (index < options.length - 1) {
+        return baseStyle
+      }
+      return {
+        marginBottom: 0,
+        ...baseStyle,
+      }
     }
 
     return <div style={containerStyle}>
-      {options.map(option => {
+      {options.map((option, index) => {
         return <LabeledToggle
-            key={option.value} label={option.name} type="radio"
-            isSelected={option.value === value} style={radioStyle}
-            onClick={() => this.props.onChange(option.value)} />
+          key={option.value} label={option.name} type="radio"
+          isSelected={option.value === value} style={radioStyle(index)}
+          onClick={() => this.props.onChange(option.value)} />
       })}
     </div>
   }
@@ -499,6 +529,7 @@ class RadioButton extends React.Component {
       borderRadius: '50%',
       borderStyle: 'solid',
       borderWidth: 1,
+      cursor: onClick ? 'pointer' : 'initial',
       height: 20,
       position: 'absolute',
       width: 20,
@@ -519,10 +550,11 @@ class RadioButton extends React.Component {
       width: outerCircleStyle.width,
     }
     return <div
-        style={containerStyle} tabIndex={0}
-        onFocus={() => this.setState({isFocused: true})}
-        onBlur={() => this.setState({isFocused: false})}
-        onKeyPress={isFocused ? onClick : null}>
+      style={containerStyle} tabIndex={0}
+      onFocus={() => this.setState({isFocused: true})}
+      onBlur={() => this.setState({isFocused: false})}
+      onClick={onClick}
+      onKeyPress={isFocused ? onClick : null}>
       <div style={outerCircleStyle}>
         {isSelected ? <div style={innerCircleStyle} /> : null}
       </div>
@@ -544,7 +576,7 @@ class FieldSet extends React.Component {
 
   render() {
     const {children, disabled, isInline, isValid, isValidated, label,
-           style, ...otherProps} = this.props
+      style, ...otherProps} = this.props
     const isMarkedInvalid = !disabled && isValidated && !isValid
     const containerStyle = {
       border: 'none',
@@ -575,12 +607,12 @@ class FieldSet extends React.Component {
       visibility: isMarkedInvalid ? 'visible' : 'hidden',
     }
     return <fieldset
-        style={containerStyle} disabled={disabled}
-        className={isMarkedInvalid ? 'marked-invalid' : ''}
-        {...otherProps}>
+      style={containerStyle} disabled={disabled}
+      className={isMarkedInvalid ? 'marked-invalid' : ''}
+      {...otherProps}>
       <label style={labelStyle}>{label}</label>
       {children}
-      {isInline ? null : <div style={errorStyle}>Champs obligatoire</div>}
+      {isInline ? null : <div style={errorStyle}>Champ obligatoire</div>}
     </fieldset>
   }
 }
@@ -660,13 +692,13 @@ class CheckboxList extends React.Component {
     const values = this.props.values || []
     const isSelected = this.state.valuesSelected[optionValue]
     const newValues = isSelected ?
-          _.without(values, optionValue) :
-          [optionValue].concat(values)
+      _.without(values, optionValue) :
+      [optionValue].concat(values)
     this.props.onChange(newValues)
   }
 
   render() {
-     // eslint-disable-next-line no-unused-vars
+    // eslint-disable-next-line no-unused-vars
     const {options, values, ...extraProps} = this.props
     const {isMobileVersion} = this.context
     const {valuesSelected} = this.state
@@ -678,8 +710,8 @@ class CheckboxList extends React.Component {
       {(options || []).map(option => {
         const isSelected = valuesSelected[option.value]
         return <LabeledToggle
-            key={option.value} label={option.name} type="checkbox" style={checkboxStyle}
-            isSelected={isSelected} onClick={() => this.handleChange(option.value)} />
+          key={option.value} label={option.name} type="checkbox" style={checkboxStyle}
+          isSelected={isSelected} onClick={() => this.handleChange(option.value)} />
       })}
     </div>
   }
@@ -712,6 +744,7 @@ class Checkbox extends React.Component {
       borderStyle: 'solid',
       borderWidth: 1,
       color: '#fff',
+      cursor: onClick ? 'pointer' : 'initial',
       display: 'flex',
       fontSize: 16,
       height: size,
@@ -726,10 +759,11 @@ class Checkbox extends React.Component {
       width: outerBoxStyle.width,
     }
     return <div
-        style={containerStyle} tabIndex={0}
-        onFocus={() => this.setState({isFocused: true})}
-        onBlur={() => this.setState({isFocused: false})}
-        onKeyPress={isFocused ? onClick : null}>
+      style={containerStyle} tabIndex={0}
+      onFocus={() => this.setState({isFocused: true})}
+      onBlur={() => this.setState({isFocused: false})}
+      onClick={onClick}
+      onKeyPress={isFocused ? onClick : null}>
       <div style={outerBoxStyle}>
         {isSelected ? <Icon name="check" /> : null}
       </div>
@@ -770,11 +804,13 @@ class LabeledToggle extends React.Component {
     }
     const ToggleInput = TOGGLE_INPUTS[type]
     return <div
-        {...otherProps} onClick={onClick} style={containerStyle}
-        onMouseOver={() => this.setState({isHovered: true})}
-        onMouseOut={() => this.setState({isHovered: false})} >
+      {...otherProps} style={containerStyle}
+      onMouseOver={() => this.setState({isHovered: true})}
+      onMouseOut={() => this.setState({isHovered: false})} >
       <ToggleInput isSelected={isSelected} isHovered={isHovered} onClick={onClick} />
-      <span style={{marginLeft: 10, ...Styles.CENTER_FONT_VERTICALLY}}>{label}</span>
+      <span onClick={onClick} style={{marginLeft: 10, ...Styles.CENTER_FONT_VERTICALLY}}>
+        {label}
+      </span>
     </div>
   }
 }
@@ -793,10 +829,10 @@ class Icon extends React.Component {
   render () {
     const {name, ...otherProps} = this.props
     return <i
-        className={`mdi mdi-${name}`} {...otherProps}
-        ref={dom => {
-          this.dom = dom
-        }} />
+      className={`mdi mdi-${name}`} {...otherProps}
+      ref={dom => {
+        this.dom = dom
+      }} />
   }
 }
 
@@ -837,9 +873,9 @@ class IconInput extends React.Component {
     }
     return <div style={{position: 'relative', ...style}}>
       <Input
-          {...otherProps}
-          ref={input => this.input = input}
-          style={inputStyle} />
+        {...otherProps}
+        ref={input => this.input = input}
+        style={inputStyle} />
       <div style={iconContainer} onClick={() => this.input.focus()}>
         <Icon name={iconName} />
       </div>
@@ -863,8 +899,8 @@ class JobSuggestWithNote extends React.Component {
       <JobSuggest {...this.props} style={{padding: 1, ...Styles.INPUT}} />
       <div style={noteStyle}>
         Vous ne trouvez pas votre métier&nbsp;? <a
-            style={linkStyle} href="https://airtable.com/shreUw3GYqAwVAA27"
-            target="_blank" rel="noopener noreferrer">
+          style={linkStyle} href="https://airtable.com/shreUw3GYqAwVAA27"
+          target="_blank" rel="noopener noreferrer">
           Cliquez ici pour l'ajouter
         </a>.
       </div>
@@ -899,8 +935,8 @@ class Input extends React.Component {
       ...style,
     }
     return <input
-        {...otherProps} style={inputStyle} onChange={this.handleChange}
-        ref={dom => this.dom = dom} />
+      {...otherProps} style={inputStyle} onChange={this.handleChange}
+      ref={dom => this.dom = dom} />
   }
 }
 
@@ -936,7 +972,7 @@ class PieChart extends React.Component {
 
   render() {
     const {backgroundColor, children, durationMillisec, percentage, size,
-           strokeWidth, style} = this.props
+      strokeWidth, style} = this.props
     const {hasStartedGrowing} = this.state
     const containerStyle = {
       alignItems: 'center',
@@ -956,17 +992,17 @@ class PieChart extends React.Component {
     const strokeLength = perimeter * currentPercentage / 100
     return <span style={containerStyle}>
       <VisibilitySensor
-          active={!hasStartedGrowing} intervalDelay={250}
-          onChange={this.startGrowing} />
+        active={!hasStartedGrowing} intervalDelay={250}
+        onChange={this.startGrowing} />
       <svg style={{left: 0, position: 'absolute', top: 0}} viewBox={`0 0 ${2 * size} ${2 * size}`}>
         <circle
-            cx={size} cy={size} r={radius} fill="none"
-            stroke={backgroundColor} strokeWidth={strokeWidth} />
+          cx={size} cy={size} r={radius} fill="none"
+          stroke={backgroundColor} strokeWidth={strokeWidth} />
         <circle
-            cx={size} cy={size} r={radius} fill="none"
-            stroke={style.color} strokeDashoffset={perimeter / 4}
-            strokeDasharray={`${strokeLength},${perimeter -strokeLength}`}
-            strokeWidth={strokeWidth} style={{transition: `${durationMillisec}ms`}} />
+          cx={size} cy={size} r={radius} fill="none"
+          stroke={style.color} strokeDashoffset={perimeter / 4}
+          strokeDasharray={`${strokeLength},${perimeter -strokeLength}`}
+          strokeWidth={strokeWidth} style={{transition: `${durationMillisec}ms`}} />
       </svg>
       {children}
     </span>
@@ -1026,8 +1062,8 @@ class GrowingNumber extends React.Component {
     } : style
     return <span style={containerStyle}>
       <VisibilitySensor
-          active={!hasStartedGrowing} intervalDelay={250}
-          onChange={this.startGrowing} />
+        active={!hasStartedGrowing} intervalDelay={250}
+        onChange={this.startGrowing} />
       {hasGrown ? number :
         Math.round(growingForMillisec / durationMillisec * number)}
     </span>
@@ -1079,8 +1115,8 @@ class AppearingList extends React.Component {
     const shownChildren = maxNumChildren ? children.slice(0, maxNumChildren) : children
     return <div {...extraProps}>
       <VisibilitySensor
-          active={!isShown} intervalDelay={250}
-          onChange={isShown => this.setState({isShown})} />
+        active={!isShown} intervalDelay={250}
+        onChange={isShown => this.setState({isShown})} />
       {shownChildren.map((item, index) =>
         React.cloneElement(item, {
           key: item.key || index,
@@ -1091,9 +1127,72 @@ class AppearingList extends React.Component {
 }
 
 
+class Tag extends React.Component {
+  static propTypes = {
+    children: PropTypes.string.isRequired,
+    style: PropTypes.object,
+  }
+
+  render() {
+    const {children, style} = this.props
+    const containerStyle = {
+      backgroundColor: Colors.GREENISH_TEAL,
+      borderRadius: 2,
+      color: '#fff',
+      display: 'inline-block',
+      flexShrink: 0,
+      fontSize: 9,
+      fontWeight: 'bold',
+      letterSpacing: .3,
+      padding: 6,
+      textTransform: 'uppercase',
+      ...style,
+    }
+    return <span style={containerStyle}>
+      <div style={Styles.CENTER_FONT_VERTICALLY}>
+        {children}
+      </div>
+    </span>
+  }
+}
+
+
+class StringJoiner extends React.Component {
+  static propTypes = {
+    children: PropTypes.arrayOf(PropTypes.node.isRequired),
+    lastSeparator: PropTypes.node.isRequired,
+    separator: PropTypes.node.isRequired,
+  }
+  static defaultProps = {
+    lastSeparator: ' ou ',
+    separator: ', ',
+  }
+
+  render() {
+    const {children, lastSeparator, separator} = this.props
+    if (Object.prototype.toString.call(children) !== '[object Array]') {
+      return children
+    }
+    if (children.length === 1) {
+      return children[0]
+    }
+    const parts = []
+    children.forEach((child, index) => {
+      if (index) {
+        const nextSeparator = (index === children.length - 1) ? lastSeparator : separator
+        parts.push(<span key={`sep-${index}`}>{nextSeparator}</span>)
+      }
+      parts.push(child)
+    })
+    return <span>{parts}</span>
+  }
+}
+
+
 export {
-  Markdown, HorizontalRule, FieldSet, LabeledToggle,
+  Markdown, HorizontalRule, FieldSet, LabeledToggle, Tag,
   Select, CheckboxList, Icon, Button, IconInput, RadioGroup,
   JobSuggestWithNote, Input, JobGroupCoverImage, PieChart,
   GrowingNumber, PaddedOnMobile, AppearingList, CircularProgress,
+  StringJoiner, Checkbox,
 }

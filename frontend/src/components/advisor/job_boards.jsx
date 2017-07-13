@@ -7,10 +7,10 @@ import {getJobBoards} from 'store/actions'
 import {lowerFirstLetter, ofCityPrefix} from 'store/french'
 
 import {AppearingList, CircularProgress, Colors, GrowingNumber, Icon,
-  PaddedOnMobile, Styles} from 'components/theme'
+  PaddedOnMobile, Tag} from 'components/theme'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
@@ -41,7 +41,7 @@ class FullAdviceCard extends React.Component {
   }
 }
 
-class AdvicePageContentBase extends React.Component {
+class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
     jobBoards: PropTypes.arrayOf(PropTypes.object.isRequired),
@@ -60,8 +60,8 @@ class AdvicePageContentBase extends React.Component {
     const {jobBoards} = this.props
     return <AppearingList style={style}>
       {jobBoards.map(({filters, link, title}, index) => <JobBoardLink
-          key={`job-board-${index}`} href={link} filters={filters}
-          style={{marginTop: index ? -1 : 0}}>
+        key={`job-board-${index}`} href={link} filters={filters}
+        style={{marginTop: index ? -1 : 0}}>
         {title}
       </JobBoardLink>)}
     </AppearingList>
@@ -80,11 +80,11 @@ class AdvicePageContentBase extends React.Component {
     return <div>
       <PaddedOnMobile style={{fontSize: 21}}>
         Nous avons trouvé <GrowingNumber
-            style={{fontWeight: 'bold'}} number={jobBoards.length} isSteady={true} />
+          style={{fontWeight: 'bold'}} number={jobBoards.length} isSteady={true} />
         {' '}site{maybeS(jobBoards.length)}
         {hasOnlySpecialized ? specialized : null} pour vous
         {(numSpecializedJobBoards > 0 && !hasOnlySpecialized) ? <span>
-          dont <GrowingNumber
+          {' '}dont <GrowingNumber
             style={{fontWeight: 'bold'}} number={numSpecializedJobBoards} isSteady={true} />
           {specialized}</span> : null}
       </PaddedOnMobile>
@@ -93,9 +93,9 @@ class AdvicePageContentBase extends React.Component {
     </div>
   }
 }
-const AdvicePageContent = connect(({app}, {project}) => ({
+const ExpandedAdviceCardContent = connect(({app}, {project}) => ({
   jobBoards: app.jobBoards[project.projectId],
-}))(AdvicePageContentBase)
+}))(ExpandedAdviceCardContentBase)
 
 
 class JobBoardLinkBase extends React.Component {
@@ -152,23 +152,12 @@ class JobBoardLinkBase extends React.Component {
       padding: '0 20px',
       ...style,
     }
-    const tagStyle = {
-      borderRadius: 2,
-      color: '#fff',
-      display: 'inline-block',
-      fontSize: 9,
-      fontWeight: 'bold',
-      letterSpacing: .3,
-      marginLeft: 15,
-      padding: 6,
-      textTransform: 'uppercase',
-    }
     return <div style={containerStyle} onClick={this.handleClick}>
       {children}
-      {this.getTags().map(({color, value}) => <span
-          key={`tag-${value}`} style={{backgroundColor: color, ...tagStyle}}>
-        <div style={Styles.CENTER_FONT_VERTICALLY}>{value}</div>
-      </span>)}
+      {this.getTags().map(({color, value}) => <Tag
+        key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
+        {value}
+      </Tag>)}
       <div style={{flex: 1}} />
       <Icon name="chevron-right" style={{fontSize: 20}} />
     </div>
@@ -177,4 +166,4 @@ class JobBoardLinkBase extends React.Component {
 const JobBoardLink = Radium(JobBoardLinkBase)
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

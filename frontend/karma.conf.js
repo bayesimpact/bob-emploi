@@ -1,13 +1,17 @@
 var webpackCfg = require('./webpack.config')
 
 module.exports = function(config) {
+  const clientConfig = {
+    mocha: {},
+  }
+  if (config.grep) {
+    clientConfig.args = ['--grep', config.grep]
+  }
   config.set({
     basePath: '',
     browsers: ['PhantomJS'],
     captureTimeout: 60000,
-    client: {
-      mocha: {},
-    },
+    client: clientConfig,
     coverageReporter: {
       dir: 'coverage/',
       type: 'html',

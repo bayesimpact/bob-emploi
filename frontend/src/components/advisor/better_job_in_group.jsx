@@ -11,7 +11,7 @@ import {USER_PROFILE_SHAPE} from 'store/user'
 import {AppearingList, Colors, Icon, PaddedOnMobile, Styles} from 'components/theme'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
@@ -34,7 +34,7 @@ class FullAdviceCard extends React.Component {
 }
 
 
-class AdvicePageContentBase extends React.Component {
+class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     dispatch: PropTypes.func.isRequired,
@@ -68,10 +68,7 @@ class AdvicePageContentBase extends React.Component {
       return
     }
     if (!jobGroupInfo) {
-      // TODO(pascal): Clean-up when server is not populating
-      // betterJobInGroupData.jobs anymore.
-      this.setState({weightedJobs:
-        advice.betterJobInGroupData && advice.betterJobInGroupData.jobs || []})
+      this.setState({weightedJobs: []})
       return
     }
     const {jobs, requirements} = jobGroupInfo
@@ -132,9 +129,9 @@ class AdvicePageContentBase extends React.Component {
     }
     return <div key={job.codeOgr} style={containerStyle} onClick={() => this.openJob(job)}>
       <span
-          style={jobNameStyle}
-          onMouseEnter={() => this.setState({hoveredJob: job})}
-          onMouseLeave={() => this.setState({hoveredJob: hoveredJob === job ? null : hoveredJob})}>
+        style={jobNameStyle}
+        onMouseEnter={() => this.setState({hoveredJob: job})}
+        onMouseLeave={() => this.setState({hoveredJob: hoveredJob === job ? null : hoveredJob})}>
         {genderizeJob(job, profile.gender)}{isTargetJob ? ' (vous)' : ''}
       </span>
       <span style={{flex: 1}} />
@@ -192,16 +189,16 @@ class AdvicePageContentBase extends React.Component {
 
       <PaddedOnMobile style={{color: Colors.COOL_GREY, fontStyle: 'italic', margin: '15px 0'}}>
         *Source&nbsp;: ROME <a
-            href={`http://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${jobGroup.romeId}`}
-            style={{color: Colors.COOL_GREY}}
-            target="_blank" rel="noopener noreferrer">{jobGroup.romeId}</a> / Pôle emploi
+          href={`http://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${jobGroup.romeId}`}
+          style={{color: Colors.COOL_GREY}}
+          target="_blank" rel="noopener noreferrer">{jobGroup.romeId}</a> / Pôle emploi
       </PaddedOnMobile>
     </div>
   }
 }
-const AdvicePageContent = connect(({app}, props) => ({
+const ExpandedAdviceCardContent = connect(({app}, props) => ({
   jobGroupInfo: app.specificJobs[props.project.targetJob.jobGroup.romeId],
-}))(AdvicePageContentBase)
+}))(ExpandedAdviceCardContentBase)
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

@@ -20,5 +20,74 @@
       "title": "Réponse classique à une offre (version 2)",
       "type": "apply-to-offer"
     }
+  ],
+  "network": [
+    {
+      "content": "Bonjour,\n\nJe suis actuellement en recherche d'emploi et j'aimerais beaucoup échanger avec toi sur mon projet et sur les entreprises que je voudrais contacter, afin que tu puisses me donner quelques conseils.\n\nAurais-tu un moment à me consacrer ?",
+      "personalizations": [
+        "NETWORK_SCORE_1",
+        "MOTIVATION"
+      ],
+      "reason": "Commencez par contacter les personnes que vous connaissez le mieux, ça sera plus facile et on ne sait pas qui connaît de fil en aiguille vos proches pourront surement vous aider",
+      "title": "Amis et proches"
+    },
+    {
+      "content": "Bonjour,\n\n[Prénom] [Nom], en copie de ce mail, m'a vivement recommandé de prendre contact avec vous. Actuellement en recherche d'emploi, j'aimerais beaucoup échanger avec vous  sur votre métier,  mon projet et sur les entreprises que je voudrais contacter afin que vous puissiez me donner quelques conseils.\n\nAuriez-vous quelques minutes à me consacrer ?",
+      "personalizations": [
+        "NETWORK_SCORE_2"
+      ],
+      "reason": "Souvenez-vous que toute personne sur le globe peut être reliée à n'importe quelle autre, au travers d'une chaîne de seulement 6 personnes :)",
+      "title": "Amis d'amis"
+    },
+    {
+      "content": "Bonjour,\n\nEn consultant les parcours des anciens élèves de la formation (nom de la formation) je suis tombé sur votre profil que j'ai trouvé très inspirant. J'aimerais beaucoup échanger avec vous sur votre parcours et sur mon projet professionnel afin que vous puissiez me donner quelques conseils.\n\nAuriez-vous quelques minutes à me consacrer ?",
+      "personalizations": [
+        "GRADUATE"
+      ],
+      "reason": "Le réseau des anciens élèves peut vous débloquer et vous permettre d'élargir votre réseau",
+      "title": "Connaissances de classe"
+    },
+    {
+      "content": "Bonjour,\n\nJe suis actuellement en recherche d'emploi et j'aimerais beaucoup échanger avec toi sur mon projet et sur les entreprises que je voudrais contacter, afin que tu puisses me donner quelques conseils.\n\nAurais-tu un moment à me consacrer ?",
+      "filters": [
+        "for-experienced(2)"
+      ],
+      "personalizations": [
+        "SAME_JOB"
+      ],
+      "reason": "Vos anciens collègues pourraient avoir eu vent de bonnes opportunités qui pourraient vous intéresser",
+      "title": "Anciens collègues"
+    },
+    {
+      "content": "Bonjour, \n\nJ'ai vu l'offre postée sur votre site pour (nom du poste) qui m'intéresse beaucoup.  \n\nPourrais-tu me donner ton avis sur ma candidature ? \nUn grand merci",
+      "personalizations": [
+        "NETWORK_SCORE_3"
+      ],
+      "reason": "Une recommandation peut vous aider à obtenir un premier rendez-vous. Ça n'est pas du piston c'est juste mettre toutes les chances de son côté",
+      "title": "Amis en poste"
+    },
+    {
+      "content": "Bonjour,\n\nAprès avoir lu votre article sur (titre de l'article), j'ai découvert votre profil que j'ai trouvé très inspirant. J'aimerais beaucoup échanger avec vous sur votre parcours et sur mon projet professionnel afin que vous puissiez me donner quelques conseils.\n\nAuriez-vous quelques minutes à me consacrer ?",
+      "filters": [
+        "for-experienced(6)"
+      ],
+      "personalizations": [
+        "ATYPIC_PROFILE",
+        "GRADUATE"
+      ],
+      "reason": "Les relations sur les réseaux sociaux n'ont pas de valeur si vous n'interragissez pas avec. Lancez-vous pour créer des liens réels",
+      "title": "Contacts repérés sur Linkedin"
+    },
+    {
+      "content": "Bonjour,\n\nDepuis notre dernière rencontre, je me suis lancé à la recherche de mon prochain défi professionnel, j'aimerais beaucoup échanger avec vous sur les entreprises du secteur et vos derniers développements.\n\nSeriez-vous disponible pour échanger autour d'un café dans les semaines à venir ?",
+      "filters": [
+        "for-experienced(6)"
+      ],
+      "personalizations": [
+        "SAME_JOB"
+      ],
+      "reason": "Vos anciens fournisseurs, clients ou partenaires connaissent surement d'autres entreprises de votre secteur et pourraient vous aider dans votre recherche.",
+      "title": "Anciens fournisseurs ou clients"
+    }
   ]
 }

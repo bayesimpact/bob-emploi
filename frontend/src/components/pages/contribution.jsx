@@ -64,8 +64,8 @@ class ContributionPage extends React.Component {
       Comment <StrongTitle>contribuer</StrongTitle>&nbsp;?
     </span>} style={{padding: 0}}>
       <a
-          style={githubLinkStyle} href={config.githubSourceLink}
-          target="_blank" rel="noopener noreferrer">
+        style={githubLinkStyle} href={config.githubSourceLink}
+        target="_blank" rel="noopener noreferrer">
         <img src={githubImage} style={{marginRight: 9}} alt="" />
         <span style={Styles.CENTER_FONT_VERTICALLY}>
           Voir le code source sur GitHub

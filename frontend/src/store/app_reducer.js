@@ -1,25 +1,36 @@
 import Cookies from 'js-cookie'
+import _ from 'underscore'
 
 import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
-        GET_DASHBOARD_EXPORT, GET_JOB_BOARDS, TRACK_INITIAL_UTM_CONTENT,
-        OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, GET_ASSOCIATIONS,
-        ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION,
-        LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS} from './actions'
+  GET_DASHBOARD_EXPORT, GET_JOB_BOARDS, TRACK_INITIAL_UTM_CONTENT,
+  OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, GET_ASSOCIATIONS,
+  ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, GET_VOLUNTEERING_MISSIONS,
+  LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS, MODIFY_PROJECT, GET_COMMUTING_CITIES,
+  GET_RESUME_TIPS, GET_INTERVIEW_TIPS, OPEN_REGISTER_MODAL} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 
+
+// Set of data cached for each project mapped to the action type that retrieves
+// this info.
+const cachedProjectData = {
+  associations: GET_ASSOCIATIONS,
+  commutingCities: GET_COMMUTING_CITIES,
+  interviewTips: GET_INTERVIEW_TIPS,
+  jobBoards: GET_JOB_BOARDS,
+  resumeTips: GET_RESUME_TIPS,
+  volunteeringMissions: GET_VOLUNTEERING_MISSIONS,
+}
+
+
 const appInitialData = {
   // Cache for advice tips for each advice module for each project.
   adviceTips: {},
-  // Cache of associations per project.
-  associations: {},
   // Cache for dashboard exports.
   dashboardExports: {},
   initialUtmContent: null,
   isMobileVersion: false,
-  // Cache of job boards.
-  jobBoards: {},
   // Cache of job requirements.
   jobRequirements: {},
   loginModal: null,
@@ -28,35 +39,47 @@ const appInitialData = {
   specificJobs: {},
   userHasAcceptedCookiesUsage: Cookies.get(ACCEPT_COOKIES_COOKIE_NAME),
 }
+_.forEach(cachedProjectData, (value, key) => {
+  appInitialData[key] = {}
+})
+
+
+function cacheData(state, action, field) {
+  if (action.status === 'success' && action.project) {
+    return {
+      ...state,
+      [field]: {
+        ...state[field],
+        [action.project.projectId]: action.response,
+      },
+    }
+  }
+  return state
+}
+
+
+const typeReducers = {
+  ..._.mapObject(_.invert(cachedProjectData), field => {
+    return (state, action) => cacheData(state, action, field)
+  }),
+}
+
 
 function app(state=appInitialData, action) {
+  const reducer = typeReducers[action.type]
+  if (reducer) {
+    return reducer(state, action)
+  }
   switch (action.type) {
     case OPEN_LOGIN_MODAL:
+      return {...state, loginModal: {defaultValues: {
+        isReturningUser: true,
+        ...action.defaultValues,
+      }}}
+    case OPEN_REGISTER_MODAL:
       return {...state, loginModal: {defaultValues: action.defaultValues || {}}}
     case CLOSE_LOGIN_MODAL:
       return {...state, loginModal: null}
-    case GET_ASSOCIATIONS:
-      if (action.status === 'success' && action.project) {
-        return {
-          ...state,
-          associations: {
-            ...state.associations,
-            [action.project.projectId]: action.response,
-          },
-        }
-      }
-      break
-    case GET_JOB_BOARDS:
-      if (action.status === 'success' && action.project) {
-        return {
-          ...state,
-          jobBoards: {
-            ...state.jobBoards,
-            [action.project.projectId]: action.response,
-          },
-        }
-      }
-      break
     case GET_JOBS:
       if (action.status === 'success' && action.romeId) {
         return {
@@ -117,6 +140,11 @@ function app(state=appInitialData, action) {
             [action.advice.adviceId]: action.response,
           },
         },
+      }
+    case MODIFY_PROJECT:
+      return {
+        ...state,
+        ..._.mapObject(cachedProjectData, field => _.omit(state[field], action.project.projectId)),
       }
     case TRACK_INITIAL_UTM_CONTENT:
       return {

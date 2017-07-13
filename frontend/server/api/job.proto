@@ -424,11 +424,25 @@ message WorkEnvironment {
   // company) in which jobs of a given job group are typically found in.
   repeated string structures = 1;
 
-  // A set of industry sectors in which jobs of a given job group are usually.
+  // A set of industry sectors in which jobs of a given job group usually are.
   repeated string sectors = 2;
 
   // A set of usual or potential conditions for jobs of a given job group.
   repeated string conditions = 3;
+
+  // A set of domains (group of industry sectors) in which jobs usually are.
+  repeated JobDomain domains = 4;
+}
+
+
+message JobDomain {
+  // Name of the domain.
+  string name = 1;
+
+  // Set of sectors in this domain. Note that it can be only a subset of all
+  // sectors of this domain in the case the proto is used to define a
+  // subdomain.
+  repeated string sectors = 2;
 }
 
 

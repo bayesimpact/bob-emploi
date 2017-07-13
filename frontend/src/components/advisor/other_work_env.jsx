@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 import {lowerFirstLetter} from 'store/french'
 
-import {AppearingList, Colors, GrowingNumber, PaddedOnMobile} from 'components/theme'
+import {AppearingList, Colors, GrowingNumber, PaddedOnMobile, StringJoiner} from 'components/theme'
 
 
 function getSectorsAndStructures({otherWorkEnvAdviceData}) {
@@ -14,7 +14,7 @@ function getSectorsAndStructures({otherWorkEnvAdviceData}) {
 }
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
   }
@@ -23,14 +23,20 @@ class FullAdviceCard extends React.Component {
     const {sectors, structures} = getSectorsAndStructures(this.props.advice)
     if ((structures || []).length > 1) {
       return <div style={{fontSize: 30}}>
-        Avez-vous déja postulé en <strong>{lowerFirstLetter(structures[0])}</strong> ou
-        en <strong>{lowerFirstLetter(structures[1])}</strong>&nbsp;?
+        Avez-vous déja postulé en <StringJoiner lastSeparator=" ou en ">
+          {structures.slice(0, 2).map((name, index) => <strong key={`structure-${index}`}>
+            {lowerFirstLetter(name)}
+          </strong>)}
+        </StringJoiner>&nbsp;?
       </div>
     }
     if ((sectors || []).length > 1) {
       return <div style={{fontSize: 30}}>
-        Avez-vous déja postulé dans le secteur <strong>{lowerFirstLetter(sectors[0])}</strong> ou
-        {' '}<strong>{lowerFirstLetter(sectors[1])}</strong>&nbsp;?
+        Avez-vous déja postulé dans le secteur <StringJoiner>
+          {sectors.slice(0, 3).map((name, index) => <strong key={`sector-${index}`}>
+            {lowerFirstLetter(name)}
+          </strong>)}
+        </StringJoiner>&nbsp;?
       </div>
     }
     return <div style={{fontSize: 30}}>
@@ -41,14 +47,14 @@ class FullAdviceCard extends React.Component {
 }
 
 
-class AdvicePageContent extends React.Component {
+class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {sectors, structures} = getSectorsAndStructures(this.props.advice)
+    const {domains, sectors, structures} = getSectorsAndStructures(this.props.advice)
     const {project} = this.props
     const areSectorsShown = (sectors || []).length > 1
     const areStructuresShown = (structures || []).length > 1
@@ -57,7 +63,9 @@ class AdvicePageContent extends React.Component {
     }
     return <div>
       <div style={style}>
-        <Section kind="secteurs" items={sectors} project={project} />
+        {(domains && domains.length > 1) ?
+          <Section kind="secteurs" items={domains.map(({name}) => name)} project={project} /> :
+          <Section kind="secteurs" items={sectors} project={project} />}
         {(areSectorsShown && areStructuresShown) ? <div style={{height: 20, width: 35}} /> : null}
         <Section kind="types de structure" items={structures}  project={project} />
       </div>
@@ -122,12 +130,12 @@ class Section extends React.Component {
       </PaddedOnMobile>
       <AppearingList>
         {items.map((title, index) => <SearchableElement
-            title={title} project={project} key={`job-board-${index}`}
-            style={index > 0 ? {marginTop: -1} : {}} />)}
+          title={title} project={project} key={`job-board-${index}`}
+          style={index > 0 ? {marginTop: -1} : {}} />)}
       </AppearingList>
     </div>
   }
 }
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

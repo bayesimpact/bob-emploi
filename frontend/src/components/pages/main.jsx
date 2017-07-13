@@ -1,6 +1,3 @@
-require('normalize.css')
-require('styles/App.css')
-
 import React from 'react'
 import PropTypes from 'prop-types'
 import _ from 'underscore'
@@ -14,6 +11,7 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import {StyleRoot} from 'radium'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import Cookies from 'js-cookie'
+import {polyfill} from 'smoothscroll-polyfill'
 import {Routes} from 'components/url'
 import {Colors} from 'components/theme'
 import {AdvicePage} from './advice'
@@ -25,6 +23,7 @@ import {ProjectPage} from './project'
 import {DashboardExportPage} from './dashboard_export'
 import {PrivacyPage} from './privacy'
 import {ProfessionalsPage} from './professionals'
+import {VideoSignUpPage} from './signup'
 import {TermsAndConditionsPage} from './terms'
 import {UpdatePage} from './update'
 import {VisionPage} from './vision'
@@ -42,6 +41,11 @@ import {app, asyncState} from 'store/app_reducer'
 import {mainSelector, onboardingComplete} from 'store/main_selectors'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {createPageviewTracker} from 'store/google_analytics'
+
+require('normalize.css')
+require('styles/App.css')
+
+polyfill()
 
 const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
 // Enable devTools middleware.
@@ -115,7 +119,6 @@ class PageHolderBase extends React.Component {
     if (resetToken) {
       dispatch(openLoginModal({
         email: location.query.email || '',
-        isReturningUser: true,
         resetToken,
       }, 'resetpassword'))
       return
@@ -129,7 +132,6 @@ class PageHolderBase extends React.Component {
         browserHistory.replace(Routes.ROOT)
         dispatch(openLoginModal({
           email: location.query.email || '',
-          isReturningUser: true,
         }, 'returninguser'))
       })
     }
@@ -173,9 +175,9 @@ class PageHolderBase extends React.Component {
             {this.props.children}
             <LoginModal onLogin={this.handleLogin} />
             <Snackbar
-                open={!!errorMessage} message={errorMessage || ''}
-                bodyStyle={{maxWidth: 800}}
-                autoHideDuration={4000} onRequestClose={this.hideToasterMessage()} />
+              open={!!errorMessage} message={errorMessage || ''}
+              bodyStyle={{maxWidth: 800}}
+              autoHideDuration={4000} onRequestClose={this.hideToasterMessage()} />
           </div>
         </StyleRoot>
       </MuiThemeProvider>
@@ -226,7 +228,6 @@ class MyRouterBase extends React.Component {
       })
       dispatch(openLoginModal({
         email: nextRouterState.location.query.email || '',
-        isReturningUser: true,
       }), 'accessurl')
       return
     }
@@ -294,11 +295,11 @@ class MyRouterBase extends React.Component {
       // Replacement chokes on it when we do not render the exact same object,
       // so we cache it here.
       this.routesCache = <Router
-          history={history} onUpdate={() => {
-            window.scrollTo(0, 0)
-            trackPageview()
-          }}
-          createElement={this.createElement}>
+        history={history} onUpdate={() => {
+          window.scrollTo(0, 0)
+          trackPageview()
+        }}
+        createElement={this.createElement}>
         <Route path={Routes.ROOT} component={PageHolder}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
           <Route onEnter={this.requireUserCheck}>
@@ -308,6 +309,7 @@ class MyRouterBase extends React.Component {
             <Route path={Routes.COOKIES_PAGE} component={CookiesPage} />
             <Route path={Routes.PRIVACY_PAGE} component={PrivacyPage} />
             <Route path={Routes.PROFESSIONALS_PAGE} component={mainConnect(ProfessionalsPage)} />
+            <Route path={Routes.VIDEO_SIGNUP_PAGE} component={VideoSignUpPage} />
             <Route path={Routes.TERMS_AND_CONDITIONS_PAGE} component={TermsAndConditionsPage} />
             <Route path={Routes.VISION_PAGE} component={mainConnect(VisionPage)} />
             <Route path={Routes.WAITING_PAGE} component={WaitingPage} />

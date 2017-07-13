@@ -1,5 +1,4 @@
-var chai = require('chai')
-var expect = chai.expect
+import {expect} from 'chai'
 import {Logger} from 'store/logging'
 
 

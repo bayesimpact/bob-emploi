@@ -14,3 +14,7 @@ services:
       - ./frontend/server/lint_and_test.sh:/work/lint_and_test.sh:ro
       - ./.pylintrc:/work/.pylintrc:ro
       - ./.pep8:/work/.pep8:ro
+  data-analysis-prepare:
+    environment:
+      # Run cleaned_data_test on real data.
+      TEST_REAL_DATA: 1

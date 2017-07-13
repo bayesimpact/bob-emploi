@@ -17,6 +17,9 @@ message Feedback {
 
   // Source of the feedback.
   FeedbackSource source = 5;
+
+  // Numerical score (usually between 1 and 5 but may vary depending on the source).
+  int32 score = 6;
 }
 
 enum FeedbackSource {
@@ -27,4 +30,13 @@ enum FeedbackSource {
 
   // General feedback in the "professionals" page.
   PROFESSIONAL_PAGE_FEEDBACK = 2;
+
+  // Global feedback on a project.
+  PROJECT_FEEDBACK = 3;
+
+  // Feedback given in the Changelog modals (on specific questions).
+  CHANGELOG_FEEDBACK = 4;
+
+  // Suggest a new advice.
+  NEW_ADVICE_FEEDBACK = 5;
 }

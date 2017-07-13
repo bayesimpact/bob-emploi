@@ -18,13 +18,19 @@ import pymongo
 
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
+from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import discovery_pb2
 from bob_emploi.frontend.api import export_pb2
+from bob_emploi.frontend.api import feedback_pb2
+from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import user_pb2
+
+_ROME_VERSION = 'v332'
 
 
 class Importer(collections.namedtuple(
@@ -41,21 +47,11 @@ CollectionsDiff = collections.namedtuple(
     'CollectionsDiff', ['collection_missing', 'importer_missing', 'imported'])
 
 IMPORTERS = {
-    'fhs_local_diagnosis': Importer(
-        name="FHS local diagnosis",
-        command="""docker-compose run --rm data-analysis-prepare \\
-            python bob_emploi/importer/fhs_local_diagnosis.py \\
-            --durations_csv data/fhs_category_a_duration_motann.csv""",
-        is_imported=True,
-        proto_type=job_pb2.LocalJobStats,
-        key="<geo>:<job group ID>, geo being one of city_id, 'd' + département_id, "
-        "'r' + region_id, '' (for France), 'ghost-d' + département_id, "
-        "'ghost-r' + region_id or 'ghost' (for ghost town France-wide)"),
     'similar_jobs': Importer(
         name='ROME Mobility',
         command="""docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/rome_mobility.py \\
-            --rome_csv_pattern data/rome/csv/unix_%s_v331_utf8.csv""",
+            --rome_csv_pattern data/rome/csv/unix_%%s_%s_utf8.csv""" % _ROME_VERSION,
         is_imported=True,
         proto_type=discovery_pb2.JobsExploration,
         key='job group ID'),
@@ -83,10 +79,11 @@ IMPORTERS = {
         command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/job_group_info.py \\
-            --rome_csv_pattern data/rome/csv/unix_%s_v331_utf8.csv \\
+            --rome_csv_pattern data/rome/csv/unix_%%s_%s_utf8.csv \\
             --job_requirements_json data/job_offers/job_offers_requirements.json \\
             --job_application_complexity_json data/job_application_complexity.json \\
-            --handcrafted_assets_airtable appMRMtWV61Kibt37:advice:viwJ1OsSqK8YTSoIq""",
+            --handcrafted_assets_airtable appMRMtWV61Kibt37:advice:viwJ1OsSqK8YTSoIq \\
+            --domains_airtable appMRMtWV61Kibt37:domains""" % _ROME_VERSION,
         is_imported=True,
         proto_type=job_pb2.JobGroup,
         key='job group ID'),
@@ -100,7 +97,7 @@ IMPORTERS = {
             --unemployment_duration_csv data/fhs_category_a_duration.csv \\
             --job_offers_changes_json data/job_offers/job_offers_changes.json \\
             --job_imt_json data/scraped_imt_local_job_stats.json \\
-            --mobility_csv data/rome/csv/unix_rubrique_mobilite_v331_utf8.csv""",
+            --mobility_csv data/rome/csv/unix_rubrique_mobilite_%s_utf8.csv""" % _ROME_VERSION,
         is_imported=True,
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>'),
@@ -112,6 +109,9 @@ IMPORTERS = {
     'dashboard_exports': Importer(
         name='Dashboard Export', command='', is_imported=False,
         proto_type=export_pb2.DashboardExport, key='dashboard_export_id'),
+    'feedbacks': Importer(
+        name='Feedbacks', command='', is_imported=False,
+        proto_type=feedback_pb2.Feedback, key='Mongo key'),
     'unverified_data_zones': Importer(
         name='Unverified Data Zones',
         command="""docker-compose run --rm data-analysis-prepare \\
@@ -120,6 +120,14 @@ IMPORTERS = {
         is_imported=True,
         proto_type=user_pb2.UnverifiedDataZone,
         key='default'),
+    'cities': Importer(
+        name='City locations',
+        command="""docker-compose run --rm data-analysis-prepare \\
+            python bob_emploi/importer/city_locations.py \\
+            --stats_filename data/geo/french_cities.csv""",
+        is_imported=True,
+        proto_type=geo_pb2.FrenchCity,
+        key='Code officiel géographique'),
     'advice_modules': Importer(
         name='Advice modules',
         command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
@@ -177,6 +185,42 @@ IMPORTERS = {
         is_imported=True,
         proto_type=association_pb2.Association,
         key='Airtable key'),
+    'volunteering_missions': Importer(
+        name='Volunteering Missions',
+        command="""docker-compose run --rm \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/volunteering_missions.py""",
+        is_imported=True,
+        proto_type=association_pb2.VolunteeringMissions,
+        key='departement ID'),
+    'hiring_cities': Importer(
+        name='Hiring Cities',
+        command="""docker-compose run --rm data-analysis-prepare \\
+            python bob_emploi/importer/offers_per_city.py \\
+            --offers_file="data/job_offers/OFFRE_EXTRACT_ENRICHIE_FGU_17JANV2017_FGU.csv" \\
+            --colnames="data/job_offers/column_names.txt" \\
+            --min_creation_date=2015/01/01""",
+        is_imported=True,
+        proto_type=commute_pb2.HiringCities,
+        key='ROME ID'),
+    'application_tips': Importer(
+        name='Appliction Tips',
+        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/airtable_to_protos.py \\
+            --base_id appXmyc7yYj0pOcae \\
+            --table application_tips \\
+            --proto ApplicationTip""",
+        is_imported=True,
+        proto_type=application_pb2.ApplicationTip,
+        key='Airtable key'),
+    'eterritoire_links': Importer(
+        name='e-Territoire Links',
+        command="""docker-compose run --rm data-analysis-prepare \\
+            python bob_emploi/importer/eterritoire.py""",
+        is_imported=True,
+        proto_type=None,
+        key='Code officiel géographique'),
 }
 
 

@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
 import {Step, ProfileUpdater} from 'components/pages/profile/step'
-import {CheckboxList, FieldSet} from 'components/theme'
+import {Checkbox, CheckboxList, FieldSet, Input} from 'components/theme'
 
 
 const maybeE = gender => gender === 'FEMININE' ? 'e' : ''
@@ -81,7 +81,7 @@ const personalFrustrationOptions = [
 
 const genderizedOptions = (options, gender) => options.map(
   ({name, value}) => ({name: name(gender), value})).filter(
-    ({value}) => (gender === 'FEMININE' || value !== 'SEX_DISCRIMINATION'))
+  ({value}) => (gender === 'FEMININE' || value !== 'SEX_DISCRIMINATION'))
 
 
 class FrustrationsStep extends React.Component {
@@ -91,7 +91,10 @@ class FrustrationsStep extends React.Component {
   }
 
   componentWillMount()  {
-    this.updater_ = new ProfileUpdater({frustrations: false}, this, this.props)
+    this.updater_ = new ProfileUpdater({
+      customFrustrations: false,
+      frustrations: false,
+    }, this, this.props)
   }
 
   fastForward = () => {
@@ -108,9 +111,34 @@ class FrustrationsStep extends React.Component {
     this.setState({frustrations})
   }
 
+  handleChangeCustomFrustration = (value, index) => {
+    const {customFrustrations} = this.state
+    if (index >= (customFrustrations || []).length) {
+      this.setState({
+        customFrustrations: (customFrustrations || []).concat(value),
+      })
+      return
+    }
+    this.setState({
+      customFrustrations: customFrustrations.map(
+        (oldValue, i) => (i === index) ? value : oldValue),
+    })
+  }
+
+  removeCustomFrustration = index => {
+    const {customFrustrations} = this.state
+    if (index >= (customFrustrations || []).length) {
+      return
+    }
+    this.setState({
+      customFrustrations: customFrustrations.slice(0, index).
+        concat(customFrustrations.slice(index + 1)),
+    })
+  }
+
   render() {
     const {isShownAsStepsDuringOnboarding, profile} = this.props
-    const {frustrations} = this.state
+    const {customFrustrations, frustrations} = this.state
     const {gender} = profile
     const genderizedFrustrationOptions = genderizedOptions(
       jobSearchFrustrationOptions.concat(personalFrustrationOptions), gender)
@@ -118,21 +146,45 @@ class FrustrationsStep extends React.Component {
       Nous sommes là pour vous écouter et pour vous aider en fonction de vos
       besoins.
     </div>
+    const customFrustrationStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      marginBottom: 10,
+      width: '100%',
+    }
+    const inputStyle = {
+      flex: 1,
+      height: 35,
+      marginLeft: 10,
+      width: 'initial',
+    }
+    const customFrustrationsPlusOne = (customFrustrations || []).some(f => !f) ?
+      customFrustrations : (customFrustrations || []).concat([''])
     return <Step
-        title={isShownAsStepsDuringOnboarding ?
-          "Qu'est ce qui vous bloque dans votre recherche ?" :
-          'Ce qui vous bloque dans votre recherche'}
-        explanation={explanation}
-        fastForward={this.fastForward}
-        onNextButtonClick={this.updater_.handleSubmit}
-        onPreviousButtonClick={this.updater_.handleBack}
-        {...this.props}>
-      <FieldSet>
+      title={isShownAsStepsDuringOnboarding ?
+        "Qu'est ce qui vous bloque dans votre recherche ?" :
+        'Ce qui vous bloque dans votre recherche'}
+      explanation={explanation}
+      fastForward={this.fastForward}
+      onNextButtonClick={this.updater_.handleSubmit}
+      onPreviousButtonClick={this.updater_.handleBack}
+      {...this.props}>
+      <FieldSet isInline={true}>
         <CheckboxList
-            options={genderizedFrustrationOptions}
-            values={frustrations}
-            onChange={this.updater_.handleChange('frustrations')} />
+          options={genderizedFrustrationOptions}
+          values={frustrations}
+          onChange={this.updater_.handleChange('frustrations')} />
       </FieldSet>
+      {customFrustrationsPlusOne.map((frustration, index) => <div
+        key={`custom-frustration-${index}`} style={customFrustrationStyle}>
+        <Checkbox
+          isSelected={!!frustration}
+          onClick={() => frustration && this.removeCustomFrustration(index)} />
+        <Input
+          value={frustration} style={inputStyle} placeholder="Autre…"
+          onChange={value => this.handleChangeCustomFrustration(value, index)}
+          onBlur={() => frustration || this.removeCustomFrustration(index)} />
+      </div>)}
     </Step>
   }
 }

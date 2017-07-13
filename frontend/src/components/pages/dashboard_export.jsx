@@ -6,7 +6,7 @@ import _ from 'underscore'
 import {Action} from 'components/actions'
 import {getDashboardExport, GET_DASHBOARD_EXPORT} from 'store/actions'
 import {allDoneActions, PROJECT_LOCATION_AREA_TYPE_OPTIONS,
-        PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
+  PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
 import {CircularProgress, JobGroupCoverImage, HorizontalRule} from 'components/theme'
 
 const areaTypeOptions = _.indexBy(PROJECT_LOCATION_AREA_TYPE_OPTIONS, 'value')
@@ -139,7 +139,7 @@ class DashboardExportPageBase extends React.Component {
         <h2>Projets:</h2>
         {dashboardExport.projects.map(project => {
           return <ProjectSummary
-              key={project.projectId} project={project} allChantiers={dashboardExport.chantiers} />
+            key={project.projectId} project={project} allChantiers={dashboardExport.chantiers} />
         })}
         {allActions.length ? <div>
           <h2 style={{marginTop: 30}}>Historique des actions pour ce projet :</h2>

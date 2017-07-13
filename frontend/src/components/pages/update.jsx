@@ -86,8 +86,8 @@ class UpdatePage extends React.Component {
       padding: 0,
     }
     return <PageWithNavigationBar
-        page="update" isContentScrollable={true}
-        style={{backgroundColor: '#fff', zIndex: 0}}>
+      page="update" isContentScrollable={true}
+      style={{backgroundColor: '#fff', zIndex: 0}}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.skipPage} />
       {this.renderBackground()}
       <header style={headerStyle}>

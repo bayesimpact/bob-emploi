@@ -23,7 +23,7 @@ import re
 
 import pandas
 
-_ROME_VERSION = 'v331'
+_ROME_VERSION = 'v332'
 
 
 # TODO: Use this function in city suggest importer to read the stats file.
@@ -35,7 +35,7 @@ def french_city_stats(data_folder='data', filename_city_stats=None):
         city_stats_path,
         sep=',', header=None, usecols=[8, 10, 14],
         names=['zipCode', 'city_id', 'population'],
-        dtype={'zipCode': str, 'city_id': str, 'population': int})
+        dtype={'zipCode': str, 'city_id': str, 'population': int}).set_index('city_id', drop=False)
 
 
 def job_offers(data_folder='data',

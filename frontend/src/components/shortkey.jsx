@@ -40,33 +40,6 @@ class ShortKey extends React.Component {
     shiftKey: PropTypes.bool,
   }
 
-  listenToEvent = (eventType, onEvent) => {
-    const listener = (event) => {
-      const {ctrlKey, keyCode, shiftKey} = this.props
-      if (event.code === keyCode  && event.ctrlKey === !!ctrlKey && event.shiftKey === !!shiftKey) {
-        return onEvent()
-      }
-      return true
-    }
-
-    keyListenerStack[eventType].unshift(listener)
-    if (keyListenerStack[eventType].length === 1) {
-      document.addEventListener(eventType, handleKeyEvents[eventType], false)
-    }
-    this.setState({[eventType + 'Listener']: listener})
-  }
-
-  stopListeningToEvent(eventType) {
-    if (!this.state || !this.state[eventType + 'Listener']) {
-      return
-    }
-    const listener = this.state[eventType + 'Listener']
-    keyListenerStack[eventType].splice(keyListenerStack[eventType].indexOf(listener), 1)
-    if (!keyListenerStack[eventType].length) {
-      document.removeEventListener(eventType, handleKeyEvents[eventType], false)
-    }
-  }
-
   componentWillMount() {
     const {onKeyDown, onKeyPress} = this.props
     if (onKeyPress) {
@@ -96,6 +69,33 @@ class ShortKey extends React.Component {
   componentWillUnmount() {
     this.stopListeningToEvent('keypress')
     this.stopListeningToEvent('keydown')
+  }
+
+  listenToEvent = (eventType, onEvent) => {
+    const listener = (event) => {
+      const {ctrlKey, keyCode, shiftKey} = this.props
+      if (event.code === keyCode  && event.ctrlKey === !!ctrlKey && event.shiftKey === !!shiftKey) {
+        return onEvent()
+      }
+      return true
+    }
+
+    keyListenerStack[eventType].unshift(listener)
+    if (keyListenerStack[eventType].length === 1) {
+      document.addEventListener(eventType, handleKeyEvents[eventType], false)
+    }
+    this.setState({[eventType + 'Listener']: listener})
+  }
+
+  stopListeningToEvent(eventType) {
+    if (!this.state || !this.state[eventType + 'Listener']) {
+      return
+    }
+    const listener = this.state[eventType + 'Listener']
+    keyListenerStack[eventType].splice(keyListenerStack[eventType].indexOf(listener), 1)
+    if (!keyListenerStack[eventType].length) {
+      document.removeEventListener(eventType, handleKeyEvents[eventType], false)
+    }
   }
 
   render() {

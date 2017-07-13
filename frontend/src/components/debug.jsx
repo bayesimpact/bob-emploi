@@ -59,7 +59,12 @@ class DebugModalBase extends React.Component {
       filterUserFunc(user)
     }
 
-    dispatch(saveUser({...user, profile: {...user.profile, email}, userId})).then(onClose)
+    dispatch(saveUser({
+      ...user,
+      profile: {...user.profile, email},
+      revision: (this.props.user.revision || 0) + 1,
+      userId,
+    })).then(onClose)
   }
 
   resetAdvices = () => {
@@ -85,10 +90,10 @@ class DebugModalBase extends React.Component {
     }
     return <Modal {...this.props} style={style}>
       <textarea
-          style={{flex: 1, fontFamily: 'Monospace', fontSize: 12}}
-          defaultValue={this.state.initialUserJson} ref={dom => {
-            this.userJsonDom = dom
-          }} />
+        style={{flex: 1, fontFamily: 'Monospace', fontSize: 12}}
+        defaultValue={this.state.initialUserJson} ref={dom => {
+          this.userJsonDom = dom
+        }} />
       <div style={buttonStyle}>
         {hasAdvices ? <Button onClick={this.resetAdvices}>
           Conseiller à nouveau

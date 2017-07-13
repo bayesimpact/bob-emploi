@@ -7,15 +7,17 @@ import FacebookLogin from 'react-facebook-login'
 import GoogleLogin from 'react-google-login'
 import config from 'config'
 
+import signupCoverImage from 'images/signup-cover.jpg'
+
 import {ShortKey} from 'components/shortkey'
 import {validateEmail} from 'store/validations'
 import {facebookAuthenticateUser, googleAuthenticateUser, emailCheck,
-        registerNewUser, loginUser, displayToasterMessage, resetPassword,
-        askPasswordReset, openLoginModal, closeLoginModalAction,
-        AUTHENTICATE_USER, EMAIL_CHECK, RESET_USER_PASSWORD} from 'store/actions'
+  registerNewUser, loginUser, displayToasterMessage, resetPassword,
+  askPasswordReset, openLoginModal, openRegistrationModal, closeLoginModalAction,
+  AUTHENTICATE_USER, EMAIL_CHECK, RESET_USER_PASSWORD} from 'store/actions'
 import {Colors, Icon, IconInput, LabeledToggle, Button, Styles} from 'components/theme'
 import {upperFirstLetter} from 'store/french'
-import {Modal} from 'components/modal'
+import {Modal, ModalCloseButton} from 'components/modal'
 import {Routes} from 'components/url'
 
 
@@ -76,7 +78,7 @@ class LoginFormBase extends React.Component {
     event.preventDefault()
     if (!validateEmail(email)) {
       dispatch(displayToasterMessage(
-          'Entrez correctement votre email dans le champs ci-dessus pour récupérer ' +
+        'Entrez correctement votre email dans le champs ci-dessus pour récupérer ' +
           'votre mot de passe'))
       this.setState({isTryingToResetPassword: true})
       return
@@ -126,38 +128,38 @@ class LoginFormBase extends React.Component {
     return <form style={loginBoxStyle} onSubmit={this.handleLogin}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.fastForward} />
       <FormHeader
-          title={isTryingToResetPassword ? 'Mot de passe oublié ?' : 'Se connecter'}
-          question={isTryingToResetPassword ? '' : 'Pas encore de compte ?'}
-          linkText="Inscrivez-vous !"
-          onClick={this.props.onShowRegistrationFormClick} />
+        title={isTryingToResetPassword ? 'Mot de passe oublié ?' : "S'identifier"}
+        question={isTryingToResetPassword ? '' : 'Pas encore de compte ?'}
+        linkText="Inscrivez-vous !"
+        onClick={this.props.onShowRegistrationFormClick} />
       <IconInput
-          autofocus={!email}
-          type="email" placeholder="Email" value={email} iconName="email-outline"
-          applyFunc={email => email.toLocaleLowerCase()}
-          onChange={this.handleChange('email')} />
+        autofocus={!email}
+        type="email" placeholder="Email" value={email} iconName="email-outline"
+        applyFunc={email => email.toLocaleLowerCase()}
+        onChange={this.handleChange('email')} />
       {isTryingToResetPassword ? null : <IconInput
-          type="password" autofocus={!!email}
-          placeholder="Mot de passe" value={password} iconName="lock-outline"
-          onChange={this.handleChange('password')}
-          style={{marginTop: 10}} />}
+        type="password" autofocus={!!email}
+        placeholder="Mot de passe" value={password} iconName="lock-outline"
+        onChange={this.handleChange('password')}
+        style={{marginTop: 10}} />}
       {isTryingToResetPassword ? null : <a
-          style={{...lostPasswordLinkStyle, cursor: 'pointer'}}
-          onClick={this.handleLostPasswordClick}>
+        style={{...lostPasswordLinkStyle, cursor: 'pointer'}}
+        onClick={this.handleLostPasswordClick}>
         Mot de passe oublié ?
       </a>}
       {passwordResetRequestedEmail ?
         <span style={lostPasswordLinkStyle}>
           Un email a été envoyé à {passwordResetRequestedEmail}
         </span>
-      : <Button
+        : <Button
           disabled={!this.isFormValid()}
           onClick={isTryingToResetPassword ? this.handleLostPasswordClick : this.handleLogin}
           style={{alignSelf: 'center', marginTop: 30}}
           isNarrow={true}
           isProgressShown={(isAuthenticating || isAskingForPasswordReset)}
           type="validation">
-        {isTryingToResetPassword ? 'Récupérer son mot de passe' : 'Se connecter'}
-      </Button>}
+          {isTryingToResetPassword ? 'Récupérer son mot de passe' : "S'identifier"}
+        </Button>}
     </form>
   }
 }
@@ -214,22 +216,22 @@ class ResetPasswordFormBase extends React.Component {
     return <form style={loginBoxStyle} onSubmit={this.handleResetPassword}>
       <FormHeader title="Changez votre mot de passe" />
       <IconInput
-          autofocus={!email}
-          type="email" placeholder="Email" value={email} iconName="email-outline"
-          applyFunc={email => email.toLocaleLowerCase()}
-          onChange={this.handleChange('email')} />
+        autofocus={!email}
+        type="email" placeholder="Email" value={email} iconName="email-outline"
+        applyFunc={email => email.toLocaleLowerCase()}
+        onChange={this.handleChange('email')} />
       <IconInput
-          type="password" autofocus={!!email}
-          placeholder="Nouveau mot de passe" value={password} iconName="lock-outline"
-          onChange={this.handleChange('password')}
-          style={{marginTop: 10}} />
+        type="password" autofocus={!!email}
+        placeholder="Nouveau mot de passe" value={password} iconName="lock-outline"
+        onChange={this.handleChange('password')}
+        style={{marginTop: 10}} />
       <Button
-          disabled={!this.isFormValid()}
-          onClick={this.handleResetPassword}
-          style={{alignSelf: 'center', marginTop: 30}}
-          isProgressShown={isAuthenticating}
-          isNarrow={true}
-          type="validation">
+        disabled={!this.isFormValid()}
+        onClick={this.handleResetPassword}
+        style={{alignSelf: 'center', marginTop: 30}}
+        isProgressShown={isAuthenticating}
+        isNarrow={true}
+        type="validation">
         Changer le mot de passe
       </Button>
     </form>
@@ -242,6 +244,7 @@ const ResetPasswordForm = connect(({asyncState}) => ({
 
 class RegistrationFormBase extends React.Component {
   static propTypes = {
+    defaultEmail: PropTypes.string,
     isAuthenticating: PropTypes.bool,
     onRegister: PropTypes.func.isRequired,
     onShowLoginFormClick: PropTypes.func.isRequired,
@@ -253,6 +256,10 @@ class RegistrationFormBase extends React.Component {
     lastName: '',
     name: '',
     password: '',
+  }
+
+  componentWillMount() {
+    this.setState({email: this.props.defaultEmail || ''})
   }
 
   handleChange = field => value => {
@@ -311,54 +318,64 @@ class RegistrationFormBase extends React.Component {
     return <form style={registrationBoxStyle} onSubmit={this.handleRegister}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.fastForward} />
       <FormHeader
-          title="Créer un compte"
-          question="Déjà un compte ?"
-          linkText="Connectez-vous !"
-          onClick={this.props.onShowLoginFormClick} />
+        title="Créer un compte"
+        question="Déjà un compte ?"
+        linkText="Connectez-vous !"
+        onClick={this.props.onShowLoginFormClick} />
       <IconInput
-          autofocus={true}
-          type="text" placeholder="Prénom" value={name} iconName="account-outline"
-          onChange={this.handleChange('name')} />
+        autofocus={true}
+        type="text" placeholder="Prénom" value={name} iconName="account-outline"
+        onChange={this.handleChange('name')} />
       <IconInput
-          type="text" placeholder="Nom" value={lastName} iconName="account-outline"
-          onChange={this.handleChange('lastName')}
-          style={{marginTop: 10}} />
+        type="text" placeholder="Nom" value={lastName} iconName="account-outline"
+        onChange={this.handleChange('lastName')}
+        style={{marginTop: 10}} />
       <IconInput
-          type="email" placeholder="Email" value={email} iconName="email-outline"
-          applyFunc={email => email.toLocaleLowerCase()}
-          onChange={this.handleChange('email')}
-          style={{marginTop: 10}} />
+        type="email" placeholder="Email" value={email} iconName="email-outline"
+        applyFunc={email => email.toLocaleLowerCase()}
+        onChange={this.handleChange('email')}
+        style={{marginTop: 10}} />
       <IconInput
-          type="password"
-          placeholder="Créer un mot de passe" value={password} iconName="lock-outline"
-          onChange={this.handleChange('password')}
-          style={{marginTop: 10}} />
+        type="password"
+        placeholder="Créer un mot de passe" value={password} iconName="lock-outline"
+        onChange={this.handleChange('password')}
+        style={{marginTop: 10}} />
+      <div style={{fontSize: 12, margin: '10px auto 0', maxWidth: 325}}>
+        Nous sommes une association loi 1901 à but non lucratif&nbsp;:
+        {' '}{config.productName} est <strong>gratuit</strong> et le restera
+        toujours.
+      </div>
       <LabeledToggle
-          type="checkbox" label={<span>
+        type="checkbox" label={<span>
             J'ai lu et j'accepte les <Link
-                to={Routes.TERMS_AND_CONDITIONS_PAGE} target="_blank"
-                onClick={event => event.stopPropagation()}>
+            to={Routes.TERMS_AND_CONDITIONS_PAGE} target="_blank"
+            onClick={event => event.stopPropagation()}>
               conditions générales d'utilisation
-            </Link>
-          </span>}
-          style={{fontSize: 12, marginTop: 10}}
-          isSelected={hasAcceptedTerms}
-          onClick={() => this.setState({hasAcceptedTerms: !hasAcceptedTerms})} />
+          </Link>
+        </span>}
+        style={{fontSize: 12, marginTop: 10}}
+        isSelected={hasAcceptedTerms}
+        onClick={() => this.setState({hasAcceptedTerms: !hasAcceptedTerms})} />
       <Button
-          disabled={!this.isFormValid()}
-          onClick={this.handleRegister}
-          style={{alignSelf: 'center', marginTop: 30}}
-          isNarrow={true}
-          isProgressShown={isAuthenticating}
-          type="validation">
+        disabled={!this.isFormValid()}
+        onClick={this.handleRegister}
+        style={{alignSelf: 'center', marginTop: 30}}
+        isNarrow={true}
+        isProgressShown={isAuthenticating}
+        type="validation">
         S'inscrire
       </Button>
     </form>
   }
 }
-const RegistrationForm = connect(({asyncState}) => ({
-  isAuthenticating: asyncState.isFetching[AUTHENTICATE_USER],
-}))(RegistrationFormBase)
+const RegistrationForm = connect(({app, asyncState}) => {
+  const {loginModal} = app
+  const {email} = loginModal && loginModal.defaultValues || {}
+  return {
+    defaultEmail: email,
+    isAuthenticating: asyncState.isFetching[AUTHENTICATE_USER],
+  }
+})(RegistrationFormBase)
 
 
 class FormHeader extends React.Component {
@@ -524,10 +541,84 @@ class LoginModalBase extends React.Component {
     })
   }
 
+  renderIntro(style) {
+    const containerStyle = {
+      minHeight: '100vh',
+      position: 'relative',
+      zIndex: 0,
+      ...style,
+    }
+    const coverAll = {
+      bottom: 0,
+      left: 0,
+      position: 'absolute',
+      right: 0,
+      top: 0,
+    }
+    const coverImageStyle = {
+      ...coverAll,
+      backgroundImage: `url(${signupCoverImage})`,
+      backgroundPosition: 'center, center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'cover',
+      zIndex: -2,
+    }
+    const contentStyle = {
+      color: '#fff',
+      display: 'flex',
+      flexDirection: 'column',
+      fontSize: 29,
+      justifyContent: 'center',
+      lineHeight: '38px',
+      minHeight: '100vh',
+      padding: 60,
+    }
+    const titleStyle = {
+      fontSize: 60,
+      fontWeight: 'bold',
+      lineHeight: 1,
+      textShadow: '0 2px 6px rgba(64, 162, 225, 0.5)',
+    }
+    const quoteStyle = {
+      fontSize: 128,
+      opacity: .3,
+      position: 'absolute',
+      right: '100%',
+    }
+
+    return <div style={containerStyle}>
+      <div style={{...coverAll, backgroundColor: Colors.SKY_BLUE, opacity: .9, zIndex: -1}} />
+      <div style={coverImageStyle} />
+      <div style={contentStyle}>
+        <div style={titleStyle}>
+          Commençons à travailler ensemble&nbsp;!
+        </div>
+
+        <div style={{fontStyle: 'italic', marginTop: 60, maxWidth: 550, position: 'relative'}}>
+          <div style={quoteStyle}>“</div>
+          Nous allons vous poser quelques questions afin de mieux vous
+          connaître et vous proposer les conseils que nous pensons être les
+          plus adaptés.
+
+          <br /><br />
+
+          Certains vous ouvriront de nouvelles pistes de réflexion, d'autres
+          peut-être moins. Faites-nous vos retours :
+          Bob s'améliore grâce à vous&nbsp;!
+        </div>
+
+        <div style={{fontSize: 20, marginTop: 40}}>
+          - L'équipe de {config.productName}
+        </div>
+      </div>
+    </div>
+  }
+
   render() {
     const {defaultEmail, resetToken} = this.props
     const {isMobileVersion} = this.context
     const {isLoginFormShown} = this.state
+    const isFullRegistrationFormShown = !isMobileVersion && !resetToken && !isLoginFormShown
     const actionBoxStyle = {
       alignItems: 'center',
       alignSelf: 'stretch',
@@ -537,47 +628,81 @@ class LoginModalBase extends React.Component {
     }
     const socialLoginBox = {
       ...actionBoxStyle,
-      backgroundColor: Colors.BACKGROUND_GREY,
+      backgroundColor: isFullRegistrationFormShown ? 'initial' : Colors.BACKGROUND_GREY,
+      borderRadius: '0 0 5px 5px',
       fontSize: 15,
     }
-    const containerStyle = {
+    const containerStyle = isFullRegistrationFormShown ? {
+      alignItems: 'center',
+      display: 'flex',
+      transition: 'none',
+      width: '100vw',
+    } : {
+      borderRadius: 5,
+      margin: isMobileVersion ? 15 : 'inherit',
+      transition: 'none',
       width: isMobileVersion ? 'inherit' : 400,
+    }
+    const closeButtonStyle = {
+      ':hover': {
+        opacity: .9,
+      },
+      boxShadow: 'initial',
+      opacity: .6,
+      right: 50,
+      top: 50,
+      transform: 'initial',
     }
     const socialLoginPrefix = isLoginFormShown ? 'Connexion' : 'Inscription'
     let form
     if (resetToken) {
       form = <ResetPasswordForm
-          defaultEmail={defaultEmail} onResetPassword={this.handleResetPassword} />
+        defaultEmail={defaultEmail} onResetPassword={this.handleResetPassword} />
     } else if (isLoginFormShown) {
       form = <LoginForm
-          onLogin={this.handleLogin} defaultEmail={defaultEmail}
-          onShowRegistrationFormClick={() => this.setState({isLoginFormShown: false})} />
+        onLogin={this.handleLogin} defaultEmail={defaultEmail}
+        onShowRegistrationFormClick={() => this.setState({isLoginFormShown: false})} />
     } else {
       form = <RegistrationForm
-          onRegister={this.handleRegister}
-          onShowLoginFormClick={() => this.setState({isLoginFormShown: true})} />
+        onRegister={this.handleRegister}
+        onShowLoginFormClick={() => this.setState({isLoginFormShown: true})} />
+    }
+    const orStyle = {
+      alignItems: 'center',
+      color: Colors.DARK_TWO,
+      display: 'flex',
+      fontSize: 15,
+      width: 325,
     }
     return <Modal
-        isShown={this.state.isShown || !!resetToken} style={containerStyle}
-        onClose={resetToken ? null : this.close}>
-      <div style={Styles.CENTERED_COLUMN}>
+      isShown={this.state.isShown || !!resetToken} style={containerStyle}
+      onClose={(resetToken || isFullRegistrationFormShown) ? null : this.close}>
+      {isFullRegistrationFormShown ? this.renderIntro({flex: 1}) : null}
+      {isFullRegistrationFormShown ?
+        <ModalCloseButton onClick={this.close} style={closeButtonStyle} /> : null}
+      <div style={{flex: 1, ...Styles.CENTERED_COLUMN}}>
         <div style={actionBoxStyle}>
           {form}
         </div>
+        <div style={orStyle}>
+          <span style={{borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`, flex: 1}} />
+          <span style={{margin: '0 20px', ...Styles.CENTER_FONT_VERTICALLY}}>ou</span>
+          <span style={{borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`, flex: 1}} />
+        </div>
         {resetToken ? null : <div style={socialLoginBox}>
           <FacebookLogin
-              appId={config.facebookSSOAppId} language="fr"
-              callback={this.handleFacebookLogin}
-              fields="email,name,picture,gender,birthday"
-              size="small" icon="fa-facebook"
-              textButton={`${socialLoginPrefix} avec Facebook`}
-              cssClass="login facebook-login"
-              style={{borderRadius: 100}} />
+            appId={config.facebookSSOAppId} language="fr"
+            callback={this.handleFacebookLogin}
+            fields="email,name,picture,gender,birthday"
+            size="small" icon="fa-facebook"
+            textButton={`${socialLoginPrefix} avec Facebook`}
+            cssClass="login facebook-login"
+            style={{borderRadius: 100}} />
           <GoogleLogin
-              clientId={config.googleSSOClientId} offline={false}
-              onSuccess={this.handleGoogleLogin}
-              onFailure={this.handleGoogleFailure}
-              className="login google-login">
+            clientId={config.googleSSOClientId} offline={false}
+            onSuccess={this.handleGoogleLogin}
+            onFailure={this.handleGoogleFailure}
+            className="login google-login">
             <Icon name="google" /> {`${socialLoginPrefix} avec Google`}
           </GoogleLogin>
         </div>}
@@ -601,6 +726,7 @@ class LoginButtonBase extends React.Component {
   static propTypes = {
     children: PropTypes.node.isRequired,
     dispatch: PropTypes.func.isRequired,
+    email: PropTypes.string,
     isLoggedIn: PropTypes.bool,
     isSignUpButton: PropTypes.bool,
     style: PropTypes.object,
@@ -608,18 +734,22 @@ class LoginButtonBase extends React.Component {
   }
 
   handleClick = () => {
-    const {isLoggedIn, isSignUpButton, dispatch, visualElement} = this.props
+    const {email, isLoggedIn, isSignUpButton, dispatch, visualElement} = this.props
     if (isLoggedIn) {
       browserHistory.push(Routes.PROJECT_PAGE)
       return
     }
-    dispatch(openLoginModal({isReturningUser: !isSignUpButton}, visualElement))
+    if (isSignUpButton) {
+      dispatch(openRegistrationModal({email}, visualElement))
+    } else {
+      dispatch(openLoginModal({email}, visualElement))
+    }
   }
 
   render() {
     // eslint-disable-next-line no-unused-vars
-    const {children, dispatch, isLoggedIn, isSignUpButton, visualElement,
-           ...extraProps} = this.props
+    const {children, dispatch, email, isLoggedIn, isSignUpButton, visualElement,
+      ...extraProps} = this.props
     return <Button type="deletion" onClick={this.handleClick} {...extraProps}>
       {children}
     </Button>

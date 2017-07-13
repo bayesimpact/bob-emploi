@@ -1,7 +1,7 @@
 all: public
 # A Makefile to simplify the download and preparation of public datasets.
 
-public: requirements geo dares rome crosswalks bmo stmt
+public: requirements geo dares rome crosswalks bmo stmt data/tous_benevoles.xml
 
 requirements: data/requirements/job_requirements_output.csv
 
@@ -58,7 +58,7 @@ data/rome/RefRomeCsv.zip:
 	wget -P data/rome/ 'https://api.emploi-store.fr/api/docs/romeopen/REF_ROME_CSV/1/RefRomeCsv.zip'
 	unzip data/rome/RefRomeCsv.zip -d data/rome/csv
 	# TODO: Get rid of this once the ROME has been cleaned up.
-	sed -i -e "s/trcie/trice/" data/rome/csv/*.csv
+	sed -i -e "s/trcie/trice/g;s/2 D/2D/g;s/3 D/3D/g" data/rome/csv/*.csv
 
 data/dares/caracteristiques_des_personnes_en_emploi_2014.xls:
 	mkdir -p $(@D)
@@ -134,4 +134,4 @@ data/recent_job_offers.csv:
 	python bob_emploi/emploi_store_downloader.py offres Offres.*d.emploi $@
 
 data/tous_benevoles.xml:
-	wget http://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml $@
+	wget http://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml -O $@

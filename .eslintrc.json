@@ -12,9 +12,11 @@
   "settings": {
     "import/resolver": "webpack"
   },
-  "ecmaFeatures": {
-    "jsx": true,
-    "modules": true
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true,
+      "modules": true
+    }
   },
   "env": {
     "browser": true,
@@ -32,6 +34,8 @@
     "eol-last": "error",
     "eqeqeq": "error",
     "global-strict": 0,
+    "import/first": "error",
+    "import/newline-after-import": "error",
     "import/unambiguous": 0,
     "indent": ["error", 2, {"SwitchCase": 1}],
     "jsx-quotes": ["error", "prefer-double"],
@@ -51,10 +55,10 @@
     "quotes": ["error", "single", "avoid-escape"],
     "react/jsx-curly-spacing": "error",
     "react/jsx-equals-spacing": "error",
-    "react/jsx-indent": ["error", 2],
     "react/jsx-tag-spacing": "error",
     "react/no-unescaped-entities": 0,
     "react/no-unused-prop-types": ["error", {"skipShapeProps": true}],
+    "react/sort-comp": "error",
     "semi": ["error", "never"],
     "sort-keys": "error",
     "space-in-parens": "error"

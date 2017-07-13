@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1270px" height="510px" viewBox="0 0 1270 510" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 45.1 (43504) - http://www.bohemiancoding.com/sketch -->
+    <title>2-big-stars</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Product" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.599999964">
+        <g id="Advisor---Dashboard-Section-Copy-3" transform="translate(-80.000000, -2033.000000)" fill="#E8EAF0">
+            <g id="2-big-stars" transform="translate(80.000000, 2033.000000)">
+                <polygon id="Star" points="255 422.881599 97.4013329 510 127.5 325.480267 3.28093108e-12 194.802666 176.200666 167.881599 255 0 333.799334 167.881599 510 194.802666 382.5 325.480267 412.598667 510"></polygon>
+                <polygon id="Star" points="1015 422.881599 857.401333 510 887.5 325.480267 760 194.802666 936.200666 167.881599 1015 0 1093.79933 167.881599 1270 194.802666 1142.5 325.480267 1172.59867 510"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

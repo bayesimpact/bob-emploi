@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32px" height="30px" viewBox="0 0 32 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 44.1 (41455) - http://www.bohemiancoding.com/sketch -->
+    <title>Star-default</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <polygon id="path-1" points="175 22.5 166.183221 27.1352549 167.867076 17.3176275 160.734152 10.3647451 170.591611 8.93237254 175 0 179.408389 8.93237254 189.265848 10.3647451 182.132924 17.3176275 183.816779 27.1352549"></polygon>
+    </defs>
+    <g id="Product" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+        <g id="Advice-Feedbacks---Bar-(hover)" transform="translate(-783.000000, -822.000000)">
+            <g id="Group-2" transform="translate(624.000000, 823.000000)">
+                <g id="Star-default">
+                    <use fill-opacity="0" fill="#2C3449" fill-rule="evenodd" xlink:href="#path-1"></use>
+                    <path stroke="#9596A0" stroke-width="1" d="M175,23.0648879 L165.519156,28.0492627 L167.329836,17.4921874 L159.659672,10.0156252 L170.259578,8.47536866 L175,-1.12977573 L179.740422,8.47536866 L190.340328,10.0156252 L182.670164,17.4921874 L184.480844,28.0492627 L175,23.0648879 Z"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

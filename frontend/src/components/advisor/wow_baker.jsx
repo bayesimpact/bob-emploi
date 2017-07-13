@@ -3,7 +3,7 @@ import React from 'react'
 import {AppearingList, Colors} from 'components/theme'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   render() {
     return <div style={{fontSize: 30}}>
       Allez à la boulangerie la veille pour savoir à quelle heure
@@ -13,7 +13,7 @@ class FullAdviceCard extends React.Component {
 }
 
 
-class AdvicePageContent extends React.Component {
+class ExpandedAdviceCardContent extends React.Component {
   render() {
     const itemStyle = isFirst => ({
       alignItems: 'center',
@@ -40,4 +40,4 @@ class AdvicePageContent extends React.Component {
 }
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

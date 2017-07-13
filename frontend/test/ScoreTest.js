@@ -1,5 +1,4 @@
-const chai = require('chai')
-const expect = chai.expect
+import {expect} from 'chai'
 import ReactDOM from 'react-dom'
 import {computeBobScore} from 'store/score'
 

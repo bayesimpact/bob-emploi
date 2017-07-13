@@ -1,7 +1,8 @@
-var chai = require('chai')
-var expect = chai.expect
+import chai from 'chai'
 import {app} from 'store/app_reducer'
 import {GET_ADVICE_TIPS} from 'store/actions'
+
+const expect = chai.expect
 
 
 describe('app reducer', () => {

@@ -2,9 +2,8 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _ from 'underscore'
 
-import {Colors, Button} from 'components/theme'
+import {Colors, Button, PaddedOnMobile} from 'components/theme'
 import {ShortKey} from 'components/shortkey'
-
 
 class ProfileUpdater {
   constructor(fieldNames, component, {profile}) {
@@ -63,8 +62,8 @@ class Step extends React.Component {
 
   render() {
     const {children, explanation, fastForward, nextButtonContent, onPreviousButtonClick,
-           onNextButtonClick, contentStyle, style, stepNumber, totalStepCount,
-           isNextButtonDisabled, title} = this.props
+      onNextButtonClick, contentStyle, style, stepNumber, totalStepCount,
+      isNextButtonDisabled, title} = this.props
     const {isMobileVersion} = this.context
     const stepStyle = {
       alignItems: 'center',
@@ -79,7 +78,7 @@ class Step extends React.Component {
       color: Colors.DARK_TWO,
       fontSize: 23,
       fontWeight: 500,
-      lineHeight: 1.6,
+      lineHeight: 1.3,
       marginTop: 40,
       textAlign: 'center',
     }
@@ -120,7 +119,7 @@ class Step extends React.Component {
     const isLastOnboardingStep = totalStepCount && totalStepCount === stepNumber
     return <div style={stepStyle}>
       <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={fastForward} />
-      <div style={titleStyle}>{title}</div>
+      <PaddedOnMobile><div style={titleStyle}>{title}</div></PaddedOnMobile>
       {stepNumber && totalStepCount ? <div style={stepNumberStyle}>
         Étape {stepNumber} / {totalStepCount}
       </div> : null}
@@ -130,7 +129,7 @@ class Step extends React.Component {
       </div>
       <div style={navigationStyle}>
         {onPreviousButtonClick ? <Button
-            type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}>
+          type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}>
           Précédent
         </Button> : null}
         <Button

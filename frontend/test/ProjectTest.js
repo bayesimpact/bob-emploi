@@ -1,11 +1,11 @@
-const chai = require('chai')
-chai.config.truncateThreshold = 0
-const expect = chai.expect
+import {config, expect} from 'chai'
 import {createProjectTitle, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
-        PROJECT_EXPERIENCE_OPTIONS, createProjectTitleComponents, getEmploymentZone,
-        getTrainingFulfillmentEstimateOptions} from 'store/project'
-const {EmploymentType} = require('api/job')
+  PROJECT_EXPERIENCE_OPTIONS, createProjectTitleComponents, getEmploymentZone,
+  getTrainingFulfillmentEstimateOptions} from 'store/project'
+import {EmploymentType} from 'api/job'
 import {PreviousJobSimilarity, TrainingFulfillmentEstimate} from 'api/project'
+
+config.truncateThreshold = 0
 
 describe('createProjectTitle', () => {
 

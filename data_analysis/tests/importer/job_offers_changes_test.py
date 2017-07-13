@@ -25,9 +25,9 @@ class JobOffersEvolutionImporterTestCase(unittest.TestCase):
         self.assertEqual(set(['78:F1106', '79:F1106']), set(changes_proto))
 
         proto = changes_proto['79:F1106']
-        self.assertEqual(200, proto.job_offers_change)
-        self.assertEqual(3, proto.num_job_offers_last_year)
-        self.assertEqual({2014: 1, 2015: 3}, proto.num_job_offers_per_year)
+        self.assertEqual(500, proto.job_offers_change)
+        self.assertEqual(6, proto.num_job_offers_last_year)
+        self.assertEqual({2014: 1, 2015: 6}, proto.num_job_offers_per_year)
 
         proto = changes_proto['78:F1106']
         self.assertEqual({2015: 1}, proto.num_job_offers_per_year)

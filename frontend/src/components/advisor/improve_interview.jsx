@@ -1,9 +1,9 @@
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
 
-import {USER_PROFILE_SHAPE} from 'store/user'
+import {getInterviewTips} from 'store/actions'
 
-import {AppearingList, Colors, Markdown, PaddedOnMobile} from 'components/theme'
+import {ImproveApplicationTips} from './base'
 
 
 function getSimpleSkills(improveSuccessRateData, numSkills) {
@@ -15,7 +15,7 @@ function getSimpleSkills(improveSuccessRateData, numSkills) {
 }
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
   }
@@ -37,63 +37,18 @@ class FullAdviceCard extends React.Component {
 }
 
 
-class AdvicePageContent extends React.Component {
-  static propTypes = {
-    advice: PropTypes.object.isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
-  }
-
-  renderSection(id, title, content, style) {
-    const items = ('\n' + content).split('\n* ').slice(1)
-    const itemStyle = {
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      display: 'flex',
-      fontSize: 13,
-      minHeight: 50,
-      padding: '10px 20px',
-    }
-    return <section style={style}>
-      <PaddedOnMobile style={{marginBottom: 15}}>{title}</PaddedOnMobile>
-      <AppearingList>
-        {items.map((advice, index) => <div
-            key={`advice-id-${index}`} style={{marginTop: index ? -1 : 0, ...itemStyle}}>
-          <Markdown content={advice} />
-        </div>)}
-      </AppearingList>
-    </section>
-  }
-
+class ExpandedAdviceCardContent extends React.Component {
   render() {
-    const {advice, profile} = this.props
-    const {improveSuccessRateData} = advice
-    const isFeminine = profile.gender === 'FEMININE'
-    const personalize =
-      "* Montrez que vous connaissez l'entreprise et ses enjeux\n" +
-      '* Expliquez en quoi le poste est important\n' +
-      '* Expliquez pourquoi votre profil est adapté pour le poste\n' +
-      `* Montrez que l'expérience que vous avez acquise de précédent(s)
-      emploi(s) ou stage(s) sera un atout pour le poste`
-    const bonusSkills =
-      improveSuccessRateData && improveSuccessRateData.requirements &&
-      improveSuccessRateData.requirements.bonusSkillsShortText
-    const skills =
-      improveSuccessRateData && improveSuccessRateData.requirements &&
-      improveSuccessRateData.requirements.skillsShortText ||
-      (`* Vous êtes organisé${isFeminine ? 'e' : ''} et ` +
-      `travailleu${isFeminine ? 'se' : 'r'}\n` +
-      '* Vous savez vous adapter et trouver des solutions\n' +
-      '* Gérez votre stress et gardez le sourire') + (bonusSkills ? ('\n' + bonusSkills) : '')
-    return <div>
-      {this.renderSection(
-        'personalize', 'Pour personnaliser votre candidature', personalize,
-        {marginBottom: 40})}
-      {this.renderSection(
-        'qualities', 'Qualités attendues par les recruteurs pour votre métier', skills)}
-    </div>
+    return <ImproveApplicationTips
+      {...this.props}
+      tipsCacheField="interviewTips"
+      sections={[
+        {data: 'qualities', title: 'Qualités les plus attendues par les recruteurs :'},
+        {data: 'preparations', title: 'Pour préparer votre entretien'},
+      ]}
+      getTipsAction={getInterviewTips} />
   }
 }
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

@@ -14,12 +14,14 @@ import re
 from bob_emploi.frontend import companies
 from bob_emploi.frontend import proto
 from bob_emploi.frontend.api import association_pb2
-from bob_emploi.frontend.api import chantier_pb2
+from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+
 
 # TODO(pascal): Split this file and remove the line below.
 # pylint: disable=too-many-lines
@@ -48,6 +50,14 @@ _JOB_BOARDS = proto.MongoCachedCollection(jobboard_pb2.JobBoard, 'jobboards')
 
 _ASSOCIATIONS = proto.MongoCachedCollection(association_pb2.Association, 'associations')
 
+_APPLICATION_TIPS = proto.MongoCachedCollection(application_pb2.ApplicationTip, 'application_tips')
+
+# Distance below which the city is so close that it is obvious.
+_MIN_CITY_DISTANCE = 8
+
+# Distance above which the city is so far that it should not be considered.
+_MAX_CITY_DISTANCE = 35
+
 
 def compute_square_distance(city_a, city_b):
     """Compute the approximative distance between two cities.
@@ -68,13 +78,14 @@ def compute_square_distance(city_a, city_b):
 def is_city_quite_close(city_a, city_b):
     """Return true if the city is not too far for commute, but not too close to be obvious."""
     square_distance = compute_square_distance(city_a, city_b)
-    return square_distance > 10 * 10 and square_distance < 35 * 35
+    return (square_distance > _MIN_CITY_DISTANCE * _MIN_CITY_DISTANCE and
+            square_distance < _MAX_CITY_DISTANCE * _MAX_CITY_DISTANCE)
 
 
 def is_city_very_close(city_a, city_b):
     """Return true if the city is so close that it is obviously known."""
     square_distance = compute_square_distance(city_a, city_b)
-    return square_distance <= 10 * 10
+    return square_distance <= _MIN_CITY_DISTANCE * _MIN_CITY_DISTANCE
 
 
 class ScoringProject(object):
@@ -94,11 +105,12 @@ class ScoringProject(object):
 
         # Cache for DB data.
         self._job_group_info = None
-        self._unemployment_durations = None
         self._local_diagnosis = None
         self._jobboards = None
         self._associations = None
         self._nearby_cities = None
+        self._application_tips = None
+        self._volunteering_missions = None
 
     # When scoring models need it, add methods to access data from DB:
     # project requirements from job offers, IMT, median unemployment duration
@@ -164,88 +176,6 @@ class ScoringProject(object):
             setattr(handcrafted_requirements, field, getattr(all_requirements, field))
         return handcrafted_requirements
 
-    def _unemployment_duration_at_level(self, area_type):
-        """Get the median unemployment time for an area type if available.
-
-        This function loads the data from MongoDB and caches it. To be even
-        faster it directly loads all level of area type that are available.
-
-        Returns:
-            a UnemploymentDuration proto or None if it is not defined for this
-            area type.
-        """
-        if self._unemployment_durations is not None:
-            return self._unemployment_durations.get(area_type)
-        city = self.details.mobility.city
-        rome_id = self._rome_id()
-        diagnosis_ids = {
-            '%s:%s' % (city.city_id, rome_id): geo_pb2.CITY,
-            'd%s:%s' % (city.departement_id, rome_id): geo_pb2.DEPARTEMENT,
-            'r%s:%s' % (city.region_id, rome_id): geo_pb2.REGION,
-            rome_id: geo_pb2.COUNTRY,
-        }
-        mongo_diagnoses = self._db.fhs_local_diagnosis.find(
-            {'_id': {'$in': list(diagnosis_ids.keys())}})
-        self._unemployment_durations = {}
-        for mongo_diagnosis in mongo_diagnoses:
-            mongo_area_type = diagnosis_ids[mongo_diagnosis.pop('_id')]
-            stats = job_pb2.LocalJobStats()
-            if proto.parse_from_mongo(mongo_diagnosis, stats):
-                self._unemployment_durations[mongo_area_type] = stats.unemployment_duration
-        return self._unemployment_durations.get(area_type)
-
-    def median_unemployment_time(self, area_type=geo_pb2.UNKNOWN_AREA_TYPE, default=90):
-        """Get the first median unemployment time available for the project.
-
-        It will try each level of areas (only going wider) until it can find a
-        value.
-
-        Args:
-            area_type: the minimum level of area to look for the best time (by
-                default it picks the one defined by the project's mobility).
-            default: the value to return if absolutely no data can be found.
-        Returns:
-            A number of days.
-        """
-        if area_type is None:
-            area_type = self.details.mobility.area_type
-        for try_area_type in geo_pb2.AreaType.values()[1:]:
-            if try_area_type < area_type:
-                continue
-            duration = self._unemployment_duration_at_level(try_area_type)
-            if duration:
-                return duration.days
-        return default
-
-    def max_num_offers(self):
-        """Maximum number of job offers available.
-
-        This is the maximum of job offers that a user can access in their
-        current project: in a given job group, in a given département.
-        Extending their search to CDD, interim, part-time, moving anywhere in
-        the département could help them get those offers.
-        """
-        local_stats = job_pb2.LocalJobStats()
-        local_id = '%s:%s' % (
-            self.details.mobility.city.departement_id,
-            self.details.target_job.job_group.rome_id)
-        proto.parse_from_mongo(self._db.recent_job_offers.find_one({'_id': local_id}), local_stats)
-        return local_stats.num_available_job_offers
-
-    def get_contract_type_percentages(self):
-        """ Compute the offers that are available for each contract type.
-
-        Return:
-            contract_to_increase: Dictionary, keyed by contract type, of percentages of job offers
-                from that project. The key is present only if we know this percentage.
-        """
-        # Putting employment type percentage in a dictionary.
-        stats = {}
-        for emp in self.imt_proto().employment_type_percentages:
-            stats[emp.employment_type] = emp.percentage
-
-        return stats
-
     def list_jobboards(self):
         """List all job boards for this project."""
         if self._jobboards:
@@ -264,8 +194,29 @@ class ScoringProject(object):
         self._associations = list(filter_using_score(all_associations, lambda j: j.filters, self))
         return self._associations
 
+    def _get_commuting_cities(self, interesting_cities_for_rome, target_city):
+        # Get the reference offers per inhabitant.
+
+        ref = next((h.offers / h.city.population
+                    for h in interesting_cities_for_rome
+                    if h.city.city_id == target_city.city_id and h.city.population), 0)
+
+        for hiring_city in interesting_cities_for_rome:
+            distance = math.sqrt(compute_square_distance(hiring_city.city, target_city))
+
+            if distance < _MAX_CITY_DISTANCE:
+                try:
+                    relative_offers = (hiring_city.offers / hiring_city.city.population) / ref
+                except ZeroDivisionError:
+                    relative_offers = 0
+
+                yield commute_pb2.CommutingCity(
+                    name=hiring_city.city.name,
+                    relative_offers_per_inhabitant=relative_offers,
+                    distance_km=distance)
+
     def list_nearby_cities(self):
-        """Computes and stores all interesting cities that are not too close and not too far.
+        """Compute and store all interesting cities that are not too close and not too far.
 
            Those cities will be used by the Commute advice.
         """
@@ -273,44 +224,74 @@ class ScoringProject(object):
             return self._nearby_cities
         self._nearby_cities = []
 
-        # TODO(guillaume): Get this from db.
-        city_1 = geo_pb2.FrenchCity(
-            name="L'Arbresle",
-            latitude=45.8347,
-            longitude=4.5929)
-        city_2 = geo_pb2.FrenchCity(
-            name='Villefranche-sur-Soane',
-            latitude=45.9915,
-            longitude=4.6483)
-        city_3 = geo_pb2.FrenchCity(
-            name='Lyon',
-            latitude=45.7580538,
-            longitude=4.7649093)
-        interesting_cities_for_rome = [city_1, city_2, city_3]
+        job_group = self.details.target_job.job_group.rome_id
 
-        # TODO(guillaume): Get this from db.
-        my_city = None
-        if self.details.mobility.city.city_id == '69123':
-            my_city = city_3
+        all_cities = commute_pb2.HiringCities()
+        proto.parse_from_mongo(self._db.hiring_cities.find_one({'_id': job_group}), all_cities)
+        interesting_cities_for_rome = all_cities.hiring_cities
 
-        if not interesting_cities_for_rome or not my_city:
+        if not interesting_cities_for_rome:
             return []
 
-        nearby_cities = [
-            city.name for city in interesting_cities_for_rome
-            if is_city_quite_close(city, my_city)]
+        target_city = geo_pb2.FrenchCity()
+        mongo_city = self._db.cities.find_one({'_id': self.details.mobility.city.city_id})
+        if not mongo_city:
+            return []
+        proto.parse_from_mongo(mongo_city, target_city)
+
+        commuting_cities = list(
+            self._get_commuting_cities(interesting_cities_for_rome, target_city))
 
         obvious_cities = [
-            city.name for city in interesting_cities_for_rome
-            if is_city_very_close(city, my_city)]
+            city for city in commuting_cities
+            if city.distance_km < _MIN_CITY_DISTANCE]
+
+        interesting_cities = [
+            city for city in commuting_cities
+            if city.distance_km >= _MIN_CITY_DISTANCE]
 
         # If there is only one city nearby and no obvious city, the nearby city becomes obvious, so
         # we do not recommend it.
-        if len(nearby_cities) == 1 and not obvious_cities:
-            return self._nearby_cities
+        if len(interesting_cities) == 1 and not obvious_cities:
+            return []
 
-        self._nearby_cities = nearby_cities
+        self._nearby_cities = interesting_cities
         return self._nearby_cities
+
+    def volunteering_missions(self):
+        """Return a list of volunteering mission close to the project."""
+        if self._volunteering_missions is not None:
+            return self._volunteering_missions
+
+        departement_id = self.details.mobility.city.departement_id
+
+        # Get data from MongoDB.
+        volunteering_missions_dict = collections.defaultdict(association_pb2.VolunteeringMissions)
+        for record in self._db.volunteering_missions.find({'_id': {'$in': [departement_id, '']}}):
+            record_id = record.pop('_id')
+            proto.parse_from_mongo(record, volunteering_missions_dict[record_id])
+
+        # TODO(pascal): First get missions from target city if any.
+
+        # Merge data.
+        project_missions = association_pb2.VolunteeringMissions()
+        for scope in [departement_id, '']:
+            for mission in volunteering_missions_dict[scope].missions:
+                mission.is_available_everywhere = not scope
+                project_missions.missions.add().CopyFrom(mission)
+
+        self._volunteering_missions = project_missions
+        return project_missions
+
+    def list_application_tips(self):
+        """List all application tips available for this project."""
+        if self._application_tips:
+            return self._application_tips
+
+        all_application_tips = _APPLICATION_TIPS.get_collection(self._db)
+        self._application_tips = list(filter_using_score(
+            all_application_tips, lambda j: j.filters, self))
+        return self._application_tips
 
 
 class _Score(collections.namedtuple('Score', ['score', 'additional_job_offers'])):
@@ -331,58 +312,12 @@ class _ScoringModelBase(object):
     # If we do standard computation across models, add it here and use this one
     # as a base class.
 
-    def _get_stable_random(self, project):
-        """Get a random number that is stable for each project.
-
-        This function called by the same scoring model (by class) and on the
-        same project (by ID) will return the same value.
-        """
-        randomizer = random.Random(project.details.project_id + self.__class__.__name__)
-        return randomizer.random()
-
     def score(self, unused_project):
         """Compute a score for the given ScoringProject.
 
         Descendants of this class should overwrite `score` to avoid the fallback to a random value.
         """
         return _Score(random.random() * 3)
-
-
-class _IncreaseJobOffersScoringModel(_ScoringModelBase):
-    """A base scoring model for all the Red Chantiers."""
-
-    def additional_job_offers_percent(self, unused_project):
-        """Compute raise in number of job offers.
-
-        Note: Use this for models for which we haven't analyzed the necessary data yet,
-            to return a static value as we believe that this chantier can be useful for everybody.
-            Overwrite this function for models with actual data.
-        """
-        return 15
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        additional_job_offers = self.additional_job_offers_percent(project)
-        return _Score(additional_job_offers * _SCORE_PER_JOB_OFFERS_PERCENT, additional_job_offers)
-
-
-class _UseYourNetworkScoringModel(_ScoringModelBase):
-    """A scoring model for the "Use your network" chantier.
-
-    See http://go/pe:chantiers/recEmfRver85zzw4C
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        # TODO(pascal): Use IMT data to get how important is the network for
-        # this project.
-        score = 1
-        if project.details.network_estimate > 0:
-            score += .5 * (project.details.network_estimate - 3)
-        market_stress = project.market_stress()
-        if market_stress:
-            score += .5 * market_stress
-        return _Score(score)
 
 
 class _AdviceEventScoringModel(_ScoringModelBase):
@@ -418,64 +353,6 @@ class _ImproveYourNetworkScoringModel(_ScoringModelBase):
         return _Score(2)
 
 
-class _GetMoreOffersScoringModel(_ScoringModelBase):
-    """A scoring model for the "Get more offers" chantier.
-
-    See http://go/pe:chantiers/recBUKv1sIzvciub3
-    """
-
-    offers_to_score = {
-        project_pb2.LESS_THAN_2: 3,
-        project_pb2.SOME: 2,
-        project_pb2.DECENT_AMOUNT: 1,
-    }
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if user_pb2.NO_OFFERS in project.user_profile.frustrations:
-            return _Score(4)
-        if project.details.weekly_offers_estimate in self.offers_to_score:
-            return _Score(self.offers_to_score[project.details.weekly_offers_estimate])
-        return _Score(.01)
-
-
-class _LearnMoreAboutJobScoringModel(_ScoringModelBase):
-    """A scoring model for the "Learn more about the job" chantier.
-
-    See http://go/pe:chantiers/recUTsNXwd3ylXx5y
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if project.details.previous_job_similarity != project_pb2.NEVER_DONE:
-            return _Score(0)
-        score = 1.5
-        if project.details.job_search_length_months <= 0:
-            score += 1
-        return _Score(score)
-
-
-class _AcceptContractTypeScoringModel(_IncreaseJobOffersScoringModel):
-    """A scoring model for the "Fallback to CDD" chantier.
-
-    See http://go/pe:chantiers/recy3Sr4T7mnor8kX
-    """
-
-    def __init__(self, contract_types):
-        self.contract_types = set(contract_types)
-
-    def additional_job_offers_percent(self, project):
-        """Compute raise in number of job offers."""
-        if set(project.details.employment_types) & self.contract_types:
-            # The project already targets one of these contract type.
-            return 0
-        percentage_targeted_types = sum(
-            c.percent_suggested
-            for c in project.requirements().contract_types
-            if c.contract_type in self.contract_types)
-        return 100 / (1 - min(percentage_targeted_types, 99)/100) - 100
-
-
 class ConstantScoreModel(_ScoringModelBase):
     """A scoring model that always return the same score."""
 
@@ -485,19 +362,6 @@ class ConstantScoreModel(_ScoringModelBase):
     def score(self, unused_project):
         """Compute a score for the given ScoringProject."""
         return _Score(self.constant_score)
-
-
-class _StandOutFromCompetitionScoringModel(_ScoringModelBase):
-    """A scoring model for the "Stand out from the competition" chantier.
-
-    See http://go/pe:chantiers/recprlmEghKRsqH8o
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if project.details.weekly_applications_estimate != project_pb2.SOME:
-            return _Score(0)
-        return _Score(2)
 
 
 class _SpontaneousApplicationScoringModel(_ScoringModelBase):
@@ -524,373 +388,6 @@ class _SpontaneousApplicationScoringModel(_ScoringModelBase):
         return project_pb2.SpontaneousApplicationData(companies=[
             companies.to_proto(c)
             for c in itertools.islice(companies.get_lbb_companies(project.details), 5)])
-
-
-class _ObtainDrivingLicenseScoringModel(_IncreaseJobOffersScoringModel):
-    """A scoring model for the "Obtain driving license" chantier.
-
-    See http://go/pe:chantiers/rec4I6EPRJ9ea8rCB
-    """
-
-    def __init__(self, driving_license):
-        self.driving_license = driving_license
-
-    def additional_job_offers_percent(self, project):
-        """Compute raise in number of job offers."""
-        if (user_pb2.HANDICAPED in project.user_profile.frustrations or
-                project.user_profile.has_handicap or
-                (project.details.mobility.city.departement_id == '75' and
-                 project.details.mobility.area_type <= geo_pb2.DEPARTEMENT)):
-            return 0
-        try:
-            requirement = next(
-                r for r in project.requirements().driving_licenses
-                if r.driving_license == self.driving_license)
-        except StopIteration:
-            return 0
-        percent_required = requirement.percent_suggested * requirement.percent_required / 100
-        # Unfortunately our data is not clean and we know that in many cases
-        # the employer forgot to tell about the requirement. So we use another
-        # approximation, and get the geometric mean of both (this is clearly
-        # handwaving data science).
-        required_when_mentionned = requirement.percent_required
-        fake_percent_required = math.sqrt(percent_required * required_when_mentionned)
-        return 100 / (1 - min(fake_percent_required, 99)/100) - 100
-
-
-class _PartTimeScoringModel(_IncreaseJobOffersScoringModel):
-    """A scoring model for the "Try a Part Time Job" chantier.
-
-    TODO: Use actual data and don't call the super `additional_job_offers_percent`.
-
-    See http://go/pe:chaniiers/recmZKvRrJCfjkP1d
-    """
-
-    def additional_job_offers_percent(self, project):
-        """Compute raise in number of job offers."""
-        if project_pb2.PART_TIME in project.details.workloads:
-            return 0
-        return super(_PartTimeScoringModel, self).additional_job_offers_percent(project)
-
-
-class _TrainingScoringModel(_IncreaseJobOffersScoringModel):
-    """A scoring model for "Plan a Training" chantier.
-
-    TODO: Use actual data and don't call the super `additional_job_offers_percent`.
-
-    See http://go/pe:chantiers/recY7emXfLAZ6kwSj
-    """
-
-    def additional_job_offers_percent(self, project):
-        """Compute raise in number of job offers."""
-        if (project.details.training_fulfillment_estimate == project_pb2.ENOUGH_DIPLOMAS or
-                project.details.training_fulfillment_estimate == project_pb2.ENOUGH_EXPERIENCE or
-                project.details.training_fulfillment_estimate ==
-                project_pb2.CURRENTLY_IN_TRAINING or
-                project.details.diploma_fulfillment_estimate == project_pb2.FULFILLED or
-                project.user_profile.situation == user_pb2.IN_TRAINING):
-            return 0
-        return super(_TrainingScoringModel, self).additional_job_offers_percent(project)
-
-
-class _ReduceSalaryScoringModel(_IncreaseJobOffersScoringModel):
-    """A scoring model for "Reduce your Salary Expectation" chantier.
-
-    TODO: Use actual data and don't call the super `additional_job_offers_percent`.
-
-    See http://go/pe:chantiers/recb069UnblVUVUcc
-    """
-
-    def additional_job_offers_percent(self, project):
-        """Compute raise in number of job offers."""
-        if project.details.min_salary == 0:
-            return 0
-        return super(_ReduceSalaryScoringModel, self).additional_job_offers_percent(project)
-
-
-class _MobilityWithoutMoveScoringModel(_ScoringModelBase):
-    """A scoring model for the "Mobility without move" chantier.
-
-    See http://go/pe:chantiers/recOqAr4gW8MtMoyg
-    """
-
-    def __init__(self, target_area_type, scaling_factor):
-        self.target_area_type = target_area_type
-        self.scaling_factor = scaling_factor
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if project.median_unemployment_time() < 90:
-            return _Score(0)
-        score = 2
-        return _Score(score * self.scaling_factor * (
-            project.median_unemployment_time(area_type=geo_pb2.CITY) /
-            project.median_unemployment_time(area_type=self.target_area_type) - 1))
-
-
-class _RelocateScoringModel(_ScoringModelBase):
-    """A scoring model for the "Relocate" chantier.
-
-    See http://go/pe:chantiers/recIQDiKBB99CKkY9
-    """
-
-    def __init__(self, target_area_type, scaling_factor):
-        self.target_area_type = target_area_type
-        self.scaling_factor = scaling_factor
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        median_unemployment_time = project.median_unemployment_time()
-        if median_unemployment_time < 180:
-            return _Score(0)
-        score = 2 * self.scaling_factor * (
-            project.median_unemployment_time(area_type=geo_pb2.CITY) /
-            project.median_unemployment_time(area_type=self.target_area_type) - 1)
-        if median_unemployment_time >= 365:
-            score += 1
-        return _Score(score)
-
-
-class _ImproveCVScoringModel(_ScoringModelBase):
-    """A scoring model for "Improve your CV/Cover letter" chantier.
-
-    See http://go/pe:chantiers/recHruwJ1nAF5BJYb
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if user_pb2.RESUME in project.user_profile.frustrations:
-            return _Score(4)
-        if ((project.details.total_interviews_estimate >= project_pb2.DECENT_AMOUNT or
-             project.details.total_interview_count > 1) and
-                project.details.job_search_length_months < 6):
-            return _Score(0)
-        score = 2
-        market_stress = project.market_stress()
-        if market_stress and market_stress >= 2:
-            score = 3
-        return _Score(score)
-
-
-class _FightGenderDiscriminationScoringModel(_ScoringModelBase):
-    """A scoring model for "Fight gender wage discriminations" chantier.
-
-    See http://go/pe:chantiers/reciQ6buoTJYH8DWW
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if (project.user_profile.gender == user_pb2.FEMININE and
-                user_pb2.SEX_DISCRIMINATION in project.user_profile.frustrations):
-            return _Score(4)
-        return _Score(0)
-
-
-class _ImproveInterviewScoringModel(_ScoringModelBase):
-    """A scoring model for "Improve your interview skills" chantier.
-
-    See http://go/pe:chantiers/rec6XRNNb9CX6NpiP
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if user_pb2.INTERVIEW in project.user_profile.frustrations:
-            return _Score(4)
-        if not project.details.total_interviews_estimate and \
-                not project.details.total_interview_count:
-            # Unknown interviews.
-            return _Score(0)
-        job_search_length_weeks = project.details.job_search_length_months * 52 / 12
-        if project.details.total_interview_count < 0:
-            interview_level = 1
-        elif not project.details.total_interview_count:
-            interview_level = project.details.total_interviews_estimate
-        else:
-            interview_level = project.details.total_interview_count + 1
-        return _Score(
-            project.details.weekly_applications_estimate * job_search_length_weeks /
-            interview_level / 15)
-
-
-class _ImproveOrganization(_ScoringModelBase):
-    """A scoring model for "Stay on top of my organisation" chantier.
-
-    See http://go/pe:chantiers/rec9yEocagBZQqBB1
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if user_pb2.TIME_MANAGEMENT in project.user_profile.frustrations:
-            return _Score(4)
-        return _Score(project.details.job_search_length_months / 6)
-
-
-class _StayMotivatedScoringModel(_ScoringModelBase):
-    """A scoring model for the "Stay motivated" chantier.
-
-    See http://go/pe:chantiers/rec91fcbhNiDdqoSn
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if user_pb2.MOTIVATION in project.user_profile.frustrations:
-            return _Score(4)
-        return _Score(project.details.job_search_length_months / 6)
-
-
-class _ShowcaseAtypicalProfileScoringModel(_ScoringModelBase):
-    """A scoring model for the "Showcase your atypical profile" chantier.
-
-    See http://go/pe:chantiers/recYT5juAIoAXJFg0
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if user_pb2.ATYPIC_PROFILE in project.user_profile.frustrations:
-            return _Score(4)
-        return _Score(0)
-
-
-class _JobDiscoveryScoringModel(_ScoringModelBase):
-    """A scoring model for the "Discover jobs close to yours" chantier.
-
-    See http://go/pe:chantiers/recYETBPqTK4TCyKQ
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if project.details.intensity == project_pb2.PROJECT_FIGURING_INTENSITY:
-            # User is in a discovery mode, this is the perfect chantier for them.
-            return _Score(10)
-        if (project.user_profile.HasField('latest_job') and (
-                project.details.target_job.job_group.rome_id !=
-                project.user_profile.latest_job.job_group.rome_id)):
-            # User already targets a different job than his, discover more!
-            return _Score(3)
-        return _Score(0)
-
-
-class _SubsidizedContractScoringModel(_ScoringModelBase):
-    """A scoring model for the "Learn about subsidized contracts" chantier.
-
-    See http://go/pe:chantiers/recJp1piJLGnVDTz0
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if project.details.job_search_length_months < 12:
-            return _Score(0)
-        score = project.details.job_search_length_months / 6
-        if project.details.seniority <= project_pb2.JUNIOR:
-            score += 1
-        return _Score(score)
-
-
-class _InternationalJobScoringModel(_ScoringModelBase):
-    """A scoring model for the "Check out international jobs" chantier.
-
-    See http://go/pe:chantiers/recDJbIakmNXajJOB
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        score = 1
-        if project.details.mobility.area_type >= geo_pb2.WORLD:
-            score += 2
-        return _Score(score)
-
-
-class _ProfessionnalisationScoringModel(_ScoringModelBase):
-    """A scoring model for the "Professionnalisation Contract" chantier.
-
-    See http://go/pe:chantiers/recFjB6pr7YwlcRUO
-    """
-
-    _seniority_to_score = {
-        project_pb2.INTERNSHIP: 3,
-        project_pb2.JUNIOR: 2.5,
-        project_pb2.INTERMEDIARY: 2,
-        project_pb2.SENIOR: 1.5,
-        project_pb2.EXPERT: 1,
-    }
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if (project.user_profile.situation == user_pb2.IN_TRAINING or
-                project.details.training_fulfillment_estimate ==
-                project_pb2.CURRENTLY_IN_TRAINING):
-            return _Score(0)
-        return _Score(self._seniority_to_score.get(project.details.seniority, 0))
-
-
-class _ApprentissageScoringModel(_ScoringModelBase):
-    """A scoring model for the "Apprentissage Contract" chantier.
-
-    See http://go/pe:chantiers/recuFIzyLeePv80UE
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        if (project.user_profile.situation == user_pb2.IN_TRAINING or
-                project.details.training_fulfillment_estimate ==
-                project_pb2.CURRENTLY_IN_TRAINING or
-                datetime.date.today().year - project.user_profile.year_of_birth > 25 or
-                project.details.seniority >= project_pb2.INTERMEDIARY):
-            return _Score(0)
-        return _Score(3)
-
-
-class _FreelanceScoringModel(_ScoringModelBase):
-    """A scoring model for the "Freelance" chantier.
-
-    See http://go/pe:chantiers/recHaOxPLO8iIVpUo
-    """
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        score = 1
-        if project.details.seniority >= project_pb2.INTERMEDIARY:
-            score += 1
-        return _Score(score)
-
-
-class _BlueTargetScoringModel(_ScoringModelBase):
-    """A scoring model to set the target for blue chantiers."""
-
-    estimates = {
-        project_pb2.LESS_THAN_2: 1,
-        project_pb2.SOME: 3.5,
-        project_pb2.DECENT_AMOUNT: 9,
-        project_pb2.A_LOT: 20,
-    }
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        num_weeks = _WEEKS_PER_MONTH * project.details.job_search_length_months
-        if num_weeks <= 9:
-            return _Score(5)
-
-        # Number of interviews
-        if project.details.total_interview_count < 0:
-            num_interviews = 0
-        elif project.details.total_interview_count > 0:
-            num_interviews = project.details.total_interview_count
-        else:
-            num_interviews = self.estimates.get(project.details.total_interviews_estimate, 0)
-
-        # Number of applications to get one interview.
-        ratio_interviews = (
-            self.estimates.get(project.details.weekly_applications_estimate, 0) * num_weeks /
-            (num_interviews or 1))
-        return _Score(ratio_interviews * _SCORE_PER_INTERVIEW_RATIO + num_interviews)
-
-
-class _GreenTargetScoringModel(_ScoringModelBase):
-    """A scoring model to set the target for green chantiers."""
-
-    def score(self, project):
-        """Compute a score for the given ScoringProject."""
-        return _Score(project.median_unemployment_time() / _DAYS_PER_MONTH)
 
 
 class _ActiveExperimentFilter(_ScoringModelBase):
@@ -1061,6 +558,29 @@ class _AdviceOtherWorkEnv(_ScoringModelBase):
         if len(work_env.structures) > 1 or len(work_env.sectors) > 1:
             return _Score(2)
         return _Score(0)
+
+
+class _AdviceVolunteer(_ScoringModelBase):
+    """A scoring model to trigger the "Try volunteering" Advice."""
+
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        association_names = [m.association_name for m in project.volunteering_missions().missions]
+
+        # Deduplicate association names.
+        seen = set()
+        association_names = [n for n in association_names if not (n in seen or seen.add(n))]
+
+        return project_pb2.VolunteerData(association_names=association_names[:3])
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        missions = project.volunteering_missions().missions
+        if not missions:
+            return _Score(0)
+        if project.details.job_search_length_months < 9:
+            return _Score(1)
+        return _Score(2)
 
 
 class _AdviceImproveInterview(_ScoringModelBase):
@@ -1260,7 +780,7 @@ class _AdviceCommuteScoringModel(_ScoringModelBase):
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
-        return project_pb2.CommuteData(cities=project.list_nearby_cities())
+        return project_pb2.CommuteData(cities=[c.name for c in project.list_nearby_cities()])
 
     def score(self, project):
         if project.list_nearby_cities():
@@ -1325,12 +845,6 @@ def get_scoring_model(scoring_model_name):
     return None
 
 
-GROUP_SCORING_MODELS = {
-    chantier_pb2.IMPROVE_SUCCESS_RATE: 'blue-group',
-    chantier_pb2.UNLOCK_NEW_LEADS: 'green-group',
-}
-
-
 SCORING_MODELS = {
     '': _ScoringModelBase(),
     'advice-association-help': _AdviceAssociationHelp(),
@@ -1346,39 +860,9 @@ SCORING_MODELS = {
     'advice-more-offer-answers': _LowPriorityAdvice(user_pb2.NO_OFFER_ANSWERS),
     'advice-other-work-env': _AdviceOtherWorkEnv(),
     'advice-use-good-network': _ImproveYourNetworkScoringModel(3),
+    'advice-volunteer': _AdviceVolunteer(),
     'advice-wow-baker': _JobFilter(job_groups={'D1102'}, exclude_jobs={'12006'}),
-    'chantier-about-job': _LearnMoreAboutJobScoringModel(),
-    'chantier-apprentissage': _ApprentissageScoringModel(),
-    'chantier-atypical-profile': _ShowcaseAtypicalProfileScoringModel(),
-    'chantier-contract-type(CDD)': _AcceptContractTypeScoringModel([
-        job_pb2.CDD_OVER_3_MONTHS, job_pb2.CDD_LESS_EQUAL_3_MONTHS]),
-    'chantier-contract-type(interim)': _AcceptContractTypeScoringModel([job_pb2.INTERIM]),
-    'chantier-driving-license(B)': _ObtainDrivingLicenseScoringModel(job_pb2.CAR),
-    'chantier-freelance': _FreelanceScoringModel(),
-    'chantier-gender-discriminations': _FightGenderDiscriminationScoringModel(),
-    'chantier-get-more-offers': _GetMoreOffersScoringModel(),
-    'chantier-international': _InternationalJobScoringModel(),
-    'chantier-interview': _ImproveInterviewScoringModel(),
-    'chantier-job-discovery': _JobDiscoveryScoringModel(),
-    'chantier-mobility-without-move(dep)': _MobilityWithoutMoveScoringModel(
-        target_area_type=geo_pb2.DEPARTEMENT, scaling_factor=.75),
-    'chantier-mobility-without-move(reg)': _MobilityWithoutMoveScoringModel(
-        target_area_type=geo_pb2.REGION, scaling_factor=.5),
-    'chantier-organize': _ImproveOrganization(),
-    'chantier-part-time': _PartTimeScoringModel(),
-    'chantier-professionnalisation': _ProfessionnalisationScoringModel(),
-    'chantier-reduce-salary': _ReduceSalaryScoringModel(),
-    'chantier-relocate(reg)': _RelocateScoringModel(
-        target_area_type=geo_pb2.REGION, scaling_factor=.5),
-    'chantier-relocate(fra)': _RelocateScoringModel(
-        target_area_type=geo_pb2.COUNTRY, scaling_factor=.25),
-    'chantier-resume': _ImproveCVScoringModel(),
     'chantier-spontaneous-application': _SpontaneousApplicationScoringModel(),
-    'chantier-stand-out': _StandOutFromCompetitionScoringModel(),
-    'chantier-stay-motivated': _StayMotivatedScoringModel(),
-    'chantier-subsidized-contract': _SubsidizedContractScoringModel(),
-    'chantier-training': _TrainingScoringModel(),
-    'chantier-use-network': _UseYourNetworkScoringModel(),
     'for-complex-application': _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS),
     'for-discovery': _ProjectFilter(
         lambda project: project.intensity == project_pb2.PROJECT_FIGURING_INTENSITY),
@@ -1411,8 +895,6 @@ SCORING_MODELS = {
     'for-unqualified(bac)': _UserProfileFilter(
         lambda user: user.highest_degree <= job_pb2.BAC_BACPRO),
     'for-women': _UserProfileFilter(lambda user: user.gender == user_pb2.FEMININE),
-    GROUP_SCORING_MODELS[chantier_pb2.IMPROVE_SUCCESS_RATE]: _BlueTargetScoringModel(),
-    GROUP_SCORING_MODELS[chantier_pb2.UNLOCK_NEW_LEADS]: _GreenTargetScoringModel(),
 }
 
 

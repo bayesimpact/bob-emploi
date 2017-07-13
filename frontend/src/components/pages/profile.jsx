@@ -12,7 +12,7 @@ import {Modal, ModalCloseButton, ModalHeader} from 'components/modal'
 import {onboardingComplete} from 'store/main_selectors'
 
 import {getOnboardingStep, gotoNextStep, gotoPreviousStep,
-        onboardingStepCount} from './profile/onboarding'
+  onboardingStepCount} from './profile/onboarding'
 import {AccountStep} from './profile/account'
 import {GeneralStep} from './profile/general'
 import {FrustrationsStep} from './profile/frustrations'
@@ -86,10 +86,10 @@ class OnboardingView extends React.Component {
     }
     return <div style={style}>
       <CurrentStepComponent
-          onSubmit={this.handleSubmit} onBack={this.handleStepBack}
-          isShownAsStepsDuringOnboarding={true}
-          stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount}
-          profile={userProfile} />
+        onSubmit={this.handleSubmit} onBack={this.handleStepBack}
+        isShownAsStepsDuringOnboarding={true}
+        stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount}
+        profile={userProfile} />
     </div>
   }
 }
@@ -111,25 +111,25 @@ class PageView extends React.Component {
     const {isAccountDeletionModalShown} = this.state
     return <div style={{...Styles.CENTERED_COLUMN, paddingBottom: 100}}>
       <AccountDeletionModal
-          isShown={isAccountDeletionModalShown}
-          onClose={() => this.setState({isAccountDeletionModalShown: false})} />
+        isShown={isAccountDeletionModalShown}
+        onClose={() => this.setState({isAccountDeletionModalShown: false})} />
       {PAGE_VIEW_STEPS.map((step, i) => {
         const StepComponent = step.component
         return <StepComponent
-            key={i}
-            onSubmit={onChange}
-            fastForward={() => {}}
-            style={{marginTop: 40}}
-            // Hide previous button.
-            onPreviousButtonClick={null}
-            nextButtonContent="Sauvegarder"
-            profile={userProfile}
-            featuresEnabled={featuresEnabled} />
+          key={i}
+          onSubmit={onChange}
+          fastForward={() => {}}
+          style={{marginTop: 40}}
+          // Hide previous button.
+          onPreviousButtonClick={null}
+          nextButtonContent="Sauvegarder"
+          profile={userProfile}
+          featuresEnabled={featuresEnabled} />
       })}
       <div style={{display: 'flex', flexDirection: 'row-reverse', marginTop: 45, width: '100%'}}>
         <Button
-            type="discreet"
-            onClick={() => this.setState({isAccountDeletionModalShown: true})}>
+          type="discreet"
+          onClick={() => this.setState({isAccountDeletionModalShown: true})}>
           Supprimer mon compte
         </Button>
       </div>
@@ -172,21 +172,21 @@ class ProfilePage extends React.Component {
       backgroundColor: Colors.BACKGROUND_GREY,
     }
     return <PageWithNavigationBar
-          style={style} page="profile" isContentScrollable={true}
-          ref={page => {
-            this.page = page
-          }}
-          isChatButtonShown={!isShownAsStepsDuringOnboarding}>
+      style={style} page="profile" isContentScrollable={true}
+      ref={page => {
+        this.page = page
+      }}
+      isChatButtonShown={!isShownAsStepsDuringOnboarding}>
       {isShownAsStepsDuringOnboarding ? (
         <OnboardingView
-            dispatch={dispatch}
-            onProfileSave={this.handleProfileSave}
-            onNewPage={() => this.page && this.page.scrollTo(0)}
-            stepName={params.stepName}
-            userProfile={user.profile} />
+          dispatch={dispatch}
+          onProfileSave={this.handleProfileSave}
+          onNewPage={() => this.page && this.page.scrollTo(0)}
+          stepName={params.stepName}
+          userProfile={user.profile} />
       ) : <PageView
-          userProfile={user.profile} onChange={this.handleProfileSave}
-          featuresEnabled={user.featuresEnabled} />
+        userProfile={user.profile} onChange={this.handleProfileSave}
+        featuresEnabled={user.featuresEnabled} />
       }
     </PageWithNavigationBar>
   }
@@ -242,14 +242,14 @@ class AccountDeletionModalBase extends React.Component {
       </div>
       <div style={buttonsBarStyle}>
         <Button
-            onClick={onClose}
-            style={{marginRight: 13}}
-            type="back">
+          onClick={onClose}
+          style={{marginRight: 13}}
+          type="back">
           Annuler
         </Button>
         <Button
-            onClick={this.handleDeletionClick}
-            type="deletion">
+          onClick={this.handleDeletionClick}
+          type="deletion">
           Supprimer définitivement mon compte
         </Button>
       </div>

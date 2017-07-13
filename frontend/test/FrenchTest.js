@@ -1,5 +1,4 @@
-const chai = require('chai')
-const expect = chai.expect
+import {expect} from 'chai'
 import {lowerFirstLetter, ofCityPrefix, maybeContract, maybeContractPrefix,
   toTitleCase} from 'store/french'
 
@@ -102,12 +101,16 @@ describe('toTitleCase', () => {
     expect(toTitleCase('CARREFOUR')).to.eq('Carrefour')
   })
 
+  it('should capitalize the first word ', () => {
+    expect(toTitleCase('LES DELICES')).to.eq('Les Delices')
+  })
+
   it('should capitalize all words', () => {
-    expect(toTitleCase('LES DELICES DE LECTOURE')).to.eq('Les Delices De Lectoure')
+    expect(toTitleCase('assurance TOUT RISQUES')).to.eq('Assurance Tout Risques')
   })
 
   it('should capitalize after dashes', () => {
-    expect(toTitleCase('LE BON PRET-A-PORTER')).to.eq('Le Bon Pret-A-Porter')
+    expect(toTitleCase('THEOREME SHWARTZ-KOPZ-BIDULE')).to.eq('Theoreme Shwartz-Kopz-Bidule')
   })
 
   it('should capitalize lowercase words', () => {

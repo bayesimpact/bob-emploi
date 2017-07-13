@@ -1,10 +1,13 @@
 import {browserHistory} from 'react-router'
 import sha1 from 'sha1'
 
-import config from 'config'
-import {api} from './api'
-import {newProject} from 'store/project'
+import {adviceTipsGet, dashboardExportGet, jobBoardsGet, associationsGet,
+  volunteeringMissionsGet, jobsGet, projectRequirementsGet, userDelete,
+  markUsedAndRetrievePost, userPost, feedbackPost, userAuthenticate, saveLikes,
+  resetPasswordPost, migrateUserToAdvisorPost, commutingCitiesGet, resumeTipsGet,
+  interviewTipsGet} from './api'
 import {splitFullName} from 'store/auth'
+import {newProject} from 'store/project'
 import {Gender, Situation, JobSearchPhase} from 'api/user'
 import {Routes} from 'components/url'
 
@@ -33,15 +36,18 @@ export const FINISH_PROJECT_EXPERIENCE = 'FINISH_PROJECT_EXPERIENCE'
 export const MOVE_USER_DATES_BACK_1_DAY = 'MOVE_USER_DATES_BACK_1_DAY'
 export const GET_DASHBOARD_EXPORT = 'GET_DASHBOARD_EXPORT'
 export const SELECT_ADVICE = 'SELECT_ADVICE'
-export const DECLINE_WHOLE_ADVICE = 'DECLINE_WHOLE_ADVICE'
 export const LIKE_OR_DISLIKE_FEATURE = 'LIKE_OR_DISLIKE_FEATURE'
 export const MIGRATE_USER_TO_ADVISOR = 'MIGRATE_USER_TO_ADVISOR'
 export const MODIFY_PROJECT = 'MODIFY_PROJECT'
+export const SCORE_ADVICE = 'SCORE_ADVICE'
+export const MARK_CHANGELOG_AS_SEEN = 'MARK_CHANGELOG_AS_SEEN'
+export const MARK_NOTIFICATION_AS_SEEN = 'MARK_NOTIFICATION_AS_SEEN'
 
 // App actions.
 
 export const CLOSE_LOGIN_MODAL = 'CLOSE_LOGIN_MODAL'
 export const OPEN_LOGIN_MODAL = 'OPEN_LOGIN_MODAL'
+export const OPEN_REGISTER_MODAL = 'OPEN_REGISTER_MODAL'
 export const GET_PROJECT_REQUIREMENTS = 'GET_PROJECT_REQUIREMENTS'
 export const HIDE_TOASTER_MESSAGE = 'HIDE_TOASTER_MESSAGE'
 export const DISPLAY_TOAST_MESSAGE = 'DISPLAY_TOAST_MESSAGE'
@@ -59,11 +65,22 @@ export const SHOW_ALL_TIPS = 'SHOW_ALL_TIPS'
 export const GET_ASSOCIATIONS = 'GET_ASSOCIATIONS'
 export const GET_JOB_BOARDS = 'GET_JOB_BOARDS'
 export const GET_JOBS = 'GET_JOBS'
+export const GET_VOLUNTEERING_MISSIONS = 'GET_VOLUNTEERING_MISSIONS'
+export const GET_COMMUTING_CITIES = 'GET_COMMUTING_CITIES'
+export const GET_INTERVIEW_TIPS = 'GET_INTERVIEW_TIPS'
+export const GET_RESUME_TIPS = 'GET_RESUME_TIPS'
 export const SEND_ADVICE_FEEDBACK = 'SEND_ADVICE_FEEDBACK'
+export const SEND_CHANGELOG_FEEDBACK = 'SEND_CHANGELOG_FEEDBACK'
 export const SEND_PROFESSIONAL_FEEDBACK = 'SEND_PROFESSIONAL_FEEDBACK'
+export const SEND_PROJECT_FEEDBACK = 'SEND_PROJECT_FEEDBACK'
 export const ALL_ADVICES_READ = 'ALL_ADVICES_READ'
 export const SHARE_PRODUCT_TO_NETWORK = 'SHARE_PRODUCT_TO_NETWORK'
 export const TRACK_INITIAL_UTM_CONTENT = 'TRACK_INITIAL_UTM_CONTENT'
+export const BOB_SCORE_IS_SHOWN = 'BOB_SCORE_IS_SHOWN'
+export const SEND_NEW_ADVICE_IDEA = 'SEND_NEW_ADVICE_IDEA'
+
+// Logging only.
+const LANDING_PAGE_SECTION_IS_SHOWN = 'LANDING_PAGE_SECTION_IS_SHOWN'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
@@ -72,9 +89,9 @@ export const actionTypesToLog = {
   [ADVICE_PAGE_IS_SHOWN]: 'Advice page shown',
   [ALL_ADVICES_READ]: 'All advice cards have been read',
   [AUTHENTICATE_USER]: 'Log in',
+  [BOB_SCORE_IS_SHOWN]: 'Bob Score is shown',
   [CREATE_PROJECT]: 'Create project',
   [CREATE_PROJECT_SAVE]: 'Save project',
-  [DECLINE_WHOLE_ADVICE]: 'Report the whole advice as useless',
   [DELETE_USER_DATA]: 'Delete user',
   [DISPLAY_TOAST_MESSAGE]: 'Display toast message',
   [FINISH_PROFILE_FRUSTRATIONS]: 'Finish profile frustrations',
@@ -84,21 +101,29 @@ export const actionTypesToLog = {
   [FINISH_PROJECT_GOAL]: 'Finish project goal',
   [GET_DASHBOARD_EXPORT]: 'View dashbord export',
   [GET_USER_DATA]: 'Load app',
+  [LANDING_PAGE_SECTION_IS_SHOWN]: 'A landing page section is shown',
   [LIKE_OR_DISLIKE_FEATURE]: 'Like/Dislike feature',
   [LOAD_LANDING_PAGE]: 'Load landing page',
   [LOGOUT]: 'Log out',
+  [MARK_CHANGELOG_AS_SEEN]: 'Mark Changelog as seen',
+  [MARK_NOTIFICATION_AS_SEEN]: 'Mark notification as seen',
   [MIGRATE_USER_TO_ADVISOR]: 'Migrate to advisor',
   [MODIFY_PROJECT]: 'Modify project',
   [MOVE_USER_DATES_BACK_1_DAY]: 'Time travel!',
   [OPEN_LOGIN_MODAL]: 'Open login modal',
+  [OPEN_REGISTER_MODAL]: 'Open register modal',
   [OPEN_TIP_EXTERNAL_LINK]: 'Open tip external link',
   [READ_TIP]: 'Open tip',
   [REGISTER_USER]: 'Register new user',
   [RESET_USER_PASSWORD]: 'Ask password email',
+  [SCORE_ADVICE]: 'Star/Unstar an advice card',
   [SEE_ADVICE]: 'See advice in dashboard',
   [SELECT_ADVICE]: 'Select advice',
   [SEND_ADVICE_FEEDBACK]: 'Send advice feedback',
+  [SEND_CHANGELOG_FEEDBACK]: 'Send feedback from the changelog modal',
+  [SEND_NEW_ADVICE_IDEA]: 'Send a new advice idea',
   [SEND_PROFESSIONAL_FEEDBACK]: 'Send feedback from professional page',
+  [SEND_PROJECT_FEEDBACK]: 'Send project feedback',
   [SET_USER_PROFILE]: 'Update profile',
   [SHARE_PRODUCT_TO_NETWORK]: 'Share product to network',
   [SHOW_ALL_TIPS]: 'Show all tips',
@@ -131,12 +156,24 @@ function adviceCardIsShown(project, advice) {
   return dispatch => dispatch({advice, project, type: ADVICE_CARD_IS_SHOWN})
 }
 
+function bobScoreIsShown(project) {
+  return dispatch => dispatch({project, type: BOB_SCORE_IS_SHOWN})
+}
+
 function displayToasterMessage(error) {
   return dispatch => dispatch({error, type: DISPLAY_TOAST_MESSAGE})
 }
 
+function landingPageSectionIsShown(sectionName) {
+  return dispatch => dispatch({type: LANDING_PAGE_SECTION_IS_SHOWN, visualElement: sectionName})
+}
+
 function openLoginModal(defaultValues, visualElement) {
   return {defaultValues, type: OPEN_LOGIN_MODAL, visualElement}
+}
+
+function openRegistrationModal(defaultValues, visualElement) {
+  return {defaultValues, type: OPEN_REGISTER_MODAL, visualElement}
 }
 
 function openTipExternalLink(action) {
@@ -195,19 +232,19 @@ function getAdviceTips(project, advice) {
   return (dispatch, getState) => {
     const {user} = getState()
     return dispatch(wrapAsyncAction(
-      GET_ADVICE_TIPS, () => api.adviceTipsGet(user, project, advice), {advice, project}))
+      GET_ADVICE_TIPS, () => adviceTipsGet(user, project, advice), {advice, project}))
   }
 }
 
 function getDashboardExport(dashboardExportId) {
-  return wrapAsyncAction(GET_DASHBOARD_EXPORT, () => api.dashboardExportGet(dashboardExportId))
+  return wrapAsyncAction(GET_DASHBOARD_EXPORT, () => dashboardExportGet(dashboardExportId))
 }
 
 function getJobBoards(project) {
   return (dispatch, getState) => {
     const {user} = getState()
     return dispatch(wrapAsyncAction(
-      GET_JOB_BOARDS, () => api.jobBoardsGet(user, project), {project}))
+      GET_JOB_BOARDS, () => jobBoardsGet(user, project), {project}))
   }
 }
 
@@ -215,13 +252,44 @@ function getAssociations(project) {
   return (dispatch, getState) => {
     const {user} = getState()
     return dispatch(wrapAsyncAction(
-      GET_ASSOCIATIONS, () => api.associationsGet(user, project), {project}))
+      GET_ASSOCIATIONS, () => associationsGet(user, project), {project}))
+  }
+}
+
+function getInterviewTips(project) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    return dispatch(wrapAsyncAction(GET_INTERVIEW_TIPS,
+      () => interviewTipsGet(user, project), {project}))
+  }
+}
+
+function getResumeTips(project) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    return dispatch(wrapAsyncAction(GET_RESUME_TIPS, () => resumeTipsGet(user, project), {project}))
+  }
+}
+
+function getVolunteeringMissions(project) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    return dispatch(wrapAsyncAction(
+      GET_VOLUNTEERING_MISSIONS, () => volunteeringMissionsGet(user, project), {project}))
+  }
+}
+
+function getCommutingCities(project) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    return dispatch(wrapAsyncAction(
+      GET_COMMUTING_CITIES, () => commutingCitiesGet(user, project), {project}))
   }
 }
 
 function getJobs({romeId}) {
   return dispatch => {
-    return dispatch(wrapAsyncAction(GET_JOBS, () => api.jobsGet(romeId), {romeId}))
+    return dispatch(wrapAsyncAction(GET_JOBS, () => jobsGet(romeId), {romeId}))
   }
 }
 
@@ -229,19 +297,19 @@ function getJobs({romeId}) {
 function fetchProjectRequirements(project) {
   return wrapAsyncAction(
     GET_PROJECT_REQUIREMENTS,
-    () => api.projectRequirementsGet(project),
+    () => projectRequirementsGet(project),
     {project},
   )
 }
 
 function deleteUser(userId) {
-  return wrapAsyncAction(DELETE_USER_DATA, () => api.userDelete(userId))
+  return wrapAsyncAction(DELETE_USER_DATA, () => userDelete(userId))
 }
 
 function fetchUser(userId, ignoreFailure) {
   return dispatch => {
     return dispatch(
-        wrapAsyncAction(GET_USER_DATA, () => api.markUsedAndRetrievePost(userId), {ignoreFailure}))
+      wrapAsyncAction(GET_USER_DATA, () => markUsedAndRetrievePost(userId), {ignoreFailure}))
   }
 }
 
@@ -251,7 +319,7 @@ function saveUser(user) {
       ...user,
       initialUtmContent: getState().app.initialUtmContent || '',
     }
-    return dispatch(wrapAsyncAction(POST_USER_DATA, () => api.userPost(trackedUser))).
+    return dispatch(wrapAsyncAction(POST_USER_DATA, () => userPost(trackedUser))).
       then(response => {
         if (response.appNotAvailable) {
           browserHistory.push(Routes.APP_NOT_AVAILABLE_PAGE)
@@ -269,35 +337,48 @@ function advicePageIsShown(project, advice) {
   }
 }
 
-function sendAdviceFeedback(project, advice, feedback) {
+function sendFeedback(type, source, feedback, extraFields) {
   return (dispatch, getState) => {
     dispatch(wrapAsyncAction(
-      SEND_ADVICE_FEEDBACK,
-      () => api.feedbackPost({
-        adviceId: advice.adviceId,
+      type,
+      () => feedbackPost({
         feedback,
-        projectId: project.projectId,
-        source: 'ADVICE_FEEDBACK',
+        source,
         userId: getState().user.userId,
-      }),
-      {advice, feedback, project},
-    )).then(() => dispatch(displayToasterMessage(
-      "Merci ! Cela nous permettra d'améliorer nos conseils")))
-  }
-}
-
-function sendProfessionalFeedback(feedback) {
-  return (dispatch, getState) => {
-    dispatch(wrapAsyncAction(
-      SEND_PROFESSIONAL_FEEDBACK,
-      () => api.feedbackPost({
-        feedback,
-        source: 'PROFESSIONAL_PAGE_FEEDBACK',
-        userId: getState().user.userId,
+        ...extraFields,
       }),
       {feedback},
     )).then(() => dispatch(displayToasterMessage('Merci pour ce retour')))
   }
+}
+
+function sendAdviceFeedback(project, advice, feedback) {
+  return sendFeedback(SEND_ADVICE_FEEDBACK, 'ADVICE_FEEDBACK', feedback, {
+    adviceId: advice.adviceId,
+    projectId: project.projectId,
+  })
+}
+
+function sendNewAdviceIdea({projectId}, feedback) {
+  return sendFeedback(SEND_NEW_ADVICE_IDEA, 'NEW_ADVICE_FEEDBACK', feedback, {
+    projectId,
+  })
+}
+
+function sendProfessionalFeedback(feedback) {
+  return sendFeedback(SEND_PROFESSIONAL_FEEDBACK, 'PROFESSIONAL_PAGE_FEEDBACK', feedback)
+}
+
+function sendProjectFeedback(project, feedback) {
+  return (dispatch, getState) => {
+    dispatch({feedback, project, type: SEND_PROJECT_FEEDBACK})
+    return dispatch(saveUser(getState().user)).
+      then(() => dispatch(displayToasterMessage('Merci pour ce retour !')))
+  }
+}
+
+function sendChangelogFeedback(feedback) {
+  return sendFeedback(SEND_CHANGELOG_FEEDBACK, 'CHANGELOG_FEEDBACK', feedback)
 }
 
 const _FACEBOOK_GENDER_MAPPING = {
@@ -306,6 +387,7 @@ const _FACEBOOK_GENDER_MAPPING = {
 }
 
 function facebookAuthenticateUser(facebookAuth, mockApi) {
+  const authenticate = mockApi ? mockApi.userAuthenticate : userAuthenticate
   // The facebookAuth object contains:
   //  - the email address: email
   //  - the facebook user ID: userID
@@ -313,7 +395,7 @@ function facebookAuthenticateUser(facebookAuth, mockApi) {
   //  - the URL of a profile picture: picture.data.url
   //  - the user's gender: gender
   //  - the user's birth day: birthday
-  return wrapAsyncAction(AUTHENTICATE_USER, () => (mockApi || api).userAuthenticate({
+  return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
     facebookSignedRequest: facebookAuth.signedRequest,
   }).then(authResponse => {
     // The signed request sent to the server only contains the facebook ID. If
@@ -358,7 +440,7 @@ function facebookAuthenticateUser(facebookAuth, mockApi) {
 }
 
 function googleAuthenticateUser(googleAuth) {
-  return wrapAsyncAction(AUTHENTICATE_USER, () => api.userAuthenticate({
+  return wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
     googleTokenId: googleAuth.getAuthResponse().id_token,
   }).then(authResponse => {
     // The signed request sent to the server only contains some fields. If it
@@ -384,12 +466,12 @@ function googleAuthenticateUser(googleAuth) {
 }
 
 function emailCheck(email) {
-  return wrapAsyncAction(EMAIL_CHECK, () => api.userAuthenticate({email}))
+  return wrapAsyncAction(EMAIL_CHECK, () => userAuthenticate({email}))
 }
 
 function registerNewUser(email, password, firstName, lastName) {
   return dispatch => {
-    return dispatch(wrapAsyncAction(AUTHENTICATE_USER, () => api.userAuthenticate({
+    return dispatch(wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
       email,
       firstName,
       hashedPassword: sha1(email + password),
@@ -402,27 +484,41 @@ function likeOrDislikeFeature(feature, likeScore) {
   return (dispatch, getState) => {
     dispatch({feature, likeScore, type: LIKE_OR_DISLIKE_FEATURE})
     const {userId} = getState().user
-    dispatch(wrapAsyncAction(SAVE_LIKES, () => api.saveLikes(userId, {[feature]: likeScore})))
+    dispatch(wrapAsyncAction(SAVE_LIKES, () => saveLikes(userId, {[feature]: likeScore})))
   }
 }
 
 function loginUser(email, password, hashSalt) {
   return dispatch => {
     return dispatch(wrapAsyncAction(
-        AUTHENTICATE_USER, () => api.userAuthenticate({
-          email, hashSalt, hashedPassword: sha1(hashSalt + sha1(email + password))})))
+      AUTHENTICATE_USER, () => userAuthenticate({
+        email, hashSalt, hashedPassword: sha1(hashSalt + sha1(email + password))})))
+  }
+}
+
+function markChangelogAsSeen(changelog) {
+  return (dispatch, getState) => {
+    dispatch({changelog, type: MARK_CHANGELOG_AS_SEEN})
+    dispatch(saveUser(getState().user))
+  }
+}
+
+function markNotificationAsSeen(notification) {
+  return (dispatch, getState) => {
+    dispatch({notification, type: MARK_NOTIFICATION_AS_SEEN})
+    dispatch(saveUser(getState().user))
   }
 }
 
 function migrateUserToAdvisor() {
   return (dispatch, getState) => {
     return dispatch(wrapAsyncAction(
-      MIGRATE_USER_TO_ADVISOR, () => api.migrateUserToAdvisor(getState().user)))
+      MIGRATE_USER_TO_ADVISOR, () => migrateUserToAdvisorPost(getState().user)))
   }
 }
 
 function resetPassword(email, password, authToken) {
-  return wrapAsyncAction(AUTHENTICATE_USER, () => api.userAuthenticate({
+  return wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
     authToken, email, hashedPassword: sha1(email + password)}))
 }
 
@@ -449,21 +545,10 @@ function setUserProfile(userProfile, shouldAlsoSaveUser, type) {
   }
 }
 
-// TODO(pascal): Rename to get rid of "whole" term that confuses some of us.
-function declineWholeAdvice(project, uselessAdviceFeedback) {
+function scoreAdvice(project, advice, score) {
   return (dispatch, getState) => {
-    dispatch({project, type: DECLINE_WHOLE_ADVICE, uselessAdviceFeedback})
-    return dispatch(saveUser(getState().user)).then(() => {
-      if (uselessAdviceFeedback) {
-        dispatch(displayToasterMessage(
-          'Merci pour votre retour ! ' +
-          'Nous allons travailler sur ces améliorations.'))
-      } else {
-        dispatch(displayToasterMessage(
-          `Désolés, nous allons continuer à améliorer ${config.productName} ` +
-          'pour mieux vous aider.'))
-      }
-    })
+    dispatch({advice, project, score, type: SCORE_ADVICE})
+    return dispatch(saveUser(getState().user))
   }
 }
 
@@ -482,7 +567,7 @@ function createFirstProject() {
     const project = projects && projects[0] || {}
     dispatch({project, type: CREATE_PROJECT})
     // Don't use normal saveUser to be able to distinguish between project creation and user saving.
-    return dispatch(wrapAsyncAction(CREATE_PROJECT_SAVE, () => api.userPost(getState().user)))
+    return dispatch(wrapAsyncAction(CREATE_PROJECT_SAVE, () => userPost(getState().user)))
   }
 }
 
@@ -503,19 +588,22 @@ function moveUserDatesBackOneDay() {
 }
 
 function askPasswordReset(email) {
-  return wrapAsyncAction(RESET_USER_PASSWORD, () => api.resetPasswordPost(email))
+  return wrapAsyncAction(RESET_USER_PASSWORD, () => resetPasswordPost(email))
 }
 
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
-        readTip, facebookAuthenticateUser, sendAdviceFeedback, modifyProject,
-        googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
-        createFirstProject, fetchProjectRequirements, resetPassword,
-        moveUserDatesBackOneDay, editFirstProject, sendProfessionalFeedback,
-        getDashboardExport, displayToasterMessage, closeLoginModalAction,
-        openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
-        loadLandingPageAction, deleteUser, askPasswordReset, selectAdvice,
-        openTipExternalLink, declineWholeAdvice, advicePageIsShown, seeAdvice,
-        adviceCardIsShown, likeOrDislikeFeature, getAdviceTips, getAssociations,
-        showAllTips, migrateUserToAdvisor, getJobBoards, getJobs,
-        allAdvicesReadAction, shareProductToNetwork, trackInitialUtmContent,
+  readTip, facebookAuthenticateUser, sendAdviceFeedback, modifyProject,
+  googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
+  createFirstProject, fetchProjectRequirements, resetPassword,
+  moveUserDatesBackOneDay, editFirstProject, sendProfessionalFeedback,
+  getDashboardExport, displayToasterMessage, closeLoginModalAction,
+  openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
+  loadLandingPageAction, deleteUser, askPasswordReset, selectAdvice,
+  openTipExternalLink, advicePageIsShown, seeAdvice, markChangelogAsSeen,
+  adviceCardIsShown, likeOrDislikeFeature, getAdviceTips, getAssociations,
+  showAllTips, migrateUserToAdvisor, getJobBoards, getJobs, markNotificationAsSeen,
+  allAdvicesReadAction, shareProductToNetwork, trackInitialUtmContent,
+  getVolunteeringMissions, sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
+  landingPageSectionIsShown, getCommutingCities, bobScoreIsShown, getResumeTips,
+  getInterviewTips, openRegistrationModal, sendNewAdviceIdea,
 }

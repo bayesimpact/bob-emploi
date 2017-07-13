@@ -27,12 +27,6 @@ class ZendeskChatButton extends React.Component {
     }
   }
 
-  componentWillUnmount() {
-    if (this.props.isShown) {
-      this.hide()
-    }
-  }
-
   componentWillReceiveProps(nextProps) {
     if (!!nextProps.isShown === !!this.props.isShown) {
       return
@@ -40,6 +34,12 @@ class ZendeskChatButton extends React.Component {
     if (nextProps.isShown) {
       this.show()
     } else {
+      this.hide()
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.props.isShown) {
       this.hide()
     }
   }

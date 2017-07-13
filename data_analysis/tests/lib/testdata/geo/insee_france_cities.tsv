@@ -1,0 +1,122 @@
+ACTUAL	CHEFLIEU	CDC	RANG	REG	DEP	COM	AR	CT	MODIF	POLE	TNCC	ARTMAJ	NCC	ARTMIN	NCCENR	ARTICLCT	NCCCT
+1	0	0		84	01	001	2	08	0		5	(L')	ABERGEMENT-CLEMENCIAT	(L')	Abergement-Clémenciat		Châtillon-sur-Chalaronne
+1	0	0		84	01	002	1	01	0		5	(L')	ABERGEMENT-DE-VAREY	(L')	Abergement-de-Varey		Ambérieu-en-Bugey
+3				84	01	003			1	01165	1		AMAREINS		Amareins		
+1	1	0		84	01	004	1	01	1		1		AMBERIEU-EN-BUGEY		Ambérieu-en-Bugey		Ambérieu-en-Bugey
+1	0	0		84	01	005	2	22	0		1		AMBERIEUX-EN-DOMBES		Ambérieux-en-Dombes		Villars-les-Dombes
+1	0	0		84	01	006	1	04	0		1		AMBLEON		Ambléon		Belley
+1	0	0		84	01	007	1	01	0		1		AMBRONAY		Ambronay		Ambérieu-en-Bugey
+1	0	0		84	01	008	1	01	0		1		AMBUTRIX		Ambutrix		Ambérieu-en-Bugey
+1	0	0		84	01	009	1	04	0		1		ANDERT-ET-CONDON		Andert-et-Condon		Belley
+1	0	0		28	14	334	3	17	0		5	(L')	HOTELLERIE	(L')	Hôtellerie		Lisieux
+1	0	0		52	49	158	4	20	0		5	(L')	HOTELLERIE-DE-FLEE	(L')	Hôtellerie-de-Flée		Segré
+1	0	0		76	09	180	2	06	0		0		MANSES		Manses		Mirepoix
+1	0	0		75	16	008	1	05	0		1		AMBERAC		Ambérac		Boixe-et-Manslois
+1	0	0		75	16	011	1	05	0		1		ANAIS		Anais		Boixe-et-Manslois
+1	0	0		75	16	023	3	05	1		1		AUNAC		Aunac		Boixe-et-Manslois
+1	0	0		75	16	024	1	05	1		1		AUSSAC-VADALLE		Aussac-Vadalle		Boixe-et-Manslois
+1	0	0		75	16	033	3	05	1		0		BAYERS		Bayers		Boixe-et-Manslois
+1	0	0		75	16	068	3	05	1		0		CELLEFROUIN		Cellefrouin		Boixe-et-Manslois
+1	0	0		75	16	069	3	05	1		0		CELLETTES		Cellettes		Boixe-et-Manslois
+1	0	0		75	16	081	1	05	0		3	(LA)	CHAPELLE	(La)	Chapelle		Boixe-et-Manslois
+1	0	0		75	16	196	3	05	1		0		LUXE		Luxé		Boixe-et-Manslois
+1	0	0		75	16	200	1	05	0		0		MAINE-DE-BOIXE		Maine-de-Boixe		Boixe-et-Manslois
+1	0	0		75	16	206	3	05	1		0		MANSLE		Mansle		Boixe-et-Manslois
+1	0	0		75	16	226	1	05	0		0		MONTIGNAC-CHARENTE		Montignac-Charente		Boixe-et-Manslois
+1	0	0		75	16	237	3	05	1		0		MOUTON		Mouton		Boixe-et-Manslois
+1	0	0		75	16	238	3	05	1		0		MOUTONNEAU		Moutonneau		Boixe-et-Manslois
+1	0	0		75	16	241	1	05	0		0		NANCLARS		Nanclars		Boixe-et-Manslois
+1	0	0		75	16	272	3	05	1		0		PUYREAUX		Puyréaux		Boixe-et-Manslois
+1	0	0		75	16	295	1	05	0		0		SAINT-AMANT-DE-BOIXE		Saint-Amant-de-Boixe		Boixe-et-Manslois
+1	0	0		75	16	296	3	05	1		0		SAINT-AMANT-DE-BONNIEURE		Saint-Amant-de-Bonnieure		Boixe-et-Manslois
+1	0	0		75	16	094	3	05	1		0		CHENOMMET		Chenommet		Boixe-et-Manslois
+1	0	0		75	16	095	3	05	1		0		CHENON		Chenon		Boixe-et-Manslois
+1	0	0		75	16	108	1	05	0		0		COULONGES		Coulonges		Boixe-et-Manslois
+1	0	0		75	16	140	3	05	1		0		FONTCLAIREAU		Fontclaireau		Boixe-et-Manslois
+1	0	0		75	16	141	3	05	1		0		FONTENILLE		Fontenille		Boixe-et-Manslois
+1	0	0		75	16	173	3	05	1		0		JUILLE		Juillé		Boixe-et-Manslois
+1	0	0		75	16	184	3	05	1		0		LICHERES		Lichères		Boixe-et-Manslois
+1	0	0		75	16	191	3	05	1		0		LONNES		Lonnes		Boixe-et-Manslois
+1	0	0		75	16	300	3	05	1		0		SAINT-ANGEAU		Saint-Angeau		Boixe-et-Manslois
+1	0	0		75	16	307	3	05	1		0		SAINT-CIERS-SUR-BONNIEURE		Saint-Ciers-sur-Bonnieure		Boixe-et-Manslois
+1	0	0		75	16	309	3	05	1		0		SAINTE-COLOMBE		Sainte-Colombe		Boixe-et-Manslois
+1	0	0		75	16	318	3	05	1		0		SAINT-FRONT		Saint-Front		Boixe-et-Manslois
+1	0	0		75	16	326	3	05	1		0		SAINT-GROUX		Saint-Groux		Boixe-et-Manslois
+1	0	0		75	16	377	3	05	1		3	(LA)	TACHE	(La)	Tâche		Boixe-et-Manslois
+1	0	0		75	16	383	1	05	0		0		TOURRIERS		Tourriers		Boixe-et-Manslois
+1	0	0		75	16	392	3	05	1		0		VALENCE		Valence		Boixe-et-Manslois
+1	1	0		75	16	393	1	05	0		0		VARS		Vars		Boixe-et-Manslois
+1	0	0		75	16	396	3	05	1		0		VENTOUSE		Ventouse		Boixe-et-Manslois
+1	0	0		75	16	401	1	05	0		0		VERVANT		Vervant		Boixe-et-Manslois
+1	0	0		75	16	412	1	05	0		0		VILLEJOUBERT		Villejoubert		Boixe-et-Manslois
+1	0	0		75	16	414	3	05	1		0		VILLOGNON		Villognon		Boixe-et-Manslois
+1	0	0		75	16	419	1	05	0		0		VOUHARTE		Vouharte		Boixe-et-Manslois
+1	0	0		75	16	423	1	05	0		0		XAMBES		Xambes		Boixe-et-Manslois
+1	0	0		75	19	124	1	13	0		0		MANSAC		Mansac		Saint-Pantaléon-de-Larche
+1	0	0		94	2B	153	5	07	1		0		MANSO		Manso		Calvi
+4					20	153			1		0		MANSO		Manso		
+1	0	0		75	23	122	2	05	1		0		MANSAT-LA-COURRIERE		Mansat-la-Courrière		Bourganeuf
+1	0	0		76	32	229	2	11	0		0		MANSEMPUY		Mansempuy		Gimone-Arrats
+1	0	0		76	32	230	2	02	0		0		MANSENCOME		Mansencôme		Armagnac-Ténarèze
+1	0	0		24	37	090	1	13	1		0		CRISSAY-SUR-MANSE		Crissay-sur-Manse		Sainte-Maure-de-Touraine
+1	0	0		76	65	297	3	13	0		0		MANSAN		Mansan		Val d'Adour-Rustan-Madiranais
+1	0	0		44	68	200	1	09	0		0		MANSPACH		Manspach		Masevaux
+1	0	0		27	71	088	3	18	0		3	(LA)	CHAPELLE-AU-MANS	(La)	Chapelle-au-Mans		Gueugnon
+1	3	2	8	52	72	181	3	99	0		2	(LE)	MANS	(Le)	Mans		Canton non précisé
+1	0	0		52	72	182	1	08	0		0		MANSIGNE		Mansigné	(Le)	Lude
+1	0	0		52	72	198	3	11	0		3	(LA)	MILESSE	(La)	Milesse	(Le)	Mans-2
+1	0	0		52	72	247	3	16	0		0		PRUILLE-LE-CHETIF		Pruillé-le-Chétif	(Le)	Mans-7
+1	0	0		52	72	257	3	10	0		0		ROUILLON		Rouillon	(Le)	Mans-1
+1	0	0		52	72	073	3	16	0		0		CHAUFOUR-NOTRE-DAME		Chaufour-Notre-Dame	(Le)	Mans-7
+1	0	0		52	72	095	3	13	0		0		COULAINES		Coulaines	(Le)	Mans-4
+1	0	0		52	72	127	1	21	1		1		ETIVAL-LES-LE-MANS		Étival-lès-le-Mans	(La)	Suze-sur-Sarthe
+1	0	0		52	72	130	3	16	0		0		FAY		Fay	(Le)	Mans-7
+1	0	0		52	72	280	3	16	0		0		SAINT-GEORGES-DU-BOIS		Saint-Georges-du-Bois	(Le)	Mans-7
+1	0	0		52	72	320	3	11	0		0		SAINT-SATURNIN		Saint-Saturnin	(Le)	Mans-2
+1	0	0		52	72	328	3	02	0		0		SARGE-LES-LE-MANS		Sargé-lès-le-Mans		Changé
+1	0	0		52	72	360	3	16	0		0		TRANGE		Trangé	(Le)	Mans-7
+1	0	0		52	72	381	1	21	1		0		VOIVRES-LES-LE-MANS		Voivres-lès-le-Mans	(La)	Suze-sur-Sarthe
+1	0	0		52	72	001	3	11	0		1		AIGNE		Aigné	(Le)	Mans-2
+1	0	0		52	72	003	3	16	0		1		ALLONNES		Allonnes	(Le)	Mans-7
+1	0	0		52	72	008	3	15	0		1		ARNAGE		Arnage	(Le)	Mans-6
+1	0	0		52	72	065	3	11	0		3	(LA)	CHAPELLE-SAINT-AUBIN	(La)	Chapelle-Saint-Aubin	(Le)	Mans-2
+9	3	1	8	52	72	181	3	10	0		2	(LE)	MANS	(Le)	Mans	(Le)	Mans-1
+9	3	1	8	52	72	181	3	11	0		2	(LE)	MANS	(Le)	Mans	(Le)	Mans-2
+9	3	1	8	52	72	181	3	12	0		2	(LE)	MANS	(Le)	Mans	(Le)	Mans-3
+9	3	1	8	52	72	181	3	13	0		2	(LE)	MANS	(Le)	Mans	(Le)	Mans-4
+9	3	1	8	52	72	181	3	14	0		2	(LE)	MANS	(Le)	Mans	(Le)	Mans-5
+9	3	1	8	52	72	181	3	15	0		2	(LE)	MANS	(Le)	Mans	(Le)	Mans-6
+9	3	1	8	52	72	181	3	16	0		2	(LE)	MANS	(Le)	Mans	(Le)	Mans-7
+1	0	0		76	82	102	1	04	0		0		MANSONVILLE		Mansonville		Garonne-Lomagne-Brulhois
+3				84	69	232			1	69123	0		SAINT-RAMBERT-L'ILE-BARBE		Saint-Rambert-l'Île-Barbe		
+5				84	69	381	1		0	69123	0		LYON 1ER ARRONDISSEMENT		Lyon 1er Arrondissement		
+5				84	69	382	1		0	69123	0		LYON 2E  ARRONDISSEMENT		Lyon 2e  Arrondissement		
+5				84	69	383	1		0	69123	0		LYON 3E  ARRONDISSEMENT		Lyon 3e  Arrondissement		
+5				84	69	384	1		0	69123	0		LYON 4E  ARRONDISSEMENT		Lyon 4e  Arrondissement		
+5				84	69	385	1		0	69123	0		LYON 5E  ARRONDISSEMENT		Lyon 5e  Arrondissement		
+5				84	69	386	1		0	69123	0		LYON 6E  ARRONDISSEMENT		Lyon 6e  Arrondissement		
+5				84	69	387	1		0	69123	0		LYON 7E  ARRONDISSEMENT		Lyon 7e  Arrondissement		
+5				84	69	388	1		0	69123	0		LYON 8E  ARRONDISSEMENT		Lyon 8e  Arrondissement		
+5				84	69	389	1		0	69123	0		LYON 9E  ARRONDISSEMENT		Lyon 9e  Arrondissement		
+5				11	75	101	1		0	75056	0		PARIS 1ER ARRONDISSEMENT		Paris 1er Arrondissement		
+5				11	75	102	1		0	75056	0		PARIS 2E  ARRONDISSEMENT		Paris 2e  Arrondissement		
+5				11	75	103	1		0	75056	0		PARIS 3E  ARRONDISSEMENT		Paris 3e  Arrondissement		
+5				11	75	104	1		0	75056	0		PARIS 4E  ARRONDISSEMENT		Paris 4e  Arrondissement		
+5				11	75	105	1		0	75056	0		PARIS 5E  ARRONDISSEMENT		Paris 5e  Arrondissement		
+5				11	75	106	1		0	75056	0		PARIS 6E  ARRONDISSEMENT		Paris 6e  Arrondissement		
+5				11	75	107	1		0	75056	0		PARIS 7E  ARRONDISSEMENT		Paris 7e  Arrondissement		
+5				11	75	108	1		0	75056	0		PARIS 8E  ARRONDISSEMENT		Paris 8e  Arrondissement		
+5				11	75	109	1		0	75056	0		PARIS 9E  ARRONDISSEMENT		Paris 9e  Arrondissement		
+5				11	75	110	1		0	75056	0		PARIS 10E  ARRONDISSEMENT		Paris 10e  Arrondissement		
+5				11	75	111	1		0	75056	0		PARIS 11E  ARRONDISSEMENT		Paris 11e  Arrondissement		
+5				11	75	112	1		0	75056	0		PARIS 12E  ARRONDISSEMENT		Paris 12e  Arrondissement		
+5				11	75	113	1		0	75056	0		PARIS 13E  ARRONDISSEMENT		Paris 13e  Arrondissement		
+5				11	75	114	1		0	75056	0		PARIS 14E  ARRONDISSEMENT		Paris 14e  Arrondissement		
+5				11	75	115	1		0	75056	0		PARIS 15E  ARRONDISSEMENT		Paris 15e  Arrondissement		
+5				11	75	116	1		0	75056	0		PARIS 16E  ARRONDISSEMENT		Paris 16e  Arrondissement		
+5				11	75	117	1		0	75056	0		PARIS 17E  ARRONDISSEMENT		Paris 17e  Arrondissement		
+5				11	75	118	1		0	75056	0		PARIS 18E  ARRONDISSEMENT		Paris 18e  Arrondissement		
+5				11	75	119	1		0	75056	0		PARIS 19E  ARRONDISSEMENT		Paris 19e  Arrondissement		
+5				11	75	120	1		0	75056	0		PARIS 20E  ARRONDISSEMENT		Paris 20e  Arrondissement		
+1	4	2	1	76	31	555	3	99	1		0		TOULOUSE		Toulouse		Canton non précisé
+1	4			84	69	123	1		1		0		LYON		Lyon		

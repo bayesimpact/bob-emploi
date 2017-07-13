@@ -1,14 +1,23 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {Link} from 'react-router'
+import VisibilitySensor from 'react-visibility-sensor'
 
 import config from 'config'
 
-import {openLoginModal, loadLandingPageAction} from 'store/actions'
+import {landingPageSectionIsShown, openRegistrationModal,
+  loadLandingPageAction} from 'store/actions'
 
 import adviceScreenshot from 'images/screenshots/advice.png'
 import arrowLeftImage from 'images/landing-arrow-left.svg'
 import arrowRightImage from 'images/landing-arrow-right.svg'
+import backgroundCoverImage1 from 'images/cover/cover-1.jpg'
+import backgroundCoverImage2 from 'images/cover/cover-2.jpg'
+import backgroundCoverImage3 from 'images/cover/cover-3.jpg'
+import backgroundCoverImage4 from 'images/cover/cover-4.jpg'
+import backgroundCoverImage5 from 'images/cover/cover-5.jpg'
+import backgroundCoverImage6 from 'images/cover/cover-6.jpg'
+import bayesLogo from 'images/logo-bayes.png'
 import diagnosticScreenshot from 'images/screenshots/diagnostic.png'
 import echappeeImage from 'images/echappee-ico.png'
 import etalabImage from 'images/etalab-ico.png'
@@ -23,7 +32,7 @@ import {LoginButton} from 'components/login'
 import {ShortKey} from 'components/shortkey'
 import {StaticPage} from 'components/static'
 import {TestimonialCard, Testimonials} from 'components/testimonials'
-import {Colors} from 'components/theme'
+import {Colors, Icon, Styles} from 'components/theme'
 import {Routes} from 'components/url'
 
 
@@ -65,7 +74,7 @@ const landingPageTitles = {
       'savoir ce qui est vraiment important',
     title: <span>
       Que faire en <span style={emStyle}>priorité</span> pour <span
-      style={emStyle}>trouver un emploi</span> ?
+        style={emStyle}>trouver un emploi</span> ?
     </span>,
   },
   speed: {
@@ -74,13 +83,17 @@ const landingPageTitles = {
       'savoir ce qui marche vraiment',
     title: <span>
       Quelle est <span style={emStyle}>la clé</span> pour <span
-      style={emStyle}>trouver rapidement un emploi</span> ?
+        style={emStyle}>trouver rapidement un emploi</span> ?
     </span>,
   },
   '': {
-    buttonCaption: 'Obtenir mon diagnostic',
+    buttonCaption: "Inscrivez-vous, c'est gratuit !",
+    fontSize: 42,
     match: /evaluation/,
-    title: <span>Bob <span style={emStyle}>évalue</span> votre recherche d'emploi</span>,
+    title: <span style={emStyle}>
+      Obtenez des conseils personnalisés pour
+      accélérer votre recherche d'emploi
+    </span>,
   },
 }
 const kinds = Object.keys(landingPageTitles)
@@ -94,6 +107,16 @@ const sectionTitleStyle = isMobileVersion => ({
 })
 
 
+const coverImages = [
+  backgroundCoverImage1,
+  backgroundCoverImage2,
+  backgroundCoverImage3,
+  backgroundCoverImage4,
+  backgroundCoverImage5,
+  backgroundCoverImage6,
+]
+
+
 class TitleSection extends React.Component {
   static propTypes = {
     style: PropTypes.object,
@@ -103,8 +126,58 @@ class TitleSection extends React.Component {
     landingPageKind: PropTypes.oneOf(kinds).isRequired,
   }
 
+  state = {
+    coverImage: '',
+    coverImageIndex: 0,
+    nextCoverImage: '',
+    // Extra height of components above the title (typically the cookie header).
+    overheadHeight: 0,
+  }
+
+  componentWillMount() {
+    this.setState({coverImage: coverImages[0], coverImageIndex: 0})
+    this.interval = setInterval(this.nextCoverImage, 15000)
+  }
+
+  componentDidMount() {
+    this.adjustToViewportBottom()
+    this.viewportInterval = setInterval(() => this.adjustToViewportBottom(), 500)
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.interval)
+    clearInterval(this.viewportInterval)
+    clearTimeout(this.timeout)
+  }
+
+  adjustToViewportBottom() {
+    if (!this.dom) {
+      return
+    }
+    const overheadHeight = this.dom.getBoundingClientRect().top + (
+      window.scrollY || window.document.body.scrollTop || 0)
+    if (overheadHeight !== this.state.overheadHeight) {
+      this.setState({overheadHeight})
+    }
+  }
+
+  nextCoverImage = () => {
+    const nextCoverImageIndex = (this.state.coverImageIndex + 1) % coverImages.length
+    const nextCoverImage = coverImages[nextCoverImageIndex]
+    this.setState({nextCoverImage})
+    clearTimeout(this.timeout)
+    this.timeout = setTimeout(() => {
+      this.setState({
+        coverImage: nextCoverImage,
+        coverImageIndex: nextCoverImageIndex,
+        nextCoverImage: '',
+      })
+    }, 1000)
+  }
+
   render() {
     const {isMobileVersion, landingPageKind} = this.context
+    const {overheadHeight} = this.state
     const {buttonCaption, fontSize, subtitle, title} = landingPageTitles[landingPageKind] || {}
     const style = {
       alignItems: 'flex-start',
@@ -112,42 +185,171 @@ class TitleSection extends React.Component {
       color: Colors.COOL_GREY,
       display: 'flex',
       flexDirection: 'column',
-      fontSize: isMobileVersion ? 30 : (fontSize || 40),
+      fontSize: isMobileVersion ? 39 : (fontSize || 40),
       justifyContent: 'center',
       lineHeight: 1.15,
-      padding: isMobileVersion ? '30px 10px 45px 10px' : '40px 0',
+      minHeight: `calc(100vh - ${overheadHeight}px)`,
+      padding: isMobileVersion ? '0 10px 60px' : '60px 10px',
       position: 'relative',
       ...this.props.style,
     }
+    const coverAll = {
+      bottom: 0,
+      left: 0,
+      position: 'absolute',
+      right: 0,
+      top: 0,
+    }
+    const backgroundStyle = {
+      ...coverAll,
+      zIndex: 0,
+    }
+    const navBackgroundStyle = {
+      backgroundImage: 'linear-gradient(to bottom, rgba(33, 41, 61, 0.5), transparent)',
+      height: 100,
+      left: 0,
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      zIndex: -1,
+    }
+    const imageBackgroundStyle = {
+      ...coverAll,
+      backgroundImage: `url("${this.state.coverImage}")`,
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'cover',
+      zIndex: -3,
+    }
+    const nextImageBackgroundStyle = {
+      ...imageBackgroundStyle,
+      backgroundImage:
+        this.state.nextCoverImage ? `url("${this.state.nextCoverImage}")` : 'initial',
+      opacity: this.state.nextCoverImage ? 1 : 0,
+      transition: this.state.nextCoverImage ? '1s' : 'initial',
+      zIndex: -2,
+    }
+    const coverBackgroundStyle = {
+      ...coverAll,
+      backgroundColor: Colors.DARK,
+      opacity: .4,
+      zIndex: -1,
+    }
     const buttonStyle = {
+      boxShadow: '0 10px 15px 0 rgba(0, 0, 0, 0.3)',
       fontSize: 15,
       letterSpacing: 1,
       marginTop: isMobileVersion ? 10 : 0,
-      padding: '14px 28px 12px',
+      padding: '15px 28px 12px',
       textTransform: 'uppercase',
     }
     const titleStyle = {
+      fontWeight: 'bold',
       marginBottom: 18,
       marginTop: isMobileVersion ? 0 : 30,
+      textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
     }
     const subTitleStyle = {
       fontSize: isMobileVersion ? 20 : 25,
       marginBottom: 20,
+      textShadow: '0 2px 15px rgba(0, 0, 0, 0.5)',
     }
-    return <section style={style}>
-      <div style={{margin: '0 auto', maxWidth: 950, textAlign: 'center'}}>
+    const proLinkStyle = {
+      color: Colors.PINKISH_GREY,
+      textShadow: '0 2px 15px rgba(0, 0, 0, 0.5)',
+    }
+    const chevronStyle = {
+      animation: 'bounce 4s ease infinite',
+      bottom: 0,
+      color: '#fff',
+      cursor: 'pointer',
+      fontSize: 45,
+      left: isMobileVersion ? 0 : 400,
+      position: 'absolute',
+      right: isMobileVersion ? 0 : 400,
+      textAlign: 'center',
+    }
+    const ngoBoxStyle = {
+      alignItems: 'center',
+      bottom: isMobileVersion ? 'initial' : 25,
+      color: '#fff',
+      display: 'flex',
+      fontSize: 16,
+      fontStyle: 'italic',
+      justifyContent: 'center',
+      left: isMobileVersion ? 'initial' : 25,
+      lineHeight: 1.19,
+      margin: 'auto',
+      position: isMobileVersion ? 'initial' : 'absolute',
+      textAlign: isMobileVersion ? 'center' : 'initial',
+      width: isMobileVersion ? 280 : 340,
+      zIndex: 1,
+    }
+    const logoStyle = {
+      height: 30,
+      opacity: isMobileVersion ? .2 : 'initial',
+      position: isMobileVersion ? 'absolute' : 'initial',
+    }
+    return <section style={style} ref={dom => {
+      this.dom = dom
+    }}>
+      <div style={backgroundStyle}>
+        <div style={imageBackgroundStyle} />
+        <div style={nextImageBackgroundStyle} />
+        <div style={coverBackgroundStyle} />
+        <div style={navBackgroundStyle} />
+      </div>
+      <div style={{flex: 1}} />
+      <div style={{margin: '0 auto', maxWidth: 950, textAlign: 'center', zIndex: 1}}>
         <div style={titleStyle}>{title}</div>
-        {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : null}
-        <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="title">
+        {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : <div style={{height: 65}} />}
+        <LoginButton
+          style={buttonStyle} isSignUpButton={true} visualElement="title" type="navigation">
           {buttonCaption || 'Commencer'}
         </LoginButton>
-        <div style={{fontSize: 15, marginTop: 15}}>
-          <Link to={Routes.PROFESSIONALS_PAGE} style={{color: Colors.COOL_GREY}}>
+        {isMobileVersion ? null : <div style={{fontSize: 15, marginTop: 15}}>
+          <Link to={Routes.PROFESSIONALS_PAGE} style={proLinkStyle}>
             Vous êtes un accompagnant&nbsp;?
           </Link>
-        </div>
+        </div>}
+      </div>
+      <div style={{flex: 1}} />
+      <div style={ngoBoxStyle}>
+        <img src={bayesLogo} style={logoStyle} />
+        <span style={{marginLeft: isMobileVersion ? 0 : 15, ...Styles.CENTER_FONT_VERTICALLY}}>
+          Développé par l'ONG <a
+            style={{color: '#fff', fontWeight: 'bold', textDecoration: 'none'}}
+            href="https://www.bayesimpact.org/fr/" target="_blank" rel="noopener noreferrer">
+            Bayes Impact
+          </a>,
+          une association à but non lucratif
+        </span>
+      </div>
+      <div style={chevronStyle} onClick={() => {
+        window.scroll({behavior: 'smooth', top: this.dom && this.dom.clientHeight || 500})
+      }}>
+        <Icon name="chevron-down" />
       </div>
     </section>
+  }
+}
+
+
+class CollaborativeSection extends React.Component {
+  render() {
+    const containerStyle = {
+      backgroundColor: '#fff',
+      color: Colors.SLATE,
+      fontSize: 26,
+      fontStyle: 'italic',
+      fontWeight: 500,
+      lineHeight: '40px',
+      padding: '80px 20px',
+      textAlign: 'center',
+    }
+    return <div style={containerStyle}>
+      {config.productName} est un projet collaboratif qui s'améliore grâce à la communauté.
+    </div>
   }
 }
 
@@ -194,8 +396,8 @@ class ScreenshotsSection extends React.Component {
       <div style={{position: 'relative'}}>
         <img src={screenshotSrc} style={imageStyle} />
         {(!isMobileVersion && arrowNext) ? <img
-            style={arrowStyle}
-            src={arrowNext === 'left' ? arrowLeftImage : arrowRightImage} /> : null}
+          style={arrowStyle}
+          src={arrowNext === 'left' ? arrowLeftImage : arrowRightImage} /> : null}
       </div>
       <div style={descriptionStyle}>
         <div style={titleStyle}>{title}</div>
@@ -261,7 +463,7 @@ class BobHelpsYouSection extends React.Component {
     const {isMobileVersion, landingPageKind} = this.context
     const {buttonCaption} = landingPageTitles[landingPageKind] || {}
     const style = {
-      backgroundColor: Colors.DARK,
+      backgroundColor: Colors.SKY_BLUE,
       color: '#fff',
       fontSize: 30,
       lineHeight: 1.33,
@@ -281,7 +483,9 @@ class BobHelpsYouSection extends React.Component {
         internet. Avec {config.productName}, vous saurez trouver 100% des
         opportunités&nbsp;!
       </div>
-      <LoginButton style={buttonStyle} isSignUpButton={true} visualElement="helpsyou">
+      <LoginButton
+        style={buttonStyle} isSignUpButton={true} visualElement="helpsyou"
+        type="navigationOnImage">
         {buttonCaption || 'Commencer'}
       </LoginButton>
     </section>
@@ -375,8 +579,8 @@ class PartnersSection extends React.Component {
         <div style={partnerBoxStyle}>
           {partnersContent.map(partner => {
             return <PartnerCard
-                name={partner.name} key={partner.name}
-                imageSrc={partner.imageSrc} />
+              name={partner.name} key={partner.name}
+              imageSrc={partner.imageSrc} />
           })}
         </div>
       </div>
@@ -423,12 +627,12 @@ class LandingPage extends React.Component {
     routing: PropTypes.object.isRequired,
   }
 
-  state = {
-    landingPageKind: '',
-  }
-
   static childContextTypes = {
     landingPageKind: PropTypes.oneOf(kinds).isRequired,
+  }
+
+  state = {
+    landingPageKind: '',
   }
 
   getChildContext() {
@@ -437,13 +641,16 @@ class LandingPage extends React.Component {
   }
 
   componentWillMount() {
-    const {query} = this.props.routing.locationBeforeTransitions
+    const {hash, query} = this.props.routing.locationBeforeTransitions
     const utmContent = query['utm_content'] || ''
     for (const landingPageKind in landingPageTitles) {
       if (landingPageTitles[landingPageKind].match.test(utmContent)) {
         this.setState({landingPageKind})
         break
       }
+    }
+    if (hash === '#inscription') {
+      this.props.dispatch(openRegistrationModal({email: query.email || ''}, 'urlHash'))
     }
   }
 
@@ -452,23 +659,46 @@ class LandingPage extends React.Component {
   }
 
   handleOpenLoginModal = () => {
-    this.props.dispatch(openLoginModal(undefined, 'fastforward'))
+    this.props.dispatch(openRegistrationModal(undefined, 'fastforward'))
+  }
+
+  handleVisibility(sectionName) {
+    return isVisible => {
+      if (!isVisible) {
+        return
+      }
+      this.props.dispatch(landingPageSectionIsShown(sectionName))
+    }
   }
 
   render() {
-    return <StaticPage page="landing">
+    return <StaticPage page="landing" isContentScrollable={false} isNavBarTransparent={true}>
       <ShortKey
-          keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.handleOpenLoginModal} />
+        keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.handleOpenLoginModal} />
 
       <TitleSection />
 
+      <CollaborativeSection />
+
       <ScreenshotsSection />
 
-      <BobHelpsYouSection />
+      <VisibilitySensor
+        onChange={this.handleVisibility('bobHelpsYou')} partialVisibility={true}
+        intervalDelay={250}>
+        <BobHelpsYouSection />
+      </VisibilitySensor>
 
-      <TestimonialsSection />
+      <VisibilitySensor
+        onChange={this.handleVisibility('testimonials')} partialVisibility={true}
+        intervalDelay={250}>
+        <TestimonialsSection />
+      </VisibilitySensor>
 
-      <PartnersSection />
+      <VisibilitySensor
+        onChange={this.handleVisibility('partners')} partialVisibility={true}
+        intervalDelay={250}>
+        <PartnersSection />
+      </VisibilitySensor>
     </StaticPage>
   }
 }

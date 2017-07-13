@@ -8,4 +8,7 @@ message UsersCount {
 
   // Number of new registered users since last week (rolling 7 days).
   int32 weekly_new_user_count = 2;
+
+  // Number of projects scored for each score since yesterday (rolling 24 hours).
+  map<int32, int32> daily_scores_count = 3;
 }

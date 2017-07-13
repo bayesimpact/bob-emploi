@@ -48,24 +48,24 @@ class VisionPage extends React.Component {
 
         <div style={{margin: '50px 0', textAlign: 'right'}}>
           <Button
-              style={{fontSize: 17, padding: '10px 12px 8px 39px'}}
-              onClick={() => browserHistory.push(Routes.CONTRIBUTION_PAGE)}>
+            style={{fontSize: 17, padding: '10px 12px 8px 39px'}}
+            onClick={() => browserHistory.push(Routes.CONTRIBUTION_PAGE)}>
             <span style={{paddingRight: '1em'}}>
               Contribuer
             </span>
             <Icon
-                name="chevron-right"
-                style={{fontSize: 24, paddingBottom: 2, verticalAlign: 'middle'}} />
+              name="chevron-right"
+              style={{fontSize: 24, paddingBottom: 2, verticalAlign: 'middle'}} />
           </Button>
         </div>
 
         <div style={{fontWeight: 'bold'}}>
           Regardez notre fondateur, Paul Duan, expliquer notre mission en vidéo&nbsp;:
           <iframe
-              style={{marginTop: 10}}
-              width={isMobileVersion ? 370 : 600} height={isMobileVersion ? 180 : 320}
-              src="https://www.youtube.com/embed/6AdHZmTHHA8" frameBorder={0}
-              allowFullScreen={true} />
+            style={{marginTop: 10}}
+            width={isMobileVersion ? 370 : 600} height={isMobileVersion ? 180 : 320}
+            src="https://www.youtube.com/embed/6AdHZmTHHA8" frameBorder={0}
+            allowFullScreen={true} />
         </div>
       </div>
     </StaticPage>

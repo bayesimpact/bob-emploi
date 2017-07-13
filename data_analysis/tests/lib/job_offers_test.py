@@ -43,7 +43,7 @@ class IterateTestCase(unittest.TestCase):
             path.join(self.testdata_folder, 'job_offers.csv'),
             path.join(self.testdata_folder, 'column_names.txt')))
         # Golden values.
-        self.assertEqual(5, len(offers))
+        self.assertEqual(8, len(offers))
         self.assertEqual('000053Q', offers[0].id_offre)
         self.assertEqual('Contrat travail', offers[1].contract_nature_name)
 

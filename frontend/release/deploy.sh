@@ -102,7 +102,7 @@ else
 
   echo -e "${TAG}\\n" > "${RELEASE_NOTES}"
   echo -e "# Edit these release notes to make them more readable (lines starting with # are ignored, and an empty file cancels the deployment)." >> "${RELEASE_NOTES}"
-  git log "origin/prod..${TAG}" --format=%B >> "${RELEASE_NOTES}"
+  git log "origin/prod..${TAG}" --format=%B -- frontend >> "${RELEASE_NOTES}"
 
   "${EDITOR:-${GIT_EDITOR:-$(git config core.editor || echo 'vim')}}" "${RELEASE_NOTES}"
 

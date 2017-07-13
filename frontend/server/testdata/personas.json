@@ -7,28 +7,10 @@
     "user": {
       "highestDegree": "BTS_DUT_DEUG",
       "email": "evolueuse.persona@gmail.com",
-      "city": {
-        "name": "Lyon",
-        "regionName": "Auvergne-Rhône-Alpes",
-        "departementName": "Rhône",
-        "departementId": "69",
-        "cityId": "69123",
-        "regionId": "84"
-      },
       "name": "Evolueuse",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1975,
-      "gender": "FEMININE",
-      "latestJob": {
-        "jobGroup": {
-          "name": "Secrétariat",
-          "romeId": "M1607"
-        },
-        "codeOgr": "19364",
-        "feminineName": "Secrétaire",
-        "name": "Secrétaire",
-        "masculineName": "Secrétaire"
-      }
+      "gender": "FEMININE"
     },
     "featuresEnabled": {
       "lbbIntegration": "ACTIVE"
@@ -78,29 +60,11 @@
     "user": {
       "highestDegree": "BTS_DUT_DEUG",
       "email": "demenageur.persona@gmail.com",
-      "city": {
-        "name": "Bourg-en-Bresse",
-        "regionName": "Auvergne-Rhône-Alpes",
-        "departementName": "Ain",
-        "departementId": "01",
-        "cityId": "01053",
-        "regionId": "84"
-      },
       "name": "Demenageur",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1983,
       "gender": "MASCULINE",
-      "hasHandicap": true,
-      "latestJob": {
-        "jobGroup": {
-          "name": "Assistanat commercial",
-          "romeId": "D1401"
-        },
-        "codeOgr": "12748",
-        "feminineName": "Commerciale sédentaire",
-        "name": "Commercial / Commerciale sédentaire",
-        "masculineName": "Commercial sédentaire"
-      }
+      "hasHandicap": true
     },
     "project": {
       "kind": "FIND_JOB",
@@ -141,19 +105,10 @@
   "newbie": {
     "user": {
       "email": "newbie.persona@gmail.com",
-      "city": {
-        "name": "Bourg-en-Bresse",
-        "regionName": "Auvergne-Rhône-Alpes",
-        "departementName": "Ain",
-        "departementId": "01",
-        "cityId": "01053",
-        "regionId": "84"
-      },
       "name": "Newbie",
       "situation": "FIRST_TIME",
       "yearOfBirth": 1986,
-      "gender": "MASCULINE",
-      "latestJob": null
+      "gender": "MASCULINE"
     },
     "project": {
       "jobSearchLengthMonths": 2,
@@ -194,29 +149,11 @@
     "user": {
       "highestDegree": "DEA_DESS_MASTER_PHD",
       "email": "persiteuse.persona@gmail.com",
-      "city": {
-        "name": "Lyon",
-        "regionName": "Auvergne-Rhône-Alpes",
-        "departementName": "Rhône",
-        "departementId": "69",
-        "cityId": "69123",
-        "regionId": "84"
-      },
       "name": "Persisteuse",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1964,
       "frustrations": ["NO_OFFERS"],
-      "gender": "FEMININE",
-      "latestJob": {
-        "jobGroup": {
-          "name": "Marketing",
-          "romeId": "M1705"
-        },
-        "codeOgr": "19125",
-        "feminineName": "Responsable marketing",
-        "name": "Responsable marketing",
-        "masculineName": "Responsable marketing"
-      }
+      "gender": "FEMININE"
     },
     "project": {
       "kind": "FIND_JOB",
@@ -292,14 +229,6 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "94011",
-        "departementId": "94",
-        "departementName": "Val-de-Marne",
-        "name": "Bonneuil-sur-Marne",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "email": "abdelkrimxxxx@yahoo.fr",
       "frustrations": ["RESUME"],
       "gender": "MASCULINE",
@@ -346,27 +275,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "77337",
-        "departementId": "77",
-        "departementName": "Seine-et-Marne",
-        "name": "Noisiel",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "BTS_DUT_DEUG",
       "email": "karenxxxxx@yahoo.fr",
       "gender": "FEMININE",
-      "latestJob": {
-        "codeOgr": "19374",
-        "feminineName": "Secrétaire de direction",
-        "jobGroup": {
-          "name": "Assistanat de direction",
-          "romeId": "M1604"
-        },
-        "masculineName": "Secrétaire de direction",
-        "name": "Secrétaire de direction"
-      },
       "name": "karen",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1971
@@ -409,27 +320,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "77337",
-        "departementId": "77",
-        "departementName": "Seine-et-Marne",
-        "name": "Noisiel",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "BTS_DUT_DEUG",
       "email": "karenxxxxx@yahoo.fr",
       "gender": "FEMININE",
-      "latestJob": {
-        "codeOgr": "19374",
-        "feminineName": "Secrétaire de direction",
-        "jobGroup": {
-          "name": "Assistanat de direction",
-          "romeId": "M1604"
-        },
-        "masculineName": "Secrétaire de direction",
-        "name": "Secrétaire de direction"
-      },
       "name": "karen",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1971
@@ -471,27 +364,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "BAC_BACPRO",
       "email": "fabe.xxxx@hotmail.fr",
       "gender": "MASCULINE",
-      "latestJob": {
-        "codeOgr": "10744",
-        "feminineName": "Agente immobilier",
-        "jobGroup": {
-          "name": "Transaction immobilière",
-          "romeId": "C1504"
-        },
-        "masculineName": "Agent immobilier",
-        "name": "Agent / Agente immobilier"
-      },
       "name": "fabrice",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1977
@@ -533,26 +408,8 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "email": "joelxxxxx@gmail.com",
       "gender": "MASCULINE",
-      "latestJob": {
-        "codeOgr": "13999",
-        "feminineName": "Designeuse graphique",
-        "jobGroup": {
-          "name": "Réalisation de contenus multimédias",
-          "romeId": "E1205"
-        },
-        "masculineName": "Designer graphique",
-        "name": "Designer / Designeuse graphique"
-      },
       "name": "Joël",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1986
@@ -596,27 +453,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "DEA_DESS_MASTER_PHD",
       "email": "jenniferxxxx@hotmail.fr",
       "gender": "FEMININE",
-      "latestJob": {
-        "codeOgr": "13597",
-        "feminineName": "Contrôleuse de gestion",
-        "jobGroup": {
-          "name": "Contrôle de gestion",
-          "romeId": "M1204"
-        },
-        "masculineName": "Contrôleur de gestion",
-        "name": "Contrôleur / Contrôleuse de gestion"
-      },
       "frustrations": ["SEX_DISCRIMINATION", "AGE_DISCRIMINATION", "NO_OFFER_ANSWERS"],
       "name": "jennifer",
       "situation": "IN_TRAINING",
@@ -660,26 +499,8 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "email": "joana.xxxxx@gmail.com",
       "gender": "FEMININE",
-      "latestJob": {
-        "codeOgr": "13696",
-        "feminineName": "Coordinatrice transit -import/export-",
-        "jobGroup": {
-          "name": "Gestion des opérations de circulation internationale des marchandises",
-          "romeId": "N1202"
-        },
-        "masculineName": "Coordinateur transit -import/export-",
-        "name": "Coordinateur / Coordinatrice transit -import/export-"
-      },
       "name": "Joana",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1990
@@ -721,27 +542,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "77468",
-        "departementId": "77",
-        "departementName": "Seine-et-Marne",
-        "name": "Torcy",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "BAC_BACPRO",
       "email": "ludivinexxxx@live.fr",
       "gender": "FEMININE",
-      "latestJob": {
-        "codeOgr": "38156",
-        "feminineName": "Directrice adjointe d'accueil de loisirs",
-        "jobGroup": {
-          "name": "Animation de loisirs auprès d'enfants ou d'adolescents",
-          "romeId": "G1203"
-        },
-        "masculineName": "Directeur adjoint d'accueil de loisirs",
-        "name": "Directeur adjoint / Directrice adjointe d'accueil de loisirs"
-      },
       "name": "ludivine",
       "frustrations": ["SINGLE_PARENT"],
       "situation": "LOST_QUIT",
@@ -785,22 +588,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "CAP_BEP",
       "email": "malek.xxxxx@live.fr",
       "gender": "FEMININE",
-      "latestJob": {
-        "feminineName": "aide éducatrice",
-        "masculineName": "aide éducatrice",
-        "name": "aide éducatrice"
-      },
       "name": "hanane",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1982
@@ -843,27 +633,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "BAC_BACPRO",
       "email": "monxxxxx@laposte.com",
       "gender": "MASCULINE",
-      "latestJob": {
-        "codeOgr": "14105",
-        "feminineName": "Dessinatrice-projeteuse du BTP",
-        "jobGroup": {
-          "name": "Dessin BTP",
-          "romeId": "F1104"
-        },
-        "masculineName": "Dessinateur-projeteur du BTP",
-        "name": "Dessinateur-projeteur / Dessinatrice-projeteuse du BTP"
-      },
       "name": "Pascal",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1978
@@ -906,27 +678,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "email": "nanou-xxxxx@hotmail.fr",
       "frustrations": ["ATYPIC_PROFILE"],
       "gender": "FEMININE",
-      "latestJob": {
-        "codeOgr": "20416",
-        "feminineName": "Traductrice-interprète",
-        "jobGroup": {
-          "name": "Traduction, interprétariat",
-          "romeId": "E1108"
-        },
-        "masculineName": "Traducteur-interprète",
-        "name": "Traducteur-interprète / Traductrice-interprète"
-      },
       "name": "nassera",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1974
@@ -958,27 +712,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "94028",
-        "departementId": "94",
-        "departementName": "Val-de-Marne",
-        "name": "Créteil",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "email": "xxxxx.fabrice@neuf.fr",
       "gender": "MASCULINE",
       "frustrations": ["AGE_DISCRIMINATION"],
-      "latestJob": {
-        "codeOgr": "18478",
-        "feminineName": "Régleuse sur machine de production",
-        "jobGroup": {
-          "name": "Réglage d'équipement de production industrielle",
-          "romeId": "H2912"
-        },
-        "masculineName": "Régleur sur machine de production",
-        "name": "Régleur / Régleuse sur machine de production"
-      },
       "name": "fabrice",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1964
@@ -1021,27 +757,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "75056",
-        "departementId": "75",
-        "departementName": "Paris",
-        "name": "Paris",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "DEA_DESS_MASTER_PHD",
       "email": "richxxxx@yahoo.fr",
       "gender": "MASCULINE",
-      "latestJob": {
-        "codeOgr": "16123",
-        "feminineName": "Juriste d'entreprise",
-        "jobGroup": {
-          "name": "Défense et conseil juridique",
-          "romeId": "K1903"
-        },
-        "masculineName": "Juriste d'entreprise",
-        "name": "Juriste d'entreprise"
-      },
       "name": "richard",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1982
@@ -1084,27 +802,9 @@
       "workloads": ["FULL_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "93050",
-        "departementId": "93",
-        "departementName": "Seine-Saint-Denis",
-        "name": "Neuilly-sur-Marne",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "DEA_DESS_MASTER_PHD",
       "email": "rxxxx@hotmail.fr",
       "gender": "MASCULINE",
-      "latestJob": {
-        "codeOgr": "10241",
-        "feminineName": "Acheteuse",
-        "jobGroup": {
-          "name": "Achats",
-          "romeId": "M1101"
-        },
-        "masculineName": "Acheteur",
-        "name": "Acheteur / Acheteuse"
-      },
       "name": "Margaux",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1992
@@ -1146,27 +846,9 @@
       "workloads": ["FULL_TIME", "PART_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "93050",
-        "departementId": "93",
-        "departementName": "Seine-Saint-Denis",
-        "name": "Neuilly-sur-Marne",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "DEA_DESS_MASTER_PHD",
       "email": "rxxxx@hotmail.fr",
       "gender": "MASCULINE",
-      "latestJob": {
-        "codeOgr": "10241",
-        "feminineName": "Acheteuse",
-        "jobGroup": {
-          "name": "Achats",
-          "romeId": "M1101"
-        },
-        "masculineName": "Acheteur",
-        "name": "Acheteur / Acheteuse"
-      },
       "name": "Rémi",
       "situation": "EMPLOYED",
       "yearOfBirth": 1989
@@ -1208,18 +890,38 @@
       "workloads": ["FULL_TIME", "PART_TIME"]
     },
     "user": {
-      "city": {
-        "cityId": "93050",
-        "departementId": "93",
-        "departementName": "Seine-Saint-Denis",
-        "name": "Neuilly-sur-Marne",
-        "regionId": "11",
-        "regionName": "Île-de-France"
-      },
       "highestDegree": "DEA_DESS_MASTER_PHD",
       "email": "rxxxx@hotmail.fr",
       "gender": "MASCULINE",
-      "latestJob": {
+      "name": "Rémi",
+      "situation": "EMPLOYED",
+      "yearOfBirth": 1989
+    }
+  },
+  "petit-paume": {
+    "project": {
+      "createdAt": "2016-09-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "97416212321",
+          "name": "Saint-Pierre",
+          "departementId": "974",
+          "departementName": "La Réunion",
+          "regionId": "04",
+          "regionName": "La Réunion",
+          "postcodes": "97432"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecddb3-bfe8",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
         "codeOgr": "10241",
         "feminineName": "Acheteuse",
         "jobGroup": {
@@ -1229,7 +931,14 @@
         "masculineName": "Acheteur",
         "name": "Acheteur / Acheteuse"
       },
-      "name": "Rémi",
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"]
+    },
+    "user": {
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "rxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Paume",
       "situation": "EMPLOYED",
       "yearOfBirth": 1989
     }

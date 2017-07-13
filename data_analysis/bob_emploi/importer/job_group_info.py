@@ -35,7 +35,8 @@ def make_dicts(
         rome_csv_pattern,
         job_requirements_json,
         job_application_complexity_json,
-        handcrafted_assets_airtable):
+        handcrafted_assets_airtable,
+        domains_airtable):
     """Import job info in MongoDB.
 
     Args:
@@ -50,6 +51,8 @@ def make_dicts(
         handcrafted_assets_airtable: the base ID and the table named joined by
             a ':' of the AirTable containing the advice per job group (short
             texts describing assets required).
+        domains_airtable: the base ID and the table name joined by a ':' of the
+            AirTable containing the domain name for each sector.
     Returns:
         A list of dict that maps the JSON representation of JobGroup protos.
     """
@@ -65,6 +68,7 @@ def make_dicts(
         links_filename=rome_csv_pattern % 'liens_rome_referentiels',
         ref_filename=rome_csv_pattern % 'referentiel_env_travail')
     handcrafted_assets = _load_assets_from_airtable(*handcrafted_assets_airtable.split(':'))
+    sector_domains = _load_domains_from_airtable(*domains_airtable.split(':'))
 
     # Genderize names.
     masculine, feminine = rome_genderization.genderize(jobs.name)
@@ -119,9 +123,9 @@ def make_dicts(
     job_groups['requirementsText'] = rome_texts.requirements
 
     # Add work environment items.
-    job_groups['workEnvironmentKeywords'] = (
-        rome_work_environments.groupby('code_rome').apply(
-            _group_work_environment_items))
+    rome_work_environments['domain'] = rome_work_environments['name'].map(sector_domains)
+    job_groups['workEnvironmentKeywords'] = \
+        rome_work_environments.groupby('code_rome').apply(_group_work_environment_items)
     # Fill NaN with empty {}.
     job_groups['workEnvironmentKeywords'] = (
         job_groups.workEnvironmentKeywords.apply(
@@ -162,10 +166,62 @@ def _group_work_environment_items(work_environments):
         A dict compatible with the JSON version of the job_pb2.WorkEnvironment
         protobuf.
     """
-    return {
+    environment = {
         section_name.lower().replace('secteurs', 'sectors'): env.name.tolist()
         for section_name, env in work_environments.groupby('section')
     }
+
+    # Add domains.
+    if 'sectors' in environment:
+        sectors = work_environments[work_environments.section.str.lower() == 'secteurs']
+        if sectors.domain.isnull().sum():
+            raise ValueError(
+                'Some sectors are not in any domain:\n"%s"' %
+                '"\n"'.join(sectors[sectors.domain.isnull()].name.tolist()))
+        environment['domains'] = [
+            {
+                'name': domain_name,
+                'sectors': env.name.tolist(),
+            }
+            for domain_name, env in sectors.groupby('domain')
+        ]
+
+    return environment
+
+
+def _load_domains_from_airtable(base_id, table, view=None):
+    """Load domain data from AirTable.
+
+    Args:
+        base_id: the ID of your AirTable app.
+        table: the name of the table to import.
+    Returns:
+        A map from sector names to domain names.
+    """
+    if not AIRTABLE_API_KEY:
+        raise ValueError(
+            'No API key found. Create an airtable API key at '
+            'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
+            'env var.')
+    client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
+    domains = {}
+    errors = []
+    for record in client.iterate(table, view=view):
+        fields = record['fields']
+        sector = fields.get('name')
+        if not sector:
+            continue
+        domain = fields.get('domain_name')
+        if not domain:
+            errors.append(ValueError(
+                'Sector "%s" on record "%s" has no domain_name set.',
+                sector, record['id']))
+            continue
+        domains[sector] = domain
+    if errors:
+        raise ValueError('%d errors while importing from Airtable:\n%s' % (
+            len(errors), '\n'.join(str(error) for error in errors)))
+    return domains
 
 
 def _load_assets_from_airtable(base_id, table, view=None):

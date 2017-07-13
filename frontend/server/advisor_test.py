@@ -15,27 +15,35 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
 
-class MaybeAdviseTestCase(unittest.TestCase):
-    """Unit tests for the maybe_advise function."""
+class _BaseTestCase(unittest.TestCase):
 
     def setUp(self):
-        super(MaybeAdviseTestCase, self).setUp()
+        super(_BaseTestCase, self).setUp()
         self.database = mongomock.MongoClient().test
         self.database.action_templates.insert_one({
             '_id': 'rec1CWahSiEtlwEHW',
             'goal': 'Reorientation !',
         })
-        self.user = user_pb2.User(features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE))
+        self.user = user_pb2.User(
+            features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE),
+            profile=user_pb2.UserProfile(name='Margaux', gender=user_pb2.FEMININE))
         advisor.clear_cache()
 
-    def test_no_advice_if_project_incomplete(self):
+
+@mock.patch(advisor.mail.__name__ + '.send_template')
+class MaybeAdviseTestCase(_BaseTestCase):
+    """Unit tests for the maybe_advise function."""
+
+    def test_no_advice_if_project_incomplete(self, mock_send_template):
         """Test that the advice do not get populated when the project is marked as incomplete."""
         project = project_pb2.Project(is_incomplete=True)
         advisor.maybe_advise(self.user, project, self.database)
 
         self.assertEqual(len(project.advices), 0)
 
-    def test_missing_module(self):
+        mock_send_template.assert_not_called()
+
+    def test_missing_module(self, mock_send_template):
         """Test that the advisor does not crash when a module is missing."""
         project = project_pb2.Project(advices=[project_pb2.Advice(
             advice_id='does-not-exist',
@@ -45,9 +53,20 @@ class MaybeAdviseTestCase(unittest.TestCase):
 
         self.assertEqual(project_before, str(project))
 
-    def test_find_all_pieces_of_advice(self):
+        mock_send_template.assert_not_called()
+
+    def test_find_all_pieces_of_advice(self, mock_send_template):
         """Test that the advisor scores all advice modules."""
-        project = project_pb2.Project()
+        mock_send_template().status_code = 200
+        mock_send_template.reset_mock()
+        project = project_pb2.Project(
+            project_id='1234',
+            target_job=job_pb2.Job(
+                name='Steward/ Hôtesse',
+                feminine_name='Hôtesse',
+                masculine_name='Steward',
+            ),
+        )
         self.database.advice_modules.insert_many([
             {
                 'adviceId': 'spontaneous-application',
@@ -61,12 +80,22 @@ class MaybeAdviseTestCase(unittest.TestCase):
             },
         ])
 
-        advisor.maybe_advise(self.user, project, self.database)
+        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
 
         self.assertEqual(['spontaneous-application'], [a.advice_id for a in project.advices])
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, project.advices[0].status)
 
-    def test_recommend_advice_none(self):
+        mock_send_template.assert_called_once()
+        data = mock_send_template.call_args[0][2]
+        self.assertEqual(
+            ['advices', 'baseUrl', 'firstName', 'ofProjectTitle', 'projectId'],
+            sorted(data.keys()))
+        self.assertEqual('http://base.example.com', data['baseUrl'])
+        self.assertEqual('Margaux', data['firstName'])
+        self.assertEqual("d'hôtesse", data['ofProjectTitle'])
+        self.assertEqual('1234', data['projectId'])
+
+    def test_recommend_advice_none(self, mock_send_template):
         """Test that the advisor does not recommend anyting if all modules score 0."""
         project = project_pb2.Project()
         self.database.advice_modules.insert_many([
@@ -86,8 +115,12 @@ class MaybeAdviseTestCase(unittest.TestCase):
 
         self.assertFalse(project.advices)
 
-    def test_incompatible_advice_modules(self):
+        mock_send_template.assert_not_called()
+
+    def test_incompatible_advice_modules(self, mock_send_template):
         """Test that the advisor discard incompatible advice modules."""
+        mock_send_template().status_code = 200
+        mock_send_template.reset_mock()
         project = project_pb2.Project()
         self.database.advice_modules.insert_many([
             {
@@ -117,6 +150,21 @@ class MaybeAdviseTestCase(unittest.TestCase):
         self.assertEqual(
             ['spontaneous-application', 'final-one'],
             [a.advice_id for a in project.advices])
+        mock_send_template.assert_called_once()
+
+
+class ExtraDataTestCase(_BaseTestCase):
+    """Unit tests for maybe_advise to compute extra data for advice modules."""
+
+    def setUp(self):
+        super(ExtraDataTestCase, self).setUp()
+        self.mail_patcher = mock.patch(advisor.mail.__name__ + '.send_template')
+        mock_send_template = self.mail_patcher.start()
+        mock_send_template().status_code = 200
+
+    def tearDown(self):
+        self.mail_patcher.stop()
+        super(ExtraDataTestCase, self).tearDown()
 
     def test_advice_other_work_env_extra_data(self):
         """Test that the advisor computes extra data for the work environment advice."""
@@ -320,6 +368,38 @@ class MaybeAdviseTestCase(unittest.TestCase):
         advice = next(a for a in project.advices if a.advice_id == 'my-advice')
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
         self.assertEqual('SNC', advice.associations_data.association_name)
+
+    def test_advice_volunteer_extra_data(self):
+        """Test that the advisor computes extra data for the "Volunteer" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(code_ogr='1234', job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='75')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.volunteering_missions.insert_one({
+            '_id': '75',
+            'missions': [
+                {'associationName': 'BackUp Rural'},
+                {'associationName': 'Construisons Ensemble Comment Faire'},
+            ],
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-volunteer',
+            'extraDataFieldName': 'volunteer_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(
+            ['BackUp Rural', 'Construisons Ensemble Comment Faire'],
+            sorted(advice.volunteer_data.association_names))
 
 
 class SelectAdviceForEmailTestCase(unittest.TestCase):

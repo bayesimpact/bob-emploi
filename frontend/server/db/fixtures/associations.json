@@ -1,0 +1,95 @@
+[
+ {
+  "_id": "recWCC4NvZrpYICqc",
+  "filters": [
+   "for-departement(14, 76, 59, 80, 92, 94, 75, 78, 91, 92, 93, 54, 57, 67, 22, 29, 35, 44, 56, 35, 37, 44, 49, 18, 37, 41, 45, 21, 25, 71, 71, 39, 47, 17, 12, 16, 24, 33, 47, 63, 79, 87, 19, 38, 42, 43, 63, 69, 73, 01, 31, 11, 13, 06, 83, 84, 06,)"
+  ],
+  "link": "http://snc.asso.fr/",
+  "name": "Solidarité Nouvelle face au Chômage (SNC)"
+ },
+ {
+  "_id": "rec6MmafXTYGoxhXk",
+  "filters": [
+   "for-departement(44, 75)"
+  ],
+  "link": "http://cojob.fr/groupes",
+  "name": "Co Job"
+ },
+ {
+  "_id": "reccYwwX0mgFm32rt",
+  "filters": [
+   "for-qualified(bac+3)",
+   "for-departement(75, 01, 07, 26, 38, 42, 69, 73, 74, 03, 15, 43, 63, 44, 49, 53, 72, 85, 09, 12, 31, 32, 46, 65, 81, 82, 30, 34, 48, 66, 92, 02, 59, 60, 62, 80)"
+  ],
+  "link": "http://mozaikrh.com/campus/",
+  "name": "Mozaik RH "
+ },
+ {
+  "_id": "recGJKRTTbNQ4CzXF",
+  "filters": [
+   "for-young(25)",
+   "for-qualified(bac+3)",
+   "for-departement(01, 07, 26, 38, 42, 69, 73, 74, 75, 77, 78, 95, 91, 28, 41, 45, 37, 36, 18, 76, 27, 14, 50, 62, 59, 80, 60, 02, 53, 72, 49, 44, 79, 86, 16, 17, 24, 33, 47, 40, 64, 31, 65, 81, 82, 30, 34, 11, 66, 13, 83, 06, 57, 67, 68)"
+  ],
+  "link": "http://www.nqt.fr/presentation-136.html",
+  "name": "Nos quartiers ont du talent (NQT)"
+ },
+ {
+  "_id": "recnDWTSuaHWM1Rr7",
+  "filters": [
+   "for-departement(67)"
+  ],
+  "link": "http://www.activaction.org/",
+  "name": "Activ'Action"
+ },
+ {
+  "_id": "reckUNqbSdOCwt6hA",
+  "filters": [
+   "for-qualified(bac+3)",
+   "for-complex-application",
+   "for-departement(35)"
+  ],
+  "link": "http://www.ascape35.org/",
+  "name": "Ascape : Association des cadres pour l'emploi"
+ },
+ {
+  "_id": "recBODKSNKHrISSab",
+  "filters": [
+   "for-qualified(bac+3)",
+   "for-complex-application",
+   "for-departement(53)"
+  ],
+  "link": "http://www.ascape53.org/",
+  "name": "Ascape : Association des cadres pour l'emploi"
+ },
+ {
+  "_id": "recwSQqJJGB162bIe",
+  "filters": [
+   "for-qualified(bac+3)",
+   "for-complex-application",
+   "for-departement(72)"
+  ],
+  "link": "http://www.ascape72.org/",
+  "name": "Ascape : Association des cadres pour l'emploi"
+ },
+ {
+  "_id": "recaz2sXN1pBmmB5E",
+  "filters": [
+   "for-qualified(bac+3)",
+   "for-complex-application",
+   "for-departement(49)"
+  ],
+  "link": "http://www.ascape49.org/",
+  "name": "Ascape : Association des cadres pour l'emploi"
+ },
+ {
+  "_id": "recZbAckOTaIzZNpU",
+  "filters": [
+   "for-complex-application",
+   "for-qualified(bac+3)",
+   "for-departement(69)"
+  ],
+  "link": "http://www.ressortweb.fr/",
+  "name": "Ressort"
+ }
+]

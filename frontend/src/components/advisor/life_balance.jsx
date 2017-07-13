@@ -5,17 +5,16 @@ import React from 'react'
 import cinemaIcon from 'images/hobbies/cinema.svg'
 import cookIcon from 'images/hobbies/cook.svg'
 import fitnessIcon from 'images/hobbies/fitness.svg'
-import heartIcon from 'images/hobbies/heart.svg'
 import runIcon from 'images/hobbies/run.svg'
 import searchIcon from 'images/hobbies/search.svg'
 import swimIcon from 'images/hobbies/swim.svg'
 import {AppearingList, Colors, Icon, Styles} from 'components/theme'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   render() {
     return <div style={{fontSize: 30}}>
-      Faites du bénévolat, du sport ou allez au cinéma… Ça vous booste le moral
+      Faites du sport ou allez au cinéma… Ça vous booste le moral
       et ça ajoute du peps dans votre CV.
     </div>
   }
@@ -23,11 +22,6 @@ class FullAdviceCard extends React.Component {
 
 
 const hobbies = [
-  {
-    icon: heartIcon,
-    keywords: 'bénévolat',
-    title: 'Faire du bénévolat dans une association',
-  },
   {
     icon: fitnessIcon,
     keywords: 'salle sport',
@@ -56,12 +50,12 @@ const hobbies = [
   {
     icon: searchIcon,
     title: "Trouver d'autres activités…",
-    url: 'http://eterritoire.fr',
+    url: '/api/redirect/eterritoire/%cityId',
   },
 ]
 
 
-class AdvicePageContent extends React.Component {
+class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     project: PropTypes.shape({
       mobility: PropTypes.shape({
@@ -74,8 +68,8 @@ class AdvicePageContent extends React.Component {
     const {city} = this.props.project.mobility
     return <AppearingList>
       {hobbies.map((hobby, index) => <Hobby
-          style={{marginTop: index ? -1 : 0}} {...hobby}
-          key={`hobby-${index}`} city={city} />)}
+        style={{marginTop: index ? -1 : 0}} {...hobby}
+        key={`hobby-${index}`} city={city} />)}
     </AppearingList>
   }
 }
@@ -93,7 +87,7 @@ class HobbyBase extends React.Component {
 
   handleClick = () => {
     const {city, keywords, url} = this.props
-    const finalUrl = url ||
+    const finalUrl = url && url.replace('%cityId', city.cityId) ||
       `https://www.google.fr/search?q=${encodeURIComponent(keywords + ' ' + city.name)}`
     window.open(finalUrl, '_blank')
   }
@@ -130,4 +124,4 @@ class HobbyBase extends React.Component {
 const Hobby = Radium(HobbyBase)
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

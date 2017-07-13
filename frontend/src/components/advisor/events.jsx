@@ -13,7 +13,7 @@ import eventsTypes from './data/events.json'
 import {ToolCard} from './base'
 
 
-class FullAdviceCard extends React.Component {
+class AdviceCard extends React.Component {
   static propTypes = {
     project: PropTypes.object,
   }
@@ -60,7 +60,7 @@ const EVENT_TOOLS = [
 ]
 
 
-class AdvicePageContent extends React.Component {
+class ExpandedAdviceCardContent extends React.Component {
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -111,8 +111,8 @@ class AdvicePageContent extends React.Component {
       <div style={toolsContainerStyle}>
         {EVENT_TOOLS.map(({title, ...props}, index) =>
           <ToolCard
-              {...props} key={index}
-              style={{marginRight: index % 2 ? 0 : 20, ...cardStyle}}>
+            {...props} key={index}
+            style={{marginRight: index % 2 ? 0 : 20, ...cardStyle}}>
             {title}
           </ToolCard>
         )}
@@ -122,4 +122,4 @@ class AdvicePageContent extends React.Component {
 }
 
 
-export default {AdvicePageContent, FullAdviceCard}
+export default {AdviceCard, ExpandedAdviceCardContent}

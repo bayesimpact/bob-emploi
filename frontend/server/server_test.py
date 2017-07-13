@@ -19,6 +19,10 @@ from bob_emploi.frontend import server
 # TODO(pascal): Split this smaller test modules.
 # pylint: disable=too-many-lines
 
+# Allow access to server's top constant pulled from os environment so that we
+# can test the various features controlled by those env vars.
+# pylint: disable=protected-access
+
 _TIME = time.time
 
 
@@ -49,7 +53,6 @@ def _add_project(user):
     user['projects'] = user.get('projects', []) + [{
         'targetJob': {'jobGroup': {'romeId': 'A1234'}},
         'mobility': {'city': {'cityId': '31555'}},
-        'intensity': 'PROJECT_PRETTY_INTENSE',
     }]
 
 
@@ -58,7 +61,8 @@ def _clean_up_variable_flags(features_enabled):
     for feature in features_enabled:
         for prefix in (
                 'actionFeedbackModal', 'advisor', 'hideDiscoveryNav',
-                'lbbIntegration', 'stickyActions', 'alpha', 'netPromoterScoreEmail'):
+                'lbbIntegration', 'stickyActions', 'alpha', 'netPromoterScoreEmail',
+                'poleEmploi'):
             if feature.startswith(prefix):
                 del_features.append(feature)
     for feature in del_features:
@@ -93,7 +97,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
     @mock.patch(requests.__name__ + '.post')
     def test_feedback(self, mock_post):
         """Basic call to "/api/feedback"."""
-        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        server._SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
 
         user_id = self._create_user_joe_the_cheminot()
 
@@ -123,7 +127,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
     @mock.patch(requests.__name__ + '.post')
     def test_feedback_no_user(self, mock_post):
         """Testing /api/feedback with missing user ID."""
-        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        server._SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
 
         self._create_user_joe_the_cheminot()
 
@@ -141,7 +145,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
 
     def test_feedback_wrong_user(self):
         """Testing /api/feedback with wrong user ID, this should fail."""
-        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        server._SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
         self._create_user_joe_the_cheminot()
 
         response = self.app.post(
@@ -154,7 +158,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
     @mock.patch(requests.__name__ + '.post')
     def test_feedback_missing_project(self, mock_post):
         """Testing /api/feedback with missing project ID but correct user ID."""
-        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        server._SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
         user_id = self._create_user_joe_the_cheminot()
 
         response = self.app.post(
@@ -169,7 +173,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
 
     def test_feedback_wrong_project(self):
         """Testing /api/feedback with ok user ID and wrong project ID, this should fail."""
-        server.SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
+        server._SLACK_FEEDBACK_URL = 'https://slack.example.com/url'
         user_id = self._create_user_joe_the_cheminot()
 
         response = self.app.post(
@@ -179,13 +183,59 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(404, response.status_code)
 
+    @mock.patch(now.__name__ + '.get')
+    def test_usage_stats(self, mock_now):
+        """Testing /api/usage/stats endpoint."""
+        self._db.user.insert_many([
+            {'registeredAt': '2016-11-01T12:00:00Z'},
+            {'registeredAt': '2016-11-01T12:00:00Z'},
+            {'registeredAt': '2017-06-03T12:00:00Z'},
+            {'registeredAt': '2017-06-03T13:00:00Z', 'profile': {'email': 'real@email.fr'}},
+            {'registeredAt': '2017-06-04T12:00:00Z', 'profile': {'email': 'fake@example.com'}},
+            {'registeredAt': '2017-06-10T11:00:00Z', 'projects': [{'feedback': {'score': 5}}]},
+            {'registeredAt': '2017-06-10T11:00:00Z', 'projects': [{'feedback': {'score': 2}}]},
+        ])
+        mock_now.return_value = datetime.datetime(
+            2017, 6, 10, 12, 30, tzinfo=datetime.timezone.utc)
+
+        response = self.app.get('/api/usage/stats')
+        self.assertEqual(
+            {
+                'dailyScoresCount': {'2': 1, '5': 1},
+                'totalUserCount': 7,
+                'weeklyNewUserCount': 4,
+            },
+            self.json_from_response(response))
+
+    def test_redirect_eterritoire(self):
+        """Check the /api/redirect/eterritoire endpoint."""
+        self._db.eterritoire_links.insert_one({
+            '_id': '69123',
+            'path': '/lyon/69123',
+        })
+
+        response = self.app.get('/api/redirect/eterritoire/69123')
+        self.assertEqual(302, response.status_code)
+        self.assertEqual('http://www.eterritoire.fr/lyon/69123', response.location)
+
+    def test_redirect_eterritoire_missing(self):
+        """Check the /api/redirect/eterritoire endpoint for missing city."""
+        self._db.eterritoire_links.insert_one({
+            '_id': '69123',
+            'path': '/lyon/69123',
+        })
+
+        response = self.app.get('/api/redirect/eterritoire/69006')
+        self.assertEqual(302, response.status_code)
+        self.assertEqual('http://www.eterritoire.fr', response.location)
+
 
 class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
     """Tests for the /api/user/nps-survey-response endpoint."""
 
     def setUp(self):
         super(NPSSurveyEndpointTestCase, self).setUp()
-        server.ADMIN_AUTH_TOKEN = ''
+        server._ADMIN_AUTH_TOKEN = ''
 
     def test_set_nps_survey_response(self):
         """Calls to "/api/user/<user_email>/nps-survey-response"."""
@@ -243,7 +293,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         """Endpoint protected and no auth token sent"."""
         user_email = 'foo@bar.fr'
         self.create_user(email=user_email)
-        server.ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
+        server._ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
         response = self.app.post(
             '/api/user/nps-survey-response',
             data='{"email": "%s", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
@@ -256,7 +306,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         """Endpoint protected and wrong auth token sent"."""
         user_email = 'foo@bar.fr'
         self.create_user(email=user_email)
-        server.ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
+        server._ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
         response = self.app.post(
             '/api/user/nps-survey-response',
             data='{"email": "%s", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
@@ -270,7 +320,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         """Endpoint protected and correct auth token sent"."""
         user_email = 'foo@bar.fr'
         self.create_user(email=user_email)
-        server.ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
+        server._ADMIN_AUTH_TOKEN = 'cryptic-admin-auth-token-123'
         response = self.app.post(
             '/api/user/nps-survey-response',
             data='{"email": "%s", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
@@ -353,6 +403,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info2.pop('projects')
         user_info.pop('projects')
         user_info2.pop('featuresEnabled')
+        user_info2.pop('revision')
         self.assertEqual(user_info, user_info2)
 
     def test_user(self):
@@ -379,6 +430,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                     'city': {'name': 'fobar'},
                     'email': 'foo@bar.fr',
                 },
+                'revision': 1,
                 'userId': user_id,
             },
             user_info)
@@ -407,6 +459,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
                     'city': {'name': 'fobar'},
                     'email': 'foo@bar.fr',
                 },
+                'revision': 1,
                 'userId': user_id,
             },
             stored_user_info)
@@ -604,17 +657,37 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         response2 = self.app.post(
             '/api/user',
-            data='{"profile": {"city": {"name": "very different"}, '
-            '"email": "foo@bar.fr"}, "userId": "%s"}' % user_id,
+            data='{"profile": {"name": "very different", '
+            '"email": "foo@bar.fr"}, "revision": 2, "userId": "%s"}' % user_id,
             content_type='application/json')
         user_info2 = self.json_from_response(response2)
         user_id2 = user_info2.pop('userId')
         user_info2.pop('registeredAt')
-        self.assertEqual({'name': 'very different'}, user_info2['profile']['city'])
+        self.assertEqual('very different', user_info2['profile']['name'])
         self.assertEqual(user_id, user_id2)
         self.assertEqual([user_id], [str(u['_id']) for u in self._db.user.find()])
         user_in_db = self.user_info_from_db(user_id)
-        self.assertEqual('very different', user_in_db['profile']['city']['name'])
+        self.assertEqual('very different', user_in_db['profile']['name'])
+
+    def test_update_revision(self):
+        """Updating a user to an old revision does not work and return the new version."""
+        user_id = self.create_user(email='foo@bar.fr')
+
+        self.app.post(
+            '/api/user',
+            data='{"profile": {"name": "new name", '
+            '"email": "foo@bar.fr"}, "revision": 15, "userId": "%s"}' % user_id,
+            content_type='application/json')
+
+        response = self.app.post(
+            '/api/user',
+            data='{"profile": {"name": "old name", '
+            '"email": "foo@bar.fr"}, "revision": 10, "userId": "%s"}' % user_id,
+            content_type='application/json')
+
+        user_info = self.json_from_response(response)
+        self.assertEqual('new name', user_info['profile'].get('name'))
+        self.assertEqual(16, user_info['revision'])
 
     def test_create_project(self):
         """An ID and the timestamp should be added to a new project."""
@@ -795,6 +868,21 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_in_db = self.user_info_from_db(user_id)
         self.assertFalse(user_in_db.get('appNotAvailable'))
 
+    def test_unverified_data_for_new_rome(self):
+        """Called with a user with no latest job and a project in an unverified data zone."""
+        user_id = self.create_user(email='foo@bar.fr')
+
+        response = self.app.post(
+            '/api/user',
+            data='{"projects": [{"targetJob": {"jobGroup": {"romeId": "L1510"}},'
+            '"mobility": {"city": {"postcodes": "12345"}}}],'
+            '"profile": {"email": "foo@bar.fr"}, "userId": "%s"}' % user_id,
+            content_type='application/json')
+        user_info = self.json_from_response(response)
+        self.assertTrue(user_info.get('appNotAvailable'))
+        user_in_db = self.user_info_from_db(user_id)
+        self.assertTrue(user_in_db.get('appNotAvailable'))
+
 
 class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/requirements endpoint."""
@@ -836,7 +924,7 @@ class ProjectAssociationsTestCase(base_test.ServerTestCase):
         self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
 
     def test_one_association(self):
-        """Basic test with one job board only."""
+        """Basic test with one association only."""
         self._db.associations.insert_one({'name': 'SNC'})
         response = self.app.get('/api/project/%s/%s/associations' % (self.user_id, self.project_id))
 
@@ -871,11 +959,11 @@ class ProjectAssociationsTestCase(base_test.ServerTestCase):
             [j.get('name') for j in associations.get('associations', [])])
 
 
-class ProjectJobBoardsTipsTestCase(base_test.ServerTestCase):
+class ProjectJobBoardsTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../jobboards endpoint."""
 
     def setUp(self):
-        super(ProjectJobBoardsTipsTestCase, self).setUp()
+        super(ProjectJobBoardsTestCase, self).setUp()
         self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
         user_info = self.get_user_info(self.user_id)
         self.project_id = user_info['projects'][0]['projectId']
@@ -921,6 +1009,280 @@ class ProjectJobBoardsTipsTestCase(base_test.ServerTestCase):
         self.assertEqual(
             ['Very specialized', 'Specialized', 'Generic'],
             [j.get('title') for j in jobboards.get('jobBoards', [])])
+
+
+class ProjectInterviewTipsTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../interview-tips endpoint."""
+
+    def setUp(self):
+        super(ProjectInterviewTipsTestCase, self).setUp()
+        self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/interview-tips' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_two_tips(self):
+        """Basic test with one quality and one improvement tip only."""
+        self._db.application_tips.insert_many([
+            {'content': 'Testing', 'type': 'QUALITY'},
+            {'content': 'Google your interviewer', 'type': 'INTERVIEW_PREPARATION'},
+        ])
+        response = self.app.get(
+            '/api/project/%s/%s/interview-tips' % (self.user_id, self.project_id))
+
+        tips = self.json_from_response(response)
+        self.assertEqual(
+            {
+                'qualities': [{'content': 'Testing'}],
+                'preparations': [{'content': 'Google your interviewer'}],
+            },
+            tips)
+
+    def test_filtered_tips(self):
+        """Tips not useful for this project is filtered."""
+        self._db.application_tips.insert_many([
+            {'content': 'Not a good one', 'filters': ['constant(0)'], 'type': 'QUALITY'},
+            {'content': 'Keep this one', 'filters': ['constant(1)'], 'type': 'QUALITY'},
+        ])
+        response = self.app.get(
+            '/api/project/%s/%s/interview-tips' % (self.user_id, self.project_id))
+
+        tips = self.json_from_response(response)
+        self.assertEqual(
+            {'qualities': [{'content': 'Keep this one', 'filters': ['constant(1)']}]},
+            tips)
+
+    def test_sorted_tips(self):
+        """More specialized tips come first."""
+        self._db.application_tips.insert_many([
+            {'content': 'Specialized', 'filters': ['constant(2)'], 'type': 'QUALITY'},
+            {'content': 'Generic', 'type': 'QUALITY'},
+            {
+                'content': 'Very specialized',
+                'filters': ['constant(1)', 'constant(1)'],
+                'type': 'QUALITY',
+            },
+        ])
+        response = self.app.get(
+            '/api/project/%s/%s/interview-tips' % (self.user_id, self.project_id))
+
+        tips = self.json_from_response(response)
+        self.assertEqual(
+            ['Very specialized', 'Specialized', 'Generic'],
+            [t.get('content') for t in tips.get('qualities', [])])
+
+
+class ProjectResumeTipsTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../resumet-ips endpoint."""
+
+    def setUp(self):
+        super(ProjectResumeTipsTestCase, self).setUp()
+        self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/resume-tips' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_two_tips(self):
+        """Basic test with one quality and one improvement tip only."""
+        self._db.application_tips.insert_many([
+            {'content': 'Testing', 'type': 'QUALITY'},
+            {'content': 'Re-read your CV', 'type': 'CV_IMPROVEMENT'},
+        ])
+        response = self.app.get('/api/project/%s/%s/resume-tips' % (self.user_id, self.project_id))
+
+        tips = self.json_from_response(response)
+        self.assertEqual(
+            {
+                'qualities': [{'content': 'Testing'}],
+                'improvements': [{'content': 'Re-read your CV'}],
+            },
+            tips)
+
+    def test_filtered_tips(self):
+        """Tips not useful for this project is filtered."""
+        self._db.application_tips.insert_many([
+            {'content': 'Not a good one', 'filters': ['constant(0)'], 'type': 'QUALITY'},
+            {'content': 'Keep this one', 'filters': ['constant(1)'], 'type': 'QUALITY'},
+        ])
+        response = self.app.get('/api/project/%s/%s/resume-tips' % (self.user_id, self.project_id))
+
+        tips = self.json_from_response(response)
+        self.assertEqual(
+            {'qualities': [{'content': 'Keep this one', 'filters': ['constant(1)']}]},
+            tips)
+
+    def test_sorted_tips(self):
+        """More specialized tips come first."""
+        self._db.application_tips.insert_many([
+            {'content': 'Specialized', 'filters': ['constant(2)'], 'type': 'QUALITY'},
+            {'content': 'Generic', 'type': 'QUALITY'},
+            {
+                'content': 'Very specialized',
+                'filters': ['constant(1)', 'constant(1)'],
+                'type': 'QUALITY',
+            },
+        ])
+        response = self.app.get('/api/project/%s/%s/resume-tips' % (self.user_id, self.project_id))
+
+        tips = self.json_from_response(response)
+        self.assertEqual(
+            ['Very specialized', 'Specialized', 'Generic'],
+            [t.get('content') for t in tips.get('qualities', [])])
+
+
+class ProjectCommuteTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../commute endpoint."""
+
+    def setUp(self):
+        super(ProjectCommuteTestCase, self).setUp()
+        self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/commute' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_no_cities(self):
+        """Basic test with no cities."""
+        response = self.app.get('/api/project/%s/%s/commute' % (self.user_id, self.project_id))
+
+        self.assertEqual({}, self.json_from_response(response))
+
+    def test_lyon(self):
+        """Cities available close to Lyon."""
+        user_id = self.create_user(
+            data={'projects': [{
+                'mobility': {'city': {'cityId': '69123'}},
+                "targetJob": {"jobGroup": {"romeId": "A6789"}},
+            }]})
+        self._db.cities.insert_one({
+            "_id": "69123",
+            "name": "Lyon",
+            "longitude": 4.8363116,
+            "latitude": 45.7640454,
+            "population": 400000,
+        })
+        self._db.hiring_cities.insert_one({
+            "_id": "A6789",
+            "hiringCities": [
+                {
+                    "offers": 10,
+                    "city": {
+                        "cityId": "69124",
+                        "name": "Brindas",
+                        "longitude": 4.6965532,
+                        "latitude": 45.7179675,
+                        "population": 10000,
+                    },
+                },
+                {
+                    "offers": 40,
+                    "city": {
+                        "cityId": "69123",
+                        "name": "Lyon",
+                        "longitude": 4.8363116,
+                        "latitude": 45.7640454,
+                        "population": 400000,
+                    },
+                },
+            ],
+        })
+        user_info = self.get_user_info(user_id)
+        project_id = user_info['projects'][0]['projectId']
+        response = self.app.get('/api/project/%s/%s/commute' % (user_id, project_id))
+
+        self.assertEqual(
+            ['Brindas'],
+            [m.get('name') for m in self.json_from_response(response).get('cities', [])])
+
+
+class ProjectVolunteerTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../volunteer endpoint."""
+
+    def setUp(self):
+        super(ProjectVolunteerTestCase, self).setUp()
+        self.user_id = self.create_user(modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/volunteer' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_no_missions(self):
+        """Basic test with no missions."""
+        response = self.app.get('/api/project/%s/%s/volunteer' % (self.user_id, self.project_id))
+
+        self.assertEqual({}, self.json_from_response(response))
+
+    def test_actual_missions(self):
+        """Missions available."""
+        user_id = self.create_user(
+            data={'projects': [{'mobility': {'city': {'departementId': '75'}}}]})
+        self._db.volunteering_missions.insert_one({
+            '_id': '75',
+            'missions': [
+                {'title': 'Mission n°1'},
+                {'title': 'Mission n°2'},
+            ],
+        })
+        user_info = self.get_user_info(user_id)
+        project_id = user_info['projects'][0]['projectId']
+        response = self.app.get('/api/project/%s/%s/volunteer' % (user_id, project_id))
+
+        self.assertEqual(
+            ['Mission n°1', 'Mission n°2'],
+            [m.get('title') for m in self.json_from_response(response).get('missions')])
+
+    def test_global_missions(self):
+        """Missions available both locally and globally."""
+        user_id = self.create_user(
+            data={'projects': [{'mobility': {'city': {'departementId': '75'}}}]})
+        self._db.volunteering_missions.insert_many([
+            {
+                '_id': '',
+                'missions': [
+                    {'title': 'Global Mission'},
+                ],
+            },
+            {
+                '_id': '75',
+                'missions': [
+                    {'title': 'Mission n°1'},
+                    {'title': 'Mission n°2'},
+                ],
+            },
+        ])
+        user_info = self.get_user_info(user_id)
+        project_id = user_info['projects'][0]['projectId']
+        response = self.app.get('/api/project/%s/%s/volunteer' % (user_id, project_id))
+
+        missions = self.json_from_response(response).get('missions', [])
+        self.assertEqual(
+            ['Mission n°1', 'Mission n°2', 'Global Mission'],
+            [m.get('title') for m in missions])
+        self.assertEqual(
+            [False, False, True],
+            [m.get('isAvailableEverywhere', False) for m in missions])
 
 
 class ProjectAdviceTipsTestCase(base_test.ServerTestCase):

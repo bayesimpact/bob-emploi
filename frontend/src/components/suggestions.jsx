@@ -3,8 +3,9 @@ import PropTypes from 'prop-types'
 import algoliasearch from 'algoliasearch/reactnative'
 import autocomplete from 'autocomplete.js/dist/autocomplete.min'
 
-require('styles/algolia.css')
 import algoliaLogoUrl from 'images/algolia.svg'
+
+require('styles/algolia.css')
 
 // An autocomplete input using Algolia as a backend.
 // TODO: Contribute to autocomplete.js.
@@ -69,7 +70,7 @@ class AlgoliaSuggest extends React.Component {
       {
         display: displayFunc,
         source: autocomplete.sources.hits(
-            algoliaClient.initIndex(algoliaIndex), {hitsPerPage: hitsPerPage}),
+          algoliaClient.initIndex(algoliaIndex), {hitsPerPage: hitsPerPage}),
         templates: {
           footer: '<div class="aa-footer">recherche rapide grâce à ' +
             '<img src="' + algoliaLogoUrl + '" alt="Algolia"/></div>',
@@ -105,7 +106,7 @@ class AlgoliaSuggest extends React.Component {
       // properties but it's quite hard as the hint object is not managed by
       // React and we have no use for it for now.
       if ((prevProps.style && prevProps.style.display) !==
-          (this.props.style.display && this.props.style.display)) {
+          (this.props.style && this.props.style.display)) {
         this.hint.style.display = this.props.style.display
       }
     }
@@ -127,7 +128,7 @@ class AlgoliaSuggest extends React.Component {
     }
     // TODO(pascal): Also style with focus and hover effects like the other inputs.
     return <input
-        onChange={wrappedOnChange} ref={handleRef} style={style} placeholder={placeholder} />
+      onChange={wrappedOnChange} ref={handleRef} style={style} placeholder={placeholder} />
   }
 }
 
@@ -183,6 +184,14 @@ class JobSuggest extends React.Component {
 
   componentWillMount() {
     this.reset()
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.value && nextProps.value.codeOgr) {
+      const genderizedJobName = genderizeJob(nextProps.value, nextProps.gender)
+      const jobName = this.maybeLowerFirstLetter(genderizedJobName)
+      this.setState({jobName})
+    }
   }
 
   reset() {
@@ -269,14 +278,6 @@ class JobSuggest extends React.Component {
     return this.state.jobName && !this.props.value
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.value && nextProps.value.codeOgr) {
-      const genderizedJobName = genderizeJob(nextProps.value, nextProps.gender)
-      const jobName = this.maybeLowerFirstLetter(genderizedJobName)
-      this.setState({jobName})
-    }
-  }
-
   render() {
     // eslint-disable-next-line no-unused-vars
     const {gender, onChange, style, value, ...otherProps} = this.props
@@ -289,13 +290,13 @@ class JobSuggest extends React.Component {
     const displayKey = 'libelleAppellationCourt' + (GENDERIZED_DISPLAY_KEY_SUFFIX[gender] || '')
     const display = suggestion => this.maybeLowerFirstLetter(suggestion[displayKey])
     return <AlgoliaSuggest
-        {...otherProps} algoliaIndex="jobs"
-        algoliaApp="K6ACI9BKKT" algoliaApiKey="da4db0bf437e37d6d49cefcb8768c67a"
-        displayValue={this.state.jobName} hint={true} autoselect={true}
-        autoselectOnBlur={true} style={fieldStyle} display={display}
-        onBlur={this.handleBlur}
-        onChange={this.handleChange}
-        suggestionTemplate={this.renderSuggestion} />
+      {...otherProps} algoliaIndex="jobs"
+      algoliaApp="K6ACI9BKKT" algoliaApiKey="da4db0bf437e37d6d49cefcb8768c67a"
+      displayValue={this.state.jobName} hint={true} autoselect={true}
+      autoselectOnBlur={true} style={fieldStyle} display={display}
+      onBlur={this.handleBlur}
+      onChange={this.handleChange}
+      suggestionTemplate={this.renderSuggestion} />
   }
 }
 
@@ -311,6 +312,14 @@ class CitySuggest extends React.Component {
   componentWillMount() {
     const {value} = this.props
     this.setState({cityName: value && value.name || ''})
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.value && nextProps.value.cityId) {
+      this.setState({
+        cityName: nextProps.value.name,
+      })
+    }
   }
 
   renderSuggestion = (suggestion) => {
@@ -335,14 +344,6 @@ class CitySuggest extends React.Component {
     onChange && onChange(city)
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.value && nextProps.value.cityId) {
-      this.setState({
-        cityName: nextProps.value.name,
-      })
-    }
-  }
-
   render() {
     // eslint-disable-next-line no-unused-vars
     const {onChange, style, value, ...otherProps} = this.props
@@ -352,13 +353,13 @@ class CitySuggest extends React.Component {
       fieldStyle.borderColor = 'red'
     }
     return <AlgoliaSuggest
-        {...otherProps} algoliaIndex="cities"
-        algoliaApp="K6ACI9BKKT" algoliaApiKey="da4db0bf437e37d6d49cefcb8768c67a"
-        displayValue={cityName} hint={true} autoselect={true} autoselectOnBlur={true}
-        hitsPerPage={5} displayKey="name"
-        style={fieldStyle}
-        onChange={this.handleChange}
-        suggestionTemplate={this.renderSuggestion} />
+      {...otherProps} algoliaIndex="cities"
+      algoliaApp="K6ACI9BKKT" algoliaApiKey="da4db0bf437e37d6d49cefcb8768c67a"
+      displayValue={cityName} hint={true} autoselect={true} autoselectOnBlur={true}
+      hitsPerPage={5} displayKey="name"
+      style={fieldStyle}
+      onChange={this.handleChange}
+      suggestionTemplate={this.renderSuggestion} />
   }
 }
 

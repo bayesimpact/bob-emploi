@@ -1,3 +1,7 @@
-.pep8
-.pylintrc
-data
+/data/bmo
+/data/crosswalks
+/data/dares
+/data/intitule_fap2009.txt
+/data/requirements
+/data/rome
+/data/stmt

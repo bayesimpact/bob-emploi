@@ -20,7 +20,7 @@ class JobOffersTestCase(unittest.TestCase):
     def test_csv2dicts(self):
         """Test basic usage of the csv2dicts function."""
         collection = job_offers.csv2dicts(self.job_offers_csv, self.colnames_csv)
-        self.assertEqual(3, len(collection))
+        self.assertEqual(4, len(collection))
         collection_proto = dict(mongo.collection_to_proto_mapping(
             collection, job_offer_counts_pb2.JobOfferCounts))
         # Point check, csv designed to match these numbers.
@@ -28,8 +28,8 @@ class JobOffersTestCase(unittest.TestCase):
         city = collection_proto['F1106:c' + city_id]
         self.assertEqual(city_id, city.city.city_id)
         self.assertEqual(2, city.city_count)
-        self.assertEqual(3, city.departement_count)
-        self.assertEqual(4, city.region_count)
+        self.assertEqual(6, city.departement_count)
+        self.assertEqual(7, city.region_count)
 
 
 if __name__ == '__main__':

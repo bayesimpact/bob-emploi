@@ -64,6 +64,10 @@ function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
+function interviewTipsGet({userId}, {projectId}) {
+  return getJson(`/api/project/${userId}/${projectId}/interview-tips`)
+}
+
 function jobBoardsGet({userId}, {projectId}) {
   return getJson(`/api/project/${userId}/${projectId}/jobboards`).
     then(response => response.jobBoards || [])
@@ -77,7 +81,7 @@ function markUsedAndRetrievePost(userId) {
   return postJson(`/api/app/use/${userId}`, undefined, true)
 }
 
-function migrateUserToAdvisor({userId}) {
+function migrateUserToAdvisorPost({userId}) {
   return postJson(`/api/user/${userId}/migrate-to-advisor`, undefined, true)
 }
 
@@ -85,12 +89,12 @@ function projectRequirementsGet(project) {
   return postJson('/api/project/requirements', project, true)
 }
 
-function refreshActionPlanPost(userId) {
-  return postJson('/api/user/refresh-action-plan', {userId}, true)
-}
-
 function resetPasswordPost(email) {
   return postJson('/api/user/reset-password', {email}, true)
+}
+
+function resumeTipsGet({userId}, {projectId}) {
+  return getJson(`/api/project/${userId}/${projectId}/resume-tips`)
 }
 
 function saveLikes(userId, likes) {
@@ -104,10 +108,6 @@ function userPost(user) {
   return postJson('/api/user', {...protoUser}, true)
 }
 
-function userGet(userId) {
-  return getJson(`/api/user/${userId}`)
-}
-
 function userDelete(user) {
   return deleteJson('/api/user', user)
 }
@@ -116,43 +116,37 @@ function userAuthenticate(authRequest) {
   return postJson('/api/user/authenticate', authRequest, true)
 }
 
-function exploreGet(city, sourceJob) {
-  const data = {city, sourceJob}
-  return getJson(`/api/explore/job?data=${encodeURIComponent(JSON.stringify(data))}`)
+function volunteeringMissionsGet({userId}, {projectId}) {
+  return getJson(`/api/project/${userId}/${projectId}/volunteer`).
+    then(response => response.missions || [])
 }
 
-function exploreJobGroupGet(city, jobGroupRomeId) {
-  const data = {
-    city,
-    sourceJob: {jobGroup: {romeId: jobGroupRomeId}},
-  }
-  return getJson(`/api/explore/job/stats?data=${encodeURIComponent(JSON.stringify(data))}`)
+function commutingCitiesGet({userId}, {projectId}) {
+  return getJson(`/api/project/${userId}/${projectId}/commute`).
+    then(response => response.cities || [])
 }
 
 function feedbackPost(feedback) {
   return postJson('/api/feedback', feedback, false)
 }
 
-const api = {
+export {
   adviceTipsGet,
   associationsGet,
   dashboardExportGet,
-  exploreGet,
-  exploreJobGroupGet,
   feedbackPost,
+  interviewTipsGet,
   jobBoardsGet,
   jobsGet,
   markUsedAndRetrievePost,
-  migrateUserToAdvisor,
+  migrateUserToAdvisorPost,
   projectRequirementsGet,
-  refreshActionPlanPost,
   resetPasswordPost,
+  resumeTipsGet,
   saveLikes,
   userAuthenticate,
   userDelete,
-  userGet,
   userPost,
+  volunteeringMissionsGet,
+  commutingCitiesGet,
 }
-
-
-export {api}
