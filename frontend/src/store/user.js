@@ -104,7 +104,7 @@ const ORIGIN_OPTIONS = [
   {name: 'Autre', value: 'FROM_OTHER'},
 ]
 
-const personalizationsPredicates = {
+export const personalizationsPredicates = {
   GRADUATE: ({highestDegree}) => highestDegree === 'LICENCE_MAITRISE' ||
     highestDegree === 'DEA_DESS_MASTER_PHD',
   NETWORK_SCORE_1: (profile, {networkEstimate}) => networkEstimate === 1,
@@ -113,13 +113,12 @@ const personalizationsPredicates = {
   SAME_JOB: (profile, {previousJobSimilarity}) => previousJobSimilarity !== 'NEVER_DONE',
 }
 
-const filterPredicatesMatch = {
+export const filterPredicatesMatch = {
   'for-experienced(2)': ({seniority}) => seniority === 'EXPERT' || seniority === 'SENIOR' ||
     seniority === 'INTERMEDIARY',
   'for-experienced(6)': ({seniority}) => seniority === 'EXPERT' || seniority === 'SENIOR',
 }
 
-// TODO(guillaume): Create import tests for the two next functions.
 function isEmailTemplatePersonalized(personalisations, profile, project) {
   // Check that personalization is not directly a frustration.
   const isFrustration = (profile.frustrations || []).find(frustration =>

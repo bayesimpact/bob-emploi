@@ -443,7 +443,6 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
 
     def test_email_address_change(self, mock_verify_id_token):
         """Change the email address of a Google SSO user."""
-        # TODO(pascal): Split in 3 tests with the distinct scenarii.
         mock_verify_id_token.return_value = {
             'iss': 'accounts.google.com',
             'email': 'pascal@bayes.org',
@@ -455,7 +454,26 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
         auth_response = self.json_from_response(response)
         user_id = auth_response['authenticatedUser']['userId']
 
-        # Try changing with an invalid email.
+        response = self.app.post(
+            '/api/user',
+            data='{"userId": "%s", "googleId": "12345", '
+            '"profile": {"email": "valid@email.fr"}}' % user_id,
+            content_type='application/json')
+        self.assertEqual(200, response.status_code)
+
+    def test_email_address_change_invalid(self, mock_verify_id_token):
+        """Change the email address of a Google SSO user to invalid email."""
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'pascal@bayes.org',
+            'sub': '12345',
+        }
+        response = self.app.post(
+            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        user_id = auth_response['authenticatedUser']['userId']
+
         response = self.app.post(
             '/api/user',
             data='{"userId": "%s", "googleId": "12345", '
@@ -463,7 +481,19 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
 
-        # Try with an email that is already in use.
+    def test_email_address_change_to_used(self, mock_verify_id_token):
+        """Change the email address of a Google SSO user to an address already used."""
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'pascal@bayes.org',
+            'sub': '12345',
+        }
+        response = self.app.post(
+            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        user_id = auth_response['authenticatedUser']['userId']
+
         self.authenticate_new_user(email='used@email.fr', password='psswd')
         response = self.app.post(
             '/api/user',
@@ -471,14 +501,6 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             '"profile": {"email": "used@email.fr"}}' % user_id,
             content_type='application/json')
         self.assertEqual(403, response.status_code)
-
-        # Try with a valid and not used email address.
-        response = self.app.post(
-            '/api/user',
-            data='{"userId": "%s", "googleId": "12345", '
-            '"profile": {"email": "valid@email.fr"}}' % user_id,
-            content_type='application/json')
-        self.assertEqual(200, response.status_code)
 
     def test_update_no_email_change(self, mock_verify_id_token):
         """Update a Google signed-in user without changing the email."""

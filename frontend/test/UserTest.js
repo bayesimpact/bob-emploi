@@ -1,8 +1,10 @@
 import {expect} from 'chai'
-import {FamilySituation, UserOrigin} from 'api/user'
+import {FamilySituation, Frustration, UserOrigin} from 'api/user'
 import {travelInTime, getUserFrustrationTags, getFamilySituationOptions, increaseRevision,
   getHighestDegreeDescription, ORIGIN_OPTIONS, keepMostRecentRevision,
-  isEmailTemplatePersonalized, projectMatchAllFilters} from 'store/user'
+  isEmailTemplatePersonalized, projectMatchAllFilters, filterPredicatesMatch,
+  personalizationsPredicates} from 'store/user'
+import emailTemplates from 'components/advisor/data/email_templates.json'
 
 
 describe('frustrations', () => {
@@ -245,5 +247,64 @@ describe('keepMostRecentRevision', () => {
       {origin: 'client', revision: 2},
       {origin: 'server', revision: 2})
     expect(user.origin).to.eq('client')
+  })
+})
+
+
+describe('Network email templates filters', () => {
+  it('should be defined in filterPredicatesMatch', () => {
+    let hasFilters = false
+    emailTemplates.network.forEach(({filters}) => {
+      if (filters) {
+        expect(filterPredicatesMatch).to.contain.all.keys(filters)
+        hasFilters = true
+      }
+    })
+    // If this is false, then this test is useless and can be removed.
+    expect(hasFilters).to.be.true
+  })
+
+  it('should use all the filters defined by filterPredicatesMatch', () => {
+    const usedFilters = {}
+    emailTemplates.network.forEach(({filters}) => {
+      if (filters) {
+        filters.forEach(filter => {
+          usedFilters[filter] = true
+        })
+      }
+    })
+    expect(usedFilters).to.contain.all.keys(filterPredicatesMatch)
+  })
+})
+
+
+describe('Network email templates personalizations', () => {
+  it('should be defined in personalizationsPredicates', () => {
+    let hasPersonalizations = false
+    emailTemplates.network.forEach(({personalizations}) => {
+      if (personalizations) {
+        personalizations.forEach(personalization => {
+          if (personalization in Frustration) {
+            return
+          }
+          expect(personalizationsPredicates).to.contain.all.keys(personalization)
+          hasPersonalizations = true
+        })
+      }
+    })
+    // If this is false, then this test is useless and can be removed.
+    expect(hasPersonalizations).to.be.true
+  })
+
+  it('should use all the personalizations defined by personalizationsPredicates', () => {
+    const usedPersonalizations = {}
+    emailTemplates.network.forEach(({personalizations}) => {
+      if (personalizations) {
+        personalizations.forEach(personalization => {
+          usedPersonalizations[personalization] = true
+        })
+      }
+    })
+    expect(usedPersonalizations).to.contain.all.keys(personalizationsPredicates)
   })
 })

@@ -363,9 +363,6 @@ class PersonasTestCase(unittest.TestCase):
             model = scoring.SCORING_MODELS[model_name]
             if isinstance(model, scoring.ConstantScoreModel):
                 continue
-            # TODO(pascal): Remove when we use a scoring model generator.
-            if isinstance(model, scoring.JobGroupFilter):
-                continue
             self.assertLess(
                 1, len(set(model_scores.values())),
                 msg='Model "%s" has the same score for all personas.' % model_name)

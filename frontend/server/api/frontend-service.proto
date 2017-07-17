@@ -53,10 +53,6 @@ service FrontendService {
   // directly).
   rpc UseApp(User) returns (User);
 
-  // Creates daily actions for the user if none for today.
-  // TODO(pascal): Clean up.
-  rpc RefreshActionPlan(User) returns (User);
-
   // Authenticate a user: retrieve a user's data or create a new user.
   rpc Authenticate(AuthRequest) returns (AuthResponse);
 

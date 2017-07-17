@@ -208,15 +208,6 @@ class ServerTestCase(unittest.TestCase):
         user_req = self.app.get('/api/user/' + user_id)
         return self.json_from_response(user_req)
 
-    def _refresh_action_plan(self, user_id, get_user_info=False):
-        user_info = self.json_from_response(self.app.post(
-            '/api/user/refresh-action-plan',
-            data='{"userId": "%s"}' % user_id,
-            content_type='application/json'))
-        if get_user_info:
-            return user_info
-        return user_info['projects'][0].get('actions', [])
-
     def user_info_from_db(self, user_id):
         """Get user's info directly from DB without calling any endpoint."""
         user_info = self._db.user.find_one({'_id': mongomock.ObjectId(user_id)})

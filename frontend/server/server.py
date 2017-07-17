@@ -164,14 +164,6 @@ def user_likes(user_data):
     return ''
 
 
-# TODO(pascal): Clean-up, this has no effect.
-@app.route("/api/user/refresh-action-plan", methods=['POST'])
-@proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
-def user_refresh_action_plan(user_data):
-    """Creates daily actions for the user if none for today."""
-    return _get_user_data(user_data.user_id)
-
-
 @app.route("/api/user/<user_id>/migrate-to-advisor", methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
 def migrate_to_advisor(user_id):

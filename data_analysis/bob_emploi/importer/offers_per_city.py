@@ -14,8 +14,10 @@ If you managed to get your hands on the offers dataset, you can run:
         --to_json
 """
 import collections
-import sys
 import math
+import sys
+
+import tqdm
 
 from bob_emploi.lib import cleaned_data
 from bob_emploi.lib import job_offers
@@ -34,18 +36,6 @@ _CityData = collections.namedtuple(
     '_CityData', "job_group_to_city_ids, offers_per_job_group, city_info")
 _CityOffers = collections.namedtuple(
     '_CityOffers', 'city offers')
-
-
-# TODO(guillaume): Replace this by a library like tqdm.
-def _print_progress(value, total, bar_length=100):
-    percent = round(value * 100 / total, 2)
-    filled_length = int(percent * bar_length / 100)
-    bar_ascii = '#' * filled_length + '-' * (bar_length - filled_length)
-
-    sys.stdout.write('[%s] %s%%\r' % (bar_ascii, percent))
-    if value == total:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
 
 
 def _find_better_names_for_cities(city_info, french_cities):
@@ -67,7 +57,7 @@ def _add_population_data(city_info, data_folder):
             city_info[city_code]['population'] = 0
 
 
-def _list_hiring_cities(offers_rows, min_creation_date, progress, data_folder):
+def _list_hiring_cities(offers_rows, min_creation_date, data_folder):
     """Segmenting the data into three dictionaries."""
     french_cities = cleaned_data.french_cities(data_folder, unique=True)
     french_cities.loc[french_cities.current_city_id.isnull(), 'current_city_id'] = \
@@ -76,14 +66,9 @@ def _list_hiring_cities(offers_rows, min_creation_date, progress, data_folder):
     job_group_to_city_ids = collections.defaultdict(lambda: collections.defaultdict(int))
     offers_per_job_group = collections.defaultdict(int)
     city_info = {}
-    counted = 0
     bad_format_records = 0
 
-    for offer in offers_rows:
-        counted += 1
-        if counted % 10000 == 0 and progress:
-            progress(counted, _TOTAL_RECORDS)
-
+    for offer in tqdm.tqdm(offers_rows, total=_TOTAL_RECORDS, file=sys.stdout):
         if offer.creation_date < min_creation_date:
             continue
 
@@ -121,8 +106,7 @@ def _list_hiring_cities(offers_rows, min_creation_date, progress, data_folder):
         city_info=city_info)
 
 
-def extract_offers_per_cities(
-        offers_file, colnames, min_creation_date, progress=_print_progress, data_folder='data'):
+def extract_offers_per_cities(offers_file, colnames, min_creation_date, data_folder='data'):
     """Extract the interesting cities in terms of number of offers for each job group.
 
     Args:
@@ -136,7 +120,7 @@ def extract_offers_per_cities(
 
     offers_rows = job_offers.iterate(offers_file, colnames, required_fields)
 
-    city_data = _list_hiring_cities(offers_rows, min_creation_date, progress, data_folder)
+    city_data = _list_hiring_cities(offers_rows, min_creation_date, data_folder)
 
     # Computing the threshold per job group.
     job_group_threshold = collections.defaultdict(float)

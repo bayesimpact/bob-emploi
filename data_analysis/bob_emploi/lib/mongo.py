@@ -7,6 +7,7 @@ import sys
 import time
 
 import pymongo
+import tqdm
 
 from google.protobuf import json_format
 
@@ -49,14 +50,12 @@ class Importer(object):
                 print(
                     "Inserting %d objects in chunks of %s" %
                     (total, chunk_size))
-                for pos in range(0, total, chunk_size):
-                    self._print_progress(pos, total)
+                for pos in tqdm.tqdm(range(0, total, chunk_size), file=sys.stdout):
                     try:
                         collection.insert_many(items[pos:pos + chunk_size])
                     except pymongo.errors.BulkWriteError as error:
                         print(error.details)
                         raise
-                self._print_progress(total, total)
         except Exception:
             collection.drop()
             raise
@@ -74,17 +73,6 @@ class Importer(object):
         client = pymongo.MongoClient(self.flag_values.mongo_url)
         database = client.get_default_database()
         return database.get_collection(collection_name + suffix)
-
-    # TODO: move to library
-    def _print_progress(self, value, total, bar_length=100):
-        percent = round(value * 100 / total, 2)
-        filled_length = int(percent * bar_length / 100)
-        bar_ascii = '#' * filled_length + '-' * (bar_length - filled_length)
-
-        sys.stdout.write('[%s] %s%%\r' % (bar_ascii, percent))
-        if value == total:
-            sys.stdout.write('\n')
-        sys.stdout.flush()
 
 
 def _get_doc_section(docstring, section_name):

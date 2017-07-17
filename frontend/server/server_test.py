@@ -592,10 +592,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         ]
         self.assertEqual(all_advices, project.get('advices'))
 
-        # TODO(pascal): Clean it up.
-        project_actions = self._refresh_action_plan(user_id)
-        self.assertEqual([], project_actions, msg='No actions generated for projects in Advisor')
-
     def test_post_user_with_no_id(self):
         """Called with no ID the endpoint should return an error."""
         user_id = self.create_user()

@@ -18,6 +18,8 @@ import csv
 from os import path
 import sys
 
+import tqdm
+
 from bob_emploi.lib import fhs
 from bob_emploi.lib import migration_helpers
 
@@ -55,18 +57,6 @@ _SALARY_BUCKET_SIZES = [
     _BucketRange(lower_bound=70000, bucket_size=5000),
     _BucketRange(lower_bound=100000, bucket_size=10000),
 ]
-
-
-# TODO: Move to a library.
-def _print_progress(value, total, bar_length=100):
-    percent = round(value * 100 / total, 2)
-    filled_length = int(percent * bar_length / 100)
-    bar_ascii = '#' * filled_length + '-' * (bar_length - filled_length)
-
-    sys.stdout.write('[%s] %s%%\r' % (bar_ascii, percent))
-    if value == total:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
 
 
 def compute_annual_salary(amt, unit):
@@ -131,7 +121,7 @@ def job_seeker_criteria(de_dict):
         salary_high)
 
 
-def main(fhs_folder, csv_output, progress=_print_progress):
+def main(fhs_folder, csv_output):
     """Extract the salaries information from FHS and bucketize them.
 
     In order to avoid issues about jobseekers being counted several times, we
@@ -156,18 +146,12 @@ def main(fhs_folder, csv_output, progress=_print_progress):
     total = 7000001
 
     job_seeker_counts = collections.defaultdict(int)
-    counted = 0
-    for de_dict in de_rows:
-        counted += 1
-        if counted % 10000 == 0 and progress:
-            progress(counted, total)
+    for de_dict in tqdm.tqdm(de_rows, total=total, file=sys.stdout):
         # Discard historical job requests, only work on the ones that are still
         # open.
         if de_dict[_END_DATE_FIELD]:
             continue
         job_seeker_counts[job_seeker_criteria(de_dict)] += 1
-
-    _print_progress(total, total)
 
     with open(csv_output, 'w') as csv_file:
         writer = csv.writer(csv_file)

@@ -22,6 +22,7 @@ import sys
 
 import numpy
 import pandas
+import tqdm
 
 from bob_emploi.lib import fhs
 from bob_emploi.lib import migration_helpers
@@ -33,18 +34,7 @@ _END_DATE_FIELD = fhs.CANCELATION_REASON_FIELD
 _JOB_CODE_FIELD = fhs.JOB_ID_FIELD
 
 
-def _print_progress(value, total, bar_length=100):
-    percent = round(value * 100 / total, 2)
-    filled_length = int(percent * bar_length / 100)
-    bar_ascii = '#' * filled_length + '-' * (bar_length - filled_length)
-
-    sys.stdout.write('[%s] %s%%\r' % (bar_ascii, percent))
-    if value == total:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
-
-
-def main(fhs_folder, json_output, progress=_print_progress):
+def main(fhs_folder, json_output):
     """Extract the job OGR codes from FHS and count them.
 
     Args:
@@ -65,17 +55,11 @@ def main(fhs_folder, json_output, progress=_print_progress):
     # If we need to do that often we could replace this code by a simple Map
     # Reduce to use multiple threads or multiple computers.
     job_counts = collections.defaultdict(int)
-    counted = 0
-    for de_dict in de_rows:
-        counted += 1
-        if counted % 1000 == 0 and progress:
-            progress(counted, total)
+    for de_dict in tqdm.tqdm(de_rows, total=total, file=sys.stdout):
         if de_dict[_END_DATE_FIELD]:
             continue
         job_code = de_dict[_JOB_CODE_FIELD]
         job_counts[job_code] += 1
-
-    _print_progress(total, total)
 
     job_count_series = pandas.Series(job_counts)
     # Add random gaussian noise so that numbers do not reveal initial data.
