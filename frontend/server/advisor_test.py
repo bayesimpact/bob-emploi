@@ -201,7 +201,7 @@ class ExtraDataTestCase(_BaseTestCase):
         project = project_pb2.Project(
             target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
             mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
-            job_search_length_months=7,
+            job_search_length_months=6,
             weekly_applications_estimate=project_pb2.A_LOT,
             total_interview_count=1,
         )

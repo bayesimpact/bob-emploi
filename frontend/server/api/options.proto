@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "google/protobuf/descriptor.proto";
+
+
+extend google.protobuf.FieldOptions {
+  // Give a bit more semantics to a field so that we can programatically
+  // identify sensitive fields to handle with care.
+  FieldUsage field_usage = 50000;
+}
+
+
+enum FieldUsage {
+  // Many fields are not tagged, this is either because they have not been
+  // tagged yet or because they define the user's project and as such do not
+  // need special care yet. In the future we might add a tag for those if there
+  // is a need.
+  UNKNOWN_FIELD_USAGE = 0;
+
+  // A field that may uniquely identify a user.
+  PERSONAL_IDENTIFIER = 1;
+
+  // A field that is only used for the app's UX or UI: it does not contain
+  // actual user data.
+  APP_ONLY = 2;
+
+  // A field which value is provided by the user as a feedback.
+  USER_FEEDBACK = 3;
+
+  // A field populated by the app as a result of an algorithm.
+  ALGORITHM_RESULT = 4;
+}

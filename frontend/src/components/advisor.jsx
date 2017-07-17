@@ -31,6 +31,7 @@ import NetworkApplicationMedium from './advisor/network_medium'
 import NetworkApplicationGood from './advisor/network_good'
 import OtherWorkEnv from './advisor/other_work_env'
 import SpontaneousApplication from './advisor/spontaneous'
+import Training from './advisor/training'
 import Volunteer from './advisor/volunteer'
 import WowBaker from './advisor/wow_baker'
 import WowHairdresser from './advisor/wow_hairdresser'
@@ -53,6 +54,7 @@ const ADVICE_MODULES = {
   'network-application-medium': NetworkApplicationMedium,
   'other-work-env': OtherWorkEnv,
   'spontaneous-application': SpontaneousApplication,
+  'training': Training,
   'volunteer': Volunteer,
   'wow-baker': WowBaker,
   'wow-hairdresser': WowHairdresser,

@@ -46,6 +46,7 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import export_pb2
+from bob_emploi.frontend.api import use_case_pb2
 
 app = flask.Flask(__name__)  # pylint: disable=invalid-name
 # Get original host and scheme used before proxies (load balancer, nginx, etc).
@@ -182,6 +183,15 @@ def migrate_to_advisor(user_id):
         upsert=False)
 
     return _save_user(user_proto, is_new_user=False)
+
+
+@app.route('/api/project/compute-advices', methods=['POST'])
+@proto.flask_api(in_type=user_pb2.User, out_type=project_pb2.Advices)
+def compute_advices_for_project(user_proto):
+    """Advise on a user project."""
+    if not user_proto.projects:
+        flask.abort(422, 'There is no input project to advise on.')
+    return advisor.compute_advices_for_project(user_proto, user_proto.projects[0], _DB)
 
 
 @app.route('/api/app/use/<user_id>', methods=['POST'])
@@ -399,8 +409,10 @@ def _copy_unmodifiable_fields(previous_user_data, user_data):
 
 
 def _assert_no_credentials_change(previous, new):
-    if previous.facebook_id != new.facebook_id or previous.google_id != new.google_id:
-        flask.abort(403, 'Impossible de modifier jour les identifiants.')
+    if previous.facebook_id != new.facebook_id:
+        flask.abort(403, "Impossible de modifier l'identifiant Facebook.")
+    if previous.google_id != new.google_id:
+        flask.abort(403, "Impossible de modifier l'identifiant Google.")
     if previous.profile.email == new.profile.email:
         return
     if (new.facebook_id and not previous.profile.email) or new.google_id:
@@ -457,7 +469,6 @@ def _get_user_data(user_id):
                 project.kind = project_pb2.FIND_ANOTHER_JOB
 
         project.ClearField('diploma_fulfillment_estimate')
-        project.ClearField('intensity')
         project.ClearField('actions_generated_at')
 
     # TODO(pascal): Remove the fields completely after this has been live for a
@@ -895,6 +906,38 @@ def redirect_eterritoire(city_id):
     link = association_pb2.SimpleLink()
     proto.parse_from_mongo(_DB.eterritoire_links.find_one({'_id': city_id}), link)
     return flask.redirect('http://www.eterritoire.fr%s' % link.path)
+
+
+@app.route('/api/eval/use-case-pool-names', methods=['GET'])
+@proto.flask_api(out_type=use_case_pb2.UseCasePoolNames)
+def eval_use_case_pools():
+    """Retrieve a list of the available pools of anonymized user examples."""
+    use_case_pool_dicts = _DB.use_case.aggregate([
+        {'$group': {
+            '_id': '$_poolName',
+        }},
+        {'$project': {
+            '_id': 0,
+            'name': '$_id',
+        }}
+    ])
+    use_case_pool_names = [pool['name'] for pool in use_case_pool_dicts]
+    return use_case_pb2.UseCasePoolNames(
+        use_case_pool_names=use_case_pool_names
+    )
+
+
+@app.route('/api/eval/use-cases/<pool_name>', methods=['GET'])
+@proto.flask_api(out_type=user_pb2.UseCases)
+def eval_use_cases(pool_name):
+    """Retrieve a list of anonymized user examples from one pool."""
+    use_case_dicts = _DB.use_case.find({'_poolName': pool_name})
+    use_case_protos = []
+    for use_case_dict in use_case_dicts:
+        use_case_proto = user_pb2.User()
+        proto.parse_from_mongo(use_case_dict, use_case_proto)
+        use_case_protos.append(use_case_proto)
+    return user_pb2.UseCases(use_cases=use_case_protos)
 
 
 @app.before_request

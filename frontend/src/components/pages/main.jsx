@@ -6,6 +6,7 @@ import {IndexRoute, Redirect, Router, Route, browserHistory} from 'react-router'
 import {syncHistoryWithStore, routerReducer} from 'react-router-redux'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import thunk from 'redux-thunk'
+import RavenMiddleware from 'redux-raven-middleware'
 import Snackbar from 'material-ui/Snackbar'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import {StyleRoot} from 'radium'
@@ -16,6 +17,7 @@ import {Routes} from 'components/url'
 import {Colors} from 'components/theme'
 import {AdvicePage} from './advice'
 import {CookiesPage} from './cookies'
+import {EvalPage} from './eval'
 import {LandingPage} from './landing'
 import {NewProjectPage} from './new_project'
 import {ProfilePage} from './profile'
@@ -24,6 +26,7 @@ import {DashboardExportPage} from './dashboard_export'
 import {PrivacyPage} from './privacy'
 import {ProfessionalsPage} from './professionals'
 import {VideoSignUpPage} from './signup'
+import {TransparencyPage} from './transparency'
 import {TermsAndConditionsPage} from './terms'
 import {UpdatePage} from './update'
 import {VisionPage} from './vision'
@@ -41,16 +44,27 @@ import {app, asyncState} from 'store/app_reducer'
 import {mainSelector, onboardingComplete} from 'store/main_selectors'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {createPageviewTracker} from 'store/google_analytics'
+import config from 'config'
 
 require('normalize.css')
 require('styles/App.css')
 
 polyfill()
 
+const ravenMiddleware = RavenMiddleware(config.sentryDSN, {}, {
+  stateTransformer: function(state) {
+    return {
+      ...state,
+      // Don't send user info to Sentry.
+      user: 'Removed with ravenMiddleware stateTransformer',
+    }
+  },
+})
 const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
 // Enable devTools middleware.
 const finalCreateStore = composeWithDevTools(
-  applyMiddleware(thunk, amplitudeMiddleware),
+  // ravenMiddleware needs to be first to correctly catch exception down the line.
+  applyMiddleware(ravenMiddleware, thunk, amplitudeMiddleware),
 )(createStore)
 
 // Create the store that will be provided to connected components via Context.
@@ -302,12 +316,14 @@ class MyRouterBase extends React.Component {
         createElement={this.createElement}>
         <Route path={Routes.ROOT} component={PageHolder}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
+          <Route path={Routes.EVAL_PAGE} component={mainConnect(EvalPage)} />
           <Route onEnter={this.requireUserCheck}>
             <IndexRoute component={mainConnect(HomePage)} />
             <Route path={Routes.APP_NOT_AVAILABLE_PAGE} component={AppNotAvailablePage} />
             <Route path={Routes.CONTRIBUTION_PAGE} component={mainConnect(ContributionPage)} />
             <Route path={Routes.COOKIES_PAGE} component={CookiesPage} />
             <Route path={Routes.PRIVACY_PAGE} component={PrivacyPage} />
+            <Route path={Routes.TRANSPARENCY_PAGE} component={mainConnect(TransparencyPage)} />
             <Route path={Routes.PROFESSIONALS_PAGE} component={mainConnect(ProfessionalsPage)} />
             <Route path={Routes.VIDEO_SIGNUP_PAGE} component={VideoSignUpPage} />
             <Route path={Routes.TERMS_AND_CONDITIONS_PAGE} component={TermsAndConditionsPage} />

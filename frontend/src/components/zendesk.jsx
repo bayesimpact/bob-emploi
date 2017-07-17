@@ -54,7 +54,7 @@ class ZendeskChatButton extends React.Component {
 
     window.zE(() => {
       window.zE.hide()
-      window.$zopim(() => {
+      window.$zopim && window.$zopim(() => {
         // More configuration values here:
         // https://api.zopim.com/files/meshim/widget/controllers/LiveChatAPI-js.html
         const {$zopim} = window
@@ -80,7 +80,7 @@ class ZendeskChatButton extends React.Component {
     if (!--numChatButtonsShown) {
       clearTimeout(timeout)
       timeout = setTimeout(() => {
-        window.$zopim(() => window.$zopim.livechat.hideAll())
+        window.$zopim && window.$zopim(() => window.$zopim.livechat.hideAll())
       }, 1)
     }
   }

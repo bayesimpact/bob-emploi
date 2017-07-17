@@ -70,7 +70,7 @@ export class Logger {
 
   getEventProperties(action, state) {
     const properties = {}
-    if (browser.name) {
+    if (browser && browser.name) {
       properties['$browser'] = browser.name
     }
     properties['$hostname'] = window.location.hostname

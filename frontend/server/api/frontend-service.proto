@@ -53,6 +53,13 @@ service FrontendService {
   // directly).
   rpc UseApp(User) returns (User);
 
+  // Advise on a given project (the first one find in the user proto) and
+  // returns personalized advice. In User, not all the fields need to be
+  // populated, the method uses the following fields: features_enabled, profile
+  // and projects. Note that the user does not need to have an ID nor to exist
+  // in the database.
+  rpc AdviseOnProject(User) returns (Advices);
+
   // Authenticate a user: retrieve a user's data or create a new user.
   rpc Authenticate(AuthRequest) returns (AuthResponse);
 

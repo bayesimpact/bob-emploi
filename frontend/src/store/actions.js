@@ -1,11 +1,11 @@
 import {browserHistory} from 'react-router'
 import sha1 from 'sha1'
 
-import {adviceTipsGet, dashboardExportGet, jobBoardsGet, associationsGet,
-  volunteeringMissionsGet, jobsGet, projectRequirementsGet, userDelete,
-  markUsedAndRetrievePost, userPost, feedbackPost, userAuthenticate, saveLikes,
+import {adviceTipsGet, dashboardExportGet, evalUseCasePoolNamesGet, evalUseCasesGet,
+  jobBoardsGet, associationsGet, volunteeringMissionsGet, jobsGet, projectRequirementsGet,
+  userDelete, markUsedAndRetrievePost, userPost, feedbackPost, userAuthenticate, saveLikes,
   resetPasswordPost, migrateUserToAdvisorPost, commutingCitiesGet, resumeTipsGet,
-  interviewTipsGet} from './api'
+  interviewTipsGet, projectComputeAdvicesPost} from './api'
 import {splitFullName} from 'store/auth'
 import {newProject} from 'store/project'
 import {Gender, Situation, JobSearchPhase} from 'api/user'
@@ -78,6 +78,9 @@ export const SHARE_PRODUCT_TO_NETWORK = 'SHARE_PRODUCT_TO_NETWORK'
 export const TRACK_INITIAL_UTM_CONTENT = 'TRACK_INITIAL_UTM_CONTENT'
 export const BOB_SCORE_IS_SHOWN = 'BOB_SCORE_IS_SHOWN'
 export const SEND_NEW_ADVICE_IDEA = 'SEND_NEW_ADVICE_IDEA'
+export const COMPUTE_ADVICES_FOR_PROJECT = ' COMPUTE_ADVICES_FOR_PROJECT'
+export const GET_EVAL_USE_CASE_POOLS = 'GET_EVAL_USE_CASE_POOLS'
+export const GET_EVAL_USE_CASES = 'GET_EVAL_USE_CASES'
 
 // Logging only.
 const LANDING_PAGE_SECTION_IS_SHOWN = 'LANDING_PAGE_SECTION_IS_SHOWN'
@@ -227,6 +230,10 @@ function wrapAsyncAction(actionType, asyncFunc, options) {
 }
 
 // Asynchronous actions wrapped with the dispatched actions (see wrapAsyncAction).
+
+function computeAdvicesForProject(user) {
+  return wrapAsyncAction(COMPUTE_ADVICES_FOR_PROJECT, () => projectComputeAdvicesPost(user))
+}
 
 function getAdviceTips(project, advice) {
   return (dispatch, getState) => {
@@ -591,6 +598,20 @@ function askPasswordReset(email) {
   return wrapAsyncAction(RESET_USER_PASSWORD, () => resetPasswordPost(email))
 }
 
+function getEvalUseCasePoolNames() {
+  return dispatch => {
+    return dispatch(wrapAsyncAction(
+      GET_EVAL_USE_CASE_POOLS, () => evalUseCasePoolNamesGet()))
+  }
+}
+
+function getEvalUseCases(poolName) {
+  return dispatch => {
+    return dispatch(wrapAsyncAction(
+      GET_EVAL_USE_CASES, () => evalUseCasesGet(poolName)))
+  }
+}
+
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   readTip, facebookAuthenticateUser, sendAdviceFeedback, modifyProject,
   googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
@@ -605,5 +626,6 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   allAdvicesReadAction, shareProductToNetwork, trackInitialUtmContent,
   getVolunteeringMissions, sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
   landingPageSectionIsShown, getCommutingCities, bobScoreIsShown, getResumeTips,
-  getInterviewTips, openRegistrationModal, sendNewAdviceIdea,
+  getInterviewTips, openRegistrationModal, sendNewAdviceIdea, computeAdvicesForProject,
+  getEvalUseCasePoolNames, getEvalUseCases,
 }

@@ -168,6 +168,7 @@ IMPORTERS = {
             data-analysis-prepare \\
             python bob_emploi/importer/airtable_to_protos.py \\
             --table jobboards \\
+            --view viwKBgHagnOhGkGoj \\
             --proto JobBoard \\
             --base_id appXmyc7yYj0pOcae""",
         is_imported=True,

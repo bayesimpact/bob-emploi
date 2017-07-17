@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+
+message UseCasePoolNames {
+  // A sorted list of names of use case groups. The ones available in the db to be fetch.
+  repeated string use_case_pool_names = 1;
+}

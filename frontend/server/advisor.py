@@ -46,11 +46,28 @@ def maybe_advise(user, project, database, base_url='http://localhost:3000'):
 def _maybe_recommend_advice(user, project, database):
     if user.features_enabled.advisor != user_pb2.ACTIVE or project.advices:
         return False
+    advices = compute_advices_for_project(user, project, database)
+    for piece_of_advice in advices.advices:
+        piece_of_advice.status = project_pb2.ADVICE_RECOMMENDED
+    project.advices.extend(advices.advices[:])
+    return True
 
+
+def compute_advices_for_project(user, project, database):
+    """Advise on a user project.
+
+    Args:
+        user: the user's data, mainly used for their profile and features_enabled.
+        project: the project data. It will not be modified.
+        database: access to the MongoDB with market data.
+    Returns:
+        an Advices protobuffer containing a list of recommendations.
+    """
     scoring_project = scoring.ScoringProject(
         project, user.profile, user.features_enabled, database)
     scores = {}
     advice_modules = _advice_modules(database)
+    advice = project_pb2.Advices()
     for module in advice_modules:
         if not module.is_ready_for_prod and not user.features_enabled.alpha:
             continue
@@ -73,16 +90,15 @@ def _maybe_recommend_advice(user, project, database):
             break
         if module.airtable_id in incompatible_modules:
             continue
-        piece_of_advice = project.advices.add()
+        piece_of_advice = advice.advices.add()
         piece_of_advice.advice_id = module.advice_id
-        piece_of_advice.status = project_pb2.ADVICE_RECOMMENDED
         piece_of_advice.num_stars = scores.get(module.advice_id)
 
         incompatible_modules.update(module.incompatible_advice_ids)
 
         _compute_extra_data(piece_of_advice, module, scoring_project)
 
-    return True
+    return advice
 
 
 def _compute_extra_data(piece_of_advice, module, scoring_project):

@@ -90,7 +90,7 @@
     "title": "Construisez et développez votre réseau",
     "titleXStars": {
       "1": "Pensez à développer votre réseau",
-      "2": "Construisez d'avantage votre réseau",
+      "2": "Construisez davantage votre réseau",
       "3": "Construisez votre réseau en priorité"
     }
   },
@@ -129,6 +129,15 @@
       "1": "Pensez aussi aux candidatures spontanées",
       "2": "Faites davantage de candidatures spontanées",
       "3": "Privilégiez les candidatures spontanées sur le reste"
+    }
+  },
+  "training": {
+    "goal": "trouver une formation utile",
+    "title": "Trouvez la bonne formation pour vous",
+    "titleXStars": {
+      "1": "Trouvez une formation",
+      "2": "Regardez les possibilités de formations",
+      "3": "Trouvez la bonne formation pour vous"
     }
   },
   "volunteer": {

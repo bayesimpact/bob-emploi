@@ -1,3 +1,31 @@
+This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
+
+# 2017-08-01_00
+
+- Transparency page.
+- Evaluation page.
+- Update scoring models according to evaluations.
+- Stop sending daily emails.
+
+Deployed on Tue, 01 Aug 2017 09:05:39 +0000
+
+# 2017-07-24_00
+
+- Fix some French typos.
+- Script to create a pool of use case for the evaluation by cleaning private information.
+- Disable chat if the lib is not ready even though ZenDesk is loaded.
+Deployed on Mon, 24 Jul 2017 14:13:11 +0000
+
+# 2017-07-20_00
+
+- Add error logging to Sentry
+- Do not show very well known job board on the advice card.
+- Fix bug for menu on mobile.
+- Simple Eval page that does not modify any user.
+- Allow linking to a specific advice card even with an incomplete advice ID (like #network).
+
+Deployed on Thu, 20 Jul 2017 09:09:32 +0000
+
 # 2017-07-13_01
 
 - Collapse 1-star advice cards in "À regarder"

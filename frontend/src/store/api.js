@@ -64,6 +64,14 @@ function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
+function evalUseCasePoolNamesGet() {
+  return getJson('/api/eval/use-case-pool-names')
+}
+
+function evalUseCasesGet(poolName) {
+  return getJson(`/api/eval/use-cases/${poolName}`)
+}
+
 function interviewTipsGet({userId}, {projectId}) {
   return getJson(`/api/project/${userId}/${projectId}/interview-tips`)
 }
@@ -83,6 +91,10 @@ function markUsedAndRetrievePost(userId) {
 
 function migrateUserToAdvisorPost({userId}) {
   return postJson(`/api/user/${userId}/migrate-to-advisor`, undefined, true)
+}
+
+function projectComputeAdvicesPost(user) {
+  return postJson('/api/project/compute-advices', user, true)
 }
 
 function projectRequirementsGet(project) {
@@ -134,12 +146,15 @@ export {
   adviceTipsGet,
   associationsGet,
   dashboardExportGet,
+  evalUseCasePoolNamesGet,
+  evalUseCasesGet,
   feedbackPost,
   interviewTipsGet,
   jobBoardsGet,
   jobsGet,
   markUsedAndRetrievePost,
   migrateUserToAdvisorPost,
+  projectComputeAdvicesPost,
   projectRequirementsGet,
   resetPasswordPost,
   resumeTipsGet,

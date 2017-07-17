@@ -170,6 +170,31 @@ class AdviceEventScoringModelTestCase(ScoringModelTestBase('advice-event')):
         self.assertLessEqual(score, 1, msg='Fail for "%s"' % self.persona.name)
 
 
+class TrainingAdviceScoringModelTestCase(ScoringModelTestBase('advice-training')):
+    """Unit test for the training scoring model."""
+
+    def setUp(self):
+        super(TrainingAdviceScoringModelTestCase, self).setUp()
+        self.persona = self._random_persona().clone()
+
+    def test_low_advice_for_new_de(self):
+        """The user just started searching for a job."""
+        self.persona.project.job_search_length_months = 0
+        self.assertGreater(2, self._score_persona(self.persona))
+
+    def test_three_stars(self):
+        """The user has been searching for a job for 3 months."""
+        self.persona.project.job_search_length_months = 3
+        self.assertEqual(3, self._score_persona(self.persona))
+
+    def test_one_month(self):
+        """The user has been searching for a job for 1 month."""
+        self.persona.project.job_search_length_months = 1
+        score = self._score_persona(self.persona)
+        self.assertGreater(3, score)
+        self.assertLess(0, score)
+
+
 class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improve-network')):
     """Unit test for the "Improve your network" scoring model."""
 
@@ -412,10 +437,11 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
         self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
 
     def test_should_try_other_job(self):
-        """There's a job with way more offers."""
+        """There's a job with way more offers, and the user wants to reorient."""
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'A1234'
         persona.project.target_job.code_ogr = '5678'
+        persona.project.kind = project_pb2.REORIENTATION
         self.database.job_group_info.insert_one({
             '_id': 'A1234',
             'jobs': [
@@ -430,7 +456,7 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
+        self.assertEqual(score, 3, msg='Failed for "%s"' % persona.name)
 
     def test_already_best_job(self):
         """User is targetting the best job in their group."""
@@ -458,6 +484,8 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'A1234'
         persona.project.target_job.code_ogr = '1234'
+        persona.project.job_search_length_months = 2
+        persona.project.kind = project_pb2.FIND_A_FIRST_JOB
         self.database.job_group_info.insert_one({
             '_id': 'A1234',
             'jobs': [
@@ -468,7 +496,7 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
                 'specificJobs': [
                     {
                         'codeOgr': "5678",
-                        'percentSuggested': 55,
+                        'percentSuggested': 50,
                     },
                     {
                         'codeOgr': "1234",
@@ -478,7 +506,7 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 1, msg='Failed for "%s"' % persona.name)
+        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
 
 
 class VolunteerAdviceTestCase(ScoringModelTestBase('advice-volunteer')):
@@ -623,6 +651,19 @@ class AdviceJobBoardsTestCase(ScoringModelTestBase('advice-job-boards')):
         self.assertTrue(result)
         self.assertEqual('Specialized for me', result.job_board_title)
 
+    def test_filter_pole_emploi(self):
+        """Never show Pôle emploi,"""
+        persona = self._random_persona().clone()
+        persona.project.mobility.city.departement_id = '69'
+        project = persona.scoring_project(self.database)
+        self.database.jobboards.insert_many([
+            {'title': 'Pôle emploi', 'isWellKnown': True},
+            {'title': 'Remix Jobs'},
+        ])
+        result = self.model.compute_extra_data(project)
+        self.assertTrue(result)
+        self.assertEqual('Remix Jobs', result.job_board_title)
+
 
 class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
     """Unit tests for the "Other Work Environments" advice."""
@@ -672,6 +713,8 @@ class AdviceImproveInterviewTestCase(ScoringModelTestBase('advice-improve-interv
         persona = self._random_persona().clone()
         if persona.project.job_search_length_months < 3:
             persona.project.job_search_length_months = 3
+        if persona.project.job_search_length_months > 6:
+            persona.project.job_search_length_months = 6
         persona.project.total_interview_count = 1
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
@@ -681,6 +724,8 @@ class AdviceImproveInterviewTestCase(ScoringModelTestBase('advice-improve-interv
         persona = self._random_persona().clone()
         persona.project.total_interview_count = 21
         persona.project.job_search_length_months = 2
+        if persona.project.job_search_length_months > 6:
+            persona.project.job_search_length_months = 6
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
 
@@ -688,6 +733,8 @@ class AdviceImproveInterviewTestCase(ScoringModelTestBase('advice-improve-interv
         """Users has maximum interviews."""
         persona = self._random_persona().clone()
         persona.project.total_interview_count = 21
+        if persona.project.job_search_length_months > 6:
+            persona.project.job_search_length_months = 6
         score = self._score_persona(persona)
         self.assertGreaterEqual(score, 3, msg='Failed for "%s":' % persona.name)
 
@@ -702,6 +749,8 @@ class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume'))
         persona.project.mobility.city.departement_id = '14'
         if persona.project.job_search_length_months < 3:
             persona.project.job_search_length_months = 3
+        if persona.project.job_search_length_months > 6:
+            persona.project.job_search_length_months = 6
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1
@@ -745,6 +794,8 @@ class AdviceImproveResumeTestCase(ScoringModelTestBase('advice-improve-resume'))
         persona = self._random_persona().clone()
         if persona.project.job_search_length_months < 3:
             persona.project.job_search_length_months = 3
+        if persona.project.job_search_length_months > 6:
+            persona.project.job_search_length_months = 6
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1

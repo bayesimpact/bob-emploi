@@ -420,7 +420,6 @@
       "createdAt": "2016-09-29T07:56:06.227671Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "NEVER_DONE",
-      "intensity": "PROJECT_PRETTY_INTENSE",
       "jobSearchLengthMonths": 2,
       "kind": "FIND_JOB",
       "minSalary": 35000.0,
@@ -467,7 +466,6 @@
       "createdAt": "2016-09-29T09:25:11.514083Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_SIMILAR",
-      "intensity": "PROJECT_FIGURING_INTENSITY",
       "jobSearchLengthMonths": 2,
       "kind": "FIND_JOB",
       "mobility": {

@@ -364,6 +364,41 @@ class ConstantScoreModel(_ScoringModelBase):
         return _Score(self.constant_score)
 
 
+class _AdviceTrainingScoringModel(_ScoringModelBase):
+    """A scoring model for the training advice."""
+
+    def _filter_hiring_trainings(self, trainings):
+        # We only return trainings that hire more than average.
+        return [training for training in trainings if training['hiring_potential'] > 2]
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        # TODO(guillaume): Get training data from API.
+        # TODO(guillaume): Compute extra data.
+        all_trainings = [{
+            'name': 'Une super formation',
+            'hiring_potential': 4,
+        }, {
+            'name': 'Une bonne formation',
+            'hiring_potential': 3,
+        }, {
+            'name': 'Une formation bof',
+            'hiring_potential': 2,
+        }]
+
+        selected_trainings = self._filter_hiring_trainings(all_trainings)
+
+        if len(selected_trainings) >= 2 and project.details.job_search_length_months >= 3:
+            return _Score(3)
+
+        if selected_trainings:
+            if project.details.job_search_length_months >= 2:
+                return _Score(2)
+            return _Score(1)
+
+        return _Score(0)
+
+
 class _SpontaneousApplicationScoringModel(_ScoringModelBase):
     """A scoring model for the "Send spontaneous applications" chantier.
 
@@ -616,7 +651,8 @@ class _AdviceImproveInterview(_ScoringModelBase):
         if num_monthly_interviews > self._max_monthly_interviews(project):
             return _Score(3)
         # Whatever the number of month of search, trigger 3 if the user did more than 5 interviews:
-        if num_interviews >= self._NUM_INTERVIEWS[project_pb2.A_LOT]:
+        if num_interviews >= self._NUM_INTERVIEWS[project_pb2.A_LOT] and \
+                project.details.job_search_length_months <= 6:
             return _Score(3)
         return _Score(0)
 
@@ -637,10 +673,14 @@ class _AdviceBetterJobInGroup(_ScoringModelBase):
         except StopIteration:
             target_job_percentage = 0
 
-        if target_job_percentage + 20 < specific_jobs[0].percent_suggested:
-            return _Score(2)
+        has_way_better_job = target_job_percentage + 30 < specific_jobs[0].percent_suggested
+        has_better_job = target_job_percentage + 5 < specific_jobs[0].percent_suggested
+        is_looking_for_new_job = project.details.kind == project_pb2.REORIENTATION
 
-        return _Score(1)
+        if (project.details.job_search_length_months > 6 and has_better_job) or \
+                has_way_better_job or is_looking_for_new_job:
+            return _Score(3)
+        return _Score(2)
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
@@ -719,7 +759,8 @@ class _AdviceImproveResume(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        if self._num_interviews_increase(project) >= 2:
+        if (self._num_interviews_increase(project) >= 2 and
+                project.details.job_search_length_months <= 6):
             return _Score(3)
         return _Score(0)
 
@@ -761,7 +802,7 @@ class _AdviceJobBoards(_LowPriorityAdvice):
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
-        jobboards = project.list_jobboards()
+        jobboards = [j for j in project.list_jobboards() if not j.is_well_known]
         if not jobboards:
             return None
         sorted_jobboards = sorted(jobboards, key=lambda j: (-len(j.filters), random.random()))
@@ -862,10 +903,9 @@ SCORING_MODELS = {
     'advice-use-good-network': _ImproveYourNetworkScoringModel(3),
     'advice-volunteer': _AdviceVolunteer(),
     'advice-wow-baker': _JobFilter(job_groups={'D1102'}, exclude_jobs={'12006'}),
+    'advice-training': _AdviceTrainingScoringModel(),
     'chantier-spontaneous-application': _SpontaneousApplicationScoringModel(),
     'for-complex-application': _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS),
-    'for-discovery': _ProjectFilter(
-        lambda project: project.intensity == project_pb2.PROJECT_FIGURING_INTENSITY),
     'for-experienced(2)': _ProjectFilter(
         lambda project: project.seniority >= project_pb2.INTERMEDIARY),
     'for-experienced(6)': _ProjectFilter(

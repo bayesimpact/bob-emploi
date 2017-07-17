@@ -6,19 +6,20 @@ import "bob_emploi/frontend/api/action.proto";
 import "bob_emploi/frontend/api/company.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/options.proto";
 
 package bayes.bob;
 
 // Next available tag: 24.
 message Project {
   // A unique identifier for this project.
-  string project_id = 1;
+  string project_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // A short descriptive title in the user's language.
-  string title = 2;
+  string title = 2 [(field_usage) = APP_ONLY];
 
   // Current status of this project for the user.
-  ProjectStatus status = 3;
+  ProjectStatus status = 3 [(field_usage) = APP_ONLY];
 
   // Job targeted by this project.
   Job target_job = 6;
@@ -39,7 +40,7 @@ message Project {
   // for this project.
   // TODO(pascal): Find what to do with that, it is still used in the dashboard
   // export, but nowhere else.
-  map<string, bool> activated_chantiers = 18 [deprecated = true];
+  map<string, bool> activated_chantiers = 18 [deprecated = true, (field_usage) = APP_ONLY];
 
   // List of current actions for this project. They stay in here until the next
   // generation of new actions and then the finished or declined ones are moved
@@ -47,29 +48,29 @@ message Project {
   // last.
   // NOTE: We do not use it anymore but old projects might still have this
   // field set from previous versions.
-  repeated Action actions = 25 [deprecated = true];
+  repeated Action actions = 25 [deprecated = true, (field_usage) = ALGORITHM_RESULT];
 
   // List of past actions that were done or declined in previous days. They are
   // sorted by their stopped_at field: most recent last.
   // NOTE: We do not use it anymore but old projects might still have this
   // field set from previous versions.
-  repeated Action past_actions = 35 [deprecated = true];
+  repeated Action past_actions = 35 [deprecated = true, (field_usage) = ALGORITHM_RESULT];
 
   // List of actions that are stuck by the users. They are sorted by their
   // stucked_at field: most recent last.
   // NOTE: We do not use it anymore but old projects might still have this
   // field set from previous versions.
-  repeated Action sticky_actions = 10 [deprecated = true];
+  repeated Action sticky_actions = 10 [deprecated = true, (field_usage) = ALGORITHM_RESULT];
 
   // Reason why this project was deleted.
-  string deletion_reason = 14;
+  string deletion_reason = 14 [(field_usage) = USER_FEEDBACK];
 
   // The date and time at which this project was created or if it was a
   // suggestion, when the suggestion was first created.
   google.protobuf.Timestamp created_at = 15;
 
   // How the project/suggestion was created in the first place.
-  ProjectSource source = 16;
+  ProjectSource source = 16 [(field_usage) = APP_ONLY];
 
   // The kind of project (e.g. to find a job).
   ProjectKind kind = 19;
@@ -97,10 +98,6 @@ message Project {
   // super strong, -1 = unknown.
   int32 network_estimate = 22;
 
-  // Effort the user wants to put into this project.
-  // TODO(pascal): Cleanup.
-  ProjectIntensity intensity = 26 [deprecated = true];
-
   // How long the user searches in this field in months. -1 means not started yet.
   // 19 means more than 18 months.
   // TODO(pascal): This should change with time!
@@ -127,23 +124,23 @@ message Project {
   // actions were there so that we could not generate new ones we still update
   // this timestamp when we try.
   // TODO(pascal): Cleanup.
-  google.protobuf.Timestamp actions_generated_at = 5 [deprecated = true];
+  google.protobuf.Timestamp actions_generated_at = 5 [deprecated = true, (field_usage) = APP_ONLY];
 
   // Job stats for this specific project.
-  LocalJobStats local_stats = 9;
+  LocalJobStats local_stats = 9 [(field_usage) = ALGORITHM_RESULT];
 
   // Sorted list of advices that triggered for this user.
-  repeated Advice advices = 21;
+  repeated Advice advices = 21 [(field_usage) = ALGORITHM_RESULT];
 
   // Tells whether the project is missing information and needs more information by the user.
   bool is_incomplete = 23;
 
   // Feedback from user when the advice given for this project was useless to them.
   // TODO(pascal): Convert to full feedback.
-  string useless_advice_feedback = 11;
+  string useless_advice_feedback = 11 [(field_usage) = USER_FEEDBACK];
 
   // User feedback on this project.
-  ProjectFeedback feedback = 17;
+  ProjectFeedback feedback = 17 [(field_usage) = USER_FEEDBACK];
 }
 
 message ProjectFeedback {
@@ -203,6 +200,11 @@ message Advice {
   // not think it was a good advice, for any reasons. A high score means they
   // think the advice was good and they need to work on it.
   int32 score = 11;
+}
+
+message Advices {
+  // Sorted list of advices that we want to give for a project.
+  repeated Advice advices = 1;
 }
 
 message CommuteData {
@@ -369,20 +371,6 @@ enum ProjectSource {
   // An automated system created the project and allowed the user to accept it
   // or not.
   PROJECT_SUGGESTED = 2;
-}
-
-enum ProjectIntensity {
-  option allow_alias = true;
-  UNKNOWN_PROJECT_INTENSITY = 0;
-
-  PROJECT_NOT_VERY_INTENSE = 1 [deprecated = true];
-  // User is not actually applying for jobs but is exploring this project to
-  // see if it would be worth it.
-  PROJECT_FIGURING_INTENSITY = 1;
-
-  PROJECT_NORMALLY_INTENSE = 2;
-  PROJECT_PRETTY_INTENSE = 3;
-  PROJECT_EXTREMELY_INTENSE = 4;
 }
 
 enum AdviceStatus {

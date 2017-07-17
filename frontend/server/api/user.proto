@@ -3,9 +3,10 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/discovery.proto";
-import "bob_emploi/frontend/api/job.proto";
-import "bob_emploi/frontend/api/project.proto";
 import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/options.proto";
+import "bob_emploi/frontend/api/project.proto";
 
 package bayes.bob;
 
@@ -14,16 +15,16 @@ message User {
   // A unique identifier for this user. It is not related to any public
   // identifiers although it is not obfuscated in the API. It looks like a normal Mongo ObjectID,
   // under the hood however we hash it with a salt to make it less guessable.
-  string user_id = 1;
+  string user_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // Profile of the user.
   UserProfile profile = 2;
 
   // ID of the google account linked to this profile.
-  string google_id = 7;
+  string google_id = 7 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // ID of the Facebook account linked to this profile.
-  string facebook_id = 8;
+  string facebook_id = 8 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // The date and time at which the user has registered with the app.
   google.protobuf.Timestamp registered_at = 6;
@@ -36,42 +37,42 @@ message User {
 
   // App is not available to the user. A possible reason might be the user being in an
   // unverified data zone.
-  bool app_not_available = 4;
+  bool app_not_available = 4 [(field_usage) = APP_ONLY];
 
   // Features enabled for this user.
   Features features_enabled = 9;
 
   // The last date on which the user loaded their information through the API.
   // We only look at the date of this value, not at the time.
-  google.protobuf.Timestamp requested_by_user_at_date= 10;
+  google.protobuf.Timestamp requested_by_user_at_date= 10 [(field_usage) = APP_ONLY];
 
   // The date and time we last sent an email to the user. This does not include
   // password recovery emails.
-  google.protobuf.Timestamp last_email_sent_at = 11;
+  google.protobuf.Timestamp last_email_sent_at = 11 [(field_usage) = APP_ONLY];
 
   // A map of likes (+1) and dislikes (-1) per feature.
-  map<string, int32> likes = 13;
+  map<string, int32> likes = 13 [(field_usage) = USER_FEEDBACK];
 
   // Value of the utm_content parameters the first time the user reached our
   // website. If it is not empty, it contains an ID that helps us track the
   // system that recommended the app to the user originally.
-  string initial_utm_content = 14;
+  string initial_utm_content = 14 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // Response from the user to the survey we send by email to get feedback on the app
   // and on the relevance of the given advices.
-  NPSSurveyResponse net_promoter_score_survey_response = 15;
+  NPSSurveyResponse net_promoter_score_survey_response = 15 [(field_usage) = USER_FEEDBACK];
 
   // Identifier of the latest changelog message seen by the user, e.g. 2017-06-18_00.
   // TODO(pascal): Move inside notifications.
-  string latest_changelog_seen = 16;
+  string latest_changelog_seen = 16 [(field_usage) = APP_ONLY];
 
   // The notifications that the user has seen.
-  Notifications notifications_seen = 17;
+  Notifications notifications_seen = 17 [(field_usage) = APP_ONLY];
 
   // Revision of the user's data. This number should always be increasing, it
   // helps keep synchronized the client and the server versions of the user's
   // data. See http://go/bob:revision-design
-  int32 revision = 18;
+  int32 revision = 18 [(field_usage) = APP_ONLY];
 }
 
 message UserAuth {
@@ -147,13 +148,13 @@ message UserProfile {
   Gender gender = 5;
 
   // User's email.
-  string email = 7;
+  string email = 7 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // User's first name (e.g.: Stephan).
-  string name = 8;
+  string name = 8 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // User's last name (e.g.: Corpet).
-  string last_name = 16;
+  string last_name = 16 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // User's year of birth.
   uint32 year_of_birth = 9;
@@ -162,7 +163,7 @@ message UserProfile {
   bool has_handicap = 19;
 
   // URL of a picture of the user.
-  string picture_url = 12;
+  string picture_url = 12 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // The current situation of the user (e.g.: Fresh graduate, lost job, etc...).
   // TODO(pascal): Clean up old users and remove completly.
@@ -184,22 +185,22 @@ message UserProfile {
   SalaryUnit preferred_salary_unit = 39;
 
   // Whether the user opted-in to receive the newsletter.
-  bool is_newsletter_enabled = 11;
+  bool is_newsletter_enabled = 11 [(field_usage) = APP_ONLY];
 
   // Whether the user opted-in to receive a weekly summary of their activity.
-  bool is_weekly_summary_enabled = 13;
+  bool is_weekly_summary_enabled = 13 [(field_usage) = APP_ONLY];
 
   // Which days of the week the user wants a notification email.
-  repeated WeekDay email_days = 14;
+  repeated WeekDay email_days = 14 [(field_usage) = APP_ONLY];
 
   // Phone number of the user (only to call them to get more precise feedback).
-  string phone_number = 15;
+  string phone_number = 15 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // How the user is OK to give us feedback.
-  FeedbackMedium feedback_medium = 17;
+  FeedbackMedium feedback_medium = 17 [(field_usage) = APP_ONLY];
 
   // How did the user found out about the application.
-  UserOrigin origin = 21;
+  UserOrigin origin = 21 [(field_usage) = APP_ONLY];
 }
 
 // A lightweight message to reference a user.
@@ -457,4 +458,9 @@ message NPSSurveyResponse {
   // 'which_advices_were_useful_comment' and at the list of advices the app actually
   // gave to the user.
   repeated string curated_useful_advice_ids = 7;
+}
+
+message UseCases {
+  // A list of anonymized user examples.
+  repeated User use_cases = 1;
 }

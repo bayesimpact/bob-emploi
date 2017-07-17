@@ -7,7 +7,6 @@ import mock
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend import scoring_test
 from bob_emploi.frontend.api import job_pb2
-from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
 
@@ -190,32 +189,18 @@ class QualifiedFilterTestCase(_FilterTestBase('for-qualified(bac+3)')):
         self._assert_fail_filter()
 
 
-class DiscoveryFilterTestCase(_FilterTestBase('for-discovery')):
-    """Unit tests for the _ProjectFilter class for projects about discovering a job."""
+class NegateFilterTestCase(_FilterTestBase('not-for-searching-forever')):
+    """Unit tests for the negate filter."""
 
-    def test_discovering(self):
-        """Project is about discovering."""
-        self.persona.project.intensity = project_pb2.PROJECT_FIGURING_INTENSITY
+    def test_just_started(self):
+        """User has just started this project."""
+        self.persona.project.job_search_length_months = 1
         self._assert_pass_filter()
 
-    def test_normally_intense(self):
-        """Project is about finding a job."""
-        self.persona.project.intensity = project_pb2.PROJECT_NORMALLY_INTENSE
+    def test_started_2_years_ago(self):
+        """User has been working on this project for 2 years."""
+        self.persona.project.job_search_length_months = 24
         self._assert_fail_filter()
-
-
-class NegateFilterTestCase(_FilterTestBase('not-for-discovery')):
-    """Unit tests for the negate filter about discovering a job."""
-
-    def test_discovering(self):
-        """Project is about discovering."""
-        self.persona.project.intensity = project_pb2.PROJECT_FIGURING_INTENSITY
-        self._assert_fail_filter()
-
-    def test_normally_intense(self):
-        """Project is about finding a job."""
-        self.persona.project.intensity = project_pb2.PROJECT_NORMALLY_INTENSE
-        self._assert_pass_filter()
 
 
 class SearchingForeverFilterTestCase(_FilterTestBase('for-searching-forever')):

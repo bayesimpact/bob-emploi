@@ -1070,6 +1070,19 @@ class ProjectDashboardPageBase extends React.Component {
     </div>
   }
 
+  getClosestAdviceId(adviceId) {
+    const {advices} = this.props.project
+    if (!advices || !adviceId) {
+      return null
+    }
+    // Exact match.
+    if (advices.find(a => a.adviceId === adviceId)) {
+      return adviceId
+    }
+    // Starts with.
+    return advices.map(({adviceId}) => adviceId).find(a => a.startsWith(adviceId))
+  }
+
   renderAdviceCards(advices) {
     const {adviceShownOnMount, profile, project} = this.props
     const cardsContainerStyle = {
@@ -1078,12 +1091,14 @@ class ProjectDashboardPageBase extends React.Component {
     const adviceGroups = _.groupBy(advices, 'numStars')
     const groupKeys = Object.keys(adviceGroups).sort().reverse()
 
+    const existingAdviceShownOnMount = this.getClosestAdviceId(adviceShownOnMount)
+
     const sections = []
     groupKeys.forEach((numStars, index) => {
       sections.push(<AdviceSection
         key={`advices-${numStars}-star`}
         numStars={numStars} advices={adviceGroups[numStars]}
-        adviceShownOnMount={adviceShownOnMount} scrollTo={this.scrollTo}
+        adviceShownOnMount={existingAdviceShownOnMount} scrollTo={this.scrollTo}
         {...{profile, project}} />)
       if (index !== groupKeys.length - 1) {
         // Add separator before next section.
@@ -1297,10 +1312,9 @@ class FeedbackBarBase extends React.Component {
       <div style={{fontSize: 15, padding: '35px 0', position: 'relative', width: 600}}>
         <div style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>
           {isGoodFeedback ? <span>
-            Qu'est-ce qui vous a le plus séduit{isFeminine ? 'e ' : ' '}
-            dans {config.productName}&nbsp;?
+            Qu'est-ce qui vous a le plus parlé dans {config.productName}&nbsp;?
           </span> : <span>
-            Pouvez-vous nous dire ce qui vous a gêné{isFeminine ? 'e' : ''}&nbsp;?
+            Pouvez-vous nous dire ce qui n'a pas fonctionné pour vous&nbsp;?
           </span>}
         </div>
         <textarea

@@ -12,9 +12,13 @@ class DebugModalBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
     email: PropTypes.string,
+    keepProps: PropTypes.shape({
+      facebookId: PropTypes.string,
+      googleId: PropTypes.string,
+      userId: PropTypes.string,
+    }),
     onClose: PropTypes.func.isRequired,
     user: PropTypes.object.isRequired,
-    userId: PropTypes.string,
   }
 
   componentWillMount() {
@@ -32,7 +36,7 @@ class DebugModalBase extends React.Component {
   }
 
   saveAndClose(filterUserFunc) {
-    const {dispatch, email, onClose, userId} = this.props
+    const {dispatch, email, keepProps, onClose} = this.props
     const {initialUserJson} = this.state
     const userJson = this.userJsonDom && this.userJsonDom.value || ''
     if (userJson === initialUserJson) {
@@ -63,7 +67,7 @@ class DebugModalBase extends React.Component {
       ...user,
       profile: {...user.profile, email},
       revision: (this.props.user.revision || 0) + 1,
-      userId,
+      ...keepProps,
     })).then(onClose)
   }
 
@@ -106,10 +110,10 @@ class DebugModalBase extends React.Component {
   }
 }
 export const DebugModal = connect(({user}) => {
-  const {userId, ...userProps} = user
+  const {facebookId, googleId, userId, ...userProps} = user
   return {
     email: user.profile.email,
+    keepProps: {facebookId, googleId, userId},
     user: userProps,
-    userId,
   }
 })(DebugModalBase)

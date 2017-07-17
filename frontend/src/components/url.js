@@ -22,7 +22,9 @@ Routes.PRIVACY_PAGE = Routes.ROOT + 'vie-privee'
 Routes.APP_NOT_AVAILABLE_PAGE = Routes.ROOT + 'indisponible'
 Routes.APP_UPDATED_PAGE = Routes.ROOT + 'mise-a-jour'
 Routes.PROFESSIONALS_PAGE = Routes.ROOT + 'professionnels'
+Routes.TRANSPARENCY_PAGE = Routes.ROOT + 'transparence'
 Routes.VIDEO_SIGNUP_PAGE = Routes.ROOT + 'inscription'
+Routes.EVAL_PAGE = Routes.ROOT + 'eval'
 
 export const NEW_PROJECT_ID = 'nouveau'
 

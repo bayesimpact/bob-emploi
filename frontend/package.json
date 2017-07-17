@@ -76,6 +76,7 @@
     "phantomjs-prebuilt": "^2.x.x",
     "prop-types": "^15.x.x",
     "radium": "^0.19.x",
+    "redux-raven-middleware": "1.2.0",
     "raw-loader": "^0.5.x",
     "react": "^15.x.x",
     "react-addons-test-utils": "^15.x.x",

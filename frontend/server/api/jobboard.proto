@@ -12,6 +12,9 @@ message JobBoard {
   // filters returns false for the project.
   // See the list of available filters in scoring.py.
   repeated string filters = 3;
+
+  // Whether this job board is well known.
+  bool is_well_known = 4;
 }
 
 message JobBoards {

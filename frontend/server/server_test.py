@@ -229,6 +229,25 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(302, response.status_code)
         self.assertEqual('http://www.eterritoire.fr', response.location)
 
+    def test_compute_advices_for_missing_project(self):
+        """Check the /api/project/compute-advices endpoint without projects."""
+        response = self.app.post(
+            '/api/project/compute-advices', data='{}', content_type='application/json')
+        self.assertEqual(422, response.status_code)
+
+    def test_compute_advices_for_project(self):
+        """Check the /api/project/compute-advices endpoint without projects."""
+        self._db.advice_modules.insert_one({
+            'adviceId': 'one-ring',
+            'isReadyForProd': True,
+            'triggerScoringModel': 'constant(1)',
+        })
+        response = self.app.post(
+            '/api/project/compute-advices',
+            data='{"projects": [{}]}', content_type='application/json')
+        advice = self.json_from_response(response)
+        self.assertEqual({'advices': [{'adviceId': 'one-ring', 'numStars': 1}]}, advice)
+
 
 class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
     """Tests for the /api/user/nps-survey-response endpoint."""

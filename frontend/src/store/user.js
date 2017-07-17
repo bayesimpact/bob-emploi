@@ -99,7 +99,7 @@ const ORIGIN_OPTIONS = [
   {name: 'Recommandé par un ami', value: 'FROM_A_FRIEND'},
   {name: "Par un groupe de recherche d'emploi", value: 'FROM_JOBSEEKER_GROUP'},
   {name: 'Présenté dans une information collective Pôle emploi', value: 'FROM_PE_WORKSHOP'},
-  {name: "Mon conseiller Pôle emploi me l'a recommendé", value: 'FROM_PE_COUNSELOR'},
+  {name: "Mon conseiller Pôle emploi me l'a recommandé", value: 'FROM_PE_COUNSELOR'},
   {name: 'Recommandé par un autre site ou moteur de recherche', value: 'FROM_WEBSITE'},
   {name: 'Autre', value: 'FROM_OTHER'},
 ]

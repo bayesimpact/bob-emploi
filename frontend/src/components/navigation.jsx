@@ -291,7 +291,7 @@ class MobileNavigationBarBase extends React.Component {
       position: 'absolute',
       right: 0,
       top: 0,
-      zIndex: 1,
+      zIndex: 2,
     }
     const linkStyle = page => ({
       backgroundColor: page === this.props.page ? Colors.RED_PINK : 'inherit',
@@ -633,6 +633,11 @@ class Footer extends React.Component {
 
       <NavigationLink style={linkStyle} target="_blank" to={config.helpRequestUrl}>
         Nous contacter
+      </NavigationLink>
+
+      <NavigationLink
+        style={linkStyle} target="_blank" to={'https://www.bob-emploi.fr/transparence'}>
+        Transparence
       </NavigationLink>
 
       <div style={{flex: 1}} />
