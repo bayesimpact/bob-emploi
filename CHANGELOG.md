@@ -1,3 +1,5 @@
+This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](https://github.com/bayesimpact/bob-emploi/blob/master/HISTORY.md).
+
 # 2017-07-13_01
 
 - Collapse 1-star advice cards in "À regarder"
