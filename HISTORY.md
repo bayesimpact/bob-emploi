@@ -8,7 +8,7 @@ This is a high level (non-technical) view of the Bob product history. For a deta
 
 **Oct. 2015**: Brainstorming between Paul & Stephan to figure out how to best tackle the (very broad) problem; first product idea: "MyGamePlan" (a tool to simulate career decisions).
 
-**Dec. 2015**: First interactive demo prototype.
+**Dec. 2015**: First interactive demo prototype - [GitHub](https://github.com/bayesimpact/giga-le-jobs) - [Demo](http://giga-le-jobs.s3-website-us-west-2.amazonaws.com/#/onboarding/step1).
 
 **Jan. 2016**: Partnership signed with Pôle emploi to research data-driven recommendations based on anonymized data.
 
@@ -30,9 +30,11 @@ This is a high level (non-technical) view of the Bob product history. For a deta
 
 **12 Dec. 2016**: Strong decision to refocus Bob's core value proposition for the "Advisor" (providing high-level strategic advice rather than daily tips), in order to maximize the potential impact.
 
-**Jan. 2017**: Start measuring [Net Promoter Score](ttps://en.wikipedia.org/wiki/Net_Promoter), among other metrics; make the drastic choice to start from scratch and switch to the early Advisor so as to enable faster development.
+**Jan. 2017**: Start measuring [Net Promoter Score](https://en.wikipedia.org/wiki/Net_Promoter), among other metrics; make the drastic choice to start from scratch and switch to the early Advisor so as to enable faster development.
 
-**8 Feb. 2017**: Bob goes mobile!
+**16 Jan. 2017**: Export of Bob's code to an Open Source repo.
+
+**8 Feb. 2017**: Bob goes mobile!.
 
 **17 Feb. 2017**: Decision to rollback to the Mashup and work undercover until we're ready to switch.
 

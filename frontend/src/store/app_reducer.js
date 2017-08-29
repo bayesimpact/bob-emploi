@@ -6,7 +6,7 @@ import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
   OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, GET_ASSOCIATIONS,
   ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, GET_VOLUNTEERING_MISSIONS,
   LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS, MODIFY_PROJECT, GET_COMMUTING_CITIES,
-  GET_RESUME_TIPS, GET_INTERVIEW_TIPS, OPEN_REGISTER_MODAL} from './actions'
+  GET_RESUME_TIPS, GET_INTERVIEW_TIPS, OPEN_REGISTER_MODAL, GET_EVENTS} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
@@ -17,6 +17,7 @@ const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 const cachedProjectData = {
   associations: GET_ASSOCIATIONS,
   commutingCities: GET_COMMUTING_CITIES,
+  events: GET_EVENTS,
   interviewTips: GET_INTERVIEW_TIPS,
   jobBoards: GET_JOB_BOARDS,
   resumeTips: GET_RESUME_TIPS,
@@ -173,7 +174,7 @@ function asyncState(state=asyncInitialData, action) {
   if (action.status === 'error') {
     return {
       ...state,
-      errorMessage: action.ignoreFailure ? '' : action.error.toString(),
+      errorMessage: (action.ignoreFailure || !action.error) ? '' : action.error.toString(),
       isFetching: {...state.isFetching, [action.type]: false},
     }
   }

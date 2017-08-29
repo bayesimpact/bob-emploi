@@ -6,7 +6,7 @@ Background information: http://go/pe:import-status
 The third, and optional, parameter is to get details on a certain collection.
 
 Run it with:
-    docker-compose run --rm data-analysis-prepare
+    docker-compose run --rm data-analysis-prepare \
         python bob_emploi/importer/import_status.py mongodb://frontend-db/test [collection_name]
 """
 import collections
@@ -22,12 +22,14 @@ from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import discovery_pb2
+from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import export_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
+from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
 _ROME_VERSION = 'v332'
@@ -101,6 +103,9 @@ IMPORTERS = {
         is_imported=True,
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>'),
+    'use_case': Importer(
+        name='Use Case', command='', is_imported=False, proto_type=use_case_pb2.UseCase,
+        key='use_case_id'),
     'user': Importer(
         name='App User', command='', is_imported=False, proto_type=user_pb2.User, key='user_id'),
     'user_auth': Importer(
@@ -222,6 +227,15 @@ IMPORTERS = {
         is_imported=True,
         proto_type=None,
         key='Code officiel géographique'),
+    'events': Importer(
+        name='WorkUp Events',
+        command="""docker-compose run --rm data-analysis-prepare \\
+            python bob_emploi/importer/workup_events.py \\
+            --events_json data/workup.json \\
+            --departement_bounds_csv data/geo/france_departements_bounds.csv""",
+        is_imported=True,
+        proto_type=event_pb2.Event,
+        key='WorkUp ID'),
 }
 
 

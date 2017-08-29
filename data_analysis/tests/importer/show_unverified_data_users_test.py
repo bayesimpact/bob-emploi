@@ -1,39 +1,33 @@
 """Tests for the bob_emploi.importer.show_unverified_data_users module."""
 import unittest
 
-from airtable import airtable
-import mock
+import airtablemock
 
 from bob_emploi.importer import show_unverified_data_users
 
 
-@mock.patch(airtable.__name__ + '.Airtable')
+@airtablemock.patch(show_unverified_data_users.__name__ + '.airtable')
 class ShowUnverifiedDataUsersImporterTestCase(unittest.TestCase):
     """Tests for the importer."""
 
-    def test_airtable2dicts(self, mock_airtable):
+    def setUp(self):
+        super(ShowUnverifiedDataUsersImporterTestCase, self).setUp()
+        table = airtablemock.Airtable('app0', 'apikey1')
+        table.create('table0', {'email': 'pascal@example.com'})
+        table.create('table0', {'email': 'guillaume@example.com'})
+
+    def test_airtable2dicts(self):
         """Test the airtable2dicts method."""
         show_unverified_data_users.API_KEY = 'apikey1'
-        mock_airtable().iterate.return_value = [
-            {'_id': 'rec0', 'fields': {'email': 'pascal@example.com'}},
-            {'_id': 'rec1', 'fields': {'email': 'guillaume@example.com'}},
-        ]
 
         dicts = show_unverified_data_users.airtable2dicts('app0', 'table0')
         self.assertEqual(
-            [{'_id': 'pascal@example.com'}, {'_id': 'guillaume@example.com'}],
-            dicts)
+            [{'_id': 'guillaume@example.com'}, {'_id': 'pascal@example.com'}],
+            sorted(dicts, key=lambda a: a['_id']))
 
-        mock_airtable.assert_called_with('app0', 'apikey1')
-        mock_airtable().iterate.assert_called_once_with('table0', view=None)
-
-    def test_missing_api_key(self, mock_airtable):
+    def test_missing_api_key(self):
         """Test that it raises an error if the API key is missing."""
         show_unverified_data_users.API_KEY = ''
-        mock_airtable().iterate.return_value = [
-            {'_id': 'rec0', 'fields': {'email': 'pascal@example.com'}},
-            {'_id': 'rec1', 'fields': {'email': 'guillaume@example.com'}},
-        ]
 
         self.assertRaises(
             ValueError,

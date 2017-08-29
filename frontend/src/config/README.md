@@ -7,12 +7,15 @@ whether your setup runs in dev mode or is built for distribution.
 You can include the configuration into your code like this:
 
 ```javascript
-let react = require('react/addons');
-let config = require('config');
+import React from 'react'
+import config from 'config'
+
+
 class MyComponent extends React.Component {
   constructor(props) {
-    super(props);
-    let currentAppEnv = config.appEnv;
+    super(props)
+    const {productName} = config
+    …
   }
 }
 ```

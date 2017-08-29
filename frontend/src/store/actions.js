@@ -5,7 +5,7 @@ import {adviceTipsGet, dashboardExportGet, evalUseCasePoolNamesGet, evalUseCases
   jobBoardsGet, associationsGet, volunteeringMissionsGet, jobsGet, projectRequirementsGet,
   userDelete, markUsedAndRetrievePost, userPost, feedbackPost, userAuthenticate, saveLikes,
   resetPasswordPost, migrateUserToAdvisorPost, commutingCitiesGet, resumeTipsGet,
-  interviewTipsGet, projectComputeAdvicesPost} from './api'
+  interviewTipsGet, projectComputeAdvicesPost, eventsGet} from './api'
 import {splitFullName} from 'store/auth'
 import {newProject} from 'store/project'
 import {Gender, Situation, JobSearchPhase} from 'api/user'
@@ -63,6 +63,7 @@ export const GET_ADVICE_TIPS = 'GET_ADVICE_TIPS'
 export const SEE_ADVICE = 'SEE_ADVICE'
 export const SHOW_ALL_TIPS = 'SHOW_ALL_TIPS'
 export const GET_ASSOCIATIONS = 'GET_ASSOCIATIONS'
+export const GET_EVENTS = 'GET_EVENTS'
 export const GET_JOB_BOARDS = 'GET_JOB_BOARDS'
 export const GET_JOBS = 'GET_JOBS'
 export const GET_VOLUNTEERING_MISSIONS = 'GET_VOLUNTEERING_MISSIONS'
@@ -245,6 +246,13 @@ function getAdviceTips(project, advice) {
 
 function getDashboardExport(dashboardExportId) {
   return wrapAsyncAction(GET_DASHBOARD_EXPORT, () => dashboardExportGet(dashboardExportId))
+}
+
+function getEvents(project) {
+  return (dispatch, getState) => {
+    const {user} = getState()
+    return dispatch(wrapAsyncAction(GET_EVENTS, () => eventsGet(user, project), {project}))
+  }
 }
 
 function getJobBoards(project) {
@@ -627,5 +635,5 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   getVolunteeringMissions, sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
   landingPageSectionIsShown, getCommutingCities, bobScoreIsShown, getResumeTips,
   getInterviewTips, openRegistrationModal, sendNewAdviceIdea, computeAdvicesForProject,
-  getEvalUseCasePoolNames, getEvalUseCases,
+  getEvalUseCasePoolNames, getEvalUseCases, getEvents,
 }

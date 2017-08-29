@@ -230,8 +230,8 @@ class MobileNavigationBarBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
     isLoggedIn: PropTypes.bool.isRequired,
+    isOnboardingComplete: PropTypes.bool,
     onNavigateBack: PropTypes.func,
-    onboardingComplete: PropTypes.bool,
     page: PropTypes.string,
   }
 
@@ -260,7 +260,7 @@ class MobileNavigationBarBase extends React.Component {
   }
 
   render() {
-    const {onNavigateBack, onboardingComplete, isLoggedIn} = this.props
+    const {onNavigateBack, isOnboardingComplete, isLoggedIn} = this.props
     const {isMenuOpen} = this.state
     const style = {
       alignItems: 'center',
@@ -317,7 +317,7 @@ class MobileNavigationBarBase extends React.Component {
           <Link to={Routes.CONTRIBUTION_PAGE} style={linkStyle('contribution')}>
             Contribuer
           </Link>
-          {isLoggedIn && onboardingComplete ? <div>
+          {isLoggedIn && isOnboardingComplete ? <div>
             <Link to={Routes.PROJECT_PAGE} style={linkStyle('project')}>
               Mon projet
             </Link>
@@ -345,7 +345,7 @@ class MobileNavigationBarBase extends React.Component {
 }
 const MobileNavigationBar = connect(({user}) => ({
   isLoggedIn: !!(user.profile && user.profile.name),
-  onboardingComplete: onboardingComplete(user),
+  isOnboardingComplete: onboardingComplete(user),
 }))(MobileNavigationBarBase)
 
 
@@ -356,8 +356,8 @@ class NavigationBarBase extends React.Component {
     featuresEnabled: PropTypes.shape({
       poleEmploi: PropTypes.bool,
     }).isRequired,
+    isOnboardingComplete: PropTypes.bool,
     isTransparent: PropTypes.bool,
-    onboardingComplete: PropTypes.bool,
     page: PropTypes.string,
     style: PropTypes.object,
     userProfile: USER_PROFILE_SHAPE.isRequired,
@@ -385,8 +385,8 @@ class NavigationBarBase extends React.Component {
   }
 
   handleLogoClick = () => {
-    const {page, onboardingComplete} = this.props
-    if ((page === 'profile' || page === 'new_project') && !onboardingComplete) {
+    const {page, isOnboardingComplete} = this.props
+    if ((page === 'profile' || page === 'new_project') && !isOnboardingComplete) {
       return
     }
     browserHistory.push(Routes.ROOT)
@@ -567,7 +567,7 @@ class NavigationBarBase extends React.Component {
 }
 const NavigationBar = connect(({user}) => ({
   featuresEnabled: user.featuresEnabled || {},
-  onboardingComplete: onboardingComplete(user),
+  isOnboardingComplete: onboardingComplete(user),
   userProfile: user.profile,
 }))(Radium(NavigationBarBase))
 
@@ -631,22 +631,27 @@ class Footer extends React.Component {
         Vie privée
       </NavigationLink>
 
-      <NavigationLink style={linkStyle} target="_blank" to={config.helpRequestUrl}>
+      <NavigationLink
+        style={linkStyle} target="_blank" to={config.helpRequestUrl} rel="noopener noreferrer">
         Nous contacter
       </NavigationLink>
 
       <NavigationLink
-        style={linkStyle} target="_blank" to={'https://www.bob-emploi.fr/transparence'}>
+        style={linkStyle} to={'/transparence'}>
         Transparence
       </NavigationLink>
 
       <div style={{flex: 1}} />
 
-      <NavigationLink style={iconStyle} to="https://www.facebook.com/bobemploi" target="_blank">
+      <NavigationLink
+        style={iconStyle} to="https://www.facebook.com/bobemploi" target="_blank"
+        rel="noopener noreferrer">
         <img src={facebookImage} alt="Facebook" />
       </NavigationLink>
 
-      <NavigationLink style={iconStyle} to="https://twitter.com/bobemploi" target="_blank">
+      <NavigationLink
+        style={iconStyle} to="https://twitter.com/bobemploi" target="_blank"
+        rel="noopener noreferrer">
         <img src={twitterImage} alt="Twitter" />
       </NavigationLink>
     </footer>
@@ -761,7 +766,7 @@ class PageWithNavigationBar extends React.Component {
         domain={config.zendeskDomain} user={this.getUserProfile()} />
 
       <ShortKey
-        keyCode="KeyE" ctrlKey={true} shiftKey={true}
+        keyCode="KeyE" hasCtrlModifier={true} hasShiftModifier={true}
         onKeyPress={() => this.setState({isDebugModalShown: true})} />
       <DebugModal
         onClose={() => this.setState({isDebugModalShown: false})}

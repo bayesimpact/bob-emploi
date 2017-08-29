@@ -1,0 +1,200 @@
+[
+	{
+			"_id" : "2017-07-19_00",
+			"poolName" : "2017-07-19",
+			"indexInPool" : 0,
+			"userData" : {
+					"profile" : {
+							"gender" : "FEMININE",
+							"yearOfBirth" : 1977,
+							"highestDegree" : "BTS_DUT_DEUG",
+							"familySituation" : "SINGLE",
+							"frustrations" : [ 
+									"INTERVIEW", 
+									"NO_OFFERS"
+							]
+					},
+					"projects" : [ 
+							{
+									"targetJob" : {
+											"jobGroup" : {
+													"romeId" : "M1607",
+													"name" : "Secrétariat"
+											},
+											"name" : "Assistant administratif / Assistante administrative",
+											"codeOgr" : "11183",
+											"masculineName" : "Assistant administratif",
+											"feminineName" : "Assistante administrative"
+									},
+									"mobility" : {
+											"city" : {
+													"cityId" : "29046",
+													"name" : "Douarnenez",
+													"departementId" : "29",
+													"departementName" : "Finistère",
+													"regionId" : "53",
+													"regionName" : "Bretagne",
+													"postcodes" : "29100"
+											},
+											"areaType" : "CITY"
+									},
+									"trainingFulfillmentEstimate" : "NO_TRAINING_REQUIRED",
+									"createdAt" : "2017-07-19T23:00:00Z",
+									"kind" : "FIND_ANOTHER_JOB",
+									"previousJobSimilarity" : "DONE_THIS",
+									"networkEstimate" : 1,
+									"seniority" : "SENIOR",
+									"jobSearchLengthMonths" : -1,
+									"employmentTypes" : [ 
+											"CDI"
+									],
+									"workloads" : [ 
+											"FULL_TIME"
+									]
+							}
+					],
+					"registeredAt" : "2017-07-19T23:00:00Z",
+					"featuresEnabled" : {
+							"lbbIntegration" : "CONTROL",
+							"advisor" : "ACTIVE",
+							"netPromoterScoreEmail" : "NPS_EMAIL_PENDING",
+							"advisorEmail" : "ACTIVE"
+					}
+			}
+	},
+	{
+			"_id" : "2017-07-19_01",
+			"poolName" : "2017-07-19",
+			"indexInPool" : 1,
+			"userData" : {
+					"profile" : {
+							"gender" : "MASCULINE",
+							"yearOfBirth" : 1968,
+							"highestDegree" : "CAP_BEP",
+							"familySituation" : "SINGLE",
+							"frustrations" : [ 
+									"NO_OFFERS"
+							],
+							"preferredSalaryUnit" : "MONTHLY_NET_SALARY"
+					},
+					"projects" : [ 
+							{
+									"targetJob" : {
+											"jobGroup" : {
+													"romeId" : "K2501",
+													"name" : "Gardiennage de locaux"
+											},
+											"name" : "Gardien / Gardienne de propriété",
+											"codeOgr" : "15222",
+											"masculineName" : "Gardien de propriété",
+											"feminineName" : "Gardienne de propriété"
+									},
+									"mobility" : {
+											"city" : {
+													"cityId" : "06112",
+													"name" : "Le Rouret",
+													"departementId" : "06",
+													"departementName" : "Alpes-Maritimes",
+													"regionId" : "93",
+													"regionName" : "Provence-Alpes-Côte d'Azur",
+													"postcodes" : "06650"
+											},
+											"areaType" : "CITY"
+									},
+									"trainingFulfillmentEstimate" : "ENOUGH_EXPERIENCE",
+									"totalInterviewCount" : -1,
+									"createdAt" : "2017-07-19T22:00:00Z",
+									"kind" : "FIND_A_NEW_JOB",
+									"previousJobSimilarity" : "DONE_SIMILAR",
+									"networkEstimate" : 2,
+									"seniority" : "JUNIOR",
+									"jobSearchLengthMonths" : 1,
+									"weeklyOffersEstimate" : "SOME",
+									"weeklyApplicationsEstimate" : "DECENT_AMOUNT",
+									"employmentTypes" : [ 
+											"CDI"
+									],
+									"workloads" : [ 
+											"FULL_TIME"
+									]
+							}
+					],
+					"registeredAt" : "2017-07-19T22:00:00Z",
+					"featuresEnabled" : {
+							"lbbIntegration" : "CONTROL",
+							"advisor" : "ACTIVE",
+							"netPromoterScoreEmail" : "NPS_EMAIL_PENDING",
+							"advisorEmail" : "ACTIVE"
+					}
+			}
+	},
+	{
+			"_id" : "2017-07-20_03",
+			"poolName" : "2017-07-20",
+			"indexInPool" : 3,
+			"userData" : {
+					"profile" : {
+							"gender" : "FEMININE",
+							"yearOfBirth" : 1965,
+							"highestDegree" : "NO_DEGREE",
+							"familySituation" : "SINGLE",
+							"frustrations" : [ 
+									"ATYPIC_PROFILE", 
+									"MOTIVATION", 
+									"RESUME", 
+									"NO_OFFERS"
+							]
+					},
+					"projects" : [ 
+							{
+									"targetJob" : {
+											"jobGroup" : {
+													"romeId" : "D1507",
+													"name" : "Mise en rayon libre-service"
+											},
+											"name" : "Employé / Employée de libre-service",
+											"codeOgr" : "14769",
+											"masculineName" : "Employé de libre-service",
+											"feminineName" : "Employée de libre-service"
+									},
+									"mobility" : {
+											"city" : {
+													"cityId" : "10387",
+													"name" : "Troyes",
+													"departementId" : "10",
+													"departementName" : "Aube",
+													"regionId" : "44",
+													"regionName" : "Alsace-Champagne-Ardenne-Lorraine",
+													"postcodes" : "10000"
+											},
+											"areaType" : "DEPARTEMENT"
+									},
+									"trainingFulfillmentEstimate" : "TRAINING_FULFILLMENT_NOT_SURE",
+									"totalInterviewCount" : -1,
+									"createdAt" : "2017-07-20T23:00:00Z",
+									"kind" : "FIND_A_NEW_JOB",
+									"previousJobSimilarity" : "DONE_THIS",
+									"networkEstimate" : 1,
+									"seniority" : "INTERNSHIP",
+									"jobSearchLengthMonths" : 1,
+									"weeklyOffersEstimate" : "SOME",
+									"weeklyApplicationsEstimate" : "LESS_THAN_2",
+									"employmentTypes" : [ 
+											"CDI"
+									],
+									"workloads" : [ 
+											"PART_TIME", 
+											"FULL_TIME"
+									]
+							}
+					],
+					"registeredAt" : "2017-07-20T23:00:00Z",
+					"featuresEnabled" : {
+							"lbbIntegration" : "ACTIVE",
+							"advisor" : "ACTIVE",
+							"netPromoterScoreEmail" : "NPS_EMAIL_PENDING",
+							"advisorEmail" : "ACTIVE"
+					}
+			}
+	}
+]

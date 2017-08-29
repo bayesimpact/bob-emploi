@@ -652,6 +652,11 @@ class LandingPage extends React.Component {
     if (hash === '#inscription') {
       this.props.dispatch(openRegistrationModal({email: query.email || ''}, 'urlHash'))
     }
+    // In Mobile Facebook auth flow, the Facebook login button component needs
+    // to be mounted in order to actually login after a redirect.
+    if (query.state === 'facebookdirect') {
+      this.props.dispatch(openRegistrationModal({}, 'facebookDirect'))
+    }
   }
 
   componentDidMount() {
@@ -674,7 +679,8 @@ class LandingPage extends React.Component {
   render() {
     return <StaticPage page="landing" isContentScrollable={false} isNavBarTransparent={true}>
       <ShortKey
-        keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.handleOpenLoginModal} />
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
+        onKeyPress={this.handleOpenLoginModal} />
 
       <TitleSection />
 

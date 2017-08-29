@@ -2,20 +2,29 @@ const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const _ = require('lodash')
+const WebpackPwaManifest = require('webpack-pwa-manifest')
 
 const baseConfig = require('./base')
 
 const config = _.merge({
   cache: true,
   devtool: 'eval-source-map',
-  entry: [
-    'react-hot-loader/patch',
-    'webpack-dev-server/client?http://0.0.0.0:0',
-    'webpack/hot/only-dev-server',
-    './src/entry',
-  ],
+  entry: {
+    app: [
+      'react-hot-loader/patch',
+      'webpack-dev-server/client?http://0.0.0.0:0',
+      'webpack/hot/only-dev-server',
+      './src/entry',
+    ],
+    eval: [
+      'react-hot-loader/patch',
+      'webpack-dev-server/client?http://0.0.0.0:0',
+      'webpack/hot/only-dev-server',
+      './src/eval_entry',
+    ],
+  },
   output: {
-    filename: 'app.js',
+    filename: '[name].js',
     path: __dirname,
     publicPath: baseConfig.devServer.publicPath,
   },
@@ -29,7 +38,17 @@ Array.prototype.push.apply(config.plugins, [
   new webpack.NamedModulesPlugin(),
   // Embed the JavaScript in the index.html page.
   new HtmlWebpackPlugin({
-    template: path.join(__dirname, '/../src/index.html'),
+    chunks: ['app'],
+    template: './src/index.html',
+  }),
+  new HtmlWebpackPlugin({
+    chunks: ['eval'],
+    filename: 'eval.html',
+    template: './src/index.html',
+  }),
+  new WebpackPwaManifest({
+    lang: 'fr-FR',
+    name: 'Bob Emploi',
   }),
   new webpack.NoEmitOnErrorsPlugin(),
 ])

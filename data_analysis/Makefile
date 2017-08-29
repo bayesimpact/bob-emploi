@@ -1,7 +1,7 @@
 all: public
 # A Makefile to simplify the download and preparation of public datasets.
 
-public: requirements geo dares rome crosswalks bmo stmt data/tous_benevoles.xml
+public: requirements geo dares rome crosswalks bmo stmt data/tous_benevoles.xml data/workup.json
 
 requirements: data/requirements/job_requirements_output.csv
 
@@ -12,7 +12,7 @@ data/requirements/job_requirements_input.csv: data/rome/ficheMetierXml/ficheMeti
 data/requirements/job_requirements_output.csv: data/requirements/job_requirements_input.csv
 	python bob_emploi/parsers/rome_parser/parse.py data/requirements/job_requirements_input.csv data/requirements/job_requirements_output
 
-geo: data/geo/french_cities.csv data/geo/insee_france_cities.tsv data/geo/insee_france_departements.tsv data/geo/insee_france_regions.tsv
+geo: data/geo/french_cities.csv data/geo/insee_france_cities.tsv data/geo/insee_france_departements.tsv data/geo/insee_france_regions.tsv data/geo/france_departements_bounds.csv
 
 # This is unofficial data, but contains a lot of rich fields like zipCode and
 # population.
@@ -20,6 +20,10 @@ data/geo/french_cities.csv: data/geo/french_cities_arrondissements.csv
 	mkdir -p $(dir $@)
 	wget -O $@ 'http://sql.sh/ressources/sql-villes-france/villes_france.csv'
 	cat $< >> $@
+
+data/geo/france_departements_bounds.csv: data/geo/french_cities.csv
+	mkdir -p $(dir $@)
+	python bob_emploi/french_departements_bounds.py $@ $<
 
 # Official data for French cities.
 data/geo/insee_france_cities.tsv:
@@ -135,3 +139,6 @@ data/recent_job_offers.csv:
 
 data/tous_benevoles.xml:
 	wget http://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml -O $@
+
+data/workup.json:
+	wget https://www.workuper.com/events/index_json.json -O $@

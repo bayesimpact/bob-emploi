@@ -1,5 +1,78 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2017-08-29_01
+
+Fix the evaluation module in demo/prod setup.
+
+Deployed on Tue, 29 Aug 2017 10:36:55 +0000
+
+# 2017-08-29_00
+
+* Cleanups for emails
+* Add evaluation pools logic and UI
+
+Deployed on Tue, 29 Aug 2017 08:45:09 +0000
+
+# 2017-08-28_00
+
+- Evaluation Tool can now be used to score use cases.
+- Small UI fixes (trainings, relocate, transparency page).
+- Changes in scoring after first eval batch.
+Deployed on Mon, 28 Aug 2017 09:15:29 +0000
+
+# 2017-08-23_00
+
+- Tweak multiple advice scoring models.
+- Move the Eval page outside of the app.
+- More advice work in alpha version.
+Deployed on Wed, 23 Aug 2017 15:00:41 +0000
+
+# 2017-08-22_00
+
+- Use 'cotisation sociale' instead of 'charges sociales' in budget graph of Transparency page
+- Serve full use cases instead of only user data for eval.
+
+Deployed on Tue, 22 Aug 2017 13:15:37 +0000
+
+# 2017-08-21_00
+
+- Improve documentation and processes for emergency situations (outage).
+- Under-the-hood work on new advice modules (alpha only).
+- Improve Transparence Page.
+- Fix many bugs (JS errors found in Sentry, Facebook mobile signin).
+- Improve some best practices recommended by Google Lighthouse.
+Deployed on Mon, 21 Aug 2017 10:18:28 +0000
+
+# 2017-08-08_00
+
+- Update Transparency page.
+- Factorize style of advices suggestion lists.
+- Fixes Facebook sign-up and sign-in on Mobile, JS errors, and flaky tests.
+- Show advice text in eval tool
+
+**This release was rolled back as it broke connections from client to server.**
+
+Deployed on Tue, 08 Aug 2017 21:58:26 +0000
+Rolledback on Wed, 09 Aug 2017 07:10:00 +0000
+
+# 2017-08-03_03
+
+Update text on transparency page.
+Deployed on Thu, 03 Aug 2017 21:47:41 +0000
+Deployed on Thu, 03 Aug 2017 22:06:17 +0000
+Deployed on Wed, 09 Aug 2017 12:16:56 +0000
+
+# 2017-08-03_02
+
+Score training max in case of reorientation.
+
+- Prioritize association help
+- Fix minor typos and glitches
+- Update graphs for the transparency page
+- Prepare backend for the training advice and maximize its score in case of reorientation
+
+Deployed on Thu, 03 Aug 2017 12:49:01 +0000
+
 # 2017-08-01_00
 
 - Transparency page.

@@ -940,5 +940,51 @@
       "situation": "EMPLOYED",
       "yearOfBirth": 1989
     }
+  },
+  "grand-paume": {
+    "project": {
+      "createdAt": "2016-09-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "97416212321",
+          "name": "Saint-Pierre",
+          "departementId": "974",
+          "departementName": "La Réunion",
+          "regionId": "04",
+          "regionName": "La Réunion",
+          "postcodes": "97432"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecddb3-bfe8",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "10241",
+        "feminineName": "Acheteuse",
+        "jobGroup": {
+          "name": "Achats",
+          "romeId": "M1101"
+        },
+        "masculineName": "Acheteur",
+        "name": "Acheteur / Acheteuse"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"]
+    },
+    "user": {
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "rxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Paume",
+      "situation": "EMPLOYED",
+      "yearOfBirth": 1989
+    }
   }
 }

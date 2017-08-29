@@ -57,16 +57,17 @@ class Authenticator(object):
             return self._facebook_authenticate(auth_request.facebook_signed_request)
         if auth_request.email:
             return self._password_authenticate(auth_request)
-        flask.abort(422, "Aucun moyen d'authentification n'a été trouvé.")
+        flask.abort(422, 'Aucun moyen d\'authentification n\'a été trouvé.')
 
     def _google_authenticate(self, token_id):
         try:
             id_info = client.verify_id_token(token_id, GOOGLE_SSO_CLIENT_ID)
         except crypt.AppIdentityError as error:
-            flask.abort(401, "Mauvais jeton d'authentification : %s" % error)
+            flask.abort(401, 'Mauvais jeton d\'authentification : %s' % error)
         if id_info.get('iss') not in _GOOGLE_SSO_ISSUERS:
             flask.abort(
-                401, "Fournisseur d'authentification invalide : %s." % id_info.get('iss', '<none>'))
+                401,
+                'Fournisseur d\'authentification invalide : %s.' % id_info.get('iss', '<none>'))
 
         response = user_pb2.AuthResponse()
         user_dict = self._db.user.find_one({'googleId': id_info['sub']})
@@ -119,7 +120,7 @@ class Authenticator(object):
     def _assert_user_not_existing(self, email):
         is_existing_user = self._db.user.find({'profile.email': email}, {'_id': 1}).limit(1).count()
         if is_existing_user:
-            flask.abort(403, "L'utilisateur existe mais utilise un autre moyen de connexion.")
+            flask.abort(403, 'L\'utilisateur existe mais utilise un autre moyen de connexion.')
 
     def _password_authenticate(self, auth_request):
         now = int(time.time())
@@ -143,7 +144,7 @@ class Authenticator(object):
                 auth_method = ''
             flask.abort(
                 403,
-                "L'utilisateur existe mais utilise un autre moyen de connexion%s." % auth_method)
+                'L\'utilisateur existe mais utilise un autre moyen de connexion%s.' % auth_method)
 
         if not auth_request.hashed_password:
             # User exists but did not sent a passwordt: probably just getting some fresh salt.
@@ -169,7 +170,7 @@ class Authenticator(object):
                 return response
         except ValueError as error:
             flask.abort(
-                403, "Le sel n'a pas été généré par ce serveur : %s." % error)
+                403, 'Le sel n\'a pas été généré par ce serveur : %s.' % error)
 
         stored_hashed_password = user_auth_dict.get('hashedPassword')
 
@@ -212,11 +213,12 @@ class Authenticator(object):
                 auth_request.email + user_id + user_auth_dict.get('hashedPassword'),
                 int(time.time()))
             if not is_token_valid:
-                flask.abort(403, "Le jeton d'authentification est périmé.")
+                flask.abort(403, 'Le jeton d\'authentification est périmé.')
         except ValueError as error:
             flask.abort(
                 401,
-                "Le jeton d'authentification n'a pas été généré par ce serveur : %s." % error)
+                'Le jeton d\'authentification n\'a pas été généré par ce serveur : %s.' %
+                error)
         self._db.user_auth.replace_one(
             {'_id': objectid.ObjectId(user_id)},
             {'hashedPassword': auth_request.hashed_password})
@@ -225,7 +227,7 @@ class Authenticator(object):
         """Sends an email to user with a reset token so that they can reset their password."""
         user_dict = self._db.user.find_one({'profile.email': email})
         if not user_dict:
-            flask.abort(403, "Nous n'avons pas d'utilisateur avec cet email : %s" % email)
+            flask.abort(403, 'Nous n\'avons pas d\'utilisateur avec cet email : %s' % email)
         user_auth_dict = self._db.user_auth.find_one({'_id': user_dict['_id']})
         if not user_auth_dict or not user_auth_dict.get('hashedPassword'):
             flask.abort(
@@ -264,13 +266,13 @@ def _assert_valid_salt(salt, email, now):
     [timestamp, salt_check] = salt.split('.')
     timestamp = int(timestamp)
     if timestamp > now:
-        raise ValueError("Salt's timestamp is in the future.")
+        raise ValueError('Salt\'s timestamp is in the future.')
     if timestamp < now - _SALT_VALIDITY_SECONDS:
         # Salt is too old, let's hope the client will try again with the
         # new salt.
         return False
     if salt_check != _unique_salt_check(timestamp, email):
-        raise ValueError("Salt's signature is invalid")
+        raise ValueError('Salt\'s signature is invalid')
     return True
 
 

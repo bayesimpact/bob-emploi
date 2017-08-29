@@ -1,0 +1,62 @@
+[
+  {
+    "_id" : 238,
+    "title" : "AP HEROS CANDIDATS MADIRCOM - BORDEAUX",
+    "organiser" : "MADIRCOM",
+    "link" : "https://www.workuper.com/events/ap-heros-candidats-madircom-bordeaux",
+    "startDate" : "2017-08-29",
+    "filters" : [ 
+        "for-departement(33)"
+    ]
+	},
+	{
+    "_id" : 53,
+    "title" : "Le Salon du Travail et de la Mobilité Professionnelle",
+    "organiser" : "Altice Media Events",
+    "link" : "https://www.workuper.com/events/le-salon-du-travail-et-de-la-mobilite-professionnelle",
+    "startDate" : "2018-01-19",
+    "filters" : [ 
+        "for-departement(60,75,77,78,91,92,93,94,95)"
+    ]
+	},
+	{
+    "_id" : 161,
+    "title" : "Salon des 10 000 emplois - Lyon",
+    "organiser" : "Job Rencontres",
+    "link" : "https://www.workuper.com/events/salon-des-10-000-emplois-lyon",
+    "startDate" : "2017-09-20",
+    "filters" : [ 
+        "for-departement(01,38,42,69)"
+    ]
+	},
+	{
+    "_id" : 162,
+    "title" : "Salon des 10 000 emplois - Bordeaux",
+    "organiser" : "Job Rencontres",
+    "link" : "https://www.workuper.com/events/salon-des-10-000-emplois-bordeaux",
+    "startDate" : "2017-09-28",
+    "filters" : [ 
+        "for-departement(17,33)"
+    ]
+	},
+	{
+    "_id" : 261,
+    "title" : "Activ'Boost @Paris 20ème (12h45-16h)",
+    "organiser" : "Activ'Action",
+    "link" : "https://www.workuper.com/events/activ-boost-paris-20eme-12h45-16h-f5e736ad-cbd3-4dfd-97d3-b91cac1ebdd5",
+    "startDate" : "2017-08-28",
+    "filters" : [ 
+        "for-departement(60,75,77,78,91,92,93,94,95)"
+    ]
+	},
+	{
+    "_id" : 264,
+    "title" : "Atelier et Conférence au CIDJ - TROUVER SA VOIE by 4 coachs ",
+    "organiser" : "AlexforjoB",
+    "link" : "https://www.workuper.com/events/atelier-et-conference-au-cidj-trouver-sa-voie-by-4-coachs",
+    "startDate" : "2017-09-30",
+    "filters" : [ 
+        "for-departement(28,60,75,77,78,91,92,93,94,95)"
+    ]
+	}
+]

@@ -118,7 +118,8 @@ class Step extends React.Component {
     const buttonStyle = isMobileVersion ? mobileButtonStyle : {}
     const isLastOnboardingStep = totalStepCount && totalStepCount === stepNumber
     return <div style={stepStyle}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={fastForward} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={fastForward} />
       <PaddedOnMobile><div style={titleStyle}>{title}</div></PaddedOnMobile>
       {stepNumber && totalStepCount ? <div style={stepNumberStyle}>
         Étape {stepNumber} / {totalStepCount}

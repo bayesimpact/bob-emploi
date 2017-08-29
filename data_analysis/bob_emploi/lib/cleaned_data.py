@@ -29,13 +29,20 @@ _ROME_VERSION = 'v332'
 # TODO: Use this function in city suggest importer to read the stats file.
 def french_city_stats(data_folder='data', filename_city_stats=None):
     """Read the french city stats."""
-    city_stats_path = path.join(
-        data_folder, filename_city_stats or 'geo/french_cities.csv')
+    if not filename_city_stats:
+        filename_city_stats = path.join(data_folder, 'geo/french_cities.csv')
     return pandas.read_csv(
-        city_stats_path,
-        sep=',', header=None, usecols=[8, 10, 14],
-        names=['zipCode', 'city_id', 'population'],
-        dtype={'zipCode': str, 'city_id': str, 'population': int}).set_index('city_id', drop=False)
+        filename_city_stats,
+        sep=',', header=None, usecols=[1, 8, 10, 14, 19, 20],
+        names=['departement_id', 'zipCode', 'city_id', 'population', 'longitude', 'latitude'],
+        dtype={
+            'departement_id': str,
+            'zipCode': str,
+            'city_id': str,
+            'population': int,
+            'latitude': float,
+            'longitude': float,
+        }).set_index('city_id', drop=False)
 
 
 def job_offers(data_folder='data',
@@ -110,7 +117,8 @@ def rome_to_skills(data_folder='data',
     rome_to_item = pandas.read_csv(filename_items, dtype=str)
     skills = pandas.read_csv(filename_skills, dtype=str)
     merged = pandas.merge(rome_to_item, skills, on='code_ogr')
-    merged['skill_name'] = merged.libelle_competence.str.replace("''", "'")
+    merged['skill_name'] = merged.libelle_competence.str.replace("''", "'")\
+        .apply(maybe_add_accents)
     merged['skill_is_practical'] = merged.code_type_competence == '2'
     return merged[['code_rome', 'code_ogr', 'skill_name', 'skill_is_practical']]
 
@@ -129,7 +137,8 @@ def rome_job_groups(data_folder='data', filename=None):
     job_groups = pandas.read_csv(filename)
 
     # Fix names that contain double '.
-    job_groups['name'] = job_groups['libelle_rome'].str.replace("''", "'")
+    job_groups['name'] = job_groups['libelle_rome'].str.replace("''", "'")\
+        .apply(maybe_add_accents)
 
     job_groups.set_index('code_rome', inplace=True)
 
@@ -194,7 +203,8 @@ def rome_work_environments(
     links = pandas.read_csv(links_filename)
     ref = pandas.read_csv(ref_filename)
     environments = pandas.merge(links, ref, on='code_ogr', how='inner')
-    environments['name'] = environments.libelle_env_travail.str.replace("''", "'")
+    environments['name'] = environments.libelle_env_travail.str.replace("''", "'")\
+        .apply(maybe_add_accents)
     return environments.rename(columns={
         'libelle_type_section_env_trav': 'section',
     })[['name', 'code_ogr', 'code_rome', 'section']]
@@ -214,7 +224,8 @@ def rome_jobs(data_folder='data', filename=None):
     jobs = pandas.read_csv(filename, dtype=str)
 
     # Fix names that contain double '.
-    jobs['name'] = jobs['libelle_appellation_court'].str.replace("''", "'")
+    jobs['name'] = jobs['libelle_appellation_court'].str.replace("''", "'")\
+        .apply(maybe_add_accents)
 
     jobs.set_index('code_ogr', inplace=True)
 
@@ -384,3 +395,24 @@ def scraped_imt(data_folder='data', filename=None):
     imt['departement_id'] = imt.city.apply(lambda c: c['departementId'])
     imt['rome_id'] = imt.job.apply(lambda j: j['jobGroup']['romeId'])
     return imt.set_index(['departement_id', 'rome_id'])
+
+
+# Regular expression to match unaccented capital E in French text that should
+# be capitalized. It has been computed empirically by testing on the full ROME.
+# It matches the E in "Etat", "Ecrivain", "Evolution", but not in "Entreprise",
+# "Ethnologue" nor "Euro".
+_UNACCENTED_E_MATCH = re.compile(
+    r'E(?=('
+    '([bcdfghjklpqrstvz]|[cpt][hlr])[aeiouyéèêë]|'
+    'n([eouyéèêë]|i[^v]|a[^m])|'
+    'm([aeiuyéèêë]|o[^j])))')
+
+
+def maybe_add_accents(title):
+    """Add an accent on capitalized letters if needed.
+
+    In the ROME, most of the capitalized letters have no accent even if the
+    French word would require one. This function fixes this by using
+    heuristics.
+    """
+    return _UNACCENTED_E_MATCH.sub('É', title)

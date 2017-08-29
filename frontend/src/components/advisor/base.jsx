@@ -301,4 +301,115 @@ const ImproveApplicationTips = connect(({app}, {project, tipsCacheField}) => ({
 }))(ImproveApplicationTipsBase)
 
 
-export {AdviceBox, ToolCard, EmailTemplate, ImproveApplicationTips}
+class PercentageBoxes extends React.Component {
+  // This class enables to represent a percentage in form of little boxes, for instance
+  // 250% will be represented as 2.5 boxes
+  // Percentages below 100% are not displayed.
+
+  static propTypes = {
+    percentage: PropTypes.number,
+  }
+
+  renderBox(percentage, isTarget, key) {
+    const boxStyle = {
+      backgroundColor: isTarget ? Colors.SLATE : Colors.HOVER_GREEN,
+      borderRadius: 2,
+      marginLeft: 5,
+      width: `${percentage * 22}px`,
+    }
+    return <div style={boxStyle} key={`box-${key}`} />
+  }
+
+  render() {
+    const {percentage} = this.props
+    // Do not represent values below 1.
+    if (percentage < 1) {
+      return null
+    }
+    const maxBoxes = 8
+    const nbBoxes = Math.floor(percentage)
+
+    const boxes = []
+
+    if (nbBoxes >= maxBoxes) {
+      boxes.push({percentage: .5})
+      new Array(maxBoxes / 2 - 1).fill().forEach(() => boxes.push({percentage: 1}))
+      const dotsStyle = {
+        color: Colors.HOVER_GREEN,
+        fontWeight: 'bold',
+        marginLeft: 5,
+        marginTop: 8,
+      }
+      boxes.push({
+        component: <div style={dotsStyle} key="dots">…</div>,
+      })
+      new Array(maxBoxes / 2 - 1).fill().forEach(() => boxes.push({percentage: 1}))
+    } else {
+      boxes.push({percentage: percentage - nbBoxes})
+      new Array(nbBoxes - 1).fill().forEach(() => boxes.push({percentage: 1}))
+    }
+    boxes.push({isTarget: true, percentage: 1})
+
+    return <div style={{display: 'flex', height: 22}}>
+      {boxes.map(({component, isTarget, percentage}, index) =>
+        component || this.renderBox(percentage, isTarget, index))}
+    </div>
+  }
+}
+
+
+class AdviceSuggestionList extends React.Component {
+  static propTypes = {
+    children: PropTypes.arrayOf(PropTypes.node.isRequired),
+  }
+
+  render() {
+    const {children, ...extraProps} = this.props
+    const childStyle = (index, props) => ({
+      ':hover': props.isNotClickable ? {} : {
+        backgroundColor: Colors.LIGHT_GREY,
+      },
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      cursor: props.isNotClickable ? 'initial' : 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      fontWeight: 'bold',
+      marginTop: index ? -1 : 0,
+      minHeight: 50,
+      padding: '0 20px',
+      ...SmoothTransitions,
+      ...props.style,
+    })
+    return <AppearingList {...extraProps}>
+      {children.map((child, index) => React.cloneElement(child, {
+        style: childStyle(index, child.props),
+      }))}
+    </AppearingList>
+  }
+}
+
+class TipBase extends React.Component {
+  static propTypes = {
+    style: PropTypes.string,
+    tip: PropTypes.string.isRequired,
+  }
+
+  render() {
+    const {tip, style} = this.props
+    const tipStyle = {
+      fontStyle: 'italic',
+      marginRight: 10,
+      ...style,
+    }
+    return <div style={tipStyle} >
+      {tip}
+    </div>
+  }
+}
+const Tip = Radium(TipBase)
+
+
+export {AdviceBox, ToolCard, EmailTemplate, ImproveApplicationTips, AdviceSuggestionList, Tip,
+  PercentageBoxes}

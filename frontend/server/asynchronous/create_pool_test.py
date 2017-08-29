@@ -20,7 +20,10 @@ class CreatePoolTestCase(unittest.TestCase):
         self._db_patcher.stop()
         super(CreatePoolTestCase, self).tearDown()
 
-    def test_basic_usage(self):
+    @mock.patch(create_pool.__name__ + '.requests.post')
+    @mock.patch(
+        create_pool.__name__ + '._SLACK_CREATE_POOL_URL', 'https://slack.example.com/webhook')
+    def test_basic_usage(self, mock_post):
         """Basic usage."""
         self._db.user.insert_many([
             {
@@ -42,9 +45,18 @@ class CreatePoolTestCase(unittest.TestCase):
         create_pool.main(pool_name='test-pool', users_json_filters='{}')
 
         use_cases = list(self._db.use_case.find())
-        self.assertEqual([1954, 1982], sorted(u['profile']['yearOfBirth'] for u in use_cases))
-        self.assertFalse(use_cases[0]['profile'].get('email'))
-        self.assertFalse(use_cases[0].get('googleId'))
+        self.assertEqual(
+            [1954, 1982], sorted(u['userData']['profile']['yearOfBirth'] for u in use_cases))
+        self.assertFalse(use_cases[0]['userData']['profile'].get('email'))
+        self.assertFalse(use_cases[0]['userData'].get('googleId'))
+        mock_post.assert_called_once_with(
+            'https://slack.example.com/webhook',
+            json={
+                'text':
+                    'A new use cases pool is ready for evaluation: '
+                    '<https://www.bob-emploi.fr/eval?poolName=test-pool|test-pool>',
+            },
+        )
 
 
 if __name__ == '__main__':

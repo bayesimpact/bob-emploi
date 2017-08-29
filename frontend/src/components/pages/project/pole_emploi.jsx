@@ -192,7 +192,8 @@ class PoleEmploiChangelogModalBase extends React.Component {
     return <Modal
       title={step.title || `Nous avons mis à jour ${config.productName} !`} style={containerStyle}
       onHidden={onHidden} {...extraProps}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={nextStep} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={nextStep} />
       <div style={{fontSize: 14, lineHeight: 1.8, maxWidth: 450, textAlign: 'center'}}>
         {step.subtitle || `Dans le but d'améliorer notre accompagnement nous
           avons apporté quelques améliorations à ${config.productName} :`}

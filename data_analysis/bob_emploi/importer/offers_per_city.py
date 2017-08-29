@@ -1,16 +1,16 @@
 """This script computes nearby cities that have offers.
 
-The script look at the number of offers per city for any given job group and returns it.
+The script looks at the number of offers per city for any given job group and returns it.
 
 The output is used for ranking cities according to which have the most job offers for a given job
 group.
 
 If you managed to get your hands on the offers dataset, you can run:
-    docker-compose run --rm data-analysis-prepare \\
-        python bob_emploi/importer/offers_per_city.py \\
-        --offers_file="data/job_offers/OFFRE_EXTRACT_ENRICHIE_FGU_17JANV2017_FGU.csv"
-        --colnames="data/job_offers/column_names.txt"
-        --min_creation_date="2015/01/01"
+    docker-compose run --rm data-analysis-prepare \
+        python bob_emploi/importer/offers_per_city.py \
+        --offers_file="data/job_offers/OFFRE_EXTRACT_ENRICHIE_FGU_17JANV2017_FGU.csv" \
+        --colnames="data/job_offers/column_names.txt" \
+        --min_creation_date="2015/01/01" \
         --to_json
 """
 import collections

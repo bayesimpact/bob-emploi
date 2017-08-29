@@ -1,5 +1,3 @@
-import config from 'config'
-
 function cleanHtmlError(htmlErrorPage) {
   const page = document.createElement('html')
   page.innerHTML = htmlErrorPage
@@ -18,8 +16,7 @@ function handleJsonResponse(response) {
 }
 
 function postJson(path, data, isExpectingResponse) {
-  const url = config.backendHostName + path
-  const fetchPromise = fetch(url, {
+  const fetchPromise = fetch(path, {
     body: JSON.stringify(data),
     headers: {
       'Accept': 'application/json',
@@ -34,8 +31,7 @@ function postJson(path, data, isExpectingResponse) {
 }
 
 function deleteJson(path, data) {
-  const url = config.backendHostName + path
-  return fetch(url, {
+  return fetch(path, {
     body: JSON.stringify(data),
     headers: {
       'Accept': 'application/json',
@@ -46,8 +42,7 @@ function deleteJson(path, data) {
 }
 
 function getJson(path) {
-  const url = config.backendHostName + path
-  return fetch(url).then(handleJsonResponse)
+  return fetch(path).then(handleJsonResponse)
 }
 
 function adviceTipsGet({userId}, {projectId}, {adviceId}) {
@@ -60,6 +55,10 @@ function associationsGet({userId}, {projectId}) {
     then(response => response.associations || [])
 }
 
+function createEvalUseCasePost(poolName, email) {
+  return postJson('/api/eval/use-case/create', {email, poolName}, true)
+}
+
 function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
@@ -70,6 +69,11 @@ function evalUseCasePoolNamesGet() {
 
 function evalUseCasesGet(poolName) {
   return getJson(`/api/eval/use-cases/${poolName}`)
+}
+
+function eventsGet({userId}, {projectId}) {
+  return getJson(`/api/project/${userId}/${projectId}/events`).
+    then(response => response.events || [])
 }
 
 function interviewTipsGet({userId}, {projectId}) {
@@ -145,9 +149,11 @@ function feedbackPost(feedback) {
 export {
   adviceTipsGet,
   associationsGet,
+  createEvalUseCasePost,
   dashboardExportGet,
   evalUseCasePoolNamesGet,
   evalUseCasesGet,
+  eventsGet,
   feedbackPost,
   interviewTipsGet,
   jobBoardsGet,

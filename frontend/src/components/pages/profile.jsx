@@ -226,7 +226,7 @@ class AccountDeletionModalBase extends React.Component {
     }
     return <Modal isShown={isShown} onClose={onClose}>
       <ModalHeader>Vous voulez nous quitter ? :(</ModalHeader>
-      <ModalCloseButton onClick={onClose} closeOnEscape={true} />
+      <ModalCloseButton onClick={onClose} shouldCloseOnEscape={true} />
       <div style={contentStyle}>
         <p>
           Si vous décidez de supprimer votre compte, toutes vos données personnelles

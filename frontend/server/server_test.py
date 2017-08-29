@@ -86,11 +86,11 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
     def _create_user_joe_the_cheminot(self):
         """Joe is a special user used to analyse feedback."""
         user_data = {
-            'profile': {"name": 'Joe'},
+            'profile': {'name': 'Joe'},
             'projects': [
-                {"projectId": "another-id", "title": "Cultivateur d'escargots à Lyon"},
-                {"projectId": "pid", "title": "Cheminot à Caen", "seniority": 1},
-                {"projectId": 'last-id', "title": "Polénisateur à Brest", "seniority": 2}],
+                {'projectId': 'another-id', 'title': 'Cultivateur d\'escargots à Lyon'},
+                {'projectId': 'pid', 'title': 'Cheminot à Caen', 'seniority': 1},
+                {'projectId': 'last-id', 'title': 'Polénisateur à Brest', 'seniority': 2}],
         }
         return self.create_user(data=user_data, email='foo@bar.fr')
 
@@ -974,6 +974,60 @@ class ProjectAssociationsTestCase(base_test.ServerTestCase):
             [j.get('name') for j in associations.get('associations', [])])
 
 
+class ProjectEventsTestCase(base_test.ServerTestCase):
+    """Unit tests for the project/.../events endpoint."""
+
+    def setUp(self):
+        super(ProjectEventsTestCase, self).setUp()
+        self.user_id = self.create_user(
+            # TODO(pascal): Remove the email when events are available for all users.
+            email='p@example.com', modifiers=[_add_project], advisor=True)
+        user_info = self.get_user_info(self.user_id)
+        self.project_id = user_info['projects'][0]['projectId']
+
+    def test_bad_project_id(self):
+        """Test with a non existing project ID."""
+        response = self.app.get('/api/project/%s/foo/events' % self.user_id)
+
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
+
+    def test_no_events(self):
+        """Basic test with no events."""
+        response = self.app.get('/api/project/%s/%s/events' % (self.user_id, self.project_id))
+
+        events = self.json_from_response(response)
+        self.assertEqual({}, events)
+
+    def test_with_events(self):
+        """Basic test with alpha user and constant events."""
+        self._db.events.insert_many([
+            {
+                'title': 'AP HEROS CANDIDATS MADIRCOM - BORDEAUX',
+                'link': 'https://www.workuper.com/events/ap-heros-candidats-madircom-bordeaux',
+                'organiser': 'MADIRCOM',
+                'startDate': '2017-08-29',
+            },
+            {
+                'title': 'Le Salon du Travail et de la Mobilité Professionnelle',
+                'link': 'https://www.workuper.com/events/le-salon-du-travail-et-de-la-mobilite-'
+                        'professionnelle',
+                'organiser': 'Altice Media Events',
+                'startDate': '2018-01-19',
+            },
+        ])
+
+        response = self.app.get('/api/project/%s/%s/events' % (self.user_id, self.project_id))
+
+        events = self.json_from_response(response)
+        self.assertEqual(
+            [
+                'AP HEROS CANDIDATS MADIRCOM - BORDEAUX',
+                'Le Salon du Travail et de la Mobilité Professionnelle',
+            ],
+            [e.get('title') for e in events.get('events')])
+
+
 class ProjectJobBoardsTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../jobboards endpoint."""
 
@@ -1184,36 +1238,36 @@ class ProjectCommuteTestCase(base_test.ServerTestCase):
         user_id = self.create_user(
             data={'projects': [{
                 'mobility': {'city': {'cityId': '69123'}},
-                "targetJob": {"jobGroup": {"romeId": "A6789"}},
+                'targetJob': {'jobGroup': {'romeId': 'A6789'}},
             }]})
         self._db.cities.insert_one({
-            "_id": "69123",
-            "name": "Lyon",
-            "longitude": 4.8363116,
-            "latitude": 45.7640454,
-            "population": 400000,
+            '_id': '69123',
+            'name': 'Lyon',
+            'longitude': 4.8363116,
+            'latitude': 45.7640454,
+            'population': 400000,
         })
         self._db.hiring_cities.insert_one({
-            "_id": "A6789",
-            "hiringCities": [
+            '_id': 'A6789',
+            'hiringCities': [
                 {
-                    "offers": 10,
-                    "city": {
-                        "cityId": "69124",
-                        "name": "Brindas",
-                        "longitude": 4.6965532,
-                        "latitude": 45.7179675,
-                        "population": 10000,
+                    'offers': 10,
+                    'city': {
+                        'cityId': '69124',
+                        'name': 'Brindas',
+                        'longitude': 4.6965532,
+                        'latitude': 45.7179675,
+                        'population': 10000,
                     },
                 },
                 {
-                    "offers": 40,
-                    "city": {
-                        "cityId": "69123",
-                        "name": "Lyon",
-                        "longitude": 4.8363116,
-                        "latitude": 45.7640454,
-                        "population": 400000,
+                    'offers': 40,
+                    'city': {
+                        'cityId': '69123',
+                        'name': 'Lyon',
+                        'longitude': 4.8363116,
+                        'latitude': 45.7640454,
+                        'population': 400000,
                     },
                 },
             ],

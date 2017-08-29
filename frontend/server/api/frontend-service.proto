@@ -5,15 +5,17 @@ import "google/protobuf/empty.proto";
 import "bob_emploi/frontend/api/action.proto";
 import "bob_emploi/frontend/api/application.proto";
 import "bob_emploi/frontend/api/association.proto";
+import "bob_emploi/frontend/api/commute.proto";
 import "bob_emploi/frontend/api/config.proto";
-import "bob_emploi/frontend/api/feedback.proto";
+import "bob_emploi/frontend/api/event.proto";
 import "bob_emploi/frontend/api/export.proto";
+import "bob_emploi/frontend/api/feedback.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/jobboard.proto";
 import "bob_emploi/frontend/api/project.proto";
 import "bob_emploi/frontend/api/stats.proto";
+import "bob_emploi/frontend/api/use_case.proto";
 import "bob_emploi/frontend/api/user.proto";
-import "bob_emploi/frontend/api/commute.proto";
 
 package bayes.bob;
 
@@ -67,6 +69,9 @@ service FrontendService {
   // job group.
   rpc ProjectRequirements(Project) returns (JobRequirements);
 
+  // Retrieve a list of events for a project.
+  rpc ProjectEvents(Project) returns (Events);
+
   // Retrieve a list of tips to prepare for an interivew for a project.
   rpc ProjectInterviewTips(Project) returns (InterviewTips);
 
@@ -95,4 +100,16 @@ service FrontendService {
 
   // Retrieve information about possible cities to commute to for this project.
   rpc GetCommutingCities(Project) returns (CommutingCities);
+
+  // Retrieve a list of the available pools of anonymized user examples.
+  rpc EvalUseCasePoolNames(google.protobuf.Empty) returns (UseCasePoolNames);
+
+  // Retrieve a list of anonymized user examples from one pool.
+  rpc EvalUseCases(UseCasePool) returns (UseCases);
+
+  // Evaluate a use case.
+  rpc EvalUseCase(UseCaseEvaluation) returns (google.protobuf.Empty);
+
+  // Create a use case from a user.
+  rpc EvalUseCaseCreate(UseCaseCreateRequest) returns (UseCase);
 }

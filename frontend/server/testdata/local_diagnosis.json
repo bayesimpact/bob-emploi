@@ -1,5 +1,21 @@
 [
   {
+    "_id": "94:N4105",
+    "imt": {
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 2
+    }
+  },
+  {
+    "_id": "42:N4105",
+    "imt": {
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 10
+    }
+  },
+  {
     "_id": "69:M1604",
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],

@@ -13,6 +13,10 @@
 
 set -e
 
+if [ -n "${DRY_RUN}" ]; then
+  echo -e "\033[31mDRY RUN: will not actually modify anything.\033[0m"
+fi
+
 if [ -z "$1" ]; then
   echo -e "ERROR: \033[31mChoose a git tag to deploy.\033[0m"
   git tag | grep ^20..-..-.. | sort | tail
@@ -70,7 +74,6 @@ fi
 
 readonly DOCKER_SERVER_REPO="bob-emploi-frontend-server"
 readonly DOCKER_CLIENT_REPO="bob-emploi-frontend"
-rm -f "${RELEASE_NOTES}"
 readonly DOCKER_TAG="tag-${TAG}"
 readonly DOCKER_SERVER_IMAGE="bayesimpact/${DOCKER_SERVER_REPO}:${DOCKER_TAG}"
 readonly DOCKER_CLIENT_IMAGE="bayesimpact/${DOCKER_CLIENT_REPO}:${DOCKER_TAG}"
@@ -121,21 +124,25 @@ readonly CONTAINERS_DEFINITION=$(
   aws ecs describe-task-definition --task-definition "${ECS_FAMILY}" | \
     python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; containers[0]['memoryReservation'] = 300; containers[0]['image'] = '${DOCKER_SERVER_IMAGE}'; print(json.dumps(containers))")
 
-aws ecs register-task-definition --family="${ECS_FAMILY}" --container-definitions "${CONTAINERS_DEFINITION}" > /dev/null
+if [ -z "${DRY_RUN}" ]; then
+  aws ecs register-task-definition --family="${ECS_FAMILY}" --container-definitions "${CONTAINERS_DEFINITION}" > /dev/null
+fi
 
 echo -e "\033[32mRolling out the new task definition…\033[0m"
-aws ecs update-service --service="${ECS_SERVICE}" --task-definition="${ECS_FAMILY}" > /dev/null
+if [ -z "${DRY_RUN}" ]; then
+  aws ecs update-service --service="${ECS_SERVICE}" --task-definition="${ECS_FAMILY}" > /dev/null
 
-function count_deployments()
-{
-  aws ecs describe-services --services "${ECS_SERVICE}" | \
-    python3 -c "import sys, json; deployments = json.load(sys.stdin)['services'][0]['deployments']; print(len(deployments))"
-}
+  function count_deployments()
+  {
+    aws ecs describe-services --services "${ECS_SERVICE}" | \
+      python3 -c "import sys, json; deployments = json.load(sys.stdin)['services'][0]['deployments']; print(len(deployments))"
+  }
 
-while [ "$(count_deployments)" != "1" ]; do
-  printf .
-  sleep 10
-done
+  while [ "$(count_deployments)" != "1" ]; do
+    printf .
+    sleep 10
+  done
+fi
 
 echo -e "\033[32mServer Deployed!\033[0m"
 
@@ -167,24 +174,38 @@ rm -r "${TMP_TAR_FILE}"
 
 echo -e "\033[32mUploading files to the OpenStack container…\033[0m"
 pushd "${TMP_DIR}"
-swift upload "${OPEN_STACK_CONTAINER}" --skip-identical *
+if [ -z "${DRY_RUN}" ]; then
+  swift upload "${OPEN_STACK_CONTAINER}" --skip-identical *
+fi
 popd
 
 rm -r "${TMP_DIR}"
 
 echo -e "\033[32mLogging the deployment on GitHub…\033[0m"
 echo "Deployed on $(date -R -u)" >> "${RELEASE_NOTES}"
-hub release "${RELEASE_COMMAND}" --file="${RELEASE_NOTES}" "${TAG}"
-git push -f origin "${TAG}":prod
+readonly PREVIOUS_RELEASE="$(git describe --tags origin/prod)"
+if [ -z "${DRY_RUN}" ]; then
+  hub release "${RELEASE_COMMAND}" --file="${RELEASE_NOTES}" "${TAG}"
+  git push -f origin "${TAG}":prod
+fi
+
 # Ping Slack to say the deployment is done.
 readonly SLACK_MESSAGE=$(mktemp)
+readonly ROLLBACK_COMMAND=\`"frontend/release/deploy.sh ${PREVIOUS_RELEASE}"\`
 python3 -c "import json
 release_notes = open('${RELEASE_NOTES}', 'r').read()
-slack_message = {'text': 'A new version of Bob has been deployed ($TAG).\n%s' % release_notes}
+slack_message = {'text': 'A new version of Bob has been deployed ($TAG).\n%s\nTo rollback run: ${ROLLBACK_COMMAND}' % release_notes}
 with open('${SLACK_MESSAGE}', 'w') as slack_message_file:
   json.dump(slack_message, slack_message_file)"
-wget -o /dev/null -O /dev/null --post-file=${SLACK_MESSAGE} "$SLACK_INTEGRATION_URL"
+if [ -z "${DRY_RUN}" ]; then
+  wget -o /dev/null -O /dev/null --post-file=${SLACK_MESSAGE} "$SLACK_INTEGRATION_URL"
+else
+  echo "Would send the following message to Slack:"
+  cat "${SLACK_MESSAGE}"
+  echo ""
+fi
 rm -f "${SLACK_MESSAGE}"
 rm -f "${RELEASE_NOTES}"
 
 echo -e "\033[32mSuccess!\033[0m"
+echo "Please wait ~15 minutes and check that everything works. If needed rollback using: ${ROLLBACK_COMMAND}."

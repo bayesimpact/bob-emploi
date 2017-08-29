@@ -9,6 +9,9 @@ import {inCityPrefix, lowerFirstLetter} from 'store/french'
 import {AppearingList, Colors, GrowingNumber, PaddedOnMobile, StringJoiner,
   Styles, Tag} from 'components/theme'
 
+import {PercentageBoxes} from './base'
+
+
 const maybeS = count => count > 1 ? 's' : ''
 
 class AdviceCard extends React.Component {
@@ -127,51 +130,6 @@ class CommuteCitySuggestionBase extends React.Component {
     window.open(`https://www.google.fr/maps/dir/${searchOrigin}/${searchTarget}`, '_blank')
   }
 
-  renderBox(percentage, isTargetCity, key) {
-    const boxStyle = {
-      backgroundColor: isTargetCity ? Colors.SLATE : Colors.HOVER_GREEN,
-      borderRadius: 2,
-      marginLeft: 5,
-      width: `${percentage * 22}px`,
-    }
-    return <div style={boxStyle} key={`box-${key}`} />
-  }
-
-  renderBoxes(value) {
-    // We choose not to represent values below 1.
-    if (value < 1) {
-      return null
-    }
-    const maxBoxes = 8
-    const nbBoxes = Math.floor(value)
-
-    const boxes = []
-
-    if (nbBoxes >= maxBoxes) {
-      boxes.push({percentage: .5})
-      new Array(maxBoxes / 2 - 1).fill().forEach(() => boxes.push({percentage: 1}))
-      const dotsStyle = {
-        color: Colors.HOVER_GREEN,
-        fontWeight: 'bold',
-        marginLeft: 5,
-        marginTop: 8,
-      }
-      boxes.push({
-        component: <div style={dotsStyle} key="dots">…</div>,
-      })
-      new Array(maxBoxes / 2 - 1).fill().forEach(() => boxes.push({percentage: 1}))
-    } else {
-      boxes.push({percentage: value - nbBoxes})
-      new Array(nbBoxes - 1).fill().forEach(() => boxes.push({percentage: 1}))
-    }
-    boxes.push({isTargetCity: true, percentage: 1})
-
-    return <div style={{display: 'flex', height: 22}}>
-      {boxes.map(({component, isTargetCity, percentage}, index) =>
-        component || this.renderBox(percentage, isTargetCity, index))}
-    </div>
-  }
-
   renderTargetCity(style) {
     const {city} = this.props
     const {prefix, cityName} = inCityPrefix(city.name)
@@ -188,7 +146,7 @@ class CommuteCitySuggestionBase extends React.Component {
       <div style={{flex: 1}} />
       <div style={{fontStyle: 'italic', fontWeight: 'normal'}}>
         Offres par habitant {prefix}{cityName} :
-      </div> {this.renderBox(1, true, 'target')}
+      </div> <PercentageBoxes percentage={1} />
     </div>
   }
 
@@ -218,7 +176,7 @@ class CommuteCitySuggestionBase extends React.Component {
         {roundedOffers > 1.1 ? <span style={{alignItems: 'center', display: 'flex'}}>
           <div style={multiplierStyle}>
             {roundedOffers}x plus
-          </div> {this.renderBoxes(roundedOffers)} </span> : null}
+          </div> <PercentageBoxes percentage={roundedOffers} /></span> : null}
       </span>
     </div>
   }

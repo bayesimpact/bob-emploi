@@ -28,6 +28,7 @@ class ServerTestCase(unittest.TestCase):
 
         self.app = server.app.test_client()
         self._db = mongomock.MongoClient().get_database('test')
+        server.app.config['DATABASE'] = self._db
         server._DB = self._db  # pylint: disable=protected-access
         server._JOB_GROUPS_INFO.reset_cache()  # pylint: disable=protected-access
         server._CHANTIERS.reset_cache()  # pylint: disable=protected-access
@@ -74,7 +75,7 @@ class ServerTestCase(unittest.TestCase):
                             },
                         },
                         {
-                            'name': "Réaliser l'oeuvre et les finitions",
+                            'name': 'Réaliser l\'oeuvre et les finitions',
                             'skill': {
                                 'kind': 'PRACTICAL_SKILL',
                                 'skillId': '1235',

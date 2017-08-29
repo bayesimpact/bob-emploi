@@ -17,7 +17,6 @@ import {Routes} from 'components/url'
 import {Colors} from 'components/theme'
 import {AdvicePage} from './advice'
 import {CookiesPage} from './cookies'
-import {EvalPage} from './eval'
 import {LandingPage} from './landing'
 import {NewProjectPage} from './new_project'
 import {ProfilePage} from './profile'
@@ -316,7 +315,6 @@ class MyRouterBase extends React.Component {
         createElement={this.createElement}>
         <Route path={Routes.ROOT} component={PageHolder}>
           <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
-          <Route path={Routes.EVAL_PAGE} component={mainConnect(EvalPage)} />
           <Route onEnter={this.requireUserCheck}>
             <IndexRoute component={mainConnect(HomePage)} />
             <Route path={Routes.APP_NOT_AVAILABLE_PAGE} component={AppNotAvailablePage} />

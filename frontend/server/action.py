@@ -65,7 +65,7 @@ def instantiate(action, user_proto, project, template, for_email=False):
                     logging.warning(
                         'LBB Action %s is missing a city name (user %s).',
                         action.action_id, user_proto.user_id)
-                action.title = title_match.group(1) + " l'entreprise : " + company_name
+                action.title = title_match.group(1) + ' l\'entreprise : ' + company_name
             else:
                 logging.warning(
                     'LBB Action %s does not have a title that can be updated (user %s).',
@@ -98,7 +98,7 @@ def populate_template(template, city, job):
         '%romeId': job.job_group.rome_id,
         '%jobId': job.code_ogr,
         '%jobGroupNameUrl': parse.quote(unidecode.unidecode(
-            job.job_group.name.lower().replace(' ', '-').replace("'", '-'))),
+            job.job_group.name.lower().replace(' ', '-').replace('\'', '-'))),
         '%masculineJobName': parse.quote(job.masculine_name),
         '%latin1MasculineJobName': parse.quote(job.masculine_name.encode('latin-1', 'replace')),
     }

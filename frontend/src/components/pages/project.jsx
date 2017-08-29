@@ -150,7 +150,7 @@ class WaitingProjectPage extends React.Component {
       lineHeight: 1.5,
     }
     return <div style={containerStyle}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onDone} />
+      <ShortKey keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onDone} />
       <JobGroupCoverImage romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}} />
       <div style={boxStyle}>
         <header style={headerStyle}>{project.title}</header>
@@ -236,7 +236,8 @@ class SumUpProfileModal extends React.Component {
     // TODO(guillaume): Avoid flex when possible.
     return <Modal {...extraProps} style={containerStyle}
       title="Les données retenues pour établir votre diagnostic">
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onClose} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
       <div style={boxStyle}>
         <div style={sectionWithBorderBottom}>
           <img src={roundUserImage} style={pictoStyle} />
@@ -545,7 +546,8 @@ class SuggestAdviceModalBase extends React.Component {
     return <Modal
       title="Bob s'améliore grâce à vous"
       {...this.props} onClose={this.handleClose} isShown={isShown && !isThankYouShown}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.fastForward} />
+      <ShortKey keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
+        onKeyPress={this.fastForward} />
       <div style={{padding: '0 50px 50px'}}>
         <div style={subtitleStyle}>
           Proposez de nouveaux conseils pour aider les chercheurs d'emploi&nbsp;!
@@ -619,7 +621,8 @@ class SuggestAdviceModalBase extends React.Component {
       title="Merci beaucoup pour votre aide !" {...extraProps}
       onHidden={() => this.setState({isThankYouShown: false})}
       isShown={isShown && isThankYouShown}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onClose} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
       <div style={{fontSize: 15, lineHeight: 1.5, padding: '30px 50px 30px'}}>
 
         <div style={{marginBottom: 25, textAlign: 'center'}}>
@@ -860,7 +863,8 @@ class ProjectDashboardPageBase extends React.Component {
     const onClose = () => this.setState({isBobScoreShown: false})
     const {components, percent} = computeBobScore(profile, project)
     return <div style={containerStyle}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onClose} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
       <div style={bobScoreStyle}>
         <div>Bob Score</div>
         <Gauge percent={percent} style={{margin: 10}} />
@@ -1172,7 +1176,8 @@ class ProjectDashboardPageBase extends React.Component {
       style={{padding: '0 50px 40px', textAlign: 'center'}}
       title="Modifier mes informations"
       onClose={onClose}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={onModify} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onModify} />
       <div style={noticeStyle}>
         En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.
       </div>

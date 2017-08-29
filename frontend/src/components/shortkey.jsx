@@ -25,7 +25,8 @@ const handleKeyEvents = {
 class ShortKey extends React.Component {
   static propTypes = {
     children: PropTypes.node,
-    ctrlKey: PropTypes.bool,
+    hasCtrlModifier: PropTypes.bool,
+    hasShiftModifier: PropTypes.bool,
     keyCode: PropTypes.string.isRequired,
     // A function that is called if the short-key is going down. If it returns
     // false, it will consume the event and other ShortKey components will not
@@ -37,7 +38,6 @@ class ShortKey extends React.Component {
     // get called. If it returns true other ShortKey components using the same
     // short-key will be called.
     onKeyPress: PropTypes.func,
-    shiftKey: PropTypes.bool,
   }
 
   componentWillMount() {
@@ -73,8 +73,9 @@ class ShortKey extends React.Component {
 
   listenToEvent = (eventType, onEvent) => {
     const listener = (event) => {
-      const {ctrlKey, keyCode, shiftKey} = this.props
-      if (event.code === keyCode  && event.ctrlKey === !!ctrlKey && event.shiftKey === !!shiftKey) {
+      const {hasCtrlModifier, keyCode, hasShiftModifier} = this.props
+      if (event.code === keyCode  && event.ctrlKey === !!hasCtrlModifier &&
+          event.shiftKey === !!hasShiftModifier) {
         return onEvent()
       }
       return true

@@ -136,7 +136,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     def test_la_bonne_boite_special_chars(self):
         """Test LaBonneBoite URL when city and job group names contain special chars."""
         self.project.target_job.job_group.name = (
-            "Recherche en sciences de l'homme et de la société")
+            'Recherche en sciences de l\'homme et de la société')
         self.project.mobility.city.name = 'Orléans'
         self.project.mobility.city.departement_id = '42'
 

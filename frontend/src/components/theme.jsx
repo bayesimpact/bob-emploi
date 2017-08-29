@@ -144,6 +144,8 @@ class ButtonBase extends React.Component {
   static propTypes = {
     bounceDurationMs: PropTypes.number,
     children: PropTypes.node.isRequired,
+    // We keep disabled by consistency with the DOM button element.
+    // eslint-disable-next-line react/boolean-prop-naming
     disabled: PropTypes.bool,
     isHighlighted: PropTypes.bool,
     isNarrow: PropTypes.bool,
@@ -566,6 +568,8 @@ class RadioButton extends React.Component {
 class FieldSet extends React.Component {
   static propTypes = {
     children: PropTypes.node,
+    // We keep disabled by consistency with the DOM fieldset element.
+    // eslint-disable-next-line react/boolean-prop-naming
     disabled: PropTypes.bool,
     isInline: PropTypes.bool,
     isValid: PropTypes.bool,
@@ -644,7 +648,8 @@ class Select extends React.Component {
       ...style,
     }
     return  <select onChange={this.handleChange} value={value} style={containerStyle}>
-      {value ? null : <option></option>}
+      {/* Add an empty option if no option matches the selected value. */}
+      {options.some(option => option.value === value) ? null : <option />}
       {options.map(option => {
         return <option key={option.value} value={option.value} disabled={option.disabled}>
           {option.name}
@@ -839,22 +844,23 @@ class Icon extends React.Component {
 
 class IconInput extends React.Component {
   static propTypes = {
-    autofocus: PropTypes.bool,
     iconName: PropTypes.string.isRequired,
     iconStyle: PropTypes.object,
     inputStyle: PropTypes.object,
+    shouldFocusOnMount: PropTypes.bool,
     style: PropTypes.object,
   }
 
   componentDidMount() {
-    if (this.props.autofocus) {
+    if (this.props.shouldFocusOnMount) {
       this.input.focus()
     }
   }
 
   render() {
     // eslint-disable-next-line no-unused-vars
-    const {autofocus, iconName, iconStyle, inputStyle, style, ...otherProps} = this.props
+    const {shouldFocusOnMount, iconName, iconStyle, inputStyle, style,
+      ...otherProps} = this.props
     const iconContainer = {
       alignItems: 'center',
       backgroundColor: 'white',

@@ -13,13 +13,16 @@ import re
 
 from bob_emploi.frontend import companies
 from bob_emploi.frontend import proto
+from bob_emploi.frontend import carif
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import application_pb2
-from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import commute_pb2
+from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
 
 
@@ -52,11 +55,120 @@ _ASSOCIATIONS = proto.MongoCachedCollection(association_pb2.Association, 'associ
 
 _APPLICATION_TIPS = proto.MongoCachedCollection(application_pb2.ApplicationTip, 'application_tips')
 
+_EVENTS = proto.MongoCachedCollection(event_pb2.Event, 'events')
+
 # Distance below which the city is so close that it is obvious.
 _MIN_CITY_DISTANCE = 8
 
 # Distance above which the city is so far that it should not be considered.
 _MAX_CITY_DISTANCE = 35
+
+# All departements we want to consider in our app.
+# TODO(guillaume): Find a better way to get the departements that are compatible
+# E.G. (69M) should not be here, but 2A should.
+_ALL_DEPARTEMENTS = {
+    '1': 'Ain',
+    '2': 'Aisne',
+    '3': 'Allier',
+    '4': 'Alpes-de-Haute-Provence',
+    '5': 'Hautes-Alpes',
+    '6': 'Alpes-Maritimes',
+    '7': 'Ardèche',
+    '8': 'Ardennes',
+    '9': 'Ariège',
+    '10': 'Aube',
+    '11': 'Aude',
+    '12': 'Aveyron',
+    '13': 'Bouches-du-Rhône',
+    '14': 'Calvados',
+    '15': 'Cantal',
+    '16': 'Charente',
+    '17': 'Charente-Maritime',
+    '18': 'Cher',
+    '19': 'Corrèze',
+    '21': 'Côte-dOr',
+    '22': 'Côtes-dArmor',
+    '23': 'Creuse',
+    '24': 'Dordogne',
+    '25': 'Doubs',
+    '26': 'Drôme',
+    '27': 'Eure',
+    '28': 'Eure-et-Loir',
+    '29': 'Finistère',
+    '2A': 'Corse-du-Sud',
+    '2B': 'Haute-Corse',
+    '30': 'Gard',
+    '31': 'Haute-Garonne',
+    '32': 'Gers',
+    '33': 'Gironde',
+    '34': 'Hérault',
+    '35': 'Ille-et-Vilaine',
+    '36': 'Indre',
+    '37': 'Indre-et-Loire',
+    '38': 'Isère',
+    '39': 'Jura',
+    '40': 'Landes',
+    '41': 'Loir-et-Cher',
+    '42': 'Loire',
+    '43': 'Haute-Loire',
+    '44': 'Loire-Atlantique',
+    '45': 'Loiret',
+    '46': 'Lot',
+    '47': 'Lot-et-Garonne',
+    '48': 'Lozère',
+    '49': 'Maine-et-Loire',
+    '50': 'Manche',
+    '51': 'Marne',
+    '52': 'Haute-Marne',
+    '53': 'Mayenne',
+    '54': 'Meurthe-et-Moselle',
+    '55': 'Meuse',
+    '56': 'Morbihan',
+    '57': 'Moselle',
+    '58': 'Nièvre',
+    '59': 'Nord',
+    '60': 'Oise',
+    '61': 'Orne',
+    '62': 'Pas-de-Calais',
+    '63': 'Puy-de-Dôme',
+    '64': 'Pyrénées-Atlantiques',
+    '65': 'Hautes-Pyrénées',
+    '66': 'Pyrénées-Orientales',
+    '67': 'Bas-Rhin',
+    '68': 'Haut-Rhin',
+    '69': 'Rhône',
+    '70': 'Haute-Saône',
+    '71': 'Saône-et-Loire',
+    '72': 'Sarthe',
+    '73': 'Savoie',
+    '74': 'Haute-Savoie',
+    '75': 'Paris',
+    '76': 'Seine-Maritime',
+    '77': 'Seine-et-Marne',
+    '78': 'Yvelines',
+    '79': 'Deux-Sèvres',
+    '80': 'Somme',
+    '81': 'Tarn',
+    '82': 'Tarn-et-Garonne',
+    '83': 'Var',
+    '84': 'Vaucluse',
+    '85': 'Vendée',
+    '86': 'Vienne',
+    '87': 'Haute-Vienne',
+    '88': 'Vosges',
+    '89': 'Yonne',
+    '90': 'Territoire de Belfort',
+    '91': 'Essonne',
+    '92': 'Hauts-de-Seine',
+    '93': 'Seine-Saint-Denis',
+    '94': 'Val-de-Marne',
+    '95': 'Val-d\'Oise',
+    '971': 'Guadeloupe',
+    '972': 'Martinique',
+    '973': 'Guyane',
+    '974': 'Réunion',
+    '976': 'Mayotte',
+}
 
 
 def compute_square_distance(city_a, city_b):
@@ -110,7 +222,10 @@ class ScoringProject(object):
         self._associations = None
         self._nearby_cities = None
         self._application_tips = None
+        self._trainings = None
         self._volunteering_missions = None
+        self._best_departements = None
+        self._events = None
 
     # When scoring models need it, add methods to access data from DB:
     # project requirements from job offers, IMT, median unemployment duration
@@ -194,6 +309,52 @@ class ScoringProject(object):
         self._associations = list(filter_using_score(all_associations, lambda j: j.filters, self))
         return self._associations
 
+    def find_best_departements(self):
+        """Find which are the best departement to relocate for a given job group."""
+
+        if self._best_departements is not None:
+            return self._best_departements
+
+        # TODO(pascal): Should we use the cache system described here :
+        # https://docs.python.org/3/library/functools.html ?
+
+        job_group = self.details.target_job.job_group.rome_id
+
+        local_stats_ids = {('%s:%s' % (departement_id, job_group)): departement_id
+                           for departement_id in _ALL_DEPARTEMENTS}
+
+        local_stats = self._db.local_diagnosis.find({'_id': {'$in': list(local_stats_ids)}})
+
+        departement_to_offers = {}
+        for departement_local_stats in local_stats:
+            departement_id = local_stats_ids[departement_local_stats['_id']]
+            departement_to_offers[departement_id] = \
+                departement_local_stats.get('imt', {}).get('yearlyAvgOffersPer10Candidates', 0) or 0
+
+        # If we do not have data about our own departement, we chose not to say anything.
+        own_departement = self.details.mobility.city.departement_id
+
+        # We only advice departements that are better than own departement.
+        min_offers = departement_to_offers.get(own_departement, 0)
+
+        if not min_offers:
+            self._best_departements = []
+            return self._best_departements
+
+        # Compute the score for each departement.
+        sorted_departements = sorted(
+            departement_to_offers.items(), key=lambda x: x[1], reverse=True)
+
+        # Get only departements that are strictly better than own departement.
+        top_departements = [
+            project_pb2.DepartementScore(name=_ALL_DEPARTEMENTS[dep[0]],
+                                         offer_ratio=dep[1] / min_offers)
+            for dep in sorted_departements if dep[1] > min_offers]
+
+        # Return at most 10 departements
+        self._best_departements = top_departements[0:10]
+        return self._best_departements
+
     def _get_commuting_cities(self, interesting_cities_for_rome, target_city):
         # Get the reference offers per inhabitant.
 
@@ -215,10 +376,18 @@ class ScoringProject(object):
                     relative_offers_per_inhabitant=relative_offers,
                     distance_km=distance)
 
+    def get_trainings(self):
+        """Get the training opportunities from our partner's API."""
+        if self._trainings is not None:
+            return self._trainings
+        self._trainings = carif.get_carif_trainings(
+            self.details.target_job.job_group.rome_id, self.details.mobility.city.departement_id)
+        return self._trainings
+
     def list_nearby_cities(self):
         """Compute and store all interesting cities that are not too close and not too far.
 
-           Those cities will be used by the Commute advice.
+            Those cities will be used by the Commute advice.
         """
         if self._nearby_cities is not None:
             return self._nearby_cities
@@ -293,11 +462,16 @@ class ScoringProject(object):
             all_application_tips, lambda j: j.filters, self))
         return self._application_tips
 
-
-class _Score(collections.namedtuple('Score', ['score', 'additional_job_offers'])):
-
-    def __new__(cls, score, additional_job_offers=0):
-        return super(_Score, cls).__new__(cls, score, additional_job_offers)
+    def list_events(self):
+        """List all events close to the project's target."""
+        # TODO(pascal): Get real data instead.
+        if not self.features_enabled.alpha:
+            return []
+        if self._events:
+            return self._events
+        all_events = _EVENTS.get_collection(self._db)
+        self._events = list(filter_using_score(all_events, lambda e: e.filters, self))
+        return self._events
 
 
 class _ScoringModelBase(object):
@@ -317,7 +491,7 @@ class _ScoringModelBase(object):
 
         Descendants of this class should overwrite `score` to avoid the fallback to a random value.
         """
-        return _Score(random.random() * 3)
+        return random.random() * 3
 
 
 class _AdviceEventScoringModel(_ScoringModelBase):
@@ -328,9 +502,16 @@ class _AdviceEventScoringModel(_ScoringModelBase):
         first_modes = set(mode.first for mode in imt.application_modes.values())
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
-            return _Score(2)
+            return 2
 
-        return _Score(1)
+        return 1
+
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        all_events = project.list_events()
+        if not all_events:
+            return None
+        return project_pb2.EventsData(event_name=all_events[0].title)
 
 
 class _ImproveYourNetworkScoringModel(_ScoringModelBase):
@@ -342,15 +523,15 @@ class _ImproveYourNetworkScoringModel(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if project.details.network_estimate != self._network_level:
-            return _Score(0)
+            return 0
 
         imt = project.imt_proto()
         first_modes = set(mode.first for mode in imt.application_modes.values())
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
-            return _Score(3)
+            return 3
 
-        return _Score(2)
+        return 2
 
 
 class ConstantScoreModel(_ScoringModelBase):
@@ -361,42 +542,33 @@ class ConstantScoreModel(_ScoringModelBase):
 
     def score(self, unused_project):
         """Compute a score for the given ScoringProject."""
-        return _Score(self.constant_score)
+        return self.constant_score
 
 
 class _AdviceTrainingScoringModel(_ScoringModelBase):
     """A scoring model for the training advice."""
 
-    def _filter_hiring_trainings(self, trainings):
-        # We only return trainings that hire more than average.
-        return [training for training in trainings if training['hiring_potential'] > 2]
+    def compute_extra_data(self, project):
+        """Compute extra data for this module to render a card in the client."""
+        return training_pb2.Trainings(trainings=project.get_trainings())
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        # TODO(guillaume): Get training data from API.
-        # TODO(guillaume): Compute extra data.
-        all_trainings = [{
-            'name': 'Une super formation',
-            'hiring_potential': 4,
-        }, {
-            'name': 'Une bonne formation',
-            'hiring_potential': 3,
-        }, {
-            'name': 'Une formation bof',
-            'hiring_potential': 2,
-        }]
+        # TODO(guillaume): Get the score for each project from lbf.
+        all_trainings = project.get_trainings()
 
-        selected_trainings = self._filter_hiring_trainings(all_trainings)
+        if not all_trainings:
+            return 0
 
-        if len(selected_trainings) >= 2 and project.details.job_search_length_months >= 3:
-            return _Score(3)
+        if len(all_trainings) >= 2:
+            if project.details.job_search_length_months >= 3:
+                return 3
+            if project.details.kind == project_pb2.REORIENTATION >= 3:
+                return 3
+        if project.details.job_search_length_months >= 2:
+            return 2
 
-        if selected_trainings:
-            if project.details.job_search_length_months >= 2:
-                return _Score(2)
-            return _Score(1)
-
-        return _Score(0)
+        return 1
 
 
 class _SpontaneousApplicationScoringModel(_ScoringModelBase):
@@ -410,13 +582,13 @@ class _SpontaneousApplicationScoringModel(_ScoringModelBase):
         imt = project.imt_proto()
         first_modes = set(mode.first for mode in imt.application_modes.values())
         if job_pb2.SPONTANEOUS_APPLICATION in first_modes:
-            return _Score(3)
+            return 3
 
         second_modes = set(mode.second for mode in imt.application_modes.values())
         if job_pb2.SPONTANEOUS_APPLICATION in second_modes:
-            return _Score(2)
+            return 2
 
-        return _Score(0)
+        return 0
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
@@ -435,11 +607,11 @@ class _ActiveExperimentFilter(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         try:
             if getattr(project.features_enabled, self.feature) == user_pb2.ACTIVE:
-                return _Score(3)
+                return 3
         except AttributeError:
             logging.warning(
                 'A scoring model is referring to a non existant feature flag: "%s"', self.feature)
-        return _Score(0)
+        return 0
 
 
 class _UserProfileFilter(_ScoringModelBase):
@@ -460,8 +632,8 @@ class _UserProfileFilter(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if self.filter_func(project.user_profile):
-            return _Score(3)
-        return _Score(0)
+            return 3
+        return 0
 
 
 class _ProjectFilter(_ScoringModelBase):
@@ -483,8 +655,8 @@ class _ProjectFilter(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if self.filter_func(project.details):
-            return _Score(3)
-        return _Score(0)
+            return 3
+        return 0
 
 
 class JobGroupFilter(_ProjectFilter):
@@ -562,7 +734,7 @@ class _NegateFilter(_ScoringModelBase):
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        return _Score(3 - self.negated_filter.score(project).score)
+        return 3 - self.negated_filter.score(project)
 
 
 class _ApplicationComplexityFilter(_ScoringModelBase):
@@ -575,8 +747,8 @@ class _ApplicationComplexityFilter(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if self._application_complexity == project.job_group_info().application_complexity:
-            return _Score(3)
-        return _Score(0)
+            return 3
+        return 0
 
 
 class _AdviceOtherWorkEnv(_ScoringModelBase):
@@ -591,8 +763,72 @@ class _AdviceOtherWorkEnv(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         work_env = project.job_group_info().work_environment_keywords
         if len(work_env.structures) > 1 or len(work_env.sectors) > 1:
-            return _Score(2)
-        return _Score(0)
+            return 2
+        return 0
+
+
+class _AdviceLifeBalanceScoringModel(_ScoringModelBase):
+    """A scoring model to trigger the "life balance" Advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        if project.user_profile.has_handicap:
+            return 0
+
+        if project.details.job_search_length_months > 3:
+            return 1
+
+        return 0
+
+
+class _AdviceVae(_ScoringModelBase):
+    """A scoring model to trigger the "VAE" Advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        is_frustrated_by_trainings = user_pb2.TRAINING in project.user_profile.frustrations
+        has_experience = project.details.seniority in set([project_pb2.SENIOR, project_pb2.EXPERT])
+        thinks_xp_covers_diplomas = \
+            project.details.training_fulfillment_estimate == project_pb2.ENOUGH_EXPERIENCE
+
+        does_not_have_required_diplomas = \
+            project.details.training_fulfillment_estimate in set([
+                project_pb2.ENOUGH_EXPERIENCE,
+                project_pb2.TRAINING_FULFILLMENT_NOT_SURE,
+                project_pb2.CURRENTLY_IN_TRAINING])
+
+        if thinks_xp_covers_diplomas:
+            if is_frustrated_by_trainings or has_experience:
+                return 3
+            return 2
+
+        if has_experience and (does_not_have_required_diplomas or is_frustrated_by_trainings):
+            return 2
+
+        return 0
+
+
+class _AdviceSenior(_ScoringModelBase):
+    """A scoring model to trigger the "Senior" Advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        user = project.user_profile
+        age = datetime.date.today().year - user.year_of_birth
+        if (user_pb2.AGE_DISCRIMINATION in user.frustrations and age > 35) or age >= 50:
+            return 2
+        return 0
+
+
+class _AdviceLessApplications(_ScoringModelBase):
+    """A scoring model to trigger the "Make less applications" Advice."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        if project.details.weekly_applications_estimate == project_pb2.DECENT_AMOUNT or \
+                project.details.weekly_applications_estimate == project_pb2.A_LOT:
+            return 2
+        return 0
 
 
 class _AdviceVolunteer(_ScoringModelBase):
@@ -612,10 +848,10 @@ class _AdviceVolunteer(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         missions = project.volunteering_missions().missions
         if not missions:
-            return _Score(0)
+            return 0
         if project.details.job_search_length_months < 9:
-            return _Score(1)
-        return _Score(2)
+            return 1
+        return 2
 
 
 class _AdviceImproveInterview(_ScoringModelBase):
@@ -649,12 +885,12 @@ class _AdviceImproveInterview(_ScoringModelBase):
             num_interviews = self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
         num_monthly_interviews = num_interviews / (project.details.job_search_length_months or 1)
         if num_monthly_interviews > self._max_monthly_interviews(project):
-            return _Score(3)
+            return 3
         # Whatever the number of month of search, trigger 3 if the user did more than 5 interviews:
         if num_interviews >= self._NUM_INTERVIEWS[project_pb2.A_LOT] and \
                 project.details.job_search_length_months <= 6:
-            return _Score(3)
-        return _Score(0)
+            return 3
+        return 0
 
 
 class _AdviceBetterJobInGroup(_ScoringModelBase):
@@ -664,7 +900,7 @@ class _AdviceBetterJobInGroup(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         specific_jobs = project.requirements().specific_jobs
         if not specific_jobs or specific_jobs[0].code_ogr == project.details.target_job.code_ogr:
-            return _Score(0)
+            return 0
 
         try:
             target_job_percentage = next(
@@ -679,8 +915,8 @@ class _AdviceBetterJobInGroup(_ScoringModelBase):
 
         if (project.details.job_search_length_months > 6 and has_better_job) or \
                 has_way_better_job or is_looking_for_new_job:
-            return _Score(3)
-        return _Score(2)
+            return 3
+        return 2
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
@@ -761,8 +997,8 @@ class _AdviceImproveResume(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         if (self._num_interviews_increase(project) >= 2 and
                 project.details.job_search_length_months <= 6):
-            return _Score(3)
-        return _Score(0)
+            return 3
+        return 0
 
 
 class _AdviceFreshResume(_ProjectFilter):
@@ -790,8 +1026,8 @@ class _LowPriorityAdvice(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if self._main_frustration in project.user_profile.frustrations:
-            return _Score(2)
-        return _Score(1)
+            return 2
+        return 1
 
 
 class _AdviceJobBoards(_LowPriorityAdvice):
@@ -816,6 +1052,24 @@ class _AdviceJobBoards(_LowPriorityAdvice):
         )
 
 
+class _AdviceRelocateScoringModel(_ScoringModelBase):
+    """A scoring model to trigger the "Relocate" advice."""
+
+    def compute_extra_data(self, project):
+        """Compute extra data for this module."""
+        return project_pb2.RelocateData(departement_scores=project.find_best_departements())
+
+    # TODO(guillaume): Add more tests than just all persona.
+    def score(self, project):
+        if project.details.mobility.area_type != geo_pb2.COUNTRY and \
+                project.details.mobility.area_type != geo_pb2.WORLD:
+            return 0
+
+        if project.find_best_departements():
+            return 2
+        return 0
+
+
 class _AdviceCommuteScoringModel(_ScoringModelBase):
     """A scoring model to trigger the "Commute" advice."""
 
@@ -825,8 +1079,8 @@ class _AdviceCommuteScoringModel(_ScoringModelBase):
 
     def score(self, project):
         if project.list_nearby_cities():
-            return _Score(2)
-        return _Score(0)
+            return 2
+        return 0
 
 
 class _AdviceAssociationHelp(_ScoringModelBase):
@@ -835,10 +1089,12 @@ class _AdviceAssociationHelp(_ScoringModelBase):
     def score(self, project):
         """Compute a score for the given ScoringProject."""
         if not project.list_associations():
-            return _Score(0)
+            return 0
         if user_pb2.MOTIVATION in project.user_profile.frustrations:
-            return _Score(3)
-        return _Score(2)
+            return 3
+        if len(project.list_associations()) >= 3 and project.details.job_search_length_months >= 6:
+            return 3
+        return 2
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
@@ -896,12 +1152,17 @@ SCORING_MODELS = {
     'advice-improve-interview': _AdviceImproveInterview(),
     'advice-improve-network': _ImproveYourNetworkScoringModel(1),
     'advice-improve-resume': _AdviceImproveResume(),
+    'advice-life-balance': _AdviceLifeBalanceScoringModel(),
     'advice-commute': _AdviceCommuteScoringModel(),
     'advice-job-boards': _AdviceJobBoards(),
     'advice-more-offer-answers': _LowPriorityAdvice(user_pb2.NO_OFFER_ANSWERS),
     'advice-other-work-env': _AdviceOtherWorkEnv(),
+    'advice-relocate': _AdviceRelocateScoringModel(),
     'advice-use-good-network': _ImproveYourNetworkScoringModel(3),
     'advice-volunteer': _AdviceVolunteer(),
+    'advice-vae': _AdviceVae(),
+    'advice-senior': _AdviceSenior(),
+    'advice-less-applications': _AdviceLessApplications(),
     'advice-wow-baker': _JobFilter(job_groups={'D1102'}, exclude_jobs={'12006'}),
     'advice-training': _AdviceTrainingScoringModel(),
     'chantier-spontaneous-application': _SpontaneousApplicationScoringModel(),
@@ -938,15 +1199,12 @@ SCORING_MODELS = {
 }
 
 
-_ScoreAndReasons = collections.namedtuple('ScoreAndReasons', ['score', 'additional_job_offers'])
-
-
 class _Scorer(object):
     """Helper to compute the scores of multiple models for a given project."""
 
     def __init__(self, project):
         self._project = project
-        # A cache of scores (_ScoreAndReasons) keyed by scoring model names.
+        # A cache of scores keyed by scoring model names.
         self._scores = {}
 
     def _get_score(self, scoring_model_name):
@@ -977,7 +1235,7 @@ class _FilterHelper(_Scorer):
             False if any of the filters returned a negative value for the
             project. True if there are no filters.
         """
-        return all(self._get_score(f).score > 0 for f in filters)
+        return all(self._get_score(f) > 0 for f in filters)
 
 
 def filter_using_score(iterable, get_scoring_func, project):

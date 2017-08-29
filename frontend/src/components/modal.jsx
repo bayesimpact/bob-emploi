@@ -195,7 +195,7 @@ class Modal extends React.Component {
       {externalChildren}
       <ReactHeight onHeightReady={this.handleUpdatedHeight} style={modalStyle}>
         {title ? <div style={titleStyle}>{title}</div> : null}
-        {onClose ? <ModalCloseButton closeOnEscape={isShown} onClick={onClose} /> : null}
+        {onClose ? <ModalCloseButton shouldCloseOnEscape={isShown} onClick={onClose} /> : null}
         {isContentShown ? (children || this.props.children) : null}
       </ReactHeight>
     </div>
@@ -205,16 +205,16 @@ class Modal extends React.Component {
 
 class ModalCloseButtonBase extends React.Component {
   static propTypes = {
-    closeOnEscape: PropTypes.bool,
     onClick: PropTypes.func.isRequired,
+    shouldCloseOnEscape: PropTypes.bool,
     style: PropTypes.object,
   }
   static contextTypes = {
-    isMobileVersion: PropTypes.bool.isRequired,
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
-    const {closeOnEscape, onClick, style, ...otherProps} = this.props
+    const {shouldCloseOnEscape, onClick, style, ...otherProps} = this.props
     const {isMobileVersion} = this.context
     const closeButtonStyle = {
       ':hover': {
@@ -240,7 +240,7 @@ class ModalCloseButtonBase extends React.Component {
       ...style,
     }
     return <div {...otherProps} style={closeButtonStyle} onClick={onClick}>
-      <ShortKey keyCode="Escape" onKeyDown={closeOnEscape ? onClick : null} />
+      <ShortKey keyCode="Escape" onKeyDown={shouldCloseOnEscape ? onClick : null} />
       <Icon name="close" />
     </div>
   }

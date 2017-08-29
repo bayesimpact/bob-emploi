@@ -6,8 +6,9 @@ import Radium from 'radium'
 import {getJobBoards} from 'store/actions'
 import {lowerFirstLetter, ofCityPrefix} from 'store/french'
 
-import {AppearingList, CircularProgress, Colors, GrowingNumber, Icon,
-  PaddedOnMobile, Tag} from 'components/theme'
+import {CircularProgress, Colors, GrowingNumber, Icon, PaddedOnMobile, Tag} from 'components/theme'
+
+import {AdviceSuggestionList} from './base'
 
 
 class AdviceCard extends React.Component {
@@ -58,13 +59,12 @@ class ExpandedAdviceCardContentBase extends React.Component {
 
   renderJobBoards(style) {
     const {jobBoards} = this.props
-    return <AppearingList style={style}>
+    return <AdviceSuggestionList style={style}>
       {jobBoards.map(({filters, link, title}, index) => <JobBoardLink
-        key={`job-board-${index}`} href={link} filters={filters}
-        style={{marginTop: index ? -1 : 0}}>
+        key={`job-board-${index}`} href={link} filters={filters}>
         {title}
       </JobBoardLink>)}
-    </AppearingList>
+    </AdviceSuggestionList>
   }
 
   render() {
@@ -137,22 +137,7 @@ class JobBoardLinkBase extends React.Component {
 
   render() {
     const {children, style} = this.props
-    const containerStyle = {
-      ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
-      },
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      cursor: 'pointer',
-      display: 'flex',
-      fontSize: 13,
-      fontWeight: 'bold',
-      height: 50,
-      padding: '0 20px',
-      ...style,
-    }
-    return <div style={containerStyle} onClick={this.handleClick}>
+    return <div style={style} onClick={this.handleClick}>
       {children}
       {this.getTags().map(({color, value}) => <Tag
         key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>

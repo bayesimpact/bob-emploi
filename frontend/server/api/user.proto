@@ -459,8 +459,3 @@ message NPSSurveyResponse {
   // gave to the user.
   repeated string curated_useful_advice_ids = 7;
 }
-
-message UseCases {
-  // A list of anonymized user examples.
-  repeated User use_cases = 1;
-}

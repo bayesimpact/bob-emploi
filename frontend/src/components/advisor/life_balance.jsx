@@ -8,7 +8,9 @@ import fitnessIcon from 'images/hobbies/fitness.svg'
 import runIcon from 'images/hobbies/run.svg'
 import searchIcon from 'images/hobbies/search.svg'
 import swimIcon from 'images/hobbies/swim.svg'
-import {AppearingList, Colors, Icon, Styles} from 'components/theme'
+import {Icon, Styles} from 'components/theme'
+
+import {AdviceSuggestionList} from './base'
 
 
 class AdviceCard extends React.Component {
@@ -66,11 +68,9 @@ class ExpandedAdviceCardContent extends React.Component {
 
   render() {
     const {city} = this.props.project.mobility
-    return <AppearingList>
-      {hobbies.map((hobby, index) => <Hobby
-        style={{marginTop: index ? -1 : 0}} {...hobby}
-        key={`hobby-${index}`} city={city} />)}
-    </AppearingList>
+    return <AdviceSuggestionList>
+      {hobbies.map((hobby, index) => <Hobby {...hobby} key={`hobby-${index}`} city={city} />)}
+    </AdviceSuggestionList>
   }
 }
 
@@ -95,21 +95,9 @@ class HobbyBase extends React.Component {
   render() {
     const {icon, style, title} = this.props
     const containerStyle = {
-      ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
-      },
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      color: Colors.DARK_TWO,
-      cursor: 'pointer',
-      display: 'flex',
-      fontSize: 13,
-      fontWeight: 'bold',
-      height: 50,
-      paddingLeft: 12,
-      paddingRight: 20,
       ...style,
+      fontWeight: 'bold',
+      padding: '0 20px 0 12px',
     }
     return <div style={containerStyle} onClick={this.handleClick}>
       {icon ? <img src={icon} style={{marginRight: 12}} /> : null}

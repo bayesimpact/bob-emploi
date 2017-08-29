@@ -167,7 +167,7 @@ class JobSuggest extends React.Component {
     // If true, will display job names starting with a lower case letter
     // instead of upper case. This only changes the display, not the values in
     // the job object if it comes from a suggestion.
-    lowercase: PropTypes.bool,
+    isLowercased: PropTypes.bool,
     // Function called when the value changed either when the text changes or
     // when a suggestion is selected. It takes 1 argument: the job that is
     // selected if it's a valid job, null otherwise.
@@ -224,7 +224,7 @@ class JobSuggest extends React.Component {
   }
 
   maybeLowerFirstLetter = word => {
-    if (!this.props.lowercase || !word) {
+    if (!this.props.isLowercased || !word) {
       return word
     }
     // Matches the first visible letter (ignoring HTML tag that would come

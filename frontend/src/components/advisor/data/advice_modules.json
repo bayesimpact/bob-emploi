@@ -64,6 +64,12 @@
     "titleXStars": {
     }
   },
+  "less-applications": {
+    "goal": "postuler moins",
+    "title": "Ne vous épuisez pas à faire trop de candidatures, postulez moins !",
+    "titleXStars": {
+    }
+  },
   "life-balance": {
     "callToAction": "Voir des astuces pour votre bien-être",
     "goal": "trouver une association",
@@ -121,6 +127,18 @@
     "titleXStars": {
     }
   },
+  "relocate": {
+    "goal": "envisager de bouger dans un département qui recrute plus",
+    "title": "Envisagez de bouger dans un département qui recrute plus",
+    "titleXStars": {
+    }
+  },
+  "senior": {
+    "goal": "mettre en valeur son age",
+    "title": "Votre âge est un atout, valorisez-le !",
+    "titleXStars": {
+    }
+  },
   "spontaneous-application": {
     "callToAction": "Trouver des entreprises où postuler",
     "goal": "faire de bonnes candidatures spontanées",
@@ -131,6 +149,12 @@
       "3": "Privilégiez les candidatures spontanées sur le reste"
     }
   },
+  "tension-jobs": {
+    "goal": "postuler pour les métiers qui recrutent le plus dans votre région",
+    "title": "Postulez pour les métiers qui recrutent le plus dans votre département",
+    "titleXStars": {
+    }
+  },
   "training": {
     "goal": "trouver une formation utile",
     "title": "Trouvez la bonne formation pour vous",
@@ -138,6 +162,12 @@
       "1": "Trouvez une formation",
       "2": "Regardez les possibilités de formations",
       "3": "Trouvez la bonne formation pour vous"
+    }
+  },
+  "vae": {
+    "goal": "valoriser ses aquis d'expérience",
+    "title": "Valoriser vos années d'expérience par un diplôme",
+    "titleXStars": {
     }
   },
   "volunteer": {

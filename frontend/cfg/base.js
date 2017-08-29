@@ -9,7 +9,11 @@ const srcPath = path.join(__dirname, '../src')
 module.exports = {
   devServer: {
     contentBase: './src/',
-    historyApiFallback: true,
+    historyApiFallback: {
+      rewrites: [
+        {from: /^\/eval($|\/)/, to: '/eval.html'},
+      ],
+    },
     hot: true,
     noInfo: false,
     port: 80,

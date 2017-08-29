@@ -12,9 +12,8 @@ message Training {
   // Name of the city in which the training site is.
   string city_name = 3;
 
-  // Main FORMACODE associated to this training (cf http://formacode.centre-inffo.fr/?).
-  // TODO: handle multiple formacodes in the app.
-  string formacode = 4;
+  // FORMACODEs associated to this training (cf http://formacode.centre-inffo.fr/?).
+  repeated string formacodes = 4;
 
   // Hiring potential after training: 0 means unknown, then the scale is from 1 to 5.
   int32 hiring_potential = 5;

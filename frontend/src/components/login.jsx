@@ -126,19 +126,21 @@ class LoginFormBase extends React.Component {
       textDecoration: 'none',
     }
     return <form style={loginBoxStyle} onSubmit={this.handleLogin}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.fastForward} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
+        onKeyPress={this.fastForward} />
       <FormHeader
         title={isTryingToResetPassword ? 'Mot de passe oublié ?' : "S'identifier"}
         question={isTryingToResetPassword ? '' : 'Pas encore de compte ?'}
         linkText="Inscrivez-vous !"
         onClick={this.props.onShowRegistrationFormClick} />
       <IconInput
-        autofocus={!email}
+        shouldFocusOnMount={!email}
         type="email" placeholder="Email" value={email} iconName="email-outline"
         applyFunc={email => email.toLocaleLowerCase()}
         onChange={this.handleChange('email')} />
       {isTryingToResetPassword ? null : <IconInput
-        type="password" autofocus={!!email}
+        type="password" shouldFocusOnMount={!!email}
         placeholder="Mot de passe" value={password} iconName="lock-outline"
         onChange={this.handleChange('password')}
         style={{marginTop: 10}} />}
@@ -216,12 +218,12 @@ class ResetPasswordFormBase extends React.Component {
     return <form style={loginBoxStyle} onSubmit={this.handleResetPassword}>
       <FormHeader title="Changez votre mot de passe" />
       <IconInput
-        autofocus={!email}
+        shouldFocusOnMount={!email}
         type="email" placeholder="Email" value={email} iconName="email-outline"
         applyFunc={email => email.toLocaleLowerCase()}
         onChange={this.handleChange('email')} />
       <IconInput
-        type="password" autofocus={!!email}
+        type="password" shouldFocusOnMount={!!email}
         placeholder="Nouveau mot de passe" value={password} iconName="lock-outline"
         onChange={this.handleChange('password')}
         style={{marginTop: 10}} />
@@ -316,14 +318,16 @@ class RegistrationFormBase extends React.Component {
       marginTop: 15,
     }
     return <form style={registrationBoxStyle} onSubmit={this.handleRegister}>
-      <ShortKey keyCode="KeyF" ctrlKey={true} shiftKey={true} onKeyPress={this.fastForward} />
+      <ShortKey
+        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
+        onKeyPress={this.fastForward} />
       <FormHeader
         title="Créer un compte"
         question="Déjà un compte ?"
         linkText="Connectez-vous !"
         onClick={this.props.onShowLoginFormClick} />
       <IconInput
-        autofocus={true}
+        shouldFocusOnMount={true}
         type="text" placeholder="Prénom" value={name} iconName="account-outline"
         onChange={this.handleChange('name')} />
       <IconInput
@@ -420,8 +424,8 @@ class FormHeader extends React.Component {
 class LoginModalBase extends React.Component {
   static propTypes = {
     defaultEmail: PropTypes.string,
-    defaultIsLoginFormShown: PropTypes.bool,
     dispatch: PropTypes.func.isRequired,
+    isLoginFormShownByDefault: PropTypes.bool,
     isShown: PropTypes.bool,
     onLogin: PropTypes.func,
     resetToken: PropTypes.string,
@@ -436,8 +440,8 @@ class LoginModalBase extends React.Component {
   }
 
   componentWillMount() {
-    const {defaultIsLoginFormShown, isShown} = this.props
-    this.componentWillReceiveProps({defaultIsLoginFormShown, isShown})
+    const {isLoginFormShownByDefault, isShown} = this.props
+    this.componentWillReceiveProps({isLoginFormShownByDefault, isShown})
   }
 
   componentWillReceiveProps(nextProps) {
@@ -447,7 +451,7 @@ class LoginModalBase extends React.Component {
     }
     this.setState({isShown: wantShown})
     if (wantShown) {
-      this.setState({isLoginFormShown: nextProps.defaultIsLoginFormShown})
+      this.setState({isLoginFormShown: nextProps.isLoginFormShownByDefault})
     }
   }
 
@@ -715,7 +719,7 @@ const LoginModal = connect(({app}) => {
   const {email, isReturningUser, resetToken} = loginModal && loginModal.defaultValues || {}
   return {
     defaultEmail: email,
-    defaultIsLoginFormShown: !!isReturningUser,
+    isLoginFormShownByDefault: !!isReturningUser,
     isShown: !!loginModal,
     resetToken,
   }

@@ -5,7 +5,7 @@ FROM bayesimpact/react-base:latest
 COPY package.json .
 RUN npm install
 
-ENV PROTOBUF_VERSION=3.0.0-beta-3
+ENV PROTOBUF_VERSION=3.4.0
 
 # Install Protobuf compiler.
 COPY vendor/install-protoc.sh ./vendor/install-protoc.sh

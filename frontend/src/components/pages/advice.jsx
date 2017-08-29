@@ -220,7 +220,9 @@ class AdvicePage extends React.Component {
     }
     return <PageWithNavigationBar
       style={{zIndex: 0}} isContentScrollable={true} onNavigateBack={this.redirectToProject}>
-      <ShortKey keyCode="KeyY" ctrlKey={true} shiftKey={true} onKeyPress={this.moveToTomorrow} />
+      <ShortKey
+        keyCode="KeyY" hasCtrlModifier={true} hasShiftModifier={true}
+        onKeyPress={this.moveToTomorrow} />
       {this.renderNavigationButtons()}
       <div style={{display: 'flex', position: 'relative', ...sideBarContainerStyle}}>
         {this.renderSideBar()}

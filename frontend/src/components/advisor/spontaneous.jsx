@@ -8,10 +8,9 @@ import {USER_PROFILE_SHAPE} from 'store/user'
 
 import laBonneBoiteImage from 'images/labonneboite-picto.png'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
-import {AppearingList, Colors, Icon, PaddedOnMobile, SmoothTransitions,
-  StringJoiner, Styles} from 'components/theme'
+import {Colors, Icon, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
 
-import {ToolCard} from './base'
+import {AdviceSuggestionList, ToolCard} from './base'
 
 
 class AdviceCard extends React.Component {
@@ -79,18 +78,18 @@ class ExpandedAdviceCardContent extends React.Component {
         fort potentiel d'embauche pour {profile.gender === 'FEMININE' ? 'une ' : 'un '}
         {lowerFirstLetter(genderizeJob(project.targetJob, profile.gender))} près {prefix}{cityName}*
       </PaddedOnMobile>
-      <AppearingList>
+      <AdviceSuggestionList>
         {[
           ...companies.map((company, index) => <CompanyLink
-            key={`company-${index}`} style={{marginTop: index ? -1 : 0}} {...company} />),
+            key={`company-${index}`} {...company} isNotClickable={!company.siret} />),
           <MoreCompaniesLink
-            style={{marginTop: -1}} key="more" onClick={() => {
+            key="more" onClick={() => {
               window.open(this.createLBBLink(), '_blank')
             }}>
             Voir d'autres entreprises sur La Bonne Boîte
           </MoreCompaniesLink>,
         ]}
-      </AppearingList>
+      </AdviceSuggestionList>
       <PaddedOnMobile
         style={{color: Colors.COOL_GREY, fontSize: 13, fontStyle: 'italic', marginTop: 15}}>
         *Source&nbsp;: La Bonne Boîte / Pôle emploi
@@ -164,19 +163,8 @@ class CompanyLinkBase extends React.Component {
   render() {
     const {cityName, siret, name, style} = this.props
     const containerStyle = {
-      ':hover': siret ? {
-        background: Colors.LIGHT_GREY,
-      } : {},
-      alignItems: 'center',
-      background: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      cursor: siret ? 'pointer' : 'initial',
-      display: 'flex',
-      fontSize: 13,
-      height: 50,
-      paddingLeft: 20,
-      ...SmoothTransitions,
       ...style,
+      fontWeight: 'normal',
     }
     const chevronStyle = {
       fontSize: 25,
@@ -207,18 +195,7 @@ class MoreCompaniesLinkBase extends React.Component {
   render() {
     const {children, style, ...extraProps} = this.props
     const containerStyle = {
-      ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
-      },
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      color: Colors.CHARCOAL_GREY,
-      cursor: 'pointer',
-      display: 'flex',
-      fontSize: 13,
-      height: 50,
-      paddingLeft: 20,
+      padding: '0 0 0 20px',
       ...style,
     }
     const chevronStyle = {

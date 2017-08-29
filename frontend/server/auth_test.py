@@ -175,7 +175,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         response = self.app.post('/api/user/authenticate', data=request)
         self.assertEqual(403, response.status_code)
         self.assertIn(
-            "Le jeton d'authentification est périmé.",
+            'Le jeton d\'authentification est périmé.',
             response.get_data(as_text=True))
 
     def _get_salt(self, email):
@@ -233,7 +233,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
         self.assertIn(
-            "L'utilisateur existe mais utilise un autre moyen de connexion (Google).",
+            'L\'utilisateur existe mais utilise un autre moyen de connexion (Google).',
             response.get_data(as_text=True))
 
 
@@ -297,7 +297,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(422, response.status_code)
         self.assertIn(
-            "Algorithme d'encryption inconnu &quot;plain&quot;", response.get_data(as_text=True))
+            'Algorithme d\'encryption inconnu &quot;plain&quot;', response.get_data(as_text=True))
 
     def test_bad_signature(self):
         """Auth request with a facebook token but wrong signature."""
@@ -393,7 +393,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(401, response.status_code)
         self.assertIn(
-            "Mauvais jeton d'authentification : foo bar",
+            'Mauvais jeton d\'authentification : foo bar',
             response.get_data(as_text=True))
 
     def test_wrong_token_issuer(self, mock_verify_id_token):
@@ -406,7 +406,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(401, response.status_code)
         self.assertIn(
-            "Fournisseur d'authentification invalide : accounts.facebook.com",
+            'Fournisseur d\'authentification invalide : accounts.facebook.com',
             response.get_data(as_text=True))
 
     def test_new_user(self, mock_verify_id_token):

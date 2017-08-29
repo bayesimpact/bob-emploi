@@ -25,7 +25,7 @@ def get_lbb_companies(project):
             rome_codes=[project.target_job.job_group.rome_id])
         for company in companies:
             yield company
-    except IOError as error:
+    except (IOError, ValueError) as error:
         logging.error(
             'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
             error, project.mobility.city.city_id, project.target_job.job_group)

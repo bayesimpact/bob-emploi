@@ -14,7 +14,7 @@ ENV PROTOBUF_VERSION=3.2.0 \
 RUN apt-get update -qqy && \
   apt-get install -qqy --no-install-recommends wget unzip && \
   # Install needed Python dependencies.
-  pip install python-emploi-store flask mailjet_rest mongo oauth2client pyfarmhash unidecode uwsgi && \
+  pip install python-emploi-store flask mailjet_rest mongo oauth2client pyfarmhash unidecode uwsgi xmltodict && \
   # Install Protobuf compiler.
   wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip && unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto && \
   # Install Python Protobuf runtime.
@@ -25,7 +25,7 @@ RUN apt-get update -qqy && \
   touch bob_emploi/frontend/__init__.py
 
 COPY entrypoint.sh .
-COPY server.py action.py advisor.py auth.py companies.py french.py mail.py now.py privacy.py proto.py scoring.py bob_emploi/frontend/
+COPY server.py action.py advisor.py auth.py carif.py companies.py evaluation.py french.py mail.py now.py privacy.py proto.py scoring.py bob_emploi/frontend/
 COPY asynchronous/__init__.py asynchronous/create_pool.py asynchronous/mail_nps.py bob_emploi/frontend/asynchronous/
 COPY api bob_emploi/frontend/api
 

@@ -5,10 +5,9 @@ import Radium from 'radium'
 import {lowerFirstLetter, ofCityPrefix} from 'store/french'
 
 import laBonneFormationImage from 'images/labonneformation-picto.png'
-import {AppearingList, Colors, PaddedOnMobile, StringJoiner,
-  Styles} from 'components/theme'
+import {Colors, GrowingNumber, Icon, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
 
-import {ToolCard} from './base'
+import {AdviceSuggestionList, ToolCard} from './base'
 
 const valueToColor = {
   // 0 is unknown
@@ -32,18 +31,31 @@ const valueToText = {
 
 class AdviceCard extends React.Component {
   static propTypes = {
+    advice: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {project} = this.props
+    const {advice, project} = this.props
     const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
-    const trainingNames = ['Connaissance et maîtrise du cheveu afro/métissé',
-      'Coiffure pour le spectacle', 'Coiffeur artistique - Hair Designer']
+    if (!advice.trainingData) {
+      return null
+    }
+    const {trainings} = advice.trainingData
+    if (!trainings || !trainings.length) {
+      return null
+    }
+
+    const trainingNames = trainings.map(training => training.name)
+    const uniqueTrainingNames = trainingNames.sort().filter(
+      function(item, pos, array) {
+        return !pos || item !== array[pos - 1]
+      })
+
     return <div style={{fontSize: 30}}>
       Des formations près {prefix}<strong>{cityName}</strong> comme{' '}
       <StringJoiner>
-        {trainingNames.map((name, index) => <strong key={`company-${index}`}>
+        {uniqueTrainingNames.slice(0, 2).map((name, index) => <strong key={`company-${index}`}>
           {name}
         </strong>)}
       </StringJoiner>
@@ -55,66 +67,42 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
+    advice: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
   }
 
   createLBFLink() {
     const {project} = this.props
     const domain = lowerFirstLetter(project.targetJob.jobGroup.name)
-    return `https://labonneformation.pole-emploi.fr/formations/${domain}`
+    return `https://labonneformation.pole-emploi.fr/formations/${domain}/france`
   }
 
   render() {
-    const {project} = this.props
+    const {advice, project} = this.props
     const toolCardStyle = {
       maxWidth: 950,
     }
 
-    // TODO(guillaume): Fill values from server.
-    const trainings = [
-      {
-        cityName: 'Lyon',
-        departmentName: 'Rhône',
-        hiringPotential: 5,
-        trainingName: 'Connaissance et maîtrise du cheveu afro/métissé',
-        url: 'http://www.google.com',
-      },
-      {
-        cityName: 'St Etienne',
-        departmentName: 'Loire',
-        hiringPotential: 3,
-        trainingName: 'Coiffure pour le spectacle',
-        url: 'http://www.google.com',
-      },
-      {
-        cityName: 'Marseille',
-        departmentName: 'Bouches du Rhône',
-        hiringPotential: 2,
-        trainingName: 'Coiffeur artistique - Hair Designer',
-        url: 'http://www.google.com',
-      },
-      {
-        cityName: 'Marseille',
-        departmentName: 'Bouches du Rhône',
-        hiringPotential: 1,
-        trainingName: 'CAP Coiffure',
-        url: 'http://www.google.com',
-      },
-    ]
+    if (!advice.trainingData) {
+      return null
+    }
+    const {trainings} = advice.trainingData
+    if (!trainings || !trainings.length) {
+      return null
+    }
 
-    const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
     return <div>
       <PaddedOnMobile style={{fontSize: 21}}>
-        <strong>Potentiel d'embauche</strong> des formations autour de vous&nbsp;:
+        Nous avons trouvé <GrowingNumber style={{fontWeight: 'bold'}} number={trainings.length}
+          isSteady={true} /> formation{trainings.length > 0 ? 's' : ''} autour de vous&nbsp;:
       </PaddedOnMobile>
-      <AppearingList style={{marginTop: 15}}>
+      <AdviceSuggestionList style={{marginTop: 15}}>
         {trainings.map((training, index) => <TrainingSuggestion
-          training={training} key={`city-${index}`} style={{marginTop: index ? -1 : 0}} />)}
-      </AppearingList>
+          training={training} key={`city-${index}`} />)}
+      </AdviceSuggestionList>
       <PaddedOnMobile style={{fontSize: 21, marginBottom: 15, marginTop: 30}}>
-        Trouver d'autres formations
-        en {lowerFirstLetter(project.targetJob.jobGroup.name)} près {prefix}
-        <strong>{cityName}</strong>&nbsp;:
+        Nous aimons beaucoup ce site pour trouver d'autres formations
+        en <strong>{lowerFirstLetter(project.targetJob.jobGroup.name)}&nbsp;</strong>:
       </PaddedOnMobile>
       <div style={toolCardStyle}>
         <ToolCard imageSrc={laBonneFormationImage} href={this.createLBFLink()}>
@@ -140,6 +128,10 @@ class TrainingSuggestionBase extends React.Component {
   }
 
   renderBoxes(score) {
+    if (!score) {
+      return null
+    }
+
     const boxStyle = {
       display: 'inline-block',
       height: 10,
@@ -173,32 +165,28 @@ class TrainingSuggestionBase extends React.Component {
 
   render() {
     const {training, style} = this.props
-    const {cityName, trainingName, hiringPotential} = training
+    const {cityName, name, hiringPotential} = training
     const containerStyle = {
-      ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
-      },
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      cursor: 'pointer',
-      display: 'flex',
-      fontSize: 13,
-      height: 50,
-      padding: '0 20px',
       ...style,
+      fontWeight: 'normal',
     }
-    const trainingNameStyle = {
+    const trainingStyle = {
       fontStyle: 'italic',
       marginRight: 10,
       ...Styles.CENTER_FONT_VERTICALLY,
     }
-    return <div style={containerStyle} onClick={this.handleClick}>
-      <span style={trainingNameStyle}>
-        <strong>{trainingName}</strong> - {cityName}
+    const chevronStyle = {
+      fontSize: 20,
+      lineHeight: 1,
+      padding: '0 0 0 10px',
+    }
+    return <div style={containerStyle} onClick={this.handleClick} key="training">
+      <span style={trainingStyle}>
+        <strong>{name}</strong> - {cityName}
       </span>
       <div style={{flex: 1}} />
       {this.renderBoxes(hiringPotential)}
+      <Icon name="chevron-right" style={chevronStyle} />
     </div>
   }
 }

@@ -4,3 +4,4 @@ nose
 nose-watch
 pep8
 pylint
+pylint-quotes

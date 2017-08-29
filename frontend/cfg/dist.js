@@ -1,6 +1,7 @@
 const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const WebpackPwaManifest = require('webpack-pwa-manifest')
 const _ = require('lodash')
 
 const baseConfig = require('./base')
@@ -10,12 +11,18 @@ const srcDir = path.resolve(__dirname, '../src') + '/'
 const config = _.merge({
   cache: false,
   devtool: 'hidden-source-map',
-  entry: [
-    'babel-polyfill',
-    path.join(__dirname, '../src/entry'),
-  ],
+  entry: {
+    app: [
+      'babel-polyfill',
+      './src/entry',
+    ],
+    eval: [
+      'babel-polyfill',
+      './src/eval_entry',
+    ],
+  },
   output: {
-    filename: 'app.[hash].js',
+    filename: '[name].[hash].js',
     path: path.join(__dirname, '/../dist/assets'),
     publicPath: '/assets/',
   },
@@ -40,6 +47,7 @@ Array.prototype.push.apply(config.plugins, [
   }),
   // Embed the JavaScript in the index.html page.
   new HtmlWebpackPlugin({
+    chunks: ['app'],
     filename: '../index.html',
     minify: {
       collapseWhitespace: true,
@@ -53,6 +61,26 @@ Array.prototype.push.apply(config.plugins, [
       removeStyleLinkTypeAttributes: true,
     },
     template: path.join(__dirname, '/../src/index.html'),
+  }),
+  new HtmlWebpackPlugin({
+    chunks: ['eval'],
+    filename: '../eval.html',
+    minify: {
+      collapseWhitespace: true,
+      decodeEntities: true,
+      minifyCSS: true,
+      removeAttributeQuotes: true,
+      removeComments: true,
+      removeOptionalTags: true,
+      removeRedundantAttributes: true,
+      removeScriptTypeAttributes: true,
+      removeStyleLinkTypeAttributes: true,
+    },
+    template: path.join(__dirname, '/../src/index.html'),
+  }),
+  new WebpackPwaManifest({
+    lang: 'fr-FR',
+    name: 'Bob Emploi',
   }),
   // When there are errors while compiling this plugin skips the emitting phase,
   // so there are no assets emitted that include errors.

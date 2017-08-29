@@ -88,6 +88,36 @@ class _ProtoAirtableConverter(collections.namedtuple(
             fields[self.snake_to_camelcase[self.id_field]] = record_id
         return fields
 
+    def _group_filter_fields(self, record, record_name, field='filters', others=None):
+        """Group multiple fields to specify filters.
+
+        Args:
+            record: the record to convert.
+            record_name: the name of the type of record for error messages.
+            field: the main field for filters, it should contain an array of
+                filter IDs.
+            others: a list of fields which, if not empty, create extra fields
+                by combining the field name and their content, e.g.
+                "for-departement" with value "75,69" would add a filter
+                "for-departement(75,69)".
+        Returns:
+            A list of valid filters.
+        Raises:
+            ValueError: if one the filter is not implemented.
+        """
+        filters = record['fields'].get(field, [])
+        if others:
+            for filter_type in others:
+                filter_value = record['fields'].get(filter_type)
+                if filter_value:
+                    filters.append('%s(%s)' % (filter_type, filter_value))
+        for one_filter in filters:
+            if not scoring.get_scoring_model(one_filter):
+                raise ValueError(
+                    '%s uses the filter "%s" that is not implemented yet'
+                    % (record_name, one_filter))
+        return filters
+
 
 class _ActionTemplateConverter(_ProtoAirtableConverter):
 
@@ -100,11 +130,13 @@ class _ActionTemplateConverter(_ProtoAirtableConverter):
         if link and not _LINK_REGEXP.match(link):
             raise ValueError(
                 'Action template "%s" has an irregular link: %s.' % (fields['_id'], link))
-        for action_filter in fields.get('filters', []):
-            if not scoring.get_scoring_model(action_filter):
-                raise ValueError(
-                    'Action template "%s" uses the filter "%s" that is not implemented yet'
-                    % (fields['_id'], action_filter))
+
+        # Populate filters.
+        filters = self._group_filter_fields(
+            airtable_record, 'Action template "%s"' % fields['_id'])
+        if filters:
+            fields['filters'] = filters
+
         return fields
 
 
@@ -130,18 +162,11 @@ class _FilteredLinkConverter(_ProtoAirtableConverter):
         fields = super(_FilteredLinkConverter, self).convert_record(airtable_record)
 
         # Populate filters.
-        filters = airtable_record['fields'].get('filters', [])
-        for filter_type in ('for-departement', 'for-job-group'):
-            filter_value = airtable_record['fields'].get(filter_type)
-            if filter_value:
-                filters.append('%s(%s)' % (filter_type, filter_value))
+        filters = self._group_filter_fields(
+            airtable_record, 'The link "%s"' % fields['_id'],
+            others=('for-departement', 'for-job-group'))
         if filters:
             fields['filters'] = filters
-            for link_filter in filters:
-                if not scoring.get_scoring_model(link_filter):
-                    raise ValueError(
-                        'The link "%s" uses the filter "%s" that is not implemented yet'
-                        % (fields['_id'], link_filter))
 
         # Check link.
         link = fields.get('link')

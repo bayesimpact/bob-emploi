@@ -24,15 +24,19 @@ import Events from './advisor/events'
 import ImproveInterview from './advisor/improve_interview'
 import ImproveResume from './advisor/improve_resume'
 import JobBoards from './advisor/job_boards'
+import LessApplications from './advisor/less_applications'
 import LifeBalance from './advisor/life_balance'
 import MotivationEmail from './advisor/motivation_email'
 import NetworkApplication from './advisor/network_bad'
 import NetworkApplicationMedium from './advisor/network_medium'
 import NetworkApplicationGood from './advisor/network_good'
 import OtherWorkEnv from './advisor/other_work_env'
+import Relocate from './advisor/relocate'
+import Senior from './advisor/senior'
 import SpontaneousApplication from './advisor/spontaneous'
 import Training from './advisor/training'
 import Volunteer from './advisor/volunteer'
+import Vae from './advisor/vae'
 import WowBaker from './advisor/wow_baker'
 import WowHairdresser from './advisor/wow_hairdresser'
 
@@ -47,14 +51,18 @@ const ADVICE_MODULES = {
   'fresh-resume': ImproveResume,
   'improve-interview': ImproveInterview,
   'improve-resume': ImproveResume,
+  'less-applications': LessApplications,
   'life-balance': LifeBalance,
   'motivation-email': MotivationEmail,
   'network-application': NetworkApplication,
   'network-application-good': NetworkApplicationGood,
   'network-application-medium': NetworkApplicationMedium,
   'other-work-env': OtherWorkEnv,
+  'relocate': Relocate,
+  'senior': Senior,
   'spontaneous-application': SpontaneousApplication,
   'training': Training,
+  'vae': Vae,
   'volunteer': Volunteer,
   'wow-baker': WowBaker,
   'wow-hairdresser': WowHairdresser,

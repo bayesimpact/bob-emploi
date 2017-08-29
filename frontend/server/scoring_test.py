@@ -6,6 +6,7 @@ import numbers
 from os import path
 import random
 import unittest
+from unittest import mock
 
 import mongomock
 
@@ -16,12 +17,573 @@ from bob_emploi.frontend.api import user_pb2
 
 _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
 
+# TODO: Clean that up.
+# pylint: disable=too-many-lines
+
 
 def _load_json_to_mongo(database, collection):
     """Load a MongoDB collection from a JSON file."""
     with open(path.join(_TESTDATA_FOLDER, collection + '.json')) as json_file:
         json_blob = json.load(json_file)
     database[collection].insert_many(json_blob)
+
+
+def training_mocked_requests_get(*args, **kargs):
+    """A function to mock the requests url."""
+    class MockResponse:
+        """A simple mock requests response."""
+
+        def __init__(self, text, status_code):
+            self.text = text
+            self.status_code = status_code
+
+    if 'www.intercariforef.org' not in args[0]:
+        return MockResponse('', 404)
+
+    if not kargs['params']:
+        return MockResponse('Missing parameters', 500)
+
+    # TODO(guillaume): Cleanup this json to the appropriate place after asking Pascal about it.
+    return MockResponse('''
+<lheo-index xmlns="http://www.lheo.org/2.2">
+<resumes-offres>
+<resume-offre numero="14_AF_0000011179_SE_0000093700" file="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>42602</code-FORMACODE>
+<code-NSF>334</code-NSF>
+<code-ROME>G1102</code-ROME>
+<code-ROME>G1201</code-ROME>
+</domaine-formation>
+<intitule-formation>Licence pro guide conférencier</intitule-formation>
+<nom-organisme numero="14_OF_0000000880">GRETA METEHOR PARIS</nom-organisme>
+<SIRET>19750707200027</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>6</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>80006</code-public-vise>
+<code-public-vise>81050</code-public-vise>
+<code-public-vise>82044</code-public-vise>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>482</nombre-heures-total>
+<session>
+<periode>
+<debut>20171003</debut>
+<fin>20190928</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>25730</code-RNCP>
+<code-CERTIFINFO>85556</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.897144</extra>
+<extra info="longitude">2.320914</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000028218_SE_0000118670" href="https://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>42623</code-FORMACODE>
+<code-FORMACODE>42654</code-FORMACODE>
+<code-NSF>334</code-NSF>
+<code-ROME>G1201</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Titre professionnel d'accompagnateur(trice) de tourisme
+</intitule-formation>
+<nom-organisme numero="14_OF_0000011022">AFCI</nom-organisme>
+<SIRET>39297563700043</SIRET>
+<codepostal>75014</codepostal>
+<code-INSEE-commune>75114</code-INSEE-commune>
+<ville>Paris 14e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>80006</code-public-vise>
+<nombre-heures-total>686</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180300</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75014</codepostal>
+<ville>Paris 14e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>17793</code-RNCP>
+<code-CERTIFINFO>82182</code-CERTIFINFO>
+</certification>
+<extras info="lheo">
+<extra info="conventionnement">1</extra>
+</extras>
+<extras info="geolocalisation">
+<extra info="latitude">48.826991</extra>
+<extra info="longitude">2.333706</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">5</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036088_SE_0000116542" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littérature et civilisations étrangères et
+régionales
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75018</codepostal>
+<code-INSEE-commune>75118</code-INSEE-commune>
+<ville>Paris 18e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>534</nombre-heures-total>
+<session>
+<periode>
+<debut>20170921</debut>
+<fin>20180721</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75018</codepostal>
+<ville>Paris 18e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.899569</extra>
+<extra info="longitude">2.347494</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036094_SE_0000116555" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours allemand
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>534</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036101_SE_0000116567" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours arabe
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75005</codepostal>
+<code-INSEE-commune>75105</code-INSEE-commune>
+<ville>Paris 5e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>611</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75005</codepostal>
+<ville>Paris 5e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.848307</extra>
+<extra info="longitude">2.342806</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036148_SE_0000116777" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours espagnol
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75005</codepostal>
+<code-INSEE-commune>75105</code-INSEE-commune>
+<ville>Paris 5e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>534</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75005</codepostal>
+<ville>Paris 5e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.844088</extra>
+<extra info="longitude">2.342302</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036157_SE_0000116821" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères
+et régionales parcours études nordiques
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>390</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036163_SE_0000116829" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours italien
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>539</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036167_SE_0000116834" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licences arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours néerlandais
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>481</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000038967_SE_0000126421" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>D1401</code-ROME>
+<code-ROME>E1103</code-ROME>
+<code-ROME>E1108</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>M1705</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues étrangères appliquées
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>676</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>25169</code-RNCP>
+<code-CERTIFINFO>92893</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<extras info="FLUX-CARIF">
+<extra info="date-export">20170809</extra>
+<extra info="heure-export">000940</extra>
+<extra info="statut">OK</extra>
+<extra info="nb-resultat">10</extra>
+</extras>
+</resumes-offres>
+</lheo-index>''', 200)
 
 
 class _Persona(object):
@@ -109,7 +671,7 @@ def ScoringModelTestBase(model_id):  # pylint: disable=invalid-name
             if not persona:
                 persona = _PERSONAS[name]
             project = persona.scoring_project(self.database)
-            return self.model.score(project).score
+            return self.model.score(project)
 
         def _assert_score_for_empty_project(self, expected):
             score = self._score_persona(name='empty')
@@ -138,6 +700,21 @@ class AdviceEventScoringModelTestCase(ScoringModelTestBase('advice-event')):
     def setUp(self):
         super(AdviceEventScoringModelTestCase, self).setUp()
         self.persona = self._random_persona().clone()
+        self.database.events.insert_many([
+            {
+                'title': 'AP HEROS CANDIDATS MADIRCOM - BORDEAUX',
+                'link': 'https://www.workuper.com/events/ap-heros-candidats-madircom-bordeaux',
+                'organiser': 'MADIRCOM',
+                'startDate': '2017-08-29',
+            },
+            {
+                'title': 'Le Salon du Travail et de la Mobilité Professionnelle',
+                'link': 'https://www.workuper.com/events/le-salon-du-travail-et-de-la-mobilite-'
+                        'professionnelle',
+                'organiser': 'Altice Media Events',
+                'startDate': '2018-01-19',
+            },
+        ])
 
     def test_important_application(self):
         """Network is important for the user."""
@@ -174,25 +751,39 @@ class TrainingAdviceScoringModelTestCase(ScoringModelTestBase('advice-training')
     """Unit test for the training scoring model."""
 
     def setUp(self):
+        """Setting up the persona for a test."""
         super(TrainingAdviceScoringModelTestCase, self).setUp()
         self.persona = self._random_persona().clone()
 
-    def test_low_advice_for_new_de(self):
+    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
+    def test_low_advice_for_new_de(self, unused_mocked_get):
         """The user just started searching for a job."""
         self.persona.project.job_search_length_months = 0
+        if self.persona.project.kind == project_pb2.REORIENTATION:
+            self.persona.project.kind = project_pb2.FIND_JOB
         self.assertGreater(2, self._score_persona(self.persona))
 
-    def test_three_stars(self):
+    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
+    def test_three_stars(self, unused_mocked_get):
         """The user has been searching for a job for 3 months."""
         self.persona.project.job_search_length_months = 3
         self.assertEqual(3, self._score_persona(self.persona))
 
-    def test_one_month(self):
+    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
+    def test_one_month(self, unused_mocked_get):
         """The user has been searching for a job for 1 month."""
         self.persona.project.job_search_length_months = 1
+        if self.persona.project.kind == project_pb2.REORIENTATION:
+            self.persona.project.kind = project_pb2.FIND_JOB
         score = self._score_persona(self.persona)
         self.assertGreater(3, score)
         self.assertLess(0, score)
+
+    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
+    def test_reorientation(self, unused_mocked_get):
+        """The user is in reorientation."""
+        self.persona.project.kind = project_pb2.REORIENTATION
+        self.assertEqual(3, self._score_persona(self.persona))
 
 
 class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improve-network')):
@@ -278,47 +869,47 @@ class CommuteScoringModelTestCase(ScoringModelTestBase('advice-commute')):
         self.persona = self._random_persona().clone()
         self.database.cities.insert_one({
             '_id': '69123',
-            "longitude": 4.6965532,
-            "latitude": 45.7179675
+            'longitude': 4.6965532,
+            'latitude': 45.7179675
         })
 
         self.database.hiring_cities.insert_one({
-            "_id": "M1604",
-            "hiringCities": [
+            '_id': 'M1604',
+            'hiringCities': [
                 {
-                    "offers": 10,
-                    "city": {
-                        "name": "Brindas",
-                        "longitude": 4.6965532,
-                        "latitude": 45.7179675,
-                        "population": 10000
+                    'offers': 10,
+                    'city': {
+                        'name': 'Brindas',
+                        'longitude': 4.6965532,
+                        'latitude': 45.7179675,
+                        'population': 10000
                     }
                 },
                 {
-                    "offers": 40,
-                    "city": {
-                        "name": "Lyon",
-                        "longitude": 4.8363116,
-                        "latitude": 45.7640454,
-                        "population": 400000
+                    'offers': 40,
+                    'city': {
+                        'name': 'Lyon',
+                        'longitude': 4.8363116,
+                        'latitude': 45.7640454,
+                        'population': 400000
                     }
                 },
                 {
-                    "offers": 40,
-                    "city": {
-                        "name": "Saint-Priest",
-                        "longitude": 4.9123846,
-                        "latitude": 45.7013617,
-                        "population": 20000
+                    'offers': 40,
+                    'city': {
+                        'name': 'Saint-Priest',
+                        'longitude': 4.9123846,
+                        'latitude': 45.7013617,
+                        'population': 20000
                     }
                 },
                 {
-                    "offers": 40,
-                    "city": {
-                        "name": "Vaulx-en-Velin",
-                        "longitude": 4.8892431,
-                        "latitude": 45.7775502,
-                        "population": 10000
+                    'offers': 40,
+                    'city': {
+                        'name': 'Vaulx-en-Velin',
+                        'longitude': 4.8892431,
+                        'latitude': 45.7775502,
+                        'population': 10000
                     }
                 }
             ]
@@ -350,7 +941,8 @@ class CommuteScoringModelTestCase(ScoringModelTestBase('advice-commute')):
 class PersonasTestCase(unittest.TestCase):
     """Tests all scoring models and all personas."""
 
-    def test_run_all(self):
+    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
+    def test_run_all(self, unused_mocked_get):
         """Run all scoring models on all personas."""
         database = mongomock.MongoClient().test
         _load_json_to_mongo(database, 'job_group_info')
@@ -369,7 +961,7 @@ class PersonasTestCase(unittest.TestCase):
             scores[model_name] = {}
             for name, persona in _PERSONAS.items():
                 scores[model_name][name] = model.score(
-                    persona.scoring_project(database, now=now)).score
+                    persona.scoring_project(database, now=now))
                 self.assertIsInstance(
                     scores[model_name][name],
                     numbers.Number,
@@ -391,6 +983,122 @@ class PersonasTestCase(unittest.TestCase):
             self.assertLess(
                 1, len(set(model_scores.values())),
                 msg='Model "%s" has the same score for all personas.' % model_name)
+
+
+class LifeBalanceTestCase(ScoringModelTestBase('advice-life-balance')):
+    """Unit tests for the "Work/Life balance" advice."""
+
+    def test_short_searching(self):
+        """The user does not have a diploma problem."""
+        persona = self._random_persona().clone()
+        if persona.project.job_search_length_months > 3:
+            persona.project.job_search_length_months = 2
+        persona.user_profile.has_handicap = False
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+    def test_handicaped(self):
+        """The user has a handicap."""
+        persona = self._random_persona().clone()
+        persona.user_profile.has_handicap = True
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+    def test_long_searching(self):
+        """The user does not have a diploma problem."""
+        persona = self._random_persona().clone()
+        if persona.project.job_search_length_months < 4:
+            persona.project.job_search_length_months = 4
+        persona.user_profile.has_handicap = False
+        score = self._score_persona(persona)
+        self.assertEqual(score, 1, msg='Failed for "%s"' % persona.name)
+
+
+class AdviceVaeTestCase(ScoringModelTestBase('advice-vae')):
+    """Unit tests for the "vae" advice."""
+
+    def test_experiemented(self):
+        """The user is experimented and think he has enough diplomas."""
+        persona = self._random_persona().clone()
+        persona.project.seniority = project_pb2.EXPERT
+        persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_EXPERIENCE
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "%s"' % persona.name)
+
+    def test_frustrated_by_trainings_and_is_senior(self):
+        """The user is frustrated by training and is senior."""
+        persona = self._random_persona().clone()
+        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+        persona.project.seniority = project_pb2.SENIOR
+        score = self._score_persona(persona)
+        self.assertGreaterEqual(score, 2, msg='Failed for "%s"' % persona.name)
+
+    def test_not_matching(self):
+        """The user does not have a diploma problem."""
+        persona = self._random_persona().clone()
+        persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+    def test_frustrated_no_experience(self):
+        """The user is frustrated by trainings, has no experience and his diploma is unsure."""
+        persona = self._random_persona().clone()
+        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+        persona.project.seniority = project_pb2.JUNIOR
+        persona.project.training_fulfillment_estimate = project_pb2.TRAINING_FULFILLMENT_NOT_SURE
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+
+class AdviceSeniorTestCase(ScoringModelTestBase('advice-senior')):
+    """Unit tests for the "Senior" advice."""
+
+    def test_match_discriminated(self):
+        """The user is over 40 years old and feels discriminated so this should match."""
+        persona = self._random_persona().clone()
+        if persona.user_profile.year_of_birth > datetime.date.today().year - 40:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 40
+        persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
+        score = self._score_persona(persona)
+        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
+
+    def test_match_old(self):
+        """The user is over 50 years old so the advice should match."""
+        persona = self._random_persona().clone()
+        if persona.user_profile.year_of_birth > datetime.date.today().year - 50:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 50
+        score = self._score_persona(persona)
+        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
+
+    def test_no_match(self):
+        """The user is young so the advice should not match."""
+        persona = self._random_persona().clone()
+        if persona.user_profile.year_of_birth < datetime.date.today().year - 35:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 35
+        score = self._score_persona(persona)
+        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
+
+class AdviceLessApplicationsTestCase(ScoringModelTestBase('advice-less-applications')):
+    """Unit tests for the "Apply less" advice."""
+
+    def test_match(self):
+        """The user applies a lot so the advice should match."""
+        persona = self._random_persona().clone()
+        if persona.project.weekly_applications_estimate != project_pb2.A_LOT and \
+                persona.project.weekly_applications_estimate != project_pb2.DECENT_AMOUNT:
+            persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
+        score = self._score_persona(persona)
+        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
+
+    def test_no_match(self):
+        """The user does not apply a lot so the advice should not match."""
+        persona = self._random_persona().clone()
+        if persona.project.weekly_applications_estimate == project_pb2.DECENT_AMOUNT or \
+                persona.project.weekly_applications_estimate == project_pb2.A_LOT:
+            persona.project.weekly_applications_estimate = project_pb2.SOME
+        score = self._score_persona(persona)
+        self.assertLessEqual(score, 0, msg='Failed for "%s"' % persona.name)
 
 
 class AdviceAssociationHelpTestCase(ScoringModelTestBase('advice-association-help')):
@@ -415,6 +1123,15 @@ class AdviceAssociationHelpTestCase(ScoringModelTestBase('advice-association-hel
         persona = self._random_persona().clone()
         self.database.associations.insert_one({'name': 'SNC'})
         persona.user_profile.frustrations.append(user_pb2.MOTIVATION)
+        score = self._score_persona(persona)
+        self.assertEqual(3, score, msg='Failed for "%s"' % persona.name)
+
+    def test_many_assos_and_long_search(self):
+        """User searches for a long time and there are a lot of associations."""
+        persona = self._random_persona().clone()
+        self.database.associations.insert_many(
+            [{'name': 'SNC'}, {'name': 'SND'}, {'name': 'SNE'}, {'name': 'SNF'}])
+        persona.project.job_search_length_months = 6
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg='Failed for "%s"' % persona.name)
 
@@ -450,7 +1167,7 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
             ],
             'requirements': {
                 'specificJobs': [{
-                    'codeOgr': "1234",
+                    'codeOgr': '1234',
                     'percentSuggested': 100,
                 }],
             },
@@ -471,7 +1188,7 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
             ],
             'requirements': {
                 'specificJobs': [{
-                    'codeOgr': "1234",
+                    'codeOgr': '1234',
                     'percentSuggested': 100,
                 }],
             },
@@ -495,11 +1212,11 @@ class AdviceBetterJobInGroupTestCase(ScoringModelTestBase('advice-better-job-in-
             'requirements': {
                 'specificJobs': [
                     {
-                        'codeOgr': "5678",
+                        'codeOgr': '5678',
                         'percentSuggested': 50,
                     },
                     {
-                        'codeOgr': "1234",
+                        'codeOgr': '1234',
                         'percentSuggested': 45,
                     },
                 ],

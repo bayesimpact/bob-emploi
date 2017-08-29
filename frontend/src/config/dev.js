@@ -4,8 +4,6 @@
 // (./dist.js).
 const config = {
   amplitudeToken: '84272c8018835dff932e59447cc33694',
-  appEnv: 'dev',
-  backendHostName: '',
   donationUrl: 'https://www.helloasso.com/associations/bayes-impact-france/formulaires/3',
   facebookSSOAppId: '1048782155234293',
   githubSourceLink: 'https://github.com/bayesimpact/bob-emploi',

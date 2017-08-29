@@ -11,6 +11,5 @@ rm protoc.zip
 rm readme.txt
 
 # Move the binary to /bin and the common protos to /share.
-mv protoc "${DEST_FOLDER}/bin/"
-mkdir -p "${DEST_FOLDER}/share/proto"
-mv google "${DEST_FOLDER}/share/proto"
+mv bin/protoc "${DEST_FOLDER}/bin/"
+mv include "${DEST_FOLDER}/share/proto"

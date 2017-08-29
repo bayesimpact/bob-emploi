@@ -1,14 +1,18 @@
 """Tests for the bob_emploi.importer.airtable_to_protos module."""
+import os
 import unittest
+
+import airtablemock
+import mock
 
 from bob_emploi.importer import airtable_to_protos
 
 
-class AirtableTestCase(unittest.TestCase):
+class ConverterTestCase(unittest.TestCase):
     """Tests for the converter."""
 
     def setUp(self):
-        super(AirtableTestCase, self).setUp()
+        super(ConverterTestCase, self).setUp()
         self.converter = airtable_to_protos.PROTO_CLASSES['Chantier']
 
     def test_convert_record(self):
@@ -155,6 +159,28 @@ class AirtableTestCase(unittest.TestCase):
             'link': 'https://candidat.pole-emploi.fr/offres/recherche',
             'filters': ['for-departement(49)', 'for-job-group(A12,B)'],
         })
+
+
+@airtablemock.patch(airtable_to_protos.__name__ + '.airtable')
+@mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'apikey42'})
+class Airtable2DictsTestCase(unittest.TestCase):
+    """Unit tests for the importer."""
+
+    def test_airtable2dicts(self):
+        """Basic usage of airtable2dicts."""
+        base = airtablemock.Airtable('base123', 'apikey42')
+        base.create('table456', {
+            'advice_id': 'my-advice',
+            'trigger_scoring_model': 'constant(2)',
+        })
+        base.create('table456', {
+            'advice_id': 'my-second-advice',
+            'trigger_scoring_model': 'constant(3)',
+        })
+
+        protos = airtable_to_protos.airtable2dicts('base123', 'table456', 'AdviceModule')
+        self.assertEqual(
+            ['my-advice', 'my-second-advice'], sorted(m['adviceId'] for m in protos))
 
 
 if __name__ == '__main__':

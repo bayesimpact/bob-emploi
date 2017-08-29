@@ -5,7 +5,7 @@ with the server code. For instance it checks that all scoring models defined in
 the code are used at least once in one of the collections.
 
 Run it regularly with the command:
-    docker-compose run --rm data-aanalysis-prepare \\
+    docker-compose run --rm data-analysis-prepare \
         bob_emploi/frontend/asynchronous/maintenance.py mongodb://frontend-db/test
 """
 # TODO(pascal): Run it automatically (weekly ?) and send the results to slack.

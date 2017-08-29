@@ -91,7 +91,8 @@ class ProjectSummary extends React.Component {
         <h3>Solutions sélectionnées :</h3>
         <ul>
           {_.map(project.activatedChantiers, (activated, chantierId) => {
-            return activated ? <li key={chantierId}>{allChantiers[chantierId].title}</li> : null
+            return (activated && allChantiers[chantierId]) ?
+              <li key={chantierId}>{allChantiers[chantierId].title}</li> : null
           })}
         </ul>
       </div> : null}
@@ -101,7 +102,12 @@ class ProjectSummary extends React.Component {
 
 class DashboardExportPageBase extends React.Component {
   static propTypes = {
-    dashboardExport: PropTypes.object,
+    dashboardExport: PropTypes.shape({
+      chantiers: PropTypes.object,
+      projects: PropTypes.arrayOf(PropTypes.shape({
+        projectId: PropTypes.string.isRequired,
+      }).isRequired).isRequired,
+    }),
     dispatch: PropTypes.func.isRequired,
     isFetching: PropTypes.bool,
     params: PropTypes.shape({
@@ -127,7 +133,7 @@ class DashboardExportPageBase extends React.Component {
     const style = {
       padding: 50,
     }
-    const allActions = allDoneActions(dashboardExport.projects)
+    const allActions = allDoneActions(dashboardExport && dashboardExport.projects || [])
     return <div style={style}>
       <h1>Export de l'historique des actions</h1>
       <p>

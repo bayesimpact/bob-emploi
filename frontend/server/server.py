@@ -30,6 +30,7 @@ from werkzeug.contrib import fixers
 from bob_emploi.frontend import action
 from bob_emploi.frontend import advisor
 from bob_emploi.frontend import auth
+from bob_emploi.frontend import evaluation
 from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
@@ -38,6 +39,7 @@ from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
+from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import commute_pb2
@@ -46,7 +48,6 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import export_pb2
-from bob_emploi.frontend.api import use_case_pb2
 
 app = flask.Flask(__name__)  # pylint: disable=invalid-name
 # Get original host and scheme used before proxies (load balancer, nginx, etc).
@@ -69,7 +70,7 @@ _POLE_EMPLOI_USER_REGEXP = \
     re.compile(os.getenv('POLE_EMPLOI_USER_REGEXP', r'@pole-emploi.fr$'))
 
 # Email regex from http://emailregex.com/
-_EMAIL_REGEX = re.compile(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+_EMAIL_REGEX = re.compile(r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)')
 
 # For testing on old users, we sometimes want to enable advisor for newly
 # created users.
@@ -129,7 +130,7 @@ def get_user(user_id):
     return user_proto
 
 
-@app.route("/api/user", methods=['POST'])
+@app.route('/api/user', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
 def user(user_data):
     """Save the user data sent by client.
@@ -143,7 +144,7 @@ def user(user_data):
     return _save_user(user_data, is_new_user=False)
 
 
-@app.route("/api/user/likes", methods=['POST'])
+@app.route('/api/user/likes', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User)
 def user_likes(user_data):
     """Save the user likes sent by client.
@@ -155,7 +156,7 @@ def user_likes(user_data):
         flask.abort(400, 'Impossible de sauver les données utilisateur sans ID.')
     for key in user_data.likes.keys():
         if '.' in key or '$' in key:
-            flask.abort(422, "Liked feature IDs cannot contain . or $, got \"%s\"" % key)
+            flask.abort(422, 'Liked feature IDs cannot contain . or $, got "%s"' % key)
     result = _DB.user.update_one(
         {'_id': _safe_object_id(user_data.user_id)}, {'$set': {
             'likes.%s' % key: value for key, value in user_data.likes.items()}},
@@ -165,7 +166,7 @@ def user_likes(user_data):
     return ''
 
 
-@app.route("/api/user/<user_id>/migrate-to-advisor", methods=['POST'])
+@app.route('/api/user/<user_id>/migrate-to-advisor', methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
 def migrate_to_advisor(user_id):
     """Migrate a user of the Mashup to use the Advisor."""
@@ -410,9 +411,9 @@ def _copy_unmodifiable_fields(previous_user_data, user_data):
 
 def _assert_no_credentials_change(previous, new):
     if previous.facebook_id != new.facebook_id:
-        flask.abort(403, "Impossible de modifier l'identifiant Facebook.")
+        flask.abort(403, 'Impossible de modifier l\'identifiant Facebook.')
     if previous.google_id != new.google_id:
-        flask.abort(403, "Impossible de modifier l'identifiant Google.")
+        flask.abort(403, 'Impossible de modifier l\'identifiant Google.')
     if previous.profile.email == new.profile.email:
         return
     if (new.facebook_id and not previous.profile.email) or new.google_id:
@@ -422,9 +423,9 @@ def _assert_no_credentials_change(previous, new):
         email_taken = bool(_DB.user.find(
             {'profile.email': new.profile.email}, {'_id': 1}).limit(1).count())
         if email_taken:
-            flask.abort(403, "L'utilisateur existe mais utilise un autre moyen de connexion.")
+            flask.abort(403, 'L\'utilisateur existe mais utilise un autre moyen de connexion.')
         return
-    flask.abort(403, "Impossible de modifier l'adresse email.")
+    flask.abort(403, 'Impossible de modifier l\'adresse email.')
 
 
 def _safe_object_id(_id):
@@ -576,6 +577,19 @@ def project_associations(user_id, project_id):
     associations = scoring_project.list_associations()
     sorted_associations = sorted(associations, key=lambda j: (-len(j.filters), random.random()))
     return association_pb2.Associations(associations=sorted_associations)
+
+
+@app.route('/api/project/<user_id>/<project_id>/events', methods=['GET'])
+@proto.flask_api(out_type=event_pb2.Events)
+def project_events(user_id, project_id):
+    """Retrieve a list of associations for a project."""
+    user_proto = _get_user_data(user_id)
+    project = _get_project_data(user_proto, project_id)
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, _DB)
+    events = scoring_project.list_events()
+    sorted_events = sorted(events, key=lambda j: (j.start_date, -len(j.filters), random.random()))
+    return event_pb2.Events(events=sorted_events)
 
 
 @app.route('/api/project/<user_id>/<project_id>/interview-tips', methods=['GET'])
@@ -908,36 +922,7 @@ def redirect_eterritoire(city_id):
     return flask.redirect('http://www.eterritoire.fr%s' % link.path)
 
 
-@app.route('/api/eval/use-case-pool-names', methods=['GET'])
-@proto.flask_api(out_type=use_case_pb2.UseCasePoolNames)
-def eval_use_case_pools():
-    """Retrieve a list of the available pools of anonymized user examples."""
-    use_case_pool_dicts = _DB.use_case.aggregate([
-        {'$group': {
-            '_id': '$_poolName',
-        }},
-        {'$project': {
-            '_id': 0,
-            'name': '$_id',
-        }}
-    ])
-    use_case_pool_names = [pool['name'] for pool in use_case_pool_dicts]
-    return use_case_pb2.UseCasePoolNames(
-        use_case_pool_names=use_case_pool_names
-    )
-
-
-@app.route('/api/eval/use-cases/<pool_name>', methods=['GET'])
-@proto.flask_api(out_type=user_pb2.UseCases)
-def eval_use_cases(pool_name):
-    """Retrieve a list of anonymized user examples from one pool."""
-    use_case_dicts = _DB.use_case.find({'_poolName': pool_name})
-    use_case_protos = []
-    for use_case_dict in use_case_dicts:
-        use_case_proto = user_pb2.User()
-        proto.parse_from_mongo(use_case_dict, use_case_proto)
-        use_case_protos.append(use_case_proto)
-    return user_pb2.UseCases(use_cases=use_case_protos)
+app.register_blueprint(evaluation.app, url_prefix='/api/eval')
 
 
 @app.before_request
@@ -974,7 +959,12 @@ def _teardown_request(unused_exception=None):
         last_tick_time = tick.time
 
 
-if __name__ == "__main__":
+app.config['DATABASE'] = _DB
+
+
+if __name__ == '__main__':
+    # This is only used for dev setup as otherwise we use uwsgi that loads the
+    # module and handle the server without running the app.
     app.run(  # pragma: no cover
         debug=bool(os.getenv('DEBUG')),
         host=os.getenv('BIND_HOST', 'localhost'),

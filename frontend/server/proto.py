@@ -66,7 +66,7 @@ def flask_api(out_type=None, in_type=None):
     The decorator converts the POST body from JSON to proto.
     """
     if not flask:
-        raise ImportError("No module named 'flask'")
+        raise ImportError('No module named \'flask\'')
     if out_type:
         assert issubclass(out_type, message.Message)
     if in_type:
