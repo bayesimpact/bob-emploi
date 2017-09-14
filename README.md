@@ -1,3 +1,5 @@
+_Si vous ne parlez pas anglais, contactez-nous directement à [contribuer@bob-emploi.fr](mailto:contribuer@bob-emploi.fr). Le code source et sa documentation sont en anglais afin de favoriser les contributions internationales._
+
 # Bob Emploi
 Bob Emploi is an application that uses algorithms to provide personalized advice to jobseekers.
 
@@ -28,7 +30,7 @@ Each folder contains a README file with further details regarding this applicati
 
 ### Contributions
 
-We welcome content and feature suggestions, which help us provide better and more granular advice to Bob users. These can be as simple as a cool job search tip you'd like to share with Bob users, or more sophisticated (for example if you have an idea for how to better suggest training programs based on a user's situation). You can send these to contribuer@bob-emploi.fr either in French or in English.
+We welcome content and feature suggestions, which help us provide better and more granular advice to Bob users. These can be as simple as a cool job search tip you'd like to share with Bob users, or more sophisticated (for example if you have an idea for how to better suggest training programs based on a user's situation). You can send these to [contribuer@bob-emploi.fr](mailto:contribuer@bob-emploi.fr) either in French or in English.
 
 If you want to contribute to Bob Emploi with a bug fix or feature suggestion, please follow the Github contribution workflow described in [here](https://guides.github.com/activities/contributing-to-open-source/#contributing). At the current stage however, the main intention of the open source repository is to be transparent about the inner workings of Bob. In the future we hope  for, and will actively seek out for, contributions from the community. When we are ready for that, we will add detailed contribution instructions and suggestions of what to work on to this repository.
 
