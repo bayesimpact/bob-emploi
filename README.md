@@ -1,9 +1,9 @@
 # Bob Emploi
-Bob Emploi is a data-driven companion for jobseekers.
+Bob Emploi is an application that uses algorithms to provide personalized advice to jobseekers.
 
-It is a free web application that aims to empower jobseekers by: a) using data to help them find better job search strategies and b) delivering to them concrete, actionable actions every day in order to execute them. For more information, check out the website at http://www.bob-emploi.fr (French only for now).
+For more information, check out the website at http://www.bob-emploi.fr.
 
-Bob Emploi is developed and maintained by [Bayes Impact](http://www.bayesimpact.org), a non-profit organization whose purpose is to use technology and data to address social issues. It is currently being launched in France, where Bayes Impact works closely with the French National Unemployment Service (Pôle Emploi).
+Bob Emploi is developed and maintained by [Bayes Impact](http://www.bayesimpact.org), a non-profit organization whose purpose is to use technology to address social issues. The project is currently in active development and started in Spring 2016 (see [HISTORY.md](HISTORY.md) for the full project history).
 
 Please subscribe to our [mailing list](https://groups.google.com/forum/#!forum/bob-emploi) in order to receive updates regarding the open sourcing of this project.
 
@@ -27,6 +27,8 @@ This repository contains several components where each is located within a singl
 Each folder contains a README file with further details regarding this application.
 
 ### Contributions
+
+We welcome content and feature suggestions, which help us provide better and more granular advice to Bob users. These can be as simple as a cool job search tip you'd like to share with Bob users, or more sophisticated (for example if you have an idea for how to better suggest training programs based on a user's situation). You can send these to contribuer@bob-emploi.fr either in French or in English.
 
 If you want to contribute to Bob Emploi with a bug fix or feature suggestion, please follow the Github contribution workflow described in [here](https://guides.github.com/activities/contributing-to-open-source/#contributing). At the current stage however, the main intention of the open source repository is to be transparent about the inner workings of Bob. In the future we hope  for, and will actively seek out for, contributions from the community. When we are ready for that, we will add detailed contribution instructions and suggestions of what to work on to this repository.
 
