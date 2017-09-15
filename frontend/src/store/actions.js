@@ -1,7 +1,7 @@
 import {browserHistory} from 'react-router'
 import sha1 from 'sha1'
 
-import {adviceTipsGet, dashboardExportGet, evalUseCasePoolNamesGet, evalUseCasesGet,
+import {adviceTipsGet, dashboardExportGet, evalUseCasePoolsGet, evalUseCasesGet,
   jobBoardsGet, associationsGet, volunteeringMissionsGet, jobsGet, projectRequirementsGet,
   userDelete, markUsedAndRetrievePost, userPost, feedbackPost, userAuthenticate, saveLikes,
   resetPasswordPost, migrateUserToAdvisorPost, commutingCitiesGet, resumeTipsGet,
@@ -330,11 +330,12 @@ function fetchUser(userId, ignoreFailure) {
 
 function saveUser(user) {
   return (dispatch, getState) => {
+    const {authToken, initialUtmContent} = getState().app
     const trackedUser = user.initialUtmContent ? user : {
       ...user,
-      initialUtmContent: getState().app.initialUtmContent || '',
+      initialUtmContent: initialUtmContent || '',
     }
-    return dispatch(wrapAsyncAction(POST_USER_DATA, () => userPost(trackedUser))).
+    return dispatch(wrapAsyncAction(POST_USER_DATA, () => userPost(trackedUser, authToken))).
       then(response => {
         if (response.appNotAvailable) {
           browserHistory.push(Routes.APP_NOT_AVAILABLE_PAGE)
@@ -606,10 +607,10 @@ function askPasswordReset(email) {
   return wrapAsyncAction(RESET_USER_PASSWORD, () => resetPasswordPost(email))
 }
 
-function getEvalUseCasePoolNames() {
+function getEvalUseCasePools() {
   return dispatch => {
     return dispatch(wrapAsyncAction(
-      GET_EVAL_USE_CASE_POOLS, () => evalUseCasePoolNamesGet()))
+      GET_EVAL_USE_CASE_POOLS, () => evalUseCasePoolsGet()))
   }
 }
 
@@ -635,5 +636,5 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   getVolunteeringMissions, sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
   landingPageSectionIsShown, getCommutingCities, bobScoreIsShown, getResumeTips,
   getInterviewTips, openRegistrationModal, sendNewAdviceIdea, computeAdvicesForProject,
-  getEvalUseCasePoolNames, getEvalUseCases, getEvents,
+  getEvalUseCasePools, getEvalUseCases, getEvents,
 }

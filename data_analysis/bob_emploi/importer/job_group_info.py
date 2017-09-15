@@ -12,7 +12,9 @@ You can try it out on a local instance:
         --rome_csv_pattern data/rome/csv/unix_%s_v331_utf8.csv \
         --job_requirements_json data/job_offers/job_offers_requirements.json \
         --job_application_complexity_json data/job_application_complexity.json \
+        --application_mode_csv data/imt/application_modes.csv \
         --handcrafted_assets_airtable appMRMtWV61Kibt37:advice:viwJ1OsSqK8YTSoIq \
+        --domains_airtable appMRMtWV61Kibt37:domains \
         --mongo_url mongodb://frontend-db/test
 """
 import json
@@ -26,6 +28,12 @@ from bob_emploi.lib import cleaned_data
 from bob_emploi.lib import mongo
 from bob_emploi.lib import rome_genderization
 
+_APPLICATION_MODE_PROTO_FIELDS = {
+    'R1': 'PLACEMENT_AGENCY',
+    'R2': 'PERSONAL_OR_PROFESSIONAL_CONTACTS',
+    'R3': 'SPONTANEOUS_APPLICATION',
+    'R4': 'UNDEFINED_APPLICATION_MODE',
+}
 _JOB_PROTO_JSON_FIELDS = [
     'name', 'masculineName', 'feminineName', 'codeOgr']
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
@@ -35,6 +43,8 @@ def make_dicts(
         rome_csv_pattern,
         job_requirements_json,
         job_application_complexity_json,
+        application_mode_csv,
+        rome_fap_crosswalk_txt,
         handcrafted_assets_airtable,
         domains_airtable):
     """Import job info in MongoDB.
@@ -48,6 +58,10 @@ def make_dicts(
             job group.
         job_application_complexity_json: path to a JSON file containing the
             application complexity of each job group.
+        application_mode_csv: path to a CSV file containing the application mode
+            data from emploi-store-dev API.
+        rome_fap_crosswalk_txt: path to a TXT file containing the crosswalk
+            from FAP codes to ROME job group codes.
         handcrafted_assets_airtable: the base ID and the table named joined by
             a ':' of the AirTable containing the advice per job group (short
             texts describing assets required).
@@ -69,6 +83,8 @@ def make_dicts(
         ref_filename=rome_csv_pattern % 'referentiel_env_travail')
     handcrafted_assets = _load_assets_from_airtable(*handcrafted_assets_airtable.split(':'))
     sector_domains = _load_domains_from_airtable(*domains_airtable.split(':'))
+    application_modes = _get_application_modes(
+        application_mode_csv, rome_fap_crosswalk_txt)
 
     # Genderize names.
     masculine, feminine = rome_genderization.genderize(jobs.name)
@@ -93,6 +109,9 @@ def make_dicts(
     skills_grouped = rome_to_skills.groupby('code_rome')
     job_groups['requirements'] = skills_grouped.apply(
         _group_skills_as_proto_list)
+    # Replace NaN by empty dicts.
+    job_groups['requirements'] = job_groups.requirements.apply(
+        lambda r: r if isinstance(r, dict) else {})
 
     # Combine requirements from json file.
     with open(job_requirements_json) as job_requirements_file:
@@ -111,25 +130,35 @@ def make_dicts(
     application_complexity = pandas.read_json(job_application_complexity_json)
     application_complexity.set_index('_id', inplace=True)
     job_groups['applicationComplexity'] = application_complexity['applicationComplexity']
+    job_groups.applicationComplexity.fillna('UNKNOWN_APPLICATION_COMPLEXITY', inplace=True)
 
     # Add Hollande Code https://en.wikipedia.org/wiki/Holland_Codes.
     # Will later be used for job similarity measures.
     job_groups['hollandCodeMajor'] = holland_codes.major
+    job_groups.hollandCodeMajor.fillna('', inplace=True)
     job_groups['hollandCodeMinor'] = holland_codes.minor
+    job_groups.hollandCodeMinor.fillna('', inplace=True)
 
     # Add description, working environment and requirement as text.
     job_groups['description'] = rome_texts.definition
+    job_groups.description.fillna('', inplace=True)
     job_groups['workingEnvironment'] = rome_texts.working_environment
+    job_groups.workingEnvironment.fillna('', inplace=True)
     job_groups['requirementsText'] = rome_texts.requirements
+    job_groups.requirementsText.fillna('', inplace=True)
 
     # Add work environment items.
     rome_work_environments['domain'] = rome_work_environments['name'].map(sector_domains)
     job_groups['workEnvironmentKeywords'] = \
         rome_work_environments.groupby('code_rome').apply(_group_work_environment_items)
     # Fill NaN with empty {}.
-    job_groups['workEnvironmentKeywords'] = (
-        job_groups.workEnvironmentKeywords.apply(
-            lambda k: k if isinstance(k, dict) else {}))
+    job_groups['workEnvironmentKeywords'] = job_groups.workEnvironmentKeywords.apply(
+        lambda k: k if isinstance(k, dict) else {})
+
+    # Add application modes.
+    job_groups['applicationModes'] = application_modes
+    job_groups['applicationModes'] = job_groups.applicationModes.apply(
+        lambda m: m if isinstance(m, dict) else {})
 
     # Set index as field.
     job_groups.index.name = 'romeId'
@@ -288,5 +317,25 @@ def _assert_markdown_list(value):
     return '\n'.join(lines)
 
 
-if __name__ == "__main__":
+def _get_application_modes(application_mode_csv, rome_fap_crosswalk_txt):
+    modes = pandas.read_csv(application_mode_csv)
+    rome_fap_mapping = cleaned_data.rome_fap_mapping(
+        filename=rome_fap_crosswalk_txt)
+
+    app_modes_map = modes.sort_values('RECRUT_PERCENT', ascending=False).\
+        groupby('FAP_CODE').apply(_get_app_modes_perc)
+    application_modes = rome_fap_mapping.fap_codes.apply(
+        lambda faps: {fap: app_modes_map[fap] for fap in faps if fap in app_modes_map})
+    return application_modes
+
+
+def _get_app_modes_perc(fap_modes):
+    return {
+        'modes': [
+            {'mode': _APPLICATION_MODE_PROTO_FIELDS[row.APPLICATION_TYPE_CODE],
+             'percentage': row.RECRUT_PERCENT}
+            for row in fap_modes.itertuples()]}
+
+
+if __name__ == '__main__':
     mongo.importer_main(make_dicts, 'job_group_info')  # pragma: no cover

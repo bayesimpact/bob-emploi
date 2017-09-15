@@ -60,7 +60,4 @@ bigquery_credentials.dat
 
 # Files that are automatically created by data_analysis/entrypoint.sh
 # TODO: Refactor to avoid this.
-/data_analysis/bob_emploi/frontend/__init__.py
-/data_analysis/bob_emploi/frontend/companies.py
-/data_analysis/bob_emploi/frontend/proto.py
-/data_analysis/bob_emploi/frontend/scoring.py
+/data_analysis/bob_emploi/frontend/

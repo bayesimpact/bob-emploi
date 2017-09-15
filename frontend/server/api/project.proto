@@ -101,8 +101,17 @@ message Project {
 
   // How long the user searches in this field in months. -1 means not started yet.
   // 19 means more than 18 months.
-  // TODO(pascal): This should change with time!
-  int32 job_search_length_months = 31;
+  // DEPRECATED: Do not rely on this value but instead always check the two
+  // fields below.
+  // TODO(pascal): Switch all usage to the new fields, convert all old users
+  // and remove the field.
+  int32 job_search_length_months = 31 [deprecated = true];
+
+  // Whether the user has started searching in this field.
+  bool job_search_has_not_started = 24;
+
+  // When the user started searching in this field.
+  google.protobuf.Timestamp job_search_started_at = 26;
 
   // Users estimate of how many offers they usually have access to per week.
   NumberOfferEstimateOption weekly_offers_estimate = 32;
@@ -155,7 +164,7 @@ message ProjectFeedback {
   map<string, bool> useful_advice_modules = 3;
 }
 
-// Next ID: 18.
+// Next ID: 25.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -210,6 +219,25 @@ message Advice {
   // not think it was a good advice, for any reasons. A high score means they
   // think the advice was good and they need to work on it.
   int32 score = 11;
+
+  // Title of the advice. Most of the time this is empty and is decided by the
+  // client, but for some advice modules the server can decide what to display.
+  string title = 23;
+
+  // Content for the advice card. Most of the time this is empty and is decided
+  // by the client, but for some advice modules the server can decide what to
+  // display. This is using Markdown.
+  string card_text = 21;
+
+  // Header of the content for the expanded advice card. Most of the time this
+  // is empty and is decided by the client, but for some advice modules the
+  // server can decide what to display directly. This is using Markdown.
+  string expanded_card_header = 24;
+
+  // Content for the expanded advice card. Most of the time this is empty and
+  // is decided by the client, but for some advice modules the server can
+  // decide what to display directly. This is using Markdown.
+  repeated string expanded_card_items = 22;
 }
 
 message Advices {

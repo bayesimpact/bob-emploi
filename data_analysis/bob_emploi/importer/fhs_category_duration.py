@@ -39,20 +39,23 @@ from bob_emploi.lib import fhs
 
 # TODO: Add tests.
 
-_CollectionMode = collections.namedtuple('CollectionMode', ['categories', 'only_last'])
+_CollectionMode = collections.namedtuple('CollectionMode', ['categories', 'only_one'])
 _MODES = {
     # Extract the last contiguous period for which a job seeker was in category A unemployment.
-    'A': _CollectionMode(categories='A', only_last=True),
+    'A': _CollectionMode(categories='A', only_one='last'),
     # Extract the last contiguous period for which a job seeker was in one of
     # the unemployment categories A, B or C.
-    'ABC': _CollectionMode(categories='ABC', only_last=True),
+    'ABC': _CollectionMode(categories='ABC', only_one='last'),
     # Extract all the contiguous periods of time for which job seekers stayed
     # in category A unemployment.
-    'all-A': _CollectionMode(categories='A', only_last=False),
+    'all-A': _CollectionMode(categories='A', only_one=False),
+    # Extract the first contiguous period for which a job seeker was in
+    # category A unemployment.
+    'first-A': _CollectionMode(categories='A', only_one='first'),
 }
 
 
-def job_seeker_rows(job_seeker, now, categories, only_last):
+def job_seeker_rows(job_seeker, now, categories, only_one):
     """Extract a limited set of criteria for a job seeker.
 
     Args:
@@ -71,11 +74,16 @@ def job_seeker_rows(job_seeker, now, categories, only_last):
     category_periods.exclude_after(now, lambda m: dict(
         m, MOTANN=fhs.CancellationReason.NOW))
 
-    if only_last:
+    if only_one == 'last':
         last_period = category_periods.last_contiguous_period()
         if last_period is None:
             return
         periods = [last_period]
+    elif only_one == 'first':
+        first_period = category_periods.first_contiguous_period()
+        if first_period is None:
+            return
+        periods = [first_period]
     else:
         periods = category_periods
 
@@ -133,7 +141,7 @@ def main(fhs_folder, now, mode_name, csv_output):
         writer = csv.writer(csv_file)
         writer.writerow(_CRITERIA_HEADERS)
         for job_seeker in tqdm.tqdm(job_seekers, total=total):
-            for row in job_seeker_rows(job_seeker, now, mode.categories, mode.only_last):
+            for row in job_seeker_rows(job_seeker, now, mode.categories, mode.only_one):
                 writer.writerow(list(row))
 
 

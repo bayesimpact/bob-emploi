@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[4.91667, 46.3833], [4.83333, 46.2333]]]
+      },
+      "properties": {
+        "code": "01",
+        "nom": "Ain"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[3.65, 46.2333]]]]
+      },
+      "properties": {
+        "code": "03",
+        "nom": "Allier"
+      }
+    }
+  ]
+}

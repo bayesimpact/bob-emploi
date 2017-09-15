@@ -133,9 +133,21 @@
     "titleXStars": {
     }
   },
+  "seasonal-relocate": {
+    "goal": "trouver un emploi saisonnier",
+    "title": "Pensez aux emplois saisonniers",
+    "titleXStars": {
+    }
+  },
   "senior": {
     "goal": "mettre en valeur son age",
     "title": "Votre âge est un atout, valorisez-le !",
+    "titleXStars": {
+    }
+  },
+  "specific-to-job": {
+    "goal": "vous démarquer",
+    "title": "Utilisez les ficelles des experts",
     "titleXStars": {
     }
   },
@@ -166,7 +178,7 @@
   },
   "vae": {
     "goal": "valoriser ses aquis d'expérience",
-    "title": "Valoriser vos années d'expérience par un diplôme",
+    "title": "Valorisez vos années d'expérience par un diplôme",
     "titleXStars": {
     }
   },

@@ -21,7 +21,12 @@ data/geo/french_cities.csv: data/geo/french_cities_arrondissements.csv
 	wget -O $@ 'http://sql.sh/ressources/sql-villes-france/villes_france.csv'
 	cat $< >> $@
 
-data/geo/france_departements_bounds.csv: data/geo/french_cities.csv
+
+data/geo/departements-avec-outre-mer.geojson:
+	mkdir -p $(dir $@)
+	wget -O $@ 'https://github.com/gregoiredavid/france-geojson/blob/master/departements-avec-outre-mer.geojson?raw=true'
+
+data/geo/france_departements_bounds.csv: data/geo/departements-avec-outre-mer.geojson
 	mkdir -p $(dir $@)
 	python bob_emploi/french_departements_bounds.py $@ $<
 
@@ -142,3 +147,11 @@ data/tous_benevoles.xml:
 
 data/workup.json:
 	wget https://www.workuper.com/events/index_json.json -O $@
+
+data/imt/application_modes.csv:
+	mkdir -p $(dir $@)
+	python bob_emploi/emploi_store_downloader.py imt "Canaux de reprise*" "$@"
+
+data/imt/statistiques_offres_et_demandes.csv:
+	mkdir -p $(dir $@)
+	python bob_emploi/emploi_store_downloader.py imt "Statistiques offres et demandes" "$@"

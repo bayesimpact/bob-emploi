@@ -250,6 +250,20 @@ class MultiJobGroupFilterTestCase(_FilterTestBase('for-job-group(L15,L13)')):
         self._assert_pass_filter()
 
 
+class JobFilterTestCase(_FilterTestBase('for-job(12006)')):
+    """Unit tests for the _JobFilter class for projects about 12006 job."""
+
+    def test_chief_baker(self):
+        """User is looking for a chief baker job."""
+        self.persona.project.target_job.code_ogr = '12006'
+        self._assert_pass_filter()
+
+    def test_prefix(self):
+        """User is looking for a job that starts with the chief baker code."""
+        self.persona.project.target_job.code_ogr = '120060'
+        self._assert_fail_filter()
+
+
 class DepartementFilterTestCase(_FilterTestBase('for-departement(31)')):
     """Unit tests for the _DepartementFilter class for projects about département 31."""
 

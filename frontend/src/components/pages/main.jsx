@@ -26,6 +26,7 @@ import {PrivacyPage} from './privacy'
 import {ProfessionalsPage} from './professionals'
 import {VideoSignUpPage} from './signup'
 import {TransparencyPage} from './transparency'
+import {TeamPage} from './team'
 import {TermsAndConditionsPage} from './terms'
 import {UpdatePage} from './update'
 import {VisionPage} from './vision'
@@ -322,6 +323,7 @@ class MyRouterBase extends React.Component {
             <Route path={Routes.COOKIES_PAGE} component={CookiesPage} />
             <Route path={Routes.PRIVACY_PAGE} component={PrivacyPage} />
             <Route path={Routes.TRANSPARENCY_PAGE} component={mainConnect(TransparencyPage)} />
+            <Route path={Routes.TEAM_PAGE} component={mainConnect(TeamPage)} />
             <Route path={Routes.PROFESSIONALS_PAGE} component={mainConnect(ProfessionalsPage)} />
             <Route path={Routes.VIDEO_SIGNUP_PAGE} component={VideoSignUpPage} />
             <Route path={Routes.TERMS_AND_CONDITIONS_PAGE} component={TermsAndConditionsPage} />

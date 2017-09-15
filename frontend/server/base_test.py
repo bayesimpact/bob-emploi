@@ -75,7 +75,7 @@ class ServerTestCase(unittest.TestCase):
                             },
                         },
                         {
-                            'name': 'Réaliser l\'oeuvre et les finitions',
+                            'name': "Réaliser l'oeuvre et les finitions",
                             'skill': {
                                 'kind': 'PRACTICAL_SKILL',
                                 'skillId': '1235',

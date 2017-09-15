@@ -33,7 +33,7 @@ _CITY_NAME_CODE_FIELD = 'city_name'
 _TOTAL_RECORDS = 11170764
 
 _CityData = collections.namedtuple(
-    '_CityData', "job_group_to_city_ids, offers_per_job_group, city_info")
+    '_CityData', 'job_group_to_city_ids, offers_per_job_group, city_info')
 _CityOffers = collections.namedtuple(
     '_CityOffers', 'city offers')
 

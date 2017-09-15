@@ -55,6 +55,12 @@ const jobSearchFrustrationOptions = [
     </span>),
     value: 'TIME_MANAGEMENT',
   },
+  {
+    name: () => unnamedComponent(<span>
+      L'<strong>expérience demandée</strong> pour le poste
+    </span>),
+    value: 'EXPERIENCE',
+  },
 ]
 
 const personalFrustrationOptions = [

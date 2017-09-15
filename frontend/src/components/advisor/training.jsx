@@ -38,12 +38,17 @@ class AdviceCard extends React.Component {
   render() {
     const {advice, project} = this.props
     const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
+
+    const noTraingsData =  <div style={{fontSize: 30}}>
+      Des formations près {prefix}<strong>{cityName}</strong> ont un fort taux de retour à l'emploi.
+    </div>
+
     if (!advice.trainingData) {
-      return null
+      return noTraingsData
     }
     const {trainings} = advice.trainingData
     if (!trainings || !trainings.length) {
-      return null
+      return noTraingsData
     }
 
     const trainingNames = trainings.map(training => training.name)
@@ -86,7 +91,7 @@ class ExpandedAdviceCardContent extends React.Component {
     if (!advice.trainingData) {
       return null
     }
-    const {trainings} = advice.trainingData
+    const {trainings} = advice.trainingData || []
     if (!trainings || !trainings.length) {
       return null
     }

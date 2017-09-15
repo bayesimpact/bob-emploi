@@ -73,6 +73,9 @@ message User {
   // helps keep synchronized the client and the server versions of the user's
   // data. See http://go/bob:revision-design
   int32 revision = 18 [(field_usage) = APP_ONLY];
+
+  // The emails that were sent to the user.
+  repeated EmailSent emails_sent = 19;
 }
 
 message UserAuth {
@@ -127,6 +130,10 @@ message AuthResponse {
   // An opaque string to use as salt to hash the password in a following
   // auth request.
   string hash_salt = 3;
+
+  // Authentication token.
+  // TODO(benoit): add better description of auth_token in go/bob:security, and a link here.
+  string auth_token = 4;
 }
 
 // Profile of a user, a job seeker.
@@ -235,7 +242,7 @@ message UnverifiedDataZone {
 //  - The comment describes precisely what is being developped.
 //  - The comment includes the date for when this feature started to be
 //    implemented.
-// Next ID: 21
+// Next ID: 22
 message Features {
   // Email notifications can be sent to any user that has checked some days
   // in profile.email_days. The feature here is for users that we opted-in
@@ -283,6 +290,10 @@ message Features {
 
   // Whether the user switched from mashup to advisor.
   bool switched_from_mashup_to_advisor = 19;
+
+  // Whether the user will see all advices. We use this feature only as a debug tool to be able to
+  // see all advices at once. It will not be used for regular users.
+  bool all_modules = 21;
 }
 
 message Notifications {
@@ -356,7 +367,7 @@ enum Frustration {
   // DEPRECATED: Use has_handicap boolean in profile instead.
   HANDICAPED = 9 [deprecated = true];
 
-  // The users profile does not fit what recruters have in mind.
+  // The users profile does not fit what recruiters have in mind.
   ATYPIC_PROFILE = 10;
 
   // The user feels discriminated for their age.
@@ -364,6 +375,10 @@ enum Frustration {
 
   // The user feels discriminated for their sex.
   SEX_DISCRIMINATION = 12;
+
+  // The user experience does not fit what the recruiters expect.
+  // Added on 09/07/2017.
+  EXPERIENCE = 13;
 }
 
 // Day of the week.
@@ -458,4 +473,16 @@ message NPSSurveyResponse {
   // 'which_advices_were_useful_comment' and at the list of advices the app actually
   // gave to the user.
   repeated string curated_useful_advice_ids = 7;
+}
+
+// Description of an email we sent to the user.
+message EmailSent {
+  // When the user was sent.
+  google.protobuf.Timestamp sent_at = 1;
+
+  // ID of the MailJet template that was used.
+  string mailjet_template = 2;
+
+  // An internal ID used to identify campaigns, e.g. "no-network".
+  string campaign_id = 3;
 }

@@ -24,27 +24,8 @@
     }
   },
   {
-    "_id": "31:D1401",
-    "imt": {
-      "applicationModes": {
-        "Commercial": {
-          "first": "PERSONAL_OR_PROFESSIONAL_CONTACTS",
-          "second": "PLACEMENT_AGENCY",
-          "third": "SPONTANEOUS_APPLICATION"
-        }
-      }
-    }
-  },
-  {
     "_id": "77:M1607",
     "imt": {
-      "applicationModes": {
-        "Commercial": {
-          "first": "SPONTANEOUS_APPLICATION",
-          "second": "PLACEMENT_AGENCY",
-          "third": "PERSONAL_OR_PROFESSIONAL_CONTACTS"
-        }
-      },
       "employmentTypePercentages": [
         {"employmentType": "CDI" , "percentage": 5},
         {"employmentType": "CDD_OVER_3_MONTHS" , "percentage": 95}

@@ -1,4 +1,6 @@
+# encoding: utf-8
 """Unit tests for the bob_emploi.frontend.french module."""
+import collections
 import unittest
 
 from bob_emploi.frontend import french
@@ -55,6 +57,41 @@ class LowerFirstLetterTestCase(unittest.TestCase):
         """Empty string."""
         sentence = french.lower_first_letter('')
         self.assertEqual('', sentence)
+
+
+_InCityTestCase = collections.namedtuple(
+    '_InCityTestCase', ['description', 'city_name', 'expected'])
+
+
+class InCityTestCase(unittest.TestCase):
+    """Unit tests for the in_city function."""
+
+    def test_all_cases(self):
+        """Test the in_city function."""
+        test_cases = [
+            _InCityTestCase('Regular city name', 'Toulouse', 'à Toulouse'),
+            _InCityTestCase('Contract "à" + "Le"', 'Le Mans', 'au Mans'),
+            _InCityTestCase('Lowercase "La" as first word', 'La Ferté', 'à la Ferté'),
+            _InCityTestCase('Do not lowercase "La" as prefix', 'Laval', 'à Laval'),
+            _InCityTestCase('Contract "à" + "Les"', 'Les Ulis', 'aux Ulis'),
+            _InCityTestCase('Lowercase "L\'"', "L'Arbresle", "à l'Arbresle"),
+        ]
+
+        for description, city_name, expected in test_cases:
+            self.assertEqual(expected, french.in_city(city_name), description)
+
+
+class NumberTestCase(unittest.TestCase):
+    """Unit tests for the try_stringify_number function."""
+
+    def test_spot_check(self):
+        """Spot checks."""
+        self.assertEqual('trois', french.try_stringify_number(3))
+        self.assertEqual('six', french.try_stringify_number(6))
+
+    def test_missing_value(self):
+        """Check a missing value."""
+        self.assertRaises(NotImplementedError, french.try_stringify_number, 123)
 
 
 if __name__ == '__main__':

@@ -110,32 +110,6 @@ class ExpandedAdviceCardContentBase extends React.Component {
     }
   }
 
-  renderToolCard(image, title, href, style) {
-    const cardStyle = {
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      cursor: 'pointer',
-      display: 'flex',
-      padding: 10,
-      ...style,
-    }
-    const titleStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      flex: 1,
-      fontSize: 14,
-      fontWeight: 'bold',
-    }
-    return <div style={cardStyle} onClick={() => window.open(href, '_blank')}>
-      <div style={titleStyle}>
-        <img src={image}
-          style={{height: 55, width: 55}} />
-        <div style={{paddingLeft: 20}}>{title}</div>
-      </div>
-      <Icon name="chevron-right" style={{fontSize: 20}} />
-    </div>
-  }
-
   renderEvents(events) {
     return <div>
       <PaddedOnMobile style={{marginBottom: 15}}>

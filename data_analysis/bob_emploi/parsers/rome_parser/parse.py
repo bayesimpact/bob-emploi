@@ -80,7 +80,7 @@ def main(in_file, out_file):
 
     out = pd.concat([data, parsed], axis=1)
     save_dataframe_to_json(out[to_display], out_file + '.json', rules)
-    out[to_display].to_csv(out_file + '.csv', encoding="latin-1")
+    out[to_display].to_csv(out_file + '.csv', encoding='latin-1')
     # End output will be in JSON but CSV is easier for manual spotcheck.
 
 

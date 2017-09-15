@@ -156,6 +156,7 @@ class CacheMongoTestCase(unittest.TestCase):
         self.assertEqual('Job Group 2', cache.get('A124').name)
 
 
+@mock.patch(proto.__name__ + '._IS_TEST_ENV', new=False)
 class ParseFromMongoTestCase(unittest.TestCase):
     """Unit tests for the parse_from_mongo function."""
 
@@ -185,7 +186,7 @@ class ParseFromMongoTestCase(unittest.TestCase):
             'Failed to parse romeId field: expected string or bytes-like object.',
             str(mock_warning.call_args[0][1]))
         self.assertEqual('JobGroup', str(mock_warning.call_args[0][2]))
-        self.assertEqual('{\'romeId\': 123}', str(mock_warning.call_args[0][3]))
+        self.assertEqual("{'romeId': 123}", str(mock_warning.call_args[0][3]))
 
 
 if __name__ == '__main__':

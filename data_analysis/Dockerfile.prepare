@@ -27,6 +27,7 @@ RUN pip install --no-binary pycparser \
   pandas \
   pep8 \
   pylint \
+  pylint-quotes \
   pymongo \
   python-emploi-store \
   requests \
@@ -57,7 +58,5 @@ RUN wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBU
   rm -rf protobuf-${PROTOBUF_VERSION}
 
 ENV PYTHONPATH=/data_analysis:/usr/lib/python3/dist-packages/
-
-ENTRYPOINT ["./entrypoint.sh"]
 
 CMD ["make", "all"]

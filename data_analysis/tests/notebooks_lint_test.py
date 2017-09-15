@@ -83,6 +83,15 @@ class NotebookLintCase(unittest.TestCase):
             self.assertNotIn(
                 ' ', path.basename(file_name), msg='Use underscore in filename %s' % file_name)
 
+    def test_filenames_in_lowercase(self):
+        """Check that the notebooks names only use lowercases."""
+        asserter = TolerantAsserter(self, tolerance=8)
+        for file_name, unused_notebook in self.__class__.notebooks:
+            basename = path.basename(file_name)
+            asserter.assertEqual(
+                basename.lower(), basename, msg='Use lowercase only in filename "%s"' % file_name)
+        asserter.assert_exact_tolerance()
+
     def test_clean_execution(self):
         """Check that all code cells have been executed once in the right order."""
         for file_name, notebook in self.__class__.notebooks:
@@ -145,10 +154,6 @@ class TolerantAsserter(object):
 
     def assert_exact_tolerance(self):
         """Assert that this object has used all its tolerance."""
-        if self._tolerance > len(self._errors):
-            raise AssertionError(
-                'Thanks for cleaning up, reduce the tolerance of this object '
-                'to %d.' % len(self._errors))
         if os.getenv('NO_TOLERANCE'):
             if self._errors:
                 raise AssertionError(
@@ -157,6 +162,10 @@ class TolerantAsserter(object):
             else:
                 raise AssertionError(
                     "NO TOLERANCE! you don't need this wrapper anymore")
+        if self._tolerance > len(self._errors):
+            raise AssertionError(
+                'Thanks for cleaning up, reduce the tolerance of this object '
+                'to %d.' % len(self._errors))
 
 
 if __name__ == '__main__':

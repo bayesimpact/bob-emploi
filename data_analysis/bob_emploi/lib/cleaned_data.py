@@ -68,7 +68,7 @@ def job_offers(data_folder='data',
         filename_offers,
         encoding='latin-1',
         delimiter='|',    # The file is *pipe separated*, not *comma separated*
-        escapechar="\\",  # It also contains escaped *pipe separated* strings.
+        escapechar='\\',  # It also contains escaped *pipe separated* strings.
         header=None,
         names=column_names,
         dtype=dtypes)
@@ -79,10 +79,10 @@ def job_offers(data_folder='data',
         pandas.to_datetime(offers['date_debut_validite_offre'])
     offers['rome_id'] = offers.rome_profession_card_code
     # Remove undesirable spaces
-    offers["rome_name"] = offers["rome_profession_card_name"].str.strip()
-    offers["annual_maximum_salary"] = pandas.to_numeric(
+    offers['rome_name'] = offers['rome_profession_card_name'].str.strip()
+    offers['annual_maximum_salary'] = pandas.to_numeric(
         offers.annual_maximum_salary, errors='coerce')
-    offers["annual_minimum_salary"] = pandas.to_numeric(
+    offers['annual_minimum_salary'] = pandas.to_numeric(
         offers.annual_minimum_salary, errors='coerce')
     # We use `availibility_date` when available and impute `creation_date`
     # when missing.
@@ -91,10 +91,10 @@ def job_offers(data_folder='data',
                'date_debut_imputed'] = offers['creation_date']
     # `experience_min_duration` is sometimes expressed in Months or in Year :
     # Let's convert everything into month.
-    annual_expe_condition = (offers.exp_duration_type_code == "AN")
-    offers.loc[annual_expe_condition, "experience_min_duration"] =\
-        offers.loc[annual_expe_condition, "experience_min_duration"] * 12
-    offers.loc[annual_expe_condition, "exp_duration_type_code"] = "MO"
+    annual_expe_condition = (offers.exp_duration_type_code == 'AN')
+    offers.loc[annual_expe_condition, 'experience_min_duration'] =\
+        offers.loc[annual_expe_condition, 'experience_min_duration'] * 12
+    offers.loc[annual_expe_condition, 'exp_duration_type_code'] = 'MO'
     return offers
 
 

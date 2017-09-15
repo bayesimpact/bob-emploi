@@ -208,7 +208,7 @@ class MoreCompaniesLinkBase extends React.Component {
         {children}
       </strong>
       <span style={{flex: 1}} />
-      <img src={poleEmploiImage} style={{height: 35}} />
+      <img src={poleEmploiImage} style={{height: 35}} alt="Pôle emploi" />
       <Icon name="chevron-right" style={chevronStyle} />
     </div>
   }

@@ -102,7 +102,7 @@ service FrontendService {
   rpc GetCommutingCities(Project) returns (CommutingCities);
 
   // Retrieve a list of the available pools of anonymized user examples.
-  rpc EvalUseCasePoolNames(google.protobuf.Empty) returns (UseCasePoolNames);
+  rpc EvalUseCasePools(google.protobuf.Empty) returns (UseCasePools);
 
   // Retrieve a list of anonymized user examples from one pool.
   rpc EvalUseCases(UseCasePool) returns (UseCases);

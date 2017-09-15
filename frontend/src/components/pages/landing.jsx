@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {Link} from 'react-router'
+import {browserHistory} from 'react-router'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import config from 'config'
@@ -17,22 +17,24 @@ import backgroundCoverImage3 from 'images/cover/cover-3.jpg'
 import backgroundCoverImage4 from 'images/cover/cover-4.jpg'
 import backgroundCoverImage5 from 'images/cover/cover-5.jpg'
 import backgroundCoverImage6 from 'images/cover/cover-6.jpg'
-import bayesLogo from 'images/logo-bayes.png'
+import bulletImage from 'images/bullet.svg'
 import diagnosticScreenshot from 'images/screenshots/diagnostic.png'
 import echappeeImage from 'images/echappee-ico.png'
 import etalabImage from 'images/etalab-ico.png'
 import franceEngageImage from 'images/francengage-ico.png'
+import githubImage from 'images/github.png'
 import onboardingScreenshot from 'images/screenshots/onboarding.png'
 import openAdviceScreenshot from 'images/screenshots/open-advice.png'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
 import rcoImage from 'images/rco-ico.png'
 import sncImage from 'images/snc-ico.png'
+import teamImage from 'images/landing-team.jpg'
 
 import {LoginButton} from 'components/login'
 import {ShortKey} from 'components/shortkey'
 import {StaticPage} from 'components/static'
 import {TestimonialCard, Testimonials} from 'components/testimonials'
-import {Colors, Icon, Styles} from 'components/theme'
+import {Button, Colors, Icon, SmoothTransitions, Styles} from 'components/theme'
 import {Routes} from 'components/url'
 
 
@@ -175,10 +177,56 @@ class TitleSection extends React.Component {
     }, 1000)
   }
 
+  renderLoginButtons() {
+    const {isMobileVersion, landingPageKind} = this.context
+    const {buttonCaption} = landingPageTitles[landingPageKind] || {}
+    const buttonStyle = {
+      boxShadow: '0 10px 15px 0 rgba(0, 0, 0, 0.3)',
+      fontSize: 15,
+      letterSpacing: 1,
+      marginTop: isMobileVersion ? 10 : 0,
+      padding: '15px 28px 12px',
+      textTransform: 'uppercase',
+    }
+    const loginButtonStyle = {
+      ':hover': {
+        backgroundColor: 'transparent',
+        textShadow: '0 1px 2px rgba(0, 0, 0, .9)',
+      },
+      backgroundColor: 'transparent',
+      color: '#fff',
+      letterSpacing: 1.1,
+      padding: 11,
+      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+      textTransform: 'uppercase',
+    }
+    return <div>
+      <LoginButton
+        style={buttonStyle} isSignUpButton={true} visualElement="title" type="navigation">
+        {buttonCaption || 'Commencer'}
+      </LoginButton>
+
+      <div style={{alignItems: 'center', display: 'flex', justifyContent: 'center', marginTop: 11}}>
+        <div style={{backgroundColor: 'rgba(255, 255, 255, .5)', height: 1, width: 66}} />
+        <span style={{color: '#fff', fontSize: 14, margin: 7, ...Styles.CENTER_FONT_VERTICALLY}}>
+          ou
+        </span>
+        <div style={{backgroundColor: 'rgba(255, 255, 255, .5)', height: 1, width: 66}} />
+      </div>
+
+      <div style={{lineHeight: 0.4}}>
+        <LoginButton style={loginButtonStyle} visualElement="title-login">
+          <Icon name="lock" style={{marginRight: 8}} />
+          S'identifier
+        </LoginButton>
+      </div>
+    </div>
+  }
+
   render() {
     const {isMobileVersion, landingPageKind} = this.context
     const {overheadHeight} = this.state
-    const {buttonCaption, fontSize, subtitle, title} = landingPageTitles[landingPageKind] || {}
+    const {fontSize, subtitle, title} = landingPageTitles[landingPageKind] || {}
     const style = {
       alignItems: 'flex-start',
       backgroundColor: Colors.DARK,
@@ -235,14 +283,6 @@ class TitleSection extends React.Component {
       opacity: .4,
       zIndex: -1,
     }
-    const buttonStyle = {
-      boxShadow: '0 10px 15px 0 rgba(0, 0, 0, 0.3)',
-      fontSize: 15,
-      letterSpacing: 1,
-      marginTop: isMobileVersion ? 10 : 0,
-      padding: '15px 28px 12px',
-      textTransform: 'uppercase',
-    }
     const titleStyle = {
       fontWeight: 'bold',
       marginBottom: 18,
@@ -252,10 +292,6 @@ class TitleSection extends React.Component {
     const subTitleStyle = {
       fontSize: isMobileVersion ? 20 : 25,
       marginBottom: 20,
-      textShadow: '0 2px 15px rgba(0, 0, 0, 0.5)',
-    }
-    const proLinkStyle = {
-      color: Colors.PINKISH_GREY,
       textShadow: '0 2px 15px rgba(0, 0, 0, 0.5)',
     }
     const chevronStyle = {
@@ -270,25 +306,15 @@ class TitleSection extends React.Component {
       textAlign: 'center',
     }
     const ngoBoxStyle = {
-      alignItems: 'center',
-      bottom: isMobileVersion ? 'initial' : 25,
-      color: '#fff',
+      alignSelf: 'center',
+      color: Colors.MODAL_PROJECT_GREY,
       display: 'flex',
-      fontSize: 16,
+      fontSize: 14,
       fontStyle: 'italic',
-      justifyContent: 'center',
-      left: isMobileVersion ? 'initial' : 25,
-      lineHeight: 1.19,
-      margin: 'auto',
-      position: isMobileVersion ? 'initial' : 'absolute',
-      textAlign: isMobileVersion ? 'center' : 'initial',
+      fontWeight: 500,
+      textAlign: 'center',
       width: isMobileVersion ? 280 : 340,
       zIndex: 1,
-    }
-    const logoStyle = {
-      height: 30,
-      opacity: isMobileVersion ? .2 : 'initial',
-      position: isMobileVersion ? 'absolute' : 'initial',
     }
     return <section style={style} ref={dom => {
       this.dom = dom
@@ -303,27 +329,12 @@ class TitleSection extends React.Component {
       <div style={{margin: '0 auto', maxWidth: 950, textAlign: 'center', zIndex: 1}}>
         <div style={titleStyle}>{title}</div>
         {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : <div style={{height: 65}} />}
-        <LoginButton
-          style={buttonStyle} isSignUpButton={true} visualElement="title" type="navigation">
-          {buttonCaption || 'Commencer'}
-        </LoginButton>
-        {isMobileVersion ? null : <div style={{fontSize: 15, marginTop: 15}}>
-          <Link to={Routes.PROFESSIONALS_PAGE} style={proLinkStyle}>
-            Vous êtes un accompagnant&nbsp;?
-          </Link>
-        </div>}
+        {this.renderLoginButtons()}
       </div>
       <div style={{flex: 1}} />
       <div style={ngoBoxStyle}>
-        <img src={bayesLogo} style={logoStyle} />
-        <span style={{marginLeft: isMobileVersion ? 0 : 15, ...Styles.CENTER_FONT_VERTICALLY}}>
-          Développé par l'ONG <a
-            style={{color: '#fff', fontWeight: 'bold', textDecoration: 'none'}}
-            href="https://www.bayesimpact.org/fr/" target="_blank" rel="noopener noreferrer">
-            Bayes Impact
-          </a>,
-          une association à but non lucratif
-        </span>
+        Nous sommes une association loi 1901 à but non lucratif&nbsp;: {config.productName} est
+        gratuit et le restera toujours.
       </div>
       <div style={chevronStyle} onClick={() => {
         window.scroll({behavior: 'smooth', top: this.dom && this.dom.clientHeight || 500})
@@ -331,25 +342,6 @@ class TitleSection extends React.Component {
         <Icon name="chevron-down" />
       </div>
     </section>
-  }
-}
-
-
-class CollaborativeSection extends React.Component {
-  render() {
-    const containerStyle = {
-      backgroundColor: '#fff',
-      color: Colors.SLATE,
-      fontSize: 26,
-      fontStyle: 'italic',
-      fontWeight: 500,
-      lineHeight: '40px',
-      padding: '80px 20px',
-      textAlign: 'center',
-    }
-    return <div style={containerStyle}>
-      {config.productName} est un projet collaboratif qui s'améliore grâce à la communauté.
-    </div>
   }
 }
 
@@ -394,9 +386,9 @@ class ScreenshotsSection extends React.Component {
     }
     return <div style={style}>
       <div style={{position: 'relative'}}>
-        <img src={screenshotSrc} style={imageStyle} />
+        <img src={screenshotSrc} style={imageStyle} alt="" />
         {(!isMobileVersion && arrowNext) ? <img
-          style={arrowStyle}
+          style={arrowStyle} alt=""
           src={arrowNext === 'left' ? arrowLeftImage : arrowRightImage} /> : null}
       </div>
       <div style={descriptionStyle}>
@@ -448,6 +440,99 @@ class ScreenshotsSection extends React.Component {
         `L'application garde vos informations et vous pouvez consulter à tous
         moments les conseils et astuces.`,
         'row', openAdviceScreenshot)}
+    </section>
+  }
+}
+
+
+class ConvictionsSection extends React.Component {
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
+  renderConviction(content) {
+    const {isMobileVersion} = this.context
+    const style = {
+      display: 'block',
+      padding: isMobileVersion ? '0 0 25px' : '0 0 25px 35px',
+      position: 'relative',
+      textAlign: 'left',
+    }
+    const bulletStyle = {
+      left: 0,
+      position: 'absolute',
+      top: 0,
+    }
+    return <li style={style}>
+      {isMobileVersion ? null : <img src={bulletImage} alt="" style={bulletStyle} />}
+      {content}
+    </li>
+  }
+
+  render() {
+    const {isMobileVersion} = this.context
+    const style = {
+      backgroundColor: '#fff',
+      color: Colors.SLATE,
+      overflowX: 'hidden',
+      padding: isMobileVersion ? '50px 0' : '100px 0',
+    }
+    const contentStyle = {
+      lineHeight: 1.47,
+      maxWidth: 600,
+      minHeight: 365,
+      padding: isMobileVersion ? '22px 40px 0' : '22px 40px 0 0',
+      position: 'relative',
+      textAlign: isMobileVersion ? 'center' : 'initial',
+    }
+    const headerStyle = {
+      fontSize: isMobileVersion ? 28 : 35,
+      fontWeight: 'bold',
+      lineHeight: 1,
+      marginBottom: 50,
+    }
+    const buttonStyle = {
+      ':hover': {
+        backgroundColor: Colors.SKY_BLUE,
+        color: '#fff',
+      },
+      backgroundColor: '#fff',
+      border: `solid 2px ${Colors.SKY_BLUE}`,
+      color: Colors.SKY_BLUE,
+      marginTop: 35,
+    }
+
+    return <section style={style}>
+      <div style={{margin: 'auto', maxWidth: 1000}}>
+        <div style={contentStyle}>
+          <header style={headerStyle}>
+            Nos convictions
+          </header>
+          {isMobileVersion ? null :
+            <img src={teamImage} style={{left: '100%', position: 'absolute', top: 0}} alt="" />}
+          {this.renderConviction(
+            <span>
+              Qu'il faut toujours
+              <strong> mettre l'individu au coeur de la recherche d'emploi</strong>.
+            </span>)}
+          {this.renderConviction(
+            <span>
+              Que même s'il n'y a pas de solution miracle,
+              <strong> on a tous des pistes à explorer pour augmenter ses chances. </strong>
+              Qu'elles soient nouvelles ou paraissent évidentes.
+            </span>)}
+          {this.renderConviction(
+            <span>Qu'il ne sert à rien de s'épuiser à postuler toujours plus&nbsp;: la
+              recherche d'emploi n'est pas une affaire de matching.
+              <strong> C'est une affaire humaine</strong>.
+            </span>)}
+          <Button
+            style={buttonStyle} isNarrow={true}
+            onClick={() => browserHistory.push(Routes.VISION_PAGE)}>
+            En lire plus sur notre mission
+          </Button>
+        </div>
+      </div>
     </section>
   }
 }
@@ -626,12 +711,17 @@ class LandingPage extends React.Component {
     dispatch: PropTypes.func.isRequired,
     routing: PropTypes.object.isRequired,
   }
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
 
   static childContextTypes = {
     landingPageKind: PropTypes.oneOf(kinds).isRequired,
   }
 
   state = {
+    isGitHubBannerShown: false,
+    isLastSectionVisible: false,
     landingPageKind: '',
   }
 
@@ -676,32 +766,107 @@ class LandingPage extends React.Component {
     }
   }
 
+  handleVisibilityLastSection(sectionName) {
+    return isLastSectionVisible => {
+      this.setState({isLastSectionVisible})
+      this.handleVisibility(sectionName)(isLastSectionVisible)
+    }
+  }
+
+  renderGitHubBanner(isVisible) {
+    const {isMobileVersion} = this.context
+    if (isMobileVersion) {
+      return null
+    }
+    const style = {
+      backgroundColor: '#fff',
+      borderRadius: 2,
+      bottom: isVisible ? 15 : -200,
+      boxShadow: '0 18px 25px 0 rgba(0, 0, 0, 0.15)',
+      color: Colors.DARK,
+      display: 'flex',
+      fontSize: 14,
+      opacity: isVisible ? 1 : 0,
+      position: 'fixed',
+      right: 15,
+      width: 360,
+      zIndex: 1,
+      ...SmoothTransitions,
+    }
+    const imageContainerStyle = {
+      alignItems: 'center',
+      backgroundColor: Colors.SQUASH,
+      borderRadius: '2px 0 0 2px',
+      display: 'flex',
+      justifyContent: 'center',
+      width: 50,
+    }
+    const linkStyle = {
+      color: Colors.DARK,
+      fontStyle: 'italic',
+      fontWeight: 500,
+      textDecoration: 'none',
+    }
+    return <div style={style}>
+      <div style={imageContainerStyle}>
+        <img src={githubImage} alt="" />
+      </div>
+      <div style={{flex: 1, padding: '25px 20px'}}>
+        <span style={{fontWeight: 500}}>{config.productName}</span> est un projet
+        open source et chacun peut participer à sa construction.
+        <br /><br />
+        <a
+          href={config.githubSourceLink} rel="noopener noreferrer"
+          style={linkStyle} target="_blank">
+          Voir le code source sur GitHub <Icon name="chevron-right" />
+        </a>
+      </div>
+    </div>
+  }
+
   render() {
+    const {isGitHubBannerShown, isLastSectionVisible} = this.state
     return <StaticPage page="landing" isContentScrollable={false} isNavBarTransparent={true}>
       <ShortKey
         keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
         onKeyPress={this.handleOpenLoginModal} />
 
+      {this.renderGitHubBanner(isGitHubBannerShown && !isLastSectionVisible)}
+
       <TitleSection />
 
-      <CollaborativeSection />
-
-      <ScreenshotsSection />
-
       <VisibilitySensor
-        onChange={this.handleVisibility('bobHelpsYou')} partialVisibility={true}
-        intervalDelay={250}>
-        <BobHelpsYouSection />
+        onChange={isGitHubBannerShown => this.setState({isGitHubBannerShown})}
+        partialVisibility={true} minTopValue={150} intervalDelay={250}>
+        <div>
+          <VisibilitySensor
+            onChange={this.handleVisibility('convictions')} partialVisibility={true}
+            intervalDelay={250}>
+            <ConvictionsSection />
+          </VisibilitySensor>
+
+          <VisibilitySensor
+            onChange={this.handleVisibility('screenshot')} partialVisibility={true}
+            intervalDelay={250}>
+            <ScreenshotsSection />
+          </VisibilitySensor>
+
+          <VisibilitySensor
+            onChange={this.handleVisibility('bobHelpsYou')} partialVisibility={true}
+            intervalDelay={250}>
+            <BobHelpsYouSection />
+          </VisibilitySensor>
+
+          <VisibilitySensor
+            onChange={this.handleVisibility('testimonials')} partialVisibility={true}
+            intervalDelay={250}>
+            <TestimonialsSection />
+          </VisibilitySensor>
+        </div>
       </VisibilitySensor>
 
       <VisibilitySensor
-        onChange={this.handleVisibility('testimonials')} partialVisibility={true}
-        intervalDelay={250}>
-        <TestimonialsSection />
-      </VisibilitySensor>
-
-      <VisibilitySensor
-        onChange={this.handleVisibility('partners')} partialVisibility={true}
+        onChange={this.handleVisibilityLastSection('partners')} partialVisibility={true}
         intervalDelay={250}>
         <PartnersSection />
       </VisibilitySensor>

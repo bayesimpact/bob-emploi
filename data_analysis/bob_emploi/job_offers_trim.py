@@ -43,5 +43,5 @@ def trim_job_offers_csv(
             writer.writerow({field: getattr(job_offer, field) for field in fieldnames})
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     trim_job_offers_csv(*sys.argv[1:])

@@ -25,7 +25,7 @@ class ParserTestCase(unittest.TestCase):
         parsed = rule_engine.run_rules(self.data)
         perc_with_level = parsed.level.count() / len(parsed) * 100
         self.assertGreater(perc_with_level, 60)
-        print("level coverage: {}%".format(perc_with_level))
+        print('level coverage: {}%'.format(perc_with_level))
 
     def test_degree_rule(self):
         """Check that the degree rule works correctly."""

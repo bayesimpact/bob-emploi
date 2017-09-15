@@ -1,5 +1,62 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2017-09-14_00
+
+Rewording of all static pages, bios in Team Page.
+
+Deployed on Thu, 14 Sep 2017 15:27:36 +0000
+
+# 2017-09-13_00
+
+- Update the Landing Page (new section).
+- Fixes on the Team Page.
+- Advice module "specific-to-job" ready!
+- Improvements in the Eval Page left panel.
+Deployed on Wed, 13 Sep 2017 16:38:36 +0000
+Deployed on Thu, 14 Sep 2017 13:55:23 +0000
+
+# 2017-09-12_00
+
+- Introduce a Team Page presenting the team behind Bob.
+- Under the hood work for "specific-to-job" and "seasonal-relocate" advice modules.
+- Slight changes on the landing page, and UI components.
+- Slight change in scoring for the commute advice.
+- Adds Experience in frustrations.
+- Restrict access to the Eval API.
+
+Deployed on Tue, 12 Sep 2017 17:28:56 +0000
+Deployed on Wed, 13 Sep 2017 07:57:21 +0000
+
+# 2017-09-07_00
+
+- Eval Tool improvements (comments, optimize, autologin)
+- Page to unsubscribe from Bob with a simple link (for emails)
+- Prepare the Network Focus Email
+- Super Bob! (show all the advice modules available)
+- Filter out "entreprise" as a structure.
+- Transparency Page updated.
+
+Deployed on Thu, 07 Sep 2017 13:12:54 +0000
+
+# 2017-09-05_00
+
+- Improve accessibility (alternative texts for all images, French language declared).
+- Improve the Eval Tool (kill the "Next" button, see which use cases have been evaluated).
+- Small UI improvements (VAE, senior, contribute banner)
+Deployed on Tue, 05 Sep 2017 12:52:13 +0000
+
+# 2017-09-04_00
+
+Fixes on scoring models following what we've learned in the evaluations.
+- Show all advice sections in Eval Tool even if there are no advice cards for the section.
+Deployed on Mon, 04 Sep 2017 13:11:58 +0000
+
+# 2017-08-31_01
+
+- Eval Tools improvements: introducing the Overview, simplifying the left panel
+- Open Graph information per page instead of once for the whole app
+Deployed on Thu, 31 Aug 2017 13:53:29 +0000
+
 # 2017-08-29_01
 
 Fix the evaluation module in demo/prod setup.

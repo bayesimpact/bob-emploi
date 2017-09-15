@@ -12,5 +12,13 @@ function genderizeJob(job, gender) {
   return job.name
 }
 
+// Return url for job name search.
+function getJobSearchURL(job, gender) {
+  if (!job) {
+    return ''
+  }
+  const searchTerms = encodeURIComponent('métier ' + genderizeJob(job, gender))
+  return `https://www.google.fr/search?q=${searchTerms}`
+}
 
-export {genderizeJob}
+export {genderizeJob, getJobSearchURL}

@@ -341,5 +341,5 @@ def csv2dicts(job_offers_csv, colnames_txt):
         for job_group_id in sorted(job_groups)]
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     mongo.importer_main(csv2dicts, 'job_requirements')  # pragma: no cover

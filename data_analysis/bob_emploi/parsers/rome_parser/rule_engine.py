@@ -57,9 +57,9 @@ def apply_rules(text):
     more specific (more accuracy). Then we run some cleaning routines to
     clean-up the extracted values.
     """
-    clean_level = re.compile(r"^((la|le|un|une|des) )", re.IGNORECASE)
+    clean_level = re.compile(r'^((la|le|un|une|des) )', re.IGNORECASE)
     clean_subj = re.compile(r"^(l'|)", re.IGNORECASE)
-    clean_subj2 = re.compile(r"[ ,.]+$", re.IGNORECASE)
+    clean_subj2 = re.compile(r'[ ,.]+$', re.IGNORECASE)
     rules_dict = get_rules()
 
     res = {'level': None, 'subject': None}
@@ -97,13 +97,13 @@ def check_quality(parsed):
     type or importance rule, which should only very rarely happen (when the
     requirement is weirdly defined).
     """
-    print("Total number of lines: ", len(parsed))
-    print("\nTypes: ", sum(parsed.degree | parsed.certification |
+    print('Total number of lines: ', len(parsed))
+    print('\nTypes: ', sum(parsed.degree | parsed.certification |
                            parsed.skill | parsed.experience))
-    print("- Collisions: ", sum(sum((parsed.degree, parsed.certification,
+    print('- Collisions: ', sum(sum((parsed.degree, parsed.certification,
                                      parsed.skill, parsed.experience)) > 1))
-    print("\nImportances: ", sum(parsed.required | parsed.alternative |
+    print('\nImportances: ', sum(parsed.required | parsed.alternative |
                                  parsed.sometimes | parsed.bonus))
-    print("- Collisions: ", sum(sum((parsed.required, parsed.alternative,
+    print('- Collisions: ', sum(sum((parsed.required, parsed.alternative,
                                      parsed.sometimes, parsed.bonus)) > 1))
-    print("\nLevels: ", sum(parsed.level.notnull()))
+    print('\nLevels: ', sum(parsed.level.notnull()))

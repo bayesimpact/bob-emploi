@@ -59,6 +59,25 @@ message JobGroup {
 
   // How difficult it is for job seekers to apply to this kind of jobs.
   ApplicationProcessComplexity application_complexity = 15;
+
+  // What application modes have been used for a job type.
+  // The dataset is based on an annual survey on recently re-employed people.
+  map<string, RecruitingModesDistribution> application_modes = 16;
+}
+
+message RecruitingModesDistribution {
+  // List of application modes percentages
+  // sorted in descending percentages order.
+  // Note that percentages sum up to ~100%.
+  repeated ModePercentage modes = 1;
+}
+
+message ModePercentage {
+  // Application mode kind.
+  ApplicationMode mode = 1;
+
+  // Observed percentage from 0 to 100.
+  float percentage = 2;
 }
 
 message LocalJobStats {
@@ -340,17 +359,8 @@ message ImtLocalJobStats {
   // The number of people looking for this job during the last week.
   uint32 last_week_demand = 4;
 
-  // The average number of weekly open offers per 10 candiates. This value gives
-  // a ratio in combination with
-  // TODO(pascal): Move usage to yearly_avg_offers_per_10_candidates and remove
-  // this field.
-  uint32 yearly_avg_offers_per_10_openings = 5 [deprecated = true];
-
   // The average number of weekly open offers per 10 candidates. This value
   // gives a ratio in combination with yearly_avg_offers_denominator.
-  // NOTE: Be careful when using this, the data might not be populated yet as
-  // the field is the new name of the one above. If it's not populated, rely on
-  // yearly_avg_offers_per_10_openings.
   uint32 yearly_avg_offers_per_10_candidates = 14;
 
   // The denomiator to compute the average yearly ratio with yearly_avg_offers_per_10_openings.

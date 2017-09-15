@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
-import ReactHeight from 'react-height'
 import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 import _ from 'underscore'
@@ -240,7 +239,7 @@ class SumUpProfileModal extends React.Component {
         keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
       <div style={boxStyle}>
         <div style={sectionWithBorderBottom}>
-          <img src={roundUserImage} style={pictoStyle} />
+          <img src={roundUserImage} style={pictoStyle} alt="Profil" />
           <div style={{flex: 1}}>
             <div>
               Sexe&nbsp;:
@@ -268,7 +267,7 @@ class SumUpProfileModal extends React.Component {
           </div>
         </div>
         <div style={sectionWithBorderBottom}>
-          <img src={workImage} style={pictoStyle} />
+          <img src={workImage} style={pictoStyle} alt="Métier" />
           <div style={{flex: 1}}>
             <div>
               Métier&nbsp;:
@@ -281,7 +280,7 @@ class SumUpProfileModal extends React.Component {
           </div>
         </div>
         <div style={sectionStyle}>
-          <img src={localisationImage} style={pictoStyle} />
+          <img src={localisationImage} style={pictoStyle} alt="Lieu" />
           <div style={{flex: 1}}>
             <div>
               Zone de recherche&nbsp;:
@@ -383,8 +382,8 @@ class TheEndModalBase extends React.Component {
       onMouseEnter={() => this.setState({[shareIdState]: true})}
       onMouseLeave={() => this.setState({[shareIdState]: false})}
       onClick={() => this.share(shareId, onShare)}>
-      <img src={icon} style={colorIconStyle} />
-      <img src={grayIcon} />
+      <img src={icon} style={colorIconStyle} alt="" />
+      <img src={grayIcon} alt={shareId} />
     </span>
   }
 
@@ -407,7 +406,7 @@ class TheEndModalBase extends React.Component {
     }
     return <Modal {...extraProps} title="C'est tout pour le moment !">
       <div style={{padding: 25, textAlign: 'center'}}>
-        <img src={victoryImage} />
+        <img src={victoryImage} alt="" />
       </div>
 
       <div style={textStyle}>
@@ -626,7 +625,7 @@ class SuggestAdviceModalBase extends React.Component {
       <div style={{fontSize: 15, lineHeight: 1.5, padding: '30px 50px 30px'}}>
 
         <div style={{marginBottom: 25, textAlign: 'center'}}>
-          <img src={victoryImage} />
+          <img src={victoryImage} alt="" />
         </div>
 
         <div style={{maxWidth: 380}}>
@@ -772,7 +771,6 @@ class ProjectDashboardPageBase extends React.Component {
 
   state = {
     // This can be either false (e.g. removed), 'hidden' or 'shown'.
-    fixedSuggestAdviceBarDisplay: false,
     isBobScoreShown: false,
     isModifyModalIsShown: false,
     isPoleEmploiChangelogShown: false,
@@ -807,21 +805,6 @@ class ProjectDashboardPageBase extends React.Component {
 
   toggleScoreTooltip = () => {
     this.setState({isScoreTooltipShown: !this.state.isScoreTooltipShown})
-  }
-
-  handleScroll = () => {
-    const {fixedSuggestAdviceBarDisplay, headerHeight} = this.state
-    const {scrollTop} = window.document.body
-    if (headerHeight) {
-      const isHeaderAboveTopScroll = scrollTop >= headerHeight
-      const isExplanationAboveTopScroll =
-        isHeaderAboveTopScroll && scrollTop >= headerHeight + 50
-      const display = isExplanationAboveTopScroll ? 'shown' :
-        isHeaderAboveTopScroll ? 'hidden' : false
-      if (display !== fixedSuggestAdviceBarDisplay) {
-        this.setState({fixedSuggestAdviceBarDisplay: display})
-      }
-    }
   }
 
   scrollTo = element => {
@@ -947,7 +930,7 @@ class ProjectDashboardPageBase extends React.Component {
         {components.map(({display, iconSrc, score, scorePartId}) => <li
           key={scorePartId} style={listItemStyle}>
           <div style={iconStyle}>
-            <img src={iconSrc} />
+            <img src={iconSrc} alt="" />
           </div>
           <div style={{flex: 1}}>
             {display}
@@ -1038,27 +1021,14 @@ class ProjectDashboardPageBase extends React.Component {
     </header>
   }
 
-  renderFixedAdviceSuggest() {
-    const {fixedSuggestAdviceBarDisplay} = this.state
-    if (!fixedSuggestAdviceBarDisplay) {
-      // NOTE: We remove it from the DOM so that users can click on buttons
-      // underneath when it is completly gone.
-      return null
-    }
+  renderBottomAdviceSuggest() {
     const style = {
       backgroundColor: Colors.SKY_BLUE,
       boxShadow: '0 1px 7px 0 rgba(0, 0, 0, 0.1)',
       color: '#fff',
       fontSize: 16,
-      left: 0,
-      opacity: (fixedSuggestAdviceBarDisplay === 'shown') ? 1 : 0,
       overflow: 'hidden',
       padding: 10,
-      position: 'fixed',
-      right: 0,
-      top: 0,
-      zIndex: 1,
-      ...SmoothTransitions,
     }
     return <div style={style}>
       <div style={{alignItems: 'center', display: 'flex', margin: 'auto', maxWidth: 960}}>
@@ -1213,7 +1183,7 @@ class ProjectDashboardPageBase extends React.Component {
           this.scrollTo(this.scrollElementOnReady)
           this.scrollElementOnReady = null
         }
-      }} isChatButtonShown={true} onScroll={this.handleScroll}>
+      }} isChatButtonShown={true}>
       <SumUpProfileModal
         isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
         onClose={() => {
@@ -1238,15 +1208,13 @@ class ProjectDashboardPageBase extends React.Component {
         isShown={isSuggestAdviceModalIsShown} project={project}
         onClose={() => this.setState({isSuggestAdviceModalIsShown: false})} />
       {this.renderModifyModal()}
-      <ReactHeight onHeightReady={headerHeight => this.setState({headerHeight})}>
-        {this.renderHeader()}
-      </ReactHeight>
-      {this.renderFixedAdviceSuggest()}
+      {this.renderHeader()}
       {this.renderAdviceCards(advices)}
       <InfoCollNotificationBox
         style={{zIndex: 3}} isShown={isInfoCollKitNotificationShown}
         onClose={() => dispatch(markNotificationAsSeen('infoCollKit'))} />
       <FeedbackBar project={project} style={{padding: '90px 0'}} />
+      {this.renderBottomAdviceSuggest()}
     </PageWithNavigationBar>
   }
 }
@@ -1364,7 +1332,7 @@ class FeedbackBarBase extends React.Component {
               this.setState({hoveredStars: 0})
             }
           }}
-          style={starStyle}
+          style={starStyle} alt={`${index + 1} étoile${index ? 's' : ''}`}
           onClick={() => this.openModal(highlightedStars)}
           src={(index < highlightedStars) ? starIcon : starOutlineIcon} key={`star-${index}`} />)}
       </div>
@@ -1424,7 +1392,7 @@ class AdviceSection extends React.Component {
 
   componentDidMount() {
     const {adviceShownOnMount, scrollTo} = this.props
-    if (!adviceShownOnMount || !scrollTo || !this.cards[adviceShownOnMount]) {
+    if (!adviceShownOnMount || !scrollTo || !this.cards || !this.cards[adviceShownOnMount]) {
       return
     }
     this.mountTimeout = setTimeout(() => scrollTo(this.cards[adviceShownOnMount]), 100)
@@ -1539,7 +1507,7 @@ class AdviceSection extends React.Component {
     }
     return <div style={containerStyle}>
       <div style={titleLinestyle}>
-        {image ? <img src={image} style={{marginBottom: 20}} /> : null}
+        {image ? <img src={image} style={{marginBottom: 20}} alt="" /> : null}
         <div>{title}</div>
       </div>
       {isCollapsed ?

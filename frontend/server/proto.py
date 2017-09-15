@@ -3,6 +3,7 @@ import collections
 import datetime
 import functools
 import logging
+import os
 
 try:
     import flask
@@ -16,6 +17,7 @@ from google.protobuf import json_format
 from google.protobuf import message
 
 _CACHE_DURATION = datetime.timedelta(hours=1)
+_IS_TEST_ENV = bool(os.getenv('TEST_ENV'))
 
 
 def parse_from_mongo(mongo_dict, proto):
@@ -35,11 +37,13 @@ def parse_from_mongo(mongo_dict, proto):
         del mongo_dict[key]
     _convert_datetimes_to_string(mongo_dict)
     try:
-        json_format.ParseDict(mongo_dict, proto, ignore_unknown_fields=True)
+        json_format.ParseDict(mongo_dict, proto, ignore_unknown_fields=not _IS_TEST_ENV)
     except json_format.ParseError as error:
         logging.warning(
             'Error %s while parsing a JSON dict for proto type %s:\n%s',
             error, proto.__class__.__name__, mongo_dict)
+        if _IS_TEST_ENV:
+            raise error
         return False
     return True
 
@@ -66,7 +70,7 @@ def flask_api(out_type=None, in_type=None):
     The decorator converts the POST body from JSON to proto.
     """
     if not flask:
-        raise ImportError('No module named \'flask\'')
+        raise ImportError("No module named 'flask'")
     if out_type:
         assert issubclass(out_type, message.Message)
     if in_type:

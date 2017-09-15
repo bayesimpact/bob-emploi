@@ -15,13 +15,17 @@ function handleJsonResponse(response) {
   return response.json()
 }
 
-function postJson(path, data, isExpectingResponse) {
+function postJson(path, data, isExpectingResponse, authToken) {
+  const headers = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  }
+  if (authToken) {
+    headers['Authorization'] = 'Bearer ' + authToken
+  }
   const fetchPromise = fetch(path, {
     body: JSON.stringify(data),
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    },
+    headers,
     method: 'post',
   })
   if (isExpectingResponse) {
@@ -41,8 +45,9 @@ function deleteJson(path, data) {
   }).then(handleJsonResponse)
 }
 
-function getJson(path) {
-  return fetch(path).then(handleJsonResponse)
+function getJson(path, authToken) {
+  const args = authToken ? {headers: {'Authorization': 'Bearer ' + authToken}} : {}
+  return fetch(path, args).then(handleJsonResponse)
 }
 
 function adviceTipsGet({userId}, {projectId}, {adviceId}) {
@@ -55,20 +60,22 @@ function associationsGet({userId}, {projectId}) {
     then(response => response.associations || [])
 }
 
-function createEvalUseCasePost(poolName, email) {
-  return postJson('/api/eval/use-case/create', {email, poolName}, true)
+function createEvalUseCasePost(poolName, email, googleIdToken) {
+  return postJson('/api/eval/use-case/create', {email, poolName}, true, googleIdToken)
 }
 
 function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
-function evalUseCasePoolNamesGet() {
-  return getJson('/api/eval/use-case-pool-names')
+function evalUseCasePoolsGet() {
+  return getJson('/api/eval/use-case-pools').
+    then(response => response.useCasePools || [])
 }
 
 function evalUseCasesGet(poolName) {
-  return getJson(`/api/eval/use-cases/${poolName}`)
+  return getJson(`/api/eval/use-cases/${poolName}`).
+    then(response => response.useCases || [])
 }
 
 function eventsGet({userId}, {projectId}) {
@@ -117,11 +124,11 @@ function saveLikes(userId, likes) {
   return postJson('/api/user/likes', {likes, userId}, false)
 }
 
-function userPost(user) {
+function userPost(user, token) {
   const {onboardingComplete, ...protoUser} = user
   // Unused.
   onboardingComplete
-  return postJson('/api/user', {...protoUser}, true)
+  return postJson('/api/user', {...protoUser}, true, token)
 }
 
 function userDelete(user) {
@@ -151,7 +158,7 @@ export {
   associationsGet,
   createEvalUseCasePost,
   dashboardExportGet,
-  evalUseCasePoolNamesGet,
+  evalUseCasePoolsGet,
   evalUseCasesGet,
   eventsGet,
   feedbackPost,

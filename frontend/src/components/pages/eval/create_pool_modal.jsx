@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types'
 import React from 'react'
 
 import {createEvalUseCasePost} from 'store/api'
@@ -8,6 +9,10 @@ import {Button, FieldSet, Input, SmoothTransitions} from 'components/theme'
 
 
 class CreatePoolModal extends React.Component {
+  static propTypes = {
+    googleIdToken: PropTypes.string.isRequired,
+  }
+
   state = {
     email: '',
     emailSaved: false,
@@ -16,11 +21,12 @@ class CreatePoolModal extends React.Component {
   }
 
   handleCreate = () => {
+    const {googleIdToken} = this.props
     const {email, poolName} = this.state
     if (!poolName || !validateEmail(email)) {
       return
     }
-    createEvalUseCasePost(poolName, email).
+    createEvalUseCasePost(poolName, email, googleIdToken).
       then(({useCaseId}) => this.setState({
         email: '',
         emailSaved: email,

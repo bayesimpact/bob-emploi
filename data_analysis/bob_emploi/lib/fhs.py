@@ -94,7 +94,7 @@ def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
     """
     def _table_iterator(table):
         return PeekIterator(migration_helpers.flatten_iterator(
-            path.join(fhs_folder, '*/%s_*.csv' % table)))
+            path.join(fhs_folder, '*/%s.csv' % table)))
     iterators = {table: _table_iterator(table) for table in set(tables)}
 
     while any(not i.done for i in iterators.values()):
@@ -363,9 +363,9 @@ class Period(object):
     def __init__(self, begin, end, metadata):
         """Initialize with begin/end dates (or string dates) and metadata."""
         if isinstance(begin, str):
-            begin = datetime.datetime.strptime(begin, "%Y-%m-%d").date()
+            begin = datetime.datetime.strptime(begin, '%Y-%m-%d').date()
         if isinstance(end, str):
-            end = datetime.datetime.strptime(end, "%Y-%m-%d").date()
+            end = datetime.datetime.strptime(end, '%Y-%m-%d').date()
         self.begin = begin
         self.end = end
         self.metadata = metadata
@@ -420,6 +420,10 @@ class DateIntervals(object):
         return (
             isinstance(other, self.__class__) and
             self._periods == other._periods)  # pylint: disable=protected-access
+
+    def first_contiguous_period(self):
+        """First contiguous period of time."""
+        return self._periods[0] if self._periods else None
 
     def last_contiguous_period(self):
         """Last contiguous period of time."""

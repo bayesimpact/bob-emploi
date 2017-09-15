@@ -5,7 +5,7 @@ import _ from 'underscore'
 
 import {getJobs} from 'store/actions'
 import {lowerFirstLetter} from 'store/french'
-import {genderizeJob} from 'store/job'
+import {genderizeJob, getJobSearchURL} from 'store/job'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
 import {AppearingList, Colors, Icon, PaddedOnMobile, Styles} from 'components/theme'
@@ -82,8 +82,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
 
   openJob(job) {
     const {profile} = this.props
-    const searchTerms = encodeURIComponent('métier ' + genderizeJob(job, profile.gender))
-    window.open(`https://www.google.fr/search?q=${searchTerms}`, '_blank')
+    window.open(getJobSearchURL(job, profile.gender), '_blank')
   }
 
   renderWeightedJob({job, weight}, style, maxWeight, isTargetJob, isBetterThanTarget) {

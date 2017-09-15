@@ -44,11 +44,11 @@ class Importer(object):
             # already cut it in small pieces:
             # https://api.mongodb.com/python/current/examples/bulk.html
             if not chunk_size or chunk_size >= total:
-                print("Inserting all %d objects at once." % total)
+                print('Inserting all %d objects at once.' % total)
                 collection.insert_many(items)
             else:
                 print(
-                    "Inserting %d objects in chunks of %s" %
+                    'Inserting %d objects in chunks of %s' %
                     (total, chunk_size))
                 for pos in tqdm.tqdm(range(0, total, chunk_size), file=sys.stdout):
                     try:

@@ -100,7 +100,7 @@ class HobbyBase extends React.Component {
       padding: '0 20px 0 12px',
     }
     return <div style={containerStyle} onClick={this.handleClick}>
-      {icon ? <img src={icon} style={{marginRight: 12}} /> : null}
+      {icon ? <img src={icon} style={{marginRight: 12}} alt="" /> : null}
       <span style={Styles.CENTER_FONT_VERTICALLY}>
         {title}
       </span>

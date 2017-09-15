@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import VisibilitySensor from 'react-visibility-sensor'
 
 import config from 'config'
 
@@ -9,11 +10,10 @@ import downloadImage from 'images/download-picto.svg'
 import userPositiveFeedbacksImage from 'images/positive-feedbacks.png'
 import userFeedbackPositiveImage from 'images/user-feedback-positive.png'
 import userFeedbackNegativeImage from 'images/user-feedback-negative.png'
-import userStatsImage from 'images/user-stats.png'
 import npsImage from 'images/nps.png'
 
 import {StaticPage} from 'components/static'
-import {Colors, Styles} from 'components/theme'
+import {Colors, SmoothTransitions, Styles} from 'components/theme'
 
 const textSectionStyle = {
   backgroundColor: '#fff',
@@ -132,12 +132,13 @@ class TransparencyPage extends React.Component {
     }
     return <div style={{...textSectionStyle, paddingBottom: 0}}>
       <div style={overTitleStyle}>
-        Cette page répertorie publiquement les informations liées au fonctionnement
-        et aux développements de Bob.
+        Nous sommes attachés à inscrire nos travaux dans une démarche
+        transparente et collaborative.<br />
+        Cette page répertorie ainsi publiquement les informations liées au développement de Bob.
       </div>
       <div style={titleStyle}><strong>Impact et métriques</strong></div>
       <div style={this.getTextStyle()}>
-        En France, environ une reprise d'emploi sur 10 se fait via une offre d'emploi en
+        En France, seulement une reprise d'emploi sur 10 se fait via une offre d'emploi en
         ligne. Plus que du simple matching, l'enjeu est surtout humain : accompagner chacun
         dans ses choix stratégiques.
         <div style={{fontWeight: 'bold', marginTop: 25}}>
@@ -183,7 +184,7 @@ class TransparencyPage extends React.Component {
       flex: 1,
       flexDirection: 'column',
       justifyContent: 'center',
-      padding: 15,
+      padding: 10,
     }
     const npsSumStyle = {
       ...Styles.CENTER_FONT_VERTICALLY,
@@ -193,33 +194,48 @@ class TransparencyPage extends React.Component {
     }
     return <div style={textSectionStyle}>
       <div style={this.getTextStyle()}>
-        <div style={sectionTitleStyle}>Métriques générales (au 1er août 2017)</div>
+        <div style={sectionTitleStyle}>Métriques générales (au 1<sup>er</sup> septembre 2017)</div>
       </div>
       <div style={{...graphStyle, display: 'flex'}}>
         <div style={userCountGraphStyle}>
           <strong style={{color: Colors.SKY_BLUE, fontSize: 60}}>
-            {(113801).toLocaleString('fr')}
+            {(116387).toLocaleString('fr')}
           </strong>
           <span>
             comptes créés depuis novembre 2016
           </span>
         </div>
         <div style={npsBoxStyle}>
-          <img
-            src={userStatsImage} alt="Statistiques de satisfaction des utilisateurs"
-            style={{padding: 10}} />
+          <div>
+            <div style={{fontSize: 13, fontWeight: 500, margin: 12, textAlign: 'left'}}>
+              Que pensez-vous des conseils de Bob&nbsp;?
+            </div>
+            <PercentBarChart values={[
+              {name: 'Mauvais', value: .06},
+              {name: 'Peu intéressants', value: .08},
+              {color: Colors.GREENISH_TEAL, name: 'Intéressants', value: .35},
+              {color: Colors.GREENISH_TEAL, name: 'Utiles', value: .3},
+              {color: Colors.GREENISH_TEAL, name: 'Très utiles', value: .21},
+            ]} style={{height: 250, marginRight: '0 10px', width: 500}} />
+          </div>
           <div style={npsSumsBoxStyle}>
             <div style={{...npsSumBoxStyle, borderBottom: `solid 1px ${Colors.SILVER}`}}>
-              <span><strong>Satisfait</strong> (intéressants, utiles, trés utiles)</span>
-              <strong style={npsSumStyle}>
-                86&nbsp;%
+              <strong>Bob m'a aidé*</strong>
+              <strong style={{...npsSumStyle, color: Colors.GREENISH_TEAL}}>
+                86%
               </strong>
+              <span style={{fontSize: 11}}>
+                * les conseils étaient intéressants, utiles ou trés utiles
+              </span>
             </div>
             <div style={npsSumBoxStyle}>
-              <span><strong>Non satisfait</strong> (mauvais, peu intéressants)</span>
-              <strong style={npsSumStyle}>
-                14&nbsp;%
+              <strong>Bob ne m'a pas aidé*</strong>
+              <strong style={{...npsSumStyle, color: Colors.RED_PINK}}>
+                14%
               </strong>
+              <span style={{fontSize: 11}}>
+                * les conseils étaient mauvais ou peu intéressants
+              </span>
             </div>
           </div>
         </div>
@@ -544,6 +560,109 @@ class FundingTable extends React.Component {
         </tr>
       </tbody>
     </table>
+  }
+}
+
+
+class PercentBarChart extends React.Component {
+  static propTypes = {
+    style: PropTypes.object,
+    values: PropTypes.arrayOf(PropTypes.shape({
+      color: PropTypes.string,
+      name: PropTypes.string.isRequired,
+      value: PropTypes.number.isRequired,
+    }).isRequired).isRequired,
+  }
+
+  state = {
+    hasAppeared: false,
+  }
+
+  renderBars() {
+    const {hasAppeared} = this.state
+    const {values} = this.props
+    const containerStyle = {
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'flex-end',
+      position: 'relative',
+      width: 50,
+    }
+    const barStyle = (color, value) => ({
+      backgroundColor: color || Colors.RED_PINK,
+      height: (hasAppeared ? value * 100 : 0) + '%',
+      ...SmoothTransitions,
+    })
+    const legendStyle = {
+      fontSize: 11,
+      left: 0,
+      margin: '10px -100%',
+      position: 'absolute',
+      right: 0,
+      textAlign: 'center',
+      top: '100%',
+      whiteSpace: 'nowrap',
+    }
+    return values.map(({color, name, value}) => <div
+      key={`bar-${name}`} style={containerStyle}>
+      <strong style={{fontSize: 16, marginBottom: 5}}>{value * 100}%</strong>
+      <div style={barStyle(color, value)} />
+      <div style={legendStyle}>
+        {name}
+      </div>
+    </div>)
+  }
+
+  renderHorizontalScales() {
+    const scaleStyle = index => ({
+      alignItems: 'center',
+      display: 'flex',
+      height: 0,
+      left: 0,
+      position: 'absolute',
+      right: 0,
+      top: (index * 25) + '%',
+    })
+    const numberStyle = {
+      fontSize: 8,
+      paddingRight: 4,
+      paddingTop: 4,
+      textAlign: 'right',
+      width: '3.2em',
+    }
+    return new Array(5).fill().map(
+      (unused, index) => <div style={scaleStyle(index)} key={`scale-${index}`}>
+        <span style={numberStyle}>{(4 - index) * 25}%</span>
+        <div style={{
+          backgroundColor: index < 4 ? Colors.SILVER : Colors.COOL_GREY,
+          flex: 1,
+          height: 1,
+        }} />
+      </div>)
+  }
+
+  render() {
+    const barContainerStyle = {
+      display: 'flex',
+      flex: 1,
+      justifyContent: 'space-around',
+      marginBottom: 30,
+      marginLeft: 21,
+      marginTop: 5,
+      position: 'relative',
+    }
+    return <div style={{display: 'flex', position: 'relative', ...this.props.style}}>
+      <div style={{bottom: 30, left: 0, position: 'absolute', right: 0, top: 5}}>
+        {this.renderHorizontalScales()}
+      </div>
+      <VisibilitySensor
+        partialVisibility={true} intervalDelay={250}
+        onChange={hasAppeared => this.setState({hasAppeared})}>
+        <div style={barContainerStyle}>
+          {this.renderBars()}
+        </div>
+      </VisibilitySensor>
+    </div>
   }
 }
 

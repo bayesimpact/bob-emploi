@@ -1,7 +1,7 @@
 import Cookies from 'js-cookie'
 import _ from 'underscore'
 
-import {HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
+import {AUTHENTICATE_USER, HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
   GET_DASHBOARD_EXPORT, GET_JOB_BOARDS, TRACK_INITIAL_UTM_CONTENT,
   OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, GET_ASSOCIATIONS,
   ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, GET_VOLUNTEERING_MISSIONS,
@@ -28,6 +28,8 @@ const cachedProjectData = {
 const appInitialData = {
   // Cache for advice tips for each advice module for each project.
   adviceTips: {},
+  // Authentication token.
+  authToken: null,
   // Cache for dashboard exports.
   dashboardExports: {},
   initialUtmContent: null,
@@ -151,6 +153,14 @@ function app(state=appInitialData, action) {
       return {
         ...state,
         initialUtmContent: state.initialUtmContent || action.utmContent,
+      }
+    case AUTHENTICATE_USER:
+      if (action.status !== 'success' || !action.response.authToken) {
+        return state
+      }
+      return {
+        ...state,
+        authToken: action.response.authToken,
       }
   }
   return state

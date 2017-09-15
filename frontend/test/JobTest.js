@@ -1,5 +1,5 @@
 import {expect} from 'chai'
-import {genderizeJob} from 'store/job.js'
+import {genderizeJob, getJobSearchURL} from 'store/job.js'
 import {JobSuggest} from 'components/suggestions'
 
 describe('jobFromSuggestion', () => {
@@ -90,5 +90,37 @@ describe('genderizeJob', () => {
       name: 'foo',
     }, 'FEMININE')
     expect('foo', name)
+  })
+})
+
+
+describe('getJobSearchURL', () => {
+  it('should return an empty string for an empty job', () => {
+    const url = getJobSearchURL({}, 'FEMININE')
+    expect('', url)
+  })
+  it('should return a URL with genderized job name if gender', () => {
+    const name = getJobSearchURL({
+      feminineName: 'feminineFoo',
+      masculineName: 'masculineFoo',
+      name: 'foo',
+    }, 'FEMININE')
+    expect('https://www.google.fr/search?q=métier feminineFoo', name)
+  })
+  it('should return a URL with the default name if no gender', () => {
+    const name = getJobSearchURL({
+      feminineName: 'feminineFoo',
+      masculineName: 'masculineFoo',
+      name: 'foo',
+    }, undefined)
+    expect('https://www.google.fr/search?q=métier foo', name)
+  })
+  it('should return a URL with the default name if unknown gender', () => {
+    const name = getJobSearchURL({
+      feminineName: 'feminineFoo',
+      masculineName: 'masculineFoo',
+      name: 'foo',
+    }, 'WOMAN')
+    expect('https://www.google.fr/search?q=métier foo', name)
   })
 })

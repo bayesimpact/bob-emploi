@@ -37,7 +37,7 @@ class BucketsTestCase(unittest.TestCase):
             bucketize = job_offers_optimal_buckets.create_bucketizer(
                 job_offers_optimal_buckets.OPTIMAL_BUCKETS)
             actual = bucketize(pandas.DataFrame({
-                'rome_id': ["A" for x in test.offers],
+                'rome_id': ['A' for x in test.offers],
                 'annual_minimum_salary': [20000 for x in test.offers],
                 'experience_min_duration': test.offers,
             }))

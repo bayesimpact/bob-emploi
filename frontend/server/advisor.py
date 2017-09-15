@@ -10,6 +10,7 @@ import mailjet_rest
 
 from bob_emploi.frontend import french
 from bob_emploi.frontend import mail
+from bob_emploi.frontend import now
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
@@ -59,7 +60,7 @@ def compute_advices_for_project(user, project, database):
         an Advices protobuffer containing a list of recommendations.
     """
     scoring_project = scoring.ScoringProject(
-        project, user.profile, user.features_enabled, database)
+        project, user.profile, user.features_enabled, database, now=now.get())
     scores = {}
     advice_modules = _advice_modules(database)
     advice = project_pb2.Advices()
@@ -72,7 +73,16 @@ def compute_advices_for_project(user, project, database):
                 'Not able to score advice "%s", the scoring model "%s" is unknown.',
                 module.advice_id, module.trigger_scoring_model)
             continue
-        scores[module.advice_id] = scoring_model.score(scoring_project)
+        if user.features_enabled.all_modules:
+            scores[module.advice_id] = 3
+        else:
+            try:
+                scores[module.advice_id] = scoring_model.score(scoring_project)
+            except Exception:  # pylint: disable=broad-except
+                logging.exception(
+                    'Scoring "%s" crashed for:\n%s\n%s',
+                    module.trigger_scoring_model, scoring_project.user_profile,
+                    scoring_project.details)
 
     modules = sorted(
         advice_modules,
@@ -83,7 +93,7 @@ def compute_advices_for_project(user, project, database):
         if not scores.get(module.advice_id):
             # We can break as others will have 0 score as well.
             break
-        if module.airtable_id in incompatible_modules:
+        if module.airtable_id in incompatible_modules and not user.features_enabled.all_modules:
             continue
         piece_of_advice = advice.advices.add()
         piece_of_advice.advice_id = module.advice_id
@@ -92,6 +102,7 @@ def compute_advices_for_project(user, project, database):
         incompatible_modules.update(module.incompatible_advice_ids)
 
         _compute_extra_data(piece_of_advice, module, scoring_project)
+        _maybe_override_advice_data(piece_of_advice, module, scoring_project)
 
     return advice
 
@@ -119,6 +130,20 @@ def _compute_extra_data(piece_of_advice, module, scoring_project):
     data_field.CopyFrom(extra_data)
 
 
+def _maybe_override_advice_data(piece_of_advice, module, scoring_project):
+    scoring_model = scoring.get_scoring_model(module.trigger_scoring_model)
+    try:
+        get_advice_override = scoring_model.get_advice_override
+    except AttributeError:
+        # The scoring model has no get_advice_override method;
+        return
+    override_data = get_advice_override(scoring_project, piece_of_advice)
+    if not override_data:
+        # Nothing to override.
+        return
+    piece_of_advice.MergeFrom(override_data)
+
+
 def _send_activation_email(user, project, database, base_url):
     """Send an email to the user just after we have defined their diagnosis."""
     advice_modules = {a.advice_id: a for a in _advice_modules(database)}
@@ -132,7 +157,7 @@ def _send_activation_email(user, project, database, base_url):
         'projectId': project.project_id,
         'firstName': user.profile.name,
         'ofProjectTitle': french.maybe_contract_prefix(
-            'de ', 'd\'', french.lower_first_letter(_get_job_name(
+            'de ', "d'", french.lower_first_letter(_get_job_name(
                 project.target_job, user.profile.gender))),
         'advices': [
             {'adviceId': a.advice_id, 'title': advice_modules[a.advice_id].title}
@@ -193,7 +218,7 @@ def list_all_tips(user, project, piece_of_advice, database, cache=None, filter_t
     scoring_project = cache.get('scoring_project')
     if not scoring_project:
         scoring_project = scoring.ScoringProject(
-            project, user.profile, user.features_enabled, database)
+            project, user.profile, user.features_enabled, database, now=now.get())
         cache['scoring_project'] = scoring_project
     filtered_tips = scoring.filter_using_score(
         tip_templates, lambda t: t.filters, scoring_project)

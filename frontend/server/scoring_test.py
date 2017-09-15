@@ -6,13 +6,16 @@ import numbers
 from os import path
 import random
 import unittest
-from unittest import mock
 
+import mock
 import mongomock
 
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend import proto
+from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
 
 _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
@@ -26,564 +29,6 @@ def _load_json_to_mongo(database, collection):
     with open(path.join(_TESTDATA_FOLDER, collection + '.json')) as json_file:
         json_blob = json.load(json_file)
     database[collection].insert_many(json_blob)
-
-
-def training_mocked_requests_get(*args, **kargs):
-    """A function to mock the requests url."""
-    class MockResponse:
-        """A simple mock requests response."""
-
-        def __init__(self, text, status_code):
-            self.text = text
-            self.status_code = status_code
-
-    if 'www.intercariforef.org' not in args[0]:
-        return MockResponse('', 404)
-
-    if not kargs['params']:
-        return MockResponse('Missing parameters', 500)
-
-    # TODO(guillaume): Cleanup this json to the appropriate place after asking Pascal about it.
-    return MockResponse('''
-<lheo-index xmlns="http://www.lheo.org/2.2">
-<resumes-offres>
-<resume-offre numero="14_AF_0000011179_SE_0000093700" file="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>42602</code-FORMACODE>
-<code-NSF>334</code-NSF>
-<code-ROME>G1102</code-ROME>
-<code-ROME>G1201</code-ROME>
-</domaine-formation>
-<intitule-formation>Licence pro guide conférencier</intitule-formation>
-<nom-organisme numero="14_OF_0000000880">GRETA METEHOR PARIS</nom-organisme>
-<SIRET>19750707200027</SIRET>
-<codepostal>75017</codepostal>
-<code-INSEE-commune>75117</code-INSEE-commune>
-<ville>Paris 17e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>6</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>80006</code-public-vise>
-<code-public-vise>81050</code-public-vise>
-<code-public-vise>82044</code-public-vise>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>482</nombre-heures-total>
-<session>
-<periode>
-<debut>20171003</debut>
-<fin>20190928</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75017</codepostal>
-<ville>Paris 17e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>25730</code-RNCP>
-<code-CERTIFINFO>85556</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.897144</extra>
-<extra info="longitude">2.320914</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000028218_SE_0000118670" href="https://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>42623</code-FORMACODE>
-<code-FORMACODE>42654</code-FORMACODE>
-<code-NSF>334</code-NSF>
-<code-ROME>G1201</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Titre professionnel d'accompagnateur(trice) de tourisme
-</intitule-formation>
-<nom-organisme numero="14_OF_0000011022">AFCI</nom-organisme>
-<SIRET>39297563700043</SIRET>
-<codepostal>75014</codepostal>
-<code-INSEE-commune>75114</code-INSEE-commune>
-<ville>Paris 14e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>80006</code-public-vise>
-<nombre-heures-total>686</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180300</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75014</codepostal>
-<ville>Paris 14e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>17793</code-RNCP>
-<code-CERTIFINFO>82182</code-CERTIFINFO>
-</certification>
-<extras info="lheo">
-<extra info="conventionnement">1</extra>
-</extras>
-<extras info="geolocalisation">
-<extra info="latitude">48.826991</extra>
-<extra info="longitude">2.333706</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">5</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000036088_SE_0000116542" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>14201</code-FORMACODE>
-<code-FORMACODE>14270</code-FORMACODE>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>E1108</code-ROME>
-<code-ROME>E1305</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>K1206</code-ROME>
-<code-ROME>K2111</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licence arts, lettres, langues mention langues, littérature et civilisations étrangères et
-régionales
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75018</codepostal>
-<code-INSEE-commune>75118</code-INSEE-commune>
-<ville>Paris 18e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>534</nombre-heures-total>
-<session>
-<periode>
-<debut>20170921</debut>
-<fin>20180721</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75018</codepostal>
-<ville>Paris 18e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>24508</code-RNCP>
-<code-CERTIFINFO>92891</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.899569</extra>
-<extra info="longitude">2.347494</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000036094_SE_0000116555" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>14201</code-FORMACODE>
-<code-FORMACODE>14270</code-FORMACODE>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>E1108</code-ROME>
-<code-ROME>E1305</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>K1206</code-ROME>
-<code-ROME>K2111</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
-régionales parcours allemand
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75017</codepostal>
-<code-INSEE-commune>75117</code-INSEE-commune>
-<ville>Paris 17e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>534</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180700</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75017</codepostal>
-<ville>Paris 17e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>24508</code-RNCP>
-<code-CERTIFINFO>92891</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.883512</extra>
-<extra info="longitude">2.309388</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000036101_SE_0000116567" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>14201</code-FORMACODE>
-<code-FORMACODE>14270</code-FORMACODE>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>E1108</code-ROME>
-<code-ROME>E1305</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>K1206</code-ROME>
-<code-ROME>K2111</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
-régionales parcours arabe
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75005</codepostal>
-<code-INSEE-commune>75105</code-INSEE-commune>
-<ville>Paris 5e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>611</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180700</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75005</codepostal>
-<ville>Paris 5e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>24508</code-RNCP>
-<code-CERTIFINFO>92891</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.848307</extra>
-<extra info="longitude">2.342806</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000036148_SE_0000116777" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>14201</code-FORMACODE>
-<code-FORMACODE>14270</code-FORMACODE>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>E1108</code-ROME>
-<code-ROME>E1305</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>K1206</code-ROME>
-<code-ROME>K2111</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
-régionales parcours espagnol
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75005</codepostal>
-<code-INSEE-commune>75105</code-INSEE-commune>
-<ville>Paris 5e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>534</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180700</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75005</codepostal>
-<ville>Paris 5e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>24508</code-RNCP>
-<code-CERTIFINFO>92891</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.844088</extra>
-<extra info="longitude">2.342302</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000036157_SE_0000116821" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>14201</code-FORMACODE>
-<code-FORMACODE>14270</code-FORMACODE>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>E1108</code-ROME>
-<code-ROME>E1305</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>K1206</code-ROME>
-<code-ROME>K2111</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licence arts, lettres, langues mention langues, littératures et civilisations étrangères
-et régionales parcours études nordiques
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75017</codepostal>
-<code-INSEE-commune>75117</code-INSEE-commune>
-<ville>Paris 17e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>390</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180700</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75017</codepostal>
-<ville>Paris 17e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>24508</code-RNCP>
-<code-CERTIFINFO>92891</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.883512</extra>
-<extra info="longitude">2.309388</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000036163_SE_0000116829" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>14201</code-FORMACODE>
-<code-FORMACODE>14270</code-FORMACODE>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>E1108</code-ROME>
-<code-ROME>E1305</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>K1206</code-ROME>
-<code-ROME>K2111</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
-régionales parcours italien
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75017</codepostal>
-<code-INSEE-commune>75117</code-INSEE-commune>
-<ville>Paris 17e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>539</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180700</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75017</codepostal>
-<ville>Paris 17e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>24508</code-RNCP>
-<code-CERTIFINFO>92891</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.883512</extra>
-<extra info="longitude">2.309388</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000036167_SE_0000116834" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>14201</code-FORMACODE>
-<code-FORMACODE>14270</code-FORMACODE>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>E1108</code-ROME>
-<code-ROME>E1305</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>K1206</code-ROME>
-<code-ROME>K2111</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licences arts, lettres, langues mention langues, littératures et civilisations étrangères et
-régionales parcours néerlandais
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75017</codepostal>
-<code-INSEE-commune>75117</code-INSEE-commune>
-<ville>Paris 17e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>481</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180700</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75017</codepostal>
-<ville>Paris 17e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>24508</code-RNCP>
-<code-CERTIFINFO>92891</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.883512</extra>
-<extra info="longitude">2.309388</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<resume-offre numero="14_AF_0000038967_SE_0000126421" href="http://www.intercariforef.org/">
-<domaine-formation>
-<code-FORMACODE>15254</code-FORMACODE>
-<code-NSF>136</code-NSF>
-<code-ROME>D1401</code-ROME>
-<code-ROME>E1103</code-ROME>
-<code-ROME>E1108</code-ROME>
-<code-ROME>G1201</code-ROME>
-<code-ROME>M1705</code-ROME>
-</domaine-formation>
-<intitule-formation>
-Licence arts, lettres, langues mention langues étrangères appliquées
-</intitule-formation>
-<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
-<SIRET>19751720400396</SIRET>
-<codepostal>75017</codepostal>
-<code-INSEE-commune>75117</code-INSEE-commune>
-<ville>Paris 17e Arrondissement</ville>
-<departement>75</departement>
-<region>11</region>
-<certifiante>1</certifiante>
-<code-niveau-entree>5</code-niveau-entree>
-<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
-<modalites-enseignement>0</modalites-enseignement>
-<code-public-vise>83056</code-public-vise>
-<nombre-heures-total>676</nombre-heures-total>
-<session>
-<periode>
-<debut>20170900</debut>
-<fin>20180700</fin>
-</periode>
-<adresse-inscription>
-<adresse>
-<ligne>-</ligne>
-<codepostal>75017</codepostal>
-<ville>Paris 17e Arrondissement</ville>
-</adresse>
-</adresse-inscription>
-</session>
-<certification>
-<code-RNCP>25169</code-RNCP>
-<code-CERTIFINFO>92893</code-CERTIFINFO>
-</certification>
-<extras info="geolocalisation">
-<extra info="latitude">48.883512</extra>
-<extra info="longitude">2.309388</extra>
-</extras>
-<extras info="complements">
-<extra info="code-niveau-sortie">7</extra>
-</extras>
-</resume-offre>
-<extras info="FLUX-CARIF">
-<extra info="date-export">20170809</extra>
-<extra info="heure-export">000940</extra>
-<extra info="statut">OK</extra>
-<extra info="nb-resultat">10</extra>
-</extras>
-</resumes-offres>
-</lheo-index>''', 200)
 
 
 class _Persona(object):
@@ -720,12 +165,29 @@ class AdviceEventScoringModelTestCase(ScoringModelTestBase('advice-event')):
         """Network is important for the user."""
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {
-                'applicationModes': {
-                    'Foo': {'first': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'},
-                },
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        }
+                    ],
+                }
             },
         })
         score = self._score_persona(self.persona)
@@ -735,12 +197,29 @@ class AdviceEventScoringModelTestCase(ScoringModelTestBase('advice-event')):
         """Network is important for the user."""
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {
-                'applicationModes': {
-                    'Foo': {'second': 'PERSONAL_OR_PROFESSIONAL_CONTACTS', 'first': 'LEVEL'},
-                },
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        }
+                    ],
+                }
             },
         })
         score = self._score_persona(self.persona)
@@ -754,24 +233,35 @@ class TrainingAdviceScoringModelTestCase(ScoringModelTestBase('advice-training')
         """Setting up the persona for a test."""
         super(TrainingAdviceScoringModelTestCase, self).setUp()
         self.persona = self._random_persona().clone()
+        self._many_trainings = [
+            training_pb2.Training(),
+            training_pb2.Training(),
+            training_pb2.Training(),
+        ]
 
-    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
-    def test_low_advice_for_new_de(self, unused_mocked_get):
+    @mock.patch(scoring.carif.__name__ + '.get_trainings')
+    def test_low_advice_for_new_de(self, mock_carif_get_trainings):
         """The user just started searching for a job."""
+        mock_carif_get_trainings.return_value = self._many_trainings
+        self.persona.project.mobility.city.departement_id = '35'
+        self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.job_search_length_months = 0
         if self.persona.project.kind == project_pb2.REORIENTATION:
             self.persona.project.kind = project_pb2.FIND_JOB
         self.assertGreater(2, self._score_persona(self.persona))
+        mock_carif_get_trainings.assert_called_once_with('A1234', '35')
 
-    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
-    def test_three_stars(self, unused_mocked_get):
+    @mock.patch(scoring.carif.__name__ + '.get_trainings')
+    def test_three_stars(self, mock_carif_get_trainings):
         """The user has been searching for a job for 3 months."""
+        mock_carif_get_trainings.return_value = self._many_trainings
         self.persona.project.job_search_length_months = 3
         self.assertEqual(3, self._score_persona(self.persona))
 
-    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
-    def test_one_month(self, unused_mocked_get):
+    @mock.patch(scoring.carif.__name__ + '.get_trainings')
+    def test_one_month(self, mock_carif_get_trainings):
         """The user has been searching for a job for 1 month."""
+        mock_carif_get_trainings.return_value = self._many_trainings
         self.persona.project.job_search_length_months = 1
         if self.persona.project.kind == project_pb2.REORIENTATION:
             self.persona.project.kind = project_pb2.FIND_JOB
@@ -779,11 +269,18 @@ class TrainingAdviceScoringModelTestCase(ScoringModelTestBase('advice-training')
         self.assertGreater(3, score)
         self.assertLess(0, score)
 
-    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
-    def test_reorientation(self, unused_mocked_get):
+    @mock.patch(scoring.carif.__name__ + '.get_trainings')
+    def test_reorientation(self, mock_carif_get_trainings):
         """The user is in reorientation."""
+        mock_carif_get_trainings.return_value = self._many_trainings
         self.persona.project.kind = project_pb2.REORIENTATION
         self.assertEqual(3, self._score_persona(self.persona))
+
+    @mock.patch(scoring.carif.__name__ + '.get_trainings')
+    def test_no_trainings(self, mock_carif_get_trainings):
+        """There are no trainings for this combination."""
+        mock_carif_get_trainings.return_value = []
+        self.assertEqual(0, self._score_persona(self.persona))
 
 
 class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improve-network')):
@@ -806,12 +303,29 @@ class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improv
         self.persona.project.network_estimate = 1
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {
-                'applicationModes': {
-                    'Foo': {'first': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'},
-                },
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        }
+                    ],
+                }
             },
         })
         score = self._score_persona(self.persona)
@@ -822,12 +336,29 @@ class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improv
         self.persona.project.network_estimate = 1
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {
-                'applicationModes': {
-                    'Foo': {'first': 'SPONTANEOUS_APPLICATION'},
-                },
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        }
+                    ],
+                }
             },
         })
         score = self._score_persona(self.persona)
@@ -838,13 +369,49 @@ class ImproveYourNetworkScoringModelTestCase(ScoringModelTestBase('advice-improv
         self.persona.project.network_estimate = 1
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.persona.project.mobility.city.departement_id = '69'
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {
-                'applicationModes': {
-                    'Foo': {'first': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'},
-                    'Bar': {'first': 'SPONTANEOUS_APPLICATION'},
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'Foo': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        }
+                    ],
                 },
+                'Bar': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        }
+                    ],
+                }
             },
         })
         score = self._score_persona(self.persona)
@@ -929,6 +496,15 @@ class CommuteScoringModelTestCase(ScoringModelTestBase('advice-commute')):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Fail for "%s"' % self.persona.name)
 
+    def test_super_commute(self):
+        """Test that people that wants to move and with super commute cities have score 3."""
+        self.persona.project.mobility.city.city_id = '69123'
+        self.persona.project.target_job.job_group.rome_id = 'M1604'
+        if self.persona.project.mobility.area_type <= geo_pb2.CITY:
+            self.persona.project.mobility.area_type = geo_pb2.DEPARTEMENT
+        score = self._score_persona(self.persona)
+        self.assertEqual(score, 3, msg='Fail for "%s"' % self.persona.name)
+
     def test_extra_data(self):
         """Compute extra data."""
         self.persona.project.mobility.city.city_id = '69123'
@@ -941,9 +517,14 @@ class CommuteScoringModelTestCase(ScoringModelTestBase('advice-commute')):
 class PersonasTestCase(unittest.TestCase):
     """Tests all scoring models and all personas."""
 
-    @mock.patch('requests.get', side_effect=training_mocked_requests_get)
-    def test_run_all(self, unused_mocked_get):
+    @mock.patch(scoring.carif.__name__ + '.get_trainings')
+    def test_run_all(self, mock_carif_get_trainings):
         """Run all scoring models on all personas."""
+        mock_carif_get_trainings.return_value = [
+            training_pb2.Training(),
+            training_pb2.Training(),
+            training_pb2.Training(),
+        ]
         database = mongomock.MongoClient().test
         _load_json_to_mongo(database, 'job_group_info')
         _load_json_to_mongo(database, 'local_diagnosis')
@@ -951,6 +532,7 @@ class PersonasTestCase(unittest.TestCase):
         _load_json_to_mongo(database, 'volunteering_missions')
         _load_json_to_mongo(database, 'hiring_cities')
         _load_json_to_mongo(database, 'cities')
+        _load_json_to_mongo(database, 'specific_to_job_advice')
         scores = collections.defaultdict(lambda: collections.defaultdict(float))
         # Mock the "now" date so that scoring models that are based on time
         # (like "Right timing") are deterministic.
@@ -1049,6 +631,15 @@ class AdviceVaeTestCase(ScoringModelTestBase('advice-vae')):
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
 
+    def test_has_enough_diplomas(self):
+        """The user is frustrated by trainings but is expert and has enough diplomas."""
+        persona = self._random_persona().clone()
+        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+        persona.project.seniority = project_pb2.EXPERT
+        persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s"' % persona.name)
+
 
 class AdviceSeniorTestCase(ScoringModelTestBase('advice-senior')):
     """Unit tests for the "Senior" advice."""
@@ -1056,8 +647,8 @@ class AdviceSeniorTestCase(ScoringModelTestBase('advice-senior')):
     def test_match_discriminated(self):
         """The user is over 40 years old and feels discriminated so this should match."""
         persona = self._random_persona().clone()
-        if persona.user_profile.year_of_birth > datetime.date.today().year - 40:
-            persona.user_profile.year_of_birth = datetime.date.today().year - 40
+        if persona.user_profile.year_of_birth > datetime.date.today().year - 41:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 41
         persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
         score = self._score_persona(persona)
         self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
@@ -1089,7 +680,7 @@ class AdviceLessApplicationsTestCase(ScoringModelTestBase('advice-less-applicati
                 persona.project.weekly_applications_estimate != project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "%s"' % persona.name)
+        self.assertEqual(score, 3, msg='Failed for "%s"' % persona.name)
 
     def test_no_match(self):
         """The user does not apply a lot so the advice should not match."""
@@ -1115,6 +706,8 @@ class AdviceAssociationHelpTestCase(ScoringModelTestBase('advice-association-hel
         persona = self._random_persona().clone()
         self.database.associations.insert_one({'name': 'SNC'})
         del persona.user_profile.frustrations[:]
+        if persona.project.job_search_length_months >= 12:
+            persona.project.job_search_length_months = 11
         score = self._score_persona(persona)
         self.assertEqual(2, score, msg='Failed for "%s"' % persona.name)
 
@@ -1132,6 +725,14 @@ class AdviceAssociationHelpTestCase(ScoringModelTestBase('advice-association-hel
         self.database.associations.insert_many(
             [{'name': 'SNC'}, {'name': 'SND'}, {'name': 'SNE'}, {'name': 'SNF'}])
         persona.project.job_search_length_months = 6
+        score = self._score_persona(persona)
+        self.assertEqual(3, score, msg='Failed for "%s"' % persona.name)
+
+    def test_very_long_search(self):
+        """User searches for a very long time."""
+        persona = self._random_persona().clone()
+        self.database.associations.insert_one({'name': 'SNC'})
+        persona.project.job_search_length_months = 12
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg='Failed for "%s"' % persona.name)
 
@@ -1267,7 +868,7 @@ class VolunteerAdviceTestCase(ScoringModelTestBase('advice-volunteer')):
 
 
 class SpontaneousApplicationScoringModelTestCase(
-        ScoringModelTestBase('chantier-spontaneous-application')):
+        ScoringModelTestBase('advice-spontaneous-application')):
     """Unit tests for the "Send spontaneous applications" chantier."""
 
     def test_best_channel(self):
@@ -1277,11 +878,30 @@ class SpontaneousApplicationScoringModelTestCase(
         persona.project.mobility.city.departement_id = '69'
         persona.project.job_search_length_months = 2
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {'applicationModes': {
-                'FAP': {'first': 'SPONTANEOUS_APPLICATION'},
-            }},
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        }
+                    ],
+                }
+            },
         })
         score = self._score_persona(persona)
 
@@ -1294,11 +914,30 @@ class SpontaneousApplicationScoringModelTestCase(
         persona.project.mobility.city.departement_id = '69'
         persona.project.job_search_length_months = 2
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {'applicationModes': {
-                'FAP': {'second': 'SPONTANEOUS_APPLICATION'},
-            }},
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        }
+                    ],
+                }
+            },
         })
         score = self._score_persona(persona)
 
@@ -1311,11 +950,30 @@ class SpontaneousApplicationScoringModelTestCase(
         persona.project.mobility.city.departement_id = '69'
         persona.project.job_search_length_months = 2
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
-        self.database.local_diagnosis.insert_one({
-            '_id': '69:A1234',
-            'imt': {'applicationModes': {
-                'FAP': {'third': 'SPONTANEOUS_APPLICATION'},
-            }},
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        }
+                    ],
+                }
+            },
         })
         score = self._score_persona(persona)
 
@@ -1382,6 +1040,73 @@ class AdviceJobBoardsTestCase(ScoringModelTestBase('advice-job-boards')):
         self.assertEqual('Remix Jobs', result.job_board_title)
 
 
+class AdviceSeasonalRelocateTestCase(ScoringModelTestBase('advice-seasonal-relocate')):
+    """Unit tests for the "Advice Seasonal Relocate" advice."""
+
+    def test_older(self):
+        """Do not trigger for older people."""
+        persona = self._random_persona().clone()
+        if persona.user_profile.year_of_birth > datetime.date.today().year - 36:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 36
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_region(self):
+        """Do not trigger for people who's mobility is below "COUNTRY"."""
+        persona = self._random_persona().clone()
+        if persona.project.mobility.area_type >= geo_pb2.COUNTRY:
+            persona.project.mobility.area_type = geo_pb2.REGION
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_children(self):
+        """Do not trigger for people who have children."""
+        persona = self._random_persona().clone()
+        persona.user_profile.family_situation = user_pb2.FAMILY_WITH_KIDS
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_diplomas(self):
+        """Do not trigger for people who have diplomas."""
+        persona = self._random_persona().clone()
+        if persona.user_profile.highest_degree <= job_pb2.BTS_DUT_DEUG:
+            persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_young_no_diploma(self):
+        """Young mobile single people without advanced diplomas should trigger."""
+        persona = self._random_persona().clone()
+        persona.project.mobility.area_type = geo_pb2.COUNTRY
+        if persona.user_profile.year_of_birth < datetime.date.today().year - 28:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 28
+        if persona.user_profile.year_of_birth > datetime.date.today().year - 25:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 25
+        if persona.user_profile.highest_degree > job_pb2.BAC_BACPRO:
+            persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
+        persona.user_profile.family_situation = user_pb2.SINGLE
+        if persona.project.employment_types == [job_pb2.CDI]:
+            persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 2, msg='Failed for "%s":' % persona.name)
+
+    def test_very_young_no_diploma(self):
+        """Very mobile single people without advanced diplomas should trigger high."""
+        persona = self._random_persona().clone()
+        persona.project.mobility.area_type = geo_pb2.COUNTRY
+        if persona.user_profile.year_of_birth < datetime.date.today().year - 22:
+            persona.user_profile.year_of_birth = datetime.date.today().year - 22
+        if persona.user_profile.highest_degree > job_pb2.BAC_BACPRO:
+            persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
+        if persona.project.employment_types == [job_pb2.CDI]:
+            persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)
+        persona.user_profile.family_situation = user_pb2.SINGLE
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
+
+
 class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
     """Unit tests for the "Other Work Environments" advice."""
 
@@ -1412,7 +1137,7 @@ class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
             '_id': 'M1607',
             'workEnvironmentKeywords': {
                 'structures': ['Kmenistan'],
-                'sector': ['Toise'],
+                'sectors': ['Toise'],
             },
         })
         persona = self._random_persona().clone()
@@ -1543,6 +1268,56 @@ class AdviceWowBakerTestCase(ScoringModelTestBase('advice-wow-baker')):
 
     def test_baker_not_chief(self):
         """Does not trigger for a chief baker."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'D1102'
+        if persona.project.target_job.code_ogr == '12006':
+            persona.project.target_job.code_ogr = '10868'
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "%s":' % persona.name)
+
+
+class AdviceSpecificToJobTestCase(ScoringModelTestBase('advice-specific-to-job')):
+    """Unit tests for the "Specicif to Job" advice."""
+
+    def setUp(self):
+        super(AdviceSpecificToJobTestCase, self).setUp()
+        self.database.specific_to_job_advice.insert_one({
+            'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            'filters': ['for-job-group(D1102)', 'not-for-job(12006)'],
+            'cardText':
+            'Allez à la boulangerie la veille pour savoir à quelle '
+            'heure arrive le chef boulanger.',
+            'expandedCardHeader': "Voilà ce qu'il faut faire",
+            'expandedCardItems': [
+                'Se présenter aux boulangers entre 4h et 7h du matin.',
+                'Demander au vendeur / à la vendeuse à quelle heure arrive le chef le matin',
+                'Contacter les fournisseurs de farine locaux : ils connaissent '
+                'tous les boulangers du coin et sauront où il y a des '
+                'embauches.',
+            ],
+        })
+
+    def test_not_baker(self):
+        """Does not trigger for non baker."""
+        persona = self._random_persona().clone()
+        if persona.project.target_job.job_group.rome_id == 'D1102':
+            persona.project.target_job.job_group.rome_id = 'M1607'
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_chief_baker(self):
+        """Does not trigger for a chief baker."""
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'D1102'
+        persona.project.target_job.code_ogr = '12006'
+
+        score = self._score_persona(persona)
+        self.assertEqual(score, 0, msg='Failed for "%s":' % persona.name)
+
+    def test_baker_not_chief(self):
+        """Trigger for a baker that is not a chief baker."""
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'D1102'
         if persona.project.target_job.code_ogr == '12006':

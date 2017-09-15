@@ -18,4 +18,9 @@ describe('getAdviceTitle', () => {
   it('returns a title even if no stars are specified', () => {
     expect(getAdviceTitle({adviceId: 'other-work-env'})).to.be.ok
   })
+
+  it('prefers a title defined on the advice itself', () => {
+    const title = getAdviceTitle({adviceId: 'network-application', numStars: 1, title: 'yep'})
+    expect(title).to.eq('yep')
+  })
 })
