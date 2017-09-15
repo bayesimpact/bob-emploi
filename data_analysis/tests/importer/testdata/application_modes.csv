@@ -1,0 +1,9 @@
+APPLICATION_TYPE_CODE,APPLICATION_TYPE_NAME,APPLICATION_TYPE_ORDER,FAP_CODE,FAP_NAME,RECRUT_PERCENT
+R3,Candidature spontanée,1,R0Z60,Employés de libre service,37.58
+R1,Intermédiaires du placement,2,R0Z60,Employés de libre service,31.97
+R2,Réseau personnel ou professionnel,3,R0Z60,Employés de libre service,21.63
+R4,Autres canaux,4,R0Z60,Employés de libre service,8.82
+R3,Candidature spontanée,1,R2Z83,Représentants auprès des particuliers,30.27
+R2,Réseau personnel ou professionnel,2,R2Z83,Représentants auprès des particuliers,25.05
+R4,Autres canaux,3,R2Z83,Représentants auprès des particuliers,23.65
+R1,Intermédiaires du placement,4,R2Z83,Représentants auprès des particuliers,20.94

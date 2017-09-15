@@ -35,7 +35,7 @@ def region_iteratior(base_path, file_name):
             data_frame = pd.DataFrame.from_csv(f_name)
         else:
             raise ValueError(
-                "Expected sas7bdat or csv files only, got %s" % file_name)
+                'Expected sas7bdat or csv files only, got %s' % file_name)
         yield (region_id, data_frame)
 
 
@@ -76,7 +76,7 @@ def flatten_iterator(files_pattern):
             headers = header_line + ['__file__']
         elif headers[:-1] != header_line:
             raise ValueError(
-                'Headers from file %s don\'t match those of previous '
+                "Headers from file %s don't match those of previous "
                 'files. Was expecting:\n%s\n  got:\n%s'
                 % (current_file,
                    headers[:-1],  # pylint: disable=unsubscriptable-object

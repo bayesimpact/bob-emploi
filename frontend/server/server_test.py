@@ -88,7 +88,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         user_data = {
             'profile': {'name': 'Joe'},
             'projects': [
-                {'projectId': 'another-id', 'title': 'Cultivateur d\'escargots à Lyon'},
+                {'projectId': 'another-id', 'title': "Cultivateur d'escargots à Lyon"},
                 {'projectId': 'pid', 'title': 'Cheminot à Caen', 'seniority': 1},
                 {'projectId': 'last-id', 'title': 'Polénisateur à Brest', 'seniority': 2}],
         }
@@ -398,7 +398,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
     def test_delete_user_missing_id(self):
         """Test trying user deletion without user_id."""
         response = self.app.delete('/api/user', data='{"profile": {"email": "foo@bar.fr"}}')
-        self.assertEqual(400, response.status_code)
+        self.assertEqual(403, response.status_code)
 
     def test_delete_user_credential_mismatch_email(self):
         """Test trying user deletion without correct email."""
@@ -409,9 +409,26 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             data='{"userId": "%s", "profile": {"email": "wrong@email.fr"}}' % user_id)
         self.assertEqual(403, response.status_code)
 
+    def test_delete_user_token(self):
+        """Delete a user without its ID but with an auth token."""
+        user_info = {'profile': {'city': {'name': 'foobar'}}, 'projects': [{}]}
+        user_id = self.create_user(data=user_info, email='foo@bar.fr')
+        token = server.auth.create_token('foo@bar.fr', role='unsubscribe')
+        response = self.app.delete(
+            '/api/user',
+            data='{"profile": {"email": "foo@bar.fr"}}',
+            headers={'Authorization': 'Bearer %s' % token})
+        self.assertEqual(200, response.status_code)
+        auth_object = self._db.user_auth.find_one({'_id': mongomock.ObjectId(user_id)})
+        self.assertFalse(auth_object)
+        user_data = self._db.user.find_one({'_id': mongomock.ObjectId(user_id)})
+        self.assertFalse(user_data)
+
     def test_get_user(self):
         """Basic Usage of retrieving a user from DB."""
-        user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{}]}
+        user_info = {'profile': {'gender': 'FEMININE'}, 'projects': [{
+            'jobSearchLengthMonths': 6,
+        }]}
         user_id = self.create_user(data=user_info)
         user_info['userId'] = user_id
 
@@ -419,11 +436,20 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertIn('registeredAt', user_info2)
         user_info2.pop('registeredAt')
         self.assertIn('projects', user_info2)
-        user_info2.pop('projects')
+        projects = user_info2.pop('projects')
         user_info.pop('projects')
         user_info2.pop('featuresEnabled')
         user_info2.pop('revision')
         self.assertEqual(user_info, user_info2)
+
+        self.assertEqual(1, len(projects), projects)
+        self.assertFalse(projects[0].get('jobSearchHasNotStarted'))
+        job_search_started_at = datetime.datetime.strptime(
+            projects[0].get('jobSearchStartedAt'), '%Y-%m-%dT%H:%M:%SZ')
+        self.assertLess(
+            job_search_started_at, datetime.datetime.now() - datetime.timedelta(days=180))
+        self.assertGreater(
+            job_search_started_at, datetime.datetime.now() - datetime.timedelta(days=200))
 
     def test_user(self):
         """Basic usage."""
@@ -1497,7 +1523,7 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
         ])
         before = datetime.datetime.now()
         response = self.app.post('/api/dashboard-export/open/%s' % user_id)
-        after = datetime.datetime.now()
+        after = datetime.datetime.now() + datetime.timedelta(seconds=1)
         self.assertEqual(302, response.status_code)
         self.assertRegex(
             response.location,

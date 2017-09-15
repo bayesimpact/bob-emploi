@@ -159,35 +159,35 @@ def load_applications_sample_df(database):
     returns a DataFrame.
     """
 
-    query = """
+    query = '''
         SELECT
             *
         FROM users
         JOIN bayes_applications_under_study
                 USING (application_id)
-    """
+    '''
 
     def _rename_column(col):
-        if "_french" in col:
-            return "%s_french" % column_names[col[:-7]]
-        elif "_english" in col:
-            return "%s_english" % column_names[col[:-8]]
+        if '_french' in col:
+            return '%s_french' % column_names[col[:-7]]
+        elif '_english' in col:
+            return '%s_english' % column_names[col[:-8]]
         else:
             return column_names[col]
 
     # Load column names transformation dict from column_descriptions spreadsheet
     column_names_df = pd.read_excel(
-        "../../data/mixed_sources/FHS_column_descriptions.xlsx",
-        sheetname="en__users")
+        '../../data/mixed_sources/FHS_column_descriptions.xlsx',
+        sheetname='en__users')
     column_names_df = column_names_df[
-        column_names_df["english_column_name"].map(str) != "nan"]
+        column_names_df['english_column_name'].map(str) != 'nan']
     column_names = dict(zip(
         column_names_df.orig_column_name, column_names_df.english_column_name))
 
     # Load codebook from spreadsheet and replace column codes with column names
     # everywhere
     codebook = pd.read_excel(
-        "../../data/mixed_sources/FHS_en_table_codebook.xlsx", sheetname=None)
+        '../../data/mixed_sources/FHS_en_table_codebook.xlsx', sheetname=None)
     codebook = {
         column_names[key]: mapping.rename(columns=_rename_column)
         for key, mapping in codebook.items()}
@@ -195,7 +195,7 @@ def load_applications_sample_df(database):
     # Run query, transform results using codebook, and return
     data_frame = database.query(query)
     print(
-        "Loaded %d unique application records." %
+        'Loaded %d unique application records.' %
         data_frame.application_id.nunique())
     data_frame.set_index('application_id', inplace=True)
     return transform_categorial_vars(data_frame, codebook)

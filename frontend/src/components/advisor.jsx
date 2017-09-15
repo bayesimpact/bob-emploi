@@ -21,6 +21,7 @@ import AssociationHelp from './advisor/association_help'
 import BetterJobInGroup from './advisor/better_job_in_group'
 import Commute from './advisor/commute'
 import Events from './advisor/events'
+import FromServer from './advisor/from_server'
 import ImproveInterview from './advisor/improve_interview'
 import ImproveResume from './advisor/improve_resume'
 import JobBoards from './advisor/job_boards'
@@ -32,6 +33,7 @@ import NetworkApplicationMedium from './advisor/network_medium'
 import NetworkApplicationGood from './advisor/network_good'
 import OtherWorkEnv from './advisor/other_work_env'
 import Relocate from './advisor/relocate'
+import SeasonalRelocate from './advisor/seasonal_relocate'
 import Senior from './advisor/senior'
 import SpontaneousApplication from './advisor/spontaneous'
 import Training from './advisor/training'
@@ -59,7 +61,9 @@ const ADVICE_MODULES = {
   'network-application-medium': NetworkApplicationMedium,
   'other-work-env': OtherWorkEnv,
   'relocate': Relocate,
+  'seasonal-relocate': SeasonalRelocate,
   'senior': Senior,
+  'specific-to-job': FromServer,
   'spontaneous-application': SpontaneousApplication,
   'training': Training,
   'vae': Vae,
@@ -171,7 +175,7 @@ class WhiteAdviceCard extends React.Component {
       <div className="tooltip" style={{alignItems: 'center', display: 'flex', marginLeft: 15}}>
         <img
           src={advice.score ? starIcon : starOutlineIcon}
-          style={starStyle} onClick={this.handleStarClick} />
+          style={starStyle} onClick={this.handleStarClick} alt="Très bon conseil" />
         <div
           className="tooltiptext tooltip-bottom"
           style={{fontSize: 13, fontWeight: 'initial', padding: '10px 13px', width: 160}}>
@@ -347,7 +351,7 @@ class ExpandedAdviceCardContent extends React.Component {
     }
     return <div style={containerStyle}>
       <div style={{flex: 1, textAlign: 'center'}}>
-        <img src={constructionImage} />
+        <img src={constructionImage} alt="" />
         <div style={{fontStyle: 'italic', fontWeight: 500}}>
           Module en construction
         </div>

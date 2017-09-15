@@ -109,7 +109,7 @@ def _send_slack_report(count, errors):
             _SLACK_WEBHOOK_URL,
             json={
                 'text':
-                    'Report for NPS blast: I\'ve sent %d emails (with %d errors).'
+                    "Report for NPS blast: I've sent %d emails (with %d errors)."
                     % (count, len(errors)),
             },
         )

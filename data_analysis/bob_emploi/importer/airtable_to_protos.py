@@ -176,6 +176,44 @@ class _FilteredLinkConverter(_ProtoAirtableConverter):
         return fields
 
 
+class _DynamicAdviceConverter(_FilteredLinkConverter):
+
+    def _split_list_field(self, markdown_list, fields, prefix, suffix=''):
+        if not markdown_list:
+            return
+        if markdown_list.startswith('*'):
+            parts = ('', markdown_list[1:])
+        else:
+            parts = markdown_list.split('\n*', 1)
+
+        if parts[0]:
+            fields['%sHeader%s' % (prefix, suffix)] = parts[0]
+
+        if len(parts) == 1:
+            return
+
+        items = '*' + parts[1]
+        lines = [l.strip() for l in items.split('\n')]
+        if not all(l.startswith('* ') for l in lines):
+            raise ValueError(
+                'Error in field %s, it should be a markdown list with one line per item\n%s'
+                % (prefix + suffix, markdown_list))
+        fields['%sItems%s' % (prefix, suffix)] = [l[len('* '):] for l in lines]
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+        fields = super(_DynamicAdviceConverter, self).convert_record(airtable_record)
+
+        self._split_list_field(
+            airtable_record['fields'].get('expanded_card_items'),
+            fields, prefix='expandedCard')
+        self._split_list_field(
+            airtable_record['fields'].get('expanded_card_items_feminine'),
+            fields, prefix='expandedCard', suffix='Feminine')
+
+        return fields
+
+
 PROTO_CLASSES = {
     'Chantier': _ProtoAirtableConverter(
         chantier_pb2.Chantier, 'chantier_id', required_fields=[]),
@@ -190,6 +228,9 @@ PROTO_CLASSES = {
         jobboard_pb2.JobBoard, None, required_fields=['title', 'link']),
     'Association': _FilteredLinkConverter(
         association_pb2.Association, None, required_fields=['name', 'link']),
+    'DynamicAdvice': _DynamicAdviceConverter(
+        advisor_pb2.DynamicAdvice, None,
+        required_fields=['title', 'card_text', 'expanded_card_items', 'for-job-group']),
 }
 
 

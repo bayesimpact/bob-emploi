@@ -852,6 +852,50 @@
       "yearOfBirth": 1989
     }
   },
+  "chef-boulanger": {
+    "project": {
+      "createdAt": "2016-09-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "cityId": "93050",
+          "departementId": "93",
+          "departementName": "Seine-Saint-Denis",
+          "name": "Neuilly-sur-Marne",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 3,
+      "projectId": "57ecddb3-bfe8",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "12006",
+        "feminineName": "Aide boulangère",
+        "jobGroup": {
+          "name": "Boulangerie - viennoiserie",
+          "romeId": "D1102"
+        },
+        "masculineName": "Aide boulanger",
+        "name": "Aide boulanger(ère)"
+      },
+      "title": "Trouver un emploi d'aide boulanger en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"]
+    },
+    "user": {
+      "highestDegree": "DEA_DESS_MASTER_PHD",
+      "email": "rxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Rémi",
+      "situation": "EMPLOYED",
+      "yearOfBirth": 1989
+    }
+  },
   "remi": {
     "project": {
       "createdAt": "2016-09-29T09:24:02.698094Z",
@@ -985,6 +1029,97 @@
       "name": "Paume",
       "situation": "EMPLOYED",
       "yearOfBirth": 1989
+    }
+  },
+  "Chat Botté": {
+    "project": {
+      "createdAt": "2016-09-29T09:24:02.698094Z",
+      "employmentTypes": ["CDD_LESS_EQUAL_3_MONTHS"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 2,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "COUNTRY",
+        "city": {
+          "cityId": "97416212321",
+          "name": "Saint-Pierre",
+          "departementId": "974",
+          "departementName": "La Réunion",
+          "regionId": "04",
+          "regionName": "La Réunion",
+          "postcodes": "97432"
+        }
+      },
+      "networkEstimate": 1,
+      "projectId": "57ecddb3-bfe8",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "10241",
+        "feminineName": "Acheteuse",
+        "jobGroup": {
+          "name": "Achats",
+          "romeId": "M1101"
+        },
+        "masculineName": "Acheteur",
+        "name": "Acheteur / Acheteuse"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"]
+    },
+    "user": {
+      "highestDegree": "BAC_BACPRO",
+      "email": "rxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Chat Botté",
+      "familySituation": "SINGLE",
+      "yearOfBirth": 1995
+    }
+  },
+  "Dark Vador": {
+    "project": {
+      "createdAt": "2017-08-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 3,
+      "kind": "FIND_JOB",
+      "mobility": {
+        "areaType": "COUNTRY",
+        "city": {
+          "cityId": "77337",
+          "departementId": "77",
+          "departementName": "Seine-et-Marne",
+          "name": "Noisiel",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecddb3-bfe8",
+      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "masculineName": "Boucher",
+        "name": "Boucher / Bouchère"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"]
+    },
+    "user": {
+      "highestDegree": "BAC_BACPRO",
+      "email": "bxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Dark Vador",
+      "familySituation": "SINGLE",
+      "yearOfBirth": 1975
     }
   }
 }

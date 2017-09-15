@@ -22,9 +22,12 @@ class AdviceCard extends React.Component {
   render() {
     const {sectors, structures} = getSectorsAndStructures(this.props.advice)
     if ((structures || []).length > 1) {
+      // We remove "entreprise" because it feels strange to propose to people to work in entreprise.
+      const  okStructures = structures.filter(
+        structure => structure.toLocaleLowerCase() !== 'entreprise')
       return <div style={{fontSize: 30}}>
         Avez-vous déja postulé en <StringJoiner lastSeparator=" ou en ">
-          {structures.slice(0, 2).map((name, index) => <strong key={`structure-${index}`}>
+          {okStructures.slice(0, 2).map((name, index) => <strong key={`structure-${index}`}>
             {lowerFirstLetter(name)}
           </strong>)}
         </StringJoiner>&nbsp;?

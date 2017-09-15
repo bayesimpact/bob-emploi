@@ -42,11 +42,11 @@ class WorkupEventsTestCase(unittest.TestCase):
 
         collection = workup_events.events2dicts(
             self.events_json_path,
-            io.StringIO("""departement_id,max_latitude,max_longitude,min_latitude,min_longitude
+            io.StringIO('''departement_id,max_latitude,max_longitude,min_latitude,min_longitude
 38,45.8667,6.18333,44.75,4.76667
 69,46.2833,5.1116,45.45,4.3
 75,48.86,2.34445,48.86,2.34445
-"""))
+'''))
         event_protos = dict(mongo.collection_to_proto_mapping(
             collection, event_pb2.Event))
         self.assertEqual({'event-a'}, set(event_protos))
@@ -74,11 +74,11 @@ class WorkupEventsTestCase(unittest.TestCase):
 
         collection = workup_events.events2dicts(
             self.events_json_path,
-            io.StringIO("""departement_id,max_latitude,max_longitude,min_latitude,min_longitude
+            io.StringIO('''departement_id,max_latitude,max_longitude,min_latitude,min_longitude
 38,45.8667,6.18333,44.75,4.76667
 69,46.2833,5.1116,45.45,4.3
 75,48.86,2.34445,48.86,2.34445
-"""))
+'''))
 
         self.assertFalse(collection)
 
@@ -101,13 +101,46 @@ class WorkupEventsTestCase(unittest.TestCase):
 
         collection = workup_events.events2dicts(
             self.events_json_path,
-            io.StringIO("""departement_id,max_latitude,max_longitude,min_latitude,min_longitude
+            io.StringIO('''departement_id,max_latitude,max_longitude,min_latitude,min_longitude
 38,45.8667,6.18333,44.75,4.76667
 69,46.2833,5.1116,45.45,4.3
 75,48.86,2.34445,48.86,2.34445
-"""))
+'''))
 
         self.assertFalse(collection)
+
+    def test_webinar(self):
+        """Webinar."""
+        json.dump([
+            {
+                'title': 'Event A',
+                'organiser': 'Pascal',
+                'latitude': 45.4839244,
+                'longitude': -73.4671686,
+                'price': 0,
+                'id': 'event-a',
+                'slug': 'slug-event-a',
+                'date': '2017-08-19',
+                'category': '["Trouver un job"]',
+                'address': 'En ligne ',
+            },
+        ], self.events_file)
+        self.events_file.close()
+
+        collection = workup_events.events2dicts(
+            self.events_json_path,
+            io.StringIO('''departement_id,max_latitude,max_longitude,min_latitude,min_longitude
+38,45.8667,6.18333,44.75,4.76667
+69,46.2833,5.1116,45.45,4.3
+75,48.86,2.34445,48.86,2.34445
+'''))
+        event_protos = dict(mongo.collection_to_proto_mapping(
+            collection, event_pb2.Event))
+        self.assertEqual({'event-a'}, set(event_protos))
+        event = event_protos['event-a']
+        self.assertEqual('Event A', event.title)
+        self.assertEqual('https://www.workuper.com/events/slug-event-a', event.link)
+        self.assertFalse(event.filters)
 
 
 if __name__ == '__main__':

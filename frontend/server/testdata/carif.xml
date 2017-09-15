@@ -1,0 +1,539 @@
+<lheo-index xmlns="http://www.lheo.org/2.2">
+<resumes-offres>
+<resume-offre numero="14_AF_0000011179_SE_0000093700" file="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>42602</code-FORMACODE>
+<code-NSF>334</code-NSF>
+<code-ROME>G1102</code-ROME>
+<code-ROME>G1201</code-ROME>
+</domaine-formation>
+<intitule-formation>Licence pro guide conférencier</intitule-formation>
+<nom-organisme numero="14_OF_0000000880">GRETA METEHOR PARIS</nom-organisme>
+<SIRET>19750707200027</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>6</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>80006</code-public-vise>
+<code-public-vise>81050</code-public-vise>
+<code-public-vise>82044</code-public-vise>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>482</nombre-heures-total>
+<session>
+<periode>
+<debut>20171003</debut>
+<fin>20190928</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>25730</code-RNCP>
+<code-CERTIFINFO>85556</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.897144</extra>
+<extra info="longitude">2.320914</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000028218_SE_0000118670" href="https://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>42623</code-FORMACODE>
+<code-FORMACODE>42654</code-FORMACODE>
+<code-NSF>334</code-NSF>
+<code-ROME>G1201</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Titre professionnel d'accompagnateur(trice) de tourisme
+</intitule-formation>
+<nom-organisme numero="14_OF_0000011022">AFCI</nom-organisme>
+<SIRET>39297563700043</SIRET>
+<codepostal>75014</codepostal>
+<code-INSEE-commune>75114</code-INSEE-commune>
+<ville>Paris 14e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>80006</code-public-vise>
+<nombre-heures-total>686</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180300</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75014</codepostal>
+<ville>Paris 14e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>17793</code-RNCP>
+<code-CERTIFINFO>82182</code-CERTIFINFO>
+</certification>
+<extras info="lheo">
+<extra info="conventionnement">1</extra>
+</extras>
+<extras info="geolocalisation">
+<extra info="latitude">48.826991</extra>
+<extra info="longitude">2.333706</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">5</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036088_SE_0000116542" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littérature et civilisations étrangères et
+régionales
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75018</codepostal>
+<code-INSEE-commune>75118</code-INSEE-commune>
+<ville>Paris 18e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>534</nombre-heures-total>
+<session>
+<periode>
+<debut>20170921</debut>
+<fin>20180721</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75018</codepostal>
+<ville>Paris 18e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.899569</extra>
+<extra info="longitude">2.347494</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036094_SE_0000116555" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours allemand
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>534</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036101_SE_0000116567" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours arabe
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75005</codepostal>
+<code-INSEE-commune>75105</code-INSEE-commune>
+<ville>Paris 5e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>611</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75005</codepostal>
+<ville>Paris 5e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.848307</extra>
+<extra info="longitude">2.342806</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036148_SE_0000116777" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours espagnol
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75005</codepostal>
+<code-INSEE-commune>75105</code-INSEE-commune>
+<ville>Paris 5e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>534</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75005</codepostal>
+<ville>Paris 5e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.844088</extra>
+<extra info="longitude">2.342302</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036157_SE_0000116821" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères
+et régionales parcours études nordiques
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>390</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036163_SE_0000116829" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours italien
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>539</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000036167_SE_0000116834" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>14201</code-FORMACODE>
+<code-FORMACODE>14270</code-FORMACODE>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>E1108</code-ROME>
+<code-ROME>E1305</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>K1206</code-ROME>
+<code-ROME>K2111</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licences arts, lettres, langues mention langues, littératures et civilisations étrangères et
+régionales parcours néerlandais
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>481</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>24508</code-RNCP>
+<code-CERTIFINFO>92891</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<resume-offre numero="14_AF_0000038967_SE_0000126421" href="http://www.intercariforef.org/">
+<domaine-formation>
+<code-FORMACODE>15254</code-FORMACODE>
+<code-NSF>136</code-NSF>
+<code-ROME>D1401</code-ROME>
+<code-ROME>E1103</code-ROME>
+<code-ROME>E1108</code-ROME>
+<code-ROME>G1201</code-ROME>
+<code-ROME>M1705</code-ROME>
+</domaine-formation>
+<intitule-formation>
+Licence arts, lettres, langues mention langues étrangères appliquées
+</intitule-formation>
+<nom-organisme numero="14_OF_0000000233">UNIVERSITE PARIS 4 SORBONNE</nom-organisme>
+<SIRET>19751720400396</SIRET>
+<codepostal>75017</codepostal>
+<code-INSEE-commune>75117</code-INSEE-commune>
+<ville>Paris 17e Arrondissement</ville>
+<departement>75</departement>
+<region>11</region>
+<certifiante>1</certifiante>
+<code-niveau-entree>5</code-niveau-entree>
+<prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+<modalites-enseignement>0</modalites-enseignement>
+<code-public-vise>83056</code-public-vise>
+<nombre-heures-total>676</nombre-heures-total>
+<session>
+<periode>
+<debut>20170900</debut>
+<fin>20180700</fin>
+</periode>
+<adresse-inscription>
+<adresse>
+<ligne>-</ligne>
+<codepostal>75017</codepostal>
+<ville>Paris 17e Arrondissement</ville>
+</adresse>
+</adresse-inscription>
+</session>
+<certification>
+<code-RNCP>25169</code-RNCP>
+<code-CERTIFINFO>92893</code-CERTIFINFO>
+</certification>
+<extras info="geolocalisation">
+<extra info="latitude">48.883512</extra>
+<extra info="longitude">2.309388</extra>
+</extras>
+<extras info="complements">
+<extra info="code-niveau-sortie">7</extra>
+</extras>
+</resume-offre>
+<extras info="FLUX-CARIF">
+<extra info="date-export">20170809</extra>
+<extra info="heure-export">000940</extra>
+<extra info="statut">OK</extra>
+<extra info="nb-resultat">10</extra>
+</extras>
+</resumes-offres>
+</lheo-index>

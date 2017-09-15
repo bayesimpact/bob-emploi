@@ -4,6 +4,28 @@
     "name": "Boucherie",
     "romeId": "D1101",
     "applicationComplexity": "SIMPLE_APPLICATION_PROCESS",
+    "applicationModes" : {
+        "S0Z20" : {
+            "modes" : [
+                {
+                    "percentage" : 32.95,
+                    "mode" : "SPONTANEOUS_APPLICATION"
+                },
+                {
+                    "percentage" : 31.12,
+                    "mode" : "PERSONAL_OR_PROFESSIONAL_CONTACTS"
+                },
+                {
+                    "percentage" : 26.74,
+                    "mode" : "PLACEMENT_AGENCY"
+                },
+                {
+                    "percentage" : 9.19,
+                    "mode" : "UNDEFINED_APPLICATION_MODE"
+                }
+            ]
+        }
+    },
     "requirements": {
       "skills": [
         {
@@ -338,6 +360,28 @@
           "contractType": "CDD"
         }
       ]
+    },
+    "applicationModes" : {
+        "S0Z21" : {
+            "modes" : [
+                {
+                    "percentage" : 32.95,
+                    "mode" : "PERSONAL_OR_PROFESSIONAL_CONTACTS"
+                },
+                {
+                    "percentage" : 31.12,
+                    "mode" : "PLACEMENT_AGENCY"
+                },
+                {
+                    "percentage" : 26.74,
+                    "mode" : "UNDEFINED_APPLICATION_MODE"
+                },
+                {
+                    "percentage" : 9.19,
+                    "mode" : "SPONTANEOUS_APPLICATION"
+                }
+            ]
+        }
     }
   }
 ]

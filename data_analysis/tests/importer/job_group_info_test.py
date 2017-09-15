@@ -18,6 +18,8 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         path.dirname(__file__), 'testdata/job_offers/job_requirements.json')
     job_application_complexity_json = path.join(
         path.dirname(__file__), 'testdata/job_application_complexity.json')
+    application_mode_csv = path.join(
+        path.dirname(__file__), 'testdata/application_modes.csv')
 
     @airtablemock.patch(job_group_info.__name__ + '.airtable')
     def test_make_dicts(self):
@@ -45,10 +47,11 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             self.rome_csv_pattern,
             self.job_requirements_json,
             self.job_application_complexity_json,
+            self.application_mode_csv,
             'app01234567:advice:viw012345',
             'app4242:domains')
 
-        self.assertEqual(531, len(collection))
+        self.assertEqual(532, len(collection))
         for info in collection:
             self.assertEqual(info['_id'], info['romeId'])
 
@@ -86,6 +89,12 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual(
             ['Commerce de gros', 'Commerce/grande distribution'],
             sorted(d1501.work_environment_keywords.domains[0].sectors))
+        self.assertEqual(
+            job_pb2.SPONTANEOUS_APPLICATION,
+            d1501.application_modes['R2Z83'].modes[0].mode)
+        self.assertEqual(
+            30.27,
+            d1501.application_modes['R2Z83'].modes[0].percentage)
 
 
 if __name__ == '__main__':

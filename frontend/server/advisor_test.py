@@ -89,7 +89,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
             sorted(data.keys()))
         self.assertEqual('http://base.example.com', data['baseUrl'])
         self.assertEqual('Margaux', data['firstName'])
-        self.assertEqual('d\'hôtesse', data['ofProjectTitle'])
+        self.assertEqual("d'hôtesse", data['ofProjectTitle'])
         self.assertEqual('1234', data['projectId'])
 
     def test_recommend_advice_none(self, mock_send_template):
@@ -113,6 +113,40 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertFalse(project.advices)
 
         mock_send_template.assert_not_called()
+
+    def test_recommend_all_modules(self, mock_send_template):
+        """Test that all advice are recommended when all_modules is true even if incompatible."""
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_many([
+            {
+                'adviceId': 'spontaneous-application',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+                'airtableId': 'abc',
+                'incompatibleAdviceIds': ['def'],
+            },
+            {
+                'adviceId': 'other-work-env',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+                'airtableId': 'def',
+            },
+            {
+                'adviceId': 'new-advice',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+                'airtableId': 'def',
+                'incompatibleAdviceIds': ['abc'],
+            },
+        ])
+
+        self.user.features_enabled.all_modules = True
+        advisor.maybe_advise(self.user, project, self.database)
+        self.assertEqual(
+            ['spontaneous-application', 'other-work-env', 'new-advice'],
+            [a.advice_id for a in project.advices])
+
+        mock_send_template.assert_called_once()
 
     def test_incompatible_advice_modules(self, mock_send_template):
         """Test that the advisor discard incompatible advice modules."""
@@ -270,9 +304,30 @@ class ExtraDataTestCase(_BaseTestCase):
             weekly_applications_estimate=project_pb2.A_LOT,
             total_interview_count=1,
         )
-        self.database.local_diagnosis.insert_one({
-            '_id': '14:A1234',
-            'imt': {'applicationModes': {'Foo': {'first': 'SPONTANEOUS_APPLICATION'}}},
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        }
+                    ],
+                }
+            },
         })
         self.database.advice_modules.insert_one({
             'adviceId': 'my-advice',
@@ -436,6 +491,55 @@ class ExtraDataTestCase(_BaseTestCase):
         advice = next(a for a in project.advices if a.advice_id == 'my-advice')
         self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
         self.assertEqual('AP HEROS CANDIDATS MADIRCOM - BORDEAUX', advice.events_data.event_name)
+
+
+class OverrideAdviceTestCase(_BaseTestCase):
+    """Unit tests for maybe_advise to have overriden values from modules."""
+
+    def setUp(self):
+        super(OverrideAdviceTestCase, self).setUp()
+        self.mail_patcher = mock.patch(advisor.mail.__name__ + '.send_template')
+        mock_send_template = self.mail_patcher.start()
+        mock_send_template().status_code = 200
+
+    def tearDown(self):
+        self.mail_patcher.stop()
+        super(OverrideAdviceTestCase, self).tearDown()
+
+    def test_advice_specific_to_job_override(self):
+        """Test that the advisor overrides some advice data with the "Specific to Job" module."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='D1102')),
+        )
+        self.database.advice_modules.insert_one({
+            'adviceId': 'custom-advice-id',
+            'triggerScoringModel': 'advice-specific-to-job',
+            'isReadyForProd': True,
+        })
+        self.database.specific_to_job_advice.insert_one({
+            'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            'filters': ['for-job-group(D1102)', 'not-for-job(12006)'],
+            'cardText':
+            'Allez à la boulangerie la veille pour savoir à quelle '
+            'heure arrive le chef boulanger.',
+            'expandedCardItems': [
+                'Se présenter aux boulangers entre 4h et 7h du matin.',
+                'Demander au vendeur / à la vendeuse à quelle heure arrive le chef le matin',
+                'Contacter les fournisseurs de farine locaux : ils connaissent '
+                'tous les boulangers du coin et sauront où il y a des '
+                'embauches.',
+            ],
+        })
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'custom-advice-id')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(
+            'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            advice.title)
+        self.assertTrue(advice.card_text)
+        self.assertTrue(advice.expanded_card_items)
 
 
 if __name__ == '__main__':

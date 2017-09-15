@@ -72,7 +72,10 @@ def compute_advices_for_project(user, project, database):
                 'Not able to score advice "%s", the scoring model "%s" is unknown.',
                 module.advice_id, module.trigger_scoring_model)
             continue
-        scores[module.advice_id] = scoring_model.score(scoring_project)
+        if user.features_enabled.all_modules:
+            scores[module.advice_id] = 3
+        else:
+            scores[module.advice_id] = scoring_model.score(scoring_project)
 
     modules = sorted(
         advice_modules,
@@ -83,7 +86,7 @@ def compute_advices_for_project(user, project, database):
         if not scores.get(module.advice_id):
             # We can break as others will have 0 score as well.
             break
-        if module.airtable_id in incompatible_modules:
+        if module.airtable_id in incompatible_modules and not user.features_enabled.all_modules:
             continue
         piece_of_advice = advice.advices.add()
         piece_of_advice.advice_id = module.advice_id
@@ -92,6 +95,7 @@ def compute_advices_for_project(user, project, database):
         incompatible_modules.update(module.incompatible_advice_ids)
 
         _compute_extra_data(piece_of_advice, module, scoring_project)
+        _maybe_override_advice_data(piece_of_advice, module, scoring_project)
 
     return advice
 
@@ -119,6 +123,20 @@ def _compute_extra_data(piece_of_advice, module, scoring_project):
     data_field.CopyFrom(extra_data)
 
 
+def _maybe_override_advice_data(piece_of_advice, module, scoring_project):
+    scoring_model = scoring.get_scoring_model(module.trigger_scoring_model)
+    try:
+        get_advice_override = scoring_model.get_advice_override
+    except AttributeError:
+        # The scoring model has no get_advice_override method;
+        return
+    override_data = get_advice_override(scoring_project, piece_of_advice)
+    if not override_data:
+        # Nothing to override.
+        return
+    piece_of_advice.MergeFrom(override_data)
+
+
 def _send_activation_email(user, project, database, base_url):
     """Send an email to the user just after we have defined their diagnosis."""
     advice_modules = {a.advice_id: a for a in _advice_modules(database)}
@@ -132,7 +150,7 @@ def _send_activation_email(user, project, database, base_url):
         'projectId': project.project_id,
         'firstName': user.profile.name,
         'ofProjectTitle': french.maybe_contract_prefix(
-            'de ', 'd\'', french.lower_first_letter(_get_job_name(
+            'de ', "d'", french.lower_first_letter(_get_job_name(
                 project.target_job, user.profile.gender))),
         'advices': [
             {'adviceId': a.advice_id, 'title': advice_modules[a.advice_id].title}

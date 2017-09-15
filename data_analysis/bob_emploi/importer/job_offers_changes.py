@@ -83,7 +83,7 @@ def csv2dicts(job_offers_csv, colnames_txt, last_year='2015'):
     return list(counter.get_proto_dicts())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # This is actually never used like this, in a normal importing flow, we
     # would import the data in a .json file and then combine it with other data
     # in local_diagnosis.py.

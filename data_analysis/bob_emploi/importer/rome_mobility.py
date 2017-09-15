@@ -26,7 +26,7 @@ from bob_emploi.lib import cleaned_data
 from bob_emploi.lib import mongo
 from bob_emploi.lib import rome_genderization
 
-locale.setlocale(locale.LC_TIME, "fr_FR.utf8")
+locale.setlocale(locale.LC_TIME, 'fr_FR.utf8')
 
 
 def csv2dicts(rome_csv_pattern):
@@ -153,5 +153,5 @@ def _sample_jobs(num_samples):
     return _sampling
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     mongo.importer_main(csv2dicts, 'similar_jobs')  # pragma: no cover

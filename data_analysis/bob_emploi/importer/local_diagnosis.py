@@ -320,5 +320,5 @@ def finalize_salary_estimation(estimation):
     return estimation
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     mongo.importer_main(csv2dicts, 'local_diagnosis')  # pragma: no cover

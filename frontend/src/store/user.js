@@ -69,6 +69,7 @@ function getUserFrustrationTags(profile) {
   const frustrationsToTag = {
     AGE_DISCRIMINATION: 'Discriminations (âge)',
     ATYPIC_PROFILE: 'Profil atypique',
+    EXPERIENCE: "L'expérience demandée",
     HANDICAPED: 'Handicap non adapté',
     INTERVIEW: "Entretiens d'embauche",
     MOTIVATION: `Rester motivé${maybeE}`,

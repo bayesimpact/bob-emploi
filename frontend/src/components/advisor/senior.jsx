@@ -50,7 +50,7 @@ class ExpandedAdviceCardContent extends React.Component {
       <PaddedOnMobile style={{fontSize: 21}}>
         Mettez en avant les qualités liées à l'âge:
       </PaddedOnMobile>
-      <AdviceSuggestionList style={{marginTop: 15}}>
+      <AdviceSuggestionList style={{marginTop: 15}} isNotClickable={true}>
         {tips.map((tip, index) => this.renderTip(tip, index))}
       </AdviceSuggestionList>
     </div>

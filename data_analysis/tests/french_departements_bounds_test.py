@@ -13,7 +13,7 @@ class FrenchDepartementsBoundsTestCase(unittest.TestCase):
 
     def test_basic_usage(self):
         """Basic usage."""
-        testfile = path.join(path.dirname(__file__), 'testdata/french_cities.csv')
+        testfile = path.join(path.dirname(__file__), 'testdata/departements-avec-outre-mer.geojson')
         out = io.StringIO()
         french_departements_bounds.main(out, filename=testfile)
 

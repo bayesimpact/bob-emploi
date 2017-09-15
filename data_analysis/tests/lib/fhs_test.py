@@ -16,7 +16,7 @@ class FhsTestCase(unittest.TestCase):
     def test_job_seeker_iterator(self, mock_flatten_iterator):
         """Basic usage of job_seeker_iterator."""
         def _flatten_iterator(filename):
-            if '/de_' in filename:
+            if '/de.csv' in filename:
                 return iter([
                     {
                         'IDX': '1',
@@ -37,7 +37,7 @@ class FhsTestCase(unittest.TestCase):
                         '__file__': filename.replace('*', 'Reg21'),
                     },
                 ])
-            if '/e0_' in filename:
+            if '/e0.csv' in filename:
                 return iter([
                     {
                         'IDX': '1',
@@ -70,20 +70,20 @@ class FhsTestCase(unittest.TestCase):
                     'IDX': '1',
                     'ROME': 'foo',
                     'DATINS': datetime.date(2015, 12, 1),
-                    '__file__': '/folder/path/Reg01/de_Reg01.csv',
+                    '__file__': '/folder/path/Reg01/de.csv',
                 }],
                 'e0': [
                     {
                         'IDX': '1',
                         'HOURS': 42,
                         'MOIS': '201510',
-                        '__file__': '/folder/path/Reg01/e0_Reg01.csv',
+                        '__file__': '/folder/path/Reg01/e0.csv',
                     },
                     {
                         'IDX': '1',
                         'HOURS': 43,
                         'MOIS': '201510',
-                        '__file__': '/folder/path/Reg01/e0_Reg01.csv',
+                        '__file__': '/folder/path/Reg01/e0.csv',
                     },
                 ],
             },
@@ -93,7 +93,7 @@ class FhsTestCase(unittest.TestCase):
                     'IDX': '15',
                     'ROME': 'foo',
                     'DATINS': datetime.date(2015, 12, 1),
-                    '__file__': '/folder/path/Reg01/de_Reg01.csv',
+                    '__file__': '/folder/path/Reg01/de.csv',
                 }],
                 'e0': [],
             },
@@ -103,13 +103,13 @@ class FhsTestCase(unittest.TestCase):
                     'IDX': '2',
                     'ROME': 'foo',
                     'DATINS': datetime.date(2015, 12, 1),
-                    '__file__': '/folder/path/Reg21/de_Reg21.csv',
+                    '__file__': '/folder/path/Reg21/de.csv',
                 }],
                 'e0': [{
                     'IDX': '2',
                     'HOURS': 27,
                     'MOIS': '201510',
-                    '__file__': '/folder/path/Reg21/e0_Reg21.csv',
+                    '__file__': '/folder/path/Reg21/e0.csv',
                 }],
             },
         ], data)
@@ -343,6 +343,15 @@ class JobSeekerTestCase(unittest.TestCase):
                   'MOTINS': 'eee',
                   'MOTANN': 'fff'})]),
             periods)
+        self.assertEqual(
+            fhs.Period(
+                datetime.date(2015, 5, 1), datetime.date(2015, 10, 31),
+                {'DATINS': datetime.date(2015, 5, 1),
+                 'DATANN': datetime.date(2015, 10, 31),
+                 'CATREGR': '1',
+                 'MOTINS': 'aaa',
+                 'MOTANN': 'ddd'}),
+            periods.first_contiguous_period())
 
     def test_state_at_date(self):
         """Basic usages of state_at_date."""
@@ -370,27 +379,27 @@ class JobSeekerTestCase(unittest.TestCase):
         }
         tests = [
             StateAtDateTestCase(
-                name="In the middle",
+                name='In the middle',
                 date=datetime.date(2015, 5, 10),
                 expect=first_state),
             StateAtDateTestCase(
-                name="Before unemployment",
+                name='Before unemployment',
                 date=datetime.date(2014, 5, 10),
                 expect=None),
             StateAtDateTestCase(
-                name="After unemployment",
+                name='After unemployment',
                 date=datetime.date(2016, 5, 10),
                 expect=None),
             StateAtDateTestCase(
-                name="Between 2 unemployment periods",
+                name='Between 2 unemployment periods',
                 date=datetime.date(2015, 5, 30),
                 expect=None),
             StateAtDateTestCase(
-                name="First day of unemployment",
+                name='First day of unemployment',
                 date=datetime.date(2015, 5, 1),
                 expect=first_state),
             StateAtDateTestCase(
-                name="First day of employment",
+                name='First day of employment',
                 date=datetime.date(2015, 5, 22),
                 expect=None),
         ]

@@ -25,9 +25,10 @@ RUN apt-get update -qqy && \
   touch bob_emploi/frontend/__init__.py
 
 COPY entrypoint.sh .
-COPY server.py action.py advisor.py auth.py carif.py companies.py evaluation.py french.py mail.py now.py privacy.py proto.py scoring.py bob_emploi/frontend/
-COPY asynchronous/__init__.py asynchronous/create_pool.py asynchronous/mail_nps.py bob_emploi/frontend/asynchronous/
+COPY server.py action.py advisor.py auth.py carif.py companies.py evaluation.py french.py mail.py now.py opengraph.py privacy.py proto.py scoring.py bob_emploi/frontend/
+COPY asynchronous/__init__.py asynchronous/create_pool.py asynchronous/focus_email.py asynchronous/mail_nps.py bob_emploi/frontend/asynchronous/
 COPY api bob_emploi/frontend/api
+COPY templates bob_emploi/frontend/templates
 
 # Label the image with the git commit.
 LABEL org.bayesimpact.git=$GIT_SHA1

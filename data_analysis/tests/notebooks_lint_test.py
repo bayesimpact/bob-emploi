@@ -83,6 +83,15 @@ class NotebookLintCase(unittest.TestCase):
             self.assertNotIn(
                 ' ', path.basename(file_name), msg='Use underscore in filename %s' % file_name)
 
+    def test_filenames_in_lowercase(self):
+        """Check that the notebooks names only use lowercases."""
+        asserter = TolerantAsserter(self, tolerance=23)
+        for file_name, unused_notebook in self.__class__.notebooks:
+            basename = path.basename(file_name)
+            asserter.assertEqual(
+                basename.lower(), basename, msg='Use lowercase only in filename "%s"' % file_name)
+        asserter.assert_exact_tolerance()
+
     def test_clean_execution(self):
         """Check that all code cells have been executed once in the right order."""
         for file_name, notebook in self.__class__.notebooks:

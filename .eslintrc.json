@@ -7,6 +7,7 @@
   "parser": "babel-eslint",
   "plugins": [
     "import",
+    "jsx-a11y",
     "react"
   ],
   "settings": {
@@ -38,6 +39,7 @@
     "import/newline-after-import": "error",
     "import/unambiguous": 0,
     "indent": ["error", 2, {"SwitchCase": 1}],
+    "jsx-a11y/alt-text": "error",
     "jsx-quotes": ["error", "prefer-double"],
     "key-spacing": "error",
     "linebreak-style": "error",

@@ -12,6 +12,7 @@ module.exports = {
     historyApiFallback: {
       rewrites: [
         {from: /^\/eval($|\/)/, to: '/eval.html'},
+        {from: /^\/unsubscribe/, to: '/unsubscribe.html'},
       ],
     },
     hot: true,

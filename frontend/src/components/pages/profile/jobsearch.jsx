@@ -151,4 +151,4 @@ class NewProjectJobsearchStep extends React.Component {
 }
 
 
-export {NewProjectJobsearchStep}
+export {NewProjectJobsearchStep, weeklyApplicationOptions, weeklyOfferOptions}

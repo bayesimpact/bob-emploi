@@ -95,7 +95,9 @@ class UpdatePage extends React.Component {
         {config.productName} évolue&nbsp;!
       </header>
 
-      <img style={imageStyle} src={newAdvisorScreenshot} />
+      <img
+        style={imageStyle} src={newAdvisorScreenshot}
+        alt={`Capture d'écran du nouveau ${config.productName}`} />
 
       <div style={{margin: '70px auto', maxWidth: 500}}>
         <div style={{color: Colors.DARK_TWO, fontSize: 21, fontWeight: 'bold'}}>

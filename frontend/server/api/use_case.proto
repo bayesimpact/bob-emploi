@@ -6,24 +6,28 @@ import "bob_emploi/frontend/api/user.proto";
 
 package bayes.bob;
 
-
-message UseCasePoolNames {
-  // A sorted list of names of use case groups. The ones available in the db to be fetch.
-  repeated string use_case_pool_names = 1;
+message UseCasePools {
+  // A sorted list of use case groups. The ones available in the db to be fetch.
+  repeated UseCasePool use_case_pools = 1;
 }
 
 message UseCases {
   // A list of anonymized user examples.
   repeated UseCase use_cases = 1;
-
-  // A list of anonymized user examples.
-  // DEPRECATED: use the renamed field above when it is set.
-  // TODO(pascal): Clean up when this has been live for few days.
-  repeated UseCase new_use_cases = 2 [deprecated = true];
 }
 
 message UseCasePool {
+  // Name of the pool, usually the date of creation.
   string name = 1;
+
+  // How many use cases are in this group.
+  int32 useCaseCount = 2;
+
+  // How many use cases have already been evaluated in this group.
+  int32 evaluatedUseCaseCount = 3;
+
+  // Timestamp of the most recent use case.
+  google.protobuf.Timestamp last_user_registered_at = 4;
 }
 
 message UseCase {
@@ -47,8 +51,11 @@ message UseCase {
 }
 
 message UseCaseEvaluation {
-  // When the evaluation was done.
+  // When the evaluation was last done.
   google.protobuf.Timestamp evaluated_at = 1;
+
+  // Email address of the user that did the latest evaluation of the use case.
+  string by = 6;
 
   // General score for this use case.
   UseCaseScore score = 2;
@@ -57,7 +64,20 @@ message UseCaseEvaluation {
   string comments = 3;
 
   // New score for advice modules.
+  // TODO: put this info in AdviceEvaluation if possible (note that we need to store "0" value
+  // for "modules" to mean that the advice should be hidden).
   map<string, int32> modules = 4;
+
+  // Evaluation for each advice modules.
+  map<string, AdviceEvaluation> advices = 5;
+}
+
+message AdviceEvaluation {
+  // Whether the advice needs to be optimized with better data and content.
+  bool shouldBeOptimized = 1;
+
+  // Comment about the advice.
+  string comment = 2;
 }
 
 enum UseCaseScore {

@@ -800,7 +800,6 @@ class LabeledToggle extends React.Component {
     const {isHovered} = this.state
     const containerStyle = {
       alignItems: 'center',
-      color: isSelected ? Colors.SKY_BLUE : 'inherit',
       cursor: 'pointer',
       display: 'flex',
       listStyle: 'none',

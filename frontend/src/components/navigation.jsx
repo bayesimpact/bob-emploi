@@ -23,7 +23,6 @@ import {CookieMessage} from './cookie_message'
 import {BetaMessage} from './beta_message'
 import {Colors, Icon, SmoothTransitions, Styles} from './theme'
 import {Routes} from './url'
-import {LoginButton} from 'components/login'
 import {ZendeskChatButton} from 'components/zendesk'
 
 export const NAVIGATION_BAR_HEIGHT = 56
@@ -103,7 +102,8 @@ class Notifications extends React.Component {
       style={{alignItems: 'center', display: 'flex', width: iconStyle.width}}>
       <img
         src={bellImage} style={iconStyle} tabIndex={0}
-        onClick={() => this.setState({isExpanded: true})} />
+        onClick={() => this.setState({isExpanded: true})}
+        alt="notifications" />
 
       <div style={triangleContainerStyle}>
         <div style={triangleStyle} />
@@ -139,6 +139,7 @@ const navLinkStyle = {
 class NavigationLink extends React.Component {
   static propTypes = {
     children: PropTypes.node,
+    isOnTransparentBar: PropTypes.bool,
     isSelected: PropTypes.bool,
     selectionStyle: PropTypes.oneOf(['bottom', 'top']),
     style: PropTypes.object,
@@ -151,14 +152,19 @@ class NavigationLink extends React.Component {
   }
 
   render() {
-    const {children, isSelected, selectionStyle, style, ...extraProps} = this.props
-    const isHighlighted = isSelected || this.state.isHovered || this.state.isFocused
+    const {children, isOnTransparentBar, isSelected, selectionStyle, style,
+      ...extraProps} = this.props
+    const {isFocused, isHovered} = this.state
+    const isHighlighted = isSelected || isHovered || isFocused
     const isSelectionOnTop = selectionStyle === 'top'
     const containerStyle = {
       ...navLinkStyle,
-      color: isHighlighted ? '#fff' : navLinkStyle.color,
+      color: isOnTransparentBar ?
+        ((isSelected || !isHovered && !isFocused) ? '#fff' : navLinkStyle.color) :
+        (isHighlighted ? '#fff' : navLinkStyle.color),
       position: 'relative',
       textDecoration: 'none',
+      textShadow: isHighlighted ? '0 1px 2px rgba(0, 0, 0, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.9)',
       ...SmoothTransitions,
       ...style,
       ...(isHighlighted && style && style[':highlight'] || null),
@@ -314,8 +320,11 @@ class MobileNavigationBarBase extends React.Component {
           <Link to={Routes.VISION_PAGE} style={linkStyle('vision')}>
             Notre mission
           </Link>
-          <Link to={Routes.CONTRIBUTION_PAGE} style={linkStyle('contribution')}>
-            Contribuer
+          <Link to={Routes.TEAM_PAGE} style={linkStyle('equipe')}>
+            Qui est Bob&nbsp;?
+          </Link>
+          <Link to={Routes.TRANSPARENCY_PAGE} style={linkStyle('transparency')}>
+            Où en sommes-nous&nbsp;?
           </Link>
           {isLoggedIn && isOnboardingComplete ? <div>
             <Link to={Routes.PROJECT_PAGE} style={linkStyle('project')}>
@@ -425,15 +434,8 @@ class NavigationBarBase extends React.Component {
     const logo = <img
       src={logoBobEmploiBetaImage}
       style={{cursor: 'pointer'}}
-      onClick={this.handleLogoClick} />
+      onClick={this.handleLogoClick} alt={config.productName} />
     if (!name) {
-      const loginButtonStyle = {
-        ...navLinkStyle,
-        ':hover': {
-          backgroundColor: 'initial',
-          color: '#fff',
-        },
-      }
       return <nav style={containerStyle}>
         <div style={{width: 27}} />
 
@@ -441,20 +443,21 @@ class NavigationBarBase extends React.Component {
 
         <div style={{flex: 1}} />
 
-        <NavigationLink to={Routes.ROOT} isSelected={page === 'landing'} selectionStyle="top">
-          Accueil
-        </NavigationLink>
-        <NavigationLink to={Routes.VISION_PAGE} isSelected={page === 'vision'} selectionStyle="top">
+        <NavigationLink
+          to={Routes.VISION_PAGE} isSelected={page === 'vision'} selectionStyle="top"
+          isOnTransparentBar={isTransparent}>
           Notre mission
         </NavigationLink>
         <NavigationLink
-          to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'} selectionStyle="top">
-          Contribuer
+          to={Routes.TEAM_PAGE} isSelected={page === 'equipe'} selectionStyle="top"
+          isOnTransparentBar={isTransparent}>
+          Qui est Bob&nbsp;?
         </NavigationLink>
-        <LoginButton style={loginButtonStyle} visualElement="navbar" type="discreet">
-          <Icon name="lock" style={{marginRight: 8}} />
-          S'identifier
-        </LoginButton>
+        <NavigationLink
+          to={Routes.TRANSPARENCY_PAGE} isSelected={page === 'transparency'} selectionStyle="top"
+          isOnTransparentBar={isTransparent}>
+          Où en sommes-nous&nbsp;?
+        </NavigationLink>
       </nav>
     }
     const menuStyle = {
@@ -467,16 +470,14 @@ class NavigationBarBase extends React.Component {
     const dropDownButtonStyle = {
       ':focus': {
         backgroundColor: '#fff',
-        color: Colors.DARK_TWO,
       },
       ':hover': {
         backgroundColor: isLogOutDropDownShown ? '#fff' : 'rgba(255, 255, 255, .2)',
-        color: isLogOutDropDownShown ? Colors.DARK_TWO : '#fff',
       },
       alignItems: 'center',
       backgroundColor: isLogOutDropDownShown ? '#fff' : 'initial',
       bottom: 0,
-      color: isLogOutDropDownShown ? Colors.DARK_TWO : Colors.COOL_GREY,
+      color: isLogOutDropDownShown ? Colors.DARK_TWO : '#fff',
       display: 'flex',
       justifyContent: 'center',
       left: 0,
@@ -615,7 +616,7 @@ class Footer extends React.Component {
     return <footer style={containerStyle}>
       <img
         src={isMobileVersion ? logoBobEmploiBetaMobileImage : logoBobEmploiWhiteImage}
-        style={logoStyle} />
+        style={logoStyle} alt={config.productName} />
 
       <div style={{flex: 1}} />
 
@@ -632,13 +633,19 @@ class Footer extends React.Component {
       </NavigationLink>
 
       <NavigationLink
-        style={linkStyle} target="_blank" to={config.helpRequestUrl} rel="noopener noreferrer">
-        Nous contacter
+        style={linkStyle} to={Routes.PROFESSIONALS_PAGE}
+        isSelected={page === 'professionals'}>
+        Accompagnateurs
       </NavigationLink>
 
       <NavigationLink
-        style={linkStyle} to={'/transparence'}>
-        Transparence
+        style={linkStyle} to={Routes.CONTRIBUTION_PAGE}>
+        Contribuer
+      </NavigationLink>
+
+      <NavigationLink
+        style={linkStyle} target="_blank" to={config.helpRequestUrl} rel="noopener noreferrer">
+        Nous contacter
       </NavigationLink>
 
       <div style={{flex: 1}} />

@@ -51,47 +51,48 @@ CollectionsDiff = collections.namedtuple(
 IMPORTERS = {
     'similar_jobs': Importer(
         name='ROME Mobility',
-        command="""docker-compose run --rm data-analysis-prepare \\
+        command='''docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/rome_mobility.py \\
-            --rome_csv_pattern data/rome/csv/unix_%%s_%s_utf8.csv""" % _ROME_VERSION,
+            --rome_csv_pattern data/rome/csv/unix_%%s_%s_utf8.csv''' % _ROME_VERSION,
         is_imported=True,
         proto_type=discovery_pb2.JobsExploration,
         key='job group ID'),
     'recent_job_offers': Importer(
         name='Available Job Offers',
-        command="""docker-compose run --rm data-analysis-prepare \\
-            python bob_emploi/importer/recent_job_offers_count.py""",
+        command='''docker-compose run --rm data-analysis-prepare \\
+            python bob_emploi/importer/recent_job_offers_count.py''',
         is_imported=True,
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>'),
     'chantiers': Importer(
         name='Chantiers',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/airtable_to_protos.py \\
             --table chantiers \\
             --proto Chantier \\
             --base_id appXmyc7yYj0pOcae \\
-            --view viwbjlYBDlD1Fd7Ob""",
+            --view viwbjlYBDlD1Fd7Ob''',
         is_imported=True,
         proto_type=chantier_pb2.Chantier,
         key='chantier_id'),
     'job_group_info': Importer(
         name='Job Group Info',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/job_group_info.py \\
             --rome_csv_pattern data/rome/csv/unix_%%s_%s_utf8.csv \\
             --job_requirements_json data/job_offers/job_offers_requirements.json \\
             --job_application_complexity_json data/job_application_complexity.json \\
+            --application_mode_csv data/imt/application_modes.csv \\
             --handcrafted_assets_airtable appMRMtWV61Kibt37:advice:viwJ1OsSqK8YTSoIq \\
-            --domains_airtable appMRMtWV61Kibt37:domains""" % _ROME_VERSION,
+            --domains_airtable appMRMtWV61Kibt37:domains''' % _ROME_VERSION,
         is_imported=True,
         proto_type=job_pb2.JobGroup,
         key='job group ID'),
     'local_diagnosis': Importer(
         name='Local Diagnosis',
-        command="""docker-compose run --rm data-analysis-prepare \\
+        command='''docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/local_diagnosis.py \\
             --bmo_csv data/bmo/bmo_2016.csv \\
             --fap_rome_crosswalk data/crosswalks/passage_fap2009_romev3.txt \\
@@ -99,7 +100,7 @@ IMPORTERS = {
             --unemployment_duration_csv data/fhs_category_a_duration.csv \\
             --job_offers_changes_json data/job_offers/job_offers_changes.json \\
             --job_imt_json data/scraped_imt_local_job_stats.json \\
-            --mobility_csv data/rome/csv/unix_rubrique_mobilite_%s_utf8.csv""" % _ROME_VERSION,
+            --mobility_csv data/rome/csv/unix_rubrique_mobilite_%s_utf8.csv''' % _ROME_VERSION,
         is_imported=True,
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>'),
@@ -119,123 +120,135 @@ IMPORTERS = {
         proto_type=feedback_pb2.Feedback, key='Mongo key'),
     'unverified_data_zones': Importer(
         name='Unverified Data Zones',
-        command="""docker-compose run --rm data-analysis-prepare \\
+        command='''docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/unverified_data_zones.py \\
-            --data_folder data""",
+            --data_folder data''',
         is_imported=True,
         proto_type=user_pb2.UnverifiedDataZone,
         key='default'),
     'cities': Importer(
         name='City locations',
-        command="""docker-compose run --rm data-analysis-prepare \\
+        command='''docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/city_locations.py \\
-            --stats_filename data/geo/french_cities.csv""",
+            --stats_filename data/geo/french_cities.csv''',
         is_imported=True,
         proto_type=geo_pb2.FrenchCity,
         key='Code officiel géographique'),
     'advice_modules': Importer(
         name='Advice modules',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/airtable_to_protos.py \\
             --table advice_modules \\
             --view viwGHHyK2Tc7sNxwv \\
             --proto AdviceModule \\
-            --base_id appXmyc7yYj0pOcae""",
+            --base_id appXmyc7yYj0pOcae''',
         is_imported=True,
         proto_type=advisor_pb2.AdviceModule,
         key='AirTable key'),
     'tip_templates': Importer(
         name='Tip templates',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/airtable_to_protos.py \\
             --table tip_templates \\
             --proto ActionTemplate \\
             --base_id appXmyc7yYj0pOcae \\
-            --view viwPgjqZAa7GcpkU2""",
+            --view viwPgjqZAa7GcpkU2''',
         is_imported=True,
         proto_type=action_pb2.ActionTemplate,
         key='AirTable key'),
     'show_unverified_data_users': Importer(
         name='Show unverified data Users',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/show_unverified_data_users.py \\
             --base_id appvjPDlByLmGbjaE \\
-            --table whitelist""",
+            --table whitelist''',
         is_imported=True,
         proto_type=None,
         key='User Email'),
     'jobboards': Importer(
         name='Job Boards',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/airtable_to_protos.py \\
             --table jobboards \\
             --view viwKBgHagnOhGkGoj \\
             --proto JobBoard \\
-            --base_id appXmyc7yYj0pOcae""",
+            --base_id appXmyc7yYj0pOcae''',
         is_imported=True,
         proto_type=jobboard_pb2.JobBoard,
         key='Airtable key'),
     'associations': Importer(
         name='Associations',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/airtable_to_protos.py \\
             --table association_list \\
             --proto Association \\
             --view viw8d0QdKj4LT3UEp \\
-            --base_id appXmyc7yYj0pOcae""",
+            --base_id appXmyc7yYj0pOcae''',
         is_imported=True,
         proto_type=association_pb2.Association,
         key='Airtable key'),
     'volunteering_missions': Importer(
         name='Volunteering Missions',
-        command="""docker-compose run --rm \\
+        command='''docker-compose run --rm \\
             data-analysis-prepare \\
-            python bob_emploi/importer/volunteering_missions.py""",
+            python bob_emploi/importer/volunteering_missions.py''',
         is_imported=True,
         proto_type=association_pb2.VolunteeringMissions,
         key='departement ID'),
     'hiring_cities': Importer(
         name='Hiring Cities',
-        command="""docker-compose run --rm data-analysis-prepare \\
+        command='''docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/offers_per_city.py \\
             --offers_file="data/job_offers/OFFRE_EXTRACT_ENRICHIE_FGU_17JANV2017_FGU.csv" \\
             --colnames="data/job_offers/column_names.txt" \\
-            --min_creation_date=2015/01/01""",
+            --min_creation_date=2015/01/01''',
         is_imported=True,
         proto_type=commute_pb2.HiringCities,
         key='ROME ID'),
     'application_tips': Importer(
         name='Appliction Tips',
-        command="""docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/airtable_to_protos.py \\
             --base_id appXmyc7yYj0pOcae \\
             --table application_tips \\
-            --proto ApplicationTip""",
+            --proto ApplicationTip''',
         is_imported=True,
         proto_type=application_pb2.ApplicationTip,
         key='Airtable key'),
     'eterritoire_links': Importer(
         name='e-Territoire Links',
-        command="""docker-compose run --rm data-analysis-prepare \\
-            python bob_emploi/importer/eterritoire.py""",
+        command='''docker-compose run --rm data-analysis-prepare \\
+            python bob_emploi/importer/eterritoire.py''',
         is_imported=True,
         proto_type=None,
         key='Code officiel géographique'),
     'events': Importer(
         name='WorkUp Events',
-        command="""docker-compose run --rm data-analysis-prepare \\
+        command='''docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/workup_events.py \\
             --events_json data/workup.json \\
-            --departement_bounds_csv data/geo/france_departements_bounds.csv""",
+            --departement_bounds_csv data/geo/france_departements_bounds.csv''',
         is_imported=True,
         proto_type=event_pb2.Event,
         key='WorkUp ID'),
+    'specific_to_job_advice': Importer(
+        name='Specific to Job Advice',
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/airtable_to_protos.py \\
+            --base_id appXmyc7yYj0pOcae \\
+            --table specific_to_job_advice \\
+            --view viwtskoVJykFxo6R6 \\
+            --proto DynamicAdvice''',
+        is_imported=True,
+        proto_type=advisor_pb2.DynamicAdvice,
+        key='Airtable key'),
 }
 
 

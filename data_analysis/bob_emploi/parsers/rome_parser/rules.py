@@ -52,8 +52,8 @@ Notes for the regexes:
 # number of degrees that exist and the fact they're very short (meaning I need
 # to actually bother delineating the words in the regexes).
 
-DEGREES = r"bac,baccalaur.?.?at,cap,bep,bts,dut,licence,l[1-3],master,"
-DEGREES += r"m[1-2]mast.?.?re,dipl.?.?me,des formations,bac professionnel"
+DEGREES = r'bac,baccalaur.?.?at,cap,bep,bts,dut,licence,l[1-3],master,'
+DEGREES += r'm[1-2]mast.?.?re,dipl.?.?me,des formations,bac professionnel'
 
 
 # This is the main dictionary containing the rules for each type flag.
@@ -62,32 +62,32 @@ DEGREES += r"m[1-2]mast.?.?re,dipl.?.?me,des formations,bac professionnel"
 
 TYPE_RULES = {
     'degree': r'(\b' + r'\b|\b'.join(DEGREES.split(',')) + r'\b)' +
-              "( specialis.?.?s?)?",
+              '( specialis.?.?s?)?',
     'certification': "((la|une) formation|l'inscription|attestation|" +
-                     "habilitations?|" +
-                     "Les permis|" +
-                     "(des|le) permis|certifications?|carte|" +
-                     r"(certificats?)\b)" +
-                     r"( professionnel(le)?s?)?",
+                     'habilitations?|' +
+                     'Les permis|' +
+                     '(des|le) permis|certifications?|carte|' +
+                     r'(certificats?)\b)' +
+                     r'( professionnel(le)?s?)?',
     'experience': r"((d'|une )exp.?.?riences?|" +
                   r"d'exercice|(?<!r )d'activit.?.?)" +
-                  r"( professionnel(le)?s?)?",
-    'skill': r"(une|des) connaissances?|" +
-             r"la ma.?.?trise|la pratique|comp.?.?tences",
-    'other': r"des vaccinations|casier judiciaire|" +
-             r"des d.?.?marches|des agr.?.?ments",
+                  r'( professionnel(le)?s?)?',
+    'skill': r'(une|des) connaissances?|' +
+             r'la ma.?.?trise|la pratique|comp.?.?tences',
+    'other': r'des vaccinations|casier judiciaire|' +
+             r'des d.?.?marches|des agr.?.?ments',
 }
 
 # This is the main dictionary containing the rules for each importance level.
 IMPORTANCE_RULES = {
-    'required': r"est accessible|(est|sont) (souvent )?(exig|requis|demand)",
-    'alternative': r".?.?galement accessible",
-    'sometimes': r"(parfois|peut .?.?tre|peuvent .?.?tre) (exig|requis|demand)",
-    'bonus': r"peu(ven)?t en faciliter|est appreci",
+    'required': r'est accessible|(est|sont) (souvent )?(exig|requis|demand)',
+    'alternative': r'.?.?galement accessible',
+    'sometimes': r'(parfois|peut .?.?tre|peuvent .?.?tre) (exig|requis|demand)',
+    'bonus': r'peu(ven)?t en faciliter|est appreci',
 }
 
 # Content rules start here.
-"""This next block creates what I call the base rule, which is a simple but
+'''This next block creates what I call the base rule, which is a simple but
 effective generic rule that matches a lot of patterns. It recognizes the
 X in Y pattern when they're surrounded by a type and an importance level.
 Example: "A [Bachelor's] in [accounting] [is required].
@@ -97,14 +97,14 @@ are actually pretty good at detecting the start and end of this pattern.
 So I just did a massive OR between all the type patterns to get a
 "This sentence piece defines a type of requirement" pattern; same with
 importances. Furthermore, the type detection patterns tend to be reasonable
-basesfor the levels as well."""
+basesfor the levels as well.'''
 
 # First we make all groups non-capturing in the patterns we want to OR together
 # (treat lookaheads and lookbehinds separately when doing this though)
-ALL_TYPE_RULES = r"(?:{0})".format(
+ALL_TYPE_RULES = r'(?:{0})'.format(
     r'|'.join(TYPE_RULES.values()).replace('(', '(?:'))
 ALL_TYPE_RULES = ALL_TYPE_RULES.replace('(?:?<!', '(?<!')
-ALL_IMPORTANCE_RULES = r"(?:{0})".format(
+ALL_IMPORTANCE_RULES = r'(?:{0})'.format(
     r'|'.join(IMPORTANCE_RULES.values()).replace('(', '(?:'))
 ALL_IMPORTANCE_RULES = ALL_IMPORTANCE_RULES.replace('(?:?<!', '(?<!')
 
@@ -114,6 +114,6 @@ BASE_RULE = r"((?:{0})) (?:en|dans|de|de l'|l'|d')? ?(.+) (?:{1})"
 CONTENT_RULES = {
     'base_rule': BASE_RULE.format(ALL_TYPE_RULES, ALL_IMPORTANCE_RULES),
     'degree1': r"est accessible (?:\.?.? partir|avec) (?:du|d'un|le|un)" +
-               r"(?: dipl.?.?me de niveau)? (.+) " +
-               r"(?:en|dans|de|pour) (?:le |un |la )?(.+)(?: en | dans )?\.$",
+               r'(?: dipl.?.?me de niveau)? (.+) ' +
+               r'(?:en|dans|de|pour) (?:le |un |la )?(.+)(?: en | dans )?\.$',
 }

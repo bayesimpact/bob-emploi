@@ -16,7 +16,7 @@ class ETerritoireImporterTestCase(unittest.TestCase):
     @mock.patch(requests.__name__ + '.get')
     def test_get_cities_dicts(self, mock_get):
         """Basic usage."""
-        mock_get().json.return_value = json.loads("""[
+        mock_get().json.return_value = json.loads('''[
             {
                 "idinsee": "01001",
                 "nom": "Abergement-Clémenciat",
@@ -32,7 +32,7 @@ class ETerritoireImporterTestCase(unittest.TestCase):
                 "nom":"Ajaccio",
                 "url":"\\/territoires\\/corse\\/corse-du-sud\\/ajaccio\\/992004\\/37369"
             }
-        ]""")
+        ]''')
 
         cities = dict(mongo.collection_to_proto_mapping(
             eterritoire.get_cities_dicts(),

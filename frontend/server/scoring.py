@@ -14,6 +14,7 @@ import re
 from bob_emploi.frontend import companies
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import carif
+from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import event_pb2
@@ -56,6 +57,9 @@ _ASSOCIATIONS = proto.MongoCachedCollection(association_pb2.Association, 'associ
 _APPLICATION_TIPS = proto.MongoCachedCollection(application_pb2.ApplicationTip, 'application_tips')
 
 _EVENTS = proto.MongoCachedCollection(event_pb2.Event, 'events')
+
+_SPECIFIC_TO_JOB_ADVICE = proto.MongoCachedCollection(
+    advisor_pb2.DynamicAdvice, 'specific_to_job_advice')
 
 # Distance below which the city is so close that it is obvious.
 _MIN_CITY_DISTANCE = 8
@@ -162,7 +166,7 @@ _ALL_DEPARTEMENTS = {
     '92': 'Hauts-de-Seine',
     '93': 'Seine-Saint-Denis',
     '94': 'Val-de-Marne',
-    '95': 'Val-d\'Oise',
+    '95': "Val-d'Oise",
     '971': 'Guadeloupe',
     '972': 'Martinique',
     '973': 'Guyane',
@@ -255,7 +259,7 @@ class ScoringProject(object):
         imt = self.imt_proto()
         if not imt.yearly_avg_offers_denominator:
             return None
-        offers = imt.yearly_avg_offers_per_10_candidates or imt.yearly_avg_offers_per_10_openings
+        offers = imt.yearly_avg_offers_per_10_candidates
         if not offers:
             # No job offers at all, ouch!
             return 1000
@@ -273,7 +277,6 @@ class ScoringProject(object):
         proto.parse_from_mongo(
             self._db.job_group_info.find_one({'_id': self._rome_id()}),
             self._job_group_info)
-
         return self._job_group_info
 
     def requirements(self):
@@ -311,7 +314,6 @@ class ScoringProject(object):
 
     def find_best_departements(self):
         """Find which are the best departement to relocate for a given job group."""
-
         if self._best_departements is not None:
             return self._best_departements
 
@@ -380,9 +382,15 @@ class ScoringProject(object):
         """Get the training opportunities from our partner's API."""
         if self._trainings is not None:
             return self._trainings
-        self._trainings = carif.get_carif_trainings(
+        self._trainings = carif.get_trainings(
             self.details.target_job.job_group.rome_id, self.details.mobility.city.departement_id)
         return self._trainings
+
+    def get_seasonal_departements(self):
+        """Compute departements that propose seasonal jobs."""
+        # TODO(guillaume): Implement with real data.
+
+        return ['Savoie', 'Haute Savoie']
 
     def list_nearby_cities(self):
         """Compute and store all interesting cities that are not too close and not too far.
@@ -473,6 +481,11 @@ class ScoringProject(object):
         self._events = list(filter_using_score(all_events, lambda e: e.filters, self))
         return self._events
 
+    def specific_to_job_advice_config(self):
+        """Find the first specific to job advice config that matches this project."""
+        _configs = _SPECIFIC_TO_JOB_ADVICE.get_collection(self._db)
+        return next(filter_using_score(_configs, lambda c: c.filters, self), None)
+
 
 class _ScoringModelBase(object):
     """A base/default scoring model.
@@ -498,8 +511,8 @@ class _AdviceEventScoringModel(_ScoringModelBase):
     """A scoring model for Advice that user needs to go to events."""
 
     def score(self, project):
-        imt = project.imt_proto()
-        first_modes = set(mode.first for mode in imt.application_modes.values())
+        application_modes = project.job_group_info().application_modes.values()
+        first_modes = set(fap_modes.modes[0].mode for fap_modes in application_modes)
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
             return 2
@@ -525,8 +538,8 @@ class _ImproveYourNetworkScoringModel(_ScoringModelBase):
         if project.details.network_estimate != self._network_level:
             return 0
 
-        imt = project.imt_proto()
-        first_modes = set(mode.first for mode in imt.application_modes.values())
+        application_modes = project.job_group_info().application_modes.values()
+        first_modes = set(fap_modes.modes[0].mode for fap_modes in application_modes)
         first_modes.discard(job_pb2.UNDEFINED_APPLICATION_MODE)
         if first_modes == {job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS}:
             return 3
@@ -571,20 +584,70 @@ class _AdviceTrainingScoringModel(_ScoringModelBase):
         return 1
 
 
-class _SpontaneousApplicationScoringModel(_ScoringModelBase):
-    """A scoring model for the "Send spontaneous applications" chantier.
+class _AdviceSeasonalRelocate(_ScoringModelBase):
+    """A scoring model for the "seasonal relocate" advice module."""
 
-    See http://go/pe:chantiers/rec2qz1yvVzEysaTd
-    """
+    def score(self, project):
+        user_age = datetime.date.today().year - project.user_profile.year_of_birth
+
+        # For now we just match for people willing to move to the whole country.
+        # There might be cases where we should be able to recommend to people who want to move to
+        # their own region, but it would add complexity to find them.
+        is_not_ready_to_move = (
+            project.details.mobility.area_type != geo_pb2.COUNTRY and
+            project.details.mobility.area_type != geo_pb2.WORLD)
+
+        is_not_single = project.user_profile.family_situation != user_pb2.SINGLE
+        has_advanced_degree = project.user_profile.highest_degree >= job_pb2.LICENCE_MAITRISE
+        is_not_young = user_age > 30
+        looks_only_for_cdi = project.details.employment_types == [job_pb2.CDI]
+
+        if (is_not_ready_to_move or is_not_young or is_not_single or has_advanced_degree or
+                looks_only_for_cdi):
+            return 0
+
+        if len(project.get_seasonal_departements()) > 1:
+            if user_age < 25:
+                return 3
+            return 2
+        return 0
+
+
+class _AdviceSpecificToJob(_ScoringModelBase):
+    """A scoring model for the "Specific to Job" advice module."""
 
     def score(self, project):
         """Compute a score for the given ScoringProject."""
-        imt = project.imt_proto()
-        first_modes = set(mode.first for mode in imt.application_modes.values())
+        if project.specific_to_job_advice_config():
+            return 3
+        return 0
+
+    def get_advice_override(self, project, unused_advice):
+        """Get override data for an advice."""
+        config = project.specific_to_job_advice_config()
+        if project.user_profile.gender == user_pb2.FEMININE and config.expanded_card_items_feminine:
+            expanded_card_items = config.expanded_card_items_feminine
+        else:
+            expanded_card_items = config.expanded_card_items
+
+        return project_pb2.Advice(
+            title=config.title,
+            card_text=config.card_text,
+            expanded_card_items=expanded_card_items,
+        )
+
+
+class _SpontaneousApplicationScoringModel(_ScoringModelBase):
+    """A scoring model for the "Send spontaneous applications" advice module."""
+
+    def score(self, project):
+        """Compute a score for the given ScoringProject."""
+        application_modes = project.job_group_info().application_modes.values()
+        first_modes = set(fap_modes.modes[0].mode for fap_modes in application_modes)
         if job_pb2.SPONTANEOUS_APPLICATION in first_modes:
             return 3
 
-        second_modes = set(mode.second for mode in imt.application_modes.values())
+        second_modes = set(fap_modes.modes[1].mode for fap_modes in application_modes)
         if job_pb2.SPONTANEOUS_APPLICATION in second_modes:
             return 2
 
@@ -674,10 +737,21 @@ class JobGroupFilter(_ProjectFilter):
 
 
 class _JobFilter(_ProjectFilter):
-    """A scoring model to filter on a job group."""
+    """A scoring model to filter on specific jobs."""
+
+    def __init__(self, jobs):
+        super(_JobFilter, self).__init__(self._filter)
+        self._jobs = set(job.strip() for job in jobs.split(','))
+
+    def _filter(self, project):
+        return project.target_job.code_ogr in self._jobs
+
+
+class _JobGroupWithoutJobFilter(_ProjectFilter):
+    """A scoring model to filter on a job group but exclude some jobs."""
 
     def __init__(self, job_groups, exclude_jobs=None):
-        super(_JobFilter, self).__init__(self._filter)
+        super(_JobGroupWithoutJobFilter, self).__init__(self._filter)
         self._job_groups = set(job_groups)
         self._exclude_jobs = set(exclude_jobs) or {}
 
@@ -797,6 +871,9 @@ class _AdviceVae(_ScoringModelBase):
                 project_pb2.TRAINING_FULFILLMENT_NOT_SURE,
                 project_pb2.CURRENTLY_IN_TRAINING])
 
+        if project.details.training_fulfillment_estimate == project_pb2.ENOUGH_DIPLOMAS:
+            return 0
+
         if thinks_xp_covers_diplomas:
             if is_frustrated_by_trainings or has_experience:
                 return 3
@@ -815,7 +892,7 @@ class _AdviceSenior(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         user = project.user_profile
         age = datetime.date.today().year - user.year_of_birth
-        if (user_pb2.AGE_DISCRIMINATION in user.frustrations and age > 35) or age >= 50:
+        if (user_pb2.AGE_DISCRIMINATION in user.frustrations and age > 40) or age >= 45:
             return 2
         return 0
 
@@ -827,7 +904,7 @@ class _AdviceLessApplications(_ScoringModelBase):
         """Compute a score for the given ScoringProject."""
         if project.details.weekly_applications_estimate == project_pb2.DECENT_AMOUNT or \
                 project.details.weekly_applications_estimate == project_pb2.A_LOT:
-            return 2
+            return 3
         return 0
 
 
@@ -1078,9 +1155,15 @@ class _AdviceCommuteScoringModel(_ScoringModelBase):
         return project_pb2.CommuteData(cities=[c.name for c in project.list_nearby_cities()])
 
     def score(self, project):
-        if project.list_nearby_cities():
-            return 2
-        return 0
+        nearby_cities = project.list_nearby_cities()
+        if not nearby_cities:
+            return 0
+
+        if project.details.mobility.area_type > geo_pb2.CITY and \
+                any(c.relative_offers_per_inhabitant >= 2 for c in nearby_cities):
+            return 3
+
+        return 2
 
 
 class _AdviceAssociationHelp(_ScoringModelBase):
@@ -1093,6 +1176,8 @@ class _AdviceAssociationHelp(_ScoringModelBase):
         if user_pb2.MOTIVATION in project.user_profile.frustrations:
             return 3
         if len(project.list_associations()) >= 3 and project.details.job_search_length_months >= 6:
+            return 3
+        if project.details.job_search_length_months >= 12:
             return 3
         return 2
 
@@ -1111,6 +1196,8 @@ _ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'c
 _SCORING_MODEL_REGEXPS = (
     # Matches strings like "for-job-group(M16)" or "for-job-group(A12, A13)".
     _ScoringModelRegexp(re.compile(r'^for-job-group\((.*)\)$'), JobGroupFilter),
+    # Matches strings like "for-job(12006)" or "for-job(12006,12007)".
+    _ScoringModelRegexp(re.compile(r'^for-job\((.*)\)$'), _JobFilter),
     # Matches strings like "for-departement(31)" or "for-departement(31, 75)".
     _ScoringModelRegexp(re.compile(r'^for-departement\((.*)\)$'), _DepartementFilter),
     # Matches strings like "not-for-young" or "not-for-active-experiment".
@@ -1161,10 +1248,14 @@ SCORING_MODELS = {
     'advice-use-good-network': _ImproveYourNetworkScoringModel(3),
     'advice-volunteer': _AdviceVolunteer(),
     'advice-vae': _AdviceVae(),
+    'advice-seasonal-relocate': _AdviceSeasonalRelocate(),
     'advice-senior': _AdviceSenior(),
+    'advice-specific-to-job': _AdviceSpecificToJob(),
     'advice-less-applications': _AdviceLessApplications(),
-    'advice-wow-baker': _JobFilter(job_groups={'D1102'}, exclude_jobs={'12006'}),
+    'advice-wow-baker': _JobGroupWithoutJobFilter(job_groups={'D1102'}, exclude_jobs={'12006'}),
     'advice-training': _AdviceTrainingScoringModel(),
+    'advice-spontaneous-application': _SpontaneousApplicationScoringModel(),
+    # TODO(guillaume): Remove chantier by september 20th.
     'chantier-spontaneous-application': _SpontaneousApplicationScoringModel(),
     'for-complex-application': _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS),
     'for-experienced(2)': _ProjectFilter(

@@ -63,12 +63,14 @@ function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
-function evalUseCasePoolNamesGet() {
-  return getJson('/api/eval/use-case-pool-names')
+function evalUseCasePoolsGet() {
+  return getJson('/api/eval/use-case-pools').
+    then(response => response.useCasePools || [])
 }
 
 function evalUseCasesGet(poolName) {
-  return getJson(`/api/eval/use-cases/${poolName}`)
+  return getJson(`/api/eval/use-cases/${poolName}`).
+    then(response => response.useCases || [])
 }
 
 function eventsGet({userId}, {projectId}) {
@@ -151,7 +153,7 @@ export {
   associationsGet,
   createEvalUseCasePost,
   dashboardExportGet,
-  evalUseCasePoolNamesGet,
+  evalUseCasePoolsGet,
   evalUseCasesGet,
   eventsGet,
   feedbackPost,

@@ -82,5 +82,5 @@ def get_data_zones(data_folder='data'):
     data_zones.drop_duplicates(['rome_id', 'postcodes'], inplace=True)
     return data_zones
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     mongo.importer_main(csv2dicts, 'unverified_data_zones')  # pragma: no cover

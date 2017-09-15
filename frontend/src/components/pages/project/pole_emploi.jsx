@@ -141,7 +141,9 @@ class PoleEmploiChangelogModalBase extends React.Component {
     return <div style={style}>
       {isNewFeature ? <div style={newStyle}>Nouveau</div> : null}
       <div style={{marginBottom: 15}}>{caption}</div>
-      <img src={image} style={{maxWidth: isMobileVersion ? 'calc(100% - 40px)' : 'initial'}} />
+      <img
+        src={image} alt=""
+        style={{maxWidth: isMobileVersion ? 'calc(100% - 40px)' : 'initial'}} />
     </div>
   }
 

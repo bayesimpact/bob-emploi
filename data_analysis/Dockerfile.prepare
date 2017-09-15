@@ -27,6 +27,7 @@ RUN pip install --no-binary pycparser \
   pandas \
   pep8 \
   pylint \
+  pylint-quotes \
   pymongo \
   python-emploi-store \
   requests \

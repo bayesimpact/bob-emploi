@@ -8,18 +8,17 @@ from bob_emploi.frontend.api import training_pb2
 _CARIF_URL = 'http://www.intercariforef.org/serviceweb2/offre-info/?versionLHEO=2.2&typeListe=max'
 
 
-def _make_carif_key(title, city):
+def _make_key(title, city):
     """Create a unique key for a training."""
     return title + city
 
 
-def get_carif_trainings(rome_id, departement_id):
+def get_trainings(rome_id, departement_id):
     """Helper function to get trainings from the CARIF API.
 
     Carif sends us multiple trainings that have the same city and title, this function only return
     one training per city/title.
     """
-    # TODO(guillaume): Unitest this module.
     no_trainings = []
 
     try:
@@ -61,11 +60,11 @@ def get_carif_trainings(rome_id, departement_id):
             if not isinstance(formacodes, list):
                 formacodes = [formacodes]
 
-            name = offer['intitule-formation']
+            name = offer['intitule-formation'].replace('\n', ' ')
             city_name = offer['ville']
             url = offer['@href']
 
-            key = _make_carif_key(name, city_name)
+            key = _make_key(name, city_name)
             if key in trainings_keys:
                 continue
 

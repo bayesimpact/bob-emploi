@@ -175,7 +175,9 @@ class TestimonialCard extends React.Component {
       padding: `0 ${horizontalPadding}px`,
       position: 'absolute',
     }
-    const authorPicto = <img style={{marginRight: 15}} src={isAuthorMan ? manImage : womanImage} />
+    const authorPicto = <img
+      style={{marginRight: 15}} src={isAuthorMan ? manImage : womanImage}
+      alt={isAuthorMan ? 'homme' : 'femme'} />
     return <div style={style}>
       {children}
       <div style={authorStyle}>{authorPicto} {author}</div>

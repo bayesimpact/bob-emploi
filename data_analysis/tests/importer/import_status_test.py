@@ -47,7 +47,7 @@ class ImportStatusBasicTests(unittest.TestCase):
     def test_details_no_import_needed(self, mock_log_info):
         """Test no import needed."""
         importer = import_status.Importer(
-            name="no import needed", command='', is_imported=False,
+            name='no import needed', command='', is_imported=False,
             proto_type=None, key=None)
         import_status.print_single_importer(importer, 'no-import-needed', 'url')
         mock_log_info.assert_any_call(
@@ -58,7 +58,7 @@ class ImportStatusBasicTests(unittest.TestCase):
     def test_details_basic_usage(self, mock_log_info):
         """Basic usage."""
         importer = import_status.Importer(
-            name="with command",
+            name='with command',
             command='run this',
             is_imported=True,
             proto_type=None, key=None)
@@ -75,13 +75,13 @@ class ImportStatusBasicTests(unittest.TestCase):
         self.mongo_db.create_collection('in-both')
         importers = {
             'no-import-needed': import_status.Importer(
-                name="no import needed", command='', is_imported=False,
+                name='no import needed', command='', is_imported=False,
                 proto_type=None, key=None),
             'missing-in-db-importer': import_status.Importer(
-                name="missing in db", command='', is_imported=True,
+                name='missing in db', command='', is_imported=True,
                 proto_type=None, key=None),
             'in-both': import_status.Importer(
-                name="in both", command='', is_imported=True,
+                name='in both', command='', is_imported=True,
                 proto_type=None, key=None)
         }
         diff = import_status.compute_collections_diff(importers, self.mongo_db)
@@ -106,16 +106,16 @@ class ImportStatusBasicTests(unittest.TestCase):
     @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'missing-in-db-importer': import_status.Importer(
-            name="missing in db", command='', is_imported=True,
+            name='missing in db', command='', is_imported=True,
             proto_type=None, key=None),
         'in-both': import_status.Importer(
-            name="in both", command='', is_imported=True,
+            name='in both', command='', is_imported=True,
             proto_type=None, key=None),
         'in-both-with-meta': import_status.Importer(
-            name="in both with meta", command='', is_imported=True,
+            name='in both with meta', command='', is_imported=True,
             proto_type=job_pb2.JobGroup, key=None),
         'in-both-not-needed': import_status.Importer(
-            name="in both not needed", command='', is_imported=False,
+            name='in both not needed', command='', is_imported=False,
             proto_type=None, key=None)
         })
     def test_main_function(self, pymongo_mock, mock_log_info):
@@ -161,7 +161,7 @@ class ImportStatusBasicTests(unittest.TestCase):
     @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'collection_id': import_status.Importer(
-            name="Collection name",
+            name='Collection name',
             command='my-long-command',
             is_imported=True,
             proto_type=None, key=None),

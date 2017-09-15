@@ -43,7 +43,8 @@ class Banner extends React.Component {
         </div>
       </div>
       <Button
-        type="navigationOnImage" style={buttonStyle} onClick={onClose}>
+        type="navigationOnImage" style={buttonStyle} onClick={onClose}
+        aria-label="Fermer">
         <Icon style={closeIconStyle} name="close" /> {isMobileVersion ? null : 'Fermer'}
       </Button>
     </div>

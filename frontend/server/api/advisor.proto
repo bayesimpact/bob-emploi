@@ -61,7 +61,6 @@ message AdviceModule {
   repeated string email_facts = 13;
 }
 
-
 // History of advice sent by email.
 message EmailHistory {
   // Last time an advice module was sent by email.
@@ -69,4 +68,33 @@ message EmailHistory {
 
   // Last time a tip was sent by email.
   map<string, google.protobuf.Timestamp> tips = 2;
+}
+
+// Definition of an advice which content is fully dynamic and determined by the
+// server, e.g. the "Specific to Job" advice.
+message DynamicAdvice {
+  // Title of this advice.
+  string title = 1;
+
+  // Content for the advice card. This is using Markdown.
+  string card_text = 2;
+
+  // Header content for the expanded advice card. This is using Mardown.
+  string expanded_card_header = 6;
+
+  // Header content for the expanded advice card, feminine version. This is
+  // using Mardown.
+  string expanded_card_header_feminine = 7;
+
+  // Content for the expanded advice card. This is using Markdown.
+  repeated string expanded_card_items = 3;
+
+  // Content for the expanded advice card, feminine version. This is using
+  // Markdown.
+  repeated string expanded_card_items_feminine = 4;
+
+  // A set of filter IDs: do not show the advice card if one these filters
+  // returns false for the project.
+  // See the list of available filters in scoring.py.
+  repeated string filters = 5;
 }

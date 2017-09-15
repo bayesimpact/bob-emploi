@@ -19,7 +19,8 @@ class AdviceCard extends React.Component {
 
   render() {
     const {advice, project} = this.props
-    const {associationNames} = advice.volunteerData || {}
+    const {volunteerData} = advice
+    const associationNames = volunteerData.associationNames || ['SNC', 'Missions Locales']
     const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
     return <div style={{fontSize: 30}}>
       Des associations près {prefix}<strong>{cityName}</strong> comme <StringJoiner>
@@ -202,7 +203,7 @@ class MoreMissionsLinkBase extends React.Component {
         {children}
       </strong>
       <span style={{flex: 1}} />
-      <img src={logoTousBenevoles} style={{height: 25}} />
+      <img src={logoTousBenevoles} style={{height: 25}} alt="Tous bénévoles" />
       <Icon
         name="chevron-right"
         style={{fontSize: 20, lineHeight: '13px', marginLeft: 5}} />

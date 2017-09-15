@@ -4,21 +4,38 @@ import ReactHeight from 'react-height'
 import PropTypes from 'prop-types'
 import _ from 'underscore'
 
-import rankOneImage from 'images/rank-one-picto.svg'
-import rankThreeImage from 'images/rank-three-picto.svg'
-import rankTwoImage from 'images/rank-two-picto.svg'
-import rankZeroImage from 'images/rank-zero-picto.svg'
+import optimizeImage from 'images/optimize-picto.svg'
+import commentImage from 'images/comment-picto.svg'
 import threeStarsImage from 'images/3-stars-picto.svg'
 import twoStarsImage from 'images/2-stars-picto.svg'
 
 import {AdviceCard} from 'components/advisor'
 import {Colors, LabeledToggle, Styles} from 'components/theme'
 
+import {ADVICE_SCORES} from './score_levels'
+
+
+const ADVICE_GROUP_PROPS = {
+  '1': {
+    title: 'À regarder',
+  },
+  '2': {
+    image: twoStarsImage,
+    title: '2 étoiles',
+  },
+  '3': {
+    image: threeStarsImage,
+    title: '3 étoiles',
+  },
+}
+
 
 class AdvicesRecap extends React.Component {
   static propTypes = {
+    adviceEvaluations: PropTypes.objectOf(PropTypes.object.isRequired).isRequired,
     advices: PropTypes.array.isRequired,
     moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
+    onEvaluateAdvice: PropTypes.func.isRequired,
     onRescoreAdvice: PropTypes.func.isRequired,
     profile: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
@@ -30,7 +47,8 @@ class AdvicesRecap extends React.Component {
   }
 
   render() {
-    const {advices, moduleNewScores, onRescoreAdvice, profile, project, style} = this.props
+    const {advices, adviceEvaluations, moduleNewScores,onRescoreAdvice,
+      onEvaluateAdvice, profile, project, style} = this.props
     const {showAdviceCards} = this.state
     const containerStyle = {
       backgroundColor: '#fff',
@@ -38,7 +56,7 @@ class AdvicesRecap extends React.Component {
       ...style,
     }
     const adviceGroups = _.groupBy(advices, 'numStars')
-    const groupKeys = Object.keys(adviceGroups).sort().reverse()
+    const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse()
     return <div style={containerStyle}>
       <LabeledToggle
         label="Afficher les cartes des conseils"
@@ -48,7 +66,9 @@ class AdvicesRecap extends React.Component {
         {groupKeys.map(numStars => (
           <AdvicesRecapSection
             key={`section-${numStars}-stars`} profile={profile}
-            project={project} advices={adviceGroups[numStars]}
+            project={project} advices={adviceGroups[numStars] || []}
+            adviceEvaluations={adviceEvaluations}
+            onEvaluateAdvice={onEvaluateAdvice}
             onRescoreAdvice={onRescoreAdvice} moduleNewScores={moduleNewScores}
             numStars={numStars} showAdviceCards={showAdviceCards} />
         ))}
@@ -57,48 +77,26 @@ class AdvicesRecap extends React.Component {
   }
 }
 
-const ADVICE_GROUP_PROPS = {
-  '1': {
-    title: 'À regarder',
-  },
-  '2': {
-    image: twoStarsImage,
-  },
-  '3': {
-    image: threeStarsImage,
-  },
-}
-
-
-const RESCORE_BUTTONS = [
-  {
-    image: rankThreeImage,
-    value: '3',
-  },
-  {
-    image: rankTwoImage,
-    value: '2',
-  },
-  {
-    image: rankOneImage,
-    value: '1',
-  },
-  {
-    image: rankZeroImage,
-    value: '0',
-  },
-]
-
-
 class AdvicesRecapSection extends React.Component {
   static propTypes = {
+    adviceEvaluations: PropTypes.objectOf(PropTypes.object.isRequired).isRequired,
     advices: PropTypes.array.isRequired,
     moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
     numStars: PropTypes.oneOf(Object.keys(ADVICE_GROUP_PROPS)).isRequired,
+    onEvaluateAdvice: PropTypes.func.isRequired,
     onRescoreAdvice: PropTypes.func.isRequired,
     profile: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
     showAdviceCards: PropTypes.bool.isRequired,
+  }
+
+  constructor(props) {
+    super(props)
+    this.state = {
+      isCommentShownByAdviceId: _.mapObject(props.adviceEvaluations, function(adviceEvaluation) {
+        return !!adviceEvaluation.comment
+      }),
+    }
   }
 
   handleAddAdvice = adviceId => {
@@ -112,7 +110,7 @@ class AdvicesRecapSection extends React.Component {
   renderRescoreButtons = advice => {
     const {moduleNewScores, numStars, onRescoreAdvice} = this.props
     const newScore = moduleNewScores[advice.adviceId] + ''
-    return RESCORE_BUTTONS.map(({image, value}) => {
+    return ADVICE_SCORES.map(({image, value}) => {
       return <RescoreAdviceButton
         key={`rescore-${advice.adviceId}-${value}-stars`}
         isPreselected={value === numStars}
@@ -123,6 +121,62 @@ class AdvicesRecapSection extends React.Component {
     })
   }
 
+  renderOptimizeButton = advice => {
+    const {adviceEvaluations, onEvaluateAdvice} = this.props
+    const adviceEvaluation = adviceEvaluations[advice.adviceId] || {}
+    const shouldBeOptimized = adviceEvaluation.shouldBeOptimized
+    return <RescoreAdviceButton
+      key={`optimize-${advice.adviceId}`}
+      isSelected={shouldBeOptimized}
+      onClick={() => onEvaluateAdvice(advice.adviceId, {shouldBeOptimized: !shouldBeOptimized})}>
+      <img src={optimizeImage} alt={'À optimiser'} />
+    </RescoreAdviceButton>
+  }
+
+  renderCommentButton = advice => {
+    const {adviceEvaluations} = this.props
+    const adviceEvaluation = adviceEvaluations[advice.adviceId] || {}
+    const {comment} = adviceEvaluation
+    const {isCommentShownByAdviceId} = this.state
+    const isCommentShown = !!isCommentShownByAdviceId[advice.adviceId]
+    return <RescoreAdviceButton
+      key={`comment-${advice.adviceId}`}
+      isSelected={!!comment || isCommentShown}
+      onClick={() => {
+        // TODO(florian): focus directly inside the comment box when switching on.
+        this.setState({
+          isCommentShownByAdviceId: {
+            ...isCommentShownByAdviceId,
+            [advice.adviceId]: !isCommentShown,
+          },
+        })
+      }}>
+      <img src={commentImage} alt={'Commenter'} />
+    </RescoreAdviceButton>
+  }
+
+  renderComment = advice => {
+    const {isCommentShownByAdviceId} = this.state
+    const isCommentShown = !!isCommentShownByAdviceId[advice.adviceId]
+    if (!isCommentShown) {
+      return null
+    }
+
+    const {adviceEvaluations, onEvaluateAdvice} = this.props
+    const adviceEvaluation = adviceEvaluations[advice.adviceId] || {}
+    const {comment} = adviceEvaluation
+    const textareaStyle = {
+      borderColor: Colors.SKY_BLUE,
+      fontSize: 14,
+      marginTop: -10,
+      width: '100%',
+    }
+    return <textarea
+      style={textareaStyle} value={comment || ''}
+      onChange={event => onEvaluateAdvice(advice.adviceId, {comment: event.target.value})}
+    />
+  }
+
   renderAdvice = advice => {
     const {profile, project, showAdviceCards} = this.props
     return <div key={advice.adviceId}>
@@ -131,7 +185,10 @@ class AdvicesRecapSection extends React.Component {
           {advice.adviceId}
         </span>
         {this.renderRescoreButtons(advice)}
+        {this.renderOptimizeButton(advice)}
+        {this.renderCommentButton(advice)}
       </div>
+      {this.renderComment(advice)}
       {showAdviceCards ? <ScaledAdvice
         scale={.5} advice={advice} profile={profile} project={project}
         style={{marginLeft: 60}} /> : null}
@@ -139,7 +196,7 @@ class AdvicesRecapSection extends React.Component {
   }
 
   renderExtraAdvices() {
-    const {advices, moduleNewScores, numStars} = this.props
+    const {advices, moduleNewScores, numStars, onRescoreAdvice} = this.props
     const advicesShown = _.object(
       advices.map(({adviceId}) => adviceId), new Array(advices.length).fill(true))
     const rescoredAdvices = _.keys(moduleNewScores)
@@ -151,11 +208,13 @@ class AdvicesRecapSection extends React.Component {
       margin: '5px 0',
       padding: 6,
     }
-    // TODO(pascal): Add a way to remove an extra advice.
     return <div style={{display: 'flex', flexDirection: 'column'}}>
       {extraAdvices.map(adviceId => <div key={adviceId} style={extraAdviceStyle}>
-        <div style={Styles.CENTER_FONT_VERTICALLY}>
-          {adviceId}
+        <div style={{...Styles.CENTER_FONT_VERTICALLY, alignItems: 'center', display: 'flex'}}>
+          <span style={{flex: 1}}>{adviceId}</span>
+          <span
+            style={{cursor: 'pointer', padding: 5}}
+            onClick={() => onRescoreAdvice(adviceId, '')}>×</span>
         </div>
       </div>)}
       <input
@@ -178,7 +237,7 @@ class AdvicesRecapSection extends React.Component {
     return <div>
       <div style={headerStyle}>
         {image
-          ? <img src={image} style={{height: 63, width: 63}} />
+          ? <img src={image} style={{height: 63, width: 63}} alt={title} />
           : <span style={{fontSize: 36, fontWeight: 'bold'}}>{title}</span>
         }
       </div>

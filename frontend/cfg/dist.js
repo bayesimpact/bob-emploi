@@ -20,6 +20,10 @@ const config = _.merge({
       'babel-polyfill',
       './src/eval_entry',
     ],
+    unsubscribe: [
+      'babel-polyfill',
+      './src/components/pages/unsubscribe',
+    ],
   },
   output: {
     filename: '[name].[hash].js',
@@ -49,6 +53,22 @@ Array.prototype.push.apply(config.plugins, [
   new HtmlWebpackPlugin({
     chunks: ['app'],
     filename: '../index.html',
+    minify: {
+      collapseWhitespace: true,
+      decodeEntities: true,
+      minifyCSS: true,
+      removeAttributeQuotes: true,
+      removeComments: true,
+      removeOptionalTags: true,
+      removeRedundantAttributes: true,
+      removeScriptTypeAttributes: true,
+      removeStyleLinkTypeAttributes: true,
+    },
+    template: path.join(__dirname, '/../src/index.html'),
+  }),
+  new HtmlWebpackPlugin({
+    chunks: ['unsubscribe'],
+    filename: '../unsubscribe.html',
     minify: {
       collapseWhitespace: true,
       decodeEntities: true,

@@ -12,23 +12,24 @@ import thunk from 'redux-thunk'
 
 import config from 'config'
 
-import {computeAdvicesForProject, getEvalUseCasePoolNames, getEvalUseCases} from 'store/actions'
+import {computeAdvicesForProject, getEvalUseCasePools, getEvalUseCases} from 'store/actions'
 
 import {app} from 'store/app_reducer'
 import {createProjectTitleComponents} from 'store/project'
 
 import {Button, Colors, Select, SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
-import badImage from 'images/bad-picto.svg'
-import excellentImage from 'images/excellent-picto.svg'
-import goodImage from 'images/good-picto.svg'
 
 import {AdvicesRecap} from './eval/advices_recap'
 import {CreatePoolModal} from './eval/create_pool_modal'
+import {PoolOverview} from './eval/overview'
+import {EVAL_SCORES} from './eval/score_levels'
 import {UseCase} from './eval/use_case'
 
 require('normalize.css')
 require('styles/App.css')
+
+const overviewId = 'sommaire'
 
 
 function getUseCaseTitle(title, userData) {
@@ -48,6 +49,7 @@ function getUseCaseTitle(title, userData) {
 class EvalPage extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    googleIdToken: PropTypes.string.isRequired,
     location: PropTypes.shape({
       query: PropTypes.shape({
         poolName: PropTypes.string,
@@ -64,8 +66,9 @@ class EvalPage extends React.Component {
     initialUseCaseId: null,
     isCreatePoolModalShown: false,
     isModified: false,
+    isOverviewShown: false,
     isSaved: false,
-    poolNames: [],
+    pools: [],
     selectedPoolName: undefined,
     selectedUseCase: null,
     useCases: [],
@@ -73,12 +76,11 @@ class EvalPage extends React.Component {
 
   componentWillMount() {
     const {dispatch, location, params} = this.props
-    dispatch(getEvalUseCasePoolNames()).then(useCasePoolNames => {
-      const poolNames = useCasePoolNames.useCasePoolNames || []
+    dispatch(getEvalUseCasePools()).then(pools => {
       this.setState({
-        poolNames,
+        pools,
         selectedPoolName: this.state.selectedPoolName ||
-          (poolNames.length ? poolNames[0] : undefined),
+          (pools.length ? pools[0].name : undefined),
       }, this.fetchPoolUseCases)
     })
     if (location.query.poolName) {
@@ -99,12 +101,14 @@ class EvalPage extends React.Component {
     if (!selectedPoolName) {
       return
     }
-    dispatch(getEvalUseCases(selectedPoolName)).then(({newUseCases, useCases}) => {
-      const fetchedUsedCases = useCases || newUseCases || []
-      const initialUseCase = initialUseCaseId && fetchedUsedCases.find(
+    dispatch(getEvalUseCases(selectedPoolName)).then(useCases => {
+      const initialUseCase = initialUseCaseId && useCases.find(
         ({useCaseId}) => useCaseId === initialUseCaseId)
-      this.setState({useCases: fetchedUsedCases})
-      this.selectUseCase(initialUseCase || fetchedUsedCases.length && fetchedUsedCases[0] || null)
+      this.setState({
+        isOverviewShown: initialUseCaseId === overviewId,
+        useCases,
+      })
+      this.selectUseCase(initialUseCase || useCases.length && useCases[0] || null)
     })
   }
 
@@ -114,27 +118,54 @@ class EvalPage extends React.Component {
     if (!selectedUseCase) {
       return
     }
-    const {poolName, useCaseId} = selectedUseCase
     dispatch(computeAdvicesForProject(selectedUseCase.userData)).then(({advices}) => {
       if (!this.isUnmounting) {
         this.setState({advices: advices || []})
       }
     })
-    // Sometimes this call might replace the current component by another one
-    // and we lose everything.
-    // TODO(pascal): Switch to a newer version of react-router so that we can
-    // keep the same component.
-    browserHistory.replace(
-      Routes.EVAL_PAGE + '/' + useCaseId + '?poolName=' + encodeURIComponent(poolName))
+  }
+
+  updateBrowserHistory(useCaseId, poolName) {
+    if (poolName && useCaseId) {
+      // Sometimes this call might replace the current component by another one
+      // and we lose everything.
+      // TODO(pascal): Switch to a newer version of react-router so that we can
+      // keep the same component.
+      browserHistory.replace(
+        Routes.EVAL_PAGE + '/' + useCaseId + '?poolName=' + encodeURIComponent(poolName))
+    }
   }
 
   selectUseCase = selectedUseCase => {
+    const {evaluation, poolName, useCaseId} = selectedUseCase || {}
     this.setState({
-      evaluation: selectedUseCase && selectedUseCase.evaluation || {},
+      advices: [],
+      evaluation: evaluation || {},
       isModified: false,
+      isOverviewShown: false,
       isSaved: false,
       selectedUseCase,
     }, this.advise)
+    this.updateBrowserHistory(useCaseId, poolName)
+  }
+
+  selectNextUseCase = () => {
+    const {selectedUseCase, useCases} = this.state
+    let nextUseCase = null
+    useCases.forEach(useCase => {
+      const indexInPool = useCase.indexInPool || 0
+      if (indexInPool <= (selectedUseCase.indexInPool || 0)) {
+        return
+      }
+      if (!nextUseCase || indexInPool < (nextUseCase.indexInPool || 0)) {
+        nextUseCase = useCase
+      }
+    })
+    if (nextUseCase) {
+      this.selectUseCase(nextUseCase)
+    } else {
+      this.handleUseCaseChange(overviewId)
+    }
   }
 
   handlePoolChange = selectedPoolName => {
@@ -142,12 +173,32 @@ class EvalPage extends React.Component {
   }
 
   handleUseCaseChange = selectedUseCaseId => {
-    this.selectUseCase(
-      this.state.useCases.find(({useCaseId}) => useCaseId === selectedUseCaseId))
+    if (selectedUseCaseId !== overviewId) {
+      this.selectUseCase(
+        this.state.useCases.find(({useCaseId}) => useCaseId === selectedUseCaseId))
+      return
+    }
+    this.setState({
+      isOverviewShown: true,
+      selectedUseCase: null,
+    })
+    const {poolName} = this.state.useCases.find(({poolName}) => poolName) || {}
+    this.updateBrowserHistory(overviewId, poolName)
   }
 
   handleRescoreAdvice = (adviceId, newScore) => {
     const {evaluation} = this.state
+    if (!newScore) {
+      const modules = {...evaluation && evaluation.modules}
+      delete modules[adviceId]
+      this.setState({
+        evaluation: {
+          ...evaluation,
+          modules,
+        },
+      })
+      return
+    }
     this.setState({
       evaluation: {
         ...evaluation,
@@ -160,13 +211,41 @@ class EvalPage extends React.Component {
     })
   }
 
+  handleEvaluateAdvice = (adviceId, adviceEvaluation) => {
+    const {evaluation} = this.state
+    const advices = evaluation.advices
+    this.setState({
+      evaluation: {
+        ...evaluation,
+        advices: {
+          ...advices,
+          [adviceId]: {
+            ...(advices && advices[adviceId]),
+            ...adviceEvaluation,
+          },
+        },
+      },
+      isModified: true,
+    })
+  }
+
   handleSaveEval = () => {
-    const {evaluation, selectedUseCase, useCases} = this.state
+    const {evaluation, pools, selectedPoolName, selectedUseCase, useCases} = this.state
     const {useCaseId} = selectedUseCase || {}
     if (!useCaseId) {
       return
     }
     this.setState({
+      // Let the pool know if the use case got evaluated for the first time.
+      pools: selectedUseCase.evaluation ? pools : pools.map(pool => {
+        if (pool.name === selectedPoolName) {
+          return {
+            ...pool,
+            evaluatedUseCaseCount: (pool.evaluatedUseCaseCount || 0) + 1,
+          }
+        }
+        return pool
+      }),
       useCases: useCases.map(useCase => {
         if (useCase.useCaseId === useCaseId) {
           return {
@@ -180,6 +259,7 @@ class EvalPage extends React.Component {
     fetch(`/api/eval/use-case/${useCaseId}`, {
       body: JSON.stringify(evaluation),
       headers: {
+        'Authorization': 'Bearer ' + this.props.googleIdToken,
         'Content-Type': 'application/json',
       },
       method: 'post',
@@ -191,6 +271,7 @@ class EvalPage extends React.Component {
         isModified: false,
         isSaved: true,
       })
+      this.selectNextUseCase()
     })
   }
 
@@ -227,31 +308,24 @@ class EvalPage extends React.Component {
     return <div style={containerStyle}>
       <strong>Évaluation</strong>
       <div style={{display: 'flex'}}>
-        <ScoreButton
-          onClick={() => updateEvaluation({score: 'EXCELLENT'})}
-          isSelected={score === 'EXCELLENT'} image={excellentImage}>
-          Excellent
-        </ScoreButton>
-        <ScoreButton
-          onClick={() => updateEvaluation({score: 'GOOD_ENOUGH'})}
-          isSelected={score === 'GOOD_ENOUGH'} image={goodImage}>
-          Bien
-        </ScoreButton>
-        <ScoreButton
-          onClick={() => updateEvaluation({score: 'BAD'})}
-          isSelected={score === 'BAD'} image={badImage}>
-          Mauvais
-        </ScoreButton>
+        {EVAL_SCORES.map(level => <ScoreButton
+          key={`${level.score}-button`}
+          onClick={() => updateEvaluation({score: level.score})}
+          isSelected={score === level.score} image={level.image}>
+          {level.title}
+        </ScoreButton>)}
       </div>
       <strong style={{marginBottom: 20}}>Commentaires</strong>
       <textarea
         style={{minHeight: 400, width: '100%'}} value={comments || ''}
         onChange={event => updateEvaluation({comments: event.target.value})} />
-      <Button
-        disabled={!isModified} style={{margin: 35}} type="validation"
-        onClick={this.handleSaveEval}>
-        Sauver
-      </Button>
+      <div style={{margin: '35px 0'}}>
+        {isModified ?
+          <Button type="validation" onClick={this.handleSaveEval}>Enregister</Button>
+          :
+          <Button type="navigation" onClick={this.selectNextUseCase}>Suivant</Button>
+        }
+      </div>
       <div style={savedMessageStyle}>
         Évaluation sauvegardée
       </div>
@@ -259,16 +333,28 @@ class EvalPage extends React.Component {
   }
 
   render() {
-    const {advices, selectedPoolName, selectedUseCase, useCases, poolNames} = this.state
-    const poolOptions = poolNames.map(poolName => {
-      return {name: poolName, value: poolName}
-    })
-    const useCasesOptions = useCases.map(({indexInPool, title, useCaseId, userData}) => {
+    const {advices, isOverviewShown, pools, selectedPoolName,
+      selectedUseCase, useCases} = this.state
+    const poolOptions = pools.map(pool => {
+      const isPoolEvaluated = pool.evaluatedUseCaseCount === pool.useCaseCount
       return {
-        name: (indexInPool || 0).toString() + ' - ' + getUseCaseTitle(title, userData),
-        value: useCaseId,
+        name: (isPoolEvaluated ? '✅ ' : '🎯 ') + pool.name,
+        value: pool.name,
       }
     })
+    const overviewOption = {
+      name: 'Sommaire',
+      value: overviewId,
+    }
+    const useCasesOptions = [overviewOption].concat(useCases.
+      sort((a, b) => (a.indexInPool || 0) - (b.indexInPool || 0)).
+      map(({indexInPool, title, useCaseId, userData, evaluation}) => {
+        return {
+          name: (evaluation ? '✅ ' : '🎯 ') +
+            (indexInPool || 0).toString() + ' - ' + getUseCaseTitle(title, userData),
+          value: useCaseId,
+        }
+      }))
     const {useCaseId, userData} = selectedUseCase || {}
     const {profile, projects} = userData || {}
     const project = projects && projects.length && projects[0] || {}
@@ -296,19 +382,17 @@ class EvalPage extends React.Component {
             Créer un nouveau pool
           </Button>
         </div>
-        {selectedUseCase &&
-      <UseCase useCase={selectedUseCase} />
-        }
+        {selectedUseCase ? <UseCase useCase={selectedUseCase} /> : null}
+        {isOverviewShown ? <PoolOverview
+          useCases={useCases} onSelectUseCase={this.selectUseCase} /> : null}
       </div>
-      <div>
-        {selectedUseCase &&
-          <AdvicesRecap
-            profile={profile} project={project} advices={advices}
-            onRescoreAdvice={this.handleRescoreAdvice}
-            moduleNewScores={this.state.evaluation.modules || {}} />
-        }
-      </div>
-      {this.renderScorePanel()}
+      {selectedUseCase ? <AdvicesRecap
+        profile={profile} project={project} advices={advices}
+        adviceEvaluations={this.state.evaluation.advices || {}}
+        onEvaluateAdvice={this.handleEvaluateAdvice}
+        onRescoreAdvice={this.handleRescoreAdvice}
+        moduleNewScores={this.state.evaluation.modules || {}} /> : null}
+      {isOverviewShown ? null : this.renderScorePanel()}
     </div>
   }
 }
@@ -371,12 +455,13 @@ class AuthenticateEvalPageBase extends React.Component {
   render() {
     const {googleIdToken, ...extraProps} = this.props
     if (googleIdToken) {
-      return <EvalPage {...extraProps} />
+      return <EvalPage googleIdToken={googleIdToken} {...extraProps} />
     }
 
     return <div style={{padding: 20, textAlign: 'center'}}>
       <GoogleLogin
         clientId={config.googleSSOClientId} offline={false}
+        isSignedIn={true}
         onSuccess={this.handleGoogleLogin}
         onFailure={this.handleGoogleFailure} />
       {this.state.hasAuthenticationFailed ? <div style={{margin: 20}}>

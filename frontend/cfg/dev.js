@@ -22,6 +22,10 @@ const config = _.merge({
       'webpack/hot/only-dev-server',
       './src/eval_entry',
     ],
+    unsubscribe: [
+      'webpack-dev-server/client?http://0.0.0.0:0',
+      './src/components/pages/unsubscribe',
+    ],
   },
   output: {
     filename: '[name].js',
@@ -44,6 +48,11 @@ Array.prototype.push.apply(config.plugins, [
   new HtmlWebpackPlugin({
     chunks: ['eval'],
     filename: 'eval.html',
+    template: './src/index.html',
+  }),
+  new HtmlWebpackPlugin({
+    chunks: ['unsubscribe'],
+    filename: 'unsubscribe.html',
     template: './src/index.html',
   }),
   new WebpackPwaManifest({

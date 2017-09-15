@@ -35,14 +35,10 @@ def events2dicts(events_json, departement_bounds_csv):
         an iterable of dict with the JSON values of the Event proto.
     """
     departements = pd.read_csv(departement_bounds_csv, dtype={'departement_id': str})
-    # TODO(pascal): Fix incorrect bounds and drop this patch.
-    valid_departements = departements[
-        (departements.max_latitude < departements.min_latitude + 2) &
-        (departements.max_longitude < departements.min_longitude + 3)]
     with open(events_json, 'r') as events_file:
         events = json.load(events_file)
     return [
-        _workup_to_proto(e, valid_departements)
+        _workup_to_proto(e, departements)
         for e in events if _is_valid_event(e)]
 
 
@@ -62,18 +58,22 @@ def _is_valid_event(event):
 
 
 def _workup_to_proto(event, departements):
-    close_departements = departements[
-        (departements.max_latitude + _LAT_BUFFER >= event['latitude']) &
-        (departements.min_latitude - _LAT_BUFFER <= event['latitude']) &
-        (departements.max_longitude + _LNG_BUFFER >= event['longitude']) &
-        (departements.min_longitude - _LNG_BUFFER <= event['longitude'])]
-    if close_departements.empty:
-        raise ValueError('Event is next to no French départements:\n%s', event)
-    geo_filter = 'for-departement(%s)' % ','.join(sorted(close_departements.departement_id))
+    if event.get('address', '').strip().lower() == 'en ligne':
+        geo_filters = []
+    else:
+        close_departements = departements[
+            (departements.max_latitude + _LAT_BUFFER >= event['latitude']) &
+            (departements.min_latitude - _LAT_BUFFER <= event['latitude']) &
+            (departements.max_longitude + _LNG_BUFFER >= event['longitude']) &
+            (departements.min_longitude - _LNG_BUFFER <= event['longitude'])]
+        if close_departements.empty:
+            raise ValueError('Event is next to no French départements:\n%s', event)
+        geo_filters = ['for-departement(%s)' % ','.join(sorted(close_departements.departement_id))]
+
     # TODO(pascal): Add better filters for reorientation.
     return {
         '_id': event['id'],
-        'filters': [geo_filter],
+        'filters': geo_filters,
         'link': _WORKUP_EVENT_URL % event['slug'],
         'organiser': event['organiser'],
         'startDate': event['date'],

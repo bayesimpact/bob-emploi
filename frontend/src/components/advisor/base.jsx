@@ -199,7 +199,7 @@ class ToolCardBase extends React.Component {
     return <div style={cardStyle} onClick={() => window.open(href, '_blank')}>
       <div style={titleStyle}>
         <img src={imageSrc}
-          style={{height: 55, width: 55}} />
+          style={{height: 55, width: 55}} alt="" />
         <div style={{paddingLeft: 20}}>{children}</div>
       </div>
       <Icon name="chevron-right" style={{fontSize: 20}} />
@@ -361,18 +361,19 @@ class PercentageBoxes extends React.Component {
 class AdviceSuggestionList extends React.Component {
   static propTypes = {
     children: PropTypes.arrayOf(PropTypes.node.isRequired),
+    isNotClickable: PropTypes.bool,
   }
 
   render() {
-    const {children, ...extraProps} = this.props
+    const {children, isNotClickable, ...extraProps} = this.props
     const childStyle = (index, props) => ({
-      ':hover': props.isNotClickable ? {} : {
+      ':hover': (isNotClickable || props.isNotClickable) ? {} : {
         backgroundColor: Colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',
       border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      cursor: props.isNotClickable ? 'initial' : 'pointer',
+      cursor: (isNotClickable || props.isNotClickable) ? 'initial' : 'pointer',
       display: 'flex',
       fontSize: 13,
       fontWeight: 'bold',

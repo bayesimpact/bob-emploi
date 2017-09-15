@@ -175,7 +175,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         response = self.app.post('/api/user/authenticate', data=request)
         self.assertEqual(403, response.status_code)
         self.assertIn(
-            'Le jeton d\'authentification est périmé.',
+            "Le jeton d'authentification est périmé.",
             response.get_data(as_text=True))
 
     def _get_salt(self, email):
@@ -233,7 +233,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
         self.assertIn(
-            'L\'utilisateur existe mais utilise un autre moyen de connexion (Google).',
+            "L'utilisateur existe mais utilise un autre moyen de connexion (Google).",
             response.get_data(as_text=True))
 
 
@@ -297,7 +297,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(422, response.status_code)
         self.assertIn(
-            'Algorithme d\'encryption inconnu &quot;plain&quot;', response.get_data(as_text=True))
+            "Algorithme d'encryption inconnu &quot;plain&quot;", response.get_data(as_text=True))
 
     def test_bad_signature(self):
         """Auth request with a facebook token but wrong signature."""
@@ -393,7 +393,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(401, response.status_code)
         self.assertIn(
-            'Mauvais jeton d\'authentification : foo bar',
+            "Mauvais jeton d'authentification : foo bar",
             response.get_data(as_text=True))
 
     def test_wrong_token_issuer(self, mock_verify_id_token):
@@ -406,7 +406,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(401, response.status_code)
         self.assertIn(
-            'Fournisseur d\'authentification invalide : accounts.facebook.com',
+            "Fournisseur d'authentification invalide : accounts.facebook.com",
             response.get_data(as_text=True))
 
     def test_new_user(self, mock_verify_id_token):
@@ -553,6 +553,39 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
         self.assertEqual('13579', returned_user.get('googleId'))
         self.assertEqual('pascal@bayes.org', returned_user.get('profile', {}).get('email'))
         self.assertEqual(user_id, returned_user.get('userId'))
+
+
+class TokenTestCase(unittest.TestCase):
+    """Unit tests for the token functions."""
+
+    def test_create_token(self):
+        """Basic usage of create_token."""
+        token_1 = auth.create_token('pascal@example.fr', 'login')
+        self.assertTrue(token_1)
+
+        token_2 = auth.create_token('pascal@example.fr', 'unsubscribe')
+        self.assertTrue(token_2)
+        self.assertNotEqual(token_1, token_2)
+
+        token_3 = auth.create_token('john@example.com', 'login')
+        self.assertTrue(token_3)
+        self.assertNotEqual(token_1, token_3)
+
+    def test_check_token(self):
+        """Basic usage of check_token (round trip with create_token)."""
+        login_token = auth.create_token('pascal@example.fr', 'login')
+        auth.check_token('pascal@example.fr', login_token, 'login')
+
+    def test_check_token_empty(self):
+        """Check that an empty token fails."""
+        with self.assertRaises(ValueError):
+            auth.check_token('pascal@example.fr', '', 'login')
+
+    def test_check_token_wrong_role(self):
+        """check_token fails if wrong role."""
+        login_token = auth.create_token('pascal@example.fr', 'login')
+        with self.assertRaises(ValueError):
+            auth.check_token('pascal@example.fr', login_token, 'unsubscribe')
 
 
 if __name__ == '__main__':

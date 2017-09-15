@@ -24,7 +24,9 @@ class ExpandedAdviceCardContent extends React.Component {
     }
     return <div style={trainingNameStyle} key={`tip-${index}`}>
       {tip.text} {tip.url ? <span>
-        &nbsp;:&nbsp; <a href={tip.url} style={{color: Colors.SKY_BLUE}}>{tip.url}</a>
+        &nbsp;:&nbsp; <a
+          href={tip.url} style={{color: Colors.SKY_BLUE}}
+          target="_blank" rel="noopener noreferer">{tip.url}</a>
       </span> : null}
     </div>
   }

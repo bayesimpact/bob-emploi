@@ -134,7 +134,7 @@ class ParseArgsDocTestCase(unittest.TestCase):
 
     def test_parse_args_doc(self):
         """Test the basic usage of the parse_args_doc function."""
-        args_doc = mongo.parse_args_doc("""Description of function.
+        args_doc = mongo.parse_args_doc('''Description of function.
 
     Args:
         what: What it is.
@@ -143,7 +143,7 @@ class ParseArgsDocTestCase(unittest.TestCase):
 
     Returns:
         whatever: this is not a real func.
-    """)
+    ''')
         self.assertEqual({
             'what': 'What it is.',
             'when': 'When it happened.',
@@ -151,48 +151,48 @@ class ParseArgsDocTestCase(unittest.TestCase):
 
     def test_parse_args_doc_return_contiguous(self):
         """Test parse_args_doc when a section is contiguous to the Args one."""
-        args_doc = mongo.parse_args_doc("""Description of function.
+        args_doc = mongo.parse_args_doc('''Description of function.
 
     Args:
         what: What it is.
     Returns:
         whatever: this is not a real func.
-    """)
+    ''')
         self.assertEqual({'what': 'What it is.'}, args_doc)
 
     def test_parse_args_doc_multiple_colons(self):
         """Test parse_args_doc when an arg's documentation contains a colon."""
-        args_doc = mongo.parse_args_doc("""Description of function.
+        args_doc = mongo.parse_args_doc('''Description of function.
 
     Args:
         what: What it is: now that's interesting.
-    """)
+    ''')
         self.assertEqual(
             {'what': "What it is: now that's interesting."}, args_doc)
 
     def test_parse_args_doc_ignore_wrong_format(self):
         """Test parse_args_doc when one arg's doc has the wrong format."""
-        args_doc = mongo.parse_args_doc("""Description of function.
+        args_doc = mongo.parse_args_doc('''Description of function.
 
     Args:
         what: What it is.
         past, What it was.
         future: What it will be.
-    """)
+    ''')
         self.assertEqual(
             {'what': 'What it is.', 'future': 'What it will be.'},
             args_doc)
 
     def test_parse_args_doc_long_lines(self):
         """Test parse_args_doc when one arg's doc is on multiple lines."""
-        args_doc = mongo.parse_args_doc("""Description of function.
+        args_doc = mongo.parse_args_doc('''Description of function.
 
     Args:
         what: What it is. Even though this documentation could be quite small we
             have decided to make it quite long so that it would fit on multiple
             lines: now that's the case!
         short: A short doc.
-    """)
+    ''')
         self.assertEqual({
             'what':
                 'What it is. Even though this documentation could be '
@@ -202,25 +202,25 @@ class ParseArgsDocTestCase(unittest.TestCase):
 
     def test_parse_args_doc_no_args_section(self):
         """Test parse_args_doc when there is no Args section."""
-        args_doc = mongo.parse_args_doc("""Description of function.""")
+        args_doc = mongo.parse_args_doc('''Description of function.''')
         self.assertEqual({}, args_doc)
 
     def test_parse_args_doc_empty_args_section(self):
         """Test parse_args_doc when the Args section is empty."""
-        args_doc = mongo.parse_args_doc("""Description of function.
+        args_doc = mongo.parse_args_doc('''Description of function.
 
     Args:
     what: What it is.
     Returns: nothing.
-    """)
+    ''')
         self.assertEqual({}, args_doc)
 
     def test_parse_args_doc_empty_args_section_because_end(self):
         """Test parse_args_doc when Args section is empty and the last one."""
-        args_doc = mongo.parse_args_doc("""Description of function.
+        args_doc = mongo.parse_args_doc('''Description of function.
 
     Args:
-    """)
+    ''')
         self.assertEqual({}, args_doc)
 
 

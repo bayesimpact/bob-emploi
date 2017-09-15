@@ -74,7 +74,7 @@ class NoticeStep extends React.Component {
       isNextButtonDisabled={isNextButtonDisabled}
       nextButtonContent={isNextButtonDisabled ? <CountDown seconds={3} /> : null}>
       <div style={{margin: 20, textAlign: 'center'}}>
-        <img src={bobCircleImage} />
+        <img src={bobCircleImage} alt="" />
       </div>
 
       <div style={textStyle}>

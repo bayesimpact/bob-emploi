@@ -1,11 +1,18 @@
 import PropTypes from 'prop-types'
 import React from 'react'
+import _ from 'underscore'
 
-import {PROJECT_EXPERIENCE_OPTIONS,
-  PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
-  getSeniorityText} from 'store/project'
-import {getHighestDegreeDescription, getFamilySituationOptions,
+import {weeklyApplicationOptions, weeklyOfferOptions}
+  from 'components/pages/profile/jobsearch'
+import {genderizeJob, getJobSearchURL} from 'store/job'
+import {getSeniorityText, getTrainingFulfillmentEstimateOptions,
+  PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_EXPERIENCE_OPTIONS,
+  PROJECT_LOCATION_AREA_TYPE_OPTIONS} from 'store/project'
+import {getFamilySituationOptions, getHighestDegreeDescription,
   getUserFrustrationTags, userAge} from 'store/user'
+
+import {Colors} from 'components/theme'
+
 
 const PROJECT_GOAL_OPTIONS = [
   {name: 'Retrouver un emploi', value: 'FIND_A_NEW_JOB'},
@@ -17,12 +24,19 @@ const PROJECT_GOAL_OPTIONS = [
 ]
 
 function getOptionName(options, value) {
-  const myOption = options.find(option => option.value === value)
-  return myOption && myOption.name || value
+  if (value) {
+    const myOption = options.find(option => option.value === value)
+    return myOption && myOption.name || value
+  }
+  return undefined
 }
 
 function replaceFalseValue(oldValue, newValue)  {
   return oldValue && oldValue !== -1 ? oldValue : newValue
+}
+
+function getInterviewCountValidity(project) {
+  return  project.totalInterviewCount && project.totalInterviewCount !== 0
 }
 
 class UseCase extends React.Component {
@@ -34,11 +48,30 @@ class UseCase extends React.Component {
     }).isRequired,
   }
 
+  openJob(job, gender) {
+    window.open(getJobSearchURL(job, gender), '_blank')
+  }
+
+  renderJobName(job, gender) {
+    const jobNameStyle = {
+      color: Colors.SKY_BLUE,
+      cursor: 'pointer',
+      fontWeight: 'bold',
+      marginBottom: 10,
+    }
+
+    return <div style={jobNameStyle} onClick={() => this.openJob(job, gender)}>
+      {genderizeJob(job, gender)}
+    </div>
+  }
+
   renderSection(title, elements, sectionKey) {
     const titleStyle = {
       fontWeight: 'bold',
     }
-
+    if (!elements.length) {
+      return null
+    }
     return <div>
       <div style={titleStyle}>{title}&nbsp;:</div>
       <ul style={{listStyleType: 'none'}}>
@@ -49,7 +82,7 @@ class UseCase extends React.Component {
 
   renderProfile(profile, location) {
     const familySituations = getFamilySituationOptions(profile.gender)
-    const handicapSituation = profile.hasHandicap ? 'oui' : 'non'
+    const handicapText = profile.gender === 'FEMININE' ? 'Handicapée' : 'Handicapé'
 
     return this.renderSection(
       'Profil',
@@ -58,7 +91,7 @@ class UseCase extends React.Component {
         getOptionName(familySituations, profile.familySituation),
         userAge(profile.yearOfBirth) + ' ans',
         'Diplôme : ' + (getHighestDegreeDescription(profile) || 'aucun'),
-        'Handicapé : ' + handicapSituation,
+        (profile.hasHandicap ?  handicapText : null),
         location.name,
         'Dep : ' + location.departementName,
       ],
@@ -66,12 +99,22 @@ class UseCase extends React.Component {
     )
   }
 
-  // TODO (marielaure) add beavior for totalInterviewCount == 0
-  renderProject(project) {
+  renderProject(profile, project) {
     const employmentStatus = (project.employmentTypes || []).map((employmentType) =>(
       getOptionName(PROJECT_EMPLOYMENT_TYPE_OPTIONS, employmentType)
     ))
     const employmentStatusText = employmentStatus.join()
+    const totalInterviewCountText = getInterviewCountValidity(project) &&
+      replaceFalseValue(project.totalInterviewCount, '0')
+    const trainingFulfillmentOptions = getTrainingFulfillmentEstimateOptions(profile.gender)
+    const noTrainingOption = {
+      name: 'Pas de diplôme requis',
+      value: 'NO_TRAINING_REQUIRED',
+    }
+    const totalTrainingOptions = trainingFulfillmentOptions.concat([noTrainingOption])
+    const trainingFulfillmentStatus = getOptionName(
+      totalTrainingOptions, project.trainingFulfillmentEstimate
+    )
 
     return this.renderSection(
       'Projet',
@@ -84,22 +127,24 @@ class UseCase extends React.Component {
         getOptionName(PROJECT_EXPERIENCE_OPTIONS, project.previousJobSimilarity),
         'Network estimate : ' + replaceFalseValue(project.networkEstimate, 'inconnu'),
         'Expérience : ' + getSeniorityText(project.seniority),
-        'Diplôme suffisant : ' + project.trainingFulfillmentEstimate,
+        'Diplôme suffisant : ' + trainingFulfillmentStatus,
         'Temps de recherche (mois) : ' + replaceFalseValue(project.jobSearchLengthMonths,
           'N\'a pas commencé sa recherche'),
-        'Offres par semaine : ' + (project.weeklyOffersEstimate || 'inconnu'),
-        'Candidatures par semaine : ' + (project.weeklyApplicationsEstimate || 'inconnu'),
-        'Entretiens décrochés : ' + replaceFalseValue(project.totalInterviewCount, '0'),
+        'Offres par semaine : ' + project.weeklyOffersEstimate ?
+          getOptionName(weeklyOfferOptions, project.weeklyOffersEstimate) : 'inconnu',
+        'Candidatures par semaine : ' + project.weeklyApplicationsEstimate ?
+          getOptionName(weeklyApplicationOptions, project.weeklyApplicationsEstimate) : 'inconnu',
+
+        'Entretiens décrochés : ' + (totalInterviewCountText || 'valeur absente !'),
       ],
       'project'
     )
   }
 
   renderFrustrations(profile) {
-    const frustrations = getUserFrustrationTags(profile) || ['Aucune']
-
-    profile.customFrustrations && frustrations.concat(profile.customFrustrations)
-    return this.renderSection('Frustrations', frustrations, 'frustrations')
+    const frustrations = getUserFrustrationTags(profile) || []
+    const totalFrustrations = frustrations.concat(profile.customFrustrations || [])
+    return this.renderSection('Frustrations', totalFrustrations, 'frustrations')
   }
 
   render() {
@@ -117,16 +162,37 @@ class UseCase extends React.Component {
       width: '100%',
     }
 
-    const json = JSON.stringify(userData, null, 2).replace(/[{}",[\]]/g, '')
     const {profile, projects} = userData
     const project = projects && projects.length && projects[0]
     const location = project && project.mobility.city
+    const cleanedProfileFields = ['gender', 'hasHandicap', 'highestDegree', 'yearOfBirth',
+      'familySituation', 'frustrations', 'customFrustrations']
+    const cleanedProjectsFields = ['kind', 'employmentTypes', 'previousJobSimilarity',
+      'networkEstimate', 'seniority', 'trainingFulfillmentEstimate', 'jobSearchLengthMonths',
+      'weeklyOffersEstimate', 'weeklyApplicationsEstimate', 'totalInterviewCount']
+    const cleanedMobilityFields = ['name', 'departementName']
 
+    // TODO (Marie Laure): Use a helper function instead of this manual approach
+    const remainingData = {
+      ...userData,
+      profile: userData.profile && _.omit(userData.profile, cleanedProfileFields),
+      projects: userData.projects && userData.projects.map(project =>
+        _.omit({
+          ...project,
+          mobility: _.omit({
+            ...project.mobility,
+            city: _.omit(project.mobility.city, cleanedMobilityFields),
+          }, 'areaType'),
+        }, cleanedProjectsFields)),
+    }
+
+    const json = JSON.stringify(remainingData, null, 2).replace(/[{}",[\]]/g, '')
 
     return <div style={boxStyle}>
+      {project && profile && this.renderJobName(project.targetJob, profile.gender) || null}
       {this.renderProfile(profile || {}, location || {})}
-      {this.renderProject(project || {})}
-      {profile ? this.renderFrustrations(profile) : null}
+      {this.renderProject(profile || {}, project || {})}
+      {profile && this.renderFrustrations(profile) || null}
       <textarea value={json} readOnly={true} style={textareaStyle} />
     </div>
   }

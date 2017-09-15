@@ -160,6 +160,44 @@ class ConverterTestCase(unittest.TestCase):
             'filters': ['for-departement(49)', 'for-job-group(A12,B)'],
         })
 
+    def test_dynamic_advice_converter(self):
+        """Convert a dynamic advice config."""
+        converter = airtable_to_protos.PROTO_CLASSES['DynamicAdvice']
+        dynamic_advice = converter.convert_record({
+            'id': 'foobar',
+            'fields': {
+                'title': 'Présentez-vous au chef boulanger',
+                'for-job-group': 'D1102',
+                'filters': ['not-for-job(12006)'],
+                'card_text': 'Allez à la boulangerie la veille',
+                'expanded_card_items': 'Il *faut*\n* Se présenter\n* Très tôt',
+                'expanded_card_items_feminine': '* Se représenter\n* Très tôt',
+            },
+        })
+        self.assertEqual(dynamic_advice, {
+            '_id': 'foobar',
+            'title': 'Présentez-vous au chef boulanger',
+            'cardText': 'Allez à la boulangerie la veille',
+            'filters': ['not-for-job(12006)', 'for-job-group(D1102)'],
+            'expandedCardHeader': 'Il *faut*',
+            'expandedCardItems': ['Se présenter', 'Très tôt'],
+            'expandedCardItemsFeminine': ['Se représenter', 'Très tôt'],
+        })
+
+    def test_dynamic_advice_converter_wrong_format(self):
+        """Convert a dynamic advice config with wrong items list format."""
+        converter = airtable_to_protos.PROTO_CLASSES['DynamicAdvice']
+        with self.assertRaises(ValueError):
+            converter.convert_record({
+                'id': 'foobar',
+                'fields': {
+                    'title': 'Présentez-vous au chef boulanger',
+                    'for-job-group': 'D1102',
+                    'card_text': 'Allez à la boulangerie la veille',
+                    'expanded_card_items': '* Se présenter\ntrès tôt',
+                },
+            })
+
 
 @airtablemock.patch(airtable_to_protos.__name__ + '.airtable')
 @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'apikey42'})

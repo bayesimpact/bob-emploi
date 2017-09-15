@@ -106,9 +106,7 @@ const BOB_SCORE_PARTS = [
     category: 'market',
     compute: (user, {localStats}) => {
       const imt = localStats && localStats.imt || {}
-      const {yearlyAvgOffersDenominator} = imt
-      const yearlyAvgOffersPer10Candidates = imt.yearlyAvgOffersPer10Candidates ||
-        imt.yearlyAvgOffersPer10Openings
+      const {yearlyAvgOffersDenominator, yearlyAvgOffersPer10Candidates} = imt
       if (!yearlyAvgOffersDenominator || ! yearlyAvgOffersPer10Candidates) {
         return {score: 0}
       }

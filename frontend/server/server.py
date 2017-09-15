@@ -32,6 +32,7 @@ from bob_emploi.frontend import advisor
 from bob_emploi.frontend import auth
 from bob_emploi.frontend import evaluation
 from bob_emploi.frontend import now
+from bob_emploi.frontend import opengraph
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
@@ -101,20 +102,30 @@ def requires_admin_auth(func):
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.UserId)
 def delete_user(user_data):
     """Delete a user and their authentication information."""
-    if not user_data.user_id:
+    if user_data.user_id:
+        user_from_db = _get_user_data(user_data.user_id)
+        facebook_creds_mismatch = (
+            user_data.facebook_id and user_data.facebook_id != user_from_db.facebook_id)
+        google_creds_mismatch = (
+            user_data.google_id and user_data.google_id != user_from_db.google_id)
+        email_mismatch = (
+            user_data.profile.email and user_data.profile.email != user_from_db.profile.email)
+        if facebook_creds_mismatch or google_creds_mismatch or email_mismatch:
+            flask.abort(403, 'Wrong credentials.')
+        filter_user = {'_id': _safe_object_id(user_data.user_id)}
+    elif user_data.profile.email:
+        auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
+        try:
+            auth.check_token(user_data.profile.email, auth_token, role='unsubscribe')
+        except ValueError:
+            flask.abort(403, 'Accès refusé')
+        filter_user = _DB.user.find_one({'profile.email': user_data.profile.email}, {'_id': 1})
+    else:
         flask.abort(400, 'Impossible de supprimer un utilisateur sans son ID.')
-    user_from_db = _get_user_data(user_data.user_id)
-    facebook_creds_mismatch = (
-        user_data.facebook_id and user_data.facebook_id != user_from_db.facebook_id)
-    google_creds_mismatch = (
-        user_data.google_id and user_data.google_id != user_from_db.google_id)
-    email_mismatch = (
-        user_data.profile.email and user_data.profile.email != user_from_db.profile.email)
-    if facebook_creds_mismatch or google_creds_mismatch or email_mismatch:
-        flask.abort(403, 'Wrong credentials.')
-    filter_user = {'_id': _safe_object_id(user_data.user_id)}
-    _DB.user_auth.delete_one(filter_user)
-    _DB.user.delete_one(filter_user)
+
+    if filter_user:
+        _DB.user_auth.delete_one(filter_user)
+        _DB.user.delete_one(filter_user)
     return user_pb2.UserId(user_id=user_data.user_id)
 
 
@@ -411,9 +422,9 @@ def _copy_unmodifiable_fields(previous_user_data, user_data):
 
 def _assert_no_credentials_change(previous, new):
     if previous.facebook_id != new.facebook_id:
-        flask.abort(403, 'Impossible de modifier l\'identifiant Facebook.')
+        flask.abort(403, "Impossible de modifier l'identifiant Facebook.")
     if previous.google_id != new.google_id:
-        flask.abort(403, 'Impossible de modifier l\'identifiant Google.')
+        flask.abort(403, "Impossible de modifier l'identifiant Google.")
     if previous.profile.email == new.profile.email:
         return
     if (new.facebook_id and not previous.profile.email) or new.google_id:
@@ -423,9 +434,9 @@ def _assert_no_credentials_change(previous, new):
         email_taken = bool(_DB.user.find(
             {'profile.email': new.profile.email}, {'_id': 1}).limit(1).count())
         if email_taken:
-            flask.abort(403, 'L\'utilisateur existe mais utilise un autre moyen de connexion.')
+            flask.abort(403, "L'utilisateur existe mais utilise un autre moyen de connexion.")
         return
-    flask.abort(403, 'Impossible de modifier l\'adresse email.')
+    flask.abort(403, "Impossible de modifier l'adresse email.")
 
 
 def _safe_object_id(_id):
@@ -468,6 +479,18 @@ def _get_user_data(user_id):
                 project.kind = project_pb2.FIND_A_FIRST_JOB
             else:
                 project.kind = project_pb2.FIND_ANOTHER_JOB
+
+        # TODO(pascal): Update existing users and get rid of job_search_length_months.
+        if not (project.job_search_started_at.seconds or project.job_search_has_not_started) \
+                and project.job_search_length_months:
+            if project.job_search_length_months < 0:
+                project.job_search_has_not_started = True
+            else:
+                job_search_length_days = 30.5 * project.job_search_length_months
+                job_search_length_duration = datetime.timedelta(days=job_search_length_days)
+                project.job_search_started_at.FromDatetime(
+                    project.created_at.ToDatetime() - job_search_length_duration)
+                project.job_search_started_at.nanos = 0
 
         project.ClearField('diploma_fulfillment_estimate')
         project.ClearField('actions_generated_at')
@@ -923,6 +946,9 @@ def redirect_eterritoire(city_id):
 
 
 app.register_blueprint(evaluation.app, url_prefix='/api/eval')
+
+
+app.register_blueprint(opengraph.app, url_prefix='/og')
 
 
 @app.before_request
