@@ -110,9 +110,10 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => ({
-  cities: app.commutingCities[project.projectId] || [],
-}))(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connect(({app}, {project}) => {
+  const {cities} = (app.adviceData[project.projectId] || {}).commute || {}
+  return {cities: cities || []}
+})(ExpandedAdviceCardContentBase)
 
 
 class CommuteCitySuggestionBase extends React.Component {

@@ -18,16 +18,12 @@ import sys
 from urllib import parse
 
 import pymongo
-import requests
 
 from google.protobuf import json_format
 
 from bob_emploi.frontend import mail
 from bob_emploi.frontend.api import user_pb2
-
-# A Slack WebHook URL to send final reports to. Defined in the Incoming
-# WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
-_SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
+from bob_emploi.frontend.asynchronous import report
 
 _DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
     .get_default_database()
@@ -99,29 +95,10 @@ def _break_on_signal(signums, iterator):
 def _send_reports(count, errors):
     logging.warning('%d emails sent.', count)
 
-    _send_slack_report(count, errors)
-    _send_email_report(count, errors)
-
-
-def _send_slack_report(count, errors):
-    if _SLACK_WEBHOOK_URL:
-        requests.post(
-            _SLACK_WEBHOOK_URL,
-            json={
-                'text':
-                    "Report for NPS blast: I've sent %d emails (with %d errors)."
-                    % (count, len(errors)),
-            },
-        )
-
-
-def _send_email_report(count, errors):
-    result = mail.send_template_to_admins(
-        _MAILJET_REPORT_TEMPLATE_ID,
-        {'count': count, 'errors': errors or ['No errors'], 'weekday': 'NPS'},
-    )
-    if result.status_code != 200:
-        logging.error('Error while sending the report: %d', result.status_code)
+    report.notify_slack(
+        "Report for NPS blast: I've sent {:d} emails (with {:d} errors).".format(
+            count, len(errors)))
+    report.send_to_admins('NPS', count, errors)
 
 
 def main(user_db, base_url, now, days_before_sending):
@@ -160,7 +137,7 @@ def main(user_db, base_url, now, days_before_sending):
         try:
             result = send_email_to_user(user, base_url, now)
         except (IOError, json_format.ParseError) as err:
-            errors.append('%s - %s' % (err, user_id))
+            errors.append('{} - {}'.foramt(err, user_id))
             logging.error(err)
             continue
 

@@ -71,7 +71,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
             {...mission} style={{marginTop: index ? -1 : 0}} key={`mission-${index}`} />),
           <MoreMissionsLink
             style={{marginTop: -1}} key="more" onClick={() => {
-              window.open('http://www.tousbenevoles.org/', '_blank')
+              window.open('http://www.tousbenevoles.org/?utm_source=bob-emploi', '_blank')
             }}>
             Trouver d'autres missions de bénévolat sur Tous Bénévoles
           </MoreMissionsLink>,
@@ -80,9 +80,10 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => ({
-  missions: app.volunteeringMissions[project.projectId] || [],
-}))(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connect(({app}, {project}) => {
+  const {missions} = (app.adviceData[project.projectId] || {}).volunteer || {}
+  return {missions: missions || []}
+})(ExpandedAdviceCardContentBase)
 
 
 class MissionBase extends React.Component {

@@ -50,7 +50,7 @@ class ImporterMainTestCase(unittest.TestCase):
 
         def richer_importer_func():
             """An importer with many outputs."""
-            return list({'_id': 'foo-%02d' % i, 'value': i} for i in range(20))
+            return list({'_id': 'foo-{:02d}'.format(i), 'value': i} for i in range(20))
 
         mongo_mock.return_value = mock.MagicMock()
         mongo.importer_main(
@@ -331,7 +331,7 @@ class ProtoTestCase(unittest.TestCase):
     def test_collection_to_proto_mapping_wrong_field(self):
         """Use of unknown proto field in a dict."""
         iterator = mongo.collection_to_proto_mapping([
-            {'_id': '75056', 'user_id': 'Pascal'},
+            {'_id': '75056', 'unkownField': 'Pascal'},
         ], user_pb2.User)
         self.assertRaises(mongo.json_format.ParseError, next, iterator)
 

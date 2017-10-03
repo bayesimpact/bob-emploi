@@ -7,6 +7,8 @@ import config from 'config'
 import budgetImage from 'images/budget.png'
 import demographyImage from 'images/demography.png'
 import downloadImage from 'images/download-picto.svg'
+import loveMessageImage from 'images/love-message-picto.svg'
+import loveHeartIcon from 'images/love-heart-picto.svg'
 import userPositiveFeedbacksImage from 'images/positive-feedbacks.png'
 import userFeedbackPositiveImage from 'images/user-feedback-positive.png'
 import userFeedbackNegativeImage from 'images/user-feedback-negative.png'
@@ -48,14 +50,6 @@ const milestone = {
 const graphStyle = {
   padding: '10px 20px',
 }
-const milestonesZone = {
-  ...graphStyle,
-  display: 'flex',
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 10,
-  width: '100%',
-}
 const excerptStyle = {
   fontStyle: 'italic',
   textAlign: 'center',
@@ -73,6 +67,7 @@ const milestoneSurtitle = {
   color: Colors.COOL_GREY,
   fontSize: 10,
   lineHeight: 1,
+  textTransform: 'uppercase',
 }
 const bulletStyle = {
   marginBottom: 20,
@@ -85,16 +80,6 @@ const subtitleStyle = {
 const imageStats = {
   height: 'auto',
   width: '100%',
-}
-const downloadButtonStyle = {
-  backgroundColor: Colors.SKY_BLUE,
-  borderRadius: 4,
-  boxShadow: '0 2px 3px 0 rgba(0, 0, 0, 0.2)',
-  color: '#fff',
-  margin: '100 auto 200px auto',
-  padding: '15px 20px',
-  textDecoration: 'none',
-  width: 430,
 }
 
 
@@ -152,9 +137,15 @@ class TransparencyPage extends React.Component {
   }
 
   renderGeneralMetrics() {
+    const {isMobileVersion} = this.context
+    const silverBorder = `solid 1px ${Colors.SILVER}`
+    const flexRowOnDesktop = {
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column': 'row',
+    }
     const userCountGraphStyle = {
       alignItems: 'center',
-      border: `solid 1px ${Colors.SILVER}`,
+      border: silverBorder,
       borderRadius: 4,
       color: Colors.DARK_TWO,
       display: 'flex',
@@ -162,22 +153,26 @@ class TransparencyPage extends React.Component {
       fontSize: 14,
       justifyContent: 'center',
       lineHeight: 1,
-      marginRight: 20,
-      width: 312,
+      marginBottom: isMobileVersion ? 20 : 'initial',
+      marginRight: isMobileVersion ? 'initial' : 20,
+      padding: '30px 0',
+      width: isMobileVersion ? 'initial' : 312,
     }
     const npsBoxStyle = {
-      border: `solid 1px ${Colors.SILVER}`,
+      border: silverBorder,
       borderRadius: 4,
       display: 'flex',
       fontSize: 14,
       lineHeight: 1,
       textAlign: 'center',
+      ...flexRowOnDesktop,
     }
     const npsSumsBoxStyle = {
-      borderLeft: `solid 1px ${Colors.SILVER}`,
+      borderLeft: isMobileVersion ? 'initial' : silverBorder,
+      borderTop: isMobileVersion ? silverBorder : 'initial',
       display: 'flex',
-      flexDirection: 'column',
-      width: 186,
+      flexDirection: isMobileVersion ? 'row-reverse' : 'column',
+      width: isMobileVersion ? 'initial' : 186,
     }
     const npsSumBoxStyle = {
       display: 'flex',
@@ -186,20 +181,31 @@ class TransparencyPage extends React.Component {
       justifyContent: 'center',
       padding: 10,
     }
+    const npsSumFirstBoxStyle = {
+      ...npsSumBoxStyle,
+      borderBottom: isMobileVersion ? 'initial' : silverBorder,
+      borderLeft: isMobileVersion ? silverBorder : 'initial',
+    }
     const npsSumStyle = {
       ...Styles.CENTER_FONT_VERTICALLY,
       color: Colors.SKY_BLUE,
       display: 'block',
       fontSize: 50,
     }
+    const percentBarChartStyle = {
+      height: 250,
+      marginRight: 10,
+      overflow: 'hidden',
+      width: isMobileVersion ? '100%' : 500,
+    }
     return <div style={textSectionStyle}>
       <div style={this.getTextStyle()}>
-        <div style={sectionTitleStyle}>Métriques générales (au 1<sup>er</sup> septembre 2017)</div>
+        <div style={sectionTitleStyle}>Métriques générales (au 1<sup>er</sup> octobre 2017)</div>
       </div>
-      <div style={{...graphStyle, display: 'flex'}}>
+      <div style={{...graphStyle, ...flexRowOnDesktop}}>
         <div style={userCountGraphStyle}>
           <strong style={{color: Colors.SKY_BLUE, fontSize: 60}}>
-            {(116387).toLocaleString('fr')}
+            {(123255).toLocaleString('fr')}
           </strong>
           <span>
             comptes créés depuis novembre 2016
@@ -213,19 +219,19 @@ class TransparencyPage extends React.Component {
             <PercentBarChart values={[
               {name: 'Mauvais', value: .06},
               {name: 'Peu intéressants', value: .08},
-              {color: Colors.GREENISH_TEAL, name: 'Intéressants', value: .35},
-              {color: Colors.GREENISH_TEAL, name: 'Utiles', value: .3},
-              {color: Colors.GREENISH_TEAL, name: 'Très utiles', value: .21},
-            ]} style={{height: 250, marginRight: '0 10px', width: 500}} />
+              {color: Colors.GREENISH_TEAL, name: 'Intéressants', value: .39},
+              {color: Colors.GREENISH_TEAL, name: 'Utiles', value: .29},
+              {color: Colors.GREENISH_TEAL, name: 'Très utiles', value: .18},
+            ]} style={percentBarChartStyle} />
           </div>
           <div style={npsSumsBoxStyle}>
-            <div style={{...npsSumBoxStyle, borderBottom: `solid 1px ${Colors.SILVER}`}}>
+            <div style={npsSumFirstBoxStyle}>
               <strong>Bob m'a aidé*</strong>
               <strong style={{...npsSumStyle, color: Colors.GREENISH_TEAL}}>
                 86%
               </strong>
               <span style={{fontSize: 11}}>
-                * les conseils étaient intéressants, utiles ou trés utiles
+                * les conseils étaient intéressants, utiles ou très utiles
               </span>
             </div>
             <div style={npsSumBoxStyle}>
@@ -240,6 +246,113 @@ class TransparencyPage extends React.Component {
           </div>
         </div>
       </div>
+    </div>
+  }
+
+  renderLove(sectionStyle) {
+    const {isMobileVersion} = this.context
+    const containerStyle = {
+      // TODO(pascal): Custom color, either fix it or add it to the list of
+      // theme's Colors.
+      background: '#f8fcff',
+      overflow: 'hidden',
+      position: 'relative',
+    }
+    const backgroundImageStyle = {
+      bottom: 180,
+      position: 'absolute',
+      right: 0,
+    }
+    const loveStyle = {
+      fontFamily: 'Droid Serif',
+      fontSize: 21,
+      fontStyle: 'italic',
+      lineHeight: 1.9,
+      marginTop: 50,
+      position: 'relative',
+    }
+    const bigQuoteStyle = {
+      // TODO(pascal): Custom color, either fix it or add it to the list of
+      // theme's Colors.
+      color: '#e6f5ff',
+      fontSize: 200,
+      marginRight: 5,
+      position: 'absolute',
+      right: '100%',
+      top: '-.6em',
+    }
+    const loveMarkerStyle = {
+      marginRight: 25,
+      position: 'absolute',
+      right: '100%',
+      top: 0,
+    }
+    return <div style={{...textSectionStyle, ...containerStyle}}>
+      {isMobileVersion ? null : <img src={loveMessageImage} alt="" style={backgroundImageStyle} />}
+      <div style={{...sectionStyle, ...this.getTextStyle()}}>
+        <div style={titleStyle}><strong>Notre message préféré</strong></div>
+        <div>
+          Nous recevons régulièrement des retours d'utilisateurs qui nous
+          touchent. C'est ce qui nous motive pour avancer
+          {' '}<span role="img" aria-label="content">😊</span>.<br /><br />
+
+          Celui-ci en particulier nous est allé droit au cœur, car il
+          représente l'impact fondamentalement humain pour lequel nous nous
+          battons : <em>empowerer</em> chaque individu en utilisant la
+          technologie pour montrer qu'il y a toujours des solutions et de l'espoir.
+        </div>
+        <div style={loveStyle}>
+          <div style={bigQuoteStyle}>“</div>
+          <div>
+            Bonjour,<br />
+            Je vous dirais tout simplement Ouahouh !<br />
+            Ça fait grand plaisir de recevoir un soutien comme le vôtre.<br />
+            Alors, un Grand merci à vous de me rebooster …<br /><br />
+
+            Je vais, par cette échange, suivre votre conseil et j'aimerais rester
+            en contact avec vous car tout le monde avant vous me disait ; “vous
+            savez, je n'ai pas de baguette magique”.<br />
+            Vous, vous avez une baguette magique ; le mérite de me redonner foi
+            en ma recherche d'emploi et des billes <span role="img"
+              style={{fontStyle: 'normal'}} aria-label="sourire">😬</span><br />
+            Le message est bien passé et dans une bonne oreille !<br />
+            Vous me redonner confiance, là où d'autres ont échoué, et vous suis
+            très reconnaissante.<br />
+            Ma situation change, je pense me retourner vers un autre domaine de
+            travail car physiquement, j'ai des problèmes de dos qui me décourage
+            parfois à me retrouver un travail.<br /><br />
+
+            En tout cas, je fais le nécessaire pour me réadapter dans un autre domaine.
+            J'espère avoir prochainement de vos nouvelles et conseils,<br />
+            Un grand merci à vous !<br />
+            Cordialement et Sincèrement,<br /><br />
+
+            <div style={{position: 'relative'}}>
+              <div style={loveMarkerStyle}><img src={loveHeartIcon} alt="" /></div>
+              PS : “Parfois notre lumière s'éteint, puis elle est rallumée par un
+              autre être humain. Chacun de nous doit de sincères remerciements à ceux
+              qui ont ravivé leur flamme.”
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  renderRoadmap() {
+    const {isMobileVersion} = this.context
+    const flexRowOnDesktop = {
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column': 'row',
+    }
+    const milestonesZone = {
+      ...graphStyle,
+      ...flexRowOnDesktop,
+      justifyContent: 'space-between',
+      marginTop: 10,
+      width: '100%',
+    }
+    return <div style={textSectionStyle}>
       <div style={this.getTextStyle()}>
         <div style={sectionTitleStyle}>Travaux en cours</div>
         {config.productName} est en développement actif. Le code est open source et&nbsp;
@@ -253,7 +366,7 @@ class TransparencyPage extends React.Component {
       </div>
       <div style={milestonesZone}>
         <div style={milestone}>
-          <div style={milestoneSurtitle}>ÉTAPE PRÉCÉDENTE</div>
+          <div style={milestoneSurtitle}>Étape précédente</div>
           <strong>Expérience utilisateur</strong>
           <div style={{...milestoneSubtitle, color: Colors.GREENISH_TEAL}}>
             Terminé le 19 juillet 2017
@@ -265,7 +378,7 @@ class TransparencyPage extends React.Component {
           </div>
         </div>
         <div style={{...milestone, borderColor: Colors.BUTTERSCOTCH}}>
-          <div style={milestoneSurtitle}>ÉTAPE EN COURS</div>
+          <div style={milestoneSurtitle}>Étape en cours</div>
           <strong>Diversité des recommandations</strong>
           <div style={{...milestoneSubtitle}}>&nbsp;</div>
           <div style={milestoneExcerptStyle}>
@@ -274,7 +387,7 @@ class TransparencyPage extends React.Component {
           </div>
         </div>
         <div style={milestone}>
-          <div style={milestoneSurtitle}>ÉTAPE SUIVANTE</div>
+          <div style={milestoneSurtitle}>Étape suivante</div>
           <strong>Algorithmes de scoring</strong>
           <div style={milestoneSubtitle}>&nbsp;</div>
           <div style={milestoneExcerptStyle}>
@@ -383,6 +496,18 @@ class TransparencyPage extends React.Component {
   }
 
   renderFinances() {
+    const {isMobileVersion} = this.context
+    const downloadButtonStyle = {
+      backgroundColor: Colors.SKY_BLUE,
+      borderRadius: 4,
+      boxShadow: '0 2px 3px 0 rgba(0, 0, 0, 0.2)',
+      color: '#fff',
+      margin: '100px auto 200px auto',
+      padding: '15px 20px',
+      textAlign: 'center',
+      textDecoration: 'none',
+      width: isMobileVersion ? 300 : 430,
+    }
     return <div style={textSectionStyle}>
       <div style={titleStyle}><strong>Financement de Bob Emploi</strong></div>
       <div style={this.getTextStyle()}>
@@ -480,10 +605,20 @@ class TransparencyPage extends React.Component {
   }
 
   render() {
+    // TODO(pascal): Fix the maxWidth layout.
+    const sectionStyle = {
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      maxWidth: 1000,
+    }
     return <StaticPage page="transparency" style={{backgroundColor: '#fff'}}>
-      <div style={{marginLeft: 'auto', marginRight: 'auto', maxWidth: 1000}}>
+      <div style={sectionStyle}>
         {this.renderPageDescription()}
         {this.renderGeneralMetrics()}
+      </div>
+      {this.renderLove(sectionStyle)}
+      <div style={sectionStyle}>
+        {this.renderRoadmap()}
         {this.renderUserFeedback()}
         {this.renderDemography()}
         {this.renderFinances()}
@@ -605,7 +740,7 @@ class PercentBarChart extends React.Component {
     }
     return values.map(({color, name, value}) => <div
       key={`bar-${name}`} style={containerStyle}>
-      <strong style={{fontSize: 16, marginBottom: 5}}>{value * 100}%</strong>
+      <strong style={{fontSize: 16, marginBottom: 5}}>{Math.round(value * 100)}%</strong>
       <div style={barStyle(color, value)} />
       <div style={legendStyle}>
         {name}

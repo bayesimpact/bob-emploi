@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Présentez-vous au chef boulanger dès son arrivée tôt le matin",
+    "filters": ["for-job-group(M1101)", "not-for-job(12006)"],
+    "cardText": "Allez à la boulangerie la veille pour savoir à quelle heure arrive le chef boulanger.",
+    "expandedCardItems": [
+      "Se présenter aux boulangers entre 4h et 7h du matin.",
+      "Demander au vendeur / à la vendeuse à quelle heure arrive le chef le matin",
+      "Contacter les fournisseurs de farine locaux : ils connaissent tous les boulangers du coin et sauront où il y a des embauches."
+    ]
+  }
+]

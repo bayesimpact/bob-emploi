@@ -1,5 +1,4 @@
 import PropTypes from 'prop-types'
-import {FamilySituation, UserOrigin} from 'api/user'
 
 // TODO: Remove situation after the deprecated fields got removed from the
 // user.proto.
@@ -9,7 +8,8 @@ const USER_PROFILE_FIELDS = {
   drivingLicenses: PropTypes.arrayOf(PropTypes.string.isRequired),
   email: PropTypes.string.isRequired,
   englishLevelEstimate: PropTypes.number,
-  familySituation: PropTypes.oneOf(Object.keys(FamilySituation)),
+  // TODO(pascal): Enforce one of FamilySituation from proto without bloating the client size.
+  familySituation: PropTypes.string,
   frustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
   gender: PropTypes.string,
   hasHandicap: PropTypes.bool,
@@ -18,7 +18,8 @@ const USER_PROFILE_FIELDS = {
   latestJob: PropTypes.object,
   name: PropTypes.string.isRequired,
   officeSkillsEstimate: PropTypes.number,
-  origin: PropTypes.oneOf(Object.keys(UserOrigin)),
+  // TODO(pascal): Enforce one of UserOrigin from proto without bloating the client size.
+  origin: PropTypes.string,
   situation: PropTypes.string,
   yearOfBirth: PropTypes.number,
 }

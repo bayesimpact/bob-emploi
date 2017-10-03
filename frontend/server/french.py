@@ -21,17 +21,30 @@ def lower_first_letter(sentence):
     return sentence[:1].lower() + sentence[1:]
 
 
+def of_city(city_name):
+    """Compute the right prefix for a city name when writing "of City C"."""
+    if city_name.startswith('Le '):
+        return 'du {}'.format(city_name[3:])
+    if city_name.startswith('Les '):
+        return 'des {}'.format(city_name[4:])
+    if city_name.startswith('La '):
+        return 'de la {}'.format(city_name[3:])
+    if city_name.startswith("L'"):
+        return "de l'{}".format(city_name[2:])
+    return 'de {}'.format(city_name)
+
+
 def in_city(city_name):
     """Compute the right prefix for a city name when writing "in City C"."""
     if city_name.startswith('Le '):
-        return 'au %s' % city_name[3:]
+        return 'au {}'.format(city_name[3:])
     if city_name.startswith('Les '):
-        return 'aux %s' % city_name[4:]
+        return 'aux {}'.format(city_name[4:])
     if city_name.startswith('La '):
-        return 'à la %s' % city_name[3:]
+        return 'à la {}'.format(city_name[3:])
     if city_name.startswith("L'"):
-        return "à l'%s" % city_name[2:]
-    return 'à %s' % city_name
+        return "à l'{}".format(city_name[2:])
+    return 'à {}'.format(city_name)
 
 
 _NUMBER_WORDS = {
@@ -49,4 +62,4 @@ def try_stringify_number(value):
     try:
         return _NUMBER_WORDS[value]
     except KeyError:
-        raise NotImplementedError('No French words defined for %d' % value)
+        raise NotImplementedError('No French words defined for {:d}'.format(value))

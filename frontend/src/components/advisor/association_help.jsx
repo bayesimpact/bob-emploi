@@ -78,9 +78,10 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => ({
-  associations: app.associations[project.projectId],
-}))(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connect(({app}, {project}) => {
+  const {associations} = (app.adviceData[project.projectId] || {})['association-help'] || {}
+  return {associations: associations || []}
+})(ExpandedAdviceCardContentBase)
 
 
 class AssociationLinkBase extends React.Component {

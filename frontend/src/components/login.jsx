@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
-import {Link, browserHistory} from 'react-router'
+import {Link} from 'react-router-dom'
 
 import FacebookLogin from 'react-facebook-login'
 import GoogleLogin from 'react-google-login'
@@ -736,11 +736,16 @@ class LoginButtonBase extends React.Component {
     style: PropTypes.object,
     visualElement: PropTypes.string,
   }
+  static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
+  }
 
   handleClick = () => {
     const {email, isLoggedIn, isSignUpButton, dispatch, visualElement} = this.props
     if (isLoggedIn) {
-      browserHistory.push(Routes.PROJECT_PAGE)
+      this.context.history.push(Routes.PROJECT_PAGE)
       return
     }
     if (isSignUpButton) {

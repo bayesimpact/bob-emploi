@@ -115,7 +115,7 @@ def _diploma_name(job_offer_diploma):
     if (not int(job_offer_diploma.subject_area_code) or
             job_offer_diploma.subject_area_name == 'NULL'):
         return diploma_name
-    return '%s en %s' % (diploma_name, job_offer_diploma.subject_area_name)
+    return '{} en {}'.format(diploma_name, job_offer_diploma.subject_area_name)
 
 
 def _employment_type(job_offer):

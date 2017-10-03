@@ -126,7 +126,8 @@ def main(fhs_folder, now, mode_name, csv_output):
         csv_output: path to the file to write to.
     """
     if mode_name not in _MODES:
-        raise ValueError('Unsupported mode: [%s], want one of [%s]' % (mode_name, _MODES.keys()))
+        raise ValueError(
+            'Unsupported mode: [{}], want one of [{}]'.format(mode_name, _MODES.keys()))
     mode = _MODES[mode_name]
     now = datetime.datetime.strptime(now, '%Y-%m-%d').date()
 

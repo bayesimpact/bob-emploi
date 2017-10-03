@@ -38,7 +38,7 @@ def require_evaluator_auth(wrapped):
             flask.request.headers['Authorization'].replace('Bearer ', ''))
         email = id_info['email']
         if not _EMAILS_PATTERN.match(email):
-            flask.abort(401, 'Adresse email %s non autorisée' % email)
+            flask.abort(401, 'Adresse email "{}" non autorisée'.format(email))
         if should_send_email_keywords:
             kwargs = dict(kwargs, evaluator_email=email)
         return wrapped(*args, **kwargs)
@@ -107,7 +107,8 @@ def create_use_case(request):
     # Find user.
     user_dict = database.user.find_one({'profile.email': request.email})
     if not user_dict:
-        flask.abort(404, 'Aucun utilisateur avec l\'email "%s" n\'a été trouvé.' % request.email)
+        flask.abort(
+            404, 'Aucun utilisateur avec l\'email "{}" n\'a été trouvé.'.format(request.email))
 
     # Find next free index in use case pool.
     last_use_case_in_pool = database.use_case.find(

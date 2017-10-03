@@ -2,6 +2,7 @@
 import base64
 import binascii
 import datetime
+import functools
 import hashlib
 import hmac
 import json
@@ -35,13 +36,46 @@ _FACEBOOK_SECRET = os.getenv(
     'aA12bB34cC56dD78eE90fF12aA34bB56').encode('ascii', 'ignore')
 FACEBOOK_SSO_APP_ID = os.getenv('FACEBOOK_SSO_APP_ID', '1048782155234293')
 
+# This is a fake salt, not used anywhere in staging nor prod. This default
+# value is used for tests and dev environment.
+FAKE_SECRET_SALT = b'a2z3S5AKAEavfdr234aze075'
 SECRET_SALT = os.getenv(
     'SECRET_SALT',
-    # This is a fake salt, not used anywhere in staging nor prod. This default
-    # value is used for tests and dev environment.
-    'a2z3S5AKAEavfdr234aze075').encode('ascii', 'ignore')
+    FAKE_SECRET_SALT.decode('ascii')).encode('ascii', 'ignore')
 # Validity of generated salt tokens.
 _SALT_VALIDITY_SECONDS = datetime.timedelta(hours=2).total_seconds()
+
+_ADMIN_AUTH_TOKEN = os.getenv('ADMIN_AUTH_TOKEN')
+
+
+def require_admin(func):
+    """Decorator for a function that requires admin authorization."""
+    def _decorated_fun(*args, **kwargs):
+        if _ADMIN_AUTH_TOKEN:
+            request_token = flask.request.headers.get('Authorization')
+            if not request_token:
+                flask.abort(401)
+            if request_token != _ADMIN_AUTH_TOKEN:
+                flask.abort(403)
+        return func(*args, **kwargs)
+    return functools.wraps(func)(_decorated_fun)
+
+
+def require_user(get_user_id):
+    """Check if authenticated user has a valid token in Authorization header."""
+    def _decorator(func):
+        def _decorated_fun(*args, **kwargs):
+            auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
+            if not auth_token:
+                flask.abort(401, 'Token manquant')
+            user_id = get_user_id(*args, **kwargs)
+            try:
+                check_token(user_id, auth_token, role='auth')
+            except ValueError:
+                flask.abort(403, 'Unauthorized token')
+            return func(*args, **kwargs)
+        return functools.wraps(func)(_decorated_fun)
+    return _decorator
 
 
 def decode_google_id_token(token_id):
@@ -51,11 +85,11 @@ def decode_google_id_token(token_id):
     try:
         id_info = client.verify_id_token(token_id, GOOGLE_SSO_CLIENT_ID)
     except crypt.AppIdentityError as error:
-        flask.abort(401, "Mauvais jeton d'authentification : %s" % error)
+        flask.abort(401, "Mauvais jeton d'authentification : {}".format(error))
     if id_info.get('iss') not in _GOOGLE_SSO_ISSUERS:
         flask.abort(
             401,
-            "Fournisseur d'authentification invalide : %s." % id_info.get('iss', '<none>'))
+            "Fournisseur d'authentification invalide : {}.".format(id_info.get('iss', '<none>')))
     return id_info
 
 
@@ -71,7 +105,8 @@ class Authenticator(object):
         if auth_request.google_token_id:
             return self._google_authenticate(auth_request.google_token_id)
         if auth_request.facebook_signed_request:
-            return self._facebook_authenticate(auth_request.facebook_signed_request)
+            return self._facebook_authenticate(
+                auth_request.facebook_signed_request, auth_request.email)
         if auth_request.email:
             return self._password_authenticate(auth_request)
         flask.abort(422, "Aucun moyen d'authentification n'a été trouvé.")
@@ -91,15 +126,13 @@ class Authenticator(object):
             self._save_new_user(response.authenticated_user)
             response.is_new_user = True
 
-        # TODO(benoit): Check token provide enough guarantee for this use case.
         response.auth_token = create_token(response.authenticated_user.user_id, 'auth')
 
         return response
 
     # TODO: Handle the case where a user creates its account through Facebook but refuses to share
-    # their email (empty email at creation time). Use `_assert_user_not_existing` in case they share
-    # their email.
-    def _facebook_authenticate(self, signed_request):
+    # their email (empty email at creation time).
+    def _facebook_authenticate(self, signed_request, email):
         try:
             [encoded_signature, payload] = signed_request.split('.')
             data = json.loads(_base64_url_decode(payload).decode('utf-8'))
@@ -108,9 +141,9 @@ class Authenticator(object):
             flask.abort(422, error)
         for required_field in ('algorithm', 'user_id'):
             if not data.get(required_field):
-                flask.abort(422, 'Le champs %s est requis : %s' % (required_field, data))
+                flask.abort(422, 'Le champs "{}" est requis : {}'.format(required_field, data))
         if data['algorithm'].lower() != 'hmac-sha256':
-            flask.abort(422, 'Algorithme d\'encryption inconnu "%s"' % data['algorithm'])
+            flask.abort(422, 'Algorithme d\'encryption inconnu "{}"'.format(data['algorithm']))
 
         expected_signature = hmac.new(
             _FACEBOOK_SECRET, payload.encode('utf-8'), hashlib.sha256).digest()
@@ -123,12 +156,13 @@ class Authenticator(object):
         if proto.parse_from_mongo(user_dict, response.authenticated_user):
             response.authenticated_user.user_id = user_id
         else:
+            if email:
+                self._assert_user_not_existing(email)
+                response.authenticated_user.profile.email = email
             response.authenticated_user.facebook_id = data['user_id']
             self._save_new_user(response.authenticated_user)
             response.is_new_user = True
 
-        # TODO(benoit): Check token provide enough guarantee for this use case.
-        # TODO(benoit): User email may not exists, we have to use another strategy.
         response.auth_token = create_token(response.authenticated_user.user_id, 'auth')
 
         return response
@@ -149,7 +183,6 @@ class Authenticator(object):
             return self._password_register(auth_request, response)
 
         user_id = str(user_dict['_id'])
-        # TODO(benoit): Check token provide enough guarantee for this use case.
         response.auth_token = create_token(user_id, 'auth')
 
         user_auth_dict = self._db.user_auth.find_one({'_id': user_dict['_id']})
@@ -163,7 +196,8 @@ class Authenticator(object):
                 auth_method = ''
             flask.abort(
                 403,
-                "L'utilisateur existe mais utilise un autre moyen de connexion%s." % auth_method)
+                "L'utilisateur existe mais utilise un autre moyen de connexion{}."
+                .format(auth_method))
 
         if not auth_request.hashed_password:
             # User exists but did not sent a passwordt: probably just getting some fresh salt.
@@ -189,7 +223,7 @@ class Authenticator(object):
                 return response
         except ValueError as error:
             flask.abort(
-                403, "Le sel n'a pas été généré par ce serveur : %s." % error)
+                403, "Le sel n'a pas été généré par ce serveur : {}.".format(error))
 
         stored_hashed_password = user_auth_dict.get('hashedPassword')
 
@@ -222,7 +256,6 @@ class Authenticator(object):
                 '_id': object_id,
                 'hashedPassword': auth_request.hashed_password})
         response.is_new_user = True
-        # TODO(benoit): Check token provide enough guarantee for this use case.
         response.auth_token = create_token(response.authenticated_user.user_id, 'auth')
         return response
 
@@ -238,8 +271,7 @@ class Authenticator(object):
         except ValueError as error:
             flask.abort(
                 401,
-                "Le jeton d'authentification n'a pas été généré par ce serveur : %s." %
-                error)
+                "Le jeton d'authentification n'a pas été généré par ce serveur : {}.".format(error))
         self._db.user_auth.replace_one(
             {'_id': objectid.ObjectId(user_id)},
             {'hashedPassword': auth_request.hashed_password})
@@ -248,7 +280,7 @@ class Authenticator(object):
         """Sends an email to user with a reset token so that they can reset their password."""
         user_dict = self._db.user.find_one({'profile.email': email})
         if not user_dict:
-            flask.abort(403, "Nous n'avons pas d'utilisateur avec cet email : %s" % email)
+            flask.abort(403, "Nous n'avons pas d'utilisateur avec cet email : {}".format(email))
         user_auth_dict = self._db.user_auth.find_one({'_id': user_dict['_id']})
         if not user_auth_dict or not user_auth_dict.get('hashedPassword'):
             flask.abort(
@@ -282,7 +314,7 @@ def create_token(email, role=''):
 
 def check_token(email, token, role=None):
     """Ensures a token is valid for a given role or raises a ValueError."""
-    _assert_valid_salt(token, email + role)
+    return _assert_valid_salt(token, email + role)
 
 
 def _assert_valid_salt(salt, email, now=None):
@@ -313,7 +345,7 @@ def _timestamped_hash(timestamp, value):
 
     This can be used either as a salt or as an auth token.
     """
-    return '%d.%s' % (timestamp, _unique_salt_check(timestamp, value))
+    return '{:d}.{}'.format(timestamp, _unique_salt_check(timestamp, value))
 
 
 def _unique_salt_check(timestamp, email):

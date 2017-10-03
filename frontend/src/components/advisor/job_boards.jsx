@@ -93,9 +93,10 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => ({
-  jobBoards: app.jobBoards[project.projectId],
-}))(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connect(({app}, {project}) => {
+  const {jobBoards} = (app.adviceData[project.projectId] || {})['find-a-jobboard'] || {}
+  return {jobBoards: jobBoards || []}
+})(ExpandedAdviceCardContentBase)
 
 
 class JobBoardLinkBase extends React.Component {

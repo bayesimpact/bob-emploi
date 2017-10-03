@@ -1,11 +1,11 @@
-import React from 'react'
+import {parse} from 'query-string'
 import PropTypes from 'prop-types'
-import {browserHistory} from 'react-router'
+import React from 'react'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import config from 'config'
 
-import {landingPageSectionIsShown, openRegistrationModal,
+import {landingPageSectionIsShown, openLoginModal, openRegistrationModal,
   loadLandingPageAction} from 'store/actions'
 
 import adviceScreenshot from 'images/screenshots/advice.png'
@@ -447,6 +447,9 @@ class ScreenshotsSection extends React.Component {
 
 class ConvictionsSection extends React.Component {
   static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
     isMobileVersion: PropTypes.bool,
   }
 
@@ -470,7 +473,7 @@ class ConvictionsSection extends React.Component {
   }
 
   render() {
-    const {isMobileVersion} = this.context
+    const {isMobileVersion, history} = this.context
     const style = {
       backgroundColor: '#fff',
       color: Colors.SLATE,
@@ -528,7 +531,7 @@ class ConvictionsSection extends React.Component {
             </span>)}
           <Button
             style={buttonStyle} isNarrow={true}
-            onClick={() => browserHistory.push(Routes.VISION_PAGE)}>
+            onClick={() => history.push(Routes.VISION_PAGE)}>
             En lire plus sur notre mission
           </Button>
         </div>
@@ -709,7 +712,11 @@ class PartnerCard extends React.Component {
 class LandingPage extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
-    routing: PropTypes.object.isRequired,
+    location: PropTypes.shape({
+      hash: PropTypes.string.isRequired,
+      pathname: PropTypes.string.isRequired,
+      search: PropTypes.string.isRequired,
+    }).isRequired,
   }
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
@@ -731,7 +738,9 @@ class LandingPage extends React.Component {
   }
 
   componentWillMount() {
-    const {hash, query} = this.props.routing.locationBeforeTransitions
+    const {dispatch, location} = this.props
+    const {hash, pathname, search} = location
+    const query = parse(search)
     const utmContent = query['utm_content'] || ''
     for (const landingPageKind in landingPageTitles) {
       if (landingPageTitles[landingPageKind].match.test(utmContent)) {
@@ -740,12 +749,17 @@ class LandingPage extends React.Component {
       }
     }
     if (hash === '#inscription') {
-      this.props.dispatch(openRegistrationModal({email: query.email || ''}, 'urlHash'))
+      dispatch(openRegistrationModal({email: query.email || ''}, 'urlHash'))
     }
     // In Mobile Facebook auth flow, the Facebook login button component needs
     // to be mounted in order to actually login after a redirect.
     if (query.state === 'facebookdirect') {
-      this.props.dispatch(openRegistrationModal({}, 'facebookDirect'))
+      dispatch(openRegistrationModal({}, 'facebookDirect'))
+    }
+    if (pathname !== Routes.ROOT) {
+      dispatch(openLoginModal({
+        email: query.email || '',
+      }, 'returninguser'))
     }
   }
 

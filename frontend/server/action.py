@@ -4,12 +4,10 @@ import logging
 import random
 import re
 import time
-from urllib import parse
-
-import unidecode
 
 from bob_emploi.frontend import companies
 from bob_emploi.frontend import now
+from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -18,7 +16,7 @@ from bob_emploi.frontend.api import user_pb2
 _ANY_COMPANY_REGEXP = re.compile('^(.*) une entreprise')
 
 
-def instantiate(action, user_proto, project, template, for_email=False):
+def instantiate(action, user_proto, project, template, database, for_email=False):
     """Instantiate a newly created action from a template.
 
     Args:
@@ -26,11 +24,12 @@ def instantiate(action, user_proto, project, template, for_email=False):
         user_proto: the whole user data.
         project: the whole project data.
         template: the action template to instantiate.
+        database: a MongoDB client to get stats and info.
         for_email: whether the action is to be sent in an email.
     Returns:
         the populated action for chaining.
     """
-    action.action_id = '%s-%s-%x-%x' % (
+    action.action_id = '{}-{}-{:x}-{:x}'.format(
         project.project_id,
         template.action_template_id,
         round(time.time()),
@@ -40,8 +39,9 @@ def instantiate(action, user_proto, project, template, for_email=False):
     action.title_feminine = template.title_feminine
     action.short_description = template.short_description
     action.short_description_feminine = template.short_description_feminine
-    action.link = populate_template(
-        template.link, project.mobility.city, project.target_job)
+    scoring_project = scoring.ScoringProject(
+        project, user_proto.profile, user_proto.features_enabled, database)
+    action.link = scoring_project.populate_template(template.link)
     action.how_to = template.how_to
     action.status = action_pb2.ACTION_UNREAD
     action.created_at.FromDatetime(now.get())
@@ -60,7 +60,7 @@ def instantiate(action, user_proto, project, template, for_email=False):
             if title_match:
                 company_name = action.apply_to_company.name
                 if action.apply_to_company.city_name:
-                    company_name += ' (%s)' % action.apply_to_company.city_name
+                    company_name += ' ({})'.format(action.apply_to_company.city_name)
                 else:
                     logging.warning(
                         'LBB Action %s is missing a city name (user %s).',
@@ -72,38 +72,6 @@ def instantiate(action, user_proto, project, template, for_email=False):
                     action.action_id, user_proto.user_id)
 
     return action
-
-
-def populate_template(template, city, job):
-    """Populate a template with project variables.
-
-    Args:
-        template: a string that may or may not contain placeholders e.g.
-            %romeId, %departementId.
-        city: the city to target.
-        job: the job to target.
-    Returns:
-        A string with the placeholder replaced by actual values.
-    """
-    if '%' not in template:
-        return template
-    project_vars = {
-        '%cityId': city.city_id,
-        '%cityName': parse.quote(city.name),
-        '%latin1CityName': parse.quote(city.name.encode('latin-1', 'replace')),
-        '%departementId': city.departement_id,
-        '%postcode': city.postcodes.split('-')[0] or (
-            city.departement_id + '0' * (5 - len(city.departement_id))),
-        '%regionId': city.region_id,
-        '%romeId': job.job_group.rome_id,
-        '%jobId': job.code_ogr,
-        '%jobGroupNameUrl': parse.quote(unidecode.unidecode(
-            job.job_group.name.lower().replace(' ', '-').replace("'", '-'))),
-        '%masculineJobName': parse.quote(job.masculine_name),
-        '%latin1MasculineJobName': parse.quote(job.masculine_name.encode('latin-1', 'replace')),
-    }
-    pattern = re.compile('|'.join(project_vars.keys()))
-    return pattern.sub(lambda v: project_vars[v.group(0)], template)
 
 
 def _get_company_from_lbb(project, company):

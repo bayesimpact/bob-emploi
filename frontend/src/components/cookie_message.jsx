@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
-import {browserHistory} from 'react-router'
 
 import {acceptCookiesUsageAction} from 'store/actions'
 
@@ -16,6 +15,11 @@ class CookieMessageBase extends React.Component {
     isMessageShown: PropTypes.bool,
     style: PropTypes.object,
   }
+  static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
+  }
 
   state = {
     isModalShown: false,
@@ -23,6 +27,7 @@ class CookieMessageBase extends React.Component {
 
   render() {
     const {isMessageShown} = this.props
+    const {history} = this.context
     if (!isMessageShown) {
       return null
     }
@@ -44,7 +49,7 @@ class CookieMessageBase extends React.Component {
       statistiques de visite. Vos données ne seront ni cédées à des tiers, ni
       exploitées à des fins commerciales. <a
         style={tinyLinkStyle}
-        onClick={() => browserHistory.push(Routes.COOKIES_PAGE)}>
+        onClick={() => history.push(Routes.COOKIES_PAGE)}>
         En savoir plus
       </a>
     </Banner>

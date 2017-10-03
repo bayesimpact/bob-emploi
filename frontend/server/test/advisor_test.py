@@ -1,0 +1,649 @@
+"""Unit tests for the bob_emploi.frontend.advisor module."""
+import datetime
+import unittest
+
+import mock
+import mongomock
+
+from bob_emploi.frontend import advisor
+from bob_emploi.frontend import companies
+from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import user_pb2
+
+
+class _BaseTestCase(unittest.TestCase):
+
+    def setUp(self):
+        super(_BaseTestCase, self).setUp()
+        self.database = mongomock.MongoClient().test
+        self.database.action_templates.insert_one({
+            '_id': 'rec1CWahSiEtlwEHW',
+            'goal': 'Reorientation !',
+        })
+        self.user = user_pb2.User(
+            features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE),
+            profile=user_pb2.UserProfile(name='Margaux', gender=user_pb2.FEMININE))
+        advisor.clear_cache()
+
+
+@mock.patch(advisor.mail.__name__ + '.send_template')
+class MaybeAdviseTestCase(_BaseTestCase):
+    """Unit tests for the maybe_advise function."""
+
+    def test_no_advice_if_project_incomplete(self, mock_send_template):
+        """Test that the advice do not get populated when the project is marked as incomplete."""
+        project = project_pb2.Project(is_incomplete=True)
+        advisor.maybe_advise(self.user, project, self.database)
+
+        self.assertEqual(len(project.advices), 0)
+
+        mock_send_template.assert_not_called()
+
+    def test_missing_module(self, mock_send_template):
+        """Test that the advisor does not crash when a module is missing."""
+        project = project_pb2.Project(advices=[project_pb2.Advice(
+            advice_id='does-not-exist',
+            status=project_pb2.ADVICE_ACCEPTED)])
+        project_before = str(project)
+        advisor.maybe_advise(self.user, project, self.database)
+
+        self.assertEqual(project_before, str(project))
+
+        mock_send_template.assert_not_called()
+
+    def test_find_all_pieces_of_advice(self, mock_send_template):
+        """Test that the advisor scores all advice modules."""
+        mock_send_template().status_code = 200
+        mock_send_template.reset_mock()
+        project = project_pb2.Project(
+            project_id='1234',
+            target_job=job_pb2.Job(
+                name='Steward/ Hôtesse',
+                feminine_name='Hôtesse',
+                masculine_name='Steward',
+            ),
+        )
+        self.database.advice_modules.insert_many([
+            {
+                'adviceId': 'spontaneous-application',
+                'triggerScoringModel': 'constant(2)',
+                'isReadyForProd': True,
+            },
+            {
+                'adviceId': 'other-work-env',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+            },
+        ])
+
+        advisor.maybe_advise(self.user, project, self.database, 'http://base.example.com')
+
+        self.assertEqual(['spontaneous-application'], [a.advice_id for a in project.advices])
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, project.advices[0].status)
+
+        mock_send_template.assert_called_once()
+        data = mock_send_template.call_args[0][2]
+        self.assertEqual(
+            ['advices', 'baseUrl', 'firstName', 'ofProjectTitle', 'projectId'],
+            sorted(data.keys()))
+        self.assertEqual('http://base.example.com', data['baseUrl'])
+        self.assertEqual('Margaux', data['firstName'])
+        self.assertEqual("d'hôtesse", data['ofProjectTitle'])
+        self.assertEqual('1234', data['projectId'])
+
+    def test_recommend_advice_none(self, mock_send_template):
+        """Test that the advisor does not recommend anyting if all modules score 0."""
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_many([
+            {
+                'adviceId': 'spontaneous-application',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+            },
+            {
+                'adviceId': 'other-work-env',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+            },
+        ])
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        self.assertFalse(project.advices)
+
+        mock_send_template.assert_not_called()
+
+    def test_recommend_all_modules(self, mock_send_template):
+        """Test that all advice are recommended when all_modules is true even if incompatible."""
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_many([
+            {
+                'adviceId': 'spontaneous-application',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+                'airtableId': 'abc',
+                'incompatibleAdviceIds': ['def'],
+            },
+            {
+                'adviceId': 'other-work-env',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+                'airtableId': 'def',
+            },
+            {
+                'adviceId': 'new-advice',
+                'triggerScoringModel': 'constant(0)',
+                'isReadyForProd': True,
+                'airtableId': 'def',
+                'incompatibleAdviceIds': ['abc'],
+            },
+        ])
+
+        self.user.features_enabled.all_modules = True
+        advisor.maybe_advise(self.user, project, self.database)
+        self.assertEqual(
+            ['spontaneous-application', 'other-work-env', 'new-advice'],
+            [a.advice_id for a in project.advices])
+
+        mock_send_template.assert_called_once()
+
+    def test_incompatible_advice_modules(self, mock_send_template):
+        """Test that the advisor discard incompatible advice modules."""
+        mock_send_template().status_code = 200
+        mock_send_template.reset_mock()
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_many([
+            {
+                'adviceId': 'other-work-env',
+                'airtableId': 'abc',
+                'triggerScoringModel': 'constant(2)',
+                'isReadyForProd': True,
+                'incompatibleAdviceIds': ['def'],
+            },
+            {
+                'adviceId': 'spontaneous-application',
+                'airtableId': 'def',
+                'triggerScoringModel': 'constant(3)',
+                'isReadyForProd': True,
+                'incompatibleAdviceIds': ['abc'],
+            },
+            {
+                'adviceId': 'final-one',
+                'airtableId': 'ghi',
+                'triggerScoringModel': 'constant(1)',
+                'isReadyForProd': True,
+            },
+        ])
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        self.assertEqual(
+            ['spontaneous-application', 'final-one'],
+            [a.advice_id for a in project.advices])
+        mock_send_template.assert_called_once()
+
+    @mock.patch(advisor.scoring.__name__ + '.SCORING_MODELS', new_callable=dict)
+    @mock.patch(advisor.logging.__name__ + '.exception')
+    def test_module_crashes(self, mock_logger, mock_scoring_models, mock_send_template):
+        """Test that the advisor does not crash if one module does."""
+        mock_send_template().status_code = 200
+        mock_send_template.reset_mock()
+
+        mock_scoring_models['constant(1)'] = mock.MagicMock(spec=['score'])
+        mock_scoring_models['constant(1)'].score.return_value = 1
+        mock_scoring_models['crash-me'] = mock.MagicMock(spec=['score'])
+        mock_scoring_models['crash-me'].score.side_effect = ValueError('ouch')
+
+        project = project_pb2.Project()
+        self.database.advice_modules.insert_many([
+            {
+                'adviceId': 'other-work-env',
+                'triggerScoringModel': 'crash-me',
+                'isReadyForProd': True,
+            },
+            {
+                'adviceId': 'network',
+                'triggerScoringModel': 'constant(1)',
+                'isReadyForProd': True,
+            },
+        ])
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        self.assertEqual(['network'], [a.advice_id for a in project.advices])
+        mock_send_template.assert_called_once()
+        mock_logger.assert_called_once()
+
+
+class ExtraDataTestCase(_BaseTestCase):
+    """Unit tests for maybe_advise to compute extra data for advice modules."""
+
+    def setUp(self):
+        super(ExtraDataTestCase, self).setUp()
+        self.mail_patcher = mock.patch(advisor.mail.__name__ + '.send_template')
+        mock_send_template = self.mail_patcher.start()
+        mock_send_template().status_code = 200
+
+    def tearDown(self):
+        self.mail_patcher.stop()
+        super(ExtraDataTestCase, self).tearDown()
+
+    def test_advice_other_work_env_extra_data(self):
+        """Test that the advisor computes extra data for the work environment advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+        )
+        self.user.features_enabled.alpha = True
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'workEnvironmentKeywords': {
+                'structures': ['A', 'B'],
+                'sectors': ['sector Toise', 'sector Gal'],
+            },
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'other-work-env',
+            'triggerScoringModel': 'advice-other-work-env',
+            'extraDataFieldName': 'other_work_env_advice_data',
+            'isReadyForProd': True,
+        })
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'other-work-env')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(
+            ['A', 'B'], advice.other_work_env_advice_data.work_environment_keywords.structures)
+        self.assertEqual(
+            ['sector Toise', 'sector Gal'],
+            advice.other_work_env_advice_data.work_environment_keywords.sectors)
+
+    def test_advice_improve_success_rate_extra_data(self):
+        """Test that the advisor computes extra data for the "Improve Success Rate" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=6,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.local_diagnosis.insert_one({
+            '_id': '14:A1234',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 2,
+            },
+        })
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {
+                'skills': [{'name': 'Humour'}, {'name': 'Empathie'}],
+                'skillsShortText': '**Humour** et **empathie**',
+            },
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'improve-success',
+            'triggerScoringModel': 'advice-improve-resume',
+            'extraDataFieldName': 'improve_success_rate_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'improve-success')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertGreater(advice.improve_success_rate_data.num_interviews_increase, 50)
+        self.assertFalse(advice.improve_success_rate_data.requirements.skills)
+        self.assertEqual(
+            '**Humour** et **empathie**',
+            advice.improve_success_rate_data.requirements.skills_short_text)
+
+    def test_advice_job_boards_extra_data(self):
+        """Test that the advisor computes extra data for the "Find a Job Board" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.jobboards.insert_one({'title': 'Indeed', 'filters': ['for-departement(14)']})
+        self.database.advice_modules.insert_one({
+            'adviceId': 'job-boards',
+            'triggerScoringModel': 'advice-job-boards',
+            'extraDataFieldName': 'job_boards_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'job-boards')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('Indeed', advice.job_boards_data.job_board_title)
+        self.assertFalse(advice.job_boards_data.is_specific_to_job_group)
+        self.assertTrue(advice.job_boards_data.is_specific_to_region)
+
+    @mock.patch(companies.__name__ + '.get_lbb_companies')
+    def test_advice_spontaneous_application_extra_data(self, mock_get_lbb_companies):
+        """Test that the advisor computes extra data for the "Spontaneous Application" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        }
+                    ],
+                }
+            },
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-spontaneous-application',
+            'extraDataFieldName': 'spontaneous_application_data',
+            'isReadyForProd': True,
+        })
+        mock_get_lbb_companies.return_value = iter([
+            {'name': 'EX NIHILO'},
+            {'name': 'M.F.P MULTIMEDIA FRANCE PRODUCTIONS'},
+        ])
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(
+            ['EX NIHILO', 'M.F.P MULTIMEDIA FRANCE PRODUCTIONS'],
+            [c.name for c in advice.spontaneous_application_data.companies])
+
+    def test_advice_better_job_in_group_extra_data(self):
+        """Test that the advisor computes extra data for the "Better Job in Group" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(code_ogr='1234', job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'jobs': [
+                {'codeOgr': '1234', 'name': 'Pilote'},
+                {'codeOgr': '5678', 'name': 'Pompier'},
+                {'codeOgr': '9012', 'name': 'Facteur'},
+            ],
+            'requirements': {
+                'specificJobs': [
+                    {
+                        'codeOgr': '5678',
+                        'percentSuggested': 55,
+                    },
+                    {
+                        'codeOgr': '1234',
+                        'percentSuggested': 45,
+                    },
+                ],
+            },
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-better-job-in-group',
+            'extraDataFieldName': 'better_job_in_group_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('Pompier', advice.better_job_in_group_data.better_job.name)
+        self.assertEqual(1, advice.better_job_in_group_data.num_better_jobs)
+
+    def test_advice_association_help_extra_data(self):
+        """Test that the advisor computes extra data for the "Find an association" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(code_ogr='1234', job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='14')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.associations.insert_many([
+            {'name': 'Pôle emploi'},
+            {'name': 'SNC', 'filters': ['for-departement(14,15,16)']},
+            {'name': 'Ressort', 'filters': ['for-departement(69)']},
+        ])
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-association-help',
+            'extraDataFieldName': 'associations_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('SNC', advice.associations_data.association_name)
+
+    def test_advice_volunteer_extra_data(self):
+        """Test that the advisor computes extra data for the "Volunteer" advice."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(code_ogr='1234', job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='75')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.volunteering_missions.insert_one({
+            '_id': '75',
+            'missions': [
+                {'associationName': 'BackUp Rural'},
+                {'associationName': 'Construisons Ensemble Comment Faire'},
+            ],
+        })
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-volunteer',
+            'extraDataFieldName': 'volunteer_data',
+            'isReadyForProd': True,
+        })
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(
+            ['BackUp Rural', 'Construisons Ensemble Comment Faire'],
+            sorted(advice.volunteer_data.association_names))
+
+    @mock.patch(advisor.now.__name__ + '.get')
+    def test_advice_events_extra_data(self, mock_now):
+        """Test that the advisor computes extra data for the "Events" advice."""
+        mock_now.return_value = datetime.datetime(2017, 8, 15)
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(code_ogr='1234', job_group=job_pb2.JobGroup(rome_id='A1234')),
+            mobility=geo_pb2.Location(city=geo_pb2.FrenchCity(departement_id='75')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            total_interview_count=1,
+        )
+        self.database.advice_modules.insert_one({
+            'adviceId': 'my-advice',
+            'triggerScoringModel': 'advice-event',
+            'extraDataFieldName': 'events_data',
+            'isReadyForProd': True,
+        })
+        self.database.events.insert_many([
+            {
+                'title': 'AP HEROS CANDIDATS MADIRCOM - BORDEAUX',
+                'link': 'https://www.workuper.com/events/ap-heros-candidats-madircom-bordeaux',
+                'organiser': 'MADIRCOM',
+                'startDate': '2017-08-29',
+            },
+            {
+                'title': 'Le Salon du Travail et de la Mobilité Professionnelle',
+                'link': 'https://www.workuper.com/events/le-salon-du-travail-et-de-la-mobilite-'
+                        'professionnelle',
+                'organiser': 'Altice Media Events',
+                'startDate': '2018-01-19',
+            },
+        ])
+        advisor.clear_cache()
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'my-advice')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual('AP HEROS CANDIDATS MADIRCOM - BORDEAUX', advice.events_data.event_name)
+
+    @mock.patch(advisor.now.__name__ + '.get')
+    def test_seasonal_extra_data(self, mock_now):
+        """Test that the advisor computes extra data for the seasonal-relocate advice."""
+        mock_now.return_value = datetime.datetime(2017, 2, 15)
+
+        self.user.profile.year_of_birth = datetime.date.today().year - 28
+        self.user.profile.highest_degree = job_pb2.BAC_BACPRO
+        self.user.profile.family_situation = user_pb2.SINGLE
+        project = project_pb2.Project(
+            mobility=geo_pb2.Location(area_type=geo_pb2.COUNTRY),
+            job_search_length_months=7,
+            employment_types=[job_pb2.INTERIM, job_pb2.CDD_LESS_EQUAL_3_MONTHS]
+        )
+        self.database.advice_modules.insert_one({
+            'adviceId': 'seasonal-relocate',
+            'triggerScoringModel': 'advice-seasonal-relocate',
+            'extraDataFieldName': 'seasonal_data',
+            'isReadyForProd': True,
+        })
+        self.database.seasonal_jobbing.insert_one(
+            {
+                '_id': 2,
+                'departementStats': [
+                    {
+                        'departementId': '06',
+                        'departementSeasonalOffers': 900,
+                        'jobGroups': [{
+                            'romeId': 'I1202',
+                            'name': 'Professeur de piano',
+                            'offers': 123,
+                        }, {
+                            'romeId': 'I1203',
+                            'name': 'Professeur de guitarre',
+                            'offers': 120,
+                        }, ],
+                    }, {
+                        'departementId': '2A',
+                        'departementSeasonalOffers': 800,
+                        'jobGroups': [
+                            {
+                                'romeId': 'I1202',
+                                'name': 'Professeur de piano',
+                                'offers': 123,
+                            }, {
+                                'romeId': 'I1203',
+                                'name': 'Professeur de guitarre',
+                                'offers': 120,
+                            },
+                        ],
+                    },
+                ],
+            }
+        )
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'seasonal-relocate')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(2, len(advice.seasonal_data.departement_stats))
+        first_dep = advice.seasonal_data.departement_stats[0]
+        self.assertEqual('06', first_dep.departement_id)
+        self.assertEqual(900, first_dep.departement_seasonal_offers)
+        self.assertEqual(2, len(first_dep.job_groups))
+        self.assertEqual('I1202', first_dep.job_groups[0].rome_id)
+        self.assertEqual('Professeur de piano', first_dep.job_groups[0].name)
+        self.assertEqual(123, first_dep.job_groups[0].offers)
+
+
+class OverrideAdviceTestCase(_BaseTestCase):
+    """Unit tests for maybe_advise to have overriden values from modules."""
+
+    def setUp(self):
+        super(OverrideAdviceTestCase, self).setUp()
+        self.mail_patcher = mock.patch(advisor.mail.__name__ + '.send_template')
+        mock_send_template = self.mail_patcher.start()
+        mock_send_template().status_code = 200
+
+    def tearDown(self):
+        self.mail_patcher.stop()
+        super(OverrideAdviceTestCase, self).tearDown()
+
+    def test_advice_specific_to_job_override(self):
+        """Test that the advisor overrides some advice data with the "Specific to Job" module."""
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='D1102')),
+        )
+        self.database.advice_modules.insert_one({
+            'adviceId': 'custom-advice-id',
+            'triggerScoringModel': 'advice-specific-to-job',
+            'isReadyForProd': True,
+        })
+        self.database.specific_to_job_advice.insert_one({
+            'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            'filters': ['for-job-group(D1102)', 'not-for-job(12006)'],
+            'cardText':
+            'Allez à la boulangerie la veille pour savoir à quelle '
+            'heure arrive le chef boulanger.',
+            'expandedCardHeader': "Voilà ce qu'il faut faire",
+            'expandedCardItems': [
+                'Se présenter aux boulangers entre 4h et 7h du matin.',
+                'Demander au vendeur / à la vendeuse à quelle heure arrive le chef le matin',
+                'Contacter les fournisseurs de farine locaux : ils connaissent '
+                'tous les boulangers du coin et sauront où il y a des '
+                'embauches.',
+            ],
+        })
+
+        advisor.maybe_advise(self.user, project, self.database)
+
+        advice = next(a for a in project.advices if a.advice_id == 'custom-advice-id')
+        self.assertEqual(project_pb2.ADVICE_RECOMMENDED, advice.status)
+        self.assertEqual(
+            'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            advice.title)
+        self.assertEqual("Voilà ce qu'il faut faire", advice.expanded_card_header)
+        self.assertTrue(advice.card_text)
+        self.assertTrue(advice.expanded_card_items)
+
+
+if __name__ == '__main__':
+    unittest.main()  # pragma: no cover

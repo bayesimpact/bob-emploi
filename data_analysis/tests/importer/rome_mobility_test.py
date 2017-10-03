@@ -15,7 +15,7 @@ class RomeMobilityImporterTestCase(unittest.TestCase):
     """Unit tests for the Rome mobility importer."""
 
     rome_csv_pattern = path.join(
-        path.dirname(__file__), 'testdata/unix_%s_v327_utf8.csv')
+        path.dirname(__file__), 'testdata/unix_{}_v327_utf8.csv')
 
     def test_csv2dicts(self):
         """Test basic usage of the csv2dicts function."""

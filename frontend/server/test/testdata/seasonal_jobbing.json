@@ -1,0 +1,40 @@
+[
+  {
+    "_id": 9,
+    "departementStats": [
+      {
+        "departementId": "06",
+        "departementSeasonalOffers": 800,
+        "jobGroups": [
+          {
+            "romeId": "I1202",
+            "name": "Professeur de piano",
+            "offers": 123
+          },
+          {
+            "romeId": "I1203",
+            "name": "Professeur de guitarre",
+            "offers": 120
+          }
+        ]
+      },
+      {
+        "departementId": "2A",
+        "departementSeasonalOffers": 800,
+        "jobGroups": [
+          {
+            "romeId": "I1202",
+            "name": "Professeur de piano",
+            "offers": 123
+          },
+          {
+            "romeId": "I1203",
+            "name": "Professeur de guitarre",
+            "offers": 120
+          }
+        ]
+      }
+    ]
+  }
+]
+

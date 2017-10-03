@@ -5,64 +5,8 @@ import {connect} from 'react-redux'
 
 import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {FeatureLikeDislikeButtons} from 'components/like'
 import {AppearingList, CircularProgress, Colors, Icon, Markdown,
   PaddedOnMobile, SmoothTransitions, Styles, Tag} from 'components/theme'
-
-// Todo(guillaume)#lutins: Clean up.
-class AdviceBox extends React.Component {
-  static propTypes = {
-    children: PropTypes.node,
-    feature: PropTypes.string.isRequired,
-    header: PropTypes.node,
-    style: PropTypes.object,
-  }
-
-  render() {
-    const {children, feature, header, style} = this.props
-    const {padding, ...outerStyle} = style
-    const containerStyle = {
-      backgroundColor: Colors.LIGHT_GREY,
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      borderRadius: 4,
-      display: 'flex',
-      flexDirection: 'column',
-      ...outerStyle,
-    }
-    const headerStyle = {
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      borderRadius: '4px 4px 0 0',
-      display: 'flex',
-      fontSize: 16,
-      justifyContent: 'center',
-      padding: 30,
-      textAlign: 'center',
-    }
-    const contentStyle = {
-      display: 'flex',
-      flex: 1,
-      flexDirection: 'column',
-      fontSize: 13,
-      padding: (padding || padding === 0) ? padding : '20px 35px',
-      position: 'relative',
-    }
-    return <div style={containerStyle}>
-      <header style={headerStyle}>
-        {header}
-      </header>
-
-      <div style={contentStyle}>
-        <FeatureLikeDislikeButtons
-          style={{position: 'absolute', right: 30, top: -16}}
-          feature={feature} />
-        {children}
-      </div>
-    </div>
-  }
-}
-
 
 // TODO: Find a better place for those tags if we don't need them elsewhere in this file.
 const typeTags = {
@@ -297,7 +241,7 @@ class ImproveApplicationTipsBase extends React.Component {
   }
 }
 const ImproveApplicationTips = connect(({app}, {project, tipsCacheField}) => ({
-  tips: app[tipsCacheField][project.projectId] || {},
+  tips: (app.adviceData[project.projectId] || {})[tipsCacheField] || {},
 }))(ImproveApplicationTipsBase)
 
 
@@ -412,5 +356,4 @@ class TipBase extends React.Component {
 const Tip = Radium(TipBase)
 
 
-export {AdviceBox, ToolCard, EmailTemplate, ImproveApplicationTips, AdviceSuggestionList, Tip,
-  PercentageBoxes}
+export {ToolCard, EmailTemplate, ImproveApplicationTips, AdviceSuggestionList, Tip, PercentageBoxes}

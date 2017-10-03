@@ -31,6 +31,7 @@ from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.api import seasonal_jobbing_pb2
 
 _ROME_VERSION = 'v332'
 
@@ -42,7 +43,7 @@ class Importer(collections.namedtuple(
     def __str__(self):
         if not self.proto_type:
             return self.name
-        return '%s (%s)' % (self.name, self.proto_type.__name__)
+        return '{} ({})'.format(self.name, self.proto_type.__name__)
 
 
 CollectionsDiff = collections.namedtuple(
@@ -53,7 +54,7 @@ IMPORTERS = {
         name='ROME Mobility',
         command='''docker-compose run --rm data-analysis-prepare \\
             python bob_emploi/importer/rome_mobility.py \\
-            --rome_csv_pattern data/rome/csv/unix_%%s_%s_utf8.csv''' % _ROME_VERSION,
+            --rome_csv_pattern data/rome/csv/unix_{{}}_{}_utf8.csv'''.format(_ROME_VERSION),
         is_imported=True,
         proto_type=discovery_pb2.JobsExploration,
         key='job group ID'),
@@ -81,13 +82,14 @@ IMPORTERS = {
         command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
             data-analysis-prepare \\
             python bob_emploi/importer/job_group_info.py \\
-            --rome_csv_pattern data/rome/csv/unix_%%s_%s_utf8.csv \\
+            --rome_csv_pattern data/rome/csv/unix_{{}}_{}_utf8.csv \\
             --job_requirements_json data/job_offers/job_offers_requirements.json \\
             --job_application_complexity_json data/job_application_complexity.json \\
             --application_mode_csv data/imt/application_modes.csv \\
             --rome_fap_crosswalk_txt data/crosswalks/passage_fap2009_romev3.txt \\
             --handcrafted_assets_airtable appMRMtWV61Kibt37:advice:viwJ1OsSqK8YTSoIq \\
-            --domains_airtable appMRMtWV61Kibt37:domains''' % _ROME_VERSION,
+            --domains_airtable appMRMtWV61Kibt37:domains \\
+            --info_by_prefix_airtable appMRMtWV61Kibt37:info_by_prefix'''.format(_ROME_VERSION),
         is_imported=True,
         proto_type=job_pb2.JobGroup,
         key='job group ID'),
@@ -97,11 +99,16 @@ IMPORTERS = {
             python bob_emploi/importer/local_diagnosis.py \\
             --bmo_csv data/bmo/bmo_2016.csv \\
             --fap_rome_crosswalk data/crosswalks/passage_fap2009_romev3.txt \\
+            --pcs_rome_crosswalk data/crosswalks/passage_pcs_fap2009_romev3.csv \\
             --salaries_csv data/fhs_salaries.csv \\
             --unemployment_duration_csv data/fhs_category_a_duration.csv \\
             --job_offers_changes_json data/job_offers/job_offers_changes.json \\
             --job_imt_json data/scraped_imt_local_job_stats.json \\
-            --mobility_csv data/rome/csv/unix_rubrique_mobilite_%s_utf8.csv''' % _ROME_VERSION,
+            --market_score_csv data/imt/market_score.csv \\
+            --employment_type_csv data/imt/employment_type.csv \\
+            --imt_salaries_csv data/imt/salaries.csv \\
+            --mobility_csv data/rome/csv/unix_rubrique_mobilite_{}_utf8.csv'''
+        .format(_ROME_VERSION),
         is_imported=True,
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>'),
@@ -250,6 +257,26 @@ IMPORTERS = {
         is_imported=True,
         proto_type=advisor_pb2.DynamicAdvice,
         key='Airtable key'),
+    'seasonal_jobbing': Importer(
+        name='Top Places for Seasonal Jobs Per Month',
+        command='''docker-compose run --rm data-analysis-prepare \
+            python bob_emploi/importer/seasonal_jobbing.py \
+            --offer_types_csv data/job_offers/seasonal_offers_2015_2017.csv''',
+        is_imported=True,
+        proto_type=seasonal_jobbing_pb2.MonthlySeasonalJobbingStats,
+        key='Month as number from 1'),
+    'contact_lead': Importer(
+        name='Contact lead to expand or use your network',
+        command='''docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \\
+            data-analysis-prepare \\
+            python bob_emploi/importer/airtable_to_protos.py \\
+            --base_id appXmyc7yYj0pOcae \\
+            --table contact_lead \\
+            --view viwaSa8CoXHHqpTtn \\
+            --proto ContactLead''',
+        is_imported=True,
+        proto_type=advisor_pb2.DynamicAdvice,
+        key='Airtable key'),
 }
 
 
@@ -295,7 +322,7 @@ def print_single_importer(importer, collection_name, mongo_url):
     logging.info(
         'To import "%s" in "%s", run:\n%s',
         importer.name, collection_name, importer.command +
-        ' \\\n            --mongo_url "%s" --mongo_collection "%s"\n' % (
+        ' \\\n            --mongo_url "{}" --mongo_collection "{}"\n'.format(
             mongo_url, collection_name))
 
 
@@ -337,7 +364,7 @@ def main(mongo_url, details_for_collection=None):
             status = termcolor.colored('No import needed', 'green')
         elif collection_name in meta_info:
             status = termcolor.colored(
-                'last import: %s' % meta_info[collection_name]['updated_at'],
+                'last import: {}'.format(meta_info[collection_name]['updated_at']),
                 'green')
         else:
             status = termcolor.colored('Metainformation missing', 'red')
@@ -354,4 +381,4 @@ def main(mongo_url, details_for_collection=None):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    main(*sys.argv[1:])
+    main(*sys.argv[1:])  # pylint: disable=no-value-for-parameter

@@ -6,30 +6,21 @@ import {AUTHENTICATE_USER, HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJ
   OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, GET_ASSOCIATIONS,
   ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, GET_VOLUNTEERING_MISSIONS,
   LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS, MODIFY_PROJECT, GET_COMMUTING_CITIES,
-  GET_RESUME_TIPS, GET_INTERVIEW_TIPS, OPEN_REGISTER_MODAL, GET_EVENTS} from './actions'
+  GET_RESUME_TIPS, GET_INTERVIEW_TIPS, OPEN_REGISTER_MODAL, GET_EVENTS,
+  GET_EXPANDED_CARD_CONTENT} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 
 
-// Set of data cached for each project mapped to the action type that retrieves
-// this info.
-const cachedProjectData = {
-  associations: GET_ASSOCIATIONS,
-  commutingCities: GET_COMMUTING_CITIES,
-  events: GET_EVENTS,
-  interviewTips: GET_INTERVIEW_TIPS,
-  jobBoards: GET_JOB_BOARDS,
-  resumeTips: GET_RESUME_TIPS,
-  volunteeringMissions: GET_VOLUNTEERING_MISSIONS,
-}
-
-
 const appInitialData = {
+  // Cache for advice data. It is organized as a map of maps: the first key
+  // being the project ID and the second one the advice ID.
+  adviceData: {},
   // Cache for advice tips for each advice module for each project.
   adviceTips: {},
   // Authentication token.
-  authToken: null,
+  authToken: Cookies.get('authToken'),
   // Cache for dashboard exports.
   dashboardExports: {},
   initialUtmContent: null,
@@ -42,38 +33,31 @@ const appInitialData = {
   specificJobs: {},
   userHasAcceptedCookiesUsage: Cookies.get(ACCEPT_COOKIES_COOKIE_NAME),
 }
-_.forEach(cachedProjectData, (value, key) => {
-  appInitialData[key] = {}
-})
-
-
-function cacheData(state, action, field) {
-  if (action.status === 'success' && action.project) {
-    return {
-      ...state,
-      [field]: {
-        ...state[field],
-        [action.project.projectId]: action.response,
-      },
-    }
-  }
-  return state
-}
-
-
-const typeReducers = {
-  ..._.mapObject(_.invert(cachedProjectData), field => {
-    return (state, action) => cacheData(state, action, field)
-  }),
-}
 
 
 function app(state=appInitialData, action) {
-  const reducer = typeReducers[action.type]
-  if (reducer) {
-    return reducer(state, action)
-  }
   switch (action.type) {
+    case GET_ASSOCIATIONS: // Fallthrough intended.
+    case GET_COMMUTING_CITIES: // Fallthrough intended.
+    case GET_EVENTS: // Fallthrough intended.
+    case GET_JOB_BOARDS: // Fallthrough intended.
+    case GET_INTERVIEW_TIPS: // Fallthrough intended.
+    case GET_RESUME_TIPS: // Fallthrough intended.
+    case GET_VOLUNTEERING_MISSIONS: // Fallthrough intended.
+    case GET_EXPANDED_CARD_CONTENT:
+      if (action.status === 'success' && action.project) {
+        return {
+          ...state,
+          adviceData: {
+            ...state.adviceData,
+            [action.project.projectId]: {
+              ...state.adviceData[action.project.projectId],
+              [action.advice.adviceId]: action.response,
+            },
+          },
+        }
+      }
+      return state
     case OPEN_LOGIN_MODAL:
       return {...state, loginModal: {defaultValues: {
         isReturningUser: true,
@@ -129,7 +113,8 @@ function app(state=appInitialData, action) {
       }
     case LOGOUT:  // Fallthrough intended.
     case DELETE_USER_DATA:
-      return state
+      Cookies.remove('authToken')
+      return {...state, authToken: null}
     case GET_ADVICE_TIPS:
       if (action.status !== 'success' || !action.advice || !action.project) {
         return state
@@ -147,7 +132,7 @@ function app(state=appInitialData, action) {
     case MODIFY_PROJECT:
       return {
         ...state,
-        ..._.mapObject(cachedProjectData, field => _.omit(state[field], action.project.projectId)),
+        adviceData: _.omit(state.adviceData, action.project.projectId),
       }
     case TRACK_INITIAL_UTM_CONTENT:
       return {
@@ -158,6 +143,7 @@ function app(state=appInitialData, action) {
       if (action.status !== 'success' || !action.response.authToken) {
         return state
       }
+      Cookies.set('authToken', action.response.authToken)
       return {
         ...state,
         authToken: action.response.authToken,

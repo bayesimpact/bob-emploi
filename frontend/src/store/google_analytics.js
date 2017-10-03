@@ -9,7 +9,7 @@ function createPageviewTracker() {
     return () => {}
   }
   window.ga('create', config.googleUAID, 'auto')
-  return () => window.ga('send', 'pageview', window.location.pathname)
+  return ({pathname}) => window.ga('send', 'pageview', pathname)
 }
 
 

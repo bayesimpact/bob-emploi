@@ -129,7 +129,7 @@ class AdvicesRecapSection extends React.Component {
       key={`optimize-${advice.adviceId}`}
       isSelected={shouldBeOptimized}
       onClick={() => onEvaluateAdvice(advice.adviceId, {shouldBeOptimized: !shouldBeOptimized})}>
-      <img src={optimizeImage} alt={'À optimiser'} />
+      <img src={optimizeImage} alt="À optimiser" />
     </RescoreAdviceButton>
   }
 
@@ -151,7 +151,7 @@ class AdvicesRecapSection extends React.Component {
           },
         })
       }}>
-      <img src={commentImage} alt={'Commenter'} />
+      <img src={commentImage} alt="Commenter" />
     </RescoreAdviceButton>
   }
 

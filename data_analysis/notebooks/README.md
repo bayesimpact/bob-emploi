@@ -18,7 +18,7 @@ Some of the folders are pretty empty at the moment, but more notebooks are going
 ### Explaining Datasets
 
 * [IMT](datasets/rome/work_environments.ipynb): regional statistics about different jobs.
-* [ROME](datasets/rome/ROME_dataset.ipynb): taxonomy of jobs.
+* [ROME](datasets/rome/rome_dataset.ipynb): taxonomy of jobs.
 
 ### Running Analyses
 
@@ -26,7 +26,7 @@ Some of the folders are pretty empty at the moment, but more notebooks are going
 * [Best job in group](research/best_job_in_group/from_job_offers.ipynb): trying to find which job is the best in each job group.
 * [Spontaneous Applications](research/application_types/apply_spontaneously.ipynb): studying where the spontaneous applications are the most useful.
 * [Work environements from ROME](datasets/rome/work_environments.ipynb): work environments from the ROME dataset.
-* [Skills from ROME](datasets/rome/ROME_skills.ipynb): list of skills from the ROME dataset.
+* [Skills from ROME](datasets/rome/skills.ipynb): list of skills from the ROME dataset.
 * [Salaries from FHS](notebooks/research/salaries/fhs_salaries.ipynb): study the salaries from the FHS dataset.
 * [Unemployement duration from FHS](research/unemployment_duration/fhs_raw_duration_exploration.ipynb): study the unemployment duration from FHS dataset.
 

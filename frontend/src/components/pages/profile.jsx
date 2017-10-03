@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 
 import {deleteUser, displayToasterMessage, setUserProfile} from 'store/actions'
@@ -35,6 +34,9 @@ class OnboardingView extends React.Component {
     userProfile: PropTypes.object.isRequired,
   }
   static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
     isMobileVersion: PropTypes.bool.isRequired,
   }
 
@@ -61,12 +63,12 @@ class OnboardingView extends React.Component {
   handleSubmit = stepUpdates => {
     const {dispatch, stepName} = this.props
     this.maybeUpdateProfile(stepUpdates)
-    gotoNextStep(Routes.PROFILE_PAGE, stepName, dispatch)
+    gotoNextStep(Routes.PROFILE_PAGE, stepName, dispatch, this.context.history)
   }
 
   handleStepBack = stepUpdates => {
     this.maybeUpdateProfile(stepUpdates)
-    gotoPreviousStep(Routes.PROFILE_PAGE, this.props.stepName)
+    gotoPreviousStep(Routes.PROFILE_PAGE, this.props.stepName, this.context.history)
   }
 
   render() {
@@ -141,18 +143,26 @@ class PageView extends React.Component {
 class ProfilePage extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
-    location: PropTypes.object.isRequired,
-    params: PropTypes.object.isRequired,
+    match: PropTypes.shape({
+      params: PropTypes.shape({
+        stepName: PropTypes.string,
+      }).isRequired,
+    }).isRequired,
     user: PropTypes.object.isRequired,
+  }
+  static contextTypes = {
+    history: PropTypes.shape({
+      replace: PropTypes.func.isRequired,
+    }).isRequired,
   }
 
   componentWillMount() {
-    const {location, user} = this.props
+    const {match, user} = this.props
     const isShownAsStepsDuringOnboarding = !onboardingComplete(user)
     this.setState({isShownAsStepsDuringOnboarding})
-    // TODO: Directly redirect to the step with the missing information.
-    if (isShownAsStepsDuringOnboarding && location.pathname === Routes.PROFILE_PAGE) {
-      browserHistory.replace(Routes.PROFILE_PAGE + '/confidentialite')
+    if (isShownAsStepsDuringOnboarding && !match.params.stepName) {
+      const stepName = user.profile.gender ? 'profil' : 'confidentialite'
+      this.context.history.replace(`${Routes.PROFILE_PAGE}/${stepName}`)
     }
   }
 
@@ -166,7 +176,7 @@ class ProfilePage extends React.Component {
   }
 
   render() {
-    const {dispatch, params, user} = this.props
+    const {dispatch, match, user} = this.props
     const {isShownAsStepsDuringOnboarding} = this.state
     const style = {
       backgroundColor: Colors.BACKGROUND_GREY,
@@ -182,7 +192,7 @@ class ProfilePage extends React.Component {
           dispatch={dispatch}
           onProfileSave={this.handleProfileSave}
           onNewPage={() => this.page && this.page.scrollTo(0)}
-          stepName={params.stepName}
+          stepName={match.params.stepName}
           userProfile={user.profile} />
       ) : <PageView
         userProfile={user.profile} onChange={this.handleProfileSave}
@@ -200,12 +210,17 @@ class AccountDeletionModalBase extends React.Component {
     onClose: PropTypes.func.isRequired,
     user: PropTypes.object.isRequired,
   }
+  static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
+  }
 
   handleDeletionClick = () => {
     const {dispatch, user} = this.props
     dispatch(deleteUser(user)).then(() => {
       dispatch(displayToasterMessage('Votre compte a été définitivement supprimé.'))
-      browserHistory.push(Routes.ROOT)
+      this.context.history.push(Routes.ROOT)
     })
   }
 

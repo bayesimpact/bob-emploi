@@ -93,7 +93,7 @@ def flask_api(out_type=None, in_type=None):
                 return ret
             if not isinstance(ret, out_type):
                 raise TypeError(
-                    '%s expects a %s output but got: %s' % (
+                    '{} expects a {} output but got: {}'.format(
                         func.__name__,
                         out_type.__name__,
                         type(ret).__name__))

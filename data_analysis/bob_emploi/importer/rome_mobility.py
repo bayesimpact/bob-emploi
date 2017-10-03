@@ -15,7 +15,7 @@ You can try it out on a local instance:
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/importer/rome_mobility.py \
-        --rome_csv_pattern data/rome/csv/unix_%s_v331_utf8.csv \
+        --rome_csv_pattern data/rome/csv/unix_{}_v331_utf8.csv \
         --mongo_url mongodb://frontend-db/test
 """
 import locale
@@ -42,17 +42,17 @@ def csv2dicts(rome_csv_pattern):
 
     Args:
         rome_csv_pattern: pattern of paths to CSV files containing the ROME
-            data. It must contain a '%s' that will be replaced by
+            data. It must contain a '{}' that will be replaced by
             'referentiel_code_rome', 'rubrique_mobilite' and
             'referentiel_appellation'.
     """
     mobility = pandas.read_csv(
-        rome_csv_pattern % 'rubrique_mobilite', dtype=str)
+        rome_csv_pattern.format('rubrique_mobilite'), dtype=str)
     job_groups = cleaned_data.rome_job_groups(
-        filename=rome_csv_pattern % 'referentiel_code_rome')
+        filename=rome_csv_pattern.format('referentiel_code_rome'))
 
     jobs = cleaned_data.rome_jobs(
-        filename=rome_csv_pattern % 'referentiel_appellation')
+        filename=rome_csv_pattern.format('referentiel_appellation'))
     jobs.index.name = 'codeOgr'
     masculine_job_names, feminine_job_names = (
         rome_genderization.genderize(jobs.name))

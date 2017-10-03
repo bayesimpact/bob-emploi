@@ -1,10 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
-import {browserHistory} from 'react-router'
 import Radium from 'radium'
 
-import {ActionStatus} from 'api/project'
 import {Modal, ModalHeader} from './modal'
 import {Routes} from 'components/url'
 import {Colors, Icon, Markdown, Button, Styles} from './theme'
@@ -20,7 +18,8 @@ const ACTION_SHAPE = PropTypes.shape({
   justification: PropTypes.string,
   shortDescription: PropTypes.string,
   shortDescriptionFeminine: PropTypes.string,
-  status: PropTypes.oneOf(Object.keys(ActionStatus)).isRequired,
+  // TODO(pascal): Enforce one of ActionStatus from proto without bloating the client size.
+  status: PropTypes.string.isRequired,
   title: PropTypes.string,
   titleFeminine: PropTypes.string,
 })
@@ -137,7 +136,11 @@ class ActionBase extends React.Component {
     project: PropTypes.object,
     style: PropTypes.object,
   }
-
+  static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
+  }
 
   renderRightButton() {
     const {action} = this.props
@@ -176,7 +179,7 @@ class ActionBase extends React.Component {
 
   handleProjectClick = event => {
     event.stopPropagation()
-    browserHistory.push(Routes.PROJECT_PAGE + '/' + this.props.project.projectId)
+    this.context.history.push(Routes.PROJECT_PAGE + '/' + this.props.project.projectId)
   }
 
   getBulletColor(actionStatus) {

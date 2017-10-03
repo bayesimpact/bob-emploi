@@ -1,4 +1,3 @@
-import moment from 'moment'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
@@ -18,7 +17,16 @@ import eventsTypes from './data/events.json'
 import {AdviceSuggestionList, ToolCard} from './base'
 
 
-moment.locale('fr')
+// Move to library if needed somewhere else
+const monthsShort = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+const niceDate = timestamp => {
+  const date = new Date(timestamp)
+  const day = date.getDay()
+  const month = date.getMonth()
+  const year = date.getFullYear()
+  return `${day} ${monthsShort[month]} ${year}`
+}
 
 
 class AdviceCard extends React.Component {
@@ -93,7 +101,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
       organiser: PropTypes.string.isRequired,
       startDate: PropTypes.string.isRequired,
       title: PropTypes.string.isRequired,
-    }).isRequired),
+    }).isRequired).isRequired,
     project: PropTypes.shape({
       projectId: PropTypes.string.isRequired,
     }).isRequired,
@@ -105,7 +113,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
 
   componentWillMount() {
     const {dispatch, events, project} = this.props
-    if (!events) {
+    if (!events.length) {
       dispatch(getEvents(project))
     }
   }
@@ -154,9 +162,10 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => ({
-  events: app.events[project.projectId],
-}))(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connect(({app}, {project}) => {
+  const {events} = (app.adviceData[project.projectId] || {}).events || {}
+  return {events: events || []}
+})(ExpandedAdviceCardContentBase)
 
 
 class EventBase extends React.Component {
@@ -180,7 +189,7 @@ class EventBase extends React.Component {
         par {organiser}
       </span>
       <span style={{flex: 1}} />
-      <span style={Styles.CENTER_FONT_VERTICALLY}>{moment(startDate).format('ll')}</span>
+      <span style={Styles.CENTER_FONT_VERTICALLY}>{niceDate(startDate)}</span>
       <Icon name="chevron-right" style={{fontSize: 20, marginLeft: '1em'}} />
     </div>
   }

@@ -23,13 +23,18 @@ message Job {
 }
 
 // Description of a job group.
-// Next free ID: 4.
+// Next free ID: 6.
 message JobGroup {
   // Identifier of the group in the ROME index.
   string rome_id = 1;
 
   // Complete name of this group in user's language.
   string name = 2;
+
+  // How one would describe their area of work when talking to someone else:
+  // "I'm working ..." (in French "Je travaille ..."). E.g. "dans la banque",
+  // "dans l'immobilier".
+  string in_domain = 4;
 
   // Example of jobs in this group.
   repeated Job samples = 3;
@@ -339,9 +344,10 @@ enum DrivingLicense {
   TRUCK = 3;
 }
 
-// Message to hold data that we scraped from the IMT website. The granularity is
-// on a Job level (in contrast to most other data that we have on the JobGroup level).
-// We have one entry for each Job and each departement.
+// Message to hold data that we scraped from the IMT website or provided by the Emploi
+// store dev API (ApplicationModes, yearly_avg_offers_per_10_candidates, last_week_offers
+// last_week_demand). The granularity is on a Job level (in contrast to most other data
+// that we have on the JobGroup level). We have one entry for each Job and each departement.
 // Next free Id: 15
 message ImtLocalJobStats {
   // The city of the IMT data. Only departement will be set.

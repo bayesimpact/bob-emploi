@@ -4,18 +4,16 @@ import _ from 'underscore'
 
 import {weeklyApplicationOptions, weeklyOfferOptions}
   from 'components/pages/profile/jobsearch'
-import {genderizeJob, getJobSearchURL} from 'store/job'
+import {getIMTURL, getJobSearchURL} from 'store/job'
 import {getSeniorityText, getTrainingFulfillmentEstimateOptions,
   PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_EXPERIENCE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS} from 'store/project'
 import {getFamilySituationOptions, getHighestDegreeDescription,
   getUserFrustrationTags, userAge} from 'store/user'
 
-import {Colors} from 'components/theme'
-
-
+// TODO: Factorize this with the onboarding.
 const PROJECT_GOAL_OPTIONS = [
-  {name: 'Retrouver un emploi', value: 'FIND_A_NEW_JOB'},
+  {name: 'Retrouver un emploi (je suis en poste)', value: 'FIND_A_NEW_JOB'},
   {name: 'Me reconvertir', value: 'REORIENTATION'},
   {name: 'Trouver mon premier emploi', value: 'FIND_A_FIRST_JOB'},
   {name: 'Trouver un autre emploi', value: 'FIND_ANOTHER_JOB'},
@@ -48,20 +46,16 @@ class UseCase extends React.Component {
     }).isRequired,
   }
 
-  openJob(job, gender) {
-    window.open(getJobSearchURL(job, gender), '_blank')
-  }
-
-  renderJobName(job, gender) {
-    const jobNameStyle = {
-      color: Colors.SKY_BLUE,
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      marginBottom: 10,
-    }
-
-    return <div style={jobNameStyle} onClick={() => this.openJob(job, gender)}>
-      {genderizeJob(job, gender)}
+  renderLinks(project, gender) {
+    const {targetJob, mobility} = project
+    return <div style={{marginBottom: 10}}>
+      <a href={getJobSearchURL(targetJob, gender)} target="_blank" rel="noopener noferrer">
+        Chercher le métier sur Google
+      </a>
+      {' '}&ndash;{' '}
+      <a href={getIMTURL(targetJob, mobility.city)} target="_blank" rel="noopener noreferrer">
+        Voir l'IMT
+      </a>
     </div>
   }
 
@@ -92,8 +86,8 @@ class UseCase extends React.Component {
         userAge(profile.yearOfBirth) + ' ans',
         'Diplôme : ' + (getHighestDegreeDescription(profile) || 'aucun'),
         (profile.hasHandicap ?  handicapText : null),
-        location.name,
-        'Dep : ' + location.departementName,
+        `${location.name} ` +
+        `(${location.departementId} - ${location.departementName})`,
       ],
       'profile'
     )
@@ -103,7 +97,7 @@ class UseCase extends React.Component {
     const employmentStatus = (project.employmentTypes || []).map((employmentType) =>(
       getOptionName(PROJECT_EMPLOYMENT_TYPE_OPTIONS, employmentType)
     ))
-    const employmentStatusText = employmentStatus.join()
+    const employmentStatusText = employmentStatus.join(', ')
     const totalInterviewCountText = getInterviewCountValidity(project) &&
       replaceFalseValue(project.totalInterviewCount, '0')
     const trainingFulfillmentOptions = getTrainingFulfillmentEstimateOptions(profile.gender)
@@ -128,14 +122,15 @@ class UseCase extends React.Component {
         'Network estimate : ' + replaceFalseValue(project.networkEstimate, 'inconnu'),
         'Expérience : ' + getSeniorityText(project.seniority),
         'Diplôme suffisant : ' + trainingFulfillmentStatus,
-        'Temps de recherche (mois) : ' + replaceFalseValue(project.jobSearchLengthMonths,
-          'N\'a pas commencé sa recherche'),
+        project.jobSearchLengthMonths > 0 ?
+          `Recherche depuis ${project.jobSearchLengthMonths} mois` :
+          "N'a pas commencé sa recherche",
         'Offres par semaine : ' + project.weeklyOffersEstimate ?
           getOptionName(weeklyOfferOptions, project.weeklyOffersEstimate) : 'inconnu',
         'Candidatures par semaine : ' + project.weeklyApplicationsEstimate ?
           getOptionName(weeklyApplicationOptions, project.weeklyApplicationsEstimate) : 'inconnu',
 
-        'Entretiens décrochés : ' + (totalInterviewCountText || 'valeur absente !'),
+        totalInterviewCountText ? `${totalInterviewCountText} entretiens décroché(s)` : null,
       ],
       'project'
     )
@@ -189,7 +184,7 @@ class UseCase extends React.Component {
     const json = JSON.stringify(remainingData, null, 2).replace(/[{}",[\]]/g, '')
 
     return <div style={boxStyle}>
-      {project && profile && this.renderJobName(project.targetJob, profile.gender) || null}
+      {project && profile && this.renderLinks(project, profile.gender) || null}
       {this.renderProfile(profile || {}, location || {})}
       {this.renderProject(profile || {}, project || {})}
       {profile && this.renderFrustrations(profile) || null}

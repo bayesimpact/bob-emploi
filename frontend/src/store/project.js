@@ -149,7 +149,7 @@ function newProject(newProjectData, gender) {
   }
 }
 
-
+// TODO(cyrille): Clean-up since unused.
 function getAdviceById(advice, project) {
   return (project.advices || []).
     find(updatedAdvice => advice.adviceId === updatedAdvice.adviceId)

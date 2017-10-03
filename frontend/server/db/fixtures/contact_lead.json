@@ -1,0 +1,26 @@
+[
+  {
+    "_id" : "recpsXBCCvJE1bM3y",
+    "cardContent" : "Contactez vos amis qui habitent %inCity, peu importe qu'ils soient %jobName comme vous ou pas",
+    "emailTemplate" : "Je cherche mon premier job. Si tu connais ou entends parler de quelqu'un qui cherche %aJobName, j'aimerais beaucoup que tu me contactes. Je suis disponible dès maintenant et j'ai vraiment envie de me lancer dans le monde du travail.",
+    "filters" : [ 
+      "for-first-job-search"
+    ],
+    "name" : "Vos amis qui habitent près %ofCity"
+  },
+  {
+    "_id" : "recq4utzcMfLup9Y8",
+    "cardContent" : "Contactez vos amis qui habitent %inCity, peu importe qu'ils soient %jobName comme vous ou pas",
+    "emailTemplate" : "Je cherche à me reconvertir. Si tu connais ou entends parler de quelqu'un qui cherche %aJobName, j'aimerais beaucoup que tu me contactes. Je suis disponible dès maintenant et j'ai vraiment envie de me lancer dans ce nouveau métier.",
+    "filters" : [ 
+      "for-reorientation"
+    ],
+    "name" : "Vos amis qui habitent près %ofCity"
+  },
+  {
+    "_id" : "recpTAZdlfFhUdI9z",
+    "cardContent" : "Contactez vos amis qui habitent %inCity, peu importe qu'ils soient %jobName comme vous ou pas",
+    "emailTemplate" : "Tu te souviens de ton ami qui travaille %inDomain dont tu m'avais parlé ? J'aimerais beaucoup le rencontrer pour parler de son travail et de mon projet professionnel",
+    "name" : "Vos amis et proches qui habitent %inCity ou ailleurs"
+  }
+]

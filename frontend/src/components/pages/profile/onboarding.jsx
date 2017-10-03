@@ -5,7 +5,6 @@ import {FINISH_PROFILE_SITUATION,
   FINISH_PROJECT_EXPERIENCE,
   ACCEPT_PRIVACY_NOTICE,
   createFirstProject} from 'store/actions'
-import {browserHistory} from 'react-router'
 
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 
@@ -87,7 +86,7 @@ function getOnboardingStep(path, name) {
 }
 
 
-function gotoRelativeStep(path, name, dispatch, relativeStep) {
+function gotoRelativeStep(path, name, dispatch, history, relativeStep) {
   const {index} = NUMBERED_STEPS[`${path}/${name}`]
   const newStepIndex = index + relativeStep
   if (newStepIndex < 0) {
@@ -95,17 +94,19 @@ function gotoRelativeStep(path, name, dispatch, relativeStep) {
   }
   if (newStepIndex >= STEPS.length) {
     dispatch && dispatch(createFirstProject())
-    browserHistory.push(`${Routes.PROJECT_PAGE}/${NEW_PROJECT_ID}`)
+    history.push(`${Routes.PROJECT_PAGE}/${NEW_PROJECT_ID}`)
     return false
   }
   const newStep = STEPS[newStepIndex]
-  browserHistory.push(`${newStep.path}/${newStep.name}`)
+  history.push(`${newStep.path}/${newStep.name}`)
   return true
 }
 
 
-const gotoPreviousStep = (path, name) => gotoRelativeStep(path, name, null, -1)
-const gotoNextStep = (path, name, dispatch) => gotoRelativeStep(path, name, dispatch, 1)
+const gotoPreviousStep = (path, name, history) =>
+  gotoRelativeStep(path, name, null, history, -1)
+const gotoNextStep = (path, name, dispatch, history) =>
+  gotoRelativeStep(path, name, dispatch, history, 1)
 
 
 export {getOnboardingStep, gotoNextStep, gotoPreviousStep}

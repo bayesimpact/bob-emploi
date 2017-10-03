@@ -25,7 +25,7 @@ from tqdm import tqdm
 API_KEY = os.getenv('AIRTABLE_API_KEY')
 BASE_ID = 'appXmyc7yYj0pOcae'
 VIEW_ID = 'viweTj15LzsyrvNqu'
-TABLE_BASE_URL = 'https://airtable.com/tblsScCB9ouUfiQ8q/%s/' % VIEW_ID
+TABLE_BASE_URL = 'https://airtable.com/tblsScCB9ouUfiQ8q/{}/'.format(VIEW_ID)
 
 # Some websites return error codes when no header is set.
 HTTP_HEADERS = {
@@ -103,7 +103,8 @@ def print_status_report(problems):
     for problem_type, problematic_actions in problems.items():
         print(problem_type + ':')
         for problematic_action in problematic_actions:
-            print('\t%s%s: %s' % (TABLE_BASE_URL, problematic_action.id, problematic_action.url))
+            print(
+                '\t{}{}: {}'.format(TABLE_BASE_URL, problematic_action.id, problematic_action.url))
 
 
 if __name__ == '__main__':

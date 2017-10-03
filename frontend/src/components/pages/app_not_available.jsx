@@ -1,5 +1,5 @@
+import PropTypes from 'prop-types'
 import React from 'react'
-import {browserHistory} from 'react-router'
 
 import config from 'config'
 
@@ -8,9 +8,14 @@ import {Colors, Button} from 'components/theme'
 import {Routes} from 'components/url'
 
 class AppNotAvailablePage extends React.Component {
+  static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
+  }
 
   handleBackClick = () => {
-    browserHistory.push(Routes.ROOT)
+    this.context.history.push(Routes.ROOT)
   }
 
   render() {

@@ -66,6 +66,15 @@ if ! command -v swift >/dev/null 2>&1; then
   exit 7
 fi
 
+if ! swift list > /dev/null 2>&1; then
+  echo -e "ERROR: \033[31mOpenStack credentials are incorrect.\033[0m"
+  echo "* Go to https://www.ovh.com/manager/cloud and select: Servers -> OpenStack"
+  echo "* Create an user if you do not have any, and copy the password"
+  echo "* Click on the little wrench and select 'Downloading an Openstack configuration file'"
+  echo "* Select 'GRA1 - Gravelines'"
+  echo "* Source this file to export the OpenStack environment variables, it will ask for your password."
+fi
+
 if ! pip show python-keystoneclient > /dev/null; then
   echo -e "ERROR: \033[31mSet up the keystoneclient first.\033[0m"
   echo "* Installation is probably as simple as \`pip install python-keystoneclient\`"
@@ -122,7 +131,7 @@ fi
 echo -e "\033[32mCreating a new task definition…\033[0m"
 readonly CONTAINERS_DEFINITION=$(
   aws ecs describe-task-definition --task-definition "${ECS_FAMILY}" | \
-    python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; containers[0]['memoryReservation'] = 300; containers[0]['image'] = '${DOCKER_SERVER_IMAGE}'; print(json.dumps(containers))")
+    python3 -c "import sys, json; containers = json.load(sys.stdin)['taskDefinition']['containerDefinitions']; containers[0]['environment'] = [dict(env_var, value='prod.${TAG}') if env_var['name'] == 'SERVER_VERSION' else env_var for env_var in containers[0]['environment']]; containers[0]['image'] = '${DOCKER_SERVER_IMAGE}'; print(json.dumps(containers))")
 
 if [ -z "${DRY_RUN}" ]; then
   aws ecs register-task-definition --family="${ECS_FAMILY}" --container-definitions "${CONTAINERS_DEFINITION}" > /dev/null

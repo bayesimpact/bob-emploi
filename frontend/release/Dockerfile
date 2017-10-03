@@ -6,6 +6,7 @@ ADD dist /usr/share/bob-emploi/html
 
 ADD release/nginx.conf /etc/nginx/conf.d/default.conf
 ADD release/entrypoint.sh /usr/share/bob-emploi/
+ADD src/config/dist.json /usr/share/bob-emploi/
 
 CMD ["/usr/share/bob-emploi/entrypoint.sh"]
 

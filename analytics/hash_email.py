@@ -20,7 +20,7 @@ def hash_line(line, keep=False):
         fields = fields + [hashed_field]
     else:
         fields = [hashed_field] + fields[1:]
-    return '%s\n' % ','.join(fields)
+    return '{}\n'.format(','.join(fields))
 
 
 def hash_files(inputfile, outputfile, keep=False):
@@ -45,4 +45,6 @@ def hash_files(inputfile, outputfile, keep=False):
 
 
 if __name__ == '__main__':
-    print('%d lines hashed.' % hash_files(*sys.argv[1:]))  # pylint: disable=no-value-for-parameter
+    print(
+        '{:d} lines hashed.'
+        .format(hash_files(*sys.argv[1:])))  # pylint: disable=no-value-for-parameter

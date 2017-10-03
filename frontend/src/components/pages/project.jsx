@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
-import {browserHistory} from 'react-router'
 import {connect} from 'react-redux'
 import _ from 'underscore'
 
@@ -49,8 +48,8 @@ import {PoleEmploiChangelogModal} from './project/pole_emploi'
 
 
 function getProjectFromProps(props) {
-  const {params, user} = props
-  const projectId = params.projectId || ''
+  const {match, user} = props
+  const projectId = match.params.projectId || ''
   const project = (user.projects || []).find(project => project.projectId === projectId)
   if (project) {
     return project
@@ -177,7 +176,6 @@ class SumUpProfileModal extends React.Component {
     style: PropTypes.object,
     userProfile: PropTypes.object.isRequired,
   }
-
 
   render() {
     const maybeE = (gender) => gender === 'FEMININE' ? 'e' : ''
@@ -395,7 +393,7 @@ class TheEndModalBase extends React.Component {
       color: Colors.DARK_TWO,
       fontSize: 15,
       lineHeight: 1.5,
-      maxWidth: 380,
+      maxWidth: 480,
       padding: '0 50px',
     }
     const hrStyle = {
@@ -410,13 +408,13 @@ class TheEndModalBase extends React.Component {
       </div>
 
       <div style={textStyle}>
-        Vous avez consulté toutes les propositions que nous avons pour vous à
-        ce stade. Nous espérons que certaines vous auront inspiré{maybeE} dans votre
-        recherche !
+        Vous avez consulté tous les conseils que nous avons pour vous à ce
+        stade. Nous espérons que certains vous auront inspiré{maybeE} dans
+        votre recherche !
 
         <br /><br />
 
-        De nouvelles propositions arriveront bientôt&nbsp;! Nous travaillons
+        De nouveaux conseils arriveront bientôt&nbsp;! Nous travaillons
         dur à améliorer {config.productName}.
       </div>
 
@@ -667,15 +665,20 @@ const SuggestAdviceModal = connect()(SuggestAdviceModalBase)
 
 class ProjectPage extends React.Component {
   static propTypes = {
-    params: PropTypes.shape({
-      projectId: PropTypes.string,
-    }),
-    routing: PropTypes.shape({
-      locationBeforeTransitions: PropTypes.shape({
-        hash: PropTypes.string,
-      }).isRequired,
+    location: PropTypes.shape({
+      hash: PropTypes.string,
     }).isRequired,
+    match: PropTypes.shape({
+      params: PropTypes.shape({
+        projectId: PropTypes.string,
+      }),
+    }),
     user: PropTypes.object.isRequired,
+  }
+  static contextTypes = {
+    history: PropTypes.shape({
+      replace: PropTypes.func.isRequired,
+    }).isRequired,
   }
 
   state = {
@@ -685,17 +688,17 @@ class ProjectPage extends React.Component {
   }
 
   componentWillMount() {
-    const {params, routing} = this.props
-    const {hash} = routing.locationBeforeTransitions
+    const {location, match} = this.props
+    const {hash} = location
     this.setState({
       adviceShownOnMount: hash && hash.substr(1) || null,
-      isSumUpProfileModalShown: params.projectId === NEW_PROJECT_ID,
-      isWaitingInterstitialShown: params.projectId === NEW_PROJECT_ID,
+      isSumUpProfileModalShown: match.params.projectId === NEW_PROJECT_ID,
+      isWaitingInterstitialShown: match.params.projectId === NEW_PROJECT_ID,
     })
     const project = getProjectFromProps(this.props)
     const {projectId} = project
-    if (projectId && projectId !== params.projectId) {
-      browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId + hash)
+    if (projectId && projectId !== match.params.projectId) {
+      this.context.history.replace(Routes.PROJECT_PAGE + '/' + projectId + hash)
     }
   }
 
@@ -704,8 +707,8 @@ class ProjectPage extends React.Component {
     if (!projectId) {
       return
     }
-    if (projectId !== nextProps.params.projectId) {
-      browserHistory.replace(Routes.PROJECT_PAGE + '/' + projectId)
+    if (projectId !== nextProps.match.params.projectId) {
+      this.context.history.replace(Routes.PROJECT_PAGE + '/' + projectId)
     }
   }
 
@@ -780,8 +783,12 @@ class ProjectDashboardPageBase extends React.Component {
   }
 
   componentWillMount() {
-    const {poleEmploi} = this.props.featuresEnabled
-    this.setState({isPoleEmploiChangelogShown: poleEmploi})
+    const {featuresEnabled, isSumUpProfileModalShown} = this.props
+    const {poleEmploi} = featuresEnabled
+    this.setState({
+      isBobScoreShown: isSumUpProfileModalShown,
+      isPoleEmploiChangelogShown: poleEmploi,
+    })
   }
 
   componentWillReceiveProps(nextProps) {
@@ -826,6 +833,8 @@ class ProjectDashboardPageBase extends React.Component {
     const {profile, project} = this.props
     const {isMobileVersion} = this.context
     const containerStyle = {
+      margin: 'auto',
+      maxWidth: 1000,
       minWidth: isMobileVersion ? '100%' : 680,
       ...style,
     }
@@ -845,55 +854,57 @@ class ProjectDashboardPageBase extends React.Component {
     const roundedBottom = {borderRadius: '0 0 5px 5px'}
     const onClose = () => this.setState({isBobScoreShown: false})
     const {components, percent} = computeBobScore(profile, project)
-    return <div style={containerStyle}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
-      <div style={bobScoreStyle}>
-        <div>Bob Score</div>
-        <Gauge percent={percent} style={{margin: 10}} />
-        <div style={{fontSize: 17}}>
-          <GrowingNumber number={Math.round(percent)} isSteady={true} />%
-          <span style={{fontSize: 12}}> de favorabilité</span>
-        </div>
-        <div
-          className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
-          style={{fontSize: 13, fontWeight: 'normal'}}>
-          <span
-            style={{cursor: 'pointer', textDecoration: 'underline'}}
-            onClick={this.toggleScoreTooltip}>
-            Que veut dire ce score&nbsp;?
-          </span>
+    return <div style={{backgroundColor: '#fff', paddingTop: 1}}>
+      <div style={containerStyle}>
+        <ShortKey
+          keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
+        <div style={bobScoreStyle}>
+          <div>Bob Score</div>
+          <Gauge percent={percent} style={{margin: 10}} />
+          <div style={{fontSize: 17}}>
+            <GrowingNumber number={Math.round(percent)} isSteady={true} />%
+            <span style={{fontSize: 12}}> de favorabilité</span>
+          </div>
           <div
-            className="tooltiptext"
-            style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
-            <p>
-              Ce score représente notre avis sur la façon dont les facteurs
-              liés au marché et à votre recherche affectent vos chances de
-              retrouver un emploi. Par exemple, un score proche de 100% indique
-              que tous les feux sont au vert&nbsp;!
-            </p>
+            className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
+            style={{fontSize: 13, fontWeight: 'normal'}}>
+            <span
+              style={{cursor: 'pointer', textDecoration: 'underline'}}
+              onClick={this.toggleScoreTooltip}>
+              Que veut dire ce score&nbsp;?
+            </span>
+            <div
+              className="tooltiptext"
+              style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
+              <p>
+                Ce score représente notre avis sur la façon dont les facteurs
+                liés au marché et à votre recherche affectent vos chances de
+                retrouver un emploi. Par exemple, un score proche de 100% indique
+                que tous les feux sont au vert&nbsp;!
+              </p>
 
-            <p>
-              En fonction de vos caractéristiques personnelles vos chances
-              individuelles peuvent varier, mais ce score nous donne un point de
-              départ pour vous aider.
-            </p>
+              <p>
+                En fonction de vos caractéristiques personnelles vos chances
+                individuelles peuvent varier, mais ce score nous donne un point de
+                départ pour vous aider.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div style={{backgroundColor: '#fff', color: Colors.DARK_TWO, padding: 10, ...roundedBottom}}>
-        {this.renderDiagnosticComponents(
-          components.filter(({category, score}) => Math.round(score) && category === 'market'),
-          maybeS => `Facteur${maybeS} lié${maybeS} au marché`)}
-        {this.renderDiagnosticComponents(
-          components.filter(({category, score}) => Math.round(score) && category === 'user'),
-          maybeS => `Information${maybeS} sur votre profil`)}
+        <div style={{color: Colors.DARK_TWO, padding: 10, ...roundedBottom}}>
+          {this.renderDiagnosticComponents(
+            components.filter(({category, score}) => Math.round(score) && category === 'market'),
+            maybeS => `Facteur${maybeS} lié${maybeS} au marché`)}
+          {this.renderDiagnosticComponents(
+            components.filter(({category, score}) => Math.round(score) && category === 'user'),
+            maybeS => `Information${maybeS} sur votre profil`)}
 
-        <div style={{paddingBottom: 30, textAlign: 'center', ...roundedBottom}}>
-          <Button onClick={onClose}>
-            Voir les recommandations
-          </Button>
+          <div style={{paddingBottom: 30, textAlign: 'center', ...roundedBottom}}>
+            <Button onClick={onClose}>
+              Voir les conseils
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -943,6 +954,7 @@ class ProjectDashboardPageBase extends React.Component {
 
   renderHeader() {
     const {profile, project} = this.props
+    const {isBobScoreShown} = this.state
     const {isMobileVersion} = this.context
     const style = {
       alignItems: 'center',
@@ -964,12 +976,6 @@ class ProjectDashboardPageBase extends React.Component {
       minHeight: isMobileVersion ? 200 : 240,
       padding: '20px 0',
     }
-    const subtitleStyle = {
-      color: Colors.MODAL_PROJECT_GREY,
-      fontSize: 16,
-      fontWeight: 'normal',
-      marginTop: 5,
-    }
     const buttonBarStyle = {
       alignSelf: 'center',
       color: Colors.SILVER,
@@ -985,27 +991,27 @@ class ProjectDashboardPageBase extends React.Component {
       transform: 'translateY(50%)',
     }
     const {what, where} = createProjectTitleComponents(project, profile.gender)
-    const numAdvices = (project.advices || []).filter(a => a.numStars > 1).length
-    const maybeS = numAdvices > 1 ? 's' : ''
     return <header style={style}>
       <JobGroupCoverImage
         romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
         coverOpacity={.6} opaqueCoverColor={Colors.DARK} />
       <div style={titleStyle}>
         <div>
-          {numAdvices} conseil{maybeS} personnalisé{maybeS}
-          <div style={subtitleStyle}>
-            pour trouver un emploi {maybeContract('de ', "d'", what)}
-            <strong style={{color: '#fff'}}>
-              {lowerFirstLetter(what)} {where}
-            </strong>
-          </div>
+          Trouver un emploi {maybeContract('de ', "d'", what)}
+          <strong style={{color: '#fff'}}>
+            {lowerFirstLetter(what)} {where}
+          </strong>
         </div>
       </div>
 
       <div style={buttonBarStyle}>
-        <HeaderLink onClick={this.showBobScore}>
-          Revoir mon diagnostic
+        <HeaderLink onClick={this.showBobScore} isSelected={!!isBobScoreShown}>
+          Mon diagnostic
+        </HeaderLink>
+        <div style={{borderLeft: 'solid 1px'}} />
+        <HeaderLink
+          onClick={() => this.setState({isBobScoreShown: false})} isSelected={!isBobScoreShown}>
+          Mes conseils
         </HeaderLink>
         <div style={{borderLeft: 'solid 1px'}} />
         <HeaderLink onClick={() => this.setState({isModifyModalIsShown: true})}>
@@ -1013,7 +1019,7 @@ class ProjectDashboardPageBase extends React.Component {
         </HeaderLink>
       </div>
 
-      {isMobileVersion ? null : <Button
+      {(isMobileVersion || isBobScoreShown) ? null : <Button
         style={floatingButtonStyle}
         onClick={() => this.setState({isSuggestAdviceModalIsShown: true})}>
         Proposer un conseil
@@ -1165,14 +1171,7 @@ class ProjectDashboardPageBase extends React.Component {
       notificationsSeen, onCloseSumUpProfileModal, profile, project} = this.props
     const {isBobScoreShown, isPoleEmploiChangelogShown,
       isSuggestAdviceModalIsShown, isTheEndModalShown} = this.state
-    const {isMobileVersion} = this.context
     const advices = project.advices || []
-    const bobScoreStyle = {
-      backgroundColor: Colors.CHARCOAL_GREY,
-      borderRadius: 5,
-      color: '#fff',
-      margin: isMobileVersion ? 15 : 'inherit',
-    }
     const isInfoCollKitNotificationShown =
       featuresEnabled.poleEmploi && !notificationsSeen.infoCollKit &&
       !isSumUpProfileModalShown && !isBobScoreShown
@@ -1184,37 +1183,31 @@ class ProjectDashboardPageBase extends React.Component {
           this.scrollElementOnReady = null
         }
       }} isChatButtonShown={true}>
-      <SumUpProfileModal
-        isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
-        onClose={() => {
-          onCloseSumUpProfileModal()
-          this.showBobScore()
-        }} />
       <TheEndModal
         isShown={isTheEndModalShown}
         onClose={() => this.setState({isTheEndModalShown: false})} />
       <PoleEmploiChangelogModal
         isShown={isPoleEmploiChangelogShown} projectCreatedAt={project.createdAt}
         onClose={() => this.setState({isPoleEmploiChangelogShown: false})} />
-      <Modal
-        style={bobScoreStyle}
-        titleStyle={{color: '#fff'}}
-        title="Notre diagnostic"
-        isShown={isBobScoreShown}
-        onClose={() => this.setState({isBobScoreShown: false})}>
-        {this.renderDiagnostic()}
-      </Modal>
       <SuggestAdviceModal
         isShown={isSuggestAdviceModalIsShown} project={project}
         onClose={() => this.setState({isSuggestAdviceModalIsShown: false})} />
       {this.renderModifyModal()}
       {this.renderHeader()}
-      {this.renderAdviceCards(advices)}
-      <InfoCollNotificationBox
-        style={{zIndex: 3}} isShown={isInfoCollKitNotificationShown}
-        onClose={() => dispatch(markNotificationAsSeen('infoCollKit'))} />
-      <FeedbackBar project={project} style={{padding: '90px 0'}} />
-      {this.renderBottomAdviceSuggest()}
+      {isBobScoreShown ? this.renderDiagnostic() : <div>
+        {this.renderAdviceCards(advices)}
+        <InfoCollNotificationBox
+          style={{zIndex: 3}} isShown={isInfoCollKitNotificationShown}
+          onClose={() => dispatch(markNotificationAsSeen('infoCollKit'))} />
+        <FeedbackBar project={project} style={{padding: '90px 0'}} />
+        {this.renderBottomAdviceSuggest()}
+      </div>}
+      <SumUpProfileModal
+        isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
+        onClose={() => {
+          onCloseSumUpProfileModal()
+          this.showBobScore()
+        }} />
     </PageWithNavigationBar>
   }
 }
@@ -1654,15 +1647,17 @@ class ArrowsUpOrDown extends React.Component {
 class HeaderLinkBase extends React.Component {
   static propTypes = {
     children: PropTypes.node,
+    isSelected: PropTypes.bool,
     style: PropTypes.object,
   }
 
   render() {
-    const {children, style, ...extraProps} = this.props
+    const {children, isSelected, style, ...extraProps} = this.props
     const containerStyle = {
       ':hover': {
         color: '#fff',
       },
+      color: isSelected ? '#fff' : 'inherit',
       cursor: 'pointer',
       fontWeight: 'bold',
       padding: '10px 20px',

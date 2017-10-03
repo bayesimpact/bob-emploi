@@ -1,5 +1,7 @@
 var webpackCfg = require('./webpack.config')
 
+process.env.CHROME_BIN = require('puppeteer').executablePath()
+
 module.exports = function(config) {
   const clientConfig = {
     mocha: {},
@@ -9,17 +11,23 @@ module.exports = function(config) {
   }
   config.set({
     basePath: '',
-    browsers: ['PhantomJS'],
+    browsers: ['ChromeHeadlessNoSandbox'],
     captureTimeout: 60000,
     client: clientConfig,
     coverageReporter: {
       dir: 'coverage/',
       type: 'html',
     },
+    customLaunchers: {
+      ChromeHeadlessNoSandbox: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox', '--disable-setuid-sandbox'],
+      },
+    },
     files: [
       'test/loadtests.js',
     ],
-    frameworks: ['phantomjs-shim', 'mocha', 'chai'],
+    frameworks: ['mocha', 'chai'],
     port: 8080,
     preprocessors: {
       'test/loadtests.js': ['webpack', 'sourcemap'],

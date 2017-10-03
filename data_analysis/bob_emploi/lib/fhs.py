@@ -94,7 +94,7 @@ def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
     """
     def _table_iterator(table):
         return PeekIterator(migration_helpers.flatten_iterator(
-            path.join(fhs_folder, '*/%s.csv' % table)))
+            path.join(fhs_folder, '*/{}.csv'.format(table))))
     iterators = {table: _table_iterator(table) for table in set(tables)}
 
     while any(not i.done for i in iterators.values()):

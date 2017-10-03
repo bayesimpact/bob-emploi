@@ -34,13 +34,17 @@ function postJson(path, data, isExpectingResponse, authToken) {
   return fetchPromise
 }
 
-function deleteJson(path, data) {
+function deleteJson(path, data, authToken) {
+  const headers = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  }
+  if (authToken) {
+    headers['Authorization'] = 'Bearer ' + authToken
+  }
   return fetch(path, {
     body: JSON.stringify(data),
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    },
+    headers,
     method: 'delete',
   }).then(handleJsonResponse)
 }
@@ -50,14 +54,9 @@ function getJson(path, authToken) {
   return fetch(path, args).then(handleJsonResponse)
 }
 
-function adviceTipsGet({userId}, {projectId}, {adviceId}) {
-  return getJson(`/api/project/${userId}/${projectId}/advice/${adviceId}/tips`).
+function adviceTipsGet({userId}, {projectId}, {adviceId}, authToken) {
+  return getJson(`/api/project/${userId}/${projectId}/advice/${adviceId}/tips`, authToken).
     then(response => response.tips)
-}
-
-function associationsGet({userId}, {projectId}) {
-  return getJson(`/api/project/${userId}/${projectId}/associations`).
-    then(response => response.associations || [])
 }
 
 function createEvalUseCasePost(poolName, email, googleIdToken) {
@@ -78,30 +77,29 @@ function evalUseCasesGet(poolName) {
     then(response => response.useCases || [])
 }
 
-function eventsGet({userId}, {projectId}) {
-  return getJson(`/api/project/${userId}/${projectId}/events`).
-    then(response => response.events || [])
-}
-
-function interviewTipsGet({userId}, {projectId}) {
-  return getJson(`/api/project/${userId}/${projectId}/interview-tips`)
-}
-
-function jobBoardsGet({userId}, {projectId}) {
-  return getJson(`/api/project/${userId}/${projectId}/jobboards`).
-    then(response => response.jobBoards || [])
+function expandedCardContentGet(user, project, {adviceId}, authToken) {
+  if (user.userId && project.project.id) {
+    return getJson(`/api/project/${user.userId}/${project.projectId}/${adviceId}`, authToken)
+  }
+  return postJson(
+    `/api/advice/${adviceId}`,
+    {
+      ...user,
+      projects: (user.projects || []).filter(p => p.projectId === project.projectId),
+    },
+    true)
 }
 
 function jobsGet(romeId) {
   return getJson(`/api/jobs/${romeId}`)
 }
 
-function markUsedAndRetrievePost(userId) {
-  return postJson(`/api/app/use/${userId}`, undefined, true)
+function markUsedAndRetrievePost(userId, authToken) {
+  return postJson(`/api/app/use/${userId}`, undefined, true, authToken)
 }
 
-function migrateUserToAdvisorPost({userId}) {
-  return postJson(`/api/user/${userId}/migrate-to-advisor`, undefined, true)
+function migrateUserToAdvisorPost({userId}, authToken) {
+  return postJson(`/api/user/${userId}/migrate-to-advisor`, undefined, true, authToken)
 }
 
 function projectComputeAdvicesPost(user) {
@@ -116,12 +114,8 @@ function resetPasswordPost(email) {
   return postJson('/api/user/reset-password', {email}, true)
 }
 
-function resumeTipsGet({userId}, {projectId}) {
-  return getJson(`/api/project/${userId}/${projectId}/resume-tips`)
-}
-
-function saveLikes(userId, likes) {
-  return postJson('/api/user/likes', {likes, userId}, false)
+function saveLikes(userId, likes, authToken) {
+  return postJson('/api/user/likes', {likes, userId}, false, authToken)
 }
 
 function userPost(user, token) {
@@ -131,50 +125,34 @@ function userPost(user, token) {
   return postJson('/api/user', {...protoUser}, true, token)
 }
 
-function userDelete(user) {
-  return deleteJson('/api/user', user)
+function userDelete(user, authToken) {
+  return deleteJson('/api/user', user, authToken)
 }
 
 function userAuthenticate(authRequest) {
   return postJson('/api/user/authenticate', authRequest, true)
 }
 
-function volunteeringMissionsGet({userId}, {projectId}) {
-  return getJson(`/api/project/${userId}/${projectId}/volunteer`).
-    then(response => response.missions || [])
-}
-
-function commutingCitiesGet({userId}, {projectId}) {
-  return getJson(`/api/project/${userId}/${projectId}/commute`).
-    then(response => response.cities || [])
-}
-
-function feedbackPost(feedback) {
-  return postJson('/api/feedback', feedback, false)
+function feedbackPost(feedback, authToken) {
+  return postJson('/api/feedback', feedback, false, authToken)
 }
 
 export {
   adviceTipsGet,
-  associationsGet,
   createEvalUseCasePost,
   dashboardExportGet,
   evalUseCasePoolsGet,
   evalUseCasesGet,
-  eventsGet,
+  expandedCardContentGet,
   feedbackPost,
-  interviewTipsGet,
-  jobBoardsGet,
   jobsGet,
   markUsedAndRetrievePost,
   migrateUserToAdvisorPost,
   projectComputeAdvicesPost,
   projectRequirementsGet,
   resetPasswordPost,
-  resumeTipsGet,
   saveLikes,
   userAuthenticate,
   userDelete,
   userPost,
-  volunteeringMissionsGet,
-  commutingCitiesGet,
 }

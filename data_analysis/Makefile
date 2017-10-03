@@ -1,16 +1,7 @@
 all: public
 # A Makefile to simplify the download and preparation of public datasets.
 
-public: requirements geo dares rome crosswalks bmo stmt data/tous_benevoles.xml data/workup.json
-
-requirements: data/requirements/job_requirements_output.csv
-
-data/requirements/job_requirements_input.csv: data/rome/ficheMetierXml/ficheMetierXml.zip
-	mkdir -p $(dir $@)
-	python bob_emploi/parsers/rome_parser/helpers.py data/rome/ficheMetierXml data/requirements/job_requirements_input.csv
-
-data/requirements/job_requirements_output.csv: data/requirements/job_requirements_input.csv
-	python bob_emploi/parsers/rome_parser/parse.py data/requirements/job_requirements_input.csv data/requirements/job_requirements_output
+public: geo dares rome crosswalks bmo stmt data/tous_benevoles.xml data/workup.json
 
 geo: data/geo/french_cities.csv data/geo/insee_france_cities.tsv data/geo/insee_france_departements.tsv data/geo/insee_france_regions.tsv data/geo/france_departements_bounds.csv
 
@@ -78,8 +69,9 @@ dares: data/dares/caracteristiques_des_personnes_en_emploi_2014.xls
 crosswalks: data/crosswalks/passage_fap2009_romev3.txt data/crosswalks/Correspondance_Rome_Formacode.csv data/intitule_fap2009.txt
 
 data/crosswalks/passage_fap2009_romev3.txt:
-	mkdir -p $(dir $@)
-	wget -P data/crosswalks http://dares.travail-emploi.gouv.fr/IMG/txt/passage_fap2009_romev3.txt
+	mkdir -p $(@D)
+	wget -O "$@" http://dares.travail-emploi.gouv.fr/IMG/txt/passage_fap2009_romev3.txt
+	sed -i -e 's/"L1509"        /"L1509","L1510"/' "$@"
 
 data/crosswalks/Correspondance_Rome_Formacode.pdf:
 	mkdir -p $(dir $@)
@@ -152,6 +144,23 @@ data/imt/application_modes.csv:
 	mkdir -p $(dir $@)
 	python bob_emploi/emploi_store_downloader.py imt "Canaux de reprise*" "$@"
 
-data/imt/statistiques_offres_et_demandes.csv:
+# This may take several minutes.
+data/imt/market_score.csv:
 	mkdir -p $(dir $@)
 	python bob_emploi/emploi_store_downloader.py imt "Statistiques offres et demandes" "$@"
+
+# This may take several minutes.
+data/imt/employment_type.csv:
+	mkdir -p $(dir $@)
+	python bob_emploi/emploi_store_downloader.py imt "Types de contrats*" "$@"
+
+# This may take several minutes.
+data/imt/salaries.csv:
+	mkdir -p $(dir $@)
+	python bob_emploi/emploi_store_downloader.py imt "Salaires*" "$@"
+
+data/crosswalks/passage_pcs_romev3.csv:
+	mkdir -p $(dir $@)
+	wget -P $(@D)/ http://www.c2rp.fr/sites/default/files/atoms/files/c2rp_table_supra_def_fap_pcs_rome.xlsx
+	python bob_emploi/pcs_to_fap_mapping.py $@ "$(@D)/c2rp_table_supra_def_fap_pcs_rome.xlsx"
+	rm $(@D)/c2rp_table_supra_def_fap_pcs_rome.xlsx

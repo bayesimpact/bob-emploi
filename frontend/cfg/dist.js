@@ -43,8 +43,6 @@ Array.prototype.push.apply(config.plugins, [
     sourceMap: true,
     warningsFilter: source => source.substr(0, srcDir.length) === srcDir,
   }),
-  // Only keep the fr locale from the moment library.
-  new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /fr/),
   new webpack.LoaderOptionsPlugin({
     debug: false,
     minimize: true,

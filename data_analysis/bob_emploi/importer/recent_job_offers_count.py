@@ -33,7 +33,7 @@ def download_and_count():
     """
     counts = collections.defaultdict(int)
     for job_offer in _iterate_job_offers():
-        local_id = '%s:%s' % (
+        local_id = '{}:{}'.format(
             job_offer['DEPARTEMENT_CODE'],
             job_offer['ROME_PROFESSION_CARD_CODE'])
         counts[local_id] += 1

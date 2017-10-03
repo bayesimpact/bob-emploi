@@ -41,7 +41,7 @@ class ExpandedAdviceCardContent extends React.Component {
   render() {
     return <ImproveApplicationTips
       {...this.props}
-      tipsCacheField="interviewTips"
+      tipsCacheField="improve-interview"
       sections={[
         {data: 'qualities', title: 'Qualités les plus attendues par les recruteurs :'},
         {data: 'preparations', title: 'Pour préparer votre entretien'},

@@ -160,6 +160,24 @@ class ConverterTestCase(unittest.TestCase):
             'filters': ['for-departement(49)', 'for-job-group(A12,B)'],
         })
 
+    def test_contact_lead_converter(self):
+        """Convert a Contact Lead template."""
+        converter = airtable_to_protos.PROTO_CLASSES['ContactLead']
+        dynamic_advice = converter.convert_record({
+            'id': 'foobar',
+            'fields': {
+                'name': 'Le maire %ofCity',
+                'filters': ['for-experienced(6)'],
+                'email_template': 'Hi Mr.Mayor!',
+            },
+        })
+        self.assertEqual(dynamic_advice, {
+            '_id': 'foobar',
+            'name': 'Le maire %ofCity',
+            'filters': ['for-experienced(6)'],
+            'emailTemplate': 'Hi Mr.Mayor!',
+        })
+
     def test_dynamic_advice_converter(self):
         """Convert a dynamic advice config."""
         converter = airtable_to_protos.PROTO_CLASSES['DynamicAdvice']

@@ -110,16 +110,16 @@ class NewProjectJobsearchStep extends React.Component {
       onNextButtonClick={this.handleSubmit}
       title="Où en êtes-vous dans votre recherche ?">
       <FieldSet
-        label={`Depuis combien de temps avez-vous commencé à postuler à des offres pour
-            ce métier ?`}
+        label="Depuis combien de temps avez-vous commencé à postuler à des offres pour
+            ce métier ?"
         isValid={!!jobSearchLengthMonths} isValidated={isValidated}>
         <Select options={jobSearchLengthMonthsOptions} value={jobSearchLengthMonths}
           onChange={value => this.setState(
             {jobSearchLengthMonths: parseInt(value, 10) || 0})} />
       </FieldSet>
       <FieldSet
-        label={`En moyenne, combien trouvez-vous de nouvelles offres qui vous conviennent
-            par semaine ?`}
+        label="En moyenne, combien trouvez-vous de nouvelles offres qui vous conviennent
+            par semaine ?"
         isValid={!!weeklyOffersEstimate} isValidated={isValidated}
         disabled={jobSearchLengthMonths === -1}>
         <Select options={weeklyOfferOptions} value={weeklyOffersEstimate}

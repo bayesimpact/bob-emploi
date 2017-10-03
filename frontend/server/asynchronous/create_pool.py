@@ -26,7 +26,7 @@ _BASE_URL = os.getenv('BASE_URL', 'https://www.bob-emploi.fr')
 _YESTERDAY = (datetime.date.today() + datetime.timedelta(days=-1)).strftime('%Y-%m-%d')
 _DEFAULT_USERS_FILTER = {
     'profile.email': {'$not': re.compile('@example.com|@bayes')},
-    'registeredAt': {'$gt': _YESTERDAY, '$lt': '%sT24' % _YESTERDAY},
+    'registeredAt': {'$gt': _YESTERDAY, '$lt': '{}T24'.format(_YESTERDAY)},
     'projects.createdAt': {'$exists': True},
     'projects.isIncomplete': {'$ne': True},
 }
@@ -47,8 +47,8 @@ def main(pool_name=_YESTERDAY, users_json_filters=None, limit=20):
 
     if _SLACK_CREATE_POOL_URL:
         requests.post(_SLACK_CREATE_POOL_URL, json={
-            'text': 'A new use cases pool is ready for evaluation: <%s|%s>' % (
-                '%s/eval?poolName=%s' % (_BASE_URL, parse.quote(pool_name)), pool_name)})
+            'text': 'A new use cases pool is ready for evaluation: <{}|{}>'.format(
+                '{}/eval?poolName={}'.format(_BASE_URL, parse.quote(pool_name)), pool_name)})
 
 
 if __name__ == '__main__':

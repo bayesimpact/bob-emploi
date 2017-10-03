@@ -11,7 +11,7 @@ def unemployment_estimation(duration):
     quantiles = duration.quantile(quantiles_values)
     estimation = {}
     for name, quantile in _QUANTILES.items():
-        estimation['%sDays' % name] = int(quantiles.loc[quantile])
+        estimation['{}Days'.format(name)] = int(quantiles.loc[quantile])
     return finalize_duration_estimation(estimation)
 
 
@@ -24,6 +24,6 @@ def finalize_duration_estimation(estimation):
     Returns:
         The input dict with additional fields to be displayed.
     """
-    estimation['shortText'] = '%d mois' % (
+    estimation['shortText'] = '{:d} mois'.format(
         round(estimation['medianDays'] / DAYS_PER_MONTH))
     return estimation

@@ -5,6 +5,8 @@ import React from 'react'
 import headerImage from 'images/header-img.png'
 
 import benoitImage from 'images/people/benoit.png'
+import chemaImage from 'images/people/chema.png'
+import cyrilleImage from 'images/people/cyrille.png'
 import florianImage from 'images/people/florian.png'
 import guillaumeImage from 'images/people/guillaume.png'
 import johnImage from 'images/people/john.png'
@@ -112,18 +114,43 @@ const guillaumeBio = {
   twitter: 'https://twitter.com/GChaslot',
 }
 
+const cyrilleBio = {
+  description: "Cyrille a fait de la recherche en mathématiques jusqu'à ce qu'il se rende compte \
+    que ça n'avait pas vraiment d'impact, et décide de se rendre utile. Il aime les jeux de \
+    société, surtout coopératifs, et partir marcher ou faire de l'escalade si le temps le permet.",
+  education: 'École Normale Supérieure, Paris',
+  experience: 'Développeur web à Kreactive',
+  linkedin: 'https://www.linkedin.com/in/cyrillecorpet',
+}
+
+const chemaBio = {
+  description: "Chema a précédemment travaillé à l'OCDE sur le développement du secteur privé, et \
+    dans le conseil en management. Elle a une formation universitaire mixte en mathématiques, \
+    économie et politiques publiques. Elle est une idéaliste passionnée, aime toute sorte de \
+    musique, de Muse à Um Kalthoum et ne peut pas résister à une évasion en mer.",
+  education: 'ENSIIE, Sciences Po, LSE',
+  experience: "Management Consultant à Equinox Consulting et Policy Analyst à l'OCDE",
+  facebook: 'https://www.facebook.com/chema.triki',
+  linkedin: 'https://www.linkedin.com/in/chema-triki-670abb23/',
+  twitter: 'https://twitter.com/ChemaTriki',
+}
+
 const allPersons = [
   {bio: paulBio, name: 'Paul Duan', picture: paulImage, position: 'Président'},
   {bio: margauxBio, name: 'Margaux Salzman', picture: margauxImage,
     position: 'Responsable des opérations'},
   {bio: florianBio, name: 'Florian Jourda', picture: florianImage, position: 'Product Manager'},
-  {bio: pascalBio, name: 'Pascal Corpet', picture: pascalImage, position: 'Directeur Technique'},
+  {bio: pascalBio, name: 'Pascal Corpet', picture: pascalImage, position: 'Directeur technique'},
   {bio: marielaureBio, name: 'Marie Laure Endale Ahanda', picture: marielaureImage,
-    position: 'Ingénieure Logiciel'},
-  {bio: johnBio, name: 'John Métois', picture: johnImage, position: 'UX Designer'},
-  {bio: benoitBio, name: 'Benoit Mathieu', picture: benoitImage, position: 'Ingénieur Logiciel'},
+    position: 'Ingénieure logiciel'},
+  {bio: johnBio, name: 'John Métois', picture: johnImage, position: 'Designer UX'},
+  {bio: benoitBio, name: 'Benoit Mathieu', picture: benoitImage, position: 'Ingénieur logiciel'},
   {bio: guillaumeBio, name: 'Guillaume Chaslot', picture: guillaumeImage,
-    position: 'Ingénieur Logiciel'},
+    position: 'Ingénieur logiciel'},
+  {bio: chemaBio, name: 'Chema Triki', picture: chemaImage,
+    position: 'Responsable développement'},
+  {bio: cyrilleBio, name: 'Cyrille Corpet', picture: cyrilleImage,
+    position: 'Ingénieur logiciel'},
 ]
 
 class EmptyPersonTile extends React.Component {
@@ -372,7 +399,8 @@ class TeamPage extends React.Component {
     const valuesStyle = {
       justifyContent: 'center',
       margin: '100px auto',
-      width: 600,
+      maxWidth: 650,
+      padding: '0 25px',
     }
 
     return <div style={containerStyle}>

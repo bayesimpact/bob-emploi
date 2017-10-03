@@ -1,0 +1,66 @@
+[
+  {
+      "_id" : "recieKJTssgtoDN6d",
+      "imageUrl" : "https://dl.airtable.com/N0Fe0uhdQL2m8WmUUlOX_Artboard%202%20Z.png",
+      "emailTitle" : "Trouver les adresses mail des recruteurs",
+      "isReadyForEmail" : true,
+      "shortDescription" : "* prénom.nom@exemple.com\n* nom.prénom@exemple.com\n* p.nom@exemple.com\n* pnom@exemple.com\n* prénomnom@exemple.com\n* nomprénom@exemple.com\n* nom@exemple.com\n* prénom@exemple.com",
+      "link" : "http://www.blogdumoderateur.com/outil-trouver-mails-contacts-entreprise/",
+      "emailSubjectKeyword" : "Enquête",
+      "title" : "8 exemples de format d'adresse mail à tester",
+      "emailLinkLabel" : "Lire l'article",
+      "actionTemplateId" : "recieKJTssgtoDN6d"
+  },
+  {
+      "_id" : "recBKWIcaWhOBAnZy",
+      "imageUrl" : "https://dl.airtable.com/hlikJeAER9Kw8VwMqcxc_Artboard%202890.png",
+      "emailTitle" : "12 astuces pour vos candidatures spontanées",
+      "isReadyForEmail" : true,
+      "shortDescription" : "[Linkedin](https://www.linkedin.com/)\nPour trouver le nom de la personne en charge des ressources humaines ou du service qui vous intéressent.\n\n[Verify Email Address](http://www.verifyemailaddress.org/)\nPour vérifier que vous avez trouvé la bonne adresse avant de postuler.",
+      "link" : "http://www.blogdumoderateur.com/14-conseils-pour-optimiser-vos-candidatures-spontanees/",
+      "emailSubjectKeyword" : "Astuces",
+      "title" : "2 exemples d'outils pour vos candidatures spontanées",
+      "emailLinkLabel" : "Lire l'article",
+      "actionTemplateId" : "recBKWIcaWhOBAnZy"
+  },
+  {
+      "_id" : "reclxp8DgacIU0oNE",
+      "imageUrl" : "https://dl.airtable.com/cDsjHp1vQaepuQabp5Lw_Artboard%2090IO%20(1).png",
+      "emailTitle" : "Un ou plusieurs CV ?",
+      "isReadyForEmail" : true,
+      "shortDescription" : "Créez plusieurs versions de votre CV. Cela vous permettra de les combiner rapidement quand vous répondez à une nouvelle offre.",
+      "link" : "https://www.monster.fr/conseil-carriere/article/faut-il-un-seul-cv-ou-plusieurs",
+      "emailSubjectKeyword" : "Un ou plusieurs CV ?",
+      "title" : "1 idée pour améliorer votre CV",
+      "emailLinkLabel" : "Lire l'article",
+      "actionTemplateId" : "reclxp8DgacIU0oNE"
+  },
+  {
+      "_id" : "reclK8s0whtE39OQR",
+      "imageUrl" : "https://dl.airtable.com/LxWa9aFZRaWE3wMn14Zq_Artboard%202%202%20.png",
+      "emailTitle" : "Les questions à vous poser avant de postuler",
+      "isReadyForEmail" : true,
+      "shortDescription" : "* Quelles sont les missions principales ?\n* Quelles sont les missions secondaires ?\n* Quelles sont les compétences absolument nécessaires ?\n* Quelles sont les compétences bonus ?\n* Quel est le type de personnalité recherché ?",
+      "link" : "https://openclassrooms.com/courses/decrypter-une-offre-et-valoriser-sa-candidature-france",
+      "emailSubjectKeyword" : "Anticiper",
+      "title" : "5 exemples de questions à vous poser avant de postuler",
+      "emailLinkLabel" : "Lire l'article",
+      "actionTemplateId" : "reclK8s0whtE39OQR"
+  },
+  {
+      "_id" : "rec89xCdVZIRHZTtX",
+      "imageUrl" : "https://dl.airtable.com/rbMR4xdURiC7L1jzyfow_Artboard%2090IO.png",
+      "emailTitle" : "Avez-vous pensé à faire un CV par compétences ?",
+      "isReadyForEmail" : true,
+      "filters" : [
+          "for-old(50)",
+          "for-experienced(6)"
+      ],
+      "shortDescription" : "Faites un CV par compétences, le but est de valoriser vos compétences acquises dans un domaine précis et de clarifier la cohérence de votre CV.\nIl n'est donc par exemple pas nécessaire si vous avez un parcours linéaire ou si vous n'avez pas de trou dans votre CV.\n\nPour faire un bon CV par compétences, il faut être précis pour chaque compétence mentionnée. Pésentez chaque compétence concrètement et expliquez le comment. \nPour compléter votre CV, ajoutez vos expériences professionnelles en précisant simplement un résultat chiffré pour chaque expérience mais ne détaillez pas vos missions et compétences à nouveau.",
+      "link" : "http://www.carriereonline.com/e/le-cv-de-competences.html",
+      "emailSubjectKeyword" : "CV par compétences",
+      "title" : "1 idée pour améliorer votre CV",
+      "emailLinkLabel" : "Lire l'article",
+      "actionTemplateId" : "rec89xCdVZIRHZTtX"
+  }
+]

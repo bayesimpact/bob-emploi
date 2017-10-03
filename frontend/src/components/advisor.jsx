@@ -299,7 +299,6 @@ class AdviceCardBase extends React.Component {
   }
 
   render() {
-    // eslint-disable-next-line no-unused-vars
     const {advice, dispatch, maxWidth, project, refDom, style, ...extraProps} = this.props
     const {isExpanded} = this.state
     const isCardShown = this.isCardShown()

@@ -105,7 +105,7 @@ def add_given_advices_to_nps_gsheet(user_db):
 
 def write_given_advices_in_gsheet(user_db, service, user):
     """Fetches given advices for one user from our db and writes it in the NPS gsheet."""
-    print('%s %s' % (user.user_index, user.email))
+    print('{} {}'.format(user.user_index, user.email))
     # TODO(florian): if necessary for perf later, fetch given advices in bulk.
     try:
         given_advice_ids = get_given_advices_id(user_db, user.email)
@@ -135,7 +135,7 @@ def update_user_field_in_nps_gsheet(service, user, field_name, field_value):
         }
     ).execute()
     if result['updatedCells'] != 1:
-        print('Error updating cell in gsheet: %s' % result)
+        print('Error updating cell in gsheet: {}'.format(result))
 
 
 def get_range_for_user_field(user, field_name):
@@ -150,7 +150,7 @@ def get_range_for_user_field(user, field_name):
     field_index = user._fields.index(field_name)
     # Converts 1 to 'A', 2 to 'B'...
     column_id = string.ascii_uppercase[field_index - 1]
-    return 'NPS Responses!%s%s:%s%s' % (column_id, row_id, column_id, row_id)
+    return 'NPS Responses!{}{}:{}{}'.format(column_id, row_id, column_id, row_id)
 
 
 def get_given_advices_id(user_db, email):

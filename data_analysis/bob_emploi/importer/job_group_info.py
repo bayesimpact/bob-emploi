@@ -9,7 +9,7 @@ You can try it out on a local instance:
     docker-compose run -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \
         --rm data-analysis-prepare \
         python bob_emploi/importer/job_group_info.py \
-        --rome_csv_pattern data/rome/csv/unix_%s_v331_utf8.csv \
+        --rome_csv_pattern data/rome/csv/unix_{}_v331_utf8.csv \
         --job_requirements_json data/job_offers/job_offers_requirements.json \
         --job_application_complexity_json data/job_application_complexity.json \
         --application_mode_csv data/imt/application_modes.csv \
@@ -46,12 +46,13 @@ def make_dicts(
         application_mode_csv,
         rome_fap_crosswalk_txt,
         handcrafted_assets_airtable,
-        domains_airtable):
+        domains_airtable,
+        info_by_prefix_airtable):
     """Import job info in MongoDB.
 
     Args:
         rome_csv_pattern: pattern of paths to CSV file containing the ROME data.
-            It must contain a '%s' that will be replaced by
+            It must contain a '{}' that will be replaced by
             'referentiel_code_rome', 'referentiel_env_travail',
             'liens_rome_referentiels' and 'referentiel_appellation'.
         job_requirements_json: path to a JSON file containing requirements per
@@ -67,22 +68,27 @@ def make_dicts(
             texts describing assets required).
         domains_airtable: the base ID and the table name joined by a ':' of the
             AirTable containing the domain name for each sector.
+        info_by_prefix_airtable: the base ID and the table name joined by a ':'
+            of the AirTable containing some manually specified info for group of
+            job group (by ROME ID prefix).
     Returns:
         A list of dict that maps the JSON representation of JobGroup protos.
     """
     job_groups = cleaned_data.rome_job_groups(
-        filename=rome_csv_pattern % 'referentiel_code_rome')
+        filename=rome_csv_pattern.format('referentiel_code_rome'))
     jobs = cleaned_data.rome_jobs(
-        filename=rome_csv_pattern % 'referentiel_appellation')
+        filename=rome_csv_pattern.format('referentiel_appellation'))
     holland_codes = cleaned_data.rome_holland_codes(
-        filename=rome_csv_pattern % 'referentiel_code_rome_riasec')
+        filename=rome_csv_pattern.format('referentiel_code_rome_riasec'))
     rome_texts = cleaned_data.rome_texts(
-        filename=rome_csv_pattern % 'texte')
+        filename=rome_csv_pattern.format('texte'))
     rome_work_environments = cleaned_data.rome_work_environments(
-        links_filename=rome_csv_pattern % 'liens_rome_referentiels',
-        ref_filename=rome_csv_pattern % 'referentiel_env_travail')
+        links_filename=rome_csv_pattern.format('liens_rome_referentiels'),
+        ref_filename=rome_csv_pattern.format('referentiel_env_travail'))
     handcrafted_assets = _load_assets_from_airtable(*handcrafted_assets_airtable.split(':'))
     sector_domains = _load_domains_from_airtable(*domains_airtable.split(':'))
+    info_by_prefix = _load_prefix_info_from_airtable(
+        job_groups.index, *info_by_prefix_airtable.split(':'))
     application_modes = _get_application_modes(
         application_mode_csv, rome_fap_crosswalk_txt)
 
@@ -102,10 +108,13 @@ def make_dicts(
     job_groups['jobs'] = job_groups.jobs.apply(
         lambda s: s if isinstance(s, list) else [])
 
+    # Add info by prefix.
+    job_groups = job_groups.join(info_by_prefix)
+
     # Add skills.
     rome_to_skills = cleaned_data.rome_to_skills(
-        filename_items=rome_csv_pattern % 'coherence_item',
-        filename_skills=rome_csv_pattern % 'referentiel_competence')
+        filename_items=rome_csv_pattern.format('coherence_item'),
+        filename_skills=rome_csv_pattern.format('referentiel_competence'))
     skills_grouped = rome_to_skills.groupby('code_rome')
     job_groups['requirements'] = skills_grouped.apply(
         _group_skills_as_proto_list)
@@ -205,8 +214,8 @@ def _group_work_environment_items(work_environments):
         sectors = work_environments[work_environments.section.str.lower() == 'secteurs']
         if sectors.domain.isnull().sum():
             raise ValueError(
-                'Some sectors are not in any domain:\n"%s"' %
-                '"\n"'.join(sectors[sectors.domain.isnull()].name.tolist()))
+                'Some sectors are not in any domain:\n"{}"'
+                .format('"\n"'.join(sectors[sectors.domain.isnull()].name.tolist())))
         environment['domains'] = [
             {
                 'name': domain_name,
@@ -243,12 +252,12 @@ def _load_domains_from_airtable(base_id, table, view=None):
         domain = fields.get('domain_name')
         if not domain:
             errors.append(ValueError(
-                'Sector "%s" on record "%s" has no domain_name set.',
-                sector, record['id']))
+                'Sector "{}" on record "{}" has no domain_name set.'
+                .format(sector, record['id'])))
             continue
         domains[sector] = domain
     if errors:
-        raise ValueError('%d errors while importing from Airtable:\n%s' % (
+        raise ValueError('{:d} errors while importing from Airtable:\n{}'.format(
             len(errors), '\n'.join(str(error) for error in errors)))
     return domains
 
@@ -274,7 +283,7 @@ def _load_assets_from_airtable(base_id, table, view=None):
         except ValueError as error:
             errors.append(error)
     if errors:
-        raise ValueError('%d errors while importing from Airtable:\n%s' % (
+        raise ValueError('{:d} errors while importing from Airtable:\n{}'.format(
             len(errors), '\n'.join(str(error) for error in errors)))
     return dict(assets)
 
@@ -298,9 +307,9 @@ def _load_asset_from_airtable(airtable_fields):
                 assets[proto_name] = _assert_markdown_list(value)
             except ValueError as error:
                 errors.append(ValueError(
-                    'The field %s is not formatted correctly: %s' % (airtable_name, error)))
+                    'The field {} is not formatted correctly: {}'.format(airtable_name, error)))
     if errors:
-        raise ValueError('The job %s has %d, errors:\n%s' % (
+        raise ValueError('The job {} has {:d}, errors:\n{}'.format(
             airtable_fields.get('code_rome'), len(errors),
             '\n'.join(str(error) for error in errors)))
     return airtable_fields['code_rome'], assets
@@ -313,8 +322,43 @@ def _assert_markdown_list(value):
     for line in lines:
         if not _MARKDOWN_LIST_LINE_REGEXP.match(line):
             raise ValueError(
-                'Each line should start with a * and an upper case, found: %s' % line)
+                'Each line should start with a * and an upper case, found: {}'.format(line))
     return '\n'.join(lines)
+
+
+def _load_prefix_info_from_airtable(job_groups, base_id, table, view=None):
+    """Load info by prefix from AirTable.
+
+    Args:
+        job_groups: an iterable of job groups.
+        base_id: the ID of your AirTable app.
+        table: the name of the table to import.
+    Returns:
+        A pandas DataFrame keyed by job group with the fields.
+    """
+    if not AIRTABLE_API_KEY:
+        raise ValueError(
+            'No API key found. Create an airtable API key at '
+            'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
+            'env var.')
+    columns = ['inDomain']
+    info = pandas.DataFrame(index=job_groups, columns=columns)
+
+    client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
+    sorted_records = sorted(
+        client.iterate(table, view=view),
+        key=lambda record: str(record['fields'].get('rome_prefix')))
+    for record in sorted_records:
+        fields = record['fields']
+        rome_prefix = fields.get('rome_prefix')
+        if not rome_prefix:
+            continue
+        for column in columns:
+            if column not in fields:
+                continue
+            info.loc[info.index.str.startswith(rome_prefix), column] = fields[column]
+
+    return info.fillna('')
 
 
 def _get_application_modes(application_mode_csv, rome_fap_crosswalk_txt):

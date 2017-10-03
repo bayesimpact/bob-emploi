@@ -34,13 +34,13 @@ def parse_rome_formacode_line(line):
         return
     if not rome_ids:
         raise ValueError(
-            'A line contained Formacodes, but no ROME ID:\n%s', line)
+            'A line contained Formacodes, but no ROME ID:\n{}'.format(line))
     if len(rome_ids) > 1:
         raise ValueError(
-            'A line contained more than one ROME ID:\n%s', line)
+            'A line contained more than one ROME ID:\n{}'.format(line))
     if not formacodes:
         raise ValueError(
-            'A line contained a ROME ID, but no Formacodes:\n%s', line)
+            'A line contained a ROME ID, but no Formacodes:\n{}'.format(line))
     rome_id = rome_ids[0]
     for formacode in formacodes:
         yield (rome_id, formacode)
@@ -58,7 +58,7 @@ def main(args, out=sys.stdout):
     input_file = args[1]
     out.write('rome,formacode\n')
     for mapping in _parse_rome_formacode_file(input_file):
-        out.write('%s,%s\n' % mapping)
+        out.write('{},{}\n'.format(*mapping))
 
 
 if __name__ == '__main__':

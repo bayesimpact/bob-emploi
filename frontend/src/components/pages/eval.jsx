@@ -1,10 +1,11 @@
 import PropTypes from 'prop-types'
+import {parse} from 'query-string'
 import Radium from 'radium'
 import React from 'react'
 import GoogleLogin from 'react-google-login'
 import {connect, Provider} from 'react-redux'
-import {Router, Route, browserHistory} from 'react-router'
-import {syncHistoryWithStore, routerReducer} from 'react-router-redux'
+import {BrowserRouter, Route} from 'react-router-dom'
+import {routerReducer} from 'react-router-redux'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import RavenMiddleware from 'redux-raven-middleware'
@@ -51,13 +52,18 @@ class EvalPage extends React.Component {
     dispatch: PropTypes.func.isRequired,
     googleIdToken: PropTypes.string.isRequired,
     location: PropTypes.shape({
-      query: PropTypes.shape({
-        poolName: PropTypes.string,
-      }).isRequired,
+      search: PropTypes.string.isRequired,
     }).isRequired,
-    params: PropTypes.shape({
-      useCaseId: PropTypes.string,
+    match: PropTypes.shape({
+      params: PropTypes.shape({
+        useCaseId: PropTypes.string,
+      }),
     }),
+  }
+  static contextTypes = {
+    history: PropTypes.shape({
+      replace: PropTypes.func.isRequired,
+    }).isRequired,
   }
 
   state = {
@@ -75,7 +81,7 @@ class EvalPage extends React.Component {
   }
 
   componentWillMount() {
-    const {dispatch, location, params} = this.props
+    const {dispatch, location, match} = this.props
     dispatch(getEvalUseCasePools()).then(pools => {
       this.setState({
         pools,
@@ -83,10 +89,11 @@ class EvalPage extends React.Component {
           (pools.length ? pools[0].name : undefined),
       }, this.fetchPoolUseCases)
     })
-    if (location.query.poolName) {
+    const {poolName} = parse(location.search)
+    if (poolName) {
       this.setState({
-        initialUseCaseId: params && params.useCaseId,
-        selectedPoolName: location.query.poolName,
+        initialUseCaseId: match.params.useCaseId,
+        selectedPoolName: poolName,
       })
     }
   }
@@ -127,17 +134,13 @@ class EvalPage extends React.Component {
 
   updateBrowserHistory(useCaseId, poolName) {
     if (poolName && useCaseId) {
-      // Sometimes this call might replace the current component by another one
-      // and we lose everything.
-      // TODO(pascal): Switch to a newer version of react-router so that we can
-      // keep the same component.
-      browserHistory.replace(
+      this.context.history.replace(
         Routes.EVAL_PAGE + '/' + useCaseId + '?poolName=' + encodeURIComponent(poolName))
     }
   }
 
   selectUseCase = selectedUseCase => {
-    const {evaluation, poolName, useCaseId} = selectedUseCase || {}
+    const {evaluation, poolName, useCaseId, userData} = selectedUseCase || {}
     this.setState({
       advices: [],
       evaluation: evaluation || {},
@@ -146,6 +149,7 @@ class EvalPage extends React.Component {
       isSaved: false,
       selectedUseCase,
     }, this.advise)
+    this.props.dispatch({type: 'SELECT_USER', user: userData || null})
     this.updateBrowserHistory(useCaseId, poolName)
   }
 
@@ -182,6 +186,7 @@ class EvalPage extends React.Component {
       isOverviewShown: true,
       selectedUseCase: null,
     })
+    this.props.dispatch({type: 'SELECT_USER', user: null})
     const {poolName} = this.state.useCases.find(({poolName}) => poolName) || {}
     this.updateBrowserHistory(overviewId, poolName)
   }
@@ -336,11 +341,11 @@ class EvalPage extends React.Component {
   render() {
     const {advices, isOverviewShown, pools, selectedPoolName,
       selectedUseCase, useCases} = this.state
-    const poolOptions = pools.map(pool => {
-      const isPoolEvaluated = pool.evaluatedUseCaseCount === pool.useCaseCount
+    const poolOptions = pools.map(({evaluatedUseCaseCount, name, useCaseCount}) => {
+      const isPoolEvaluated = evaluatedUseCaseCount === useCaseCount
       return {
-        name: (isPoolEvaluated ? '✅ ' : '🎯 ') + pool.name,
-        value: pool.name,
+        name: (isPoolEvaluated ? '✅ ' : evaluatedUseCaseCount >= 10 ? '✓ ' : '🎯 ') + name,
+        value: name,
       }
     })
     const overviewOption = {
@@ -433,10 +438,25 @@ class AuthenticateEvalPageBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
     googleIdToken: PropTypes.string,
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+      replace: PropTypes.func.isRequired,
+    }).isRequired,
+  }
+  static childContextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+      replace: PropTypes.func.isRequired,
+    }).isRequired,
   }
 
   state = {
     hasAuthenticationFailed: false,
+  }
+
+  getChildContext() {
+    const {history} = this.props
+    return {history}
   }
 
   handleGoogleLogin = googleAuth => {
@@ -471,17 +491,25 @@ class AuthenticateEvalPageBase extends React.Component {
     </div>
   }
 }
-const AuthenticateEvalPage = connect(({user}) => ({
-  googleIdToken: user.googleIdToken,
+const AuthenticateEvalPage = connect(({auth}) => ({
+  googleIdToken: auth.googleIdToken,
 }))(AuthenticateEvalPageBase)
 
 
-function evalUserReducer(state={}, action) {
+function evalAuthReducer(state={}, action) {
   if (action.type === 'AUTH' && action.googleIdToken) {
     return {
       ...state,
       googleIdToken: action.googleIdToken,
     }
+  }
+  return state
+}
+
+
+function evalUserReducer(state={}, action) {
+  if (action.type === 'SELECT_USER') {
+    return action.user
   }
   return state
 }
@@ -506,30 +534,31 @@ const finalCreateStore = composeWithDevTools(
 const store = finalCreateStore(
   combineReducers({
     app,
+    auth: evalAuthReducer,
     routing: routerReducer,
     user: evalUserReducer,
   })
 )
-
-// Create an enhanced history that syncs navigation events with the store.
-const history = syncHistoryWithStore(browserHistory, store)
+if (module.hot) {
+  module.hot.accept(['store/app_reducer'], () => {
+    store.replaceReducer(combineReducers({
+      app: require('store/app_reducer').app,
+      auth: evalAuthReducer,
+      routing: routerReducer,
+      user: evalUserReducer,
+    }))
+  })
+}
 
 
 class App extends React.Component {
   render() {
-    if (!this.routesCache) {
-      // Cache for the Routes: our routes are not dynamic, and the Hot Module
-      // Replacement chokes on it when we do not render the exact same object,
-      // so we cache it here.
-      this.routesCache = <Router history={history}>
-        <Route path={Routes.EVAL_PAGE} component={AuthenticateEvalPage} />
-        <Route path={Routes.EVAL_PATH} component={AuthenticateEvalPage} />
-      </Router>
-    }
     return <Provider store={store}>
       <Radium.StyleRoot>
         <div style={{backgroundColor: Colors.BACKGROUND_GREY}}>
-          {this.routesCache}
+          <BrowserRouter>
+            <Route path={Routes.EVAL_PATH} component={AuthenticateEvalPage} />
+          </BrowserRouter>
         </div>
       </Radium.StyleRoot>
     </Provider>

@@ -169,9 +169,9 @@ def load_applications_sample_df(database):
 
     def _rename_column(col):
         if '_french' in col:
-            return '%s_french' % column_names[col[:-7]]
+            return '{}_french'.format(column_names[col[:-7]])
         elif '_english' in col:
-            return '%s_english' % column_names[col[:-8]]
+            return '{}_english'.format(column_names[col[:-8]])
         else:
             return column_names[col]
 
@@ -194,8 +194,6 @@ def load_applications_sample_df(database):
 
     # Run query, transform results using codebook, and return
     data_frame = database.query(query)
-    print(
-        'Loaded %d unique application records.' %
-        data_frame.application_id.nunique())
+    print('Loaded {:d} unique application records.'.format(data_frame.application_id.nunique()))
     data_frame.set_index('application_id', inplace=True)
     return transform_categorial_vars(data_frame, codebook)

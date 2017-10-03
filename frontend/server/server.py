@@ -7,12 +7,10 @@ MyGamePlan web application with data.
 """
 import collections
 import datetime
-import functools
 import hashlib
 import itertools
 import logging
 import os
-import random
 import re
 import time
 from urllib import parse
@@ -21,6 +19,7 @@ from bson import objectid
 import farmhash
 import flask
 from google.protobuf import json_format
+from google.protobuf import message
 from google.protobuf import timestamp_pb2
 import pymongo
 from raven.contrib import flask as raven_flask
@@ -32,19 +31,14 @@ from bob_emploi.frontend import advisor
 from bob_emploi.frontend import auth
 from bob_emploi.frontend import evaluation
 from bob_emploi.frontend import now
-from bob_emploi.frontend import opengraph
 from bob_emploi.frontend import proto
 from bob_emploi.frontend import scoring
 from bob_emploi.frontend.api import action_pb2
-from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import config_pb2
 from bob_emploi.frontend.api import chantier_pb2
-from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import job_pb2
-from bob_emploi.frontend.api import commute_pb2
-from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -61,7 +55,6 @@ _DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
 _SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
 
 _SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
-_ADMIN_AUTH_TOKEN = os.getenv('ADMIN_AUTH_TOKEN')
 
 _TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
 _ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
@@ -85,36 +78,18 @@ _Tick = collections.namedtuple('Tick', ['name', 'time'])
 _LONG_REQUEST_DURATION_SECONDS = 1.5
 
 
-def requires_admin_auth(func):
-    """Decorator for a function that requires admin authorization."""
-    def _decorated_fun(*args, **kwargs):
-        if _ADMIN_AUTH_TOKEN:
-            request_token = flask.request.headers.get('Authorization')
-            if not request_token:
-                flask.abort(401)
-            if request_token != _ADMIN_AUTH_TOKEN:
-                flask.abort(403)
-        return func(*args, **kwargs)
-    return functools.wraps(func)(_decorated_fun)
-
-
 @app.route('/api/user', methods=['DELETE'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.UserId)
 def delete_user(user_data):
     """Delete a user and their authentication information."""
+    auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
     if user_data.user_id:
-        user_from_db = _get_user_data(user_data.user_id)
-        facebook_creds_mismatch = (
-            user_data.facebook_id and user_data.facebook_id != user_from_db.facebook_id)
-        google_creds_mismatch = (
-            user_data.google_id and user_data.google_id != user_from_db.google_id)
-        email_mismatch = (
-            user_data.profile.email and user_data.profile.email != user_from_db.profile.email)
-        if facebook_creds_mismatch or google_creds_mismatch or email_mismatch:
-            flask.abort(403, 'Wrong credentials.')
+        try:
+            auth.check_token(user_data.user_id, auth_token, role='auth')
+        except ValueError:
+            flask.abort(403, 'Wrong authentication token.')
         filter_user = {'_id': _safe_object_id(user_data.user_id)}
     elif user_data.profile.email:
-        auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
         try:
             auth.check_token(user_data.profile.email, auth_token, role='unsubscribe')
         except ValueError:
@@ -131,6 +106,7 @@ def delete_user(user_data):
 
 @app.route('/api/user/<user_id>', methods=['GET'])
 @proto.flask_api(out_type=user_pb2.User)
+@auth.require_user(lambda user_id: user_id)
 def get_user(user_id):
     """Return the user identified by user_id.
 
@@ -143,6 +119,7 @@ def get_user(user_id):
 
 @app.route('/api/user', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
+@auth.require_user(lambda user_data: user_data.user_id)
 def user(user_data):
     """Save the user data sent by client.
 
@@ -157,28 +134,28 @@ def user(user_data):
 
 @app.route('/api/user/likes', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User)
+@auth.require_user(lambda user_data: user_data.user_id)
 def user_likes(user_data):
     """Save the user likes sent by client.
 
     Input:
         * Body: A dictionary with attributes of the user data.
     """
-    if not user_data.user_id:
-        flask.abort(400, 'Impossible de sauver les données utilisateur sans ID.')
     for key in user_data.likes.keys():
         if '.' in key or '$' in key:
-            flask.abort(422, 'Liked feature IDs cannot contain . or $, got "%s"' % key)
+            flask.abort(422, 'Liked feature IDs cannot contain . or $, got "{}"'.format(key))
     result = _DB.user.update_one(
         {'_id': _safe_object_id(user_data.user_id)}, {'$set': {
-            'likes.%s' % key: value for key, value in user_data.likes.items()}},
+            'likes.{}'.format(key): value for key, value in user_data.likes.items()}},
         upsert=False)
     if not result.matched_count:
-        flask.abort(404, 'Utilisateur "%s" inconnu.' % user_data.user_id)
+        flask.abort(404, 'Utilisateur "{}" inconnu.'.format(user_data.user_id))
     return ''
 
 
 @app.route('/api/user/<user_id>/migrate-to-advisor', methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
+@auth.require_user(lambda user_id: user_id)
 def migrate_to_advisor(user_id):
     """Migrate a user of the Mashup to use the Advisor."""
     user_proto = _get_user_data(user_id)
@@ -208,6 +185,7 @@ def compute_advices_for_project(user_proto):
 
 @app.route('/api/app/use/<user_id>', methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
+@auth.require_user(lambda user_id: user_id)
 def use_app(user_id):
     """Update the user's data to mark that they have just used the app."""
     user_proto = _get_user_data(user_id)
@@ -225,17 +203,17 @@ def _get_feedback_context(feedback):
         return ''
 
     user_data = _get_user_data(feedback.user_id)
-    name = ' from %s,' % user_data.profile.name
+    name = ' from {},'.format(user_data.profile.name)
 
     if not feedback.project_id:
         return name
 
     project = _get_project_data(user_data, feedback.project_id)
-    title = ' %s,' % project.title
-    experience = ' with experience of "%s"' %\
-        project_pb2.ProjectSeniority.Name(project.seniority).lower()
+    title = ' {},'.format(project.title)
+    experience = ' with experience of "{}"'.format(
+        project_pb2.ProjectSeniority.Name(project.seniority).lower())
 
-    return '%s%s%s' % (name, title, experience)
+    return '{}{}{}'.format(name, title, experience)
 
 
 def _save_user(user_data, is_new_user):
@@ -303,8 +281,8 @@ def _save_user(user_data, is_new_user):
                 (p for p in previous_user_data.projects if p.project_id == project.project_id),
                 project_pb2.Project())
             if project.feedback.score > 2 and not previous_project.feedback.score:
-                score_text = \
-                    ':sparkles: General feedback score: %s' % (':star:' * project.feedback.score)
+                score_text = ':sparkles: General feedback score: {}'.format(
+                    ':star:' * project.feedback.score)
             else:
                 score_text = ''
             if project.feedback.text and not previous_project.feedback.text:
@@ -343,7 +321,7 @@ def _create_new_project_id(user_data):
     existing_ids = set(p.project_id for p in user_data.projects) |\
         set(p.project_id for p in user_data.deleted_projects)
     for id_candidate in itertools.count():
-        id_string = '%x' % id_candidate
+        id_string = '{:x}'.format(id_candidate)
         if id_string not in existing_ids:
             return id_string
 
@@ -398,7 +376,7 @@ def _is_in_unverified_data_zone(user_profile, user_projects):
     if job.job_group.rome_id == 'L1510':
         return True
 
-    data_zone_key = '%s:%s' % (city.postcodes, job.job_group.rome_id)
+    data_zone_key = '{}:{}'.format(city.postcodes, job.job_group.rome_id)
     hashed_data_zone_key = hashlib.md5(data_zone_key.encode('utf-8')).hexdigest()
     return bool(_DB.unverified_data_zones.find(
         {'_id': hashed_data_zone_key}, {'_id': 1}).limit(1).count())
@@ -444,7 +422,8 @@ def _safe_object_id(_id):
         return objectid.ObjectId(_id)
     except objectid.InvalidId:
         # Switch to raising an error if you move this function in a lib.
-        flask.abort(400, 'L\'identifiant "%s" n\'est pas un identifiant MongoDB valide.' % _id)
+        flask.abort(
+            400, 'L\'identifiant "{}" n\'est pas un identifiant MongoDB valide.'.format(_id))
 
 
 # Mapping of old diploma estimates to new training estimates.
@@ -462,7 +441,7 @@ def _get_user_data(user_id):
     user_proto = user_pb2.User()
     if not proto.parse_from_mongo(user_dict, user_proto):
         # Switch to raising an error if you move this function in a lib.
-        flask.abort(404, 'Utilisateur "%s" inconnu.' % user_id)
+        flask.abort(404, 'Utilisateur "{}" inconnu.'.format(user_id))
 
     _populate_feature_flags(user_proto)
 
@@ -510,7 +489,7 @@ def _get_project_data(user_proto, project_id):
             project for project in user_proto.projects
             if project.project_id == project_id)
     except StopIteration:
-        flask.abort(404, 'Projet "%s" inconnu.' % project_id)
+        flask.abort(404, 'Projet "{}" inconnu.'.format(project_id))
 
 
 def _get_advice_data(project, advice_id):
@@ -519,7 +498,7 @@ def _get_advice_data(project, advice_id):
             advice for advice in project.advices
             if advice.advice_id == advice_id)
     except StopIteration:
-        flask.abort(404, 'Conseil "%s" inconnu.' % advice_id)
+        flask.abort(404, 'Conseil "{}" inconnu.'.format(advice_id))
 
 
 _ACTION_STOPPED_STATUSES = frozenset([
@@ -589,108 +568,52 @@ def _get_project_requirements(project):
     return job_group_info.requirements
 
 
-@app.route('/api/project/<user_id>/<project_id>/associations', methods=['GET'])
-@proto.flask_api(out_type=association_pb2.Associations)
-def project_associations(user_id, project_id):
-    """Retrieve a list of associations for a project."""
-    user_proto = _get_user_data(user_id)
-    project = _get_project_data(user_proto, project_id)
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    associations = scoring_project.list_associations()
-    sorted_associations = sorted(associations, key=lambda j: (-len(j.filters), random.random()))
-    return association_pb2.Associations(associations=sorted_associations)
+def _get_expanded_card_data(user_proto, project, advice_id):
+    module = advisor.get_advice_module(advice_id, _DB)
+    if not module or not module.trigger_scoring_model:
+        flask.abort(404, 'Le module "{}" n\'existe pas'.format(advice_id))
+    model = scoring.get_scoring_model(module.trigger_scoring_model)
+    if not model or not hasattr(model, 'get_expanded_card_data'):
+        flask.abort(404, 'Le module "{}" n\'a pas de données supplémentaires'.format(advice_id))
 
-
-@app.route('/api/project/<user_id>/<project_id>/events', methods=['GET'])
-@proto.flask_api(out_type=event_pb2.Events)
-def project_events(user_id, project_id):
-    """Retrieve a list of associations for a project."""
-    user_proto = _get_user_data(user_id)
-    project = _get_project_data(user_proto, project_id)
     scoring_project = scoring.ScoringProject(
         project, user_proto.profile, user_proto.features_enabled, _DB, now=now.get())
-    events = scoring_project.list_events()
-    sorted_events = sorted(events, key=lambda j: (j.start_date, -len(j.filters), random.random()))
-    return event_pb2.Events(events=sorted_events)
+    return model.get_expanded_card_data(scoring_project)
 
 
-@app.route('/api/project/<user_id>/<project_id>/interview-tips', methods=['GET'])
-@proto.flask_api(out_type=application_pb2.InterviewTips)
-def project_interview_tips(user_id, project_id):
-    """Retrieve a list of interview tips for a project."""
+# TODO(pascal): Once the client has been live for one week, drop this
+# translation.
+_ENDPOINT_TO_ADVICE_ID = {
+    'associations': 'association-help',
+    'interview-tips': 'improve-interview',
+    'jobboards': 'find-a-jobboard',
+    'resume-tips': 'improve-resume',
+}
+
+
+# TODO(pascal): Move to /api/advice/<advice_id>/<user_id>/<project_id>.
+@app.route('/api/project/<user_id>/<project_id>/<advice_id>', methods=['GET'])
+@proto.flask_api(out_type=message.Message)
+@auth.require_user(lambda user_id, project_id, advice_id: user_id)
+def get_advice_expanded_card_data(user_id, project_id, advice_id):
+    """Retrieve expanded card data for an advice module for a project."""
+    advice_id = _ENDPOINT_TO_ADVICE_ID.get(advice_id, advice_id)
     user_proto = _get_user_data(user_id)
-    project = _get_project_data(user_proto, project_id)
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    interview_tips = scoring_project.list_application_tips()
-    sorted_tips = sorted(interview_tips, key=lambda t: (-len(t.filters), random.random()))
-    tips_proto = application_pb2.InterviewTips(
-        qualities=[t for t in sorted_tips if t.type == application_pb2.QUALITY],
-        preparations=[
-            t for t in sorted_tips
-            if t.type == application_pb2.INTERVIEW_PREPARATION])
-    for tip in itertools.chain(tips_proto.qualities, tips_proto.preparations):
-        tip.ClearField('type')
-    return tips_proto
+    return _get_expanded_card_data(user_proto, _get_project_data(user_proto, project_id), advice_id)
 
 
-@app.route('/api/project/<user_id>/<project_id>/jobboards', methods=['GET'])
-@proto.flask_api(out_type=jobboard_pb2.JobBoards)
-def project_jobboards(user_id, project_id):
-    """Retrieve a list of job boards for a project."""
-    user_proto = _get_user_data(user_id)
-    project = _get_project_data(user_proto, project_id)
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    jobboards = scoring_project.list_jobboards()
-    sorted_jobboards = sorted(jobboards, key=lambda j: (-len(j.filters), random.random()))
-    return jobboard_pb2.JobBoards(job_boards=sorted_jobboards)
-
-
-@app.route('/api/project/<user_id>/<project_id>/resume-tips', methods=['GET'])
-@proto.flask_api(out_type=application_pb2.ResumeTips)
-def project_resume_tips(user_id, project_id):
-    """Retrieve a list of resume tips for a project."""
-    user_proto = _get_user_data(user_id)
-    project = _get_project_data(user_proto, project_id)
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    resume_tips = scoring_project.list_application_tips()
-    sorted_tips = sorted(resume_tips, key=lambda t: (-len(t.filters), random.random()))
-    tips_proto = application_pb2.ResumeTips(
-        qualities=[t for t in sorted_tips if t.type == application_pb2.QUALITY],
-        improvements=[t for t in sorted_tips if t.type == application_pb2.CV_IMPROVEMENT])
-    for tip in itertools.chain(tips_proto.qualities, tips_proto.improvements):
-        tip.ClearField('type')
-    return tips_proto
-
-
-@app.route('/api/project/<user_id>/<project_id>/volunteer', methods=['GET'])
-@proto.flask_api(out_type=association_pb2.VolunteeringMissions)
-def project_volunteer(user_id, project_id):
-    """Retrieve a list of job boards for a project."""
-    user_proto = _get_user_data(user_id)
-    project = _get_project_data(user_proto, project_id)
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    return scoring_project.volunteering_missions()
-
-
-@app.route('/api/project/<user_id>/<project_id>/commute', methods=['GET'])
-@proto.flask_api(out_type=commute_pb2.CommutingCities)
-def project_commute(user_id, project_id):
-    """Retrieve a list of commuting cities for a project."""
-    user_proto = _get_user_data(user_id)
-    project = _get_project_data(user_proto, project_id)
-
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB)
-    return commute_pb2.CommutingCities(cities=scoring_project.list_nearby_cities())
+@app.route('/api/advice/<advice_id>', methods=['POST'])
+@proto.flask_api(in_type=user_pb2.User, out_type=message.Message)
+def compute_expanded_card_data(user_proto, advice_id):
+    """Retrieve expanded card data for an advice module for a project."""
+    if not user_proto.projects:
+        flask.abort(422, 'There is no input project to advise on.')
+    return _get_expanded_card_data(user_proto, user_proto.projects[0], advice_id)
 
 
 @app.route('/api/project/<user_id>/<project_id>/advice/<advice_id>/tips', methods=['GET'])
 @proto.flask_api(out_type=action_pb2.AdviceTips)
+@auth.require_user(lambda user_id, project_id, advice_id: user_id)
 def advice_tips(user_id, project_id, advice_id):
     """Get all available tips for a piece of advice."""
     user_proto = _get_user_data(user_id)
@@ -701,13 +624,13 @@ def advice_tips(user_id, project_id, advice_id):
 
     response = action_pb2.AdviceTips()
     for tip_template in all_tips:
-        action.instantiate(response.tips.add(), user_proto, project, tip_template)
+        action.instantiate(response.tips.add(), user_proto, project, tip_template, _DB)
     return response
 
 
 def _populate_job_stats_dict(local_job_stats, city):
     local_stats_ids = dict(
-        ('%s:%s' % (city.departement_id, job_group_id), job_group_id)
+        ('{}:{}'.format(city.departement_id, job_group_id), job_group_id)
         for job_group_id in local_job_stats)
 
     # Import most stats from local_diagnosis.
@@ -739,6 +662,7 @@ def clear_cache():
 
 
 @app.route('/api/dashboard-export/open/<user_id>', methods=['POST'])
+@auth.require_user(lambda user_id: user_id)
 def open_dashboard_export(user_id):
     """Create an export of the user's current dashboard.
 
@@ -746,7 +670,8 @@ def open_dashboard_export(user_id):
     """
     dashboard_export = _create_dashboard_export(user_id)
     # Keep in sync with the same URL on the client.
-    return flask.redirect('/historique-des-actions/%s' % dashboard_export.dashboard_export_id)
+    return flask.redirect(
+        '/historique-des-actions/{}'.format(dashboard_export.dashboard_export_id))
 
 
 def _create_dashboard_export(user_id):
@@ -779,7 +704,7 @@ def get_dashboard_export(dashboard_export_id):
         '_id': _safe_object_id(dashboard_export_id)})
     dashboard_export = export_pb2.DashboardExport()
     if not proto.parse_from_mongo(dashboard_export_json, dashboard_export):
-        flask.abort(404, 'Export "%s" introuvable.' % dashboard_export_id)
+        flask.abort(404, 'Export "{}" introuvable.'.format(dashboard_export_id))
     dashboard_export.dashboard_export_id = dashboard_export_id
     return dashboard_export
 
@@ -790,7 +715,7 @@ def get_job_group_jobs(rome_id):
     """Retrieve information about jobs whithin a job group."""
     job_group = _job_groups_info().get(rome_id)
     if not job_group:
-        flask.abort(404, 'Groupe de métiers "%s" inconnu.' % rome_id)
+        flask.abort(404, 'Groupe de métiers "{}" inconnu.'.format(rome_id))
 
     result = job_pb2.JobGroup()
     result.jobs.extend(job_group.jobs)
@@ -802,6 +727,14 @@ def get_job_group_jobs(rome_id):
 @proto.flask_api(in_type=feedback_pb2.Feedback)
 def give_feedback(feedback):
     """Retrieve information about jobs whithin a job group."""
+    if feedback.user_id:
+        auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not auth_token:
+            flask.abort(401, 'Token manquant')
+        try:
+            auth.check_token(feedback.user_id, auth_token, role='auth')
+        except ValueError:
+            flask.abort(403, 'Unauthorized token')
     _give_feedback(feedback)
     return ''
 
@@ -811,16 +744,16 @@ def _give_feedback(feedback, extra_text=None):
 
     context = _get_feedback_context(feedback)
     if feedback.source == feedback_pb2.ADVICE_FEEDBACK:
-        context += ' on advice "%s"' % feedback.advice_id
+        context += ' on advice "{}"'.format(feedback.advice_id)
     elif feedback.source == feedback_pb2.PROFESSIONAL_PAGE_FEEDBACK:
         context += ' from the Counselors Page'
     elif feedback.source == feedback_pb2.ADVICE_FEEDBACK:
-        context += ' on project "%s"' % feedback.project_id
+        context += ' on project "{}"'.format(feedback.project_id)
 
     _tell_slack(
-        ':right_anger_bubble: New user feedback%s:\n'
-        '> %s\n'
-        'To get full context: `db.feedbacks.find(ObjectId("%s"))`%s' %
+        ':right_anger_bubble: New user feedback{}:\n'
+        '> {}\n'
+        'To get full context: `db.feedbacks.find(ObjectId("{}"))`{}'.format
         (context, feedback.feedback.replace('\n', '\n> '), result.inserted_id,
          ('\n' + extra_text) if extra_text else ''))
 
@@ -866,7 +799,7 @@ def _populate_feature_flags(user_proto):
 
 
 @app.route('/api/user/nps-survey-response', methods=['POST'])
-@requires_admin_auth
+@auth.require_admin
 @proto.flask_api(in_type=user_pb2.NPSSurveyResponse)
 def set_nps_survey_response(nps_survey_response):
     """Save user response to the Net Promoter Score survey."""
@@ -874,7 +807,7 @@ def set_nps_survey_response(nps_survey_response):
     # update the user record.
     user_dict = _DB.user.find_one({'profile.email': nps_survey_response.email}, {'_id': 1})
     if not user_dict:
-        flask.abort(404, 'Utilisateur "%s" inconnu.' % nps_survey_response.email)
+        flask.abort(404, 'Utilisateur "{}" inconnu.'.format(nps_survey_response.email))
     user_id = user_dict['_id']
     user_proto = _get_user_data(user_id)
     # We use MergeFrom, as 'curated_useful_advice_ids' will likely be set in a second call.
@@ -888,6 +821,49 @@ def set_nps_survey_response(nps_survey_response):
         )}},
         upsert=False
     )
+    return ''
+
+
+@app.route('/api/employment-status', methods=['GET'])
+def get_employment_status():
+    """Save user's first click and redirect them to the full survey."""
+    if any(param not in flask.request.args for param in ('user', 'token')):
+        flask.abort(422, 'Paramètres manquants.')
+    user_id = flask.request.args.get('user')
+    auth_token = flask.request.args.get('token')
+    try:
+        auth.check_token(user_id, auth_token, role='employment-status')
+    except ValueError:
+        flask.abort(403, 'Accès non autorisé.')
+    user_proto = _get_user_data(user_id)
+    if 'id' in flask.request.args:
+        survey_id = int(flask.request.args.get('id'))
+        if survey_id >= len(user_proto.employment_status):
+            flask.abort(422, 'Id invalide.')
+        employment_status = user_proto.employment_status[survey_id]
+        json_format.ParseDict(flask.request.args, employment_status, ignore_unknown_fields=True)
+        _DB.user.update_one(
+            {'_id': _safe_object_id(user_id)},
+            {'$set': {
+                'employment_status.%s' % survey_id: json_format.MessageToDict(employment_status)}},
+            upsert=False)
+    else:
+        survey_id = len(user_proto.employment_status)
+        employment_status = user_pb2.EmploymentStatus()
+        employment_status.created_at.FromDatetime(now.get())
+        json_format.ParseDict(flask.request.args, employment_status, ignore_unknown_fields=True)
+        _DB.user.update_one(
+            {'_id': _safe_object_id(user_id)},
+            {'$push': {'employment_status': json_format.MessageToDict(employment_status)}},
+            upsert=False)
+    if 'redirect' in flask.request.args:
+        return flask.redirect('{}?{}'.format(
+            flask.request.args.get('redirect'),
+            parse.urlencode({
+                'user': user_id,
+                'token': auth_token,
+                'id': survey_id,
+            })))
     return ''
 
 
@@ -942,13 +918,10 @@ def redirect_eterritoire(city_id):
     """Redirect to the e-Territoire page for a city."""
     link = association_pb2.SimpleLink()
     proto.parse_from_mongo(_DB.eterritoire_links.find_one({'_id': city_id}), link)
-    return flask.redirect('http://www.eterritoire.fr%s' % link.path)
+    return flask.redirect('http://www.eterritoire.fr{}'.format(link.path))
 
 
 app.register_blueprint(evaluation.app, url_prefix='/api/eval')
-
-
-app.register_blueprint(opengraph.app, url_prefix='/og')
 
 
 @app.before_request
@@ -987,6 +960,9 @@ def _teardown_request(unused_exception=None):
 
 app.config['DATABASE'] = _DB
 if os.getenv('SENTRY_DSN'):
+    # Setup logging basic's config first so that we also get basic logging to STDERR.
+    logging.basicConfig()
+    app.config['SENTRY_RELEASE'] = _SERVER_TAG['_server']
     raven_flask.Sentry(app, dsn=os.getenv('SENTRY_DSN'), logging=True, level=logging.WARNING)
 
 

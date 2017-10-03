@@ -1,5 +1,5 @@
+import PropTypes from 'prop-types'
 import React from 'react'
-import {browserHistory} from 'react-router'
 
 import config from 'config'
 
@@ -11,8 +11,14 @@ import {NEW_PROJECT_ID, Routes} from 'components/url'
 
 
 class UpdatePage extends React.Component {
-  skipPage() {
-    browserHistory.push(Routes.PROJECT_PAGE + '/' + NEW_PROJECT_ID)
+  static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
+  }
+
+  skipPage = () => {
+    this.context.history.push(Routes.PROJECT_PAGE + '/' + NEW_PROJECT_ID)
   }
 
   renderBackground() {

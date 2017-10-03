@@ -155,7 +155,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             '\t%s - %s - %s',
             _AnyColorText('in-both-with-meta'),
             _AnyColorText('in both with meta (JobGroup)'),
-            _AnyColorText('last import: %s' % two_days_ago))
+            _AnyColorText('last import: {}'.format(two_days_ago)))
 
     @mock.patch(logging.__name__ + '.info')
     @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
@@ -186,7 +186,7 @@ class ImportStatusBasicTests(unittest.TestCase):
         for name, importer in import_status.IMPORTERS.items():
             self.assertTrue(
                 bool(importer.command) == importer.is_imported,
-                msg='Conflicts in command and is_imported field for %s' % name)
+                msg='Conflicts in command and is_imported field for {}'.format(name))
             if not importer.command:
                 continue
 
@@ -194,8 +194,8 @@ class ImportStatusBasicTests(unittest.TestCase):
             for line in command_lines[:-1]:
                 self.assertTrue(
                     line.endswith('\\'),
-                    msg='A command line for importer "%s" does not end with "\\":\n%s'
-                    % (name, line))
+                    msg='A command line for importer "{}" does not end with "\\":\n{}'
+                    .format(name, line))
 
 
 if __name__ == '__main__':

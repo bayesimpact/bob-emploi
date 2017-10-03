@@ -21,15 +21,15 @@ RUN mkdir -p bob_emploi/frontend && \
   touch bob_emploi/frontend/__init__.py
 
 COPY entrypoint.sh .
-COPY server.py action.py advisor.py auth.py carif.py companies.py evaluation.py french.py mail.py now.py opengraph.py privacy.py proto.py scoring.py bob_emploi/frontend/
-COPY asynchronous/__init__.py asynchronous/create_pool.py asynchronous/focus_email.py asynchronous/mail_nps.py bob_emploi/frontend/asynchronous/
+COPY *.py bob_emploi/frontend/
+COPY modules/*.py bob_emploi/frontend/modules/
+COPY asynchronous/*.py bob_emploi/frontend/asynchronous/
 COPY api bob_emploi/frontend/api
-COPY templates bob_emploi/frontend/templates
 
 # Setup environment.
 EXPOSE 80
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["uwsgi", "--protocol=http", "--socket", "0.0.0.0:80", "-w", "bob_emploi.frontend.server:app"]
+CMD ["uwsgi", "--protocol=http", "--socket", "0.0.0.0:80", "--enable-threads", "-w", "bob_emploi.frontend.server:app"]
 ARG GIT_SHA1=non-git
 
 # Label the image with the git commit.

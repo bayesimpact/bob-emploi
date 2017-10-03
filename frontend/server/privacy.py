@@ -57,5 +57,5 @@ def user_to_use_case(user, pool_name, index_in_pool):
     })
     use_case.pool_name = pool_name
     use_case.index_in_pool = index_in_pool
-    use_case.use_case_id = '%s_%02x' % (pool_name, index_in_pool)
+    use_case.use_case_id = '{}_{:02x}'.format(pool_name, index_in_pool)
     return use_case

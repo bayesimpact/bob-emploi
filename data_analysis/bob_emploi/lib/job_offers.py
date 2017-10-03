@@ -70,8 +70,7 @@ def iterate(job_offers_csv, colnames_txt, required_fields=None):
         column_names = [line.strip() for line in colnames_lines]
     if required_fields and not required_fields < set(column_names):
         raise ValueError(
-            'Required fields are missing: %s' %
-            (required_fields - set(column_names)))
+            'Required fields are missing: {}'.format(required_fields - set(column_names)))
     min_num_required_fields = -1
     if required_fields:
         for field in required_fields:

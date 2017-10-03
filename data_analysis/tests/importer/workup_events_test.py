@@ -35,7 +35,7 @@ class WorkupEventsTestCase(unittest.TestCase):
                 'id': 'event-a',
                 'slug': 'slug-event-a',
                 'date': '2017-08-19',
-                'category': '["Trouver un job"]',
+                'category': ['Trouver un job'],
             },
         ], self.events_file)
         self.events_file.close()
@@ -67,7 +67,7 @@ class WorkupEventsTestCase(unittest.TestCase):
                 'id': 'event-a',
                 'slug': 'slug-event-a',
                 'date': '2017-08-19',
-                'category': '["Trouver un job"]',
+                'category': ['Trouver un job'],
             },
         ], self.events_file)
         self.events_file.close()
@@ -94,7 +94,7 @@ class WorkupEventsTestCase(unittest.TestCase):
                 'id': 'event-a',
                 'slug': 'slug-event-a',
                 'date': '2017-08-19',
-                'category': '["Créer sa boite"]',
+                'category': ['Créer sa boite'],
             },
         ], self.events_file)
         self.events_file.close()
@@ -121,7 +121,7 @@ class WorkupEventsTestCase(unittest.TestCase):
                 'id': 'event-a',
                 'slug': 'slug-event-a',
                 'date': '2017-08-19',
-                'category': '["Trouver un job"]',
+                'category': ['Trouver un job'],
                 'address': 'En ligne ',
             },
         ], self.events_file)

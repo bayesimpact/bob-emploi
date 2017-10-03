@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
-import {browserHistory} from 'react-router'
 
 import {CircularProgress, Colors} from 'components/theme'
 import {PageWithNavigationBar} from 'components/navigation'
@@ -17,12 +16,17 @@ class NewProjectPageBase extends React.Component {
     dispatch: PropTypes.func.isRequired,
     existingProject: PropTypes.object,
     isCreatingProject: PropTypes.bool,
-    params: PropTypes.shape({
-      stepName: PropTypes.string,
+    match: PropTypes.shape({
+      params: PropTypes.shape({
+        stepName: PropTypes.string,
+      }).isRequired,
     }).isRequired,
     userProfile: USER_PROFILE_SHAPE,
   }
   static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
     isMobileVersion: PropTypes.bool.isRequired,
   }
 
@@ -43,35 +47,35 @@ class NewProjectPageBase extends React.Component {
     })
     // Prevent people from manually going back and creating another project.
     if (existingProject && !existingProject.isIncomplete) {
-      browserHistory.push(Routes.PROJECT_PAGE + '/' + existingProject.projectId)
+      this.context.history.push(Routes.PROJECT_PAGE + '/' + existingProject.projectId)
       return
     }
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.params.stepName === this.props.params.stepName) {
+    if (prevProps.match.params.stepName === this.props.match.params.stepName) {
       return
     }
     this.pageDom && this.pageDom.scrollTo(0)
   }
 
   handleSubmit = newProjectUpdates => {
-    const {dispatch, params} = this.props
-    const {type} = getOnboardingStep(Routes.NEW_PROJECT_PAGE, params.stepName)
+    const {dispatch, match} = this.props
+    const {type} = getOnboardingStep(Routes.NEW_PROJECT_PAGE, match.params.stepName)
     this.setState(newProjectUpdates, () => {
       dispatch(editFirstProject(this.state, type))
-      gotoNextStep(Routes.NEW_PROJECT_PAGE, params.stepName, dispatch)
+      gotoNextStep(Routes.NEW_PROJECT_PAGE, match.params.stepName, dispatch, this.context.history)
     })
   }
 
   handleBack = () => {
-    const {stepName} = this.props.params
+    const {stepName} = this.props.match.params
     // TODO(pascal): Save state when going back as well.
-    gotoPreviousStep(Routes.NEW_PROJECT_PAGE, stepName)
+    gotoPreviousStep(Routes.NEW_PROJECT_PAGE, stepName, this.context.history)
   }
 
   render() {
-    const {isCreatingProject, params, userProfile} = this.props
+    const {isCreatingProject, match, userProfile} = this.props
     const {isMobileVersion} = this.context
     const spinnerBoxStyle = {
       alignItems: 'center',
@@ -91,7 +95,7 @@ class NewProjectPageBase extends React.Component {
     if (isCreatingProject) {
       content = <div style={spinnerBoxStyle}><CircularProgress /></div>
     } else {
-      const currentStepItem = getOnboardingStep(Routes.NEW_PROJECT_PAGE, params.stepName)
+      const currentStepItem = getOnboardingStep(Routes.NEW_PROJECT_PAGE, match.params.stepName)
       const CurrentStepComponent = currentStepItem.component
       content = <CurrentStepComponent
         onSubmit={this.handleSubmit}

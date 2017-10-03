@@ -202,3 +202,5 @@ input::-ms-reveal, input::-ms-clear {
   20%  {bottom: 20px}
   30%  {bottom: 10px}
 }
+
+@import url('https://fonts.googleapis.com/css?family=Droid+Serif:italic&subset=latin,latin-ext')

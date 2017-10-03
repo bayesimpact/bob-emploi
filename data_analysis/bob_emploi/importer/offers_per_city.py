@@ -88,6 +88,13 @@ def _list_hiring_cities(offers_rows, min_creation_date, data_folder):
             bad_format_records += 1
             continue
 
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+        except ValueError:
+            bad_format_records += 1
+            continue
+
         offers_per_job_group[job_group_code] += 1
         if city_code not in city_info:
             city_info[city_code] = {

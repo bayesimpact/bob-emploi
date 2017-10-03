@@ -110,13 +110,15 @@ class DashboardExportPageBase extends React.Component {
     }),
     dispatch: PropTypes.func.isRequired,
     isFetching: PropTypes.bool,
-    params: PropTypes.shape({
-      dashboardExportId: PropTypes.string.isRequired,
+    match: PropTypes.shape({
+      params: PropTypes.shape({
+        dashboardExportId: PropTypes.string.isRequired,
+      }).isRequired,
     }),
   }
 
   componentWillMount() {
-    const {dashboardExportId} = this.props.params
+    const {dashboardExportId} = this.props.match.params
     const {dashboardExport, isFetching} = this.props
     if (!dashboardExport && !isFetching) {
       this.props.dispatch(getDashboardExport(dashboardExportId))
@@ -124,10 +126,10 @@ class DashboardExportPageBase extends React.Component {
   }
 
   render() {
-    const {dashboardExport, isFetching, params} = this.props
+    const {dashboardExport, isFetching, match} = this.props
     if (!dashboardExport && !isFetching) {
       return <div>
-        {`Impossible de trouver le document ${params.dashboardExportId}`}
+        {`Impossible de trouver le document ${match.params.dashboardExportId}`}
       </div>
     }
     const style = {
@@ -159,8 +161,8 @@ class DashboardExportPageBase extends React.Component {
     </div>
   }
 }
-const DashboardExportPage = connect(({app, asyncState, user}, {params}) => ({
-  dashboardExport: app.dashboardExports[params.dashboardExportId],
+const DashboardExportPage = connect(({app, asyncState, user}, {match}) => ({
+  dashboardExport: app.dashboardExports[match.params.dashboardExportId],
   isFetching: asyncState.isFetching[GET_DASHBOARD_EXPORT],
   userProfile: user.profile,
 }))(DashboardExportPageBase)

@@ -76,6 +76,9 @@ message User {
 
   // The emails that were sent to the user.
   repeated EmailSent emails_sent = 19;
+
+  // The employment survey responses.
+  repeated EmploymentStatus employment_status = 20;
 }
 
 message UserAuth {
@@ -131,8 +134,7 @@ message AuthResponse {
   // auth request.
   string hash_salt = 3;
 
-  // Authentication token.
-  // TODO(benoit): add better description of auth_token in go/bob:security, and a link here.
+  // Authentication token. More details in go/bob:security
   string auth_token = 4;
 }
 
@@ -485,4 +487,47 @@ message EmailSent {
 
   // An internal ID used to identify campaigns, e.g. "no-network".
   string campaign_id = 3;
+
+  // Message ID on MailJet.
+  int64 mailjet_message_id = 4;
+
+  google.protobuf.Timestamp last_status_checked_at = 5;
+
+  EmailSentStatus status = 6;
+}
+
+// Status of email sent. This relies only on the mailjet API and is named
+// accordingly. See Status in https://dev.mailjet.com/email-api/v3/message/.
+enum EmailSentStatus {
+  EMAIL_SENT_UNKNOWN = 0;
+  EMAIL_SENT_QUEUED = 1;
+  EMAIL_SENT_SENT = 2;
+  EMAIL_SENT_OPENED = 3;
+  EMAIL_SENT_CLICKED = 4;
+  EMAIL_SENT_BOUNCE = 5;
+  EMAIL_SENT_SPAM = 6;
+  EMAIL_SENT_UNSUB = 7;
+  EMAIL_SENT_BLOCKED = 8;
+}
+
+// Description of an employement survey response.
+message EmploymentStatus {
+  // Creation timestamp.
+  google.protobuf.Timestamp created_at = 1;
+
+  // Whether the user is still searching for a job.
+  SeekingStatus seeking = 2;
+
+  // User situation.
+  string situation = 3;
+
+  // Whether bob has helped.
+  string bob_has_helped = 4;
+}
+
+// Job seeker status.
+enum SeekingStatus {
+  SEEKING_STATUS_UNDEFINED = 0;
+  STILL_SEEKING = 1;
+  STOP_SEEKING = 2;
 }

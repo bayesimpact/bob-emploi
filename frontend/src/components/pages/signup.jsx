@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import {parse} from 'query-string'
 import React from 'react'
 
 import {LoginButton} from 'components/login'
@@ -8,9 +9,7 @@ import {PageWithNavigationBar} from 'components/navigation'
 class VideoSignUpPage extends React.Component {
   static propTypes = {
     location: PropTypes.shape({
-      query: PropTypes.shape({
-        email: PropTypes.string,
-      }).isRequired,
+      search: PropTypes.string.isRequired,
     }).isRequired,
   }
   static contextTypes = {
@@ -18,7 +17,7 @@ class VideoSignUpPage extends React.Component {
   }
 
   componentWillMount() {
-    const {email} = this.props.location.query
+    const {email} = parse(this.props.location.search)
     this.setState({email})
   }
 

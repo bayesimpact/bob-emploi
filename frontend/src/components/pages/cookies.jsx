@@ -17,7 +17,7 @@ class CookiesPage extends React.Component {
 
       <br /><br />
 
-      <strong>Nos cookies 🍪</strong><br />
+      <strong>Nos cookies <span role="img" aria-label="">🍪</span></strong><br />
       Lorsque vous soumettez des données via un formulaire, tel que les
       formulaires de contact ou de commentaires, les cookies peuvent servir à
       sauver certaines informations vous concernant pour un usage futur.

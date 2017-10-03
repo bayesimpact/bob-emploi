@@ -1,0 +1,43 @@
+AGE_GROUP_CODE,AGE_GROUP_NAME,AREA_CODE,AREA_NAME,AREA_TYPE_CODE,AREA_TYPE_NAME,MAXIMUM_SALARY,MINIMUM_SALARY,PCS_PROFESSION_CODE,PCS_PROFESSION_NAME
+1,Moins de 35 ans,09,ARIEGE,D,Département,-2,-2,621a,Chefs d'équipe du gros oeuvre et des travaux publics
+2,35 ans et plus,09,ARIEGE,D,Département,4700,2400,621a,Chefs d'équipe du gros oeuvre et des travaux publics
+1,Moins de 35 ans,09,ARIEGE,D,Département,2600,1750,621b,Ouvriers qualifiés du travail du béton
+2,35 ans et plus,09,ARIEGE,D,Département,2950,1650,621b,Ouvriers qualifiés du travail du béton
+1,Moins de 35 ans,09,ARIEGE,D,Département,2500,1650,621d,Ouvriers des travaux publics en installations électriques et de télécommunications
+2,35 ans et plus,09,ARIEGE,D,Département,3150,1800,621d,Ouvriers des travaux publics en installations électriques et de télécommunications
+1,Moins de 35 ans,09,ARIEGE,D,Département,2900,1650,621e,Autres ouvriers qualifiés des travaux publics
+2,35 ans et plus,09,ARIEGE,D,Département,3000,1750,621e,Autres ouvriers qualifiés des travaux publics
+1,Moins de 35 ans,09,ARIEGE,D,Département,2000,1550,621f,Ouvriers qualifiés des travaux publics (salariés de l'Etat et des collectivités locales)
+2,35 ans et plus,09,ARIEGE,D,Département,2350,1600,621f,Ouvriers qualifiés des travaux publics (salariés de l'Etat et des collectivités locales)
+1,Moins de 35 ans,09,ARIEGE,D,Département,2800,2200,621g,"Mineurs de fond qualifiés et autres ouvriers qualifiés des industries d'extraction (carrières, pétrole, gaz...)"
+2,35 ans et plus,09,ARIEGE,D,Département,3650,2350,621g,"Mineurs de fond qualifiés et autres ouvriers qualifiés des industries d'extraction (carrières, pétrole, gaz...)"
+1,Moins de 35 ans,09,ARIEGE,D,Département,-2,-2,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales
+2,35 ans et plus,09,ARIEGE,D,Département,-2,-2,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales
+1,Moins de 35 ans,10,AUBE,D,Département,-1,-1,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales
+2,35 ans et plus,10,AUBE,D,Département,-1,-1,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales
+1,Moins de 35 ans,10,AUBE,D,Département,3300,2000,621a,Chefs d'équipe du gros oeuvre et des travaux publics
+2,35 ans et plus,10,AUBE,D,Département,3900,2100,621a,Chefs d'équipe du gros oeuvre et des travaux publics
+1,Moins de 35 ans,10,AUBE,D,Département,2700,1800,621b,Ouvriers qualifiés du travail du béton
+2,35 ans et plus,10,AUBE,D,Département,3150,1950,621b,Ouvriers qualifiés du travail du béton
+1,Moins de 35 ans,10,AUBE,D,Département,3050,1900,621d,Ouvriers des travaux publics en installations électriques et de télécommunications
+2,35 ans et plus,10,AUBE,D,Département,4350,1850,621d,Ouvriers des travaux publics en installations électriques et de télécommunications
+1,Moins de 35 ans,10,AUBE,D,Département,2750,1650,621e,Autres ouvriers qualifiés des travaux publics
+2,35 ans et plus,10,AUBE,D,Département,3000,2050,621e,Autres ouvriers qualifiés des travaux publics
+1,Moins de 35 ans,10,AUBE,D,Département,2000,1500,621f,Ouvriers qualifiés des travaux publics (salariés de l'Etat et des collectivités locales)
+2,35 ans et plus,10,AUBE,D,Département,2400,1550,621f,Ouvriers qualifiés des travaux publics (salariés de l'Etat et des collectivités locales)
+1,Moins de 35 ans,10,AUBE,D,Département,2600,1900,621g,"Mineurs de fond qualifiés et autres ouvriers qualifiés des industries d'extraction (carrières, pétrole, gaz...)"
+2,35 ans et plus,10,AUBE,D,Département,3350,2050,621g,"Mineurs de fond qualifiés et autres ouvriers qualifiés des industries d'extraction (carrières, pétrole, gaz...)"
+1,Moins de 35 ans,12,AVEYRON,D,Département,3900,2150,621a,Chefs d'équipe du gros oeuvre et des travaux publics
+2,35 ans et plus,12,AVEYRON,D,Département,3850,2400,621a,Chefs d'équipe du gros oeuvre et des travaux publics
+1,Moins de 35 ans,12,AVEYRON,D,Département,2750,1750,621b,Ouvriers qualifiés du travail du béton
+2,35 ans et plus,12,AVEYRON,D,Département,2900,1950,621b,Ouvriers qualifiés du travail du béton
+1,Moins de 35 ans,12,AVEYRON,D,Département,2700,1750,621d,Ouvriers des travaux publics en installations électriques et de télécommunications
+2,35 ans et plus,12,AVEYRON,D,Département,3400,1900,621d,Ouvriers des travaux publics en installations électriques et de télécommunications
+1,Moins de 35 ans,12,AVEYRON,D,Département,3000,1800,621e,Autres ouvriers qualifiés des travaux publics
+2,35 ans et plus,12,AVEYRON,D,Département,3350,2000,621e,Autres ouvriers qualifiés des travaux publics
+1,Moins de 35 ans,12,AVEYRON,D,Département,2000,1550,621f,Ouvriers qualifiés des travaux publics (salariés de l'Etat et des collectivités locales)
+2,35 ans et plus,12,AVEYRON,D,Département,2350,1550,621f,Ouvriers qualifiés des travaux publics (salariés de l'Etat et des collectivités locales)
+1,Moins de 35 ans,12,AVEYRON,D,Département,2350,1500,621g,"Mineurs de fond qualifiés et autres ouvriers qualifiés des industries d'extraction (carrières, pétrole, gaz...)"
+2,35 ans et plus,12,AVEYRON,D,Département,2850,1850,621g,"Mineurs de fond qualifiés et autres ouvriers qualifiés des industries d'extraction (carrières, pétrole, gaz...)"
+1,Moins de 35 ans,12,AVEYRON,D,Département,-2,-2,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales
+2,35 ans et plus,12,AVEYRON,D,Département,2450,1850,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales

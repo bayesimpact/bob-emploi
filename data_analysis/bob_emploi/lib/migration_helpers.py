@@ -35,7 +35,7 @@ def region_iteratior(base_path, file_name):
             data_frame = pd.DataFrame.from_csv(f_name)
         else:
             raise ValueError(
-                'Expected sas7bdat or csv files only, got %s' % file_name)
+                'Expected sas7bdat or csv files only, got {}'.format(file_name))
         yield (region_id, data_frame)
 
 
@@ -55,11 +55,11 @@ def flatten_iterator(files_pattern):
     """
     files = glob.glob(files_pattern)
     if not files:
-        raise ValueError('No files found matching %s' % files_pattern)
+        raise ValueError('No files found matching {}'.format(files_pattern))
 
     headers = None
 
-    print('Flattening %d files' % len(files))
+    print('Flattening {:d} files'.format(len(files)))
 
     for current_file in sorted(files):
         reader = None
@@ -69,18 +69,19 @@ def flatten_iterator(files_pattern):
             reader = csv.reader(open(current_file))
         else:
             raise ValueError(
-                'Can only process .csv and .sas7bdat files. Got pattern %s'
-                % files_pattern)
+                'Can only process .csv and .sas7bdat files. Got pattern {}'
+                .format(files_pattern))
         header_line = next(reader)
         if headers is None:
             headers = header_line + ['__file__']
         elif headers[:-1] != header_line:
             raise ValueError(
-                "Headers from file %s don't match those of previous "
-                'files. Was expecting:\n%s\n  got:\n%s'
-                % (current_file,
-                   headers[:-1],  # pylint: disable=unsubscriptable-object
-                   header_line))
+                "Headers from file {} don't match those of previous "
+                'files. Was expecting:\n{}\n  got:\n{}'
+                .format(
+                    current_file,
+                    headers[:-1],  # pylint: disable=unsubscriptable-object
+                    header_line))
         for line in reader:
             yield dict(zip(headers, line + [current_file]))
 

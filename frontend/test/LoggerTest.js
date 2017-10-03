@@ -1,6 +1,6 @@
 import {expect} from 'chai'
-import {Logger} from 'store/logging'
-
+import {Logger, daysSince} from 'store/logging'
+import moment from 'moment'
 
 describe('Logger', () => {
   it('flatten the features flag always the same way', () => {
@@ -15,6 +15,13 @@ describe('Logger', () => {
       userId: 'foo',
     }})
     expect(userProperties.Features).to.eql(['alpha', 'email'])
+  })
+})
+
+describe('daysSince', () => {
+  it('count the number of days elapsed since a given timestamp', () => {
+    const threeDaysAgo = moment().subtract(3, 'days').valueOf()
+    expect(daysSince(threeDaysAgo)).to.eql(3)
   })
 })
 

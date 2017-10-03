@@ -35,7 +35,7 @@ def main():
     if os.path.isdir(sys.argv[1]):
         notebooks_path = os.path.join(sys.argv[1], '**', '*.ipynb')
         filelist = glob.glob(notebooks_path, recursive=True)
-        print('Running %s files' % len(filelist))
+        print('Running {:d} files'.format(len(filelist)))
         run_notebook_list(filelist)
     else:
         run_notebook_list(sys.argv[1:])
@@ -51,11 +51,11 @@ def run_notebook_list(filelist):
             continue
         try:
             _run_notebook(notebook, notebook_path)
-            message = ' %s ✔.' % notebook_path
+            message = ' {} ✔.'.format(notebook_path)
             print(termcolor.colored(message, 'green'))
         except notebook_runner.NotebookError as error:
             print(error)
-            message = ' %s 𝗫.' % notebook_path
+            message = ' {} 𝗫.'.format(notebook_path)
             print(termcolor.colored(message, 'red'))
 
 

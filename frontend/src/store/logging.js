@@ -1,13 +1,14 @@
-import browser from 'detect-browser'
-import moment from 'moment'
+import {detect} from 'detect-browser'
 
 import {AUTHENTICATE_USER, REGISTER_USER} from './actions'
 
 
-const daysSince = timestamp => {
-  const day = moment(timestamp).startOf('day')
-  const today = moment().startOf('day')
-  return Math.round(today.diff(day, 'days'))
+export const daysSince = timestamp => {
+  const day = new Date(timestamp)
+  day.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.round((today.getTime() - day.getTime()) / 86400000)
 }
 
 
@@ -46,6 +47,7 @@ const flattenFeatureFlags = featuresEnabled => {
 export class Logger {
   constructor(actionTypesToLog) {
     this.actionTypesToLog = actionTypesToLog
+    this.browser = detect()
   }
 
   shouldLogAction(action) {
@@ -70,8 +72,8 @@ export class Logger {
 
   getEventProperties(action, state) {
     const properties = {}
-    if (browser && browser.name) {
-      properties['$browser'] = browser.name
+    if (this.browser && this.browser.name) {
+      properties['$browser'] = this.browser.name
     }
     properties['$hostname'] = window.location.hostname
     if (state.app.isMobileVersion) {

@@ -76,7 +76,7 @@ def _list_all_points(geometry):
                     yield point
         return
 
-    raise NotImplementedError('Does not know how to handle type %s' % geometry['type'])
+    raise NotImplementedError('Does not know how to handle type {}'.format(geometry['type']))
 
 
 if __name__ == '__main__':

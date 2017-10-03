@@ -1,11 +1,63 @@
-FROM bayesimpact/bob-emploi-frontend-server
+FROM python:3
 
+# TEST ONLY.
+#
+# This file is the same as the one in Dockerfile and it should stay in sync except for:
+# - The blocks starting with "# TEST ONLY." in here are ignored.
+# - The COPY commands actually start from a different place, and should be updated here.
+#
+# Having them in sync allow us to always finish by setting the files and
+# optimize the caching when Docker building the images.
+
+# Install dependencies
+# TODO(florian): keep in one RUN to reduce # of Docker layers once we get the caching to always work
+# correctly on CircleCI remote Docker environment.
+RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends wget unzip
+
+WORKDIR /work
+# Install needed Python dependencies.
+RUN pip install python-emploi-store flask mailjet_rest mongo oauth2client pyfarmhash raven[flask] unidecode uwsgi xmltodict
+
+# Install Protobuf compiler.
+RUN wget --quiet https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip -O protoc.zip && unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto
+
+# Install Python Protobuf runtime.
+RUN wget --quiet https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-python-3.2.0.zip -O protobuf-python.zip && unzip -qq protobuf-python.zip && rm protobuf-python.zip && cd protobuf-3.2.0/python && ./setup.py install && cd ../.. && rm -rf protobuf-3.2.0
+
+# Prepare the frontend module.
+RUN mkdir -p bob_emploi/frontend && \
+  touch bob_emploi/__init__.py && \
+  touch bob_emploi/frontend/__init__.py
+
+# TEST ONLY.
 COPY frontend/server/requirements-testing.txt /work
 RUN pip install -r requirements-testing.txt
 
-COPY frontend/server/lint_and_test.sh .pylintrc .pep8 /work/
-COPY frontend/server/*_test.py /work/bob_emploi/frontend/
-COPY frontend/server/asynchronous/*_test.py /work/bob_emploi/frontend/asynchronous/
-COPY frontend/server/testdata /work/bob_emploi/frontend/testdata
+COPY frontend/server/entrypoint.sh .
+COPY frontend/server/*.py bob_emploi/frontend/
+COPY frontend/server/modules/*.py bob_emploi/frontend/modules/
+COPY frontend/server/asynchronous/*.py bob_emploi/frontend/asynchronous/
+COPY frontend/server/api bob_emploi/frontend/api
 
+# TEST ONLY.
+COPY frontend/server/lint_and_test.sh .pylintrc .pep8 /work/
+COPY frontend/server/test /work/bob_emploi/frontend/test/
+COPY frontend/server/asynchronous/test /work/bob_emploi/frontend/asynchronous/test/
+COPY frontend/server/Dockerfile* /work/bob_emploi/frontend/
+
+# Setup environment.
+EXPOSE 80
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["uwsgi", "--protocol=http", "--socket", "0.0.0.0:80", "--enable-threads", "-w", "bob_emploi.frontend.server:app"]
+ARG GIT_SHA1=non-git
+
+# Label the image with the git commit.
+LABEL org.bayesimpact.git=$GIT_SHA1
+# Set a default server version based on Git commit. This is overriden in
+# production with more context, e.g. the name of the demo server.
+ENV SERVER_VERSION=git-$GIT_SHA1 \
+  BIND_HOST=0.0.0.0 \
+  PYTHONPATH=/work
+
+# TEST ONLY.
 CMD ["nosetests", "--with-watch"]

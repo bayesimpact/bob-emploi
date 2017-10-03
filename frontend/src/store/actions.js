@@ -1,14 +1,12 @@
-import {browserHistory} from 'react-router'
+import {push} from 'react-router-redux'
 import sha1 from 'sha1'
 
 import {adviceTipsGet, dashboardExportGet, evalUseCasePoolsGet, evalUseCasesGet,
-  jobBoardsGet, associationsGet, volunteeringMissionsGet, jobsGet, projectRequirementsGet,
-  userDelete, markUsedAndRetrievePost, userPost, feedbackPost, userAuthenticate, saveLikes,
-  resetPasswordPost, migrateUserToAdvisorPost, commutingCitiesGet, resumeTipsGet,
-  interviewTipsGet, projectComputeAdvicesPost, eventsGet} from './api'
+  jobsGet, projectRequirementsGet, userDelete, markUsedAndRetrievePost,
+  userPost, feedbackPost, userAuthenticate, saveLikes, resetPasswordPost,
+  migrateUserToAdvisorPost, projectComputeAdvicesPost, expandedCardContentGet} from './api'
 import {splitFullName} from 'store/auth'
 import {newProject} from 'store/project'
-import {Gender, Situation, JobSearchPhase} from 'api/user'
 import {Routes} from 'components/url'
 
 const ASYNC_MARKER = 'ASYNC_MARKER'
@@ -82,6 +80,7 @@ export const SEND_NEW_ADVICE_IDEA = 'SEND_NEW_ADVICE_IDEA'
 export const COMPUTE_ADVICES_FOR_PROJECT = ' COMPUTE_ADVICES_FOR_PROJECT'
 export const GET_EVAL_USE_CASE_POOLS = 'GET_EVAL_USE_CASE_POOLS'
 export const GET_EVAL_USE_CASES = 'GET_EVAL_USE_CASES'
+export const GET_EXPANDED_CARD_CONTENT = 'GET_EXPANDED_CARD_CONTENT'
 
 // Logging only.
 const LANDING_PAGE_SECTION_IS_SHOWN = 'LANDING_PAGE_SECTION_IS_SHOWN'
@@ -238,9 +237,10 @@ function computeAdvicesForProject(user) {
 
 function getAdviceTips(project, advice) {
   return (dispatch, getState) => {
-    const {user} = getState()
+    const {user, app} = getState()
     return dispatch(wrapAsyncAction(
-      GET_ADVICE_TIPS, () => adviceTipsGet(user, project, advice), {advice, project}))
+      GET_ADVICE_TIPS, () => adviceTipsGet(user, project, advice, app.authToken),
+      {advice, project}))
   }
 }
 
@@ -248,58 +248,46 @@ function getDashboardExport(dashboardExportId) {
   return wrapAsyncAction(GET_DASHBOARD_EXPORT, () => dashboardExportGet(dashboardExportId))
 }
 
-function getEvents(project) {
+function getExpandedCardContent(project, type, adviceId) {
   return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(GET_EVENTS, () => eventsGet(user, project), {project}))
+    const {user, app} = getState()
+    return dispatch(
+      wrapAsyncAction(
+        type,
+        () => expandedCardContentGet(user, project, {adviceId}, app.authToken),
+        {advice: {adviceId}, project}))
   }
+}
+
+// TODO(pascal): Get rid of all these getters and simplify by directly using a
+// common action to get expanded card data.
+
+function getEvents(project) {
+  return getExpandedCardContent(project, GET_EVENTS, 'events')
 }
 
 function getJobBoards(project) {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(
-      GET_JOB_BOARDS, () => jobBoardsGet(user, project), {project}))
-  }
+  return getExpandedCardContent(project, GET_JOB_BOARDS, 'find-a-jobboard')
 }
 
 function getAssociations(project) {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(
-      GET_ASSOCIATIONS, () => associationsGet(user, project), {project}))
-  }
+  return getExpandedCardContent(project, GET_ASSOCIATIONS, 'association-help')
 }
 
 function getInterviewTips(project) {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(GET_INTERVIEW_TIPS,
-      () => interviewTipsGet(user, project), {project}))
-  }
+  return getExpandedCardContent(project, GET_INTERVIEW_TIPS, 'improve-interview')
 }
 
 function getResumeTips(project) {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(GET_RESUME_TIPS, () => resumeTipsGet(user, project), {project}))
-  }
+  return getExpandedCardContent(project, GET_RESUME_TIPS, 'improve-resume')
 }
 
 function getVolunteeringMissions(project) {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(
-      GET_VOLUNTEERING_MISSIONS, () => volunteeringMissionsGet(user, project), {project}))
-  }
+  return getExpandedCardContent(project, GET_VOLUNTEERING_MISSIONS, 'volunteer')
 }
 
 function getCommutingCities(project) {
-  return (dispatch, getState) => {
-    const {user} = getState()
-    return dispatch(wrapAsyncAction(
-      GET_COMMUTING_CITIES, () => commutingCitiesGet(user, project), {project}))
-  }
+  return getExpandedCardContent(project, GET_COMMUTING_CITIES, 'commute')
 }
 
 function getJobs({romeId}) {
@@ -318,13 +306,20 @@ function fetchProjectRequirements(project) {
 }
 
 function deleteUser(userId) {
-  return wrapAsyncAction(DELETE_USER_DATA, () => userDelete(userId))
+  return (dispatch, getState) => {
+    const {app} = getState()
+    return dispatch(wrapAsyncAction(DELETE_USER_DATA, () => userDelete(userId, app.authToken)))
+  }
 }
 
 function fetchUser(userId, ignoreFailure) {
-  return dispatch => {
+  return (dispatch, getState) => {
+    const {authToken} = getState().app
     return dispatch(
-      wrapAsyncAction(GET_USER_DATA, () => markUsedAndRetrievePost(userId), {ignoreFailure}))
+      wrapAsyncAction(
+        GET_USER_DATA,
+        () => markUsedAndRetrievePost(userId, authToken),
+        {ignoreFailure}))
   }
 }
 
@@ -338,14 +333,15 @@ function saveUser(user) {
     return dispatch(wrapAsyncAction(POST_USER_DATA, () => userPost(trackedUser, authToken))).
       then(response => {
         if (response.appNotAvailable) {
-          browserHistory.push(Routes.APP_NOT_AVAILABLE_PAGE)
           dispatch(logoutAction)
+          push(Routes.APP_NOT_AVAILABLE_PAGE)
         }
         return response
       })
   }
 }
 
+// TODO(cyrille): See if this can be cleaned up.
 function advicePageIsShown(project, advice) {
   return (dispatch, getState) => {
     dispatch({advice, project, type: ADVICE_PAGE_IS_SHOWN})
@@ -355,14 +351,15 @@ function advicePageIsShown(project, advice) {
 
 function sendFeedback(type, source, feedback, extraFields) {
   return (dispatch, getState) => {
+    const {user, app} = getState()
     dispatch(wrapAsyncAction(
       type,
       () => feedbackPost({
         feedback,
         source,
-        userId: getState().user.userId,
+        userId: user.userId,
         ...extraFields,
-      }),
+      }, app.authToken),
       {feedback},
     )).then(() => dispatch(displayToasterMessage('Merci pour ce retour')))
   }
@@ -412,6 +409,7 @@ function facebookAuthenticateUser(facebookAuth, mockApi) {
   //  - the user's gender: gender
   //  - the user's birth day: birthday
   return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
+    email: facebookAuth.email,
     facebookSignedRequest: facebookAuth.signedRequest,
   }).then(authResponse => {
     // The signed request sent to the server only contains the facebook ID. If
@@ -455,8 +453,9 @@ function facebookAuthenticateUser(facebookAuth, mockApi) {
   }))
 }
 
-function googleAuthenticateUser(googleAuth) {
-  return wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
+function googleAuthenticateUser(googleAuth, mockApi) {
+  const authenticate = mockApi ? mockApi.userAuthenticate : userAuthenticate
+  return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
     googleTokenId: googleAuth.getAuthResponse().id_token,
   }).then(authResponse => {
     // The signed request sent to the server only contains some fields. If it
@@ -467,14 +466,15 @@ function googleAuthenticateUser(googleAuth) {
         profile.getId() !== authResponse.authenticatedUser.googleId) {
       return authResponse
     }
+    const {lastName, name} = authResponse.authenticatedUser.profile || {}
     return {
       ...authResponse,
       authenticatedUser: {
         ...authResponse.authenticatedUser,
         profile: {
           ...authResponse.authenticatedUser.profile,
-          lastName: authResponse.authenticatedUser.profile.lastName || profile.getFamilyName(),
-          name: authResponse.authenticatedUser.profile.name || profile.getGivenName(),
+          lastName: lastName || profile.getFamilyName() || ' ',
+          name: name || profile.getGivenName() || profile.getEmail().replace(/@.*$/, ''),
         },
       },
     }
@@ -496,11 +496,13 @@ function registerNewUser(email, password, firstName, lastName) {
   }
 }
 
+// TODO(cyrille): Clean-up since unused.
 function likeOrDislikeFeature(feature, likeScore) {
   return (dispatch, getState) => {
     dispatch({feature, likeScore, type: LIKE_OR_DISLIKE_FEATURE})
-    const {userId} = getState().user
-    dispatch(wrapAsyncAction(SAVE_LIKES, () => saveLikes(userId, {[feature]: likeScore})))
+    const {user, app} = getState()
+    dispatch(wrapAsyncAction(
+      SAVE_LIKES, () => saveLikes(user.userId, {[feature]: likeScore}, app.authToken)))
   }
 }
 
@@ -528,8 +530,9 @@ function markNotificationAsSeen(notification) {
 
 function migrateUserToAdvisor() {
   return (dispatch, getState) => {
+    const {authToken} = getState().app
     return dispatch(wrapAsyncAction(
-      MIGRATE_USER_TO_ADVISOR, () => migrateUserToAdvisorPost(getState().user)))
+      MIGRATE_USER_TO_ADVISOR, () => migrateUserToAdvisorPost(getState().user, authToken)))
   }
 }
 
@@ -541,18 +544,8 @@ function resetPassword(email, password, authToken) {
 function setUserProfile(userProfile, shouldAlsoSaveUser, type) {
   return (dispatch, getState) => {
     // Drop unknown kinds.
-    if (userProfile.gender && !Gender[userProfile.gender]) {
-      dispatch(displayToasterMessage('Unknown gender: ' + userProfile.gender))
-      delete userProfile.gender
-    }
-    if (userProfile.situation && !Situation[userProfile.situation]) {
-      dispatch(displayToasterMessage('Unknown situation: ' + userProfile.situation))
-      delete userProfile.situation
-    }
-    if (userProfile.jobSearchPhase && !JobSearchPhase[userProfile.jobSearchPhase]) {
-      dispatch(displayToasterMessage('Unknown job search phase: ' + userProfile.jobSearchPhase))
-      delete userProfile.jobSearchPhase
-    }
+    // TODO(pascal) Check that gender, situation, jobSearchPhase 
+    // are consistent with their kinds, if they exist.
     dispatch({type: type || SET_USER_PROFILE, userProfile})
     if (shouldAlsoSaveUser) {
       return dispatch(saveUser(getState().user))
@@ -580,20 +573,23 @@ function editFirstProject(newProjectData, actionType) {
 function createFirstProject() {
   return (dispatch, getState) => {
     const {projects} = getState().user
+    const {authToken} = getState().app
     const project = projects && projects[0] || {}
     dispatch({project, type: CREATE_PROJECT})
     // Don't use normal saveUser to be able to distinguish between project creation and user saving.
-    return dispatch(wrapAsyncAction(CREATE_PROJECT_SAVE, () => userPost(getState().user)))
+    return dispatch(wrapAsyncAction(
+      CREATE_PROJECT_SAVE, () => userPost(getState().user, authToken)))
   }
 }
 
 function modifyProject(project) {
   return dispatch => {
+    push(`${Routes.PROFILE_PAGE}/profil`)
     dispatch({project, type: MODIFY_PROJECT})
-    browserHistory.push(`${Routes.PROFILE_PAGE}/profil`)
   }
 }
 
+// TODO(cyrille): Clean-up since unused.
 function moveUserDatesBackOneDay() {
   return (dispatch, getState) => {
     dispatch({type: MOVE_USER_DATES_BACK_1_DAY})
@@ -636,5 +632,5 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   getVolunteeringMissions, sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
   landingPageSectionIsShown, getCommutingCities, bobScoreIsShown, getResumeTips,
   getInterviewTips, openRegistrationModal, sendNewAdviceIdea, computeAdvicesForProject,
-  getEvalUseCasePools, getEvalUseCases, getEvents,
+  getEvalUseCasePools, getEvalUseCases, getEvents, getExpandedCardContent,
 }

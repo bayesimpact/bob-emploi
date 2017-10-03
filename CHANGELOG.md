@@ -1,5 +1,79 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2017-10-16_00
+
+- Add Cyrille and Chema to the Team Page.
+- Fix the expanded Events card.
+- Fix many typos and small annoying UX quirks (modal showing at the wrong moment).
+- Stop telling sociologists to become archeologists.
+- Ensure that new users created from Facebook do not collide with existing users.
+- Under the hood prepare for more personalization for the network cards.
+
+Nerd improvements:
+- Upgrade to React Fiber.
+- Use headless Chrome instead of PhantomJS to run tests (it uses less RAM).
+Deployed on Mon, 16 Oct 2017 14:11:35 +0000
+
+# 2017-10-12_00
+
+- Add a user feedback in the Transparency Page
+- Reduce the loading time by discarding some libraries not used that much.
+
+Deployed on Thu, 12 Oct 2017 11:44:06 +0000
+
+# 2017-10-09_01
+
+- Switch Bob Score to a tab instead of a modal.
+- Update user count on Transparency Page.
+- Small adjustement for Seasonal Jobbing advice triggering.
+
+Internals:
+- Add endpoint to handle employment status survey.
+- Harmonize endpoints to get expanded card data and rely on the advice ID.
+Deployed on Mon, 09 Oct 2017 15:10:39 +0000
+
+# 2017-10-02_00
+
+- Fix some live errors found by Sentry.
+- Do not show the confidentiality page, once the user has seen it once.
+- Under the hood: expended card for the seasonal-relocate advice.
+Deployed on Tue, 03 Oct 2017 09:36:17 +0000
+
+# 2017-09-27_00
+
+- Various bugfixes and improvements.
+- Improve user authentication using token.
+- Focus Email: Spontaneous Applications.
+- Improve Slack integration.
+Deployed on Thu, 28 Sep 2017 08:07:55 +0000
+
+# 2017-09-26_00
+
+Externally visible:
+- Launch WorkUp events for all users.
+- Fix Team & Transparency pages on mobile.
+- Slight improvements for the Eval tool (left panel, check icon at 10 use cases evaluated).
+
+Internals:
+- Add utm_source=bob-emploi to all links going to tousbenevoles.org.
+- Under the hood, make progress on strong authentication in the API.
+- Refactor the scoring models in separate modules.
+- Upgrade to Webpack 3 and React Router 4.
+- Separate auth and analytics token for demo and prod.
+- Under the hood, make progress on Seasonal Jobbing advice module.
+- Improve performance on server by using threads to do logging.
+
+Deployed on Tue, 26 Sep 2017 08:49:43 +0000
+
+# 2017-09-18_00
+
+- Various improvements on team page.
+- Preparation for better user authentication.
+- More robust advisor and better error handling.
+- Improved authentication for eval tool.
+
+Deployed on Mon, 18 Sep 2017 15:17:09 +0000
+
 # 2017-09-14_00
 
 Rewording of all static pages, bios in Team Page.

@@ -23,7 +23,7 @@ class VolunteeringMissionImporterTestCase(unittest.TestCase):
     <JobId>12345</JobId>
     <JobDescription>Mission proposée par Bayes Impact&lt;br /&gt;'''
             '''&lt;b&gt;Informations complémentaires&lt;/b&gt;Nothing</JobDescription>
-    <applyURL>https://www.example.com/yes</applyURL>
+    <applyURL>https://www.example.com/yes?param=true</applyURL>
     <PostalCode>69006</PostalCode>
   </job>
   <job>
@@ -42,6 +42,12 @@ class VolunteeringMissionImporterTestCase(unittest.TestCase):
 
         self.assertEqual({'69', '75'}, missions.keys())
         self.assertEqual(['Cool Mission #2'], [m.title for m in missions['75'].missions])
+        self.assertEqual(
+            'https://www.example.com/no?utm_source=bob-emploi',
+            missions['75'].missions[0].link)
+        self.assertEqual(
+            'https://www.example.com/yes?param=true&utm_source=bob-emploi',
+            missions['69'].missions[0].link)
 
     @mock.patch(requests.__name__ + '.get')
     def test_country_wide(self, mock_get):

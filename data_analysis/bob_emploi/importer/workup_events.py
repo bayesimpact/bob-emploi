@@ -21,7 +21,7 @@ _LAT_BUFFER = math.degrees(_BUFFER_KILOMETER / 6371)
 _LNG_BUFFER = math.degrees(_BUFFER_KILOMETER / 6371 / math.cos(math.radians(45)))
 
 # URL of an event page.
-_WORKUP_EVENT_URL = 'https://www.workuper.com/events/%s'
+_WORKUP_EVENT_URL = 'https://www.workuper.com/events/{}'
 
 
 def events2dicts(events_json, departement_bounds_csv):
@@ -49,16 +49,16 @@ def _is_valid_event(event):
 
     # Do not display events that are only to create a new company as we do not
     # cover that case yet.
-    # TODO(pascal): Drop this extra json.loads if/when WorkUp fixes their JSON export.
-    categories = json.loads(event['category'])
-    if categories == ['Créer sa boite']:
+    if not isinstance(event['category'], list):
+        raise ValueError('category field should be a list:\n{}'.format(event))
+    if event['category'] == ['Créer sa boite']:
         return False
 
     return True
 
 
 def _workup_to_proto(event, departements):
-    if event.get('address', '').strip().lower() == 'en ligne':
+    if event.get('address', '').strip().lower() in ('en ligne', 'internet'):
         geo_filters = []
     else:
         close_departements = departements[
@@ -67,14 +67,15 @@ def _workup_to_proto(event, departements):
             (departements.max_longitude + _LNG_BUFFER >= event['longitude']) &
             (departements.min_longitude - _LNG_BUFFER <= event['longitude'])]
         if close_departements.empty:
-            raise ValueError('Event is next to no French départements:\n%s', event)
-        geo_filters = ['for-departement(%s)' % ','.join(sorted(close_departements.departement_id))]
+            raise ValueError('Event is next to no French départements:\n{}'.format(event))
+        geo_filters = [
+            'for-departement({})'.format(','.join(sorted(close_departements.departement_id)))]
 
     # TODO(pascal): Add better filters for reorientation.
     return {
         '_id': event['id'],
         'filters': geo_filters,
-        'link': _WORKUP_EVENT_URL % event['slug'],
+        'link': _WORKUP_EVENT_URL.format(event['slug']),
         'organiser': event['organiser'],
         'startDate': event['date'],
         'title': event['title'],

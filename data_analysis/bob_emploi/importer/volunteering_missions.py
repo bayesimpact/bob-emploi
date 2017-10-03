@@ -35,6 +35,11 @@ def get_missions_dicts():
     missions['departement'] = missions.PostalCode.str[:2]
     missions.loc[missions.departement == '96', 'departement'] = missions.PostalCode.str[:3]
 
+    # Add an utm_source=bob-emploi parameter to links.
+    missions['link'] = (missions.link + '&utm_source=bob-emploi').\
+        where(missions.link.str.contains(r'\?'), other=(
+            missions.link + '?utm_source=bob-emploi'))
+
     # Identify missions available everywhere.
     all_post_codes = missions.groupby('JobId').PostalCode\
         .apply(lambda codes: ','.join(codes.sort_values()))

@@ -7,6 +7,7 @@ import "bob_emploi/frontend/api/company.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/options.proto";
+import "bob_emploi/frontend/api/seasonal_jobbing.proto";
 import "bob_emploi/frontend/api/training.proto";
 
 package bayes.bob;
@@ -164,7 +165,7 @@ message ProjectFeedback {
   map<string, bool> useful_advice_modules = 3;
 }
 
-// Next ID: 25.
+// Next ID: 26.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -213,6 +214,9 @@ message Advice {
 
     // Extra data needed for the "training" advice.
     Trainings training_data = 20;
+
+    // Extra data needed for the "seasonal_relocate" advice.
+    MonthlySeasonalJobbingStats seasonal_data = 25;
   }
 
   // The score the user gave to the piece of advice. A low score means they do

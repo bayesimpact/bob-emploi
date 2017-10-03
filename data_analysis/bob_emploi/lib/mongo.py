@@ -33,7 +33,7 @@ class Importer(object):
 
     def import_in_collection(self, items, collection_name=None):
         """Import items in a MongoDB collection."""
-        unique_suffix = '_%x' % round(time.time())
+        unique_suffix = '_{:x}'.format(round(time.time()))
         collection = self._collection_from_flags(
             collection_name, suffix=unique_suffix)
         collection.drop()
@@ -44,12 +44,10 @@ class Importer(object):
             # already cut it in small pieces:
             # https://api.mongodb.com/python/current/examples/bulk.html
             if not chunk_size or chunk_size >= total:
-                print('Inserting all %d objects at once.' % total)
+                print('Inserting all {:d} objects at once.'.format(total))
                 collection.insert_many(items)
             else:
-                print(
-                    'Inserting %d objects in chunks of %s' %
-                    (total, chunk_size))
+                print('Inserting {:d} objects in chunks of {}'.format(total, chunk_size))
                 for pos in tqdm.tqdm(range(0, total, chunk_size), file=sys.stdout):
                     try:
                         collection.insert_many(items[pos:pos + chunk_size])
@@ -266,7 +264,7 @@ def collection_to_proto_mapping(collection, proto_type):
         del document['_id']
 
         if document_id in ids:
-            raise KeyError('%s is a duplicate' % document_id)
+            raise KeyError('{} is a duplicate'.format(document_id))
         ids.add(document_id)
         yield document_id, parse_doc_to_proto(document, proto_type)
 
@@ -278,6 +276,6 @@ def parse_doc_to_proto(document, proto_type):
         json_format.Parse(json.dumps(document), proto)
     except json_format.ParseError as error:
         raise json_format.ParseError(
-            'Error while parsing item %s: %s\n%s' % (
+            'Error while parsing item {}: {}\n{}'.format(
                 id, error, json.dumps(document, indent=2)))
     return proto

@@ -43,6 +43,7 @@ from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import jobboard_pb2
+from bob_emploi.frontend.api import network_pb2
 
 # Regular expression to validate links, e.g http://bayesimpact.org. Keep in
 # sync with frontend/src/store/link.js.
@@ -69,12 +70,12 @@ class _ProtoAirtableConverter(collections.namedtuple(
         airtable_fields = set(airtable_record['fields'].keys())
         if not airtable_fields & proto_fields:
             raise KeyError(
-                'None of the AirTable fields (%s) correspond to the proto '
-                'fields (%s)' % (airtable_fields, proto_fields))
+                'None of the AirTable fields ({}) correspond to the proto '
+                'fields ({})'.format(airtable_fields, proto_fields))
         if not airtable_fields >= self.required_fields_set:
             raise KeyError(
-                'Some require fields are missing (%s) in the record: %s'
-                % (self.required_fields_set - airtable_fields, airtable_record))
+                'Some require fields are missing ({}) in the record: {}'
+                .format(self.required_fields_set - airtable_fields, airtable_record))
 
         # Convert all existing fields in the AirTable record to their proto
         # equivalent if they have one. The key (k) is converted to camelCase
@@ -110,12 +111,12 @@ class _ProtoAirtableConverter(collections.namedtuple(
             for filter_type in others:
                 filter_value = record['fields'].get(filter_type)
                 if filter_value:
-                    filters.append('%s(%s)' % (filter_type, filter_value))
+                    filters.append('{}({})'.format(filter_type, filter_value))
         for one_filter in filters:
             if not scoring.get_scoring_model(one_filter):
                 raise ValueError(
-                    '%s uses the filter "%s" that is not implemented yet'
-                    % (record_name, one_filter))
+                    '{} uses the filter "{}" that is not implemented yet'
+                    .format(record_name, one_filter))
         return filters
 
 
@@ -129,11 +130,11 @@ class _ActionTemplateConverter(_ProtoAirtableConverter):
         link = fields.get('link')
         if link and not _LINK_REGEXP.match(link):
             raise ValueError(
-                'Action template "%s" has an irregular link: %s.' % (fields['_id'], link))
+                'Action template "{}" has an irregular link: {}.'.format(fields['_id'], link))
 
         # Populate filters.
         filters = self._group_filter_fields(
-            airtable_record, 'Action template "%s"' % fields['_id'])
+            airtable_record, 'Action template "{}"'.format(fields['_id']))
         if filters:
             fields['filters'] = filters
 
@@ -148,8 +149,8 @@ class _AdviceModuleConverter(_ProtoAirtableConverter):
         trigger_scoring_model = fields.get('triggerScoringModel')
         if not scoring.get_scoring_model(trigger_scoring_model):
             raise ValueError(
-                'Advice module "%s" uses the scoring model "%s" that is not implemented yet'
-                % (fields['_id'], trigger_scoring_model))
+                'Advice module "{}" uses the scoring model "{}" that is not implemented yet'
+                .format(fields['_id'], trigger_scoring_model))
         if 'emailFacts' in fields:
             fields['emailFacts'] = fields['emailFacts'].split('\n')
         return fields
@@ -163,7 +164,7 @@ class _FilteredLinkConverter(_ProtoAirtableConverter):
 
         # Populate filters.
         filters = self._group_filter_fields(
-            airtable_record, 'The link "%s"' % fields['_id'],
+            airtable_record, 'The link "{}"'.format(fields['_id']),
             others=('for-departement', 'for-job-group'))
         if filters:
             fields['filters'] = filters
@@ -172,7 +173,25 @@ class _FilteredLinkConverter(_ProtoAirtableConverter):
         link = fields.get('link')
         if link and not _LINK_REGEXP.match(link):
             raise ValueError(
-                'Job Board "%s" has an irregular link: %s.' % (fields['_id'], link))
+                'Job Board "{}" has an irregular link: {}.'.format(fields['_id'], link))
+        return fields
+
+
+class _ContactLeadConverter(_ProtoAirtableConverter):
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+        fields = super(_ContactLeadConverter, self).convert_record(airtable_record)
+
+        # Populate filters.
+        filters = self._group_filter_fields(
+            airtable_record, 'The contact lead "{}"'.format(fields['_id']),
+            others=('for-departement', 'for-job-group'))
+        if filters:
+            fields['filters'] = filters
+
+        # TODO(pascal): Check that template vars are all implemented.
+
         return fields
 
 
@@ -187,7 +206,7 @@ class _DynamicAdviceConverter(_FilteredLinkConverter):
             parts = markdown_list.split('\n*', 1)
 
         if parts[0]:
-            fields['%sHeader%s' % (prefix, suffix)] = parts[0]
+            fields['{}Header{}'.format(prefix, suffix)] = parts[0]
 
         if len(parts) == 1:
             return
@@ -196,9 +215,9 @@ class _DynamicAdviceConverter(_FilteredLinkConverter):
         lines = [l.strip() for l in items.split('\n')]
         if not all(l.startswith('* ') for l in lines):
             raise ValueError(
-                'Error in field %s, it should be a markdown list with one line per item\n%s'
-                % (prefix + suffix, markdown_list))
-        fields['%sItems%s' % (prefix, suffix)] = [l[len('* '):] for l in lines]
+                'Error in field {}, it should be a markdown list with one line per item\n{}'
+                .format(prefix + suffix, markdown_list))
+        fields['{}Items{}'.format(prefix, suffix)] = [l[len('* '):] for l in lines]
 
     def convert_record(self, airtable_record):
         """Convert an AirTable record to a dict proto-Json ready."""
@@ -231,6 +250,8 @@ PROTO_CLASSES = {
     'DynamicAdvice': _DynamicAdviceConverter(
         advisor_pb2.DynamicAdvice, None,
         required_fields=['title', 'card_text', 'expanded_card_items', 'for-job-group']),
+    'ContactLead': _ContactLeadConverter(
+        network_pb2.ContactLeadTemplate, None, required_fields=('name', 'email_template')),
 }
 
 
@@ -279,7 +300,7 @@ def validate(values, proto_class):
         try:
             json_format.Parse(json.dumps(value), proto)
         except json_format.ParseError as error:
-            raise ValueError('Error while parsing:\n%s\n%s' % (
+            raise ValueError('Error while parsing:\n{}\n{}'.format(
                 json.dumps(value, indent=2), error))
         if _id is not None:
             value['_id'] = _id

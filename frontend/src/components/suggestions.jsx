@@ -340,6 +340,7 @@ class CitySuggest extends React.Component {
     const {cityId, population, zipCode, objectID, _highlightResult, ...city} = suggestion
     city.cityId = cityId || objectID
     city.postcodes = zipCode
+    city.population = population
     this.setState({cityName: city.name})
     onChange && onChange(city)
   }

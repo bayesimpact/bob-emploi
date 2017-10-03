@@ -13,7 +13,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
     """Unit tests for the Job Group Info importer."""
 
     rome_csv_pattern = path.join(
-        path.dirname(__file__), 'testdata/unix_%s_v327_utf8.csv')
+        path.dirname(__file__), 'testdata/unix_{}_v327_utf8.csv')
     job_requirements_json = path.join(
         path.dirname(__file__), 'testdata/job_offers/job_requirements.json')
     job_application_complexity_json = path.join(
@@ -44,6 +44,14 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             'name': 'Commerce/grande distribution',
             'domain_name': 'Commerce, négoce et distribution',
         })
+        rome_airtable.create('info_by_prefix', {
+            'rome_prefix': 'D',
+            'inDomain': 'dans le commerce',
+        })
+        rome_airtable.create('info_by_prefix', {
+            'rome_prefix': 'D15',
+            'inDomain': 'dans la grande distribution',
+        })
 
         collection = job_group_info.make_dicts(
             self.rome_csv_pattern,
@@ -52,7 +60,8 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             self.application_mode_csv,
             self.rome_fap_crosswalk_txt,
             'app01234567:advice:viw012345',
-            'app4242:domains')
+            'app4242:domains',
+            'app4242:info_by_prefix')
 
         self.assertEqual(532, len(collection))
         for info in collection:
@@ -98,6 +107,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual(
             30.27,
             d1501.application_modes['R2Z83'].modes[0].percentage)
+        self.assertEqual('dans la grande distribution', d1501.in_domain)
 
 
 if __name__ == '__main__':

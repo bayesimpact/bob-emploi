@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {browserHistory} from 'react-router'
 
 import content from './vision/content.txt'
 
@@ -10,11 +9,14 @@ import {Colors, Icon, Markdown, Button} from 'components/theme'
 
 class VisionPage extends React.Component {
   static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
     isMobileVersion: PropTypes.bool,
   }
 
   render() {
-    const {isMobileVersion} = this.context
+    const {isMobileVersion, history} = this.context
     const leftTitleStyle = {
       color: Colors.SLATE,
       fontSize: 35,
@@ -44,7 +46,7 @@ class VisionPage extends React.Component {
         <div style={{margin: '50px 0', textAlign: 'right'}}>
           <Button
             style={{fontSize: 17, padding: '10px 12px 8px 39px'}}
-            onClick={() => browserHistory.push(Routes.CONTRIBUTION_PAGE)}>
+            onClick={() => history.push(Routes.CONTRIBUTION_PAGE)}>
             <span style={{paddingRight: '1em'}}>
               Contribuer
             </span>

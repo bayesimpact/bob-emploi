@@ -1,0 +1,1076 @@
+[
+  {
+    "_id" : ObjectId("582c2cb862893d0007fcacbc"),
+    "createdAt" : "2016-11-16T09:54:00.517577Z",
+    "chantiers" : {
+      "reccJ8fxmUgsXqxoB" : {
+        "scoringModel" : "chantier-contract-type(interim)",
+        "incentive" : "car c'est un très bon moyen de se lancer dans un métier quand le marché est difficile",
+        "chantierId" : "reccJ8fxmUgsXqxoB",
+        "title" : "Envisagez les missions en intérim",
+        "titleFirstPerson" : "envisager les missions en intérim",
+        "kind" : "INCREASE_AVAILABLE_OFFERS"
+      },
+      "recOSLLTcx5EcQYHl" : {
+        "scoringModel" : "constant(2)",
+        "incentive" : "nous vous aiderons à identifier les aides que vous pourriez demander",
+        "chantierId" : "recOSLLTcx5EcQYHl",
+        "title" : "Découvrez les aides financières auxquelles vous avez droit",
+        "titleFirstPerson" : "découvrir les aides financières auxquelles j'ai droit",
+        "kind" : "UNLOCK_NEW_LEADS"
+      },
+      "recy3Sr4T7mnor8kX" : {
+        "scoringModel" : "chantier-contract-type(CDD)",
+        "incentive" : "car les CDD permettent aussi souvent de déboucher sur des CDI",
+        "chantierId" : "recy3Sr4T7mnor8kX",
+        "title" : "Regardez également des offres en CDD",
+        "titleFirstPerson" : "regarder également des offres en CDD",
+        "kind" : "INCREASE_AVAILABLE_OFFERS"
+      },
+      "recmZKvRrJCfjkP1d" : {
+        "scoringModel" : "chantier-part-time",
+        "incentive" : "car un contrat de moins de 35h par semaine peut être une bonne passerelle vers un emploi à plein temps",
+        "chantierId" : "recmZKvRrJCfjkP1d",
+        "title" : "Regardez également des offres en temps partiel",
+        "titleFirstPerson" : "regarder également des offres en temps partiel",
+        "kind" : "INCREASE_AVAILABLE_OFFERS"
+      },
+      "rec91fcbhNiDdqoSn" : {
+        "scoringModel" : "chantier-stay-motivated",
+        "incentive" : "nous vous proposerons des actions pour prendre soin de vous et préserver votre motivation",
+        "chantierId" : "rec91fcbhNiDdqoSn",
+        "title" : "Gardez votre moral au top",
+        "titleFirstPerson" : "garder mon moral au top",
+        "kind" : "IMPROVE_SUCCESS_RATE"
+      },
+      "rec9yEocagBZQqBB1" : {
+        "scoringModel" : "chantier-organize",
+        "incentive" : "nous vous aiderons à rester au top dans votre organisation",
+        "chantierId" : "rec9yEocagBZQqBB1",
+        "title" : "Soyez encore plus efficace dans votre recherche",
+        "titleFirstPerson" : "être encore plus efficace dans ma recherche",
+        "kind" : "IMPROVE_SUCCESS_RATE"
+      },
+      "recvEk9a4zOznPQU1" : {
+        "scoringModel" : "chantier-get-more-offers",
+        "incentive" : "nous vous aiderons à cibler des entreprises auxquelles on ne pense pas forcément",
+        "chantierId" : "recvEk9a4zOznPQU1",
+        "title" : "Cherchez auprès de types d’entreprises différents",
+        "titleFirstPerson" : "chercher auprès de types d'entreprises différents",
+        "kind" : "UNLOCK_NEW_LEADS"
+      },
+      "recY7emXfLAZ6kwSj" : {
+        "scoringModel" : "chantier-training",
+        "incentive" : "nous vous aiderons à construire votre projet de formation",
+        "chantierId" : "recY7emXfLAZ6kwSj",
+        "title" : "Préparez un diplôme ou une certification",
+        "titleFirstPerson" : "préparer un diplôme ou une certification",
+        "kind" : "INCREASE_AVAILABLE_OFFERS"
+      },
+      "recJp1piJLGnVDTz0" : {
+        "scoringModel" : "chantier-subsidized-contract",
+        "incentive" : "car c'est un excellent moyen de s'insérer dans un métier quand on est dans une situation difficile",
+        "chantierId" : "recJp1piJLGnVDTz0",
+        "title" : "Renseignez-vous sur les contrats aidés",
+        "titleFirstPerson" : "me renseigner sur les contrats aidés",
+        "kind" : "UNLOCK_NEW_LEADS"
+      },
+      "rec2qz1yvVzEysaTd" : {
+        "scoringModel" : "chantier-spontaneous-application",
+        "incentive" : "car beaucoup d'entreprises recrutent sans diffuser d'annonces",
+        "chantierId" : "rec2qz1yvVzEysaTd",
+        "title" : "Ciblez davantage les offres d'emploi cachées",
+        "titleFirstPerson" : "cibler davantage les offres d'emploi cachées",
+        "kind" : "IMPROVE_SUCCESS_RATE"
+      },
+      "rec6XRNNb9CX6NpiP" : {
+        "scoringModel" : "chantier-interview",
+        "incentive" : "nous vous aiderons à préparer vos réponses et à vous entrainer avant le jour J",
+        "chantierId" : "rec6XRNNb9CX6NpiP",
+        "title" : "Préparez-vous mieux à l'entretien d'embauche",
+        "titleFirstPerson" : "mieux me préparer à l'entretien d'embauche",
+        "kind" : "IMPROVE_SUCCESS_RATE"
+      }
+    },
+    "projects" : [
+      {
+        "source" : "PROJECT_MANUALLY_CREATED",
+        "jobSearchLengthMonths" : 19,
+        "title" : "Assistant administratif à Sochaux",
+        "workloads" : [
+          "FULL_TIME"
+            ],
+            "kind" : "FIND_JOB",
+            "networkEstimate" : 1,
+            "totalInterviewsEstimate" : "DECENT_AMOUNT",
+            "activatedChantiers" : {
+              "recmZKvRrJCfjkP1d" : true,
+              "recHruwJ1nAF5BJYb" : false,
+              "rec9yEocagBZQqBB1" : true,
+              "recY7emXfLAZ6kwSj" : true,
+              "rec2qz1yvVzEysaTd" : true,
+              "rec6XRNNb9CX6NpiP" : true,
+              "recJp1piJLGnVDTz0" : true,
+              "reccJ8fxmUgsXqxoB" : true,
+              "recOSLLTcx5EcQYHl" : true,
+              "recvEk9a4zOznPQU1" : true,
+              "rec91fcbhNiDdqoSn" : true,
+              "recy3Sr4T7mnor8kX" : true
+            },
+            "intensity" : "PROJECT_FIGURING_INTENSITY",
+            "projectId" : "582c2b7c-4762",
+            "actionsGeneratedAt" : "2016-11-16T09:49:58.380481Z",
+            "createdAt" : "2016-11-16T09:48:43.760750Z",
+            "seniority" : "INTERMEDIARY",
+            "employmentTypes" : [
+              "CDI"
+            ],
+            "weeklyApplicationsEstimate" : "LESS_THAN_2",
+            "status" : "PROJECT_CURRENT",
+            "targetJob" : {
+              "name" : "Assistant administratif / Assistante administrative",
+              "jobGroup" : {
+                "name" : "Secrétariat",
+                "romeId" : "M1607"
+              },
+              "codeOgr" : "11183",
+              "masculineName" : "Assistant administratif",
+              "feminineName" : "Assistante administrative"
+            },
+            "diplomaFulfillmentEstimate" : "NOTHING_REQUIRED",
+            "mobility" : {
+              "areaType" : "CITY",
+              "city" : {
+                "name" : "Sochaux",
+                "regionId" : "27",
+                "departementName" : "Doubs",
+                "postcodes" : "25600",
+                "departementId" : "25",
+                "cityId" : "25547",
+                "regionName" : "Bourgogne-Franche-Comté"
+              }
+            },
+            "actions" : [
+              {
+                "actionId" : "582c2b7c-4762-recnZTNPkUovpFBHs-582c2bc6-8a53",
+                "actionTemplateId" : "recnZTNPkUovpFBHs",
+                "title" : "Trouver la formation qui correspond à mes besoins",
+                "shortDescription" : "Entrez vos critères : domaine, lieu, niveau de diplôme, etc. Vous accéderez ainsi à une liste de formations diplomantes et certifiantes qui correspondent à vos souhaits.",
+                "status" : "ACTION_DECLINED",
+                "createdAt" : "2016-11-16T09:49:58.383246Z",
+                "link" : "http://www.cursuspro.com/cursus-go/(type)/domaine",
+                "chantiers" : [
+                  {
+                    "chantierId" : "recY7emXfLAZ6kwSj",
+                    "title" : "Préparez un diplôme ou une certification",
+                    "titleFirstPerson" : "préparer un diplôme ou une certification"
+                  }
+                ],
+                "stoppedAt" : "2016-11-16T09:52:36.308627Z"
+              },
+              {
+                "doneFeedback" : "Ça ne m'a pas aidé",
+                "actionId" : "582c2b7c-4762-recF6kpMgD3kVXQ61-582c2bc6-94e2",
+                "link" : "https://www.keljob.com/editorial/chercher-un-emploi/mener-sa-recherche-demploi/detail/article/8-facons-de-rater-sa-candidature-spontanee.html",
+                "title" : "Lire les 8 erreurs à éviter lorsque je fais une candidature spontanée",
+                "shortDescription" : "Vous sollicitez une entreprise qui ne vous a rien demandé ? Vous avez raison : votre démarche peut aboutir sur un poste, à condition de suivre un certain nombre de bonnes pratiques. Lisez l'article proposé pour éviter les erreurs classiques et réussir vos candidatures spontanées.",
+                "status" : "ACTION_DONE",
+                "createdAt" : "2016-11-16T09:49:58.383343Z",
+                "actionTemplateId" : "recF6kpMgD3kVXQ61",
+                "chantiers" : [
+                  {
+                    "chantierId" : "rec2qz1yvVzEysaTd",
+                    "title" : "Ciblez davantage les offres d'emploi cachées",
+                    "titleFirstPerson" : "cibler davantage les offres d'emploi cachées"
+                  }
+                ],
+                "stoppedAt" : "2016-11-16T09:52:51.635507Z"
+              }
+            ],
+            "shortDescription" : "This is a dummy short description. We will add something better in the future.",
+            "coverImageUrl" : "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/M1607.jpg",
+            "weeklyOffersEstimate" : "LESS_THAN_2",
+            "previousJobSimilarity" : "DONE_THIS"
+      }
+    ]
+  },
+  {
+    "_id" : ObjectId("582b979fb373ac0009110dfa"),
+    "createdAt" : "2016-11-15T23:17:51.466141Z",
+    "projects" : [
+      {
+        "source" : "PROJECT_MANUALLY_CREATED",
+        "createdAt" : "2016-11-15T23:17:26.833410Z",
+        "mobility" : {
+          "city" : {
+            "departementName" : "Rhône",
+            "postcodes" : "69001-69002-69003-69004-69005-69006-69007-69008-69009",
+            "departementId" : "69",
+            "regionId" : "84",
+            "regionName" : "Auvergne-Rhône-Alpes",
+            "name" : "Lyon",
+            "cityId" : "69123"
+          },
+          "areaType" : "CITY"
+        },
+        "previousJobSimilarity" : "DONE_THIS",
+        "title" : "Chef de produit à Lyon",
+        "actionsGeneratedAt" : "2016-11-15T23:17:38.639131Z",
+        "diplomaFulfillmentEstimate" : "NOTHING_REQUIRED",
+        "workloads" : [
+          "FULL_TIME"
+        ],
+        "activatedChantiers" : {
+          "reccJ8fxmUgsXqxoB" : true,
+          "recY7emXfLAZ6kwSj" : true,
+          "recDJbIakmNXajJOB" : true,
+          "rec91fcbhNiDdqoSn" : true,
+          "rec6XRNNb9CX6NpiP" : true,
+          "recy3Sr4T7mnor8kX" : true,
+          "recHruwJ1nAF5BJYb" : true,
+          "recprlmEghKRsqH8o" : true,
+          "recYETBPqTK4TCyKQ" : true,
+          "recEmfRver85zzw4C" : true,
+          "rec9yEocagBZQqBB1" : true,
+          "recOSLLTcx5EcQYHl" : true
+        },
+        "employmentTypes" : [
+          "CDI"
+        ],
+        "weeklyOffersEstimate" : "DECENT_AMOUNT",
+        "coverImageUrl" : "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/M1703.jpg",
+        "shortDescription" : "This is a dummy short description. We will add something better in the future.",
+        "actions" : [
+          {
+            "stoppedAt" : "2016-11-15T23:17:48.896448Z",
+            "createdAt" : "2016-11-15T23:17:38.640600Z",
+            "actionTemplateId" : "recO6RjK0h0WDlon0",
+            "chantiers" : [
+              {
+                "title" : "Avancez dans vos candidatures",
+                "chantierId" : "recpfsVR2dnn91B0t",
+                "titleFirstPerson" : "avancer dans mes candidatures"
+              }
+            ],
+            "actionId" : "582b9787-c8df-recO6RjK0h0WDlon0-582b9793-7611",
+            "shortDescription" : "Regarder sur le site de Pôle emploi le nombre d'offres correspondant à vos critères, cela vous permettra de mieux connaître le marché pour le métier qui vous intéresse.",
+            "title" : "Découvrir les entreprises susceptibles de recruter qui pourraient m'intéresser",
+            "link" : "http://labonneboite.pole-emploi.fr/entreprises/Lyon-69000/management-et-gestion-de-produit?sort=distance&d=10&h=1",
+            "status" : "ACTION_DONE",
+            "doneFeedback" : "Ça m'a aidé"
+          },
+          {
+            "createdAt" : "2016-11-15T23:17:38.642249Z",
+            "actionTemplateId" : "reclIP1ZHwFizwf8c",
+            "chantiers" : [
+              {
+                "title" : "Utilisez davantage votre réseau",
+                "chantierId" : "recEmfRver85zzw4C",
+                "titleFirstPerson" : "utiliser davantage mon réseau"
+              }
+            ],
+            "actionId" : "582b9787-c8df-reclIP1ZHwFizwf8c-582b9793-2a79",
+            "title" : "Faire une liste des personnes qui pourraient m'aider dans ma recherche",
+            "link" : "http://www.monster.fr/conseil-carriere/article/cultiver-son-reseau-professionnel",
+            "status" : "ACTION_UNREAD",
+            "shortDescription" : "Faites une liste des gens qui dans votre entourage pourraient vous aider dans votre recherche. Nous vous aiderons par la suite à travers des actions concrètes à les contacter."
+          },
+          {
+            "createdAt" : "2016-11-15T23:17:38.642313Z",
+            "actionTemplateId" : "reczU4CaEUJwumGvX",
+            "chantiers" : [
+              {
+                "title" : "Rendez vos CV et lettre de motivation plus percutants",
+                "chantierId" : "recHruwJ1nAF5BJYb",
+                "titleFirstPerson" : "rendre mes CV et lettre de motivation plus percutants"
+              }
+            ],
+            "actionId" : "582b9787-c8df-reczU4CaEUJwumGvX-582b9793-5f00",
+            "title" : "Améliorer mon CV en utilisant des verbes d'action",
+            "link" : "https://www.cadremploi.fr/editorial/conseils/conseils-candidature/cv/detail/article/les-verbes-a-utiliser-dans-son-cv.html",
+            "status" : "ACTION_UNREAD",
+            "shortDescription" : "63 % des recruteurs préfèrent les CV avec des verbes. Cet article explique pourquoi c’est important pour les recruteurs et lesquels choisir pour votre candidature."
+          },
+          {
+            "createdAt" : "2016-11-15T23:17:38.642389Z",
+            "actionTemplateId" : "recc9C6ehy0DFvLTW",
+            "chantiers" : [
+              {
+                "title" : "Gardez votre moral au top",
+                "chantierId" : "rec91fcbhNiDdqoSn",
+                "titleFirstPerson" : "garder mon moral au top"
+              }
+            ],
+            "actionId" : "582b9787-c8df-recc9C6ehy0DFvLTW-582b9793-ae81",
+            "title" : "Ne pas oublier de m'aérer l'esprit au moins une fois par semaine",
+            "link" : "https://www.keljob.com/editorial/chercher-un-emploi/mener-sa-recherche-demploi/detail/article/comment-eviter-de-ruiner-sa-vie-privee-quand-on-cherche-un-emploi.html",
+            "status" : "ACTION_UNREAD",
+            "shortDescription" : "Concilier vie personnelle et vie professionnelle est aussi important pour un chercheur d’emploi que pour un travailleur. D’autant que la recherche peut être une période longue et éprouvante. Cet article donne quelques astuces pour ne pas mettre sa vie privée en danger quand on cherche un job."
+          }
+        ],
+        "totalInterviewsEstimate" : "SOME",
+        "status" : "PROJECT_CURRENT",
+        "intensity" : "PROJECT_PRETTY_INTENSE",
+        "jobSearchLengthMonths" : 11,
+        "weeklyApplicationsEstimate" : "SOME",
+        "networkEstimate" : 3,
+        "projectId" : "582b9787-c8df",
+        "seniority" : "EXPERT",
+        "kind" : "FIND_JOB",
+        "targetJob" : {
+          "masculineName" : "Chef de produit",
+          "jobGroup" : {
+            "romeId" : "M1703",
+            "name" : "Management et gestion de produit"
+          },
+          "feminineName" : "Chef de produit",
+          "name" : "Chef de produit",
+          "codeOgr" : "12218"
+        }
+      }
+    ],
+    "chantiers" : {
+      "reccJ8fxmUgsXqxoB" : {
+        "scoringModel" : "chantier-contract-type(interim)",
+        "title" : "Envisagez les missions en intérim",
+        "chantierId" : "reccJ8fxmUgsXqxoB",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "titleFirstPerson" : "envisager les missions en intérim",
+        "incentive" : "car c'est un très bon moyen de se lancer dans un métier quand le marché est difficile"
+      },
+      "recprlmEghKRsqH8o" : {
+        "scoringModel" : "chantier-stand-out",
+        "title" : "Démarquez-vous de la concurrence",
+        "chantierId" : "recprlmEghKRsqH8o",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "titleFirstPerson" : "me démarquer de la concurrence",
+        "incentive" : "quelques astuces pour sortir du lot quand la concurrence est rude"
+      },
+      "recDJbIakmNXajJOB" : {
+        "scoringModel" : "chantier-international",
+        "title" : "Regardez des opportunités à l’international",
+        "chantierId" : "recDJbIakmNXajJOB",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "titleFirstPerson" : "regarder des opportunités à l’international",
+        "incentive" : "nous vous aiderons à construire votre projet de départ à l'étranger"
+      },
+      "rec91fcbhNiDdqoSn" : {
+        "scoringModel" : "chantier-stay-motivated",
+        "title" : "Gardez votre moral au top",
+        "chantierId" : "rec91fcbhNiDdqoSn",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "titleFirstPerson" : "garder mon moral au top",
+        "incentive" : "nous vous proposerons des actions pour prendre soin de vous et préserver votre motivation"
+      },
+      "rec6XRNNb9CX6NpiP" : {
+        "scoringModel" : "chantier-interview",
+        "title" : "Préparez-vous mieux à l'entretien d'embauche",
+        "chantierId" : "rec6XRNNb9CX6NpiP",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "titleFirstPerson" : "mieux me préparer à l'entretien d'embauche",
+        "incentive" : "nous vous aiderons à préparer vos réponses et à vous entrainer avant le jour J"
+      },
+      "recy3Sr4T7mnor8kX" : {
+        "scoringModel" : "chantier-contract-type(CDD)",
+        "title" : "Regardez également des offres en CDD",
+        "chantierId" : "recy3Sr4T7mnor8kX",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "titleFirstPerson" : "regarder également des offres en CDD",
+        "incentive" : "car les CDD permettent aussi souvent de déboucher sur des CDI"
+      },
+      "recHruwJ1nAF5BJYb" : {
+        "scoringModel" : "chantier-resume",
+        "title" : "Rendez vos CV et lettre de motivation plus percutants",
+        "chantierId" : "recHruwJ1nAF5BJYb",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "titleFirstPerson" : "rendre mes CV et lettre de motivation plus percutants",
+        "incentive" : "même si vous avez déjà un bon CV, nous vous aiderons à obtenir plus de réponses"
+      },
+      "recY7emXfLAZ6kwSj" : {
+        "scoringModel" : "chantier-training",
+        "title" : "Préparez un diplôme ou une certification",
+        "chantierId" : "recY7emXfLAZ6kwSj",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "titleFirstPerson" : "préparer un diplôme ou une certification",
+        "incentive" : "nous vous aiderons à construire votre projet de formation"
+      },
+      "recYETBPqTK4TCyKQ" : {
+        "scoringModel" : "chantier-job-discovery",
+        "title" : "Regardez d'autres métiers qui pourraient vous intéresser",
+        "chantierId" : "recYETBPqTK4TCyKQ",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "titleFirstPerson" : "regarder d'autres métiers qui pourraient m'intéresser",
+        "incentive" : "nous vous aiderons à explorer des métiers qui pourraient vous offrir plus d'opportunités"
+      },
+      "recEmfRver85zzw4C" : {
+        "scoringModel" : "chantier-use-network",
+        "title" : "Utilisez davantage votre réseau",
+        "chantierId" : "recEmfRver85zzw4C",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "titleFirstPerson" : "utiliser davantage mon réseau",
+        "incentive" : "nous vous aiderons à vous appuyer sur votre réseau pour booster votre recherche"
+      },
+      "rec9yEocagBZQqBB1" : {
+        "scoringModel" : "chantier-organize",
+        "title" : "Soyez encore plus efficace dans votre recherche",
+        "chantierId" : "rec9yEocagBZQqBB1",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "titleFirstPerson" : "être encore plus efficace dans ma recherche",
+        "incentive" : "nous vous aiderons à rester au top dans votre organisation"
+      },
+      "recOSLLTcx5EcQYHl" : {
+        "scoringModel" : "constant(2)",
+        "title" : "Découvrez les aides financières auxquelles vous avez droit",
+        "chantierId" : "recOSLLTcx5EcQYHl",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "titleFirstPerson" : "découvrir les aides financières auxquelles j'ai droit",
+        "incentive" : "nous vous aiderons à identifier les aides que vous pourriez demander"
+      }
+    }
+  },
+  {
+    "_id" : ObjectId("582c21e34169cf0009fc87c7"),
+    "createdAt" : "2016-11-16T09:07:47.467329Z",
+    "projects" : [
+      {
+        "activatedChantiers" : {
+          "rec9W3FpHBsUXADBu" : true,
+          "recy3Sr4T7mnor8kX" : true,
+          "recY7emXfLAZ6kwSj" : true,
+          "recEmfRver85zzw4C" : true,
+          "rec2qz1yvVzEysaTd" : true,
+          "reccJ8fxmUgsXqxoB" : true,
+          "recJp1piJLGnVDTz0" : true,
+          "rec6XRNNb9CX6NpiP" : true,
+          "recmZKvRrJCfjkP1d" : true,
+          "recHruwJ1nAF5BJYb" : true,
+          "rec9yEocagBZQqBB1" : true,
+          "recvEk9a4zOznPQU1" : true,
+          "recHaOxPLO8iIVpUo" : true,
+          "rec91fcbhNiDdqoSn" : true
+        },
+        "minSalary" : 40000.0,
+        "weeklyApplicationsEstimate" : "LESS_THAN_2",
+        "targetJob" : {
+          "codeOgr" : "15559",
+          "masculineName" : "Infographiste",
+          "feminineName" : "Infographiste",
+          "name" : "Infographiste",
+          "jobGroup" : {
+            "romeId" : "E1205",
+            "name" : "Réalisation de contenus multimédias"
+          }
+        },
+        "kind" : "FIND_JOB",
+        "source" : "PROJECT_MANUALLY_CREATED",
+        "mobility" : {
+          "areaType" : "DEPARTEMENT",
+          "city" : {
+            "departementName" : "Drôme",
+            "postcodes" : "26000",
+            "departementId" : "26",
+            "regionName" : "Auvergne-Rhône-Alpes",
+            "name" : "Valence",
+            "cityId" : "26362",
+            "regionId" : "84"
+          }
+        },
+        "title" : "Infographiste à Valence",
+        "shortDescription" : "This is a dummy short description. We will add something better in the future.",
+        "intensity" : "PROJECT_NORMALLY_INTENSE",
+        "employmentTypes" : [
+          "CDI"
+        ],
+        "jobSearchLengthMonths" : 19,
+        "workloads" : [
+          "FULL_TIME"
+        ],
+        "seniority" : "SENIOR",
+        "status" : "PROJECT_CURRENT",
+        "actionsGeneratedAt" : "2016-11-16T09:04:31.918919Z",
+        "weeklyOffersEstimate" : "LESS_THAN_2",
+        "networkEstimate" : 2,
+        "diplomaFulfillmentEstimate" : "NOTHING_REQUIRED",
+        "projectId" : "582c209c-9550",
+        "createdAt" : "2016-11-16T09:02:20.075917Z",
+        "actions" : [
+          {
+            "createdAt" : "2016-11-16T09:04:31.920340Z",
+            "status" : "ACTION_DONE",
+            "title" : "Découvrir les entreprises susceptibles de recruter qui pourraient m'intéresser",
+            "shortDescription" : "Regarder sur le site de Pôle emploi le nombre d'offres correspondant à vos critères, cela vous permettra de mieux connaître le marché pour le métier qui vous intéresse.",
+            "actionTemplateId" : "recO6RjK0h0WDlon0",
+            "stoppedAt" : "2016-11-16T09:06:10.926917Z",
+            "doneFeedback" : "Ça m'a aidé",
+            "chantiers" : [
+              {
+                "chantierId" : "recpfsVR2dnn91B0t",
+                "title" : "Avancez dans vos candidatures",
+                "titleFirstPerson" : "avancer dans mes candidatures"
+              }
+            ],
+            "link" : "http://labonneboite.pole-emploi.fr/entreprises/Valence-26000/realisation-de-contenus-multimedias?sort=distance&d=10&h=1",
+            "actionId" : "582c209c-9550-recO6RjK0h0WDlon0-582c2120-c1c0"
+          },
+          {
+            "createdAt" : "2016-11-16T09:04:31.922064Z",
+            "status" : "ACTION_DONE",
+            "title" : "Faire une liste des personnes qui pourraient m'aider dans ma recherche",
+            "shortDescription" : "Faites une liste des gens qui dans votre entourage pourraient vous aider dans votre recherche. Nous vous aiderons par la suite à travers des actions concrètes à les contacter.",
+            "actionTemplateId" : "reclIP1ZHwFizwf8c",
+            "stoppedAt" : "2016-11-16T09:06:05.385201Z",
+            "doneFeedback" : "Ça m'a aidé",
+            "chantiers" : [
+              {
+                "chantierId" : "recEmfRver85zzw4C",
+                "title" : "Utilisez davantage votre réseau",
+                "titleFirstPerson" : "utiliser davantage mon réseau"
+              }
+            ],
+            "link" : "http://www.monster.fr/conseil-carriere/article/cultiver-son-reseau-professionnel",
+            "actionId" : "582c209c-9550-reclIP1ZHwFizwf8c-582c2120-9796"
+          },
+          {
+            "createdAt" : "2016-11-16T09:04:31.922132Z",
+            "status" : "ACTION_SNOOZED",
+            "title" : "Améliorer mon CV en utilisant des verbes d'action",
+            "shortDescription" : "63 % des recruteurs préfèrent les CV avec des verbes. Cet article explique pourquoi c’est important pour les recruteurs et lesquels choisir pour votre candidature.",
+            "actionTemplateId" : "reczU4CaEUJwumGvX",
+            "endOfCoolDown" : "2016-11-16T09:05:27.867941Z",
+            "stoppedAt" : "2016-11-16T09:05:27.867901Z",
+            "chantiers" : [
+              {
+                "chantierId" : "recHruwJ1nAF5BJYb",
+                "title" : "Rendez vos CV et lettre de motivation plus percutants",
+                "titleFirstPerson" : "rendre mes CV et lettre de motivation plus percutants"
+              }
+            ],
+            "link" : "https://www.cadremploi.fr/editorial/conseils/conseils-candidature/cv/detail/article/les-verbes-a-utiliser-dans-son-cv.html",
+            "actionId" : "582c209c-9550-reczU4CaEUJwumGvX-582c2120-2438"
+          },
+          {
+            "createdAt" : "2016-11-16T09:04:31.922213Z",
+            "status" : "ACTION_SNOOZED",
+            "title" : "Demander à un proche de relire mon CV",
+            "shortDescription" : "Demandez à vos proches de vous donner leur avis sur votre CV pour l'améliorer. Vous pouvez proposer au proche qui vous aide de lire cet article qui liste les éléments qui font un bon CV avant de relire le vôtre.",
+            "actionTemplateId" : "recQzU7okwrhl02xB",
+            "endOfCoolDown" : "2016-11-16T09:05:32.795376Z",
+            "stoppedAt" : "2016-11-16T09:05:32.795334Z",
+            "chantiers" : [
+              {
+                "chantierId" : "recHruwJ1nAF5BJYb",
+                "title" : "Rendez vos CV et lettre de motivation plus percutants",
+                "titleFirstPerson" : "rendre mes CV et lettre de motivation plus percutants"
+              }
+            ],
+            "link" : "http://www.adecco.be/cv-et-conseils/10-conseils-pour-un-bon-cv.aspx",
+            "actionId" : "582c209c-9550-recQzU7okwrhl02xB-582c2120-b0be"
+          }
+        ],
+        "coverImageUrl" : "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/E1205.jpg",
+        "previousJobSimilarity" : "DONE_THIS",
+        "totalInterviewsEstimate" : "LESS_THAN_2"
+      }
+    ],
+    "chantiers" : {
+      "rec9W3FpHBsUXADBu" : {
+        "title" : "Améliorez votre anglais",
+        "chantierId" : "rec9W3FpHBsUXADBu",
+        "incentive" : "car la maîtrise de cette langue est souvent nécessaire dans ce métier",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "scoringModel" : "chantier-english",
+        "titleFirstPerson" : "améliorer mon anglais"
+      },
+      "recy3Sr4T7mnor8kX" : {
+        "title" : "Regardez également des offres en CDD",
+        "chantierId" : "recy3Sr4T7mnor8kX",
+        "incentive" : "car les CDD permettent aussi souvent de déboucher sur des CDI",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "scoringModel" : "chantier-contract-type(CDD)",
+        "titleFirstPerson" : "regarder également des offres en CDD"
+      },
+      "recY7emXfLAZ6kwSj" : {
+        "title" : "Préparez un diplôme ou une certification",
+        "chantierId" : "recY7emXfLAZ6kwSj",
+        "incentive" : "nous vous aiderons à construire votre projet de formation",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "scoringModel" : "chantier-training",
+        "titleFirstPerson" : "préparer un diplôme ou une certification"
+      },
+      "recEmfRver85zzw4C" : {
+        "title" : "Utilisez davantage votre réseau",
+        "chantierId" : "recEmfRver85zzw4C",
+        "incentive" : "nous vous aiderons à vous appuyer sur votre réseau pour booster votre recherche",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "scoringModel" : "chantier-use-network",
+        "titleFirstPerson" : "utiliser davantage mon réseau"
+      },
+      "rec2qz1yvVzEysaTd" : {
+        "title" : "Ciblez davantage les offres d'emploi cachées",
+        "chantierId" : "rec2qz1yvVzEysaTd",
+        "incentive" : "car beaucoup d'entreprises recrutent sans diffuser d'annonces",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "scoringModel" : "chantier-spontaneous-application",
+        "titleFirstPerson" : "cibler davantage les offres d'emploi cachées"
+      },
+      "reccJ8fxmUgsXqxoB" : {
+        "title" : "Envisagez les missions en intérim",
+        "chantierId" : "reccJ8fxmUgsXqxoB",
+        "incentive" : "car c'est un très bon moyen de se lancer dans un métier quand le marché est difficile",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "scoringModel" : "chantier-contract-type(interim)",
+        "titleFirstPerson" : "envisager les missions en intérim"
+      },
+      "recJp1piJLGnVDTz0" : {
+        "title" : "Renseignez-vous sur les contrats aidés",
+        "chantierId" : "recJp1piJLGnVDTz0",
+        "incentive" : "car c'est un excellent moyen de s'insérer dans un métier quand on est dans une situation difficile",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "scoringModel" : "chantier-subsidized-contract",
+        "titleFirstPerson" : "me renseigner sur les contrats aidés"
+      },
+      "rec6XRNNb9CX6NpiP" : {
+        "title" : "Préparez-vous mieux à l'entretien d'embauche",
+        "chantierId" : "rec6XRNNb9CX6NpiP",
+        "incentive" : "nous vous aiderons à préparer vos réponses et à vous entrainer avant le jour J",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "scoringModel" : "chantier-interview",
+        "titleFirstPerson" : "mieux me préparer à l'entretien d'embauche"
+      },
+      "recmZKvRrJCfjkP1d" : {
+        "title" : "Regardez également des offres en temps partiel",
+        "chantierId" : "recmZKvRrJCfjkP1d",
+        "incentive" : "car un contrat de moins de 35h par semaine peut être une bonne passerelle vers un emploi à plein temps",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "scoringModel" : "chantier-part-time",
+        "titleFirstPerson" : "regarder également des offres en temps partiel"
+      },
+      "recHruwJ1nAF5BJYb" : {
+        "title" : "Rendez vos CV et lettre de motivation plus percutants",
+        "chantierId" : "recHruwJ1nAF5BJYb",
+        "incentive" : "même si vous avez déjà un bon CV, nous vous aiderons à obtenir plus de réponses",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "scoringModel" : "chantier-resume",
+        "titleFirstPerson" : "rendre mes CV et lettre de motivation plus percutants"
+      },
+      "rec9yEocagBZQqBB1" : {
+        "title" : "Soyez encore plus efficace dans votre recherche",
+        "chantierId" : "rec9yEocagBZQqBB1",
+        "incentive" : "nous vous aiderons à rester au top dans votre organisation",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "scoringModel" : "chantier-organize",
+        "titleFirstPerson" : "être encore plus efficace dans ma recherche"
+      },
+      "recvEk9a4zOznPQU1" : {
+        "title" : "Cherchez auprès de types d’entreprises différents",
+        "chantierId" : "recvEk9a4zOznPQU1",
+        "incentive" : "nous vous aiderons à cibler des entreprises auxquelles on ne pense pas forcément",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "scoringModel" : "chantier-get-more-offers",
+        "titleFirstPerson" : "chercher auprès de types d'entreprises différents"
+      },
+      "recHaOxPLO8iIVpUo" : {
+        "title" : "Envisagez de passer en freelance",
+        "chantierId" : "recHaOxPLO8iIVpUo",
+        "incentive" : "car c’est une excellente façon d’offrir vos compétences  quand le marché est bloqué pour votre niveau d’expérience",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "scoringModel" : "chantier-freelance",
+        "titleFirstPerson" : "envisager de passer en freelance"
+      },
+      "rec91fcbhNiDdqoSn" : {
+        "title" : "Gardez votre moral au top",
+        "chantierId" : "rec91fcbhNiDdqoSn",
+        "incentive" : "nous vous proposerons des actions pour prendre soin de vous et préserver votre motivation",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "scoringModel" : "chantier-stay-motivated",
+        "titleFirstPerson" : "garder mon moral au top"
+      }
+    }
+  },
+  {
+    "_id" : ObjectId("582c258227507a00099a64d0"),
+    "projects" : [
+      {
+        "actions" : [
+          {
+            "actionId" : "582c1aaa-14f8-recO6RjK0h0WDlon0-582c1c34-697b",
+            "title" : "Découvrir les entreprises susceptibles de recruter qui pourraient m'intéresser",
+            "endOfCoolDown" : "2016-11-16T08:49:14.596674Z",
+            "shortDescription" : "Regarder sur le site de Pôle emploi le nombre d'offres correspondant à vos critères, cela vous permettra de mieux connaître le marché pour le métier qui vous intéresse.",
+            "status" : "ACTION_SNOOZED",
+            "link" : "http://labonneboite.pole-emploi.fr/entreprises/Saint-Brieuc-22000/formation-professionnelle?sort=distance&d=10&h=1",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "avancer dans mes candidatures",
+                "title" : "Avancez dans vos candidatures",
+                "chantierId" : "recpfsVR2dnn91B0t"
+              }
+            ],
+            "stoppedAt" : "2016-11-16T08:49:14.596625Z",
+            "createdAt" : "2016-11-16T08:43:31.818449Z",
+            "actionTemplateId" : "recO6RjK0h0WDlon0"
+          },
+          {
+            "actionId" : "582c1aaa-14f8-reciHzb56h0bGaxOj-582c1c34-a747",
+            "title" : "Candidature du jour : envoyer une candidature spontanée à une entreprises qui recrute",
+            "actionTemplateId" : "reciHzb56h0bGaxOj",
+            "shortDescription" : "Les candidatures spontanées vous permettent d’être proactifs quand vous ne trouvez pas d’offre qui correspond à vos besoins. N'envoyez plus vos CV au hasard, ciblez les entreprises susceptibles de recruter près de chez vous grâce à cet outil. ",
+            "createdAt" : "2016-11-16T08:43:31.818601Z",
+            "link" : "http://labonneboite.pole-emploi.fr/entreprises/Saint-Brieuc-22000/formation-professionnelle?sort=distance&d=10&h=1",
+            "shortDescriptionFeminine" : "Les candidatures spontanées vous permettent d’être proactive quand vous ne trouvez pas d’offre qui correspond à vos besoins. N'envoyez plus vos CV au hasard, ciblez les entreprises susceptibles de recruter près de chez vous grâce à cet outil.",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "avancer dans mes candidatures",
+                "title" : "Avancez dans vos candidatures",
+                "chantierId" : "recpfsVR2dnn91B0t"
+              }
+            ],
+            "status" : "ACTION_CURRENT"
+          },
+          {
+            "actionId" : "582c1aaa-14f8-reclIP1ZHwFizwf8c-582c1c34-55cf",
+            "title" : "Faire une liste des personnes qui pourraient m'aider dans ma recherche",
+            "actionTemplateId" : "reclIP1ZHwFizwf8c",
+            "shortDescription" : "Faites une liste des gens qui dans votre entourage pourraient vous aider dans votre recherche. Nous vous aiderons par la suite à travers des actions concrètes à les contacter.",
+            "status" : "ACTION_DONE",
+            "link" : "http://www.monster.fr/conseil-carriere/article/cultiver-son-reseau-professionnel",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "utiliser davantage mon réseau",
+                "title" : "Utilisez davantage votre réseau",
+                "chantierId" : "recEmfRver85zzw4C"
+              }
+            ],
+            "stoppedAt" : "2016-11-16T09:23:03.657334Z",
+            "createdAt" : "2016-11-16T08:43:31.820291Z",
+            "doneFeedback" : "Ça m'a aidé"
+          },
+          {
+            "actionId" : "582c1aaa-14f8-reczU4CaEUJwumGvX-582c1c34-be05",
+            "title" : "Améliorer mon CV en utilisant des verbes d'action",
+            "endOfCoolDown" : "2016-11-16T08:50:00.553364Z",
+            "shortDescription" : "63 % des recruteurs préfèrent les CV avec des verbes. Cet article explique pourquoi c’est important pour les recruteurs et lesquels choisir pour votre candidature.",
+            "status" : "ACTION_SNOOZED",
+            "link" : "https://www.cadremploi.fr/editorial/conseils/conseils-candidature/cv/detail/article/les-verbes-a-utiliser-dans-son-cv.html",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "rendre mes CV et lettre de motivation plus percutants",
+                "title" : "Rendez vos CV et lettre de motivation plus percutants",
+                "chantierId" : "recHruwJ1nAF5BJYb"
+              }
+            ],
+            "stoppedAt" : "2016-11-16T08:50:00.553328Z",
+            "createdAt" : "2016-11-16T08:43:31.820359Z",
+            "actionTemplateId" : "reczU4CaEUJwumGvX"
+          },
+          {
+            "actionId" : "582c1aaa-14f8-recEpwCnOSMfW3vjm-582c1c34-10d0",
+            "title" : "Lire cet article sur les atouts à valoriser face à un recruteur quand on a plus de 50 ans",
+            "endOfCoolDown" : "2016-11-16T08:58:50.929620Z",
+            "shortDescription" : "Votre âge est atout, lisez cet article pour savoir comment le mettre en valeur face aux recruteurs.",
+            "status" : "ACTION_SNOOZED",
+            "link" : "https://www.keljob.com/editorial/chercher-un-emploi/mener-sa-recherche-demploi/detail/article/candidats-seniors-les-arguments-qui-font-mouche-aupres-des-recruteurs.html",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "explorer nos actions pour les plus de 50 ans",
+                "title" : "Explorez nos actions pour les plus de 50 ans",
+                "chantierId" : "recw7W85TVvAbCPo8"
+              }
+            ],
+            "stoppedAt" : "2016-11-16T08:58:50.929587Z",
+            "createdAt" : "2016-11-16T08:43:31.820440Z",
+            "actionTemplateId" : "recEpwCnOSMfW3vjm"
+          }
+        ],
+        "title" : "Formateur d'adultes à Saint-Brieuc",
+        "coverImageUrl" : "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/K2111.jpg",
+        "workloads" : [
+          "PART_TIME",
+          "FULL_TIME"
+        ],
+        "mobility" : {
+          "city" : {
+            "departementName" : "Côtes-d'Armor",
+            "postcodes" : "22000",
+            "name" : "Saint-Brieuc",
+            "regionId" : "53",
+            "regionName" : "Bretagne",
+            "cityId" : "22278",
+            "departementId" : "22"
+          },
+          "areaType" : "REGION"
+        },
+        "createdAt" : "2016-11-16T08:36:57.685304Z",
+        "weeklyApplicationsEstimate" : "SOME",
+        "totalInterviewsEstimate" : "DECENT_AMOUNT",
+        "jobSearchLengthMonths" : 10,
+        "targetJob" : {
+          "feminineName" : "Formatrice d'adultes",
+          "name" : "Formateur / Formatrice d'adultes",
+          "masculineName" : "Formateur d'adultes",
+          "jobGroup" : {
+            "name" : "Formation professionnelle",
+            "romeId" : "K2111"
+          },
+          "codeOgr" : "15131"
+        },
+        "status" : "PROJECT_CURRENT",
+        "weeklyOffersEstimate" : "LESS_THAN_2",
+        "employmentTypes" : [
+          "CDI"
+        ],
+        "previousJobSimilarity" : "DONE_THIS",
+        "activatedChantiers" : {
+          "recHaOxPLO8iIVpUo" : true,
+          "recvEk9a4zOznPQU1" : true,
+          "reccJ8fxmUgsXqxoB" : false,
+          "rec9W3FpHBsUXADBu" : true,
+          "recy3Sr4T7mnor8kX" : true,
+          "recprlmEghKRsqH8o" : true,
+          "rec91fcbhNiDdqoSn" : true,
+          "recEmfRver85zzw4C" : true,
+          "rec6XRNNb9CX6NpiP" : true,
+          "recw7W85TVvAbCPo8" : true,
+          "recY7emXfLAZ6kwSj" : true,
+          "rec9yEocagBZQqBB1" : true,
+          "recHruwJ1nAF5BJYb" : true
+        },
+        "shortDescription" : "This is a dummy short description. We will add something better in the future.",
+        "intensity" : "PROJECT_EXTREMELY_INTENSE",
+        "diplomaFulfillmentEstimate" : "NOTHING_REQUIRED",
+        "actionsGeneratedAt" : "2016-11-16T08:43:31.817058Z",
+        "kind" : "FIND_JOB",
+        "networkEstimate" : 2,
+        "source" : "PROJECT_MANUALLY_CREATED",
+        "projectId" : "582c1aaa-14f8",
+        "minSalary" : 37500.0,
+        "seniority" : "EXPERT"
+      },
+      {
+        "actions" : [
+          {
+            "actionId" : "582c20e1-cc2f-recugf8axp7wGOC6B-582c212c-4fd3",
+            "title" : "M'assurer d'avoir les compétences requises pour ce métier",
+            "endOfCoolDown" : "2016-11-16T09:06:35.636193Z",
+            "shortDescription" : "Prenez conscience des compétences réellement demandées par les employeurs en lisant les offres d'emploi.",
+            "status" : "ACTION_SNOOZED",
+            "link" : "https://candidat.pole-emploi.fr/candidat/rechercheoffres/resultats/A__DEPARTEMENT_22___P__________INDIFFERENT_________________K1801______",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "regarder d'autres métiers qui pourraient m'intéresser",
+                "title" : "Regardez d'autres métiers qui pourraient vous intéresser",
+                "chantierId" : "recYETBPqTK4TCyKQ"
+              }
+            ],
+            "stoppedAt" : "2016-11-16T09:06:35.636162Z",
+            "createdAt" : "2016-11-16T09:04:44.181197Z",
+            "actionTemplateId" : "recugf8axp7wGOC6B"
+          },
+          {
+            "actionId" : "582c20e1-cc2f-reclIP1ZHwFizwf8c-582c212c-44ef",
+            "title" : "Faire une liste des personnes qui pourraient m'aider dans ma recherche",
+            "actionTemplateId" : "reclIP1ZHwFizwf8c",
+            "shortDescription" : "Faites une liste des gens qui dans votre entourage pourraient vous aider dans votre recherche. Nous vous aiderons par la suite à travers des actions concrètes à les contacter.",
+            "createdAt" : "2016-11-16T09:04:44.181278Z",
+            "link" : "http://www.monster.fr/conseil-carriere/article/cultiver-son-reseau-professionnel",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "utiliser davantage mon réseau",
+                "title" : "Utilisez davantage votre réseau",
+                "chantierId" : "recEmfRver85zzw4C"
+              }
+            ],
+            "status" : "ACTION_UNREAD"
+          },
+          {
+            "actionId" : "582c20e1-cc2f-recnZTNPkUovpFBHs-582c212c-7e56",
+            "title" : "Trouver la formation qui correspond à mes besoins",
+            "actionTemplateId" : "recnZTNPkUovpFBHs",
+            "shortDescription" : "Entrez vos critères : domaine, lieu, niveau de diplôme, etc. Vous accéderez ainsi à une liste de formations diplomantes et certifiantes qui correspondent à vos souhaits.",
+            "createdAt" : "2016-11-16T09:04:44.181332Z",
+            "link" : "http://www.cursuspro.com/cursus-go/(type)/domaine",
+            "chantiers" : [
+              {
+                "titleFirstPerson" : "préparer un diplôme ou une certification",
+                "title" : "Préparez un diplôme ou une certification",
+                "chantierId" : "recY7emXfLAZ6kwSj"
+              }
+            ],
+            "status" : "ACTION_UNREAD"
+          }
+        ],
+        "title" : "Accompagnateur reconversion professionnelle à Saint-Brieuc",
+        "coverImageUrl" : "https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/K1801.jpg",
+        "workloads" : [
+          "FULL_TIME"
+        ],
+        "mobility" : {
+          "city" : {
+            "departementName" : "Côtes-d'Armor",
+            "postcodes" : "22000",
+            "name" : "Saint-Brieuc",
+            "regionId" : "53",
+            "regionName" : "Bretagne",
+            "cityId" : "22278",
+            "departementId" : "22"
+          },
+          "areaType" : "CITY"
+        },
+        "createdAt" : "2016-11-16T09:03:29.370292Z",
+        "jobSearchLengthMonths" : -1,
+        "targetJob" : {
+          "feminineName" : "Accompagnatrice reconversion professionnelle",
+          "name" : "Accompagnateur/Accompagnatrice reconversion professionnelle",
+          "masculineName" : "Accompagnateur reconversion professionnelle",
+          "jobGroup" : {
+            "name" : "Conseil en emploi et insertion socioprofessionnelle",
+            "romeId" : "K1801"
+          },
+          "codeOgr" : "10224"
+        },
+        "status" : "PROJECT_CURRENT",
+        "networkEstimate" : 2,
+        "previousJobSimilarity" : "DONE_SIMILAR",
+        "activatedChantiers" : {
+          "recYETBPqTK4TCyKQ" : true,
+          "recEmfRver85zzw4C" : true,
+          "recY7emXfLAZ6kwSj" : true,
+          "rec9W3FpHBsUXADBu" : true,
+          "recHaOxPLO8iIVpUo" : true,
+          "recw7W85TVvAbCPo8" : true,
+          "recy3Sr4T7mnor8kX" : true,
+          "rec9yEocagBZQqBB1" : true,
+          "recHruwJ1nAF5BJYb" : true,
+          "recmZKvRrJCfjkP1d" : true
+        },
+        "shortDescription" : "This is a dummy short description. We will add something better in the future.",
+        "intensity" : "PROJECT_FIGURING_INTENSITY",
+        "diplomaFulfillmentEstimate" : "NOTHING_REQUIRED",
+        "actionsGeneratedAt" : "2016-11-16T09:04:44.178259Z",
+        "kind" : "FIND_JOB",
+        "employmentTypes" : [
+          "CDI"
+        ],
+        "source" : "PROJECT_MANUALLY_CREATED",
+        "projectId" : "582c20e1-cc2f",
+        "minSalary" : 37500.0,
+        "seniority" : "INTERMEDIARY"
+      }
+    ],
+    "chantiers" : {
+      "recHaOxPLO8iIVpUo" : {
+        "titleFirstPerson" : "envisager de passer en freelance",
+        "incentive" : "car c’est une excellente façon d’offrir vos compétences  quand le marché est bloqué pour votre niveau d’expérience",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "title" : "Envisagez de passer en freelance",
+        "scoringModel" : "chantier-freelance",
+        "chantierId" : "recHaOxPLO8iIVpUo"
+      },
+      "recvEk9a4zOznPQU1" : {
+        "titleFirstPerson" : "chercher auprès de types d'entreprises différents",
+        "incentive" : "nous vous aiderons à cibler des entreprises auxquelles on ne pense pas forcément",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "title" : "Cherchez auprès de types d’entreprises différents",
+        "scoringModel" : "chantier-get-more-offers",
+        "chantierId" : "recvEk9a4zOznPQU1"
+      },
+      "rec9W3FpHBsUXADBu" : {
+        "titleFirstPerson" : "améliorer mon anglais",
+        "incentive" : "car la maîtrise de cette langue est souvent nécessaire dans ce métier",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "title" : "Améliorez votre anglais",
+        "scoringModel" : "chantier-english",
+        "chantierId" : "rec9W3FpHBsUXADBu"
+      },
+      "recYETBPqTK4TCyKQ" : {
+        "titleFirstPerson" : "regarder d'autres métiers qui pourraient m'intéresser",
+        "incentive" : "nous vous aiderons à explorer des métiers qui pourraient vous offrir plus d'opportunités",
+        "kind" : "UNLOCK_NEW_LEADS",
+        "title" : "Regardez d'autres métiers qui pourraient vous intéresser",
+        "scoringModel" : "chantier-job-discovery",
+        "chantierId" : "recYETBPqTK4TCyKQ"
+      },
+      "recy3Sr4T7mnor8kX" : {
+        "titleFirstPerson" : "regarder également des offres en CDD",
+        "incentive" : "car les CDD permettent aussi souvent de déboucher sur des CDI",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "title" : "Regardez également des offres en CDD",
+        "scoringModel" : "chantier-contract-type(CDD)",
+        "chantierId" : "recy3Sr4T7mnor8kX"
+      },
+      "recprlmEghKRsqH8o" : {
+        "titleFirstPerson" : "me démarquer de la concurrence",
+        "incentive" : "quelques astuces pour sortir du lot quand la concurrence est rude",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "title" : "Démarquez-vous de la concurrence",
+        "scoringModel" : "chantier-stand-out",
+        "chantierId" : "recprlmEghKRsqH8o"
+      },
+      "recmZKvRrJCfjkP1d" : {
+        "titleFirstPerson" : "regarder également des offres en temps partiel",
+        "incentive" : "car un contrat de moins de 35h par semaine peut être une bonne passerelle vers un emploi à plein temps",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "title" : "Regardez également des offres en temps partiel",
+        "scoringModel" : "chantier-part-time",
+        "chantierId" : "recmZKvRrJCfjkP1d"
+      },
+      "rec91fcbhNiDdqoSn" : {
+        "titleFirstPerson" : "garder mon moral au top",
+        "incentive" : "nous vous proposerons des actions pour prendre soin de vous et préserver votre motivation",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "title" : "Gardez votre moral au top",
+        "scoringModel" : "chantier-stay-motivated",
+        "chantierId" : "rec91fcbhNiDdqoSn"
+      },
+      "recEmfRver85zzw4C" : {
+        "titleFirstPerson" : "utiliser davantage mon réseau",
+        "incentive" : "nous vous aiderons à vous appuyer sur votre réseau pour booster votre recherche",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "title" : "Utilisez davantage votre réseau",
+        "scoringModel" : "chantier-use-network",
+        "chantierId" : "recEmfRver85zzw4C"
+      },
+      "rec6XRNNb9CX6NpiP" : {
+        "titleFirstPerson" : "mieux me préparer à l'entretien d'embauche",
+        "incentive" : "nous vous aiderons à préparer vos réponses et à vous entrainer avant le jour J",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "title" : "Préparez-vous mieux à l'entretien d'embauche",
+        "scoringModel" : "chantier-interview",
+        "chantierId" : "rec6XRNNb9CX6NpiP"
+      },
+      "recw7W85TVvAbCPo8" : {
+        "titleFirstPerson" : "explorer nos actions pour les plus de 50 ans",
+        "incentive" : "car on peut faire de son âge un atout dans sa recherche d'emploi",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "title" : "Explorez nos actions pour les plus de 50 ans",
+        "scoringModel" : "for-old(50)",
+        "chantierId" : "recw7W85TVvAbCPo8"
+      },
+      "recY7emXfLAZ6kwSj" : {
+        "titleFirstPerson" : "préparer un diplôme ou une certification",
+        "incentive" : "nous vous aiderons à construire votre projet de formation",
+        "kind" : "INCREASE_AVAILABLE_OFFERS",
+        "title" : "Préparez un diplôme ou une certification",
+        "scoringModel" : "chantier-training",
+        "chantierId" : "recY7emXfLAZ6kwSj"
+      },
+      "rec9yEocagBZQqBB1" : {
+        "titleFirstPerson" : "être encore plus efficace dans ma recherche",
+        "incentive" : "nous vous aiderons à rester au top dans votre organisation",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "title" : "Soyez encore plus efficace dans votre recherche",
+        "scoringModel" : "chantier-organize",
+        "chantierId" : "rec9yEocagBZQqBB1"
+      },
+      "recHruwJ1nAF5BJYb" : {
+        "titleFirstPerson" : "rendre mes CV et lettre de motivation plus percutants",
+        "incentive" : "même si vous avez déjà un bon CV, nous vous aiderons à obtenir plus de réponses",
+        "kind" : "IMPROVE_SUCCESS_RATE",
+        "title" : "Rendez vos CV et lettre de motivation plus percutants",
+        "scoringModel" : "chantier-resume",
+        "chantierId" : "recHruwJ1nAF5BJYb"
+      }
+    },
+    "createdAt" : "2016-11-16T09:23:14.920948Z"
+  }
+]

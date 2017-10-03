@@ -39,7 +39,7 @@ class _EvolutionCounter(object):
     def collect(self, job_offer):
         """Count a job offer."""
         year = int(job_offer.creation_date[:4])
-        bucket_id = '%s:%s' % (
+        bucket_id = '{}:{}'.format(
             job_offer.departement_code, job_offer.rome_profession_card_code)
         self.offers_per_year[bucket_id][year] += 1
 

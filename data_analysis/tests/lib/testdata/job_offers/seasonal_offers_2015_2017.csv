@@ -1,0 +1,794 @@
+contract_type_code,rome_profession_card_name,rome_profession_card_code,creation_date,departement_code
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2015-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-23 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-11 00:00,06
+SAI,Management de magasin de détail                                                                                                                       ,D1301,2015-03-06 00:00,06
+SAI,Magasinage et préparation de commandes                                                                                                                ,N1103,2015-03-27 00:00,06
+SAI,Personnel de caisse                                                                                                                                   ,D1505,2016-03-29 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-24 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-23 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-09 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-16 00:00,06
+SAI,Mise en rayon libre-service                                                                                                                           ,D1507,2015-03-05 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2015-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-23 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-31 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-06 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-27 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-04 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-03 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-29 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-17 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-31 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-30 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-11 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-03 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-09 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-07 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2016-03-21 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2015-03-25 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-04 00:00,06
+SAI,Personnel technique des jeux                                                                                                                          ,G1206,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-10 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-06 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2015-03-03 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2016-03-23 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-10 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-06 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2015-03-25 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-30 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-15 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2016-03-25 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-25 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-10 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-21 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-04 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-12 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-31 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-07 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-04 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-16 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-07 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-03 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2015-03-04 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-15 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-02 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-11 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-17 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-17 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-14 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-07 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2015-03-27 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-25 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-19 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-16 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-17 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-27 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-24 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-25 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-30 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-01 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-05 00:00,06
+SAI,Préparation des vols                                                                                                                                  ,N2204,2015-03-26 00:00,06
+SAI,Organisation d'évènementiel                                                                                                                           ,E1107,2016-03-18 00:00,06
+SAI,Maintenance des bâtiments et des locaux                                                                                                               ,I1203,2015-03-03 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-07 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2015-03-11 00:00,06
+SAI,Sécurité civile et secours                                                                                                                            ,K1705,2016-03-21 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-22 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-07 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-27 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-08 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-23 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-23 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-03 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-08 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-21 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-21 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-10 00:00,06
+SAI,Animation d'activités culturelles ou ludiques                                                                                                         ,G1202,2015-03-30 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2016-03-21 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-12 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-02 00:00,06
+SAI,Management du personnel d'étage                                                                                                                       ,G1503,2015-03-27 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-07 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2015-03-24 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-30 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-18 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-06 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-02 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-21 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-18 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-29 00:00,06
+SAI,"Pâtisserie, confiserie, chocolaterie et glacerie                                                                                                      ",D1104,2015-03-27 00:00,06
+SAI,Personnel de caisse                                                                                                                                   ,D1505,2016-03-07 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-10 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-31 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-27 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-08 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-08 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-01 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-30 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2016-03-15 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-31 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-14 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-18 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-31 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-11 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-27 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-19 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-05 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-21 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-12 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-22 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-04 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-23 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-23 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-05 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-03 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2015-03-05 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-24 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-15 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2015-03-18 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-24 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-27 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-29 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-19 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-13 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2015-03-03 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2015-03-10 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-12 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-14 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-17 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-21 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-14 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2016-03-08 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-14 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-04 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-24 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-08 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-01 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2016-03-21 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-04 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-03 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-15 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2016-03-02 00:00,06
+SAI,"Accompagnement de voyages, d'activités culturelles ou sportives                                                                                       ",G1201,2016-03-11 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-07 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-15 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-15 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2015-03-23 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-30 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-17 00:00,06
+SAI,Assistance de direction d'hôtel-restaurant                                                                                                            ,G1401,2015-03-25 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-16 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-20 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-27 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-03 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-15 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-27 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-25 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-23 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-31 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-13 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2016-03-11 00:00,06
+SAI,Personnel polyvalent des services hospitaliers                                                                                                        ,J1301,2016-03-12 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2015-03-04 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-01 00:00,06
+SAI,Sommellerie                                                                                                                                           ,G1804,2016-03-16 00:00,06
+SAI,Encadrement de la navigation maritime                                                                                                                 ,N3101,2015-03-05 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-08 00:00,06
+SAI,Boulangerie - viennoiserie                                                                                                                            ,D1102,2015-03-10 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2016-03-25 00:00,06
+SAI,Vente en gros de produits frais                                                                                                                       ,D1107,2016-03-13 00:00,06
+SAI,Sécurité et surveillance privées                                                                                                                      ,K2503,2015-03-27 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2016-03-21 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-27 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-27 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-15 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-09 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2015-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-09 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2016-03-10 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-14 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-17 00:00,06
+SAI,Encadrement de la navigation maritime                                                                                                                 ,N3101,2015-03-12 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-31 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-21 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-10 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2015-03-30 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-18 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-10 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-10 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-27 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-13 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-06 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-18 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-15 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-09 00:00,06
+SAI,Management du personnel d'étage                                                                                                                       ,G1503,2015-03-10 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-19 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-27 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-02 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-04 00:00,06
+SAI,Assistance de direction d'hôtel-restaurant                                                                                                            ,G1401,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-17 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-31 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-13 00:00,06
+SAI,Accueil touristique                                                                                                                                   ,G1101,2016-03-04 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-29 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-10 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-04 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-18 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-25 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-31 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-21 00:00,06
+SAI,Exploitation des opérations portuaires et du transport maritime                                                                                       ,N3201,2015-03-04 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-16 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2016-03-14 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2015-03-27 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-17 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-21 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-31 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2015-03-10 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-11 00:00,06
+SAI,"Pâtisserie, confiserie, chocolaterie et glacerie                                                                                                      ",D1104,2015-03-06 00:00,06
+SAI,Maintenance des bâtiments et des locaux                                                                                                               ,I1203,2015-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-01 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-25 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-22 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-05 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-31 00:00,06
+SAI,Accueil touristique                                                                                                                                   ,G1101,2016-03-10 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2015-03-31 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-31 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-18 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-15 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-22 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-10 00:00,06
+SAI,Personnel de caisse                                                                                                                                   ,D1505,2016-03-31 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2015-03-04 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-30 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2016-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-24 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-10 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-23 00:00,06
+SAI,Photographie                                                                                                                                          ,E1201,2015-03-09 00:00,06
+SAI,Photographie                                                                                                                                          ,E1201,2015-03-04 00:00,06
+SAI,Conduite et livraison par tournées sur courte distance                                                                                                ,N4105,2016-03-16 00:00,06
+SAI,Assistance de direction d'hôtel-restaurant                                                                                                            ,G1401,2015-03-05 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-21 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-12 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-03 00:00,06
+SAI,Assistance de direction d'hôtel-restaurant                                                                                                            ,G1401,2015-03-27 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2016-03-31 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-30 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-23 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-21 00:00,06
+SAI,Magasinage et préparation de commandes                                                                                                                ,N1103,2016-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-12 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2016-03-30 00:00,06
+SAI,"Pâtisserie, confiserie, chocolaterie et glacerie                                                                                                      ",D1104,2016-03-16 00:00,06
+SAI,Mécanique automobile et entretien de véhicules                                                                                                        ,I1604,2016-03-30 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-30 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-29 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-24 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2016-03-29 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-30 00:00,06
+SAI,"Pâtisserie, confiserie, chocolaterie et glacerie                                                                                                      ",D1104,2016-03-29 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-22 00:00,06
+SAI,Entretien des espaces verts                                                                                                                           ,A1203,2016-03-29 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-25 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-23 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2016-03-21 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-22 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-25 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-28 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-31 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-30 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-03 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-29 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-31 00:00,06
+SAI,Mise en rayon libre-service                                                                                                                           ,D1507,2016-03-21 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-31 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-14 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-08 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-11 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-01 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2016-03-14 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2016-03-31 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2016-03-30 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-29 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-29 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-15 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-24 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2016-03-08 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-23 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-17 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2016-03-03 00:00,06
+SAI,Distribution de documents                                                                                                                             ,M1603,2016-03-11 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-17 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2016-03-29 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2016-03-14 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-17 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-23 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2016-03-11 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-24 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-23 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-23 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-22 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-23 00:00,06
+SAI,"Pâtisserie, confiserie, chocolaterie et glacerie                                                                                                      ",D1104,2016-03-07 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2016-03-11 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-10 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-03 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-03 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-18 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-12 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-12 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2016-03-11 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-17 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2016-03-14 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-12 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-24 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-08 00:00,06
+SAI,Soins esthétiques et corporels                                                                                                                        ,D1208,2016-03-09 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2016-03-01 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-04 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-09 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2016-03-11 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-01 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-13 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-04 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2016-03-07 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-12 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-09 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2016-03-08 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-14 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-07 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-15 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-09 00:00,06
+SAI,Secrétariat comptable                                                                                                                                 ,M1608,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-25 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-03 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-07 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-12 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-01 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-08 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-10 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2016-03-01 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-14 00:00,06
+SAI,Management du personnel d'étage                                                                                                                       ,G1503,2016-03-02 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-08 00:00,06
+SAI,Management d'hôtel-restaurant                                                                                                                         ,G1402,2016-03-02 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2016-03-01 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-03 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-01 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2016-03-01 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-01 00:00,06
+SAI,Management du personnel d'étage                                                                                                                       ,G1503,2016-03-03 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-02 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2016-03-03 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-08 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-01 00:00,06
+SAI,Assistance de direction d'hôtel-restaurant                                                                                                            ,G1401,2016-03-01 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-02 00:00,06
+SAI,Sécurité et surveillance privées                                                                                                                      ,K2503,2015-03-30 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-18 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-23 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-24 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-27 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-25 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2015-03-16 00:00,06
+SAI,Personnel du hall                                                                                                                                     ,G1702,2015-03-12 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-11 00:00,06
+SAI,Nettoyage de locaux                                                                                                                                   ,K2204,2015-03-18 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-12 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-18 00:00,06
+SAI,Maintenance des bâtiments et des locaux                                                                                                               ,I1203,2015-03-30 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-26 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-16 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-16 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-27 00:00,06
+SAI,Photographie                                                                                                                                          ,E1201,2015-03-19 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2015-03-25 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2015-03-16 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-17 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-12 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-03 00:00,06
+SAI,Maintenance des bâtiments et des locaux                                                                                                               ,I1203,2015-03-27 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-06 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-09 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-31 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-02 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-24 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2015-03-09 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-25 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-18 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-30 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-23 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2015-03-05 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-13 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-09 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2015-03-05 00:00,06
+SAI,Animation musicale et scénique                                                                                                                        ,L1101,2015-03-11 00:00,06
+SAI,Personnel de caisse                                                                                                                                   ,D1505,2015-03-05 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-13 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-12 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-02 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-12 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-03 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-18 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2015-03-12 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-18 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-13 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-16 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-13 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-18 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-11 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-06 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-09 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-16 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-13 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-12 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-05 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-16 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-16 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-10 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-02 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-17 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-11 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2015-03-06 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-03 00:00,06
+SAI,Maintenance des bâtiments et des locaux                                                                                                               ,I1203,2015-03-06 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-04 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-12 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-02 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-02 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-10 00:00,06
+SAI,"Pâtisserie, confiserie, chocolaterie et glacerie                                                                                                      ",D1104,2015-03-02 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-03 00:00,06
+SAI,Management du personnel d'étage                                                                                                                       ,G1503,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-30 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-02 00:00,06
+SAI,Management du personnel d'étage                                                                                                                       ,G1503,2015-03-02 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-25 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2016-03-29 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-24 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-22 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-23 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-28 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-31 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-14 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-29 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2016-03-28 00:00,06
+SAI,Conduite et livraison par tournées sur courte distance                                                                                                ,N4105,2016-03-30 00:00,06
+SAI,Comptabilité                                                                                                                                          ,M1203,2016-03-10 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-22 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-24 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-24 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-25 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-12 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-21 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-25 00:00,06
+SAI,Conduite et livraison par tournées sur courte distance                                                                                                ,N4105,2016-03-15 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-24 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2016-03-22 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2016-03-23 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2016-03-23 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-16 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-15 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-14 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-29 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-28 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-24 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-22 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-08 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-07 00:00,06
+SAI,Conduite et livraison par tournées sur courte distance                                                                                                ,N4105,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-28 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2016-03-21 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-29 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-21 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2016-03-18 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-10 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2016-03-04 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-04 00:00,06
+SAI,Installation et maintenance de distributeurs automatiques                                                                                             ,I1303,2016-03-10 00:00,06
+SAI,Secrétariat                                                                                                                                           ,M1607,2016-03-15 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-09 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2016-03-02 00:00,06
+SAI,Photographie                                                                                                                                          ,E1201,2016-03-15 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-10 00:00,06
+SAI,Boulangerie - viennoiserie                                                                                                                            ,D1102,2016-03-29 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-15 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-22 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-14 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-08 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-15 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-21 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-14 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-07 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-30 00:00,06
+SAI,Management du service en restauration                                                                                                                 ,G1802,2016-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-03 00:00,06
+SAI,Assistance auprès d'adultes                                                                                                                           ,K1302,2016-03-11 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-17 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-08 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-08 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-04 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-10 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-08 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-04 00:00,06
+SAI,Soins esthétiques et corporels                                                                                                                        ,D1208,2016-03-12 00:00,06
+SAI,"Pâtisserie, confiserie, chocolaterie et glacerie                                                                                                      ",D1104,2016-03-03 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-04 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-08 00:00,06
+SAI,Intervention en milieu subaquatique                                                                                                                   ,I1502,2016-03-02 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-08 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-03 00:00,06
+SAI,Intervention en milieu subaquatique                                                                                                                   ,I1502,2016-03-02 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2016-03-04 00:00,06
+SAI,Vente en décoration et équipement du foyer                                                                                                            ,D1212,2016-03-04 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-27 00:00,06
+SAI,Assistanat commercial                                                                                                                                 ,D1401,2015-03-30 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-31 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-27 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2015-03-26 00:00,06
+SAI,Animation d'activités culturelles ou ludiques                                                                                                         ,G1202,2015-03-27 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-23 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-31 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-17 00:00,06
+SAI,Mécanique de marine                                                                                                                                   ,I1605,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-24 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-20 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-30 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-24 00:00,06
+SAI,Personnel de caisse                                                                                                                                   ,D1505,2015-03-26 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2015-03-18 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-31 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-14 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-27 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-25 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-12 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-31 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2015-03-25 00:00,06
+SAI,Animation de loisirs auprès d'enfants ou d'adolescents                                                                                                ,G1203,2015-03-25 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-13 00:00,06
+SAI,Management du personnel d'étage                                                                                                                       ,G1503,2015-03-13 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-29 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-26 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-18 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-12 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-24 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-09 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-24 00:00,06
+SAI,Accueil et renseignements                                                                                                                             ,M1601,2015-03-18 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-04 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-16 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2015-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-23 00:00,06
+SAI,Fabrication de crêpes ou pizzas                                                                                                                       ,G1604,2015-03-05 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-11 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2015-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-17 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-03 00:00,06
+SAI,Mise en rayon libre-service                                                                                                                           ,D1507,2015-03-05 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-13 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-06 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-11 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-09 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-19 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-19 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Gestion de structure de loisirs ou d'hébergement touristique                                                                                          ,G1403,2015-03-11 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-12 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-06 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-03 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-12 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-06 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2015-03-05 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-11 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-18 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-06 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-12 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2015-03-03 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Secrétariat comptable                                                                                                                                 ,M1608,2015-03-10 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2015-03-13 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-12 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-14 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2015-03-05 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-12 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2015-03-05 00:00,06
+SAI,Intervention socioculturelle                                                                                                                          ,K1206,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-30 00:00,06
+SAI,Equipage de la navigation maritime                                                                                                                    ,N3102,2015-03-05 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-07 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-27 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-29 00:00,06
+SAI,Personnel technique des jeux                                                                                                                          ,G1206,2016-03-22 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-12 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-15 00:00,06
+SAI,Sommellerie                                                                                                                                           ,G1804,2016-03-07 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-04 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-01 00:00,06
+SAI,Sommellerie                                                                                                                                           ,G1804,2016-03-11 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-16 00:00,06
+SAI,Maintenance des bâtiments et des locaux                                                                                                               ,I1203,2015-03-23 00:00,06
+SAI,Conduite de transport de particuliers                                                                                                                 ,N4102,2015-03-30 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-10 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-11 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2016-03-23 00:00,06
+SAI,Exploitation des opérations portuaires et du transport maritime                                                                                       ,N3201,2015-03-04 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-01 00:00,06
+SAI,Exploitation des opérations portuaires et du transport maritime                                                                                       ,N3201,2015-03-04 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-02 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-07 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2016-03-09 00:00,06
+SAI,Nettoyage d'articles textiles ou cuirs                                                                                                                ,D1205,2016-03-22 00:00,06
+SAI,Personnel polyvalent d'hôtellerie                                                                                                                     ,G1502,2016-03-06 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-04 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-09 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2016-03-10 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-05 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-15 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-10 00:00,06
+SAI,Location de véhicules ou de matériel de loisirs                                                                                                       ,D1204,2016-03-14 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-18 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-25 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2015-03-02 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-16 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-22 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-10 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-04 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-27 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-18 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-07 00:00,06
+SAI,Vente en habillement et accessoires de la personne                                                                                                    ,D1214,2016-03-22 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-10 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-22 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-10 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-31 00:00,06
+SAI,Éducation en activités sportives                                                                                                                      ,G1204,2016-03-30 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-10 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-24 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-15 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-30 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-07 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-11 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-07 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-31 00:00,06
+SAI,Plonge en restauration                                                                                                                                ,G1605,2015-03-09 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-15 00:00,06
+SAI,"Café, bar brasserie                                                                                                                                   ",G1801,2016-03-21 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-29 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-09 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-02 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-04 00:00,06
+SAI,Management du personnel de cuisine                                                                                                                    ,G1601,2016-03-18 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-21 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-19 00:00,06
+SAI,Personnel polyvalent en restauration                                                                                                                  ,G1603,2015-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-09 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-02 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-14 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-31 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2015-03-31 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-30 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-03 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2015-03-19 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2015-03-04 00:00,06
+SAI,Vente en alimentation                                                                                                                                 ,D1106,2015-03-10 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-08 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2016-03-16 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2015-03-31 00:00,06
+SAI,Personnel d'étage                                                                                                                                     ,G1501,2015-03-27 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-29 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-29 00:00,06
+SAI,Réception en hôtellerie                                                                                                                               ,G1703,2016-03-25 00:00,06
+SAI,Encadrement de la navigation maritime                                                                                                                 ,N3101,2016-03-07 00:00,06
+SAI,Service en restauration                                                                                                                               ,G1803,2016-03-22 00:00,06
+SAI,Encadrement de la navigation maritime                                                                                                                 ,N3101,2015-03-05 00:00,06
+SAI,Personnel de cuisine                                                                                                                                  ,G1602,2016-03-25 00:00,06

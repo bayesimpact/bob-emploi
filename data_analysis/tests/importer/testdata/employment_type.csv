@@ -1,0 +1,9 @@
+AREA_CODE,AREA_NAME,AREA_TYPE_CODE,AREA_TYPE_NAME,CONTRACT_TYPE_CODE,CONTRACT_TYPE_NAME,NB_OFFERS,OFFERS_PERCENT,ROME_PROFESSION_CARD_CODE,ROME_PROFESSION_CARD_NAME
+09,ARIEGE,D,Département,01,CDI,1,5.88,F1702,Construction de routes et voies
+09,ARIEGE,D,Département,04,Intérim,13,76.47,F1702,Construction de routes et voies
+09,ARIEGE,D,Département,03,CDD > 3 mois,3,17.65,F1702,Construction de routes et voies
+10,AUBE,D,Département,04,Intérim,28,80,F1702,Construction de routes et voies
+10,AUBE,D,Département,02,CDD <= 3 mois,3,8.57,F1702,Construction de routes et voies
+10,AUBE,D,Département,03,CDD > 3 mois,4,11.43,F1702,Construction de routes et voies
+09,ARIEGE,D,Département,04,Intérim,1,51,F1402,Extraction solide
+09,ARIEGE,D,Département,03,CDD > 3 mois,1,49,F1402,Extraction solide

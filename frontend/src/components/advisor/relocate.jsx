@@ -133,9 +133,6 @@ class RelocateDepartmentSuggestionBase extends React.Component {
     }
     const roundedOffers = Math.round(departementScore.offerRatio * 10) / 10
 
-    // TODO(guillaume): Decide what to do when we click on a result. Show the departement on a map?
-    // Maybe the best is to show the pole emploi stats page about the departement.
-    // Needs product chat.
     return <div style={style} onClick={this.handleClick}>
       <span style={{fontWeight: 'bold', marginRight: 10, ...Styles.CENTER_FONT_VERTICALLY}}>
         {departementScore.name}

@@ -109,11 +109,11 @@ def rome_to_skills(data_folder='data',
     if not filename_items:
         filename_items = path.join(
             data_folder,
-            'rome/csv/unix_coherence_item_%s_utf8.csv' % _ROME_VERSION)
+            'rome/csv/unix_coherence_item_{}_utf8.csv'.format(_ROME_VERSION))
     if not filename_skills:
         filename_skills = path.join(
             data_folder,
-            'rome/csv/unix_referentiel_competence_%s_utf8.csv' % _ROME_VERSION)
+            'rome/csv/unix_referentiel_competence_{}_utf8.csv'.format(_ROME_VERSION))
     rome_to_item = pandas.read_csv(filename_items, dtype=str)
     skills = pandas.read_csv(filename_skills, dtype=str)
     merged = pandas.merge(rome_to_item, skills, on='code_ogr')
@@ -132,7 +132,7 @@ def rome_job_groups(data_folder='data', filename=None):
     if not filename:
         filename = path.join(
             data_folder,
-            'rome/csv/unix_referentiel_code_rome_%s_utf8.csv' % _ROME_VERSION)
+            'rome/csv/unix_referentiel_code_rome_{}_utf8.csv'.format(_ROME_VERSION))
 
     job_groups = pandas.read_csv(filename)
 
@@ -153,8 +153,8 @@ def rome_holland_codes(data_folder='data', filename=None):
     professions.
     """
     if not filename:
-        file_pattern = 'rome/csv/unix_referentiel_code_rome_riasec_%s_utf8.csv'
-        filename = path.join(data_folder, file_pattern % _ROME_VERSION)
+        file_pattern = 'rome/csv/unix_referentiel_code_rome_riasec_{}_utf8.csv'
+        filename = path.join(data_folder, file_pattern.format(_ROME_VERSION))
 
     column_names = ['code_rome', 'major', 'minor']
     holland_codes = pandas.read_csv(filename, names=column_names)
@@ -171,7 +171,7 @@ def rome_texts(data_folder='data', filename=None):
     """
     if not filename:
         filename = path.join(
-            data_folder, 'rome/csv/unix_texte_%s_utf8.csv' % _ROME_VERSION)
+            data_folder, 'rome/csv/unix_texte_{}_utf8.csv'.format(_ROME_VERSION))
 
     texts = pandas.read_csv(filename).pivot_table(
         index='code_rome',
@@ -194,11 +194,11 @@ def rome_work_environments(
     if not links_filename:
         links_filename = path.join(
             data_folder,
-            'rome/csv/unix_liens_rome_referentiels_%s_utf8.csv' % _ROME_VERSION)
+            'rome/csv/unix_liens_rome_referentiels_{}_utf8.csv'.format(_ROME_VERSION))
     if not ref_filename:
         ref_filename = path.join(
             data_folder,
-            'rome/csv/unix_referentiel_env_travail_%s_utf8.csv' % _ROME_VERSION)
+            'rome/csv/unix_referentiel_env_travail_{}_utf8.csv'.format(_ROME_VERSION))
 
     links = pandas.read_csv(links_filename)
     ref = pandas.read_csv(ref_filename)
@@ -219,7 +219,7 @@ def rome_jobs(data_folder='data', filename=None):
     if not filename:
         filename = path.join(
             data_folder,
-            'rome/csv/unix_referentiel_appellation_%s_utf8.csv' % _ROME_VERSION)
+            'rome/csv/unix_referentiel_appellation_{}_utf8.csv'.format(_ROME_VERSION))
 
     jobs = pandas.read_csv(filename, dtype=str)
 
@@ -246,7 +246,7 @@ def rome_job_groups_mobility(data_folder='data', filename=None, expand_jobs=Fals
     if not filename:
         filename = path.join(
             data_folder,
-            'rome/csv/unix_rubrique_mobilite_%s_utf8.csv' % _ROME_VERSION)
+            'rome/csv/unix_rubrique_mobilite_{}_utf8.csv'.format(_ROME_VERSION))
 
     mobility = pandas.read_csv(filename, dtype=str)
     mobility.rename(columns={

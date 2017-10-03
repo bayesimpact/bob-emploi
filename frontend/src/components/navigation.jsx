@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {Link, browserHistory} from 'react-router'
+import {Link} from 'react-router-dom'
 import {connect} from 'react-redux'
 import Radium from 'radium'
 
@@ -36,6 +36,7 @@ class Notifications extends React.Component {
       subtitle: PropTypes.string,
       title: PropTypes.node.isRequired,
     }).isRequired),
+    page: PropTypes.string,
   }
 
   state = {
@@ -44,9 +45,10 @@ class Notifications extends React.Component {
   }
 
   render() {
-    const {notifications} = this.props
+    const {notifications, page} = this.props
     const {isExpanded, isHovered} = this.state
-    if (!notifications || !notifications.length) {
+    // TODO(Marie Laure): Allows each page to send its notifications.
+    if (!notifications || !notifications.length || page !== 'project') {
       return null
     }
     const notifHeight = 70
@@ -56,6 +58,7 @@ class Notifications extends React.Component {
       outline: 'none',
       padding: 15,
       width: 45,
+      zIndex: 1,
       ...SmoothTransitions,
     }
     const containerStyle = {
@@ -240,6 +243,11 @@ class MobileNavigationBarBase extends React.Component {
     onNavigateBack: PropTypes.func,
     page: PropTypes.string,
   }
+  static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
+  }
 
   state = {
     isMenuOpen: false,
@@ -262,7 +270,7 @@ class MobileNavigationBarBase extends React.Component {
   logOut = event => {
     event.stopPropagation()
     this.props.dispatch(logoutAction)
-    browserHistory.push(Routes.ROOT)
+    this.context.history.push(Routes.ROOT)
   }
 
   render() {
@@ -335,9 +343,9 @@ class MobileNavigationBarBase extends React.Component {
             <Link to={Routes.PROFILE_PAGE} style={linkStyle('profile')}>
               Vos informations
             </Link>
-            <Link style={linkStyle('logout')} onClick={this.logOut}>
+            <a style={linkStyle('logout')} onClick={this.logOut}>
               Déconnexion
-            </Link>
+            </a>
           </div> : null}
         </div>
         : onNavigateBack ?
@@ -372,6 +380,9 @@ class NavigationBarBase extends React.Component {
     userProfile: USER_PROFILE_SHAPE.isRequired,
   }
   static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
     isMobileVersion: PropTypes.bool.isRequired,
   }
 
@@ -382,7 +393,7 @@ class NavigationBarBase extends React.Component {
   logOut = event => {
     event.stopPropagation()
     this.props.dispatch(logoutAction)
-    browserHistory.push(Routes.ROOT)
+    this.context.history.push(Routes.ROOT)
   }
 
   toggleMenuDropDown = () => {
@@ -398,12 +409,12 @@ class NavigationBarBase extends React.Component {
     if ((page === 'profile' || page === 'new_project') && !isOnboardingComplete) {
       return
     }
-    browserHistory.push(Routes.ROOT)
+    this.context.history.push(Routes.ROOT)
   }
 
   render() {
     const {featuresEnabled, isTransparent, page, style, userProfile} = this.props
-    const {isMobileVersion} = this.context
+    const {isMobileVersion, history} = this.context
     const {name} = userProfile
     const {isLogOutDropDownShown} = this.state
     if (isMobileVersion) {
@@ -489,10 +500,10 @@ class NavigationBarBase extends React.Component {
     }
     const openInNewTab = href => window.open(href, '_blank')
     const menuItems = [
-      <MenuLink key="profile" onClick={() => browserHistory.push(Routes.PROFILE_PAGE)}>
+      <MenuLink key="profile" onClick={() => history.push(Routes.PROFILE_PAGE)}>
         Vos informations
       </MenuLink>,
-      <MenuLink key="contribute" onClick={() => browserHistory.push(Routes.CONTRIBUTION_PAGE)}>
+      <MenuLink key="contribute" onClick={() => history.push(Routes.CONTRIBUTION_PAGE)}>
         Contribuer
       </MenuLink>,
       <MenuLink key="help" onClick={() => openInNewTab('https://aide.bob-emploi.fr/hc/fr')}>
@@ -535,7 +546,7 @@ class NavigationBarBase extends React.Component {
       position: 'absolute',
       right: 0,
       top: 0,
-      zIndex: -1,
+      zIndex: 0,
     }
     return <nav style={containerStyle}>
       <div style={centerAbsoluteStyle}>
@@ -543,7 +554,7 @@ class NavigationBarBase extends React.Component {
       </div>
 
       <Notifications
-        notifications={featuresEnabled.poleEmploi ? [
+        page={page} notifications={featuresEnabled.poleEmploi ? [
           {
             href: 'https://projects.invisionapp.com/boards/SK39VCS276T8J/',
             subtitle: 'Trouvez ici nos resources pour présenter Bob',
@@ -728,7 +739,6 @@ class PageWithNavigationBar extends React.Component {
   }
 
   render() {
-    // eslint-disable-next-line no-unused-vars
     const {children, isChatButtonShown, isContentScrollable,
       isNavBarTransparent, onNavigateBack, onScroll, page, style,
       ...extraProps} = this.props
