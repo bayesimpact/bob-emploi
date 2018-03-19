@@ -15,7 +15,7 @@ import userFeedbackNegativeImage from 'images/user-feedback-negative.png'
 import npsImage from 'images/nps.png'
 
 import {StaticPage} from 'components/static'
-import {Colors, SmoothTransitions, Styles} from 'components/theme'
+import {Colors, colorToAlpha, SmoothTransitions, Styles} from 'components/theme'
 
 const textSectionStyle = {
   backgroundColor: '#fff',
@@ -24,12 +24,14 @@ const textSectionStyle = {
   flexDirection: 'column',
   fontSize: 16,
   lineHeight: 1.63,
-  paddingBottom: 100,
+  paddingBottom: 50,
 }
 const titleStyle = {
   fontSize: 36,
   fontWeight: 'bold',
-  padding: '45px 0 40px',
+  lineHeight: 1,
+  maxWidth: 1000,
+  padding: '50px 0 40px',
   textAlign: 'center',
 }
 const sectionTitleStyle = {
@@ -38,16 +40,10 @@ const sectionTitleStyle = {
   marginBottom: 15,
   marginTop: 40,
 }
-const milestone = {
-  border: 'solid 1px',
-  borderColor: Colors.SILVER,
-  borderRadius: 4,
-  flex: 1,
-  margin: 5,
-  padding: '30px 0',
-  textAlign: 'center',
-}
 const graphStyle = {
+  marginLeft: 'auto',
+  marginRight: 'auto',
+  maxWidth: 1000,
   padding: '10px 20px',
 }
 const excerptStyle = {
@@ -83,6 +79,21 @@ const imageStats = {
 }
 
 
+const userStats = {
+  feedbackScores: [
+    {name: 'Mauvais', value: .07},
+    {name: 'Peu intéressants', value: .06},
+    {color: Colors.GREENISH_TEAL, name: 'Intéressants', value: .28},
+    {color: Colors.GREENISH_TEAL, name: 'Utiles', value: .34},
+    {color: Colors.GREENISH_TEAL, name: 'Très utiles', value: .25},
+  ],
+  totalUserCount: 130268,
+  updatedAt: <span>au 1<sup>er</sup> janvier 2018</span>,
+}
+userStats.positiveFeedbackPercentage =
+  Math.round(userStats.feedbackScores.slice(2).reduce((sum, {value}) => sum + value, 0) * 100)
+
+
 class TransparencyPage extends React.Component {
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
@@ -94,13 +105,13 @@ class TransparencyPage extends React.Component {
       color: Colors.CHACORAL_GREY,
       lineHeight: 1.63,
       marginBottom: 10,
-      padding: isMobileVersion ? '0 50px' : '0 140px',
+      padding: isMobileVersion ? '0 20px' : '0 140px',
     }
   }
 
   makeLink(content, href) {
     const linkStyle = {
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       textDecoration: 'none',
     }
     return <a style={linkStyle} href={href} target="_blank" rel="noopener noreferrer">
@@ -119,7 +130,8 @@ class TransparencyPage extends React.Component {
       <div style={overTitleStyle}>
         Nous sommes attachés à inscrire nos travaux dans une démarche
         transparente et collaborative.<br />
-        Cette page répertorie ainsi publiquement les informations liées au développement de Bob.
+        Cette page répertorie ainsi publiquement les informations liées au développement
+        de {config.productName}.
       </div>
       <div style={titleStyle}><strong>Impact et métriques</strong></div>
       <div style={this.getTextStyle()}>
@@ -127,7 +139,7 @@ class TransparencyPage extends React.Component {
         ligne. Plus que du simple matching, l'enjeu est surtout humain : accompagner chacun
         dans ses choix stratégiques.
         <div style={{fontWeight: 'bold', marginTop: 25}}>
-          Notre objectif à travers Bob&nbsp;:
+          Notre objectif à travers {config.productName}&nbsp;:
         </div>
         Permettre à chaque individu de prendre le contrôle sur sa stratégie de recherche
         d'emploi, en lui fournissant des pistes de réflexion personnalisées et fondées sur
@@ -141,7 +153,7 @@ class TransparencyPage extends React.Component {
     const silverBorder = `solid 1px ${Colors.SILVER}`
     const flexRowOnDesktop = {
       display: 'flex',
-      flexDirection: isMobileVersion ? 'column': 'row',
+      flexDirection: isMobileVersion ? 'column' : 'row',
     }
     const userCountGraphStyle = {
       alignItems: 'center',
@@ -158,6 +170,12 @@ class TransparencyPage extends React.Component {
       padding: '30px 0',
       width: isMobileVersion ? 'initial' : 312,
     }
+    const helpfulRateStyle = {
+      color: Colors.GREENISH_TEAL,
+      fontSize: 60,
+      fontWeight: 'bold',
+      lineHeight: 1,
+    }
     const npsBoxStyle = {
       border: silverBorder,
       borderRadius: 4,
@@ -166,6 +184,14 @@ class TransparencyPage extends React.Component {
       lineHeight: 1,
       textAlign: 'center',
       ...flexRowOnDesktop,
+    }
+    const npsStarStyle = {
+      color: Colors.COOL_GREY,
+      fontSize: 13,
+      fontStyle: 'oblique',
+      lineHeight: 1.31,
+      marginBottom: -27,
+      marginLeft: '50%',
     }
     const npsSumsBoxStyle = {
       borderLeft: isMobileVersion ? 'initial' : silverBorder,
@@ -188,24 +214,33 @@ class TransparencyPage extends React.Component {
     }
     const npsSumStyle = {
       ...Styles.CENTER_FONT_VERTICALLY,
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       display: 'block',
       fontSize: 50,
     }
     const percentBarChartStyle = {
       height: 250,
-      marginRight: 10,
+      marginRight: isMobileVersion ? 0 : 10,
       overflow: 'hidden',
       width: isMobileVersion ? '100%' : 500,
     }
     return <div style={textSectionStyle}>
       <div style={this.getTextStyle()}>
-        <div style={sectionTitleStyle}>Métriques générales (au 1<sup>er</sup> octobre 2017)</div>
+        <div style={sectionTitleStyle}>Métriques générales ({userStats.updatedAt})</div>
+      </div>
+      <div style={{marginBottom: 10, textAlign: 'center'}}>
+        <div style={{fontWeight: 'bold', marginBottom: 20}}>Impact sur le retour à l'emploi</div>
+        <div style={helpfulRateStyle}>42%</div>
+        <div style={this.getTextStyle()}>
+          des personnes nous ayant indiqué avoir <strong>retrouvé un emploi</strong><br />
+          et ayant testé {config.productName}, considèrent que <strong>{config.productName} y
+          a contribué</strong>.
+        </div>
       </div>
       <div style={{...graphStyle, ...flexRowOnDesktop}}>
         <div style={userCountGraphStyle}>
-          <strong style={{color: Colors.SKY_BLUE, fontSize: 60}}>
-            {(123255).toLocaleString('fr')}
+          <strong style={{color: Colors.BOB_BLUE, fontSize: 60}}>
+            {(userStats.totalUserCount).toLocaleString('fr')}
           </strong>
           <span>
             comptes créés depuis novembre 2016
@@ -214,30 +249,24 @@ class TransparencyPage extends React.Component {
         <div style={npsBoxStyle}>
           <div>
             <div style={{fontSize: 13, fontWeight: 500, margin: 12, textAlign: 'left'}}>
-              Que pensez-vous des conseils de Bob&nbsp;?
+              Que pensez-vous des conseils de {config.productName}&nbsp;?
             </div>
-            <PercentBarChart values={[
-              {name: 'Mauvais', value: .06},
-              {name: 'Peu intéressants', value: .08},
-              {color: Colors.GREENISH_TEAL, name: 'Intéressants', value: .39},
-              {color: Colors.GREENISH_TEAL, name: 'Utiles', value: .29},
-              {color: Colors.GREENISH_TEAL, name: 'Très utiles', value: .18},
-            ]} style={percentBarChartStyle} />
+            <PercentBarChart values={userStats.feedbackScores} style={percentBarChartStyle} />
           </div>
           <div style={npsSumsBoxStyle}>
             <div style={npsSumFirstBoxStyle}>
-              <strong>Bob m'a aidé*</strong>
+              <strong>{config.productName} m'a aidé*</strong>
               <strong style={{...npsSumStyle, color: Colors.GREENISH_TEAL}}>
-                86%
+                {userStats.positiveFeedbackPercentage}%
               </strong>
               <span style={{fontSize: 11}}>
                 * les conseils étaient intéressants, utiles ou très utiles
               </span>
             </div>
             <div style={npsSumBoxStyle}>
-              <strong>Bob ne m'a pas aidé*</strong>
+              <strong>{config.productName} ne m'a pas aidé*</strong>
               <strong style={{...npsSumStyle, color: Colors.RED_PINK}}>
-                14%
+                {100 - userStats.positiveFeedbackPercentage}%
               </strong>
               <span style={{fontSize: 11}}>
                 * les conseils étaient mauvais ou peu intéressants
@@ -246,15 +275,14 @@ class TransparencyPage extends React.Component {
           </div>
         </div>
       </div>
+      <div style={npsStarStyle}>* Via le formulaire de feedback au sein de l'application</div>
     </div>
   }
 
   renderLove(sectionStyle) {
     const {isMobileVersion} = this.context
     const containerStyle = {
-      // TODO(pascal): Custom color, either fix it or add it to the list of
-      // theme's Colors.
-      background: '#f8fcff',
+      backgroundColor: colorToAlpha(Colors.BOB_BLUE, .1),
       overflow: 'hidden',
       position: 'relative',
     }
@@ -272,9 +300,7 @@ class TransparencyPage extends React.Component {
       position: 'relative',
     }
     const bigQuoteStyle = {
-      // TODO(pascal): Custom color, either fix it or add it to the list of
-      // theme's Colors.
-      color: '#e6f5ff',
+      color: colorToAlpha(Colors.BOB_BLUE, .2),
       fontSize: 200,
       marginRight: 5,
       position: 'absolute',
@@ -287,10 +313,12 @@ class TransparencyPage extends React.Component {
       right: '100%',
       top: 0,
     }
-    return <div style={{...textSectionStyle, ...containerStyle}}>
+    return <div style={{...textSectionStyle, ...containerStyle, paddingBottom: 54}}>
       {isMobileVersion ? null : <img src={loveMessageImage} alt="" style={backgroundImageStyle} />}
       <div style={{...sectionStyle, ...this.getTextStyle()}}>
-        <div style={titleStyle}><strong>Notre message préféré</strong></div>
+        <div style={{fontSize: 20, marginBottom: 20, marginTop: 50}}>
+          <strong>Notre message préféré</strong>
+        </div>
         <div>
           Nous recevons régulièrement des retours d'utilisateurs qui nous
           touchent. C'est ce qui nous motive pour avancer
@@ -343,7 +371,7 @@ class TransparencyPage extends React.Component {
     const {isMobileVersion} = this.context
     const flexRowOnDesktop = {
       display: 'flex',
-      flexDirection: isMobileVersion ? 'column': 'row',
+      flexDirection: isMobileVersion ? 'column' : 'row',
     }
     const milestonesZone = {
       ...graphStyle,
@@ -352,7 +380,23 @@ class TransparencyPage extends React.Component {
       marginTop: 10,
       width: '100%',
     }
+    const milestone = {
+      border: 'solid 1px',
+      borderColor: Colors.SILVER,
+      borderRadius: 4,
+      flex: 1,
+      margin: isMobileVersion ? '0px 0px 20px' : '0px 10px',
+      padding: '30px 0',
+      textAlign: 'center',
+    }
     return <div style={textSectionStyle}>
+      <div style={this.getTextStyle()}>
+        <div style={titleStyle}><strong>Avancement du projet</strong></div>
+        {config.productName} est un projet de long-terme. Nous apprenons en
+        marchant, car nous pensons que c'est ainsi que nous pourrons créer une
+        plate-forme toujours plus utile. Notre développement se fait de façon
+        ouverte : retrouvez ci-dessous les étapes d'avancement du projet.
+      </div>
       <div style={this.getTextStyle()}>
         <div style={sectionTitleStyle}>Travaux en cours</div>
         {config.productName} est en développement actif. Le code est open source et&nbsp;
@@ -365,14 +409,14 @@ class TransparencyPage extends React.Component {
           'https://github.com/bayesimpact/bob-emploi/blob/master/CHANGELOG.md')}.
       </div>
       <div style={milestonesZone}>
-        <div style={milestone}>
+        <div style={{...milestone, marginLeft: 0}}>
           <div style={milestoneSurtitle}>Étape précédente</div>
           <strong>Expérience utilisateur</strong>
           <div style={{...milestoneSubtitle, color: Colors.GREENISH_TEAL}}>
             Terminé le 19 juillet 2017
           </div>
           <div style={milestoneExcerptStyle}>
-            "La proposition de valeur de Bob est claire,
+            "La proposition de valeur de {config.productName} est claire,
             et l'expérience est cohérente même avec un éventail de
             recommandations plus restreint"
           </div>
@@ -382,11 +426,11 @@ class TransparencyPage extends React.Component {
           <strong>Diversité des recommandations</strong>
           <div style={{...milestoneSubtitle}}>&nbsp;</div>
           <div style={milestoneExcerptStyle}>
-            "Bob est capable de recommander suffisamment de types de conseil pour être
-            pertinent dans un large éventail de cas."
+            "{config.productName} est capable de recommander suffisamment de
+            types de conseil pour être pertinent dans un large éventail de cas."
           </div>
         </div>
-        <div style={milestone}>
+        <div style={{...milestone, marginRight: 0}}>
           <div style={milestoneSurtitle}>Étape suivante</div>
           <strong>Algorithmes de scoring</strong>
           <div style={milestoneSubtitle}>&nbsp;</div>
@@ -402,60 +446,61 @@ class TransparencyPage extends React.Component {
           <img src={npsImage} style={imageStats} alt="évaluation par les utilisateurs" />
         </a>
       </div>
+      {this.renderWorkAxes()}
     </div>
   }
 
-  renderUserFeedback() {
-    return  <div style={textSectionStyle}>
-      <div style={this.getTextStyle()}>
-        <div style={sectionTitleStyle}>
-          Retours utilisateurs
+  renderUserFeedback(sectionStyle) {
+    return <div style={textSectionStyle}>
+      <div style={{...this.getTextStyle(), ...sectionStyle}}>
+        <div style={{...titleStyle, lineHeight: 1, marginBottom: 16}}>
+          <strong>Retours utilisateurs</strong>
         </div>
-        Nous travaillons à l'amélioration continue de l'impact de Bob au contact des
-        utilisateurs. Leurs retours, synthétisés ici, sont donc importants pour guider nos travaux.
+        Nous travaillons à l'amélioration continue de l'impact de {config.productName} au
+        contact des utilisateurs.
       </div>
       <a href={userPositiveFeedbacksImage} target="_blank" rel="noopener noreferrer">
-        <div style={graphStyle}>
+        <div style={{...graphStyle, marginBottom: 10}}>
           <img src={userFeedbackPositiveImage} style={imageStats} alt="retours positifs" />
         </div>
       </a>
-      <div style={graphStyle}>
+      <div style={{...graphStyle, marginBottom: 40}}>
         <img src={userFeedbackNegativeImage} style={imageStats} alt="retours négatifs" />
       </div>
-      <div style={this.getTextStyle()}>
-        <div style={sectionTitleStyle}>
-          Axes de travail principaux
-        </div>
-        <ul>
-          <li style={bulletStyle}>
-            <span style={subtitleStyle}>Produit :</span> rendre Bob plus pertinent pour plus
-            de types de situations. Si la plate-forme apporte les conseils appropriés pour une
-            partie croissante de nos utilisateurs, ce qui se traduit en un nombre de bénéficiaires
-            élevé en valeur absolue, il existe encore de nombreux profils pour lesquels
-            ce n'est pas encore le cas. La tâche est rendue plus complexe par la faible
-            segmentation de notre base utilisateurs de Bob due à notre volonté de développer
-            un outil généraliste.
-          </li>
-          <li style={bulletStyle}>
-            <span style={subtitleStyle}>Distribution</span> : notre stratégie de distribution
-            reste embryonnaire (presse et bouche-à-oreille). Nous nous concentrons aujourd'hui
-            principalement sur l'amélioration de Bob avant de consacrer plus de ressources à
-            sa distribution dans le but d'augmenter le nombre de nos bénéficiaires.
-            Cependant définir cette stratégie est un enjeu majeur, car elle conditionnera
-            in fine notre impact global. Nos budgets ne nous permettant pas de faire de
-            grandes campagnes marketing, l'un de notre focus sera d'accroître
-            nos liens partenariaux avec les associations et organismes travaillant dans le
-            champ de l'emploi.
-          </li>
-          <li style={bulletStyle}>
-            <span style={subtitleStyle}>Écosystème</span> : catalyser l'innovation au sein du
-            service public de l'emploi représente une très forte source d'impact au-delà de
-            Bob lui-même.
-            Nous encourageons notamment la reproduction de certaines fonctionnalités de Bob
-            par d'autres acteurs.
-          </li>
-        </ul>
+      {this.renderLove(sectionStyle)}
+    </div>
+  }
+
+  renderWorkAxes() {
+    return <div style={this.getTextStyle()}>
+      <div style={sectionTitleStyle}>
+        Axes de travail principaux
       </div>
+      <ul>
+        <li style={bulletStyle}>
+          <span style={subtitleStyle}>Produit :</span> rendre {config.productName} plus pertinent
+          pour plus de types de situations différents. La tâche est rendue plus
+          complexe par notre volonté de faire de {config.productName} un outil fonctionnant pour
+          une large gamme de bénéficiaires, ce qui veut également dire que notre
+          base d'utilisateurs est peu segmentée.
+        </li>
+        <li style={bulletStyle}>
+          <span style={subtitleStyle}>Distribution</span> : notre stratégie de distribution
+          reste embryonnaire (presse et bouche-à-oreille). Nous nous concentrons aujourd'hui
+          principalement sur l'amélioration de {config.productName} avant de
+          nous concentrer plus sur sa distribution, mais cette dernière conditionnera
+          in fine notre impact global. Nos budgets ne nous permettant pas de
+          faire de grandes campagnes marketing, l'un de nos focus sera
+          d'accroître nos liens partenariaux avec les associations et organismes accompagnant les
+          chercheurs d'emploi.
+        </li>
+        <li style={bulletStyle}>
+          <span style={subtitleStyle}>Écosystème</span> : au-delà de {config.productName}, catalyser
+          l'innovation au sein du service public de l'emploi représente une très forte source
+          d'impact. Nous encourageons notamment la reproduction de certaines fonctionnalités
+          de {config.productName} par d'autres acteurs.
+        </li>
+      </ul>
     </div>
   }
 
@@ -467,7 +512,7 @@ class TransparencyPage extends React.Component {
         qui en ont le plus besoin, et pas seulement les publics plus faciles ou plus
         rentables.
         Nous suivons donc divers indicateurs liés à la diversité de la démographie des
-        utilisateurs de Bob afin d'identifier nos axes de progression.
+        utilisateurs de {config.productName} afin d'identifier nos axes de progression.
       </div>
       <div style={graphStyle}>
         <img src={demographyImage} style={imageStats} alt="statistiques demographiques" />
@@ -478,14 +523,16 @@ class TransparencyPage extends React.Component {
         </div>
         <ul>
           <li style={bulletStyle}>
-            <strong>Se concentrer sur les publics en milieu rural</strong> : l'usage de Bob reste
-            concentré dans les villes, mais nous pensons que l'autonomisation via le numérique
+            <strong>Se concentrer sur les publics en milieu rural</strong> :
+            l'usage de {config.productName} reste concentré dans les villes, mais nous
+            pensons que l'autonomisation via le numérique
             est d'autant plus pertinente dans les zones moins desservies en services publics.
           </li>
           <li style={bulletStyle}>
-            <strong>Rendre Bob plus accessible au regard de la fracture numérique</strong> :
-            nous ne sommes pas encore capables de mesurer plus finement l'utilisation de Bob
-            par rapport aux différentes dimensions de la fracture numérique (aisance avec
+            <strong>Rendre {config.productName} plus accessible au regard de la
+            fracture numérique</strong> : nous ne sommes pas encore capables de
+            mesurer plus finement l'utilisation de {config.productName} par rapport
+            aux différentes dimensions de la fracture numérique (aisance avec
             l'informatique, connectivité à internet, etc.). Nous envisageons notamment de
             nous rapprocher d'acteurs associatifs tels que les missions locales ou
             associations.
@@ -498,23 +545,23 @@ class TransparencyPage extends React.Component {
   renderFinances() {
     const {isMobileVersion} = this.context
     const downloadButtonStyle = {
-      backgroundColor: Colors.SKY_BLUE,
+      backgroundColor: Colors.BOB_BLUE,
       borderRadius: 4,
       boxShadow: '0 2px 3px 0 rgba(0, 0, 0, 0.2)',
       color: '#fff',
-      margin: '100px auto 200px auto',
+      margin: isMobileVersion ? '30px auto' : '100px auto 200px',
       padding: '15px 20px',
       textAlign: 'center',
       textDecoration: 'none',
-      width: isMobileVersion ? 300 : 430,
+      width: isMobileVersion ? 280 : 430,
     }
     return <div style={textSectionStyle}>
-      <div style={titleStyle}><strong>Financement de Bob Emploi</strong></div>
+      <div style={titleStyle}><strong>Financement de {config.productName}</strong></div>
       <div style={this.getTextStyle()}>
         <div>
           Bayes Impact est une association de loi 1901 à but non lucratif. En raison de
           notre volonté  d'inscrire notre initiative dans une démarche citoyenne de service
-          public, Bob Emploi ne dispose d'aucun business model et fonctionne de manière
+          public, {config.productName} ne dispose d'aucun business model et fonctionne de manière
           indépendante. Nous finançons ainsi notre équipe uniquement par des dons et
           subventions, répertoriés ici.
         </div>
@@ -550,7 +597,7 @@ class TransparencyPage extends React.Component {
         lauréat) et la fondation Google.org ainsi que la direction RSE du groupe Lafayette ont
         contribué ensemble 1&nbsp;665&nbsp;000&nbsp;€ en donations
         philanthropiques réparties sur plusieurs années afin de pérenniser les
-        travaux d'amélioration continue de Bob et démultiplier notre impact
+        travaux d'amélioration continue de {config.productName} et démultiplier notre impact
         dans la durée.
         <FundingTable
           style={{marginTop: 30}} items={[
@@ -587,7 +634,7 @@ class TransparencyPage extends React.Component {
               '(vidéo, 10 minutes)', 'https://www.youtube.com/watch?v=mMBCNR9uIpE')}
           </li>
           <li>
-            Notre démarche et vision pour Bob {this.makeLink(
+            Notre démarche et vision pour {config.productName} {this.makeLink(
               '(podcast, 1 heure)',
               'http://nouvelleecole.org/ep-20-paul-duan-disruption-bienveillante/')}
           </li>
@@ -616,10 +663,9 @@ class TransparencyPage extends React.Component {
         {this.renderPageDescription()}
         {this.renderGeneralMetrics()}
       </div>
-      {this.renderLove(sectionStyle)}
+      {this.renderUserFeedback(sectionStyle)}
       <div style={sectionStyle}>
         {this.renderRoadmap()}
-        {this.renderUserFeedback()}
         {this.renderDemography()}
         {this.renderFinances()}
         {this.renderLinks()}
@@ -649,7 +695,7 @@ class FundingTable extends React.Component {
       ...style,
     }
     const rowStyle = index => ({
-      backgroundColor: index % 2 ? 'transparent' : 'rgba(88, 187, 251, .1)',
+      backgroundColor: index % 2 ? 'transparent' : colorToAlpha(Colors.BOB_BLUE, .1),
     })
     const nameColumnStyle = {
       paddingLeft: 30,
@@ -665,7 +711,7 @@ class FundingTable extends React.Component {
       fontWeight: 'normal',
     }
     const totalRowStyle = {
-      backgroundColor: Colors.SKY_BLUE,
+      backgroundColor: Colors.BOB_BLUE,
       color: '#fff',
       fontSize: 16,
     }

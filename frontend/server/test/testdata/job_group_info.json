@@ -4,6 +4,7 @@
     "name": "Boucherie",
     "romeId": "D1101",
     "applicationComplexity": "SIMPLE_APPLICATION_PROCESS",
+    "growth20122022": 0.2,
     "applicationModes" : {
         "S0Z20" : {
             "modes" : [
@@ -210,18 +211,72 @@
         "codeOgr": "10867",
         "percentSuggested": 2
        }
-      ]
+      ],
+      "diplomas" : [ 
+        {
+          "name" : "Bac+2",
+          "percentSuggested" : 19,
+          "percentRequired" : 100
+        }
+      ],
+      "contractTypes" : [ 
+            {
+                "percentSuggested" : 54,
+                "contractType" : "CDD_LESS_EQUAL_3_MONTHS",
+                "percentRequired" : 100
+            }, 
+            {
+                "percentSuggested" : 30,
+                "contractType" : "CDD_OVER_3_MONTHS",
+                "percentRequired" : 100
+            }, 
+            {
+                "percentSuggested" : 14,
+                "contractType" : "CDI",
+                "percentRequired" : 100
+            }, 
+            {
+                "percentSuggested" : 2,
+                "contractType" : "INTERIM",
+                "percentRequired" : 100
+            }
+        ]
     },
     "workEnvironmentKeywords": {
       "sectors": ["Armée"],
       "structures": ["Marché, foire exposition", "Boucherie", "Boucherie-charcuteri"]
-    }
+    },
+    "preferredApplicationMedium": "APPLY_IN_PERSON"
   },
   {
     "_id": "K1903",
+    "applicationModes" : {
+        "S0Z20" : {
+            "modes" : [
+                {
+                    "percentage" : 53.2,
+                    "mode" : "PERSONAL_OR_PROFESSIONAL_CONTACTS"
+                },
+                {
+                    "percentage" : 42.1,
+                    "mode" : "SPONTANEOUS_APPLICATION"
+                },
+                {
+                    "percentage" : 5.0,
+                    "mode" : "PLACEMENT_AGENCY"
+                },
+                {
+                    "percentage" : 0.7,
+                    "mode" : "UNDEFINED_APPLICATION_MODE"
+                }
+            ]
+        }
+    },
     "name": "K 1903",
     "romeId": "K1903",
+    "growth20122022": -0.1,
     "applicationComplexity": "COMPLEX_APPLICATION_PROCESS",
+    "preferredApplicationMedium": "APPLY_BY_EMAIL",
     "requirements": {
       "officeSkills": [
         {
@@ -235,6 +290,7 @@
     "_id": "M1101",
     "name": "Achats",
     "romeId": "M1101",
+    "preferredApplicationMedium": "APPLY_BY_EMAIL",
     "applicationModes" : {
         "whatever" : {
             "modes" : [
@@ -244,12 +300,37 @@
                 }
             ]
         }
+    },
+    "requirements" : {
+        "contractTypes" : [ 
+            {
+                "percentSuggested" : 54,
+                "contractType" : "CDD_LESS_EQUAL_3_MONTHS",
+                "percentRequired" : 100
+            }, 
+            {
+                "percentSuggested" : 30,
+                "contractType" : "CDD_OVER_3_MONTHS",
+                "percentRequired" : 100
+            }, 
+            {
+                "percentSuggested" : 14,
+                "contractType" : "CDI",
+                "percentRequired" : 100
+            }, 
+            {
+                "percentSuggested" : 2,
+                "contractType" : "INTERIM",
+                "percentRequired" : 100
+            }
+        ]
     }
   },
   {
     "_id": "M1705",
     "name": "Marketing",
     "romeId": "M1705",
+    "hasFreelancers": true,
     "requirements": {
       "skills": [
         {
@@ -397,6 +478,7 @@
                 }
             ]
         }
-    }
+    },
+    "preferredApplicationMedium": "APPLY_IN_PERSON"
   }
 ]

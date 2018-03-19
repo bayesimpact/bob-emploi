@@ -1,8 +1,15 @@
+// TODO(pascal): Move these files to the store.
+import adviceModulesTu from 'components/advisor/data/advice_modules_fr_FR@tu.json'
+import adviceModulesVous from 'components/advisor/data/advice_modules.json'
+import emailTemplatesTu from 'components/advisor/data/email_templates_fr_FR@tu.json'
+import emailTemplatesVous from 'components/advisor/data/email_templates.json'
+import eventsTu from 'components/advisor/data/events_fr_FR@tu.json'
+import eventsVous from 'components/advisor/data/events.json'
+
 // Module to help with phrasing French sentences.
 //
 // If you fix any of the functions here, you'll probably want to update
 // frontend/server/french.py as well.
-import _ from 'underscore'
 
 
 // Use contract form of a word if the next word starts
@@ -36,9 +43,9 @@ export const upperFirstLetter = word => {
 
 // List of keywords that should stay as is if we find them. Note that this
 // list is not exhaustive and can be completed when we run in more cases.
-const alwaysUpperKeywords = _.object(_.map([
+const alwaysUpperKeywords = new Set([
   'IBM', 'SARL', 'SAS', 'DGEA', 'RATP', 'SNCF', 'SNC', 'FNAC', 'SA', 'LCL', 'LIDL',
-], item => [item, true]))
+])
 
 
 // Upper the first letter of each word of a string.
@@ -46,7 +53,7 @@ export const toTitleCase = text => {
   return text.match(/([\w]+(\W+|$))/g).
     map(word => {
       const trimmedWord = word.trim()
-      if (alwaysUpperKeywords[trimmedWord]) {
+      if (alwaysUpperKeywords.has(trimmedWord)) {
         return word
       }
       return word.substr(0, 1).toLocaleUpperCase() + word.substr(1).toLocaleLowerCase()
@@ -85,31 +92,68 @@ export const inCityPrefix = fullName => {
 }
 
 
-// Compute the prefix in front of a city name when writing about "of City C",
-// e.g. "Toulouse" => "de ", "Le Mans", "du ". Also return the part of the city
+// Compute the prefix in front of a name when writing about "of Name N",
+// e.g. "Toulouse" => "de ", "Le Mans" => "du ", "Orange" => "d'". Also return the part of the
 // name without the prefix.
-export const ofCityPrefix = fullName => {
+export const ofPrefix = fullName => {
+  if (fullName.match(/^[AEIOUY]/)) {
+    return {
+      modifiedName: fullName,
+      prefix: "d'",
+    }
+  }
   if (fullName.match(/^Le /)) {
     return {
-      cityName: fullName.substr(3),
+      modifiedName: fullName.substr(3),
       prefix: 'du ',
     }
   }
   if (fullName.match(/^Les /)) {
     return {
-      cityName: fullName.substr(4),
+      modifiedName: fullName.substr(4),
       prefix: 'des ',
     }
   }
   const matches = fullName.match(/^L(a |')(.*)/)
   if (matches) {
     return {
-      cityName: matches[2],
+      modifiedName: matches[2],
       prefix: 'de l' + lowerFirstLetter(matches[1]),
     }
   }
   return {
-    cityName: fullName,
+    modifiedName: fullName,
     prefix: 'de ',
   }
+}
+
+// TODO(cyrille): Use wherever applicable.
+export const inDepartement = city => {
+  const {departementName, departementPrefix} = city || {}
+  if (departementName && departementPrefix) {
+    return departementPrefix + departementName
+  }
+  return null
+}
+
+
+const canTutoieFrom = userYou => userYou && userYou(true, false)
+// TODO(cyrille): Load lazily if files get too big.
+export const getEvents = (userYou) => canTutoieFrom(userYou) ? eventsTu : eventsVous
+
+export const getEmailTemplates = userYou =>
+  canTutoieFrom(userYou) ? emailTemplatesTu : emailTemplatesVous
+
+export const getAdviceModules = userYou =>
+  canTutoieFrom(userYou) ? adviceModulesTu : adviceModulesVous
+
+
+export const genderize = (neutralSentence, herSentence, hisSentence, gender) => {
+  switch (gender) {
+    case 'FEMININE':
+      return herSentence
+    case 'MASCULINE':
+      return hisSentence
+  }
+  return neutralSentence
 }

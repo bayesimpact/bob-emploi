@@ -1,0 +1,1 @@
+javascript:void(function(){var%20s=document.createElement('script');s.setAttribute('src','https://www.bob-emploi.fr/assets/import-from-imilo.js');document.getElementsByTagName('head')[0].appendChild(s);}());

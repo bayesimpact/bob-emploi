@@ -1,13 +1,13 @@
 #!/bin/bash
 EXIT=0
 
-echo "Running pep8..."
-find -name "*.py" | grep -v _pb2.py$ | grep -v ./bob_emploi/frontend | xargs pep8 || EXIT=$?
+echo "Running pycodestyle..."
+find bob_emploi/data_analysis -name "*.py" | grep -v _pb2.py$ | xargs pycodestyle || EXIT=$?
 
 echo "Running pylint..."
-find -name "*.py" | grep -v _pb2.py$ | grep -v ./bob_emploi/frontend | xargs pylint --load-plugins pylint_quotes || EXIT=$?
+find bob_emploi/data_analysis -name "*.py" | grep -v _pb2.py$ | xargs pylint --load-plugins pylint_quotes --load-plugins pylint_doc_spacing || EXIT=$?
 
 echo "Running tests..."
-nosetests --exclude-dir=bob_emploi/frontend $@ || EXIT=$?
+nosetests bob_emploi/data_analysis $@ || EXIT=$?
 
 exit $EXIT

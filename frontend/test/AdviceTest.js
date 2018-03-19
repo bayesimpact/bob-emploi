@@ -4,9 +4,9 @@ import {getAdviceTitle} from 'store/advice'
 
 describe('getAdviceTitle', () => {
   it('returns a different title depending on the number of stars', () => {
-    const title1Star = getAdviceTitle({adviceId: 'network-application', numStars: 1})
-    const title2Stars = getAdviceTitle({adviceId: 'network-application', numStars: 2})
-    const title3Stars = getAdviceTitle({adviceId: 'network-application', numStars: 3})
+    const title1Star = getAdviceTitle({adviceId: 'commute', numStars: 1})
+    const title2Stars = getAdviceTitle({adviceId: 'commute', numStars: 2})
+    const title3Stars = getAdviceTitle({adviceId: 'commute', numStars: 3})
     expect(title1Star).to.be.ok
     expect(title2Stars).to.be.ok
     expect(title3Stars).to.be.ok

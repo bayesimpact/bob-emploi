@@ -1,8 +1,9 @@
 """Tests for the bob_emploi.frontend.privacy module."""
+
 import datetime
 import unittest
 
-from bob_emploi.frontend import privacy
+from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -12,6 +13,7 @@ class PrivacyTestCase(unittest.TestCase):
 
     def test_anonymize_proto(self):
         """Basic usage of anonymize_proto."""
+
         user = user_pb2.User()
         user.registered_at.FromDatetime(datetime.datetime(2017, 7, 19, 15, 43, 27, 12))
         user.google_id = 'Oh my god, this is personal!'
@@ -29,6 +31,7 @@ class PrivacyTestCase(unittest.TestCase):
 
     def test_anonymize_proto_also_field_usages_to_clear(self):
         """anonymize_proto clears both personal identifier and app-only fields."""
+
         user = user_pb2.User()
         user.registered_at.FromDatetime(datetime.datetime(2017, 7, 19, 15, 43, 27, 12))
         user.google_id = 'Oh my god, this is personal!'
@@ -47,6 +50,7 @@ class PrivacyTestCase(unittest.TestCase):
 
     def test_anonymize_proto_map(self):
         """anonymize_proto does not choke on a scalar map."""
+
         user = user_pb2.User()
         user.likes['pascal'] = True
 

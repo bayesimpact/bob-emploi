@@ -1,0 +1,97 @@
+preloadImiloBigJs = function (url, _callback) {
+
+    var loaded = false;
+    var modalProgress = null;
+    var progressBar = null;
+    var onprogress = false;
+
+    $.ajax({
+        async: true,
+        dataType: 'text',
+        processData: false,
+        type: 'GET',
+        url: url,
+
+        success : function () {
+            //console.log('min js file loaded successfuly, starting i-milo');
+            $('#loading-screen').removeClass('hide');
+            loaded = true;
+            if (modalProgress) {
+                modalProgress.remove();
+                modalProgress = null;
+                progressBar = null;
+            }
+            _callback();
+        },
+
+        xhr: function(){
+            // get the native XmlHttpRequest object
+            var xhr = $.ajaxSettings.xhr() ;
+
+            // set the onprogress event handler (if the browser supports it)
+            if ('onprogress' in xhr) {
+                // Modern browser, supports onprogress event, display percentage
+                onprogress = true;
+                xhr.onprogress = function (event) {
+                    if (progressBar) {
+                        var percentComplete = (event.lengthComputable)
+                            ? Math.round(event.loaded * 100 / event.total)
+                            : 100; // percent not computable ==> set bar to 100%
+                        progressBar.width(percentComplete + "%");
+                    }
+                };
+            }
+
+            // return the customized object
+            return xhr ;
+        }
+    });
+
+
+
+    setTimeout(function () {
+        loaded = true; // HACK from Florian
+        if (!loaded) {
+            // Affiche la modale seulement si le fichier n'a pas été chargé depuis 1 seconde.
+            $("#login-overlay").after(
+                '<div id="progressdiv" class="modal hide in" aria-hidden="false" style="display: block;">' +
+                '   <div class="modal-header container-fluid">' +
+                '       <div class="row-fluid">' +
+                '           <div class="span2">' +
+                '              <img src="/img/logo.png">' +
+                '           </div>' +
+                '           <div class="span10">' +
+                '               <h1>Portail Conseiller</h1>' +
+                '           </div>' +
+                '       </div>'+
+                '   </div>' +
+                '   <div class="modal-body text-center">' +
+                '       <div class="progress progress-striped active">' +
+                '           <div class="bar" style="width: 0%;"></div>' +
+                '       </div>' +
+                '       <b>Veuillez patienter pendant le chargement d\'Imilo</b>' +
+                '   </div>' +
+                '</div>'
+            );
+            modalProgress = $("#progressdiv");
+            progressBar = modalProgress.find('.bar');
+            if (! onprogress) {
+                // IE8/9 : xhr has no "onprogress" event, and has no animated progress bar
+                // => replace with ajax loader gif
+                progressBar.parent().parent().prepend('<img src="/img/ajax-loader-bar.gif" /><br/>');
+                progressBar.parent().remove();
+            }
+            var intervalId = setInterval(function () {
+                // SECURITE : Au cas où le chargement du fichier se serait terminé pendant le chargement de la modale...
+                if (loaded && modalProgress) {
+                    clearInterval(intervalId);
+                    modalProgress.remove();
+                    modalProgress = null;
+                    progressBar = null;
+                }
+            }, 500);
+
+        }
+    }, 1000);
+
+};

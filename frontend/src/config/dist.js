@@ -20,10 +20,13 @@ import jsonConfig from './dist.json'
 const config = {
   ...jsonConfig,
   donationUrl: 'https://www.helloasso.com/associations/bayes-impact-france/formulaires/3',
+  emploiStoreClientId:
+    'PAR_bobemploi_be1afe53827b15e37c95e9439c7429936c74876cbc1ff3d42d6f28ca78676825',
   githubSourceLink: 'https://github.com/bayesimpact/bob-emploi',
   helpRequestUrl: 'https://aide.bob-emploi.fr/hc/fr/requests/new',
+  jobGroupImageSmallUrl: 'https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/small/ROME_ID.jpg',
   jobGroupImageUrl: 'https://storage.gra1.cloud.ovh.net/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/Cover%20Images/ROME_ID.jpg',
-  productName: 'Bob Emploi',
+  productName: 'Bob',
   zendeskDomain: 'aide.bob-emploi.fr',
 }
 

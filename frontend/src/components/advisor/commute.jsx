@@ -1,15 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
-import {connect} from 'react-redux'
 
-import {getCommutingCities} from 'store/actions'
 import {inCityPrefix, lowerFirstLetter} from 'store/french'
 
 import {AppearingList, Colors, GrowingNumber, PaddedOnMobile, StringJoiner,
   Styles, Tag} from 'components/theme'
+import Picto from 'images/advices/picto-commute.png'
 
-import {PercentageBoxes} from './base'
+import {PercentageBoxes, connectExpandedCardWithContent} from './base'
 
 
 const maybeS = count => count > 1 ? 's' : ''
@@ -17,20 +16,23 @@ const maybeS = count => count > 1 ? 's' : ''
 class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    fontSize: PropTypes.number.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice, project} = this.props
+    const {advice, fontSize, project, userYou} = this.props
 
-    const {cities} = advice.commuteData
+    const {cities} = advice.commuteData || {}
     if (!cities || !cities.length) {
       return null
     }
 
     return <div>
-      <div style={{fontSize: 30}}>
-        Et si demain vous travailliez <StringJoiner>
+      <div style={{fontSize: fontSize}}>
+        Et si demain {userYou('tu travaillais ', 'vous travailliez ')}
+        <StringJoiner>
           {cities.slice(0, 3).map((name, index) => {
             const {cityName, prefix} = inCityPrefix(name)
             return <span key={`city-${index}`}>
@@ -50,20 +52,16 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
-    cities: PropTypes.array.isRequired,
-    dispatch: PropTypes.func.isRequired,
+    adviceData: PropTypes.shape({
+      cities: PropTypes.array,
+    }).isRequired,
     project: PropTypes.object.isRequired,
-  }
-
-  componentWillMount() {
-    const {cities, dispatch, project} = this.props
-    if (!cities.length) {
-      dispatch(getCommutingCities(project))
-    }
+    userYou: PropTypes.func.isRequired,
   }
 
   computeAllCities() {
-    const {cities, project} = this.props
+    const {adviceData, project, userYou} = this.props
+    const cities = adviceData.cities || []
 
     const interestingCities =
       cities.filter(({name}) => name !== project.mobility.city.name).slice(0, 6)
@@ -73,7 +71,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
 
     const otherCitiesList = interestingCities.map((city, index) => <CommuteCitySuggestion
       key={`city-${index}`}
-      city={city}
+      {...{city, userYou}}
       targetCity={project.mobility.city}
       style={{marginTop: -1}} />)
 
@@ -81,7 +79,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   render() {
-    const {project} = this.props
+    const {project, userYou} = this.props
     const otherCities = this.computeAllCities()
 
     if (!otherCities.length) {
@@ -92,14 +90,15 @@ class ExpandedAdviceCardContentBase extends React.Component {
       key="target-city"
       city={project.mobility.city}
       targetCity={project.mobility.city}
-      isTargetCity={true} />
+      isTargetCity={true}
+      userYou={userYou} />
 
     return <div>
       <PaddedOnMobile style={{fontSize: 21}}>
         {(otherCities.length > 1) ? 'Ces' : 'Cette'} <GrowingNumber
           style={{fontWeight: 'bold'}} number={otherCities.length} isSteady={true} />{' '}ville
         {maybeS(otherCities.length)} proche{maybeS(otherCities.length)} de chez
-        vous {otherCities.length > 1 ? 'ont' : 'a'} beaucoup
+        {userYou(' toi', ' vous')} {otherCities.length > 1 ? 'ont' : 'a'} beaucoup
         embauché en <strong>
           {lowerFirstLetter(project.targetJob.jobGroup.name)}
         </strong> ces deux dernières années :
@@ -110,10 +109,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => {
-  const {cities} = (app.adviceData[project.projectId] || {}).commute || {}
-  return {cities: cities || []}
-})(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connectExpandedCardWithContent()(ExpandedAdviceCardContentBase)
 
 
 class CommuteCitySuggestionBase extends React.Component {
@@ -122,6 +118,7 @@ class CommuteCitySuggestionBase extends React.Component {
     isTargetCity: PropTypes.bool,
     style: PropTypes.object,
     targetCity: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   handleClick = () => {
@@ -132,7 +129,7 @@ class CommuteCitySuggestionBase extends React.Component {
   }
 
   renderTargetCity(style) {
-    const {city} = this.props
+    const {city, userYou} = this.props
     const {prefix, cityName} = inCityPrefix(city.name)
     const targetCityStyle = {
       fontStyle: 'italic',
@@ -142,7 +139,7 @@ class CommuteCitySuggestionBase extends React.Component {
     }
     return <div style={style} onClick={this.handleClick}>
       <span style={targetCityStyle}>
-        {city.name} (votre ville)
+        {city.name} ({userYou('ta', 'votre')} ville)
       </span>
       <div style={{flex: 1}} />
       <div style={{fontStyle: 'italic', fontWeight: 'normal'}}>
@@ -208,4 +205,4 @@ class CommuteCitySuggestionBase extends React.Component {
 const CommuteCitySuggestion = Radium(CommuteCitySuggestionBase)
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

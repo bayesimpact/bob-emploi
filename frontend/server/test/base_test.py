@@ -1,4 +1,5 @@
 """Base classes for tests of the server module."""
+
 import binascii
 import hashlib
 import json
@@ -8,15 +9,29 @@ import unittest
 import mock
 import mongomock
 
-from bob_emploi.frontend import server
+from bob_emploi.frontend.server import server
 
 
 def sha1(*args):
     """Compute the sha1 of the given args and return an hex string of it."""
+
     hasher = hashlib.sha1()
     for arg in args:
         hasher.update(arg.encode('utf-8'))
     return binascii.hexlify(hasher.digest()).decode('ascii')
+
+
+def add_project(user):
+    """Modifier for a user proto that adds a new project.
+
+    Callers should not rely on the actual values of the project, just that it's
+    a valid project.
+    """
+
+    user['projects'] = user.get('projects', []) + [{
+        'targetJob': {'jobGroup': {'romeId': random.choice(('A1234', 'B5678'))}},
+        'mobility': {'city': {'cityId': random.choice(('31555', '69123',))}},
+    }]
 
 
 class ServerTestCase(unittest.TestCase):
@@ -24,6 +39,7 @@ class ServerTestCase(unittest.TestCase):
 
     def setUp(self):
         """Set up mock environment."""
+
         super(ServerTestCase, self).setUp()
         # Simulate a clean load of the modules.
 
@@ -31,7 +47,10 @@ class ServerTestCase(unittest.TestCase):
         self._db = mongomock.MongoClient().get_database('test')
         server.app.config['DATABASE'] = self._db
         server._DB = self._db  # pylint: disable=protected-access
-        server._JOB_GROUPS_INFO.reset_cache()  # pylint: disable=protected-access
+        self._user_db = mongomock.MongoClient().get_database('user_test')
+        server.app.config['USER_DATABASE'] = self._user_db
+        server._USER_DB = self._user_db  # pylint: disable=protected-access
+        server.jobs._JOB_GROUPS_INFO.reset_cache()  # pylint: disable=protected-access
         server._CHANTIERS.reset_cache()  # pylint: disable=protected-access
         server.advisor._EMAIL_ACTIVATION_ENABLED = False  # pylint: disable=protected-access
         self._db.chantiers.insert_many([
@@ -102,6 +121,7 @@ class ServerTestCase(unittest.TestCase):
         Returns:
             Returns their user_id.
         """
+
         response = self.app.post(
             '/api/user/authenticate',
             data='{{"email": "{}", "firstName": "{}", "lastName": "{}", "hashedPassword": "{}"}}'
@@ -112,23 +132,8 @@ class ServerTestCase(unittest.TestCase):
 
     def authenticate_new_user(self, *args, **kwargs):
         """Authenticates new user, calls authenticate_new_user_token."""
+
         return self.authenticate_new_user_token(*args, **kwargs)[0]
-
-    def user_login(self, email='foo@bar.fr', password='psswd'):
-        """User login."""
-        response = self.app.post(
-            '/api/user/authenticate', data='{{"email": "{}"}}'.format(email),
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-        salt = auth_response['hashSalt']
-
-        response2 = self.app.post(
-            '/api/user/authenticate',
-            data='{{"email": "{}", "hashSalt": "{}", "hashedPassword": "{}"}}'.format(
-                email, salt, sha1(salt, sha1(email, password))),
-            content_type='application/json')
-        auth_response2 = self.json_from_response(response2)
-        return auth_response2['authenticatedUser']
 
     def create_user_with_token(self, modifiers=None, data=None, email=None, advisor=True):
         """Creates a new user.
@@ -140,8 +145,9 @@ class ServerTestCase(unittest.TestCase):
         Returns:
             the user's ID.
         """
+
         if email is None:
-            email = 'foo{:d}@bar.fr'.format(self._db.user.count())
+            email = 'foo{:d}@bar.fr'.format(self._user_db.user.count())
         if not data:
             data = {
                 'profile': {
@@ -182,44 +188,19 @@ class ServerTestCase(unittest.TestCase):
 
     def create_user(self, *args, **kwargs):
         """Creates a new user, calling create_user_with_token"""
+
         return self.create_user_with_token(*args, **kwargs)[0]
-
-    def create_user_token_that(self, predicate, num_tries=50, *args, **kwargs):
-        """Creates a user that passes a predicate.
-
-        Args:
-            predicate: the predicate on the JSON-like dict to pass.
-            num_tries: the number of creation attempt that we should try.
-            args, kwargs: the parameters to send to the create_user method on
-                each attempt.
-        Returns:
-            a user ID.
-        Raises:
-            AssertionError: if we could not create a user that passes the
-            predicate in the given number of tries.
-        """
-        for unused_ in range(num_tries):
-            user_id, auth_token = self.create_user_with_token(*args, **kwargs)
-            user_data = self._db.user.find_one({'_id': mongomock.ObjectId(user_id)})
-            try:
-                if predicate(user_data):
-                    return user_id, auth_token
-            except KeyError:
-                pass
-        self.fail('Could not create a user that matches the predicate')  # pragma: no cover
-
-    def create_user_that(self, *args, **kwargs):
-        """Create a user that passe a predicate, calling create_user_token_that"""
-        return self.create_user_token_that(*args, **kwargs)[0]
 
     def json_from_response(self, response):
         """Parses the json returned in a response."""
+
         data_text = response.get_data(as_text=True)
         self.assertEqual(200, response.status_code, msg=data_text)
         return json.loads(data_text)
 
     def get_user_info(self, user_id, auth_token=None):
         """Retrieve the user's data from the server."""
+
         kwargs = {}
         if auth_token:
             kwargs['headers'] = {'Authorization': 'Bearer ' + auth_token}
@@ -228,13 +209,15 @@ class ServerTestCase(unittest.TestCase):
 
     def user_info_from_db(self, user_id):
         """Get user's info directly from DB without calling any endpoint."""
-        user_info = self._db.user.find_one({'_id': mongomock.ObjectId(user_id)})
+
+        user_info = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
         self.assertIn('_server', user_info)
         return {k: v for k, v in user_info.items() if not k.startswith('_')}
 
 
 def add_project_modifier(user):
     """Modifier to use in create_user_with_token to add a project."""
+
     user['projects'] = user.get('projects', []) + [{
         'targetJob': {'jobGroup': {'romeId': random.choice(('A1234', 'B5678'))}},
         'mobility': {'city': {'cityId': random.choice(('31555', '69123'))}},

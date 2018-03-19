@@ -1,0 +1,22 @@
+.highlight {
+	background-color: #EEEEEE;
+	border-radius : 3px;
+	border: 1px solid #CCCCCC;
+	font-style:normal;
+}
+
+.ui-autocomplete-loading {
+	background: white url('../img/ajax_loader_28.gif') 95% center no-repeat;
+}
+
+.ui-autocomplete-category {
+	font-weight: bold;
+}
+
+#tags {
+	width: 400px;
+	border: 1px solid #999999;;
+	margin: 0 0 5px;
+	padding: 5px 0;
+	font-size: 106%;
+}

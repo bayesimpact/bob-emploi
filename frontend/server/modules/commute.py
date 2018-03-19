@@ -1,8 +1,9 @@
 """Module to advise the user to extend their commute to get more offers."""
+
 import math
 
-from bob_emploi.frontend import proto
-from bob_emploi.frontend import scoring
+from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -14,51 +15,56 @@ _MIN_CITY_DISTANCE = 8
 _MAX_CITY_DISTANCE = 35
 
 
-class _AdviceCommuteScoringModel(scoring.ModelBase):
+class _AdviceCommuteScoringModel(scoring_base.ModelBase):
     """A scoring model to trigger the "Commute" advice."""
 
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
+
         return project_pb2.CommuteData(cities=[c.name for c in self.list_nearby_cities(project)])
 
-    def score(self, project):
+    def score_and_explain(self, project):
         """Compute a score for the given ScoringProject."""
+
         nearby_cities = self.list_nearby_cities(project)
         if not nearby_cities:
-            return 0
+            return scoring_base.NULL_EXPLAINED_SCORE
 
         if project.details.mobility.area_type > geo_pb2.CITY and \
                 any(c.relative_offers_per_inhabitant >= 2 for c in nearby_cities):
-            return 3
+            return scoring_base.ExplainedScore(
+                3, ["il y a beaucoup plus d'offres par habitants dans d'autres villes"])
 
-        return 2
+        return scoring_base.ExplainedScore(
+            2, ["il est toujours bon d'avoir une idée des offres dans les autres villes"])
 
     def get_expanded_card_data(self, project):
         """Retrieve data for the expanded card."""
+
         return commute_pb2.CommutingCities(cities=self.list_nearby_cities(project))
 
-    @scoring.ScoringProject.cached('commute')
+    @scoring_base.ScoringProject.cached('commute')
     def list_nearby_cities(self, project):
         """Compute and store all interesting cities that are not too close and not too far.
 
         Those cities will be used by the Commute advice.
         """
+
         job_group = project.details.target_job.job_group.rome_id
 
-        all_cities = commute_pb2.HiringCities()
-        proto.parse_from_mongo(
-            project.database.hiring_cities.find_one({'_id': job_group}), all_cities)
+        all_cities = proto.create_from_mongo(
+            project.database.hiring_cities.find_one({'_id': job_group}),
+            commute_pb2.HiringCities)
         interesting_cities_for_rome = all_cities.hiring_cities
 
         if not interesting_cities_for_rome:
             return []
 
-        target_city = geo_pb2.FrenchCity()
         mongo_city = project.database.cities.find_one(
             {'_id': project.details.mobility.city.city_id})
         if not mongo_city:
             return []
-        proto.parse_from_mongo(mongo_city, target_city)
+        target_city = proto.create_from_mongo(mongo_city, geo_pb2.FrenchCity)
 
         commuting_cities = list(_get_commuting_cities(interesting_cities_for_rome, target_city))
 
@@ -108,10 +114,11 @@ def _compute_square_distance(city_a, city_b):
      - 1° latitude = 111km
      - 1° longitude = 111km * cos(lat)
     """
+
     delta_y = (city_a.latitude - city_b.latitude) * 111
     mean_latitude = (city_a.latitude + city_b.latitude) / 2
     delta_x = (city_a.longitude - city_b.longitude) * 111 * math.cos(math.radians(mean_latitude))
     return delta_x * delta_x + delta_y * delta_y
 
 
-scoring.register_model('advice-commute', _AdviceCommuteScoringModel())
+scoring_base.register_model('advice-commute', _AdviceCommuteScoringModel())

@@ -1,4 +1,5 @@
 """Module to help the frontend manipulate protobuffers."""
+
 import collections
 import datetime
 import functools
@@ -16,6 +17,8 @@ except ImportError:
 from google.protobuf import json_format
 from google.protobuf import message
 
+from bob_emploi.frontend.server import now
+
 _CACHE_DURATION = datetime.timedelta(hours=1)
 _IS_TEST_ENV = bool(os.getenv('TEST_ENV'))
 
@@ -30,6 +33,7 @@ def parse_from_mongo(mongo_dict, proto):
         proto: a protobuffer to merge data into.
     Returns: a boolean indicating whether the input had actual data.
     """
+
     if mongo_dict is None:
         return False
     to_delete = [k for k in mongo_dict if k.startswith('_')]
@@ -46,6 +50,26 @@ def parse_from_mongo(mongo_dict, proto):
             raise error
         return False
     return True
+
+
+def create_from_mongo(mongo_dict, proto_type, always_create=True):
+    """Create a Protobuf from a dict coming from MongoDB.
+
+    Args:
+        mongo_dict: a dict coming from MongoDB, or None. This dict will be
+            modified by the function: it removes all the keys prefixed by "_"
+            and convert datetime objects to iso strings.
+        proto_type: a protobuffer type to create the data from.
+        always_create: when True, this function creates an empty proto if the
+            entry is empty or if the parsing fails.
+    Returns: a populated instance of the proto or None if there was an error.
+    """
+
+    assert issubclass(proto_type, message.Message)
+    proto = proto_type()
+    if not parse_from_mongo(mongo_dict, proto) and not always_create:
+        return None
+    return proto
 
 
 def _convert_datetimes_to_string(values):
@@ -69,6 +93,7 @@ def flask_api(out_type=None, in_type=None):
 
     The decorator converts the POST body from JSON to proto.
     """
+
     if not flask:
         raise ImportError("No module named 'flask'")
     if out_type:
@@ -114,13 +139,13 @@ def _cache_mongo_collection(mongo_iterator, cache, proto_type, update_func=None)
     Returns:
         returns the cache value populated.
     """
+
     if cache:
         return cache
     as_dict = isinstance(cache, dict)
     for document in mongo_iterator():
-        proto = proto_type()
         _id = str(document['_id'])
-        parse_from_mongo(document, proto)
+        proto = create_from_mongo(document, proto_type)
         if update_func:
             update_func(proto, _id)
         if as_dict:
@@ -141,6 +166,7 @@ class MongoCachedCollection(object):
             collection_name: a MongoDB collection_name that holds he original protobuffers.
             update_func: an optional function to call on each proto once imported.
         """
+
         self._collection_name = collection_name
         self._proto_type = proto_type
         self._update_func = update_func
@@ -150,14 +176,17 @@ class MongoCachedCollection(object):
 
     def get_collection(self, database):
         """Gets access to the collection for a database."""
+
         if self._cache and database == self._database:
             return self._cache
         self._database = database
-        self._cache = _MongoCachedCollection(self._populate)
+        self._cache = CachedCollection(self._populate)
         return self._cache
 
+    # TODO(cyrille): Remove, since we have another way to deprecate cache.
     def reset_cache(self):
         """Reset any cache that this function could hold."""
+
         self._cache = None
         self._database = None
 
@@ -167,24 +196,37 @@ class MongoCachedCollection(object):
             self._proto_type, self._update_func)
 
 
-class _MongoCachedCollection(object):
+class CachedCollection(object):
+    """A collection of items cached for some time."""
+
+    _global_cache_version = 0
 
     def __init__(self, populate, cache_duration=_CACHE_DURATION):
         self._populate = populate
         self._cache = None
         self._cached_valid_until = None
         self._cache_duration = cache_duration
+        self._cache_version = self._global_cache_version
+
+    @classmethod
+    def update_cache_version(cls):
+        """Forces all cached collection to deprecate their cache."""
+
+        cls._global_cache_version += 1
 
     @property
     def is_cached(self):
         """Returns whether this object holds some cached data."""
+
         return bool(self._cache)
 
     def _ensure_cache(self):
-        now = datetime.datetime.utcnow()
-        if self._cached_valid_until and self._cached_valid_until >= now:
+        instant = now.get()
+        if self._cached_valid_until and self._cached_valid_until >= instant and \
+                self._cache_version >= self._global_cache_version:
             return self._cache
-        self._cached_valid_until = now + self._cache_duration
+        self._cache_version = self._global_cache_version
+        self._cached_valid_until = instant + self._cache_duration
         self._cache = collections.OrderedDict()
         self._populate(self._cache)
         return self._cache
@@ -192,5 +234,14 @@ class _MongoCachedCollection(object):
     def __getattr__(self, prop):
         return getattr(self._ensure_cache(), prop)
 
+    def __getitem__(self, key):
+        return self._ensure_cache()[key]
+
     def __iter__(self):
         return iter(self.values())
+
+    def __contains__(self, key):
+        return key in self._ensure_cache()
+
+    def __bool__(self):
+        return bool(self._ensure_cache())

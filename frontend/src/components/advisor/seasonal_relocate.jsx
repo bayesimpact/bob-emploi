@@ -4,26 +4,42 @@ import PropTypes from 'prop-types'
 import {getJobPlacesFromDepartementStats} from 'store/job'
 
 import {Colors, PaddedOnMobile} from 'components/theme'
+import Picto from 'images/advices/picto-seasonal-relocate.png'
 
 import {AdviceSuggestionList} from './base'
 
 class AdviceCard extends React.Component {
   static propTypes = {
-    advice: PropTypes.object.isRequired,
+    advice: PropTypes.shape({
+      seasonalData: PropTypes.shape({
+        departementStats: PropTypes.arrayOf(PropTypes.shape({
+          departementInName: PropTypes.string,
+        })),
+      }),
+    }).isRequired,
+    fontSize: PropTypes.number.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice} = this.props
-    const {departementStats} = advice.seasonalData || {
-      'departementStats': [{'departementInName': 'dans le Var'}],
-    }
+    const {
+      advice: {
+        seasonalData: {
+          departementStats: {
+            departementInName = 'dans le Var',
+          } = {},
+        } = {},
+      } = {},
+      fontSize,
+      userYou,
+    } = this.props
     // TODO(guillaume): Add job titles that feel interesting for our users.
     return <div>
-      <div style={{fontSize: 30}}>
-        Et si vous travailliez <strong>4 mois comme
-        barman {departementStats[0].departementInName}</strong>&nbsp;?
-        On cherche du monde pour la prochaine saison touristique et vous pourriez gagner en
-        expérience.
+      <div style={{fontSize: fontSize}}>
+        Et si {userYou('tu travaillais', 'vous travailliez')} <strong>4 mois comme
+        barman {departementInName}</strong>&nbsp;?
+        On cherche du monde pour la prochaine saison touristique
+        et {userYou('tu pourrais', 'vous pourriez')} gagner en expérience.
       </div>
     </div>
   }
@@ -32,24 +48,35 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
-    advice: PropTypes.object.isRequired,
+    advice: PropTypes.shape({
+      seasonalData: PropTypes.shape({
+        departementStats: PropTypes.arrayOf(PropTypes.shape({
+          departementInName: PropTypes.string,
+          jobGroups: PropTypes.arrayOf(PropTypes.shape({
+            name: PropTypes.string,
+            romeId: PropTypes.string,
+          }).isRequired),
+        })),
+      }),
+    }).isRequired,
   }
 
   render() {
-    const {advice} = this.props
-    const {departementStats} = advice.seasonalData || {
-      'departementStats': [
-        {
-          'departementInName': 'dans le Var',
-          'jobGroups': [
-            {
-              'name': 'Hôtellerie',
-              'romeId': '10293',
-            },
-          ],
-        },
-      ],
-    }
+    const {
+      advice: {
+        seasonalData: {
+          departementStats = [{
+            'departementInName': 'dans le Var',
+            'jobGroups': [
+              {
+                'name': 'Hôtellerie',
+                'romeId': '10293',
+              },
+            ],
+          }],
+        } = {},
+      } = {},
+    } = this.props
 
     const jobPlaces = getJobPlacesFromDepartementStats(departementStats)
 
@@ -60,9 +87,7 @@ class ExpandedAdviceCardContent extends React.Component {
       </PaddedOnMobile>
       <AdviceSuggestionList isNotClickable={true}>
         {jobPlaces.map((jobPlace, index) => <SeasonalJobSuggestion
-          inDepartement={jobPlace.inDepartement}
-          jobGroup={jobPlace.jobGroup}
-          key={`suggestion-${index}`} />)}
+          {...jobPlace} key={`suggestion-${index}`} />)}
       </AdviceSuggestionList>
     </div>
   }
@@ -97,4 +122,4 @@ class SeasonalJobSuggestion extends React.Component {
 }
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

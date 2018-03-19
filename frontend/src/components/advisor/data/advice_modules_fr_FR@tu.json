@@ -1,0 +1,427 @@
+{
+  "association-help": {
+    "callToAction": "Voir des exemples d'associations d'accompagnement",
+    "explanations": [
+      "800.000+ Français font appel à des associations pour les aider leur recherche d'emploi"
+    ],
+    "goal": "trouver une association pour t'accompagner",
+    "title": "Trouve une association pour t'accompagner",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus rapide de retrouver un emploi"
+  },
+  "better-job-in-group": {
+    "callToAction": "Voir des exemples de métiers proches",
+    "explanations": [
+      "tu as les compétences pour postuler à d'autres postes"
+    ],
+    "goal": "trouver les meilleurs métier proches",
+    "title": "Regarde les métiers proches du tien",
+    "titleXStars": {
+      "1": "N'oublie pas de regarder les métiers proches",
+      "2": "Explore les métiers proches du tien",
+      "3": "Explore les métiers proches du tien"
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus rapide de retrouver un emploi"
+  },
+  "body-language": {
+    "explanations": [
+      "une grande partie de la communication est non-verbale"
+    ],
+    "goal": "te mettre en valeur",
+    "title": "Booste ta confiance en travaillant ton language corporel",
+    "titleXStars": {
+      "1": "Utilise davantage le language corporel",
+      "2": "Booste ta confiance en travaillant ton language corporel",
+      "3": "Booste ta confiance en travaillant ton langage corporel"
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus de chances de faire une très bonne première impression"
+  },
+  "civic-service": {
+    "explanations": [
+      "tu pourras gagner de l'expérience"
+    ],
+    "goal": "gagner de l'expérience",
+    "title": "Fais une mission de service civique",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus rapide de trouver une mission"
+  },
+  "commute": {
+    "callToAction": "Regardez quelles villes proches ont de nombreuses offres",
+    "explanations": [
+      "30 min de transport peuvent te permettre d'accéder à plus d'opportunités"
+    ],
+    "goal": "explorer les villes qui proposent le plus d'emplois",
+    "title": "Explore les offres dans les villes proches",
+    "titleXStars": {
+      "1": "Considére les offres dans des villes proches",
+      "2": "Regarde les offres dans des villes proches",
+      "3": "Explore les offres dans les villes proches"
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "d'opportunités d'embauche accessibles"
+  },
+  "create-your-company": {
+    "explanations": [
+      "le taux de pérennité des micro-entreprises financées par l'Adie est de 68 % après 2 ans d'existence"
+    ],
+    "goal": "réfléchir à ton projet",
+    "title": "Envisage de créer ta propre activité",
+    "titleXStars": {
+    },
+    "userGainDetails": "Ça dépend de toi"
+  },
+  "driving-license-euro": {
+    "explanations": [
+      "tu as entre 16 et 18 ans"
+    ],
+    "goal": "obtenir le permis",
+    "title": "Essaie d'obtenir un prêt « permis à 1€ »",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus d'opportunités d'embauche"
+  },
+  "driving-license-low-income": {
+    "explanations": [
+      "il semblerait que tu remplisses certaines conditions pour obtenir une aide au permis"
+    ],
+    "goal": "obtenir le permis",
+    "title": "Essaie d'obtenir une aide au permis de conduire",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus d'opportunités d'embauche"
+  },
+  "driving-license-written": {
+    "explanations": [
+      "obtenir le permis augmenterait tes chances de trouver un emploi"
+    ],
+    "goal": "obtenir le code de la route",
+    "title": "Révise ton code de la route en ligne",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus d'opportunités d'embauche"
+  },
+  "events": {
+    "callToAction": "Trouver des exemples d'évènements professionnels",
+    "explanations": [
+      "tu pourras rencontrer directement des recruteurs"
+    ],
+    "goal": "trouver et te préparer à aller à des évènements",
+    "title": "Va à des évènements",
+    "titleXStars": {
+      "1": "Explore les évènements professionnels autour de toi",
+      "2": "Passe plus de temps dans les évènements professionnels",
+      "3": "Passe plus de temps dans les évènements professionnels"
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus de chances de décrocher un entretien en rencontrant les employeurs en personne"
+  },
+  "find-a-jobboard": {
+    "callToAction": "Voir des exemples de portails d'offre en ligne",
+    "explanations": [
+      "tu pourras cibler des offres qui te correspondent"
+    ],
+    "goal": "trouver des offres qui te correspondent",
+    "title": "Fais le tour des sites d'emploi intéressants pour toi",
+    "titleXStars": {
+    },
+    "userGainCallout": "30 min",
+    "userGainDetails": "de temps de recherche économisé par jour"
+  },
+  "follow-up": {
+    "callToAction": "Voir des exemples de mails de relance",
+    "explanations": [
+      "tu pourras te démarquer des autres"
+    ],
+    "goal": "obtenir plus de réponses",
+    "title": "Relance toujours après avoir postulé",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "fresh-resume": {
+    "callToAction": "Voir des exemples de qualités à mettre en avant",
+    "explanations": [
+      "70% des candidats adaptent leur CV avant de postuler à une offre"
+    ],
+    "goal": "mettre en valeur ton profil",
+    "title": "Personnalise tes candidatures pour avoir plus d'impact",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus de chances de décrocher un entretien lorsque tu postules"
+  },
+  "immersion-milo": {
+    "explanations": [
+      "tu connaitras mieux la réalité de ton métier"
+    ],
+    "goal": "en apprendre plus sur l'immersion",
+    "title": "Découvre la réalité du métier grâce une immersion",
+    "titleXStars": {
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "d'attractivité de ton profil"
+  },
+  "improve-interview": {
+    "callToAction": "Voir des exemples de qualités à mettre en avant",
+    "explanations": [
+      "il y a des erreurs faciles à éviter en entretien"
+    ],
+    "goal": "réussir tes entretiens",
+    "title": "Assure-toi de montrer ta motivation lors de tes entretiens",
+    "titleXStars": {
+    },
+    "userGainCallout": "4x",
+    "userGainDetails": "plus de chances de convaincre la personne que tu rencontreras"
+  },
+  "improve-resume": {
+    "callToAction": "Voir des exemples de qualités à mettre en avant",
+    "explanations": [
+      "les CVs personnalisés sont beaucoup plus lus"
+    ],
+    "goal": "obtenir plus d'entretiens",
+    "title": "Personnalise tes candidatures pour avoir plus d'impact",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": " plus de chances de décrocher un entretien lorsque tu postules"
+  },
+  "less-applications": {
+    "explanations": [
+      "tu pourras mieux cibler tes candidatures"
+    ],
+    "goal": "postuler moins",
+    "title": "Ne t'épuise pas à faire trop de candidatures, postule moins !",
+    "titleXStars": {
+    },
+    "userGainCallout": "-80%",
+    "userGainDetails": "de candidatures inutiles"
+  },
+  "life-balance": {
+    "callToAction": "Voir des astuces pour votre bien-être",
+    "explanations": [
+      "on a besoin de repos et énergie pour s'ouvrir de nouvelles portes"
+    ],
+    "goal": "garder le moral",
+    "title": "Pense à t'aérer l'esprit",
+    "titleXStars": {
+      "1": "Pense à t'aérer l'esprit",
+      "2": "Pense à ménager ton équilibre de vie",
+      "3": "Fais surtout attention à ne pas perdre la santé !"
+    },
+    "userGainCallout": "🤗🤗🤗",
+    "userGainDetails": "de bien-être dans ta recherche"
+  },
+  "motivation-email": {
+    "callToAction": "Voir des exemples de mails de motivation",
+    "explanations": [
+      "certains font un choix dès la lecture du mail de motivation"
+    ],
+    "goal": "travailler sur ton mail de motivation",
+    "title": "Soigne vraiment tes mails de motivation",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "network-application": {
+    "callToAction": "Voir des exemples de mails pour contacter votre réseau",
+    "explanations": [
+      "la moitié des embauches se font grâce au bouche-à-oreille"
+    ],
+    "goal": "améliorer ton réseau",
+    "title": "Tu utilises peu le réseau, commence par expliquer aux gens comment ils peuvent t'aider",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "network-application-good": {
+    "callToAction": "Voir des exemples de mails pour contacter votre réseau",
+    "explanations": [
+      "la moitié des embauches se font grâce au bouche-à-oreille"
+    ],
+    "goal": "utiliser ton réseau de manière efficace",
+    "title": "Tu connais du monde, passe en priorité par eux !",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "network-application-medium": {
+    "callToAction": "Voir des exemples de mails pour contacter votre réseau",
+    "explanations": [
+      "la moitié des embauches se font grâce au bouche-à-oreille"
+    ],
+    "goal": "améliorer ton réseau",
+    "title": "Tu utilises peu ton réseau, explique aux gens comment ils peuvent t'aider",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "other-work-env": {
+    "callToAction": "Voir d'autres secteurs ou types d'organisations",
+    "explanations": [
+      "il y a moins de concurrences dans d'autres secteurs"
+    ],
+    "goal": "trouver d'autres secteurs",
+    "title": "Postule à d'autres types d'entreprises",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus d'opportunités d'embauches"
+  },
+  "relocate": {
+    "explanations": [
+      "trouver les opportunités qui te correspondent le mieux"
+    ],
+    "goal": "envisager de bouger dans un département qui recrute plus",
+    "title": "Envisage de bouger dans un département qui recrute plus",
+    "titleXStars": {
+    },
+    "userGainCallout": "+32%",
+    "userGainDetails": "d'opportunités d'embauche accessibles"
+  },
+  "reorient-jobbing": {
+    "callToAction": "Voir des métiers qui recrutent dans le département",
+    "explanations": [
+      "retourner sur le marché du travail plus rapidement"
+    ],
+    "goal": "considérer d'autres opportunités",
+    "title": "Mise sur les métiers qui recrutent le plus dans ton département",
+    "titleXStars": {
+    },
+    "userGainCallout": "1 mois",
+    "userGainDetails": "pour trouver un emploi"
+  },
+  "reorient-to-close-job": {
+    "explanations": [
+      "tu as les compétences pour postuler à d'autres postes"
+    ],
+    "goal": "considérer d'autres opportunités",
+    "title": "Valorise tes compétences dans un métier proche",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": " plus rapide de retrouver un emploi"
+  },
+  "seasonal-relocate": {
+    "explanations": [
+      "les métiers saisonniers recrutent beaucoup"
+    ],
+    "goal": "trouver un emploi saisonnier",
+    "title": "Pense aux emplois saisonniers",
+    "titleXStars": {
+    },
+    "userGainCallout": "5x",
+    "userGainDetails": "plus de chances de trouver un emploi en 1 mois"
+  },
+  "senior": {
+    "explanations": [
+      "tu auras les bons arguments pour convaincre"
+    ],
+    "goal": "mettre en valeur ton age",
+    "title": "Ton âge est un atout, valorise-le !",
+    "titleXStars": {
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "d'attractivité de ton profil"
+  },
+  "specific-to-job": {
+    "explanations": [
+      "certaines astuces sont très efficaces dans ton domaine"
+    ],
+    "goal": "te démarquer",
+    "title": "Utilise les ficelles des experts",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "spontaneous-application": {
+    "callToAction": "Trouver des entreprises où postuler",
+    "explanations": [
+      "la majorité des offres d'emploi ne sont pas mises sur internet"
+    ],
+    "goal": "faire de bonnes candidatures spontanées",
+    "title": "Pense aux candidatures spontanées",
+    "titleXStars": {
+      "1": "Pense aussi aux candidatures spontanées",
+      "2": "Fais davantage de candidatures spontanées",
+      "3": "Privilégie les candidatures spontanées sur le reste"
+    },
+    "userGainCallout": "5x",
+    "userGainDetails": "plus de chances de trouver un poste"
+  },
+  "training": {
+    "explanations": [
+      "tu pourras monter en compétences"
+    ],
+    "goal": "trouver une formation utile",
+    "title": "Trouve la bonne formation pour toi",
+    "titleXStars": {
+      "1": "Trouve une formation",
+      "2": "Regarde les possibilités de formations",
+      "3": "Trouve la bonne formation pour toi"
+    },
+    "userGainCallout": "2,3x",
+    "userGainDetails": "plus de chances de retrouver un emploi en moins de 6 mois"
+  },
+  "vae": {
+    "explanations": [
+      "91% des entreprises se disent prêtes à engager un candidat qui a le potentiel d'acquérir les compétences nécessaires."
+    ],
+    "goal": "valoriser tes aquis d'expérience",
+    "title": "Valorise tes années d'expérience par un diplôme",
+    "titleXStars": {
+    },
+    "userGainCallout": "3x",
+    "userGainDetails": "plus d'entreprises prêtes à t'embaucher"
+  },
+  "volunteer": {
+    "callToAction": "Voir des exemples d'associations près de chez vous",
+    "explanations": [
+      "tu pourras apprendre de nouvelles compétences"
+    ],
+    "goal": "trouver des missions de bénévolat",
+    "title": "Donne un coup de main à une association",
+    "titleXStars": {
+    },
+    "userGainCallout": "🤗🤗🤗",
+    "userGainDetails": "de bien-être dans ta recherche et un CV qui sort du lot"
+  },
+  "wow-baker": {
+    "callToAction": "Voir d'autres astuces pour vous démarquer",
+    "explanations": [
+      "les boulangers cherchent des candidats qui pourront tenir le rythme"
+    ],
+    "goal": "te démarquer",
+    "title": "Présente-toi au chef boulanger dès son arrivée tôt le matin",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "wow-hairdresser": {
+    "callToAction": "Voir d'autres astuces pour vous démarquer",
+    "explanations": [
+      "les coiffeurs apprécient de rencontrer les candidats en personne"
+    ],
+    "goal": "te démarquer",
+    "title": "Assure-toi de donner ton CV à la bonne personne quand tu postules",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus de chances de décrocher un entretien"
+  }
+}

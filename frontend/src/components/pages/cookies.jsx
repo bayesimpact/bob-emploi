@@ -1,13 +1,24 @@
+import PropTypes from 'prop-types'
 import React from 'react'
 
 import {StaticPage, StrongTitle} from 'components/static'
 
 
 class CookiesPage extends React.Component {
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
   render() {
+    const {isMobileVersion} = this.context
+    const style = {
+      fontSize: 16,
+      lineHeight: 1.63,
+      padding: isMobileVersion ? '60px 20px' : '90px 150px',
+    }
     return <StaticPage page="cookies" title={<span>
       Qu'est ce qu'un <StrongTitle>cookie</StrongTitle>&nbsp;?
-    </span>} style={{fontSize: 16, lineHeight: 1.63, padding: '90px 150px'}}>
+    </span>} style={style}>
       <strong>Qu'est-ce que sont les cookies ?</strong><br />
       Les cookies sont des fichiers stockés dans votre navigateur par les sites
       que vous visitez. C'est une pratique courante utilisée par la majorité

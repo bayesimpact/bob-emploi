@@ -25,39 +25,6 @@ const USER_PROFILE_FIELDS = {
 }
 const USER_PROFILE_SHAPE = PropTypes.shape(USER_PROFILE_FIELDS)
 
-function recursivelyUpdateDates(root, delta) {
-  if (!root) {
-    return root
-  }
-  if (typeof root === 'string') {
-    if (!/^\d+-\d+-\d+T\d+:\d+:[\d.]+Z$/.test(root)) {
-      return root
-    }
-    const d = new Date(root)
-    if (isNaN(d.valueOf())) {
-      return root
-    }
-    return new Date(d.getTime() + delta).toISOString()
-  }
-  if (typeof root !== 'object') {
-    return root
-  }
-  if (Object.prototype.toString.call(root) === '[object Array]') {
-    root.forEach((value, i) => {
-      root[i] = recursivelyUpdateDates(value, delta)
-    })
-    return root
-  }
-  for (const key in root) {
-    root[key] = recursivelyUpdateDates(root[key], delta)
-  }
-  return root
-}
-
-function travelInTime(user, delta) {
-  return recursivelyUpdateDates(user, delta)
-}
-
 function userAge(yearOfBirth) {
   const todayYear = (new Date()).getFullYear()
   return todayYear - yearOfBirth
@@ -66,7 +33,7 @@ function userAge(yearOfBirth) {
 // Returns a list of all frustrations of a user, as tags.
 // TODO(guillaume): Pull directly from Airtable when we know for sure the shape.
 function getUserFrustrationTags(profile) {
-  const maybeE = profile.gender === 'FEMININE' ? 'e': ''
+  const maybeE = profile.gender === 'FEMININE' ? 'e' : ''
   const frustrationsToTag = {
     AGE_DISCRIMINATION: 'Discriminations (âge)',
     ATYPIC_PROFILE: 'Profil atypique',
@@ -140,7 +107,7 @@ function projectMatchAllFilters(project, filters) {
 // A function that returns a description for a degree.
 // If no degree, we do not return any a description.
 function getHighestDegreeDescription(userProfile) {
-  if(userProfile.highestDegree === 'NO_DEGREE') {
+  if (userProfile.highestDegree === 'NO_DEGREE') {
     // Exception where we do not want to show the option's name.
     return
   }
@@ -183,7 +150,12 @@ function keepMostRecentRevision(clientUser, serverUser) {
 }
 
 
-export {getUserFrustrationTags, travelInTime, USER_PROFILE_FIELDS, increaseRevision,
+const youForUser = user => user.profile && user.profile.canTutoie ?
+  tuSentence => tuSentence :
+  (unusedTuSentence, vousSentence) => vousSentence
+
+
+export {getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision, youForUser,
   USER_PROFILE_SHAPE, userAge, getHighestDegreeDescription, keepMostRecentRevision,
   getFamilySituationOptions, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
   projectMatchAllFilters}

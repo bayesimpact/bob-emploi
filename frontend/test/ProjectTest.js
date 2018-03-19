@@ -1,9 +1,9 @@
 import {config, expect} from 'chai'
-import {createProjectTitle, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
-  PROJECT_EXPERIENCE_OPTIONS, createProjectTitleComponents, getEmploymentZone,
-  getTrainingFulfillmentEstimateOptions} from 'store/project'
+import {createProjectTitle, PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
+  PROJECT_EXPERIENCE_OPTIONS, createProjectTitleComponents,
+  getTrainingFulfillmentEstimateOptions, isOldProject} from 'store/project'
 import {EmploymentType} from 'api/job'
-import {PreviousJobSimilarity, TrainingFulfillmentEstimate} from 'api/project'
+import {PreviousJobSimilarity, TrainingFulfillmentEstimate, PassionateLevel} from 'api/project'
 
 config.truncateThreshold = 0
 
@@ -138,39 +138,7 @@ describe('PROJECT_EMPLOYMENT_TYPE_OPTIONS', () => {
 })
 
 
-describe('employment zone', () => {
-  it('should return the city name when there are no area type in mobility', () => {
-    const mobility = {city: {name: 'Paris'}}
-    const result = getEmploymentZone(mobility)
-    expect(result).to.equal('Paris')
-  })
-
-  it('should return the city when the city area is chosen in mobility', () => {
-    const mobility = {areaType: 'CITY', city: {name: 'Lectoure', regionName: 'Rhône-Alpes'}}
-    const result = getEmploymentZone(mobility)
-    expect(result).to.equal('Lectoure')
-  })
-
-  it('should return the departement when the departement area is chosen in mobility ', () => {
-    const mobility = {areaType: 'DEPARTEMENT', city: {departementName: 'Rhône', name: 'Lyon'}}
-    const result = getEmploymentZone(mobility)
-    expect(result).to.equal('Rhône')
-  })
-
-  it('should return the region when the region area is chosen in mobility', () => {
-    const mobility = {areaType: 'REGION', city: {name: 'Lyon', regionName: 'Rhône-Alpes'}}
-    const result = getEmploymentZone(mobility)
-    expect(result).to.equal('Rhône-Alpes')
-  })
-
-  it('should return "partout en France" when country area is chosen in mobility', () => {
-    const mobility = {areaType: 'COUNTRY', city: {name: 'Lyon', regionName: 'Rhône'}}
-    const result = getEmploymentZone(mobility)
-    expect(result).to.equal('partout en France')
-  })
-})
-
-
+// TODO(cyrille): Add test for all keys from proto to be present.
 describe('getTrainingFulfillmentEstimateOptions', () => {
   ['FEMININE', 'MASCULINE'].forEach(gender => it(`has proper values for ${gender}`, () => {
     const options = getTrainingFulfillmentEstimateOptions(gender)
@@ -186,6 +154,7 @@ describe('getTrainingFulfillmentEstimateOptions', () => {
 })
 
 
+// TODO(cyrille): Add test for all keys from proto to be present.
 describe('PROJECT_EXPERIENCE_OPTIONS', () => {
   expect(PROJECT_EXPERIENCE_OPTIONS).to.have.length.above(2)
   PROJECT_EXPERIENCE_OPTIONS.forEach(option => {
@@ -194,5 +163,42 @@ describe('PROJECT_EXPERIENCE_OPTIONS', () => {
     expect(name).to.be.ok
     expect(value).to.be.ok
     expect(PreviousJobSimilarity).to.include.key(value)
+  })
+})
+
+
+describe('PROJECT_PASSIONATE_OPTIONS', () => {
+  expect(PROJECT_PASSIONATE_OPTIONS).to.have.length.above(2)
+  PROJECT_PASSIONATE_OPTIONS.forEach(option => {
+    expect(option).to.contain.all.keys('name', 'value')
+    const {name, value} = option
+    expect(name).to.be.ok
+    expect(value).to.be.ok
+    expect(PassionateLevel).to.include.key(value)
+  })
+
+  expect(PROJECT_PASSIONATE_OPTIONS.map(({value}) => value)).to.have.all.members(
+    Object.keys(PassionateLevel).filter(key => PassionateLevel[key])
+  )
+})
+
+describe('isOldProject', () => {
+  it('should return false for an undefined project', () => {
+    expect(isOldProject()).to.be.false
+  })
+
+  it('should return false for a project without a date', () => {
+    expect(isOldProject({})).to.be.false
+  })
+
+  it('should return true for a project with an old creation date', () => {
+    expect(isOldProject({createdAt: '2017-02-06T09:56:20.263919Z'})).to.be.true
+  })
+
+  it('should return false for a project with a recent creation date', () => {
+    const today = new Date()
+    const lastWeek = new Date(today - 86400000 * 7)
+    const createdAt = lastWeek.toISOString()
+    expect(isOldProject({createdAt})).to.be.false
   })
 })

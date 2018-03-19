@@ -1,0 +1,54 @@
+//namespaces for Singleton views and config
+var Storage = function(prefix){
+    this.prefix = prefix;
+};
+Storage.prototype.get = function(key) {
+    return this[this.prefix + key];
+};
+Storage.prototype.set = function(key, value) {
+    this[this.prefix + key] = value;
+};
+
+App = {
+    pageChange : false,
+    Config: {},
+    Views: {},
+    Utils: {},
+    Constants : {},
+    Collections: {},
+    PermissionKeys: {},
+    Logs : {},
+    Settings: {
+        Records : {},
+        Companies : new Storage("partner"),
+        Ods : new Storage("ods")
+    },
+    StaticEdition : {
+        FinalCivis : {id : "civEdit1", url : "/civis/edition/definitif/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements CIVIS (définitive)"},
+        DraftCivis : {id : "civEdit2",url : "/civis/edition/brouillon/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements CIVIS (brouillon)"},
+        FinalPaceGrt : {id : "paceGrtEdit1", url : "/pace/edition/grt/definitif/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements PACEA Garantie Jeunes (Définitive)"},
+        DraftPaceGrt : {id : "paceGrtEdit2",url : "/pace/edition/grt/brouillon/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements PACEA Garantie Jeunes (Brouillon)"},
+        FinalPace : {id : "paceEdit1", url : "/pace/edition/definitif/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements PACEA Basic (Définitive)"},
+        DraftPace : {id : "paceEdit2",url : "/pace/edition/brouillon/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements PACEA Basic (Brouillon)"},
+        FinalGrt : {id : "grtEdit1", url : "/grt/edition/definitif/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements Garantie Jeunes (définitive)"},
+        DraftGrt : {id : "grtEdit2",url : "/grt/edition/brouillon/structure/__AdmStructureId__/date/__EditionDate__", name : "Liste des versements Garantie Jeunes (brouillon)"},
+        Decrocheur : {id : "decrocheur",url : "/edition/statique/decrocheur/__dateCalcul__/__AdmStructureId__/__UserId__", name : "Liste des décrocheurs"},
+        PpaeList : {id : "ppaeList",url : "/edition/statique/ppae/liste/__AdmStructureId__/__UserId__", name : "PPAE Dossier Liste nominative"},      
+        PpaeControl : {id : "ppaeControl",url : "/edition/statique/ppae/controle/__AdmStructureId__/__UserId__", name : "PPAE Controle de coherence"},
+        PmsmpUrsaff : {id : "pmsmpUrsaff",url : "/edition/pmsmp/ursaff/__AdmStructureId__/__dateBegin__/__dateEnd__/__UserId__", name : "PMSMP – Bordereau URSSAF"},
+        PmsmpDetails : {id : "pmsmpDetails",url : "/edition/pmsmp/details/__AdmStructureId__/__dateBegin__/__dateEnd__/__UserId__", name : "PMSMP – Détails Bordereau URSSAF"}
+    },
+    EditionRecord : {
+        SynthetisisRecord : {url : "/edition/statique/ani/synthetisisRecord/__recordId__/__AdmStructureId__/__UserId__", fonctionalKey : "synthetisis_record" },
+        FullRecord : {url :"/edition/statique/ani/fullRecord/__recordId__/__stListeSectionIgnore__/__AdmStructureId__/__UserId__", fonctionalKey : "print_static_record"}
+    },
+    EavPartnerSelected : new Storage("eavPartnerSelected")
+};
+
+App.version = '24.2.11b';
+
+var _appNotifier = _appNotifier || [];
+_appNotifier.push(['_importStyle',false]);
+_appNotifier.push(['_classOfBanner', undefined]);
+_appNotifier.push(['_anchor', ".appNotifier"]);
+_appNotifier.push(['_refresh', 600]);

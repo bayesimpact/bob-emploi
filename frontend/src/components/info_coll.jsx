@@ -11,6 +11,7 @@ class InfoCollNotificationBox extends React.Component {
     onClose: PropTypes.func,
     style: PropTypes.object,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -42,7 +43,7 @@ class InfoCollNotificationBox extends React.Component {
       return null
     }
     const containerStyle = {
-      backgroundColor: Colors.SKY_BLUE,
+      backgroundColor: Colors.BOB_BLUE,
       borderRadius: 4,
       bottom: 20,
       boxShadow: '0 3px 14px 0 rgba(0, 0, 0, 0.2)',
@@ -73,7 +74,7 @@ class InfoCollNotificationBox extends React.Component {
         backgroundColor: '#fff',
       },
       backgroundColor: 'rgba(255, 255, 255, .8)',
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       display: 'block',
       marginTop: 25,
     }

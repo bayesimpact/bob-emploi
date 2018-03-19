@@ -3,18 +3,74 @@
 version: "2"
 services:
   frontend-flask:
-    command: python bob_emploi/frontend/server.py
+    command: python bob_emploi/frontend/server/server.py
     volumes:
-      - ./frontend/server:/work/bob_emploi/frontend
+      - ./frontend/api:/work/bob_emploi/frontend/api
+      - ./frontend/server:/work/bob_emploi/frontend/server
       - ./frontend/server/entrypoint.sh:/work/entrypoint.sh:ro
   frontend-flask-test:
     volumes:
-      - ./frontend/server:/work/bob_emploi/frontend
+      - ./frontend/api:/work/bob_emploi/frontend/api
+      - ./frontend/server:/work/bob_emploi/frontend/server
+      - ./frontend/server/.coveragerc:/work/.coveragerc:ro
       - ./frontend/server/entrypoint.sh:/work/entrypoint.sh:ro
       - ./frontend/server/lint_and_test.sh:/work/lint_and_test.sh:ro
       - ./.pylintrc:/work/.pylintrc:ro
-      - ./.pep8:/work/.pep8:ro
+      - ./.pycodestyle:/work/.pycodestyle:ro
   data-analysis-prepare:
     environment:
       # Run cleaned_data_test on real data.
       TEST_REAL_DATA: 1
+    volumes:
+      - ./data_analysis:/work/bob_emploi/data_analysis
+      - ./data_analysis/data:/work/data
+      - ./analytics/data:/work/data/analytics:ro
+      - ./.pycodestyle:/work/setup.cfg:ro
+      - ./.pylintrc:/work/.pylintrc:ro
+      - ./data_analysis/.coveragerc:/work/.coveragerc:ro
+      - ./data_analysis/entrypoint.sh:/work/entrypoint.sh:ro
+      - ./data_analysis/lint_and_test.sh:/work/lint_and_test.sh:ro
+      - ./data_analysis/Makefile:/work/Makefile:ro
+      - ./data_analysis/Makefile.internal:/work/Makefile.internal:ro
+      - ./data_analysis/Makefile.public:/work/Makefile.public:ro
+      - ./frontend/server:/work/bob_emploi/frontend/server
+      - ./frontend/api:/work/bob_emploi/frontend/api
+  frontend-dev-webpack:
+    volumes:
+      - ./frontend/cfg:/usr/app/cfg:ro
+      - ./frontend/.babelrc:/usr/app/.babelrc:ro
+      - ./frontend/src:/usr/app/src
+      - ./frontend/check-color-themes.sh:/usr/app/check-color-themes.sh:ro
+      - ./frontend/check-common-typos.sh:/usr/app/check-common-typos.sh:ro
+      - ./frontend/download.js:/usr/app/download.js:ro
+      - ./frontend/entrypoint.sh:/usr/app/entrypoint.sh:ro
+      - ./frontend/favicon.ico:/usr/app/favicon.ico:ro
+      - ./frontend/lint_and_test.sh:/usr/app/lint_and_test.sh:ro
+      - ./frontend/package.json:/usr/app/package.json:ro
+      - ./frontend/api:/usr/app/bob_emploi/frontend/api
+      # For linting.
+      - ./.eslintrc.json:/usr/app/.eslintrc.json:ro
+      - ./.eslintignore:/usr/app/.eslintignore:ro
+      # For testing.
+      - ./frontend/test:/usr/app/test:ro
+      - ./frontend/karma.conf.js:/usr/app/karma.conf.js:ro
+      # For releasing.
+      - ./frontend/dist:/usr/app/dist
+      # This is actually part of the frontend-db, but it makes it way easier to
+      # lint with the same rules.
+      - ./frontend/server/db:/usr/app/server/db:ro
+    environment:
+      AIRTABLE_API_KEY:
+  analytics:
+    volumes:
+      - ./analytics:/work/bob_emploi/analytics:ro
+      - ./frontend/api:/work/bob_emploi/frontend/api:rw
+      - ./analytics/lint_and_test.sh:/work/lint_and_test.sh:ro
+      - ./data_analysis/entrypoint.sh:/work/entrypoint.sh:ro
+      - ./.pylintrc:/work/.pylintrc:ro
+      - ./.pycodestyle:/work/setup.cfg:ro
+      - ./analytics/data:/work/data:rw
+  analytics-eslint:
+    volumes:
+      - ./analytics:/usr/app/analytics:rw
+      - ./.eslintrc.json:/usr/app/.eslintrc.json:ro

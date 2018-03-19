@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+import "bob_emploi/frontend/api/association.proto";
+
+message DrivingSchool {
+
+  // Name of the school.
+  string name = 1;
+
+  // A set of filters ID: do not show the school if one these filters
+  // returns false for the project.
+  repeated string filters = 2;
+
+  // Physical address for the school. If this is a list of schools, leave empty.
+  string address = 3;
+
+  // Web link to the school website.
+  string link = 4;
+
+  //TODO(cyrille): Add fields for geo loc, to get closest to user.
+}
+
+message OneEuroProgramPartnerBank {
+  // The name of the bank.
+  string name = 1;
+
+  // A source for an optimized version of the bank's logo, either base64 or a url.
+  string logo = 2;
+
+  // The link to the bank's website page for their "1 euro" program.
+  string link = 3;
+}
+
+message OneEuroProgram {
+  // Partner schools of the "1 euro" program.
+  repeated DrivingSchool schools = 1;
+
+  // Link to a list of partner schools for the program, that could interest the user.
+  string school_list_link = 2;
+
+  // Partner banks of the "1 euro" program.
+  repeated OneEuroProgramPartnerBank partner_banks = 3;
+
+  // Information about closest Mission Locale for user.
+  MissionLocaleData mission_locale = 4;
+}

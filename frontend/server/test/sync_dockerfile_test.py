@@ -1,4 +1,5 @@
 """Tests on Dockerfiles."""
+
 from os import path
 import unittest
 
@@ -17,9 +18,10 @@ class SyncTestCase(unittest.TestCase):
 
     def test_sync(self):
         """Dockerfiles are in sync."""
+
         self.maxDiff = None  # pylint: disable=invalid-name
         dockerfile = [
-            block.replace('COPY ', 'COPY frontend/server/')
+            block.replace('COPY ', 'COPY frontend/')
             for block in _read_blocks('Dockerfile')
         ]
         dockerfile_test = [

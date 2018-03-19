@@ -1,0 +1,20 @@
+Bonjour {{var:firstName:"Marie"}},
+
+Il y a un an  vous aviez été parmi les premi{%if var:gender == "FEMININE" %}ère{%else%}er{%endif%}s  à vous inscrire sur Bob !
+Depuis plus de 130 000 personnes ont utilisé Bob et 86% ont trouvé les conseils  de Bob utiles. Toutes les améliorations, faites depuis un an, ont été possibles grâce à vous et à tous ceux qui ont testé Bob en premier.
+De toute l’équipe, un grand merci à vous, {{var:firstName:"Marie"}} !
+Maintenant que Bob est tout beau et super utile, on a terriblement envie de le partager avec tout le monde et surtout avec vos proches en recherche d’emploi parce qu'eux aussi, on voudrait les aider.
+Partager Bob, c’est simple  comme un email et ça aide vos proches à trouver du boulot, on compte sur vous :
+Suivez ce lien pour partager directement un email à vos amis.
+[mailto:?subject=Tu%20connais%20Bob%20%3F&body=Salut%2C%0D%0A%0D%0AJ%27ai%20entendu%20parler%20de%20http%3A%2F%2Fwww.bob-emploi.fr%2Finvite%23mailing1.%20Ca%20m%27a%20fait%20penser%20%C3%A0%20toi%20%21%0D%0A%0D%0AEn%2015%20min%2C%20le%20site%20te%20donne%20des%20conseils%20pour%20trouver%20un%20job%20et%20d%C3%A9ployer%20tout%20ton%20potentiel%20%F0%9F%A4%97%0D%0A%0D%0APasse%20une%20belle%20journ%C3%A9e]
+
+
+
+D’ailleurs, si vous êtes en recherche, en ce moment, on a beaucoup de nouveautés pour vous.  [https://www.bob-emploi.fr/]Avec le nouveau Bob [https://bob-emploi.fr], vous pouvez recevoir un diagnostic “emploi”,  des conseils personnalisés  et des mails de coaching.
+À très vite,
+
+
+
+Margaux et l'équipe de Bob
+
+Vous recevez cet email car vous êtes inscrit sur Bob [https://www.bob-emploi.fr]. Cliquez ici [{{var:unsubscribeLink}}]  si vous souhaitez vous désinscrire.

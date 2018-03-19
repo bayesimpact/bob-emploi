@@ -1,4 +1,5 @@
 """Endpoints for the evaluation tool."""
+
 import functools
 import inspect
 import os
@@ -9,15 +10,14 @@ import pymongo
 
 from google.protobuf import json_format
 
-from bob_emploi.frontend import auth
-from bob_emploi.frontend import proto
-from bob_emploi.frontend import privacy
+from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.api import use_case_pb2
 
 app = flask.Blueprint('evaluation', __name__)  # pylint: disable=invalid-name
 
-_EMAILS_PATTERN = re.compile(
-    os.getenv('EMAILS_FOR_EVALUATIONS', '.*@bayesimpact.org'))
+_EMAILS_PATTERN = re.compile(os.getenv('EMAILS_FOR_EVALUATIONS', '@bayesimpact.org'))
 
 
 def require_evaluator_auth(wrapped):
@@ -28,6 +28,7 @@ def require_evaluator_auth(wrapped):
     If the wrapped function has an evaluator_email keyword argument, it will
     get populated by the email of the authenticated evaluator.
     """
+
     should_send_email_keywords = 'evaluator_email' in inspect.signature(wrapped).parameters
 
     @functools.wraps(wrapped)
@@ -37,7 +38,7 @@ def require_evaluator_auth(wrapped):
         id_info = auth.decode_google_id_token(
             flask.request.headers['Authorization'].replace('Bearer ', ''))
         email = id_info['email']
-        if not _EMAILS_PATTERN.match(email):
+        if not _EMAILS_PATTERN.search(email):
             flask.abort(401, 'Adresse email "{}" non autorisée'.format(email))
         if should_send_email_keywords:
             kwargs = dict(kwargs, evaluator_email=email)
@@ -45,10 +46,20 @@ def require_evaluator_auth(wrapped):
     return _wrapper
 
 
+@app.route('/authorized', methods=['GET'])
+@require_evaluator_auth
+def get_is_authorized():
+    """Returns a 204 empty message if the user is an evaluator."""
+
+    return '', 204
+
+
 @app.route('/use-case-pools', methods=['GET'])
 @proto.flask_api(out_type=use_case_pb2.UseCasePools)
+@require_evaluator_auth
 def fetch_use_case_pools():
     """Retrieve a list of the available pools of anonymized user examples."""
+
     use_case_pools = use_case_pb2.UseCasePools()
     use_case_pool_dicts = flask.current_app.config['DATABASE'].use_case.aggregate([
         {'$group': {
@@ -69,8 +80,10 @@ def fetch_use_case_pools():
 
 @app.route('/use-cases/<pool_name>', methods=['GET'])
 @proto.flask_api(out_type=use_case_pb2.UseCases)
+@require_evaluator_auth
 def fetch_use_cases(pool_name):
     """Retrieve a list of anonymized user examples from one pool."""
+
     use_cases = use_case_pb2.UseCases()
     use_case_dicts = flask.current_app.config['DATABASE'].use_case\
         .find({'poolName': pool_name}).sort('indexInPool', 1)
@@ -87,6 +100,7 @@ def fetch_use_cases(pool_name):
 @require_evaluator_auth
 def evaluate_use_case(use_case, use_case_id, evaluator_email=''):
     """Evaluate a use case."""
+
     use_case.evaluated_at.GetCurrentTime()
     use_case.by = evaluator_email
     # No need to pollute our DB with super precise timestamps.
@@ -102,7 +116,8 @@ def evaluate_use_case(use_case, use_case_id, evaluator_email=''):
 @require_evaluator_auth
 def create_use_case(request):
     """Create a use case from a user."""
-    database = flask.current_app.config['DATABASE']
+
+    database = flask.current_app.config['USER_DATABASE']
 
     # Find user.
     user_dict = database.user.find_one({'profile.email': request.email})

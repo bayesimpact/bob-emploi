@@ -1,9 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
+import config from 'config'
+
+import {LoginButton} from 'components/login'
+import {Colors, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
 import manImage from 'images/man-icon.svg'
 import womanImage from 'images/woman-icon.svg'
-import {Colors, SmoothTransitions} from 'components/theme'
 
 
 class Testimonials extends React.Component {
@@ -12,9 +15,11 @@ class Testimonials extends React.Component {
     carouselAutoRotationDurationMs: PropTypes.number.isRequired,
     children: PropTypes.arrayOf(PropTypes.node.isRequired).isRequired,
   }
+
   static defaultProps = {
     carouselAutoRotationDurationMs: 5000,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -74,7 +79,7 @@ class Testimonials extends React.Component {
       textAlign: 'center',
     }
     const style = isSelected => ({
-      backgroundColor: isSelected ? Colors.CHARCOAL_GREY : Colors.PINKISH_GREY,
+      backgroundColor: isSelected ? '#fff' : 'rgba(255, 255, 255, .6)',
       borderRadius: 6,
       cursor: 'pointer',
       display: 'inline-block',
@@ -136,9 +141,14 @@ class Testimonials extends React.Component {
 
 class TestimonialCard extends React.Component {
   static propTypes = {
-    author: PropTypes.string.isRequired,
+    author: PropTypes.shape({
+      age: PropTypes.number,
+      isMan: PropTypes.bool,
+      jobName: PropTypes.string,
+      name: PropTypes.string.isRequired,
+    }).isRequired,
     children: PropTypes.node,
-    isAuthorMan: PropTypes.bool,
+    isLong: PropTypes.bool,
     style: PropTypes.object,
   }
 
@@ -147,43 +157,119 @@ class TestimonialCard extends React.Component {
   }
 
   render() {
-    const {author, children, isAuthorMan} = this.props
+    const {author, children, isLong} = this.props
     const {isMobileVersion} = this.context
-    const horizontalPadding = isMobileVersion ? 30 : 75
+    const horizontalPadding = isMobileVersion && !isLong ? 30 : 75
     const style = {
       backgroundColor: '#fff',
-      borderRadius: 10,
-      color: Colors.DARK_TWO,
-      fontSize: 18,
-      fontStyle: 'italic',
+      borderRadius: isLong ? 5 : 10,
+      boxShadow: isLong ? '0 25px 40px 0 rgba(0, 0, 0, 0.15)' : 'initial',
+      color: isLong ? Colors.DARK : Colors.DARK_TWO,
+      fontSize: isLong ? 16 : 18,
+      fontStyle: isLong ? 'normal' : 'italic',
       lineHeight: 1.44,
-      maxWidth: 600,
-      minHeight: 280,
-      padding: isMobileVersion ? '30px 30px' : `60px ${horizontalPadding}px 0`,
-      position: 'relative',
+      margin: isLong ? isMobileVersion ? '10px 10px' : '50px 10px' : 'initial',
+      maxWidth: isLong ? 320 : 600,
+      minHeight: isLong ? 'initial' : 280,
+      padding: isMobileVersion || isLong ? '30px 30px' : `60px ${horizontalPadding}px 0`,
+      position: isLong ? 'initial' : 'relative',
       ...this.props.style,
     }
     const authorStyle = {
       alignItems: 'center',
-      bottom: 50,
-      color: Colors.DARK,
+      backgroundColor: isLong ? Colors.VERY_LIGHT_BLUE : 'inherited',
+      borderTopLeftRadius: isLong ? 5 : 'inherited',
+      borderTopRightRadius: isLong ? 5 : 'inherited',
+      bottom: isLong ? 'initial' : 50,
+      color: isLong ? 'inherited' : Colors.DARK,
       display: 'flex',
       fontSize: 14,
       fontStyle: 'initial',
-      fontWeight: 500,
+      fontWeight: isLong ? 'initial' : 500,
       left: 0,
-      padding: `0 ${horizontalPadding}px`,
-      position: 'absolute',
+      margin: isLong ? '-30px -30px 20px -30px' : 'initial',
+      minHeight: isLong ? 85 : 'initial',
+      padding: isLong ? '0 30px' : `0 ${horizontalPadding}px`,
+      position: isLong ? 'initial' : 'absolute',
     }
     const authorPicto = <img
-      style={{marginRight: 15}} src={isAuthorMan ? manImage : womanImage}
-      alt={isAuthorMan ? 'homme' : 'femme'} />
+      style={{marginRight: 15}} src={author.isMan ? manImage : womanImage}
+      alt={author.isMan ? 'homme' : 'femme'} />
+
+    const authorName = author.age || author.jobName ? `${author.name},` : author.name
+    const authorAge = author.age ? ` ${author.age} ans` : ''
+    const authorJobName = author.jobName ? `${author.jobName}` : ''
+
     return <div style={style}>
+      {isLong ?
+        <div style={authorStyle}>
+          {authorPicto} {authorName}{authorAge}<br />{authorJobName}
+        </div> : null}
       {children}
-      <div style={authorStyle}>{authorPicto} {author}</div>
+      {isLong ? null : <div style={authorStyle}>
+        {authorPicto} {authorName}{authorAge} {authorJobName}</div>}
     </div>
   }
 }
 
 
-export {TestimonialCard, Testimonials}
+class TestimonialStaticSection extends React.Component {
+  static propTypes = {
+    children: PropTypes.arrayOf(PropTypes.shape({
+      props: PropTypes.shape({
+        author: PropTypes.shape({
+          name: PropTypes.string.isRequired,
+        }),
+      }),
+    })).isRequired,
+    maxShown: PropTypes.number,
+    visualElement: PropTypes.string,
+  }
+
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
+  render() {
+    const {isMobileVersion} = this.context
+    // TODO(cyrille): Use Carousel 3 by 3 on Desktop.
+    const {children, maxShown = isMobileVersion ? 5 : 3, visualElement} = this.props
+    const sectionStyle = {
+      backgroundColor: Colors.BOB_BLUE,
+      flexDirection: 'column',
+      fontFamily: 'Lato, Helvetica',
+      padding: isMobileVersion ? '50px 20px' : `50px ${MIN_CONTENT_PADDING}px`,
+    }
+    const titleStyle = {
+      color: '#fff',
+      fontSize: 33,
+      margin: 0,
+      textAlign: 'center',
+    }
+    const containerStyle = {
+      alignItems: 'flex-start',
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      margin: '55px auto 0',
+      maxWidth: isMobileVersion ? 320 : MAX_CONTENT_WIDTH,
+    }
+    const firstHelped = children.slice(0, 2).map(({props: {author: {name}}}) => name).join(', ')
+
+    return <section style={sectionStyle}>
+      <h2 style={titleStyle}>
+        {config.productName} a aidé {firstHelped} et bien d'autres...<br />
+        Pourquoi pas vous&nbsp;?
+      </h2>
+      <div style={containerStyle}>
+        {children.slice(0, maxShown)}
+      </div>
+      <LoginButton style={{display: 'block', margin: '88px auto 0'}} isSignUpButton={true}
+        type="validation"
+        visualElement={`testimonials${visualElement ? `-${visualElement}` : ''}`}>
+        Obtenir mes conseils personnalisés
+      </LoginButton>
+    </section>
+  }
+}
+
+export {TestimonialCard, Testimonials, TestimonialStaticSection}

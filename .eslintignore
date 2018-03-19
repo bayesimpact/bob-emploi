@@ -1,4 +1,9 @@
+# Computed files.
 coverage/
 dist/
+*-bookmarlet.js
 vendor/
 *_pb.js
+# Files that are part of the base Docker container.
+/server.js
+/webpack.config.js

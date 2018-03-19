@@ -1,0 +1,361 @@
+{
+  "attributes": {
+    "version": "3.3.5"
+  },
+  "children": [
+    {
+      "children": [
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "color": "#55575d",
+            "font-family": "Arial, sans-serif"
+          },
+          "children": [
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "padding": "20px 0px 20px 0px",
+                "passport": {
+                  "header": true,
+                  "hidden": true,
+                  "locked": true
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "hidden": true
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "11px",
+                        "line-height": "22px",
+                        "padding": "0px 0px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "editable": true,
+                          "hidden": true,
+                          "locked": true
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
+                      "id": "ryN1eHcUzz",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "SkQ1lBcUzf",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "r1zygScIGG",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "transparent",
+                "background-repeat": "repeat",
+                "full-width": "full-width",
+                "padding": "20px 0px 20px 0px",
+                "padding-bottom": "12px",
+                "padding-top": "12px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\">&nbsp;<span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Élise\"}},</span>&nbsp;</span></p>",
+                      "id": "SywklS58Mf",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "H1LylS5UzM",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "ByB1gH98zz",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {},
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Comment allez-vous{%if var:hasReadLastFocusEmail:\"\" == \"True\" %} depuis notre dernier email{%endif%} ?</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Lorsque vous vous êtes inscrit{%if var:gender:\"\" == \"FEMININE\"%}e{%endif%} sur Bob il y a {{var:registeredMonthsAgo:\"cinq\"}} mois, vous nous avez parlé de {%if var:worstFrustration:\"\" == \"SELF_CONFIDENCE\" %}problèmes de confiance en vous{%elseif var:worstFrustration:\"\" == \"INTERVIEW\" %}frustrations par rapport aux entretiens{% else %}votre impression de ne pas rentrer dans les cases des recruteurs{%endif%}. Est-ce toujours le cas ?</span></p>",
+                      "id": "r15JlS5IMz",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "S1KJgB58GG",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "HyO1xS9IMz",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">Je suis tombée la semaine dernière sur cette vidéo de 5 min qui m'a fait penser à vous. Du coup je voulais vous la partager, je trouve le petit conseil utile à essayer&nbsp;: <b>et si travailler sur votre langage corporel pouvait vous aider à vous rendre plus confiant{%if var:gender:\"\" == \"FEMININE\"%}e{%endif%} ?</b></span></span></p>",
+                      "id": "SJTkeS5Uff",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "BJ3JeB9UGz",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "HJiJlHcLzf",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">Car même si ça fait un peu bâteau, une chose que j'ai apprise dans la vie, c'est que l'important c'est d'être vous-même et d'être fi{%if var:gender:\"\" == \"FEMININE\"%}ère{%else%}er{%endif%} de qui vous êtes. Souvenez-vous lorsque vous postulez, c'est avant tout l'<i>entreprise</i> qui a besoin de <i>vous</i> !</span></span></p>",
+                      "id": "rkglygHc8Mz",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "center",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are?language=fr",
+                        "padding": "10px 25px",
+                        "passport": {
+                          "image-id": 5945653
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/4psz/24mpu.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "700px"
+                      },
+                      "id": "Bk-lklrcLzf",
+                      "tagName": "mj-image"
+                    }
+                  ],
+                  "id": "Skyx1gS5IzM",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "BkAkercIzf",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">J'espère que cette vidéo vous inspirera aussi !</span></span></p>",
+                      "id": "B1EgJlr98fM",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">Margaux de Bob&nbsp;</span></span></p>",
+                      "id": "BkHgkgHc8GG",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "",
+                        "padding": "10px 25px",
+                        "padding-left": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "image-id": 4665666
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/26ri/lkq0m.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "98px"
+                      },
+                      "id": "HkUxylS9LMM",
+                      "tagName": "mj-image"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "15px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">PS : Si le cœur vous en dit, vous pouvez me donner votre avis en répondant directement à ce mail.</span></p>",
+                      "id": "ryPg1lBcUff",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "15px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous souhaitez vous désinscrire.</span></p>",
+                      "id": "ByOgkgB5UGz",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "HJXxygBcIzM",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "HJGlyxB9LGf",
+              "tagName": "mj-section"
+            }
+          ],
+          "id": "BkW1xH9UfG",
+          "tagName": "mj-container"
+        }
+      ],
+      "id": "Hye1er5LGf",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "Bkyer98fM",
+  "tagName": "mjml"
+}

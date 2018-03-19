@@ -1,4 +1,5 @@
 """Module to get information on companies."""
+
 import logging
 import requests
 import xmltodict
@@ -10,6 +11,7 @@ _CARIF_URL = 'http://www.intercariforef.org/serviceweb2/offre-info/?versionLHEO=
 
 def _make_key(title, city):
     """Create a unique key for a training."""
+
     return title + city
 
 
@@ -19,6 +21,7 @@ def get_trainings(rome_id, departement_id):
     Carif sends us multiple trainings that have the same city and title, this function only return
     one training per city/title.
     """
+
     no_trainings = []
 
     try:

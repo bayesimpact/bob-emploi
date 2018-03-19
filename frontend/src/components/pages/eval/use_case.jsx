@@ -1,12 +1,12 @@
+import omit from 'lodash/omit'
 import PropTypes from 'prop-types'
 import React from 'react'
-import _ from 'underscore'
 
 import {weeklyApplicationOptions, weeklyOfferOptions}
   from 'components/pages/profile/jobsearch'
 import {getIMTURL, getJobSearchURL} from 'store/job'
 import {getSeniorityText, getTrainingFulfillmentEstimateOptions,
-  PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_EXPERIENCE_OPTIONS,
+  PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_EXPERIENCE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS} from 'store/project'
 import {getFamilySituationOptions, getHighestDegreeDescription,
   getUserFrustrationTags, userAge} from 'store/user'
@@ -29,12 +29,12 @@ function getOptionName(options, value) {
   return undefined
 }
 
-function replaceFalseValue(oldValue, newValue)  {
+function replaceFalseValue(oldValue, newValue) {
   return oldValue && oldValue !== -1 ? oldValue : newValue
 }
 
 function getInterviewCountValidity(project) {
-  return  project.totalInterviewCount && project.totalInterviewCount !== 0
+  return project.totalInterviewCount && project.totalInterviewCount !== 0
 }
 
 class UseCase extends React.Component {
@@ -85,7 +85,7 @@ class UseCase extends React.Component {
         getOptionName(familySituations, profile.familySituation),
         userAge(profile.yearOfBirth) + ' ans',
         'Diplôme : ' + (getHighestDegreeDescription(profile) || 'aucun'),
-        (profile.hasHandicap ?  handicapText : null),
+        (profile.hasHandicap ? handicapText : null),
         `${location.name} ` +
         `(${location.departementId} - ${location.departementName})`,
       ],
@@ -94,7 +94,7 @@ class UseCase extends React.Component {
   }
 
   renderProject(profile, project) {
-    const employmentStatus = (project.employmentTypes || []).map((employmentType) =>(
+    const employmentStatus = (project.employmentTypes || []).map((employmentType) => (
       getOptionName(PROJECT_EMPLOYMENT_TYPE_OPTIONS, employmentType)
     ))
     const employmentStatusText = employmentStatus.join(', ')
@@ -120,6 +120,7 @@ class UseCase extends React.Component {
           undefined,
         getOptionName(PROJECT_EXPERIENCE_OPTIONS, project.previousJobSimilarity),
         'Network estimate : ' + replaceFalseValue(project.networkEstimate, 'inconnu'),
+        getOptionName(PROJECT_PASSIONATE_OPTIONS, project.passionateLevel),
         'Expérience : ' + getSeniorityText(project.seniority),
         'Diplôme suffisant : ' + trainingFulfillmentStatus,
         project.jobSearchLengthMonths > 0 ?
@@ -164,19 +165,20 @@ class UseCase extends React.Component {
       'familySituation', 'frustrations', 'customFrustrations']
     const cleanedProjectsFields = ['kind', 'employmentTypes', 'previousJobSimilarity',
       'networkEstimate', 'seniority', 'trainingFulfillmentEstimate', 'jobSearchLengthMonths',
-      'weeklyOffersEstimate', 'weeklyApplicationsEstimate', 'totalInterviewCount']
+      'weeklyOffersEstimate', 'weeklyApplicationsEstimate', 'totalInterviewCount',
+      'passionateLevel']
     const cleanedMobilityFields = ['name', 'departementName']
 
     // TODO (Marie Laure): Use a helper function instead of this manual approach
     const remainingData = {
       ...userData,
-      profile: userData.profile && _.omit(userData.profile, cleanedProfileFields),
+      profile: userData.profile && omit(userData.profile, cleanedProfileFields),
       projects: userData.projects && userData.projects.map(project =>
-        _.omit({
+        omit({
           ...project,
-          mobility: _.omit({
+          mobility: omit({
             ...project.mobility,
-            city: _.omit(project.mobility.city, cleanedMobilityFields),
+            city: omit(project.mobility.city, cleanedMobilityFields),
           }, 'areaType'),
         }, cleanedProjectsFields)),
     }

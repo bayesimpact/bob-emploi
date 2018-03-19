@@ -6,25 +6,25 @@ import rankThreeImage from 'images/rank-three-picto.svg'
 import rankTwoImage from 'images/rank-two-picto.svg'
 import rankZeroImage from 'images/rank-zero-picto.svg'
 
-import {Colors} from 'components/theme'
+import {Colors, colorToAlpha} from 'components/theme'
 
 
 export const ADVICE_SCORES = [
   {
     image: rankThreeImage,
-    tagColor: 'rgba(238, 66, 102, 0.3)',
+    tagColor: colorToAlpha(Colors.RED_PINK, .3),
     title: 'Prioritaire',
     value: '3',
   },
   {
     image: rankTwoImage,
-    tagColor: 'rgba(245, 166, 35, 0.4)',
+    tagColor: colorToAlpha(Colors.SQUASH, .4),
     title: 'Secondaire',
     value: '2',
   },
   {
     image: rankOneImage,
-    tagColor: 'rgba(88, 187, 251, 0.4)',
+    tagColor: colorToAlpha(Colors.BOB_BLUE, .4),
     title: 'À regarder',
     value: '1',
   },

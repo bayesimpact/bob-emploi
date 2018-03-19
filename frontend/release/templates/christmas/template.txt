@@ -1,0 +1,34 @@
+Hello {{var:firstName:"Élise"}},
+
+Je voudrais vous souhaiter une excellente fin d’année.
+
+Que vous fêtiez Hanoucca, Noël, rien du tout ou autre chose - les vacances, la nouvelle année, le changement de saison, l'arrivée du froid ou de la neige - nous vous souhaitons de bien terminer 2017 et de vous lancer heureu{%if var:gender:"" == "FEMININE"%}se{%else%}x{%endif%} et confiant{%if var:gender:"" == "FEMININE"%}e{%endif%} dans 2018. La fin d'année est le moment de faire attention à soi, de se recentrer sur ce qui est important et de s'entourer de ceux qui comptent. C'est tout ce que je vous souhaite.
+
+En décembre, tout le monde ne parle que de faire des bilans, mais de mon côté je préfère me poser ces questions :
+
+ * ✌️ Comment est-ce que je me sens dans ma vie ?
+ * 🔮 De quoi ai-je envie pour l'avenir ? 
+ * 🍀 Y a-t-il des choses que je pourrais faire pour être plus épanouie ?
+
+Je sais que vous vous êtes lancé{%if var:gender:"" == "FEMININE"%}e{%endif%} dans votre recherche {{var:startedSearchingSince:"depuis peu"}}, et je pense que la fin d'année pourrait être le bon moment pour remettre les compteurs à zéro, vous inspirer et ouvrir de nouveaux horizons.
+Quelques questions pour commencer...
+
+ * 🔧 Et si j'apprenais quelque chose de nouveau ?
+ * {%if var:inCommuteCity:"" != ""%}📍 Et si je travaillais {{var:inCommuteCity:""}} ?
+ * {%endif%}{%if var:inRelocateDepartement:"" != ""%}🌍 Et si je déménageais {{var:inRelocateDepartement:""}} ?
+ * {%endif%}🔦 Et si j'explorais cette piste que j'avais mise de côté ?
+ * {%if var:couldFreelance:"" == "True"%}🎒 Et si je me lançais à mon compte ?
+ * {%endif%}💡 Et si je faisais ce métier qui m'a toujours fait rêver ? 
+ * 🤝 Et si je donnais un coup de main à une association ?
+
+(Plein d'autres questions sur votre page Bob : www.bob-emploi.fr [http://www.bob-emploi.fr?email={{var:emailInUrl:""}}].)
+Ce n'est pas forcément le moment de se lancer dans l'action : pas de précipitation. Considérez simplement ces possibilités, et prenez le temps de les laisser mûrir. Qui sait où elles vous mèneront ?
+
+Bonne fin d'année, {{var:firstName:"Élise"}}.
+
+Plein de bonnes choses & à l'année prochaine.
+Margaux de Bob
+
+PS : Envie de partager vos questionnements ou vos avancées ? Ca nous intéresse ! Dites-moi par retour de mail 😊
+
+Vous recevez cet email car vous êtes inscrit sur Bob [https://www.bob-emploi.fr]. Cliquez ici [{{var:unsubscribeLink}}]  si vous souhaitez vous désinscrire.

@@ -1,0 +1,19 @@
+AREA_CODE,AREA_NAME,AREA_TYPE_CODE,AREA_TYPE_NAME,NB_APPLICATION_END_MONTH,NB_APPLICATION_LAST_WEEK,NB_OFFER_END_MONTH,NB_OFFER_LAST_WEEK,RICHER_CATCHMENT_AREA_CODE,RICHER_CATCHMENT_AREA_NAME,ROME_PROFESSION_CARD_CODE,ROME_PROFESSION_CARD_NAME,SEASONAL,SEASONAL_APR,SEASONAL_AUG,SEASONAL_DEC,SEASONAL_FEB,SEASONAL_JAN,SEASONAL_JULY,SEASONAL_JUNE,SEASONAL_MAR,SEASONAL_MAY,SEASONAL_NOV,SEASONAL_OCT,SEASONAL_SEP,TENSION_RATIO
+10,AUBE,D,Département,67,67,6,6,4110,METZ,F1301,Conduite de grue,O,N,N,N,N,N,N,N,N,N,N,O,N,8
+10,AUBE,D,Département,67,67,6,6,4110,METZ,F1302,Conduite d'engins de terrassement et de carrière,O,N,N,N,N,N,N,N,N,N,N,O,N,9
+10,AUBE,D,Département,67,67,6,6,4110,METZ,F1701,Construction en béton,O,N,N,N,N,N,N,N,N,N,N,O,N,9
+10,AUBE,D,Département,67,67,6,6,4110,METZ,F1704,Préparation du gros oeuvre et des travaux publics,O,N,N,N,N,N,N,N,N,N,N,O,N,9
+10,AUBE,D,Département,67,67,6,6,4110,METZ,F1401,Extraction liquide et gazeuse,O,N,N,N,N,N,N,N,N,N,N,O,N,9
+09,ARIEGE,D,Département,24,24,2,2,7317,TOULOUSE,F1702,Construction de routes et voies,O,N,N,N,N,N,N,N,N,N,N,O,N,9
+09,ARIEGE,D,Département,3,3,0,0,7308,CASTRES MAZAMET,F1402,Extraction solide,O,N,N,N,O,N,N,N,N,N,N,N,N,5
+12,AVEYRON,D,Département,2,2,0,0,7308,CASTRES MAZAMET,F1402,Extraction solide,O,N,N,N,N,N,N,N,N,N,N,N,N,2
+10,AUBE,D,Département,67,67,6,6,4110,METZ,F1702,Construction de routes et voies,N,O,N,N,N,N,N,O,N,O,N,N,N,18
+10,AUBE,D,Département,1,1,0,0,2111,VITRY LE FRANCOIS,F1402,Extraction solide,N,N,N,N,N,N,N,N,N,N,N,N,N,3
+24,CENTRE-VAL DE LOIRE,R,Région,6,6,2,2,2421,ORLEANS,F1402,Extraction solide,O,N,N,N,N,N,N,N,N,N,N,N,O,12
+09,ARIEGE,D,Département,24,24,2,2,7317,TOULOUSE,XXXXX,Unexistant job,O,N,N,N,N,N,N,N,N,N,N,O,N,9
+45,LOIRET,D,Département,6,6,2,2,2421,ORLEANS,A1413,Fermentation de boissons alcoolisées,O,N,N,N,N,N,N,N,N,N,N,N,O,12
+45,ARIEGE,D,Département,3,3,0,0,7308,ORLEANS,A1401,Aide agricole de production fruitière ou viticole,O,N,N,N,N,N,N,N,N,N,N,N,O,22
+45,LOIRET,D,Département,6,6,2,2,2421,ORLEANS,N4104,Courses et livraisons express,O,N,N,N,N,N,N,N,N,N,N,N,O,12
+45,ARIEGE,D,Département,3,3,0,0,7308,ORLEANS,N4103,Conduite de transport en commun sur route,O,N,N,N,N,N,N,N,N,N,N,N,O,22
+45,LOIRET,D,Département,6,6,2,2,2421,ORLEANS,N4102,Conduite de transport de particuliers,O,N,N,N,N,N,N,N,N,N,N,N,O,12
+45,ARIEGE,D,Département,3,3,0,0,7308,ORLEANS,N1101,Conduite d''engins de déplacement des charges,O,N,N,N,N,N,N,N,N,N,N,N,O,22

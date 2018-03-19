@@ -39,6 +39,9 @@ function getIMTURL(job, city) {
 //   {'inDepartement': 'en Haute Savoie', 'jobGroup': 'Animation sportive'},
 // ]
 function getJobPlacesFromDepartementStats(departementStats) {
+  if (!departementStats || !departementStats.length) {
+    return []
+  }
   const seenRomes = new Set()
   const jobPlaces = []
   const nbDep = departementStats.length
@@ -61,4 +64,11 @@ function getJobPlacesFromDepartementStats(departementStats) {
   return jobPlaces
 }
 
-export {genderizeJob, getIMTURL, getJobSearchURL, getJobPlacesFromDepartementStats}
+
+function missionLocaleUrl(missionLocaleData, departementName) {
+  return missionLocaleData && missionLocaleData.agenciesListLink ||
+      `https://www.google.fr/search?q=${encodeURIComponent(`mission locale ${departementName}`)}`
+}
+
+export {genderizeJob, getIMTURL, getJobSearchURL, missionLocaleUrl,
+  getJobPlacesFromDepartementStats}

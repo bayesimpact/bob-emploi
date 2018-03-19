@@ -17,8 +17,8 @@ class BetaMessageBase extends React.Component {
     style: PropTypes.object,
   }
 
-  componentWillMount() {
-    this.setState({isHidden: Cookies.get(HAS_SEEN_BETA_BANNER)})
+  state = {
+    isHidden: Cookies.get(HAS_SEEN_BETA_BANNER),
   }
 
   handleCloseClick = () => {
@@ -33,7 +33,7 @@ class BetaMessageBase extends React.Component {
       return null
     }
     const betaMessageBoxStyle = {
-      background: Colors.SKY_BLUE_HOVER,
+      background: Colors.BOB_BLUE_HOVER,
       color: '#fff',
       ...this.props.style,
     }

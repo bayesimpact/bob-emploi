@@ -1,12 +1,21 @@
+import PropTypes from 'prop-types'
 import React from 'react'
 
+
 import {AppearingList, Colors} from 'components/theme'
+import Picto from 'images/advices/picto-specific-to-job.png'
 
 
 class AdviceCard extends React.Component {
+  static propTypes = {
+    fontSize: PropTypes.number.isRequired,
+    userYou: PropTypes.func.isRequired,
+  }
+
   render() {
-    return <div style={{fontSize: 30}}>
-      Allez à la boulangerie la veille pour savoir à quelle heure
+    const {fontSize, userYou} = this.props
+    return <div style={{fontSize: fontSize}}>
+      {userYou('Va', 'Allez')} à la boulangerie la veille pour savoir à quelle heure
       arrive le chef boulanger.
     </div>
   }
@@ -40,4 +49,4 @@ class ExpandedAdviceCardContent extends React.Component {
 }
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

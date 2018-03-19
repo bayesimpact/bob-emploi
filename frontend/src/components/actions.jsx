@@ -1,11 +1,13 @@
-import React from 'react'
+import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import {connect} from 'react-redux'
 import Radium from 'radium'
+import React from 'react'
+import {connect} from 'react-redux'
 
 import {Modal, ModalHeader} from './modal'
 import {Routes} from 'components/url'
-import {Colors, Icon, Markdown, Button, Styles} from './theme'
+import {Colors, Markdown, Button, Styles} from './theme'
 import {readTip, openTipExternalLink} from 'store/actions'
 
 
@@ -32,6 +34,7 @@ class ActionDescriptionModalBase extends React.Component {
     gender: PropTypes.string,
     isShown: PropTypes.bool,
     onClose: PropTypes.func.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   componentDidMount() {
@@ -57,7 +60,7 @@ class ActionDescriptionModalBase extends React.Component {
     if (!action) {
       return null
     }
-    const {gender} = this.props
+    const {gender, userYou} = this.props
     const shortDescription =
         gender === 'FEMININE' && action.shortDescriptionFeminine || action.shortDescription
     const titleStyle = {
@@ -71,7 +74,7 @@ class ActionDescriptionModalBase extends React.Component {
       padding: 35,
     }
     const linkStyle = {
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       fontWeight: 'bold',
     }
     return <div>
@@ -79,7 +82,7 @@ class ActionDescriptionModalBase extends React.Component {
       <div style={contentStyle}>
         <Markdown content={shortDescription} />
         <div style={titleStyle}>
-          Vous ne savez pas par où commencer ?
+          {userYou('Tu ne sais ', 'Vous ne savez ')}pas par où commencer ?
         </div>
         <div style={{marginBottom: 15, marginTop: 5}}>
           <a
@@ -136,6 +139,7 @@ class ActionBase extends React.Component {
     project: PropTypes.object,
     style: PropTypes.object,
   }
+
   static contextTypes = {
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
@@ -146,11 +150,15 @@ class ActionBase extends React.Component {
     const {action} = this.props
     const isDone = action.status === 'ACTION_DONE'
     const doneMarkerStyle = {
-      color: Colors.GREENISH_TEAL,
-      fontSize: 27,
+      fill: Colors.GREENISH_TEAL,
+      height: 38,
+      verticalAlign: 'textBottom',
+      width: 27,
     }
     if (isDone) {
-      return <Icon name="check-circle" style={doneMarkerStyle} />
+      return <div>
+        <CheckCircleIcon style={doneMarkerStyle} />
+      </div>
     }
     const buttonStyle = {
       ':hover': {
@@ -168,12 +176,12 @@ class ActionBase extends React.Component {
       width: 24,
     }
     const chevronStyle = {
-      fontSize: 20,
-      lineHeight: 1,
-      verticalAlign: 'middle',
+      fill: Colors.COOL_GREY,
+      height: 20,
+      width: 20,
     }
     return <Button isNarrow={true} type="discreet" style={buttonStyle}>
-      <Icon name="chevron-right" style={chevronStyle} />
+      <ChevronRightIcon style={chevronStyle} />
     </Button>
   }
 
@@ -187,7 +195,7 @@ class ActionBase extends React.Component {
       return Colors.GREENISH_TEAL
     }
     if (actionStatus === 'ACTION_UNREAD') {
-      return Colors.SKY_BLUE
+      return Colors.BOB_BLUE
     }
     return Colors.SILVER
   }

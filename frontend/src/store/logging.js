@@ -86,6 +86,13 @@ export class Logger {
     if (user.featuresEnabled) {
       Object.assign(properties, flattenFeatureFlags(user.featuresEnabled))
     }
+    if (action.landingPageKind) {
+      properties['Feature.landingPage'] = action.landingPageKind
+      if (action.defaultProjectProps && action.defaultProjectProps.targetJob) {
+        properties['Landing Page Specific Job Name'] =
+          action.defaultProjectProps.targetJob.masculineName
+      }
+    }
     if (action.action) {
       properties['Action Title'] = action.action.title
     }
@@ -142,10 +149,13 @@ export class Logger {
     }
     const restrictJobGroup =
       action.props && action.props.restrictJobGroup ||
-      action.options &&  action.options.restrictJobGroup
+      action.options && action.options.restrictJobGroup
     if (restrictJobGroup) {
       properties['Restricted Jog Group Name'] = restrictJobGroup.name
       properties['Restricted Jog Group ROME ID'] = restrictJobGroup.romeId
+    }
+    if (action.timeToFirstInteractiveMillisecs) {
+      properties['Page loading time (ms)'] = action.timeToFirstInteractiveMillisecs
     }
     return properties
   }

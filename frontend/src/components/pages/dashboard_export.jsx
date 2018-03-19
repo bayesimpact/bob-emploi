@@ -1,7 +1,8 @@
-import React from 'react'
+import keyBy from 'lodash/keyBy'
+import map from 'lodash/map'
 import PropTypes from 'prop-types'
+import React from 'react'
 import {connect} from 'react-redux'
-import _ from 'underscore'
 
 import {Action} from 'components/actions'
 import {getDashboardExport, GET_DASHBOARD_EXPORT} from 'store/actions'
@@ -9,9 +10,9 @@ import {allDoneActions, PROJECT_LOCATION_AREA_TYPE_OPTIONS,
   PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
 import {CircularProgress, JobGroupCoverImage, HorizontalRule} from 'components/theme'
 
-const areaTypeOptions = _.indexBy(PROJECT_LOCATION_AREA_TYPE_OPTIONS, 'value')
-const employmentTypeOptions = _.indexBy(PROJECT_EMPLOYMENT_TYPE_OPTIONS, 'value')
-const workloadOptions = _.indexBy(PROJECT_WORKLOAD_OPTIONS, 'value')
+const areaTypeOptions = keyBy(PROJECT_LOCATION_AREA_TYPE_OPTIONS, 'value')
+const employmentTypeOptions = keyBy(PROJECT_EMPLOYMENT_TYPE_OPTIONS, 'value')
+const workloadOptions = keyBy(PROJECT_WORKLOAD_OPTIONS, 'value')
 
 class ProjectSummary extends React.Component {
   static propTypes = {
@@ -64,7 +65,7 @@ class ProjectSummary extends React.Component {
       lineHeight: 1.44,
       padding: '0 41px 41px',
     }
-    const hasActiveChantiers = _.any(_.values(project.activatedChantiers))
+    const hasActiveChantiers = Object.values(project.activatedChantiers).some(a => a)
     return <div style={containerStyle}>
       <div style={headerStyle}>
         <JobGroupCoverImage romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}} />
@@ -90,7 +91,7 @@ class ProjectSummary extends React.Component {
       {hasActiveChantiers ? <div style={contentStyle}>
         <h3>Solutions sélectionnées :</h3>
         <ul>
-          {_.map(project.activatedChantiers, (activated, chantierId) => {
+          {map(project.activatedChantiers, (activated, chantierId) => {
             return (activated && allChantiers[chantierId]) ?
               <li key={chantierId}>{allChantiers[chantierId].title}</li> : null
           })}
@@ -152,7 +153,7 @@ class DashboardExportPageBase extends React.Component {
         {allActions.length ? <div>
           <h2 style={{marginTop: 30}}>Historique des actions pour ce projet :</h2>
           <ol>
-            {_.map(allActions, action => {
+            {allActions.map(action => {
               return <Action action={action} project={action.project} key={action.actionId} />
             })}
           </ol>

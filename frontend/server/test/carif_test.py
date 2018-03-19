@@ -1,10 +1,11 @@
 """Tests for the bob_emploi.frontend.carif module."""
+
 from os import path
 import unittest
 
 import mock
 
-from bob_emploi.frontend import carif
+from bob_emploi.frontend.server import carif
 
 
 class CarifTestCase(unittest.TestCase):
@@ -18,6 +19,7 @@ class CarifTestCase(unittest.TestCase):
     @mock.patch('requests.get')
     def test_get_trainings(self, mock_get):
         """Basic usage of get_trainings."""
+
         mock_get().text = self._carif_xml_response
         mock_get().status_code = 200
         mock_get.reset_mock()
@@ -60,6 +62,7 @@ class CarifTestCase(unittest.TestCase):
     @mock.patch('requests.get')
     def test_error_code(self, mock_get):
         """Error 500 on InterCarif."""
+
         mock_get().text = self._carif_xml_response
         mock_get().status_code = 500
         mock_get.reset_mock()
@@ -71,6 +74,7 @@ class CarifTestCase(unittest.TestCase):
     @mock.patch('requests.get')
     def test_empty_response(self, mock_get):
         """Missing text when calling InterCarif."""
+
         mock_get().text = ''
         mock_get().status_code = 200
         mock_get.reset_mock()

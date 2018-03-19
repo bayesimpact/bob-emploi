@@ -1,4 +1,5 @@
 """Script to create a pool of use cases from actual users."""
+
 import datetime
 import json
 import os
@@ -10,10 +11,10 @@ from google.protobuf import json_format
 import pymongo
 import requests
 
-from bob_emploi.frontend import privacy
+from bob_emploi.frontend.server import mongo
+from bob_emploi.frontend.server import privacy
 
-_DB = pymongo.MongoClient(os.getenv('MONGO_URL', 'mongodb://localhost/test'))\
-    .get_default_database()
+_DB, _USER_DB = mongo.get_connections_from_env()
 
 # A Slack WebHook URL to send final reports to. Defined in the Incoming
 # WebHooks of https://bayesimpact.slack.com/apps/A0F7XDUAZ-incoming-webhooks
@@ -34,8 +35,9 @@ _DEFAULT_USERS_FILTER = {
 
 def main(pool_name=_YESTERDAY, users_json_filters=None, limit=20):
     """Create a pool of use cases and store them in MongoDB."""
+
     users_filters = json.loads(users_json_filters) if users_json_filters else _DEFAULT_USERS_FILTER
-    user_iterator = _DB.user.find(users_filters).limit(int(limit))
+    user_iterator = _USER_DB.user.find(users_filters).limit(int(limit))
     for user_index, user_dict in enumerate(user_iterator):
         use_case_proto = privacy.user_to_use_case(user_dict, pool_name, user_index)
         use_case = json_format.MessageToDict(use_case_proto)

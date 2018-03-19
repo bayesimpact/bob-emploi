@@ -5,6 +5,7 @@ const baseConfig = require('./base')
 module.exports = {
   devtool: 'eval',
   entry: './test/loadtests.js',
+  mode: 'development',
   module: {
     rules: [
       {

@@ -1,50 +1,52 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import _ from 'underscore'
-import {parse} from 'query-string'
-import {connect, Provider} from 'react-redux'
 import createHistory from 'history/createBrowserHistory'
+import Cookies from 'js-cookie'
+import map from 'lodash/map'
+import PropTypes from 'prop-types'
+import {parse} from 'query-string'
+import {StyleRoot} from 'radium'
+import React from 'react'
+import {connect, Provider} from 'react-redux'
 import {Redirect, Route, Switch} from 'react-router-dom'
 import {ConnectedRouter, routerReducer, routerMiddleware} from 'react-router-redux'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
-import thunk from 'redux-thunk'
-import RavenMiddleware from 'redux-raven-middleware'
-import Snackbar from 'material-ui/Snackbar'
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
-import {StyleRoot} from 'radium'
 import {composeWithDevTools} from 'redux-devtools-extension'
-import Cookies from 'js-cookie'
+import RavenMiddleware from 'redux-raven-middleware'
+import thunk from 'redux-thunk'
 import {polyfill} from 'smoothscroll-polyfill'
-import {Routes} from 'components/url'
+
+import {LoginModal} from 'components/login'
+import {Snackbar} from 'components/snackbar'
+import {STATIC_ADVICE_MODULES} from 'components/static_advice'
 import {Colors} from 'components/theme'
+import {Routes} from 'components/url'
+import {AppNotAvailablePage} from './app_not_available'
+import {ContributionPage} from './contribution'
 import {CookiesPage} from './cookies'
+import {DashboardExportPage} from './dashboard_export'
 import {LandingPage} from './landing'
 import {NewProjectPage} from './new_project'
 import {ProfilePage} from './profile'
 import {ProjectPage} from './project'
-import {DashboardExportPage} from './dashboard_export'
 import {PrivacyPage} from './privacy'
 import {ProfessionalsPage} from './professionals'
 import {VideoSignUpPage} from './signup'
-import {TransparencyPage} from './transparency'
 import {TeamPage} from './team'
 import {TermsAndConditionsPage} from './terms'
+import {TransparencyPage} from './transparency'
 import {UpdatePage} from './update'
 import {VisionPage} from './vision'
 import {WaitingPage} from './waiting'
-import {ContributionPage} from './contribution'
-import {LoginModal} from 'components/login'
-import {AppNotAvailablePage} from './app_not_available'
 
-import {isOnSmallScreen} from 'store/mobile'
-import {user} from 'store/user_reducer'
-import {actionTypesToLog, hideToasterMessageAction, fetchUser, logoutAction,
-  openLoginModal, switchToMobileVersionAction, migrateUserToAdvisor,
-  trackInitialUtmContent} from 'store/actions'
-import {app, asyncState} from 'store/app_reducer'
-import {mainSelector, onboardingComplete} from 'store/main_selectors'
+import {actionTypesToLog, fetchUser, logoutAction, openLoginModal, switchToMobileVersionAction,
+  migrateUserToAdvisor, trackInitialUtm, activateDemoInFuture, activateDemo,
+  loginUserFromToken} from 'store/actions'
 import {createAmplitudeMiddleware} from 'store/amplitude'
+import {app, asyncState} from 'store/app_reducer'
 import {createPageviewTracker} from 'store/google_analytics'
+import {onboardingComplete} from 'store/main_selectors'
+import {isOnSmallScreen} from 'store/mobile'
+import {userReducer} from 'store/user_reducer'
+
 import config from 'config'
 
 require('normalize.css')
@@ -52,60 +54,15 @@ require('styles/App.css')
 
 polyfill()
 
-const history = createHistory()
-
-const ravenMiddleware = RavenMiddleware(config.sentryDSN, {}, {
-  stateTransformer: function(state) {
-    return {
-      ...state,
-      // Don't send user info to Sentry.
-      user: 'Removed with ravenMiddleware stateTransformer',
-    }
-  },
-})
-const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
-// Enable devTools middleware.
-const finalCreateStore = composeWithDevTools(
-  // ravenMiddleware needs to be first to correctly catch exception down the line.
-  applyMiddleware(ravenMiddleware, thunk, amplitudeMiddleware, routerMiddleware(history)),
-)(createStore)
-
-// Create the store that will be provided to connected components via Context.
-const store = finalCreateStore(
-  combineReducers({
-    app,
-    asyncState,
-    routing: routerReducer,
-    user,
-  })
-)
-if (module.hot) {
-  module.hot.accept(['store/user_reducer', 'store/app_reducer'], () => {
-    const nextAppReducerModule = require('store/app_reducer')
-    store.replaceReducer(combineReducers({
-      app: nextAppReducerModule.app,
-      asyncState: nextAppReducerModule.asyncState,
-      routing: routerReducer,
-      user: require('store/user_reducer').user,
-    }))
-  })
-}
-
-
-// Connect pages that needs it to the main store.
-// TODO(pascal): Move those to their respective files.
-const ConnectedLandingPage = connect(mainSelector)(LandingPage)
-const ConnectedProfilePage = connect(mainSelector)(ProfilePage)
-const ConnectedProjectPage = connect(mainSelector)(ProjectPage)
-const ConnectedProfessionalsPage = connect(mainSelector)(ProfessionalsPage)
-
 
 // Pages that need to know whether a user is present or not. This component
 // will try to login the user if there's a clue (in the cookies or in the URL),
 // but not enforce it.
 class UserCheckedPagesBase extends React.Component {
   static propTypes = {
+    demo: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
+    hasUserSeenExplorer: PropTypes.bool.isRequired,
     location: PropTypes.shape({
       hash: PropTypes.string.isRequired,
       pathname: PropTypes.string.isRequired,
@@ -116,6 +73,12 @@ class UserCheckedPagesBase extends React.Component {
     }).isRequired,
   }
 
+  static contextTypes = {
+    history: PropTypes.shape({
+      replace: PropTypes.func.isRequired,
+    }).isRequired,
+  }
+
   state = {
     isFetchingUser: false,
     isResettingPassword: false,
@@ -123,8 +86,7 @@ class UserCheckedPagesBase extends React.Component {
 
   componentWillMount() {
     const {user, dispatch, location} = this.props
-    const {email, resetToken, userId} = parse(location.search)
-    const userIdFromUrl = userId
+    const {authToken, email, resetToken, userId: userIdFromUrl} = parse(location.search)
     const userIdFromCookie = Cookies.get('userId')
 
     // Reset password flow: disregard any page and just let the user reset
@@ -143,8 +105,11 @@ class UserCheckedPagesBase extends React.Component {
     }
 
     this.setState({isFetchingUser: true})
-    // URL has priority over cookie.
-    dispatch(fetchUser(userIdFromUrl || userIdFromCookie, !userIdFromUrl)).then(() => {
+    const fetchUserAction = (authToken && userIdFromUrl) ?
+      loginUserFromToken(userIdFromUrl, authToken) :
+      fetchUser(userIdFromUrl || userIdFromCookie, !userIdFromUrl)
+
+    dispatch(fetchUserAction).then(() => {
       this.setState({isFetchingUser: false})
     }, () => {
       dispatch(openLoginModal({
@@ -155,15 +120,18 @@ class UserCheckedPagesBase extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const {dispatch, user} = nextProps
-    if (!user.userId || user.userId === this.props.user.userId) {
+    const {demo, dispatch, user: {appNotAvailable, userId}} = nextProps
+    if (!userId || userId === this.props.user.userId) {
       return
     }
-    if (user.appNotAvailable) {
+    if (demo) {
+      dispatch(activateDemo(demo))
+    }
+    if (appNotAvailable) {
       dispatch(logoutAction)
       return
     }
-    if (!this.isAdvisorUser(user)) {
+    if (!this.isAdvisorUser(nextProps.user)) {
       dispatch(migrateUserToAdvisor())
     }
   }
@@ -174,7 +142,8 @@ class UserCheckedPagesBase extends React.Component {
   }
 
   render() {
-    const {location, user} = this.props
+    const {hasUserSeenExplorer, location, user} = this.props
+    const {history} = this.context
     const {hash, search} = location
     const hasUser = !!user.userId
     return <div>
@@ -186,45 +155,57 @@ class UserCheckedPagesBase extends React.Component {
         <Route path={Routes.PRIVACY_PAGE} component={PrivacyPage} />
         <Route path={Routes.TRANSPARENCY_PAGE} component={TransparencyPage} />
         <Route path={Routes.TEAM_PAGE} component={TeamPage} />
-        <Route path={Routes.PROFESSIONALS_PAGE} component={ConnectedProfessionalsPage} />
+        <Route path={Routes.PROFESSIONALS_PAGE} component={ProfessionalsPage} />
         <Route path={Routes.VIDEO_SIGNUP_PAGE} component={VideoSignUpPage} />
         <Route path={Routes.TERMS_AND_CONDITIONS_PAGE} component={TermsAndConditionsPage} />
         <Route path={Routes.VISION_PAGE} component={VisionPage} />
+        {STATIC_ADVICE_MODULES.map(({Page, adviceId}) =>
+          <Route
+            path={`${Routes.STATIC_ADVICE_PATH}/${adviceId}`} component={Page} key={adviceId} />
+        )}
 
         {/* Special states. */}
         {this.state.isFetchingUser ? <Route path="*" component={WaitingPage} /> : null}
         {this.state.isResettingPassword ?
-          <Route path="*" component={ConnectedLandingPage} /> : null}
+          <Route path="*" component={LandingPage} /> : null}
         {user.appNotAvailable ? <Redirect to={Routes.APP_NOT_AVAILABLE_PAGE} /> : null}
 
         {/* Landing page for anonymous users. */}
-        {hasUser ? null : <Route path="*" component={ConnectedLandingPage} />}
+        {hasUser ? null : <Route path={Routes.JOB_SIGNUP_PAGE} component={LandingPage} />}
+        {hasUser ? null : <Route path="*" component={LandingPage} />}
 
         {/* Pages for logged-in users that might not have completed their onboarding. */}
-        <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={ConnectedProfilePage} />
+        <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={ProfilePage} />
         <Route path={Routes.NEW_PROJECT_ONBOARDING_PAGES} component={NewProjectPage} />
         <Route path={Routes.APP_UPDATED_PAGE} component={UpdatePage} />
 
         {/* Redirect if user is not fully ready. */}
-        {this.isAdvisorUser(user) ? null : <Redirect to={Routes.APP_UPDATED_PAGE} />}
+        {this.isAdvisorUser(user) && hasUserSeenExplorer ? null :
+          <Redirect to={Routes.APP_UPDATED_PAGE} />}
         {onboardingComplete(user) ? null : <Redirect to={Routes.PROFILE_PAGE} />}
 
         {/* Pages for logged-in user that have completed their onboarding. */}
-        <Route path={Routes.PROJECT_PATH} component={ConnectedProjectPage} />
+        <Route path={Routes.PROJECT_PATH} component={ProjectPage} />
         <Redirect to={Routes.PROJECT_PAGE + search + hash} />
       </Switch>
-      <LoginModal onLogin={() => this.setState({isResettingPassword: false})} />
+      <LoginModal onLogin={() => {
+        this.setState({isResettingPassword: false})
+        history.replace(Routes.ROOT)
+      }} />
     </div>
   }
 }
-const UserCheckedPages = connect(mainSelector)(UserCheckedPagesBase)
+const UserCheckedPages = connect(({app, user}) => ({
+  demo: app.demo,
+  hasUserSeenExplorer: !app.lastAccessAt || app.lastAccessAt > '2018-01-17',
+  user,
+}))(UserCheckedPagesBase)
 
 
 // The main layout containing any page. Especially it handles the error message
 // bar.
 class PageHolderBase extends React.Component {
   static propTypes = {
-    asyncState: PropTypes.object.isRequired,
     dispatch: PropTypes.func.isRequired,
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
@@ -248,7 +229,6 @@ class PageHolderBase extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      initialLocation: props.location,
       isMobileVersion: isOnSmallScreen(),
     }
     this.pageviewTracker = createPageviewTracker()
@@ -261,18 +241,20 @@ class PageHolderBase extends React.Component {
   }
 
   componentWillMount() {
-    const query = parse(this.props.location)
-    const utmContent = query['utm_content'] || ''
-    if (utmContent) {
-      this.props.dispatch(trackInitialUtmContent(utmContent))
+    const {dispatch, location: {search}} = this.props
+    if (search) {
+      this.handleSearchParamsUpdated(search)
     }
-    if (this.state.isOnSmallScreen) {
-      this.props.dispatch(switchToMobileVersionAction)
+    if (this.state.isMobileVersion) {
+      dispatch(switchToMobileVersionAction)
       document.getElementById('viewport').setAttribute('content', 'width=320')
     }
-    const updatedPath = this.removeAmpersandDoubleEncoding()
-    if (updatedPath) {
-      history.replace(updatedPath)
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const {location: {search}} = nextProps
+    if (this.props.location.search !== search) {
+      this.handleSearchParamsUpdated(search)
     }
   }
 
@@ -284,44 +266,112 @@ class PageHolderBase extends React.Component {
     }
   }
 
+  handleSearchParamsUpdated(search) {
+    const {dispatch} = this.props
+    const {
+      activate,
+      utm_campaign: campaign,
+      utm_content: content,
+      utm_medium: medium,
+      utm_source: source,
+    } = parse(search)
+    if (campaign || content || medium || source) {
+      dispatch(trackInitialUtm({campaign, content, medium, source}))
+    }
+    if (activate) {
+      dispatch(activateDemoInFuture(activate))
+    }
+  }
+
   removeAmpersandDoubleEncoding() {
     const {hash, pathname, search} = this.props.location
     const query = parse(search)
     if (!Object.keys(query).some(key => /^amp;/.test(key))) {
       return ''
     }
-    return pathname + '?' + _.map(query, (value, key) =>
+    return pathname + '?' + map(query, (value, key) =>
       encodeURIComponent(key.replace(/^amp;/, '')) + '=' +
       encodeURIComponent(value)).join('&') + hash
   }
 
-  hideToasterMessage() {
-    return () => this.props.dispatch(hideToasterMessageAction)
+  resolveInviteShortLink() {
+    const {hash, pathname, search} = this.props.location
+    if (pathname !== Routes.INVITE_PATH) {
+      return ''
+    }
+    const params = 'utm_source=bob-emploi&utm_medium=link' +
+      (hash ? `&utm_campaign=${hash.substr(1)}` : '')
+    return Routes.ROOT + (search ? `${search}&${params}` : `?${params}`)
   }
 
-  render () {
-    const errorMessage = this.props.asyncState.errorMessage
-    return <MuiThemeProvider>
-      <StyleRoot>
-        <div style={{backgroundColor: Colors.BACKGROUND_GREY}}>
-          <Switch>
-            <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
-            <Route path="/" component={UserCheckedPages} />
-          </Switch>
-          <Snackbar
-            open={!!errorMessage} message={errorMessage || ''}
-            bodyStyle={{maxWidth: 800}}
-            autoHideDuration={4000} onRequestClose={this.hideToasterMessage()} />
-        </div>
-      </StyleRoot>
-    </MuiThemeProvider>
+  render() {
+    const updatedPath = this.removeAmpersandDoubleEncoding()
+    if (updatedPath) {
+      return <Redirect to={updatedPath} />
+    }
+    const invitePath = this.resolveInviteShortLink()
+    if (invitePath) {
+      return <Redirect to={invitePath} />
+    }
+    return <StyleRoot>
+      <div style={{backgroundColor: Colors.BACKGROUND_GREY}}>
+        <Switch>
+          <Route path={Routes.DASHBOARD_EXPORT} component={DashboardExportPage} />
+          <Route path="/" component={UserCheckedPages} />
+        </Switch>
+        <Snackbar timeoutMillisecs={4000} />
+      </div>
+    </StyleRoot>
   }
 }
-const PageHolder = connect(mainSelector)(PageHolderBase)
+const PageHolder = connect()(PageHolderBase)
 
 
 class App extends React.Component {
+  componentWillMount() {
+    const history = createHistory()
+
+    const ravenMiddleware = RavenMiddleware(config.sentryDSN, {}, {
+      stateTransformer: function(state) {
+        return {
+          ...state,
+          // Don't send user info to Sentry.
+          user: 'Removed with ravenMiddleware stateTransformer',
+        }
+      },
+    })
+    const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
+    // Enable devTools middleware.
+    const finalCreateStore = composeWithDevTools(
+      // ravenMiddleware needs to be first to correctly catch exception down the line.
+      applyMiddleware(ravenMiddleware, thunk, amplitudeMiddleware, routerMiddleware(history)),
+    )(createStore)
+
+    // Create the store that will be provided to connected components via Context.
+    const store = finalCreateStore(
+      combineReducers({
+        app,
+        asyncState,
+        routing: routerReducer,
+        user: userReducer,
+      })
+    )
+    if (module.hot) {
+      module.hot.accept(['store/user_reducer', 'store/app_reducer'], () => {
+        const nextAppReducerModule = require('store/app_reducer')
+        store.replaceReducer(combineReducers({
+          app: nextAppReducerModule.app,
+          asyncState: nextAppReducerModule.asyncState,
+          routing: routerReducer,
+          user: require('store/user_reducer').userReducer,
+        }))
+      })
+    }
+    this.setState({history, store})
+  }
+
   render() {
+    const {history, store} = this.state
     // The Provider puts the store on a `Context`, so we can connect other
     // components to it.
     return <Provider store={store}>

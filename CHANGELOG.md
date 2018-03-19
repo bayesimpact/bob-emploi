@@ -1,5 +1,320 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2018-03-14_01
+
+- Login/Sign Up with Pôle emploi Connect
+- Fix bug that blocks many users in onboarding.
+Deployed on Wed, 14 Mar 2018 10:14:06 +0000
+
+# 2018-03-13_00
+
+- Static advice pages
+- Fixes in UI/UX, mobile, ...
+Deployed on Wed, 14 Mar 2018 09:06:10 +0000
+
+# 2018-03-09_00
+
+- Resume and motivation letter static pages
+- Landing page diagnostic section
+- Improve diagnostic text
+- Small changes in UI, clean code, ...
+Deployed on Fri, 09 Mar 2018 11:36:33 +0000
+
+# 2018-03-06_01
+
+- Add share links and keep track of channel of user acquisition
+- Update landing page
+- Early public content page for "Better Resume"
+- Better Mobile navigation (still a long way to go)
+- Small changes in UI, clean code, ...
+Deployed on Tue, 06 Mar 2018 14:17:58 +0000
+
+# 2018-03-06_00
+
+- Add share links and keep track of channel of user acquisition
+- Update landing page
+- Early public content page for "Better Resume"
+- Better Mobile navigation (still a long way to go)
+- Small changes in UI, clean code, ...
+
+# 2018-02-27_00
+
+- More tutoiement in onboarding
+- Release driving license advices
+- IMT mail
+- Refactoring, clean code, UI fixes
+Deployed on Tue, 27 Feb 2018 15:17:01 +0000
+
+# 2018-02-20_05 - UI/UX fixes and refactoring - Disable jsonlint Deployed on Wed, 21 Feb 2018 07:22:15 +0000
+
+
+
+# 2018-02-19_00
+
+Small UI fixes.
+Deployed on Mon, 19 Feb 2018 10:02:38 +0000
+
+# 2018-02-16_00
+
+- New landing page design (inserting the wave)
+- Various UI fixes (mobile & desktop)
+- New advice: 1 euro driving license help, civic service
+- Deactivate chat on mobile
+Deployed on Fri, 16 Feb 2018 15:05:14 +0000
+
+# 2018-02-12_00
+
+- Mobile UI: many small improvements so that it looks nice with a small screen width.
+- Add pictos to advice cards and pages.
+- Advice to push users to try out a new job "immersion" with their Mission Locale.
+- Fix a bug for returning users without a diagnostic.
+Deployed on Tue, 13 Feb 2018 10:23:58 +0000
+
+# 2018-02-09_00
+
+- Prepare for translation
+- Prepare driving license and civic service advices
+- Change page for returning users to show what's new and implement a direct login from email
+- Various small fixes in UI/UX, clean code, ...
+Deployed on Fri, 09 Feb 2018 15:30:25 +0000
+
+# 2018-02-02_00
+
+- Improve Mobile UI and Navigation.
+- Remove "--" in diagnostics.
+- Use a Bob page for the NPS form instead of Typeform.
+Deployed on Fri, 02 Feb 2018 09:46:34 +0000
+
+# 2018-01-30_01
+
+- Fixes in UI/UX
+- Fixes in content
+Deployed on Tue, 30 Jan 2018 15:06:34 +0000
+
+# 2018-01-30_00
+
+- Rich Explorer Cards in the Explorer Page.
+- Handle full URLs in the workbench and enable browser history.
+- Drop the "Summarize Profile" modal before the diagnostic.
+Deployed on Tue, 30 Jan 2018 09:39:22 +0000
+
+# 2018-01-23_01
+
+- In the "Explorer" Tab, display advice cards horizontally by category.
+- In the "Analyser" Tab, move the menu on the left.
+- Prepare a new advice "Send follow up emails after an application".
+- Prepare a new advice to reorient users to other jobs.
+- Few UI updates to the Landing Page and Transparency Page.
+Deployed on Tue, 23 Jan 2018 13:13:22 +0000
+
+# 2018-01-19_00
+
+Add French IMPACT in our list of partners.
+Deployed on Fri, 19 Jan 2018 13:27:40 +0000
+
+# 2018-01-17_00
+
+- Advices can now be selected to be worked on later on in a workbench
+- Start rebranding the landing page
+- Prepare advices on company creation and reorientation
+- Navigation bar with workflow, desktop and mobile
+- Create new year email
+- Bookmarklet to import from iMiLo
+- Small fixes, clean code, ...
+Deployed on Wed, 17 Jan 2018 15:12:00 +0000
+
+# 2018-01-15_00
+
+- Prepare for the "Create your company" advice module.
+- Phrasing update for the advice modules.
+- New color and other small UI changes.
+Deployed on Mon, 15 Jan 2018 11:08:41 +0000
+
+# 2018-01-11_02
+
+- Launch the Diagnostic instead of the Bob score for almost all users.
+- Users can now export their Diagnostic to PDF.
+- Various UI and phrasing fixes.
+- Store the NPS result even if user does not finish TypeForm flow.
+- Prepare an advice for company creation.
+Deployed on Thu, 11 Jan 2018 16:26:08 +0000
+
+# 2018-01-08_00
+
+- RER Survey: add more questions when user found a new job.
+- Landing Page can now be specific to a job.
+- New advice to improve your body language for interviews.
+- Improve assessment with more sentences.
+- Fix select style in onboarding.
+- Under the hood: prepare for the reorientation jobbing advice.
+Deployed on Mon, 08 Jan 2018 13:44:06 +0000
+
+# 2017-12-22_01
+
+- Drop "emploi" in product name in many places.
+- Try A/B testing on new taglines.
+- Improve Assessment sentences (5 stars)
+Deployed on Fri, 22 Dec 2017 15:13:09 +0000
+
+# 2017-12-19_01
+
+- Workbench, for selected users only: present advice one by one in the dashboard.
+- Explorer, for selected users only: add missing previews.
+- In preparation: reorientation jobbing advice.
+- Small UI fixes.
+Deployed on Tue, 19 Dec 2017 15:07:53 +0000
+
+# 2017-12-15_00
+
+- Explorer small cards with images
+- Explorer expanded cards with partial content
+- ServerSide logic on Explorer presentation
+- Clean code, small fixes, admin actions, ...
+Deployed on Fri, 15 Dec 2017 15:54:19 +0000
+
+# 2017-12-12_00
+
+- Fix user deletion (Error 500 in prod).
+- Diagnostic: stricter overall sentence when score is really low.
+- Explorer (for test users only): preparation of dynamic categories.
+Deployed on Tue, 12 Dec 2017 15:26:16 +0000
+
+# 2017-12-11_01
+
+- Use a wider range and red color for Assessment.
+- More filters and metrics for the Assessment.
+- Add the notion of urban/rural cities in the user's profile.
+- Progress (for test users only) on the Explorer interface.
+Deployed on Mon, 11 Dec 2017 10:53:14 +0000
+
+# 2017-12-07_02
+
+-Add new filters for assessment.
+-Update team page.
+-Minor changes in onboarding.
+-Under the hood: update workbench (still only for selected users).
+Deployed on Thu, 07 Dec 2017 12:48:16 +0000
+
+# 2017-12-05_00
+
+- Prepare for tagging users that we want to follow on the long term.
+- Fix some missing uppercase in the assessment.
+Deployed on Tue, 05 Dec 2017 09:51:49 +0000
+
+# 2017-12-04_00
+
+- Amplitude export to ElasticSearch 
+- Resend same campaign email enabled
+- Add filters and templates for assessment sentences
+Deployed on Mon, 04 Dec 2017 10:27:02 +0000
+
+# 2017-12-01_01
+
+- First version of the Workbench mechanism (only for selected users).
+- Save MailJet templates in the repo.
+- Add tooltip with user counts in obonarding.
+- Redirect users interested in reconversion to external resources.
+Deployed on Fri, 01 Dec 2017 11:15:04 +0000
+
+# 2017-11-27_01
+
+* Small improvements and fixes on the onboarding UI.
+* Speed up our Continuous Integration.
+Deployed on Mon, 27 Nov 2017 11:26:38 +0000
+
+# 2017-11-23_00
+
+- Wording changes to make Bob more human.
+- Focus emails improvements.
+- Various bug fixes.
+Deployed on Thu, 23 Nov 2017 10:47:10 +0000
+
+# 2017-11-17_02
+
+- Start A/B testing the assessment.
+- Send daily feedback report to Slack.
+Deployed on Fri, 17 Nov 2017 13:02:47 +0000
+
+# 2017-11-16_00
+
+- Preparing the new assessment page (for alpha users only).
+- Update count of users in transparency page.
+- Exporting analytics data in Elasticsearch, to be used with Kibana.
+- Cleaning code, harmonize folders layout.
+- Add slack reports.
+- Various small bug fixes.
+Deployed on Thu, 16 Nov 2017 13:45:53 +0000
+
+# 2017-11-14_01
+
+- New Assessment Page (for alpha only): mobile ready, submetrics UI and logic
+- Small fixes in logging and tracking utm_content
+- Add a weak NO answer to "Bob has helped" question in the RER survey.
+Deployed on Tue, 14 Nov 2017 13:02:47 +0000
+
+# 2017-11-10_01
+
+- Assessment submetrics: first logic built
+
+Under the hood:
+- Fixed updating Github at the end of the release
+- OVHGate:
+  - Timeout each scoring model to 3 seconds. 
+  - Deploy static files to S3 as well so that we can switch to it if OVH is down.
+Deployed on Fri, 10 Nov 2017 11:20:17 +0000
+
+# 2017-11-02_01
+
+* Personalize network advice.
+* Internalize employment status forms.
+* Various bug fix.
+
+Under the hood:
+* Code cleanup.
+* Prepare assessment diagnostic.
+
+Deployed on Thu, 02 Nov 2017 11:29:22 +0000
+
+# 2017-10-30_00
+
+- Personalized network advice.
+- Improve Loading Time (reduce Js size, smaller images on mobile).
+- Handle users trying to create or take over a company.
+- Slight rearrangement of the Transparency Page.
+Deployed on Mon, 30 Oct 2017 10:22:31 +0000
+
+# 2017-10-24_01
+
+- Improve diagnostic page.
+- Improve loading performance.
+- Improve network advice personalization.
+- Update transparency page.
+
+Under the hood:
+- Remove dead code.
+- Fix backend bugs.
+- Update notebooks.
+
+Deployed on Tue, 24 Oct 2017 14:48:31 +0000
+
+# 2017-10-17_01b
+
+It's a bugfix release:
+* Fix authentication error when some data is corrupted.
+
+Deployed on Fri, 20 Oct 2017 15:23:13 +0000
+
+# 2017-10-17_01
+
+This is a release with only under the hood progress:
+* Improve personalization of network advice.
+* Refactor expanded cards API.
+* Remove unused images and pages.
+* Prepare employment status survey automation.
+* Various backend fix and improvements.
+
+Deployed on Fri, 20 Oct 2017 09:44:54 +0000
+
 # 2017-10-16_00
 
 - Add Cyrille and Chema to the Team Page.

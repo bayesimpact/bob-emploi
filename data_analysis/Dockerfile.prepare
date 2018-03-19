@@ -1,7 +1,7 @@
 FROM bayesimpact/pandas-base:latest
 
-RUN mkdir /data_analysis
-WORKDIR /data_analysis
+RUN mkdir /work
+WORKDIR /work
 
 RUN apt-get update -qqy && \
   apt-get install unzip python-pdfminer python-dev python3-gflags locales -qqy && \
@@ -10,27 +10,32 @@ RUN apt-get update -qqy && \
   rm /bin/sh && ln -s /bin/bash /bin/sh
 
 # Requirements for python code (outside of notebooks). Keep them sorted.
-# TODO: Remove the --no-binary pycparser argument when https://github.com/eliben/pycparser/issues/147 is resolved.
-RUN pip install --no-binary pycparser \
+RUN pip install --upgrade \
   airtable>=0.3.1 \
-  airtablemock \
+  airtablemock>=0.0.3 \
   algoliasearch \
   coverage \
   csvkit \
   google-api-python-client \
   httplib2 \
+  js2py \
   mongomock \
   nbformat \
   nose \
   nose-exclude \
   nose-watch \
   pandas \
-  pep8 \
-  pylint \
+  polib \
+# TODO(cyrille): Fix this by checking latest version common to github and pypi.
+  protobuf==3.5.1 \
+  pycodestyle \
+  pylint>=1.7 \
+  pylint-doc-spacing \
   pylint-quotes \
   pymongo \
-  python-emploi-store \
+  python-emploi-store>=0.5.2 \
   requests \
+  requests_mock \
   runipy \
   sas7bdat \
   scrapy \
@@ -39,24 +44,21 @@ RUN pip install --no-binary pycparser \
   tqdm \
   xmltodict
 
+# Install Protobuf compiler.
+RUN \
+  PROTOBUF_VERSION=$(pip show protobuf | grep ^Version | grep -o '[0-9][0-9.]\+[0-9]') \
+  bash -c 'wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip' && \
+  unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto
 
-# Install Protobuf compiler and Python runtime.
-ENV PROTOBUF_VERSION=3.0.2
-RUN wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip && \
-  unzip -qq protoc.zip && \
-  rm protoc.zip && \
-  rm readme.txt && \
-  mv bin/protoc /usr/local/bin && \
-  mkdir /usr/local/share/proto && \
-  mv include/google /usr/local/share/proto && \
-  wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-python-${PROTOBUF_VERSION}.zip -O protobuf-python.zip && \
-  unzip -qq protobuf-python.zip && \
-  rm protobuf-python.zip && \
-  cd protobuf-${PROTOBUF_VERSION}/python && \
-  ./setup.py install && \
-  cd ../.. && \
-  rm -rf protobuf-${PROTOBUF_VERSION}
-
-ENV PYTHONPATH=/data_analysis:/usr/lib/python3/dist-packages/
+ENV PYTHONPATH=/work:/usr/lib/python3/dist-packages/
 
 CMD ["make", "all"]
+
+COPY data_analysis/ /work/bob_emploi/data_analysis/
+COPY data_analysis/.coveragerc data_analysis/entrypoint.sh data_analysis/lint_and_test.sh data_analysis/Makefile data_analysis/Makefile.internal data_analysis/Makefile.public .pylintrc /work/
+COPY .pycodestyle /work/setup.cfg
+COPY frontend/api/ /work/bob_emploi/frontend/api/
+COPY frontend/server/ /work/bob_emploi/frontend/server/
+
+ARG SKIP_TEST=
+RUN test -n "$SKIP_TEST" && echo "Skipping tests" || ./entrypoint.sh ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html

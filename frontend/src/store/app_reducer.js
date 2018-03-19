@@ -1,16 +1,17 @@
+import omit from 'lodash/omit'
 import Cookies from 'js-cookie'
-import _ from 'underscore'
 
-import {AUTHENTICATE_USER, HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE, GET_PROJECT_REQUIREMENTS,
-  GET_DASHBOARD_EXPORT, GET_JOB_BOARDS, TRACK_INITIAL_UTM_CONTENT,
-  OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, GET_ASSOCIATIONS,
-  ACCEPT_COOKIES_USAGE, SWITCH_TO_MOBILE_VERSION, GET_VOLUNTEERING_MISSIONS,
-  LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS, MODIFY_PROJECT, GET_COMMUTING_CITIES,
-  GET_RESUME_TIPS, GET_INTERVIEW_TIPS, OPEN_REGISTER_MODAL, GET_EVENTS,
-  GET_EXPANDED_CARD_CONTENT} from './actions'
+import {AUTHENTICATE_USER, HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE,
+  GET_PROJECT_REQUIREMENTS, GET_DASHBOARD_EXPORT, LOAD_LANDING_PAGE, TRACK_INITIAL_UTM,
+  OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, ACCEPT_COOKIES_USAGE,
+  SWITCH_TO_MOBILE_VERSION, LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS,
+  MODIFY_PROJECT, OPEN_REGISTER_MODAL, PRODUCT_UPDATED_PAGE_IS_SHOWN,
+  GET_EXPANDED_CARD_CONTENT, GET_USER_COUNT, ACTIVATE_DEMO, WILL_ACTIVATE_DEMO} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
+// Name of the cookie to store the auth token.
+const AUTH_TOKEN_COOKIE_NAME = 'authToken'
 
 
 const appInitialData = {
@@ -20,13 +21,16 @@ const appInitialData = {
   // Cache for advice tips for each advice module for each project.
   adviceTips: {},
   // Authentication token.
-  authToken: Cookies.get('authToken'),
+  authToken: Cookies.get(AUTH_TOKEN_COOKIE_NAME),
   // Cache for dashboard exports.
   dashboardExports: {},
-  initialUtmContent: null,
+  // Default props to use when creating a new project.
+  defaultProjectProps: {},
+  initialUtm: null,
   isMobileVersion: false,
   // Cache of job requirements.
   jobRequirements: {},
+  lastAccessAt: null,
   loginModal: null,
   newProjectProps: {},
   // Cache for specific jobs.
@@ -35,15 +39,16 @@ const appInitialData = {
 }
 
 
-function app(state=appInitialData, action) {
+function app(state = appInitialData, action) {
   switch (action.type) {
-    case GET_ASSOCIATIONS: // Fallthrough intended.
-    case GET_COMMUTING_CITIES: // Fallthrough intended.
-    case GET_EVENTS: // Fallthrough intended.
-    case GET_JOB_BOARDS: // Fallthrough intended.
-    case GET_INTERVIEW_TIPS: // Fallthrough intended.
-    case GET_RESUME_TIPS: // Fallthrough intended.
-    case GET_VOLUNTEERING_MISSIONS: // Fallthrough intended.
+    case LOAD_LANDING_PAGE:
+      return {
+        ...state,
+        defaultProjectProps: {
+          ...state.defaultProjectProps,
+          ...action.defaultProjectProps,
+        },
+      }
     case GET_EXPANDED_CARD_CONTENT:
       if (action.status === 'success' && action.project) {
         return {
@@ -66,7 +71,14 @@ function app(state=appInitialData, action) {
     case OPEN_REGISTER_MODAL:
       return {...state, loginModal: {defaultValues: action.defaultValues || {}}}
     case CLOSE_LOGIN_MODAL:
-      return {...state, loginModal: null}
+      if (action.hasCanceledLogin) {
+        Cookies.remove(AUTH_TOKEN_COOKIE_NAME)
+      }
+      return {
+        ...state,
+        authToken: action.hasCanceledLogin ? null : state.authToken,
+        loginModal: null,
+      }
     case GET_JOBS:
       if (action.status === 'success' && action.romeId) {
         return {
@@ -111,9 +123,9 @@ function app(state=appInitialData, action) {
         ...state,
         isMobileVersion: true,
       }
-    case LOGOUT:  // Fallthrough intended.
+    case LOGOUT: // Fallthrough intended.
     case DELETE_USER_DATA:
-      Cookies.remove('authToken')
+      Cookies.remove(AUTH_TOKEN_COOKIE_NAME)
       return {...state, authToken: null}
     case GET_ADVICE_TIPS:
       if (action.status !== 'success' || !action.advice || !action.project) {
@@ -132,22 +144,40 @@ function app(state=appInitialData, action) {
     case MODIFY_PROJECT:
       return {
         ...state,
-        adviceData: _.omit(state.adviceData, action.project.projectId),
+        adviceData: omit(state.adviceData, action.project.projectId),
       }
-    case TRACK_INITIAL_UTM_CONTENT:
+    case TRACK_INITIAL_UTM:
       return {
         ...state,
-        initialUtmContent: state.initialUtmContent || action.utmContent,
+        initialUtm: state.initialUtm || action.utm,
       }
     case AUTHENTICATE_USER:
       if (action.status !== 'success' || !action.response.authToken) {
         return state
       }
-      Cookies.set('authToken', action.response.authToken)
+      Cookies.set(AUTH_TOKEN_COOKIE_NAME, action.response.authToken)
       return {
         ...state,
         authToken: action.response.authToken,
+        lastAccessAt: action.response.lastAccessAt,
       }
+    case GET_USER_COUNT:
+      if (action.status === 'success') {
+        return {
+          ...state,
+          userCounts: action.response,
+        }
+      }
+      break
+    case WILL_ACTIVATE_DEMO:
+      return {
+        ...state,
+        demo: action.demo,
+      }
+    case ACTIVATE_DEMO:
+      return omit(state, ['demo'])
+    case PRODUCT_UPDATED_PAGE_IS_SHOWN:
+      return omit(state, ['lastAccessAt'])
   }
   return state
 }
@@ -157,7 +187,7 @@ const asyncInitialData = {
   isFetching: {},
 }
 
-function asyncState(state=asyncInitialData, action) {
+function asyncState(state = asyncInitialData, action) {
   if (action.type === HIDE_TOASTER_MESSAGE) {
     return {...state, errorMessage: null}
   }
@@ -174,7 +204,7 @@ function asyncState(state=asyncInitialData, action) {
       isFetching: {...state.isFetching, [action.type]: false},
     }
   }
-  if(action.status === 'success') {
+  if (action.status === 'success') {
     return {...state, errorMessage: null, isFetching: {...state.isFetching, [action.type]: false}}
   }
   return {...state, isFetching: {...state.isFetching, [action.type]: true}}

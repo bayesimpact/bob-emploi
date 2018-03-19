@@ -2,24 +2,27 @@
 
 set -e
 
-# Package Client App in dist folder.
-if $(docker inspect frontend-dev-webpack > /dev/null); then
-  # On CircleCI remote Docker environment, containers cannot start with volumes
-  # so we use a special script. Also the --rm option doesn't work on CircleCI.
-  docker exec -t frontend-dev-webpack npm run dist
-  # Copy the created dist back to the host, as we could not mount the volume that would have
-  # allowed to do this automatically.
-  docker cp frontend-dev-webpack:usr/app/dist ./frontend
-else
+function build_dist_folder {
+  # Build the dist folder inside a container to benefit from Docker caching.
   docker-compose build --pull frontend-dev-webpack
-  docker-compose run $([[ -z ${CIRCLECI} ]] && echo --rm) frontend-dev-webpack npm run dist
-fi
+  readonly dockerfile="$(mktemp --tmpdir=frontend/release)"
+  sed -e 's/^FROM.*$/\0:'${1-latest}/ < frontend/release/Dockerfile.build > "$dockerfile"
+  readonly image="bayesimpact/bob-emploi-frontend-build:${1:-latest}"
+  docker build -f "$dockerfile" -t "$image" frontend
+  rm "$dockerfile"
+
+  readonly container=$(docker create "$image")
+  docker cp $container:/usr/app/dist ./frontend
+  docker rm $container
+}
+
+build_dist_folder "${1:-latest}"
 
 # Build the frontend container.
 docker build --pull \
   --build-arg GIT_SHA1="$GIT_SHA1" \
   -f frontend/release/Dockerfile \
-  -t bayesimpact/bob-emploi-frontend \
+  -t "bayesimpact/bob-emploi-frontend:${1:-latest}" \
   frontend
 
 # Build the frontend-flask container.
