@@ -3,6 +3,7 @@
 const path = require('path')
 const webpack = require('webpack')
 const {UnusedFilesWebpackPlugin} = require('unused-files-webpack-plugin')
+const entrypoints = require('./entrypoints')
 
 const srcPath = path.join(__dirname, '../src')
 
@@ -10,10 +11,8 @@ module.exports = {
   devServer: {
     contentBase: './src/',
     historyApiFallback: {
-      rewrites: [
-        {from: /^\/eval($|\/)/, to: '/eval.html'},
-        {from: /^\/unsubscribe/, to: '/unsubscribe.html'},
-      ],
+      rewrites: Object.values(entrypoints).filter(({rewrite}) => rewrite).
+        map(({rewrite, htmlFilename}) => ({from: rewrite, to: `/${htmlFilename}`})),
     },
     hot: true,
     noInfo: false,
@@ -23,15 +22,6 @@ module.exports = {
   },
   module: {
     rules: [
-      {
-        enforce: 'pre',
-        include: srcPath,
-        test: /\.(js|jsx)$/,
-        use: {
-          loader: 'eslint-loader',
-          options: {emitWarning: true},
-        },
-      },
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
@@ -44,12 +34,22 @@ module.exports = {
         },
       },
       {
-        test: /\.(png|jpg|gif|svg)(\?[a-z0-9=&.]+)?$/,
+        resourceQuery: /multi/,
+        test: /\.(jpe?g|png)$/,
+        use: [
+          {
+            loader: 'responsive-loader',
+          },
+        ],
+      },
+      {
+        test: /\.svg(\?fill=.*)?$/,
         use: [
           {
             loader: 'url-loader',
             query: {limit: 8192},
           },
+          'svg-fill-loader',
           {
             loader: 'img-loader',
             options: {
@@ -66,6 +66,21 @@ module.exports = {
         ],
       },
       {
+        test: /\.(png|jpg|gif)(\?[a-z0-9=&.]+)?$/,
+        use: [
+          {
+            loader: 'url-loader',
+            query: {limit: 8192},
+          },
+          {
+            loader: 'img-loader',
+            options: {
+              enabled: process.env.REACT_WEBPACK_ENV === 'dist',
+            },
+          },
+        ],
+      },
+      {
         test: /\.txt$/,
         use: 'raw-loader',
       },
@@ -76,10 +91,13 @@ module.exports = {
     new webpack.ProvidePlugin({
       fetch: 'imports-loader?this=>global!exports-loader?global.fetch!whatwg-fetch',
     }),
-    new UnusedFilesWebpackPlugin({
-      globOptions: {ignore: ['**/README.md', 'src/config/*.*']},
-      pattern: 'src/**/*.*',
-    }),
+    new UnusedFilesWebpackPlugin({patterns: [
+      'src/**/*.*',
+      '!**/README.md',
+      '!src/config/*.*',
+      '!src/import-from-imilo/import-from-imilo-bookmarlet.js',
+      '!src/import-from-imilo/import-from-imilo.gif',
+    ]}),
   ],
   resolve: {
     alias: {

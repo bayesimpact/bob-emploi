@@ -1,0 +1,56 @@
+[
+  {
+    "_id": "94:N4105",
+    "close": {
+      "jobs": [
+        {
+          "romeId": "A1413",
+          "feminineName": "Aide caviste",
+          "masculineName": "Aide caviste",
+          "name": "Aide caviste",
+          "market_score": 22
+        },
+        {
+          "romeId": "A1401",
+          "feminineName": "Aide arboricole",
+          "masculineName": "Aide arboricole",
+          "market_score": 16
+        }
+      ]
+    }
+  },
+  {
+    "_id": "75:D1211",
+    "close": {
+      "jobs": [
+        {
+          "romeId": "A1413",
+          "feminineName": "Aide caviste",
+          "masculineName": "Aide caviste",
+          "name": "Aide caviste",
+          "market_score": 22
+        },
+        {
+          "romeId": "A1401",
+          "feminineName": "Aide arboricole",
+          "masculineName": "Aide arboricole",
+          "market_score": 16
+        }
+      ]
+    }
+  },
+  {
+    "_id": "84:M1604",
+    "close": {
+      "jobs": [
+        {
+          "romeId": "A1413",
+          "masculineName": "Aide caviste",
+          "feminineName": "Aide caviste",
+          "name": "Aide caviste",
+          "market_score": 100
+         }
+       ]
+    }
+  }
+]

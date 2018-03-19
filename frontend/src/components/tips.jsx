@@ -4,11 +4,10 @@ import {connect} from 'react-redux'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import {getAdviceTips, showAllTips} from 'store/actions'
+import {getAdviceModules} from 'store/french'
 
 import {Action, ActionDescriptionModal} from 'components/actions'
 import {Button, Colors, PaddedOnMobile} from 'components/theme'
-
-import adviceModuleProperties from 'components/advisor/data/advice_modules.json'
 
 const DEFAULT_TIPS_SHOWN = 5
 
@@ -23,6 +22,7 @@ class TipsListBase extends React.Component {
     project: PropTypes.object,
     style: PropTypes.object,
     tips: PropTypes.arrayOf(PropTypes.object.isRequired).isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   state = {
@@ -31,17 +31,7 @@ class TipsListBase extends React.Component {
   }
 
   componentWillMount() {
-    this.updateAdvice(this.props)
-  }
-
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.advice !== this.props.advice || nextProps.project !== this.props.project) {
-      this.updateAdvice(nextProps)
-    }
-  }
-
-  updateAdvice({advice, project}) {
-    const {dispatch, tips} = this.props
+    const {advice, dispatch, project, tips} = this.props
     if (advice && project && !tips.length) {
       dispatch(getAdviceTips(project, advice))
     }
@@ -66,7 +56,7 @@ class TipsListBase extends React.Component {
   }
 
   render() {
-    const {advice, style, tips} = this.props
+    const {advice, style, userYou, tips} = this.props
     const {numTipsShown, openTip} = this.state
     if (!advice) {
       return null
@@ -84,13 +74,14 @@ class TipsListBase extends React.Component {
       justifyContent: 'center',
       marginTop: 20,
     }
-    const {goal} = adviceModuleProperties[advice.adviceId] || {}
+    const {goal} = getAdviceModules(userYou)[advice.adviceId] || {}
     const tipsShown = tips.slice(0, numTipsShown)
     return <div style={{marginTop: 30, ...style}}>
       <ActionDescriptionModal
         action={openTip}
         onClose={() => this.setState({openTip: null})}
-        isShown={!!this.state.openTip} />
+        isShown={!!this.state.openTip}
+        userYou={userYou} />
       <div style={titleStyle}>
         <PaddedOnMobile>Voici quelques astuces pour {goal}&nbsp;:</PaddedOnMobile>
       </div>
@@ -118,6 +109,7 @@ class AppearingComponent extends React.Component {
   static propTypes = {
     children: PropTypes.node,
   }
+
   state = {
     opacity: 0,
   }

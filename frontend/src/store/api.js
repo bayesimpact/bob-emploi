@@ -67,19 +67,19 @@ function dashboardExportGet(dashboardExportId) {
   return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
-function evalUseCasePoolsGet() {
-  return getJson('/api/eval/use-case-pools').
+function evalUseCasePoolsGet(authToken) {
+  return getJson('/api/eval/use-case-pools', authToken).
     then(response => response.useCasePools || [])
 }
 
-function evalUseCasesGet(poolName) {
-  return getJson(`/api/eval/use-cases/${poolName}`).
+function evalUseCasesGet(poolName, authToken) {
+  return getJson(`/api/eval/use-cases/${poolName}`, authToken).
     then(response => response.useCases || [])
 }
 
 function expandedCardContentGet(user, project, {adviceId}, authToken) {
-  if (user.userId && project.project.id) {
-    return getJson(`/api/project/${user.userId}/${project.projectId}/${adviceId}`, authToken)
+  if (user.userId && project.projectId) {
+    return getJson(`/api/advice/${adviceId}/${user.userId}/${project.projectId}`, authToken)
   }
   return postJson(
     `/api/advice/${adviceId}`,
@@ -88,6 +88,10 @@ function expandedCardContentGet(user, project, {adviceId}, authToken) {
       projects: (user.projects || []).filter(p => p.projectId === project.projectId),
     },
     true)
+}
+
+function jobRequirementsGet(romeId) {
+  return getJson(`/api/job/requirements/${romeId}`)
 }
 
 function jobsGet(romeId) {
@@ -106,23 +110,20 @@ function projectComputeAdvicesPost(user) {
   return postJson('/api/project/compute-advices', user, true)
 }
 
-function projectRequirementsGet(project) {
-  return postJson('/api/project/requirements', project, true)
+function projectDiagnosePost(user) {
+  return postJson('/api/project/diagnose', user, true)
 }
 
 function resetPasswordPost(email) {
   return postJson('/api/user/reset-password', {email}, true)
 }
 
-function saveLikes(userId, likes, authToken) {
-  return postJson('/api/user/likes', {likes, userId}, false, authToken)
+function userCountGet() {
+  return getJson('/api/users/counts')
 }
 
 function userPost(user, token) {
-  const {onboardingComplete, ...protoUser} = user
-  // Unused.
-  onboardingComplete
-  return postJson('/api/user', {...protoUser}, true, token)
+  return postJson('/api/user', user, true, token)
 }
 
 function userDelete(user, authToken) {
@@ -145,14 +146,15 @@ export {
   evalUseCasesGet,
   expandedCardContentGet,
   feedbackPost,
+  jobRequirementsGet,
   jobsGet,
   markUsedAndRetrievePost,
   migrateUserToAdvisorPost,
   projectComputeAdvicesPost,
-  projectRequirementsGet,
+  projectDiagnosePost,
   resetPasswordPost,
-  saveLikes,
   userAuthenticate,
+  userCountGet,
   userDelete,
   userPost,
 }

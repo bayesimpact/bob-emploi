@@ -9,46 +9,48 @@ FROM python:3
 # Having them in sync allow us to always finish by setting the files and
 # optimize the caching when Docker building the images.
 
-# Install dependencies
-# TODO(florian): keep in one RUN to reduce # of Docker layers once we get the caching to always work
-# correctly on CircleCI remote Docker environment.
-RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends wget unzip
-
 WORKDIR /work
-# Install needed Python dependencies.
-RUN pip install python-emploi-store flask mailjet_rest mongo oauth2client pyfarmhash raven[flask] unidecode uwsgi xmltodict
 
-# Install Protobuf compiler.
-RUN wget --quiet https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip -O protoc.zip && unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto
-
-# Install Python Protobuf runtime.
-RUN wget --quiet https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-python-3.2.0.zip -O protobuf-python.zip && unzip -qq protobuf-python.zip && rm protobuf-python.zip && cd protobuf-3.2.0/python && ./setup.py install && cd ../.. && rm -rf protobuf-3.2.0
-
-# Prepare the frontend module.
-RUN mkdir -p bob_emploi/frontend && \
-  touch bob_emploi/__init__.py && \
-  touch bob_emploi/frontend/__init__.py
+# Install dependencies
+RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends wget unzip && \
+  # Install needed Python dependencies.
+  # TODO(cyrille): Fix protobuf version to latest common between pip and github.
+  pip install algoliasearch python-emploi-store certifi 'elasticsearch<6.0.0' flask mailjet_rest mongo oauth2client protobuf==3.5.1 pyfarmhash raven[flask] unidecode uwsgi xmltodict && \
+  # Install Protobuf compiler.
+  PROTOBUF_VERSION=$(pip show protobuf | grep ^Version | grep -o '[0-9][0-9.]\+[0-9]') \
+  bash -c 'wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip' && \
+  unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto && \
+  # Prepare the frontend module.
+  mkdir -p bob_emploi/frontend && \
+    touch bob_emploi/__init__.py && \
+    touch bob_emploi/frontend/__init__.py
 
 # TEST ONLY.
 COPY frontend/server/requirements-testing.txt /work
 RUN pip install -r requirements-testing.txt
 
 COPY frontend/server/entrypoint.sh .
-COPY frontend/server/*.py bob_emploi/frontend/
-COPY frontend/server/modules/*.py bob_emploi/frontend/modules/
-COPY frontend/server/asynchronous/*.py bob_emploi/frontend/asynchronous/
-COPY frontend/server/api bob_emploi/frontend/api
+COPY frontend/server/*.py bob_emploi/frontend/server/
+COPY frontend/server/modules/*.py bob_emploi/frontend/server/modules/
+COPY frontend/server/asynchronous/*.py bob_emploi/frontend/server/asynchronous/
+COPY frontend/server/asynchronous/mail/*.py bob_emploi/frontend/server/asynchronous/mail/
+COPY frontend/api bob_emploi/frontend/api
 
 # TEST ONLY.
-COPY frontend/server/lint_and_test.sh .pylintrc .pep8 /work/
-COPY frontend/server/test /work/bob_emploi/frontend/test/
-COPY frontend/server/asynchronous/test /work/bob_emploi/frontend/asynchronous/test/
-COPY frontend/server/Dockerfile* /work/bob_emploi/frontend/
+COPY frontend/server/lint_and_test.sh .pylintrc .pycodestyle frontend/server/.coveragerc /work/
+COPY frontend/server/test /work/bob_emploi/frontend/server/test/
+COPY frontend/server/modules/test /work/bob_emploi/frontend/server/modules/test/
+COPY frontend/server/asynchronous/test /work/bob_emploi/frontend/server/asynchronous/test/
+COPY frontend/server/asynchronous/mail/test /work/bob_emploi/frontend/server/asynchronous/mail/test/
+COPY frontend/server/Dockerfile* /work/bob_emploi/frontend/server/
+
+# TEST ONLY.
+RUN pybabel extract bob_emploi/frontend/server/ -k translate_static_string -o strings.pot
 
 # Setup environment.
 EXPOSE 80
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["uwsgi", "--protocol=http", "--socket", "0.0.0.0:80", "--enable-threads", "-w", "bob_emploi.frontend.server:app"]
+CMD ["uwsgi", "--protocol=http", "--socket", "0.0.0.0:80", "--enable-threads", "-w", "bob_emploi.frontend.server.server:app"]
 ARG GIT_SHA1=non-git
 
 # Label the image with the git commit.
@@ -60,4 +62,6 @@ ENV SERVER_VERSION=git-$GIT_SHA1 \
   PYTHONPATH=/work
 
 # TEST ONLY.
+ARG SKIP_TEST=
+RUN test -n "$SKIP_TEST" && echo "Skipping tests" || ./entrypoint.sh ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html --cover-min-percentage=90
 CMD ["nosetests", "--with-watch"]

@@ -1,0 +1,83 @@
+Bonjour {{var:firstName:"Marie"}},
+
+
+
+Juste un petit email pour partager quelques chiffes clés avec vous. 
+
+Chez Bob, on est convaincu que l'information c'est le pouvoir et on veut vous le donner 💪
+
+J'ai regardé pour vous les chiffres du marché {{var:ofJobName}} {{var:inCity}}. Les voici :
+
+
+{% if var:marketStress.showSection == "True" %}
+--------------------------------------------------------------------------------
+
+
+
+{{var:marketStress.offers}} offre{% if var:marketStress.offers != "1" %}s{% endif %} pour {{var:marketStress.candidates}} candidat{% if var:marketStress.candidates != "1" %}s{% endif %}
+
+Cela veut dire qu'il y a {% if var:marketStress.candidates != "1" %}{{var:marketStress.candidates}} fois plus {% elseif var:marketStress.offers != "1" %}{{var:marketStress.offers}} fois moins {% else %}à peu près autant {% endif %}de candidats qui postulent pour des postes {{var:ofJobNameInDepartement}} que d'offres postées.
+
+
+{% endif %}{% if var:applicationModes.showSection == "True" %}
+--------------------------------------------------------------------------------
+
+
+
+Meilleur canal : {{var:applicationModes.title}}
+
+{{var:applicationModes.percent}}% des personnes  qui travaillent comme {{var:jobNameInDepartement}} ont décroché leur poste grâce à {{var:applicationModes.name}}.{% if var:applicationModes.link != "" %} Pourquoi pas vous ? On vous aide ici ! [{{var:applicationModes.link}}]{% endif %}
+
+
+{% endif %}{% if var:departements.showSection == "True" %}
+--------------------------------------------------------------------------------
+
+
+
+{{var:departements.title}}
+
+{% if var:departements.isInBest == "True" %}Vous êtes déjà dans un des départements qui recrutent le plus pour des postes {{var:ofJobName}} ! Mais si vous êtes prêt{% if var:gender == "FEMININE" %}e{% endif %} à déménager, vous pouvez aussi chercher {{var:departements.sentence}}.
+{% else %}Vous qui êtes mobile partout en France, pensez à chercher {{var:departements.sentence}}. C'est dans {% if var:departements.count:"0" == "1" %}ce département{% else %}ces deux départements{% endif %} qu'on recrute le plus pour des postes {{var:ofJobName}}.
+{% endif %}
+
+{% endif %}{% if var:employmentType.showSection == "True" %}
+--------------------------------------------------------------------------------
+
+
+
+{{var:employmentType.percent}}%  des offres sont en {{var:employmentType.title}}
+
+Vous aurez accès à {% if var:employmentType.ratio > 1 %}{{var:employmentType.ratio}} fois {% endif %}plus d'offres en postulant en {{var:employmentType.name}}, c'est à garder en tête.
+
+
+{% endif %}{% if var:months.showSection == "True" %}
+--------------------------------------------------------------------------------
+
+
+
+Meilleur moment : {{var:months.activeMonths}}
+
+{% if var:months.onlyOneMonth == "True" %}C'est le mois {% else %}Ce sont les mois {% endif %}où l'on recrute le plus pour des postes {{var:ofJobNameInDepartement}},  soyez prêt{% if var:gender:"" == "FEMININE" %}e{% endif %} pour {% if var:months.onlyOneMonth == "1" %}ce mois important{% else %}ces mois importants{% endif %}.
+
+
+{% endif %}
+--------------------------------------------------------------------------------
+
+Beaucoup d'autres statistiques sur votre marché sont disponibles ici [{{var:imtLink}}].
+
+Vous avez envie qu'on creuse le sujet ensemble ? 
+
+Envoyez-moi vos questions ou remarques en répondant directement à ce mail 😉
+
+
+
+Pascal et l'équipe de Bob
+
+
+PS : Vous avez déjà retrouvé un poste ? Tenez nous au courant ici [{{var:statusUpdateUrl}}].{% if var:showPs == "True" %}
+
+PPS : J'ai aussi vu un salon en ligne pour rencontrer des entreprises qui recrutent dans l'hôtellerie à Arles. Ça pourrait être intéressant pour vous. Toutes les infos sont ici [https://salonenligne.pole-emploi.fr/candidat/?salonId=630].{% endif %}
+
+
+
+Vous recevez cet email car vous êtes inscrit{% if var:gender:"" == "FEMININE" %}e{% endif %} sur Bob [https://www.bob-emploi.fr]. Cliquez ici [{{var:unsubscribeLink}}]  si vous souhaitez vous désinscrire.

@@ -2,16 +2,14 @@ import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
 
-import headerImage from 'images/header-img.png'
+import headerImage from 'images/team-header.jpg?multi&sizes[]=1440&sizes[]=600'
 
-import benoitImage from 'images/people/benoit.png'
-import chemaImage from 'images/people/chema.png'
 import cyrilleImage from 'images/people/cyrille.png'
 import florianImage from 'images/people/florian.png'
-import guillaumeImage from 'images/people/guillaume.png'
 import johnImage from 'images/people/john.png'
 import margauxImage from 'images/people/margaux.png'
 import marielaureImage from 'images/people/marie-laure.png'
+import nicolasImage from 'images/people/nicolas.jpg'
 import pascalImage from 'images/people/pascal.png'
 import paulImage from 'images/people/paul.png'
 
@@ -24,7 +22,7 @@ import twitterIcon from 'images/share/twitter-ico.svg'
 
 import {ModalCloseButton} from 'components/modal'
 import {StaticPage} from 'components/static'
-import {Colors, SmoothTransitions} from 'components/theme'
+import {chooseImageVersion, Colors, SmoothTransitions} from 'components/theme'
 
 
 const paulBio = {
@@ -66,7 +64,7 @@ const pascalBio = {
     les enfants (il en a d'ailleurs beaucoup), et va au boulot en rollers.",
   education: 'École Polytechnique, Télécoms Paris',
   experience: 'Tech Lead Manager Google Maps, Ministère de la Défense',
-  linkedin: 'https://www.linkedin.com/in/johnmetois/',
+  linkedin: 'https://www.linkedin.com/in/pascalcorpet/',
   twitter: 'https://twitter.com/pascalcorpet',
 }
 
@@ -92,28 +90,6 @@ const johnBio = {
   twitter: 'https://twitter.com/serialkimi',
 }
 
-const benoitBio = {
-  description: "Benoit est data scientist et ingénieur logiciel. Avant de rejoindre Bayes il a \
-    notament travaillé sur les algorithmes de recommendations de musique chez Deezer. Il aime \
-    marcher et faire du vélo, et le meilleur moyen d'avoir toute son attention  est probablement \
-    de lui parler de charcuteries, fromages et de bières artisanales.",
-  education: 'Télécom Bretagne',
-  experience: 'Lead Data Architect à Deezer',
-  linkedin: 'https://www.linkedin.com/in/mazben/',
-  twitter: 'https://twitter.com/matben94',
-}
-
-const guillaumeBio = {
-  description: "Guillaume s'est spécialisé en Intelligence Artificielle et optimisation. Il a fait \
-    des programmes qui ont affronté des professionnels de Go pendant sa thèse, a travaillé sur \
-    l'optimisation de YouTube, et la simplification de la législation fiscale pour le gouvernement \
-    Français. Il aime dancer et faire du roller, simultanément de préférence.",
-  education: 'Centrale Lille, Université Lille 1',
-  experience: 'Ingénieur à Etalab, Google',
-  linkedin: 'https://www.linkedin.com/in/guillaume-chaslot-6774b982/',
-  twitter: 'https://twitter.com/GChaslot',
-}
-
 const cyrilleBio = {
   description: "Cyrille a fait de la recherche en mathématiques jusqu'à ce qu'il se rende compte \
     que ça n'avait pas vraiment d'impact, et décide de se rendre utile. Il aime les jeux de \
@@ -123,16 +99,18 @@ const cyrilleBio = {
   linkedin: 'https://www.linkedin.com/in/cyrillecorpet',
 }
 
-const chemaBio = {
-  description: "Chema a précédemment travaillé à l'OCDE sur le développement du secteur privé, et \
-    dans le conseil en management. Elle a une formation universitaire mixte en mathématiques, \
-    économie et politiques publiques. Elle est une idéaliste passionnée, aime toute sorte de \
-    musique, de Muse à Um Kalthoum et ne peut pas résister à une évasion en mer.",
-  education: 'ENSIIE, Sciences Po, LSE',
-  experience: "Management Consultant à Equinox Consulting et Policy Analyst à l'OCDE",
-  facebook: 'https://www.facebook.com/chema.triki',
-  linkedin: 'https://www.linkedin.com/in/chema-triki-670abb23/',
-  twitter: 'https://twitter.com/ChemaTriki',
+const nicolasBio = {
+  description: 'Nicolas a pu travailler dans différentes agences de \
+    communication, aussi bien sur des problématiques de réputation digitale, de \
+    gestion de crise ou de relations presse. Durant son cursus universitaire, il \
+    a étudié la science politique ainsi que la communication politique et \
+    institutionnelle. Passionné de mode et de politique française, il adore \
+    également découvrir et faire découvrir de nouveaux restaurants.',
+  education: 'Sciences-Po Toulouse, La Sorbonne',
+  experience: "Consultant en communication d'influence et relations presse dans \
+    différentes agences",
+  linkedin: 'https://www.linkedin.com/in/nicolasdivet/',
+  twitter: 'https://twitter.com/nicolasdivet',
 }
 
 const allPersons = [
@@ -144,13 +122,10 @@ const allPersons = [
   {bio: marielaureBio, name: 'Marie Laure Endale Ahanda', picture: marielaureImage,
     position: 'Ingénieure logiciel'},
   {bio: johnBio, name: 'John Métois', picture: johnImage, position: 'Designer UX'},
-  {bio: benoitBio, name: 'Benoit Mathieu', picture: benoitImage, position: 'Ingénieur logiciel'},
-  {bio: guillaumeBio, name: 'Guillaume Chaslot', picture: guillaumeImage,
-    position: 'Ingénieur logiciel'},
-  {bio: chemaBio, name: 'Chema Triki', picture: chemaImage,
-    position: 'Responsable développement'},
   {bio: cyrilleBio, name: 'Cyrille Corpet', picture: cyrilleImage,
     position: 'Ingénieur logiciel'},
+  {bio: nicolasBio, name: 'Nicolas Divet', picture: nicolasImage,
+    position: 'Chargé de communication'},
 ]
 
 class EmptyPersonTile extends React.Component {
@@ -222,13 +197,8 @@ class TeamPage extends React.Component {
   }
 
   state = {
-    nbPersonInARow: 3,
+    nbPersonInARow: this.context.isMobileVersion ? 1 : 3,
     showPersonBio: '',
-  }
-
-  componentWillMount() {
-    const {isMobileVersion} = this.context
-    this.setState({nbPersonInARow: isMobileVersion ? 1 : 3})
   }
 
   setPersonBio(personName) {
@@ -259,7 +229,7 @@ class TeamPage extends React.Component {
     </div>
   }
 
-  handleBioMounted = (bioDiv) => {
+  handleBioOpen = (bioDiv) => {
     if (bioDiv) {
       const clientHeight = document.documentElement.clientHeight
       const divRect = bioDiv.getBoundingClientRect()
@@ -269,101 +239,20 @@ class TeamPage extends React.Component {
     }
   }
 
-  renderPersonBio = (personRow) => {
-    const {showPersonBio} = this.state
-    const person = personRow.find(person => person.name === showPersonBio)
-    if (!person) {
-      return null
-    }
-    const rowStyle = {
-      marginBottom: 70,
-      position: 'relative',
-      textAlign: 'center',
-    }
-    const hrStyle = {
-      backgroundColor: Colors.SILVER,
-      border: 0,
-      height: 2,
-      marginBottom: 35,
-      marginTop: 35,
-      width: 63,
-    }
-    const descriptionStyle = {
-      color: Colors.DARK_TWO,
-      fontSize: 16,
-      lineHeight: 1.31,
-      margin: 'auto',
-      maxWidth: 500,
-    }
-    const closeStyle = {
-      bottom: 'initial',
-      boxShadow: '',
-      fontSize: 10,
-      height: 20,
-      opacity: .6,
-      transform: 'initial',
-      width: 20,
-    }
-    return <div style={rowStyle} ref={this.handleBioMounted}>
-      <ModalCloseButton onClick={() => this.setPersonBio('')} style={closeStyle} />
-      <div style={{color: Colors.DARK, fontSize: 26}}>
-        <strong>{person.name}</strong><br />
-        <div style={{color: Colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', marginTop: 13}}>
-        Études : {person.bio.education}<br />
-        Expérience : {person.bio.experience}
-        </div>
-      </div>
-      <hr style={hrStyle} />
-      <div style={descriptionStyle}>{person.bio.description}</div>
-      {this.renderSocialLinks(person)}
-    </div>
-  }
-
-  renderSocialLinks(person) {
-    const style = {
-      margin: 35,
-      textAlign: 'center',
-    }
-    return <div style={style}>
-      {person.bio.linkedin ? this.renderSocialLink(
-        'linkedin', linkedinIcon, linkedinGrayIcon, person.bio.linkedin) : null}
-      {person.bio.twitter ? this.renderSocialLink(
-        'twitter', twitterIcon, twitterGrayIcon, person.bio.twitter) : null}
-      {person.bio.facebook ? this.renderSocialLink(
-        'facebook', facebookIcon, facebookGrayIcon, person.bio.facebook) : null}
-    </div>
-  }
-
-  renderSocialLink(shareId, icon, grayIcon, url) {
-    const shareIdState = `is${shareId}IconHovered`
-    const isHovered = this.state[shareIdState]
-    const colorIconStyle = {
-      opacity: isHovered ? 1 : 0,
-      position: 'absolute',
-      ...SmoothTransitions,
-    }
-    return <a
-      style={{cursor: 'pointer', margin: '0 5px', position: 'relative', textDecoration: 'none'}}
-      onMouseEnter={() => this.setState({[shareIdState]: true})}
-      onMouseLeave={() => this.setState({[shareIdState]: false})}
-      href={url}
-      rel="noopener noreferer"
-      target="_blank">
-      <img src={icon} style={colorIconStyle} alt="" />
-      <img src={grayIcon} alt={shareId} />
-    </a>
-  }
-
   renderPersonList(personList) {
-    const {nbPersonInARow} = this.state
+    const {nbPersonInARow, showPersonBio} = this.state
     return new Array(Math.ceil(personList.length / nbPersonInARow)).fill().
       map((unused, rowIndex) => personList.slice(
         rowIndex * nbPersonInARow, (rowIndex + 1) * nbPersonInARow)).
       map((personRow, rowIndex) => {
         return [
           this.renderPersonRow(personRow, rowIndex),
-          // TODO(benoit): Scroll slowly.
-          this.renderPersonBio(personRow, rowIndex),
+          <PersonBio
+            key={`bio-${rowIndex}`}
+            personRow={personRow}
+            onClose={() => this.setPersonBio('')}
+            onOpen={this.handleBioOpen}
+            showPersonBio={showPersonBio} />,
         ]
       })
   }
@@ -412,7 +301,7 @@ class TeamPage extends React.Component {
         {this.renderValue("S'améliorer constamment.", "C'est en se remettant toujours " +
           'en question que nous pourrons nous hisser à la hauteur de la complexité de nos ' +
           'enjeux.')}
-        {this.renderValue('Savoir combiner audace et humilité.', "On se doit d'être ambitieux" +
+        {this.renderValue('Savoir combiner audace et humilité.', "On se doit d'être ambitieux " +
           "lorsque c'est pour l'intérêt général. Même (surtout) si c'est dur.")}
         {this.renderValue('Être pragmatique, mais rester idéaliste.', 'Il ne faut pas faire de ' +
           "solutionnisme. Mais ça ne veut pas dire qu'il n'y a pas de solution. Le plus " +
@@ -424,7 +313,7 @@ class TeamPage extends React.Component {
   render() {
     const {isMobileVersion} = this.context
     const coverStyle = {
-      backgroundImage: `url(${headerImage})`,
+      backgroundImage: `url(${chooseImageVersion(headerImage, isMobileVersion)})`,
       backgroundPosition: 'center center',
       backgroundSize: 'cover',
       display: 'flex',
@@ -445,7 +334,7 @@ class TeamPage extends React.Component {
       fontSize: 18,
       fontStyle: 'italic',
       lineHeight: 1.33,
-      margin: isMobileVersion ? '30px auto 40px': '80px auto 90px',
+      margin: isMobileVersion ? '30px auto 40px' : '80px auto 90px',
       maxWidth: 650,
       padding: '0 25px',
       textAlign: 'center',
@@ -472,6 +361,152 @@ class TeamPage extends React.Component {
       </div>
       {this.renderValues()}
     </StaticPage>
+  }
+}
+
+
+class PersonBio extends React.Component {
+  static propTypes = {
+    onClose: PropTypes.func.isRequired,
+    onOpen: PropTypes.func.isRequired,
+    personRow: PropTypes.arrayOf(PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }).isRequired).isRequired,
+    showPersonBio: PropTypes.string,
+  }
+
+  state = {
+    isOpen: false,
+    onTransitionEnd: null,
+    person: null,
+  }
+
+  componentWillMount() {
+    const {personRow, showPersonBio} = this.props
+    const person = personRow.find(person => person.name === showPersonBio)
+    this.setState({
+      isOpen: !!person,
+      person,
+    })
+  }
+
+  componentDidMount() {
+    const {onOpen} = this.props
+    const {isOpen} = this.state
+    if (isOpen) {
+      onOpen(this.dom)
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const {onOpen, personRow, showPersonBio} = nextProps
+    const nextPerson = personRow.find(person => person.name === showPersonBio)
+    const {person} = this.state
+    if (person === nextPerson) {
+      return
+    }
+    if (nextPerson) {
+      this.setState({
+        isOpen: true,
+        onTransitionEnd: null,
+        person: nextPerson,
+      })
+      onOpen(this.dom)
+      return
+    }
+    this.setState({
+      isOpen: false,
+      onTransitionEnd: () => this.setState({person: null}),
+    })
+  }
+
+  renderSocialLinks(person) {
+    const style = {
+      margin: 35,
+      textAlign: 'center',
+    }
+    return <div style={style}>
+      {person.bio.linkedin ? this.renderSocialLink(
+        'linkedin', linkedinIcon, linkedinGrayIcon, person.bio.linkedin) : null}
+      {person.bio.twitter ? this.renderSocialLink(
+        'twitter', twitterIcon, twitterGrayIcon, person.bio.twitter) : null}
+      {person.bio.facebook ? this.renderSocialLink(
+        'facebook', facebookIcon, facebookGrayIcon, person.bio.facebook) : null}
+    </div>
+  }
+
+  renderSocialLink(shareId, icon, grayIcon, url) {
+    const shareIdState = `is${shareId}IconHovered`
+    const isHovered = this.state[shareIdState]
+    const colorIconStyle = {
+      opacity: isHovered ? 1 : 0,
+      position: 'absolute',
+      ...SmoothTransitions,
+    }
+    return <a
+      style={{cursor: 'pointer', margin: '0 5px', position: 'relative', textDecoration: 'none'}}
+      onMouseEnter={() => this.setState({[shareIdState]: true})}
+      onMouseLeave={() => this.setState({[shareIdState]: false})}
+      href={url}
+      rel="noopener noreferer"
+      target="_blank">
+      <img src={icon} style={colorIconStyle} alt="" />
+      <img src={grayIcon} alt={shareId} />
+    </a>
+  }
+
+  render() {
+    const {onClose} = this.props
+    const {isOpen, onTransitionEnd, person} = this.state
+    const rowStyle = {
+      marginBottom: isOpen ? 70 : 0,
+      maxHeight: isOpen ? 600 : 0,
+      opacity: isOpen ? 1 : 0,
+      overflow: 'hidden',
+      position: 'relative',
+      textAlign: 'center',
+      ...SmoothTransitions,
+    }
+    const hrStyle = {
+      backgroundColor: Colors.SILVER,
+      border: 0,
+      height: 2,
+      marginBottom: 35,
+      marginTop: 35,
+      width: 63,
+    }
+    const descriptionStyle = {
+      color: Colors.DARK_TWO,
+      fontSize: 16,
+      lineHeight: 1.31,
+      margin: 'auto',
+      maxWidth: 500,
+    }
+    const closeStyle = {
+      bottom: 'initial',
+      boxShadow: '',
+      fontSize: 10,
+      height: 20,
+      opacity: .6,
+      transform: 'initial',
+      width: 20,
+    }
+    return <div
+      style={rowStyle} ref={dom => {
+        this.dom = dom
+      }} onTransitionEnd={onTransitionEnd}>
+      <ModalCloseButton onClick={onClose} style={closeStyle} />
+      <div style={{color: Colors.DARK, fontSize: 26}}>
+        <strong>{person && person.name}</strong><br />
+        <div style={{color: Colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', marginTop: 13}}>
+        Études : {person && person.bio.education}<br />
+        Expérience : {person && person.bio.experience}
+        </div>
+      </div>
+      <hr style={hrStyle} />
+      <div style={descriptionStyle}>{person && person.bio.description}</div>
+      {person && this.renderSocialLinks(person)}
+    </div>
   }
 }
 

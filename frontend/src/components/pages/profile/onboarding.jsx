@@ -1,4 +1,4 @@
-import _ from 'underscore'
+import keyBy from 'lodash/keyBy'
 import {FINISH_PROFILE_SITUATION,
   FINISH_PROFILE_FRUSTRATIONS,
   FINISH_PROJECT_GOAL, FINISH_PROJECT_CRITERIA,
@@ -30,41 +30,47 @@ const STEPS = [
     component: GeneralStep,
     name: 'profil',
     path: Routes.PROFILE_PAGE,
+    percent: 20,
     type: FINISH_PROFILE_SITUATION,
   },
   {
     component: NewProjectGoalStep,
     name: 'but',
     path: Routes.NEW_PROJECT_PAGE,
+    percent: 48,
     type: FINISH_PROJECT_GOAL,
   },
   {
     component: NewProjectCriteriaStep,
     name: 'criteres',
     path: Routes.NEW_PROJECT_PAGE,
+    percent: 64,
     type: FINISH_PROJECT_CRITERIA,
   },
   {
     component: NewProjectExperienceStep,
     name: 'experience',
     path: Routes.NEW_PROJECT_PAGE,
+    percent: 80,
     type: FINISH_PROJECT_EXPERIENCE,
   },
   {
     component: NewProjectJobsearchStep,
     name: 'recherche',
     path: Routes.NEW_PROJECT_PAGE,
+    percent: 20,
   },
   {
     component: FrustrationsStep,
     name: 'frustrations',
     path: Routes.PROFILE_PAGE,
+    percent: 96,
     type: FINISH_PROFILE_FRUSTRATIONS,
   },
 ]
 // Compute stepNumber for each step.
 let nextStepNumber = 1
-const NUMBERED_STEPS = _.indexBy(
+const NUMBERED_STEPS = keyBy(
   STEPS.map((step, index) => {
     const stepNumber = nextStepNumber
     if (step.doesNotCount) {
@@ -103,10 +109,16 @@ function gotoRelativeStep(path, name, dispatch, history, relativeStep) {
 }
 
 
+function hasPreviousStep(path, name) {
+  const {index} = NUMBERED_STEPS[`${path}/${name}`]
+  return !!index
+}
+
+
 const gotoPreviousStep = (path, name, history) =>
   gotoRelativeStep(path, name, null, history, -1)
 const gotoNextStep = (path, name, dispatch, history) =>
   gotoRelativeStep(path, name, dispatch, history, 1)
 
 
-export {getOnboardingStep, gotoNextStep, gotoPreviousStep}
+export {getOnboardingStep, gotoNextStep, gotoPreviousStep, hasPreviousStep}

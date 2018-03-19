@@ -1,20 +1,22 @@
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
+import {connect} from 'react-redux'
 
 import config from 'config'
 
 import {sendProfessionalFeedback} from 'store/actions'
 
 import {InfoCollNotificationBox} from 'components/info_coll'
-import {PageWithNavigationBar} from 'components/navigation'
+import {StaticPage} from 'components/static'
 import {TestimonialCard, Testimonials} from 'components/testimonials'
 import {Button, Colors} from 'components/theme'
 
 
-class ProfessionalsPage extends React.Component {
+class ProfessionalsPageBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -75,21 +77,23 @@ class ProfessionalsPage extends React.Component {
       <Testimonials
         cardStyle={{backgroundColor: Colors.BACKGROUND_GREY, minHeight: 320}}
         carouselAutoRotationDurationMs={8000}>
-        <TestimonialCard author="Sébastien, ancien conseiller Pôle emploi" isAuthorMan={true}>
+        <TestimonialCard
+          author={{isMan: true, jobName: 'ancien conseiller Pôle emploi', name: 'Sébastien'}}>
           J'aurais aimé que cette application existe quand j'étais encore
           conseiller à Pôle emploi. Le fait que les chercheurs d'emploi
           puissent recevoir un suivi en ligne avec des actions et des
           informations personnalisées en complément des rendez-vous avec leur
           conseiller est une réelle plus-value.
         </TestimonialCard>
-        <TestimonialCard author="Bénédicte, assistante informatique">
+        <TestimonialCard author={{jobName: 'assistante informatique', name: 'Bénédicte'}}>
           J'aime beaucoup… je l'utilise professionnellement (je suis assistante
           informatique dans une mission locale)… donc je la teste et j'en
           parle a mes collègues et via notre page Facebook.
           Les jeunes apprécient aussi surtout ceux qui sont déjà plus ou moins
           autonomes. Les conseils sont avisés. C'est du bon taf !
         </TestimonialCard>
-        <TestimonialCard author="Claire, conseillère en évolution professionnelle">
+        <TestimonialCard
+          author={{jobName: 'conseillère en évolution professionnelle', name: 'Claire'}}>
           Cet outil permet de ne pas rester seul face à ses interrogations. Il
           propose au chercheur d'emploi une structuration de son action
           quotidienne, et l'aiguille au bon moment vers des informations
@@ -165,18 +169,20 @@ class ProfessionalsPage extends React.Component {
       color: Colors.DARK,
       padding: '50px 10px',
     }
-    return <PageWithNavigationBar
+    return <StaticPage
       page="professionals" isContentScrollable={true}
-      style={{fontSize: 27, paddingBottom: 150, textAlign: 'center'}}>
+      style={{fontSize: 27, textAlign: 'center'}}>
       <InfoCollNotificationBox />
       {this.renderTitle()}
       {this.renderDemo(greyBackgroundStyle)}
       {this.renderWhy(whiteBackgroundStyle)}
       {this.renderFeedback({...greyBackgroundStyle, padding: '50px 10px 0'})}
       {this.renderFollow(greyBackgroundStyle)}
-    </PageWithNavigationBar>
+      <div style={{height: 150}} />
+    </StaticPage>
   }
 }
+const ProfessionalsPage = connect()(ProfessionalsPageBase)
 
 
 export {ProfessionalsPage}

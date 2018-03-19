@@ -1,11 +1,12 @@
-import React from 'react'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
+import React from 'react'
 
 import {lowerFirstLetter} from 'store/french'
 
 import {AppearingList, Colors, GrowingNumber, PaddedOnMobile, StringJoiner,
   Styles} from 'components/theme'
+import Picto from 'images/advices/picto-relocate.png'
 
 import {PercentageBoxes} from './base'
 
@@ -15,11 +16,12 @@ const maybeS = count => count > 1 ? 's' : ''
 class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    fontSize: PropTypes.number.isRequired,
     project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {advice, project} = this.props
+    const {advice, fontSize, project} = this.props
 
     if (!advice.relocateData) {
       return null
@@ -27,7 +29,7 @@ class AdviceCard extends React.Component {
     const {departementScores} = advice.relocateData
 
     return <div>
-      <div style={{fontSize: 30}}>
+      <div style={{fontSize: fontSize}}>
         <StringJoiner>
           {departementScores.slice(0, 3).map((dep, index) => <span key={`dep-${index}`}>
             <strong>{dep.name}</strong>
@@ -173,4 +175,4 @@ class RelocateDepartmentSuggestionBase extends React.Component {
 const RelocateDepartmentSuggestion = Radium(RelocateDepartmentSuggestionBase)
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

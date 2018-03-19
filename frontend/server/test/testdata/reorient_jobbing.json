@@ -1,0 +1,36 @@
+[
+  {
+    "_id": "45",
+    "departementJobStats": {
+      "jobs": [
+        {
+          "romeId": "A1413",
+          "feminineName": "Aide caviste",
+          "masculineName": "Aide caviste",
+          "name": "Aide caviste",
+          "offers": 123
+        },
+        {
+          "romeId": "A1401",
+          "feminineName": "Aide arboricole",
+          "masculineName": "Aide arboricole",
+          "offers": 60
+        }
+      ]
+    }
+  },
+  {
+    "_id": "09",
+    "departementJobStats": {
+      "jobs": [
+        {
+          "romeId": "A1413",
+          "masculineName": "Aide caviste",
+          "feminineName": "Aide caviste",
+          "name": "Aide caviste",
+          "offers": 123
+         }
+       ]
+    }
+  }
+]

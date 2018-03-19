@@ -12,9 +12,14 @@ do
       mongoimport -c "$collection" --jsonArray --file="${collection_file}"
     done
     mongo *.js
+    readonly SUCCESS=1
     killall mongod
   fi
   if [[ "${LOGLINE}" == *"dbexit"* ]]; then
     break
   fi
 done < <(mongod $@)
+
+if [ -z "$SUCCESS" ]; then
+  exit 1
+fi

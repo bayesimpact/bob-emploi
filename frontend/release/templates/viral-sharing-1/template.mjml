@@ -1,0 +1,265 @@
+{
+  "attributes": {
+    "version": "3.3.5"
+  },
+  "children": [
+    {
+      "children": [
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "color": "#55575d",
+            "font-family": "Arial, sans-serif"
+          },
+          "children": [
+            {
+              "attributes": {
+                "background-color": "transparent",
+                "background-repeat": "repeat",
+                "full-width": "full-width",
+                "padding": "20px 0px 20px 0px",
+                "padding-bottom": "12px",
+                "padding-top": "12px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span></span></p>",
+                      "id": "BkDejFmrtz",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-family:Arial,sans-serif\">I<span style=\"font-size:14px\">l y a un an<span style=\"text-decoration:none\"> vous aviez été parmi les premi{%if var:gender == \"FEMININE\" %}</span>ère{%else%}er{%endif%}s<span style=\"text-decoration:none\"> à vous inscrire sur Bob ! </span></span></span></span></p>",
+                      "id": "S1_goYQHtM",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Depuis plus de </span><span style=\"color:#1888ff\"><b><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">130 000 personnes ont utilisé Bob et 86% ont trouvé les conseils</span></b></span><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\"> de Bob utiles. Toutes les améliorations, faites depuis un an, ont été possibles grâce à vous et à tous ceux qui ont testé Bob en premier.</span></p>",
+                      "id": "Hytgjt7rKf",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:18px\"><span style=\"color:#1888ff\"><b><span style=\"font-family:Arial; text-decoration:none\">De toute l’équipe, un grand merci à vous, </span><span style=\"font-family:Arial; text-decoration:none\">{{var:firstName:\"Marie\"}} !</span></b></span></span></p>",
+                      "id": "By5xsYXSKG",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Maintenant que Bob est tout beau et super utile, on a terriblement envie de le partager avec tout le monde et surtout avec vos proches en recherche d’emploi parce qu'eux aussi, on voudrait les aider.</span></p>",
+                      "id": "rJsxsFQrFG",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1888ff\"><b><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Partager Bob</span></b></span><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">, c’est </span><b><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">simple</span></b><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\"> comme un email et </span><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\"><b>ça aide vos proches à trouver du boulot</b>, on compte sur vous :</span></p>",
+                      "id": "SJngotmSFz",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "center",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "mailto:?subject=Tu%20connais%20Bob%20%3F&body=Salut%2C%0D%0A%0D%0AJ%27ai%20entendu%20parler%20de%20http%3A%2F%2Fwww.bob-emploi.fr%2Finvite%23mailing1.%20Ca%20m%27a%20fait%20penser%20%C3%A0%20toi%20%21%0D%0A%0D%0AEn%2015%20min%2C%20le%20site%20te%20donne%20des%20conseils%20pour%20trouver%20un%20job%20et%20d%C3%A9ployer%20tout%20ton%20potentiel%20%F0%9F%A4%97%0D%0A%0D%0APasse%20une%20belle%20journ%C3%A9e",
+                        "padding": "10px 25px",
+                        "passport": {
+                          "image-id": 5997459
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/25sr3.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "1200px"
+                      },
+                      "id": "SJpxoF7BFM",
+                      "tagName": "mj-image"
+                    }
+                  ],
+                  "id": "ByUejKXHKG",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "rkBgit7rFG",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">D’ailleurs, si vous êtes en recherche, en ce moment, on a beaucoup de nouveautés pour vous.</span><a style=\"text-decoration:none\" href=\"https://www.bob-emploi.fr/\" target=\"_blank\"> </a><a target=\"_blank\" style=\"color: rgb(24, 136, 255);\" href=\"https://bob-emploi.fr\"><span style=\"color:#1888ff\">Avec le nouveau Bob</span></a><span style=\"color:#000000; font-family:Arial; text-decoration:none\">, vous pouvez recevoir un </span><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>diagnostic “emploi”</b>,</span><span style=\"color:#000000; font-family:Arial; text-decoration:none\"> des </span><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>conseils personnalisés</b> et des <b>mails de coaching</b>.</span></span></p>",
+                      "id": "H1eggjYmHYf",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">À très vite,</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"> </p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
+                      "id": "H1ZeeoKXSYM",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "",
+                        "padding": "10px 25px",
+                        "padding-left": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "image-id": 4665666
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/4r7v/2oshq.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "105px"
+                      },
+                      "id": "BJGxeitXStz",
+                      "tagName": "mj-image"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "15px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous souhaitez vous désinscrire.</span></p>",
+                      "id": "BJmlestmrtM",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "HJJxeoKmBtz",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "BkCxoKQBFM",
+              "tagName": "mj-section"
+            }
+          ],
+          "id": "B1ZgjYmHYM",
+          "tagName": "mj-container"
+        }
+      ],
+      "id": "SyllsF7SKf",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "BJeoKmHtz",
+  "tagName": "mjml"
+}

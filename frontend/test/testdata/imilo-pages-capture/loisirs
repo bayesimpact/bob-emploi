@@ -1,0 +1,875 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0061)loisirs -->
+<html lang="fr" class="win chrome chrome6 webkit webkit5"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>loisirs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <link href="./static_files/bootstrap.css" rel="stylesheet">
+    <link href="./static_files/bootstrap-bbf.css" rel="stylesheet">
+    <link href="./static_files/bootstrap-scroll-modal.css" rel="stylesheet">
+    <link href="./static_files/jquery-ui.css" rel="stylesheet">
+    <link href="./static_files/jquery-pnotify.css" rel="stylesheet">
+    <link href="./static_files/autocomplete.css" rel="stylesheet">
+    <link href="./static_files/imilo.css" rel="stylesheet">
+
+    <!--[if IE]>
+    <link href="/css/ie-specific.css" rel="stylesheet" type="text/css" />
+    <![endif]-->
+    <link href="./static_files/records.css" rel="stylesheet">
+    <link href="./static_files/homepage.css" rel="stylesheet">
+    <link href="./static_files/partner.css" rel="stylesheet">
+    <link href="./static_files/catalog.css" rel="stylesheet">
+    <link href="./static_files/policy.css" rel="stylesheet">
+    <link href="./static_files/no-images.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="./static_files/fullcalendar.css">
+    <link rel="stylesheet" type="text/css" href="./static_files/fullcalendar.print.css" media="print">
+
+    <link rel="stylesheet" type="text/css" href="./static_files/multi-select.css">
+
+    <script type="text/javascript">
+        less = {
+            env: "development"
+        };
+    </script>
+    <script src="./static_files/appGlobalVar.js.téléchargement" type="text/javascript"></script>
+	<script src="./static_files/jquery.js.téléchargement" type="text/javascript"></script>
+
+    <!--[if lt IE 9]>
+    <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <script src="/js/lib/iespecific/respond.js"></script>
+    <![endif]-->
+
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="/js/imilo.min.24.2.11b.js" src="./static_files/imilo.min.24.2.11b.js.téléchargement"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="config" src="./static_files/config.js.téléchargement"></script></head>
+
+<body class="">
+    <div id="loginPopinContainer"></div>
+    <div id="full-site" class="loaded"><div><div id="contentGroup" class="container">
+
+    <div class="navbar-wrapper-ie">
+        <div class="navbar navbar-static-top">
+            <div class="navbar-inner">
+                <div id="header-bloc" class="container"><div>
+<div class="row" id="access-links">
+    <!-- Commenté temporairement : -->
+    <div class="span3">
+        <!-- Acccès au <a href="#" class="navbar-link">Menu</a> |
+        <a href="#" class="navbar-link">Contenu</a> -->
+    </div>
+
+    <div class="span ">
+
+        <div id="header-user-site" class="header-right">
+
+            <span id="user-site-label" class="custom-select">Tous les sites i-milo</span>
+            <div id="user-site-select" class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown">
+
+
+
+
+                            Portail Conseiller
+
+
+
+
+                </a>
+                <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+
+                        <li>
+                            <a id="4" href="https://decisionnel.i-milo.fr/">Portail BI</a>
+                        </li>
+
+                        <li>
+                            <a id="1" href="https://portail.i-milo.fr/">Portail Conseiller</a>
+                        </li>
+
+                        <li>
+                            <a id="3" href="https://portail.i-milo.fr/sso/login?service=https%3A%2F%2Fc-milo.i-milo.fr%2F">C-milo</a>
+                        </li>
+
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="span align-right">
+
+        <div id="header-user-structure" class="header-right">
+
+
+            <label class="custom-select">
+                Toutes les structures
+                <select id="user-structure-select">
+
+
+                            <option value="345">69088 - 69-ML FONTAINES SUR SAONE</option>
+
+
+
+                            <option value="344">69091 - 69-ML GIVORS</option>
+
+
+
+                            <option value="324">69149 - 69-ML OULLINS</option>
+
+
+
+                            <option value="356">69199 - 69-ML ST FONS</option>
+
+
+
+                            <option value="340">69243 - 69-ML TARARE</option>
+
+
+
+                            <option value="363">69244 - ML Tassin la Demi Lune</option>
+
+
+
+                            <option value="343">69256 - 69-ML VAULX EN VELIN</option>
+
+
+
+                            <option value="334">69259 - 69-ML VENISSIEUX</option>
+
+
+
+                            <option value="354">69264 - 69-ML VILLEFRANCHE SUR SAONE</option>
+
+
+
+                            <option value="352">69266 - 69-ML VILLEURBANNE</option>
+
+
+
+                            <option value="333" selected="selected">69275 - 69-ML DECINES CHARPIEU  </option>
+
+
+
+                            <option value="203">69382 - 69-ML LYON</option>
+
+
+                </select>
+            </label>
+        </div>
+    </div>
+</div>
+
+
+<div id="header" class="span12">
+    <div id="logo">
+        <a href="https://portail.i-milo.fr/accueil"><img src="./static_files/logo.png" alt="logo i-milo"></a>
+    </div>
+    <div id="brand" class="row">
+
+        <a class="brand" href="https://portail.i-milo.fr/accueil" tabindex="1">Portail <span id="homepage-header-title" class="boldPart">Conseiller</span></a>
+
+
+        <div class="bar"></div>
+
+        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </a>
+        <div id="menu" class="nav-collapse collapse"><ul class="nav"><li id="nav-home" class=""><a class="navigation" href="https://portail.i-milo.fr/accueil">Mon portail</a></li>
+
+    <li id="nav-records" class="active"><a class="navigation" href="https://portail.i-milo.fr/dossiers">Dossiers</a></li>
+
+
+    <li id="nav-partners"><a class="navigation" href="https://portail.i-milo.fr/partenaires">Partenaires</a></li>
+
+
+
+    <li id="nav-services"><a class="navigation" href="https://portail.i-milo.fr/services">Offre de services</a></li>
+
+
+
+
+    <li id="nav-contracts"><a class="navigation" href="https://portail.i-milo.fr/contrats-aides">Contrats aidés</a></li>
+
+
+    <li id="nav-tools" class="dropdown">
+        <a id="tools" class="navigation standard-cursor" data-hover="dropdown" data-toggle="dropdown">Outils</a>
+        <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+
+            <li><a tabindex="-1" href="https://portail.i-milo.fr/outils/edition">Editions structure</a></li>
+
+            <!-- <li><a tabindex="-1" disabled>Rendez-vous</a></li> -->
+
+            <li><a href="https://portail.i-milo.fr/memos">Tâches</a></li>
+
+        </ul>
+    </li>
+
+</ul></div>
+        <div class="span3 navbar-text">
+            <!-- commenté temporairement -->
+            <!--  Acccès au <a href="#" class="navbar-link">Menu</a> |
+             <a href="#" class="navbar-link">Contenu</a>-->
+        </div>
+    </div>
+</div>
+
+<div id="profile" class=" span3 pull-right">
+    <div class="row">
+        <div id="profile-image" class="span1">
+            <img src="./static_files/connexion.png" alt="logo connexion">
+        </div>
+        <div id="profile-links" class="span2">
+            <div id="profile-name" class="profile-link "><span class="gr">Eric <strong>TRUGLIA</strong></span></div>
+            <div class="profile-link"><a href="loisirs#" tabindex="2" id="lnk-myAccount">Mon compte</a></div>
+            <div class="profile-link-logout"><a id="lnk-logout" href="https://portail.i-milo.fr/logout" tabindex="3"><span class="gr">Déconnexion</span></a></div>
+        </div>
+    </div>
+    <div class="bar"></div>
+</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main" class="container">
+        <div id="breadcrumb"><ul class="breadcrumb"><li class=""><a href="https://portail.i-milo.fr/accueil">Mon portail</a></li><li><span class="divider">&nbsp;&gt;&nbsp;</span><a href="https://portail.i-milo.fr/dossiers">Dossiers</a></li><li><span class="divider">&nbsp;&gt;&nbsp;</span><a href="https://portail.i-milo.fr/dossier/999503/synthese">Hamza AKKUS </a></li><li class="active"><span class="divider">&nbsp;&gt;&nbsp;</span>loisirs</li></ul></div>
+        <div class="appNotifier" style="display: none;"></div>
+        <div class="feedback"><div><div id="feedbacks" class="hide">
+</div></div></div>
+        <div class="row">
+            <div id="content" class="span12 main-container"><div><div class="row">
+    <div class="span12 title widget record-header"><div><div class="row">
+
+
+        <div class="span10">
+        <h1>
+
+
+                    Hamza AKKUS
+                    <span class="h1-sub-title">
+                        (Justifié <input class="btn btn-image btn-help" type="button" id="recordStatusHelp" title="Détails sur l&#39;état du statut du dossier">)
+                        27 ans -
+                    </span>
+
+                <span class="h1-sub-title">
+                    Conseiller référent :
+
+
+                            Eric TRUGLIA
+
+
+                </span>
+
+
+            <span class="h1-sub-title">
+                -
+                    Niveau IV
+
+                        (Niveau V)
+
+
+            </span>
+
+
+        <span class="h1-sub-title">
+
+        </span>
+
+        <span class="h1-sub-title">
+
+                - En veille
+
+        </span>
+
+
+    </h1>
+    </div>
+
+
+
+                <div class="span2 btns action-responsive">
+
+                        <button class="btn btn-image btn-calendar" title="Ajouter un rendez-vous"></button>
+
+
+                        <button class="btn btn-image btn-sms" title="Envoyer un SMS"></button>
+
+
+                        <button class="btn btn-image btn-mail" title="Envoyer un e-mail"></button>
+
+                    <div class="btn-group">
+                        <button class="btn dropdown-toggle dropdown-toggle-action-group btn btn-image actions-dropdown-menu size24" data-toggle="dropdown" alt="Ouvrir le menu d&#39;actions" title="Ouvrir le menu d&#39;actions"></button>
+                        <ul class="dropdown-menu dropdown-actions-group-menu pull-right">
+
+                                <li>
+                                    <a href="loisirs" class="btn-export-csv">Exporter le dossier en CSV</a>
+                                </li>
+
+
+                                <li>
+                                    <a href="loisirs" class="btn-print">Télécharger une édition</a>
+                                </li>
+
+                                    <li>
+                                        <a href="loisirs" class="btn-archive-record">Archiver le dossier</a>
+                                    </li>
+
+
+
+                                <li>
+                                    <a href="loisirs" class="btn-trash-record">Supprimer le dossier</a>
+                                </li>
+
+
+                        </ul>
+                    </div>
+                </div>
+
+
+
+    <div id="dialog-modal"></div>
+</div>
+</div></div>
+</div>
+<div class="row">
+    <div class="menu span3"><div><ul class="level1">
+
+
+
+
+    <li class="synthese level1" id="synthesis">
+        <div class="title" style="padding-left: 0px;"><a href="https://portail.i-milo.fr/dossier/999503/synthese" class="title active">Synthèse</a></div>
+
+    </li>
+
+
+
+
+
+    <li class="suivi level1 collapser">
+        <div class="title titledossier">
+            <a href="loisirs#" class="toggle toggledossier">
+                Suivi
+            </a>
+        </div>
+        <ul class="level2 collapsable plain" id="suivi">
+
+            <li class="dispositifs split level2">
+                <a href="https://portail.i-milo.fr/dossier/999503/suivi/programmes" class="recordLink">Dispositifs et Parcours</a>
+            </li>
+
+
+
+            <li class="services split level2">
+                <a href="https://portail.i-milo.fr/dossier/999503/suivi/services" class="recordLink">Services</a>
+            </li>
+
+
+                <li class="demandes split level2">
+                    <a href="https://portail.i-milo.fr/dossier/999503/suivi/demandes" class="recordLink">Demandes</a>
+                </li>
+
+
+
+            <li class="actualites split level2">
+                <a href="https://portail.i-milo.fr/dossier/999503/suivi/evenements" class="recordLink">Evènements</a>
+            </li>
+
+
+            <li class="appointments split level2">
+                <a href="https://portail.i-milo.fr/dossier/999503/suivi/appointment" class="recordLink">Rendez-vous</a>
+            </li>
+
+            <!--                 <li class="historiques split level2"> -->
+            <!--                     <a href="/dossier/999503/suivi/historique" class="recordLink">Historique des actions</a> -->
+            <!--                 </li> -->
+
+            <li class="documents split level2">
+                <a href="https://portail.i-milo.fr/dossier/999503/suivi/documents" class="recordLink">Documents</a><br>
+                <span id="documentCounter" class="last-update hide" style="display: inline;">0 en ligne</span>
+            </li>
+
+        </ul>
+    </li>
+
+
+    <li class="dossier level1 collapser active">
+        <div class="title titledossier">
+            <a href="loisirs#" class="toggle toggledossier">
+
+            Dossier
+
+            </a>
+        </div>
+        <ul class="level2 collapsable plain">
+
+
+
+            <li class="identite split level2">
+                <div class="left">
+                    <a href="identite" class="canBeDisabled recordLink">Identité</a><br>
+                    <span id="IdentityCompletude" class="hide rouge" style="display: inline;">Incomplet</span><span id="dataCategoryIdentityNotification" class="hide pull-right jaune" style="display: inline;"></span><br>
+                    <span id="recordFormIdentity" class="last-update hide">&nbsp;</span><br>
+
+                </div>
+
+
+                <div class="right">
+                    <a id="identityModifyLink" class="canBeDisabled btn btn-image btn-edit" title="Modifier l&#39;identité" href="https://portail.i-milo.fr/dossier/999503/identite">
+                        Modifier
+                    </a>
+                </div>
+
+
+            </li>
+
+
+
+
+
+
+
+            <li class="coordonnees split level2">
+                <div class="left">
+                    <a href="coordonnees" class="canBeDisabled recordLink">Coordonnées</a><br>
+                    <span id="CoordinatesCompletude" class="hide vert" style="display: inline;">Complet</span><span id="dataCategoryCoordoNotification" class="hide pull-right jaune" style="display: inline;"></span><br>
+                    <span id="recordFormCoord" class="last-update hide" style="display: inline;">27/08/2015</span><br>
+
+                </div>
+
+
+                <div class="right">
+                    <a id="coordinateModifyLink" class="canBeDisabled btn btn-image btn-edit" title="Modifier les coordonnées" href="https://portail.i-milo.fr/dossier/999503/coordonnees">
+                        Modifier
+                    </a>
+                </div>
+
+            </li>
+
+
+
+
+
+            <li class="complements split level2">
+                <div class="left">
+                    <a href="complements" class="canBeDisabled recordLink">Compléments</a><br>
+                    <span id="ComplementCompletude" class="hide vert" style="display: inline;">Complet</span><span id="dataCategoryComplNotification" class="hide pull-right jaune" style="display: inline;"></span><br>
+                    <span id="recordFormCompl" class="last-update hide">&nbsp;</span><br>
+
+                </div>
+
+
+                <div class="right">
+                    <a id="complModifyLink" class="canBeDisabled btn btn-image btn-edit" title="Modifier les compléments" href="https://portail.i-milo.fr/dossier/999503/complements">
+                        Modifier
+                    </a>
+                </div>
+
+            </li>
+
+
+
+
+            <li class="mobilite split level2">
+                <div class="left level2">
+                    <a href="mobilite" class="canBeDisabled recordLink">Mobilité</a><br>
+                    <span id="MobilityCompletude" class="hide vert" style="display: inline;">Complet</span><span id="dataCategoryMobilityNotification" class="hide pull-right jaune" style="display: inline;"></span><br>
+                    <span id="recordFormMobility" class="last-update hide">&nbsp;</span>
+                </div>
+
+
+                <div class="right">
+                    <a id="mobilityModifyLink" class="canBeDisabled btn btn-image btn-edit" title="Modifier la mobilité" href="https://portail.i-milo.fr/dossier/999503/mobilite">
+                        Modifier
+                    </a>
+                </div>
+
+            </li>
+
+
+
+
+            <li class="cursus split level2">
+                <div class="left">
+                    <a href="cursus" class="canBeDisabled recordLink">Cursus</a><br>
+                    <span id="CursusCompletude" class="hide" style="display: inline;"></span><br>
+                    <span id="recordFormCursus" class="last-update hide">&nbsp;</span>
+                </div>
+
+
+                <div class="right">
+                    <a class="canBeDisabled btn btn-image btn-edit" title="Modifier les cursus" href="https://portail.i-milo.fr/dossier/999503/cursus">
+                        Modifier
+                    </a>
+                </div>
+
+            </li>
+
+
+
+            <li class="situations split level2">
+                <div class="left">
+                    <a href="situations" class="canBeDisabled recordLink">Situations</a><br>
+                    <span id="SituationCompletude" class="hide vert" style="display: inline;">Complet</span><br>
+                    <span id="recordFormSituation" class="last-update hide">&nbsp;</span>
+                </div>
+
+
+                <div class="right">
+                    <a class="canBeDisabled btn btn-image btn-edit" title="Modifier les situations" href="https://portail.i-milo.fr/dossier/999503/situations">
+                        Modifier
+                    </a>
+                </div>
+
+
+            </li>
+
+
+
+
+            <li class="projets split level2">
+                <div class="left">
+                    <a href="projets" class="canBeDisabled recordLink">Projets</a><br>
+                    <span id="ProjectsCompletude" class="hide" style="display: inline;"></span><br>
+                    <span id="recordFormProjects" class="last-update hide">&nbsp;</span>
+                </div>
+
+
+                <div class="right">
+                    <a class="canBeDisabled btn btn-image btn-edit" title="Modifier les projets" href="https://portail.i-milo.fr/dossier/999503/projets">
+                        Modifier
+                    </a>
+                </div>
+
+            </li>
+
+
+
+            <li class="loisirs split level2 active">
+                <div class="left">
+                    <a href="loisirs" class="canBeDisabled recordLink active">Loisirs<br>Connaissances</a><br>
+                    <span id="InterestCompletude" class="hide" style="display: inline;"></span><br>
+                    <span id="recordFormHobbies" class="last-update hide">&nbsp;</span>
+                </div>
+
+
+                <div class="right">
+                    <a class="canBeDisabled btn btn-image btn-edit" title="Modifier les loisirs" href="https://portail.i-milo.fr/dossier/999503/loisirs">
+                        Modifier
+                    </a>
+                </div>
+
+            <img src="./static_files/menu-selected.png" alt="menu selectionne" class="menu-selection"><img src="./static_files/menu-selected.png" alt="menu selectionne" class="menu-selection"></li>
+
+
+
+
+
+        </ul>
+    </li>
+
+
+
+</ul></div></div>
+    <div id="newIdentityBlock" class="span6 mid-col main block"><div><div id="interestsDiv"><div>
+
+<div class="right right-corner">
+     <a class="canBeDisabled btn btn-image btn-edit" title="Modifier les loisirs" href="https://portail.i-milo.fr/dossier/999503/loisirs">Modifier</a>
+</div>
+
+<h2>Loisirs</h2>
+<div id="saveConfirm" class="alert alert-success hide"></div>
+<div id="validError" class="alert alert-error hide"></div>
+<div class="fileset loisirs">
+
+		<p></p>
+		<p>Aucun loisir défini</p>
+		<div class="pull-right"></div>
+
+</div>
+</div></div>
+
+<div id="languageDiv"><div><h2 class="control">Langues</h2>
+
+
+<div class="fileset languages">
+
+		<p>Aucune langue définie</p>
+
+</div>
+</div></div>
+
+<div id="knowledgeDiv"><div><h2 class="control">Connaissances particulières</h2>
+
+
+<div class="fileset knowledges">
+
+		<p>Aucune connaissance définie</p>
+
+</div>
+</div></div>
+
+</div></div>
+    <div class="sidebar attached span3"><div><ul class="level1">
+
+
+    <li class="event-widget-container collapser"><div><div class="event-container"><div>
+
+        <!--Bug IE9 : on remplace les href="#" par href="javascript:;"-->
+        <a href="javascript:;" class="toggle togglewidget">
+            <h1>
+                <div class="right">
+
+
+                            <input type="button" title="Ajouter une note" value="Ajouter une note" class="btn btn-image btn-add btn-add-note size24">
+
+
+
+                </div>
+                Évènement
+
+            </h1>
+        </a>
+
+
+
+
+
+
+</div></div>
+<div class="note-form-container"></div></div></li>
+
+
+    <li class="widget-search collapser hide">
+
+    </li>
+
+
+        <li class="catalog-search collapser"><div><div>
+    <a href="loisirs#" class="toggle togglewidget">
+        <h1>
+            Recherche d'offres de services et dispositifs/parcours
+	    </h1>
+	</a>
+    <div class="content collapsable no-padding-top">
+        <form id="offer-search-form" defaultaction=".btn-primary">
+            <label id="searchFieldInputLabel" for="search-field" class="help-block">Nom, type, thème, contrat, mesure, acte de service, partenaire</label>
+            <input type="text" id="search-field">
+            <label for="simpleSearchType" class="help-block">Type d'offre</label>
+            <span class="custom-select full-width-select margin-b15">
+                <select id="simpleSearchType" class="full-width-select">
+
+                        <option value="" class="theme-category">
+                            Catalogue interne
+                        </option>
+
+                        <option value="JOBOFFER" class="">
+                            &nbsp;&nbsp;&nbsp;Emploi
+                        </option>
+
+                        <option value="TRAININGOFFER" class="">
+                            &nbsp;&nbsp;&nbsp;Formation
+                        </option>
+
+                        <option value="FINANCIALASSISTANCEOFFER" class="">
+                            &nbsp;&nbsp;&nbsp;Aide financière
+                        </option>
+
+                        <option value="INTERMEDIATIONOFFER" class="">
+                            &nbsp;&nbsp;&nbsp;Intermédiation
+                        </option>
+
+                        <option value="OFFER" class="">
+                            &nbsp;&nbsp;&nbsp;Autre service
+                        </option>
+
+                        <option value="COLLECTIVEANIMATIONOFFER" class="">
+                            &nbsp;&nbsp;&nbsp;Animation collective
+                        </option>
+
+                        <option value="POLICIES" class="">
+                            &nbsp;&nbsp;&nbsp;Dispositifs et Parcours
+                        </option>
+
+                        <option value="EXTERNALTRAINING" class="theme-category">
+                            Formations externes
+                        </option>
+
+                </select>
+            </span>
+            <div class="text-center  margin-b15">
+                <input id="btn-search" class="btn btn-primary" type="submit" value="Rechercher">
+            </div>
+        </form>
+        <div id="offers-result" class="datagrid"></div>
+
+        <hr>
+        <a href="loisirs#dossier/999503/catalogue" id="catalog-advanced-search">Recherche avancée</a>
+
+        <a href="loisirs#" id="mer-simple-proposal" class="pull-right">MER simple</a>
+
+    </div>
+</div>
+<div id="popinContainer"></div></div></li>
+
+
+
+
+        <li class="note-widget-container collapser"><div><div>
+    <a href="loisirs#" class="toggle togglewidget">
+        <h1>
+        Mémos
+
+        </h1>
+    </a>
+    <div class="content collapsable">
+
+    	<ul id="myTab" class="nav nav-tabs filters tabs2">
+    		<li class="no-margin-bottom active" id="commentTabClick"><a data-toggle="tab" class="pointer-cursor">Commentaires</a></li>
+    		<li class="no-margin-bottom standard-cursor" id="taskTabClick"><a data-toggle="tab" class="pointer-cursor">Tâches</a></li>
+    	</ul>
+    	<div class="tab-content">
+
+    		<!-- ********** Commentaire simple ********** -->
+    		<div id="comments" class="tab-pane fade active in">
+                <div id="comment-edition"><div>
+
+<form id="commentsForm" class="form-horizontal spinnerer">
+	<span id="saveConfirm" class="label label-success"></span>
+
+	<div class="control-group field-noteContent">
+
+		<div class="controls no-margin-left">
+			<textarea class="large-input-text record-comment" placeholder="Tapez ici le contenu..." title="Contenu du commentaire" id="noteContent" name="noteContent" rows="1" maxlength="500" style="overflow: hidden; height: 40px;"></textarea>
+			<div class="help-inline hide"></div>
+		<div style="position: absolute; display: none; word-wrap: break-word; white-space: pre-wrap; border-color: rgb(204, 204, 204); border-style: solid; border-width: 1px; font-weight: 400; width: 260px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; line-height: 20px; font-size: 14px; padding: 4px 6px;">&nbsp;</div></div>
+	</div>
+
+
+
+		<div class="text-center spinnerable" id="spinnableId_151566009947283"><button class="btn btn-primary" type="submit">Ajouter </button></div>
+
+
+</form>
+
+
+
+
+</div></div>
+                <hr>
+
+                <div id="comment-list"><div><div id="notes-list-collapser" class="datagrid collapser">
+	<a href="loisirs#" class="toggle togglewidget"><h1> </h1></a>
+	 <div id="notes-list-datagrid" class="datagrid collapsable"><div><table class="table"><thead><tr><th class="sortable">Liste des commentaires <i class="icon-minus pull-right"></i></th><th></th></tr></thead><tbody></tbody><p>Aucun résultat trouvé.</p></table><div class="pagination pagination-bottom"><div class="pagination">
+    <ul class="">
+
+            <li class="first">
+                <a class="btn btn-image btn-pagination-first disabled">premier</a>
+            </li>
+            <li class="prev">
+                <a class="btn btn-image btn-pagination-previous disabled">précédent</a>
+            </li>
+
+
+        <li>
+            <label class="custom-select">
+                <select class="pagination-select-page">
+
+                </select>
+            </label>
+        </li>
+
+
+            <li class="next">
+                <a class="btn btn-image btn-pagination-forward disabled">suivant</a>
+            </li>
+            <li class="last">
+                <a class="btn btn-image btn-pagination-last disabled">dernier</a>
+            </li>
+
+    </ul>
+</div>
+</div></div></div>
+</div>
+<div id="editNoteEditionDialog" class="modalContainer modal hide fade modal-confirm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+
+</div></div>
+
+		    </div>
+
+		    <!-- ********** Tâche ********** -->
+		    <div id="tasks" class="tab-pane">
+                  <div id="task-edition">
+
+                </div>
+                <hr>
+
+                <div id="tasks-list">
+
+                </div>
+
+		    </div>
+	   </div>
+
+	</div>
+</div></div></li>
+
+
+    <li class="links-widget-container collapser"><div><a href="loisirs#" class="toggle on togglewidget">
+<h1>
+    Liens utiles
+
+</h1>
+</a>
+<div class="content collapsable">
+    <div class="links"><li><a title="(nouvelle fenêtre)" href="http://www.mlbdm.org/2/outils/">Outils MLBDM</a></li><li><a title="(nouvelle fenêtre)" href="http://www.mlbdm.org/si/guide/spip.php?rubrique9">Guide de Saisie i-Milo MLBDM</a></li><li><a title="(nouvelle fenêtre)" href="http://www.mlbdm.org/2/imilo/?tout=oui">Fiches pédagogiques de C-MILO</a></li><li><a title="(nouvelle fenêtre)" href="https://www.portail-emploi.fr/">Portail DUDE</a></li><li><a title="(nouvelle fenêtre)" href="http://sicorra.rhonealpes.fr/">PROSPER</a></li></div>
+</div>
+</div></li>
+</ul></div></div>
+</div></div></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div id="footer" class="span12 widget"><div><span class="pull-left">i-milo 2015 - Marque déposée</span>
+
+
+<a href="https://portail.i-milo.fr/plan-du-site">Plan du site</a> |
+<a href="https://c-milo.i-milo.fr/jcms/c_1000662/fr/support-i-milo" class="extLink">Aide</a> |
+<a id="consultContacts" href="loisirs">Contact</a> |
+<a id="consultOpeningHours" href="loisirs">Horaires d'ouverture du service</a>
+ | <a href="https://portail.i-milo.fr/mentionsLegales">Mentions légales</a>
+ | <a href="https://portail.i-milo.fr/accessibilite">Accessibilité</a>
+
+<span class="pull-right"> Version : 2.3 | Release : 24.2.11b</span>
+
+<div id="contacts-popin-container"></div>
+<div id="opening-hours-popin-container"></div></div></div>
+        </div>
+    </div>
+
+</div>
+</div></div>
+
+    <div id="commonPopinContainer"></div>
+
+    <!-- overlay pour login -->
+    <div id="login-overlay"></div>
+
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="./static_files/require.js.téléchargement"></script>
+	<script src="./static_files/preloader.js.téléchargement"></script>
+	<script type="text/javascript">
+		preloadImiloBigJs("/js/imilo.min.24.2.11b.js",function(){
+			require.config({
+				baseUrl: "/js",
+				deps: ["/js/imilo.min.24.2.11b.js"]
+			});
+		});
+	</script><script type="text/javascript" async="" src="./static_files/appnotifier.js.téléchargement"></script>
+
+
+<div id="ui-datepicker-div" class="ui-datepicker ui-widget ui-widget-content ui-helper-clearfix ui-corner-all"></div></body></html>

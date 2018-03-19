@@ -9,15 +9,4 @@ function onboardingComplete(user) {
     && hasCompletedFirstProject)
 }
 
-const mainSelector = function(state) {
-  return {
-    ...state,
-    user: {
-      ...state.user,
-      onboardingComplete: state.user && onboardingComplete(state.user),
-    },
-  }
-}
-
-
-export {mainSelector, onboardingComplete}
+export {onboardingComplete}

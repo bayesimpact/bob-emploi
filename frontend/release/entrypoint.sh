@@ -37,6 +37,7 @@ replace_var_if_value AMPLITUDE_TOKEN amplitudeToken
 replace_var_if_value FACEBOOK_APP_ID facebookSSOAppId
 replace_var_if_value GOOGLE_SSO_CLIENT_ID googleSSOClientId
 replace_var_if_value GOOGLE_UA_ID googleUAID
+replace_var_if_value LINKED_IN_CLIENT_ID linkedInClientId
 replace_var_if_value SENTRY_PUBLIC_DSN sentryDSN
 
 rm "${DIST_VARS}"

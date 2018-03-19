@@ -1,89 +1,84 @@
 import {expect} from 'chai'
-import ReactDOM from 'react-dom'
-import {computeBobScore} from 'store/score'
+import {computeNewBobScore} from 'store/score'
 
-const renderText = component => {
-  const div = document.createElement('div')
-  ReactDOM.render(component, div)
-  return div.innerText
-}
+import {DiagnosticTopic} from 'api/diagnostic'
 
+describe('computeNewBobScore', () => {
+  const allKnownTopics = Object.keys(DiagnosticTopic).filter(topic => DiagnosticTopic[topic])
 
-describe('computeScore', () => {
-  it('gives a neutral score on empty project', () => {
-    const {components, percent} = computeBobScore({}, {})
-    components.forEach(({score}) => expect(score).to.eq(0))
-    expect(percent).to.equal(62.5)
+  it('covers all topics', () => {
+    const {components} = computeNewBobScore({
+      overallScore: 50,
+      subDiagnostics: [
+        {
+          score: 37,
+          text: 'Vous avez un bon profil.',
+          topic: 'PROFILE_DIAGNOSTIC',
+        },
+        {
+          score: 53,
+          text: 'Vous avez un bon projet.',
+          topic: 'PROJECT_DIAGNOSTIC',
+        },
+        {
+          score: 93,
+          text: 'Vous recherche est efficace.',
+          topic: 'JOB_SEARCH_DIAGNOSTIC',
+        },
+        {
+          score: 17,
+          text: 'Le marché vous est favorable.',
+          topic: 'MARKET_DIAGNOSTIC',
+        },
+        {
+          score: 50,
+          text: 'Votre métier devrait être de plus en plus recherché dans les prochaines années.',
+          topic: 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
+        },
+      ],
+    })
+    expect(components.map(({topic}) => topic)).
+      to.have.members(allKnownTopics)
+    expect(components.map(({title}) => title)).to.have.lengthOf(allKnownTopics.length)
+    const computedTexts = components.map(({text}) => text)
+    computedTexts.forEach(computed => {
+      expect(computed).to.be.a('string').that.is.not.empty
+    })
+    expect(computedTexts).to.have.lengthOf(allKnownTopics.length)
   })
 
-  it('gives a great score on perfect project', () => {
-    const {components, percent} = computeBobScore({}, {
-      jobSearchLengthMonths: 3,
-      localStats: {
-        imt: {
-          employmentTypePercentages: [{
-            employmentType: 'CDI',
-            percentage: 100,
-          }],
-          yearlyAvgOffersDenominator: 10,
-          yearlyAvgOffersPer10Candidates: 25,
-        },
-        jobOffersChange: 120,
-        unemploymentDuration: {days: 10},
-      },
-      totalInterviewsEstimate: 'A_LOT',
-      weeklyApplicationsEstimate: 'A_LOT',
+  it('puts placeholders for missing topics', () => {
+    const {components} = computeNewBobScore({
+      overallScore: 50,
+      subDiagnostics: [{
+        score: 37,
+        text: 'Vous avez un bon profil.',
+        topic: 'PROFILE_DIAGNOSTIC',
+      }],
     })
-    components.forEach(({display, score}) => {
-      expect(score).to.be.above(3)
-      expect(display).to.be.ok
+    expect(components.map(({topic}) => topic)).
+      to.have.members(allKnownTopics, components.map(({topic}) => topic))
+    expect(components.map(({title}) => title)).to.have.lengthOf(allKnownTopics.length)
+    const computedTexts = components.map(({text}) => text)
+    computedTexts.forEach(computed => {
+      expect(computed).to.be.a('string').that.is.not.empty
     })
-    expect(percent).to.equal(95)
+    expect(computedTexts).to.have.lengthOf(allKnownTopics.length)
+    const {text} = components.filter(({topic}) => topic === 'PROJECT_DIAGNOSTIC')[0]
+    expect(text).to.equal("Nous n'avons pas assez d'informations pour vous aider sur ce point.")
   })
 
-  it('gives a very low score on weakest project', () => {
-    const {components, percent} = computeBobScore({}, {
-      jobSearchLengthMonths: 18,
-      localStats: {
-        imt: {
-          employmentTypePercentages: [{
-            employmentType: 'INTERIM',
-            percentage: 100,
-          }],
-          yearlyAvgOffersDenominator: 10,
-          yearlyAvgOffersPer10Candidates: 0.9,
-        },
-        jobOffersChange: -120,
-        unemploymentDuration: {days: 360},
-      },
-      totalInterviewsEstimate: 'LESS_THAN_2',
-      weeklyApplicationsEstimate: 'LESS_THAN_2',
+  it('caps scores above 10 and below 90', () => {
+    const {components, percent} = computeNewBobScore({
+      overallScore: 9,
+      subDiagnostics: [{
+        score: 98,
+        text: 'Vous avez un bon profil.',
+        topic: 'PROFILE_DIAGNOSTIC',
+      }],
     })
-    components.forEach(({display, score}) => {
-      expect(score).to.be.below(-3)
-      expect(display).to.be.ok
-    })
-    expect(percent).to.equal(30)
-  })
-
-  it('surfaces the most important components first', () => {
-    const {components, percent} = computeBobScore({}, {
-      localStats: {
-        imt: {
-          employmentTypePercentages: [{
-            employmentType: 'INTERIM',
-            percentage: 100,
-          }],
-        },
-        jobOffersChange: 10,
-      },
-    })
-    expect(percent).to.be.within(30, 95)
-    expect(components).to.have.length.above(2)
-
-    expect(components[0].score).to.be.below(-3)
-    expect(renderText(components[0].display)).to.eq("0% d'offres en CDI")
-    expect(components[1].score).to.be.within(0, 2)
-    expect(renderText(components[1].display)).to.eq("+10% d'offres en 2016")
+    expect(percent).to.equal(10)
+    const profileComponent = components.filter(({topic}) => topic === 'PROFILE_DIAGNOSTIC')[0]
+    expect(profileComponent.percent).to.equal(90)
   })
 })

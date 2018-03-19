@@ -1,11 +1,31 @@
 'use strict'
+// The source of this file is in bob-emploi-internal git repo:
+// frontend/release/opengraph-redirect.js
+// and should be deployed using the frontend/release/deploy_lambda.sh script.
 
-const productName = 'Bob Emploi'
+const productName = 'Bob'
 const urlRoot = 'https://www.bob-emploi.fr/'
 
 const pages = {
   '': {
     description: `Accélérez votre recherche d'emploi avec ${productName}`,
+  },
+  'conseil/cv-percutant': {
+    description: '3 points pour réussir votre CV :\n' +
+      'Identifiez les qualités importantes à mettre dans votre CV.\n' +
+      'Trouvez les meilleurs outils gratuits pour générer des exemples de CV.\n' +
+      'Trouvez des astuces pour repérer les bons mots-clés et adapter vos CV ' +
+      'en fonction des offres d’emploi.',
+    'title': 'Rendez votre CV plus percutant',
+  },
+  'conseil/lettre-motivation': {
+    description: '3 points pour réussir votre lettre de motivation :\n' +
+      'Trouver des modèles de mails de motivation.\n' +
+      'Trouver les meilleurs outils gratuits pour générer des exemples de ' +
+      'lettre de motivation.\n' +
+      'Trouver des astuces pour adapter vos mails et lettres de motivation ' +
+      'en fonction de la situation.',
+    'title': 'Réussir vos mails et lettres de motivation',
   },
   'contribuer': {
     description: 'Ensemble créons le service public de demain.',
@@ -22,7 +42,7 @@ const pages = {
   },
   'transparence': {
     description: `Le fonctionnement et le développement de ${productName} en ` +
-      'toute transparence : les chiffres clés, nos financements, les plans ' +
+      'toute transparence\u00A0: les chiffres clés, nos financements, les plans ' +
       'pour la suite',
     title: 'Transparence',
   },
@@ -38,7 +58,7 @@ function isOpenGraphBot(userAgent) {
 }
 
 function openGraphContent(pageUrl, {title, description}) {
-  const fullTitle = title ? `Bob Emploi - ${title}` : 'Bob Emploi'
+  const fullTitle = title ? `${productName} - ${title}` : productName
   const url = `${urlRoot}/${pageUrl}`
   return `<html>
   <head>

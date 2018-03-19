@@ -1,10 +1,11 @@
 """Tests for the create_pool module."""
+
 import unittest
 
 import mock
 import mongomock
 
-from bob_emploi.frontend.asynchronous import create_pool
+from bob_emploi.frontend.server.asynchronous import create_pool
 
 
 class CreatePoolTestCase(unittest.TestCase):
@@ -12,20 +13,25 @@ class CreatePoolTestCase(unittest.TestCase):
 
     def setUp(self):
         super(CreatePoolTestCase, self).setUp()
-        self._db = mongomock.MongoClient().test
-        self._db_patcher = mock.patch(create_pool.__name__ + '._DB', self._db)
-        self._db_patcher.start()
+        client = mongomock.MongoClient()
 
-    def tearDown(self):
-        self._db_patcher.stop()
-        super(CreatePoolTestCase, self).tearDown()
+        self._db = client.test
+        patcher = mock.patch(create_pool.__name__ + '._DB', self._db)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        self._user_db = client.user_test
+        patcher = mock.patch(create_pool.__name__ + '._USER_DB', self._user_db)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     @mock.patch(create_pool.__name__ + '.requests.post')
     @mock.patch(
         create_pool.__name__ + '._SLACK_CREATE_POOL_URL', 'https://slack.example.com/webhook')
     def test_basic_usage(self, mock_post):
         """Basic usage."""
-        self._db.user.insert_many([
+
+        self._user_db.user.insert_many([
             {
                 'googleId': '1234',
                 'profile': {

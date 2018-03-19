@@ -2,6 +2,7 @@ import PropTypes from 'prop-types'
 import React from 'react'
 
 import {Markdown} from 'components/theme'
+import Picto from 'images/advices/picto-specific-to-job.png'
 
 import {AdviceSuggestionList} from './base'
 
@@ -11,14 +12,16 @@ class AdviceCard extends React.Component {
     advice: PropTypes.shape({
       cardText: PropTypes.string,
     }).isRequired,
+    fontSize: PropTypes.number.isRequired,
   }
 
   render() {
+    const {fontSize} = this.props
     const {cardText} = this.props.advice
     if (!cardText) {
       return null
     }
-    return <div style={{fontSize: 30}}>
+    return <div style={{fontSize: fontSize}}>
       <Markdown content={cardText} />
     </div>
   }
@@ -48,4 +51,4 @@ class ExpandedAdviceCardContent extends React.Component {
 }
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

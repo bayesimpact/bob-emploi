@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+// DEPRECATED: we use VolunteeringMissions and VolunteeringMission messages now.
+// TODO(marielaure): Remove this proto when old users get the new one.
+
+message CivicServiceMission {
+  // Title of the mission.
+  string title = 1;
+
+  // Description of the mission.
+  string description = 2;
+
+  // Name of the civic service domain (e.g Environnement/Environment, Sport/Sports…).
+  CivicServiceDomain domain = 3;
+
+  // Mission starting date in french (e.g. 1ᵉʳ janvier 2018).
+  string start_date = 4;
+
+  // Mission duration in months, in french (e.g 6 mois).
+  string duration = 5;
+
+  // Link to the mission page with full info and way to apply.
+  string link = 6;
+}
+
+message CivicServiceMissionsData {
+  // Specific civic service misions to which the user could apply to.
+  repeated CivicServiceMission missions = 1;
+}
+
+enum CivicServiceDomain {
+  UNKNOWN = 0;
+  CITIZENSHIP = 1;
+  CULTURE = 2;
+  DEVELOPMENT = 3;
+  EDUCATION = 4;
+  ENVIRONMENT = 5;
+  EMERGENCY = 6;
+  HEALTH = 7;
+  SOLIDARITY = 8;
+  SPORTS = 9;
+}

@@ -1,11 +1,14 @@
+import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
 import {connect} from 'react-redux'
 
+import {getExpandedCardContent} from 'store/actions'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {AppearingList, CircularProgress, Colors, Icon, Markdown,
+import {AppearingList, CircularProgress, Colors, UpDownIcon, Markdown,
   PaddedOnMobile, SmoothTransitions, Styles, Tag} from 'components/theme'
 
 // TODO: Find a better place for those tags if we don't need them elsewhere in this file.
@@ -21,13 +24,19 @@ const typeTags = {
 }
 
 
-class EmailTemplateBase extends React.Component {
+class ExpandableActionBase extends React.Component {
   static propTypes = {
-    content: PropTypes.string.isRequired,
+    children: PropTypes.element,
+    contentName: PropTypes.string.isRequired,
     style: PropTypes.object,
     title: PropTypes.node.isRequired,
     type: PropTypes.oneOf(Object.keys(typeTags)),
+    userYou: PropTypes.func.isRequired,
     whyForYou: PropTypes.string,
+  }
+
+  static defaultProps = {
+    contentName: 'plus',
   }
 
   state = {
@@ -48,7 +57,7 @@ class EmailTemplateBase extends React.Component {
   }
 
   render() {
-    const {content, style, title, whyForYou} = this.props
+    const {children, contentName, style, title, userYou, whyForYou} = this.props
     const {isContentShown} = this.state
     const containerStyle = {
       ':hover': {
@@ -56,7 +65,6 @@ class EmailTemplateBase extends React.Component {
       },
       backgroundColor: '#fff',
       border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      color: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
       padding: '0 25px',
       ...style,
     }
@@ -68,46 +76,93 @@ class EmailTemplateBase extends React.Component {
       fontSize: 13,
       height: 50,
     }
-    const contentStyle = {
-      borderLeft: `solid 4px ${Colors.MODAL_PROJECT_GREY}`,
-      color: Colors.CHARCOAL_GREY,
-      fontSize: 13,
-      margin: isContentShown ? '25px 0' : 0,
-      maxHeight: isContentShown ? 600 : 0,
-      opacity: isContentShown ? 1 : 0,
-      overflow: 'hidden',
-      paddingLeft: 15,
-      ...SmoothTransitions,
+    const iconStyle = {
+      fill: Colors.CHARCOAL_GREY,
+      height: 20,
+      lineHeight: '13px',
+      marginLeft: 5,
+      width: 20,
     }
     const linkStyle = {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
+    const hiddenContentStyle = {
+      marginBottom: 0,
+      marginTop: 0,
+      maxHeight: 0,
+      opacity: 0,
+      overflow: 'hidden',
+      paddingBottom: 0,
+      paddingTop: 0,
+    }
+    const childStyle = props => ({
+      ...props.style || {},
+      ...isContentShown ? {} : hiddenContentStyle,
+      ...SmoothTransitions,
+    })
     // TODO(guillaume): Print reason when the user mouseovers the tag.
     return <div style={containerStyle}>
       <header style={headerStyle} onClick={() => this.setState({isContentShown: !isContentShown})}>
         <strong style={Styles.CENTER_FONT_VERTICALLY}>
           {title}
         </strong>
-        {whyForYou ? <Tag style={{backgroundColor: Colors.SKY_BLUE, marginLeft: 10}}>
-          Selectionné pour vous
+        {whyForYou ? <Tag style={{backgroundColor: Colors.BOB_BLUE, marginLeft: 10}}>
+          {userYou('Selectionné pour toi', 'Selectionné pour vous')}
         </Tag> : null}
         {this.renderType()}
         <span style={{flex: 1}} />
         <span style={linkStyle}>
-          Voir {isContentShown ? 'moins ' : "l'email "}
+          Voir {isContentShown ? 'moins' : contentName}{' '}
         </span>
-        <Icon
-          name={isContentShown ? 'chevron-up' : 'chevron-down'}
-          style={{fontSize: 20, lineHeight: '13px', marginLeft: 5}} />
+        <UpDownIcon icon="chevron" isUp={isContentShown} style={iconStyle} />
       </header>
-
-      <div style={contentStyle}>
-        <Markdown content={content} />
-      </div>
+      {React.cloneElement(children, {
+        style: childStyle(children.props),
+      })}
     </div>
   }
 }
-const EmailTemplate = Radium(EmailTemplateBase)
+const ExpandableAction = Radium(ExpandableActionBase)
+
+class EmailTemplate extends React.Component {
+  static propTypes = {
+    content: PropTypes.string.isRequired,
+    style: PropTypes.object,
+    tip: PropTypes.string,
+    title: PropTypes.node.isRequired,
+    userYou: PropTypes.func.isRequired,
+    whyForYou: PropTypes.string,
+  }
+
+  render() {
+    const {content, tip} = this.props
+    const contentStyle = {
+      borderLeft: `solid 4px ${Colors.MODAL_PROJECT_GREY}`,
+      color: Colors.CHARCOAL_GREY,
+      fontSize: 13,
+      marginBottom: tip ? 10 : 25,
+      marginTop: 25,
+      maxHeight: 600,
+      overflow: 'hidden',
+      paddingLeft: 15,
+    }
+    const tipStyle = {
+      fontSize: 13,
+      opacity: 1,
+      paddingBottom: 15,
+      paddingLeft: 15,
+      ...Styles.CENTER_FONT_VERTICALLY,
+    }
+    return <ExpandableAction {...this.props} contentName="l'email">
+      <div>
+        <div style={contentStyle}>
+          <Markdown style={{}} content={content} />
+        </div>
+        {tip ? <div style={tipStyle}><strong>Astuce&nbsp;: </strong>{tip}</div> : null}
+      </div>
+    </ExpandableAction>
+  }
+}
 
 class ToolCardBase extends React.Component {
   static propTypes = {
@@ -146,41 +201,66 @@ class ToolCardBase extends React.Component {
           style={{height: 55, width: 55}} alt="" />
         <div style={{paddingLeft: 20}}>{children}</div>
       </div>
-      <Icon name="chevron-right" style={{fontSize: 20}} />
+      <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, width: 20}} />
     </div>
   }
 }
 const ToolCard = Radium(ToolCardBase)
 
 
+// Extended version of redux' connect function (it should be used exactly the
+// same way), but augment the wrapped component with: an extra prop called
+// `adviceData` and a dispatch call just before the component is mounted to
+// populate it.
+const connectExpandedCardWithContent = reduceFunc => Component => {
+  class ExpandedCardWithContentBase extends React.Component {
+    static propTypes = {
+      advice: PropTypes.shape({
+        adviceId: PropTypes.string.isRequired,
+      }).isRequired,
+      dispatch: PropTypes.func.isRequired,
+      project: PropTypes.shape({
+        projectId: PropTypes.string.isRequired,
+      }).isRequired,
+    }
+
+    componentWillMount() {
+      const {advice, dispatch, project} = this.props
+      dispatch(getExpandedCardContent(project, advice.adviceId))
+    }
+
+    render() {
+      return <Component {...this.props} />
+    }
+  }
+  return connect(function({app}, {advice, project}) {
+    return {
+      adviceData: (app.adviceData[project.projectId] || {})[advice.adviceId] || {},
+      ...reduceFunc && reduceFunc.apply(this, arguments),
+    }
+  })(ExpandedCardWithContentBase)
+}
+
+
 class ImproveApplicationTipsBase extends React.Component {
   static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    getTipsAction: PropTypes.func.isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
-    project: PropTypes.object.isRequired,
-    sections: PropTypes.arrayOf(PropTypes.shape({
-      data: PropTypes.string.isRequired,
-      title: PropTypes.node.isRequired,
-    }).isRequired).isRequired,
-    tips: PropTypes.objectOf(PropTypes.arrayOf(PropTypes.shape({
+    adviceData: PropTypes.objectOf(PropTypes.arrayOf(PropTypes.shape({
       content: PropTypes.string.isRequired,
       contentMasculine: PropTypes.string,
       filters: PropTypes.arrayOf(PropTypes.string.isRequired),
     }).isRequired)).isRequired,
+    profile: USER_PROFILE_SHAPE.isRequired,
+    sections: PropTypes.arrayOf(PropTypes.shape({
+      data: PropTypes.string.isRequired,
+      title: PropTypes.node.isRequired,
+    }).isRequired).isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   state = {}
 
-  componentWillMount() {
-    const {dispatch, getTipsAction, project, sections, tips} = this.props
-    if (sections.some(({data}) => !tips[data])) {
-      dispatch(getTipsAction(project))
-    }
-  }
-
   renderSection(id, title, items, style) {
-    const {profile} = this.props
+    const {profile, userYou} = this.props
     const isMasculine = profile.gender === 'MASCULINE'
     const areAllItemsShownId = `areAllItemsShown-${id}`
     const areAllItemsShown = this.state[areAllItemsShownId]
@@ -200,14 +280,18 @@ class ImproveApplicationTipsBase extends React.Component {
       marginTop: -1,
     }
     const isSpecificToJob = ({filters}) => (filters || []).some(f => f.match(/^for-job-group/))
-    return <section style={style}>
+    return <section style={style} key={`section-${id}`}>
       <PaddedOnMobile style={{marginBottom: 15}}>{title}</PaddedOnMobile>
       <AppearingList maxNumChildren={areAllItemsShown ? 0 : 4}>
         {items.map((tip, index) => <div
           key={`tip-${id}-${index}`} style={{marginTop: index ? -1 : 0, ...itemStyle}}>
           <Markdown content={isMasculine && tip.contentMasculine || tip.content} />
           {isSpecificToJob(tip) ?
-            this.renderTag('Pour votre métier', Colors.GREENISH_TEAL) : null}
+            this.renderTag(
+              userYou('Pour ton métier', 'Pour votre métier'),
+              Colors.GREENISH_TEAL,
+            ) : null
+          }
         </div>)}
       </AppearingList>
       {(areAllItemsShown || items.length <= 4) ? null : <div
@@ -216,7 +300,7 @@ class ImproveApplicationTipsBase extends React.Component {
         <span style={Styles.CENTER_FONT_VERTICALLY}>
           Voir plus
         </span>
-        <Icon name="chevron-down" style={{fontSize: 20}} />
+        <ChevronDownIcon style={{fill: Colors.CHARCOAL_GREY, height: 20, width: 20}} />
       </div>}
     </section>
   }
@@ -230,19 +314,17 @@ class ImproveApplicationTipsBase extends React.Component {
   }
 
   render() {
-    const {sections, tips} = this.props
-    if (sections.some(({data}) => !tips[data])) {
+    const {sections, adviceData} = this.props
+    if (sections.some(({data}) => !adviceData[data])) {
       return <CircularProgress style={{margin: 'auto'}} />
     }
     return <div>
       {sections.map(({data, title}, index) => this.renderSection(
-        data, title, tips[data], index ? {marginTop: 40} : {}))}
+        data, title, adviceData[data], index ? {marginTop: 40} : {}))}
     </div>
   }
 }
-const ImproveApplicationTips = connect(({app}, {project, tipsCacheField}) => ({
-  tips: (app.adviceData[project.projectId] || {})[tipsCacheField] || {},
-}))(ImproveApplicationTipsBase)
+const ImproveApplicationTips = connectExpandedCardWithContent()(ImproveApplicationTipsBase)
 
 
 class PercentageBoxes extends React.Component {
@@ -302,7 +384,7 @@ class PercentageBoxes extends React.Component {
 }
 
 
-class AdviceSuggestionList extends React.Component {
+class AdviceSuggestionListBase extends React.Component {
   static propTypes = {
     children: PropTypes.arrayOf(PropTypes.node.isRequired),
     isNotClickable: PropTypes.bool,
@@ -323,7 +405,8 @@ class AdviceSuggestionList extends React.Component {
       fontWeight: 'bold',
       marginTop: index ? -1 : 0,
       minHeight: 50,
-      padding: '0 20px',
+      paddingLeft: 20,
+      paddingRight: 20,
       ...SmoothTransitions,
       ...props.style,
     })
@@ -334,6 +417,7 @@ class AdviceSuggestionList extends React.Component {
     </AppearingList>
   }
 }
+const AdviceSuggestionList = Radium(AdviceSuggestionListBase)
 
 class TipBase extends React.Component {
   static propTypes = {
@@ -355,5 +439,273 @@ class TipBase extends React.Component {
 }
 const Tip = Radium(TipBase)
 
+class JobSuggestionBase extends React.Component {
+  static propTypes = {
+    isCaption: PropTypes.bool,
+    job: PropTypes.object,
+    style: PropTypes.object,
+  }
 
-export {ToolCard, EmailTemplate, ImproveApplicationTips, AdviceSuggestionList, Tip, PercentageBoxes}
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
+  handleClick = () => {
+    const {job} = this.props
+    window.open(`https://www.google.fr/search?q=${encodeURIComponent(job.name)}`, '_blank')
+  }
+
+  renderCaption(style) {
+    const captionStyle = {
+      fontStyle: 'normal',
+      marginRight: 10,
+      ...Styles.CENTER_FONT_VERTICALLY,
+    }
+    return <div style={style}>
+      <span style={captionStyle}>
+        Offres par candidat par rapport à votre métier&nbsp;:
+      </span>
+    </div>
+  }
+
+  renderJob(style) {
+    const {job} = this.props
+    const {isMobileVersion} = this.context
+    const multiplierStyle = {
+      color: Colors.HOVER_GREEN,
+      flex: 1,
+      fontWeight: 'bold',
+      marginRight: 0,
+      ...Styles.CENTER_FONT_VERTICALLY,
+    }
+    const jobNameStyle = {
+      flex: isMobileVersion ? 4 : 1,
+      fontWeight: 'bold',
+      marginRight: isMobileVersion ? 10 : 'initial',
+      ...Styles.CENTER_FONT_VERTICALLY,
+    }
+    const chevronStyle = {
+      fill: Colors.CHARCOAL_GREY,
+    }
+    const textStyle = {
+      ...Styles.CENTER_FONT_VERTICALLY,
+    }
+
+    const roundedPercentGain = Math.round(job.offersPercentGain * 10) / 10
+
+    if (!job) {
+      return null
+    }
+
+    return <div style={style} onClick={this.handleClick}>
+      <div style={jobNameStyle}>
+        {job.name}
+      </div>
+      <div style={{flex: 1}}>
+        <span style={{alignItems: 'center', display: 'flex'}}>
+          {roundedPercentGain > 0.1 ? <div style={multiplierStyle}>
+            +{roundedPercentGain}% d'offres
+          </div> : null}
+          {isMobileVersion ? null : <div style={textStyle}>Découvrir ce métier</div>}
+          <ChevronRightIcon style={chevronStyle} />
+        </span>
+      </div>
+    </div>
+  }
+
+  render() {
+    const {isCaption, style} = this.props
+    const {isMobileVersion} = this.context
+    const containerStyle = {
+      ':hover': {
+        backgroundColor: Colors.LIGHT_GREY,
+      },
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      fontWeight: 'bold',
+      minHeight: isMobileVersion ? 'initial' : 50,
+      ...style,
+    }
+    if (isCaption) {
+      return this.renderCaption(containerStyle)
+    }
+    return this.renderJob(containerStyle)
+  }
+}
+const JobSuggestion = Radium(JobSuggestionBase)
+
+class MissionBase extends React.Component {
+  static propTypes = {
+    aggregatorName: PropTypes.string,
+    associationName: PropTypes.node,
+    description: PropTypes.node,
+    isAvailableEverywhere: PropTypes.bool,
+    link: PropTypes.string,
+    style: PropTypes.object,
+    title: PropTypes.string,
+  }
+
+  state = {
+    isContentShown: false,
+  }
+
+  render() {
+    const {aggregatorName, associationName, description, isAvailableEverywhere,
+      link, style, title} = this.props
+    const {isContentShown} = this.state
+    const containerStyle = {
+      ':hover': {
+        backgroundColor: isContentShown ? '#fff' : Colors.LIGHT_GREY,
+      },
+      backgroundColor: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      padding: '0 25px',
+      ...style,
+    }
+    const headerStyle = {
+      alignItems: 'center',
+      color: Colors.CHARCOAL_GREY,
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      height: 50,
+    }
+    const contentStyle = {
+      borderLeft: `solid 4px ${Colors.MODAL_PROJECT_GREY}`,
+      color: Colors.CHARCOAL_GREY,
+      fontSize: 13,
+      lineHeight: 1.6,
+      margin: isContentShown ? '25px 0' : 0,
+      maxHeight: isContentShown ? 600 : 0,
+      opacity: isContentShown ? 1 : 0,
+      overflow: 'hidden',
+      paddingLeft: 15,
+      ...SmoothTransitions,
+    }
+    const tagStyle = {
+      backgroundColor: Colors.GREENISH_TEAL,
+      marginLeft: 15,
+    }
+    const chevronStyle = {
+      fill: Colors.CHARCOAL_GREY,
+      flexShrink: 0,
+      height: 20,
+      lineHeight: '13px',
+      marginLeft: 5,
+      width: 20,
+    }
+    return <div style={containerStyle}>
+      <header style={headerStyle} onClick={() => this.setState({isContentShown: !isContentShown})}>
+        <strong style={Styles.CENTER_FONT_VERTICALLY}>
+          {associationName}
+        </strong>
+        {isAvailableEverywhere ? <Tag style={tagStyle}>
+          depuis chez vous
+        </Tag> : null}
+        <span style={{flex: 1}} />
+        <span style={Styles.CENTER_FONT_VERTICALLY}>
+          Voir {isContentShown ? 'moins ' : 'la mission '}
+        </span>
+        <UpDownIcon
+          icon="chevron"
+          isUp={isContentShown}
+          style={chevronStyle}
+        />
+      </header>
+
+      <div style={contentStyle}>
+        <div style={{marginBottom: 20}}>
+          <strong>Intitulé de la mission&nbsp;:</strong><br />
+          {title}
+        </div>
+
+        <div>
+          <strong>Description&nbsp;:</strong><br />
+          <Markdown content={description} />
+        </div>
+
+        {link ? <div style={{marginTop: 20}}>
+        Lire la suite sur <a href={link} target="_blank" rel="noopener noreferrer">{aggregatorName}
+          </a>
+        </div> : null}
+      </div>
+    </div>
+  }
+}
+const Mission = Radium(MissionBase)
+
+
+class MoreMissionsLinkBase extends React.Component {
+  static propTypes = {
+    altLogo: PropTypes.string,
+    children: PropTypes.node,
+    logo: PropTypes.string,
+    style: PropTypes.object,
+  }
+
+  render() {
+    const {altLogo, children, logo, style, ...extraProps} = this.props
+    const containerStyle = {
+      ':hover': {
+        backgroundColor: Colors.LIGHT_GREY,
+      },
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      color: Colors.CHARCOAL_GREY,
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      height: 50,
+      padding: '0 25px',
+      ...style,
+    }
+    const chevronStyle = {
+      fill: Colors.CHARCOAL_GREY,
+      height: 20,
+      lineHeight: '13px',
+      marginLeft: 5,
+      width: 20,
+    }
+    return <div style={containerStyle} {...extraProps}>
+      <strong style={Styles.CENTER_FONT_VERTICALLY}>
+        {children}
+      </strong>
+      <span style={{flex: 1}} />
+      <img src={logo} style={{height: 25}} alt={altLogo} />
+      <ChevronRightIcon style={chevronStyle} />
+    </div>
+  }
+}
+const MoreMissionsLink = Radium(MoreMissionsLinkBase)
+
+class DataSource extends React.Component {
+  static propTypes = {
+    children: PropTypes.node,
+    style: PropTypes.object,
+  }
+
+  render() {
+    const {children, style} = this.props
+    const sourceStyle = {
+      color: Colors.COOL_GREY,
+      fontSize: 13,
+      fontStyle: 'italic',
+      margin: '15px 0',
+      ...style,
+    }
+
+    return <PaddedOnMobile style={sourceStyle}>
+      *Source&nbsp;: {children}
+    </PaddedOnMobile>
+  }
+}
+
+
+export {ToolCard, EmailTemplate, ImproveApplicationTips, AdviceSuggestionList,
+  Tip, PercentageBoxes, connectExpandedCardWithContent, JobSuggestion, ExpandableAction,
+  Mission, MoreMissionsLink, DataSource}

@@ -1,0 +1,37 @@
+[
+  {
+    "_id": "06",
+    "name": "Alpes de Haute-Provence",
+    "prefix": "dans les "
+  },
+  {
+    "_id": "2A",
+    "name": "Corse du Sud",
+    "prefix": "en"
+  },
+  {
+    "_id": "31",
+    "name": "Haute-Garonne",
+    "prefix": "en"
+  },
+  {
+    "_id": "42",
+    "name": "Loire",
+    "prefix": "dans la "
+  },
+  {
+    "_id": "69",
+    "name": "Rhône",
+    "prefix": "dans le "
+  },
+  {
+    "_id": "77",
+    "name": "Seine-et-Marne",
+    "prefix": "en "
+  },
+  {
+    "_id": "94",
+    "name": "Val-de-Marne",
+    "prefix": "dans le "
+  }
+]

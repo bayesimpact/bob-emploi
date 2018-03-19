@@ -1,6 +1,6 @@
+import range from 'lodash/range'
 import React from 'react'
 import PropTypes from 'prop-types'
-import _ from 'underscore'
 
 import config from 'config'
 
@@ -8,7 +8,7 @@ import {DEGREE_OPTIONS, ORIGIN_OPTIONS, getFamilySituationOptions} from 'store/u
 
 import {DashboardExportCreator} from 'components/dashboard_export_creator'
 import {Step, ProfileUpdater} from 'components/pages/profile/step'
-import {Colors, FieldSet, RadioGroup, Select, Styles} from 'components/theme'
+import {Colors, FieldSet, RadioGroup, Select} from 'components/theme'
 
 
 const genders = [
@@ -26,6 +26,10 @@ class GeneralStep extends React.Component {
   static propTypes = {
     featuresEnabled: PropTypes.object,
     isShownAsStepsDuringOnboarding: PropTypes.bool,
+  }
+
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
   }
 
   componentWillMount() {
@@ -73,28 +77,28 @@ class GeneralStep extends React.Component {
     this.setState(state)
   }
 
-  handleYearOfBirthChange = event => {
-    const value = event.target.value
-    this.setState({yearOfBirth: value && parseInt(value) || null})
+  handleYearOfBirthChange = value => {
+    this.setState({yearOfBirth: value})
   }
 
   render() {
     const {isShownAsStepsDuringOnboarding} = this.props
+    const {isMobileVersion} = this.context
     const {familySituation, gender, hasHandicap, highestDegree, origin, yearOfBirth,
       isValidated} = this.state
     const featuresEnabled = this.props.featuresEnabled || {}
     const isFeminine = gender === 'FEMININE'
     const exportOldDataLinkStyle = {
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       cursor: 'pointer',
       fontSize: 15,
       textDecoration: 'underline',
     }
     return <Step
-      title={isShownAsStepsDuringOnboarding ? 'À propos de vous' : 'Votre profil'}
+      title={isShownAsStepsDuringOnboarding ? 'Commençons par parler de vous' : 'Votre profil'}
       fastForward={this.fastForward}
       onNextButtonClick={this.updater_.handleSubmit}
-      onPreviousButtonClick={this.updater_.handleBack}
+      onPreviousButtonClick={this.updater_.getBackHandler()}
       {...this.props}>
       <FieldSet label="Vous êtes" isValid={!!gender} isValidated={isValidated}>
         <RadioGroup
@@ -104,29 +108,34 @@ class GeneralStep extends React.Component {
       </FieldSet>
       <FieldSet
         label="Votre situation familiale" isValid={!!familySituation}
-        isValidated={isValidated}>
+        isValidated={isValidated} hasCheck={true}>
         <Select
           onChange={this.updater_.handleChange('familySituation')}
           options={getFamilySituationOptions(gender)}
+          placeholder="choisissez une situation"
           value={familySituation} />
       </FieldSet>
       <FieldSet
         label="Année de naissance"
-        isValid={!!yearOfBirth} isValidated={isValidated}>
-        <BirthYearSelector onChange={this.handleYearOfBirthChange} value={yearOfBirth} />
+        isValid={!!yearOfBirth} isValidated={isValidated} hasCheck={true}>
+        <BirthYearSelector
+          onChange={this.handleYearOfBirthChange}
+          placeholder="choisissez une année"
+          value={yearOfBirth} />
       </FieldSet>
       <FieldSet
         label="Dernier diplôme obtenu"
-        isValid={!!highestDegree} isValidated={isValidated}>
+        isValid={!!highestDegree} isValidated={isValidated} hasCheck={true}>
         <Select
           onChange={this.updater_.handleChange('highestDegree')} value={highestDegree}
-          options={DEGREE_OPTIONS} />
+          options={DEGREE_OPTIONS}
+          placeholder="choisissez un niveau d'études" />
       </FieldSet>
       {/* TODO(pasal): Please remove the left padding on the fieldset, I can't get rid of it */}
       <FieldSet
         label={`Vous êtes reconnu${isFeminine ? 'e' : ''} comme
             travailleu${isFeminine ? 'se' : 'r'} handicapé${isFeminine ? 'e' : ''}`}
-        isValid={true} isValidated={isValidated} style={{minWidth: 350}}>
+        isValid={true} isValidated={isValidated} style={{minWidth: isMobileVersion ? 280 : 350}}>
         <RadioGroup
           style={{justifyContent: 'space-around'}}
           onChange={this.updater_.handleChange('hasHandicap')}
@@ -134,15 +143,16 @@ class GeneralStep extends React.Component {
       </FieldSet>
       <FieldSet
         label={`Comment avez vous connu ${config.productName} ?`}
-        isValid={!!origin} isValidated={isValidated}>
+        isValid={!!origin} isValidated={isValidated} hasCheck={true}>
         <Select
           onChange={this.updater_.handleChange('origin')} value={origin}
-          options={ORIGIN_OPTIONS} />
+          options={ORIGIN_OPTIONS}
+          placeholder="choisissez une option" />
       </FieldSet>
 
       {featuresEnabled.switchedFromMashupToAdvisor ? <DashboardExportCreator
         style={exportOldDataLinkStyle}>
-        Accèder aux données de l'ancien Bob Emploi
+        Accèder aux données de l'ancien {config.productName}
       </DashboardExportCreator> : null}
     </Step>
   }
@@ -151,35 +161,27 @@ class GeneralStep extends React.Component {
 
 class BirthYearSelector extends React.Component {
   static propTypes = {
-    style: PropTypes.object,
     value: PropTypes.number,
-  }
-
-  state = {
-    yearOfBirth: null,
   }
 
   componentWillMount() {
     const currentYear = new Date().getFullYear()
     // We probably don't have any users under the age of 14 or over 100
     const maxBirthYear = currentYear - 14
-    const minBirthYear = currentYear - 70
-    this.yearOfBirthRange = _.range(minBirthYear, maxBirthYear, 1)
+    const minBirthYear = currentYear - 100
+    this.yearOfBirthRange = range(minBirthYear, maxBirthYear).map(year =>
+      ({name: year + '', value: year})
+    )
   }
 
   render() {
-    const {yearOfBirth} = this.state
-    const {value, style, ...otherProps} = this.props
-    const selectStyle = {
-      ...Styles.INPUT,
-      ...style,
-    }
-    return <select value={value || yearOfBirth || ''} style={selectStyle} {...otherProps}>
-      <option></option>
-      {this.yearOfBirthRange.map(year => {
-        return <option key={year} value={year}>{year}</option>
-      })}
-    </select>
+    const {value, ...otherProps} = this.props
+    return <Select
+      isValueInt={true}
+      value={value}
+      options={this.yearOfBirthRange}
+      defaultMenuScroll={this.yearOfBirthRange.length - 20}
+      {...otherProps} />
   }
 }
 

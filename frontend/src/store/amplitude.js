@@ -12,6 +12,7 @@ export const createAmplitudeMiddleware = actionTypesToLog => {
     includeGclid: true,
     includeReferrer: true,
     includeUtm: true,
+    saveParamsReferrerOncePerSession: false,
   })
   const logger = new Logger(actionTypesToLog)
   let userId

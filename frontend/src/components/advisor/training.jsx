@@ -1,11 +1,13 @@
-import React from 'react'
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
+import React from 'react'
 
-import {lowerFirstLetter, ofCityPrefix} from 'store/french'
+import {lowerFirstLetter, ofPrefix} from 'store/french'
 
+import {Colors, GrowingNumber, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
 import laBonneFormationImage from 'images/labonneformation-picto.png'
-import {Colors, GrowingNumber, Icon, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
+import Picto from 'images/advices/picto-training.png'
 
 import {AdviceSuggestionList, ToolCard} from './base'
 
@@ -14,7 +16,7 @@ const valueToColor = {
   0: 'initial',
   1: Colors.RED_PINK,
   2: Colors.BUTTERSCOTCH,
-  3: Colors.SKY_BLUE,
+  3: Colors.BOB_BLUE,
   4: Colors.GREENISH_TEAL,
   5: Colors.GREENISH_TEAL,
 }
@@ -31,24 +33,26 @@ const valueToText = {
 
 class AdviceCard extends React.Component {
   static propTypes = {
-    advice: PropTypes.object.isRequired,
+    advice: PropTypes.shape({
+      trainingData: PropTypes.shape({
+        trainings: PropTypes.arrayOf(PropTypes.shape({
+          name: PropTypes.string,
+        }).isRequired),
+      }),
+    }).isRequired,
+    fontSize: PropTypes.number.isRequired,
     project: PropTypes.object.isRequired,
   }
 
   render() {
-    const {advice, project} = this.props
-    const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
+    const {advice: {trainingData: {trainings = []} = {}}, fontSize, project} = this.props
+    const {modifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
 
-    const noTraingsData =  <div style={{fontSize: 30}}>
-      Des formations près {prefix}<strong>{cityName}</strong> ont un fort taux de retour à l'emploi.
-    </div>
-
-    if (!advice.trainingData) {
-      return noTraingsData
-    }
-    const {trainings} = advice.trainingData
-    if (!trainings || !trainings.length) {
-      return noTraingsData
+    if (!trainings.length) {
+      return <div style={{fontSize: fontSize}}>
+        Des formations près {prefix}<strong>{cityName}</strong> ont un fort taux de retour à
+        l'emploi.
+      </div>
     }
 
     const trainingNames = trainings.map(training => training.name)
@@ -57,7 +61,7 @@ class AdviceCard extends React.Component {
         return !pos || item !== array[pos - 1]
       })
 
-    return <div style={{fontSize: 30}}>
+    return <div style={{fontSize: fontSize}}>
       Des formations près {prefix}<strong>{cityName}</strong> comme{' '}
       <StringJoiner>
         {uniqueTrainingNames.slice(0, 2).map((name, index) => <strong key={`company-${index}`}>
@@ -72,8 +76,18 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
-    advice: PropTypes.object.isRequired,
+    advice: PropTypes.shape({
+      trainingData: PropTypes.shape({
+        trainings: PropTypes.arrayOf(PropTypes.shape({
+          cityName: PropTypes.string,
+          hiringPotential: PropTypes.number,
+          name: PropTypes.string,
+          url: PropTypes.string,
+        }).isRequired),
+      }),
+    }).isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   createLBFLink() {
@@ -83,23 +97,19 @@ class ExpandedAdviceCardContent extends React.Component {
   }
 
   render() {
-    const {advice, project} = this.props
+    const {advice: {trainingData: {trainings = []} = {}}, project, userYou} = this.props
     const toolCardStyle = {
       maxWidth: 950,
     }
 
-    if (!advice.trainingData) {
+    if (!trainings.length) {
       return null
     }
-    const {trainings} = advice.trainingData || []
-    if (!trainings || !trainings.length) {
-      return null
-    }
-
     return <div>
       <PaddedOnMobile style={{fontSize: 21}}>
         Nous avons trouvé <GrowingNumber style={{fontWeight: 'bold'}} number={trainings.length}
-          isSteady={true} /> formation{trainings.length > 0 ? 's' : ''} autour de vous&nbsp;:
+          isSteady={true} /> formation{trainings.length > 0 ? 's' : ''} autour
+          de {userYou('toi', 'vous')}&nbsp;:
       </PaddedOnMobile>
       <AdviceSuggestionList style={{marginTop: 15}}>
         {trainings.map((training, index) => <TrainingSuggestion
@@ -124,7 +134,12 @@ class ExpandedAdviceCardContent extends React.Component {
 class TrainingSuggestionBase extends React.Component {
   static propTypes = {
     style: PropTypes.string,
-    training: PropTypes.object.isRequired,
+    training: PropTypes.shape({
+      cityName: PropTypes.string,
+      hiringPotential: PropTypes.number,
+      name: PropTypes.string,
+      url: PropTypes.string,
+    }).isRequired,
   }
 
   handleClick = () => {
@@ -169,8 +184,7 @@ class TrainingSuggestionBase extends React.Component {
   }
 
   render() {
-    const {training, style} = this.props
-    const {cityName, name, hiringPotential} = training
+    const {training: {cityName, name, hiringPotential}, style} = this.props
     const containerStyle = {
       ...style,
       fontWeight: 'normal',
@@ -181,9 +195,12 @@ class TrainingSuggestionBase extends React.Component {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const chevronStyle = {
-      fontSize: 20,
+      fill: Colors.CHARCOAL_GREY,
+      flexShrink: 0,
+      height: 20,
       lineHeight: 1,
       padding: '0 0 0 10px',
+      width: 30,
     }
     return <div style={containerStyle} onClick={this.handleClick} key="training">
       <span style={trainingStyle}>
@@ -191,11 +208,11 @@ class TrainingSuggestionBase extends React.Component {
       </span>
       <div style={{flex: 1}} />
       {this.renderBoxes(hiringPotential)}
-      <Icon name="chevron-right" style={chevronStyle} />
+      <ChevronRightIcon style={chevronStyle} />
     </div>
   }
 }
 const TrainingSuggestion = Radium(TrainingSuggestionBase)
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

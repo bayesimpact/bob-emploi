@@ -1,9 +1,9 @@
 import {expect} from 'chai'
 import {FamilySituation, Frustration, UserOrigin} from 'api/user'
-import {travelInTime, getUserFrustrationTags, getFamilySituationOptions, increaseRevision,
+import {getUserFrustrationTags, getFamilySituationOptions, increaseRevision,
   getHighestDegreeDescription, ORIGIN_OPTIONS, keepMostRecentRevision,
   isEmailTemplatePersonalized, projectMatchAllFilters, filterPredicatesMatch,
-  personalizationsPredicates} from 'store/user'
+  personalizationsPredicates, youForUser} from 'store/user'
 import emailTemplates from 'components/advisor/data/email_templates.json'
 
 
@@ -121,62 +121,6 @@ describe('getHighestDegreeDescription', () => {
   it('should return the right degree', () => {
     const profile = {highestDegree: 'DEA_DESS_MASTER_PHD'}
     expect(getHighestDegreeDescription(profile)).to.equal('DEA - DESS - Master - PhD')
-  })
-})
-
-
-describe('travelInTime', () => {
-  it('should add a delta to a date', () => {
-    const result = travelInTime('2016-10-14T13:56:37.956Z', 60 * 1000)
-    expect(result).to.equal('2016-10-14T13:57:37.956Z')
-  })
-
-  it('should add a delta to a date field', () => {
-    const user = {
-      createdAt: '2016-10-14T13:56:00.956Z',
-    }
-    const result = travelInTime(user, 42 * 1000)
-    expect(result).to.eql({
-      createdAt: '2016-10-14T13:56:42.956Z',
-    })
-  })
-
-  it('should add a delta to all dates in an array', () => {
-    const user = [
-      '2016-10-14T13:56:00.956Z',
-      '2016-10-14T13:57:00.956Z',
-      '2016-10-14T13:58:00.956Z',
-    ]
-    const result = travelInTime(user, 42 * 1000)
-    expect(result).to.eql([
-      '2016-10-14T13:56:42.956Z',
-      '2016-10-14T13:57:42.956Z',
-      '2016-10-14T13:58:42.956Z',
-    ])
-  })
-
-  it('should add a delta to dates embedded in a complex structure', () => {
-    const user = {
-      createdAt: '2016-10-14T13:56:00.956Z',
-      projects: [
-        {updatedAt: '2016-10-14T13:57:00.956Z'},
-        {updatedAt: '2016-10-14T13:58:00.956Z'},
-      ],
-    }
-    const result = travelInTime(user, 42 * 1000)
-    expect(result).to.eql({
-      createdAt: '2016-10-14T13:56:42.956Z',
-      projects: [
-        {updatedAt: '2016-10-14T13:57:42.956Z'},
-        {updatedAt: '2016-10-14T13:58:42.956Z'},
-      ],
-    })
-  })
-
-  it('should not modify things that are not timestamps', () => {
-    ['simple text', 1234, '1234', new Date(), true].forEach(value => {
-      expect(value).to.eql(travelInTime(value, 42 * 1000))
-    })
   })
 })
 
@@ -306,5 +250,20 @@ describe('Network email templates personalizations', () => {
       }
     })
     expect(usedPersonalizations).to.contain.all.keys(personalizationsPredicates)
+  })
+})
+
+
+describe('When we can tutoie people', () => {
+  it('should not be by default', () => {
+    const user = {}
+    expect(youForUser(user)('tu', 'vous')).to.equal('vous')
+  })
+
+  it('should only be when user asked for it', () => {
+    const tutoyableUser = {profile: {canTutoie: true}}
+    const notTutoyableUser = {profile: {canTutoie: false}}
+    expect(youForUser(tutoyableUser)('tu', 'vous')).to.equal('tu')
+    expect(youForUser(notTutoyableUser)('tu', 'vous')).to.equal('vous')
   })
 })

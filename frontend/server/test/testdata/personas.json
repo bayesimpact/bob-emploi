@@ -16,14 +16,14 @@
       "lbbIntegration": "ACTIVE"
     },
     "project": {
-      "kind": "FIND_JOB",
+      "kind": "FIND_A_FIRST_JOB",
       "workloads": ["FULL_TIME"],
       "projectId": "57e92a5e-f35b",
       "jobSearchLengthMonths": 2,
-      "source": "PROJECT_MANUALLY_CREATED",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
       "employmentTypes": ["CDI"],
       "networkEstimate": 3,
-      "totalInterviewCount": 1,
+      "totalInterviewCount": -1,
       "weeklyApplicationsEstimate": "A_LOT",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -52,8 +52,83 @@
           "population": 484344
         }
       },
-      "localStats": {
-        "lessStressfulJobGroups": [{}]
+      "diagnostic": {
+        "overallScore": 99,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 20
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
+      }
+    }
+  },
+  "young_mover": {
+    "user": {
+      "highestDegree": "BTS_DUT_DEUG",
+      "email": "demenageur.persona@gmail.com",
+      "name": "Demenageur",
+      "situation": "LOST_QUIT",
+      "yearOfBirth": 1993,
+      "gender": "MASCULINE",
+      "hasHandicap": true
+    },
+    "featuresEnabled": {
+      "lbbIntegration": "ACTIVE"
+    },
+    "project": {
+      "kind": "FIND_A_FIRST_JOB",
+      "workloads": ["FULL_TIME"],
+      "projectId": "57e92ce5-3153",
+      "jobSearchLengthMonths": 24,
+      "job_search_started_at": "2014-09-25T14:12:52.717220Z",
+      "employmentTypes": ["CDI"],
+      "networkEstimate": 1,
+      "weeklyOffersEstimate": "A_LOT",
+      "weeklyApplicationsEstimate": "DECENT_AMOUNT",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "jobGroup": {
+          "name": "Assistanat commercial",
+          "romeId": "D1401"
+        },
+        "codeOgr": "12748",
+        "feminineName": "Commerciale sédentaire",
+        "name": "Commercial / Commerciale sédentaire",
+        "masculineName": "Commercial sédentaire"
+      },
+      "minSalary": 40000,
+      "totalInterviewCount": 1,
+      "title": "Trouver un emploi de commercial sédentaire en Auvergne-Rhône-Alpes",
+      "createdAt": "2016-09-26T14:12:52.717220Z",
+      "passionateLevel": "LIFE_GOAL_JOB",
+      "previousJobSimilarity": "DONE_THIS",
+      "mobility": {
+        "areaType": "REGION",
+        "city": {
+          "name": "Toulouse",
+          "regionName": "Occitanie",
+          "departementName": "Rhône",
+          "departementId": "31",
+          "cityId": "31555",
+          "regionId": "85"
+        }
       }
     }
   },
@@ -71,13 +146,14 @@
       "lbbIntegration": "ACTIVE"
     },
     "project": {
-      "kind": "FIND_JOB",
+      "kind": "FIND_A_FIRST_JOB",
       "workloads": ["FULL_TIME"],
       "projectId": "57e92ce5-3153",
-      "source": "PROJECT_MANUALLY_CREATED",
       "jobSearchLengthMonths": 24,
+      "job_search_started_at": "2014-09-25T14:12:52.717220Z",
       "employmentTypes": ["CDI"],
       "networkEstimate": 1,
+      "weeklyOffersEstimate": "A_LOT",
       "weeklyApplicationsEstimate": "DECENT_AMOUNT",
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -91,8 +167,10 @@
         "masculineName": "Commercial sédentaire"
       },
       "minSalary": 40000,
+      "totalInterviewCount": 1,
       "title": "Trouver un emploi de commercial sédentaire en Auvergne-Rhône-Alpes",
       "createdAt": "2016-09-26T14:12:52.717220Z",
+      "passionateLevel": "LIFE_GOAL_JOB",
       "previousJobSimilarity": "DONE_THIS",
       "mobility": {
         "areaType": "REGION",
@@ -117,12 +195,13 @@
       "hasHandicap": true
     },
     "project": {
-      "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "jobSearchLengthMonths": 3,
+      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "workloads": ["FULL_TIME"],
       "projectId": "57e92dc0-d824",
-      "source": "PROJECT_MANUALLY_CREATED",
       "employmentTypes": ["CDI"],
+      "totalInterviewCount": 2,
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "jobGroup": {
@@ -135,6 +214,7 @@
         "masculineName": "Boucher"
       },
       "minSalary": 25000,
+      "trainingFulfillmentEstimate": "TRAINING_FULFILLMENT_NOT_SURE",
       "title": "Trouver un emploi de boucher autour de Bourg-en-Bresse",
       "createdAt": "2016-09-26T14:16:32.199172Z",
       "previousJobSimilarity": "NEVER_DONE",
@@ -149,6 +229,31 @@
           "regionId": "84",
           "population": 39882
         }
+      },
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 10
+          }
+        ]
       }
     }
   },
@@ -159,22 +264,24 @@
       "name": "Persisteuse",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1964,
-      "frustrations": ["NO_OFFERS"],
+      "hasCarDrivingLicense": "FALSE",
+      "frustrations": ["NO_OFFERS", "TIME_MANAGEMENT", "INTERVIEW"],
       "gender": "FEMININE"
     },
     "featuresEnabled": {
       "lbbIntegration": "ACTIVE"
     },
     "project": {
-      "kind": "FIND_JOB",
+      "kind": "FIND_A_FIRST_JOB",
       "workloads": ["FULL_TIME"],
       "projectId": "57e92f6b-63df",
-      "source": "PROJECT_MANUALLY_CREATED",
       "employmentTypes": ["CDI"],
       "networkEstimate": 3,
       "totalInterviewCount": 21,
+      "weeklyOffersEstimate": "SOME",
       "weeklyApplicationsEstimate": "SOME",
       "jobSearchLengthMonths": 18,
+      "job_search_started_at": "2015-02-25T07:54:02.514215Z",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "jobGroup": {
@@ -198,8 +305,35 @@
           "departementName": "Rhône",
           "departementId": "69",
           "cityId": "69123",
-          "regionId": "84"
+          "regionId": "84",
+          "population": 484344,
+          "urbanScore": 5
         }
+      },
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 60
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
       }
     }
   },
@@ -210,6 +344,8 @@
       "previousJobSimilarity": "DONE_THIS",
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 31000.0,
+      "job_search_has_not_started": true,
+      "trainingFulfillmentEstimate": "TRAINING_FULFILLMENT_NOT_SURE",
       "mobility": {
         "areaType": "WORLD",
         "city": {
@@ -224,24 +360,55 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecded3-b55b",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "11999",
         "feminineName": "Chauffeuse-livreuse",
         "jobGroup": {
           "name": "Conduite et livraison par tournées sur courte distance",
-          "romeId": "N4105"
+          "romeId": "N4105",
+          "requirements": {
+            "diplomas": [
+              {
+                "percentRequired": 100
+              }
+            ]
+          }
         },
         "masculineName": "Chauffeur-livreur",
         "name": "Chauffeur-livreur / Chauffeuse-livreuse"
       },
       "title": "Trouver un emploi de chauffeur-livreur en Île-de-France",
-      "workloads": ["FULL_TIME"]
+      "workloads": ["FULL_TIME"],
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 60
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
+      }
     },
     "user": {
       "email": "abdelkrimxxxx@yahoo.fr",
-      "frustrations": ["RESUME"],
+      "frustrations": ["RESUME", "INTERVIEW"],
       "gender": "MASCULINE",
       "name": "abdelkrim",
       "situation": "FIRST_TIME",
@@ -253,8 +420,9 @@
       "createdAt": "2016-09-29T07:50:51.689185Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
-      "kind": "FIND_JOB",
+      "kind": "FIND_A_FIRST_JOB",
       "minSalary": 20000.0,
+      "trainingFulfillmentEstimate": "CURRENTLY_IN_TRAINING",
       "mobility": {
         "areaType": "DEPARTEMENT",
         "city": {
@@ -268,10 +436,11 @@
         }
       },
       "networkEstimate": 2,
+      "passionateLevel": "LIFE_GOAL_JOB",
       "projectId": "57ecc7dc-321cf",
       "jobSearchLengthMonths": 2,
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
       "totalInterviewCount": 21,
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "19364",
@@ -300,8 +469,9 @@
       "createdAt": "2016-09-29T07:50:51.689185Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
-      "kind": "FIND_JOB",
+      "kind": "FIND_A_FIRST_JOB",
       "minSalary": 20000.0,
+      "trainingFulfillmentEstimate": "CURRENTLY_IN_TRAINING",
       "mobility": {
         "areaType": "DEPARTEMENT",
         "city": {
@@ -315,8 +485,11 @@
       },
       "networkEstimate": 2,
       "projectId": "57ecc7dc-695a",
+      "weeklyOffersEstimate": "A_LOT",
+      "weeklyApplicationsEstimate": "SOME",
       "jobSearchLengthMonths": 2,
-      "source": "PROJECT_MANUALLY_CREATED",
+      "totalInterviewCount": -1,
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "19364",
@@ -337,7 +510,9 @@
       "gender": "FEMININE",
       "name": "karen",
       "situation": "LOST_QUIT",
-      "yearOfBirth": 1971
+      "yearOfBirth": 1971,
+      "frustrations": ["AGE_DISCRIMINATION"],
+      "hasHandicap": true
     }
   },
   "fabrice": {
@@ -346,7 +521,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "CITY",
         "city": {
@@ -355,12 +531,12 @@
           "departementName": "Paris",
           "name": "Paris",
           "regionId": "11",
-          "regionName": "Île-de-France"
+          "regionName": "Île-de-France",
+          "population": 2244000
         }
       },
       "networkEstimate": 3,
       "projectId": "57ecc89b-16cf",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10744",
@@ -381,16 +557,19 @@
       "gender": "MASCULINE",
       "name": "fabrice",
       "situation": "LOST_QUIT",
-      "yearOfBirth": 1977
+      "yearOfBirth": 1977,
+      "frustrations": ["MOTIVATION"]
     }
   },
   "joel": {
     "project": {
-      "createdAt": "2016-09-29T13:30:04.693286Z",
+      "createdAt": "2016-09-24T13:30:04.693286Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
-      "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "jobSearchLengthMonths": 1,
+      "job_search_started_at": "2016-08-25T07:54:02.514215Z",
+      "totalInterviewCount": 1,
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "CITY",
         "city": {
@@ -404,7 +583,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57ed175d-215a",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "13999",
@@ -433,7 +611,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "NEVER_DONE",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "minSalary": 35000.0,
       "mobility": {
         "areaType": "REGION",
@@ -442,13 +621,13 @@
           "departementId": "75",
           "departementName": "Paris",
           "name": "Paris",
+          "publicTransportationScore": 3,
           "regionId": "11",
           "regionName": "Île-de-France"
         }
       },
       "networkEstimate": 3,
       "projectId": "57ecc916-88b8",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "11408",
@@ -466,11 +645,12 @@
     "user": {
       "highestDegree": "DEA_DESS_MASTER_PHD",
       "email": "jenniferxxxx@hotmail.fr",
-      "gender": "FEMININE",
       "frustrations": ["SEX_DISCRIMINATION", "AGE_DISCRIMINATION", "NO_OFFER_ANSWERS"],
+      "gender": "FEMININE",
+      "hasCarDrivingLicense": "FALSE",
       "name": "jennifer",
       "situation": "IN_TRAINING",
-      "yearOfBirth": 1993
+      "yearOfBirth": 1995
     }
   },
   "joana": {
@@ -479,7 +659,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_SIMILAR",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -493,7 +674,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57ecddf8-30ab",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "13696",
@@ -521,7 +701,7 @@
       "createdAt": "2016-09-29T08:09:43.721509Z",
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
-      "kind": "FIND_JOB",
+      "kind": "FIND_A_FIRST_JOB",
       "minSalary": 20000.0,
       "mobility": {
         "areaType": "REGION",
@@ -536,7 +716,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57eccc48-f767",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "38156",
@@ -556,7 +735,7 @@
       "email": "ludivinexxxx@live.fr",
       "gender": "FEMININE",
       "name": "ludivine",
-      "frustrations": ["SINGLE_PARENT"],
+      "frustrations": ["SINGLE_PARENT", "RESUME", "SELF_CONFIDENCE"],
       "situation": "LOST_QUIT",
       "yearOfBirth": 1989
     }
@@ -567,7 +746,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "minSalary": 1400.0,
       "mobility": {
         "areaType": "CITY",
@@ -582,7 +762,7 @@
       },
       "networkEstimate": 4,
       "projectId": "57ece21e-5850",
-      "source": "PROJECT_MANUALLY_CREATED",
+      "seniority": "INTERNSHIP",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "20613",
@@ -612,7 +792,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2013-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "CITY",
         "city": {
@@ -627,7 +808,6 @@
       "networkEstimate": 2,
       "projectId": "57ecc9a7-5f0a",
       "seniority": "INTERMEDIARY",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "14500",
@@ -657,6 +837,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
+      "totalInterviewCount": -1,
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
       "kind": "REORIENTATION",
       "mobility": {
         "areaType": "CITY",
@@ -672,7 +854,6 @@
       "networkEstimate": 1,
       "projectId": "57ece175-df63",
       "seniority": "EXPERT",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "11258",
@@ -702,6 +883,7 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
       "kind": "REORIENTATION",
       "mobility": {
         "areaType": "DEPARTEMENT",
@@ -716,7 +898,6 @@
       },
       "networkEstimate": 4,
       "projectId": "57ecc950-a9a1",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "title": "Me réorienter dans le département Val-de-Marne",
       "workloads": ["FULL_TIME"]
@@ -724,7 +905,7 @@
     "user": {
       "email": "xxxxx.fabrice@neuf.fr",
       "gender": "MASCULINE",
-      "frustrations": ["AGE_DISCRIMINATION"],
+      "frustrations": ["AGE_DISCRIMINATION", "ATYPIC_PROFILE"],
       "name": "fabrice",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1964
@@ -736,7 +917,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "minSalary": 40000.0,
       "mobility": {
         "areaType": "CITY",
@@ -751,7 +933,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57eccbe9-22f1",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "16123",
@@ -772,7 +953,8 @@
       "gender": "MASCULINE",
       "name": "richard",
       "situation": "LOST_QUIT",
-      "yearOfBirth": 1982
+      "yearOfBirth": 1982,
+      "frustrations": ["MOTIVATION"]
     }
   },
   "margaux": {
@@ -781,7 +963,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -796,7 +979,6 @@
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
       "seniority": "JUNIOR",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10241",
@@ -826,7 +1008,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -841,7 +1024,6 @@
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
       "seniority": "SENIOR",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10868",
@@ -871,7 +1053,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -885,7 +1068,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "12006",
@@ -915,7 +1097,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -929,7 +1112,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10241",
@@ -959,7 +1141,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -973,7 +1156,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10241",
@@ -1003,7 +1185,8 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -1018,7 +1201,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10241",
@@ -1049,7 +1231,8 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "REGION",
         "city": {
@@ -1064,7 +1247,6 @@
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10241",
@@ -1085,6 +1267,7 @@
       "gender": "MASCULINE",
       "name": "Paume",
       "situation": "EMPLOYED",
+      "frustrations": ["ATYPIC_PROFILE", "INTERVIEW"],
       "yearOfBirth": 1989
     }
   },
@@ -1093,9 +1276,10 @@
       "createdAt": "2016-09-29T09:24:02.698094Z",
       "employmentTypes": ["CDD_LESS_EQUAL_3_MONTHS"],
       "previousJobSimilarity": "DONE_THIS",
-      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "trainingFulfillmentEstimate": "ENOUGH_DIPLOMAS",
       "jobSearchLengthMonths": 2,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "COUNTRY",
         "city": {
@@ -1110,7 +1294,6 @@
       },
       "networkEstimate": 1,
       "projectId": "57ecddb3-bfe8",
-      "source": "PROJECT_MANUALLY_CREATED",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "10241",
@@ -1129,9 +1312,10 @@
       "highestDegree": "BAC_BACPRO",
       "email": "rxxxx@hotmail.fr",
       "gender": "MASCULINE",
+      "hasCarDrivingLicense": "FALSE",
       "name": "Chat Botté",
       "familySituation": "SINGLE",
-      "yearOfBirth": 1995
+      "yearOfBirth": 1999
     }
   },
   "Dark Vador": {
@@ -1141,7 +1325,8 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 3,
-      "kind": "FIND_JOB",
+      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
       "mobility": {
         "areaType": "COUNTRY",
         "city": {
@@ -1155,7 +1340,361 @@
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",
-      "source": "PROJECT_MANUALLY_CREATED",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "masculineName": "Boucher",
+        "name": "Boucher / Bouchère"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"],
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 60
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
+      }
+    },
+    "user": {
+      "highestDegree": "BAC_BACPRO",
+      "email": "bxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Dark Vador",
+      "familySituation": "SINGLE",
+      "frustrations": ["NO_OFFERS"],
+      "yearOfBirth": 1975
+    }
+  },
+  "Dark Vador du Gers": {
+    "project": {
+      "createdAt": "2017-08-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 3,
+      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
+      "mobility": {
+        "areaType": "COUNTRY",
+        "city": {
+          "cityId": "77337",
+          "departementId": "32",
+          "departementName": "Gers",
+          "name": "Lectoure",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecddb3-bfe8",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "masculineName": "Boucher",
+        "name": "Boucher / Bouchère"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"],
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 60
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
+      }
+    },
+    "user": {
+      "highestDegree": "BAC_BACPRO",
+      "email": "bxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Dark Vador",
+      "familySituation": "SINGLE",
+      "frustrations": ["NO_OFFERS"],
+      "yearOfBirth": 1975
+    }
+  },
+  "Dark Vador du Nord": {
+    "project": {
+      "createdAt": "2017-08-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 3,
+      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
+      "mobility": {
+        "areaType": "COUNTRY",
+        "city": {
+          "cityId": "77337",
+          "departementId": "59",
+          "departementName": "Nord",
+          "name": "Arras",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecddb3-bfe8",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "masculineName": "Boucher",
+        "name": "Boucher / Bouchère"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"],
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 60
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
+      }
+    },
+    "user": {
+      "highestDegree": "BAC_BACPRO",
+      "email": "bxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Dark Vador",
+      "familySituation": "SINGLE",
+      "frustrations": ["NO_OFFERS"],
+      "yearOfBirth": 1975
+    }
+  },
+  "Dark Vador du Gers": {
+    "project": {
+      "createdAt": "2017-08-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 3,
+      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
+      "mobility": {
+        "areaType": "COUNTRY",
+        "city": {
+          "cityId": "77337",
+          "departementId": "32",
+          "departementName": "Gers",
+          "name": "Lectoure",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecddb3-bfe8",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "masculineName": "Boucher",
+        "name": "Boucher / Bouchère"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"],
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 60
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
+      }
+    },
+    "user": {
+      "highestDegree": "BAC_BACPRO",
+      "email": "bxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Dark Vador",
+      "familySituation": "SINGLE",
+      "frustrations": ["NO_OFFERS"],
+      "yearOfBirth": 1975
+    }
+  },
+  "Dark Vador du Nord": {
+    "project": {
+      "createdAt": "2017-08-29T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 3,
+      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "kind": "FIND_A_FIRST_JOB",
+      "mobility": {
+        "areaType": "COUNTRY",
+        "city": {
+          "cityId": "77337",
+          "departementId": "59",
+          "departementName": "Nord",
+          "name": "Arras",
+          "regionId": "11",
+          "regionName": "Île-de-France"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecddb3-bfe8",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "masculineName": "Boucher",
+        "name": "Boucher / Bouchère"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"],
+      "diagnostic": {
+        "overallScore": 60,
+        "sub_diagnostics": [
+          {
+            "topic": "PROFILE_DIAGNOSTIC",
+            "score": 10
+          },
+          {
+            "topic": "PROJECT_DIAGNOSTIC",
+            "score": 60
+          },
+          {
+            "topic": "MARKET_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_OF_THE_FUTURE_DIAGNOSTIC",
+            "score": 90
+          },
+          {
+            "topic": "JOB_SEARCH_DIAGNOSTIC",
+            "score": 90
+          }
+        ]
+      }
+    },
+    "user": {
+      "highestDegree": "BAC_BACPRO",
+      "email": "bxxxx@hotmail.fr",
+      "gender": "MASCULINE",
+      "name": "Dark Vador",
+      "familySituation": "SINGLE",
+      "frustrations": ["NO_OFFERS"],
+      "yearOfBirth": 1975
+    }
+  },
+  "Jeanne d'Arc": {
+    "project": {
+      "createdAt": "2016-01-06T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 23,
+      "job_search_started_at": "2015-06-25T07:54:02.514215Z",
+      "kind": "FIND_ANOTHER_JOB",
+      "mobility": {
+        "areaType": "COUNTRY",
+        "city": {
+          "cityId": "45234",
+          "departementId": "45",
+          "departementName": "Loiret",
+          "name": "Orléans",
+          "regionId": "6",
+          "regionName": "Centre-Val de Loire"
+        }
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecddb3-bfe8",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "11564",
@@ -1171,13 +1710,13 @@
       "workloads": ["FULL_TIME", "PART_TIME"]
     },
     "user": {
-      "highestDegree": "BAC_BACPRO",
+      "highestDegree": "CAP_BEP",
       "email": "bxxxx@hotmail.fr",
-      "gender": "MASCULINE",
-      "name": "Dark Vador",
+      "gender": "FEMININE",
+      "name": "Jeanne d'Arc",
       "familySituation": "SINGLE",
       "frustrations": ["NO_OFFERS"],
-      "yearOfBirth": 1975
+      "yearOfBirth": 1985
     }
   }
 }

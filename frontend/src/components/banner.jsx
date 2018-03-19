@@ -1,7 +1,8 @@
-import React from 'react'
+import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
+import React from 'react'
 
-import {Icon, Button} from './theme'
+import {Button} from './theme'
 
 
 class Banner extends React.Component {
@@ -10,6 +11,7 @@ class Banner extends React.Component {
     onClose: PropTypes.func.isRequired,
     style: PropTypes.object,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   };
@@ -28,13 +30,15 @@ class Banner extends React.Component {
       bottom: isMobileVersion ? 5 : 'initial',
       marginRight: isMobileVersion ? 5 : 15,
       marginTop: isMobileVersion ? 5 : 15,
-      padding: isMobileVersion ? '6px 6px 4px' : '8px 22px 6px 16px',
+      padding: isMobileVersion ? '6px 6px 4px' : '9px 22px 5px 16px',
     }
     const closeIconStyle = {
-      fontSize: 20,
-      paddingBottom: 2,
-      paddingRight: isMobileVersion ? 'initial' : '.5em',
+      fill: '#fff',
+      height: 24,
+      paddingBottom: 3,
+      paddingRight: isMobileVersion ? 'initial' : '10px',
       verticalAlign: 'middle',
+      width: 30,
     }
     return <div style={boxStyle}>
       <div style={{flex: 1}}>
@@ -45,7 +49,7 @@ class Banner extends React.Component {
       <Button
         type="navigationOnImage" style={buttonStyle} onClick={onClose}
         aria-label="Fermer">
-        <Icon style={closeIconStyle} name="close" /> {isMobileVersion ? null : 'Fermer'}
+        <CloseIcon style={closeIconStyle} /> {isMobileVersion ? null : 'Fermer'}
       </Button>
     </div>
   }

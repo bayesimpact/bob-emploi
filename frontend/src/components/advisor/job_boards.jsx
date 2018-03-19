@@ -1,30 +1,33 @@
-import React from 'react'
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import {connect} from 'react-redux'
 import Radium from 'radium'
+import React from 'react'
 
-import {getJobBoards} from 'store/actions'
-import {lowerFirstLetter, ofCityPrefix} from 'store/french'
+import {lowerFirstLetter, ofPrefix} from 'store/french'
 
-import {CircularProgress, Colors, GrowingNumber, Icon, PaddedOnMobile, Tag} from 'components/theme'
+import {CircularProgress, Colors, GrowingNumber, PaddedOnMobile, Tag} from 'components/theme'
+import Picto from 'images/advices/picto-find-a-jobboard.png'
 
-import {AdviceSuggestionList} from './base'
+import {AdviceSuggestionList, connectExpandedCardWithContent} from './base'
 
 
 class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    fontSize: PropTypes.number.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice, project} = this.props
+    const {advice, fontSize, project, userYou} = this.props
     const {isSpecificToJobGroup, isSpecificToRegion, jobBoardTitle} = advice.jobBoardsData || {}
-    const {prefix, cityName} = ofCityPrefix(project.mobility.city.name)
+    const {prefix, modifiedName: cityName} = ofPrefix(project.mobility.city.name)
 
-    return <div style={{fontSize: 30}}>
+    return <div style={{fontSize: fontSize}}>
       {jobBoardTitle ? <div>
-        Connaissez-vous <strong>{jobBoardTitle}</strong>&nbsp;?
+        {userYou('Connais-tu ', 'Connaissez-vous ')}
+        <strong>{jobBoardTitle}</strong>&nbsp;?
         {(isSpecificToJobGroup || isSpecificToRegion) ? <span>
           {' '}Un portail d'offres spécialisé
           {isSpecificToJobGroup ? <span>
@@ -36,7 +39,10 @@ class AdviceCard extends React.Component {
         </span> : null}
       </div> : <div>
         Et si <strong>la</strong> bonne offre d'emploi se cachait sur un site
-        que vous ne connaissez pas encore&nbsp;?
+        {userYou(
+          'que tu ne connais pas encore',
+          'que vous ne connaissez pas encore',
+        )}&nbsp;?
       </div>}
     </div>
   }
@@ -44,31 +50,29 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    jobBoards: PropTypes.arrayOf(PropTypes.object.isRequired),
-    project: PropTypes.object.isRequired,
+    adviceData: PropTypes.shape({
+      jobBoards: PropTypes.arrayOf(PropTypes.object.isRequired),
+    }).isRequired,
+    userYou: PropTypes.func.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
-  componentWillMount() {
-    const {dispatch, project} = this.props
-    dispatch(getJobBoards(project))
-  }
-
   renderJobBoards(style) {
-    const {jobBoards} = this.props
+    const {adviceData: {jobBoards}, userYou} = this.props
     return <AdviceSuggestionList style={style}>
-      {jobBoards.map(({filters, link, title}, index) => <JobBoardLink
-        key={`job-board-${index}`} href={link} filters={filters}>
+      {(jobBoards || []).map(({filters, link: href, title}, index) => <JobBoardLink
+        key={`job-board-${index}`} {...{filters, href, userYou}}>
         {title}
       </JobBoardLink>)}
     </AdviceSuggestionList>
   }
 
   render() {
-    const {jobBoards} = this.props
+    const {jobBoards} = this.props.adviceData
+    const {userYou} = this.props
     if (!jobBoards) {
       return <CircularProgress style={{margin: 'auto'}} />
     }
@@ -82,7 +86,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
         Nous avons trouvé <GrowingNumber
           style={{fontWeight: 'bold'}} number={jobBoards.length} isSteady={true} />
         {' '}site{maybeS(jobBoards.length)}
-        {hasOnlySpecialized ? specialized : null} pour vous
+        {hasOnlySpecialized ? specialized : null}{userYou(' pour toi', ' pour vous')}
         {(numSpecializedJobBoards > 0 && !hasOnlySpecialized) ? <span>
           {' '}dont <GrowingNumber
             style={{fontWeight: 'bold'}} number={numSpecializedJobBoards} isSteady={true} />
@@ -93,10 +97,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => {
-  const {jobBoards} = (app.adviceData[project.projectId] || {})['find-a-jobboard'] || {}
-  return {jobBoards: jobBoards || []}
-})(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connectExpandedCardWithContent()(ExpandedAdviceCardContentBase)
 
 
 class JobBoardLinkBase extends React.Component {
@@ -105,6 +106,7 @@ class JobBoardLinkBase extends React.Component {
     filters: PropTypes.array,
     href: PropTypes.string.isRequired,
     style: PropTypes.object,
+    userYou: PropTypes.func.isRequired,
   }
 
   handleClick = () => {
@@ -113,7 +115,7 @@ class JobBoardLinkBase extends React.Component {
   }
 
   getTags() {
-    const {filters, href} = this.props
+    const {filters, href, userYou} = this.props
     const tags = []
     if (/\.pole-emploi\.fr/.test(href)) {
       tags.push({
@@ -124,13 +126,13 @@ class JobBoardLinkBase extends React.Component {
     if ((filters || []).some(f => /^for-job-group/.test(f))) {
       tags.push({
         color: Colors.GREENISH_TEAL,
-        value: 'spécialisé pour votre métier',
+        value: userYou('spécialisé pour ton métier', 'spécialisé pour votre métier'),
       })
     }
     if ((filters || []).some(f => /^for-departement/.test(f))) {
       tags.push({
-        color: Colors.SKY_BLUE,
-        value: 'spécialisé pour votre région',
+        color: Colors.BOB_BLUE,
+        value: userYou('spécialisé pour ta région', 'spécialisé pour votre région'),
       })
     }
     return tags
@@ -145,11 +147,11 @@ class JobBoardLinkBase extends React.Component {
         {value}
       </Tag>)}
       <div style={{flex: 1}} />
-      <Icon name="chevron-right" style={{fontSize: 20}} />
+      <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, height: 20, width: 20}} />
     </div>
   }
 }
 const JobBoardLink = Radium(JobBoardLinkBase)
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

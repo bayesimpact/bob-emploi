@@ -29,13 +29,6 @@ const PROJECT_WORKLOAD_OPTIONS = [
   {name: 'à temps partiel', value: 'PART_TIME'},
 ]
 
-const INTERVIEWS_ESTIMATE = {
-  A_LOT: 'Plus de 5 entretiens',
-  DECENT_AMOUNT: 'Entre 2 et 5 entretiens',
-  LESS_THAN_2: 'Aucun entretien',
-  SOME: 'Un entretien',
-}
-
 const SENIORITY = {
   EXPERT: {
     long: "avec plus de 10 ans d'expérience",
@@ -60,9 +53,17 @@ const SENIORITY = {
 }
 
 
+const PROJECT_PASSIONATE_OPTIONS = [
+  {name: 'Le métier de ma vie', value: 'LIFE_GOAL_JOB'},
+  {name: 'Un métier passionnant', value: 'PASSIONATING_JOB'},
+  {name: 'Un métier intéressant', value: 'LIKEABLE_JOB'},
+  {name: 'Un métier comme un autre', value: 'ALIMENTARY_JOB'},
+]
+
+
 function allDoneActions(projectList) {
   const allActions = [];
-  (projectList|| []).forEach(
+  (projectList || []).forEach(
     project => {
       (project.actions || []).concat(project.pastActions || []).forEach(action => {
         if (action.status === 'ACTION_DONE') {
@@ -126,6 +127,7 @@ function createProjectTitle(newProject, gender) {
 
 function newProject(newProjectData, gender) {
   return {
+    activitySector: newProjectData.activitySector,
     employmentTypes: newProjectData.employmentTypes,
     jobSearchLengthMonths: newProjectData.jobSearchLengthMonths,
     kind: newProjectData.kind,
@@ -135,6 +137,7 @@ function newProject(newProjectData, gender) {
       city: newProjectData.city,
     },
     networkEstimate: newProjectData.networkEstimate,
+    passionateLevel: newProjectData.passionateLevel,
     previousJobSimilarity: newProjectData.previousJobSimilarity,
     seniority: newProjectData.seniority,
     status: 'PROJECT_CURRENT',
@@ -149,49 +152,6 @@ function newProject(newProjectData, gender) {
   }
 }
 
-// TODO(cyrille): Clean-up since unused.
-function getAdviceById(advice, project) {
-  return (project.advices || []).
-    find(updatedAdvice => advice.adviceId === updatedAdvice.adviceId)
-}
-
-
-function hasUserEverAcceptedAdvice(project) {
-  const wasAcceptedStatus = status =>
-    status === 'ADVICE_ACCEPTED' || status === 'ADVICE_ENGAGED' || status === 'ADVICE_CANCELED'
-  return (project.advices || []).some(advice => wasAcceptedStatus(advice.status))
-}
-
-
-function getEmploymentZone(mobility) {
-  if (!mobility || !mobility.areaType) {
-    return mobility.city.name
-  }
-  switch (mobility.areaType) {
-    case 'WORLD':
-      return 'partout dans le monde'
-    case 'COUNTRY':
-      return 'partout en France'
-    case 'DEPARTEMENT':
-      return mobility.city.departementName
-    case 'REGION':
-      return mobility.city.regionName
-    default:
-      return mobility.city.name
-  }
-}
-
-
-function totalInterviewsDisplay({totalInterviewCount, totalInterviewsEstimate}) {
-  if (totalInterviewCount < 0) {
-    return 'Aucun entretien'
-  }
-  if (totalInterviewCount > 0) {
-    return `${totalInterviewCount} entretien${totalInterviewCount > 1 ? 's' : ''}`
-  }
-  return INTERVIEWS_ESTIMATE[totalInterviewsEstimate]
-}
-
 
 const getTrainingFulfillmentEstimateOptions = gender => {
   const genderE = gender === 'FEMININE' ? 'e' : ''
@@ -204,11 +164,22 @@ const getTrainingFulfillmentEstimateOptions = gender => {
 }
 
 
+const MILLISECS_PER_MONTH = 30.5 * 24 * 60 * 60 * 1000
+
+
+function isOldProject(project) {
+  if (!project || !project.createdAt) {
+    return false
+  }
+  const millisecondsSinceProjectCreation = new Date() - new Date(project.createdAt)
+  return millisecondsSinceProjectCreation > 2 * MILLISECS_PER_MONTH
+}
+
+
 export {
-  PROJECT_EXPERIENCE_OPTIONS,
+  PROJECT_EXPERIENCE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
   PROJECT_WORKLOAD_OPTIONS, createProjectTitle, newProject, allDoneActions,
-  getAdviceById, hasUserEverAcceptedAdvice, createProjectTitleComponents,
-  getEmploymentZone, getSeniorityText, totalInterviewsDisplay,
-  getTrainingFulfillmentEstimateOptions,
+  createProjectTitleComponents, getSeniorityText,
+  getTrainingFulfillmentEstimateOptions, isOldProject,
 }

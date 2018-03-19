@@ -6,7 +6,7 @@ This is a high level (non-technical) view of the Bob product history. For a deta
 
 **June 2015**: Paul's [talk at l'Échappée Volée](https://www.youtube.com/watch?v=6AdHZmTHHA8) starts the initial momentum around the project idea (using algorithms to help the unemployed).
 
-**Oct. 2015**: Brainstorming between Paul & Stephan to figure out how to best tackle the (very broad) problem; first product idea: "MyGamePlan" (a tool to simulate career decisions).
+**Oct. 2015**: Brainstorming between Paul & Stephan to figure out how to best tackle the (broad) problem; first product idea: "MyGamePlan" (a tool to simulate career decisions).
 
 **Dec. 2015**: First interactive demo prototype - [GitHub](https://github.com/bayesimpact/giga-le-jobs) - [Demo](http://giga-le-jobs.s3-website-us-west-2.amazonaws.com/#/onboarding/step1).
 
@@ -14,7 +14,7 @@ This is a high level (non-technical) view of the Bob product history. For a deta
 
 **Mar. 2016**: Build project team in France, build a functional prototype, rewrite code for the long term: "MyGamePlan" becomes "Parcours Emploi".
 
-**Jun. 2016**: First user test session at Pôle Emploi Lab; decision to keep exploring other product ideas as feedback is inconclusive.
+**June 2016**: First user test session at Pôle Emploi Lab; decision to keep exploring other product ideas as feedback is inconclusive.
 
 **Summer 2016**: 4 prototypes in 4 weeks: Plan Comparator, Companion, Game Plan Builder, Daily "Bob the bot" Emails (this is where the "Bob" name first appeared). Another prototype not finished: Checklist.
 
@@ -30,11 +30,11 @@ This is a high level (non-technical) view of the Bob product history. For a deta
 
 **12 Dec. 2016**: Strong decision to refocus Bob's core value proposition for the "Advisor" (providing high-level strategic advice rather than daily tips), in order to maximize the potential impact.
 
-**Jan. 2017**: Start measuring [Net Promoter Score](https://en.wikipedia.org/wiki/Net_Promoter), among other metrics; make the drastic choice to start from scratch and switch to the early Advisor so as to enable faster development.
+**Jan. 2017**: Start measuring [Net Promoter Score](https://en.wikipedia.org/wiki/Net_Promoter), among other metrics; make the drastic choice to stop the Mashup and switch to the early Advisor so as to enable faster development.
 
 **16 Jan. 2017**: Export of Bob's code to an Open Source repo.
 
-**8 Feb. 2017**: Bob goes mobile!.
+**8 Feb. 2017**: Bob goes mobile.
 
 **17 Feb. 2017**: Decision to rollback to the Mashup and work undercover until we're ready to switch.
 
@@ -52,6 +52,10 @@ This is a high level (non-technical) view of the Bob product history. For a deta
 
 **July 2017**: Add sections in Dashboard to better differentiate between each piece of advice's priority level. Value Proposition is clear for team and users.
 
-**18 July 2017**: End of milestone 1 "Value Proposition is clear for team and users", beginning of milestone 2 "Reasonable quality content".
+**18 July 2017**: End of milestone 1 "Value Proposition is clear for team and users", beginning of work on milestone 2 "Reasonable quality content".
 
-**Currently**: Work in progress!
+**August 2017**: Create an evaluation tool to measure the quality content and the advice selection on day 1.
+
+**5 September 2017**: End of milestone 2 "Reasonable quality content". Start working on milestone 3 "Ready for growth".
+
+**Currently**: Work in progress

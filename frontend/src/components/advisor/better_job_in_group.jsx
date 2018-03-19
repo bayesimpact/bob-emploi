@@ -1,33 +1,41 @@
-import React from 'react'
+import keyBy from 'lodash/keyBy'
+import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import PropTypes from 'prop-types'
+import React from 'react'
 import {connect} from 'react-redux'
-import _ from 'underscore'
 
 import {getJobs} from 'store/actions'
 import {lowerFirstLetter} from 'store/french'
 import {genderizeJob, getJobSearchURL} from 'store/job'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {AppearingList, Colors, Icon, PaddedOnMobile, Styles} from 'components/theme'
+import {AppearingList, Colors, PaddedOnMobile, Styles} from 'components/theme'
+import Picto from 'images/advices/picto-better-job-in-group.png'
+
+import {DataSource} from './base'
+
 
 
 class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    fontSize: PropTypes.number.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice, profile} = this.props
+    const {advice, fontSize, profile, userYou} = this.props
     const {betterJob} = advice.betterJobInGroupData || {}
     const jobName = job => lowerFirstLetter(genderizeJob(job, profile.gender))
     if (!betterJob) {
       return null
     }
     return <div>
-      <div style={{fontSize: 30}}>
+      <div style={{fontSize: fontSize}}>
         Certains métiers proches embauchent plus en ce moment&nbsp;:
-        et si demain vous postuliez comme <strong>{jobName(betterJob)}</strong>&nbsp;?
+        et si demain {userYou('tu postulais ', 'vous postuliez ')}comme
+        <strong> {jobName(betterJob)}</strong>&nbsp;?
       </div>
     </div>
   }
@@ -41,6 +49,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     jobGroupInfo: PropTypes.object,
     profile: USER_PROFILE_SHAPE.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   state = {
@@ -72,7 +81,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
       return
     }
     const {jobs, requirements} = jobGroupInfo
-    const weights = _.indexBy(requirements.specificJobs || [], 'codeOgr')
+    const weights = keyBy(requirements.specificJobs || [], 'codeOgr')
     const weightedJobs = (jobs || []).map(job => ({
       job,
       weight: weights[job.codeOgr] && weights[job.codeOgr].percentSuggested / 100 || 0,
@@ -86,7 +95,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   renderWeightedJob({job, weight}, style, maxWeight, isTargetJob, isBetterThanTarget) {
-    const {profile} = this.props
+    const {profile, userYou} = this.props
     const {hoveredJob} = this.state
     const isHovered = hoveredJob === job
     const containerStyle = {
@@ -99,7 +108,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
       ...style,
     }
     const jobNameStyle = {
-      color: isHovered ? Colors.SKY_BLUE : 'initial',
+      color: isHovered ? Colors.BOB_BLUE : 'initial',
       cursor: 'pointer',
       fontWeight: isTargetJob ? 'bold' : 'initial',
       paddingLeft: 20,
@@ -131,7 +140,8 @@ class ExpandedAdviceCardContentBase extends React.Component {
         style={jobNameStyle}
         onMouseEnter={() => this.setState({hoveredJob: job})}
         onMouseLeave={() => this.setState({hoveredJob: hoveredJob === job ? null : hoveredJob})}>
-        {genderizeJob(job, profile.gender)}{isTargetJob ? ' (vous)' : ''}
+        {genderizeJob(job, profile.gender)}
+        {isTargetJob ? userYou(' (toi)', ' (vous)') : ''}
       </span>
       <span style={{flex: 1}} />
       {weight ? <span style={{alignItems: 'center', display: 'flex'}}>
@@ -162,7 +172,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
       <span style={Styles.CENTER_FONT_VERTICALLY}>
         Voir tous les métiers
       </span>
-      <Icon name="chevron-down" style={{fontSize: 20}} />
+      <ChevronDownIcon style={{fill: Colors.CHARCOAL_GREY, height: 20, width: 20}} />
     </div>
   }
 
@@ -172,6 +182,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     const {codeOgr, jobGroup} = project.targetJob
     const targetJobIndex = weightedJobs.findIndex(({job}) => job.codeOgr === codeOgr)
     const maxWeight = Math.min((weightedJobs.length && weightedJobs[0].weight || 1) + .1, 1)
+
     return <div>
       <PaddedOnMobile style={{fontSize: 21, marginBottom: 15}}>
         Répartition des offres d'emploi pour <strong>{weightedJobs.length} métiers</strong> du
@@ -186,12 +197,13 @@ class ExpandedAdviceCardContentBase extends React.Component {
 
       {areAllJobsShown ? null : this.renderShowMoreButton()}
 
-      <PaddedOnMobile style={{color: Colors.COOL_GREY, fontStyle: 'italic', margin: '15px 0'}}>
-        *Source&nbsp;: ROME <a
+      <DataSource>
+        ROME  <a
           href={`http://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${jobGroup.romeId}`}
           style={{color: Colors.COOL_GREY}}
           target="_blank" rel="noopener noreferrer">{jobGroup.romeId}</a> / Pôle emploi
-      </PaddedOnMobile>
+      </DataSource>
+
     </div>
   }
 }
@@ -200,4 +212,4 @@ const ExpandedAdviceCardContent = connect(({app}, props) => ({
 }))(ExpandedAdviceCardContentBase)
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

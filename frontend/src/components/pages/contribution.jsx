@@ -1,3 +1,4 @@
+import GithubCircleIcon from 'mdi-react/GithubCircleIcon'
 import React from 'react'
 import PropTypes from 'prop-types'
 
@@ -6,7 +7,6 @@ import config from 'config'
 import howtoContent from './contribution/howto.txt'
 import roadmapContent from './contribution/roadmap.txt'
 
-import githubImage from 'images/github.png'
 import {StaticPage, StrongTitle} from 'components/static'
 import {Colors, Markdown, Button, Styles} from 'components/theme'
 
@@ -66,7 +66,7 @@ class ContributionPage extends React.Component {
       <a
         style={githubLinkStyle} href={config.githubSourceLink}
         target="_blank" rel="noopener noreferrer">
-        <img src={githubImage} style={{marginRight: 9}} alt="" />
+        <GithubCircleIcon style={{fill: '#fff', height: 29, marginRight: 9, width: 29}} />
         <span style={Styles.CENTER_FONT_VERTICALLY}>
           Voir le code source sur GitHub
         </span>

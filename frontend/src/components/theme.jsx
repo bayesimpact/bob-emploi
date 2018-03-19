@@ -1,58 +1,86 @@
-import React from 'react'
+import omit from 'lodash/omit'
+import without from 'lodash/without'
+import ArrowDownIcon from 'mdi-react/ArrowDownIcon'
+import ArrowUpIcon from 'mdi-react/ArrowUpIcon'
+import CheckIcon from 'mdi-react/CheckIcon'
+import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
+import ChevronUpIcon from 'mdi-react/ChevronUpIcon'
+import CloseIcon from 'mdi-react/CloseIcon'
+import MenuDownIcon from 'mdi-react/MenuDownIcon'
+import MenuUpIcon from 'mdi-react/MenuUpIcon'
 import PropTypes from 'prop-types'
-import ReactMarkdown from 'react-markdown'
 import Radium from 'radium'
+import React from 'react'
+import ReactMarkdown from 'react-markdown'
+import ReactSelect from 'react-select'
 import VisibilitySensor from 'react-visibility-sensor'
-import _ from 'underscore'
 
 import config from 'config'
 
-import {JobSuggest} from 'components/suggestions'
+import 'react-select/dist/react-select.css'
+import 'styles/fonts/GTWalsheim/font.css'
+import 'styles/fonts/Lato/font.css'
 
-require('styles/fonts/GTWalsheim/font.css')
-require('mdi/css/materialdesignicons.min.css')
-
+// Keep this at top of this file, for color linter.
 export const Colors = {
   BACKGROUND_GREY: '#f3f4f7',
+  BOB_BLUE: '#1888ff',
+  BOB_BLUE_HOVER: '#287cda',
   BUTTERSCOTCH: '#ffbc4c',
   CHARCOAL_GREY: '#383f52',
   COOL_GREY: '#9596a0',
   DARK: '#21293d',
+  DARK_BLUE: '#09223f',
   DARK_TWO: '#2c3449',
+  DODGER_BLUE: '#4fa2fe',
   GREENISH_TEAL: '#43d484',
   GREYISH_BROWN: '#575757',
   HOVER_GREEN: '#31bd59',
-  LIGHTER_PURPLE: '#b755f2',
+  LIGHT_BLUE: '#badbff',
   LIGHT_GREY: '#f9fafd',
-  LIGHT_NAVY_BLUE: '#2b5c7b',
   MODAL_PROJECT_GREY: '#e8eaf0',
-  PALE_GREY_TWO: '#eceef2',
+  NEW_GREY: '#f0f0f0',
   PINKISH_GREY: '#cbcbd5',
   RED_PINK: '#ee4266',
   RED_PINK_HOVER: '#dc3457',
+  ROBINS_EGG: '#58f5fb',
+  SEA_BLUE: '#45e1ff',
   SILVER: '#d9d9e0',
-  SKY_BLUE: '#58bbfb',
-  SKY_BLUE_HOVER: '#40a2e1',
   SLATE: '#4e5972',
   SQUASH: '#f5a623',
   SUN_YELLOW: '#ffd930',
+  SUN_YELLOW_80: '#f8e71c',
+  VERY_LIGHT_BLUE: '#d8ebff',
   WARM_GREY: '#858585',
-  WHITE_HALO: '#dcdcdc',
-  WINDOWS_BLUE: '#4695c8',
+}
+
+// Extract color components.
+export const colorToComponents = color => ([
+  parseInt(color.substring(1, 3), 16),
+  parseInt(color.substring(3, 5), 16),
+  parseInt(color.substring(5, 7), 16),
+])
+
+// Change #rrbbgg color to rgba(r, b, g, alpha)
+export const colorToAlpha = (color, alpha) => {
+  const [red, green, blue] = colorToComponents(color)
+  return `rgba(${red}, ${green}, ${blue}, ${alpha || 1})`
 }
 
 export const SmoothTransitions = {
   transition: 'all 450ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms',
 }
-export const FastTransitions = {
-  transition: 'all 300ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms',
-}
 
+// Maximum width of content on super wide screen.
+export const MAX_CONTENT_WIDTH = 1000
+
+// Minimum padding between screen borders and content on medium screens.
+export const MIN_CONTENT_PADDING = 20
 
 export const Styles = {
   // Style for the sticker on top of a box that tells the users why we show them this box.
   BOX_EXPLANATION: {
-    backgroundColor: Colors.SKY_BLUE,
+    backgroundColor: Colors.BOB_BLUE,
     borderRadius: 4,
     color: '#fff',
     display: 'inline-block',
@@ -85,7 +113,9 @@ export const Styles = {
   // ! Border color is handled in App.css !
   INPUT: {
     background: 'inherit',
+    borderRadius: 0,
     color: Colors.CHARCOAL_GREY,
+    fontFamily: 'GTWalsheim',
     fontSize: 15,
     fontWeight: 'normal',
     height: 41,
@@ -93,9 +123,6 @@ export const Styles = {
     paddingTop: 5,
     width: '100%',
     ...SmoothTransitions,
-  },
-  PROGRESS_GRADIENT: {
-    backgroundImage: `linear-gradient(to bottom, #91dffe, ${Colors.SKY_BLUE})`,
   },
   VENDOR_PREFIXED: (property, value) => {
     const style = {}
@@ -116,7 +143,7 @@ const BUTTON_TYPE_STYLES = {
   },
   deletion: {
     backgroundColor: Colors.RED_PINK,
-    disabledColor: 'rgba(238, 66, 102, .5)',
+    disabledColor: colorToAlpha(Colors.RED_PINK, .5),
     hoverColor: Colors.RED_PINK_HOVER,
   },
   discreet: {
@@ -125,9 +152,9 @@ const BUTTON_TYPE_STYLES = {
     hoverColor: Colors.SILVER,
   },
   navigation: {
-    backgroundColor: Colors.SKY_BLUE,
-    disabledColor: 'rgba(88, 187, 251, .5)',
-    hoverColor: Colors.SKY_BLUE_HOVER,
+    backgroundColor: Colors.BOB_BLUE,
+    disabledColor: colorToAlpha(Colors.BOB_BLUE, .5),
+    hoverColor: Colors.BOB_BLUE_HOVER,
   },
   navigationOnImage: {
     backgroundColor: 'rgba(255, 255, 255, .3)',
@@ -135,8 +162,8 @@ const BUTTON_TYPE_STYLES = {
   },
   validation: {
     backgroundColor: Colors.GREENISH_TEAL,
-    disabledColor: '#a4e7c1',
-    hoverColor: '#31bd59',
+    disabledColor: colorToAlpha(Colors.GREENISH_TEAL, .5),
+    hoverColor: Colors.HOVER_GREEN,
   },
 }
 
@@ -149,18 +176,22 @@ class ButtonBase extends React.Component {
     disabled: PropTypes.bool,
     isHighlighted: PropTypes.bool,
     isNarrow: PropTypes.bool,
+    // TODO(pascal): Fix all remaining occurences, then get rid of this.
+    isOldStyle: PropTypes.bool,
     isProgressShown: PropTypes.bool,
+    isRound: PropTypes.bool,
     onClick: PropTypes.func,
     onMouseDown: PropTypes.func,
     style: PropTypes.object,
     type: PropTypes.oneOf(Object.keys(BUTTON_TYPE_STYLES)),
   }
+
   static defaultProps = {
     bounceDurationMs: 50,
   }
 
   state = {
-    isBouncing: false,
+    isClicking: false,
   }
 
   componentWillUnmount() {
@@ -171,56 +202,81 @@ class ButtonBase extends React.Component {
     this.dom && this.dom.blur()
   }
 
-  handleMouseDown = event => {
-    const {bounceDurationMs, onMouseDown} = this.props
-    this.setState({isBouncing: true})
-    this.timeout = setTimeout(() => this.setState({isBouncing: false}), bounceDurationMs)
-    onMouseDown && onMouseDown(event)
+  handleClick = event => {
+    const {bounceDurationMs, onClick} = this.props
+    if (event && event.stopPropagation) {
+      event.stopPropagation()
+    }
+    if (event && event.preventDefault) {
+      event.preventDefault()
+    }
+    this.setState({isClicking: true})
+    this.timeout = setTimeout(() => {
+      this.setState({isClicking: false})
+      onClick && onClick(event)
+    }, bounceDurationMs)
   }
 
   render() {
     const {bounceDurationMs, children, disabled, isNarrow, isProgressShown, type, style,
-      isHighlighted, ...otherProps} = this.props
-    const {isBouncing} = this.state
+      isHighlighted, isOldStyle, isRound, ...otherProps} = this.props
+    const {isClicking} = this.state
     const typeStyle = BUTTON_TYPE_STYLES[type] || BUTTON_TYPE_STYLES.navigation
 
     const buttonStyle = {
       backgroundColor: typeStyle.backgroundColor,
       border: 'none',
-      borderRadius: 100,
+      borderRadius: isOldStyle ? 100 : isRound ? 30 : 5,
+      boxShadow: isOldStyle ? 'initial' :
+        '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
       color: typeStyle.color || '#fff',
       cursor: 'pointer',
       flexShrink: 0,
-      fontFamily: 'GTWalsheim',
-      fontSize: 14,
+      fontFamily: isOldStyle ? 'GTWalsheim' : 'Lato, Helvetica',
+      fontSize: isOldStyle ? 14 : isRound ? 15 : 16,
       fontStyle: 'normal',
-      fontWeight: 500,
-      padding: isNarrow ? '8px 21px 6px' : '10px 39px 8px',
+      fontWeight: isOldStyle ? 500 : 'normal',
+      padding: isOldStyle ?
+        isNarrow ? '8px 21px 6px' : '10px 39px 8px' :
+        isNarrow ? '10px 14px 8px' : isRound ? '12px 35px 13px' : '12px 20px 13px',
       textAlign: 'center',
-      transition: SmoothTransitions.transition + `, transform ${bounceDurationMs}ms`,
+      transform: isOldStyle ? 'initial' : 'translateY(0)',
+      transition: isOldStyle ?
+        SmoothTransitions.transition + `, transform ${bounceDurationMs}ms` :
+        `ease ${bounceDurationMs}ms`,
       ...style,
-    }
-    if (isBouncing) {
-      buttonStyle.transform =
-        (buttonStyle.transform ? `${buttonStyle.transform} ` : '') + 'scale(.97)'
     }
     if (!disabled) {
       buttonStyle[':hover'] = {
-        backgroundColor: typeStyle.hoverColor,
+        backgroundColor: isOldStyle ? typeStyle.hoverColor : buttonStyle.backgroundColor,
+        boxShadow: isOldStyle ? 'initial' :
+          '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
+        transform: isOldStyle ? 'initial' : 'translateY(-1px)',
         ...(style ? style[':hover'] : {}),
       }
       buttonStyle[':focus'] = buttonStyle[':hover']
+      buttonStyle[':active'] = {
+        boxShadow: isOldStyle ? 'initial' :
+          '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
+        transform: isOldStyle ? 'scale(.97)' : 'translateY(1px)',
+        ...(style ? style[':active'] : {}),
+      }
     } else {
       buttonStyle[':hover'] = {}
-      buttonStyle.backgroundColor = typeStyle.disabledColor || 'rgba(67, 212, 132, 0.5)'
+      buttonStyle.backgroundColor = typeStyle.disabledColor ||
+        (typeStyle.backgroundColor && colorToAlpha(typeStyle.backgroundColor, .5)) ||
+        'rgba(67, 212, 132, 0.5)'
       buttonStyle.cursor = 'inherit'
     }
     if (isHighlighted) {
       Object.assign(buttonStyle, buttonStyle[':hover'])
     }
+    if (isClicking) {
+      Object.assign(buttonStyle, buttonStyle[':active'])
+    }
     return <button
       style={buttonStyle} disabled={disabled} {...otherProps}
-      onMouseDown={this.handleMouseDown} ref={dom => {
+      onClick={this.handleClick} ref={dom => {
         this.dom = dom
       }}>
       {isProgressShown ?
@@ -245,9 +301,8 @@ class Markdown extends React.Component {
     }
     return <ReactMarkdown
       source={content} escapeHtml={true}
-      // eslint-disable-next-line no-unused-vars
-      renderers={{Link: ({literal, nodeKey, ...props}) => <a
-        {...props} target="_blank" rel="noopener noreferrer" />}}
+      renderers={{link: props => <a
+        {...omit(props, ['nodeKey', 'value'])} target="_blank" rel="noopener noreferrer" />}}
       {...extraProps} />
   }
 }
@@ -277,6 +332,7 @@ class CircularProgress extends React.Component {
     style: PropTypes.object,
     thickness: PropTypes.number,
   }
+
   static defaultProps = {
     periodMilliseconds: 1750,
     size: 80,
@@ -324,7 +380,7 @@ class CircularProgress extends React.Component {
     const {periodMilliseconds, size, thickness} = this.props
     const {isWrapperRotated, scalePathStep} = this.state
     const style = {
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       height: size,
       marginLeft: 'auto',
       marginRight: 'auto',
@@ -378,6 +434,58 @@ class CircularProgress extends React.Component {
   }
 }
 
+// Function to use smaller version of image on mobile in css.
+// Uses responsive-loader format, so image must be imported as
+// 'myImage.jpg?multi&sizes[]=<fullSize>&sizes[]=<mobileSize>'
+function chooseImageVersion(responsiveImage, isMobileVersion) {
+  return !isMobileVersion ? responsiveImage.src :
+    responsiveImage.images[1] ?
+      responsiveImage.images[1].path :
+      responsiveImage.src
+}
+
+
+const IMAGE_SIZE_SHAPE = PropTypes.PropTypes.shape({
+  mediaCondition: PropTypes.string,
+  width: PropTypes.string.isRequired,
+})
+
+
+// A component using output from dynamic loader for multi-sized images.
+// You must still implement the sizes, although a default is set to first image width.
+// You can get most of the props directly from responsive-loader:
+// `import myImageAllSizes from 'myImage.jpg/png?multi&sizes[]=<defaultSize>&sizes[]=<otherSize>'`
+class MultiSizeImage extends React.Component {
+  static propTypes = {
+    alt: PropTypes.string.isRequired,
+    sizes: PropTypes.arrayOf(IMAGE_SIZE_SHAPE.isRequired),
+    srcs: PropTypes.shape({
+      src: PropTypes.string.isRequired,
+      srcSet: PropTypes.string,
+      width: PropTypes.number,
+    }).isRequired,
+  }
+
+
+  sizeRow(size) {
+    const {mediaCondition, width} = size
+    return mediaCondition ? `${mediaCondition} ${width}` : width
+  }
+
+  makeSizesProp(sizes, width) {
+    if (!sizes || !sizes.length) {
+      return width || ''
+    }
+    return sizes.map(this.sizeRow).join(', ')
+  }
+
+  render() {
+    const {alt, srcs, sizes, ...props} = this.props
+    const sizesProp = this.makeSizesProp(sizes, srcs.width)
+    return <img alt={alt} src={srcs.src} srcSet={srcs.srcSet} sizes={sizesProp} {...props} />
+  }
+}
+
 
 class JobGroupCoverImage extends React.Component {
   static propTypes = {
@@ -394,6 +502,10 @@ class JobGroupCoverImage extends React.Component {
     style: PropTypes.object,
   }
 
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
   static defaultProps = {
     coverOpacity: .4,
     opaqueCoverColor: '#000',
@@ -402,7 +514,9 @@ class JobGroupCoverImage extends React.Component {
   render() {
     const {blur, coverOpacity, grayScale, opaqueCoverColor,
       opaqueCoverGradient, romeId, style} = this.props
-    const url = config.jobGroupImageUrl.replace('ROME_ID', romeId)
+    const {isMobileVersion} = this.context
+    const url = (isMobileVersion ? config.jobGroupImageSmallUrl : config.jobGroupImageUrl).
+      replace('ROME_ID', romeId)
     const coverAll = {
       bottom: 0,
       left: 0,
@@ -473,36 +587,19 @@ class RadioGroup extends React.Component {
       PropTypes.string,
     ]),
   }
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
 
   render() {
     const {options, style, value} = this.props
-    const {isMobileVersion} = this.context
     const containerStyle = {
       display: 'flex',
       flexWrap: 'wrap',
       ...style,
     }
-    const radioStyle = index => {
-      const baseStyle = {
-        marginTop: isMobileVersion ? 10 : 0,
-      }
-      if (index < options.length - 1) {
-        return baseStyle
-      }
-      return {
-        marginBottom: 0,
-        ...baseStyle,
-      }
-    }
-
     return <div style={containerStyle}>
-      {options.map((option, index) => {
+      {options.map(option => {
         return <LabeledToggle
           key={option.value} label={option.name} type="radio"
-          isSelected={option.value === value} style={radioStyle(index)}
+          isSelected={option.value === value}
           onClick={() => this.props.onChange(option.value)} />
       })}
     </div>
@@ -537,7 +634,7 @@ class RadioButton extends React.Component {
       width: 20,
     }
     const innerCircleStyle = {
-      backgroundColor: '#58bbfb',
+      backgroundColor: Colors.BOB_BLUE,
       borderRadius: '50%',
       height: 10,
       left: 4,
@@ -571,23 +668,27 @@ class FieldSet extends React.Component {
     // We keep disabled by consistency with the DOM fieldset element.
     // eslint-disable-next-line react/boolean-prop-naming
     disabled: PropTypes.bool,
+    hasCheck: PropTypes.bool,
+    hasNote: PropTypes.bool,
     isInline: PropTypes.bool,
+    isUserCountTipShown: PropTypes.bool,
     isValid: PropTypes.bool,
     isValidated: PropTypes.bool,
     label: PropTypes.node,
     style: PropTypes.object,
+    tip: PropTypes.node,
   }
 
   render() {
-    const {children, disabled, isInline, isValid, isValidated, label,
-      style, ...otherProps} = this.props
+    const {children, disabled, hasCheck, hasNote, isInline, isUserCountTipShown, isValid,
+      isValidated, label, style, tip, ...otherProps} = this.props
     const isMarkedInvalid = !disabled && isValidated && !isValid
     const containerStyle = {
       border: 'none',
       display: 'flex',
       flexDirection: 'column',
       fontSize: 15,
-      marginBottom: isInline ? 0 : 5,
+      marginBottom: hasNote || isInline ? 0 : 25,
       marginLeft: 0,
       marginRight: 0,
       opacity: disabled ? 0.5 : 'inherit',
@@ -595,6 +696,10 @@ class FieldSet extends React.Component {
       position: 'relative',
       ...style,
     }
+    const fieldStyle = {
+      position: 'relative',
+    }
+
     let labelStyle = {
       color: isInline && isMarkedInvalid ? Colors.RED_PINK : Colors.CHARCOAL_GREY,
       fontSize: 15,
@@ -604,65 +709,193 @@ class FieldSet extends React.Component {
     if (isInline) {
       labelStyle = {...labelStyle, ...Styles.CENTER_FONT_VERTICALLY}
     }
-    const errorStyle = {
-      color: Colors.RED_PINK,
-      fontSize: 13,
-      marginTop: 7,
-      visibility: isMarkedInvalid ? 'visible' : 'hidden',
-    }
+
     return <fieldset
       style={containerStyle} disabled={disabled}
       className={isMarkedInvalid ? 'marked-invalid' : ''}
       {...otherProps}>
       <label style={labelStyle}>{label}</label>
-      {children}
-      {isInline ? null : <div style={errorStyle}>Champ obligatoire</div>}
+      <div style={fieldStyle}>
+        {tip && isUserCountTipShown ? <ToolTip content={tip} isValid={isValid} /> : null}
+        <div>
+          {children}
+        </div>
+        {(hasCheck && isValid) || isMarkedInvalid ?
+          <FieldCheck isValid={isValid} isMarkedInvalid={isMarkedInvalid} /> : null}
+      </div>
     </fieldset>
   }
 }
 
 
-// TODO: Set border radius to zero.
+class ToolTip extends React.Component {
+  static propTypes = {
+    content: PropTypes.node,
+    isValid: PropTypes.bool,
+    style: PropTypes.object,
+  }
+
+  state = {
+    isVisible: true,
+  }
+
+  render() {
+    const {content, isValid, style} = this.props
+    const {isVisible} = this.state
+    const tipStyle = {
+      backgroundColor: Colors.DARK,
+      borderRadius: 4,
+      color: '#fff',
+      display: (isValid && isVisible) ? 'inherit' : 'none',
+      left: -10,
+      padding: 8,
+      position: 'absolute',
+      right: -10,
+      top: -10,
+      transform: 'translateY(-100%)',
+      ...style,
+    }
+
+    const arrowStyle = {
+      borderBottom: '10px solid transparent',
+      borderLeft: '10px solid transparent',
+      borderRight: '10px solid transparent',
+      borderTop: `10px solid ${Colors.DARK}`,
+      bottom: 0,
+      height: 20,
+      left: 20,
+      position: 'absolute',
+      transform: 'translate(100%, 100%)',
+    }
+
+    return <div style={tipStyle} onClick={() => this.setState({isVisible: false})}>
+      {content}
+      <div style={arrowStyle}></div>
+    </div>
+  }
+}
+
+
 class Select extends React.Component {
   static propTypes = {
+    // Number of options to scroll the menu when first opened.
+    defaultMenuScroll: PropTypes.number,
+    isValueInt: PropTypes.bool,
     onChange: PropTypes.func.isRequired,
     options: PropTypes.arrayOf(PropTypes.shape({
       disabled: PropTypes.bool,
       name: PropTypes.string.isRequired,
       value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     })).isRequired,
+    placeholder: PropTypes.string,
     style: PropTypes.object,
     value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   }
 
-  handleChange = event => {
-    event.stopPropagation()
-    this.props.onChange(event.target.value)
+  handleChange = option => {
+    if (!option) {
+      return
+    }
+    const {isValueInt, onChange} = this.props
+    const {value} = option
+    onChange(isValueInt ? parseInt(value) : value)
+  }
+
+  handleMenuOpen = () => {
+    const {defaultMenuScroll, value} = this.props
+    if (!defaultMenuScroll || value || !this.subComponent || !this.subComponent.menu) {
+      return
+    }
+    const {children} = this.subComponent.menu
+    if (children && children.length > defaultMenuScroll) {
+      this.subComponent.menu.scrollTop = children[defaultMenuScroll].offsetTop
+    }
   }
 
   render() {
-    const {options, style, value} = this.props
-    const containerStyle = {
-      ...Styles.INPUT,
+    const {options, placeholder, style, value, ...otherProps} = this.props
+    const asString = value => value ? '' + value : ''
+    const selectStyle = {
+      borderRadius: 0,
+      color: (value ? Colors.CHARCOAL_GREY : Colors.COOL_GREY) + ' !important',
+      height: 41,
+      lineHeight: 1,
       width: '100%',
       ...style,
     }
-    return  <select onChange={this.handleChange} value={value} style={containerStyle}>
-      {/* Add an empty option if no option matches the selected value. */}
-      {options.some(option => option.value === value) ? null : <option />}
-      {options.map(option => {
-        return <option key={option.value} value={option.value} disabled={option.disabled}>
-          {option.name}
-        </option>
-      })}
-    </select>
+    const menuContainerStyle = {
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+    }
+    const allOptions = []
+    allOptions.push.apply(allOptions, options.map(option => ({
+      disabled: !!option.disabled,
+      label: option.name,
+      value: asString(option.value),
+    })))
+
+    return <ReactSelect
+      onChange={this.handleChange}
+      value={asString(value)}
+      style={selectStyle}
+      options={allOptions}
+      clearable={false}
+      placeholder={placeholder}
+      menuContainerStyle={menuContainerStyle}
+      onOpen={this.handleMenuOpen}
+      ref={subComponent => {
+        this.subComponent = subComponent
+      }}
+      {...omit(otherProps, ['isValueInt', 'onChange'])} />
   }
 }
 
 
-// Convert an array to an object containing the array values as keys and true
-// as values.
-const arrayToSet = array => _.reduce(array || [], (set, val) => ({...set, [val]: true}), {})
+class FieldCheck extends React.Component {
+  static propTypes = {
+    isMarkedInvalid: PropTypes.bool,
+    isValid: PropTypes.bool,
+    style: PropTypes.object,
+  }
+
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
+  render() {
+    const {isMarkedInvalid, isValid, style} = this.props
+    const {isMobileVersion} = this.context
+    const checkboxStyle = {
+      alignItems: 'center',
+      backgroundColor: isMarkedInvalid ? Colors.RED_PINK : Colors.GREENISH_TEAL,
+      borderRadius: '50%',
+      bottom: 0,
+      color: '#fff',
+      display: 'flex',
+      fontSize: 16,
+      height: isMobileVersion ? 20 : 30,
+      justifyContent: 'center',
+      margin: 'auto',
+      opacity: (!isMobileVersion && isValid) || isMarkedInvalid ? 1 : 0,
+      overflow: 'hidden',
+      position: 'absolute',
+      right: isMobileVersion ? 30 : -10,
+      top: isMobileVersion ? -70 : 0,
+      transform: 'translateX(100%)',
+      width: isMobileVersion ? 20 : 30,
+      ...style,
+    }
+    const iconStyle = {
+      fill: '#fff',
+      width: 20,
+    }
+
+    return <div style={checkboxStyle}>
+      {isMarkedInvalid ? <CloseIcon style={iconStyle} /> : null}
+      {isValid ? <CheckIcon style={iconStyle} /> : null}
+    </div>
+  }
+}
 
 
 class CheckboxList extends React.Component {
@@ -676,12 +909,13 @@ class CheckboxList extends React.Component {
     style: PropTypes.object,
     values: PropTypes.arrayOf(PropTypes.string),
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
-  componentWillMount() {
-    this.setState({valuesSelected: arrayToSet(this.props.values)})
+  state = {
+    valuesSelected: new Set(this.props.values),
   }
 
   componentWillReceiveProps(nextProps) {
@@ -689,31 +923,30 @@ class CheckboxList extends React.Component {
       return
     }
     this.setState({
-      valuesSelected: arrayToSet(nextProps.values),
+      valuesSelected: new Set(nextProps.values),
     })
   }
 
   handleChange = optionValue => {
     const values = this.props.values || []
-    const isSelected = this.state.valuesSelected[optionValue]
+    const isSelected = this.state.valuesSelected.has(optionValue)
     const newValues = isSelected ?
-      _.without(values, optionValue) :
+      without(values, optionValue) :
       [optionValue].concat(values)
     this.props.onChange(newValues)
   }
 
   render() {
-    // eslint-disable-next-line no-unused-vars
-    const {options, values, ...extraProps} = this.props
+    const {options, ...extraProps} = this.props
     const {isMobileVersion} = this.context
     const {valuesSelected} = this.state
     const checkboxStyle = {
       marginTop: isMobileVersion ? 10 : 0,
     }
 
-    return <div {...extraProps}>
+    return <div {...omit(extraProps, ['values'])}>
       {(options || []).map(option => {
-        const isSelected = valuesSelected[option.value]
+        const isSelected = valuesSelected.has(option.value)
         return <LabeledToggle
           key={option.value} label={option.name} type="checkbox" style={checkboxStyle}
           isSelected={isSelected} onClick={() => this.handleChange(option.value)} />
@@ -741,8 +974,8 @@ class Checkbox extends React.Component {
     const size = 20
     const outerBoxStyle = {
       alignItems: 'center',
-      backgroundColor: isSelected ? Colors.SKY_BLUE : '#fff',
-      borderColor: isSelected ? Colors.SKY_BLUE : (
+      backgroundColor: isSelected ? Colors.BOB_BLUE : '#fff',
+      borderColor: isSelected ? Colors.BOB_BLUE : (
         isHighlighted ? Colors.COOL_GREY : Colors.PINKISH_GREY
       ),
       borderRadius: 4,
@@ -770,7 +1003,7 @@ class Checkbox extends React.Component {
       onClick={onClick}
       onKeyPress={isFocused ? onClick : null}>
       <div style={outerBoxStyle}>
-        {isSelected ? <Icon name="check" /> : null}
+        {isSelected ? <CheckIcon style={{fill: '#fff', width: 16}} /> : null}
       </div>
     </div>
   }
@@ -820,30 +1053,33 @@ class LabeledToggle extends React.Component {
 }
 
 
-// Abstraction for Icons from https://materialdesignicons.com/
-class Icon extends React.Component {
+class UpDownIcon extends React.Component {
   static propTypes = {
-    name: PropTypes.string.isRequired,
+    icon: PropTypes.oneOf(['arrow', 'chevron', 'menu']).isRequired,
+    isUp: PropTypes.bool,
   }
 
-  focus() {
-    this.dom && this.dom.focus()
+  chooseIcon(icon, isUp) {
+    if (icon === 'arrow') {
+      return isUp ? ArrowUpIcon : ArrowDownIcon
+    }
+    if (icon === 'chevron') {
+      return isUp ? ChevronUpIcon : ChevronDownIcon
+    }
+    return isUp ? MenuUpIcon : MenuDownIcon
   }
 
-  render () {
-    const {name, ...otherProps} = this.props
-    return <i
-      className={`mdi mdi-${name}`} {...otherProps}
-      ref={dom => {
-        this.dom = dom
-      }} />
+  render() {
+    const {icon, isUp, ...otherProps} = this.props
+    const Icon = this.chooseIcon(icon, isUp)
+    return <Icon {...otherProps} />
   }
 }
 
 
 class IconInput extends React.Component {
   static propTypes = {
-    iconName: PropTypes.string.isRequired,
+    iconComponent: PropTypes.func.isRequired,
     iconStyle: PropTypes.object,
     inputStyle: PropTypes.object,
     shouldFocusOnMount: PropTypes.bool,
@@ -857,14 +1093,12 @@ class IconInput extends React.Component {
   }
 
   render() {
-    // eslint-disable-next-line no-unused-vars
-    const {shouldFocusOnMount, iconName, iconStyle, inputStyle, style,
-      ...otherProps} = this.props
+    const {iconComponent, iconStyle, inputStyle, style, ...otherProps} = this.props
     const iconContainer = {
       alignItems: 'center',
       backgroundColor: 'white',
       bottom: 0,
-      color: '#cbcbd5',
+      color: Colors.PINKISH_GREY,
       cursor: 'text',
       display: 'flex',
       fontSize: 20,
@@ -874,40 +1108,49 @@ class IconInput extends React.Component {
       position: 'absolute',
       right: 0,
       top: 0,
-      ...iconStyle,
     }
+    const Icon = iconComponent
     return <div style={{position: 'relative', ...style}}>
       <Input
-        {...otherProps}
+        {...omit(otherProps, ['shouldFocusOnMount'])}
         ref={input => this.input = input}
         style={inputStyle} />
       <div style={iconContainer} onClick={() => this.input.focus()}>
-        <Icon name={iconName} />
+        <Icon style={iconStyle} />
       </div>
     </div>
   }
 }
 
 
-class JobSuggestWithNote extends React.Component {
+class WithNote extends React.Component {
+  static propTypes = {
+    children: PropTypes.node,
+    link: PropTypes.string,
+    note: PropTypes.string,
+  }
+
   render() {
+    const {children, link, note} = this.props
     const noteStyle = {
       color: Colors.COOL_GREY,
+      fontSize: 15,
       lineHeight: 1.1,
+      marginBottom: 20,
       marginTop: 8,
     }
     const linkStyle = {
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       fontSize: 15,
     }
     return <div style={{display: 'flex', flexDirection: 'column'}}>
-      <JobSuggest {...this.props} style={{padding: 1, ...Styles.INPUT}} />
+      {children}
       <div style={noteStyle}>
-        Vous ne trouvez pas votre métier&nbsp;? <a
-          style={linkStyle} href="https://airtable.com/shreUw3GYqAwVAA27"
+        {note + ' '}
+        {link ? <a style={linkStyle} href={link}
           target="_blank" rel="noopener noreferrer">
           Cliquez ici pour l'ajouter
-        </a>.
+        </a> : null}
       </div>
     </div>
   }
@@ -932,20 +1175,24 @@ class Input extends React.Component {
     this.dom && this.dom.focus()
   }
 
+  select() {
+    this.dom && this.dom.select()
+  }
+
   render() {
-    // eslint-disable-next-line no-unused-vars
-    const {applyFunc, style, ...otherProps} = this.props
+    const {style, ...otherProps} = this.props
     const inputStyle = {
       ...Styles.INPUT,
       ...style,
     }
     return <input
-      {...otherProps} style={inputStyle} onChange={this.handleChange}
+      {...omit(otherProps, ['applyFunc'])} style={inputStyle} onChange={this.handleChange}
       ref={dom => this.dom = dom} />
   }
 }
 
 
+// TODO(cyrille): Use this in transparency page.
 class PieChart extends React.Component {
   static propTypes = {
     backgroundColor: PropTypes.string,
@@ -956,14 +1203,15 @@ class PieChart extends React.Component {
     strokeWidth: PropTypes.number.isRequired,
     style: PropTypes.object,
   }
+
   static defaultProps = {
     durationMillisec: 1000,
     size: 60,
     strokeWidth: 15,
   }
 
-  componentWillMount() {
-    this.setState({hasStartedGrowing: false})
+  state = {
+    hasStartedGrowing: false,
   }
 
   startGrowing = isVisible => {
@@ -1006,7 +1254,7 @@ class PieChart extends React.Component {
         <circle
           cx={size} cy={size} r={radius} fill="none"
           stroke={style.color} strokeDashoffset={perimeter / 4}
-          strokeDasharray={`${strokeLength},${perimeter -strokeLength}`}
+          strokeDasharray={`${strokeLength},${perimeter - strokeLength}`}
           strokeWidth={strokeWidth} style={{transition: `${durationMillisec}ms`}} />
       </svg>
       {children}
@@ -1022,12 +1270,15 @@ class GrowingNumber extends React.Component {
     number: PropTypes.number.isRequired,
     style: PropTypes.object,
   }
+
   static defaultProps = {
     durationMillisec: 1000,
   }
 
-  componentWillMount() {
-    this.setState({growingForMillisec: 0, hasGrown: false, hasStartedGrowing: false})
+  state = {
+    growingForMillisec: 0,
+    hasGrown: false,
+    hasStartedGrowing: false,
   }
 
   componentWillUnmount() {
@@ -1057,7 +1308,7 @@ class GrowingNumber extends React.Component {
   render() {
     const {durationMillisec, isSteady, number, style} = this.props
     const {growingForMillisec, hasGrown, hasStartedGrowing} = this.state
-    const maxNumDigits = Math.floor(Math.log10(number)) + 1
+    const maxNumDigits = number ? Math.floor(Math.log10(number)) + 1 : 1
     const containerStyle = isSteady ? {
       display: 'inline-block',
       textAlign: 'right',
@@ -1084,6 +1335,7 @@ class PaddedOnMobile extends React.Component {
     children: PropTypes.node,
     style: PropTypes.object,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -1168,6 +1420,7 @@ class StringJoiner extends React.Component {
     lastSeparator: PropTypes.node.isRequired,
     separator: PropTypes.node.isRequired,
   }
+
   static defaultProps = {
     lastSeparator: ' ou ',
     separator: ', ',
@@ -1194,10 +1447,91 @@ class StringJoiner extends React.Component {
 }
 
 
+// A component to handle when mouse is clicked outside its children.
+// All clicks on children won't be handled. All clicks outside will trigger onOutsideClick. You can
+// also add other props such as style.
+class OutsideClickHandler extends React.Component {
+  static propTypes = {
+    children: PropTypes.element.isRequired,
+    onOutsideClick: PropTypes.func.isRequired,
+  }
+
+  componentDidMount() {
+    document.addEventListener('mousedown', this.handleClickOutside)
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('mousedown', this.handleClickOutside)
+  }
+
+  handleClickOutside = event => {
+    if (this.wrapperRef && !this.wrapperRef.contains(event.target)) {
+      this.props.onOutsideClick()
+    }
+  }
+
+  render() {
+    const {children, ...otherProps} = this.props
+    const extraProps = omit(otherProps, ['onOutsideClick'])
+    return <div ref={ref => this.wrapperRef = ref} {...extraProps}>
+      {children}
+    </div>
+  }
+}
+
+
+class PercentBar extends React.Component {
+  static propTypes = {
+    color: PropTypes.string.isRequired,
+    height: PropTypes.number.isRequired,
+    percent: PropTypes.number,
+    showPercent: PropTypes.bool.isRequired,
+    style: PropTypes.object,
+  }
+
+  static defaultProps = {
+    height: 25,
+    percent: 0,
+    showPercent: true,
+  }
+
+  render() {
+    const {color, height, percent, showPercent, style} = this.props
+    const containerStyle = {
+      backgroundColor: Colors.MODAL_PROJECT_GREY,
+      borderRadius: 25,
+      height: height,
+      marginBottom: 10,
+      maxWidth: 425,
+      overflow: 'hidden',
+      width: '100%',
+      ...style,
+    }
+    // TODO(cyrille): Use Styles.CENTER_FONT_VERTICALLY here.
+    const percentStyle = {
+      backgroundColor: color,
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: 'bold',
+      height: '100%',
+      lineHeight: height - 10 + 'px',
+      paddingBottom: 3,
+      paddingLeft: showPercent ? 18 : 0,
+      paddingTop: 7,
+      width: `${percent}%`,
+    }
+    return <div style={containerStyle}>
+      {percent ? <div style={percentStyle}>
+        {showPercent ? `${Math.round(percent)}%` : ''}
+      </div> : null}
+    </div>
+  }
+}
+
+
 export {
-  Markdown, HorizontalRule, FieldSet, LabeledToggle, Tag,
-  Select, CheckboxList, Icon, Button, IconInput, RadioGroup,
-  JobSuggestWithNote, Input, JobGroupCoverImage, PieChart,
-  GrowingNumber, PaddedOnMobile, AppearingList, CircularProgress,
-  StringJoiner, Checkbox,
+  Markdown, HorizontalRule, FieldSet, LabeledToggle, Tag, Select, PercentBar,
+  CheckboxList, Button, IconInput, RadioGroup, WithNote, Input,
+  JobGroupCoverImage, PieChart, OutsideClickHandler, GrowingNumber, PaddedOnMobile, AppearingList,
+  CircularProgress, StringJoiner, Checkbox, UpDownIcon, chooseImageVersion, MultiSizeImage,
 }

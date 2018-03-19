@@ -1,29 +1,30 @@
 const path = require('path')
 const webpack = require('webpack')
+const RenameOutputWebpackPlugin = require('rename-output-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 const WebpackPwaManifest = require('webpack-pwa-manifest')
-const _ = require('lodash')
+const fromPairs = require('lodash/fromPairs')
+const mapValues = require('lodash/mapValues')
+const merge = require('lodash/merge')
 
 const baseConfig = require('./base')
+const entrypoints = require('./entrypoints')
 
 const srcDir = path.resolve(__dirname, '../src') + '/'
 
-const config = _.merge({
+const config = merge({
   cache: false,
   devtool: 'hidden-source-map',
-  entry: {
-    app: [
-      'babel-polyfill',
-      './src/entry',
-    ],
-    eval: [
-      'babel-polyfill',
-      './src/eval_entry',
-    ],
-    unsubscribe: [
-      'babel-polyfill',
-      './src/components/pages/unsubscribe',
-    ],
+  entry: mapValues(entrypoints, ({entry}) => ['babel-polyfill'].concat([entry])),
+  mode: 'production',
+  optimization: {
+    minimize: true,
+    minimizer: [new UglifyJsPlugin({
+      sourceMap: true,
+      uglifyOptions: {warnings: true},
+      warningsFilter: source => source.substr(0, srcDir.length) === srcDir,
+    })],
   },
   output: {
     filename: '[name].[hash].js',
@@ -32,78 +33,47 @@ const config = _.merge({
   },
 }, baseConfig)
 
+const minify = {
+  collapseWhitespace: true,
+  decodeEntities: true,
+  minifyCSS: true,
+  removeAttributeQuotes: true,
+  removeComments: true,
+  removeOptionalTags: true,
+  removeRedundantAttributes: true,
+  removeScriptTypeAttributes: true,
+  removeStyleLinkTypeAttributes: true,
+}
+
+
 Array.prototype.push.apply(config.plugins, [
   // Define free variables -> global constants.
   new webpack.DefinePlugin({
     'process.env.NODE_ENV': '"production"',
-  }),
-  // Minimize all JavaScript files to reduce their size (renames variable names, etc).
-  new webpack.optimize.UglifyJsPlugin({
-    compress: {warnings: true},
-    sourceMap: true,
-    warningsFilter: source => source.substr(0, srcDir.length) === srcDir,
   }),
   new webpack.LoaderOptionsPlugin({
     debug: false,
     minimize: true,
   }),
   // Embed the JavaScript in the index.html page.
-  new HtmlWebpackPlugin({
-    chunks: ['app'],
-    filename: '../index.html',
-    minify: {
-      collapseWhitespace: true,
-      decodeEntities: true,
-      minifyCSS: true,
-      removeAttributeQuotes: true,
-      removeComments: true,
-      removeOptionalTags: true,
-      removeRedundantAttributes: true,
-      removeScriptTypeAttributes: true,
-      removeStyleLinkTypeAttributes: true,
-    },
-    template: path.join(__dirname, '/../src/index.html'),
-  }),
-  new HtmlWebpackPlugin({
-    chunks: ['unsubscribe'],
-    filename: '../unsubscribe.html',
-    minify: {
-      collapseWhitespace: true,
-      decodeEntities: true,
-      minifyCSS: true,
-      removeAttributeQuotes: true,
-      removeComments: true,
-      removeOptionalTags: true,
-      removeRedundantAttributes: true,
-      removeScriptTypeAttributes: true,
-      removeStyleLinkTypeAttributes: true,
-    },
-    template: path.join(__dirname, '/../src/index.html'),
-  }),
-  new HtmlWebpackPlugin({
-    chunks: ['eval'],
-    filename: '../eval.html',
-    minify: {
-      collapseWhitespace: true,
-      decodeEntities: true,
-      minifyCSS: true,
-      removeAttributeQuotes: true,
-      removeComments: true,
-      removeOptionalTags: true,
-      removeRedundantAttributes: true,
-      removeScriptTypeAttributes: true,
-      removeStyleLinkTypeAttributes: true,
-    },
-    template: path.join(__dirname, '/../src/index.html'),
-  }),
+  ...Object.keys(entrypoints).filter(key => entrypoints[key].htmlFilename).map(key =>
+    new HtmlWebpackPlugin({
+      chunks: [key],
+      filename: `../${entrypoints[key].htmlFilename}`,
+      minify,
+      template: path.join(__dirname, '/../src/index.html'),
+    })
+  ),
   new WebpackPwaManifest({
     lang: 'fr-FR',
-    name: 'Bob Emploi',
+    name: 'Bob',
   }),
-  // When there are errors while compiling this plugin skips the emitting phase,
-  // so there are no assets emitted that include errors.
-  new webpack.NoEmitOnErrorsPlugin(),
+  new RenameOutputWebpackPlugin(fromPairs(
+    Object.keys(entrypoints).filter(key => !entrypoints[key].htmlFilename).
+      map(key => [key, '[name].js'])
+  )),
 ])
+
 
 config.module.rules.push({
   include: [
@@ -113,7 +83,7 @@ config.module.rules.push({
   use: {
     loader: 'babel-loader',
     options: {
-      presets: [['es2015', {modules: false}], 'react', 'stage-0'],
+      presets: [['env', {modules: false}], 'react', 'stage-0'],
     },
   },
 })

@@ -1,29 +1,33 @@
-import React from 'react'
+import CurrencyEurIcon from 'mdi-react/CurrencyEurIcon'
 import PropTypes from 'prop-types'
+import React from 'react'
 import {connect} from 'react-redux'
 
 import {Colors, Select, CheckboxList, FieldSet, IconInput} from 'components/theme'
 import {PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
 import {Step} from './step'
 import {setUserProfile} from 'store/actions'
+import {youForUser} from 'store/user'
 
 
-class NewProjectCriteriaStep extends React.Component {
+class NewProjectCriteriaStepBase extends React.Component {
   static propTypes = {
     newProject: PropTypes.object,
     onSubmit: PropTypes.func,
+    userYou: PropTypes.func.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool.isRequired,
   }
 
-  componentWillMount() {
-    const {employmentTypes, minSalary, workloads} = this.props.newProject
-    this.setState({employmentTypes, minSalary, workloads})
+  state = {
+    ...this.props.newProject,
   }
 
   handleSubmit = () => {
     const {onSubmit} = this.props
+    // minSalary is sent in unit ANNUAL_GROSS_SALARY.
     const {employmentTypes, minSalary, workloads} = this.state
     this.setState({isValidated: true})
     if (this.isFormValid()) {
@@ -65,6 +69,7 @@ class NewProjectCriteriaStep extends React.Component {
   }
 
   render() {
+    const {userYou} = this.props
     const {isMobileVersion} = this.context
     const {minSalary, employmentTypes, workloads, isValidated} = this.state
     const checkboxListContainerStyle = {
@@ -73,11 +78,11 @@ class NewProjectCriteriaStep extends React.Component {
       justifyContent: 'space-between',
     }
     return <Step
-      title="Quels sont vos critères ?"
+      title={`Ok, et concrètement ${userYou('tu cherches', 'vous cherchez')} quoi\u00A0?`}
       {...this.props} fastForward={this.fastForward}
       onNextButtonClick={this.handleSubmit}>
       <FieldSet
-        label="Je cherche un poste en :"
+        label={`${userYou('Tu cherches', 'Vous cherchez')} un poste en\u00A0:`}
         isValid={!!(employmentTypes || []).length && !!(workloads || []).length}
         isValidated={isValidated}>
         <div style={checkboxListContainerStyle}>
@@ -94,12 +99,17 @@ class NewProjectCriteriaStep extends React.Component {
       <FieldSet label="Pour un salaire de :">
         <SalaryInput value={minSalary} onChange={this.handleValueChange('minSalary')} />
         <p style={{color: Colors.COOL_GREY, fontSize: 15, lineHeight: 1.3}}>
-          (laissez vide si vous n'avez pas d'idée précise)
+          ({userYou('laisse', 'laissez')} vide si
+          {userYou(" tu n'as", " vous n'avez")} pas d'idée précise)
         </p>
       </FieldSet>
     </Step>
   }
 }
+
+const NewProjectCriteriaStep = connect(({user}) => ({
+  userYou: youForUser(user),
+}))(NewProjectCriteriaStepBase)
 
 const SALARY_UNIT_OPTIONS = [
   {name: 'brut par an', value: 'ANNUAL_GROSS_SALARY'},
@@ -123,6 +133,7 @@ class SalaryInputBase extends React.Component {
     unitValue: PropTypes.string.isRequired,
     value: PropTypes.number,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool.isRequired,
   }
@@ -185,21 +196,27 @@ class SalaryInputBase extends React.Component {
     const {unitValue} = this.props
     const {isMobileVersion} = this.context
     const {salaryValue} = this.state
+    const selectStyle = isMobileVersion ? {marginTop: 10} : {
+      marginLeft: 10,
+      width: 130,
+    }
     return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
       <IconInput
-        iconName="currency-eur" iconStyle={{paddingTop: 5}}
+        iconComponent={CurrencyEurIcon}
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
         placeholder="Montant" inputStyle={{paddingRight: '2.1em', textAlign: 'right'}}
         value={salaryValue} onChange={this.handleSalaryValueChange} />
       <Select
         options={SALARY_UNIT_OPTIONS} value={unitValue}
         onChange={this.handleSalaryUnitChange}
         isEmptyDisabled={true}
-        style={{[isMobileVersion ? 'marginTop' : 'marginLeft']: 10}} />
+        style={selectStyle} />
     </div>
   }
 }
 const SalaryInput = connect(({user}) => ({
   unitValue: user.profile.preferredSalaryUnit || 'ANNUAL_GROSS_SALARY',
+  userYou: youForUser(user),
 }))(SalaryInputBase)
 
 

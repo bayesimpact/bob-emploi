@@ -29,7 +29,7 @@ class AppNotAvailablePage extends React.Component {
       width: 945,
     }
     const titleStyle = {
-      color: '#2c3449',
+      color: Colors.DARK_TWO,
       fontSize: 23,
       fontWeight: 500,
       lineHeight: 1.6,

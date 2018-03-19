@@ -2,10 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 
-import {CircularProgress, Colors} from 'components/theme'
+import {CircularProgress} from 'components/theme'
 import {PageWithNavigationBar} from 'components/navigation'
 import {editFirstProject, CREATE_PROJECT_SAVE} from 'store/actions'
-import {USER_PROFILE_SHAPE} from 'store/user_reducer'
 import {Routes} from 'components/url'
 import {getOnboardingStep, gotoNextStep, gotoPreviousStep,
   onboardingStepCount} from './profile/onboarding'
@@ -21,8 +20,11 @@ class NewProjectPageBase extends React.Component {
         stepName: PropTypes.string,
       }).isRequired,
     }).isRequired,
-    userProfile: USER_PROFILE_SHAPE,
+    userProfile: PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }).isRequired,
   }
+
   static contextTypes = {
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
@@ -34,13 +36,14 @@ class NewProjectPageBase extends React.Component {
     const {existingProject} = this.props
     const {mobility, ...overrideState} = existingProject || {}
     this.setState({
-      areaType: mobility && mobility.areaType || 'CITY',
+      areaType: mobility && mobility.areaType,
       city: mobility && mobility.city || null,
       employmentTypes: ['CDI'],
       isIncomplete: true,
-      kind: 'FIND_A_NEW_JOB',
+      kind: null,
       minSalary: null,
-      previousJobSimilarity: 'DONE_THIS',
+      passionateLevel: null,
+      previousJobSimilarity: null,
       targetJob: null,
       workloads: ['FULL_TIME'],
       ...overrideState,
@@ -81,36 +84,29 @@ class NewProjectPageBase extends React.Component {
       alignItems: 'center',
       display: 'flex',
       justifyContent: 'center',
-      marginBottom: 20,
-    }
-    const style = {
-      alignItems: 'center',
-      display: 'flex',
-      justifyContent: 'center',
-      paddingBottom: isMobileVersion ? 0 : 70,
-      paddingTop: isMobileVersion ? 0 : 70,
+      margin: '20px 0',
     }
     const newProject = {...this.state}
     let content
     if (isCreatingProject) {
       content = <div style={spinnerBoxStyle}><CircularProgress /></div>
     } else {
-      const currentStepItem = getOnboardingStep(Routes.NEW_PROJECT_PAGE, match.params.stepName)
-      const CurrentStepComponent = currentStepItem.component
+      const {
+        component: CurrentStepComponent,
+        stepNumber,
+      } = getOnboardingStep(Routes.NEW_PROJECT_PAGE, match.params.stepName)
       content = <CurrentStepComponent
         onSubmit={this.handleSubmit}
-        onPreviousButtonClick={this.handleBack}
+        onPreviousButtonClick={isMobileVersion ? null : this.handleBack}
         profile={userProfile} newProject={newProject}
-        stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount} />
+        stepNumber={stepNumber} totalStepCount={onboardingStepCount} />
     }
-    return <PageWithNavigationBar
-      style={{backgroundColor: Colors.BACKGROUND_GREY}}
+    return <PageWithNavigationBar style={{backgroundColor: '#fff'}}
+      onBackClick={isMobileVersion ? this.handleBack : null}
       page="new_project" isContentScrollable={true} ref={page => {
         this.page = page
       }}>
-      <div style={style}>
-        {content}
-      </div>
+      <div>{content}</div>
     </PageWithNavigationBar>
   }
 }

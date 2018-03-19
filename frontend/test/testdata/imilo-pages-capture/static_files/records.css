@@ -1,0 +1,99 @@
+@font-face{font-family:GothamLight;src:local('GothamLight'),url('./fonts/GothamLight.otf') format("opentype");}@font-face{font-family:GothamMedium;src:local('GothamMedium'),url('./fonts/GothamMedium.otf') format("opentype");font-weight:bold;}@font-face{font-family:AachenBT;src:local('Aachen BT'),url('./fonts/Aachen.eot');src:url('./fonts/Aachen.eot?#iefix') format('embedded-opentype');src:url('./fonts/Aachen.woff') format('woff');}.no-box-shadow{-webkit-box-shadow:none;-moz-box-shadow:none;box-shadow:none;}
+.component-shadow{-webkit-box-shadow:0px 1px 3px rgba(0, 0, 0, 0.1);-moz-box-shadow:0px 1px 3px rgba(0, 0, 0, 0.1);box-shadow:0px 1px 3px rgba(0, 0, 0, 0.1);border-collapse:separate;}
+.component-background{background-color:#E5E5E5;background:-webkit-linear-gradient(#fafafa, #f4f4f4 40%, #e5e5e5);background:-ms-linear-gradient(#fafafa, #f4f4f4 40%, #e5e5e5);background:-moz-linear-gradient(#fafafa, #f4f4f4 40%, #e5e5e5);background:-o-linear-gradient(#fafafa, #f4f4f4 40%, #e5e5e5);background:linear-gradient(#fafafa, #f4f4f4 40%, #e5e5e5);}
+.component-background-selected{background-color:#d2d9a6;background:-webkit-linear-gradient(#f2f6d1, #e4ebb8 40%, #d2d9a6);background:-ms-linear-gradient(#f2f6d1, #e4ebb8 40%, #d2d9a6);background:-moz-linear-gradient(#f2f6d1, #e4ebb8 40%, #d2d9a6);background:-o-linear-gradient(#f2f6d1, #e4ebb8 40%, #d2d9a6);background:linear-gradient(#f2f6d1, #e4ebb8 40%, #d2d9a6);}
+.no-border-radius{-webkit-border-radius:none;-moz-border-radius:none;border-radius:none;}
+.component-border{border:1px solid #bababa;-webkit-border-radius:3px;-moz-border-radius:3px;border-radius:3px;}
+.block-shadow{-webkit-box-shadow:2px 0px 2px rgba(0, 0, 0, 0.1),-2px 5px 5px rgba(0, 0, 0, 0.1);-moz-box-shadow:2px 0px 2px rgba(0, 0, 0, 0.1),-2px 5px 5px rgba(0, 0, 0, 0.1);box-shadow:2px 0px 2px rgba(0, 0, 0, 0.1),-2px 5px 5px rgba(0, 0, 0, 0.1);border-collapse:separate;}
+.block-radius{-webkit-border-radius:7px;-moz-border-radius:7px;border-radius:7px;}
+.background-shadow{-webkit-box-shadow:2px 0 2px rgba(0, 0, 0, 0.1),-4px 10px 10px rgba(0, 0, 0, 0.1);-moz-box-shadow:2px 0 2px rgba(0, 0, 0, 0.1),-4px 10px 10px rgba(0, 0, 0, 0.1);box-shadow:2px 0 2px rgba(0, 0, 0, 0.1),-4px 10px 10px rgba(0, 0, 0, 0.1);border-collapse:separate;}
+.footer-block-radius{-webkit-border-radius:7px;-moz-border-radius:7px;border-radius:7px;-webkit-border-top-right-radius:0;-moz-border-top-right-radius:0;border-top-right-radius:0;}
+.font-light{font-family:GothamLight,'Helvetica Neue',Helvetica,Arial,sans-serif;}
+.font-medium{font-family:GothamMedium,'Helvetica Neue',Helvetica,Arial,sans-serif;}
+.btn-hide-text{width:1px;color:transparent;text-overflow:hidden;*text-indent:-9000px;*text-transform:capitalize;white-space:nowrap;overflow:hidden;font-size:0px;}
+.service-type{font-style:italic;}.service-type.training{color:#606d01;}
+.service-type.help{color:#b62b86;}
+.service-type.offer{color:#a78a60;}
+.menu .dossier ul.plain .cursus{background-color:#f3f3f3;}
+.menu .dossier ul.plain .situation,.menu .dossier ul.plain .ressources{background-color:#f1c6e1;}
+.menu .dossier .last-update{font-style:italic;}
+.menu .dossier .identite .last-update{color:#b62b86;}
+.menu .dossier .cursus .last-update{color:#b62b86;}
+.menu .dossier .situation .last-update{color:#b62b86;}
+.menu .dossier .ressources .last-update{color:#b62b86;}
+#content .record.main{min-height:600px;}
+@media screen and (max-width:767px){#content .record.main{min-height:0;}}.record-group{left-padding:10px;}
+.record-group-shared{left-padding:20px;}
+.input-xlarge .number{width:16px;}
+.input-xlarge .phone{width:90px;}
+.menu ul.level1 li.active a.recordLink,.menu ul.level1 a.recordLink,recordLink{text-decoration:underline;font-family:'GothamLight';font-size:12px;color:#000;}
+.menu ul.level1 li.active a.recordLink,.menu ul.level1 a.recordLink,recordLink{text-decoration:underline;}
+.menu ul.level1 a.recordLink,.menu ul.level2 a.recordLink{text-decoration:underline;font-family:'GothamLight';font-size:12px;color:#000;}
+#phones-edition legend{line-height:30px;margin:0;text-rendering:inherit;font-size:13px;margin-bottom:5px;}
+.record-title-bar{padding-left:15px;padding-top:7px;text-transform:uppercase;}
+.record-bold{font-weight:bold;}
+form.cursustypeform{margin:0 0 0px;}
+.record-comment{max-height:200px;resize:vertical;}
+#content .main .custom-select select.record-input-small{width:102px;}
+.record-step-consult{width:103px;}
+.table .record-step-table-name{width:80px;}
+.table .record-step-table,.table .record-step-table-buttons{display:flex;}
+.record-step-cal-img{padding-bottom:0;}
+.table .record-step-table-buttons{width:27px;}
+.table#projectStepsTable .record-step-table-buttons{min-width:60px;padding-top:0;}
+p.no-offer-for-record,p.no-offer-for-record-all,p.no-policy-for-record,p.no-event{margin:0px 10px;}
+.fresh{display:inline;padding:2px 4px;font-size:11.844px;font-weight:bold;line-height:14px;color:#ffffff;vertical-align:baseline;white-space:nowrap;text-shadow:0 -1px 0 rgba(0, 0, 0, 0.25);background-color:#ffffff;}
+.fresh-menu-notifs{color:#b62b86;font-weight:bold;font-style:italic;font-size:12px;}
+ul.nav-tabs li.pointable{cursor:pointer;}
+.facets{background-color:#eeeced;border:1px solid #d6d6d6;padding:5px;}.facets .facets-title{font-weight:bold;text-transform:uppercase;}
+.facets .expand_facet{background:url('/img/ic_expand.png') no-repeat top left;padding-left:20px;cursor:pointer;}
+.facets .fold_facet{background:url('/img/ic_fold.png') no-repeat top left;cursor:pointer;}
+.facets div.ui-autocomplete-loading{height:28px;width:28px;display:none;}
+.facets .facet-filter-group{background-color:white;padding:5px;}
+.facets .facets-selection-group{background-color:white;padding:5px;}.facets .facets-selection-group .facets-selection-value{font-weight:bold;}
+.facets .facets-selection-group .centered a{cursor:pointer;}
+.facets .slider{margin-left:25px;}
+div.autocomplete.input-append,div.autocomplete.input-prepend{padding-left:0px;padding-right:0px;}
+div.autocomplete.locked input[type="text"]{width:222px;}
+div.autocomplete.locked .btn.unlock{height:23px;border-top-right-radius:4px;border-bottom-right-radius:4px;padding-top:0px;padding-left:6px;padding-right:6px;display:inline-block;}
+div.autocomplete .btn{display:none;}
+.schoolimg input.btn-image.btn-search[type="button"],.schoolimg .btn-image.btn-search,.schoolimg .menu ul.level2.plain li.level2.active a.btn-image.btn-search,.schoolimg .menu ul.level2.plain li.level2 a.btn-image.btn-search{margin-left:3px;margin-bottom:0px;}
+div.sidebar div.facets{background-color:inherit;border:none;}
+div.search-widget div.facets{border:none;background-color:#F9F9F9;}div.search-widget div.facets span.facets-title{margin-top:5px;}
+div.search-widget div.results div.pagination-top h2{padding-bottom:0px;padding-top:20px;}
+div.search-widget div.results table.table{margin-top:0px;}div.search-widget div.results table.table thead tr th{padding-top:0px;}
+.selected-records{background-color:#f9f9f9;border:1px solid #d6d6d6;padding:5px;}.selected-records .actions{text-align:right;margin:5px;}
+.selected-records hr{margin-top:5px;margin-right:5px;margin-bottom:5px;}
+#main #content .sidebar ul.level1 li .modalContainer .groups-form textarea,#main #content .sidebar .modalContainer .groups-form textarea{height:50px;}
+#main #content .sidebar ul.level1 li .groups-form,#main #content .sidebar .groups-form{padding:5px;}#main #content .sidebar ul.level1 li .groups-form label.custom-select,#main #content .sidebar .groups-form label.custom-select{margin-bottom:10px;}#main #content .sidebar ul.level1 li .groups-form label.custom-select select,#main #content .sidebar .groups-form label.custom-select select{width:100%;}
+#main #content .sidebar ul.level1 li .groups-form input[type='text'],#main #content .sidebar .groups-form input[type='text'],#main #content .sidebar ul.level1 li .groups-form textarea,#main #content .sidebar .groups-form textarea,#main #content .sidebar ul.level1 li .groups-form label.custom-select,#main #content .sidebar .groups-form label.custom-select{height:15px;width:87%;}#main #content .sidebar ul.level1 li .groups-form input[type='text'].txt-common-referent.ui-autocomplete-input,#main #content .sidebar .groups-form input[type='text'].txt-common-referent.ui-autocomplete-input,#main #content .sidebar ul.level1 li .groups-form textarea.txt-common-referent.ui-autocomplete-input,#main #content .sidebar .groups-form textarea.txt-common-referent.ui-autocomplete-input,#main #content .sidebar ul.level1 li .groups-form label.custom-select.txt-common-referent.ui-autocomplete-input,#main #content .sidebar .groups-form label.custom-select.txt-common-referent.ui-autocomplete-input{width:70%;}
+#main #content .sidebar ul.level1 li .groups-form #referentsChoices input[type='text'],#main #content .sidebar .groups-form #referentsChoices input[type='text']{height:15px;width:75%;}
+#main #content .sidebar ul.level1 li .groups-form .regular-radio.right input[type="radio"]+span,#main #content .sidebar .groups-form .regular-radio.right input[type="radio"]+span{margin-left:-30px;}
+#main #content .sidebar .groups ul.level1 li{margin-left:0px;}#main #content .sidebar .groups ul.level1 li .listGroups,#main #content .sidebar .groups ul.level1 li .listSharedGroups,#main #content .sidebar .groups ul.level1 li .listDynamicGroups,#main #content .sidebar .groups ul.level1 li .listSharedDynamicGroups{margin-left:0px;}#main #content .sidebar .groups ul.level1 li .listGroups>div,#main #content .sidebar .groups ul.level1 li .listSharedGroups>div,#main #content .sidebar .groups ul.level1 li .listDynamicGroups>div,#main #content .sidebar .groups ul.level1 li .listSharedDynamicGroups>div{margin-bottom:5px;border-bottom:1px solid #d6d6d6;padding-bottom:5px;}
+#main #content .sidebar .groups ul.level1 li .listGroups a,#main #content .sidebar .groups ul.level1 li .listSharedGroups a,#main #content .sidebar .groups ul.level1 li .listDynamicGroups a,#main #content .sidebar .groups ul.level1 li .listSharedDynamicGroups a{cursor:pointer;}
+#main #content .sidebar .groups ul.level1 li .listGroups .modalContainer fieldset.fileset ul#records-list-group,#main #content .sidebar .groups ul.level1 li .listSharedGroups .modalContainer fieldset.fileset ul#records-list-group,#main #content .sidebar .groups ul.level1 li .listDynamicGroups .modalContainer fieldset.fileset ul#records-list-group,#main #content .sidebar .groups ul.level1 li .listSharedDynamicGroups .modalContainer fieldset.fileset ul#records-list-group{list-style:none;margin-left:0;}#main #content .sidebar .groups ul.level1 li .listGroups .modalContainer fieldset.fileset ul#records-list-group li,#main #content .sidebar .groups ul.level1 li .listSharedGroups .modalContainer fieldset.fileset ul#records-list-group li,#main #content .sidebar .groups ul.level1 li .listDynamicGroups .modalContainer fieldset.fileset ul#records-list-group li,#main #content .sidebar .groups ul.level1 li .listSharedDynamicGroups .modalContainer fieldset.fileset ul#records-list-group li{border-bottom:1px solid #c6c6c6;padding-top:5px;line-height:1;height:auto;margin-bottom:5px;margin-left:10px;background-color:white;}#main #content .sidebar .groups ul.level1 li .listGroups .modalContainer fieldset.fileset ul#records-list-group li .text,#main #content .sidebar .groups ul.level1 li .listSharedGroups .modalContainer fieldset.fileset ul#records-list-group li .text,#main #content .sidebar .groups ul.level1 li .listDynamicGroups .modalContainer fieldset.fileset ul#records-list-group li .text,#main #content .sidebar .groups ul.level1 li .listSharedDynamicGroups .modalContainer fieldset.fileset ul#records-list-group li .text{width:80%;margin-bottom:3px;}
+#main #content .sidebar ul.level1 .search-widget .facets li{margin-bottom:0px;background-color:inherit;}
+.well .toggle{float:right;position:relative;left:0px;top:-19px;margin-top:0px;}
+.fileset .well .content span{display:block;margin-top:5px;}
+.fileset .well .content span.inline{display:inline;}
+.modal .form-horizontal .certif_details .controls span{margin-top:5px;font-weight:bold;}
+.modal .form-horizontal .certif_details .control-label{width:120px;}
+.modal .form-horizontal .certif_details .controls{margin-left:120px;}
+#popinSiene.modal .form-horizontal .certif_details .control-label{width:130px;}
+#popinSiene.modal .form-horizontal .certif_details .controls{margin-left:150px;}
+#popinSiene.modal .results{overflow:auto;height:300px;}
+.modal .appointment .no-static-position{position:relative;}
+#certificationForm .well,#schoolingForm .well,.shiftwell .well{margin-left:30px;}
+.othersButtons{margin-top:5px;}
+.custom-select select.select-groups-add{width:100%;}
+@media screen and (min-width:1200px){textarea#details{width:200px;}}#referent-group .ui-autocomplete{max-height:200px;overflow-y:auto;overflow-x:hidden;}
+#newIdentityBlock{min-height:430px;}
+#newIdentityBlock .right,#newIdentityBlock #duplicates{padding:0 10px;}
+#newIdentityBlock .situationsBlock .right{padding:12px;}
+#recordStatusHelp{background-image:url("/img/ic_aide_mini.png");width:16px;height:16px;margin:0 0 4px 0;padding:10px;}
+#completenessStateTable th{font-family:'GothamMedium';}
+#completenessStateTable td,#completenessStateTable th{padding:3px;width:50%;vertical-align:top;text-align:left;}
+#completenessStateTable .completenessStateImg{background-image:url("/img/ic_decochee_mini.png");display:inline-block;vertical-align:top;padding:8px;margin-top:2px;}
+#completenessStateTable .complete{background-image:url("/img/ic_cochee_mini.png");}
+#completenessStateTable .completnenessStateLabel{display:inline-block;max-width:90%;vertical-align:top;}
+#popinAppointment .form-horizontal .control-label,#popinRecordidentityVerified .form-horizontal .control-label{width:170px;}

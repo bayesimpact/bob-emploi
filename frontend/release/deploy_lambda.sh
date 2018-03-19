@@ -1,15 +1,8 @@
 #!/bin/bash
 # Upload the code for our Lambda functions directly to AWS Lambda.
 #
-# To actually deploy it, you would need to publish a new version at
-# https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions/opengraph-redirect
-# and then update the Lambda Function Association in the Default Behavior of
-# our CloudFront distribution
-# https://console.aws.amazon.com/cloudfront/home?region=us-east-1#distribution-settings:E3BI8P0VPS4VAY
-#
-# TODO(pascal): Do the above steps more automatically but add the same
-# precaution than in deploy.sh and make it only work with reviewed, tagged and
-# released code.
+# To use the new version, you would need to update the LambdaFunctionARN with
+# the new version numbers in "cloudfront.json".
 set -e
 
 readonly LAMBDA_FOLDER="$(dirname "$0")"
@@ -23,10 +16,24 @@ function upload_lambda() {
   zip -q "${zip_file}" "${index_path}"
   # Rename the file inside the zip as it needs to be index.js.
   printf "@ ${index_path}\n@=index.js\n" | zipnote -w "${zip_file}"
-  aws --region=us-east-1 lambda update-function-code \
+
+  previous_code_sha_256="$(
+    aws --region=us-east-1 lambda get-function --function-name "${lambda_function_name}" | \
+    jq -r .Configuration.CodeSha256)"
+  new_code_sha_256="$(aws --region=us-east-1 lambda update-function-code \
     --function-name "${lambda_function_name}" \
-    --zip-file "fileb://$(realpath "${zip_file}")"
+    --zip-file "fileb://$(realpath "${zip_file}")" | \
+    jq -r .CodeSha256)"
   rm "${zip_file}"
+
+  if [ "$previous_code_sha_256" != "$new_code_sha_256" ]; then
+    function_arn="$(aws --region=us-east-1 lambda publish-version --function-name "${lambda_function_name}" | \
+      jq -r .FunctionArn)"
+    echo "New version of $lambda_function_name published, update cloudfront.json: $function_arn"
+  else
+    echo "$lambda_function_name already up to date."
+  fi
 }
 
 upload_lambda opengraph-redirect.js opengraph-redirect
+upload_lambda aux-pages-redirect.js bob-aux-pages-redirect

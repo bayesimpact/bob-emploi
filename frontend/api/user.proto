@@ -1,0 +1,682 @@
+syntax = "proto3";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+import "bob_emploi/frontend/api/discovery.proto";
+import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/options.proto";
+import "bob_emploi/frontend/api/project.proto";
+
+package bayes.bob;
+
+// All data for a user of the mashup app, a job seeker.
+// Next ID: 26
+message User {
+  // A unique identifier for this user. It is not related to any public
+  // identifiers although it is not obfuscated in the API. It looks like a normal Mongo ObjectID,
+  // under the hood however we hash it with a salt to make it less guessable.
+  //
+  // In MongoDB, this is stored as the key ("_id") and therefore you should not
+  // rely on this field being populated. However during transport or on the
+  // client, this field should be populated as soon as we have an ID.
+  string user_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // Profile of the user.
+  UserProfile profile = 2;
+
+  // ID of the google account linked to this profile.
+  string google_id = 7 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // ID of the Facebook account linked to this profile.
+  string facebook_id = 8 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // ID of the PE Connect account linked to this profile.
+  string pe_connect_id = 24 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // ID of the LinkedIn account linked to this profile.
+  string linked_in_id = 25 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // The date and time at which the user has registered with the app.
+  google.protobuf.Timestamp registered_at = 6;
+
+  // List of current projects for this user even the ones on stand-by.
+  repeated Project projects = 3;
+
+  // List of old projects (older first).
+  repeated Project deleted_projects = 12;
+
+  // App is not available to the user. A possible reason might be the user being in an
+  // unverified data zone.
+  bool app_not_available = 4 [(field_usage) = APP_ONLY];
+
+  // Features enabled for this user.
+  Features features_enabled = 9;
+
+  // The last date on which the user loaded their information through the API.
+  // We only look at the date of this value, not at the time.
+  google.protobuf.Timestamp requested_by_user_at_date = 10 [(field_usage) = APP_ONLY];
+
+  // The date and time we last sent an email to the user. This does not include
+  // password recovery emails.
+  google.protobuf.Timestamp last_email_sent_at = 11 [(field_usage) = APP_ONLY];
+
+  // A map of likes (+1) and dislikes (-1) per feature.
+  // TODO(pascal): Clean this up.
+  map<string, int32> likes = 13 [(field_usage) = USER_FEEDBACK, deprecated = true];
+
+  // Value of the utm_content parameters the first time the user reached our
+  // website. If it is not empty, it contains an ID that helps us track the
+  // system that recommended the app to the user originally.
+  // TODO(pascal): Remove this field 1 week after this has been live ~2018-03-20.
+  string initial_utm_content = 14 [(field_usage) = PERSONAL_IDENTIFIER, deprecated = true];
+
+  // Value of the utm parameters the first time the user reached our website.
+  TrackingParameters origin = 23;
+
+  // Response from the user to the survey we send by email to get feedback on the app
+  // and on the relevance of the given advices.
+  NPSSurveyResponse net_promoter_score_survey_response = 15 [(field_usage) = USER_FEEDBACK];
+
+  // Identifier of the latest changelog message seen by the user, e.g. 2017-06-18_00.
+  // TODO(pascal): Move inside notifications.
+  string latest_changelog_seen = 16 [(field_usage) = APP_ONLY];
+
+  // The notifications that the user has seen.
+  Notifications notifications_seen = 17 [(field_usage) = APP_ONLY];
+
+  // Revision of the user's data. This number should always be increasing, it
+  // helps keep synchronized the client and the server versions of the user's
+  // data. See http://go/bob:revision-design
+  int32 revision = 18 [(field_usage) = APP_ONLY];
+
+  // The emails that were sent to the user.
+  repeated EmailSent emails_sent = 19;
+
+  // The employment survey responses.
+  repeated EmploymentStatus employment_status = 20 [(field_usage) = USER_FEEDBACK];
+
+  // The date and time at which the user has deleted their account.
+  google.protobuf.Timestamp deleted_at = 21;
+
+  // Metrics reported from the client.
+  ClientSideMetrics client_metrics = 22;
+}
+
+message UserAuth {
+  // A unique identifier for this user. It is not related to any public
+  // identifiers although it is not obfuscated in the API.
+  string user_id = 1;
+
+  // A hashed version of the user's password: sha1(email + password).
+  string hashed_password = 2;
+}
+
+// See http://go/pe:password-design
+message AuthRequest {
+  // An authentication token from the OAuth2 Google Sign-in flow.
+  // See https://developers.google.com/identity/sign-in/web/backend-auth
+  string google_token_id = 1;
+
+  // An authentication token from the Facebook Login flow.
+  // See https://developers.facebook.com/docs/games/gamesonfacebook/login#parsingsr.
+  string facebook_signed_request = 2;
+
+  // The email of the user. It can be used with hashed password or without,
+  // then the server will return a hash_salt to use.
+  string email = 3;
+
+  // A hashed version of the user's password: sha1(salt + sha1(email +
+  // password)), or only sha1(email + password) when creating it for the first
+  // time.
+  string hashed_password = 4;
+
+  // Salt used for the hash.
+  string hash_salt = 5;
+
+  // First name of the user.
+  string first_name = 6;
+
+  // Last name of the user.
+  string last_name = 7;
+
+  // Reset auth token. A token that allows to authenticate the user directly.
+  string auth_token = 8;
+
+  // The user's ID to authenticate using the pair user ID / auth token.
+  string user_id = 9;
+
+  // Auth code returned by PE Connect.
+  // See https://www.emploi-store-dev.fr/portail-developpeur-cms/home/catalogue-des-api/documentation-des-api/utiliser-les-api/authorization-code-flow.html.
+  string pe_connect_code = 10;
+
+  // Random ID generated to get the PE Connect code.
+  string pe_connect_nonce = 11;
+
+  // Auth code returned by LinkedIn OAuth2.
+  // See https://developer.linkedin.com/docs/oauth2.
+  string linked_in_code = 12;
+}
+
+message AuthResponse {
+  // The user's data.
+  User authenticated_user = 1;
+
+  // Whether the user is a new user (true) or one that was retrieved (false).
+  // This can be used by the client to update the phrasing.
+  bool is_new_user = 2;
+
+  // An opaque string to use as salt to hash the password in a following
+  // auth request.
+  string hash_salt = 3;
+
+  // Authentication token. More details in go/bob:security
+  string auth_token = 4;
+
+  // Timestamp of the last connection before this one.
+  google.protobuf.Timestamp last_access_at = 5;
+}
+
+message TrackingParameters {
+  // A slug identifying the org, product or website that reffered the user to
+  // Bob, e.g. "pole-emploi", "adie" or "bob-emploi" when it's auto-referral.
+  // Originally in utm_source.
+  string source = 1;
+
+  // An ID identifying the medium that was originally used to reffer the user
+  // to Bob, e.g. "link", "email". Originally in utm_medium.
+  string medium = 2;
+
+  // The ID of the campaign if any. See https://airtable.com/tblpbiUqtvn3poeXd
+  // for a full list of short codes. Originally in utm_campaign.
+  string campaign = 3;
+
+  // Value of the utm_content parameters the first time the user reached our
+  // website. If it is not empty, it contains an ID that helps us track the
+  // system that recommended the app to the user originally.
+  string content = 4 [(field_usage) = PERSONAL_IDENTIFIER];
+}
+
+// Profile of a user, a job seeker.
+// Next ID: 26.
+message UserProfile {
+  // Where the user is living.
+  // We wanted to distinguish where the user is living from where they search
+  // for a job, but we've simplified the onboarding.
+  // TODO(pascal): Clean up completely.
+  FrenchCity city = 1 [deprecated = true];
+
+  // The job, the user had just before being unemployed.
+  // We wanted to know the previous job of the user, but we simplified the onboarding.
+  // TODO(guillaume): Clean up completely.
+  Job latest_job = 3 [deprecated = true];
+
+  // The gender of the user, at least the one they prefer when we have to use a
+  // masculine or feminine grammatical form.
+  Gender gender = 5;
+
+  // User's email.
+  string email = 7 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // User's first name (e.g.: Stephan).
+  string name = 8 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // User's last name (e.g.: Corpet).
+  string last_name = 16 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // User's year of birth.
+  uint32 year_of_birth = 9;
+
+  // Whether the user has a recognized handicaped.
+  bool has_handicap = 19;
+
+  // URL of a picture of the user.
+  string picture_url = 12 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // The current situation of the user (e.g.: Fresh graduate, lost job, etc...).
+  // TODO(pascal): Clean up old users and remove completly.
+  Situation situation = 10 [deprecated = true];
+
+  // The current family situation of the user (e.g.: single, with kids, etc.).
+  FamilySituation family_situation = 20;
+
+  // The users highest school degree.
+  DegreeLevel highest_degree = 18;
+
+  // User frustration reasons (e.g.: no offers, no answers, single parent, ...).
+  repeated Frustration frustrations = 32;
+
+  // User custom frustration reasons.
+  repeated string custom_frustrations = 22;
+
+  // The preferred salary unit of the user.
+  SalaryUnit preferred_salary_unit = 39 [(field_usage) = APP_ONLY];
+
+  // Whether the user opted-in to receive the newsletter.
+  bool is_newsletter_enabled = 11 [(field_usage) = APP_ONLY];
+
+  // Whether the user opted-in to receive a weekly summary of their activity.
+  bool is_weekly_summary_enabled = 13 [(field_usage) = APP_ONLY];
+
+  // Which days of the week the user wants a notification email.
+  repeated WeekDay email_days = 14 [(field_usage) = APP_ONLY];
+
+  // Phone number of the user (only to call them to get more precise feedback).
+  string phone_number = 15 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // How the user is OK to give us feedback.
+  FeedbackMedium feedback_medium = 17 [(field_usage) = APP_ONLY];
+
+  // How did the user found out about the application.
+  UserOrigin origin = 21 [(field_usage) = APP_ONLY];
+
+  // Whether the user asked to be "tutoyé".
+  bool can_tutoie = 23 [(field_usage) = APP_ONLY];
+
+  // The driving licenses the user has.
+  repeated DrivingLicense driving_licenses = 24;
+
+  // Whether the user has the car driving license.
+  OptionalBool has_car_driving_license = 25;
+}
+
+// A lightweight message to reference a user.
+message UserId {
+  // A unique identifier for this user. It is not related to any public
+  // identifiers although it is not obfuscated in the API.
+  string user_id = 1;
+}
+
+// A message containing fields according to which we can decide whether the app is available or not.
+// To access these messages from the Mongo DB, the key is the MD5 digest of a combination of
+// the postcodes with the ROME ID, connected by a colon (e.g. md5('1590:C1109')).
+// We don't use the fields of the message, but keep them around for readability as the ID is so cryptic.
+message UnverifiedDataZone {
+
+  // A string of dash separated postcodes, as we also have them in the
+  // Algolia `cities` index. As an example for Toulouse: `31000-31100-31200-31300-31400-31500`.
+  string postcodes = 1;
+
+  // ROME ID of the job group.
+  string rome_id = 2;
+}
+
+// This message can only be modified server-side to decide to enable features
+// that are still in development or in test to some users. See
+// http://go/bob:feature-flags-design.
+//
+// Each feature flag should follow the guidelines:
+//  - Do not use is_ or has_ prefix, as this is by design a list of features
+//    where each field means "is this feature enabled".
+//  - The name is specific to the feature added.
+//  - The comment describes precisely what is being developped.
+//  - The comment includes the date for when this feature started to be
+//    implemented.
+// Next ID: 26
+message Features {
+  // Email notifications can be sent to any user that has checked some days
+  // in profile.email_days. The feature here is for users that we opted-in
+  // email notifications automatically. The name is a bit generic because of
+  // historical reasons (when we started, only the users that we opted-in were
+  // able to recieve notifications).
+  // Started: 2016-11-23.
+  bool email_notifications = 1;
+
+  // Ablation experiment for the "I did this action" button.
+
+  // In the Action Modal, make the "I did this" button discreet.
+  // Started: 2016-12-01.
+  // Stopped: 2016-12-08.
+  bool action_done_button_discreet = 7 [deprecated = true];
+
+  // Control group for the above experiment (regular green button shown).
+  // Started: 2016-12-01.
+  // Stopped: 2016-12-08.
+  bool action_done_button_control = 8 [deprecated = true];
+
+  // Whether we integrate La Bonne Boite results directly into our application.
+  // Started: 2016-12-06.
+  // Unused so stopped: 2017-10-25.
+  BinaryExperiment lbb_integration = 9 [deprecated = true];
+
+  // This is not really an experiment but rather a marker for users for which
+  // we have disabled all emailDays because they were not reading their emails.
+  bool auto_stop_emails = 13;
+
+  // Whether we show the "Advisor" UX to the user.
+  // Graduated for new users: 2016-01-23.
+  BinaryExperiment advisor = 14;
+
+  // Enable all alpha features (usually for devs and/or user tests).
+  bool alpha = 15;
+
+  // Enable specific Pôle Emploi counselor features.
+  bool pole_emploi = 20;
+
+  // Whether the user should receive the Net Promoter Score email.
+  // DEPRECATED: Use registered_at and sent_emails fields instead.
+  // TODO(pascal): Clean that up.
+  NPSEmailStatus net_promoter_score_email = 16 [deprecated = true];
+
+  // Whether we send advice by email to this user.
+  BinaryExperiment advisor_email = 17;
+
+  // Whether the user switched from mashup to advisor.
+  bool switched_from_mashup_to_advisor = 19;
+
+  // Whether the user will see all advices. We use this feature only as a debug tool to be able to
+  // see all advices at once. It will not be used for regular users.
+  bool all_modules = 21;
+
+  // Whether we show the new Assessment page.
+  // DEPRECATED: All users have it, since we're retiring the old bob score.
+  // TODO(cyrille): Clean it up.
+  BinaryExperiment assessment = 22 [deprecated = true];
+
+  // Whether to exclude this user when computing analytics.
+  bool exclude_from_analytics = 23;
+
+  // Whether we show the new Workbench flow. The user must select a list of
+  // advice card they want to work that arrive on their workbench.
+  // Started: 2017-11-27.
+  // Stopped: 2017-01-01. Dropped the experiment entirely but start the
+  // workbench again without any experiment.
+  BinaryExperiment workbench = 24 [deprecated = true];
+
+  // Users we want to follow on the long term.
+  bool follow_up_long_term = 25;
+
+  // Whether we show Bob as a talking person in the onboarding.
+  // Started 2018-01-29.
+  BinaryExperiment bob_talks = 26;
+}
+
+message Notifications {
+  // A notification for PE counselors that shows a kit to prepare info collectives.
+  bool info_coll_kit = 1;
+}
+
+enum Gender {
+  UNKNOWN_GENDER = 0;
+
+  MASCULINE = 1;
+
+  FEMININE = 2;
+}
+
+// The current job search situation of a user.
+enum Situation {
+  UNKNOWN_SITUATION = 0;
+
+  // First time looking for a job, e.g. a student.
+  FIRST_TIME = 1;
+
+  // User lost or quit their job. This might be due to an ending contract.
+  LOST_QUIT = 2;
+
+  // User is currently in a training.
+  IN_TRAINING = 3;
+
+  // User is currently employed.
+  EMPLOYED = 5;
+}
+
+// Family situation of a user.
+enum FamilySituation {
+  UNKNOWN_FAMILY_SITUATION = 0;
+  SINGLE = 1;
+  IN_A_RELATIONSHIP = 2;
+  FAMILY_WITH_KIDS = 3;
+  // The suffix below is needed because of a conflict with frustration.
+  SINGLE_PARENT_SITUATION = 4;
+}
+
+// Next ID: 15
+enum Frustration {
+  UNKNOWN_JOB_SEARCH_FRUSTRATION = 0;
+
+  // User cannot find enough offers that fit their criteria.
+  NO_OFFERS = 1;
+
+  // User does not receive enough answers to their applications.
+  NO_OFFER_ANSWERS = 2;
+
+  // User has trouble to come up with a decent CV.
+  RESUME = 3;
+
+  // User struggles in interview situations.
+  INTERVIEW = 4;
+
+  // User struggles finding a training.
+  TRAINING = 5;
+
+  // User has problems to stay motivated.
+  MOTIVATION = 6;
+
+  // User has problems with general time management.
+  TIME_MANAGEMENT = 7;
+
+  // User is a single parent.
+  SINGLE_PARENT = 8 [deprecated = true];
+
+  // User is handicaped.
+  // DEPRECATED: Use has_handicap boolean in profile instead.
+  HANDICAPED = 9 [deprecated = true];
+
+  // The users profile does not fit what recruiters have in mind.
+  ATYPIC_PROFILE = 10;
+
+  // The user feels discriminated for their age.
+  AGE_DISCRIMINATION = 11;
+
+  // The user feels discriminated for their sex.
+  SEX_DISCRIMINATION = 12;
+
+  // The user experience does not fit what the recruiters expect.
+  // Added on 09/07/2017.
+  EXPERIENCE = 13;
+
+  // The user fell they lack self-confidence.
+  SELF_CONFIDENCE = 14;
+}
+
+// Day of the week.
+enum WeekDay {
+  UNKNOWN_DAY = 0;
+
+  MONDAY = 1;
+  TUESDAY = 2;
+  WEDNESDAY = 3;
+  THURSDAY = 4;
+  FRIDAY = 5;
+  SATURDAY = 6;
+  SUNDAY = 7;
+}
+
+enum BinaryExperiment {
+  NOT_IN_EXPERIMENT = 0;
+
+  // The experiment is active for this user.
+  ACTIVE = 1;
+
+  // The user is in a control group: the experiment is not active.
+  CONTROL = 2;
+}
+
+enum FeedbackMedium {
+  UNKNOWN_FEEDBACL_MEDIUM = 0;
+
+  PHONE = 1;
+
+  ON_SITE = 2;
+
+  PHONE_OR_ON_SITE = 3;
+}
+
+enum UserOrigin {
+  UNKNOWN_ORIGIN = 0;
+
+  FROM_A_FRIEND = 1;
+
+  FROM_JOBSEEKER_GROUP = 2;
+
+  FROM_PE_WORKSHOP = 3;
+
+  FROM_PE_COUNSELOR = 4;
+
+  FROM_PRESS = 5;
+
+  FROM_WEBSITE = 6;
+
+  FROM_OTHER = 7;
+}
+
+// Status of the email sent to user to compute the Net Promoter Score.
+enum NPSEmailStatus {
+  // User was created before the NPS experiment was ever started.
+  BEFORE_NPS_EXPERIMENT = 0;
+
+  // User has been created recently and did not receive any NPS email yet.
+  NPS_EMAIL_PENDING = 1;
+
+  // We sent the NPS email to the user.
+  NPS_EMAIL_SENT = 2;
+}
+
+// Responses to the survey sent by email to user to compute the Net Promoter Score
+// and get feedback on the advices (https://bayes.typeform.com/to/uuPH5r?email=me@example.com).
+// Next ID: 7.
+message NPSSurveyResponse {
+  // The email address used to answer the survey.
+  string email = 1;
+
+  // The date and time at which the user has responded to the survey.
+  google.protobuf.Timestamp responded_at = 2;
+
+  // How much (from 0 to 10) the user would recommend the app.
+  // As the score is always supposed to be given, not finding a value for 'score' means
+  // the given score was '0'.
+  uint32 score = 3;
+
+  // Free-form text answer to the question "What did you think about the advices?".
+  string were_advices_useful_comment = 4;
+
+  // Free-form text answer to the question "Which advices have you found useful?".
+  string which_advices_were_useful_comment = 5;
+
+  // Free-form text answer about what the user liked or did not like in the app.
+  string general_feedback_comment = 6;
+
+  // List of advices that we consider have created a spark for the user.
+  // This is manually edited by team members after looking at the user answer
+  // 'which_advices_were_useful_comment' and at the list of advices the app actually
+  // gave to the user.
+  repeated string curated_useful_advice_ids = 7;
+}
+
+message SetNPSCommentRequest {
+  // A unique identifier for this user. It is not related to any public
+  // identifiers although it is not obfuscated in the API.
+  string user_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // Free-form text answer about what the user liked or did not like in the app.
+  string comment = 2;
+}
+
+// Description of an email we sent to the user.
+message EmailSent {
+  // When the user was sent.
+  google.protobuf.Timestamp sent_at = 1;
+
+  // ID of the MailJet template that was used.
+  string mailjet_template = 2;
+
+  // An internal ID used to identify campaigns, e.g. "no-network".
+  string campaign_id = 3;
+
+  // Message ID on MailJet.
+  int64 mailjet_message_id = 4 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  google.protobuf.Timestamp last_status_checked_at = 5;
+
+  EmailSentStatus status = 6;
+}
+
+// Status of email sent. This relies only on the mailjet API and is named
+// accordingly. See Status in https://dev.mailjet.com/email-api/v3/message/.
+enum EmailSentStatus {
+  EMAIL_SENT_UNKNOWN = 0;
+  EMAIL_SENT_QUEUED = 1;
+  EMAIL_SENT_SENT = 2;
+  EMAIL_SENT_OPENED = 3;
+  EMAIL_SENT_CLICKED = 4;
+  EMAIL_SENT_BOUNCE = 5;
+  EMAIL_SENT_SPAM = 6;
+  EMAIL_SENT_UNSUB = 7;
+  EMAIL_SENT_BLOCKED = 8;
+}
+
+// Description of an employement survey response.
+message EmploymentStatus {
+  // Creation timestamp.
+  google.protobuf.Timestamp created_at = 1;
+
+  // Whether the user is still searching for a job.
+  SeekingStatus seeking = 2;
+
+  // User situation.
+  string situation = 3;
+
+  // Whether bob has helped.
+  string bob_has_helped = 4;
+
+  // Contract type of the new job, if any.
+  EmploymentType new_job_contract_type = 5;
+
+  // List of Bob features that were useful.
+  repeated UsefulFeature bob_features_that_helped = 6;
+}
+
+// Job seeker status.
+enum SeekingStatus {
+  SEEKING_STATUS_UNDEFINED = 0;
+  STILL_SEEKING = 1;
+  STOP_SEEKING = 2;
+}
+
+enum UsefulFeature {
+  UNKNOWN_FEATURE = 0;
+
+  // Bob diagnostic or Bob score.
+  DIAGNOSTIC = 1;
+
+  // Bob pushed the user to use or expand their network.
+  NETWORK = 2;
+
+  // Bob pushed the user to send more spontaneous applications.
+  SPONTANEOUS = 3;
+
+  // Tips for the resumes and the cover letters.
+  RESUME_TIPS = 4;
+
+  // Tips for the interviews.
+  INTERVIEW_TIPS = 5;
+
+  // Bob pushed the user to change their job search strategie.
+  STRATEGY_CHANGE = 6;
+}
+
+message ClientSideMetrics {
+  // ID of user on Amplitude if any.
+  string amplitude_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // Duration of the user's first session.
+  uint32 first_session_duration_seconds = 2;
+}
+
+enum OptionalBool {
+  UNKNOWN_BOOL = 0;
+  FALSE = 1;
+  TRUE = 2;
+}

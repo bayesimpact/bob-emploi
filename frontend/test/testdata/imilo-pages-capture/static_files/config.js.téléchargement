@@ -1,0 +1,75 @@
+App.Config = {
+    serverCompanyRootURL: '/partners/api',
+    serverAddressRootURL: '/addresses/api',
+    serverAAARootURL: '/auth/api',
+    serverRecordRootURL: '/records/api',
+    serverPolicyRootURL: '/policies/api',
+    serverCatalogRootURL: '/catalog/api',
+    serverMessagingRootURL: '/messaging/api',
+    serverDematRootURL: '/policies/api',
+    serverHomePageRootURL: '/homepage/api',
+    serverEditionRootURL: '/edition/api',
+
+    idAdministrativeStructureDefault: 2,
+
+    onClickSearch: 1,
+    currentEnv: "prod",
+
+    logContextRoot: "advisor-portal/",
+
+    flexibleParamRecordContext: "dossier",
+    flexibleParamRegistrationFormContext: "ficheInscription",
+    dateFormat: "dd/mm/yy",
+    momentDateFormat: "DD/MM/YYYY",
+    dateRegexp: /\d\d\/\d\d\/\d\d\d\d/,
+    calendarImagePath: "/img/ic_calendrier.png",
+
+    NotImplementedMessage: "Fonctionnalité non implémentée",
+
+    /** config pour la sécurité cas* */
+    casUrlApi: '/sso/v1/tickets',
+    interceptUrlSecurity: '/api/*',
+    securityUrl: 'security',
+    defaultRedirect: 'accueil',
+    loginUrl: 'login',
+    logoutUrl: '/sso/logout',
+    casCookiesName: 'CASTGC',
+    usernameCookieName : 'username',
+    subDomains: '.i-milo.fr',
+    StructureIdCookieName: 'UserStructureId',
+    registrationRedirect: 'utilisateur/interne/inscription/{userId}',
+
+    // URL des différents portail
+    admin_url: "https://admin.i-milo.fr",
+    rse_url: "https://portail.i-milo.fr/sso/login?service=https%3A%2F%2Fc-milo.i-milo.fr%2F",
+    rse_support_url : "https://c-milo.i-milo.fr/jcms/c_1000662/fr/support-i-milo",
+    advisor_url: "https://portail.i-milo.fr",
+    homepage_url: "https://i-milo-accueil.similo.net",
+    bi_url: "https://decisionnel.i-milo.fr",
+    icare_url: 'https://icare.i-milo.fr',
+
+    record_url: "https://portail.i-milo.fr" + '/dossiers',
+    ods_url: "https://portail.i-milo.fr" + '/services',
+    partner_url: "https://portail.i-milo.fr" + '/partenaires',
+
+    record_url_suffix: '/dossier',
+    ods_url_suffix: '/service',
+    partner_url_suffix: '/partenaire',
+
+    simulateASP: false,
+    
+    //Montant max calculette Garantie jeune
+    maxAllowanceGrt : 480.02,
+    
+    //Montant smic
+    smicValue : 1498.47,
+
+    // Débrayage possible de PMSMP (MER simple)
+    enablePmsmp: true,
+
+    /** Config Jmilo **/
+    // Débrayage possible de Jmilo
+    jmiloActivated: true
+};
+
+_appNotifier.push(['_appUid', '624e5069-de87-4ea9-9f8a-8ddce787d5ca']);

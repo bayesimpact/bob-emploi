@@ -1,0 +1,353 @@
+{
+  "attributes": {
+    "version": "3.3.3"
+  },
+  "children": [
+    {
+      "children": [],
+      "tagName": "mj-head"
+    },
+    {
+      "children": [
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "color": "#55575d",
+            "font-family": "Arial, sans-serif"
+          },
+          "children": [
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "padding": "20px 0px 20px 0px",
+                "passport": {
+                  "header": true,
+                  "hidden": true,
+                  "locked": true
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "hidden": true
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "11px",
+                        "line-height": "22px",
+                        "padding": "0px 0px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "editable": true,
+                          "hidden": true,
+                          "locked": true
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "tagName": "mj-column"
+                }
+              ],
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "transparent",
+                "background-repeat": "repeat",
+                "full-width": "full-width",
+                "padding": "20px 0px 20px 0px",
+                "padding-bottom": "12px",
+                "padding-top": "12px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height:1.38; margin:10px 0\"><span style=\"font-size:14px\">&nbsp;<span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Patrick\"}},</span>&nbsp;</span></p><p style=\"line-height:1.38; margin:10px 0\">&nbsp;</p><p style=\"line-height:1.38; margin:10px 0\">&nbsp;</p><p style=\"line-height:1.38; margin:10px 0\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Comment allez-vous aujourd'hui ?&nbsp;</span></span></p><ul><li style=\"line-height: 1.38; margin: 10px 0px;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Ça fait {{var:registeredMonthsAgo:\"trois\"}} mois que vous vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}&nbsp;sur Bob et je voulais faire un point avec vous. (Votre situation a évolué&nbsp;? </span><a target=\"_blank\" style=\"text-decoration:none\" href=\"{{var:statusUpdateUrl}}\"><u style=\"color:#1155cc; font-family:Arial; font-size:11pt; text-decoration:underline\">Dites le nous !</u></a><span style=\"color:#000000; font-family:Arial; text-decoration:none\">). </span>&nbsp;</span></li></ul><p style=\"line-height:1.38; margin:10px 0\">&nbsp;</p><p style=\"line-height:1.38; margin:10px 0\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Quand vous vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}, vous nous avez dit que vous ne pensiez pas avoir un bon réseau. Pourtant, je pense que c'est vraiment ce qui fait la différence. </span></span></p><p style=\"line-height:1.38; margin:10px 0\">&nbsp;</p><p style=\"line-height:1.38; margin:10px 0\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">J'ai un ami qui a passé un an au chômage à faire des candidatures en ligne. Toutes les semaines, il envoyait 10 candidatures. Quand il en envoyait plus de 10, il était content. Quand il en envoyait moins, il s'en voulait. Il avait l'impression de faire de son mieux, de mettre toutes les chances de son côté. Pourtant, ça ne marchait pas. Il ne retrouvait pas de job, et pire, {% if var:frustration:\"\" == \"NO_OFFER_ANSWERS\" %}il n'avait même pas de réponse{% elseif var:frustration:\"\" == \"MOTIVATION\" %}il commençait vraiment à se décourager{% else %}il ne décrochait même pas d'entretien{% endif %}.</span></span></p><p style=\"line-height:1.38; margin:10px 0\">&nbsp;</p><p style=\"line-height:1.38; margin:10px 0\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Je pense que répondre aux offres ne fonctionne pas. C'est une perte de temps : on a l'impression d'être productif, mais cela n'aboutit à rien. Ce n'est pas un hasard si seulement 7 personnes sur 100 trouvent un emploi de cette manière. </span></span></p><p style=\"line-height:1.38; margin:10px 0\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">C'est pourtant le conseil numéro 1 de tout le monde : que faudrait-il faire à la place ?</span>&nbsp;&nbsp;</span></p>",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "tagName": "mj-column"
+                }
+              ],
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:16px\"><b><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Le réseau, c'est la clé</span></b></span></p>",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Le réseau, c'est le meilleur canal d'opportunités. 4 personnes sur 10 retrouvent un emploi grâce au réseau. C'est grâce aux personnes que vous connaissez que vous entendrez parler des gens ou des entreprises qui cherchent des personnes comme nous. Alors allez-y à fond.</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">N'ayez pas peur du mot. \"Faire du réseau\" c'est tout bête : dire ce qu'on cherche à ses amis, rencontrer des gens. C'est tout. Rien de mafieux, pas de combine de pro ou d'apéro networking en cravate. Le monde est petit, il s'agit simplement d'en profiter. </span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Beaucoup de gens pensent ne pas avoir de réseau. L'autre jour, j'avais une utilisatrice de Bob au téléphone qui me disait qu'elle n'en avait pas… sauf qu'elle avait trouvé son dernier emploi grâce à sa sœur et celui d'avant grâce à sa nièce. Niveau réseau, elle était plutôt dans la catégorie expert !</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Tout le monde a un réseau donc, même sans le savoir. Relations de travail mais aussi amis, famille, connaissances, voisine de dessous ou meilleur ami de lycée : ils sont votre meilleur atout.</span></span></p>",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "tagName": "mj-column"
+                }
+              ],
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:16px\"><b><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Ok, mais comment je fais ?</span></b></span></p>",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">La première étape c'est de faire savoir à ses proches ce qu'on recherche. Vous cherchez un travail {{var:inTargetDomain:\"dans votre secteur\"}}&nbsp;? Peu importe qu'ils soient {{var:jobInCity}}, comme vous, ou bien {{var:otherJobInCity:\"coiffeur à Marseille\"}}, vos amis doivent le savoir. Il y a sûrement parmi vos connaissances et leurs amis des gens qui pourront vous aider à retrouver un emploi. </span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Le but : qu'ils vous présentent à des personnes qui travaillent dans le secteur que vous visez. En plus d'informer tout le monde de ce que vous recherchez, faites en sorte de bien indiquer à vos proches comment ils peuvent vous aider :</span></p>",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<ul><li style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span>&nbsp;</span><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">\"J'essaie de rencontrer du monde dans mon secteur, si vous connaissez des gens dans le milieu, j'aimerais beaucoup les rencontrer !\"</span></p></li><li><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">\"Tu te souviens de ton ami qui travaille {{var:inTargetDomain:\"dans mon secteur\"}}&nbsp;dont tu m'avais parlé ? J'aimerais beaucoup le rencontrer pour parler de son travail et de mon projet professionnel\"</span><span>&nbsp;</span></li></ul>",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "tagName": "mj-column"
+                }
+              ],
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:16px\"><b><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Pour de vrai, je ne connais personne</span></b></span></p>",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Vous venez de changer de vie et d'identité ? Vous ne connaissez </span><u style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:underline\">vraiment</u><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\"> personne ? &nbsp;Il vous reste une carte à jouer : contacter des gens qui vous intéressent que vous ne connaissez pas. Vous pouvez trouver leur adresse mail sur Internet, ou leur écrire sur Linkedin, Twitter ou par la poste pour leur proposer un café. C'est audacieux mais vous seriez surpris du nombre de fois où cela fonctionne, ce genre de choses. Un simple \"j'aime beaucoup ce que vous faites\" envoyé sur Linkedin au responsable d'un média&nbsp;il y a un mois a valu à Julie, community manager à Lyon, cette réponse : \"nous cherchons du monde en ce moment, il faudrait qu'on se rencontre\". </span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Bref, le réseau, c'est la base. </span></p>",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Je suis sûre que ça va marcher pour vous, tenez-moi au courant ! </span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Plein de bonnes choses&nbsp;</span><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">{{var:firstName:\"Patrick\"}}</span></span><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\"> !</span></p><p style=\"line-height: 1.38; margin: 10px 0;\">&nbsp;</p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux de Bob&nbsp;</span></span></p>",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "",
+                        "padding": "10px 25px",
+                        "padding-left": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "image-id": 4665666
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/26ri/lkq0m.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "98px"
+                      },
+                      "tagName": "mj-image"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "15px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">PS : vous avez des expériences&nbsp;à nous raconter ou des choses à dire ? Je suis toute ouïe ! Vous pouvez simplement répondre à ce message :)</span><span>&nbsp;</span></p>",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "15px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous souhaitez vous désinscrire.</span></p>",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "tagName": "mj-column"
+                }
+              ],
+              "tagName": "mj-section"
+            }
+          ],
+          "tagName": "mj-container"
+        }
+      ],
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "Hy8Orn_CW",
+  "tagName": "mjml"
+}

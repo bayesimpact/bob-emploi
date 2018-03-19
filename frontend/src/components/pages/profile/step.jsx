@@ -1,9 +1,9 @@
+import pick from 'lodash/pick'
 import React from 'react'
 import PropTypes from 'prop-types'
-import _ from 'underscore'
 
-import {Colors, Button, PaddedOnMobile} from 'components/theme'
-import {ShortKey} from 'components/shortkey'
+import {FastForward} from 'components/fast_forward'
+import {Colors, Button, PaddedOnMobile, PercentBar} from 'components/theme'
 
 class ProfileUpdater {
   constructor(fieldNames, component, {profile}) {
@@ -11,25 +11,30 @@ class ProfileUpdater {
     this.requiredFields_ = Object.keys(fieldNames).filter(fieldName => fieldNames[fieldName])
     this.component_ = component
 
-    this.component_.setState(_.pick(profile, Object.keys(fieldNames)))
+    this.component_.setState(pick(profile, Object.keys(fieldNames)))
   }
 
   isFormValid = () => {
-    return _.all(this.requiredFields_.map(fieldname => this.component_.state[fieldname]))
+    return this.requiredFields_.every(fieldname => this.component_.state[fieldname])
   }
 
   handleSubmit = () => {
     this.component_.setState({isValidated: true})
     if (this.isFormValid()) {
-      const fields = _.pick(this.component_.state, Object.keys(this.fieldNames_))
+      const fields = pick(this.component_.state, Object.keys(this.fieldNames_))
       this.component_.props.onSubmit(fields)
     }
   }
 
-  handleBack = () => {
+  getBackHandler = () => {
     const {onBack} = this.component_.props
-    const fields = _.pick(this.component_.state, Object.keys(this.fieldNames_))
-    onBack && onBack(fields)
+    if (!onBack) {
+      return null
+    }
+    return () => {
+      const fields = pick(this.component_.state, Object.keys(this.fieldNames_))
+      onBack(fields)
+    }
   }
 
   handleChange = field => value => {
@@ -46,18 +51,16 @@ class Step extends React.Component {
     fastForward: PropTypes.func.isRequired,
     isNextButtonDisabled: PropTypes.bool,
     nextButtonContent: PropTypes.node,
-    onNextButtonClick: PropTypes.func.isRequired,
+    onNextButtonClick: PropTypes.func,
     onPreviousButtonClick: PropTypes.func,
     stepNumber: PropTypes.number,
     style: PropTypes.object,
-    title: PropTypes.string.isRequired,
+    title: PropTypes.string,
     totalStepCount: PropTypes.number,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
-  }
-  static defaultProps = {
-    title: 'Définir mon projet',
   }
 
   render() {
@@ -67,11 +70,8 @@ class Step extends React.Component {
     const {isMobileVersion} = this.context
     const stepStyle = {
       alignItems: 'center',
-      backgroundColor: '#fff',
-      boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.04)',
       display: 'flex',
       flexDirection: 'column',
-      width: 945,
       ...style,
     }
     const titleStyle = {
@@ -83,20 +83,11 @@ class Step extends React.Component {
       textAlign: 'center',
     }
     const explanationStyle = {
-      color: '#575757',
+      color: Colors.GREYISH_BROWN,
       fontSize: 14,
       lineHeight: 1.4,
       marginTop: 10,
       textAlign: 'center',
-    }
-    const stepNumberStyle = {
-      color: Colors.SKY_BLUE,
-      fontSize: 13,
-      fontStyle: 11,
-      fontWeight: 'bold',
-      letterSpacing: 1.2,
-      textAlign: 'center',
-      textTransform: 'uppercase',
     }
     const containerStyle = {
       display: 'flex',
@@ -112,34 +103,39 @@ class Step extends React.Component {
       marginTop: 15,
     }
     const mobileButtonStyle = {
-      padding: '13px 10px',
-      width: 130,
+      minWidth: 130,
+      padding: '13px 16px',
     }
     const buttonStyle = isMobileVersion ? mobileButtonStyle : {}
     const isLastOnboardingStep = totalStepCount && totalStepCount === stepNumber
     return <div style={stepStyle}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={fastForward} />
-      <PaddedOnMobile><div style={titleStyle}>{title}</div></PaddedOnMobile>
-      {stepNumber && totalStepCount ? <div style={stepNumberStyle}>
-        Étape {stepNumber} / {totalStepCount}
-      </div> : null}
+      <FastForward onForward={fastForward} />
+      {title ? <PaddedOnMobile><div style={titleStyle}>{title}</div></PaddedOnMobile> : null}
+      {stepNumber && totalStepCount ? <PercentBar
+        color={Colors.BOB_BLUE}
+        height={15}
+        percent={Math.round(100 * (stepNumber - .5) / totalStepCount)}
+        showPercent={false}
+        style={{marginTop: 10, width: '90%'}}
+      /> : null
+      }
       {explanation ? <div style={explanationStyle}>{explanation}</div> : null}
       <div style={containerStyle}>
         {children}
       </div>
       <div style={navigationStyle}>
         {onPreviousButtonClick ? <Button
-          type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}>
+          type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}
+          isRound={true}>
           Précédent
         </Button> : null}
-        <Button
-          type="validation"
+        {onNextButtonClick ? <Button
+          isRound={true}
           onClick={onNextButtonClick}
           disabled={isNextButtonDisabled}
           style={buttonStyle}>
-          {nextButtonContent || (isLastOnboardingStep ? 'Créer' : 'Suivant')}
-        </Button>
+          {nextButtonContent || (isLastOnboardingStep ? 'Terminer le questionnaire' : 'Suivant')}
+        </Button> : null}
       </div>
     </div>
   }

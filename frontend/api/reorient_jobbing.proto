@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+// Statistics for jobbing without qualification.
+message LocalJobbingStats {
+  // The ID of the departement.
+  string departement_id = 1;
+
+  // The departement statistics of jobs without qualification.
+  DepartementReorientJobStat departement_job_stats = 2;
+}
+
+// Statistics for unqualified job groups for a departement.
+message DepartementReorientJobStat {
+  // The jobs which hire the most sorted in descending job offers
+  // over two-years.
+  repeated JobStats jobs = 1;
+}
+
+message JobbingReorientJobs {
+  // A list of jobs recommended for reorientation jobbing.
+  repeated ReorientJob reorient_jobbing_jobs = 1;
+}
+
+message ReorientJob {
+  // Masculine name of the job.
+  string masculine_name = 1;
+
+  // Feminine name of the job.
+  string feminine_name = 2;
+
+  // The complete name of the job.
+  string name = 3;
+
+  // Offers raise compared to the current job in percent.
+  float offers_percent_gain = 4;
+}
+
+message JobStats {
+  // The ROME ID of the job's job group.
+  string rome_id = 1;
+
+  // The masculine ROME name of the job.
+  string masculine_name = 2;
+
+  // The feminine ROME name of the job.
+  string feminine_name = 3;
+
+  // The complete ROME name of the job.
+  string name = 4;
+
+  // The number of job offers over two years for this job.
+  int32 offers = 5;
+
+  // The market score for the job group of this job.
+  int32 market_score = 6;
+}

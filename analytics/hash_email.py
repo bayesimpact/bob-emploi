@@ -1,6 +1,9 @@
 """Script to hash email fields in a CSV file."""
+
 import hashlib
 import sys
+
+import unidecode
 
 
 def hash_line(line, keep=False):
@@ -14,6 +17,7 @@ def hash_line(line, keep=False):
     Returns:
         The modified line.
     """
+
     fields = line.strip().split(',')
     hashed_field = hashlib.sha1(fields[0].encode('utf-8')).hexdigest()
     if keep:
@@ -35,6 +39,7 @@ def hash_files(inputfile, outputfile, keep=False):
     Returns:
         The number of hashed lines.
     """
+
     count = 0
     with open(outputfile, 'wt') as output:
         with open(inputfile, 'r') as input_lines:
@@ -42,6 +47,12 @@ def hash_files(inputfile, outputfile, keep=False):
                 output.write(hash_line(line, keep))
                 count += 1
     return count
+
+
+def hash_user(email, name):
+    """Prepare the hash string for a given user."""
+
+    return hash_line(unidecode.unidecode(email + name[:3].lower())).strip()
 
 
 if __name__ == '__main__':

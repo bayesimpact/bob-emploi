@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
+import {Redirect} from 'react-router-dom'
 
 import {deleteUser, displayToasterMessage, setUserProfile} from 'store/actions'
 import {USER_PROFILE_FIELDS} from 'store/user'
@@ -10,11 +11,11 @@ import {Routes} from 'components/url'
 import {Modal, ModalCloseButton, ModalHeader} from 'components/modal'
 import {onboardingComplete} from 'store/main_selectors'
 
-import {getOnboardingStep, gotoNextStep, gotoPreviousStep,
+import {getOnboardingStep, gotoNextStep, gotoPreviousStep, hasPreviousStep,
   onboardingStepCount} from './profile/onboarding'
 import {AccountStep} from './profile/account'
-import {GeneralStep} from './profile/general'
 import {FrustrationsStep} from './profile/frustrations'
+import {GeneralStep} from './profile/general'
 import {NotificationsStep} from './profile/notifications'
 
 const PAGE_VIEW_STEPS = [
@@ -28,11 +29,11 @@ const PAGE_VIEW_STEPS = [
 class OnboardingView extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
-    onNewPage: PropTypes.func.isRequired,
     onProfileSave: PropTypes.func.isRequired,
-    stepName: PropTypes.string,
+    stepName: PropTypes.string.isRequired,
     userProfile: PropTypes.object.isRequired,
   }
+
   static contextTypes = {
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
@@ -41,9 +42,9 @@ class OnboardingView extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const {onNewPage, stepName} = nextProps
-    if (stepName !== this.props.stepName) {
-      onNewPage()
+    const {stepName} = nextProps
+    if (stepName !== this.props.stepName && this.page) {
+      this.page.scrollTo(0)
     }
   }
 
@@ -74,25 +75,25 @@ class OnboardingView extends React.Component {
   render() {
     const {stepName, userProfile} = this.props
     const {isMobileVersion} = this.context
-    if (!stepName) {
-      return null
-    }
-    const currentStepItem = getOnboardingStep(Routes.PROFILE_PAGE, stepName)
-    const CurrentStepComponent = currentStepItem.component
-    const style = {
-      alignItems: 'center',
-      display: 'flex',
-      justifyContent: 'center',
-      paddingBottom: isMobileVersion ? 0 : 70,
-      paddingTop: isMobileVersion ? 0 : 70,
-    }
-    return <div style={style}>
+    const {
+      component: CurrentStepComponent,
+      stepNumber,
+    } = getOnboardingStep(Routes.PROFILE_PAGE, stepName)
+    const canGoBack = hasPreviousStep(Routes.PROFILE_PAGE, stepName)
+    return <PageWithNavigationBar
+      style={{backgroundColor: '#fff'}}
+      page="profile" isContentScrollable={true}
+      onBackClick={isMobileVersion && canGoBack ? this.handleStepBack : null}
+      ref={page => {
+        this.page = page
+      }}>
       <CurrentStepComponent
-        onSubmit={this.handleSubmit} onBack={this.handleStepBack}
+        onSubmit={this.handleSubmit}
+        onBack={isMobileVersion || !canGoBack ? null : this.handleStepBack}
         isShownAsStepsDuringOnboarding={true}
-        stepNumber={currentStepItem.stepNumber} totalStepCount={onboardingStepCount}
+        stepNumber={stepNumber} totalStepCount={onboardingStepCount}
         profile={userProfile} />
-    </div>
+    </PageWithNavigationBar>
   }
 }
 
@@ -104,31 +105,46 @@ class PageView extends React.Component {
     userProfile: PropTypes.object.isRequired,
   }
 
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
   state = {
     isAccountDeletionModalShown: false,
   }
 
   render() {
     const {featuresEnabled, onChange, userProfile} = this.props
+    const {isMobileVersion} = this.context
     const {isAccountDeletionModalShown} = this.state
+    const deleteContainerStyle = {
+      alignSelf: isMobileVersion ? 'center' : 'stretch',
+      display: 'flex',
+      justifyContent: 'flex-end',
+      marginTop: 45,
+    }
     return <div style={{...Styles.CENTERED_COLUMN, paddingBottom: 100}}>
       <AccountDeletionModal
         isShown={isAccountDeletionModalShown}
         onClose={() => this.setState({isAccountDeletionModalShown: false})} />
-      {PAGE_VIEW_STEPS.map((step, i) => {
-        const StepComponent = step.component
+      {PAGE_VIEW_STEPS.map(({component: StepComponent}, i) => {
         return <StepComponent
           key={i}
           onSubmit={onChange}
           fastForward={() => {}}
-          style={{marginTop: 40}}
+          style={{
+            backgroundColor: '#fff',
+            boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.04)',
+            marginTop: 40,
+            width: isMobileVersion ? 'initial' : 945,
+          }}
           // Hide previous button.
           onPreviousButtonClick={null}
           nextButtonContent="Sauvegarder"
           profile={userProfile}
           featuresEnabled={featuresEnabled} />
       })}
-      <div style={{display: 'flex', flexDirection: 'row-reverse', marginTop: 45, width: '100%'}}>
+      <div style={deleteContainerStyle}>
         <Button
           type="discreet"
           onClick={() => this.setState({isAccountDeletionModalShown: true})}>
@@ -140,7 +156,7 @@ class PageView extends React.Component {
 }
 
 
-class ProfilePage extends React.Component {
+class ProfilePageBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
     match: PropTypes.shape({
@@ -150,20 +166,9 @@ class ProfilePage extends React.Component {
     }).isRequired,
     user: PropTypes.object.isRequired,
   }
-  static contextTypes = {
-    history: PropTypes.shape({
-      replace: PropTypes.func.isRequired,
-    }).isRequired,
-  }
 
-  componentWillMount() {
-    const {match, user} = this.props
-    const isShownAsStepsDuringOnboarding = !onboardingComplete(user)
-    this.setState({isShownAsStepsDuringOnboarding})
-    if (isShownAsStepsDuringOnboarding && !match.params.stepName) {
-      const stepName = user.profile.gender ? 'profil' : 'confidentialite'
-      this.context.history.replace(`${Routes.PROFILE_PAGE}/${stepName}`)
-    }
+  state = {
+    isShownAsStepsDuringOnboarding: !onboardingComplete(this.props.user),
   }
 
   handleProfileSave = (userProfileUpdates, actionType, shouldNotSaveUser) => {
@@ -176,31 +181,30 @@ class ProfilePage extends React.Component {
   }
 
   render() {
-    const {dispatch, match, user} = this.props
+    const {dispatch, match: {params: {stepName}, url}, user} = this.props
     const {isShownAsStepsDuringOnboarding} = this.state
-    const style = {
-      backgroundColor: Colors.BACKGROUND_GREY,
+    if (!isShownAsStepsDuringOnboarding) {
+      return <PageWithNavigationBar
+        style={{backgroundColor: Colors.BACKGROUND_GREY}}
+        page="profile" isContentScrollable={true}
+        isChatButtonShown={true}>
+        <PageView
+          userProfile={user.profile} onChange={this.handleProfileSave}
+          featuresEnabled={user.featuresEnabled} />
+      </PageWithNavigationBar>
     }
-    return <PageWithNavigationBar
-      style={style} page="profile" isContentScrollable={true}
-      ref={page => {
-        this.page = page
-      }}
-      isChatButtonShown={!isShownAsStepsDuringOnboarding}>
-      {isShownAsStepsDuringOnboarding ? (
-        <OnboardingView
-          dispatch={dispatch}
-          onProfileSave={this.handleProfileSave}
-          onNewPage={() => this.page && this.page.scrollTo(0)}
-          stepName={match.params.stepName}
-          userProfile={user.profile} />
-      ) : <PageView
-        userProfile={user.profile} onChange={this.handleProfileSave}
-        featuresEnabled={user.featuresEnabled} />
-      }
-    </PageWithNavigationBar>
+    if (!stepName) {
+      return <Redirect to={`${url}/${user.profile.gender ? 'profil' : 'confidentialite'}`} />
+    }
+    return <OnboardingView
+      dispatch={dispatch}
+      onProfileSave={this.handleProfileSave}
+      stepName={stepName}
+      userProfile={user.profile}
+    />
   }
 }
+const ProfilePage = connect(({user}) => ({user}))(ProfilePageBase)
 
 
 class AccountDeletionModalBase extends React.Component {
@@ -210,6 +214,7 @@ class AccountDeletionModalBase extends React.Component {
     onClose: PropTypes.func.isRequired,
     user: PropTypes.object.isRequired,
   }
+
   static contextTypes = {
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
@@ -250,21 +255,16 @@ class AccountDeletionModalBase extends React.Component {
         </p>
         <p>
           Nous sommes tristes de vous voir partir, n'hésitez pas à nous dire ce que nous
-          pouvons améliorer <a style={{color: Colors.SKY_BLUE}} href="https://airtable.com/shr3pFteo6ERIHnpH">
+          pouvons améliorer <a style={{color: Colors.BOB_BLUE}} href="https://airtable.com/shr3pFteo6ERIHnpH">
             en cliquant ici
           </a> !
         </p>
       </div>
       <div style={buttonsBarStyle}>
-        <Button
-          onClick={onClose}
-          style={{marginRight: 13}}
-          type="back">
+        <Button onClick={onClose} style={{marginRight: 13}} type="back" isRound={true}>
           Annuler
         </Button>
-        <Button
-          onClick={this.handleDeletionClick}
-          type="deletion">
+        <Button onClick={this.handleDeletionClick} type="deletion" isRound={true}>
           Supprimer définitivement mon compte
         </Button>
       </div>

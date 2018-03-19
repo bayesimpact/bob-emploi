@@ -1,0 +1,148 @@
+Hello {{var:firstName:"Elise"}},
+
+
+
+J'espère que vous allez bien.
+
+Vous avez essayé Bob, il y a {{var:registeredMonthsAgo:"cinq"}} mois et je me demande comment les choses se passent de votre côté. Votre projet a-t-il évolué ? Cherchez-vous toujours un poste {{var:ofJobName:"d'expert comptable"}} ? (Vous avez trouvé un emploi ? Dites-le nous [http://bob-emploi.fr/retrouv%C3%A9]  !)
+
+
+
+En recherche d'emploi on s'entend tous dire à un moment...
+
+ * "Tes attentes ne sont pas réalistes"
+   
+   
+ * "Arrête de rêver"
+   
+   
+ * "Il faut t'adapter"{%if var:hasEnoughExperience:"" == ""%}
+   
+   
+ * "Tu n'as pas assez d'expérience"{%endif%}
+   
+   
+ * "Cherche plutôt un job alimentaire"
+   
+   
+ * "Habille-toi de façon plus professionnelle"{%if var:isYoung:"" == "True"%}
+   
+   
+ * "Tu es un peu trop jeune"{%endif%}{%if var:isOld:"" == "True"%}  
+   
+   
+ * "Vous aurez peut-être du mal à vous intégrer dans une équipe jeune"{%endif%}
+   
+   
+ * "Saute sur l'occasion ! Tu ne sais pas quand ça peut se représenter !"
+   
+   
+
+Ça part souvent d’une bonne intention. Mais à cause de ce discours, je rencontre beaucoup de chercheurs d'emploi qui ont moins confiance en eux, se blâment, ont honte. 
+
+Pour moi, une des clés pour dépasser cela, c'est de ne pas perdre de vue la raison pour laquelle on fait les choses.
+
+
+
+Gardez un œil sur l’essentiel
+
+Savoir pourquoi on fait les choses permet de ne pas perdre de vue l'essentiel. Vous méritez d'être épanoui{%if var:gender:"" == "FEMININE"%}e{%endif%}.Vous méritez un métier qui vous corresponde, pas simplement n'importe lequel.
+
+
+
+Ce schéma m'a aidé à y voir plus clair.
+
+On exerce un métier pour gagner de l'argent et parce qu'on sait le faire, certes. Mon conseil est de ne pas oublier de faire quelque chose qui nous épanouit.
+
+L'autre jour j'ai reçu un mail de Pascale, assistante administrative. En recherche d'emploi depuis 3 mois, elle postulait beaucoup mais n'avait pas de réponses et commençait à s'inquiéter. Pourtant, la liste de ce qu'elle sait faire est longue : accueil du public, gestion d'agenda, gestion de stocks, facturation… 
+
+Et puis elle s'est demandé ce qui l'avait épanouie dans ses emplois précédents. Et elle a compris que ce qu'elle aimait c'était travailler dans les écoles. Quand elle aidait les directeurs et directrices d'école, elle savait pourquoi elle se levait le matin. Cette mission la rendait concentrée, alerte, pleine d'énergie. 
+
+Comprendre ce qu'elle aimait lui a permis de comprendre ce qu'elle voulait. Cela a changé la façon dont elle se voit, et comment elle parle d'elle-même. Parce qu'elle sait ce qu'elle veut, elle cible en priorité les écoles. 
+
+{%if var:isAdministrativeAssistant:"" == ""%}Evidemment, pour vous, {{var:jobName:"expert comptable"}}, c'est différent. Mais p{%else%}Ça vous parle ? P{%endif%}our moi, ce qui est important c'est de trouver ce qui nous correspond.  Pas seulement ce à quoi on est fort, mais l'activité qui nous rend engagé, heureux. Notre élément.
+
+
+
+Ok mais comment je fais ?
+Savoir ce qui nous pousse est crucial. "Pourquoi je fais les choses ?" est une question qui a marqué ma vie et celle de toute l'équipe (Paul, le fondateur de Bob en parle ici [https://www.facebook.com/bobemploi/videos/465918990448295/]). 
+
+Prenez le temps de faire le point avec vous-même. Demandez vous ce que vous voudriez être, en dehors de ce qu'on attend de vous. Ce qui vous épanouit. Ce que vous voulez faire au quotidien. 
+
+ * Qu'est-ce qui me donne de l'énergie ?
+   
+   
+ * Qu’est-ce que j'adore faire ? (au travail et en dehors) 
+   
+   
+ * De quoi suis-je vraiment {%if var:gender:"" == "FEMININE"%}fière{%else%}fier{%endif%} ?
+   
+   
+ * Pour quoi me remercie-t-on? 
+   
+   
+ * Quand me suis-je senti{%if var:gender:"" == "FEMININE"%}e{%endif%} vraiment utile ? 
+
+
+
+Laissez libre cours à votre pensée. Ecrivez tout ce qui vous vient, ne vous limitez pas. Il sera bien temps de modifier ensuite.
+
+
+
+{%if var:gender:"" == "FEMININE"%}{%if var:isYoung:"" == "True"%}C'est un exercice qui peut être plus difficile quand on est une femme et qu'on est jeune, parce qu’on a plus tendance à manquer de confiance en soi, se censurer et de pas assumer ses besoins. Si vous avez ces problèmes, rappelez vous que vous avez le droit de vouloir votre bien{%else%}C'est un exercice qui peut être plus difficile pour les femmes, parce que nous avons plus tendance à nous censurer et ne pas oser assumer nos besoins. Si vous avez ce problème, rappelez-vous de vous écouter. Vous avez le droit de vouloir votre bien.{%endif%}
+
+
+
+{%else%}{%if var:isYoung:"" == "True"%}C'est un exercice qui peut être plus difficile quand on est jeune, parce qu’on a plus tendance à manquer de confiance en soi. C'est normal, mais ne laissez pas ce sentiment vous abattre. Vous avez le droit de vouloir votre bien.
+
+
+
+{%else%}{%if var:isOld:"" == "True"%}C'est un exercice qui peut être plus difficile quand on a plus de 50 ans, parce qu'on a plus tendance à nous mettre dans la case senior. Mais ne vous laissez pas décourager. Vous êtes légitime. Vous avez le droit de vouloir votre bien.
+
+
+
+{%endif%}{%endif%}{%endif%}Si vous séchez, vous pouvez aussi faire appel à vos proches :
+
+ * "Dis-moi franchement, dans quoi penses-tu que je m'épanouis ?"
+   
+   
+ * "Quand est-ce que tu as l'impression que je me sens bien ?"
+   
+   
+
+Faites le tri, prenez ce qui est bon à prendre. Avoir le point de vue de nos connaissances peut parfois nous faire faire un grand pas. 
+
+Moi par exemple, j'aime :
+
+ * échanger avec des gens tous les jours
+   
+   
+ * travailler avec des personnes bienveillantes
+   
+   
+ * prendre soin des autres
+   
+   
+ * avoir le sentiment d'apprendre des choses
+   
+   
+ * écrire de longs emails 🙈
+   
+   
+ * etc.
+   
+   
+
+Cette liste m’a permis de savoir comment je voulais évoluer dans mon métier. Il y a d'autres choses que je savais faire (comme me servir d'Excel) mais que j'ai choisi de ne pas mettre en avant (je n’avais plus envie de faire ça toute la journée). 
+
+Utilisez ce portrait de ce que vous êtes comme une boussole pour vous orienter dans votre évolution personnelle. Voyez si elle vous suggère des directions nouvelles, des actions qui vous feront avancer. En cas de doute, au moment de faire des choix, pensez-y.
+
+
+
+Prêt{%if var:gender:""=="FEMININE"%}e{%endif%} ? Isolez vingt minutes, et prenez feuille et stylo pour écrire cette liste de ce que vous méritez d'être.
+
+Je vous souhaite le meilleur,{{var:firstName:"Elise"}}.
+Margaux de Bob
+
+PS : Vous avez envie de partager votre liste ? Envoyez-la moi (simplement en répondant à ce message 💌)
+Vous recevez cet email car vous êtes inscrit sur Bob [https://www.bob-emploi.fr]. Cliquez ici [{{var:unsubscribeLink}}]  si vous souhaitez vous désinscrire.

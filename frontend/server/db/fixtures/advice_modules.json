@@ -10,14 +10,14 @@
   ],
   "emailSubject": "candidatures spontanées",
   "emailSuggestionSentence": "travailler sur les candidatures spontanées",
-  "emailTitle": "Allez au devant des opportunités : pensez candidatures spontanées",
+  "emailTitle": "%you<Va/Allez> au devant des opportunités : pense%you</z> candidatures spontanées",
   "extraDataFieldName": "spontaneous_application_data",
   "isReadyForProd": true,
   "tipTemplateIds": [
    "recieKJTssgtoDN6d",
    "recBKWIcaWhOBAnZy"
   ],
-  "title": "Pensez aux candidatures spontanées",
+  "title": "Pense%you</z> aux candidatures spontanées",
   "triggerScoringModel": "chantier-spontaneous-application"
  },
  {
@@ -25,14 +25,14 @@
   "adviceId": "other-work-env",
   "airtableId": "recp2Lq8KhHGAzyaE",
   "emailFacts": [
-   "Votre métier peut s'exercer dans d'autres types d'entreprises ou d'autres secteurs"
+   "%you<Ton/Votre> métier peut s'exercer dans d'autres types d'entreprises ou d'autres secteurs"
   ],
   "emailSubject": "nouveaux horizons",
   "emailSuggestionSentence": "chercher dans des secteurs différents",
-  "emailTitle": "Gardez l'œil ouvert : Explorez d'autres types d'entreprises",
+  "emailTitle": "Garde%you</z> l'œil ouvert : Explore%you</z> d'autres types d'entreprises",
   "extraDataFieldName": "other_work_env_advice_data",
   "isReadyForProd": true,
-  "title": "Postulez à d'autres types d'entreprises",
+  "title": "Postule%you</z> à d'autres types d'entreprises",
   "triggerScoringModel": "advice-other-work-env"
  },
  {
@@ -40,13 +40,13 @@
   "adviceId": "improve-resume",
   "airtableId": "recSLhIt7aP2zI0Pb",
   "emailFacts": [
-   "Vous pouvez décrocher plus d’entretiens",
-   "Seulement 37% des candidats personnalisent leur CV et lettre de motivation pensez-y ca peut faire la différence",
+   "%you<Tu peux/Vous pouvez> décrocher plus d’entretiens",
+   "Seulement 37% des candidats personnalisent leur CV et lettre de motivation pense%you<s/z>-y ça peut faire la différence",
    "65% des entreprises demandent des lettres de motivation"
   ],
   "emailSubject": "candidature au top",
-  "emailSuggestionSentence": "travailler sur vos candidatures",
-  "emailTitle": "Soignez la première impression pour décrocher plus d’entretiens ",
+  "emailSuggestionSentence": "travailler sur %you<tes/vos> candidatures",
+  "emailTitle": "Soigne%you</z> la première impression pour décrocher plus d’entretiens ",
   "extraDataFieldName": "improve_success_rate_data",
   "incompatibleAdviceIds": [
    "rec1igR2AJ0flVDKu",
@@ -60,7 +60,7 @@
    "recSucaFyD7L1pabV",
    "recZ7Jz1fFyeCmFqG"
   ],
-  "title": "Personnalisez vos candidatures pour avoir plus d'impact",
+  "title": "Personnalise%you< tes/z vos> candidatures pour avoir plus d'impact",
   "triggerScoringModel": "advice-improve-resume"
  },
  {
@@ -68,12 +68,12 @@
   "adviceId": "fresh-resume",
   "airtableId": "recOVDF3LlPt1A49x",
   "emailFacts": [
-   "Vous pouvez décrocher plus d’entretiens",
-   "Seulement 37% des candidats personnalisent leur CV et lettre de motivation pensez-y ca peut faire la différence"
+   "%you<Tu peux/Vous pouvez> décrocher plus d’entretiens",
+   "Seulement 37% des candidats personnalisent leur CV et lettre de motivation pense%you<s/z>-y ça peut faire la différence"
   ],
   "emailSubject": "candidature au top",
-  "emailSuggestionSentence": "travailler sur vos candidatures",
-  "emailTitle": "Soignez la première impression pour décrocher plus d’entretiens",
+  "emailSuggestionSentence": "travailler sur %you<tes/vos> candidatures",
+  "emailTitle": "Soigne%you</z> la première impression pour décrocher plus d’entretiens",
   "extraDataFieldName": "improve_success_rate_data",
   "incompatibleAdviceIds": [
    "recSLhIt7aP2zI0Pb",
@@ -87,7 +87,7 @@
    "recSucaFyD7L1pabV",
    "recZ7Jz1fFyeCmFqG"
   ],
-  "title": "Personnalisez vos candidatures pour avoir plus d'impact",
+  "title": "Personnalise%you< tes/z vos> candidatures pour avoir plus d'impact",
   "triggerScoringModel": "advice-fresh-resume"
  },
  {
@@ -101,8 +101,8 @@
    "95% des recruteurs considèrent la motivation comme un critère essentiel pour choisir un candidat"
   ],
   "emailSubject": "entretien",
-  "emailSuggestionSentence": "travailler la préparation de vos entretiens",
-  "emailTitle": "Préparez mieux vos entretiens pour transformer l'essai",
+  "emailSuggestionSentence": "travailler la préparation de %you<tes/vos> entretiens",
+  "emailTitle": "Prépare%you</z> mieux %you<tes/vos> entretiens pour transformer l'essai",
   "extraDataFieldName": "improve_success_rate_data",
   "incompatibleAdviceIds": [
    "recSLhIt7aP2zI0Pb",
@@ -118,7 +118,7 @@
    "recOgOKlLWLkgUoMk",
    "recwADC71N3uWO6kv"
   ],
-  "title": "Assurez-vous de montrer votre motivation lors de vos entretiens",
+  "title": "Assure%you<-toi/z-vous> de montrer %you<ta/votre> motivation lors de %you<tes/vos> entretiens",
   "triggerScoringModel": "advice-improve-interview"
  },
  {
@@ -127,7 +127,7 @@
   "airtableId": "recnmpCRl4SE0RTtX",
   "extraDataFieldName": "better_job_in_group_data",
   "isReadyForProd": true,
-  "title": "Regardez les métiers proches du votre",
+  "title": "Regarde%you</z> les métiers proches du %you<tien/vôtre>",
   "triggerScoringModel": "advice-better-job-in-group"
  },
  {
@@ -138,8 +138,8 @@
    "80% des accompagnateurs du SNC pensent que le bénévolat contribue au retour à l'emploi"
   ],
   "emailSubject": "s'aérer l'esprit",
-  "emailSuggestionSentence": "vous concentrer sur votre bien-être",
-  "emailTitle": "Préservez votre équilibre de vie pour garder votre moral au top",
+  "emailSuggestionSentence": "%you<te/vous> concentrer sur %you<ton/votre> bien-être",
+  "emailTitle": "Préserve%you< ton/z votre> équilibre de vie pour garder %you<ton/votre> moral au top",
   "isEasy": true,
   "isReadyForProd": true,
   "tipTemplateIds": [
@@ -148,7 +148,7 @@
    "recvbdzGhx0pdzxWy",
    "recMJKwFHVaVL6Zbe"
   ],
-  "title": "Préservez votre équilibre de vie",
+  "title": "Préserve%you< ton/z votre> équilibre de vie",
   "triggerScoringModel": "constant(1)"
  },
  {
@@ -161,7 +161,7 @@
   ],
   "emailSubject": "marché caché",
   "emailSuggestionSentence": "nous concentrer sur le réseau",
-  "emailTitle": "Construisez et développez votre réseau pour booster votre recherche",
+  "emailTitle": "Construis%you</ez> et développe%you< ton/z votre> réseau pour booster %you<ta/votre> recherche",
   "incompatibleAdviceIds": [
    "recYVbuShgn0ku9cm",
    "recuOzLy0Ks7y88kj"
@@ -170,7 +170,7 @@
   "tipTemplateIds": [
    "reclUt1eptGzxmvM9"
   ],
-  "title": "Construisez et développez votre réseau",
+  "title": "Construis%you</ez> et développe%you< ton/z votre> réseau",
   "triggerScoringModel": "advice-improve-network"
  },
  {
@@ -183,7 +183,7 @@
   ],
   "emailSubject": "marché caché",
   "emailSuggestionSentence": "nous concentrer sur le réseau",
-  "emailTitle": "Utilisez à fond votre réseau pour vous attaquer au marché caché",
+  "emailTitle": "Utilise%you</z> à fond %you<ton/votre> réseau pour %you<t'/vous >attaquer au marché caché",
   "incompatibleAdviceIds": [
    "recYVbuShgn0ku9cm",
    "recuOzLy0Ks7y88kj"
@@ -192,7 +192,7 @@
   "tipTemplateIds": [
    "reclUt1eptGzxmvM9"
   ],
-  "title": "Utilisez à fond votre réseau",
+  "title": "Utilise%you</z> à fond %you<ton/votre> réseau",
   "triggerScoringModel": "advice-use-good-network"
  },
  {
@@ -205,7 +205,7 @@
   ],
   "emailSubject": "marché caché",
   "emailSuggestionSentence": "nous concentrer sur le réseau",
-  "emailTitle": "Développez votre réseau pour vous attaquer au marché caché",
+  "emailTitle": "Développe%you< ton/z votre> réseau pour %you<t'/vous >attaquer au marché caché",
   "incompatibleAdviceIds": [
    "recYVbuShgn0ku9cm",
    "recqeiR3Vl0WwFj17"
@@ -214,7 +214,7 @@
   "tipTemplateIds": [
    "reclUt1eptGzxmvM9"
   ],
-  "title": "Utilisez votre réseau",
+  "title": "Utilisez %you<ton/votre> réseau",
   "triggerScoringModel": "advice-better-network"
  },
  {
@@ -227,13 +227,13 @@
   ],
   "emailSubject": "jobboard",
   "emailSuggestionSentence": "de postuler à des offres sur internet",
-  "emailTitle": "Trouvez des offres qui vous correspondent",
+  "emailTitle": "Trouve%you</z> des offres qui %you<te/vous> correspondent",
   "extraDataFieldName": "job_boards_data",
   "isReadyForProd": true,
   "tipTemplateIds": [
    "recbOMC6vNln4sAek"
   ],
-  "title": "Faites le tour des sites d'emploi intéressants pour vous",
+  "title": "Fai%you</te>s le tour des sites d'emploi intéressants pour %you<toi/vous>",
   "triggerScoringModel": "advice-job-boards"
  },
  {
@@ -244,14 +244,14 @@
    "Plus de 150 évènements emploi ont lieu en France chaque semaine"
   ],
   "emailSubject": "évènements",
-  "emailSuggestionSentence": "de trouver et de vous préparer pour aller à des évènements",
-  "emailTitle": "Rencontrez de nouvelles têtes, allez à des évènements",
+  "emailSuggestionSentence": "de trouver et de %you<te/vous> préparer pour aller à des évènements",
+  "emailTitle": "Rencontre%you</z> de nouvelles têtes, %you<va/allez> à des évènements",
   "isReadyForProd": true,
   "tipTemplateIds": [
    "recfrMrKdqGfTGXHT",
    "recBvGSLHtxoaXSRt"
   ],
-  "title": "Allez à des évènements",
+  "title": "%you<Va/Allez> à des évènements",
   "triggerScoringModel": "advice-event"
  },
  {
@@ -263,9 +263,9 @@
   ],
   "emailSubject": "mail de motivation",
   "emailSuggestionSentence": "de travailler sur votre mail de motivation",
-  "emailTitle": "Donnez tout dans votre mail de motivation",
+  "emailTitle": "Donne%you</z> tout dans %you<ton/votre> mail de motivation",
   "isReadyForProd": true,
-  "title": "Attirez tout de suite l'œil du recruteur dans votre email de candidature",
+  "title": "Attire%you</z> tout de suite l'œil du recruteur dans %you<ton/votre> email de candidature",
   "triggerScoringModel": "advice-more-offer-answers"
  },
  {
@@ -277,7 +277,7 @@
   "tipTemplateIds": [
    "recBUEjBVKRyTTnfe"
   ],
-  "title": "Trouvez une association pour vous accompagner",
+  "title": "Trouve%you</z> une association pour %you<t'/vous >accompagner",
   "triggerScoringModel": "advice-association-help"
  },
  {
@@ -285,7 +285,7 @@
   "adviceId": "wow-baker",
   "airtableId": "rec88C9OP5tTUVyHv",
   "isReadyForProd": true,
-  "title": "Présentez-vous au chef boulanger dès son arrivée tôt le matin",
+  "title": "Présente%you<-toi/z-vous> au chef boulanger dès son arrivée tôt le matin",
   "triggerScoringModel": "advice-wow-baker"
  },
  {
@@ -293,7 +293,7 @@
   "adviceId": "wow-hairdresser",
   "airtableId": "recLhOsHX8eOs8ede",
   "isReadyForProd": true,
-  "title": "Assurez-vous de donner votre CV à la bonne personne quand vous postulez",
+  "title": "Assure%you<-toi/z-vous> de donner %you<ton/votre> CV à la bonne personne quand %you<tu/vous> postule%you<s/z>",
   "triggerScoringModel": "for-job-group(D1202)"
  },
  {
@@ -305,9 +305,9 @@
   ],
   "emailSubject": "offres dans les villes proches",
   "emailSuggestionSentence": "de trouver des offres dans des villes proches",
-  "emailTitle": "Explorez les offres dans des villes proches",
+  "emailTitle": "Explore%you</z> les offres dans des villes proches",
   "extraDataFieldName": "commute_data",
-  "title": "Explorez les offres dans des villes proches",
+  "title": "Explore%you</z> les offres dans des villes proches",
   "triggerScoringModel": "advice-commute"
  },
  {
@@ -316,7 +316,7 @@
   "airtableId": "rec5Xv4wpehxeL5EW",
   "extraDataFieldName": "volunteer_data",
   "isReadyForProd": true,
-  "title": "Restez actif en aidant une association",
+  "title": "Reste%you</z> actif en aidant une association",
   "triggerScoringModel": "advice-volunteer"
  }
 ]
