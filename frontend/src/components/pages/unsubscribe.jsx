@@ -1,10 +1,10 @@
+import fromPairs from 'lodash/fromPairs'
 import React from 'react'
 import ReactDOM from 'react-dom'
-import _ from 'underscore'
 
 import config from 'config'
 
-import logoBobEmploiBetaImage from 'images/logo-bob-emploi-beta.svg'
+import logoProductImage from 'images/logo-bob-beta.svg'
 
 import {Button, Colors} from 'components/theme'
 
@@ -22,7 +22,7 @@ class UnsubscribePage extends React.Component {
   componentWillMount() {
     const {search} = window.location
     if (search) {
-      const params = _.object(
+      const params = fromPairs(
         search.slice(1).split('&').map(keyValue => {
           const parts = keyValue.split('=')
           if (parts.length !== 2) {
@@ -84,8 +84,8 @@ class UnsubscribePage extends React.Component {
     }
     return <header style={style}>
       <img
-        style={{cursor: 'pointer'}} onClick={this.handleCancel}
-        src={logoBobEmploiBetaImage} alt={config.productName} />
+        style={{cursor: 'pointer', height: 40}} onClick={this.handleCancel}
+        src={logoProductImage} alt={config.productName} />
     </header>
   }
 

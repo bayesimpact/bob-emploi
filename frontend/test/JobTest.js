@@ -1,11 +1,9 @@
 import {expect} from 'chai'
 import {genderizeJob, getIMTURL, getJobSearchURL,
   getJobPlacesFromDepartementStats} from 'store/job.js'
-import {JobSuggest} from 'components/suggestions'
+import {jobFromSuggestion} from 'components/suggestions'
 
 describe('jobFromSuggestion', () => {
-
-  const {jobFromSuggestion} = new JobSuggest({})
 
   it('should assemble a job proto from a suggestion', () => {
     const job = jobFromSuggestion({

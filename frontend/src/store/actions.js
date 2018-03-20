@@ -2,9 +2,10 @@ import {push} from 'react-router-redux'
 import sha1 from 'sha1'
 
 import {adviceTipsGet, dashboardExportGet, evalUseCasePoolsGet, evalUseCasesGet,
-  jobsGet, projectRequirementsGet, userDelete, markUsedAndRetrievePost,
-  userPost, feedbackPost, userAuthenticate, saveLikes, resetPasswordPost,
-  migrateUserToAdvisorPost, projectComputeAdvicesPost, expandedCardContentGet} from './api'
+  jobRequirementsGet, jobsGet, userDelete, markUsedAndRetrievePost,
+  userPost, feedbackPost, userAuthenticate, resetPasswordPost,
+  migrateUserToAdvisorPost, projectComputeAdvicesPost, expandedCardContentGet,
+  projectDiagnosePost, userCountGet} from './api'
 import {splitFullName} from 'store/auth'
 import {newProject} from 'store/project'
 import {Routes} from 'components/url'
@@ -31,10 +32,8 @@ export const EDIT_FIRST_PROJECT = 'EDIT_FIRST_PROJECT'
 export const FINISH_PROJECT_GOAL = 'FINISH_PROJECT_GOAL'
 export const FINISH_PROJECT_CRITERIA = 'FINISH_PROJECT_CRITERIA'
 export const FINISH_PROJECT_EXPERIENCE = 'FINISH_PROJECT_EXPERIENCE'
-export const MOVE_USER_DATES_BACK_1_DAY = 'MOVE_USER_DATES_BACK_1_DAY'
 export const GET_DASHBOARD_EXPORT = 'GET_DASHBOARD_EXPORT'
 export const SELECT_ADVICE = 'SELECT_ADVICE'
-export const LIKE_OR_DISLIKE_FEATURE = 'LIKE_OR_DISLIKE_FEATURE'
 export const MIGRATE_USER_TO_ADVISOR = 'MIGRATE_USER_TO_ADVISOR'
 export const MODIFY_PROJECT = 'MODIFY_PROJECT'
 export const SCORE_ADVICE = 'SCORE_ADVICE'
@@ -43,6 +42,7 @@ export const MARK_NOTIFICATION_AS_SEEN = 'MARK_NOTIFICATION_AS_SEEN'
 
 // App actions.
 
+export const ACTIVATE_DEMO = 'ACTIVATE_DEMO'
 export const CLOSE_LOGIN_MODAL = 'CLOSE_LOGIN_MODAL'
 export const OPEN_LOGIN_MODAL = 'OPEN_LOGIN_MODAL'
 export const OPEN_REGISTER_MODAL = 'OPEN_REGISTER_MODAL'
@@ -56,31 +56,29 @@ export const RESET_USER_PASSWORD = 'RESET_USER_PASSWORD'
 export const OPEN_TIP_EXTERNAL_LINK = 'OPEN_TIP_EXTERNAL_LINK'
 export const ADVICE_CARD_IS_SHOWN = 'ADVICE_CARD_IS_SHOWN'
 export const ADVICE_PAGE_IS_SHOWN = 'ADVICE_PAGE_IS_SHOWN'
-export const SAVE_LIKES = 'SAVE_LIKES'
 export const GET_ADVICE_TIPS = 'GET_ADVICE_TIPS'
 export const SEE_ADVICE = 'SEE_ADVICE'
 export const SHOW_ALL_TIPS = 'SHOW_ALL_TIPS'
-export const GET_ASSOCIATIONS = 'GET_ASSOCIATIONS'
-export const GET_EVENTS = 'GET_EVENTS'
-export const GET_JOB_BOARDS = 'GET_JOB_BOARDS'
 export const GET_JOBS = 'GET_JOBS'
-export const GET_VOLUNTEERING_MISSIONS = 'GET_VOLUNTEERING_MISSIONS'
-export const GET_COMMUTING_CITIES = 'GET_COMMUTING_CITIES'
-export const GET_INTERVIEW_TIPS = 'GET_INTERVIEW_TIPS'
-export const GET_RESUME_TIPS = 'GET_RESUME_TIPS'
 export const SEND_ADVICE_FEEDBACK = 'SEND_ADVICE_FEEDBACK'
 export const SEND_CHANGELOG_FEEDBACK = 'SEND_CHANGELOG_FEEDBACK'
 export const SEND_PROFESSIONAL_FEEDBACK = 'SEND_PROFESSIONAL_FEEDBACK'
 export const SEND_PROJECT_FEEDBACK = 'SEND_PROJECT_FEEDBACK'
-export const ALL_ADVICES_READ = 'ALL_ADVICES_READ'
+export const SHARE_PRODUCT_MODAL_IS_SHOWN = 'SHARE_PRODUCT_MODAL_IS_SHOWN'
 export const SHARE_PRODUCT_TO_NETWORK = 'SHARE_PRODUCT_TO_NETWORK'
-export const TRACK_INITIAL_UTM_CONTENT = 'TRACK_INITIAL_UTM_CONTENT'
-export const BOB_SCORE_IS_SHOWN = 'BOB_SCORE_IS_SHOWN'
+export const TRACK_INITIAL_UTM = 'TRACK_INITIAL_UTM'
+export const DIAGNOSTIC_IS_SHOWN = 'DIAGNOSTIC_IS_SHOWN'
+export const EXPLORER_IS_SHOWN = 'EXPLORER_IS_SHOWN'
 export const SEND_NEW_ADVICE_IDEA = 'SEND_NEW_ADVICE_IDEA'
 export const COMPUTE_ADVICES_FOR_PROJECT = ' COMPUTE_ADVICES_FOR_PROJECT'
+export const DIAGNOSE_PROJECT = 'DIAGNOSE_PROJECT'
 export const GET_EVAL_USE_CASE_POOLS = 'GET_EVAL_USE_CASE_POOLS'
 export const GET_EVAL_USE_CASES = 'GET_EVAL_USE_CASES'
 export const GET_EXPANDED_CARD_CONTENT = 'GET_EXPANDED_CARD_CONTENT'
+export const GET_USER_COUNT = 'GET_USER_COUNT'
+export const DOWNLOAD_DIAGNOSTIC_PDF = 'DOWNLOAD_DIAGNOSTIC_PDF'
+export const WILL_ACTIVATE_DEMO = 'WILL_ACTIVATE_DEMO'
+export const PRODUCT_UPDATED_PAGE_IS_SHOWN = 'PRODUCT_UPDATED_PAGE_IS_SHOWN'
 
 // Logging only.
 const LANDING_PAGE_SECTION_IS_SHOWN = 'LANDING_PAGE_SECTION_IS_SHOWN'
@@ -90,13 +88,14 @@ export const actionTypesToLog = {
   [ACCEPT_PRIVACY_NOTICE]: 'Accept privacy notice',
   [ADVICE_CARD_IS_SHOWN]: 'Advice card is shown',
   [ADVICE_PAGE_IS_SHOWN]: 'Advice page shown',
-  [ALL_ADVICES_READ]: 'All advice cards have been read',
   [AUTHENTICATE_USER]: 'Log in',
-  [BOB_SCORE_IS_SHOWN]: 'Bob Score is shown',
   [CREATE_PROJECT]: 'Create project',
   [CREATE_PROJECT_SAVE]: 'Save project',
   [DELETE_USER_DATA]: 'Delete user',
+  [DIAGNOSTIC_IS_SHOWN]: 'Diagnostic is shown',
   [DISPLAY_TOAST_MESSAGE]: 'Display toast message',
+  [DOWNLOAD_DIAGNOSTIC_PDF]: 'Download the diagnostic as a PDF',
+  [EXPLORER_IS_SHOWN]: 'Explorer is shown',
   [FINISH_PROFILE_FRUSTRATIONS]: 'Finish profile frustrations',
   [FINISH_PROFILE_SITUATION]: 'Finish profile situation',
   [FINISH_PROJECT_CRITERIA]: 'Finish project criteria',
@@ -105,17 +104,16 @@ export const actionTypesToLog = {
   [GET_DASHBOARD_EXPORT]: 'View dashbord export',
   [GET_USER_DATA]: 'Load app',
   [LANDING_PAGE_SECTION_IS_SHOWN]: 'A landing page section is shown',
-  [LIKE_OR_DISLIKE_FEATURE]: 'Like/Dislike feature',
   [LOAD_LANDING_PAGE]: 'Load landing page',
   [LOGOUT]: 'Log out',
   [MARK_CHANGELOG_AS_SEEN]: 'Mark Changelog as seen',
   [MARK_NOTIFICATION_AS_SEEN]: 'Mark notification as seen',
   [MIGRATE_USER_TO_ADVISOR]: 'Migrate to advisor',
   [MODIFY_PROJECT]: 'Modify project',
-  [MOVE_USER_DATES_BACK_1_DAY]: 'Time travel!',
   [OPEN_LOGIN_MODAL]: 'Open login modal',
   [OPEN_REGISTER_MODAL]: 'Open register modal',
   [OPEN_TIP_EXTERNAL_LINK]: 'Open tip external link',
+  [PRODUCT_UPDATED_PAGE_IS_SHOWN]: 'Product has been updated page shown',
   [READ_TIP]: 'Open tip',
   [REGISTER_USER]: 'Register new user',
   [RESET_USER_PASSWORD]: 'Ask password email',
@@ -128,6 +126,7 @@ export const actionTypesToLog = {
   [SEND_PROFESSIONAL_FEEDBACK]: 'Send feedback from professional page',
   [SEND_PROJECT_FEEDBACK]: 'Send project feedback',
   [SET_USER_PROFILE]: 'Update profile',
+  [SHARE_PRODUCT_MODAL_IS_SHOWN]: 'Share product modal is shown',
   [SHARE_PRODUCT_TO_NETWORK]: 'Share product to network',
   [SHOW_ALL_TIPS]: 'Show all tips',
 }
@@ -146,25 +145,39 @@ export const actionTypesToLog = {
 // Plain actions, keep them grouped and alpha sorted.
 
 const acceptCookiesUsageAction = {type: ACCEPT_COOKIES_USAGE}
-const allAdvicesReadAction = {type: ALL_ADVICES_READ}
-const closeLoginModalAction = {type: CLOSE_LOGIN_MODAL}
 const hideToasterMessageAction = {type: HIDE_TOASTER_MESSAGE}
 const logoutAction = {type: LOGOUT}
-const loadLandingPageAction = {type: LOAD_LANDING_PAGE}
+const productUpdatedPageIsShownAction = {type: PRODUCT_UPDATED_PAGE_IS_SHOWN}
 const switchToMobileVersionAction = {type: SWITCH_TO_MOBILE_VERSION}
 
 // Synchronous action generators, keep them grouped and alpha sorted.
+
+function activateDemoInFuture(demo) {
+  return dispatch => dispatch({demo, type: WILL_ACTIVATE_DEMO})
+}
 
 function adviceCardIsShown(project, advice) {
   return dispatch => dispatch({advice, project, type: ADVICE_CARD_IS_SHOWN})
 }
 
-function bobScoreIsShown(project) {
-  return dispatch => dispatch({project, type: BOB_SCORE_IS_SHOWN})
+function closeLoginModal(hasCanceledLogin) {
+  return {hasCanceledLogin, type: CLOSE_LOGIN_MODAL}
+}
+
+function diagnosticIsShown(project) {
+  return dispatch => dispatch({project, type: DIAGNOSTIC_IS_SHOWN})
 }
 
 function displayToasterMessage(error) {
   return dispatch => dispatch({error, type: DISPLAY_TOAST_MESSAGE})
+}
+
+function downloadDiagnosticAsPdf(project) {
+  return dispatch => dispatch({project, type: DOWNLOAD_DIAGNOSTIC_PDF})
+}
+
+function explorerIsShown(project) {
+  return dispatch => dispatch({project, type: EXPLORER_IS_SHOWN})
 }
 
 function landingPageSectionIsShown(sectionName) {
@@ -183,6 +196,15 @@ function openTipExternalLink(action) {
   return dispatch => dispatch({action, type: OPEN_TIP_EXTERNAL_LINK})
 }
 
+function loadLandingPage(timeToFirstInteractiveMillisecs, landingPageKind, specificJob) {
+  return dispatch => dispatch({
+    defaultProjectProps: specificJob ? {targetJob: specificJob} : {},
+    landingPageKind,
+    timeToFirstInteractiveMillisecs,
+    type: LOAD_LANDING_PAGE,
+  })
+}
+
 function readTip(action, feedback) {
   return dispatch => dispatch({action, feedback, type: READ_TIP})
 }
@@ -197,16 +219,20 @@ function seeAdvice(project, advice) {
   return dispatch => dispatch({advice, project, type: SEE_ADVICE})
 }
 
-function shareProductToNetwork(medium) {
-  return dispatch => dispatch({medium, type: SHARE_PRODUCT_TO_NETWORK})
+function shareProductModalIsShown(visualElement) {
+  return dispatch => dispatch({type: SHARE_PRODUCT_MODAL_IS_SHOWN, visualElement})
+}
+
+function shareProductToNetwork(visualElement) {
+  return dispatch => dispatch({type: SHARE_PRODUCT_TO_NETWORK, visualElement})
 }
 
 function showAllTips(project, advice) {
   return dispatch => dispatch({advice, project, type: SHOW_ALL_TIPS})
 }
 
-function trackInitialUtmContent(utmContent) {
-  return dispatch => dispatch({type: TRACK_INITIAL_UTM_CONTENT, utmContent})
+function trackInitialUtm(utm) {
+  return dispatch => dispatch({type: TRACK_INITIAL_UTM, utm})
 }
 
 // Asynchronous action generators.
@@ -235,6 +261,10 @@ function computeAdvicesForProject(user) {
   return wrapAsyncAction(COMPUTE_ADVICES_FOR_PROJECT, () => projectComputeAdvicesPost(user))
 }
 
+function diagnoseProject(user) {
+  return wrapAsyncAction(DIAGNOSE_PROJECT, () => projectDiagnosePost(user))
+}
+
 function getAdviceTips(project, advice) {
   return (dispatch, getState) => {
     const {user, app} = getState()
@@ -248,46 +278,15 @@ function getDashboardExport(dashboardExportId) {
   return wrapAsyncAction(GET_DASHBOARD_EXPORT, () => dashboardExportGet(dashboardExportId))
 }
 
-function getExpandedCardContent(project, type, adviceId) {
+function getExpandedCardContent(project, adviceId) {
   return (dispatch, getState) => {
     const {user, app} = getState()
     return dispatch(
       wrapAsyncAction(
-        type,
+        GET_EXPANDED_CARD_CONTENT,
         () => expandedCardContentGet(user, project, {adviceId}, app.authToken),
         {advice: {adviceId}, project}))
   }
-}
-
-// TODO(pascal): Get rid of all these getters and simplify by directly using a
-// common action to get expanded card data.
-
-function getEvents(project) {
-  return getExpandedCardContent(project, GET_EVENTS, 'events')
-}
-
-function getJobBoards(project) {
-  return getExpandedCardContent(project, GET_JOB_BOARDS, 'find-a-jobboard')
-}
-
-function getAssociations(project) {
-  return getExpandedCardContent(project, GET_ASSOCIATIONS, 'association-help')
-}
-
-function getInterviewTips(project) {
-  return getExpandedCardContent(project, GET_INTERVIEW_TIPS, 'improve-interview')
-}
-
-function getResumeTips(project) {
-  return getExpandedCardContent(project, GET_RESUME_TIPS, 'improve-resume')
-}
-
-function getVolunteeringMissions(project) {
-  return getExpandedCardContent(project, GET_VOLUNTEERING_MISSIONS, 'volunteer')
-}
-
-function getCommutingCities(project) {
-  return getExpandedCardContent(project, GET_COMMUTING_CITIES, 'commute')
 }
 
 function getJobs({romeId}) {
@@ -296,11 +295,10 @@ function getJobs({romeId}) {
   }
 }
 
-// TODO: Get rid of the project for this action, it only needs a job. Also update the endpoint.
 function fetchProjectRequirements(project) {
   return wrapAsyncAction(
     GET_PROJECT_REQUIREMENTS,
-    () => projectRequirementsGet(project),
+    () => jobRequirementsGet(project.targetJob.jobGroup.romeId),
     {project},
   )
 }
@@ -325,10 +323,10 @@ function fetchUser(userId, ignoreFailure) {
 
 function saveUser(user) {
   return (dispatch, getState) => {
-    const {authToken, initialUtmContent} = getState().app
-    const trackedUser = user.initialUtmContent ? user : {
+    const {authToken, initialUtm} = getState().app
+    const trackedUser = user.origin ? user : {
       ...user,
-      initialUtmContent: initialUtmContent || '',
+      origin: initialUtm || undefined,
     }
     return dispatch(wrapAsyncAction(POST_USER_DATA, () => userPost(trackedUser, authToken))).
       then(response => {
@@ -341,7 +339,13 @@ function saveUser(user) {
   }
 }
 
-// TODO(cyrille): See if this can be cleaned up.
+function activateDemo(demo) {
+  return (dispatch, getState) => {
+    dispatch({demo, type: ACTIVATE_DEMO})
+    return dispatch(saveUser(getState().user))
+  }
+}
+
 function advicePageIsShown(project, advice) {
   return (dispatch, getState) => {
     dispatch({advice, project, type: ADVICE_PAGE_IS_SHOWN})
@@ -437,7 +441,7 @@ function facebookAuthenticateUser(facebookAuth, mockApi) {
     if (facebookAuth.picture && facebookAuth.picture.data && facebookAuth.picture.data.url) {
       userProfile.pictureUrl = facebookAuth.picture.data.url
     }
-    if (facebookAuth.gender &&  _FACEBOOK_GENDER_MAPPING[facebookAuth.gender]) {
+    if (facebookAuth.gender && _FACEBOOK_GENDER_MAPPING[facebookAuth.gender]) {
       userProfile.gender = _FACEBOOK_GENDER_MAPPING[facebookAuth.gender]
     }
     if (facebookAuth.email) {
@@ -481,29 +485,32 @@ function googleAuthenticateUser(googleAuth, mockApi) {
   }))
 }
 
+function peConnectAuthenticateUser(code, nonce, mockApi) {
+  const authenticate = mockApi ? mockApi.userAuthenticate : userAuthenticate
+  return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
+    peConnectCode: code,
+    peConnectNonce: nonce,
+  }))
+}
+
+function linkedInAuthenticateUser(code, mockApi) {
+  const authenticate = mockApi ? mockApi.userAuthenticate : userAuthenticate
+  return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
+    linkedInCode: code,
+  }))
+}
+
 function emailCheck(email) {
   return wrapAsyncAction(EMAIL_CHECK, () => userAuthenticate({email}))
 }
 
 function registerNewUser(email, password, firstName, lastName) {
-  return dispatch => {
-    return dispatch(wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
-      email,
-      firstName,
-      hashedPassword: sha1(email + password),
-      lastName,
-    })))
-  }
-}
-
-// TODO(cyrille): Clean-up since unused.
-function likeOrDislikeFeature(feature, likeScore) {
-  return (dispatch, getState) => {
-    dispatch({feature, likeScore, type: LIKE_OR_DISLIKE_FEATURE})
-    const {user, app} = getState()
-    dispatch(wrapAsyncAction(
-      SAVE_LIKES, () => saveLikes(user.userId, {[feature]: likeScore}, app.authToken)))
-  }
+  return wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
+    email,
+    firstName,
+    hashedPassword: sha1(email + password),
+    lastName,
+  }))
 }
 
 function loginUser(email, password, hashSalt) {
@@ -512,6 +519,11 @@ function loginUser(email, password, hashSalt) {
       AUTHENTICATE_USER, () => userAuthenticate({
         email, hashSalt, hashedPassword: sha1(hashSalt + sha1(email + password))})))
   }
+}
+
+function loginUserFromToken(userId, authToken) {
+  return dispatch =>
+    dispatch(wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({authToken, userId})))
 }
 
 function markChangelogAsSeen(changelog) {
@@ -544,7 +556,7 @@ function resetPassword(email, password, authToken) {
 function setUserProfile(userProfile, shouldAlsoSaveUser, type) {
   return (dispatch, getState) => {
     // Drop unknown kinds.
-    // TODO(pascal) Check that gender, situation, jobSearchPhase 
+    // TODO(pascal): Check that gender, situation, jobSearchPhase
     // are consistent with their kinds, if they exist.
     dispatch({type: type || SET_USER_PROFILE, userProfile})
     if (shouldAlsoSaveUser) {
@@ -589,31 +601,30 @@ function modifyProject(project) {
   }
 }
 
-// TODO(cyrille): Clean-up since unused.
-function moveUserDatesBackOneDay() {
-  return (dispatch, getState) => {
-    dispatch({type: MOVE_USER_DATES_BACK_1_DAY})
-    return dispatch(saveUser(getState().user)).then(() => {
-      dispatch(displayToasterMessage('Debug: Time Travel!'))
-    })
-  }
-}
-
 function askPasswordReset(email) {
   return wrapAsyncAction(RESET_USER_PASSWORD, () => resetPasswordPost(email))
 }
 
 function getEvalUseCasePools() {
-  return dispatch => {
+  return (dispatch, getState) => {
+    const {googleIdToken} = getState().auth || {}
     return dispatch(wrapAsyncAction(
-      GET_EVAL_USE_CASE_POOLS, () => evalUseCasePoolsGet()))
+      GET_EVAL_USE_CASE_POOLS, () => evalUseCasePoolsGet(googleIdToken)))
   }
 }
 
 function getEvalUseCases(poolName) {
+  return (dispatch, getState) => {
+    const {googleIdToken} = getState().auth || {}
+    return dispatch(wrapAsyncAction(
+      GET_EVAL_USE_CASES, () => evalUseCasesGet(poolName, googleIdToken)))
+  }
+}
+
+function getUserCount() {
   return dispatch => {
     return dispatch(wrapAsyncAction(
-      GET_EVAL_USE_CASES, () => evalUseCasesGet(poolName)))
+      GET_USER_COUNT, () => userCountGet()))
   }
 }
 
@@ -621,16 +632,18 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   readTip, facebookAuthenticateUser, sendAdviceFeedback, modifyProject,
   googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
   createFirstProject, fetchProjectRequirements, resetPassword,
-  moveUserDatesBackOneDay, editFirstProject, sendProfessionalFeedback,
-  getDashboardExport, displayToasterMessage, closeLoginModalAction,
+  editFirstProject, sendProfessionalFeedback, diagnoseProject,
+  getDashboardExport, displayToasterMessage, closeLoginModal,
   openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
-  loadLandingPageAction, deleteUser, askPasswordReset, selectAdvice,
+  loadLandingPage, deleteUser, askPasswordReset, selectAdvice,
   openTipExternalLink, advicePageIsShown, seeAdvice, markChangelogAsSeen,
-  adviceCardIsShown, likeOrDislikeFeature, getAdviceTips, getAssociations,
-  showAllTips, migrateUserToAdvisor, getJobBoards, getJobs, markNotificationAsSeen,
-  allAdvicesReadAction, shareProductToNetwork, trackInitialUtmContent,
-  getVolunteeringMissions, sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
-  landingPageSectionIsShown, getCommutingCities, bobScoreIsShown, getResumeTips,
-  getInterviewTips, openRegistrationModal, sendNewAdviceIdea, computeAdvicesForProject,
-  getEvalUseCasePools, getEvalUseCases, getEvents, getExpandedCardContent,
+  adviceCardIsShown, getAdviceTips, explorerIsShown,
+  showAllTips, migrateUserToAdvisor, getJobs, markNotificationAsSeen,
+  shareProductToNetwork, trackInitialUtm, peConnectAuthenticateUser,
+  sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
+  landingPageSectionIsShown, openRegistrationModal, sendNewAdviceIdea, computeAdvicesForProject,
+  getEvalUseCasePools, getEvalUseCases, getExpandedCardContent,
+  getUserCount, activateDemoInFuture, activateDemo, diagnosticIsShown, downloadDiagnosticAsPdf,
+  productUpdatedPageIsShownAction, loginUserFromToken, shareProductModalIsShown,
+  linkedInAuthenticateUser,
 }

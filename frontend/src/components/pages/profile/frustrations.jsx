@@ -51,6 +51,12 @@ const jobSearchFrustrationOptions = [
   },
   {
     name: () => unnamedComponent(<span>
+      Le manque de <strong>confiance en moi</strong>
+    </span>),
+    value: 'SELF_CONFIDENCE',
+  },
+  {
+    name: () => unnamedComponent(<span>
       La gestion de mon temps pour être <strong>efficace</strong>
     </span>),
     value: 'TIME_MANAGEMENT',
@@ -96,7 +102,7 @@ class FrustrationsStep extends React.Component {
     profile: USER_PROFILE_SHAPE,
   }
 
-  componentWillMount()  {
+  componentWillMount() {
     this.updater_ = new ProfileUpdater({
       customFrustrations: false,
       frustrations: false,
@@ -168,12 +174,12 @@ class FrustrationsStep extends React.Component {
       customFrustrations : (customFrustrations || []).concat([''])
     return <Step
       title={isShownAsStepsDuringOnboarding ?
-        "Qu'est ce qui vous bloque dans votre recherche ?" :
+        "Pour finir, qu'est ce qui vous bloque dans votre recherche ?" :
         'Ce qui vous bloque dans votre recherche'}
       explanation={explanation}
       fastForward={this.fastForward}
       onNextButtonClick={this.updater_.handleSubmit}
-      onPreviousButtonClick={this.updater_.handleBack}
+      onPreviousButtonClick={this.updater_.getBackHandler()}
       {...this.props}>
       <FieldSet isInline={true}>
         <CheckboxList

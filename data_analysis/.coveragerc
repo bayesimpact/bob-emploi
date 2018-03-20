@@ -1,0 +1,3 @@
+[run]
+omit =
+  bob_emploi/frontend/*

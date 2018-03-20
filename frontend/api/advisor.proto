@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package bayes.bob;
+
+// The definition of an Advice Module. See http://go/bob:advisor-design.
+// Next ID: 20
+message AdviceModule {
+  // Unique readable ID for the module.
+  string advice_id = 4;
+
+  // Unique Airtable ID for the module.
+  string airtable_id = 8;
+
+  // Title for the advice module.
+  string title = 14;
+
+  // Adapted title corresponding to x stars.
+  map<int32, string> title_x_stars = 15;
+
+  // Name of the scoring model to decide whether to trigger this advice.
+  string trigger_scoring_model = 1;
+
+  // ID of the sticky action template to engage the user when they have
+  // accepted the advice.
+  string engage_sticky_action_template = 2 [deprecated = true];
+
+  // Whether this module is fully implemented, otherwise it's only availble to
+  // test users.
+  bool is_ready_for_prod = 3;
+
+  // Name of the Advice message's field to store extra data for this module to
+  // render a card in the client.
+  string extra_data_field_name = 5;
+
+  // Unordered list of ID of all tips to help apply this advice concretely.
+  repeated string tip_template_ids = 6;
+
+  // A set of airtable IDs of advice modules that should be disabled if this
+  // one triggers.
+  repeated string incompatible_advice_ids = 7;
+
+  // Whether the advice module is easy to tackle and could be prioritize on a
+  // Friday.
+  bool is_easy = 9;
+
+  // String to build the subject of an email sent about this advice module.
+  // i.e. Today your objective: "<email_subject>".
+  string email_subject = 10;
+
+  // Title of the body of the email sent about this advice module.
+  string email_title = 11;
+
+  // The end of a sentence in the email sent about this advice module that
+  // starts with: "We suggest you to…"
+  string email_suggestion_sentence = 12;
+
+  // A list of fact as static sentences that can be used in emails to convince
+  // users to work on the advice we gave.
+  repeated string email_facts = 13;
+
+  // A set of category IDs that the advice module belongs to.
+  repeated string categories = 16;
+
+  // A set of reasons why the advice is given.
+  repeated string explanations = 17;
+
+  // The callout of the gain that this advice will bring to the user, e.g. "3x", "+20%".
+  string user_gain_callout = 18;
+
+  // The rest of the explanation (after user_gain_callout) of the gain that
+  // this advice will bring to the user, e.g. "plus d'entretiens", "d'offres".
+  string user_gain_details = 19;
+}
+
+// History of advice sent by email.
+message EmailHistory {
+  // Last time an advice module was sent by email.
+  map<string, google.protobuf.Timestamp> advice_modules = 1;
+
+  // Last time a tip was sent by email.
+  map<string, google.protobuf.Timestamp> tips = 2;
+}
+
+// Definition of an advice which content is fully dynamic and determined by the
+// server, e.g. the "Specific to Job" advice.
+message DynamicAdvice {
+  // Title of this advice.
+  string title = 1;
+
+  // Content for the advice card. This is using Markdown.
+  string card_text = 2;
+
+  // Header content for the expanded advice card. This is using Mardown.
+  string expanded_card_header = 6;
+
+  // Header content for the expanded advice card, feminine version. This is
+  // using Mardown.
+  string expanded_card_header_feminine = 7;
+
+  // Content for the expanded advice card. This is using Markdown.
+  repeated string expanded_card_items = 3;
+
+  // Content for the expanded advice card, feminine version. This is using
+  // Markdown.
+  repeated string expanded_card_items_feminine = 4;
+
+  // A set of filter IDs: do not show the advice card if one these filters
+  // returns false for the project.
+  // See the list of available filters in scoring.py.
+  repeated string filters = 5;
+}

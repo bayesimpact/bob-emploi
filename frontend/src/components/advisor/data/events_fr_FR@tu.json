@@ -1,0 +1,54 @@
+{
+  "A": {
+    "atNext": "au prochain ",
+    "eventLocation": "salon de l'agriculture"
+  },
+  "B": {
+    "atNext": "à la prochaine ",
+    "eventLocation": "biénnale"
+  },
+  "C": {
+    "atNext": "au prochain ",
+    "eventLocation": "meetup"
+  },
+  "D": {
+    "atNext": "au prochain évènement de la ",
+    "eventLocation": "chambre du commerce et de l'industrie"
+  },
+  "E": {
+    "atNext": "au prochain ",
+    "eventLocation": "festival"
+  },
+  "F": {
+    "atNext": "au prochain salon de l'emploi de la ",
+    "eventLocation": "construction et des travaux publics"
+  },
+  "G": {
+    "atNext": "aux prochaines journées de recrutements des ",
+    "eventLocation": "hôtels et restaurants près de chez toi"
+  },
+  "H": {
+    "atNext": "au prochain évènement de la ",
+    "eventLocation": "chambre du commerce et de l'industrie"
+  },
+  "I": {
+    "atNext": "aux prochaines journée de ",
+    "eventLocation": "recrutement près de chez toi"
+  },
+  "J": {
+    "atNext": "au prochain ",
+    "eventLocation": "congrès de médecine"
+  },
+  "K": {
+    "atNext": "au prochain évènement de ",
+    "eventLocation": "ta mairie"
+  },
+  "M": {
+    "atNext": "au prochain ",
+    "eventLocation": "forum de l'entreprise et de l'emploi"
+  },
+  "N": {
+    "atNext": "au prochain ",
+    "eventLocation": "salon de recrutement logistique, transport et achats"
+  }
+}

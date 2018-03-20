@@ -12,13 +12,13 @@ class VideoSignUpPage extends React.Component {
       search: PropTypes.string.isRequired,
     }).isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
-  componentWillMount() {
-    const {email} = parse(this.props.location.search)
-    this.setState({email})
+  state = {
+    email: parse(this.props.location.search).email,
   }
 
   render() {

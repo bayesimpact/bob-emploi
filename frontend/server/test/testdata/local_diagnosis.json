@@ -1,14 +1,84 @@
 [
   {
     "_id": "94:N4105",
+    "numJobOffersLastYear": 21,
+    "numJobOffersPreviousYear": 15,
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
       "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 2
+    },
+    "unemploymentDuration": {
+      "days": 99
+    },
+    "job_offers_change": 10,
+    "lessStressfulJobGroups": [
+      {
+        "localStats": {
+          "imt": {
+            "yearlyAvgOffersPer10Candidates": 12
+          }
+        },
+        "jobGroup": {
+          "romeId": "A1413",
+          "name": "Superhero"
+        },
+        "mobilityType": "CLOSE"
+      },
+      {
+        "localStats": {
+          "imt": {
+            "yearlyAvgOffersPer10Candidates": 6
+          }
+        },
+        "jobGroup": {
+          "romeId": "A1401",
+          "name": "Aide arboricole"
+        },
+        "mobilityType": "CLOSE"
+      }
+    ]
+  },
+  {
+    "_id": "06:N4105",
+    "imt": {
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 6
+    }
+  },
+  {
+    "_id": "2A:N4105",
+    "imt": {
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 6
+    }
+  },
+  {
+    "_id": "31:N4105",
+    "imt": {
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 6
+    },
+    "job_offers_change": 10
+  },
+  {
+    "_id": "69:N4105",
+    "bmo": {
+      "percentDifficult": 60
+    },
+    "imt": {
+      "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 6
     }
   },
   {
     "_id": "42:N4105",
+    "numJobOffersLastYear": 2,
+    "numJobOffersPreviousYear": 15,
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
       "yearlyAvgOffersDenominator": 10,
@@ -16,15 +86,72 @@
     }
   },
   {
+    "_id": "75:D1211",
+    "numJobOffersLastYear": 41,
+    "numJobOffersPreviousYear": 15,
+    "imt": {
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 10
+    },
+    "job_offers_change": 10,
+    "lessStressfulJobGroups": [
+      {
+        "localStats": {
+          "imt": {
+            "yearlyAvgOffersPer10Candidates": 12
+          }
+        },
+        "jobGroup": {
+          "romeId": "A1413",
+          "name": "Superhero"
+        },
+        "mobilityType": "CLOSE"
+      },
+      {
+        "localStats": {
+          "imt": {
+            "yearlyAvgOffersPer10Candidates": 6
+          }
+        },
+        "jobGroup": {
+          "romeId": "A1401",
+          "name": "Aide arboricole"
+        },
+        "mobilityType": "CLOSE"
+      }
+    ]
+  },
+  {
     "_id": "69:M1604",
+    "bmo": {
+      "percentDifficult": 30
+    },
+    "numJobOffersLastYear": 1,
+    "numJobOffersPreviousYear": 2,
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
       "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 2
+    },
+    "unemploymentDuration": {
+      "days": 560
     }
   },
   {
     "_id": "77:M1607",
+    "numJobOffersLastYear": 17,
+    "numJobOffersPreviousYear": 15,
+    "imt": {
+      "employmentTypePercentages": [
+        {"employmentType": "CDI" , "percentage": 5},
+        {"employmentType": "CDD_OVER_3_MONTHS" , "percentage": 95}
+      ]
+    }
+  },
+  {
+    "_id": "45:D1101",
+    "numJobOffersLastYear": 17,
+    "numJobOffersPreviousYear": 15,
     "imt": {
       "employmentTypePercentages": [
         {"employmentType": "CDI" , "percentage": 5},

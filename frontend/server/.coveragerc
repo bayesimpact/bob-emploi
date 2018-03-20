@@ -1,0 +1,4 @@
+[run]
+omit =
+  bob_emploi/frontend/api/*
+  *_test.py

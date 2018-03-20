@@ -25,8 +25,13 @@ Routes.PROFESSIONALS_PAGE = Routes.ROOT + 'professionnels'
 Routes.TRANSPARENCY_PAGE = Routes.ROOT + 'transparence'
 Routes.TEAM_PAGE = Routes.ROOT + 'equipe'
 Routes.VIDEO_SIGNUP_PAGE = Routes.ROOT + 'inscription'
+Routes.JOB_SIGNUP_PAGE = Routes.ROOT + 'metier/:romeId/:specificJobName'
 Routes.EVAL_PAGE = Routes.ROOT + 'eval'
 Routes.EVAL_PATH = Routes.EVAL_PAGE + '/:useCaseId?'
+Routes.BOOTSTRAP_PAGE = Routes.ROOT + 'conseiller/nouveau-profil-et-projet'
+Routes.INVITE_PATH = Routes.ROOT + 'invite'
+Routes.STATIC_ADVICE_PATH = Routes.ROOT + 'conseil'
+Routes.STATIC_ADVICE_PAGE = adviceId => Routes.STATIC_ADVICE_PATH + '/' + adviceId
 
 export const NEW_PROJECT_ID = 'nouveau'
 

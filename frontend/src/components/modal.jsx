@@ -1,15 +1,14 @@
-import React from 'react'
+import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
+import React from 'react'
 import ReactHeight from 'react-height'
 
-import {Colors, Icon, SmoothTransitions} from './theme'
+import {Colors, SmoothTransitions} from './theme'
 import {ShortKey} from 'components/shortkey'
 
 
 var numModalsShown = 0
-
-const closeButtonHeight = 30
 
 
 class Modal extends React.Component {
@@ -33,8 +32,6 @@ class Modal extends React.Component {
     title: PropTypes.node,
     // Additionl styling for the title.
     titleStyle: PropTypes.object,
-    // Duration in milliseconds of the transition to open and close the modal.
-    transitionDurationMilliSec: PropTypes.number,
   }
 
   static defaultProps = {
@@ -44,10 +41,12 @@ class Modal extends React.Component {
 
   state = {
     children: null,
+    closeButtonHeight: 0,
     isContentShown: false,
     isTooBigToBeCentered: false,
     isTransitionOver: false,
     modalHeight: 0,
+    onTransitionEnd: null,
   }
 
   componentWillMount() {
@@ -73,8 +72,17 @@ class Modal extends React.Component {
     if (isShown) {
       this.hide(this.props.onHidden)
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout)
+  }
+
+  // Update the state after the transition ends.
+  // If there's no transition return directly the modifications of the state.
+  setStateOnTransitionEnd(computeState) {
+    const {style} = this.props
+    if (style && style.transition === 'none') {
+      return computeState()
+    }
+    return {
+      onTransitionEnd: () => this.setState(computeState()),
     }
   }
 
@@ -83,13 +91,10 @@ class Modal extends React.Component {
       // Disable scroll on body.
       document.body.style.overflow = 'hidden'
     }
-    this.setState({isContentShown: true})
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.timeout = setTimeout(
-      () => this.setState({isTransitionOver: true}),
-      this.props.transitionDurationMilliSec)
+    this.setState({
+      isContentShown: true,
+      ...this.setStateOnTransitionEnd(() => ({isTransitionOver: true})),
+    })
   }
 
   hide(onHidden) {
@@ -98,22 +103,26 @@ class Modal extends React.Component {
       document.body.style.overflow = 'visible'
     }
     // Keep the current children while disappearing.
-    this.setState({children: this.props.children, isTransitionOver: false})
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.timeout = setTimeout(
-      () => {
+    this.setState({
+      children: this.props.children,
+      isTransitionOver: false,
+      ...this.setStateOnTransitionEnd(() => {
         this.resetScroll()
-        this.setState({children: null, isContentShown: false})
         onHidden && onHidden()
-      },
-      this.props.transitionDurationMilliSec)
+        return {
+          children: null,
+          isContentShown: false,
+          onTransitionEnd: null,
+        }
+      }),
+    })
   }
 
   handleUpdatedHeight = newHeight => {
-    const maxHeight = window.innerHeight - (this.props.onClose ? closeButtonHeight : 0)
+    const closeButtonHeight = this.props.onClose ? 30 : 0
+    const maxHeight = window.innerHeight - closeButtonHeight
     this.setState({
+      closeButtonHeight,
       isTooBigToBeCentered: newHeight && newHeight > maxHeight,
       modalHeight: newHeight,
     })
@@ -127,10 +136,9 @@ class Modal extends React.Component {
   }
 
   render() {
-    const {backgroundCoverOpacity, externalChildren, isShown, onClose, style, title,
-      transitionDurationMilliSec} = this.props
-    const {children, isContentShown, isTooBigToBeCentered, isTransitionOver,
-      modalHeight} = this.state
+    const {backgroundCoverOpacity, externalChildren, isShown, onClose, style, title} = this.props
+    const {children, closeButtonHeight, isContentShown, isTooBigToBeCentered,
+      isTransitionOver, modalHeight, onTransitionEnd} = this.state
     const pageStyle = {
       alignItems: 'center',
       display: isTooBigToBeCentered ? 'block' : 'flex',
@@ -144,18 +152,6 @@ class Modal extends React.Component {
       top: 0,
       width: '100vw',
       zIndex: 2,
-    }
-    const backgroundStyle = {
-      backgroundColor: '#000',
-      bottom: isTooBigToBeCentered ? 'initial' : 0,
-      height: isTooBigToBeCentered ? (modalHeight + 2 * closeButtonHeight) : '100vh',
-      left: 0,
-      opacity: isShown ? backgroundCoverOpacity : 0,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      transition: `opacity ${transitionDurationMilliSec}ms`,
-      zIndex: 0,
     }
     const modalStyle = {
       backgroundColor: '#fff',
@@ -175,8 +171,20 @@ class Modal extends React.Component {
       // https://www.w3.org/TR/css-transforms-1/#transform-rendering
       transform: isTransitionOver ? 'initial' : (
         'translate(0, ' + (isShown ? '0px' : '-40px') + ')'),
-      transition: `all ${transitionDurationMilliSec}ms`,
+      transition: 'all 450ms',
       ...style,
+    }
+    const backgroundStyle = {
+      backgroundColor: '#000',
+      bottom: isTooBigToBeCentered ? 'initial' : 0,
+      height: isTooBigToBeCentered ? (modalHeight + 2 * closeButtonHeight) : '100vh',
+      left: 0,
+      opacity: isShown ? backgroundCoverOpacity : 0,
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      transition: modalStyle.transition,
+      zIndex: 0,
     }
     const titleStyle = {
       color: Colors.DARK,
@@ -188,12 +196,15 @@ class Modal extends React.Component {
       textAlign: 'center',
       ...this.props.titleStyle,
     }
-    return <div style={pageStyle} ref={page => {
-      this.page = page
-    }}>
+    return <div
+      ref={page => this.page = page}
+      style={pageStyle}
+    >
       <div style={backgroundStyle} />
       {externalChildren}
-      <ReactHeight onHeightReady={this.handleUpdatedHeight} style={modalStyle}>
+      <ReactHeight
+        onHeightReady={this.handleUpdatedHeight} style={modalStyle}
+        onTransitionEnd={onTransitionEnd}>
         {title ? <div style={titleStyle}>{title}</div> : null}
         {onClose ? <ModalCloseButton shouldCloseOnEscape={isShown} onClick={onClose} /> : null}
         {isContentShown ? (children || this.props.children) : null}
@@ -209,6 +220,7 @@ class ModalCloseButtonBase extends React.Component {
     shouldCloseOnEscape: PropTypes.bool,
     style: PropTypes.object,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -239,9 +251,14 @@ class ModalCloseButtonBase extends React.Component {
       ...SmoothTransitions,
       ...style,
     }
+    const closeIconStyle = {
+      fill: closeButtonStyle.color,
+      height: 33,
+      width: 19,
+    }
     return <div {...otherProps} style={closeButtonStyle} onClick={onClick}>
       <ShortKey keyCode="Escape" onKeyDown={shouldCloseOnEscape ? onClick : null} />
-      <Icon name="close" />
+      <CloseIcon style={closeIconStyle} />
     </div>
   }
 }

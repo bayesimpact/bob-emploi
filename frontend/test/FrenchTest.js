@@ -1,6 +1,7 @@
 import {expect} from 'chai'
-import {lowerFirstLetter, ofCityPrefix, maybeContract, maybeContractPrefix,
-  toTitleCase} from 'store/french'
+import forEach from 'lodash/forEach'
+import {lowerFirstLetter, ofPrefix, maybeContract, maybeContractPrefix,
+  toTitleCase, getEvents, getAdviceModules, getEmailTemplates} from 'store/french'
 
 
 describe('maybeContract', () => {
@@ -72,26 +73,30 @@ describe('lowerFirstLetter', () => {
 })
 
 
-describe('ofCityPrefix', () => {
-  it('should add a simple "de" prefix for regular city names', () => {
-    expect(ofCityPrefix('Toulouse')).to.eql({cityName: 'Toulouse', prefix: 'de '})
+describe('ofPrefix', () => {
+  it('should add a simple "de" prefix for regular names', () => {
+    expect(ofPrefix('Toulouse')).to.eql({modifiedName: 'Toulouse', prefix: 'de '})
   })
 
   it('should use the "du" contraction when needed', () => {
-    expect(ofCityPrefix('Le Mans')).to.eql({cityName: 'Mans', prefix: 'du '})
+    expect(ofPrefix('Le Mans')).to.eql({modifiedName: 'Mans', prefix: 'du '})
   })
 
   it('should lowercase "La" as a first word', () => {
-    expect(ofCityPrefix('La Ferté')).to.eql({cityName: 'Ferté', prefix: 'de la '})
-    expect(ofCityPrefix('Laval')).to.eql({cityName: 'Laval', prefix: 'de '})
+    expect(ofPrefix('La Ferté')).to.eql({modifiedName: 'Ferté', prefix: 'de la '})
+    expect(ofPrefix('Laval')).to.eql({modifiedName: 'Laval', prefix: 'de '})
   })
 
   it('should use the "des" contraction when needed', () => {
-    expect(ofCityPrefix('Les Ulis')).to.eql({cityName: 'Ulis', prefix: 'des '})
+    expect(ofPrefix('Les Ulis')).to.eql({modifiedName: 'Ulis', prefix: 'des '})
   })
 
   it('should lowercase "L\'" as a first word', () => {
-    expect(ofCityPrefix("L'Arbresle")).to.eql({cityName: 'Arbresle', prefix: "de l'"})
+    expect(ofPrefix("L'Arbresle")).to.eql({modifiedName: 'Arbresle', prefix: "de l'"})
+  })
+
+  it('should contract on capital vowel', () => {
+    expect(ofPrefix('Arles')).to.eql({modifiedName: 'Arles', prefix: "d'"})
   })
 })
 
@@ -121,4 +126,89 @@ describe('toTitleCase', () => {
     expect(toTitleCase('SARL BOULANGERIE PATISSERIE GRANDE')).
       to.eq('SARL Boulangerie Patisserie Grande')
   })
+})
+
+
+const userYouFromBool = canTutoie => (tu, vous) => canTutoie ? tu : vous
+const isEventJson = json => {
+  expect(json).to.be.an('object')
+  expect(Object.keys(json).every(key => key.length === 1)).to.be.true
+  Object.keys(json).forEach(key =>
+    expect(json[key]).to.include.all.keys('atNext', 'eventLocation')
+  )
+}
+
+
+describe('getEvents', () => {
+  it(
+    'should return the right json format for tutoiement',
+    () => isEventJson(getEvents(userYouFromBool(true))),
+  )
+
+  it(
+    'should return the right json format for vouvoiement',
+    () => isEventJson(getEvents(userYouFromBool(false))),
+  )
+
+  // TODO(cyrille): Check they are different once they really are.
+})
+
+
+const adviceModuleKeys = new Set([
+  'callToAction',
+  'explanations',
+  'goal',
+  'title',
+  'titleXStars',
+  'userGainCallout',
+  'userGainDetails',
+])
+
+const isAdviceModuleJson = json => {
+  expect(json).to.be.an('object')
+  forEach(json, value => {
+    const unexpectedKeys = Object.keys(value).filter(key => !adviceModuleKeys.has(key))
+    expect(unexpectedKeys).to.be.empty
+  })
+}
+
+
+describe('getAdviceModules', () => {
+  it('should return the right json format for tutoiement',
+    () => isAdviceModuleJson(getAdviceModules(userYouFromBool(true))))
+
+  it('should return the right json format for vouvoiement',
+    () => isAdviceModuleJson(getAdviceModules(userYouFromBool(false))))
+})
+
+
+const emailTemplatesKeys = new Set([
+  'content',
+  'filters',
+  'personalizations',
+  'reason',
+  'title',
+  'type',
+])
+
+
+const isEmailTemplatesJson = json => {
+  expect(json).to.be.an('object')
+  forEach(json, value => {
+    expect(value).to.be.an('array')
+    value.forEach(template => {
+      const unexpectedKeys =
+        Object.keys(template).filter(key => !emailTemplatesKeys.has(key))
+      expect(unexpectedKeys).to.be.empty
+    })
+  })
+}
+
+
+describe('getEmailTemplates', () => {
+  it('should return the right json format for tutoiement',
+    () => isEmailTemplatesJson(getEmailTemplates(userYouFromBool(true))))
+
+  it('should return the right json format for vouvoiement',
+    () => isEmailTemplatesJson(getEmailTemplates(userYouFromBool(false))))
 })

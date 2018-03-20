@@ -2,10 +2,10 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 
-import {fetchProjectRequirements, GET_PROJECT_REQUIREMENTS} from 'store/actions'
+import {fetchProjectRequirements, GET_PROJECT_REQUIREMENTS, setUserProfile} from 'store/actions'
 import {PROJECT_EXPERIENCE_OPTIONS, getTrainingFulfillmentEstimateOptions} from 'store/project'
 
-import {FieldSet, Select} from 'components/theme'
+import {FieldSet, RadioGroup, Select} from 'components/theme'
 import {Step} from './step'
 
 
@@ -23,6 +23,11 @@ const networkEstimateOptions = [
   {name: 'Je ne pense pas', value: '1'},
 ]
 
+const drivingLicenseOptions = [
+  {name: 'oui', value: 'TRUE'},
+  {name: 'non', value: 'FALSE'},
+]
+
 // TODO: Move to store.
 function isSeniorityRequired(previousJobSimilarity) {
   return previousJobSimilarity !== 'NEVER_DONE'
@@ -33,36 +38,50 @@ class NewProjectExperienceStepBase extends React.Component {
     dispatch: PropTypes.func,
     isFetchingRequirements: PropTypes.bool,
     jobRequirements: PropTypes.object,
-    newProject: PropTypes.object,
+    newProject: PropTypes.shape({
+      city: PropTypes.shape({
+        transportScore: PropTypes.number,
+        urbanScore: PropTypes.number,
+      }),
+      targetJob: PropTypes.shape({
+        codeOgr: PropTypes.string,
+      }).isRequired,
+    }).isRequired,
     onSubmit: PropTypes.func.isRequired,
     profile: PropTypes.shape({
       gender: PropTypes.string,
-    }),
+      hasCarDrivingLicense: PropTypes.oneOf(drivingLicenseOptions.map(({value}) => value)),
+    }).isRequired,
+  }
+
+  state = {
+    hasCarDrivingLicense: this.props.profile && this.props.profile.hasCarDrivingLicense,
+    ...this.props.newProject,
   }
 
   componentWillMount() {
-    const {jobRequirements, newProject} = this.props
-    this.setState({...newProject})
-    if (!jobRequirements[newProject.targetJob.codeOgr]) {
-      this.props.dispatch(fetchProjectRequirements({
-        targetJob: newProject.targetJob,
-      }))
+    const {jobRequirements, newProject: {targetJob}} = this.props
+    if (!jobRequirements[targetJob.codeOgr]) {
+      this.props.dispatch(fetchProjectRequirements({targetJob}))
     }
   }
 
   componentWillReceiveProps(nextProps) {
     const {isFetchingRequirements} = nextProps
-    if (!isFetchingRequirements && !this.getRequiredDiplomaNames().length) {
+    if (!isFetchingRequirements && !this.getRequiredDiplomaNames(nextProps).length) {
       this.setState({trainingFulfillmentEstimate: 'NO_TRAINING_REQUIRED'})
     }
   }
 
   handleSubmit = () => {
-    const {networkEstimate, previousJobSimilarity, seniority,
+    const {dispatch, onSubmit} = this.props
+    const {hasCarDrivingLicense, networkEstimate, previousJobSimilarity, seniority,
       trainingFulfillmentEstimate} = this.state
     this.setState({isValidated: true})
     if (this.isFormValid()) {
-      this.props.onSubmit({
+    // TODO(cyrille): Refacto handling changes from profile and project at the same time.
+      dispatch(setUserProfile({hasCarDrivingLicense}, true))
+      onSubmit({
         networkEstimate,
         previousJobSimilarity,
         seniority,
@@ -73,7 +92,7 @@ class NewProjectExperienceStepBase extends React.Component {
 
   fastForward = () => {
     const {trainingFulfillmentEstimate, networkEstimate, previousJobSimilarity,
-      seniority} = this.state
+      seniority, hasCarDrivingLicense} = this.state
     if (this.isFormValid()) {
       this.handleSubmit()
       return
@@ -85,7 +104,7 @@ class NewProjectExperienceStepBase extends React.Component {
     if (!previousJobSimilarity) {
       newState.previousJobSimilarity = pickRandomFromList(PROJECT_EXPERIENCE_OPTIONS).value
     }
-    if (!seniority && isSeniorityRequired(previousJobSimilarity)) {
+    if (!seniority && isSeniorityRequired(newState.previousJobSimilarity)) {
       newState.seniority = pickRandomFromList(seniorityOptions).value
     }
     if (!trainingFulfillmentEstimate) {
@@ -95,52 +114,73 @@ class NewProjectExperienceStepBase extends React.Component {
     if (!networkEstimate) {
       newState.networkEstimate = Math.floor(Math.random() * 3) + 1
     }
+    if (!hasCarDrivingLicense && this.isDrivingLicenseRequired()) {
+      newState.hasCarDrivingLicense = Math.random() < .5 ? 'TRUE' : 'FALSE'
+    }
     this.setState(newState)
   }
 
   isFormValid = () => {
-    const {previousJobSimilarity, networkEstimate, trainingFulfillmentEstimate,
-      seniority} = this.state
-    return !!(previousJobSimilarity && trainingFulfillmentEstimate &&
-              (seniority || !isSeniorityRequired(previousJobSimilarity)) &&
-              networkEstimate)
+    const {hasCarDrivingLicense, previousJobSimilarity, networkEstimate,
+      trainingFulfillmentEstimate, seniority} = this.state
+    return !!(
+      previousJobSimilarity &&
+      trainingFulfillmentEstimate &&
+      (seniority || !isSeniorityRequired(previousJobSimilarity)) &&
+      (hasCarDrivingLicense || !this.isDrivingLicenseRequired()) &&
+      networkEstimate
+    )
   }
 
   handleChange = field => value => {
     this.setState({[field]: value})
   }
 
-  getRequiredDiplomaNames = () => {
-    const {jobRequirements, newProject} = this.props
-    const requirements = jobRequirements[newProject.targetJob.codeOgr] || {}
-    return (requirements.diplomas || []).map(diploma => diploma.name)
+  getRequirements = (props, requirementId) => {
+    const {jobRequirements, newProject: {targetJob: {codeOgr}}} = props
+    const requirements = jobRequirements[codeOgr] || {}
+    return (requirements[requirementId] || [])
   }
+
+  isDrivingLicenseRequired = () => {
+    const {isFetchingRequirements, newProject: {city}} = this.props
+    return isFetchingRequirements ||
+      this.getRequirements(this.props, 'drivingLicenses').length ||
+      // Keep this in sync with frontend/server/modules/driving_license.py _license_helps_mobility.
+      (city && city.urbanScore <= 5 || city.publicTransportationScore <= 5)
+  }
+
+  getRequiredDiplomaNames = props => this.getRequirements(props, 'diplomas').map(({name}) => name)
 
   render() {
     const {gender} = this.props.profile
     const {isFetchingRequirements} = this.props
-    const {previousJobSimilarity, seniority, isValidated,
+    const {hasCarDrivingLicense, previousJobSimilarity, seniority, isValidated,
       trainingFulfillmentEstimate, networkEstimate} = this.state
-    const requiredDiplomaNames = this.getRequiredDiplomaNames()
+    const requiredDiplomaNames = this.getRequiredDiplomaNames(this.props)
 
     const networkLabel = <span>
       Avez-vous un bon réseau&nbsp;?
       Connaissez-vous des gens qui pourraient vous aider à obtenir ce métier&nbsp;?
     </span>
+    // TODO(cyrille): Tutoie everywhere relevant.
     return <Step
       {...this.props} fastForward={this.fastForward}
-      title="Comment vous placez-vous sur votre marché ?"
+      title="D'accord. Et si nous parlions de ce que vous avez déjà fait&nbsp;?"
       onNextButtonClick={this.handleSubmit}>
       <div>
         <FieldSet label="Avez-vous déjà fait ce métier&nbsp;?"
-          isValid={!!previousJobSimilarity} isValidated={isValidated}>
+          isValid={!!previousJobSimilarity} isValidated={isValidated} hasCheck={true}>
           <Select options={PROJECT_EXPERIENCE_OPTIONS} value={previousJobSimilarity}
+            placeholder="choisissez un type d'expérience"
             onChange={this.handleChange('previousJobSimilarity')} />
         </FieldSet>
         <FieldSet label="Quel est votre niveau d'expérience&nbsp;?"
           disabled={!isSeniorityRequired(previousJobSimilarity)}
-          isValid={!!seniority} isValidated={isValidated}>
+          isValid={!!seniority} isValidated={isValidated}
+          hasCheck={true}>
           <Select options={seniorityOptions} value={seniority}
+            placeholder="choisissez un niveau d'expérience"
             onChange={this.handleChange('seniority')} />
         </FieldSet>
         {requiredDiplomaNames.length || isFetchingRequirements ? (
@@ -152,17 +192,35 @@ class NewProjectExperienceStepBase extends React.Component {
               </span> : null}
             </span>}
             style={{maxWidth: 600}}
-            isValid={!!trainingFulfillmentEstimate} isValidated={isValidated}>
+            isValid={!!trainingFulfillmentEstimate} isValidated={isValidated} hasCheck={true}>
             <Select
               options={getTrainingFulfillmentEstimateOptions(gender)}
+              placeholder="choisissez une qualification"
               value={trainingFulfillmentEstimate}
               onChange={this.handleChange('trainingFulfillmentEstimate')} />
           </FieldSet>
         ) : null}
-        <FieldSet label={networkLabel} isValid={!!networkEstimate} isValidated={isValidated}>
+        {this.isDrivingLicenseRequired() ? (
+          <FieldSet
+            label="Avez-vous le permis de conduire&nbsp;?"
+            style={{maxWidth: 600}}
+            isValid={!!hasCarDrivingLicense}
+            isValidated={isValidated} hasCheck={true}>
+            <RadioGroup
+              style={{justifyContent: 'space-around'}}
+              onChange={this.handleChange('hasCarDrivingLicense')}
+              options={drivingLicenseOptions}
+              value={hasCarDrivingLicense} />
+          </FieldSet>
+        ) : null}
+        <FieldSet label={networkLabel}
+          isValid={!!networkEstimate}
+          isValidated={isValidated}
+          hasCheck={true}>
           <Select
             options={networkEstimateOptions}
             value={networkEstimate && networkEstimate.toString()}
+            placeholder="choisissez une estimation de votre réseau"
             onChange={this.handleChange('networkEstimate')} />
         </FieldSet>
       </div>

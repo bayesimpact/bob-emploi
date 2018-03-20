@@ -1,29 +1,34 @@
-import React from 'react'
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
+import StarIcon from 'mdi-react/StarIcon'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
+import React from 'react'
 
 import {genderizeJob} from 'store/job'
-import {lowerFirstLetter, ofCityPrefix, toTitleCase} from 'store/french'
+import {lowerFirstLetter, ofPrefix, toTitleCase} from 'store/french'
 import {USER_PROFILE_SHAPE} from 'store/user'
 
+import {Colors, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
 import laBonneBoiteImage from 'images/labonneboite-picto.png'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
-import {Colors, Icon, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
+import Picto from 'images/advices/picto-spontaneous-application.png'
 
-import {AdviceSuggestionList, ToolCard} from './base'
+import {AdviceSuggestionList, DataSource, ToolCard} from './base'
 
 
 class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    fontSize: PropTypes.number.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice, project} = this.props
+    const {advice, fontSize, project, userYou} = this.props
     const {companies} = advice.spontaneousApplicationData || {}
     if (companies && companies.length) {
-      const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
+      const {modifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
       const companiesMap = {}
       const companyNames = companies.map(({name}) => toTitleCase(name)).filter(name => {
         if (companiesMap[name]) {
@@ -32,7 +37,7 @@ class AdviceCard extends React.Component {
         companiesMap[name] = true
         return true
       })
-      return <div style={{fontSize: 30}}>
+      return <div style={{fontSize: fontSize}}>
         Des entreprises près {prefix}<strong>{cityName}</strong> comme{' '}
         <StringJoiner>
           {companyNames.map((name, index) => <strong key={`company-${index}`}>
@@ -42,9 +47,9 @@ class AdviceCard extends React.Component {
         {' '}ont un fort potentiel d'embauche.
       </div>
     }
-    return <div style={{fontSize: 30}}>
-      Connaissez-vous <strong>La bonne boîte</strong>&nbsp;? Un site spécialisé pour
-      trouver des entreprises où postuler près de chez vous.
+    return <div style={{fontSize: fontSize}}>
+      Connais{userYou('-tu', 'sez-vous')} <strong>La bonne boîte</strong>&nbsp;? Un site spécialisé
+      pour trouver des entreprises où postuler près de chez {userYou('toi', 'vous')}.
     </div>
   }
 }
@@ -70,13 +75,13 @@ class ExpandedAdviceCardContent extends React.Component {
       return null
     }
 
-    const {cityName, prefix} = ofCityPrefix(project.mobility.city.name)
+    const {modifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
 
     return <div>
       <PaddedOnMobile style={{fontSize: 16, marginBottom: 15}}>
         <strong>{companies.length} entreprise{companies.length > 1 ? 's' : ''}</strong> à
         fort potentiel d'embauche pour {profile.gender === 'FEMININE' ? 'une ' : 'un '}
-        {lowerFirstLetter(genderizeJob(project.targetJob, profile.gender))} près {prefix}{cityName}*
+        {lowerFirstLetter(genderizeJob(project.targetJob, profile.gender))} près {prefix}{cityName}
       </PaddedOnMobile>
       <AdviceSuggestionList>
         {[
@@ -90,10 +95,9 @@ class ExpandedAdviceCardContent extends React.Component {
           </MoreCompaniesLink>,
         ]}
       </AdviceSuggestionList>
-      <PaddedOnMobile
-        style={{color: Colors.COOL_GREY, fontSize: 13, fontStyle: 'italic', marginTop: 15}}>
-        *Source&nbsp;: La Bonne Boîte / Pôle emploi
-      </PaddedOnMobile>
+      <DataSource>
+        La Bonne Boîte / Pôle emploi
+      </DataSource>
     </div>
   }
 
@@ -148,15 +152,16 @@ class CompanyLinkBase extends React.Component {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const starStyle = starIndex => ({
-      color: starIndex < hiringPotential - 1 ? Colors.GREENISH_TEAL : Colors.PINKISH_GREY,
-      fontSize: 20,
+      fill: starIndex < hiringPotential - 1 ? Colors.GREENISH_TEAL : Colors.PINKISH_GREY,
+      height: 20,
+      width: 20,
     })
     return <span style={{alignItems: 'center', display: 'flex'}}>
       <span style={titleStyle}>
         Potentiel d'embauche&nbsp;:
       </span>
       {new Array(3).fill(null).map((unused, index) =>
-        <Icon name="star" style={starStyle(index)} key={`star-${index}`} />)}
+        <StarIcon style={starStyle(index)} key={`star-${index}`} />)}
     </span>
   }
 
@@ -167,10 +172,12 @@ class CompanyLinkBase extends React.Component {
       fontWeight: 'normal',
     }
     const chevronStyle = {
-      fontSize: 25,
-      lineHeight: 1,
+      fill: Colors.CHARCOAL_GREY,
+      flexShrink: 0,
+      height: 25,
       opacity: siret ? 1 : 0,
       padding: '0 10px',
+      width: 45,
     }
     return <div style={containerStyle} onClick={siret ? this.open : null}>
       <strong style={Styles.CENTER_FONT_VERTICALLY}>{toTitleCase(name)}</strong>
@@ -179,7 +186,7 @@ class CompanyLinkBase extends React.Component {
       </span> : null}
       <span style={{flex: 1}} />
       {this.renderStars()}
-      <Icon name="chevron-right" style={chevronStyle} />
+      <ChevronRightIcon style={chevronStyle} />
     </div>
   }
 }
@@ -194,26 +201,24 @@ class MoreCompaniesLinkBase extends React.Component {
 
   render() {
     const {children, style, ...extraProps} = this.props
-    const containerStyle = {
-      padding: '0 0 0 20px',
-      ...style,
-    }
     const chevronStyle = {
-      fontSize: 25,
+      fill: Colors.CHARCOAL_GREY,
+      height: 25,
       lineHeight: 1,
       padding: '0 10px',
+      width: 45,
     }
-    return <div style={containerStyle} {...extraProps}>
+    return <div style={style} {...extraProps}>
       <strong style={Styles.CENTER_FONT_VERTICALLY}>
         {children}
       </strong>
       <span style={{flex: 1}} />
       <img src={poleEmploiImage} style={{height: 35}} alt="Pôle emploi" />
-      <Icon name="chevron-right" style={chevronStyle} />
+      <ChevronRightIcon style={chevronStyle} />
     </div>
   }
 }
 const MoreCompaniesLink = Radium(MoreCompaniesLinkBase)
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 
 // Stacks of short key listeners. The ones entered last are tried first.
-const keyListenerStack = {keydown: [], keypress: []}
+const keyListenerStack = {keydown: [], keyup: []}
 
 // Trigger all listeners in the stack until one returns false.
 const handleKeyEvent = eventType => event => {
@@ -15,13 +15,13 @@ const handleKeyEvent = eventType => event => {
 }
 const handleKeyEvents = {
   keydown: handleKeyEvent('keydown'),
-  keypress: handleKeyEvent('keypress'),
+  keyup: handleKeyEvent('keyup'),
 }
 
 
 // An invisible component that executes a function when a short-key is used.
 // Some keys (like Escape) only trigger a "keydown" event whereas some
-// combinations (like Ctrl+Shift+F) work better with a "keypress" event.
+// combinations (like Ctrl+Shift+F) work better with a "keyup" event.
 class ShortKey extends React.Component {
   static propTypes = {
     children: PropTypes.node,
@@ -37,13 +37,15 @@ class ShortKey extends React.Component {
     // false, it will consume the event and other ShortKey components will not
     // get called. If it returns true other ShortKey components using the same
     // short-key will be called.
+    // TODO(pascal): Rename to onKeyUp if we confirm this works for what we
+    // need.
     onKeyPress: PropTypes.func,
   }
 
   componentWillMount() {
     const {onKeyDown, onKeyPress} = this.props
     if (onKeyPress) {
-      this.listenToEvent('keypress', onKeyPress)
+      this.listenToEvent('keyup', onKeyPress)
     }
     if (onKeyDown) {
       this.listenToEvent('keydown', onKeyDown)
@@ -53,9 +55,9 @@ class ShortKey extends React.Component {
   componentWillReceiveProps(newProps) {
     const {onKeyDown, onKeyPress} = newProps
     if (onKeyPress !== this.props.onKeyPress) {
-      this.stopListeningToEvent('keypress')
+      this.stopListeningToEvent('keyup')
       if (onKeyPress) {
-        this.listenToEvent('keypress', onKeyPress)
+        this.listenToEvent('keyup', onKeyPress)
       }
     }
     if (onKeyDown !== this.props.onKeyDown) {
@@ -67,14 +69,14 @@ class ShortKey extends React.Component {
   }
 
   componentWillUnmount() {
-    this.stopListeningToEvent('keypress')
+    this.stopListeningToEvent('keyup')
     this.stopListeningToEvent('keydown')
   }
 
   listenToEvent = (eventType, onEvent) => {
     const listener = (event) => {
       const {hasCtrlModifier, keyCode, hasShiftModifier} = this.props
-      if (event.code === keyCode  && event.ctrlKey === !!hasCtrlModifier &&
+      if (event.code === keyCode && event.ctrlKey === !!hasCtrlModifier &&
           event.shiftKey === !!hasShiftModifier) {
         return onEvent()
       }

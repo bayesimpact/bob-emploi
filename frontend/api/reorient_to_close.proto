@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/reorient_jobbing.proto";
+
+package bayes.bob;
+// TODO(marielaure): Merge with reorient_jobbing to have a reorient proto.
+
+
+// Statistics for jobs or job groups close to a user's job.
+message CloseJobStats {
+  // The stats of jobs which hire better market score accessible
+  // without training.
+  MobilityStat close = 1;
+
+  // The stats of the jobs which hire better market score accessible
+  // with training.
+  MobilityStat evolution = 2;
+}
+
+message ReorientCloseJobs {
+  // A list of jobs recommended for reorientation to close jobs.
+  repeated ReorientJob close_jobs = 1;
+
+  // A list of jobs recommended for reorientation to close jobs
+  // accessible with a training.
+  repeated ReorientJob evolution_jobs = 2;
+}
+
+message MobilityStat {
+  // Job or job group statistics.
+  repeated JobStats jobs = 1;
+}

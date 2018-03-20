@@ -1,6 +1,6 @@
 import React from 'react'
 
-import loadingImage from 'images/logo-bob-emploi-loading.svg'
+import loadingImage from 'images/logo-bob-loading.svg'
 import {Colors} from 'components/theme'
 
 // Keep this class in sync with index.html.

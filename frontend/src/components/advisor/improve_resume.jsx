@@ -1,9 +1,11 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import {getResumeTips} from 'store/actions'
 import {lowerFirstLetter} from 'store/french'
 import {genderizeJob} from 'store/job'
+import {USER_PROFILE_SHAPE} from 'store/user'
+
+import Picto from 'images/advices/picto-resume.png'
 
 import {ImproveApplicationTips} from './base'
 
@@ -25,24 +27,28 @@ function getPersonalizedItems(improveSuccessRateData) {
 class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    fontSize: PropTypes.number.isRequired,
+    profile: USER_PROFILE_SHAPE.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
   render() {
-    const {advice, project} = this.props
+    const {advice, fontSize, profile, project, userYou} = this.props
     const {improveSuccessRateData} = advice
     const personalizedItems = getPersonalizedItems(improveSuccessRateData)
     if (personalizedItems.length) {
-      return <div style={{fontSize: 30}}>
-        <strong>{personalizedItems[0]}</strong> pour augmenter vos chances
-        quand vous postulez
-        comme <strong>{lowerFirstLetter(genderizeJob(project.targetJob))}</strong>.
+      return <div style={{fontSize: fontSize}}>
+        <strong>{personalizedItems[0]}</strong> pour augmenter
+        {userYou(' tes chances quand tu postules ', ' vos chances quand vous postulez ')}
+        comme <strong>{lowerFirstLetter(genderizeJob(project.targetJob, profile.gender))}</strong>.
       </div>
     }
-    return <div style={{fontSize: 30}}>
+    return <div style={{fontSize: fontSize}}>
       En <strong>expliquant bien pourquoi votre profil est adapté pour
       le poste</strong> votre candidature aura beaucoup plus de poids.
     </div>
@@ -51,17 +57,27 @@ class AdviceCard extends React.Component {
 
 
 class ExpandedAdviceCardContent extends React.Component {
+  static propTypes = {
+    userYou: PropTypes.func.isRequired,
+  }
+
   render() {
+    const props = this.props
     return <ImproveApplicationTips
-      {...this.props}
-      tipsCacheField="improve-resume"
+      {...props}
       sections={[
-        {data: 'qualities', title: 'Qualités les plus attendues par les recruteurs :'},
-        {data: 'improvements', title: 'Pour améliorer votre candidature'},
+        {
+          data: 'qualities',
+          title: 'Qualités les plus attendues par les recruteurs :',
+        },
+        {
+          data: 'improvements',
+          title: `Pour améliorer ${props.userYou('ta', 'votre')} candidature`,
+        },
       ]}
-      getTipsAction={getResumeTips} />
+    />
   }
 }
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}

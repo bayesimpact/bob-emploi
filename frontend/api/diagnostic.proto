@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+message Diagnostic {
+  // Overall score for a project, typically from 0 (worst) to 100 (best).
+  uint32 overall_score = 1;
+
+  // Diagnostics on separated parts of the project.
+  repeated SubDiagnostic sub_diagnostics = 2;
+
+  // A textual personalized diagnostic. This uses markup language.
+  string text = 3;
+}
+
+message SubDiagnostic {
+  // The topic of this sub diagnostic.
+  DiagnosticTopic topic = 1;
+
+  // Score for the project for this sub-metric, typically from 0 (worst) to 100
+  // (best).
+  uint32 score = 2;
+
+  // A textual personalized diagnostic for this submetric. This uses markup
+  // language.
+  string text = 3;
+}
+
+enum DiagnosticTopic {
+  UNKNOWN_DIAGNOSTIC_TOPIC = 0;
+
+  // Diagnostic of the user's profile (skills, frustrations, age, motivation).
+  PROFILE_DIAGNOSTIC = 1;
+
+  // Diagnostic of the user's project (TODO(pascal): define it more).
+  PROJECT_DIAGNOSTIC = 2;
+
+  // Diagnostic on how the user is searching (CV, interviews, network).
+  JOB_SEARCH_DIAGNOSTIC = 3;
+
+  // Diagnostic of the micro-market itself.
+  MARKET_DIAGNOSTIC = 4;
+
+  // Whether the job is future proof.
+  JOB_OF_THE_FUTURE_DIAGNOSTIC = 5;
+}
+
+message DiagnosticSentenceTemplate {
+  // Sentence template to show to the user. It uses % vars (see the
+  // populate_template method in scoring for the full list of variables). It
+  // uses markup language.
+  string sentence_template = 1;
+
+  // Rank of the sentence. The final diagnostic text will be composed of one
+  // sentence of each rank.
+  // TODO(pascal): Rename to rank.
+  uint32 order = 2;
+
+  // A list of filter IDs: do not show the sentence if one of these filters
+  // return false for the project.
+  // See the list of available filters in scoring.py.
+  repeated string filters = 3;
+
+  // Whether this sentence is optional. Optional sentence don't block the
+  // publication of the overall diagnostic if they are missing. Non-optional
+  // sentences would require at least one sentence with the same rank to be
+  // present.
+  bool optional = 4;
+}
+
+message DiagnosticSubmetricsSentenceTemplate {
+  // Scorer for the given metric.
+  string trigger_scoring_model = 1;
+
+  // Submetric that this scorer will influence.
+  DiagnosticTopic submetric = 2;
+
+  // Weight given to the scorer in the final submetric score.
+  float weight = 3;
+
+  // Sentence template to show to the user if their score is good. It uses % vars (see the
+  // populate_template method in scoring for the full list of variables). It
+  // uses markup language.
+  string positive_sentence_template = 4;
+
+  // Sentence template to show to the user if their score is bad. It uses % vars (see the
+  // populate_template method in scoring for the full list of variables). It
+  // uses markup language.
+  string negative_sentence_template = 5;
+}

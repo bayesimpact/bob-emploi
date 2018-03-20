@@ -1,24 +1,78 @@
 import PropTypes from 'prop-types'
 import React from 'react'
+import {connect} from 'react-redux'
 
 import config from 'config'
 
-import newAdvisorScreenshot from 'images/screenshot-new-advisor.png'
+import {modifyProject, productUpdatedPageIsShownAction} from 'store/actions'
+import {isOldProject} from 'store/project'
+import {youForUser} from 'store/user'
+
+import {FastForward} from 'components/fast_forward'
+import {Modal} from 'components/modal'
 import {PageWithNavigationBar} from 'components/navigation'
-import {ShortKey} from 'components/shortkey'
 import {Button, Colors, Styles} from 'components/theme'
 import {NEW_PROJECT_ID, Routes} from 'components/url'
+import newAdvisorScreenshot from 'images/screenshot-new-advisor.png'
 
 
-class UpdatePage extends React.Component {
+class UpdatePageBase extends React.Component {
+  static propTypes = {
+    dispatch: PropTypes.func.isRequired,
+    oldProject: PropTypes.shape({
+      isIncomplete: PropTypes.bool,
+      projectId: PropTypes.string.isRequired,
+    }),
+    userYou: PropTypes.func.isRequired,
+  }
+
   static contextTypes = {
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
     }).isRequired,
   }
 
+  state = {
+    isRequireProjectCheckModalShown: false,
+  }
+
   skipPage = () => {
-    this.context.history.push(Routes.PROJECT_PAGE + '/' + NEW_PROJECT_ID)
+    const {dispatch, oldProject} = this.props
+    dispatch(productUpdatedPageIsShownAction)
+    if (!oldProject || oldProject.isIncomplete) {
+      this.context.history.push(Routes.PROJECT_PAGE + '/' + NEW_PROJECT_ID)
+    } else {
+      this.setState({isRequireProjectCheckModalShown: true})
+    }
+  }
+
+  handleConfirmProjectCheck = () => {
+    const {dispatch, oldProject} = this.props
+    this.setState({isRequireProjectCheckModalShown: false})
+    dispatch(modifyProject(oldProject))
+    this.context.history.push(Routes.ROOT)
+  }
+
+  renderRequireProjectCheckModal() {
+    const {userYou} = this.props
+    const noticeStyle = {
+      fontSize: 15,
+      fontStyle: 'italic',
+      lineHeight: 1.33,
+      margin: '35px 0 40px',
+      maxWidth: 400,
+    }
+    return <Modal
+      isShown={this.state.isRequireProjectCheckModalShown}
+      style={{borderRadius: 10, margin: 10, padding: '0 50px 40px', textAlign: 'center'}}>
+      <div style={noticeStyle}>
+        Ça fait un bail&nbsp;!
+        Commencons par vérifier que {userYou('ton', 'votre')} profil est bien à jour 🙂
+      </div>
+      <Button onClick={this.handleConfirmProjectCheck} isRound={true}>
+        Continuer
+      </Button>
+    </Modal>
   }
 
   renderBackground() {
@@ -63,6 +117,7 @@ class UpdatePage extends React.Component {
   }
 
   render() {
+    const {userYou} = this.props
     const headerStyle = {
       color: '#fff',
       fontSize: 35,
@@ -94,8 +149,8 @@ class UpdatePage extends React.Component {
     return <PageWithNavigationBar
       page="update" isContentScrollable={true}
       style={{backgroundColor: '#fff', zIndex: 0}}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={this.skipPage} />
+      {this.renderRequireProjectCheckModal()}
+      <FastForward onForward={this.skipPage} />
       {this.renderBackground()}
       <header style={headerStyle}>
         {config.productName} évolue&nbsp;!
@@ -107,23 +162,29 @@ class UpdatePage extends React.Component {
 
       <div style={{margin: '70px auto', maxWidth: 500}}>
         <div style={{color: Colors.DARK_TWO, fontSize: 21, fontWeight: 'bold'}}>
-          Que fait le nouveau {config.productName}&nbsp;?
+          Grâce au nouveau {config.productName},
+          {userYou(' tu peux', ' vous pouvez')}&nbsp;:
         </div>
         <hr style={horizontalRuleStyle} />
 
         <ol style={listStyle}>
           {this.renderListItem(
-            1, Colors.SKY_BLUE, 'Un diagnostic personnalisé',
-            'calculé en fonction de votre profil et du marché de votre métier.',
+            1, Colors.BOB_BLUE, 'Analyser.',
+            `${config.productName} ${userYou('te', 'vous')} donne un
+            diagnostic calculé en fonction de ${userYou('ton', 'votre')} profil
+            et du marché de ${userYou('ton', 'votre')} métier`,
             {marginTop: 40})}
           {this.renderListItem(
-            2, Colors.GREENISH_TEAL, 'Une analyse de favorabilité',
-            'pour trouver, retrouver un emploi ou se réorienter en fonction du marché.',
+            2, Colors.GREENISH_TEAL, 'Explorer.',
+            `${userYou('Tu choisis', 'Vous choisissez')} les conseils
+            qui ${userYou("t'", 'vous ')}intéressent parmi une sélection de conseils
+            personnalisés`,
             {marginTop: 40})}
           {this.renderListItem(
-            // TODO(pascal): Name this custom color or get rid of it.
-            3, '#f5d623', 'Des sujets priorisés',
-            'pour augmenter vos chances en fonction de votre profil et de votre recherche.',
+            3, Colors.SUN_YELLOW, 'Avancer.',
+            `${config.productName} ${userYou('te', 'vous')} donne des
+            pistes concrètes pour aller plus loin sur les conseils
+            que ${userYou('tu as', 'vous avez')} sélectionnés.`,
             {marginTop: 40})}
         </ol>
 
@@ -136,6 +197,10 @@ class UpdatePage extends React.Component {
     </PageWithNavigationBar>
   }
 }
+const UpdatePage = connect(({user}) => ({
+  oldProject: user.projects && isOldProject(user.projects[0]) && user.projects[0] || undefined,
+  userYou: youForUser(user),
+}))(UpdatePageBase)
 
 
 export {UpdatePage}

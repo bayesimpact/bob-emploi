@@ -458,6 +458,68 @@
  },
  {
   "_id": "M1403",
+  "applicationModes" : {
+        "A0Z42" : {
+            "modes" : [ 
+                {
+                    "mode" : "PERSONAL_OR_PROFESSIONAL_CONTACTS",
+                    "percentage" : 42.57
+                }, 
+                {
+                    "mode" : "SPONTANEOUS_APPLICATION",
+                    "percentage" : 21.15
+                }, 
+                {
+                    "mode" : "PLACEMENT_AGENCY",
+                    "percentage" : 18.62
+                }, 
+                {
+                    "mode" : "UNDEFINED_APPLICATION_MODE",
+                    "percentage" : 17.66
+                }
+            ]
+        },
+        "G1Z70" : {
+            "modes" : [ 
+                {
+                    "mode" : "PLACEMENT_AGENCY",
+                    "percentage" : 37.5
+                }, 
+                {
+                    "mode" : "PERSONAL_OR_PROFESSIONAL_CONTACTS",
+                    "percentage" : 28.92
+                }, 
+                {
+                    "mode" : "SPONTANEOUS_APPLICATION",
+                    "percentage" : 20.06
+                }, 
+                {
+                    "mode" : "UNDEFINED_APPLICATION_MODE",
+                    "percentage" : 13.52
+                }
+            ]
+        },
+        "H0Z91" : {
+            "modes" : [ 
+                {
+                    "mode" : "PERSONAL_OR_PROFESSIONAL_CONTACTS",
+                    "percentage" : 46.0
+                }, 
+                {
+                    "mode" : "UNDEFINED_APPLICATION_MODE",
+                    "percentage" : 22.81
+                }, 
+                {
+                    "mode" : "PLACEMENT_AGENCY",
+                    "percentage" : 16.59
+                }, 
+                {
+                    "mode" : "SPONTANEOUS_APPLICATION",
+                    "percentage" : 14.6
+                }
+            ]
+        }
+  },
   "description": "Analyse des données (économiques, statistiques, ...) et les restitue en une information opérationnelle et stratégique d'aide à la décision pour la structure, l'entreprise. - Peut réaliser et mettre en oeuvre le recueil de données. - Peut coordonner une équipe ou diriger un service.",
   "hollandCodeMajor": "I",
   "hollandCodeMinor": "E",

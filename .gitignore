@@ -61,3 +61,6 @@ bigquery_credentials.dat
 # Files that are automatically created by data_analysis/entrypoint.sh
 # TODO: Refactor to avoid this.
 /data_analysis/bob_emploi/frontend/
+
+# Files containing personal credentials related to this project.
+/frontend/release/openrc.sh

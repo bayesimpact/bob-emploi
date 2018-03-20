@@ -1,50 +1,24 @@
-import React from 'react'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
+import React from 'react'
 import {connect} from 'react-redux'
-import _ from 'underscore'
+import {Redirect, Route, Switch} from 'react-router-dom'
 
-import config from 'config'
+import {diagnosticIsShown, downloadDiagnosticAsPdf, sendNewAdviceIdea} from 'store/actions'
+import {youForUser, USER_PROFILE_SHAPE} from 'store/user'
 
-import {allAdvicesReadAction, bobScoreIsShown, markNotificationAsSeen, modifyProject,
-  sendProjectFeedback, setUserProfile, shareProductToNetwork,
-  sendNewAdviceIdea} from 'store/actions'
-import {getAdviceTitle} from 'store/advice'
-import {maybeContract, lowerFirstLetter} from 'store/french'
-import {InfoCollNotificationBox} from 'components/info_coll'
-import {genderizeJob} from 'store/job'
-import {createProjectTitleComponents, getEmploymentZone, getSeniorityText} from 'store/project'
-import {computeBobScore} from 'store/score'
-import {getHighestDegreeDescription, getUserFrustrationTags, USER_PROFILE_SHAPE} from 'store/user'
-import {ShortKey} from 'components/shortkey'
-import {NEW_PROJECT_ID, Routes} from 'components/url'
-
-import emailGrayIcon from 'images/share/email-gray-ico.svg'
-import emailIcon from 'images/share/email-ico.svg'
-import facebookGrayIcon from 'images/share/facebook-gray-ico.svg'
-import facebookIcon from 'images/share/facebook-ico.svg'
-import linkedinGrayIcon from 'images/share/linkedin-gray-ico.svg'
-import linkedinIcon from 'images/share/linkedin-ico.svg'
-import localisationImage from 'images/localisation-picto.svg'
-import roundUserImage from 'images/round-user-picto.svg'
-import starIcon from 'images/star.svg'
-import starOutlineIcon from 'images/star-outline.svg'
-import threeStarsBackgroundImage from 'images/3-stars-background.svg'
-import threeStarsImage from 'images/3-stars-picto.svg'
-import twitterGrayIcon from 'images/share/twitter-gray-ico.svg'
-import twitterIcon from 'images/share/twitter-ico.svg'
-import twoStarsBackgroundImage from 'images/2-stars-background.svg'
-import twoStarsImage from 'images/2-stars-picto.svg'
-import victoryImage from 'images/victory-picto.svg'
-import workImage from 'images/work-picto.svg'
-import {NAVIGATION_BAR_HEIGHT, PageWithNavigationBar} from 'components/navigation'
-import {AdviceCard} from 'components/advisor'
+import {FastForward} from 'components/fast_forward'
 import {Modal} from 'components/modal'
-import {JobGroupCoverImage, CircularProgress, CheckboxList, Colors, Button,
-  FieldSet, GrowingNumber, Icon, LabeledToggle, RadioGroup, SmoothTransitions,
-  Styles} from 'components/theme'
+import {PageWithNavigationBar} from 'components/navigation'
+import {JobGroupCoverImage, CircularProgress, Colors, Button,
+  FieldSet, RadioGroup, SmoothTransitions, Styles} from 'components/theme'
+import {NEW_PROJECT_ID, Routes} from 'components/url'
+import victoryImage from 'images/victory-picto.svg'
 
+import {Diagnostic} from './project/diagnostic'
+import {Explorer} from './project/explorer'
 import {PoleEmploiChangelogModal} from './project/pole_emploi'
+import {Workbench} from './project/workbench'
 
 
 function getProjectFromProps(props) {
@@ -79,9 +53,11 @@ class WaitingProjectPage extends React.Component {
     style: PropTypes.object,
     userProfile: PropTypes.object.isRequired,
   }
+
   static defaultProps = {
     fadeOutTransitionDurationMillisec: 600,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -142,13 +118,13 @@ class WaitingProjectPage extends React.Component {
       fontWeight: 500,
     }
     const waitingNoticeStyle = {
-      color: Colors.SKY_BLUE,
+      color: Colors.BOB_BLUE,
       fontSize: 13,
       fontWeight: 500,
       lineHeight: 1.5,
     }
     return <div style={containerStyle}>
-      <ShortKey keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onDone} />
+      <FastForward onForward={onDone} />
       <JobGroupCoverImage romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}} />
       <div style={boxStyle}>
         <header style={headerStyle}>{project.title}</header>
@@ -166,281 +142,6 @@ class WaitingProjectPage extends React.Component {
     </div>
   }
 }
-
-
-class SumUpProfileModal extends React.Component {
-  static propTypes = {
-    isShown: PropTypes.bool,
-    onClose: PropTypes.func.isRequired,
-    project: PropTypes.object.isRequired,
-    style: PropTypes.object,
-    userProfile: PropTypes.object.isRequired,
-  }
-
-  render() {
-    const maybeE = (gender) => gender === 'FEMININE' ? 'e' : ''
-    const {onClose, project, style, userProfile, ...extraProps} = this.props
-    const containerStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      maxWidth: 600,
-      padding: '0 10px 40px 10px',
-      position: 'relative',
-      ...style,
-    }
-    const boxStyle = {
-      backgroundColor: '#fff',
-      fontSize: 15,
-      padding: '20px 40px 0 40px',
-      textAlign: 'center',
-    }
-    const infoStyle = {
-      fontWeight: 'bold',
-    }
-    const sectionStyle = {
-      alignItems: 'flex-start',
-      display: 'flex',
-      margin: 'auto',
-      paddingTop: 15,
-      textAlign: 'left',
-    }
-    const sectionWithBorderBottom = {
-      ...sectionStyle,
-      borderBottom: 'solid 1px',
-      borderColor: Colors.MODAL_PROJECT_GREY,
-      paddingBottom: 17,
-    }
-    const pictoStyle = {
-      margin: '0 20px',
-    }
-    const frustrationTagStyle = {
-      backgroundColor: Colors.MODAL_PROJECT_GREY,
-      borderRadius: 4,
-      color: Colors.CHARCOAL_GREY,
-      display: 'inline-block',
-      fontSize: 14,
-      margin: '2.5px 5px 2.5px 0',
-      paddingLeft: 6,
-      paddingRight: 6,
-      ...Styles.CENTER_FONT_VERTICALLY,
-    }
-
-    const frustrationsTags = getUserFrustrationTags(userProfile)
-    const highestDegreeDescription = getHighestDegreeDescription(userProfile)
-
-    // TODO(guillaume): Avoid flex when possible.
-    return <Modal {...extraProps} style={containerStyle}
-      title="Les données retenues pour établir votre diagnostic">
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
-      <div style={boxStyle}>
-        <div style={sectionWithBorderBottom}>
-          <img src={roundUserImage} style={pictoStyle} alt="Profil" />
-          <div style={{flex: 1}}>
-            <div>
-              Sexe&nbsp;:
-              <span style={infoStyle}> {userProfile.gender === 'FEMININE' ? 'femme' : 'homme'}
-              </span>
-            </div>
-            <div>Né{maybeE(userProfile.gender)} en&nbsp;:
-              <span style={infoStyle}> {userProfile.yearOfBirth}</span>
-            </div>
-            {highestDegreeDescription ?
-              <div>
-                Qualifications&nbsp;:
-                <span style={infoStyle}> {highestDegreeDescription}</span>
-              </div> : null}
-            <div>
-              Expérience&nbsp;: <span style={infoStyle}>
-                {getSeniorityText(project.seniority).toLocaleLowerCase()}
-              </span>
-            </div>
-            {frustrationsTags.length ? <div>
-              Frustrations&nbsp;: {frustrationsTags.map(
-                (frustration, index) => <div style={frustrationTagStyle} key={index}>
-                  {frustration}</div>)}
-            </div> : null}
-          </div>
-        </div>
-        <div style={sectionWithBorderBottom}>
-          <img src={workImage} style={pictoStyle} alt="Métier" />
-          <div style={{flex: 1}}>
-            <div>
-              Métier&nbsp;:
-              <span style={infoStyle}> {genderizeJob(project.targetJob, userProfile.gender)}</span>
-            </div>
-            <div>
-              Secteur&nbsp;:
-              <span style={infoStyle}> {project.targetJob.jobGroup.name}</span>
-            </div>
-          </div>
-        </div>
-        <div style={sectionStyle}>
-          <img src={localisationImage} style={pictoStyle} alt="Lieu" />
-          <div style={{flex: 1}}>
-            <div>
-              Zone de recherche&nbsp;:
-              <span style={infoStyle}> {getEmploymentZone(project.mobility)}</span>
-            </div>
-          </div>
-        </div>
-        <Button style={{marginTop: 35}} onClick={onClose}>
-          Découvrir mon diagnostic
-        </Button>
-      </div>
-    </Modal>
-  }
-}
-
-
-class TheEndModalBase extends React.Component {
-  static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    onClose: PropTypes.func.isRequired,
-    userProfile: USER_PROFILE_SHAPE.isRequired,
-  }
-
-  componentWillMount() {
-    this.setState({
-      isNewsletterEnabled: !!this.props.userProfile.isNewsletterEnabled,
-    })
-  }
-
-  handleSubmit = callback => () => {
-    const {dispatch, userProfile} = this.props
-    const {isNewsletterEnabled} = this.state
-    if (isNewsletterEnabled !== !!userProfile.isNewsletterEnabled) {
-      dispatch(setUserProfile({...userProfile, isNewsletterEnabled}, true))
-    }
-    callback()
-  }
-
-  share(medium, shareMethod) {
-    this.props.dispatch(shareProductToNetwork({medium}))
-    shareMethod(
-      config.productName,
-      `Avec ${config.productName}, un super diagnostic et de bon conseils ` +
-      "pour ma recherche d'emploi.",
-      'https://www.bob-emploi.fr/')
-  }
-
-  renderShareButtons() {
-    const style = {
-      color: Colors.DARK_TWO,
-      fontSize: 14,
-      fontStyle: 'italic',
-      margin: 30,
-      textAlign: 'center',
-    }
-    const openURL = (base, urlParams, windowParams) => {
-      const encodedParams = []
-      for (const key in urlParams) {
-        encodedParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key] + '')}`)
-      }
-      window.open(`${base}?${encodedParams.join('&')}`, undefined, windowParams)
-    }
-    return <div style={style}>
-      Si {config.productName} vous a été utile n'hésitez pas à le partager&nbsp;!
-      <div style={{marginTop: 15}}>
-        {this.renderShareButton(
-          'email', emailIcon, emailGrayIcon,
-          (subject, body) => openURL('mailto:', {body, subject}))}
-        {this.renderShareButton(
-          'linkedin', linkedinIcon, linkedinGrayIcon,
-          (title, summary, url) => openURL(
-            'https://www.linkedin.com/shareArticle',
-            {mini: true, summary, title, url},
-            'width=550,height=500'))}
-        {this.renderShareButton(
-          'twitter', twitterIcon, twitterGrayIcon,
-          (title, text, url) => openURL(
-            'https://twitter.com/share', {text, url}, 'width=500,height=300'))}
-        {this.renderShareButton(
-          'facebook', facebookIcon, facebookGrayIcon,
-          (title, summary, href) => openURL(
-            'https://www.facebook.com/dialog/share',
-            {'app_id': config.facebookSSOAppId, display: 'popup', href},
-            'width=500,height=300'))}
-      </div>
-    </div>
-  }
-
-  renderShareButton(shareId, icon, grayIcon, onShare) {
-    const shareIdState = `is${shareId}IconHovered`
-    const isHovered = this.state[shareIdState]
-    const colorIconStyle = {
-      opacity: isHovered ? 1 : 0,
-      position: 'absolute',
-      ...SmoothTransitions,
-    }
-    return <span
-      style={{cursor: 'pointer', margin: '0 5px', position: 'relative'}}
-      onMouseEnter={() => this.setState({[shareIdState]: true})}
-      onMouseLeave={() => this.setState({[shareIdState]: false})}
-      onClick={() => this.share(shareId, onShare)}>
-      <img src={icon} style={colorIconStyle} alt="" />
-      <img src={grayIcon} alt={shareId} />
-    </span>
-  }
-
-  render() {
-    const {onClose, userProfile, ...extraProps} = this.props
-    const {isNewsletterEnabled} = this.state
-    const maybeE = userProfile.gender === 'FEMININE' ? 'e' : ''
-    const textStyle = {
-      color: Colors.DARK_TWO,
-      fontSize: 15,
-      lineHeight: 1.5,
-      maxWidth: 480,
-      padding: '0 50px',
-    }
-    const hrStyle = {
-      backgroundColor: Colors.SILVER,
-      border: 'none',
-      height: 1,
-      margin: '0 50px',
-    }
-    return <Modal {...extraProps} title="C'est tout pour le moment !">
-      <div style={{padding: 25, textAlign: 'center'}}>
-        <img src={victoryImage} alt="" />
-      </div>
-
-      <div style={textStyle}>
-        Vous avez consulté tous les conseils que nous avons pour vous à ce
-        stade. Nous espérons que certains vous auront inspiré{maybeE} dans
-        votre recherche !
-
-        <br /><br />
-
-        De nouveaux conseils arriveront bientôt&nbsp;! Nous travaillons
-        dur à améliorer {config.productName}.
-      </div>
-
-      <div style={{padding: '30px 50px 0'}}>
-        <LabeledToggle
-          isSelected={isNewsletterEnabled}
-          onClick={() => this.setState({isNewsletterEnabled: !isNewsletterEnabled})}
-          label={`Me tenir informé${maybeE} des nouvelles fonctionnalités
-              de ${config.productName}`}
-          style={{color: Colors.DARK_TWO, fontSize: 13, fontStyle: 'italic'}}
-          type="checkbox" />
-      </div>
-
-      <div style={{padding: 25, textAlign: 'center'}}>
-        <Button onClick={this.handleSubmit(onClose)} type="validation">
-          Retourner à mon diagnostic
-        </Button>
-      </div>
-
-      <hr style={hrStyle} />
-
-      {this.renderShareButtons()}
-    </Modal>
-  }
-}
-const TheEndModal = connect(({user}) => ({userProfile: user.profile}))(TheEndModalBase)
 
 
 class SuggestAdviceModalBase extends React.Component {
@@ -543,8 +244,7 @@ class SuggestAdviceModalBase extends React.Component {
     return <Modal
       title="Bob s'améliore grâce à vous"
       {...this.props} onClose={this.handleClose} isShown={isShown && !isThankYouShown}>
-      <ShortKey keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
-        onKeyPress={this.fastForward} />
+      <FastForward onForward={this.fastForward} />
       <div style={{padding: '0 50px 50px'}}>
         <div style={subtitleStyle}>
           Proposez de nouveaux conseils pour aider les chercheurs d'emploi&nbsp;!
@@ -603,7 +303,7 @@ class SuggestAdviceModalBase extends React.Component {
         </FieldSet>
 
         <div style={{textAlign: 'center'}}>
-          <Button type="validation" onClick={() => this.handleSubmit()}>
+          <Button type="validation" onClick={() => this.handleSubmit()} isRound={true}>
             Proposer mon conseil
           </Button>
         </div>
@@ -618,8 +318,7 @@ class SuggestAdviceModalBase extends React.Component {
       title="Merci beaucoup pour votre aide !" {...extraProps}
       onHidden={() => this.setState({isThankYouShown: false})}
       isShown={isShown && isThankYouShown}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
+      <FastForward onForward={onClose} />
       <div style={{fontSize: 15, lineHeight: 1.5, padding: '30px 50px 30px'}}>
 
         <div style={{marginBottom: 25, textAlign: 'center'}}>
@@ -637,7 +336,7 @@ class SuggestAdviceModalBase extends React.Component {
         </div>
 
         <div style={{marginTop: 40, textAlign: 'center'}}>
-          <Button onClick={onClose}>
+          <Button onClick={onClose} isRound={true}>
             Revenir aux conseils
           </Button>
         </div>
@@ -663,10 +362,47 @@ class SuggestAdviceModalBase extends React.Component {
 const SuggestAdviceModal = connect()(SuggestAdviceModalBase)
 
 
-class ProjectPage extends React.Component {
+class NeedAdviceSelectionModal extends React.Component {
+  static propTypes = {
+    onClose: PropTypes.func.isRequired,
+  }
+
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
+  }
+
+  render() {
+    const {onClose, ...extraProps} = this.props
+    const {isMobileVersion} = this.context
+    const style = {
+      borderRadius: 10,
+      margin: isMobileVersion ? '0 20px' : 'initial',
+      padding: isMobileVersion ? '30px 35px' : 50,
+    }
+    return <Modal onClose={onClose} style={style} {...extraProps}>
+      <div style={{maxWidth: 450}}>
+        Sélectionnez d'abord des conseils pour pouvoir les consulter en profondeur.
+      </div>
+      <div style={{marginTop: 20, textAlign: 'center'}}>
+        <Button onClick={onClose} isRound={true}>
+          OK
+        </Button>
+      </div>
+    </Modal>
+  }
+}
+
+
+const DIAGNOSTIC_TAB = 'analyser'
+const EXPLORER_TAB = 'explorer'
+const WORKBENCH_TAB = 'avancer'
+
+
+class ProjectPageBase extends React.Component {
   static propTypes = {
     location: PropTypes.shape({
-      hash: PropTypes.string,
+      hash: PropTypes.string.isRequired,
+      search: PropTypes.string.isRequired,
     }).isRequired,
     match: PropTypes.shape({
       params: PropTypes.shape({
@@ -675,41 +411,10 @@ class ProjectPage extends React.Component {
     }),
     user: PropTypes.object.isRequired,
   }
-  static contextTypes = {
-    history: PropTypes.shape({
-      replace: PropTypes.func.isRequired,
-    }).isRequired,
-  }
 
   state = {
-    adviceShownOnMount: null,
-    isSumUpProfileModalShown: false,
-    isWaitingInterstitialShown: false,
-  }
-
-  componentWillMount() {
-    const {location, match} = this.props
-    const {hash} = location
-    this.setState({
-      adviceShownOnMount: hash && hash.substr(1) || null,
-      isSumUpProfileModalShown: match.params.projectId === NEW_PROJECT_ID,
-      isWaitingInterstitialShown: match.params.projectId === NEW_PROJECT_ID,
-    })
-    const project = getProjectFromProps(this.props)
-    const {projectId} = project
-    if (projectId && projectId !== match.params.projectId) {
-      this.context.history.replace(Routes.PROJECT_PAGE + '/' + projectId + hash)
-    }
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const {projectId} = getProjectFromProps(nextProps)
-    if (!projectId) {
-      return
-    }
-    if (projectId !== nextProps.match.params.projectId) {
-      this.context.history.replace(Routes.PROJECT_PAGE + '/' + projectId)
-    }
+    isFirstTime: this.props.match.params.projectId === NEW_PROJECT_ID,
+    isWaitingInterstitialShown: this.props.match.params.projectId === NEW_PROJECT_ID,
   }
 
   handleWaitingInterstitialDone = () => {
@@ -718,9 +423,13 @@ class ProjectPage extends React.Component {
 
   render() {
     const project = getProjectFromProps(this.props)
-    const {user} = this.props
-    const {adviceShownOnMount, isSumUpProfileModalShown, isWaitingInterstitialShown} = this.state
-    const closeSumUpProfileModal = () => this.setState({isSumUpProfileModalShown: false})
+    const {location, match, user} = this.props
+    const {hash, search} = location
+    const {isFirstTime, isWaitingInterstitialShown} = this.state
+
+    if (project.projectId && project.projectId !== match.params.projectId) {
+      return <Redirect to={Routes.PROJECT_PAGE + '/' + project.projectId + hash} />
+    }
 
     if (isWaitingInterstitialShown || !project.advices) {
       return <WaitingProjectPage
@@ -728,90 +437,76 @@ class ProjectPage extends React.Component {
         onDone={this.handleWaitingInterstitialDone} />
     }
 
-    return <ProjectDashboardPage
-      project={project} onCloseSumUpProfileModal={closeSumUpProfileModal}
-      isSumUpProfileModalShown={isSumUpProfileModalShown}
-      adviceShownOnMount={adviceShownOnMount} />
+    const hasSelectedAdvices = (project.advices || []).some(advice => !!advice.score)
+    const defaultTab = isFirstTime ? DIAGNOSTIC_TAB :
+      hasSelectedAdvices ? WORKBENCH_TAB : EXPLORER_TAB
+    return <Switch>
+      <Route path={`${match.url}/:tab`} render={props => <ProjectDashboardPage
+        project={project} baseUrl={match.url} {...props} />} />
+      <Redirect to={`${match.url}/${defaultTab}${search}${hash}`} />
+    </Switch>
   }
 }
-
-
-const ADVICE_CARD_GROUP_PROPS = {
-  '1': {
-    title: 'À regarder',
-  },
-  '2': {
-    backgroundImage: twoStarsBackgroundImage,
-    image: twoStarsImage,
-    title: 'Secondaire',
-  },
-  '3': {
-    backgroundImage: threeStarsBackgroundImage,
-    image: threeStarsImage,
-    title: 'Prioritaire',
-  },
-}
+const ProjectPage = connect(({user}) => ({user}))(ProjectPageBase)
 
 
 class ProjectDashboardPageBase extends React.Component {
   static propTypes = {
-    adviceShownOnMount: PropTypes.string,
+    baseUrl: PropTypes.string.isRequired,
     dispatch: PropTypes.func.isRequired,
     featuresEnabled: PropTypes.shape({
       poleEmploi: PropTypes.bool,
     }).isRequired,
-    isSumUpProfileModalShown: PropTypes.bool,
+    location: PropTypes.shape({
+      hash: PropTypes.string.isRequired,
+      pathname: PropTypes.string.isRequired,
+      search: PropTypes.string.isRequired,
+    }).isRequired,
+    match: PropTypes.shape({
+      params: PropTypes.shape({
+        tab: PropTypes.string.isRequired,
+      }).isRequired,
+      url: PropTypes.string.isRequired,
+    }).isRequired,
     notificationsSeen: PropTypes.shape({
       infoCollKit: PropTypes.bool,
     }).isRequired,
-    onCloseSumUpProfileModal: PropTypes.func.isRequired,
     profile: USER_PROFILE_SHAPE.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
+
   static contextTypes = {
+    history: PropTypes.shape({
+      push: PropTypes.func.isRequired,
+    }).isRequired,
     isMobileVersion: PropTypes.bool,
   }
 
   state = {
-    // This can be either false (e.g. removed), 'hidden' or 'shown'.
-    isBobScoreShown: false,
-    isModifyModalIsShown: false,
-    isPoleEmploiChangelogShown: false,
-    isScoreTooltipShown: false,
+    isNeedAdviceSelectionModalShown: false,
+    isPoleEmploiChangelogShown: this.props.featuresEnabled.poleEmploi,
     isSuggestAdviceModalIsShown: false,
-    isTheEndModalShown: false,
-  }
-
-  componentWillMount() {
-    const {featuresEnabled, isSumUpProfileModalShown} = this.props
-    const {poleEmploi} = featuresEnabled
-    this.setState({
-      isBobScoreShown: isSumUpProfileModalShown,
-      isPoleEmploiChangelogShown: poleEmploi,
-    })
   }
 
   componentWillReceiveProps(nextProps) {
-    const {advices} = nextProps.project
+    const {project: {advices}} = nextProps
     const oldAdvices = this.props.project.advices
     const isImportantAdviceUnread = a => a.numStars > 1 && a.status === 'ADVICE_RECOMMENDED'
     if (advices === oldAdvices || advices.some(isImportantAdviceUnread) ||
         !oldAdvices.some(isImportantAdviceUnread)) {
       return
     }
-    clearTimeout(this.readingTimeout)
-    this.readingTimeout = setTimeout(() => {
-      nextProps.dispatch(allAdvicesReadAction)
-      this.setState({isTheEndModalShown: true})
-    }, 5000)
   }
 
-  componentWillUnmount() {
-    clearTimeout(this.readingTimeout)
+  // The tab that is currently shown: it can be either DIAGNOSTIC_TAB,
+  // EXPLORER_TAB, WORKBENCH_TAB or the empty string.
+  getTabShown() {
+    return this.props.match.params.tab
   }
 
-  toggleScoreTooltip = () => {
-    this.setState({isScoreTooltipShown: !this.state.isScoreTooltipShown})
+  hasSelectedAdvices() {
+    return (this.props.project.advices || []).some(advice => advice.score)
   }
 
   scrollTo = element => {
@@ -820,394 +515,193 @@ class ProjectDashboardPageBase extends React.Component {
       return
     }
     const elementRect = element.getBoundingClientRect()
-    this.pageDom.scrollDelta(elementRect.top - 60)
+    // Add delta to make sure scroll top appears below the navigation bar.
+    const headerDelta = this.context.isMobileVersion ? 90 : 60
+    this.pageDom.scrollDelta(elementRect.top - headerDelta)
   }
 
-  showBobScore = () => {
-    const {dispatch, project} = this.props
-    dispatch(bobScoreIsShown(project))
-    this.setState({isBobScoreShown: true})
+  maybeShowWorkbench = () => {
+    if (this.hasSelectedAdvices()) {
+      this.switchToTab(WORKBENCH_TAB)
+    } else {
+      this.setState({isNeedAdviceSelectionModalShown: true})
+    }
   }
 
-  renderDiagnostic(style) {
-    const {profile, project} = this.props
+  openExplorer = () => this.switchToTab(EXPLORER_TAB)
+
+  renderWorkbenchNotifications = () => {
+    const {project: {advices}, userYou} = this.props
     const {isMobileVersion} = this.context
-    const containerStyle = {
-      margin: 'auto',
-      maxWidth: 1000,
-      minWidth: isMobileVersion ? '100%' : 680,
-      ...style,
-    }
-    const bobScoreStyle = {
+    const numAdviceUnread = (advices || []).
+      filter(advice => advice.score && advice.status !== 'ADVICE_READ').length
+    const hasAdviceRead = !!(advices || []).some(advice => advice.status === 'ADVICE_READ')
+    const isTooltipShown = numAdviceUnread && !hasAdviceRead
+    const bubbleStyle = {
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      border: 'solid 1px rgba(255, 255, 255, 0.5)',
-      borderRadius: 2,
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: 16,
-      fontWeight: 'bold',
-      margin: '20px auto',
-      padding: 20,
-      width: 300,
-    }
-    const roundedBottom = {borderRadius: '0 0 5px 5px'}
-    const onClose = () => this.setState({isBobScoreShown: false})
-    const {components, percent} = computeBobScore(profile, project)
-    return <div style={{backgroundColor: '#fff', paddingTop: 1}}>
-      <div style={containerStyle}>
-        <ShortKey
-          keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onClose} />
-        <div style={bobScoreStyle}>
-          <div>Bob Score</div>
-          <Gauge percent={percent} style={{margin: 10}} />
-          <div style={{fontSize: 17}}>
-            <GrowingNumber number={Math.round(percent)} isSteady={true} />%
-            <span style={{fontSize: 12}}> de favorabilité</span>
-          </div>
-          <div
-            className={'tooltip' + (this.state.isScoreTooltipShown ? ' forced' : '')}
-            style={{fontSize: 13, fontWeight: 'normal'}}>
-            <span
-              style={{cursor: 'pointer', textDecoration: 'underline'}}
-              onClick={this.toggleScoreTooltip}>
-              Que veut dire ce score&nbsp;?
-            </span>
-            <div
-              className="tooltiptext"
-              style={{padding: '5px 25px', textAlign: 'left', width: 300}}>
-              <p>
-                Ce score représente notre avis sur la façon dont les facteurs
-                liés au marché et à votre recherche affectent vos chances de
-                retrouver un emploi. Par exemple, un score proche de 100% indique
-                que tous les feux sont au vert&nbsp;!
-              </p>
-
-              <p>
-                En fonction de vos caractéristiques personnelles vos chances
-                individuelles peuvent varier, mais ce score nous donne un point de
-                départ pour vous aider.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div style={{color: Colors.DARK_TWO, padding: 10, ...roundedBottom}}>
-          {this.renderDiagnosticComponents(
-            components.filter(({category, score}) => Math.round(score) && category === 'market'),
-            maybeS => `Facteur${maybeS} lié${maybeS} au marché`)}
-          {this.renderDiagnosticComponents(
-            components.filter(({category, score}) => Math.round(score) && category === 'user'),
-            maybeS => `Information${maybeS} sur votre profil`)}
-
-          <div style={{paddingBottom: 30, textAlign: 'center', ...roundedBottom}}>
-            <Button onClick={onClose}>
-              Voir les conseils
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  renderDiagnosticComponents(components, title) {
-    if (!components.length) {
-      return null
-    }
-    const maybeS = components.length > 1 ? 's' : ''
-    const containerStyle = {
-      fontSize: 12,
-      margin: 10,
-      textAlign: 'left',
-    }
-    const listItemStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      marginTop: 15,
-    }
-    const iconStyle = {
-      alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, .3)',
-      borderRadius: 35,
-      display: 'flex',
-      height: 35,
-      justifyContent: 'center',
-      marginRight: 12,
-      width: 35,
-    }
-    return <div style={containerStyle}>
-      <strong>{title(maybeS)}</strong>
-      <ol style={{fontSize: 14, listStyleType: 'none', padding: 0}}>
-        {components.map(({display, iconSrc, score, scorePartId}) => <li
-          key={scorePartId} style={listItemStyle}>
-          <div style={iconStyle}>
-            <img src={iconSrc} alt="" />
-          </div>
-          <div style={{flex: 1}}>
-            {display}
-            <ArrowsUpOrDown number={Math.round(score)} />
-          </div>
-        </li>)}
-      </ol>
-    </div>
-  }
-
-  renderHeader() {
-    const {profile, project} = this.props
-    const {isBobScoreShown} = this.state
-    const {isMobileVersion} = this.context
-    const style = {
-      alignItems: 'center',
-      backgroundColor: Colors.CHARCOAL_GREY,
+      backgroundColor: numAdviceUnread ? Colors.GREENISH_TEAL : Colors.COOL_GREY,
+      borderRadius: 21,
       color: '#fff',
       display: 'flex',
-      flexDirection: 'column',
+      fontWeight: 'bold',
+      height: 21,
       justifyContent: 'center',
       position: 'relative',
-      textAlign: 'center',
-      zIndex: 0,
+      verticalAlign: 'bottom',
+      width: 21,
+      ...Styles.CENTER_FONT_VERTICALLY,
+      ...SmoothTransitions,
     }
-    const titleStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      fontSize: isMobileVersion ? 23 : 38,
-      fontWeight: 'bold',
-      marginTop: NAVIGATION_BAR_HEIGHT,
-      minHeight: isMobileVersion ? 200 : 240,
-      padding: '20px 0',
+    const tooltipStyle = {
+      left: 10,
+      position: 'absolute',
+      top: '150%',
+      transform: isMobileVersion ? 'translateX(-100%)' : 'translateX(-50%)',
+      width: isMobileVersion ? 250 : 350,
+      zIndex: 1,
     }
+    const tooltipNotchStyle = {
+      borderBottom: 'solid 15px #fff',
+      borderLeft: 'solid 16px transparent',
+      borderRight: 'solid 16px transparent',
+      display: 'inline-block',
+      position: isMobileVersion ? 'absolute' : 'initial',
+      right: 10,
+    }
+    const tooltipBubbleStyle = {
+      backgroundColor: '#fff',
+      borderRadius: 4,
+      boxShadow: '0 0 15px 0 rgba(0, 0, 0, 0.3)',
+      color: Colors.DARK,
+      fontWeight: 'normal',
+      padding: '16px 20px',
+      textAlign: 'left',
+    }
+    // TODO(pascal): Display the tooltip differently on mobile when this is visible on mobile.
+    return <span style={bubbleStyle}>
+      {numAdviceUnread}
+      {isTooltipShown ? <div style={tooltipStyle}>
+        <div style={{height: 15}}>
+          <span style={tooltipNotchStyle} />
+        </div>
+        <div style={tooltipBubbleStyle}>
+          Super, {userYou('tu as', 'vous avez')} sélectionné un premier conseil à
+          creuser. {userYou('Tu peux', 'Vous pouvez')} maintenant <strong>cliquer
+          ci-dessus</strong> pour découvrir toutes les astuces que nous
+          avons préparées pour {userYou('toi', 'vous')} !
+        </div>
+      </div> : null}
+    </span>
+  }
+
+  switchToTab = tabName => {
+    this.context.history.push(`${this.props.baseUrl}/${tabName}`)
+  }
+
+  tabs = [
+    {
+      name: DIAGNOSTIC_TAB,
+      onSelect: () => this.switchToTab(DIAGNOSTIC_TAB),
+      subtitle: 'le diagnostic de ma situation',
+      title: 'Analyser',
+    },
+    {
+      name: EXPLORER_TAB,
+      onSelect: () => this.switchToTab(EXPLORER_TAB),
+      subtitle: 'les conseils pour mon projet',
+      title: 'Explorer',
+    },
+    {
+      isDisabled: () => !this.hasSelectedAdvices(),
+      name: WORKBENCH_TAB,
+      notifications: this.renderWorkbenchNotifications,
+      onSelect: this.maybeShowWorkbench,
+      subtitle: "sur les pistes que j'ai sélectionnées",
+      title: 'Avancer',
+    },
+  ]
+
+  renderNavBarContent() {
+    const {isMobileVersion} = this.context
+    const tabShown = this.getTabShown()
     const buttonBarStyle = {
-      alignSelf: 'center',
+      alignSelf: 'stretch',
+      backgroundColor: isMobileVersion ? Colors.DARK : 'initial',
       color: Colors.SILVER,
       display: 'flex',
       fontSize: 13,
-      marginBottom: 10,
+      justifyContent: 'center',
+      // TODO(marielaure): Get rid of these by wrapping the header into a div:
+      // https://stackoverflow.com/questions/21030056/border-around-divs-when-viewing-on-mobile-device
+      marginBottom: isMobileVersion ? -1 : 'initial',
+      marginTop: isMobileVersion ? -1 : 'initial',
     }
-    const floatingButtonStyle = {
-      bottom: 0,
-      boxShadow: '0 2px 2px 0 rgba(0, 0, 0, 0.25)',
-      position: 'absolute',
-      right: 30,
-      transform: 'translateY(50%)',
-    }
-    const {what, where} = createProjectTitleComponents(project, profile.gender)
-    return <header style={style}>
-      <JobGroupCoverImage
-        romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
-        coverOpacity={.6} opaqueCoverColor={Colors.DARK} />
-      <div style={titleStyle}>
-        <div>
-          Trouver un emploi {maybeContract('de ', "d'", what)}
-          <strong style={{color: '#fff'}}>
-            {lowerFirstLetter(what)} {where}
-          </strong>
-        </div>
-      </div>
-
-      <div style={buttonBarStyle}>
-        <HeaderLink onClick={this.showBobScore} isSelected={!!isBobScoreShown}>
-          Mon diagnostic
+    return <div style={buttonBarStyle}>
+      {this.tabs.map(({name, isDisabled, onSelect, notifications, subtitle, title}, index) =>
+        <HeaderLink key={`tab-${name}`}
+          onClick={onSelect}
+          isDisabled={isDisabled && isDisabled()}
+          isSelected={tabShown === name}
+          isFirstLink={!index}
+          isNextLinkSelected={this.tabs[index + 1] && this.tabs[index + 1].name === tabShown}
+          isShort={window.innerWidth < 2 * 180 + 3 * 230}
+          subtitle={subtitle}
+          notifications={notifications && notifications()}>
+          {title}
         </HeaderLink>
-        <div style={{borderLeft: 'solid 1px'}} />
-        <HeaderLink
-          onClick={() => this.setState({isBobScoreShown: false})} isSelected={!isBobScoreShown}>
-          Mes conseils
-        </HeaderLink>
-        <div style={{borderLeft: 'solid 1px'}} />
-        <HeaderLink onClick={() => this.setState({isModifyModalIsShown: true})}>
-          Modifier mon projet
-        </HeaderLink>
-      </div>
-
-      {(isMobileVersion || isBobScoreShown) ? null : <Button
-        style={floatingButtonStyle}
-        onClick={() => this.setState({isSuggestAdviceModalIsShown: true})}>
-        Proposer un conseil
-      </Button>}
-    </header>
-  }
-
-  renderBottomAdviceSuggest() {
-    const style = {
-      backgroundColor: Colors.SKY_BLUE,
-      boxShadow: '0 1px 7px 0 rgba(0, 0, 0, 0.1)',
-      color: '#fff',
-      fontSize: 16,
-      overflow: 'hidden',
-      padding: 10,
-    }
-    return <div style={style}>
-      <div style={{alignItems: 'center', display: 'flex', margin: 'auto', maxWidth: 960}}>
-        <span style={{flex: 1, ...Styles.CENTER_FONT_VERTICALLY}}>
-          Participez à l'amélioration de Bob en partageant des idées de conseil !
-        </span>
-        <Button
-          type="navigationOnImage"
-          onClick={() => this.setState({isSuggestAdviceModalIsShown: true})}>
-          Proposer un conseil
-        </Button>
-      </div>
+      )}
     </div>
-  }
-
-  getClosestAdviceId(adviceId) {
-    const {advices} = this.props.project
-    if (!advices || !adviceId) {
-      return null
-    }
-    // Exact match.
-    if (advices.find(a => a.adviceId === adviceId)) {
-      return adviceId
-    }
-    // Starts with.
-    return advices.map(({adviceId}) => adviceId).find(a => a.startsWith(adviceId))
-  }
-
-  renderAdviceCards(advices) {
-    const {adviceShownOnMount, profile, project} = this.props
-    const cardsContainerStyle = {
-      margin: '0 auto',
-    }
-    const adviceGroups = _.groupBy(advices, 'numStars')
-    const groupKeys = Object.keys(adviceGroups).sort().reverse()
-
-    const existingAdviceShownOnMount = this.getClosestAdviceId(adviceShownOnMount)
-
-    const sections = []
-    groupKeys.forEach((numStars, index) => {
-      sections.push(<AdviceSection
-        key={`advices-${numStars}-star`}
-        numStars={numStars} advices={adviceGroups[numStars]}
-        adviceShownOnMount={existingAdviceShownOnMount} scrollTo={this.scrollTo}
-        {...{profile, project}} />)
-      if (index !== groupKeys.length - 1) {
-        // Add separator before next section.
-        sections.push(this.renderSectionSeparator(numStars))
-      }
-    })
-
-    return <div style={cardsContainerStyle}>
-      {sections}
-    </div>
-  }
-
-  renderSectionSeparator(numStars) {
-    const {project} = this.props
-    const containerStyle = {
-      color: '#fff',
-      padding: '110px 0',
-      position: 'relative',
-      zIndex: 0,
-    }
-    const titleStyle = {
-      fontSize: 29,
-      fontWeight: 500,
-      margin: 'auto',
-      maxWidth: 800,
-      textAlign: 'center',
-    }
-    const sourceStyle = {
-      bottom: 45,
-      fontSize: 16,
-      fontStyle: 'italic',
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      textAlign: 'center',
-    }
-    return <div key={`section-sep-${numStars}`} style={containerStyle}>
-      <JobGroupCoverImage
-        romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}}
-        grayScale={100} blur={2} coverOpacity={.5} opaqueCoverColor={Colors.DARK} />
-      <div style={titleStyle}>
-        {numStars === '3' ?
-          `4 personnes sur 10 retrouvent un emploi grâce
-            à leurs contacts, amis, famille, collègues…` :
-          `Saviez-vous que seulement 12% des gens retrouvent un emploi
-            en répondant à des offres sur internet ?`}
-      </div>
-      <div style={sourceStyle}>
-        Source&nbsp;: <a
-          href="http://www.pole-emploi.org/statistiques-analyses/quel-usage-des-outils-numeriques-pour-la-recherche-d-emploi-@/30167/view-article-178066.html"
-          style={{color: '#fff'}} target="_blank" rel="noopener noreferrer">
-          enquête Pôle emploi / IFOP 2016
-        </a>
-      </div>
-    </div>
-  }
-
-  renderModifyModal() {
-    const {dispatch, project} = this.props
-    const noticeStyle = {
-      fontSize: 15,
-      fontStyle: 'italic',
-      lineHeight: 1.33,
-      margin: '35px 0 40px',
-      maxWidth: 400,
-    }
-    const onClose = () => this.setState({isModifyModalIsShown: false})
-    const onModify = () => dispatch(modifyProject(project))
-    return <Modal
-      isShown={this.state.isModifyModalIsShown}
-      style={{padding: '0 50px 40px', textAlign: 'center'}}
-      title="Modifier mes informations"
-      onClose={onClose}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={onModify} />
-      <div style={noticeStyle}>
-        En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.
-      </div>
-      <Button type="back" style={{marginRight: 25}} onClick={onClose}>
-        Annuler
-      </Button>
-      <Button type="validation" onClick={onModify}>
-        Continuer
-      </Button>
-    </Modal>
   }
 
   render() {
-    const {dispatch, featuresEnabled, isSumUpProfileModalShown,
-      notificationsSeen, onCloseSumUpProfileModal, profile, project} = this.props
-    const {isBobScoreShown, isPoleEmploiChangelogShown,
-      isSuggestAdviceModalIsShown, isTheEndModalShown} = this.state
-    const advices = project.advices || []
+    const {baseUrl, featuresEnabled, location, match, notificationsSeen,
+      profile, project, userYou} = this.props
+    const {hash, search} = location
+    const {isNeedAdviceSelectionModalShown, isPoleEmploiChangelogShown,
+      isSuggestAdviceModalIsShown} = this.state
+    const tabShown = this.getTabShown()
     const isInfoCollKitNotificationShown =
       featuresEnabled.poleEmploi && !notificationsSeen.infoCollKit &&
-      !isSumUpProfileModalShown && !isBobScoreShown
+      tabShown === EXPLORER_TAB
+
     return <PageWithNavigationBar
-      page="project" isContentScrollable={false} isNavBarTransparent={true} ref={dom => {
+      page="project"
+      navBarContent={this.renderNavBarContent()}
+      isContentScrollable={tabShown !== DIAGNOSTIC_TAB}
+      ref={dom => {
         this.pageDom = dom
         if (this.scrollElementOnReady) {
           this.scrollTo(this.scrollElementOnReady)
           this.scrollElementOnReady = null
         }
-      }} isChatButtonShown={true}>
-      <TheEndModal
-        isShown={isTheEndModalShown}
-        onClose={() => this.setState({isTheEndModalShown: false})} />
+      }} isChatButtonShown={true} style={{display: 'flex', flexDirection: 'column'}}>
       <PoleEmploiChangelogModal
         isShown={isPoleEmploiChangelogShown} projectCreatedAt={project.createdAt}
         onClose={() => this.setState({isPoleEmploiChangelogShown: false})} />
       <SuggestAdviceModal
         isShown={isSuggestAdviceModalIsShown} project={project}
         onClose={() => this.setState({isSuggestAdviceModalIsShown: false})} />
-      {this.renderModifyModal()}
-      {this.renderHeader()}
-      {isBobScoreShown ? this.renderDiagnostic() : <div>
-        {this.renderAdviceCards(advices)}
-        <InfoCollNotificationBox
-          style={{zIndex: 3}} isShown={isInfoCollKitNotificationShown}
-          onClose={() => dispatch(markNotificationAsSeen('infoCollKit'))} />
-        <FeedbackBar project={project} style={{padding: '90px 0'}} />
-        {this.renderBottomAdviceSuggest()}
-      </div>}
-      <SumUpProfileModal
-        isShown={isSumUpProfileModalShown} project={project} userProfile={profile}
-        onClose={() => {
-          onCloseSumUpProfileModal()
-          this.showBobScore()
-        }} />
+      <NeedAdviceSelectionModal
+        isShown={isNeedAdviceSelectionModalShown}
+        onClose={() => this.setState({isNeedAdviceSelectionModalShown: false})} />
+      <Switch>
+        <Route path={`${baseUrl}/${DIAGNOSTIC_TAB}`} render={() =>
+          <DiagnosticTab
+            onNextTab={() => this.switchToTab(EXPLORER_TAB)}
+            {... {project, userYou}} />
+        } />
+        <Route path={`${baseUrl}/${EXPLORER_TAB}`} render={() =>
+          <Explorer
+            onSuggestClick={() => this.setState({isSuggestAdviceModalIsShown: true})}
+            onValidateSelection={() => this.switchToTab(WORKBENCH_TAB)} scrollTo={this.scrollTo}
+            {...{isInfoCollKitNotificationShown, profile, project,
+              userYou}}
+          />} />
+        <Route path={`${baseUrl}/${WORKBENCH_TAB}/:adviceId?`} render={props =>
+          <Workbench {...props} baseUrl={match.url} project={project} style={{flex: 1}} />} />
+        {/* Got an unknown tab, redirect to base URL to switch to default tab. */}
+        <Redirect to={`${baseUrl}${search}${hash}`} />
+      </Switch>
     </PageWithNavigationBar>
   }
 }
@@ -1215,458 +709,140 @@ const ProjectDashboardPage = connect(({user}) => ({
   featuresEnabled: user.featuresEnabled || {},
   notificationsSeen: user.notificationsSeen || {},
   profile: user.profile,
+  userYou: youForUser(user),
 }))(ProjectDashboardPageBase)
 
 
-const feedbackTitle = {
-  '1': 'Mauvais',
-  '2': 'Peu intéressants',
-  '3': 'Intéressants',
-  '4': 'Pertinents',
-  '5': 'Très pertinents',
-}
-
-
-class FeedbackBarBase extends React.Component {
+class DiagnosticTabBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
-    isFeminine: PropTypes.bool,
-    project: PropTypes.object.isRequired,
-    style: PropTypes.object,
+    onNextTab: PropTypes.func.isRequired,
+    profile: PropTypes.shape({
+      name: PropTypes.string,
+    }).isRequired,
+    project: PropTypes.shape({
+      diagnostic: PropTypes.object,
+    }).isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
-  state = {
-    hoveredStars: 0,
-    isModalShown: false,
-    score: 0,
-    text: '',
-    usefulAdvices: [],
-  }
-
-  saveFeedback = () => {
-    const {dispatch, project} = this.props
-    const {score, text, usefulAdvices} = this.state
-    const usefulAdviceModules = {};
-    (usefulAdvices || []).forEach(adviceId => {
-      usefulAdviceModules[adviceId] = true
-    })
-    dispatch(sendProjectFeedback(project, {score, text, usefulAdviceModules}))
-  }
-
-  openModal = highlightedStars => {
-    const {project} = this.props
-    const usefulAdvices = (project.advices || []).
-      filter(({score}) => score).
-      map(({adviceId}) => adviceId)
-    this.setState({isModalShown: true, score: highlightedStars, usefulAdvices})
-  }
-
-  renderTitle(numStars) {
-    return feedbackTitle[numStars] || 'Que pensez-vous des conseils de Bob ?'
-  }
-
-  renderModal() {
-    const {isFeminine, project} = this.props
-    const {isModalShown, score, usefulAdvices, text} = this.state
-    const isGoodFeedback = score > 2
-    return <Modal
-      isShown={isModalShown} style={{color: Colors.DARK_TWO, padding: 50}}
-      onClose={() => this.setState({isModalShown: false, score: 0})}>
-      <div style={{borderBottom: `solid 2px ${Colors.SILVER}`, paddingBottom: 35}}>
-        {this.renderStars()}
-      </div>
-      <div style={{fontSize: 15, padding: '35px 0', position: 'relative', width: 600}}>
-        <div style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>
-          {isGoodFeedback ? <span>
-            Qu'est-ce qui vous a le plus parlé dans {config.productName}&nbsp;?
-          </span> : <span>
-            Pouvez-vous nous dire ce qui n'a pas fonctionné pour vous&nbsp;?
-          </span>}
-        </div>
-        <textarea
-          style={{height: 180, padding: 10, width: '100%'}}
-          placeholder="Écrivez votre commentaire ici" value={text}
-          onChange={event => this.setState({text: event.target.value})} />
-        {isGoodFeedback ? <div>
-          <div style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>
-            Quels conseils vous ont particulièrement intéressé{isFeminine ? 'e' : ''}&nbsp;?
-          </div>
-          <CheckboxList
-            onChange={usefulAdvices => this.setState({usefulAdvices})} values={usefulAdvices}
-            options={(project.advices || []).
-              filter(a => a.numStars > 1).
-              map(advice => ({name: getAdviceTitle(advice), value: advice.adviceId})).
-              filter(({name}) => name)} />
-        </div> : null}
-      </div>
-      <div style={{textAlign: 'center'}}>
-        <Button type="validation" onClick={this.saveFeedback}>Envoyer</Button>
-      </div>
-    </Modal>
-  }
-
-  renderStars() {
-    const {hoveredStars, score} = this.state
-    const highlightedStars = hoveredStars || score || 0
-    const starStyle = {
-      cursor: 'pointer',
-      height: 40,
-      padding: 5,
-    }
-    return <div style={{textAlign: 'center'}}>
-      <div style={{fontSize: 16, fontWeight: 500, marginBottom: 5}}>
-        {this.renderTitle(highlightedStars)}
-      </div>
-      <div>
-        {new Array(5).fill(null).map((unused, index) => <img
-          onMouseEnter={() => this.setState({hoveredStars: index + 1})}
-          onMouseLeave={() => {
-            if (hoveredStars === index + 1) {
-              this.setState({hoveredStars: 0})
-            }
-          }}
-          style={starStyle} alt={`${index + 1} étoile${index ? 's' : ''}`}
-          onClick={() => this.openModal(highlightedStars)}
-          src={(index < highlightedStars) ? starIcon : starOutlineIcon} key={`star-${index}`} />)}
-      </div>
-    </div>
-  }
-
-  render() {
-    const {project, style} = this.props
-    if (project.feedback && project.feedback.score) {
-      return null
-    }
-    const containerStyle = {
-      backgroundColor: Colors.DARK_TWO,
-      color: '#fff',
-      position: 'relative',
-      ...style,
-    }
-    return <div style={containerStyle}>
-      {this.renderModal()}
-      {this.renderStars()}
-    </div>
-  }
-}
-const FeedbackBar = connect(({user}) => ({
-  isFeminine: user.profile.gender === 'FEMININE',
-}))(FeedbackBarBase)
-
-
-class AdviceSection extends React.Component {
-  static propTypes = {
-    adviceShownOnMount: PropTypes.string,
-    advices: PropTypes.arrayOf(PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired).isRequired,
-    numStars: PropTypes.oneOf(Object.keys(ADVICE_CARD_GROUP_PROPS)).isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
-    project: PropTypes.object.isRequired,
-    scrollTo: PropTypes.func,
-    style: PropTypes.object,
-  }
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
-  componentWillMount() {
-    const {adviceShownOnMount, advices, numStars} = this.props
-    const isCollapsable = advices.length > 1 && numStars === '1'
-    const adviceShownIndex =
-      isCollapsable && adviceShownOnMount &&
-      advices.findIndex(a => a.adviceId === adviceShownOnMount) || 0
-    this.setState({
-      adviceShownIndex: adviceShownIndex >= 0 ? adviceShownIndex : 0,
-      isCollapsable,
-      isCollapsed: isCollapsable,
-    })
-  }
-
-  componentDidMount() {
-    const {adviceShownOnMount, scrollTo} = this.props
-    if (!adviceShownOnMount || !scrollTo || !this.cards || !this.cards[adviceShownOnMount]) {
-      return
-    }
-    this.mountTimeout = setTimeout(() => scrollTo(this.cards[adviceShownOnMount]), 100)
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.mountTimeout)
-  }
-
-  handleSeeNextAdvice = () => {
-    const {advices} = this.props
-    const {adviceShownIndex} = this.state
-    this.setState({
-      adviceShownIndex: (adviceShownIndex + 1) % advices.length,
-    })
-    this.seeNextButtonDom && this.seeNextButtonDom.blur()
-  }
-
-  renderAdviceCard(advice, style) {
-    const {profile, project} = this.props
-    return <AdviceCard
-      key={advice.adviceId} advice={advice} style={style} maxWidth={960}
-      refDom={card => {
-        this.cards = this.cards || {}
-        this.cards[advice.adviceId] = card
-      }} {...{profile, project}} />
-  }
-
-  renderCollapsed() {
-    const {advices} = this.props
-    const {adviceShownIndex} = this.state
-    const fakeCardStyle = {
-      backgroundColor: '#fff',
-      bottom: 0,
-      boxShadow: 'rgba(0, 0, 0, 0.25) 0px 2px 10px 0px',
-      height: 250,
-      left: 'calc(50% - 480px)',
-      position: 'absolute',
-      width: 960,
-    }
-    return <div style={{position: 'relative', zIndex: 0}}>
-      {this.renderAdviceCard(advices[adviceShownIndex], {padding: '50px 0 60px'})}
-      <div
-        style={{...fakeCardStyle, transform: 'translate(10px, -55px)', width: 940, zIndex: -1}} />
-      <div
-        style={{...fakeCardStyle, transform: 'translate(20px, -50px)', width: 920, zIndex: -2}} />
-    </div>
-  }
-
-  renderCollapseButtons() {
-    const {isCollapsed} = this.state
-    const buttonStyle = {
-      fontSize: 15,
-    }
-    const expandListStyle = {
-      alignItems: 'center',
-      bottom: 0,
-      color: Colors.COOL_GREY,
-      cursor: 'pointer',
-      display: 'flex',
-      position: 'absolute',
-      right: 0,
-      top: 0,
-    }
-    return <div style={{margin: 'auto', maxWidth: 960}}>
-      <div style={{minHeight: 24, position: 'relative', textAlign: 'center'}}>
-        {isCollapsed ? <Button style={buttonStyle} onClick={this.handleSeeNextAdvice} ref={dom => {
-          this.seeNextButtonDom = dom
-        }}>
-          Voir un autre conseil
-        </Button> : null}
-        <div style={expandListStyle} onClick={() => this.setState({isCollapsed: !isCollapsed})}>
-          <span style={Styles.CENTER_FONT_VERTICALLY}>
-            Voir {isCollapsed ? 'la liste complète' : 'moins'}
-          </span>
-          <Icon
-            name={isCollapsed ? 'chevron-down' : 'chevron-up'}
-            style={{fontSize: 20, marginLeft: 10}} />
-        </div>
-      </div>
-    </div>
-  }
-
   render() {
+    const {dispatch, onNextTab, profile, project, userYou} = this.props
     const {isMobileVersion} = this.context
-    const {advices, numStars, style} = this.props
-    const {isCollapsable, isCollapsed} = this.state
-    if (!advices || !advices.length) {
-      return null
+    if (!project.diagnostic) {
+      return <Redirect to={Routes.APP_UPDATED_PAGE} />
     }
-    const cardStyle = {
-      padding: isMobileVersion ? '15px 10px 40px' : '50px 0',
-    }
-    const titleLinestyle = {
-      color: Colors.DARK_TWO,
-      fontSize: 24,
-      fontStyle: 'italic',
-      fontWeight: 500,
-      padding: '25px 10px',
-      textAlign: 'center',
-    }
-    const {backgroundImage, image, title} =
-      ADVICE_CARD_GROUP_PROPS[numStars] || ADVICE_CARD_GROUP_PROPS['1']
-    const containerStyle = {
-      backgroundAttachment: 'fixed',
-      backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'initial',
-      backgroundPosition: 'center center',
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: 'contain',
-      padding: '45px 0 100px',
-      ...style,
-    }
-    return <div style={containerStyle}>
-      <div style={titleLinestyle}>
-        {image ? <img src={image} style={{marginBottom: 20}} alt="" /> : null}
-        <div>{title}</div>
-      </div>
-      {isCollapsed ?
-        this.renderCollapsed() :
-        advices.map(advice => this.renderAdviceCard(advice, cardStyle))}
-      {isCollapsable ? this.renderCollapseButtons() : null}
-    </div>
-  }
-}
-
-
-class Gauge extends React.Component {
-  static propTypes = {
-    halfAngleDeg: PropTypes.number.isRequired,
-    percent: PropTypes.number.isRequired,
-    radius: PropTypes.number.isRequired,
-    scaleY: PropTypes.number.isRequired,
-    strokeWidth: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
-  static defaultProps = {
-    halfAngleDeg: 60,
-    radius: 100,
-    scaleY: .8,
-    strokeWidth: 40,
-  }
-
-  componentWillMount() {
-    this.setState({isMounting: true})
-    this.timeout = setTimeout(() => this.setState({isMounting: false}), 10)
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.timeout)
-  }
-
-  renderMark(rad, delta) {
-    const {radius, strokeWidth} = this.props
-    const style = {
+    const diagnosticContainerStyle = {
       backgroundColor: '#fff',
-      height: strokeWidth,
-      left: '50%',
-      position: 'absolute',
-      top: strokeWidth / 2,
-      transform: `rotate(${rad}rad) translate(${delta-2}px, ${-strokeWidth/2}px)`,
-      transformOrigin: `0 ${radius}px`,
-      width: 4,
+      margin: 'auto',
+      maxWidth: 1000,
+      minWidth: isMobileVersion ? '100%' : 680,
+      padding: '48px 0',
     }
-    return <div style={style} />
-  }
-
-  renderNeedle(rad) {
-    const {radius, strokeWidth, style} = this.props
-    const needleStyle = {
-      backgroundColor: '#fff',
-      borderRadius: '50% 50% 2px 2px',
-      boxShadow: '1px -8px 5px 0 rgba(0, 0, 0, 0.6)',
-      height: strokeWidth / 2 + 5 + radius,
-      left: '50%',
-      position: 'absolute',
-      top: strokeWidth / 2,
-      transform: `rotate(${rad}rad) translate(-2px, ${-strokeWidth/2 - 5}px)`,
-      transformOrigin: `0 ${radius}px`,
-      transition: style.transition || '1000ms',
-      width: 4,
-    }
-    return <div style={needleStyle} />
-  }
-
-  render() {
-    const {halfAngleDeg, percent, radius, scaleY, style, strokeWidth, ...extraProps} = this.props
-    const {isMounting} = this.state
-    const squeezedHalfAngle = Math.atan(Math.tan(halfAngleDeg * Math.PI / 180) * scaleY)
-    const deltaY = Math.cos(squeezedHalfAngle) * radius
-    const halfWidth = Math.sin(squeezedHalfAngle) * radius
-    const containerStyle = {
-      height: (radius + strokeWidth / 2 + 5) * scaleY,
-      width: 2 * (halfWidth + 20),
-      ...style,
-    }
-    const squeezedContainerStyle = {
-      position: 'relative',
-      transform: `scaleY(${scaleY})`,
-    }
-    const svgStyle = {
-      left: '50%',
-      position: 'absolute',
-      transform: `translateX(${-20-halfWidth}px)`,
-      transformOrigin: '50% 0',
-      width: 2 * (20 + halfWidth),
-    }
-    return <div {...extraProps} style={containerStyle}>
-      <div style={squeezedContainerStyle}>
-        <svg
-          strokeWidth={strokeWidth} style={svgStyle}
-          fill="none" viewBox={`-20 0 ${2 * halfWidth + 40} ${deltaY + strokeWidth / 2 + 20}`}>
-          <defs>
-            <linearGradient
-              id="gradient" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={Colors.RED_PINK} />
-              <stop offset="50%" stopColor={Colors.SQUASH} />
-              <stop offset="100%" stopColor={Colors.GREENISH_TEAL} />
-            </linearGradient>
-          </defs>
-          <g transform={`translate(${halfWidth}, ${strokeWidth / 2 + radius})`}>
-            <path
-              d={`M ${-halfWidth},-${deltaY} A ${radius},${radius} 0 0,1 ${halfWidth},-${deltaY}`}
-              stroke="url(#gradient)" />
-          </g>
-        </svg>
-        {this.renderMark(-squeezedHalfAngle, -4)}
-        {this.renderMark(squeezedHalfAngle, 4)}
-        {this.renderNeedle(
-          -squeezedHalfAngle + (isMounting ? 0 : percent) * 2 * squeezedHalfAngle / 100)}
+    return <div style={{backgroundColor: '#fff', padding: '0 20px', width: '100%'}}>
+      <FastForward onForward={onNextTab} />
+      <div style={diagnosticContainerStyle}>
+        <Diagnostic
+          diagnosticData={project.diagnostic}
+          onClose={onNextTab}
+          onShown={() => dispatch(diagnosticIsShown(project))}
+          onDownloadAsPdf={() => dispatch(downloadDiagnosticAsPdf(project))}
+          userName={profile.name}
+          userYou={userYou}
+        />
       </div>
     </div>
   }
 }
-
-
-class ArrowsUpOrDown extends React.Component {
-  static propTypes = {
-    number: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
-
-  render() {
-    const {number, style, ...extraProps} = this.props
-    if (!number) {
-      return null
-    }
-    const containerStyle = {
-      color: number > 0 ? Colors.GREENISH_TEAL : Colors.RED_PINK,
-      ...style,
-    }
-    return <div {...extraProps} style={containerStyle}>
-      {new Array(Math.abs(number)).fill(null).map((unused, index) => <Icon
-        key={index} name={number > 0 ? 'arrow-up' : 'arrow-down'} />)}
-    </div>
-  }
-}
+const DiagnosticTab = connect(({user}) => ({profile: user.profile || {}}))(DiagnosticTabBase)
 
 
 class HeaderLinkBase extends React.Component {
   static propTypes = {
     children: PropTypes.node,
+    isDisabled: PropTypes.bool,
+    isFirstLink: PropTypes.bool,
+    isNextLinkSelected: PropTypes.bool,
     isSelected: PropTypes.bool,
+    isShort: PropTypes.bool,
+    notifications: PropTypes.node,
     style: PropTypes.object,
+    // TODO(pascal): Check with john how to add subtitles back.
+    // subtitle: PropTypes.node,
+  }
+
+  static contextTypes = {
+    isMobileVersion: PropTypes.bool,
   }
 
   render() {
-    const {children, isSelected, style, ...extraProps} = this.props
+    const {isDisabled, isFirstLink, isNextLinkSelected, isSelected, isShort,
+      notifications, style, children, ...extraProps} = this.props
+    const {isMobileVersion} = this.context
     const containerStyle = {
-      ':hover': {
-        color: '#fff',
+      ':hover': isSelected ? {} : {
+        color: isDisabled ? Colors.COOL_GREY : '#fff',
       },
-      color: isSelected ? '#fff' : 'inherit',
+      alignItems: 'center',
+      backgroundColor: !isMobileVersion && isSelected ? '#fff' : 'initial',
+      color: isSelected ? isMobileVersion ? '#fff' : Colors.DARK :
+        isMobileVersion ? Colors.SLATE : Colors.COOL_GREY,
       cursor: 'pointer',
-      fontWeight: 'bold',
-      padding: '10px 20px',
+      display: 'flex',
+      flexDirection: 'column',
+      fontSize: isMobileVersion ? 'inherited' : 16,
+      height: isMobileVersion ? 40 : 56,
+      justifyContent: 'center',
+      minWidth: isMobileVersion ? 100 : isShort ? 140 : 230,
+      opacity: isDisabled ? 0.3 : 1,
+      position: 'relative',
+      zIndex: 1,
       ...SmoothTransitions,
       ...style,
     }
-    return <span style={containerStyle} {...extraProps}>
-      {children}
-    </span>
+    const notificationsStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      position: 'absolute',
+      right: isMobileVersion ? -5 : 15,
+    }
+    const leftBorderStyle = {
+      backgroundColor: isSelected ? '#fff' : Colors.DARK,
+      borderBottom: 'solid 28px transparent',
+      borderLeft: `solid 10px ${Colors.DARK}`,
+      borderTop: 'solid 28px transparent',
+      position: 'absolute',
+      right: '100%',
+      top: 0,
+      ...SmoothTransitions,
+    }
+    const rightBorderStyle = {
+      backgroundColor: isNextLinkSelected ? '#fff' : Colors.DARK,
+      borderBottom: 'solid 28px transparent',
+      borderLeft: `solid 10px ${isSelected ? '#fff' : Colors.DARK}`,
+      borderTop: 'solid 28px transparent',
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      ...SmoothTransitions,
+    }
+    return <div
+      style={containerStyle}
+      {...extraProps}
+    >
+      <strong style={{textTransform: 'uppercase'}}>{children}</strong>
+      {notifications ? <div style={notificationsStyle}>
+        {notifications}
+      </div> : null}
+      {isMobileVersion ? null : <React.Fragment>
+        {isFirstLink ? <div style={leftBorderStyle} /> : null}
+        <div style={rightBorderStyle} />
+      </React.Fragment>}
+    </div>
   }
 }
 const HeaderLink = Radium(HeaderLinkBase)

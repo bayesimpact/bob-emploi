@@ -15,6 +15,7 @@ class DebugModalBase extends React.Component {
     keepProps: PropTypes.shape({
       facebookId: PropTypes.string,
       googleId: PropTypes.string,
+      peConnectId: PropTypes.string,
       userId: PropTypes.string,
     }),
     onClose: PropTypes.func.isRequired,
@@ -76,6 +77,9 @@ class DebugModalBase extends React.Component {
       if (user.projects && user.projects.length && user.projects[0].advices) {
         delete user.projects[0].advices
       }
+      if (user.projects && user.projects.length && user.projects[0].diagnostic) {
+        delete user.projects[0].diagnostic
+      }
     })
   }
 
@@ -99,10 +103,12 @@ class DebugModalBase extends React.Component {
           this.userJsonDom = dom
         }} />
       <div style={buttonStyle}>
-        {hasAdvices ? <Button onClick={this.resetAdvices}>
+        {hasAdvices ? <Button onClick={this.resetAdvices} isRound={true}>
           Conseiller à nouveau
         </Button> : null}
-        <Button type="validation" onClick={() => this.saveAndClose()} style={{marginLeft: 20}}>
+        <Button
+          type="validation" onClick={() => this.saveAndClose()} style={{marginLeft: 20}}
+          isRound={true}>
           Enregistrer
         </Button>
       </div>
@@ -110,10 +116,10 @@ class DebugModalBase extends React.Component {
   }
 }
 export const DebugModal = connect(({user}) => {
-  const {facebookId, googleId, userId, ...userProps} = user
+  const {facebookId, googleId, peConnectId, userId, ...userProps} = user
   return {
     email: user.profile.email,
-    keepProps: {facebookId, googleId, userId},
+    keepProps: {facebookId, googleId, peConnectId, userId},
     user: userProps,
   }
 })(DebugModalBase)

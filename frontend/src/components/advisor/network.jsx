@@ -1,16 +1,14 @@
 import React from 'react'
-import {connect} from 'react-redux'
 import PropTypes from 'prop-types'
 
-import {GET_EXPANDED_CARD_CONTENT, getExpandedCardContent} from 'store/actions'
-import {lowerFirstLetter} from 'store/french'
+import {lowerFirstLetter, getEmailTemplates} from 'store/french'
 import {isEmailTemplatePersonalized, projectMatchAllFilters} from 'store/user'
 
 import {AppearingList, GrowingNumber, Markdown, PaddedOnMobile,
   StringJoiner} from 'components/theme'
+import Picto from 'images/advices/picto-network.png'
 
-import {EmailTemplate} from './base'
-import MESSAGE_EXAMPLES from './data/email_templates.json'
+import {EmailTemplate, connectExpandedCardWithContent} from './base'
 
 
 class NetworkAdviceCard extends React.Component {
@@ -18,24 +16,26 @@ class NetworkAdviceCard extends React.Component {
     advice: PropTypes.shape({
       cardText: PropTypes.string,
     }).isRequired,
+    fontSize: PropTypes.number.isRequired,
     profile: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice, project, profile} = this.props
+    const {advice, fontSize, project, profile, userYou} = this.props
     const {cardText} = advice
     if (cardText) {
-      return <div style={{fontSize: 30}}>
+      return <div style={{fontSize: fontSize}}>
         <Markdown content={cardText} />
       </div>
     }
 
     const explanationStyle = {
-      fontSize: 30,
+      fontSize: fontSize,
     }
 
-    const selectedEmails = (MESSAGE_EXAMPLES.network.
+    const selectedEmails = (getEmailTemplates(userYou).network.
       filter(email => projectMatchAllFilters(project, email.filters)).
       filter(email => isEmailTemplatePersonalized(email.personalizations, profile, project)) ||
         ["amis d'amis"])
@@ -53,67 +53,56 @@ class NetworkAdviceCard extends React.Component {
 
 class NetworkAdvicePageBase extends React.Component {
   static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
+    adviceData: PropTypes.shape({
+      leads: PropTypes.arrayOf(PropTypes.shape({
+        name: PropTypes.string.isRequired,
+      }).isRequired),
     }).isRequired,
-    dispatch: PropTypes.func.isRequired,
-    featuresEnabled: PropTypes.shape({
-      alpha: PropTypes.bool,
-    }).isRequired,
-    leads: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }).isRequired).isRequired,
+    intro: PropTypes.node,
     profile: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
+    userYou: PropTypes.func.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
-  componentWillMount() {
-    const {advice, dispatch, featuresEnabled, leads, project} = this.props
-    // TODO(pascal): Enable for all users when ready.
-    if (!leads.length && featuresEnabled.alpha) {
-      dispatch(getExpandedCardContent(project, GET_EXPANDED_CARD_CONTENT, advice.adviceId))
-    }
-  }
-
   render() {
-    const {featuresEnabled, leads, profile, project} = this.props
-    const selectedEmails = MESSAGE_EXAMPLES.network.
+    const {adviceData, profile, project, userYou, intro} = this.props
+    const leads = adviceData.leads || []
+    const selectedEmails = getEmailTemplates(userYou).network.
       filter(({filters}) => projectMatchAllFilters(project, filters))
-    const emailCount = featuresEnabled.alpha && leads.length || selectedEmails.length
+    // TODO(pascal): Remove the selectedEmails
+    const emailCount = leads.length || selectedEmails.length
     return <div>
+      {intro ? <div style={{marginBottom: 20}}>{intro}</div> : null}
       <PaddedOnMobile>
         Nous avons trouvé <strong><GrowingNumber
           number={emailCount} isSteady={true} /> exemple{emailCount > 1 ? 's ' : ' '}
         d'email</strong> pour contacter son réseau
       </PaddedOnMobile>
       <AppearingList style={{marginTop: 15}}>
-        {(featuresEnabled.alpha && leads.length) ?
-          // TODO(pascal): Add tip.
+        {(leads.length) ?
           leads.map((lead, idx) => <EmailTemplate
             content={lead.emailExample}
+            tip={lead.contactTip}
             title={lead.name}
-            key={`lead-${idx}`} />)
+            key={`lead-${idx}`}
+            userYou={userYou} />)
           : selectedEmails.map((email, idx) => <EmailTemplate
             content={email.content}
             title={email.title}
             whyForYou={isEmailTemplatePersonalized(email.personalizations, profile, project) ?
               email.reason : null}
             key={`advice-${idx}`}
-            style={{marginTop: -1}} />)}
+            style={{marginTop: -1}}
+            userYou={userYou} />)}
       </AppearingList>
     </div>
   }
 }
-const NetworkAdvicePage = connect(({app, user}, {advice, project}) => {
-  const {leads} = (app.adviceData[project.projectId] || {})[advice.adviceId] || {}
-  return {
-    featuresEnabled: user.featuresEnabled || {},
-    leads: leads || [],
-  }
-})(NetworkAdvicePageBase)
+const NetworkAdvicePage = connectExpandedCardWithContent()(NetworkAdvicePageBase)
 
 
-export {NetworkAdviceCard, NetworkAdvicePage}
+export {NetworkAdviceCard, NetworkAdvicePage, Picto}

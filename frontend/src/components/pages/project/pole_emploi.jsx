@@ -8,8 +8,8 @@ import {markChangelogAsSeen, sendChangelogFeedback} from 'store/actions'
 
 import editProjectImage from 'images/changelog/edit-project.png'
 import mobileImprovedImage from 'images/changelog/mobile-improved.png'
+import {FastForward} from 'components/fast_forward'
 import {Modal} from 'components/modal'
-import {ShortKey} from 'components/shortkey'
 import {Button, Colors, RadioGroup, SmoothTransitions} from 'components/theme'
 
 
@@ -21,6 +21,7 @@ class CounselorAdvice extends React.Component {
       mode: PropTypes.oneOf(['RENFORCE', 'GUIDE', 'SUIVI']),
     }),
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -93,7 +94,7 @@ const steps = [
   {
     changelog: '2017-06-18',
     component: CounselorAdvice,
-    subtitle: `Vous êtes conseiller Pôle Emploi ? Nous travaillons sur un
+    subtitle: `Vous êtes conseiller Pôle emploi ? Nous travaillons sur un
       conseil Bob pour mieux rediriger les chercheurs d'emploi vers leur
       conseiller.`,
     title: 'Aidez-nous en répondant à cette question',
@@ -108,6 +109,7 @@ class PoleEmploiChangelogModalBase extends React.Component {
     onClose: PropTypes.func.isRequired,
     projectCreatedAt: PropTypes.string.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
@@ -194,8 +196,7 @@ class PoleEmploiChangelogModalBase extends React.Component {
     return <Modal
       title={step.title || `Nous avons mis à jour ${config.productName} !`} style={containerStyle}
       onHidden={onHidden} {...extraProps}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true} onKeyPress={nextStep} />
+      <FastForward onForward={nextStep} />
       <div style={{fontSize: 14, lineHeight: 1.8, maxWidth: 450, textAlign: 'center'}}>
         {step.subtitle || `Dans le but d'améliorer notre accompagnement nous
           avons apporté quelques améliorations à ${config.productName} :`}

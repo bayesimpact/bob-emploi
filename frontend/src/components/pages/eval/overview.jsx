@@ -25,7 +25,7 @@ class PoolOverview extends React.Component {
 
   renderHeader() {
     const containerStyle = {
-      backgroundColor: Colors.SKY_BLUE_HOVER,
+      backgroundColor: Colors.BOB_BLUE_HOVER,
       color: '#fff',
     }
     const cellStyle = {

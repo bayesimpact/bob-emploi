@@ -13,15 +13,18 @@ import thunk from 'redux-thunk'
 
 import config from 'config'
 
-import {computeAdvicesForProject, getEvalUseCasePools, getEvalUseCases} from 'store/actions'
+import {computeAdvicesForProject, diagnoseProject, getEvalUseCasePools,
+  getEvalUseCases} from 'store/actions'
 
-import {app} from 'store/app_reducer'
+import {app, asyncState} from 'store/app_reducer'
 import {createProjectTitleComponents} from 'store/project'
 
+import {Snackbar} from 'components/snackbar'
 import {Button, Colors, Select, SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 
 import {AdvicesRecap} from './eval/advices_recap'
+import {Assessment} from './eval/assessment'
 import {CreatePoolModal} from './eval/create_pool_modal'
 import {PoolOverview} from './eval/overview'
 import {EVAL_SCORES} from './eval/score_levels'
@@ -60,6 +63,7 @@ class EvalPage extends React.Component {
       }),
     }),
   }
+
   static contextTypes = {
     history: PropTypes.shape({
       replace: PropTypes.func.isRequired,
@@ -68,8 +72,10 @@ class EvalPage extends React.Component {
 
   state = {
     advices: [],
+    diagnostic: null,
     evaluation: {},
     initialUseCaseId: null,
+    isAssessmentShown: true,
     isCreatePoolModalShown: false,
     isModified: false,
     isOverviewShown: false,
@@ -130,6 +136,11 @@ class EvalPage extends React.Component {
         this.setState({advices: advices || []})
       }
     })
+    dispatch(diagnoseProject(selectedUseCase.userData)).then(diagnostic => {
+      if (!this.isUnmounting) {
+        this.setState({diagnostic})
+      }
+    })
   }
 
   updateBrowserHistory(useCaseId, poolName) {
@@ -143,6 +154,7 @@ class EvalPage extends React.Component {
     const {evaluation, poolName, useCaseId, userData} = selectedUseCase || {}
     this.setState({
       advices: [],
+      diagnostic: null,
       evaluation: evaluation || {},
       isModified: false,
       isOverviewShown: false,
@@ -234,6 +246,24 @@ class EvalPage extends React.Component {
     })
   }
 
+  handleEvaluateDiagnosticSection = (sectionId, sectionEvaluation) => {
+    const {evaluation} = this.state
+    const diagnostic = evaluation.diagnostic
+    this.setState({
+      evaluation: {
+        ...evaluation,
+        diagnostic: {
+          ...diagnostic,
+          [sectionId]: {
+            ...(diagnostic && diagnostic[sectionId]),
+            ...sectionEvaluation,
+          },
+        },
+      },
+      isModified: true,
+    })
+  }
+
   handleSaveEval = () => {
     const {evaluation, pools, selectedPoolName, selectedUseCase, useCases} = this.state
     const {useCaseId} = selectedUseCase || {}
@@ -294,6 +324,7 @@ class EvalPage extends React.Component {
       alignItems: 'center',
       backgroundColor: '#fff',
       display: 'flex',
+      flex: 0,
       flexDirection: 'column',
       marginLeft: 20,
       padding: 30,
@@ -338,8 +369,56 @@ class EvalPage extends React.Component {
     </div>
   }
 
+  renderAssessmentOrAdvicesPanel(profile, project) {
+    const {advices, diagnostic, isAssessmentShown} = this.state
+    const toggleStyle = {
+      display: 'flex',
+      flexDirection: 'row',
+      marginBottom: 34,
+    }
+    const toggleTitleStyle = isSelected => {
+      return {
+        ':hover': {
+          borderBottom: `2px solid ${Colors.BOB_BLUE_HOVER}`,
+        },
+        borderBottom: isSelected ? `2px solid ${Colors.BOB_BLUE}` : 'initial',
+        paddingBottom: 5,
+      }
+    }
+    return <div style={{backgroundColor: '#fff', flex: 1, padding: '25px 30px'}}>
+      <div style={toggleStyle}>
+        <HeaderLink
+          onClick={() => this.setState({isAssessmentShown: true})}
+          isSelected={isAssessmentShown}
+        >
+          <span style={toggleTitleStyle(isAssessmentShown)}>Diagnostic</span>
+        </HeaderLink>
+        <HeaderLink
+          onClick={() => this.setState({isAssessmentShown: false})}
+          isSelected={!isAssessmentShown}
+        >
+          <span style={toggleTitleStyle(!isAssessmentShown)}>Conseils</span>
+        </HeaderLink>
+      </div>
+      {(isAssessmentShown && diagnostic) ?
+        <Assessment
+          diagnostic={diagnostic || {}}
+          diagnosticEvaluations={this.state.evaluation.diagnostic || {}}
+          onEvaluateSection={this.handleEvaluateDiagnosticSection}
+        /> :
+        <AdvicesRecap
+          profile={profile} project={project} advices={advices}
+          adviceEvaluations={this.state.evaluation.advices || {}}
+          onEvaluateAdvice={this.handleEvaluateAdvice}
+          onRescoreAdvice={this.handleRescoreAdvice}
+          moduleNewScores={this.state.evaluation.modules || {}}
+        />
+      }
+    </div>
+  }
+
   render() {
-    const {advices, isOverviewShown, pools, selectedPoolName,
+    const {isOverviewShown, pools, selectedPoolName,
       selectedUseCase, useCases} = this.state
     const poolOptions = pools.map(({evaluatedUseCaseCount, name, useCaseCount}) => {
       const isPoolEvaluated = evaluatedUseCaseCount === useCaseCount
@@ -371,6 +450,7 @@ class EvalPage extends React.Component {
     }
     const letfBarStyle = {
       display: 'flex',
+      flex: isOverviewShown ? 1 : 0,
       flexDirection: 'column',
       marginRight: 20,
       minWidth: 400,
@@ -392,12 +472,7 @@ class EvalPage extends React.Component {
         {isOverviewShown ? <PoolOverview
           useCases={useCases} onSelectUseCase={this.selectUseCase} /> : null}
       </div>
-      {selectedUseCase ? <AdvicesRecap
-        profile={profile} project={project} advices={advices}
-        adviceEvaluations={this.state.evaluation.advices || {}}
-        onEvaluateAdvice={this.handleEvaluateAdvice}
-        onRescoreAdvice={this.handleRescoreAdvice}
-        moduleNewScores={this.state.evaluation.modules || {}} /> : null}
+      {selectedUseCase ? this.renderAssessmentOrAdvicesPanel(profile, project) : null}
       {isOverviewShown ? null : this.renderScorePanel()}
     </div>
   }
@@ -443,6 +518,7 @@ class AuthenticateEvalPageBase extends React.Component {
       replace: PropTypes.func.isRequired,
     }).isRequired,
   }
+
   static childContextTypes = {
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
@@ -461,12 +537,16 @@ class AuthenticateEvalPageBase extends React.Component {
 
   handleGoogleLogin = googleAuth => {
     const {dispatch} = this.props
-    const email = googleAuth && googleAuth.getBasicProfile().getEmail()
-    if (/@bayesimpact\.org$/.test(email)) {
-      dispatch({googleIdToken: googleAuth.getAuthResponse().id_token, type: 'AUTH'})
-      return
-    }
-    this.handleGoogleFailure()
+    const googleIdToken = googleAuth.getAuthResponse().id_token
+    fetch('/api/eval/authorized', {
+      headers: {'Authorization': 'Bearer ' + googleIdToken},
+    }).then(response => {
+      if (response.status >= 400 || response.status < 200) {
+        this.handleGoogleFailure()
+        return
+      }
+      dispatch({googleIdToken, type: 'AUTH'})
+    })
   }
 
   handleGoogleFailure = () => {
@@ -486,7 +566,8 @@ class AuthenticateEvalPageBase extends React.Component {
         onSuccess={this.handleGoogleLogin}
         onFailure={this.handleGoogleFailure} />
       {this.state.hasAuthenticationFailed ? <div style={{margin: 20}}>
-        Authentication failure. Access is restricted.
+        L'authentification a échoué. L'accès à cet outil est restreint.<br />
+        Contactez nous : contact@bob-emploi.fr
       </div> : null}
     </div>
   }
@@ -496,7 +577,7 @@ const AuthenticateEvalPage = connect(({auth}) => ({
 }))(AuthenticateEvalPageBase)
 
 
-function evalAuthReducer(state={}, action) {
+function evalAuthReducer(state = {}, action) {
   if (action.type === 'AUTH' && action.googleIdToken) {
     return {
       ...state,
@@ -507,7 +588,7 @@ function evalAuthReducer(state={}, action) {
 }
 
 
-function evalUserReducer(state={}, action) {
+function evalUserReducer(state = {}, action) {
   if (action.type === 'SELECT_USER') {
     return action.user
   }
@@ -534,6 +615,7 @@ const finalCreateStore = composeWithDevTools(
 const store = finalCreateStore(
   combineReducers({
     app,
+    asyncState,
     auth: evalAuthReducer,
     routing: routerReducer,
     user: evalUserReducer,
@@ -541,14 +623,42 @@ const store = finalCreateStore(
 )
 if (module.hot) {
   module.hot.accept(['store/app_reducer'], () => {
+    const {app, asyncState} = require('store/app_reducer')
     store.replaceReducer(combineReducers({
-      app: require('store/app_reducer').app,
+      app,
+      asyncState,
       auth: evalAuthReducer,
       routing: routerReducer,
       user: evalUserReducer,
     }))
   })
 }
+
+
+class HeaderLinkBase extends React.Component {
+  static propTypes = {
+    children: PropTypes.node,
+    isSelected: PropTypes.bool,
+    style: PropTypes.object,
+  }
+
+  render() {
+    const {children, isSelected, style, ...extraProps} = this.props
+    const containerStyle = {
+      cursor: 'pointer',
+      fontSize: 15,
+      fontWeight: isSelected ? 'bold' : 'initial',
+      marginRight: 30,
+      textAlign: 'center',
+      width: 80,
+      ...style,
+    }
+    return <span style={containerStyle} {...extraProps}>
+      {children}
+    </span>
+  }
+}
+const HeaderLink = Radium(HeaderLinkBase)
 
 
 class App extends React.Component {
@@ -559,6 +669,7 @@ class App extends React.Component {
           <BrowserRouter>
             <Route path={Routes.EVAL_PATH} component={AuthenticateEvalPage} />
           </BrowserRouter>
+          <Snackbar timeoutMillisecs={4000} />
         </div>
       </Radium.StyleRoot>
     </Provider>

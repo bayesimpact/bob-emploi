@@ -1,13 +1,12 @@
-import PropTypes from 'prop-types'
 import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, AUTHENTICATE_USER,
   LOGOUT, ADVICE_PAGE_IS_SHOWN, CREATE_PROJECT, CREATE_PROJECT_SAVE,
-  MOVE_USER_DATES_BACK_1_DAY, DELETE_USER_DATA, MODIFY_PROJECT,
+  DELETE_USER_DATA, MODIFY_PROJECT, ACTIVATE_DEMO,
   FINISH_PROFILE_SITUATION, ACCEPT_PRIVACY_NOTICE, EDIT_FIRST_PROJECT,
   FINISH_PROFILE_FRUSTRATIONS, SEND_PROJECT_FEEDBACK, MARK_CHANGELOG_AS_SEEN,
-  FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL, LIKE_OR_DISLIKE_FEATURE,
+  FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL,
   FINISH_PROJECT_EXPERIENCE, MIGRATE_USER_TO_ADVISOR, SCORE_ADVICE,
-  MARK_NOTIFICATION_AS_SEEN} from './actions'
-import {increaseRevision, keepMostRecentRevision, travelInTime} from './user'
+  MARK_NOTIFICATION_AS_SEEN, CLOSE_LOGIN_MODAL} from './actions'
+import {increaseRevision, keepMostRecentRevision} from './user'
 import Cookies from 'js-cookie'
 
 // All data for a user of the companion app, a job seeker.
@@ -21,15 +20,8 @@ const initialData = {
   userId: null,
 }
 
-
-const USER_PROFILE_SHAPE = PropTypes.shape({
-  city: PropTypes.object,
-  gender: PropTypes.string,
-  name: PropTypes.string,
-  pictureUrl: PropTypes.string,
-  situation: PropTypes.string,
-  yearOfBirth: PropTypes.number,
-})
+// Name of the cookie containing the user ID.
+const USER_ID_COOKIE_NAME = 'userId'
 
 
 // Updates the given properties of a project.
@@ -82,12 +74,12 @@ function updateAdvice(state, project, advice) {
   return projectModified ? increaseRevision(updatedState) : state
 }
 
-function user(state=initialData, action) {
+function userReducer(state = initialData, action) {
   const success = action.status === 'success'
   switch (action.type) {
-    case ACCEPT_PRIVACY_NOTICE:  // Fallthrough intended.
-    case FINISH_PROFILE_FRUSTRATIONS:  // Fallthrough intended.
-    case FINISH_PROFILE_SITUATION:  // Fallthrough intended.
+    case ACCEPT_PRIVACY_NOTICE: // Fallthrough intended.
+    case FINISH_PROFILE_FRUSTRATIONS: // Fallthrough intended.
+    case FINISH_PROFILE_SITUATION: // Fallthrough intended.
     case SET_USER_PROFILE:
       return increaseRevision({
         ...state,
@@ -97,11 +89,11 @@ function user(state=initialData, action) {
         },
       })
     case CREATE_PROJECT_SAVE: // Fallthrough intended.
-    case GET_USER_DATA:  // Fallthrough intended.
-    case MIGRATE_USER_TO_ADVISOR:  // Fallthrough intended.
+    case GET_USER_DATA: // Fallthrough intended.
+    case MIGRATE_USER_TO_ADVISOR: // Fallthrough intended.
     case POST_USER_DATA:
       if (success) {
-        action.response.userId && Cookies.set('userId', action.response.userId)
+        action.response.userId && Cookies.set(USER_ID_COOKIE_NAME, action.response.userId)
         return keepMostRecentRevision(state, action.response)
       }
       return state
@@ -111,23 +103,32 @@ function user(state=initialData, action) {
       }
       const user = action.response && action.response.authenticatedUser
       if (user) {
-        Cookies.set('userId', user.userId)
+        Cookies.set(USER_ID_COOKIE_NAME, user.userId)
         return user
       }
       return state
     }
     case DELETE_USER_DATA:
       if (success) {
-        Cookies.remove('userId')
+        Cookies.remove(USER_ID_COOKIE_NAME)
         return {profile: {}}
       }
       return state
     case LOGOUT:
-      Cookies.remove('userId')
+      Cookies.remove(USER_ID_COOKIE_NAME)
       return {
         profile: {
           email: state && state.profile && state.profile.email,
         },
+      }
+    case CLOSE_LOGIN_MODAL:
+      if (!action.hasCanceledLogin) {
+        return state
+      }
+      Cookies.remove(USER_ID_COOKIE_NAME)
+      return {
+        ...state,
+        userId: null,
       }
     case CREATE_PROJECT: {
       if (state.projects && state.projects.length && !state.projects[0].isIncomplete) {
@@ -144,9 +145,9 @@ function user(state=initialData, action) {
         projects: [project],
       })
     }
-    case FINISH_PROJECT_CRITERIA:  // Fallthrough intended.
-    case FINISH_PROJECT_GOAL:  // Fallthrough intended.
-    case FINISH_PROJECT_EXPERIENCE:  // Fallthrough intended.
+    case FINISH_PROJECT_CRITERIA: // Fallthrough intended.
+    case FINISH_PROJECT_GOAL: // Fallthrough intended.
+    case FINISH_PROJECT_EXPERIENCE: // Fallthrough intended.
     case EDIT_FIRST_PROJECT: {
       if (state.projects && state.projects.length && !state.projects[0].isIncomplete) {
         // Project already exists: we cannot edit it anymore.
@@ -169,8 +170,6 @@ function user(state=initialData, action) {
         localStats: {},
         projectId: action.project.projectId,
       })
-    case MOVE_USER_DATES_BACK_1_DAY:
-      return increaseRevision(travelInTime({...state}, -24 * 60 * 60 * 1000))
     case ADVICE_PAGE_IS_SHOWN:
       return updateAdvice(state, action.project, {
         adviceId: action.advice.adviceId,
@@ -205,18 +204,18 @@ function user(state=initialData, action) {
           [action.notification]: true,
         },
       })
-    case LIKE_OR_DISLIKE_FEATURE:
-      return increaseRevision({
+    case ACTIVATE_DEMO:
+      return {
         ...state,
-        likes: {
-          ...(state.likes || {}),
-          [action.feature]: action.likeScore,
+        featuresEnabled: {
+          ...state.featuresEnabled,
+          [action.demo]: 'ACTIVE',
         },
-      })
+      }
     default:
       return state
   }
 }
 
 
-export {user, USER_PROFILE_SHAPE}
+export {userReducer}

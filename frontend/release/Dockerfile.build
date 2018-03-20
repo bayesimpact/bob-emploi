@@ -1,0 +1,3 @@
+FROM bayesimpact/bob-emploi-dev-webpack
+
+RUN npm run dist

@@ -1,21 +1,31 @@
-import React from 'react'
+import omit from 'lodash/omit'
+import AccountOutlineIcon from 'mdi-react/AccountOutlineIcon'
+import EmailOutlineIcon from 'mdi-react/EmailOutlineIcon'
+import GoogleIcon from 'mdi-react/GoogleIcon'
+import LockOutlineIcon from 'mdi-react/LockOutlineIcon'
 import PropTypes from 'prop-types'
+import React from 'react'
 import {connect} from 'react-redux'
+import {parse, stringify} from 'query-string'
 import {Link} from 'react-router-dom'
 
 import FacebookLogin from 'react-facebook-login'
 import GoogleLogin from 'react-google-login'
 import config from 'config'
 
-import signupCoverImage from 'images/signup-cover.jpg'
+import linkedInIcon from 'images/linked-in.png'
+import peConnectIcon from 'images/pole-emploi-connect.svg'
+import signupCoverImage from 'images/signup-cover.jpg?multi&sizes[]=1440&sizes[]=600'
 
-import {ShortKey} from 'components/shortkey'
+import {FastForward} from 'components/fast_forward'
 import {validateEmail} from 'store/validations'
 import {facebookAuthenticateUser, googleAuthenticateUser, emailCheck,
-  registerNewUser, loginUser, displayToasterMessage, resetPassword,
-  askPasswordReset, openLoginModal, openRegistrationModal, closeLoginModalAction,
-  AUTHENTICATE_USER, EMAIL_CHECK, RESET_USER_PASSWORD} from 'store/actions'
-import {Colors, Icon, IconInput, LabeledToggle, Button, Styles} from 'components/theme'
+  registerNewUser, loginUser, displayToasterMessage, resetPassword, peConnectAuthenticateUser,
+  askPasswordReset, openLoginModal, openRegistrationModal, closeLoginModal,
+  linkedInAuthenticateUser, AUTHENTICATE_USER, EMAIL_CHECK,
+  RESET_USER_PASSWORD} from 'store/actions'
+import {chooseImageVersion, Colors, colorToAlpha, IconInput,
+  LabeledToggle, Button, Styles} from 'components/theme'
 import {upperFirstLetter} from 'store/french'
 import {Modal, ModalCloseButton} from 'components/modal'
 import {Routes} from 'components/url'
@@ -32,15 +42,11 @@ class LoginFormBase extends React.Component {
   }
 
   state = {
-    email: '',
+    email: this.props.defaultEmail || '',
     hashSalt: '',
     isTryingToResetPassword: false,
     password: '',
     passwordResetRequestedEmail: null,
-  }
-
-  componentWillMount() {
-    this.setState({email: this.props.defaultEmail || ''})
   }
 
   handleChange = field => value => {
@@ -79,7 +85,7 @@ class LoginFormBase extends React.Component {
     if (!validateEmail(email)) {
       dispatch(displayToasterMessage(
         'Entrez correctement votre email dans le champs ci-dessus pour récupérer ' +
-          'votre mot de passe'))
+          'votre mot de passe.'))
       this.setState({isTryingToResetPassword: true})
       return
     }
@@ -95,7 +101,6 @@ class LoginFormBase extends React.Component {
   }
 
   fastForward = () => {
-    // TODO: Fix fastforward triggering when a text input is selected on Mac in Chrome.
     const {email, password} = this.state
     if (this.isFormValid()) {
       this.handleLogin()
@@ -118,7 +123,7 @@ class LoginFormBase extends React.Component {
       marginTop: 15,
     }
     const lostPasswordLinkStyle = {
-      color: '#9596a0',
+      color: Colors.COOL_GREY,
       display: 'inline-block',
       fontSize: 13,
       marginLeft: 15,
@@ -126,9 +131,7 @@ class LoginFormBase extends React.Component {
       textDecoration: 'none',
     }
     return <form style={loginBoxStyle} onSubmit={this.handleLogin}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
-        onKeyPress={this.fastForward} />
+      <FastForward onForward={this.fastForward} />
       <FormHeader
         title={isTryingToResetPassword ? 'Mot de passe oublié ?' : "S'identifier"}
         question={isTryingToResetPassword ? '' : 'Pas encore de compte ?'}
@@ -136,12 +139,14 @@ class LoginFormBase extends React.Component {
         onClick={this.props.onShowRegistrationFormClick} />
       <IconInput
         shouldFocusOnMount={!email}
-        type="email" placeholder="Email" value={email} iconName="email-outline"
+        type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
         applyFunc={email => email.toLocaleLowerCase()}
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
         onChange={this.handleChange('email')} />
       {isTryingToResetPassword ? null : <IconInput
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
         type="password" shouldFocusOnMount={!!email}
-        placeholder="Mot de passe" value={password} iconName="lock-outline"
+        placeholder="Mot de passe" value={password} iconComponent={LockOutlineIcon}
         onChange={this.handleChange('password')}
         style={{marginTop: 10}} />}
       {isTryingToResetPassword ? null : <a
@@ -178,11 +183,9 @@ class ResetPasswordFormBase extends React.Component {
     onResetPassword: PropTypes.func.isRequired,
   }
 
-  componentWillMount() {
-    this.setState({
-      email: this.props.defaultEmail || '',
-      password: '',
-    })
+  state = {
+    email: this.props.defaultEmail || '',
+    password: '',
   }
 
   handleChange = field => value => {
@@ -218,13 +221,15 @@ class ResetPasswordFormBase extends React.Component {
     return <form style={loginBoxStyle} onSubmit={this.handleResetPassword}>
       <FormHeader title="Changez votre mot de passe" />
       <IconInput
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
         shouldFocusOnMount={!email}
-        type="email" placeholder="Email" value={email} iconName="email-outline"
+        type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
         applyFunc={email => email.toLocaleLowerCase()}
         onChange={this.handleChange('email')} />
       <IconInput
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
         type="password" shouldFocusOnMount={!!email}
-        placeholder="Nouveau mot de passe" value={password} iconName="lock-outline"
+        placeholder="Nouveau mot de passe" value={password} iconComponent={LockOutlineIcon}
         onChange={this.handleChange('password')}
         style={{marginTop: 10}} />
       <Button
@@ -253,38 +258,23 @@ class RegistrationFormBase extends React.Component {
   }
 
   state = {
-    email: '',
+    email: this.props.defaultEmail || '',
     hasAcceptedTerms: false,
     lastName: '',
     name: '',
     password: '',
   }
 
-  componentWillMount() {
-    this.setState({email: this.props.defaultEmail || ''})
-  }
-
   handleChange = field => value => {
     this.setState({[field]: value})
   }
 
-  handleRegister = event => {
-    const {email, password, name, lastName} = this.state
-    if (event && event.preventDefault) {
-      event.preventDefault()
-    }
+  handleRegister = () => {
     if (!this.isFormValid()) {
       return
     }
-    this.props.onRegister(email, password, name, lastName).then(() => {
-      this.setState({
-        email: '',
-        hasAcceptedTerms: false,
-        lastName: '',
-        name: '',
-        password: '',
-      })
-    })
+    const {email, password, name, lastName} = this.state
+    this.props.onRegister(email, password, name, lastName)
   }
 
   isFormValid = () => {
@@ -293,7 +283,6 @@ class RegistrationFormBase extends React.Component {
   }
 
   fastForward = () => {
-    // TODO: Fix fastforward triggering when a text input is selected on Mac in Chrome.
     const {email, password, lastName, name} = this.state
     if (this.isFormValid()) {
       this.handleRegister()
@@ -318,30 +307,32 @@ class RegistrationFormBase extends React.Component {
       marginTop: 15,
     }
     return <form style={registrationBoxStyle} onSubmit={this.handleRegister}>
-      <ShortKey
-        keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
-        onKeyPress={this.fastForward} />
+      <FastForward onForward={this.fastForward} />
       <FormHeader
         title="Créer un compte"
         question="Déjà un compte ?"
         linkText="Connectez-vous !"
         onClick={this.props.onShowLoginFormClick} />
       <IconInput
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
         shouldFocusOnMount={true}
-        type="text" placeholder="Prénom" value={name} iconName="account-outline"
+        type="text" placeholder="Prénom" value={name} iconComponent={AccountOutlineIcon}
         onChange={this.handleChange('name')} />
       <IconInput
-        type="text" placeholder="Nom" value={lastName} iconName="account-outline"
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
+        type="text" placeholder="Nom" value={lastName} iconComponent={AccountOutlineIcon}
         onChange={this.handleChange('lastName')}
         style={{marginTop: 10}} />
       <IconInput
-        type="email" placeholder="Email" value={email} iconName="email-outline"
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
+        type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
         applyFunc={email => email.toLocaleLowerCase()}
         onChange={this.handleChange('email')}
         style={{marginTop: 10}} />
       <IconInput
+        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
         type="password"
-        placeholder="Créer un mot de passe" value={password} iconName="lock-outline"
+        placeholder="Créer un mot de passe" value={password} iconComponent={LockOutlineIcon}
         onChange={this.handleChange('password')}
         style={{marginTop: 10}} />
       <div style={{fontSize: 12, margin: '10px auto 0', maxWidth: 325}}>
@@ -393,20 +384,20 @@ class FormHeader extends React.Component {
   render() {
     const {linkText, onClick, question, title} = this.props
     const headlineStyle = {
-      color: '#2c3449',
+      color: Colors.DARK_TWO,
       fontSize: 23,
       fontWeight: 500,
       lineHeight: 1.6,
       textAlign: 'center',
     }
     const contentStyle = {
-      color: '#575757',
+      color: Colors.GREYISH_BROWN,
       fontSize: 14,
       lineHeight: 1.4,
       textAlign: 'center',
     }
     const linkStyle = {
-      color: '#58bbfb',
+      color: Colors.BOB_BLUE,
       cursor: 'pointer',
       textDecoration: 'underline',
     }
@@ -421,6 +412,95 @@ class FormHeader extends React.Component {
 }
 
 
+class OAuth2ConnectLogin extends React.Component {
+  static propTypes = {
+    authorizeEndpoint: PropTypes.string.isRequired,
+    authorizeParams: PropTypes.objectOf(PropTypes.string.isRequired),
+    children: PropTypes.node,
+    clientId: PropTypes.string.isRequired,
+    logo: PropTypes.string.isRequired,
+    onFailure: PropTypes.func,
+    onSuccess: PropTypes.func,
+    scopes: PropTypes.arrayOf(PropTypes.string.isRequired),
+    style: PropTypes.object,
+  }
+
+  componentWillMount() {
+    const {onFailure, onSuccess} = this.props
+    const {search} = window.location
+    if (!search) {
+      return
+    }
+    const {code, state} = parse(search.substr(1))
+    if (!state) {
+      return
+    }
+    // TODO(pascal): Cleanup the URL and localStorage so that a refresh does
+    // not attempt logging in again.
+    const stateContent = localStorage.getItem(this.getLocalStorageKey(state))
+    if (!stateContent) {
+      return
+    }
+    const {clientId, nonce} = JSON.parse(stateContent)
+    if (clientId !== this.props.clientId) {
+      return
+    }
+    if (!nonce) {
+      onFailure(new Error(`Invalid state: "${state}".`))
+    }
+    onSuccess({code, nonce})
+  }
+
+  getLocalStorageKey(state) {
+    return `oauth2.${state}`
+  }
+
+  getRandomHash() {
+    return (Math.random() * 36).toString(36)
+  }
+
+  startSigninFlow = () => {
+    const {authorizeEndpoint, authorizeParams, clientId, scopes} = this.props
+    const state = this.getRandomHash()
+    const nonce = this.getRandomHash()
+    const {host, protocol} = window.location
+    const redirectUri = `${protocol}//${host}${Routes.ROOT}`
+    const url = `${authorizeEndpoint}?${stringify({
+      'client_id': clientId,
+      nonce,
+      'redirect_uri': redirectUri,
+      'response_type': 'code',
+      state,
+      ...(scopes ? {scope: scopes.join(' ')} : {}),
+      ...authorizeParams,
+    })}`
+    localStorage.setItem(this.getLocalStorageKey(state), JSON.stringify({clientId, nonce}))
+    window.location = url
+  }
+
+  render() {
+    const {children, logo, style, ...extraProps} = this.props
+    const buttonStyle = {
+      padding: '5px 10px',
+      ...style,
+    }
+    const imageStyle = {
+      height: 31,
+      marginRight: 10,
+      verticalAlign: 'middle',
+      width: 34,
+    }
+    return <button
+      {...omit(extraProps,
+        ['authorizeEndpoint', 'authorizeParams', 'clientId', 'onFailure', 'onSuccess', 'scopes'])}
+      onClick={this.startSigninFlow} style={buttonStyle}>
+      <img style={imageStyle} src={logo} alt="Icône Pôle emploi" />
+      {children}
+    </button>
+  }
+}
+
+
 class LoginModalBase extends React.Component {
   static propTypes = {
     defaultEmail: PropTypes.string,
@@ -430,6 +510,7 @@ class LoginModalBase extends React.Component {
     onLogin: PropTypes.func,
     resetToken: PropTypes.string,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool.isRequired,
   }
@@ -458,11 +539,11 @@ class LoginModalBase extends React.Component {
   handleActualLogin = user => {
     const {onLogin} = this.props
     onLogin && onLogin(user)
-    this.close()
+    this.close(false)
   }
 
-  close = () => {
-    this.props.dispatch(closeLoginModalAction)
+  close = hasCanceledLogin => {
+    this.props.dispatch(closeLoginModal(hasCanceledLogin))
   }
 
   handleFacebookLogin = facebookAuth => {
@@ -502,6 +583,28 @@ class LoginModalBase extends React.Component {
   handleGoogleFailure = ({details}) => {
     const {dispatch} = this.props
     dispatch(displayToasterMessage(details))
+  }
+
+  handleConnectFailure = error => {
+    const {dispatch} = this.props
+    dispatch(displayToasterMessage(error.message))
+  }
+
+  handlePEConnectLogin = ({code, nonce}) => {
+    const {dispatch} = this.props
+    dispatch(peConnectAuthenticateUser(code, nonce)).then(response => {
+      // TODO(pascal): Make sure we go to /confidentialite page on first registration.
+      this.handleActualLogin(response.authenticatedUser)
+      return response
+    })
+  }
+
+  handleLinkedinLogin = ({code}) => {
+    const {dispatch} = this.props
+    dispatch(linkedInAuthenticateUser(code)).then(response => {
+      this.handleActualLogin(response.authenticatedUser)
+      return response
+    })
   }
 
   // TODO: Use different API endpoints for login and registration.
@@ -546,6 +649,7 @@ class LoginModalBase extends React.Component {
   }
 
   renderIntro(style) {
+    const {isMobileVersion} = this.context
     const containerStyle = {
       minHeight: '100vh',
       position: 'relative',
@@ -561,7 +665,7 @@ class LoginModalBase extends React.Component {
     }
     const coverImageStyle = {
       ...coverAll,
-      backgroundImage: `url(${signupCoverImage})`,
+      backgroundImage: `url(${chooseImageVersion(signupCoverImage, isMobileVersion)})`,
       backgroundPosition: 'center, center',
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'cover',
@@ -581,7 +685,7 @@ class LoginModalBase extends React.Component {
       fontSize: 60,
       fontWeight: 'bold',
       lineHeight: 1,
-      textShadow: '0 2px 6px rgba(64, 162, 225, 0.5)',
+      textShadow: `0 2px 6px ${colorToAlpha(Colors.BOB_BLUE_HOVER, .5)}`,
     }
     const quoteStyle = {
       fontSize: 128,
@@ -591,7 +695,7 @@ class LoginModalBase extends React.Component {
     }
 
     return <div style={containerStyle}>
-      <div style={{...coverAll, backgroundColor: Colors.SKY_BLUE, opacity: .9, zIndex: -1}} />
+      <div style={{...coverAll, backgroundColor: Colors.BOB_BLUE, opacity: .9, zIndex: -1}} />
       <div style={coverImageStyle} />
       <div style={contentStyle}>
         <div style={titleStyle}>
@@ -634,6 +738,7 @@ class LoginModalBase extends React.Component {
       ...actionBoxStyle,
       backgroundColor: isFullRegistrationFormShown ? 'initial' : Colors.BACKGROUND_GREY,
       borderRadius: '0 0 5px 5px',
+      fontFamily: 'Lato, Helvetica',
       fontSize: 15,
     }
     const containerStyle = isFullRegistrationFormShown ? {
@@ -643,9 +748,8 @@ class LoginModalBase extends React.Component {
       width: '100vw',
     } : {
       borderRadius: 5,
-      margin: isMobileVersion ? 15 : 'inherit',
-      transition: 'none',
-      width: isMobileVersion ? 'inherit' : 400,
+      margin: isMobileVersion ? 15 : 'initial',
+      width: isMobileVersion ? 'initial' : 400,
     }
     const closeButtonStyle = {
       ':hover': {
@@ -656,6 +760,13 @@ class LoginModalBase extends React.Component {
       right: 50,
       top: 50,
       transform: 'initial',
+    }
+    const googleIconStyle = {
+      fill: '#fff',
+      height: 24,
+      marginRight: 10,
+      verticalAlign: 'middle',
+      width: 34,
     }
     const socialLoginPrefix = isLoginFormShown ? 'Connexion' : 'Inscription'
     let form
@@ -676,14 +787,14 @@ class LoginModalBase extends React.Component {
       color: Colors.DARK_TWO,
       display: 'flex',
       fontSize: 15,
-      width: 325,
+      width: isMobileVersion ? '100%' : 325,
     }
     return <Modal
       isShown={this.state.isShown || !!resetToken} style={containerStyle}
-      onClose={(resetToken || isFullRegistrationFormShown) ? null : this.close}>
+      onClose={(resetToken || isFullRegistrationFormShown) ? null : () => this.close(true)}>
       {isFullRegistrationFormShown ? this.renderIntro({flex: 1}) : null}
       {isFullRegistrationFormShown ?
-        <ModalCloseButton onClick={this.close} style={closeButtonStyle} /> : null}
+        <ModalCloseButton onClick={() => this.close(true)} style={closeButtonStyle} /> : null}
       <div style={{flex: 1, ...Styles.CENTERED_COLUMN}}>
         <div style={actionBoxStyle}>
           {form}
@@ -700,15 +811,36 @@ class LoginModalBase extends React.Component {
             fields="email,name,picture,gender,birthday"
             size="small" icon="fa-facebook"
             textButton={`${socialLoginPrefix} avec Facebook`}
-            cssClass="login facebook-login"
-            style={{borderRadius: 100}} />
+            cssClass="login facebook-login" />
           <GoogleLogin
             clientId={config.googleSSOClientId} offline={false}
             onSuccess={this.handleGoogleLogin}
             onFailure={this.handleGoogleFailure}
             className="login google-login">
-            <Icon name="google" /> {`${socialLoginPrefix} avec Google`}
+            <GoogleIcon style={googleIconStyle} />{`${socialLoginPrefix} avec Google`}
           </GoogleLogin>
+          <OAuth2ConnectLogin
+            authorizeEndpoint="https://authentification-candidat.pole-emploi.fr/connexion/oauth2/authorize"
+            scopes={['api_peconnect-individuv1', 'profile', 'email',
+              'coordonnees', 'api_peconnect-coordonneesv1', 'openid',
+              'competences', 'api_peconnect-competencesv1']}
+            authorizeParams={{realm: '/individu'}}
+            clientId={config.emploiStoreClientId}
+            className="login pe-connect-login"
+            logo={peConnectIcon}
+            onSuccess={this.handlePEConnectLogin}
+            onFailure={this.handleConnectFailure}>
+            {socialLoginPrefix} avec Pôle emploi
+          </OAuth2ConnectLogin>
+          <OAuth2ConnectLogin
+            clientId={config.linkedInClientId}
+            authorizeEndpoint="https://www.linkedin.com/oauth/v2/authorization"
+            onSuccess={this.handleLinkedinLogin}
+            onFailure={this.handleConnectFailure}
+            logo={linkedInIcon}
+            className="login linkedin-login">
+            {socialLoginPrefix} avec LinkedIn
+          </OAuth2ConnectLogin>
         </div>}
       </div>
     </Modal>
@@ -736,6 +868,7 @@ class LoginButtonBase extends React.Component {
     style: PropTypes.object,
     visualElement: PropTypes.string,
   }
+
   static contextTypes = {
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
@@ -756,9 +889,10 @@ class LoginButtonBase extends React.Component {
   }
 
   render() {
-    // eslint-disable-next-line no-unused-vars
-    const {children, dispatch, email, isLoggedIn, isSignUpButton, visualElement,
-      ...extraProps} = this.props
+    const {children} = this.props
+    const extraProps = omit(this.props, [
+      'children', 'dispatch', 'email', 'isLoggedIn', 'isSignUpButton', 'visualElement',
+    ])
     return <Button type="deletion" onClick={this.handleClick} {...extraProps}>
       {children}
     </Button>

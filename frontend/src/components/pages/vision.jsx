@@ -1,11 +1,12 @@
-import React from 'react'
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
+import React from 'react'
 
 import content from './vision/content.txt'
 
 import {StaticPage} from 'components/static'
 import {Routes} from 'components/url'
-import {Colors, Icon, Markdown, Button} from 'components/theme'
+import {Colors, Markdown, Button} from 'components/theme'
 
 class VisionPage extends React.Component {
   static contextTypes = {
@@ -43,16 +44,15 @@ class VisionPage extends React.Component {
       <div style={{fontSize: 16, lineHeight: 1.63, maxWidth: 600}}>
         <Markdown content={content} />
 
-        <div style={{margin: '50px 0', textAlign: 'right'}}>
+        <div style={{margin: '50px 0', textAlign: isMobileVersion ? 'center' : 'right'}}>
           <Button
             style={{fontSize: 17, padding: '10px 12px 8px 39px'}}
             onClick={() => history.push(Routes.CONTRIBUTION_PAGE)}>
             <span style={{paddingRight: '1em'}}>
               Contribuer
             </span>
-            <Icon
-              name="chevron-right"
-              style={{fontSize: 24, paddingBottom: 2, verticalAlign: 'middle'}} />
+            <ChevronRightIcon
+              style={{fill: '#fff', height: 24, paddingBottom: 2, verticalAlign: 'middle'}} />
           </Button>
         </div>
 
@@ -60,7 +60,7 @@ class VisionPage extends React.Component {
           Écoutez notre fondateur, Paul Duan, expliquer notre mission&nbsp;:
           <iframe
             style={{marginTop: 10}}
-            width={isMobileVersion ? 370 : 600} height={isMobileVersion ? 180 : 320}
+            width={isMobileVersion ? 280 : 600} height={isMobileVersion ? 180 : 320}
             scrolling="no" frameBorder={0}
             src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/326192410&amp;color=%23ff5500&amp;auto_play=false&amp;hide_related=false&amp;show_comments=true&amp;show_user=true&amp;show_reposts=false&amp;visual=true" />
         </div>

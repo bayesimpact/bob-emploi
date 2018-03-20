@@ -1,8 +1,11 @@
+Babel
 coverage
 mongomock
 nose
 nose-watch
-pep8
+pycodestyle
 pylint
+pylint-doc-spacing>=0.0.3
 pylint-quotes
 requests_mock
+rstr

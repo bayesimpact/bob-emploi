@@ -1,23 +1,49 @@
 {
+  "driving-license-euro": [
+    {
+      "content": "Bonjour, \n\nJe voudrais passer mon permis et je souhaiterais connaître vos tarifs.\nPourriez-vous m'envoyer un devis pour une formation permis B ? \nPar ailleurs, pourriez-vous me confirmer que vous acceptez le financement du permis B par Pôle emploi ? \n\nMerci d'avance, \nBien cordialement,",
+      "title": "Demander un devis à une auto-école partenaire"
+    }
+  ],
+  "driving-license-low-income": [
+    {
+      "content": "Bonjour, \n\nJe me suis renseigné(e) sur l'aide au permis de conduire proposée par Pôle emploi.\nAvoir le permis de conduire augmenterait mes chances de trouver un emploi et je crois que je remplis les conditions pour pouvoir demander cette aide.\n\nPensez-vous que je puisse être éligible ? \nSouhaitez-vous que je réunisse des documents pour faire la demande, comme un devis d'une auto-école ? \nMerci de vos conseils, \nBien cordialement, ",
+      "title": "Envoyer un mail à votre conseiller Pôle emploi pour en parler avec lui "
+    },
+    {
+      "content": "Bonjour, \n\nJe voudrais passer mon permis et je souhaiterais connaître vos tarifs.\nPourriez-vous m'envoyer un devis pour une formation permis B ? \nPar ailleurs, pourriez-vous me confirmer que vous acceptez le financement du permis B par Pôle emploi ? \n\nMerci d'avance, \nBien cordialement,",
+      "title": "Demander un devis par mail à une auto-école"
+    }
+  ],
+  "follow-up": [
+    {
+      "content": "Je me permets de revenir vers vous suite à la candidature que je vous ai adressée le (date) dernier. \nJe souhaite vous proposer que nous nous rencontrions  afin que je vous expose en détail mes motivations. \nJe reste à votre disposition pour fixer une date de rendez-vous.",
+      "title": "Exemple 1 - Relancer pour demander un rendez-vous"
+    },
+    {
+      "content": "Pour faire suite à ma candidature concernant le poste de (nom du poste).\nJ'espère qu'elle vous est bien parvenue, je suis particulièrement intéressé(e) par ce travail qui correspond à mes compétences et à mes ambitions professionnelles.\nJe reste à votre disposition pour échanger.",
+      "title": "Exemple 2 - Relancer pour réaffirmer sa motivation"
+    }
+  ],
   "motivation-email": [
     {
       "content": "**Objet :** Candidature spontanée : (intitulé du poste)\n\n**Corps du message :**\n\nJ'ai récemment appris, via mon réseau professionnel, que vous recherchiez un (intitulé du poste). Passionné depuis toujours par (secteur de l'entreprise), c'est donc naturellement que je vous contacte afin de vous rencontrer pour envisager une collaboration […]\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous motive et pourquoi vous êtes un bon candidat pour ce poste]\n\nQuand seriez-vous disponible pour échanger ?",
-      "title": "Networker en réponse à une offre",
+      "title": "En réponse à une offre",
       "type": "spontaneous-application"
     },
     {
       "content": "**Objet :** Candidature spontanée : (intitulé du poste)\n\n**Corps du message :**\n\nJ'ai lu dans la presse, que vous développiez votre activité. Passionné depuis toujours par (secteur de l'entreprise), c'est donc naturellement que je vous contacte afin de vous rencontrer […]\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous intéresse particulièrement dans cette entreprise et ce que vous pourriez lui apporter]\n\nVous aurez certainement besoin d'un (nom de votre poste) Rencontrons-nous pour en discuter.",
-      "title": "Candidature spontanée bien renseignée",
+      "title": "Candidature spontanée",
       "type": "spontaneous-application"
     },
     {
       "content": "**Objet :** Candidature à l'offre (intitulé de l'offre)\n\n**Corps du message :**\n\nSuite à votre offre diffusée sur... je vous propose ma candidature…\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous motive et pourquoi vous êtes un bon candidat pour ce poste]\n\nVous trouverez en pièce jointe mon CV et je me tiens à votre disposition pour un entretien à votre convenance.",
-      "title": "Réponse classique à une offre (version 1)",
+      "title": "Réponse classique à une offre - option 1",
       "type": "apply-to-offer"
     },
     {
       "content": "**Objet :** Candidature à l'offre (intitulé de l'offre)\n\n**Corps du message :**\n\nJ'ai pris connaissance de votre offre d'emploi pour le poste de … qui m'intéresse beaucoup.\n\n[Ajoutez un paragraphe de 6 à 8 lignes pour expliquer ce qui vous motive et pourquoi vous êtes un bon candidat pour ce poste]\n\nEn espérant que ma candidature saura retenir votre attention, je vous adresse, ci-joint, mon CV.",
-      "title": "Réponse classique à une offre (version 2)",
+      "title": "Réponse classique à une offre - option 2",
       "type": "apply-to-offer"
     }
   ],

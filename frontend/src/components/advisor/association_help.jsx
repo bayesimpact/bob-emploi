@@ -1,25 +1,28 @@
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
+import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
-import PropTypes from 'prop-types'
-import {connect} from 'react-redux'
 
-import {getAssociations} from 'store/actions'
+import {CircularProgress, Colors, GrowingNumber, PaddedOnMobile, Tag} from 'components/theme'
+import Picto from 'images/advices/picto-association-help.png'
 
-import {CircularProgress, Colors, GrowingNumber, Icon, PaddedOnMobile, Tag} from 'components/theme'
-import {AdviceSuggestionList} from './base'
+import {AdviceSuggestionList, connectExpandedCardWithContent} from './base'
 
 
 class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    fontSize: PropTypes.number.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
   render() {
+    const {fontSize} = this.props
     const {associationName} = this.props.advice.associationsData || {}
-    return <div style={{fontSize: 30}}>
+    return <div style={{fontSize: fontSize}}>
       Pourquoi ne pas faire équipe avec une association d'aide à l'emploi
       comme <strong>{associationName || 'Solidarités Nouvelles face au chômage'}</strong>&nbsp;?
     </div>
@@ -28,32 +31,30 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
-    associations: PropTypes.arrayOf(PropTypes.object.isRequired),
-    dispatch: PropTypes.func.isRequired,
-    project: PropTypes.object.isRequired,
+    adviceData: PropTypes.shape({
+      associations: PropTypes.arrayOf(PropTypes.object.isRequired),
+    }).isRequired,
+    userYou: PropTypes.func.isRequired,
   }
+
   static contextTypes = {
     isMobileVersion: PropTypes.bool,
   }
 
-  componentWillMount() {
-    const {dispatch, project} = this.props
-    dispatch(getAssociations(project))
-  }
-
   renderAssociations(style) {
-    const {associations} = this.props
+    const {adviceData: {associations}, userYou} = this.props
     return <AdviceSuggestionList style={style}>
-      {associations.map(({filters, link, name}, index) => <AssociationLink
-        key={`association-${index}`} href={link} filters={filters}>
+      {(associations || []).map(({filters, link, name}, index) => <AssociationLink
+        key={`association-${index}`} href={link} {...{filters, userYou}}>
         {name}
       </AssociationLink>)}
     </AdviceSuggestionList>
   }
 
   render() {
-    const {associations} = this.props
-    if (!associations) {
+    const {associations} = this.props.adviceData
+    const {userYou} = this.props
+    if (!associations || !associations.length) {
       return <CircularProgress style={{margin: 'auto'}} />
     }
     const numSpecializedAssociations =
@@ -66,7 +67,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
         Nous avons trouvé <GrowingNumber
           style={{fontWeight: 'bold'}} number={associations.length} isSteady={true} />
         {' '}association{maybeS(associations.length)}
-        {hasOnlySpecialized ? specialized : null} pour vous
+        {hasOnlySpecialized ? specialized : null} {userYou('pour toi', 'pour vous')}
         {(numSpecializedAssociations > 0 && !hasOnlySpecialized) ? <span>
           {' '}dont <GrowingNumber
             style={{fontWeight: 'bold'}} number={numSpecializedAssociations} isSteady={true} />
@@ -78,10 +79,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, {project}) => {
-  const {associations} = (app.adviceData[project.projectId] || {})['association-help'] || {}
-  return {associations: associations || []}
-})(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connectExpandedCardWithContent()(ExpandedAdviceCardContentBase)
 
 
 class AssociationLinkBase extends React.Component {
@@ -90,6 +88,7 @@ class AssociationLinkBase extends React.Component {
     filters: PropTypes.array,
     href: PropTypes.string.isRequired,
     style: PropTypes.object,
+    userYou: PropTypes.func.isRequired,
   }
 
   handleClick = () => {
@@ -98,24 +97,24 @@ class AssociationLinkBase extends React.Component {
   }
 
   getTags() {
-    const {filters, href} = this.props
+    const {filters, href, userYou} = this.props
     const tags = []
     if (/\.pole-emploi\.fr/.test(href)) {
       tags.push({
         color: Colors.SQUASH,
-        value: 'officielle',
+        value: () => 'officielle',
       })
     }
     if ((filters || []).some(f => /^for-job-group/.test(f))) {
       tags.push({
         color: Colors.RED_PINK,
-        value: 'pour votre métier',
+        value: userYou('pour ton métier', 'pour votre métier'),
       })
     }
     if ((filters || []).some(f => /^for-departement/.test(f))) {
       tags.push({
-        color: Colors.SKY_BLUE,
-        value: 'pour votre région',
+        color: Colors.BOB_BLUE,
+        value: userYou('pour ta région', 'pour votre région'),
       })
     }
     if ((filters || []).some(f => /^for-women$/.test(f))) {
@@ -144,11 +143,11 @@ class AssociationLinkBase extends React.Component {
         {value}
       </Tag>)}
       <div style={{flex: 1}} />
-      <Icon name="chevron-right" style={{fontSize: 20}} />
+      <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, height: 24, width: 20}} />
     </div>
   }
 }
 const AssociationLink = Radium(AssociationLinkBase)
 
 
-export default {AdviceCard, ExpandedAdviceCardContent}
+export default {AdviceCard, ExpandedAdviceCardContent, Picto}
