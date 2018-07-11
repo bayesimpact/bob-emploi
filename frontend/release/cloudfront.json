@@ -136,7 +136,7 @@
             "Items": [
               {
                 "EventType": "viewer-request",
-                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:6"
+                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:14"
               }
             ],
             "Quantity": 1
@@ -185,7 +185,7 @@
             "Items": [
               {
                 "EventType": "viewer-request",
-                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:6"
+                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:14"
               }
             ],
             "Quantity": 1
@@ -234,7 +234,7 @@
             "Items": [
               {
                 "EventType": "viewer-request",
-                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:6"
+                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:14"
               }
             ],
             "Quantity": 1
@@ -283,7 +283,7 @@
             "Items": [
               {
                 "EventType": "viewer-request",
-                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:6"
+                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:14"
               }
             ],
             "Quantity": 1
@@ -332,7 +332,7 @@
             "Items": [
               {
                 "EventType": "viewer-request",
-                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:6"
+                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:14"
               }
             ],
             "Quantity": 1
@@ -340,6 +340,98 @@
           "MaxTTL": 600,
           "MinTTL": 0,
           "PathPattern": "/retours*",
+          "SmoothStreaming": false,
+          "TargetOriginId": "PE Static Assets on OVH",
+          "TrustedSigners": {
+            "Enabled": false,
+            "Quantity": 0
+          },
+          "ViewerProtocolPolicy": "redirect-to-https"
+        },
+        {
+          "AllowedMethods": {
+            "CachedMethods": {
+              "Items": [
+                "HEAD",
+                "GET"
+              ],
+              "Quantity": 2
+            },
+            "Items": [
+              "HEAD",
+              "GET"
+            ],
+            "Quantity": 2
+          },
+          "Compress": false,
+          "DefaultTTL": 600,
+          "ForwardedValues": {
+            "Cookies": {
+              "Forward": "none"
+            },
+            "Headers": {
+              "Quantity": 0
+            },
+            "QueryString": false,
+            "QueryStringCacheKeys": {
+              "Quantity": 0
+            }
+          },
+          "LambdaFunctionAssociations": {
+            "Items": [
+              {
+                "EventType": "viewer-request",
+                "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:14"
+              }
+            ],
+            "Quantity": 1
+          },
+          "MaxTTL": 600,
+          "MinTTL": 0,
+          "PathPattern": "/BobAction/admin",
+          "SmoothStreaming": false,
+          "TargetOriginId": "PE Static Assets on OVH",
+          "TrustedSigners": {
+            "Enabled": false,
+            "Quantity": 0
+          },
+          "ViewerProtocolPolicy": "redirect-to-https"
+        },
+        {
+          "AllowedMethods": {
+            "CachedMethods": {
+              "Items": [
+                "HEAD",
+                "GET"
+              ],
+              "Quantity": 2
+            },
+            "Items": [
+              "HEAD",
+              "GET"
+            ],
+            "Quantity": 2
+          },
+          "Compress": true,
+          "DefaultTTL": 600,
+          "ForwardedValues": {
+            "Cookies": {
+              "Forward": "none"
+            },
+            "Headers": {
+              "Quantity": 0
+            },
+            "QueryString": false,
+            "QueryStringCacheKeys": {
+              "Quantity": 0
+            }
+          },
+          "LambdaFunctionAssociations": {
+            "Quantity": 0
+          },
+          "MaxTTL": 600,
+          "MinTTL": 0,
+          "PathPattern": "/favicon.ico",
           "SmoothStreaming": false,
           "TargetOriginId": "PE Static Assets on OVH",
           "TrustedSigners": {
@@ -392,20 +484,12 @@
           "ViewerProtocolPolicy": "redirect-to-https"
         }
       ],
-      "Quantity": 8
+      "Quantity": 10
     },
     "CallerReference": "1477742068362",
     "Comment": "",
     "CustomErrorResponses": {
-      "Items": [
-        {
-          "ErrorCachingMinTTL": 300,
-          "ErrorCode": 404,
-          "ResponseCode": "200",
-          "ResponsePagePath": "/"
-        }
-      ],
-      "Quantity": 1
+      "Quantity": 0
     },
     "DefaultCacheBehavior": {
       "AllowedMethods": {
@@ -423,7 +507,7 @@
         "Quantity": 2
       },
       "Compress": true,
-      "DefaultTTL": 86400,
+      "DefaultTTL": 600,
       "ForwardedValues": {
         "Cookies": {
           "Forward": "none"
@@ -440,13 +524,13 @@
         "Items": [
           {
             "EventType": "viewer-request",
-            "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:opengraph-redirect:9"
+            "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:opengraph-redirect:18"
           }
         ],
         "Quantity": 1
       },
-      "MaxTTL": 31536000,
-      "MinTTL": 3600,
+      "MaxTTL": 600,
+      "MinTTL": 0,
       "SmoothStreaming": false,
       "TargetOriginId": "PE Static Assets on OVH",
       "TrustedSigners": {
@@ -532,5 +616,5 @@
     },
     "WebACLId": ""
   },
-  "ETag": "E11ZJ7DN1TYEP1"
+  "ETag": "E20QY6I9BCAQQK"
 }

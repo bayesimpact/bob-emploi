@@ -9,7 +9,7 @@ readonly LAMBDA_FOLDER="$(dirname "$0")"
 
 function upload_lambda() {
   filename=$1; lambda_function_name=$2
-  zip_file="$(mktemp --suffix=.zip)"
+  zip_file="$(mktemp -t XXXXXXXX.zip)"
   index_path="${LAMBDA_FOLDER}/${filename}"
 
   rm "${zip_file}"
@@ -35,5 +35,5 @@ function upload_lambda() {
   fi
 }
 
-upload_lambda opengraph-redirect.js opengraph-redirect
-upload_lambda aux-pages-redirect.js bob-aux-pages-redirect
+upload_lambda opengraph_redirect.js opengraph-redirect
+upload_lambda aux_pages_redirect.js bob-aux-pages-redirect

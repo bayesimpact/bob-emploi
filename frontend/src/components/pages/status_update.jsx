@@ -1,16 +1,12 @@
-import PropTypes from 'prop-types'
 import {parse} from 'query-string'
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-import config from 'config'
-
-import {isOnSmallScreen} from 'store/mobile'
-
 import logoProductImage from 'images/logo-bob-beta.svg'
 
 import {ShareModal} from 'components/share'
-import {Button, CheckboxList, Colors, FieldSet, RadioGroup} from 'components/theme'
+import {Button} from 'components/theme'
+import {CheckboxList, FieldSet, RadioGroup} from 'components/pages/connected/form_utils'
 
 require('styles/App.css')
 
@@ -20,7 +16,7 @@ require('styles/App.css')
 const FORM_OPTIONS = {
   'en-recherche': {
     'headerText': userYou => `Merci de nous avoir donné des nouvelles,
-      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00a0! J'ai juste deux
+      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00A0! J'ai juste deux
       questions de plus.`,
     'seeking': 'STILL_SEEKING',
     'situationOptions': [
@@ -31,7 +27,7 @@ const FORM_OPTIONS = {
   },
   'mise-a-jour': {
     'headerText': userYou => `Merci de nous avoir donné des nouvelles,
-      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00a0!`,
+      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00A0!`,
     'seekingOptions': [
       {name: "Je suis toujours à la recherche d'un emploi", value: 'STILL_SEEKING'},
       {name: 'Je ne cherche plus', value: 'STOP_SEEKING'},
@@ -45,9 +41,9 @@ const FORM_OPTIONS = {
   },
   'ne-recherche-plus': {
     'headerText': userYou => `Merci de nous avoir donné des nouvelles,
-      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00a0! J'ai juste quelques
+      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00A0! J'ai juste quelques
       questions de plus qui nous servent à collecter des statistiques pour améliorer notre
-      impact\u00a0:`,
+      impact\u00A0:`,
     'seeking': 'STOP_SEEKING',
     'situationOptions': [
       {name: "J'ai un travail", value: 'WORKING'},
@@ -59,36 +55,27 @@ const FORM_OPTIONS = {
 
 
 class StatusUpdatePage extends React.Component {
-  static childContextTypes = {
-    isMobileVersion: PropTypes.bool,
+  static getStateFromLocation({pathname, search}) {
+    const page = pathname.replace('/statut/', '')
+    const state = {
+      page: FORM_OPTIONS[page] ? page : '',
+      params: parse(search),
+    }
+    const {seeking} = FORM_OPTIONS[page] || {}
+    if (seeking) {
+      state.seeking = seeking
+    }
+    return state
   }
 
   state = {
     errorMessage: null,
     isFormSent: false,
-    isMobileVersion: isOnSmallScreen(),
     isSendingUpdate: false,
     isValidated: false,
     page: '',
     params: {},
-  }
-
-  getChildContext() {
-    const {isMobileVersion} = this.state
-    return {isMobileVersion}
-  }
-
-  componentWillMount() {
-    const {pathname, search} = window.location
-    const page = pathname.replace('/statut/', '')
-    this.setState({
-      page: FORM_OPTIONS[page] ? page : '',
-      params: parse(search),
-    })
-    const {seeking} = FORM_OPTIONS[page]
-    if (seeking) {
-      this.setState({seeking})
-    }
+    ...StatusUpdatePage.getStateFromLocation(window.location),
   }
 
   handleCancel() {
@@ -138,7 +125,7 @@ class StatusUpdatePage extends React.Component {
   renderHeader() {
     const style = {
       alignItems: 'center',
-      backgroundColor: Colors.DARK,
+      backgroundColor: colors.DARK,
       display: 'flex',
       height: 56,
       justifyContent: 'center',
@@ -158,7 +145,7 @@ class StatusUpdatePage extends React.Component {
     const {can_tutoie: canTutoie, gender} = params
     const pageStyle = {
       alignItems: 'center',
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       display: 'flex',
       flexDirection: 'column',
       fontSize: 15,

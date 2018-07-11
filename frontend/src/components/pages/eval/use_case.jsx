@@ -1,15 +1,19 @@
-import omit from 'lodash/omit'
+import _omit from 'lodash/omit'
 import PropTypes from 'prop-types'
 import React from 'react'
 
+
 import {weeklyApplicationOptions, weeklyOfferOptions}
-  from 'components/pages/profile/jobsearch'
+  from 'components/pages/connected/profile/jobsearch'
 import {getIMTURL, getJobSearchURL} from 'store/job'
 import {getSeniorityText, getTrainingFulfillmentEstimateOptions,
   PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_EXPERIENCE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS} from 'store/project'
 import {getFamilySituationOptions, getHighestDegreeDescription,
   getUserFrustrationTags, userAge} from 'store/user'
+
+import {ExternalLink} from 'components/theme'
+
 
 // TODO: Factorize this with the onboarding.
 const PROJECT_GOAL_OPTIONS = [
@@ -47,15 +51,15 @@ class UseCase extends React.Component {
   }
 
   renderLinks(project, gender) {
-    const {targetJob, mobility} = project
+    const {targetJob, city = {}} = project
     return <div style={{marginBottom: 10}}>
-      <a href={getJobSearchURL(targetJob, gender)} target="_blank" rel="noopener noferrer">
+      <ExternalLink href={getJobSearchURL(targetJob, gender)}>
         Chercher le métier sur Google
-      </a>
+      </ExternalLink>
       {' '}&ndash;{' '}
-      <a href={getIMTURL(targetJob, mobility.city)} target="_blank" rel="noopener noreferrer">
+      <ExternalLink href={getIMTURL(targetJob, city)}>
         Voir l'IMT
-      </a>
+      </ExternalLink>
     </div>
   }
 
@@ -115,9 +119,7 @@ class UseCase extends React.Component {
       [
         getOptionName(PROJECT_GOAL_OPTIONS, project.kind),
         employmentStatusText,
-        project.mobility ?
-          getOptionName(PROJECT_LOCATION_AREA_TYPE_OPTIONS, project.mobility.areaType) :
-          undefined,
+        getOptionName(PROJECT_LOCATION_AREA_TYPE_OPTIONS, project.areaType),
         getOptionName(PROJECT_EXPERIENCE_OPTIONS, project.previousJobSimilarity),
         'Network estimate : ' + replaceFalseValue(project.networkEstimate, 'inconnu'),
         getOptionName(PROJECT_PASSIONATE_OPTIONS, project.passionateLevel),
@@ -160,26 +162,23 @@ class UseCase extends React.Component {
 
     const {profile, projects} = userData
     const project = projects && projects.length && projects[0]
-    const location = project && project.mobility.city
+    const {city = {}} = project
     const cleanedProfileFields = ['gender', 'hasHandicap', 'highestDegree', 'yearOfBirth',
       'familySituation', 'frustrations', 'customFrustrations']
-    const cleanedProjectsFields = ['kind', 'employmentTypes', 'previousJobSimilarity',
-      'networkEstimate', 'seniority', 'trainingFulfillmentEstimate', 'jobSearchLengthMonths',
-      'weeklyOffersEstimate', 'weeklyApplicationsEstimate', 'totalInterviewCount',
-      'passionateLevel']
-    const cleanedMobilityFields = ['name', 'departementName']
+    const cleanedProjectsFields = ['areaType', 'employmentTypes', 'jobSearchLengthMonths', 'kind',
+      'networkEstimate', 'passionateLevel', 'previousJobSimilarity', 'seniority',
+      'totalInterviewCount', 'trainingFulfillmentEstimate', 'weeklyApplicationsEstimate',
+      'weeklyOffersEstimate']
+    const cleanedCityFields = ['name', 'departementName']
 
     // TODO (Marie Laure): Use a helper function instead of this manual approach
     const remainingData = {
       ...userData,
-      profile: userData.profile && omit(userData.profile, cleanedProfileFields),
+      profile: userData.profile && _omit(userData.profile, cleanedProfileFields),
       projects: userData.projects && userData.projects.map(project =>
-        omit({
+        _omit({
           ...project,
-          mobility: omit({
-            ...project.mobility,
-            city: omit(project.mobility.city, cleanedMobilityFields),
-          }, 'areaType'),
+          city: _omit(project.mobility.city, cleanedCityFields),
         }, cleanedProjectsFields)),
     }
 
@@ -187,7 +186,7 @@ class UseCase extends React.Component {
 
     return <div style={boxStyle}>
       {project && profile && this.renderLinks(project, profile.gender) || null}
-      {this.renderProfile(profile || {}, location || {})}
+      {this.renderProfile(profile || {}, city)}
       {this.renderProject(profile || {}, project || {})}
       {profile && this.renderFrustrations(profile) || null}
       <textarea value={json} readOnly={true} style={textareaStyle} />

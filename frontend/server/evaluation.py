@@ -1,14 +1,10 @@
 """Endpoints for the evaluation tool."""
 
-import functools
-import inspect
 import os
-import re
 
 import flask
-import pymongo
-
 from google.protobuf import json_format
+import pymongo
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import proto
@@ -17,37 +13,11 @@ from bob_emploi.frontend.api import use_case_pb2
 
 app = flask.Blueprint('evaluation', __name__)  # pylint: disable=invalid-name
 
-_EMAILS_PATTERN = re.compile(os.getenv('EMAILS_FOR_EVALUATIONS', '@bayesimpact.org'))
-
-
-def require_evaluator_auth(wrapped):
-    """Check if authenticated user has a valid google id token
-    in Authorization header, and associated google account is from
-    bayesimpact.org domain.
-
-    If the wrapped function has an evaluator_email keyword argument, it will
-    get populated by the email of the authenticated evaluator.
-    """
-
-    should_send_email_keywords = 'evaluator_email' in inspect.signature(wrapped).parameters
-
-    @functools.wraps(wrapped)
-    def _wrapper(*args, **kwargs):
-        if not flask.request.headers.get('Authorization', '').startswith('Bearer '):
-            flask.abort(401, 'Token manquant')
-        id_info = auth.decode_google_id_token(
-            flask.request.headers['Authorization'].replace('Bearer ', ''))
-        email = id_info['email']
-        if not _EMAILS_PATTERN.search(email):
-            flask.abort(401, 'Adresse email "{}" non autorisée'.format(email))
-        if should_send_email_keywords:
-            kwargs = dict(kwargs, evaluator_email=email)
-        return wrapped(*args, **kwargs)
-    return _wrapper
+_EMAILS_PATTERN = os.getenv('EMAILS_FOR_EVALUATIONS', '@bayesimpact.org')
 
 
 @app.route('/authorized', methods=['GET'])
-@require_evaluator_auth
+@auth.require_google_user(_EMAILS_PATTERN)
 def get_is_authorized():
     """Returns a 204 empty message if the user is an evaluator."""
 
@@ -56,7 +26,7 @@ def get_is_authorized():
 
 @app.route('/use-case-pools', methods=['GET'])
 @proto.flask_api(out_type=use_case_pb2.UseCasePools)
-@require_evaluator_auth
+@auth.require_google_user(_EMAILS_PATTERN)
 def fetch_use_case_pools():
     """Retrieve a list of the available pools of anonymized user examples."""
 
@@ -80,7 +50,7 @@ def fetch_use_case_pools():
 
 @app.route('/use-cases/<pool_name>', methods=['GET'])
 @proto.flask_api(out_type=use_case_pb2.UseCases)
-@require_evaluator_auth
+@auth.require_google_user(_EMAILS_PATTERN)
 def fetch_use_cases(pool_name):
     """Retrieve a list of anonymized user examples from one pool."""
 
@@ -91,13 +61,17 @@ def fetch_use_cases(pool_name):
         use_case_proto = use_cases.use_cases.add()
         use_case_proto.use_case_id = use_case_dict.pop('_id')
         proto.parse_from_mongo(use_case_dict, use_case_proto)
+        for project in use_case_proto.user_data.projects:
+            if project.HasField('mobility') and not project.HasField('city'):
+                project.city.CopyFrom(project.mobility.city)
+                project.area_type = project.mobility.area_type
 
     return use_cases
 
 
 @app.route('/use-case/<use_case_id>', methods=['POST'])
 @proto.flask_api(in_type=use_case_pb2.UseCaseEvaluation)
-@require_evaluator_auth
+@auth.require_google_user(_EMAILS_PATTERN, email_kwarg='evaluator_email')
 def evaluate_use_case(use_case, use_case_id, evaluator_email=''):
     """Evaluate a use case."""
 
@@ -113,14 +87,15 @@ def evaluate_use_case(use_case, use_case_id, evaluator_email=''):
 
 @app.route('/use-case/create', methods=['POST'])
 @proto.flask_api(in_type=use_case_pb2.UseCaseCreateRequest, out_type=use_case_pb2.UseCase)
-@require_evaluator_auth
+@auth.require_google_user(_EMAILS_PATTERN)
 def create_use_case(request):
     """Create a use case from a user."""
 
-    database = flask.current_app.config['USER_DATABASE']
+    database = flask.current_app.config['DATABASE']
+    user_database = flask.current_app.config['USER_DATABASE']
 
     # Find user.
-    user_dict = database.user.find_one({'profile.email': request.email})
+    user_dict = user_database.user.find_one({'profile.email': request.email})
     if not user_dict:
         flask.abort(
             404, 'Aucun utilisateur avec l\'email "{}" n\'a été trouvé.'.format(request.email))

@@ -4,7 +4,7 @@ import React from 'react'
 
 import {lowerFirstLetter} from 'store/french'
 
-import {AppearingList, Colors, GrowingNumber, PaddedOnMobile, StringJoiner,
+import {AppearingList, GrowingNumber, PaddedOnMobile, StringJoiner,
   Styles} from 'components/theme'
 import Picto from 'images/advices/picto-relocate.png'
 
@@ -45,27 +45,28 @@ class AdviceCard extends React.Component {
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.object.isRequired,
   }
 
   computeAllDepartements() {
-    const {advice} = this.props
+    const {advice, onExplore} = this.props
 
     if (!advice.relocateData) {
-      return null
+      return []
     }
     const {departementScores} = advice.relocateData
 
     const otherDepartementsList = departementScores.map(
       (departementScore, index) => <RelocateDepartmentSuggestion
-        key={`dep-${index}`}
+        key={`dep-${index}`} onClick={onExplore('departement')}
         departementScore={departementScore}
         style={{marginTop: -1}} />)
     return otherDepartementsList
   }
 
   render() {
-    const {project} = this.props
+    const {onExplore, project} = this.props
     const otherDepartements = this.computeAllDepartements()
 
     if (!otherDepartements.length) {
@@ -73,8 +74,8 @@ class ExpandedAdviceCardContent extends React.Component {
     }
 
     const targetDepList = <RelocateDepartmentSuggestion
-      key="target-dep"
-      departementScore={{name: project.mobility.city.departementName}}
+      key="target-dep" onClick={onExplore('target')}
+      departementScore={{name: project.city.departementName}}
       isTargetDepartment={true} />
 
     return <div>
@@ -97,13 +98,15 @@ class RelocateDepartmentSuggestionBase extends React.Component {
   static propTypes = {
     departementScore: PropTypes.object.isRequired,
     isTargetDepartment: PropTypes.bool,
+    onClick: PropTypes.func,
     style: PropTypes.object,
   }
 
   handleClick = () => {
-    const {departementScore} = this.props
+    const {departementScore, onClick} = this.props
     const searchTerm = encodeURIComponent(`${departementScore.name} département, france`)
     window.open(`https://www.google.fr/maps/search/${searchTerm}`, '_blank')
+    onClick && onClick()
   }
 
   renderTargetDepartment(style) {
@@ -128,7 +131,7 @@ class RelocateDepartmentSuggestionBase extends React.Component {
   renderOtherDepartement(style) {
     const {departementScore} = this.props
     const multiplierStyle = {
-      color: Colors.HOVER_GREEN,
+      color: colors.HOVER_GREEN,
       fontWeight: 'bold',
       marginRight: 0,
       ...Styles.CENTER_FONT_VERTICALLY,
@@ -153,11 +156,11 @@ class RelocateDepartmentSuggestionBase extends React.Component {
     const {isTargetDepartment, style} = this.props
     const containerStyle = {
       ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
+        backgroundColor: colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,

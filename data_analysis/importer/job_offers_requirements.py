@@ -10,7 +10,7 @@ You can try it out on a local instance if you have a job offers file:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/job_offers_requirements.py \
+        python bob_emploi/data_analysis/importer/job_offers_requirements.py \
         --job_offers_csv data/job_offers/sample_10perc.csv \
         --colnames_txt data/job_offers/column_names.txt \
         --to_json data/job_offers/job_offers_requirements.json

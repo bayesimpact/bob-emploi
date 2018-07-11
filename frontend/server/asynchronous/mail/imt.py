@@ -83,15 +83,6 @@ def _get_best_departements_for_job_group(rome_id, database):
     return best_departements
 
 
-def _can_go_to_arles_hotellerie_event(rome_id, mobility):
-    return rome_id in ['G1502', 'G1701', 'G1703'] and (
-        mobility.area_type >= geo_pb2.COUNTRY or
-        mobility.city.city_id == '13004' or
-        (mobility.area_type >= geo_pb2.DEPARTEMENT and mobility.city.departement_id == '13') or
-        (mobility.area_type >= geo_pb2.REGION and mobility.city.region_id == '93')
-    )
-
-
 def _make_section(values):
     return dict({'showSection': campaign.as_template_boolean(values)}, **(values or {}))
 
@@ -189,18 +180,18 @@ def _make_months_section(months):
     }
 
 
-def imt_vars(user, database):
+def _get_imt_vars(user, database=None, **unused_kwargs):
     """Compute vars for the "IMT" email."""
 
-    if not user.projects:
-        logging.info('User has no project')
+    if not user.projects or user.projects[0].is_incomplete:
+        logging.info('User has no complete project')
         return None
     project = user.projects[0]
 
     genderized_job_name = french.lower_first_letter(french.genderize_job(
         project.target_job, user.profile.gender))
 
-    departement_id = project.mobility.city.departement_id
+    departement_id = project.city.departement_id or project.mobility.city.departement_id
     rome_id = project.target_job.job_group.rome_id
     diagnosis_key = '{}:{}'.format(departement_id, rome_id)
     local_diagnosis = _LOCAL_DIAGNOSIS.get_collection(database).get(diagnosis_key)
@@ -212,36 +203,37 @@ def imt_vars(user, database):
         logging.info('User market has no IMT data')
         return None
 
-    shown_sections = 0
+    shown_sections = []
 
     market_stress_section = _make_market_stress_section(imt.yearly_avg_offers_per_10_candidates)
     if market_stress_section:
-        shown_sections += 1
+        shown_sections.append('marketStress')
 
     application_modes_section = _make_application_mode_section(
         campaign.get_application_modes(rome_id, database), project.advices, user.user_id)
     if application_modes_section:
-        shown_sections += 1
+        shown_sections.append('applicationModes')
 
     departements_section = _make_departements_section(
-        project.mobility.city.departement_id,
+        departement_id,
         _get_best_departements_for_job_group(rome_id, database),
-        project.mobility.area_type,
+        project.area_type or project.mobility.area_type,
         database)
     if departements_section:
-        shown_sections += 1
+        shown_sections.append('departements')
 
     employment_types_section = _make_employment_type_section(
         sorted(imt.employment_type_percentages, key=lambda e: e.percentage))
     if employment_types_section:
-        shown_sections += 1
+        shown_sections.append('employmentTypes')
 
     months_section = _make_months_section(imt.active_months)
     if months_section:
-        shown_sections += 1
+        shown_sections.append('months')
 
-    if shown_sections < 3:
-        logging.info('Only %d section(s) to be shown for user.', shown_sections)
+    if len(shown_sections) < 3:
+        logging.info(
+            'Only %d section(s) to be shown for user (%s).', len(shown_sections), shown_sections)
         return None
 
     imt_link = 'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?' + \
@@ -250,14 +242,14 @@ def imt_vars(user, database):
 
     job_name_in_departement = '{} {}'.format(
         genderized_job_name,
-        geo.get_in_a_departement_text(database, project.mobility.city.departement_id))
+        geo.get_in_a_departement_text(database, departement_id))
 
-    return dict(campaign.get_default_vars(user), **{
+    return dict(campaign.get_default_coaching_email_vars(user), **{
         'applicationModes': _make_section(application_modes_section),
         'departements': _make_section(departements_section),
         'employmentType': _make_section(employment_types_section),
         'imtLink': imt_link,
-        'inCity': french.in_city(project.mobility.city.name),
+        'inCity': french.in_city(project.city.name or project.mobility.city.name),
         'jobNameInDepartement': job_name_in_departement,
         'loginUrl': campaign.create_logged_url(user.user_id),
         'marketStress': _make_section(market_stress_section),
@@ -265,9 +257,6 @@ def imt_vars(user, database):
         'ofJobNameInDepartement': french.maybe_contract_prefix(
             'de ', "d'", job_name_in_departement),
         'ofJobName': french.maybe_contract_prefix('de ', "d'", genderized_job_name),
-        'showPs': campaign.as_template_boolean(
-            _can_go_to_arles_hotellerie_event(rome_id, project.mobility)),
-        'statusUpdateUrl': campaign.get_status_update_link(user.user_id, user.profile),
     })
 
 
@@ -276,11 +265,13 @@ campaign.register_campaign('imt', campaign.Campaign(
     mongo_filters={
         'projects': {
             '$elemMatch': {
-                'isIncomplete': {'$exists': False},
+                'isIncomplete': {'$ne': True},
             },
         },
     },
-    get_vars=imt_vars,
+    get_vars=_get_imt_vars,
     sender_name='Pascal de Bob',
     sender_email='pascal@bob-emploi.fr',
+    is_coaching=True,
+    is_big_focus=True,
 ))

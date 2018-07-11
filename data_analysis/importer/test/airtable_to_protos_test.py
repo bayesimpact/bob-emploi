@@ -46,6 +46,17 @@ class ConverterTestCase(unittest.TestCase):
                 },
             })
 
+    def test_curly_quote_in_unused_field(self):
+        """Test that we alllow curly quotes in fields that are not imported."""
+
+        self.assertTrue(self.converter.convert_record({
+            'id': 'foobar',
+            'fields': {
+                'title': 'The used title',
+                'unused_title': 'Don’t do that',
+            },
+        }))
+
     def test_trailing_blank(self):
         """Test that we forbid strings with a trailing blank space."""
 
@@ -254,6 +265,7 @@ class ConverterTestCase(unittest.TestCase):
             'id': 'foobar',
             'fields': {
                 'title': 'Présentez-vous au chef boulanger',
+                'short_title': 'Astuces de boulangers',
                 'for-job-group': 'D1102',
                 'filters': ['not-for-job(12006)'],
                 'card_text': 'Allez à la boulangerie la veille',
@@ -264,6 +276,7 @@ class ConverterTestCase(unittest.TestCase):
         self.assertEqual(dynamic_advice, {
             '_id': 'foobar',
             'title': 'Présentez-vous au chef boulanger',
+            'shortTitle': 'Astuces de boulangers',
             'cardText': 'Allez à la boulangerie la veille',
             'filters': ['not-for-job(12006)', 'for-job-group(D1102)'],
             'expandedCardHeader': 'Il *faut*',
@@ -280,6 +293,7 @@ class ConverterTestCase(unittest.TestCase):
                 'id': 'foobar',
                 'fields': {
                     'title': 'Présentez-vous au chef boulanger',
+                    'short_title': 'Astuces de boulangers',
                     'for-job-group': 'D1102',
                     'card_text': 'Allez à la boulangerie la veille',
                     'expanded_card_items': '* Se présenter\ntrès tôt',
@@ -300,10 +314,81 @@ class ConverterTestCase(unittest.TestCase):
                 },
             })
 
+    def test_diagnostic_submetric_sentence(self):
+        """Convert a diagnostic submetric sentence."""
 
-@airtablemock.patch(airtable_to_protos.__name__ + '.airtable')
+        converter = airtable_to_protos.PROTO_CLASSES['DiagnosticScorerSentenceTemplate']
+        converter.convert_record({
+            'id': 'foo bar',
+            'fields': {
+                'name': 'Too few Applications',
+                'submetric': 'JOB_SEARCH_DIAGNOSTIC',
+                'weight': .2,
+                'trigger_scoring_model': 'constant(3)',
+                'positive_sentence_template': "c'est plutôt bien",
+                'negative_sentence_template': "c'est pas super",
+            },
+        })
+
+    def test_diagnostic_submetric_sentence_enforce_format(self):
+        """Convert a diagnostic submetric sentence with wrong format."""
+
+        converter = airtable_to_protos.PROTO_CLASSES['DiagnosticScorerSentenceTemplate']
+        with self.assertRaises(ValueError):
+            converter.convert_record({
+                'id': 'foo bar',
+                'fields': {
+                    'name': 'Too few Applications',
+                    'submetric': 'JOB_SEARCH_DIAGNOSTIC',
+                    'weight': .2,
+                    'trigger_scoring_model': 'constant(3)',
+                    'positive_sentence_template': "C'est plutôt bien",
+                    'negative_sentence_template': "c'est pas super",
+                },
+            })
+        with self.assertRaises(ValueError):
+            converter.convert_record({
+                'id': 'foo bar',
+                'fields': {
+                    'name': 'Too few Applications',
+                    'submetric': 'JOB_SEARCH_DIAGNOSTIC',
+                    'weight': .2,
+                    'trigger_scoring_model': 'constant(3)',
+                    'positive_sentence_template': "c'est plutôt bien.",
+                    'negative_sentence_template': "c'est pas super",
+                },
+            })
+
+    def test_entrepreneur_testimonial_converter(self):
+        """Convert a entrepreneur's testimonial."""
+
+        converter = airtable_to_protos.PROTO_CLASSES['Testimonial']
+        testimonial = converter.convert_record({
+            'id': 'foobar',
+            'fields': {
+                'author_name': 'Céline',
+                'author_job_name': 'Ostéopathe',
+                'description': 'Il fallait se lancer.',
+                'filters': ['not-for-job(12006)'],
+                'preferred_job_group_ids': 'D1102, D1403,D2305',
+                'link': 'www.gothere.org',
+                'image_link': 'www.this-image.org',
+            },
+        })
+        self.assertEqual(testimonial, {
+            '_id': 'foobar',
+            'authorName': 'Céline',
+            'authorJobName': 'Ostéopathe',
+            'description': 'Il fallait se lancer.',
+            'filters': ['not-for-job(12006)'],
+            'preferredJobGroupIds': ['D1102', 'D1403', 'D2305'],
+            'link': 'www.gothere.org',
+            'imageLink': 'www.this-image.org',
+        })
+
+
 @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'apikey42'})
-class Airtable2DictsTestCase(unittest.TestCase):
+class Airtable2DictsTestCase(airtablemock.TestCase):
     """Unit tests for the importer."""
 
     def test_airtable2dicts(self):
@@ -356,10 +441,74 @@ class Airtable2DictsTestCase(unittest.TestCase):
             airtable_to_protos.airtable2dicts(
                 'base456', 'diagnostic_template', 'DiagnosticSentenceTemplate')
 
+    def test_airtable2dicts_unsorted_diagnostic_submetric_sentences(self):
+        """Use of airtable2dicts for diagnostic submetric sentences which need to be sorted."""
+
+        base = airtablemock.Airtable('base789', 'apikey42')
+        base.create('diagnostic_template', {
+            'sentence_template': 'fourth',
+            'topic': 'MARKET_DIAGNOSTIC',
+            'priority': 1,
+        })
+        base.create('diagnostic_template', {
+            'sentence_template': 'third',
+            'topic': 'MARKET_DIAGNOSTIC',
+            'priority': 2,
+        })
+        base.create('diagnostic_template', {
+            'sentence_template': 'second',
+            'filters': ['constant(3)'],
+            'topic': 'MARKET_DIAGNOSTIC',
+            'priority': 2,
+        })
+        base.create('diagnostic_template', {
+            'sentence_template': 'first',
+            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
+            'priority': 1,
+        })
+
+        with self.assertRaises(ValueError):
+            airtable_to_protos.airtable2dicts(
+                'base789', 'diagnostic_template', 'DiagnosticSubmetricSentenceTemplate')
+
+    def test_airtable2dicts_sorted_diagnostic_submetric_sentences(self):
+        """Use of airtable2dicts for diagnostic submetric sentences which are already sorted."""
+
+        base = airtablemock.Airtable('baseABC', 'apikey42')
+        base.create('diagnostic_template', {
+            'sentence_template': 'first',
+            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
+            'priority': 1,
+        })
+        base.create('diagnostic_template', {
+            'sentence_template': 'second',
+            'filters': ['constant(3)'],
+            'topic': 'MARKET_DIAGNOSTIC',
+            'priority': 1,
+        })
+        base.create('diagnostic_template', {
+            'sentence_template': 'third',
+            'topic': 'MARKET_DIAGNOSTIC',
+            'priority': 2,
+        })
+        base.create('diagnostic_template', {
+            'sentence_template': 'fourth',
+            'topic': 'MARKET_DIAGNOSTIC',
+            'priority': 1,
+        })
+
+        # We're testing that the sort check does not fail, so the test should fail on ValueError,
+        # not raise the error.
+        try:
+            airtable_to_protos.airtable2dicts(
+                'baseABC', 'diagnostic_template', 'DiagnosticSubmetricSentenceTemplate')
+        except ValueError as err:
+            self.fail(err)  # pragma: no cover
+
     def test_airtable2dicts_sorted_diagnostic_submetrics_sentence(self):
         """Use of airtable2dicts when records need to be sorted."""
 
-        base = airtablemock.Airtable('base456', 'apikey42')
+        base = airtablemock.Airtable('baseDEF', 'apikey42')
         base.create('diagnostic_submetrics_template', {
             'positive_sentence_template': 'first',
             'submetric': 'JOB_SEARCH_DIAGNOSTIC',
@@ -387,7 +536,7 @@ class Airtable2DictsTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             airtable_to_protos.airtable2dicts(
-                'base456', 'diagnostic_submetrics_template', 'DiagnosticSubmetricsSentenceTemplate')
+                'baseDEF', 'diagnostic_submetrics_template', 'DiagnosticScorerSentenceTemplate')
 
 
 if __name__ == '__main__':

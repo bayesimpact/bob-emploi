@@ -6,7 +6,7 @@ import {genderize, getEmailTemplates} from 'store/french'
 
 import vroomVroomImage from 'images/vroom-vroom-picto.jpg'
 
-import {Colors, GrowingNumber, PaddedOnMobile} from 'components/theme'
+import {GrowingNumber, PaddedOnMobile} from 'components/theme'
 import Picto from 'images/advices/picto-driving-license-written.png'
 
 import {connectExpandedCardWithContent, EmailTemplate, ExpandableAction, ToolCard} from './base'
@@ -23,23 +23,18 @@ class ExpandedAdviceCardContentBase extends React.Component {
       longitude: PropTypes.number,
     }).isRequired,
     gender: PropTypes.string,
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.shape({
-      mobility: PropTypes.shape({
-        city: PropTypes.shape({
-          name: PropTypes.string,
-          regionName: PropTypes.string,
-        }),
-      }).isRequired,
+      city: PropTypes.shape({
+        name: PropTypes.string,
+        regionName: PropTypes.string,
+      }),
     }).isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   getVroomVroomUrl = () => {
-    const {adviceData: {latitude, longitude}, project: {mobility: {city}}} = this.props
+    const {adviceData: {latitude, longitude}, project: {city}} = this.props
     if (!city || !latitude || !longitude) {
       return 'https://www.vroomvroom.fr/'
     }
@@ -83,16 +78,17 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   renderSchools() {
-    const {userYou} = this.props
+    const {onExplore, userYou} = this.props
     const comparatorStyle = {
-      color: Colors.COOL_GREY,
+      color: colors.COOL_GREY,
       fontSize: 13,
       fontStyle: 'italic',
       fontWeight: 'normal',
     }
     const schoolComparators = [
       <ToolCard
-        imageSrc={vroomVroomImage} href={this.getVroomVroomUrl()} key="comparator-vroom-vroom">
+        imageSrc={vroomVroomImage} href={this.getVroomVroomUrl()} key="comparator-vroom-vroom"
+        onClick={() => onExplore('tool')}>
         VroomVroom.fr
         <div style={{fontSize: 13, fontWeight: 'normal'}}>
           pour comparer les auto-écoles près de chez vous
@@ -104,7 +100,8 @@ class ExpandedAdviceCardContentBase extends React.Component {
     const schoolsStyle = {
       paddingBottom: 35,
     }
-    return <ExpandableAction key="schools" userYou={userYou}
+    return <ExpandableAction
+      key="schools" userYou={userYou} onContentShown={() => onExplore('schools list')}
       title="Trouver une auto-école" contentName="les sites">
       <div style={schoolsStyle}>
         <div style={{marginBottom: 35}}>
@@ -121,11 +118,13 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   render() {
-    const {advice: {adviceId}, userYou} = this.props
+    const {advice: {adviceId}, onExplore, userYou} = this.props
 
     const templates = getEmailTemplates(userYou)[adviceId]
     const actions = templates.map((template, index) =>
-      <EmailTemplate {...template} key={`email-${index}`} userYou={userYou} />
+      <EmailTemplate
+        {...template} key={`email-${index}`} userYou={userYou}
+        onContentShown={() => onExplore('email')} />
     )
     actions.splice(1, 0, this.renderSchools())
 

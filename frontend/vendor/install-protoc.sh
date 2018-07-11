@@ -1,9 +1,15 @@
 #!/bin/bash
-readonly PROTOBUF_VERSION="$1"
-readonly DEST_FOLDER="$2"
+readonly DEST_FOLDER="$1"
 
-# Get the release from GitHub.
-wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip
+# Get the latest release version from GitHub.
+# TODO(pascal): Use curl everywhere instead of wget.
+readonly PROTOBUF_VERSION="$(\
+  curl -i https://github.com/protocolbuffers/protobuf/releases/latest |\
+  grep ^Location: |\
+  sed -e "s/^.*\/v//;s/\s*$//")"
+
+# Get the latest release from GitHub.
+wget --quiet https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip
 
 # Unzip then remove the zip and unneeded files.
 unzip -qq protoc.zip

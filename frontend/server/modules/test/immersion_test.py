@@ -9,8 +9,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class ImmersionMissionLocaleTest(scoring_test.ScoringModelTestBase('advice-immersion-milo')):
+class ImmersionMissionLocaleTest(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Immersion with Mission Locale" advice scoring model."""
+
+    model_id = 'advice-immersion-milo'
 
     def test_too_old(self):
         """User is too old for the missions locales."""

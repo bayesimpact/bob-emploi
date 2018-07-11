@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 import {inDepartement} from 'store/french'
 
-import {AppearingList, GrowingNumber, PaddedOnMobile} from 'components/theme'
+import {AppearingList, ExternalLink, GrowingNumber, PaddedOnMobile} from 'components/theme'
 import Picto from 'images/advices/picto-civic-service.png'
 import logoServiceCivique from 'images/logo-service-civique.png'
 
@@ -20,20 +20,16 @@ class ExpandedAdviceCardContentBase extends React.Component {
         title: PropTypes.string,
       }).isRequired),
     }).isRequired,
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
-    const {adviceData, project: {mobility}, userYou} = this.props
+    const {adviceData, onExplore, project: {city}, userYou} = this.props
     const missions = adviceData && adviceData.missions || []
     const missionCount = missions.length
-    const location = mobility && inDepartement(mobility.city) ||
-      `près de chez ${userYou('toi', 'vous')}`
+    const location = inDepartement(city) || `près de chez ${userYou('toi', 'vous')}`
 
     const missionCountStyle = {
       fontSize: 21,
@@ -50,19 +46,21 @@ class ExpandedAdviceCardContentBase extends React.Component {
         {missionCount ? <div style={missionCountStyle}> Nous avons trouvé <strong><GrowingNumber
           number={missionCount} isSteady={true} /> mission{missionCount > 1 ? 's ' : ' '}
         </strong> {location}</div> :
-          <a href="http://service-civique.gouv.fr" target="_blank" rel="noopener noreferrer">
+          <ExternalLink href="http://service-civique.gouv.fr">
             <br />{userYou('Va', 'Allez')} sur le site du service civique.
-          </a>}
+          </ExternalLink>}
       </PaddedOnMobile>
       {missionCount ? <AppearingList style={{marginTop: 15}}>
         {[
           ...missions.map((mission, index) => <Mission
             key={`mission-${index}`} aggregatorName="le portail du Service Civique" {...mission}
+            onContentShown={() => onExplore('mission')}
             style={{marginTop: index ? -1 : 0}} />),
           <MoreMissionsLink
             key="more" logo={logoServiceCivique} altLogo="Service civique" style={{marginTop: -1}}
             onClick={() => {
               window.open('http://www.service-civique.gouv.fr/?utm_source=bob-emploi', '_blank')
+              onExplore && onExplore('more')
             }}>
               Trouver d'autres missions de service civique
           </MoreMissionsLink>,

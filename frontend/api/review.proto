@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+import "bob_emploi/frontend/api/options.proto";
+import "bob_emploi/frontend/api/user.proto";
+
+package bayes.bob;
+
+// A document (CV or cover letter) to be reviewed by helpers.
+message DocumentToReview {
+  // URL of the document to review. It should be already anonymized (no last
+  // name, address, email address nor phone number).
+  string anonymized_url = 1;
+
+  // First name of the owner of the document.
+  string name = 2;
+
+  // Bob user ID of the owner of the document if they have an account.
+  string owner_user_id = 3 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // Email address of the owner of the document.
+  string owner_email = 4 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // Which kind of document it is.
+  DocumentKind kind = 5;
+
+  // A list of review for this document.
+  repeated DocumentReview reviews = 6;
+
+  // Number of pending reviews.
+  int32 num_pending_reviews = 7;
+
+  // Number of reviews done.
+  int32 num_done_reviews = 8;
+
+  // A list of emails that were sent to the owner. Does not include reviews (sent from Zendesk).
+  repeated EmailSent emails_sent = 9;
+
+  // The ID of this document in mongo, to update it in mail blasts.
+  string user_id = 10;
+}
+
+message DocumentReview {
+  // Date and time at which we send the document to be reviewed.
+  google.protobuf.Timestamp sent_at = 1;
+
+  // ID (helper ID) of the reviewer.
+  string reviewer_id = 2;
+
+  // Status of the review.
+  ReviewStatus status = 3;
+}
+
+enum DocumentKind {
+  UNKNOWN_DOCUMENT_KIND = 0;
+  DOCUMENT_RESUME = 1;
+  DOCUMENT_COVER_LETTER = 2;
+}
+
+enum ReviewStatus {
+  UNKNOWN_REVIEW_STATUS = 0;
+
+  // We sent the review to a reviewer.
+  REVIEW_SENT = 1;
+
+  // It's been a while since we send the review, consider it as moot.
+  REVIEW_TIME_OUT = 2;
+
+  // The reviewer has replied to the review.
+  REVIEW_DONE = 3;
+}
+
+message ReviewDoneRequest {
+  // Email of the reviewer.
+  string reviewer_email = 1;
+
+  // Name of the user whose document was reviewed.
+  string document_owner_name = 2;
+
+  // Extra comment from customer support to append to the email.
+  string customer_support_text = 3;
+
+  // The content of the review, to be sent to the job seeker.
+  string review_content = 4;
+
+  // The ID of the document, if it's being reviewed by a Bayes team member.
+  string document_id = 5;
+}
+
+message ReviewDoneResponse {
+  // Email address of the owner of the document.
+  string owner_email = 1;
+
+  // Which kind of document it is.
+  DocumentKind kind = 5;
+
+  // Whether the review was sent to the owner the the document.
+  bool was_review_sent = 2;
+}

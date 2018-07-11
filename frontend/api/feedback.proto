@@ -39,4 +39,7 @@ enum FeedbackSource {
 
   // Suggest a new advice.
   NEW_ADVICE_FEEDBACK = 5;
+
+  // General comment on the product.
+  PRODUCT_FEEDBACK = 6;
 }

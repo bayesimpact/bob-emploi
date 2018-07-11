@@ -34,16 +34,19 @@ const ofPlatformName = (name) => {
 
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
+    onExplore: PropTypes.func.isRequired,
     userYou: PropTypes.func.isRequired,
   }
-
 
   renderPlatforms() {
     const platformStyle = {
     }
     return <AdviceSuggestionList>
       {platforms.map(({link, name, price}) => <div key={`platform-${name}`} style={platformStyle}
-        onClick={() => window.open(link, '_blank')}>
+        onClick={() => {
+          window.open(link, '_blank')
+          this.props.onExplore('platform')
+        }}>
         <span>{name} &mdash; {price ? `${price}\u00A0€` : 'GRATUIT'}</span>
         <span style={{flex: 1}} />
         <span>Aller sur le site {ofPlatformName(name)}</span>

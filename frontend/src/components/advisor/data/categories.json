@@ -14,7 +14,8 @@
     "network-application-medium",
     "spontaneous-application",
     "wow-baker",
-    "wow-hairdresser"
+    "wow-hairdresser",
+    "online-salons"
   ],
   "MARKET_DIAGNOSTIC": [
     "reorient-jobbing",
@@ -31,6 +32,7 @@
     "senior",
     "specific-to-job",
     "training",
+    "training-alternance",
     "vae",
     "volunteer"
   ],

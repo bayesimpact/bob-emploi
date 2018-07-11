@@ -8,7 +8,7 @@ Run it using:
   docker-compose run \
     -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \
     --rm data-analysis-prepare \
-    python bob_emploi/imt_application_mode_to_airtable.py
+    python bob_emploi/data_analysis/misc/imt_application_mode_to_airtable.py
 """
 
 import os

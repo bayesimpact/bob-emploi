@@ -33,34 +33,32 @@ class ShortKey extends React.Component {
     // get called. If it returns true other ShortKey components using the same
     // short-key will be called.
     onKeyDown: PropTypes.func,
-    // A function that is called if the short-key is pressed. If it returns
+    // A function that is called if the short-key is going up. If it returns
     // false, it will consume the event and other ShortKey components will not
     // get called. If it returns true other ShortKey components using the same
     // short-key will be called.
-    // TODO(pascal): Rename to onKeyUp if we confirm this works for what we
-    // need.
-    onKeyPress: PropTypes.func,
+    onKeyUp: PropTypes.func,
   }
 
-  componentWillMount() {
-    const {onKeyDown, onKeyPress} = this.props
-    if (onKeyPress) {
-      this.listenToEvent('keyup', onKeyPress)
+  componentDidMount() {
+    const {onKeyDown, onKeyUp} = this.props
+    if (onKeyUp) {
+      this.listenToEvent('keyup', onKeyUp)
     }
     if (onKeyDown) {
       this.listenToEvent('keydown', onKeyDown)
     }
   }
 
-  componentWillReceiveProps(newProps) {
-    const {onKeyDown, onKeyPress} = newProps
-    if (onKeyPress !== this.props.onKeyPress) {
+  componentDidUpdate({onKeyDown: prevOnKeyDown, onKeyUp: prevOnKeyUp}) {
+    const {onKeyDown, onKeyUp} = this.props
+    if (onKeyUp !== prevOnKeyUp) {
       this.stopListeningToEvent('keyup')
-      if (onKeyPress) {
-        this.listenToEvent('keyup', onKeyPress)
+      if (onKeyUp) {
+        this.listenToEvent('keyup', onKeyUp)
       }
     }
-    if (onKeyDown !== this.props.onKeyDown) {
+    if (onKeyDown !== prevOnKeyDown) {
       this.stopListeningToEvent('keydown')
       if (onKeyDown) {
         this.listenToEvent('keydown', onKeyDown)

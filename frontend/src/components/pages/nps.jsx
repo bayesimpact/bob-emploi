@@ -1,17 +1,14 @@
 import ExitToAppIcon from 'mdi-react/ExitToAppIcon'
-import PropTypes from 'prop-types'
 import {parse} from 'query-string'
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-import config from 'config'
-
-import {isOnSmallScreen} from 'store/mobile'
-
 import logoProductImage from 'images/logo-bob-beta.svg'
 
+import {isMobileVersion} from 'components/mobile'
 import {ShareModal} from 'components/share'
-import {Button, Colors, FieldSet} from 'components/theme'
+import {Button, ExternalLink} from 'components/theme'
+import {FieldSet} from 'components/pages/connected/form_utils'
 
 require('styles/App.css')
 
@@ -19,33 +16,21 @@ require('styles/App.css')
 
 
 class NPSFeedbackPage extends React.Component {
-  static childContextTypes = {
-    isMobileVersion: PropTypes.bool,
+  static getStateFromLocation({search}) {
+    const params = parse(search) || {}
+    return {
+      params,
+      score: parseInt(params.score, 10) || 0,
+    }
   }
 
   state = {
     errorMessage: null,
     isFormSent: false,
-    isMobileVersion: isOnSmallScreen(),
     isSendingUpdate: false,
     isShareModalShown: false,
     isValidated: false,
-    params: {},
-    score: 0,
-  }
-
-  getChildContext() {
-    const {isMobileVersion} = this.state
-    return {isMobileVersion}
-  }
-
-  componentWillMount() {
-    const {search} = window.location
-    const params = parse(search)
-    this.setState({
-      params,
-      score: parseInt(params.score, 10) || 0,
-    })
+    ...NPSFeedbackPage.getStateFromLocation(window.location),
   }
 
   handleCancel() {
@@ -58,7 +43,7 @@ class NPSFeedbackPage extends React.Component {
       this.setState({isValidated: true})
       return
     }
-    const {token, user} = params || {}
+    const {token, user} = params
     this.setState({errorMessage: null, isSendingUpdate: true})
     fetch('/api/nps', {
       body: JSON.stringify({comment, userId: user}),
@@ -90,7 +75,7 @@ class NPSFeedbackPage extends React.Component {
   renderHeader() {
     const style = {
       alignItems: 'center',
-      backgroundColor: Colors.DARK,
+      backgroundColor: colors.DARK,
       display: 'flex',
       height: 56,
       justifyContent: 'center',
@@ -143,7 +128,7 @@ class NPSFeedbackPage extends React.Component {
   }
 
   renderShareModal() {
-    const {isMobileVersion, isShareModalShown} = this.state
+    const {isShareModalShown} = this.state
     return <ShareModal
       isShown={isShareModalShown} campaign="nps" visualElement="nps"
       title="Merci pour votre retour&nbsp;!"
@@ -158,16 +143,14 @@ class NPSFeedbackPage extends React.Component {
       </div>
 
       <div style={{textAlign: 'center'}}>
-        {/* TODO(pascal): Make that an "a" link so that hovering shows the URL in
-          the browser's status bar. */}
-        <Button
-          type="validation" style={{display: 'flex', margin: 'auto'}}
-          onClick={() => window.open(
-            'http://www.emploi-store.fr/portail/services/bobEmploi', '_blank',
-          )}>
-          Accéder à l'Emploi Store
-          <ExitToAppIcon fill="#fff" style={{height: 19, marginLeft: 10}} />
-        </Button>
+        <ExternalLink
+          href="http://www.emploi-store.fr/portail/services/bobEmploi"
+          style={{textDecoration: 'none'}}>
+          <Button type="validation" style={{display: 'flex', margin: 'auto'}}>
+            Accéder à l'Emploi Store
+            <ExitToAppIcon style={{fill: '#fff', height: 19, marginLeft: 10}} />
+          </Button>
+        </ExternalLink>
       </div>
     </ShareModal>
   }
@@ -177,7 +160,7 @@ class NPSFeedbackPage extends React.Component {
       isValidated} = this.state
     const pageStyle = {
       alignItems: 'center',
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       display: 'flex',
       flexDirection: 'column',
       fontSize: 15,

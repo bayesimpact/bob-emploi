@@ -33,12 +33,13 @@ class ExpandedAdviceCardContent extends React.Component {
     advice: PropTypes.shape({
       adviceId: PropTypes.string.isRequired,
     }).isRequired,
+    onExplore: PropTypes.func.isRequired,
     profile: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice: {adviceId}, userYou} = this.props
+    const {advice: {adviceId}, onExplore, userYou} = this.props
     const templates = getEmailTemplates(userYou)[adviceId] || []
     const boxStyle = index => ({
       marginTop: index ? -1 : 0,
@@ -52,7 +53,8 @@ class ExpandedAdviceCardContent extends React.Component {
       </PaddedOnMobile>
 
       <AppearingList>
-        {templates.map((template, index) => <EmailTemplate userYou={userYou}
+        {templates.map((template, index) => <EmailTemplate
+          userYou={userYou} onContentShown={() => onExplore('email')}
           {...template} style={boxStyle(index)} key={`template-${index}`} />)}
       </AppearingList>
     </div>

@@ -3,16 +3,18 @@ syntax = "proto3";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
+import "bob_emploi/frontend/api/diagnostic.proto";
 import "bob_emploi/frontend/api/discovery.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/options.proto";
+import "bob_emploi/frontend/api/points.proto";
 import "bob_emploi/frontend/api/project.proto";
 
 package bayes.bob;
 
 // All data for a user of the mashup app, a job seeker.
-// Next ID: 26
+// Next ID: 29
 message User {
   // A unique identifier for this user. It is not related to any public
   // identifiers although it is not obfuscated in the API. It looks like a normal Mongo ObjectID,
@@ -37,6 +39,10 @@ message User {
 
   // ID of the LinkedIn account linked to this profile.
   string linked_in_id = 25 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // Hash of the person's email, for login/password connect: sha1('bob-emploi' + email). Also makes
+  // sure the email is not used by another mean of authentication yet.
+  string hashed_email = 14 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // The date and time at which the user has registered with the app.
   google.protobuf.Timestamp registered_at = 6;
@@ -66,12 +72,6 @@ message User {
   // TODO(pascal): Clean this up.
   map<string, int32> likes = 13 [(field_usage) = USER_FEEDBACK, deprecated = true];
 
-  // Value of the utm_content parameters the first time the user reached our
-  // website. If it is not empty, it contains an ID that helps us track the
-  // system that recommended the app to the user originally.
-  // TODO(pascal): Remove this field 1 week after this has been live ~2018-03-20.
-  string initial_utm_content = 14 [(field_usage) = PERSONAL_IDENTIFIER, deprecated = true];
-
   // Value of the utm parameters the first time the user reached our website.
   TrackingParameters origin = 23;
 
@@ -84,6 +84,7 @@ message User {
   string latest_changelog_seen = 16 [(field_usage) = APP_ONLY];
 
   // The notifications that the user has seen.
+  // TODO(pascal): Maybe clean it up as we don't use it anymore.
   Notifications notifications_seen = 17 [(field_usage) = APP_ONLY];
 
   // Revision of the user's data. This number should always be increasing, it
@@ -102,6 +103,15 @@ message User {
 
   // Metrics reported from the client.
   ClientSideMetrics client_metrics = 22;
+
+  // More info if the user is a grantee of MayDay operation.
+  MaydayGrantee mayday = 26 [(field_usage) = APP_ONLY];
+
+  // Next date after which we can try again sending a coaching email.
+  google.protobuf.Timestamp send_coaching_email_after = 27;
+
+  // Data for app points owned by the user. See http://go/bob:points.
+  bayes.bob.points.UserData app_points = 28 [(field_usage) = APP_ONLY];
 }
 
 message UserAuth {
@@ -199,7 +209,7 @@ message TrackingParameters {
 }
 
 // Profile of a user, a job seeker.
-// Next ID: 26.
+// Next ID: 27.
 message UserProfile {
   // Where the user is living.
   // We wanted to distinguish where the user is living from where they search
@@ -259,9 +269,6 @@ message UserProfile {
   // Whether the user opted-in to receive a weekly summary of their activity.
   bool is_weekly_summary_enabled = 13 [(field_usage) = APP_ONLY];
 
-  // Which days of the week the user wants a notification email.
-  repeated WeekDay email_days = 14 [(field_usage) = APP_ONLY];
-
   // Phone number of the user (only to call them to get more precise feedback).
   string phone_number = 15 [(field_usage) = PERSONAL_IDENTIFIER];
 
@@ -279,6 +286,9 @@ message UserProfile {
 
   // Whether the user has the car driving license.
   OptionalBool has_car_driving_license = 25;
+
+  // How frequent should we send coaching emails (aka focus emails).
+  EmailFrequency coaching_email_frequency = 26;
 }
 
 // A lightweight message to reference a user.
@@ -313,7 +323,7 @@ message UnverifiedDataZone {
 //  - The comment describes precisely what is being developped.
 //  - The comment includes the date for when this feature started to be
 //    implemented.
-// Next ID: 26
+// Next ID: 28
 message Features {
   // Email notifications can be sent to any user that has checked some days
   // in profile.email_days. The feature here is for users that we opted-in
@@ -346,7 +356,10 @@ message Features {
 
   // Whether we show the "Advisor" UX to the user.
   // Graduated for new users: 2016-01-23.
-  BinaryExperiment advisor = 14;
+  // All users after 2017-04-01 had it ACTIVE, and no users was in CONTROL. So
+  // in 2018-06 we reversed the logic and assigned all (old) users that were
+  // undefined to CONTROL and switched the new users not to have anything.
+  BinaryExperiment advisor = 14 [deprecated = true];
 
   // Enable all alpha features (usually for devs and/or user tests).
   bool alpha = 15;
@@ -360,7 +373,10 @@ message Features {
   NPSEmailStatus net_promoter_score_email = 16 [deprecated = true];
 
   // Whether we send advice by email to this user.
-  BinaryExperiment advisor_email = 17;
+  // All users after 2017-06-01 had it ACTIVE, and no users was in CONTROL. So
+  // in 2018-06 we reversed the logic and assigned all (old) users that were
+  // undefined to CONTROL and switched the new users to use undefined.
+  BinaryExperiment advisor_email = 17 [deprecated = true];
 
   // Whether the user switched from mashup to advisor.
   bool switched_from_mashup_to_advisor = 19;
@@ -390,6 +406,18 @@ message Features {
   // Whether we show Bob as a talking person in the onboarding.
   // Started 2018-01-29.
   BinaryExperiment bob_talks = 26;
+
+  // Whether the user comes from #BobAction workflow. This is set when users in #BobAction click
+  // on the link "I don't want to help, I want to be helped".
+  // BinaryExperiment is needed to use the 'activate' GET parameter on landing page.
+  // Started 2018-04-27.
+  BinaryExperiment from_bob_action = 27;
+
+  // Whether the user cannot access all features before they get "Bob Points".
+  // Points can be earned by sharing, rating the app or exploring it. See the
+  // whole design at http://go/bob:points.
+  // TODO(pascal): Add a "Started" date when it starts.
+  BinaryExperiment bob_points = 28;
 }
 
 message Notifications {
@@ -481,19 +509,6 @@ enum Frustration {
   SELF_CONFIDENCE = 14;
 }
 
-// Day of the week.
-enum WeekDay {
-  UNKNOWN_DAY = 0;
-
-  MONDAY = 1;
-  TUESDAY = 2;
-  WEDNESDAY = 3;
-  THURSDAY = 4;
-  FRIDAY = 5;
-  SATURDAY = 6;
-  SUNDAY = 7;
-}
-
 enum BinaryExperiment {
   NOT_IN_EXPERIMENT = 0;
 
@@ -530,6 +545,9 @@ enum UserOrigin {
   FROM_WEBSITE = 6;
 
   FROM_OTHER = 7;
+
+  // See http://www.pimms.org.
+  FROM_PIMMS = 8;
 }
 
 // Status of the email sent to user to compute the Net Promoter Score.
@@ -601,6 +619,9 @@ message EmailSent {
   google.protobuf.Timestamp last_status_checked_at = 5;
 
   EmailSentStatus status = 6;
+
+  // Number of days (truncated) between sent_at and last_status_checked_at.
+  int32 last_status_checked_after_days = 7;
 }
 
 // Status of email sent. This relies only on the mailjet API and is named
@@ -679,4 +700,42 @@ enum OptionalBool {
   UNKNOWN_BOOL = 0;
   FALSE = 1;
   TRUE = 2;
+}
+
+message MaydayGrantee {
+  // Whether the user is OK to have a coffee with a helper.
+  OptionalBool has_accepted_coffee = 1;
+
+  // ID of the helper that was match to have a coffee with this user.
+  string coffee_helper_id = 2;
+}
+
+enum EmailFrequency {
+  UNKNOWN_EMAIL_FREQUENCY = 0;
+
+  // Do not send any email.
+  EMAIL_NONE = 1;
+
+  // Send email once a month.
+  EMAIL_ONCE_A_MONTH = 2;
+
+  // Send all the email you can!
+  EMAIL_MAXIMUM = 10;
+}
+
+message UserWithAdviceSelection {
+  User user = 1;
+
+  // Sorted list of selected advice module IDs.
+  repeated string advice_ids = 2;
+}
+
+message QuickDiagnosticRequest {
+  // The user and its project (as first project) to diagnose.
+  User user = 1;
+
+  // The field of the profile or project that was entered latest and on which
+  // the client is requesting a diagnostic. If not specified then try to give
+  // all the mini diagnostics possible.
+  ProjectOrProfileField field = 2;
 }

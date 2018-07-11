@@ -21,6 +21,7 @@ const PROJECT_EMPLOYMENT_TYPE_OPTIONS = [
   {name: 'CDD > 3 mois', value: 'CDD_OVER_3_MONTHS'},
   {name: 'CDD <= 3 mois', value: 'CDD_LESS_EQUAL_3_MONTHS'},
   {name: 'interim', value: 'INTERIM'},
+  {name: 'alternance', value: 'ALTERNANCE'},
   {name: 'stage', value: 'INTERNSHIP'},
 ]
 
@@ -126,8 +127,11 @@ function createProjectTitle(newProject, gender) {
 
 
 function newProject(newProjectData, gender) {
+  // TODO(cyrille): Use _pick.
   return {
     activitySector: newProjectData.activitySector,
+    areaType: newProjectData.areaType,
+    city: newProjectData.city,
     employmentTypes: newProjectData.employmentTypes,
     jobSearchLengthMonths: newProjectData.jobSearchLengthMonths,
     kind: newProjectData.kind,
@@ -176,10 +180,25 @@ function isOldProject(project) {
 }
 
 
+const flattenProject = ({mobility: {areaType, city} = {}, ...otherProjectFields}) => ({
+  areaType,
+  city: city || null,
+  employmentTypes: ['CDI'],
+  isIncomplete: true,
+  kind: null,
+  minSalary: null,
+  passionateLevel: null,
+  previousJobSimilarity: null,
+  targetJob: null,
+  workloads: ['FULL_TIME'],
+  ...otherProjectFields,
+})
+
+
 export {
   PROJECT_EXPERIENCE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
   PROJECT_WORKLOAD_OPTIONS, createProjectTitle, newProject, allDoneActions,
   createProjectTitleComponents, getSeniorityText,
-  getTrainingFulfillmentEstimateOptions, isOldProject,
+  getTrainingFulfillmentEstimateOptions, isOldProject, flattenProject,
 }

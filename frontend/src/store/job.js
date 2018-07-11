@@ -1,15 +1,15 @@
 // Genderize a job name.
 function genderizeJob(job, gender) {
-  if (!job || Object.keys(job).length === 0) {
+  if (!job) {
     return ''
   }
   if (gender === 'FEMININE') {
-    return job.feminineName || job.name
+    return job.feminineName || job.name || ''
   }
   if (gender === 'MASCULINE') {
-    return job.masculineName || job.name
+    return job.masculineName || job.name || ''
   }
-  return job.name
+  return job.name || ''
 }
 
 // Return url for job name search.

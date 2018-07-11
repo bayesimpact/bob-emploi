@@ -32,7 +32,7 @@ def strip_district(city):
     return city
 
 
-def network_vars(user, database):
+def _get_network_vars(user, database=None, **unused_kwargs):
     """Compute vars for a given user for the network email.
 
     Returns:
@@ -40,17 +40,21 @@ def network_vars(user, database):
         should be sent.
     """
 
-    if not user.projects:
-        logging.info('User has no project')
+    if not user.projects or user.projects[0].is_incomplete:
+        logging.info('User has no complete project')
         return None
     project = user.projects[0]
 
-    registered_months_ago = campaign.get_french_months_ago(user.registered_at.ToDatetime())
-    if not registered_months_ago:
-        logging.warning('User registered only recently (%s)', user.registered_at)
+    if project.network_estimate != 1:
+        logging.info('User has a good enough network')
         return None
 
     job_group_info = jobs.get_group_proto(database, project.target_job.job_group.rome_id)
+    if not job_group_info:
+        logging.warning(
+            'Could not find job group info for "%s"', project.target_job.job_group.rome_id)
+        return None
+
     in_target_domain = job_group_info.in_domain
     if not in_target_domain:
         logging.warning('Could not find a target domain (%s)', project.target_job.job_group)
@@ -63,25 +67,24 @@ def network_vars(user, database):
 
     is_hairdresser_or_in_marseille = \
         project.target_job.job_group.rome_id.startswith('D') or \
+        project.city.departement_id == '13' or \
         project.mobility.city.departement_id == '13'
     other_job_in_city = 'coiffeur à Marseille'
     if is_hairdresser_or_in_marseille:
         other_job_in_city = 'secrétaire à Lyon'
-    return dict(campaign.get_default_vars(user), **{
-        'registeredMonthsAgo': registered_months_ago,
+    return dict(campaign.get_default_coaching_email_vars(user), **{
         'inTargetDomain': in_target_domain,
         'frustration': user_pb2.Frustration.Name(worst_frustration) if worst_frustration else '',
         'otherJobInCity': other_job_in_city,
         'jobInCity': '{} {}'.format(
             french.lower_first_letter(french.genderize_job(
                 project.target_job, user.profile.gender)),
-            french.in_city(strip_district(project.mobility.city.name))),
+            french.in_city(strip_district(project.city.name or project.mobility.city.name))),
         'emailInUrl': parse.quote(user.profile.email),
-        'statusUpdateUrl': campaign.get_status_update_link(user.user_id, user.profile),
     })
 
 
-def network_plus_vars(user, database):
+def network_plus_vars(user, database=None, **unused_kwargs):
     """Compute vars for a given user for the network email.
 
     Returns:
@@ -94,12 +97,15 @@ def network_plus_vars(user, database):
         return None
     project = user.projects[0]
 
-    registered_months_ago = campaign.get_french_months_ago(user.registered_at.ToDatetime())
-    if not registered_months_ago:
-        logging.warning('User registered only recently (%s)', user.registered_at)
+    if project.network_estimate < 2:
+        logging.info('User does not have a strong network')
         return None
 
     job_group_info = jobs.get_group_proto(database, project.target_job.job_group.rome_id)
+    if not job_group_info:
+        logging.warning(
+            'Could not find job group info for "%s"', project.target_job.job_group.rome_id)
+        return None
     in_target_domain = job_group_info.in_domain
     application_modes = job_group_info.application_modes.values()
     if not in_target_domain:
@@ -136,7 +142,7 @@ def network_plus_vars(user, database):
     age = datetime.date.today().year - user.profile.year_of_birth
     max_young = 35
 
-    return dict(campaign.get_default_vars(user), **{
+    return dict(campaign.get_default_coaching_email_vars(user), **{
         'frustration': user_pb2.Frustration.Name(worst_frustration) if worst_frustration else '',
         'hasChildren': campaign.as_template_boolean(has_children),
         'hasHandicap': campaign.as_template_boolean(user.profile.has_handicap),
@@ -145,12 +151,13 @@ def network_plus_vars(user, database):
         'hasLargeNetwork': campaign.as_template_boolean(project.network_estimate >= 2),
         'hasWorkedBefore': campaign.as_template_boolean(
             project.kind != project_pb2.FIND_A_FIRST_JOB),
-        'inCity': french.in_city(project.mobility.city.name),
+        'inCity': french.in_city(project.city.name or project.mobility.city.name),
         'inTargetDomain': in_target_domain,
         'isYoung': campaign.as_template_boolean(age <= max_young),
         'jobGroupInDepartement': '{} {}'.format(
             french.lower_first_letter(project.target_job.job_group.name),
-            geo.get_in_a_departement_text(database, project.mobility.city.departement_id)),
+            geo.get_in_a_departement_text(
+                database, project.city.departement_id or project.mobility.city.departement_id)),
         'networkApplicationPercentage': network_application_importance,
     })
 
@@ -160,9 +167,11 @@ campaign.register_campaign('focus-network', campaign.Campaign(
     mongo_filters={
         'projects.networkEstimate': 1,
     },
-    get_vars=network_vars,
+    get_vars=_get_network_vars,
     sender_name='Margaux de Bob',
     sender_email='margaux@bob-emploi.fr',
+    is_coaching=True,
+    is_big_focus=True,
 ))
 
 campaign.register_campaign('network-plus', campaign.Campaign(
@@ -174,4 +183,6 @@ campaign.register_campaign('network-plus', campaign.Campaign(
     get_vars=network_plus_vars,
     sender_name='Margaux de Bob',
     sender_email='margaux@bob-emploi.fr',
+    is_coaching=True,
+    is_big_focus=True,
 ))

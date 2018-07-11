@@ -8,8 +8,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase('advice-improve-interview')):
+class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Improve Your Interview Skills" advice."""
+
+    model_id = 'advice-improve-interview'
 
     def test_not_enough_interviews(self):
         """Users does not get enough interviews."""
@@ -45,8 +47,10 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase('advice-i
         self.assertGreaterEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
 
 
-class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase('advice-improve-resume')):
+class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Improve Your Resume" advice."""
+
+    model_id = 'advice-improve-resume'
 
     def test_not_enough_interviews(self):
         """Users does not get enough interviews."""

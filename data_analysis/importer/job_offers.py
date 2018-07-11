@@ -6,7 +6,7 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-db`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/job_offers.py \
+        python bob_emploi/data_analysis/importer/job_offers.py \
         --job_offers_csv job_offers/sample_10perc.csv \
         --mongo_url mongodb://frontend-db/test
 """

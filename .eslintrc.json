@@ -9,7 +9,8 @@
   "plugins": [
     "import",
     "jsx-a11y",
-    "react"
+    "react",
+    "unicorn"
   ],
   "settings": {
     "import/resolver": "webpack"
@@ -40,7 +41,8 @@
     "eqeqeq": "error",
     "func-call-spacing": "error",
     "global-strict": 0,
-    "import/first": "error",
+    "import/extensions": ["error"],
+    "import/first": ["error", "absolute-first"],
     "import/newline-after-import": "error",
     "import/unambiguous": 0,
     "indent": ["error", 2, {"SwitchCase": 1}],
@@ -85,6 +87,9 @@
     "space-unary-ops": "error",
     "spaced-comment": "error",
     "switch-colon-spacing": "error",
-    "template-curly-spacing": "error"
+    "template-curly-spacing": "error",
+    "unicorn/escape-case": "error",
+    "unicorn/filename-case": ["error", {"case": "snakeCase"}],
+    "unicorn/number-literal-case": "error"
   }
 }

@@ -21,17 +21,18 @@ class ZendeskChatButton extends React.Component {
     }),
   }
 
-  componentWillMount() {
+  componentDidMount() {
     if (this.props.isShown) {
       this.show()
     }
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (!!nextProps.isShown === !!this.props.isShown) {
+  componentDidUpdate({isShown: wasShown}) {
+    const {isShown} = this.props
+    if (!isShown === !wasShown) {
       return
     }
-    if (nextProps.isShown) {
+    if (isShown) {
       this.show()
     } else {
       this.hide()
@@ -63,7 +64,9 @@ class ZendeskChatButton extends React.Component {
         }
         if (user) {
           const {email, name} = user
-          $zopim.livechat.set({email: email || '', name: name || ''})
+          if (email || name) {
+            $zopim.livechat.set({email: email || '', name: name || ''})
+          }
         }
         clearTimeout(timeout)
         timeout = setTimeout(() => {

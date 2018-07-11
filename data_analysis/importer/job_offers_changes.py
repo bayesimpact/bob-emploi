@@ -12,7 +12,7 @@ Gb) that would not fit in memory. To do that we compute data on the fly.
 You can try it out on a local instance if you have a job offers file:
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/job_offers_changes.py \
+        python bob_emploi/data_analysis/importer/job_offers_changes.py \
         --job_offers_csv data/job_offers/sample_10perc.csv \
         --colnames_txt data/job_offers/column_names.txt \
         --to_json data/job_offers/job_offers_changes.json

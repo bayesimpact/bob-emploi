@@ -2,7 +2,9 @@ FROM jupyter/scipy-notebook:latest
 
 USER root
 
-RUN pip install brewer2mpl \
+RUN pip install --upgrade \
+  airtable \
+  brewer2mpl \
   distance \
   gensim \
   matplotlib-venn \
@@ -17,4 +19,7 @@ RUN pip install brewer2mpl \
   echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen && \
   locale-gen && \
   su -c "/opt/conda/bin/ipython profile create" jovyan && \
-  printf "\nc.InlineBackend.figure_format = 'retina'\nc.IPKernelApp.matplotlib = 'inline'\nc.InteractiveShellApp.matplotlib = 'inline'\n" >> /home/jovyan/.ipython/profile_default/ipython_kernel_config.py
+  printf "\nc.InlineBackend.figure_format = 'retina'\nc.IPKernelApp.matplotlib = 'inline'\nc.InteractiveShellApp.matplotlib = 'inline'\n" >> /home/jovyan/.ipython/profile_default/ipython_kernel_config.py && \
+  # TODO(pascal): Remove once Docker pulls Jupyter Notebook v5.6+ and then use custom_display_url
+  # See https://github.com/jupyter/notebook/issues/3605.
+  sed -i -e "s/url = self._url.ip./url = self._url('localhost')/" /opt/conda/lib/python3.6/site-packages/notebook/notebookapp.py

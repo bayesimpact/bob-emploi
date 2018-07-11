@@ -1,7 +1,6 @@
 import React from 'react'
 
 import loadingImage from 'images/logo-bob-loading.svg'
-import {Colors} from 'components/theme'
 
 // Keep this class in sync with index.html.
 class WaitingPage extends React.Component {
@@ -9,7 +8,7 @@ class WaitingPage extends React.Component {
   render() {
     const style = {
       alignItems: 'center',
-      background: Colors.BACKGROUND_GREY,
+      background: '#fff',
       boxSizing: 'border-box',
       display: 'flex',
       height: '100%',

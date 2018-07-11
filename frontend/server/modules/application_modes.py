@@ -14,6 +14,8 @@ class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
     def score_and_explain(self, project):
         """Compute a score for the given ScoringProject."""
 
+        # TODO(pascal): Boost score for alternance.
+
         application_modes = project.job_group_info().application_modes.values()
         first_modes = set(
             fap_modes.modes[0].mode for fap_modes in application_modes
@@ -34,9 +36,20 @@ class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
     def compute_extra_data(self, project):
         """Compute extra data for this module to render a card in the client."""
 
-        return project_pb2.SpontaneousApplicationData(companies=[
-            companies.to_proto(c)
-            for c in itertools.islice(companies.get_lbb_companies(project.details), 5)])
+        extra_data = project_pb2.SpontaneousApplicationData()
+        if set(project.details.employment_types) - {job_pb2.ALTERNANCE}:
+            extra_data.companies.extend(
+                companies.to_proto(c)
+                for c in itertools.islice(companies.get_lbb_companies(project.details), 5)
+            )
+        if job_pb2.ALTERNANCE in project.details.employment_types:
+            alternance_companies = companies.get_lbb_companies(
+                project.details, contract='alternance')
+            extra_data.alternance_companies.extend(
+                companies.to_proto(c)
+                for c in itertools.islice(alternance_companies, 5)
+            )
+        return extra_data
 
 
 class _GreatApplicationModeFilter(scoring_base.BaseFilter):

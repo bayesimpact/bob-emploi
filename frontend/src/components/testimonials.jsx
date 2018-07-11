@@ -1,10 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import config from 'config'
-
 import {LoginButton} from 'components/login'
-import {Colors, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
+import {isMobileVersion} from 'components/mobile'
+import {MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
 import manImage from 'images/man-icon.svg'
 import womanImage from 'images/woman-icon.svg'
 
@@ -20,24 +19,30 @@ class Testimonials extends React.Component {
     carouselAutoRotationDurationMs: 5000,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   state = {
     isTransitionBlocked: false,
     previousTestimonial: null,
-    shownTestimonial: null,
-    shownTestimonialIndex: -1,
+    previousTestimonialIndex: 0,
+    shownTestimonial: this.getStyledTestimonial(0),
+    shownTestimonialIndex: 0,
   }
 
-  componentWillMount() {
-    this.pickTestimonial(0)
+  componentDidMount() {
     this.resetRotationTimer()
   }
 
   componentWillUnmount() {
     clearInterval(this.interval)
+    clearTimeout(this.timeout)
+  }
+
+  getStyledTestimonial(index) {
+    const {cardStyle, children} = this.props
+    const style = {
+      margin: 'auto',
+      ...cardStyle,
+    }
+    return React.cloneElement(children[index], {style}) || null
   }
 
   resetRotationTimer() {
@@ -49,12 +54,7 @@ class Testimonials extends React.Component {
   }
 
   pickTestimonial = (index, isManullyPicked) => {
-    const {cardStyle, children} = this.props
-    const style = {
-      margin: 'auto',
-      ...cardStyle,
-    }
-    const styleTestimonial = testimonial => React.cloneElement(testimonial, {style})
+    const {children} = this.props
     const shownTestimonialIndex = (index + children.length) % children.length
     if (isManullyPicked) {
       this.resetRotationTimer()
@@ -66,9 +66,12 @@ class Testimonials extends React.Component {
       isTransitionBlocked: true,
       previousTestimonial: this.state.shownTestimonial,
       previousTestimonialIndex: this.state.shownTestimonialIndex,
-      shownTestimonial: styleTestimonial(children[shownTestimonialIndex]) || null,
+      shownTestimonial: this.getStyledTestimonial(shownTestimonialIndex) || null,
       shownTestimonialIndex,
-    }, () => setTimeout(() => this.setState({isTransitionBlocked: false}), false))
+    }, () => {
+      clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => this.setState({isTransitionBlocked: false}), false)
+    })
   }
 
   renderBullets() {
@@ -95,11 +98,10 @@ class Testimonials extends React.Component {
   }
 
   render() {
-    const {isMobileVersion} = this.context
     const {isTransitionBlocked, previousTestimonial, previousTestimonialIndex,
       shownTestimonial, shownTestimonialIndex} = this.state
     const style = {
-      height: 280,
+      height: 200,
       margin: 'auto',
       overflow: 'hidden',
       padding: isMobileVersion ? '45px 30px 10px' : '30px 100px 10px',
@@ -143,6 +145,7 @@ class TestimonialCard extends React.Component {
   static propTypes = {
     author: PropTypes.shape({
       age: PropTypes.number,
+      imageLink: PropTypes.string,
       isMan: PropTypes.bool,
       jobName: PropTypes.string,
       name: PropTypes.string.isRequired,
@@ -152,48 +155,44 @@ class TestimonialCard extends React.Component {
     style: PropTypes.object,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
     const {author, children, isLong} = this.props
-    const {isMobileVersion} = this.context
     const horizontalPadding = isMobileVersion && !isLong ? 30 : 75
     const style = {
       backgroundColor: '#fff',
-      borderRadius: isLong ? 5 : 10,
-      boxShadow: isLong ? '0 25px 40px 0 rgba(0, 0, 0, 0.15)' : 'initial',
-      color: isLong ? Colors.DARK : Colors.DARK_TWO,
+      borderRadius: 5,
+      boxShadow: '0 25px 40px 0 rgba(0, 0, 0, 0.15)',
+      color: isLong ? colors.DARK : colors.DARK_TWO,
       fontSize: isLong ? 16 : 18,
-      fontStyle: isLong ? 'normal' : 'italic',
       lineHeight: 1.44,
-      margin: isLong ? isMobileVersion ? '10px 10px' : '50px 10px' : 'initial',
+      margin: isLong ? '10px 10px' : 'initial',
       maxWidth: isLong ? 320 : 600,
-      minHeight: isLong ? 'initial' : 280,
-      padding: isMobileVersion || isLong ? '30px 30px' : `60px ${horizontalPadding}px 0`,
+      minHeight: isLong ? 'initial' : 150,
+      padding: isMobileVersion || isLong ? '30px 30px' : `40px ${horizontalPadding}px`,
       position: isLong ? 'initial' : 'relative',
       ...this.props.style,
     }
     const authorStyle = {
       alignItems: 'center',
-      backgroundColor: isLong ? Colors.VERY_LIGHT_BLUE : 'inherited',
-      borderTopLeftRadius: isLong ? 5 : 'inherited',
-      borderTopRightRadius: isLong ? 5 : 'inherited',
-      bottom: isLong ? 'initial' : 50,
-      color: isLong ? 'inherited' : Colors.DARK,
+      backgroundColor: isLong ? colors.VERY_LIGHT_BLUE : 'initial',
+      borderTopLeftRadius: isLong ? 5 : 'initial',
+      borderTopRightRadius: isLong ? 5 : 'initial',
+      color: isLong ? 'inherit' : '#fff',
       display: 'flex',
       fontSize: 14,
-      fontStyle: 'initial',
-      fontWeight: isLong ? 'initial' : 500,
+      fontStyle: isLong ? 'initial' : 'italic',
+      justifyContent: isLong ? 'initial' : 'center',
       left: 0,
-      margin: isLong ? '-30px -30px 20px -30px' : 'initial',
+      margin: isLong ? '-30px -30px 20px -30px' : '15px 0 0',
       minHeight: isLong ? 85 : 'initial',
-      padding: isLong ? '0 30px' : `0 ${horizontalPadding}px`,
+      padding: isLong ? author.imageLink ? '10px 30px' : '0 30px' : `0 ${horizontalPadding}px`,
       position: isLong ? 'initial' : 'absolute',
+      right: 0,
+      top: isLong ? 'initial' : '100%',
     }
     const authorPicto = <img
-      style={{marginRight: 15}} src={author.isMan ? manImage : womanImage}
+      style={{height: 'auto', marginRight: 15, maxHeight: 100, maxWidth: 100, width: 'auto'}}
+      src={author.imageLink ? author.imageLink : author.isMan ? manImage : womanImage}
       alt={author.isMan ? 'homme' : 'femme'} />
 
     const authorName = author.age || author.jobName ? `${author.name},` : author.name
@@ -206,8 +205,7 @@ class TestimonialCard extends React.Component {
           {authorPicto} {authorName}{authorAge}<br />{authorJobName}
         </div> : null}
       {children}
-      {isLong ? null : <div style={authorStyle}>
-        {authorPicto} {authorName}{authorAge} {authorJobName}</div>}
+      {isLong ? null : <div style={authorStyle}> {authorName}{authorAge} {authorJobName}</div>}
     </div>
   }
 }
@@ -226,16 +224,11 @@ class TestimonialStaticSection extends React.Component {
     visualElement: PropTypes.string,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
-    const {isMobileVersion} = this.context
     // TODO(cyrille): Use Carousel 3 by 3 on Desktop.
     const {children, maxShown = isMobileVersion ? 5 : 3, visualElement} = this.props
     const sectionStyle = {
-      backgroundColor: Colors.BOB_BLUE,
+      backgroundColor: colors.BOB_BLUE,
       flexDirection: 'column',
       fontFamily: 'Lato, Helvetica',
       padding: isMobileVersion ? '50px 20px' : `50px ${MIN_CONTENT_PADDING}px`,
@@ -250,7 +243,7 @@ class TestimonialStaticSection extends React.Component {
       alignItems: 'flex-start',
       display: 'flex',
       flexDirection: isMobileVersion ? 'column' : 'row',
-      margin: '55px auto 0',
+      margin: '100px auto 0',
       maxWidth: isMobileVersion ? 320 : MAX_CONTENT_WIDTH,
     }
     const firstHelped = children.slice(0, 2).map(({props: {author: {name}}}) => name).join(', ')

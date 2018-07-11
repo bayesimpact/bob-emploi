@@ -5,12 +5,13 @@ import {createEvalUseCasePost} from 'store/api'
 import {validateEmail} from 'store/validations'
 
 import {Modal} from 'components/modal'
-import {Button, FieldSet, Input, SmoothTransitions} from 'components/theme'
+import {Button, Input, SmoothTransitions} from 'components/theme'
+import {FieldSet} from 'components/pages/connected/form_utils'
 
 
 class CreatePoolModal extends React.Component {
   static propTypes = {
-    googleIdToken: PropTypes.string.isRequired,
+    fetchGoogleIdToken: PropTypes.func.isRequired,
   }
 
   state = {
@@ -21,12 +22,13 @@ class CreatePoolModal extends React.Component {
   }
 
   handleCreate = () => {
-    const {googleIdToken} = this.props
+    const {fetchGoogleIdToken} = this.props
     const {email, poolName} = this.state
     if (!poolName || !validateEmail(email)) {
       return
     }
-    createEvalUseCasePost(poolName, email, googleIdToken).
+    fetchGoogleIdToken().
+      then(googleIdToken => createEvalUseCasePost(poolName, email, googleIdToken)).
       then(({useCaseId}) => this.setState({
         email: '',
         emailSaved: email,

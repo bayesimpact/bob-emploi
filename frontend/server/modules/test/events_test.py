@@ -11,8 +11,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceEventScoringModelTestCase(scoring_test.ScoringModelTestBase('advice-event')):
+class AdviceEventScoringModelTestCase(scoring_test.ScoringModelTestBase):
     """Unit test for the "Event Advice" scoring model."""
+
+    model_id = 'advice-event'
 
     def setUp(self):
         super(AdviceEventScoringModelTestCase, self).setUp()

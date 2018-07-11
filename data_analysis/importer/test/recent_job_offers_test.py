@@ -27,7 +27,7 @@ class RecentJobOffersCountTestCase(unittest.TestCase):
             {'DEPARTEMENT_CODE': '69', 'ROME_PROFESSION_CARD_CODE': 'A1234'},
             {'DEPARTEMENT_CODE': '01', 'ROME_PROFESSION_CARD_CODE': 'A1234'},
         ]
-        counts = recent_job_offers_count.download_and_count()
+        counts = recent_job_offers_count.download_and_count(file=mock.MagicMock())
 
         counts_proto = dict(mongo.collection_to_proto_mapping(
             counts, job_pb2.LocalJobStats))

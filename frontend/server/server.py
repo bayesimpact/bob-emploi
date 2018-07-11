@@ -22,15 +22,17 @@ import flask
 from google.protobuf import json_format
 from google.protobuf import message
 from google.protobuf import timestamp_pb2
-import pymongo
 from raven.contrib import flask as raven_flask
+import requests
 from werkzeug.contrib import fixers
 
 from bob_emploi.frontend.server import action
 from bob_emploi.frontend.server import advisor
 from bob_emploi.frontend.server import auth
+from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import evaluation
 from bob_emploi.frontend.server import jobs
+from bob_emploi.frontend.server import mayday
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import privacy
@@ -42,6 +44,7 @@ from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import points_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -77,6 +80,10 @@ _EMAIL_REGEX = re.compile(r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)')
 # the advisor feature.
 ADVISOR_DISABLED_FOR_TESTING = False
 
+# A Slack WebHook URL to send final reports to. Defined in the Incoming
+# WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
+_SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
+
 _Tick = collections.namedtuple('Tick', ['name', 'time'])
 
 # Log timing of requests that take too long to be treated.
@@ -91,16 +98,22 @@ def delete_user(user_data):
     auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
     if user_data.user_id:
         try:
-            auth.check_token(user_data.user_id, auth_token, role='auth')
+            auth.check_token(user_data.user_id, auth_token, role='unsubscribe')
         except ValueError:
-            flask.abort(403, 'Wrong authentication token.')
+            try:
+                auth.check_token(user_data.user_id, auth_token, role='auth')
+            except ValueError:
+                flask.abort(403, 'Wrong authentication token.')
         filter_user = {'_id': _safe_object_id(user_data.user_id)}
     elif user_data.profile.email:
+        # TODO(pascal): Drop this after 2018-09-01, until then we need to keep
+        # it as the link is used in old emails.
         try:
             auth.check_token(user_data.profile.email, auth_token, role='unsubscribe')
         except ValueError:
             flask.abort(403, 'Accès refusé')
-        filter_user = _USER_DB.user.find_one({'profile.email': user_data.profile.email}, {'_id': 1})
+        filter_user = _USER_DB.user.find_one({
+            'hashedEmail': auth.hash_user_email(user_data.profile.email)}, {'_id': 1})
     else:
         flask.abort(400, 'Impossible de supprimer un utilisateur sans son ID.')
 
@@ -121,6 +134,26 @@ def delete_user(user_data):
     _USER_DB.user.replace_one(filter_user, json_format.MessageToDict(user_proto))
 
     return user_pb2.UserId(user_id=str(filter_user['_id']))
+
+
+@app.route('/api/user/<user_id>/settings', methods=['POST'])
+@proto.flask_api(in_type=user_pb2.UserProfile, out_type=user_pb2.UserId)
+@auth.require_user(lambda unused_profile, user_id: user_id, role='settings')
+def update_user_settings(profile, user_id):
+    """Update user's settings."""
+
+    updater = {'$set': {
+        'profile.{}'.format(key): value
+        for key, value in json_format.MessageToDict(profile).items()
+    }}
+    if profile.coaching_email_frequency:
+        # Invalidate the send_coaching_email_after field: it will be recomputed
+        # by the focus email script.
+        updater['$unset'] = {'sendCoachingEmailAfter': 1}
+
+    _USER_DB.user.update_one({'_id': _safe_object_id(user_id)}, updater)
+
+    return user_pb2.UserId(user_id=user_id)
 
 
 @app.route('/api/user/<user_id>', methods=['GET'])
@@ -153,6 +186,68 @@ def user(user_data):
     return _save_user(user_data, is_new_user=False)
 
 
+@app.route('/api/user/<user_id>/project/<project_id>', methods=['POST'])
+@proto.flask_api(in_type=project_pb2.Project, out_type=project_pb2.Project)
+@auth.require_user(lambda project, user_id, project_id: user_id)
+def save_project(project_data, user_id, project_id):
+    """Save the project data sent by client.
+
+    Input:
+        * Body: A dictionary with attributes of the user's project data.
+    Returns: The project data as it was saved.
+    """
+
+    user_proto = _get_user_data(user_id)
+    if not project_data.project_id:
+        project_data.project_id = project_id
+    project_index = next((
+        index for index, p in enumerate(user_proto.projects)
+        if p.project_id == project_id), None)
+    if project_index is None:
+        flask.abort(404, "Le projet n'existe pas.")
+    # TODO(cyrille): Replace with MergeFrom and add a route for resetting
+    user_proto.projects[project_index].CopyFrom(project_data)
+    return _get_project_data(_save_user(user_proto, is_new_user=False), project_id)
+
+
+@app.route(
+    '/api/user/<user_id>/update-and-quick-diagnostic', methods=['POST'],
+    defaults={'project_id': None})
+@app.route('/api/user/<user_id>/update-and-quick-diagnostic/<project_id>', methods=['POST'])
+@proto.flask_api(in_type=user_pb2.QuickDiagnosticRequest, out_type=diagnostic_pb2.QuickDiagnostic)
+@auth.require_user(lambda request, user_id, project_id: user_id)
+def update_and_quick_diagnose(request, user_id, project_id):
+    """Update a user project and quickly diagnose it."""
+
+    user_proto = _get_user_data(user_id)
+    if project_id:
+        project_proto = _get_project_data(user_proto, project_id)
+    elif user_proto.projects:
+        project_proto = user_proto.projects[0]
+    else:
+        project_proto = None
+
+    if request.HasField('user'):
+        if request.user.projects and project_proto:
+            merged_project = request.user.projects[0]
+            project_proto.MergeFrom(request.user.projects[0])
+            del request.user.projects[:]
+        else:
+            merged_project = None
+        if request.user.profile.custom_frustrations:
+            # We don't want this repeated field to be extended, but replaced.
+            user_proto.profile.ClearField('custom_frustrations')
+        user_proto.MergeFrom(request.user)
+        user_proto = _save_user(user_proto, is_new_user=False)
+
+        if merged_project:
+            request.user.projects.extend([merged_project])
+        elif user_proto.projects:
+            project_proto = user_proto.projects[0]
+
+    return diagnostic.quick_diagnose(user_proto, project_proto, request.user, _DB)
+
+
 @app.route('/api/user/<user_id>/migrate-to-advisor', methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
 @auth.require_user(lambda user_id: user_id)
@@ -162,10 +257,10 @@ def migrate_to_advisor(user_id):
     user_proto = _get_user_data(user_id)
     has_multiple_projects = len(user_proto.projects) > 1
     was_using_mashup = \
-        user_proto.features_enabled.advisor != user_pb2.ACTIVE or has_multiple_projects
+        user_proto.features_enabled.advisor == user_pb2.CONTROL or has_multiple_projects
 
-    user_proto.features_enabled.advisor = user_pb2.ACTIVE
-    user_proto.features_enabled.advisor_email = user_pb2.ACTIVE
+    user_proto.features_enabled.ClearField('advisor')
+    user_proto.features_enabled.ClearField('advisor_email')
     user_proto.features_enabled.switched_from_mashup_to_advisor = was_using_mashup
     _USER_DB.user.update_one(
         {'_id': _safe_object_id(user_id)}, {'$set': {
@@ -182,8 +277,9 @@ def diagnose_project(user_proto):
 
     if not user_proto.projects:
         flask.abort(422, 'There is no input project to advise on.')
-    diagnostic, unused_missing = advisor.diagnose(user_proto, user_proto.projects[0], _DB)
-    return diagnostic
+    _flatten_mobility(user_proto.projects[0], user_proto.projects[0])
+    user_diagnostic, unused_missing = diagnostic.diagnose(user_proto, user_proto.projects[0], _DB)
+    return user_diagnostic
 
 
 @app.route('/api/project/compute-advices', methods=['POST'])
@@ -193,6 +289,7 @@ def compute_advices_for_project(user_proto):
 
     if not user_proto.projects:
         flask.abort(422, 'There is no input project to advise on.')
+    _flatten_mobility(user_proto.projects[0], user_proto.projects[0])
     return advisor.compute_advices_for_project(user_proto, user_proto.projects[0], _DB)
 
 
@@ -205,26 +302,8 @@ def compute_categories_for_project(user_proto):
         flask.abort(422, 'There is no input project to perform advice categorization on.')
     if not user_proto.projects[0].advices:
         flask.abort(422, 'Input project has no advice to categorize.')
+    _flatten_mobility(user_proto.projects[0], user_proto.projects[0])
     return advisor.compute_advice_categories(user_proto.projects[0], _DB)
-
-
-@app.route('/api/users/counts', methods=['GET'])
-@proto.flask_api(out_type=stats_pb2.UsersCount)
-def count_grouped_users():
-    """Gives the count of users in a department"""
-
-    all_counts = _get_users_counts(_DB)
-    if not all_counts:
-        logging.warning('Unable to serve user counts.')
-        flask.abort(500, 'There is no user counts to serve.')
-    return all_counts
-
-
-# TODO(cyrille): Add a cache for the last value served.
-def _get_users_counts(database):
-    all_counts = next(
-        database.user_count.find({}).sort('aggregatedAt', pymongo.DESCENDING).limit(1), None)
-    return proto.create_from_mongo(all_counts, stats_pb2.UsersCount, always_create=False)
 
 
 @app.route('/api/app/use/<user_id>', methods=['POST'])
@@ -259,12 +338,10 @@ def _save_user(user_data, is_new_user):
         user_data.registered_at.FromDatetime(now.get())
         # No need to pollute our DB with super precise timestamps.
         user_data.registered_at.nanos = 0
-        # Enable Advisor for new users.
-        if not ADVISOR_DISABLED_FOR_TESTING:
-            user_data.features_enabled.advisor = user_pb2.ACTIVE
-            user_data.features_enabled.advisor_email = user_pb2.ACTIVE
-            user_data.profile.email_days.extend([
-                user_pb2.MONDAY, user_pb2.WEDNESDAY, user_pb2.FRIDAY])
+        # Disable Advisor for new users in tests.
+        if ADVISOR_DISABLED_FOR_TESTING:
+            user_data.features_enabled.advisor = user_pb2.CONTROL
+            user_data.features_enabled.advisor_email = user_pb2.CONTROL
     elif not _is_test_user(previous_user_data):
         user_data.registered_at.CopyFrom(previous_user_data.registered_at)
         user_data.features_enabled.advisor = previous_user_data.features_enabled.advisor
@@ -277,7 +354,9 @@ def _save_user(user_data, is_new_user):
 
     _populate_feature_flags(user_data)
 
+    # TODO(cyrille): Move inside of the loop to a _save_project function.
     for project in user_data.projects:
+        # TODO(cyrille): Check for completeness here, rather than in client.
         if project.is_incomplete:
             continue
         _tick('Process project start')
@@ -300,13 +379,15 @@ def _save_user(user_data, is_new_user):
                     project.created_at.ToDatetime() - job_search_length_duration)
                 project.job_search_started_at.nanos = 0
 
+        # Populate flatten mobility fields.
+        _flatten_mobility(project, previous_project)
+
         _tick('Populate local stats')
         if not project.HasField('local_stats'):
-            _populate_job_stats_dict(
-                {rome_id: project.local_stats}, project.mobility.city)
+            _populate_job_stats_dict({rome_id: project.local_stats}, project.city)
 
         _tick('Diagnostic')
-        advisor.maybe_diagnose(user_data, project, _DB)
+        diagnostic.maybe_diagnose(user_data, project, _DB)
 
         _tick('Advisor')
         advisor.maybe_advise(
@@ -316,15 +397,37 @@ def _save_user(user_data, is_new_user):
         advisor.maybe_categorize_advice(user_data, project, _DB)
 
         _tick('New feedback')
-        if not is_new_user and (project.feedback.text or project.feedback.score):
-            if project.feedback.text and not previous_project.feedback.text:
-                _give_feedback(feedback_pb2.Feedback(
+        if project.feedback.text and not previous_project.feedback.text:
+            slack_text = '[{}] ObjectId("{}")\n> {}'.format(
+                ':star:' * project.feedback.score,
+                user_data.user_id,
+                '\n> '.join(project.feedback.text.split('\n')))
+            _give_feedback(
+                feedback_pb2.Feedback(
                     user_id=str(user_data.user_id),
                     project_id=str(project.project_id),
                     feedback=project.feedback.text,
-                    source=feedback_pb2.PROJECT_FEEDBACK))
+                    source=feedback_pb2.PROJECT_FEEDBACK,
+                    score=project.feedback.score),
+                slack_text=slack_text)
 
         _tick('Process project end')
+
+    if user_data.profile.coaching_email_frequency != \
+            previous_user_data.profile.coaching_email_frequency:
+        # Invalidate the send_coaching_email_after field: it will be recomputed
+        # by the focus email script.
+        user_data.ClearField('send_coaching_email_after')
+
+    # Update hashed_email field if necessary, to make sure it's consistent with profile.email. This
+    # must be done for all users, since (say) a Google authenticated user may try to connect with
+    # password, so its email hash must be indexed.
+    # TODO(cyrille): Find a way to handle multi-authentication account more gracefully. Ideally in
+    # the end we might want to have:
+    #  - only one account with multiple way of authenticating
+    #  - the email is only a property and multiple accounts may have the same email
+    if user_data.profile.email:
+        user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
 
     if not is_new_user:
         _assert_no_credentials_change(previous_user_data, user_data)
@@ -380,9 +483,31 @@ _SHOW_UNVERIFIED_DATA_USERS = set()
 
 def _show_unverified_data_users():
     if not _SHOW_UNVERIFIED_DATA_USERS:
-        for document in _DB.show_unverified_data_users.find():
+        for document in _USER_DB.show_unverified_data_users.find():
             _SHOW_UNVERIFIED_DATA_USERS.add(document['_id'])
     return _SHOW_UNVERIFIED_DATA_USERS
+
+
+def _validate_city(city):
+    if not city.postcodes:
+        return None
+    return city
+
+
+# TODO(pascal): Migrate old data and drop this.
+def _flatten_mobility(project, previous_project):
+    if not project.area_type:
+        area_type = project.mobility.area_type or previous_project.mobility.area_type
+        if area_type:
+            project.area_type = area_type
+
+    if not project.HasField('city'):
+        if project.mobility.HasField('city'):
+            city = project.mobility.city
+        else:
+            city = previous_project.mobility.city
+        if city:
+            project.city.MergeFrom(city)
 
 
 def _is_in_unverified_data_zone(user_profile, user_projects):
@@ -400,14 +525,13 @@ def _is_in_unverified_data_zone(user_profile, user_projects):
     else:
         return False
 
-    has_valid_project_city = user_projects and user_projects[0].mobility.city.postcodes
-    has_valid_profile_city = user_profile.city.postcodes
-    if has_valid_profile_city:
-        city = user_profile.city
-    elif has_valid_project_city:
-        city = user_projects[0].mobility.city
-    else:
-        return False
+    city = _validate_city(user_profile.city)
+    if not city:
+        if user_projects:
+            city = _validate_city(user_projects[0].city) \
+                or _validate_city(user_projects[0].mobility.city)
+        if not city:
+            return False
 
     data_zone_key = '{}:{}'.format(city.postcodes, job.job_group.rome_id)
     hashed_data_zone_key = hashlib.md5(data_zone_key.encode('utf-8')).hexdigest()
@@ -425,7 +549,7 @@ def _copy_unmodifiable_fields(previous_user_data, user_data):
     if _is_test_user(user_data):
         # Test users can do whatever they want.
         return
-    for field in ('features_enabled', 'last_email_sent_at'):
+    for field in ('features_enabled', 'last_email_sent_at', 'app_points'):
         if previous_user_data.HasField(field):
             getattr(user_data, field).CopyFrom(getattr(previous_user_data, field))
         else:
@@ -444,7 +568,7 @@ def _assert_no_credentials_change(previous, new):
         if not _EMAIL_REGEX.match(new.profile.email):
             flask.abort(403, 'Adresse email invalide.')
         email_taken = bool(_USER_DB.user.find(
-            {'profile.email': new.profile.email}, {'_id': 1}).limit(1).count())
+            {'hashedEmail': auth.hash_user_email(new.profile.email)}, {'_id': 1}).limit(1).count())
         if email_taken:
             flask.abort(403, "L'utilisateur existe mais utilise un autre moyen de connexion.")
         return
@@ -472,12 +596,14 @@ def _get_user_data(user_id):
 
     _populate_feature_flags(user_proto)
 
+    for project in user_proto.projects:
+        _flatten_mobility(project, project)
+
     # TODO(pascal): Remove the fields completely after this has been live for a
     # week.
     user_proto.profile.ClearField('city')
     user_proto.profile.ClearField('latest_job')
     user_proto.profile.ClearField('situation')
-    user_proto.ClearField('initial_utm_content')
 
     return user_proto
 
@@ -565,6 +691,15 @@ def reset_password(auth_request):
     return '{}'
 
 
+@app.route('/api/user/proto', methods=['POST'])
+@proto.flask_api(
+    in_type=user_pb2.UserWithAdviceSelection, out_type=user_pb2.UserWithAdviceSelection)
+def convert_user_proto(user_with_advice):
+    """A simple reflection to let client converts this proto from/to different formats."""
+
+    return user_with_advice
+
+
 @app.route('/api/user/<user_id>/generate-auth-tokens', methods=['GET'])
 @auth.require_user(lambda user_id: user_id)
 def generate_auth_tokens(user_id):
@@ -584,29 +719,14 @@ def generate_auth_tokens(user_id):
        ```
     """
 
-    user_data = _USER_DB.user.find_one(
-        {'_id': _safe_object_id(user_id)},
-        {'profile.email': 1, '_id': 0})
-    if not user_data:
-        flask.abort(404, 'Utilisateur "{}" inconnu.'.format(user_id))
-    email = user_data.get('profile', {}).get('email')
-    # TODO(cyrille): Add user to simplify use in url.
     return json.dumps({
         'auth': auth.create_token(user_id, is_using_timestamp=True),
         'employment-status': auth.create_token(user_id, 'employment-status'),
         'nps': auth.create_token(user_id, 'nps'),
-        'unsubscribe': auth.create_token(email, 'unsubscribe'),
+        'settings': auth.create_token(user_id, 'settings'),
+        'unsubscribe': auth.create_token(user_id, 'unsubscribe'),
         'user': user_id,
     })
-
-
-# TODO(pascal): Remove this endpoint, one week after its deprecation on client.
-@app.route('/api/project/requirements', methods=['POST'])
-@proto.flask_api(in_type=project_pb2.Project, out_type=job_pb2.JobRequirements)
-def project_requirements(project):
-    """Get requirements for a project."""
-
-    return _get_job_requirements(project.target_job.job_group.rome_id)
 
 
 @app.route('/api/job/requirements/<rome_id>', methods=['GET'])
@@ -614,14 +734,7 @@ def project_requirements(project):
 def job_requirements(rome_id):
     """Get requirements for a job."""
 
-    return _get_job_requirements(rome_id)
-
-
-def _get_job_requirements(rome_id):
     no_requirements = job_pb2.JobRequirements()
-
-    if not rome_id:
-        return no_requirements
 
     job_group_info = jobs.get_group_proto(_DB, rome_id)
     if not job_group_info:
@@ -660,11 +773,13 @@ def compute_expanded_card_data(user_proto, advice_id):
 
     if not user_proto.projects:
         flask.abort(422, 'There is no input project to advise on.')
+    _flatten_mobility(user_proto.projects[0], user_proto.projects[0])
     return _get_expanded_card_data(user_proto, user_proto.projects[0], advice_id)
 
 
-# TODO(pascal): Maybe move that to /api/advice/tips/<advice_id>/...
+# TODO(pascal): Delete the first route after the new one has been live for 2 weeks.
 @app.route('/api/project/<user_id>/<project_id>/advice/<advice_id>/tips', methods=['GET'])
+@app.route('/api/advice/tips/<advice_id>/<user_id>/<project_id>', methods=['GET'])
 @proto.flask_api(out_type=action_pb2.AdviceTips)
 @auth.require_user(lambda user_id, project_id, advice_id: user_id)
 def advice_tips(user_id, project_id, advice_id):
@@ -680,6 +795,59 @@ def advice_tips(user_id, project_id, advice_id):
     for tip_template in all_tips:
         action.instantiate(response.tips.add(), user_proto, project, tip_template, _DB)
     return response
+
+
+@app.route('/api/user/points/<user_id>', methods=['POST'])
+@proto.flask_api(in_type=points_pb2.Transaction, out_type=points_pb2.UserData)
+@auth.require_user(lambda transaction, user_id: user_id)
+def register_bob_points_transaction(transaction, user_id):
+    """Register a Bob Points transaction."""
+
+    if transaction.reason == points_pb2.SHARE_REWARD:
+        if not transaction.network:
+            flask.abort(422, 'Identifiant de partage manquant')
+        transaction.delta = 100
+    elif transaction.reason == points_pb2.RATE_REWARD:
+        transaction.delta = 150
+    elif transaction.reason == points_pb2.UNLOCK_ADVICE_MODULE:
+        if not transaction.advice_id:
+            flask.abort(422, 'Identifiant du conseil manquant')
+        transaction.delta = -100
+    elif transaction.reason == points_pb2.EXPLORE_ADVICE_REWARD:
+        if not transaction.advice_id:
+            flask.abort(422, 'Identifiant du conseil manquant')
+        transaction.delta = 20
+    else:
+        flask.abort(422, 'Transaction inconnue {}'.format(transaction.reason))
+
+    transaction.at.FromDatetime(now.get())
+    transaction.at.nanos = 0
+
+    app_points = _get_user_data(user_id).app_points
+
+    if transaction.delta + app_points.current < 0:
+        flask.abort(423, 'Pas assez de points')
+
+    if transaction.reason == points_pb2.UNLOCK_ADVICE_MODULE:
+        advice_id = transaction.advice_id
+        if app_points.unlocked_advice_modules[advice_id]:
+            # Advice already unlocked.
+            return app_points
+        app_points.unlocked_advice_modules[advice_id] = True
+    elif transaction.reason == points_pb2.EXPLORE_ADVICE_REWARD:
+        advice_id = transaction.advice_id
+        if app_points.explored_advice_modules[advice_id]:
+            # Advice already explored.
+            return app_points
+        app_points.explored_advice_modules[advice_id] = True
+    app_points.current += transaction.delta
+    app_points.history.extend([transaction])
+
+    _USER_DB.user.update_one(
+        {'_id': _safe_object_id(user_id)},
+        {'$set': {'appPoints': json_format.MessageToDict(app_points)}})
+
+    return app_points
 
 
 def _populate_job_stats_dict(local_job_stats, city):
@@ -711,6 +879,7 @@ def clear_cache():
 
     _SHOW_UNVERIFIED_DATA_USERS.clear()
     proto.CachedCollection.update_cache_version()
+    mayday.clear_helper_count_cache()
     return 'Server cache cleared.'
 
 
@@ -746,7 +915,7 @@ def _create_dashboard_export(user_id):
     dashboard_export.created_at.FromDatetime(now.get())
     export_json = json_format.MessageToDict(dashboard_export)
     export_json['_id'] = _get_unguessable_object_id()
-    result = _DB.dashboard_exports.insert_one(export_json)
+    result = _USER_DB.dashboard_exports.insert_one(export_json)
     dashboard_export.dashboard_export_id = str(result.inserted_id)
     return dashboard_export
 
@@ -756,7 +925,7 @@ def _create_dashboard_export(user_id):
 def get_dashboard_export(dashboard_export_id):
     """Retrieve an export of the user's current dashboard."""
 
-    dashboard_export_json = _DB.dashboard_exports.find_one({
+    dashboard_export_json = _USER_DB.dashboard_exports.find_one({
         '_id': _safe_object_id(dashboard_export_id)})
     dashboard_export = proto.create_from_mongo(
         dashboard_export_json, export_pb2.DashboardExport, always_create=False)
@@ -784,6 +953,7 @@ def get_job_group_jobs(rome_id):
 @app.route('/api/feedback', methods=['POST'])
 @proto.flask_api(in_type=feedback_pb2.Feedback)
 def give_feedback(feedback):
+    # TODO(pascal): Change this doc.
     """Retrieve information about jobs whithin a job group."""
 
     if feedback.user_id:
@@ -794,12 +964,16 @@ def give_feedback(feedback):
             auth.check_token(feedback.user_id, auth_token, role='auth')
         except ValueError:
             flask.abort(403, 'Unauthorized token')
-    _give_feedback(feedback)
+    _give_feedback(feedback, slack_text=feedback)
     return ''
 
 
-def _give_feedback(feedback):
-    _DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
+def _give_feedback(feedback, slack_text):
+    if slack_text and _SLACK_WEBHOOK_URL:
+        requests.post(_SLACK_WEBHOOK_URL, json={
+            'text': ':mega: {}'.format(slack_text),
+        })
+    _USER_DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
 
 
 @app.route('/', methods=['GET'])
@@ -834,7 +1008,8 @@ def set_nps_survey_response(nps_survey_response):
 
     # Note that this endpoint doesn't use authentication: only the email is necessary to
     # update the user record.
-    user_dict = _USER_DB.user.find_one({'profile.email': nps_survey_response.email}, {'_id': 1})
+    user_dict = _USER_DB.user.find_one({
+        'hashedEmail': auth.hash_user_email(nps_survey_response.email)}, {'_id': 1})
     if not user_dict:
         flask.abort(404, 'Utilisateur "{}" inconnu.'.format(nps_survey_response.email))
     user_id = user_dict['_id']
@@ -886,11 +1061,26 @@ def set_nps_response_comment(set_nps_request):
     user_to_update.net_promoter_score_survey_response.general_feedback_comment = \
         set_nps_request.comment
 
+    user_id = _safe_object_id(set_nps_request.user_id)
+
+    if set_nps_request.comment:
+        previous_user = _USER_DB.user.find_one(
+            {'_id': user_id}, {'netPromoterScoreSurveyResponse.score': 1})
+        if previous_user and 'netPromoterScoreSurveyResponse' in previous_user:
+            score = previous_user['netPromoterScoreSurveyResponse'].get('score', 0)
+        else:
+            score = 'unknown'
+        _give_feedback(
+            feedback_pb2.Feedback(
+                user_id=set_nps_request.user_id,
+                feedback=set_nps_request.comment,
+                source=feedback_pb2.PRODUCT_FEEDBACK),
+            slack_text='[NPS Score: {}] ObjectId("{}")\n> {}'.format(
+                score, set_nps_request.user_id,
+                '\n> '.join(set_nps_request.comment.split('\n'))))
+
     mongo_update = _flatten_mongo_fields(json_format.MessageToDict(user_to_update))
-    _USER_DB.user.update_one(
-        {'_id': _safe_object_id(set_nps_request.user_id)},
-        {'$set': mongo_update},
-        upsert=False)
+    _USER_DB.user.update_one({'_id': user_id}, {'$set': mongo_update}, upsert=False)
 
     return ''
 
@@ -946,17 +1136,9 @@ def get_employment_status(user_id):
     # Create another empty User message to update only employment_status field.
     user_to_update = user_pb2.User()
     user_to_update.employment_status.extend(user_proto.employment_status[:])
-    if 'id' in flask.request.args:
-        # TODO(pascal): Cleanup once all clients are using the POST endpoint
-        # (in 2018).
-        survey_id = int(flask.request.args.get('id'))
-        if survey_id >= len(user_to_update.employment_status):
-            flask.abort(422, 'Id invalide.')
-        employment_status = user_to_update.employment_status[survey_id]
-    else:
-        survey_id = len(user_to_update.employment_status)
-        employment_status = user_to_update.employment_status.add()
-        employment_status.created_at.FromDatetime(now.get())
+    survey_id = len(user_to_update.employment_status)
+    employment_status = user_to_update.employment_status.add()
+    employment_status.created_at.FromDatetime(now.get())
     try:
         json_format.ParseDict(flask.request.args, employment_status, ignore_unknown_fields=True)
     except json_format.ParseError:
@@ -994,34 +1176,12 @@ def get_usage_stats():
     now_utc = now.get().astimezone(datetime.timezone.utc)
     start_of_second = now_utc.replace(microsecond=0, tzinfo=None)
     last_week = start_of_second - datetime.timedelta(days=7)
-    yesterday = start_of_second - datetime.timedelta(days=1)
-
-    # Compute daily scores count.
-    daily_scores_count = collections.defaultdict(int)
-    last_day_users = _USER_DB.user.find(
-        {
-            'registeredAt': {
-                '$gt': _datetime_to_json_string(yesterday),
-                '$lte': _datetime_to_json_string(start_of_second),
-            },
-            'featuresEnabled.excludeFromAnalytics': {'$ne': True},
-        },
-        {
-            'projects': 1,
-            'registeredAt': 1,
-        },
-    )
-    for user_dict in last_day_users:
-        user_proto = proto.create_from_mongo(user_dict, user_pb2.User)
-        for project in user_proto.projects:
-            if project.feedback.score:
-                daily_scores_count[project.feedback.score] += 1
 
     # Compute weekly user count.
     weekly_new_user_count = _USER_DB.user.find({
         'registeredAt': {
-            '$gt': _datetime_to_json_string(last_week),
-            '$lte': _datetime_to_json_string(start_of_second),
+            '$gt': proto.datetime_to_json_string(last_week),
+            '$lte': proto.datetime_to_json_string(start_of_second),
         },
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
     }).count()
@@ -1029,7 +1189,6 @@ def get_usage_stats():
     return stats_pb2.UsersCount(
         total_user_count=_USER_DB.user.count(),
         weekly_new_user_count=weekly_new_user_count,
-        daily_scores_count=daily_scores_count,
     )
 
 
@@ -1043,6 +1202,7 @@ def redirect_eterritoire(city_id):
 
 
 app.register_blueprint(evaluation.app, url_prefix='/api/eval')
+app.register_blueprint(mayday.app, url_prefix='/api/mayday')
 
 
 @app.before_request
@@ -1053,12 +1213,6 @@ def _before_request():
 
 def _tick(tick_name):
     flask.g.ticks.append(_Tick(tick_name, time.time()))
-
-
-def _datetime_to_json_string(instant):
-    timestamp = timestamp_pb2.Timestamp()
-    timestamp.FromDatetime(instant)
-    return json_format.MessageToDict(timestamp)
 
 
 def _is_test_user(user_proto):

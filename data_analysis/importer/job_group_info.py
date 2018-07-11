@@ -8,7 +8,7 @@ You can try it out on a local instance:
  - Run this script:
     docker-compose run -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \
         --rm data-analysis-prepare \
-        python bob_emploi/importer/job_group_info.py \
+        python bob_emploi/data_analysis/importer/job_group_info.py \
         --rome_csv_pattern data/rome/csv/unix_{}_v331_utf8.csv \
         --job_requirements_json data/job_offers/job_offers_requirements.json \
         --job_application_complexity_json data/job_application_complexity.json \

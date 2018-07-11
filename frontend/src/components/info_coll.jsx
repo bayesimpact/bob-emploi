@@ -1,8 +1,10 @@
+// TODO(pascal): Check if it is used and maybe cleanup.
 import PropTypes from 'prop-types'
 import React from 'react'
 
+import {isMobileVersion} from 'components/mobile'
 import {ModalCloseButton} from 'components/modal'
-import {Button, Colors, SmoothTransitions} from 'components/theme'
+import {Button, SmoothTransitions} from 'components/theme'
 
 
 class InfoCollNotificationBox extends React.Component {
@@ -10,10 +12,6 @@ class InfoCollNotificationBox extends React.Component {
     isShown: PropTypes.bool,
     onClose: PropTypes.func,
     style: PropTypes.object,
-  }
-
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
   }
 
   state = {
@@ -38,12 +36,11 @@ class InfoCollNotificationBox extends React.Component {
     const {isShown, onClose, style} = this.props
     const {isHiding} = this.state
     const isVisible = isShown && !isHiding
-    const {isMobileVersion} = this.context
     if (isMobileVersion) {
       return null
     }
     const containerStyle = {
-      backgroundColor: Colors.BOB_BLUE,
+      backgroundColor: colors.BOB_BLUE,
       borderRadius: 4,
       bottom: 20,
       boxShadow: '0 3px 14px 0 rgba(0, 0, 0, 0.2)',
@@ -74,14 +71,14 @@ class InfoCollNotificationBox extends React.Component {
         backgroundColor: '#fff',
       },
       backgroundColor: 'rgba(255, 255, 255, .8)',
-      color: Colors.BOB_BLUE,
+      color: colors.BOB_BLUE,
       display: 'block',
       marginTop: 25,
     }
     return <div style={containerStyle}>
       {onClose ? <ModalCloseButton onClick={this.close} style={closeStyle} /> : null}
       <strong>Vous êtes un conseiller Pôle emploi&nbsp;?</strong><br />
-      Trouvez ici nos ressources pour présenter Bob
+      Trouvez ici nos ressources pour présenter {config.productName}
       <Button style={buttonStyle} onClick={this.handleClick}>Voir les ressources</Button>
     </div>
   }

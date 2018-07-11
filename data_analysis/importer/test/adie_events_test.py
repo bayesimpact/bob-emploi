@@ -18,8 +18,8 @@ class AdieEventsTestCase(unittest.TestCase):
             path.join(path.dirname(__file__), 'testdata/adie-evenements.html'))
         event_protos = dict(mongo.collection_to_proto_mapping(
             collection, event_pb2.Event))
-        self.assertEqual({'2018-02_0', '2018-02_1'}, set(event_protos))
-        event = event_protos['2018-02_0']
+        self.assertEqual({'2018-06_0', '2018-06_1'}, set(event_protos))
+        event = event_protos['2018-06_0']
         self.assertEqual("Zoom sur le microcrédit et l'accompagnement de l'Adie.", event.title)
         self.assertEqual('Annecy', event.city_name)
         self.assertEqual(
@@ -39,7 +39,12 @@ class AdieEventsTestCase(unittest.TestCase):
             'de 14h à 17h',
             event.description)
         self.assertEqual('le 5 février', event.timing_text)
+        self.assertEqual('2018-02-05', event.start_date)
         self.assertAlmostEqual(45.9100539, event.latitude, places=5)
+
+        event_special_date = event_protos['2018-06_1']
+        self.assertEqual('le 1er février', event_special_date.timing_text)
+        self.assertEqual('2018-02-01', event_special_date.start_date)
 
 
 if __name__ == '__main__':

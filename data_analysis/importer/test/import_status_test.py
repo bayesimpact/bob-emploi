@@ -27,6 +27,9 @@ class _AnyColorText(object):
             return False
         return self.text == _strip_colors(other_text)
 
+    def __repr__(self):
+        return 'AnyColorText({})'.format(self.text)
+
 
 class ImportStatusBasicTests(unittest.TestCase):
     """Basic tests."""
@@ -51,7 +54,7 @@ class ImportStatusBasicTests(unittest.TestCase):
 
         importer = import_status.Importer(
             name='no import needed', script=None, args=None, is_imported=False,
-            proto_type=None, key=None)
+            proto_type=None, key=None, has_pii=False)
         import_status.print_single_importer(importer, 'no-import-needed', 'url')
         mock_log_info.assert_any_call(
             'No import needed for %s',
@@ -65,7 +68,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             name='with command',
             script='run', args={'this': 'value'},
             is_imported=True,
-            proto_type=None, key=None)
+            proto_type=None, key=None, has_pii=False)
         import_status.print_single_importer(importer, 'foo', 'url')
         mock_log_info.assert_any_call(
             'To import "%s" in "%s", run:\n%s',
@@ -83,13 +86,13 @@ class ImportStatusBasicTests(unittest.TestCase):
         importers = {
             'no-import-needed': import_status.Importer(
                 name='no import needed', script=None, args=None, is_imported=False,
-                proto_type=None, key=None),
+                proto_type=None, key=None, has_pii=False),
             'missing-in-db-importer': import_status.Importer(
                 name='missing in db', script=None, args=None, is_imported=True,
-                proto_type=None, key=None),
+                proto_type=None, key=None, has_pii=False),
             'in-both': import_status.Importer(
                 name='in both', script=None, args=None, is_imported=True,
-                proto_type=None, key=None)
+                proto_type=None, key=None, has_pii=False)
         }
         diff = import_status.compute_collections_diff(importers, self.mongo_db)
         self.assertEqual(
@@ -107,24 +110,28 @@ class ImportStatusBasicTests(unittest.TestCase):
             'updated_at': two_days_ago,
         })
         meta_info = import_status.get_meta_info(self.mongo_db)
-        self.assertEqual(
-            two_days_ago, meta_info['test_collection']['updated_at'])
+        self.assertLessEqual(
+            two_days_ago.replace(microsecond=0),
+            meta_info['test_collection']['updated_at'])
+        self.assertGreaterEqual(
+            two_days_ago + datetime.timedelta(seconds=1),
+            meta_info['test_collection']['updated_at'])
 
     @mock.patch(logging.__name__ + '.info')
     @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'missing-in-db-importer': import_status.Importer(
             name='missing in db', script=None, args=None, is_imported=True,
-            proto_type=None, key=None),
+            proto_type=None, key=None, has_pii=False),
         'in-both': import_status.Importer(
             name='in both', script=None, args=None, is_imported=True,
-            proto_type=None, key=None),
+            proto_type=None, key=None, has_pii=False),
         'in-both-with-meta': import_status.Importer(
             name='in both with meta', script=None, args=None, is_imported=True,
-            proto_type=job_pb2.JobGroup, key=None),
+            proto_type=job_pb2.JobGroup, key=None, has_pii=False),
         'in-both-not-needed': import_status.Importer(
             name='in both not needed', script=None, args=None, is_imported=False,
-            proto_type=None, key=None)
+            proto_type=None, key=None, has_pii=False)
         })
     def test_main_function(self, pymongo_mock, mock_log_info):
         """Basic usage."""
@@ -136,7 +143,7 @@ class ImportStatusBasicTests(unittest.TestCase):
         mongo_db.create_collection('missing-in-importers')
         mongo_db.create_collection('in-both')
         mongo_db.create_collection('in-both-with-meta')
-        two_days_ago = datetime.datetime.now() - datetime.timedelta(days=2)
+        two_days_ago = (datetime.datetime.now() - datetime.timedelta(days=2)).replace(microsecond=0)
         mongo_db.meta.insert_one({
             '_id': 'in-both-with-meta',
             'updated_at': two_days_ago,
@@ -169,12 +176,44 @@ class ImportStatusBasicTests(unittest.TestCase):
     @mock.patch(logging.__name__ + '.info')
     @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
+        'non-personal': import_status.Importer(
+            name='non personal', script=None, args=None, is_imported=True,
+            proto_type=None, key=None, has_pii=False),
+        'personal': import_status.Importer(
+            name='personal', script=None, args=None, is_imported=True,
+            proto_type=None, key=None, has_pii=True),
+        'personal-no-import': import_status.Importer(
+            name='personal not imported', script=None, args=None, is_imported=False,
+            proto_type=None, key=None, has_pii=True)
+        })
+    def test_personal_database(self, pymongo_mock, mock_log_info):
+        """Check division between personal/non personal databases."""
+
+        client = mongomock.MongoClient('mongodb://test_url/test_db')
+        pymongo_mock.MongoClient.return_value = client
+
+        mongo_db = client.get_database('test_db')
+        mongo_db.create_collection('non-personal')
+        mongo_db.create_collection('personal')
+        mongo_db.create_collection('personal-no-import')
+
+        import_status.main(['mongodb://test_url/test_db'])
+        mock_log_info.assert_any_call(
+            '%s collection%s without importers:', _AnyColorText('1'), ' is')
+        # Although non-personal is imported, it should not be as it's a Personal database.
+        mock_log_info.assert_any_call(
+            'The collection%s with missing importer%s: %s\n',
+            '', ' is', _AnyColorText("{'non-personal'}"))
+
+    @mock.patch(logging.__name__ + '.info')
+    @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
+    @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'collection_id': import_status.Importer(
             name='Collection name',
             script='my-script-name',
             args=None,
             is_imported=True,
-            proto_type=None, key=None),
+            proto_type=None, key=None, has_pii=False),
         })
     def test_display_command(self, pymongo_mock, mock_log_info):
         """Display the command to import a missing collection."""
@@ -218,7 +257,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             script='my-script-name',
             args={'custom_importer_flag': 'value for custom flag'},
             is_imported=True,
-            proto_type=None, key=None),
+            proto_type=None, key=None, has_pii=False),
         })
     def test_run_importer(self, pymongo_mock, mock_subprocess_run):
         """Run the command to import a collection."""
@@ -243,13 +282,13 @@ class ImportStatusBasicTests(unittest.TestCase):
             script='my-script-name',
             args={'custom_importer_flag': 'value for custom flag'},
             is_imported=True,
-            proto_type=None, key=None),
+            proto_type=None, key=None, has_pii=False),
         'other_collection_id': import_status.Importer(
             name='Other collection name',
             script='other-script-name',
             args={'custom_importer_flag': 'other value for custom flag'},
             is_imported=True,
-            proto_type=None, key=None),
+            proto_type=None, key=None, has_pii=False),
         })
     def test_run_multiple_importers(self, pymongo_mock, mock_subprocess_run):
         """Run the commands to import multiple collections."""

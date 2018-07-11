@@ -9,7 +9,7 @@ from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server.asynchronous.mail import campaign
 
 
-def christmas_vars(user, database):
+def christmas_vars(user, database=None, **unused_kwargs):
     """Compute all variables required for the Christmas campaign."""
 
     project = next((p for p in user.projects), project_pb2.Project())
@@ -56,7 +56,7 @@ def christmas_vars(user, database):
     })
 
 
-def new_year_vars(user, unused_database):
+def new_year_vars(user, **unused_kwargs):
     """Compute all variables required for the New Year campaign."""
 
     project = next((p for p in user.projects), project_pb2.Project())

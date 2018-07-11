@@ -1,5 +1,6 @@
 """Module to help the frontend manipulate protobuffers."""
 
+import base64
 import collections
 import datetime
 import functools
@@ -16,6 +17,7 @@ except ImportError:
 
 from google.protobuf import json_format
 from google.protobuf import message
+from google.protobuf import timestamp_pb2
 
 from bob_emploi.frontend.server import now
 
@@ -104,15 +106,7 @@ def flask_api(out_type=None, in_type=None):
     def _proto_api_decorator(func):
         def _decorated_fun(*args, **kwargs):
             if in_type:
-                proto = in_type()
-                try:
-                    data = flask.request.get_data()
-                    if not data:
-                        data = flask.request.args.get('data', '')
-                    json_format.Parse(data, proto)
-                except json_format.ParseError as error:
-                    flask.abort(422, error)
-                args = args + (proto,)
+                args = args + (_get_flask_input_proto(in_type),)
             ret = func(*args, **kwargs)
             if not out_type:
                 return ret
@@ -122,9 +116,41 @@ def flask_api(out_type=None, in_type=None):
                         func.__name__,
                         out_type.__name__,
                         type(ret).__name__))
+            best_format = flask.request.accept_mimetypes.best_match(
+                ['application/json', 'application/x-protobuf-base64']
+            )
+            if best_format == 'application/x-protobuf-base64':
+                return flask.Response(
+                    base64.encodebytes(ret.SerializeToString()).decode('ascii'),
+                    content_type='application/x-protobuf-base64')
             return json_format.MessageToJson(ret)
         return functools.wraps(func)(_decorated_fun)
     return _proto_api_decorator
+
+
+def _get_flask_input_proto(in_type):
+    proto = in_type()
+
+    data = flask.request.get_data()
+    if not data:
+        data = flask.request.args.get('data', '')
+
+    if flask.request.headers['Content-Type'] == 'application/x-protobuf-base64':
+        try:
+            wire_format = base64.decodebytes(data)
+        except ValueError as error:
+            flask.abort(422, error)
+        try:
+            proto.ParseFromString(wire_format)
+        except message.DecodeError as error:
+            flask.abort(422, error)
+        return proto
+
+    try:
+        json_format.Parse(data, proto)
+    except (json_format.ParseError, UnicodeDecodeError) as error:
+        flask.abort(422, error)
+    return proto
 
 
 def _cache_mongo_collection(mongo_iterator, cache, proto_type, update_func=None):
@@ -158,7 +184,7 @@ def _cache_mongo_collection(mongo_iterator, cache, proto_type, update_func=None)
 class MongoCachedCollection(object):
     """Handler for a collection of protobuffers in MongoDB."""
 
-    def __init__(self, proto_type, collection_name, update_func=None):
+    def __init__(self, proto_type, collection_name, update_func=None, query=None):
         """Creates a new collection.
 
         Args:
@@ -170,6 +196,7 @@ class MongoCachedCollection(object):
         self._collection_name = collection_name
         self._proto_type = proto_type
         self._update_func = update_func
+        self._query = query
 
         self._cache = None
         self._database = None
@@ -192,7 +219,7 @@ class MongoCachedCollection(object):
 
     def _populate(self, cache):
         _cache_mongo_collection(
-            self._database.get_collection(self._collection_name).find, cache,
+            lambda: self._database.get_collection(self._collection_name).find(self._query), cache,
             self._proto_type, self._update_func)
 
 
@@ -245,3 +272,11 @@ class CachedCollection(object):
 
     def __bool__(self):
         return bool(self._ensure_cache())
+
+
+def datetime_to_json_string(instant):
+    """Convert a python datetime to a Json string compatible with the Timestamp proto."""
+
+    timestamp = timestamp_pb2.Timestamp()
+    timestamp.FromDatetime(instant)
+    return json_format.MessageToDict(timestamp)

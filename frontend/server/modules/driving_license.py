@@ -37,16 +37,20 @@ def _score_and_explain_after_filters(project):
         reasons.append(project.translate_string(
             'le permis est important dans votre métier'))
     score_modifier = 0
-    if _license_helps_mobility(project.details.mobility):
+    if _license_helps_mobility(project.details) or \
+            _license_helps_mobility(project.details.mobility):
         reasons.append(project.translate_string(
             'le permis augmenterait votre mobilité'))
         score_modifier = 1
     if not reasons:
         return scoring_base.NULL_EXPLAINED_SCORE
     score = min(3, score_modifier + (
-        3 if license_required > 30 else
-        2 if license_required > 10 else
-        1 if license_required else 0))
+        # Example at 80% is civil engineer F1106.
+        3 if license_required > 80 else
+        # Example at 67% is translator E1108.
+        2 if license_required > 67 else
+        # Example at 50% is chiropractor J1408.
+        1 if license_required > 50 else 0))
     return scoring_base.ExplainedScore(score, reasons)
 
 
@@ -80,7 +84,8 @@ class _DrivingLicenseLowIncomeScoringModel(scoring_base.ModelBase):
 
         # TODO(cyrille): Cache coordinates in ScoringProject.
         return proto.create_from_mongo(
-            project.database.cities.find_one({'_id': project.details.mobility.city.city_id}),
+            project.database.cities.find_one({
+                '_id': project.details.city.city_id or project.details.mobility.city.city_id}),
             geo_pb2.FrenchCity)
 
 

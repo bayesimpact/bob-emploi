@@ -59,17 +59,14 @@ class NetworkAdvicePageBase extends React.Component {
       }).isRequired),
     }).isRequired,
     intro: PropTypes.node,
+    onExplore: PropTypes.func.isRequired,
     profile: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
-    const {adviceData, profile, project, userYou, intro} = this.props
+    const {adviceData, onExplore, profile, project, userYou, intro} = this.props
     const leads = adviceData.leads || []
     const selectedEmails = getEmailTemplates(userYou).network.
       filter(({filters}) => projectMatchAllFilters(project, filters))
@@ -89,6 +86,7 @@ class NetworkAdvicePageBase extends React.Component {
             tip={lead.contactTip}
             title={lead.name}
             key={`lead-${idx}`}
+            onContentShown={() => onExplore('contact lead')}
             userYou={userYou} />)
           : selectedEmails.map((email, idx) => <EmailTemplate
             content={email.content}
@@ -97,6 +95,7 @@ class NetworkAdvicePageBase extends React.Component {
               email.reason : null}
             key={`advice-${idx}`}
             style={{marginTop: -1}}
+            onContentShown={() => onExplore('email template')}
             userYou={userYou} />)}
       </AppearingList>
     </div>

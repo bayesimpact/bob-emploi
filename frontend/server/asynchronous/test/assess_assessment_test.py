@@ -20,16 +20,13 @@ class AssessAssessmentTestCase(unittest.TestCase):
         patcher = mock.patch(assess_assessment.__name__ + '._DB', new=self._db)
         patcher.start()
         self.addCleanup(patcher.stop)
-        patcher = mock.patch(assess_assessment.__name__ + '._USER_DB', new=self._db)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
     @mock.patch(
         assess_assessment.now.__name__ + '.get',
         new=mock.MagicMock(return_value=datetime.datetime(2017, 11, 16)))
-    @mock.patch(assess_assessment.advisor.__name__ + '.diagnose')
+    @mock.patch(assess_assessment.diagnostic.__name__ + '.diagnose')
     def test_main(self, mock_diagnose):
-        """Test main."""
+        """Test the assessment of diagnostic."""
 
         full_diagnostic = diagnostic_pb2.Diagnostic(overall_score=10, text='Successful text')
         full_diagnostic.sub_diagnostics.extend([

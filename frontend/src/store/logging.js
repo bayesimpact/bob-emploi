@@ -1,6 +1,6 @@
 import {detect} from 'detect-browser'
 
-import {AUTHENTICATE_USER, REGISTER_USER} from './actions'
+import {REGISTER_USER, isActionRegister} from './actions'
 
 
 export const daysSince = timestamp => {
@@ -13,7 +13,7 @@ export const daysSince = timestamp => {
 
 
 const getUser = (action, state) => {
-  if (state.user.userId) {
+  if (state.user && state.user.userId) {
     return state.user
   }
   if (!action.response) {
@@ -62,10 +62,8 @@ export class Logger {
   }
 
   getEventName(action) {
-    if (action.type === AUTHENTICATE_USER) {
-      if (action.response && action.response.isNewUser) {
-        return this.actionTypesToLog[REGISTER_USER]
-      }
+    if (isActionRegister(action)) {
+      return this.actionTypesToLog[REGISTER_USER]
     }
     return this.actionTypesToLog[action.type]
   }
@@ -76,7 +74,7 @@ export class Logger {
       properties['$browser'] = this.browser.name
     }
     properties['$hostname'] = window.location.hostname
-    if (state.app.isMobileVersion) {
+    if (state.app && state.app.isMobileVersion) {
       properties['Mobile Version'] = true
     }
     const user = getUser(action, state)
@@ -109,8 +107,16 @@ export class Logger {
       properties['Notification'] = action.notification
     }
     if (action.project) {
-      properties['Project Job Name'] = action.project.targetJob.masculineName
-      properties['Project City'] = action.project.mobility.city.name
+      const {
+        targetJob: {masculineName} = {},
+        mobility: {city: {name: cityName} = {}} = {},
+      } = action.project
+      if (masculineName) {
+        properties['Project Job Name'] = masculineName
+      }
+      if (cityName) {
+        properties['Project City'] = cityName
+      }
     }
     if (action.advice && action.advice.adviceId) {
       properties['Advice'] = action.advice.adviceId
@@ -131,6 +137,9 @@ export class Logger {
           properties['Previous Advice Score'] = action.advice.score || 0
         }
       }
+    }
+    if (action.helperAction) {
+      properties['Action to help'] = action.helperAction
     }
     if (action.feature) {
       properties['Feature'] = action.feature

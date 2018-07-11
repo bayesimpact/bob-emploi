@@ -1,0 +1,42 @@
+{
+  "Targets": [
+    {
+      "Arn": "arn:aws:ecs:eu-west-3:951168128976:cluster/default",
+      "EcsParameters": {
+        "TaskCount": 1,
+        "TaskDefinitionArn": "arn:aws:ecs:eu-west-3:951168128976:task-definition/frontend-flask"
+      },
+      "Id": "bob-action-helpers",
+      "Input": {
+        "containerOverrides": [
+          {
+            "command": [
+              "python bob_emploi/frontend/server/asynchronous/update_email_sent_status.py --mongo-collection helper"
+            ],
+            "name": "flask"
+          }
+        ]
+      },
+      "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+    },
+    {
+      "Arn": "arn:aws:ecs:eu-west-3:951168128976:cluster/default",
+      "EcsParameters": {
+        "TaskCount": 1,
+        "TaskDefinitionArn": "arn:aws:ecs:eu-west-3:951168128976:task-definition/frontend-flask"
+      },
+      "Id": "bob-users",
+      "Input": {
+        "containerOverrides": [
+          {
+            "command": [
+              "python bob_emploi/frontend/server/asynchronous/update_email_sent_status.py --mongo-collection user"
+            ],
+            "name": "flask"
+          }
+        ]
+      },
+      "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+    }
+  ]
+}

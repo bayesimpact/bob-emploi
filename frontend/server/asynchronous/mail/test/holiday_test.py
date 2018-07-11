@@ -7,8 +7,10 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous.mail.test import mail_blast_test
 
 
-class ChristmasVarsTestCase(mail_blast_test.CampaignTestBase('christmas')):
+class ChristmasVarsTestCase(mail_blast_test.CampaignTestBase):
     """Unit tests for the christmas_vars method."""
+
+    campaign_id = 'christmas'
 
     def test_basic(self):
         """Basic usage."""
@@ -50,8 +52,10 @@ class ChristmasVarsTestCase(mail_blast_test.CampaignTestBase('christmas')):
         })
 
 
-class NewYearTestCase(mail_blast_test.CampaignTestBase('new-year')):
+class NewYearTestCase(mail_blast_test.CampaignTestBase):
     """Test for the new_year_vars function."""
+
+    campaign_id = 'new-year'
 
     def test_basic(self):
         """Basic usage."""

@@ -67,10 +67,6 @@ service FrontendService {
   // Get requirements for a job group.
   rpc JobGroupRequirements(JobGroup) returns (JobRequirements);
 
-  // Get requirements for a project. For now they are only requirements for the
-  // job group.
-  rpc ProjectRequirements(Project) returns (JobRequirements);
-
   // Retrieve a list of events for a project.
   rpc ProjectEvents(Project) returns (Events);
 
@@ -91,6 +87,7 @@ service FrontendService {
 
   // Retrieve an export of the user's current dashboard
   // (the input is actually only an dashboard export's ID).
+  // TODO(pascal): Clean that endpoint on the server, it's not used anymore.
   rpc GetDashboardExport(DashboardExport) returns (DashboardExport);
 
   // Migrate a user from Mashup to Advisor (the input is actually only a user's ID).
@@ -99,6 +96,9 @@ service FrontendService {
   // Retrieve information about jobs whithin a job group (the input is actually
   // only a job group's ROME ID).
   rpc GetJobs(JobGroup) returns (JobGroup);
+
+  // Update a project and quickly diagnose it.
+  rpc UpdateAndQuickDiagnostic(QuickDiagnosticRequest) returns (QuickDiagnostic);
 
   // Diagnose a user project.
   rpc DiagnoseProject(User) returns (Diagnostic);

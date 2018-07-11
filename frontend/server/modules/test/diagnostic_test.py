@@ -10,9 +10,10 @@ from bob_emploi.frontend.server.test import scoring_test
 from bob_emploi.frontend.server.test import filters_test
 
 
-class SearchLengthScoringModelTestCase(
-        scoring_test.HundredScoringModelTestBase('search-length-score')):
+class SearchLengthScoringModelTestCase(scoring_test.HundredScoringModelTestBase):
     """Unit test for the "search-length-score" scoring model."""
+
+    model_id = 'search-length-score'
 
     def test_searching_forever(self):
         """User has been searching for 20 months."""
@@ -54,9 +55,10 @@ class SearchLengthScoringModelTestCase(
         self.assert_not_enough_data()
 
 
-class InterviewRateScoringModelTestCase(
-        scoring_test.HundredScoringModelTestBase('interview-rate-score')):
+class InterviewRateScoringModelTestCase(scoring_test.HundredScoringModelTestBase):
     """Unit test for the "interview-rate-score" scoring model."""
+
+    model_id = 'interview-rate-score'
 
     def test_lot_of_interviews(self):
         """User has been searching for 8 months and has done a lot of interviews."""
@@ -114,9 +116,10 @@ class InterviewRateScoringModelTestCase(
         self.assert_not_enough_data()
 
 
-class TooManyApplicationsScoringModelTestCase(
-        scoring_test.HundredScoringModelTestBase('too-many-applications-score')):
+class TooManyApplicationsScoringModelTestCase(scoring_test.HundredScoringModelTestBase):
     """Unit test for the "weekly-application-score" scoring model."""
+
+    model_id = 'too-many-applications-score'
 
     def test_lot_of_applications(self):
         """User has done a lot of applications."""
@@ -149,9 +152,10 @@ class TooManyApplicationsScoringModelTestCase(
         self.assert_not_enough_data()
 
 
-class TooFewApplicationsScoringModelTestCase(
-        scoring_test.HundredScoringModelTestBase('too-few-applications-score')):
+class TooFewApplicationsScoringModelTestCase(scoring_test.HundredScoringModelTestBase):
     """Unit test for the "weekly-application-score" scoring model."""
+
+    model_id = 'too-few-applications-score'
 
     def test_lot_of_applications(self):
         """User has done a lot of applications."""
@@ -185,9 +189,10 @@ class TooFewApplicationsScoringModelTestCase(
         self.assert_not_enough_data()
 
 
-class TrainingFullfillmentScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('training-fullfillment-score')):
+class TrainingFullfillmentScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on the training fullfillment."""
+
+    model_id = 'training-fullfillment-score'
 
     def test_unknown(self):
         """Test that people with unknown fullfillment aren't scored."""
@@ -212,9 +217,10 @@ class TrainingFullfillmentScoringModelTest(
         self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
 
 
-class RequiredDiplomasScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('required-diplomas-score')):
+class RequiredDiplomasScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on required diplomas."""
+
+    model_id = 'required-diplomas-score'
 
     def test_unknown(self):
         """Test that jobs without known required diplomas aren't scored."""
@@ -286,9 +292,10 @@ class RequiredDiplomasScoringModelTest(
         self.assert_good_score(score, msg='Fail for "{}"'.format(self.persona.name))
 
 
-class MarketStressScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('market-stress-score')):
+class MarketStressScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on job market stress."""
+
+    model_id = 'market-stress-score'
 
     def test_missing(self):
         """Test that users looking for jobs with missing market stress information aren't scored."""
@@ -356,9 +363,10 @@ class MarketStressScoringModelTest(
         self.assert_not_enough_data()
 
 
-class ReturnToEmploymentScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('return-to-employment-score')):
+class ReturnToEmploymentScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on return to employment duration."""
+
+    model_id = 'return-to-employment-score'
 
     def test_unknown(self):
         """Test that persona with missing job local stats aren't scored."""
@@ -403,9 +411,10 @@ class ReturnToEmploymentScoringModelTest(
         self.assert_good_score(score, msg='Fail of "{}"'.format(self.persona.name))
 
 
-class JobOfTheFutureScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('job-of-the-future')):
+class JobOfTheFutureScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on job is future proof."""
+
+    model_id = 'job-of-the-future'
 
     def test_no_data(self):
         """No growth data."""
@@ -446,9 +455,10 @@ class JobOfTheFutureScoringModelTest(
         self.assert_good_score(score, msg='Fail of "{}"'.format(self.persona.name))
 
 
-class NetworkScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('network-score')):
+class NetworkScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on network quality."""
+
+    model_id = 'network-score'
 
     def test_no_data(self):
         """No network estimation available."""
@@ -471,9 +481,10 @@ class NetworkScoringModelTest(
         self.assert_good_score(score, msg='Fail of "{}"'.format(self.persona.name))
 
 
-class OffersChangeScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('offers-change-score')):
+class OffersChangeScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on job offers change."""
+
+    model_id = 'offers-change-score'
 
     def test_offers_highly_increasing(self):
         """Test that users looking for jobs where offers highly increase have the greatest score."""
@@ -517,9 +528,10 @@ class OffersChangeScoringModelTest(
         self.assert_not_enough_data()
 
 
-class PassionateLevelScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('job-passionate-score')):
+class PassionateLevelScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on users passionate about their job."""
+
+    model_id = 'job-passionate-score'
 
     def test_passionate_is_good(self):
         """Test that passionate users have greatest score."""
@@ -542,9 +554,10 @@ class PassionateLevelScoringModelTest(
         self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
 
 
-class FrustrationTimeManagementScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('frustration-time-managment-scorer')):
+class FrustrationTimeManagementScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on users frustrated by their time management."""
+
+    model_id = 'frustration-time-managment-scorer'
 
     def test_frustrated_is_bad(self):
         """Test that frustrated users have worse score."""
@@ -560,9 +573,10 @@ class FrustrationTimeManagementScoringModelTest(
         self.assert_not_enough_data()
 
 
-class JobSimilarityScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('job-similarity-score')):
+class JobSimilarityScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on users with similar job experience."""
+
+    model_id = 'job-similarity-score'
 
     def test_same_is_good(self):
         """Users with experience in job have good score."""
@@ -593,9 +607,10 @@ class JobSimilarityScoringModelTest(
         self.assert_not_enough_data()
 
 
-class HiringNeedScoringModelTest(
-        scoring_test.HundredScoringModelTestBase('hiring-difficulty-score')):
+class HiringNeedScoringModelTest(scoring_test.HundredScoringModelTestBase):
     """Unit test for the scoring model on difficult hiring for a given job."""
+
+    model_id = 'hiring-difficulty-score'
 
     def test_not_enough_data(self):
         """A job without BMO cannot be scored."""
@@ -633,9 +648,10 @@ class HiringNeedScoringModelTest(
         self.assert_bad_score(score)
 
 
-class DiagnosticEmptyFilterTest(
-        filters_test.FilterTestBase('for-empty-diagnostic(PROFILE_DIAGNOSTIC)')):
+class DiagnosticEmptyFilterTest(filters_test.FilterTestBase):
     """Unit test for the filter with empty diagnostic profile submetric."""
+
+    model_id = 'for-empty-diagnostic(PROFILE_DIAGNOSTIC)'
 
     def test_empty_diagnostic(self):
         """Users without a diagnostic should pass the filter."""
@@ -660,10 +676,11 @@ class DiagnosticEmptyFilterTest(
         self._assert_fail_filter()
 
 
-class DiagnosticRedFilterTest(
-        filters_test.FilterTestBase('for-bad-diagnostic(PROFILE_DIAGNOSTIC)')):
+class DiagnosticRedFilterTest(filters_test.FilterTestBase):
     """Unit test for the filter with bad score for diagnostic profile submetric."""
 
+    model_id = 'for-bad-diagnostic(PROFILE_DIAGNOSTIC)'
+
     def test_empty_diagnostic(self):
         """Users without a diagnostic should fail the filter."""
 
@@ -689,9 +706,10 @@ class DiagnosticRedFilterTest(
         self._assert_pass_filter()
 
 
-class DiagnosticGreenFilterTest(
-        filters_test.FilterTestBase('for-good-diagnostic(PROFILE_DIAGNOSTIC)')):
+class DiagnosticGreenFilterTest(filters_test.FilterTestBase):
     """Unit test for the filter with good score for diagnostic profile submetric."""
+
+    model_id = 'for-good-diagnostic(PROFILE_DIAGNOSTIC)'
 
     def test_empty_diagnostic(self):
         """Users without a diagnostic should fail the filter."""
@@ -718,9 +736,10 @@ class DiagnosticGreenFilterTest(
         self._assert_pass_filter()
 
 
-class CountDiagnosticFilterTest(
-        filters_test.FilterTestBase('for-good-diagnostic-submetrics(+4)')):
+class CountDiagnosticFilterTest(filters_test.FilterTestBase):
     """Unit test for the filter with good score for diagnostic profile submetric."""
+
+    model_id = 'for-good-diagnostic-submetrics(+4)'
 
     def test_one_good_diagnostic(self):
         """Users with only one submetric should fail the filter."""

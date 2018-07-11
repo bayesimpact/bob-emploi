@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
 
-import {CircularProgress, Colors, GrowingNumber, PaddedOnMobile, Tag} from 'components/theme'
+import {CircularProgress, GrowingNumber, PaddedOnMobile, Tag} from 'components/theme'
 import Picto from 'images/advices/picto-association-help.png'
 
 import {AdviceSuggestionList, connectExpandedCardWithContent} from './base'
@@ -13,10 +13,6 @@ class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     fontSize: PropTypes.number.isRequired,
-  }
-
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
   }
 
   render() {
@@ -34,18 +30,16 @@ class ExpandedAdviceCardContentBase extends React.Component {
     adviceData: PropTypes.shape({
       associations: PropTypes.arrayOf(PropTypes.object.isRequired),
     }).isRequired,
+    onExplore: PropTypes.func.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   renderAssociations(style) {
-    const {adviceData: {associations}, userYou} = this.props
+    const {adviceData: {associations}, onExplore, userYou} = this.props
     return <AdviceSuggestionList style={style}>
       {(associations || []).map(({filters, link, name}, index) => <AssociationLink
-        key={`association-${index}`} href={link} {...{filters, userYou}}>
+        key={`association-${index}`} href={link} onClick={() => onExplore('association')}
+        {...{filters, userYou}}>
         {name}
       </AssociationLink>)}
     </AdviceSuggestionList>
@@ -87,13 +81,15 @@ class AssociationLinkBase extends React.Component {
     children: PropTypes.node,
     filters: PropTypes.array,
     href: PropTypes.string.isRequired,
+    onClick: PropTypes.func,
     style: PropTypes.object,
     userYou: PropTypes.func.isRequired,
   }
 
   handleClick = () => {
-    const {href} = this.props
+    const {href, onClick} = this.props
     window.open(href, '_blank')
+    onClick && onClick()
   }
 
   getTags() {
@@ -101,25 +97,25 @@ class AssociationLinkBase extends React.Component {
     const tags = []
     if (/\.pole-emploi\.fr/.test(href)) {
       tags.push({
-        color: Colors.SQUASH,
+        color: colors.SQUASH,
         value: () => 'officielle',
       })
     }
     if ((filters || []).some(f => /^for-job-group/.test(f))) {
       tags.push({
-        color: Colors.RED_PINK,
+        color: colors.RED_PINK,
         value: userYou('pour ton métier', 'pour votre métier'),
       })
     }
     if ((filters || []).some(f => /^for-departement/.test(f))) {
       tags.push({
-        color: Colors.BOB_BLUE,
+        color: colors.BOB_BLUE,
         value: userYou('pour ta région', 'pour votre région'),
       })
     }
     if ((filters || []).some(f => /^for-women$/.test(f))) {
       tags.push({
-        color: Colors.GREENISH_TEAL,
+        color: colors.GREENISH_TEAL,
         value: 'pour les femmes',
       })
     }
@@ -127,7 +123,7 @@ class AssociationLinkBase extends React.Component {
     if (forOldFilter) {
       const age = forOldFilter.replace(/^for-old\(([0-9]+)\)$/, '$1')
       tags.push({
-        color: Colors.GREENISH_TEAL,
+        color: colors.GREENISH_TEAL,
         value: `pour les plus de ${age} ans`,
       })
     }
@@ -143,7 +139,7 @@ class AssociationLinkBase extends React.Component {
         {value}
       </Tag>)}
       <div style={{flex: 1}} />
-      <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, height: 24, width: 20}} />
+      <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 24, width: 20}} />
     </div>
   }
 }

@@ -100,88 +100,92 @@ class _Persona(object):
 _PERSONAS = _Persona.load_set(path.join(_TESTDATA_FOLDER, 'personas.json'))
 
 
-def ScoringModelTestBase(model_id):  # pylint: disable=invalid-name
+class ScoringModelTestBase(unittest.TestCase):
     """Creates a base class for unit tests of a scoring model."""
 
-    class _TestCase(unittest.TestCase):
+    model_id = None
 
-        @classmethod
-        def setUpClass(cls):
-            super(_TestCase, cls).setUpClass()
-            cls.model_id = model_id
-            cls.model = scoring.get_scoring_model(model_id)
+    @classmethod
+    def setUpClass(cls):
+        super(ScoringModelTestBase, cls).setUpClass()
+        if cls.model_id is None:
+            raise NotImplementedError('Add a model_id in "{}"'.format(cls.__name__))
+        cls._patcher = mock.patch.dict(scoring.SCORING_MODELS, {})
+        cls._patcher.start()
+        cls.model = scoring.get_scoring_model(cls.model_id)
 
-        def setUp(self):
-            super(_TestCase, self).setUp()
-            self.database = mongomock.MongoClient().test
-            self.now = None
-            self.assertIsInstance(
-                self.model, scoring.ModelBase, msg='model ID: "{}".'.format(self.model_id))
+    @classmethod
+    def tearDownClass(cls):
+        super(ScoringModelTestBase, cls).tearDownClass()
+        cls._patcher.stop()
 
-        def _score_persona(self, persona=None, name=None):
-            if not persona:
-                persona = _PERSONAS[name]
-            project = persona.scoring_project(self.database, now=self.now)
-            return self.model.score(project)
+    def setUp(self):
+        super(ScoringModelTestBase, self).setUp()
+        self.database = mongomock.MongoClient().test
+        self.now = None
+        self.assertIsInstance(
+            self.model, scoring.ModelBase, msg='model ID: "{}".'.format(self.model_id))
 
-        def _assert_score_persona_raises(self, exception_type, persona=None, name=None):
-            if not persona:
-                persona = _PERSONAS[name]
-            project = persona.scoring_project(self.database, now=self.now)
-            with self.assertRaises(exception_type, msg='Fail for "{}"'.format(persona.name)):
-                self.model.score(project)
+    def _score_persona(self, persona=None, name=None):
+        if not persona:
+            persona = _PERSONAS[name]
+        project = persona.scoring_project(self.database, now=self.now)
+        return self.model.score(project)
 
-        def _random_persona(self):
-            return _PERSONAS[random.choice(list(_PERSONAS))]
+    def _assert_score_persona_raises(self, exception_type, persona=None, name=None):
+        if not persona:
+            persona = _PERSONAS[name]
+        project = persona.scoring_project(self.database, now=self.now)
+        with self.assertRaises(exception_type, msg='Fail for "{}"'.format(persona.name)):
+            self.model.score(project)
 
-        def _clone_persona(self, name):
-            return _PERSONAS[name].clone()
+    def _random_persona(self):
+        return _PERSONAS[random.choice(list(_PERSONAS))]
 
-    return _TestCase
+    def _clone_persona(self, name):
+        return _PERSONAS[name].clone()
 
 
-def HundredScoringModelTestBase(model_id):  # pylint: disable=invalid-name
+class HundredScoringModelTestBase(ScoringModelTestBase):
     """Creates a base class for unit tests of scoring models using the ModelHundredBase."""
 
-    class _TestCase(ScoringModelTestBase(model_id)):
+    def setUp(self):
+        super(HundredScoringModelTestBase, self).setUp()
+        self.persona = self._random_persona().clone()
 
-        def setUp(self):
-            super(_TestCase, self).setUp()
-            self.persona = self._random_persona().clone()
+    def assert_not_enough_data(self):
+        """Asserts that the scorer chokes with a NotEnoughDataException
+        while scoring self.persona."""
 
-        def assert_not_enough_data(self):
-            """Asserts that the scorer chokes with a NotEnoughDataException
-            while scoring self.persona."""
+        self._assert_score_persona_raises(scoring.NotEnoughDataException, self.persona)
 
-            self._assert_score_persona_raises(scoring.NotEnoughDataException, self.persona)
+    def assert_good_score(self, score, limit=70, msg=None):
+        """Asserts that the score is considered good (more than limit in percent)."""
 
-        def assert_good_score(self, score, limit=70, msg=None):
-            """Asserts that the score is considered good (more than limit in percent)."""
+        self.assertGreaterEqual(score, limit * 3 / 100, msg)
 
-            self.assertGreaterEqual(score, limit * 3 / 100, msg)
+    def assert_great_score(self, score, msg=None):
+        """Asserts that the score is the best possible."""
 
-        def assert_great_score(self, score, msg=None):
-            """Asserts that the score is the best possible."""
+        self.assertEqual(score, 3, msg)
 
-            self.assertEqual(score, 3, msg)
+    def assert_bad_score(self, score, limit=30, msg=None):
+        """Asserts that the score is considered bad (less than limit in percent).
+        Also checks that it is not below 0%."""
 
-        def assert_bad_score(self, score, limit=30, msg=None):
-            """Asserts that the score is considered bad (less than limit in percent).
-            Also checks that it is not below 0%."""
+        self.assertGreaterEqual(score, 0, msg='A bad score should not be under 0.')
+        self.assertLessEqual(score, limit * 3 / 100, msg)
 
-            self.assertGreaterEqual(score, 0, msg='A bad score should not be under 0.')
-            self.assertLessEqual(score, limit * 3 / 100, msg)
+    def assert_worse_score(self, score, msg=None):
+        """Assert that the score is the worse possible (0%)."""
 
-        def assert_worse_score(self, score, msg=None):
-            """Assert that the score is the worse possible (0%)."""
-
-            self.assertEqual(score, 0, msg)
-
-    return _TestCase
+        self.assertEqual(score, 0, msg)
 
 
-class DefaultScoringModelTestCase(ScoringModelTestBase('')):
+class DefaultScoringModelTestCase(ScoringModelTestBase):
     """Unit test for the default scoring model."""
+
+    model_id = ''
 
     def test_score(self):
         """Test the score function."""
@@ -192,8 +196,10 @@ class DefaultScoringModelTestCase(ScoringModelTestBase('')):
         self.assertLessEqual(0, score)
 
 
-class TrainingAdviceScoringModelTestCase(ScoringModelTestBase('advice-training')):
+class TrainingAdviceScoringModelTestCase(ScoringModelTestBase):
     """Unit test for the training scoring model."""
+
+    model_id = 'advice-training'
 
     def setUp(self):
         """Setting up the persona for a test."""
@@ -264,8 +270,10 @@ class TrainingAdviceScoringModelTestCase(ScoringModelTestBase('advice-training')
         self.assertEqual(0, self._score_persona(self.persona))
 
 
-class ConstantScoreModelTestCase(ScoringModelTestBase('constant(2)')):
+class ConstantScoreModelTestCase(ScoringModelTestBase):
     """Unit test for the constant scoring model."""
+
+    model_id = 'constant(2)'
 
     def test_random(self):
         """Check score on a random persona."""
@@ -308,6 +316,7 @@ class PersonasTestCase(unittest.TestCase):
         _load_json_to_mongo(database, 'specific_to_job_advice')
         _load_json_to_mongo(database, 'reorient_jobbing')
         _load_json_to_mongo(database, 'reorient_to_close')
+        _load_json_to_mongo(database, 'online_salons')
 
         scores = collections.defaultdict(lambda: collections.defaultdict(float))
         # Mock the "now" date so that scoring models that are based on time
@@ -403,8 +412,10 @@ class PersonasTestCase(unittest.TestCase):
                     .format(regexp, other_regexp, example))
 
 
-class LifeBalanceTestCase(ScoringModelTestBase('advice-life-balance')):
+class LifeBalanceTestCase(ScoringModelTestBase):
     """Unit tests for the "Work/Life balance" advice."""
+
+    model_id = 'advice-life-balance'
 
     def test_short_searching(self):
         """The user does not have a diploma problem."""
@@ -443,8 +454,10 @@ class LifeBalanceTestCase(ScoringModelTestBase('advice-life-balance')):
         self.assertEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
 
 
-class AdviceVaeTestCase(ScoringModelTestBase('advice-vae')):
+class AdviceVaeTestCase(ScoringModelTestBase):
     """Unit tests for the "vae" advice."""
+
+    model_id = 'advice-vae'
 
     def test_experiemented(self):
         """The user is experimented and think he has enough diplomas."""
@@ -498,8 +511,10 @@ class AdviceVaeTestCase(ScoringModelTestBase('advice-vae')):
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
 
 
-class AdviceSeniorTestCase(ScoringModelTestBase('advice-senior')):
+class AdviceSeniorTestCase(ScoringModelTestBase):
     """Unit tests for the "Senior" advice."""
+
+    model_id = 'advice-senior'
 
     def test_match_discriminated(self):
         """The user is over 40 years old and feels discriminated so this should match."""
@@ -530,8 +545,10 @@ class AdviceSeniorTestCase(ScoringModelTestBase('advice-senior')):
         self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
 
 
-class AdviceLessApplicationsTestCase(ScoringModelTestBase('advice-less-applications')):
+class AdviceLessApplicationsTestCase(ScoringModelTestBase):
     """Unit tests for the "Apply less" advice."""
+
+    model_id = 'advice-less-applications'
 
     def test_match(self):
         """The user applies a lot so the advice should match."""
@@ -554,8 +571,10 @@ class AdviceLessApplicationsTestCase(ScoringModelTestBase('advice-less-applicati
         self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
 
 
-class AdviceJobBoardsTestCase(ScoringModelTestBase('advice-job-boards')):
+class AdviceJobBoardsTestCase(ScoringModelTestBase):
     """Unit tests for the "Other Work Environments" advice."""
+
+    model_id = 'advice-job-boards'
 
     def test_frustrated(self):
         """Frustrated by not enough offers."""
@@ -620,8 +639,10 @@ class AdviceJobBoardsTestCase(ScoringModelTestBase('advice-job-boards')):
         self.assertEqual('Remix Jobs', result.job_board_title)
 
 
-class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
+class AdviceOtherWorkEnvTestCase(ScoringModelTestBase):
     """Unit tests for the "Other Work Environments" advice."""
+
+    model_id = 'advice-other-work-env'
 
     def test_no_job_group_info(self):
         """Does not trigger if we are missing environment data."""
@@ -663,8 +684,10 @@ class AdviceOtherWorkEnvTestCase(ScoringModelTestBase('advice-other-work-env')):
         self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
 
 
-class AdviceWowBakerTestCase(ScoringModelTestBase('advice-wow-baker')):
+class AdviceWowBakerTestCase(ScoringModelTestBase):
     """Unit tests for the "Wow Baker" advice."""
+
+    model_id = 'advice-wow-baker'
 
     def test_not_baker(self):
         """Does not trigger for non baker."""
@@ -698,13 +721,16 @@ class AdviceWowBakerTestCase(ScoringModelTestBase('advice-wow-baker')):
         self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
 
 
-class AdviceSpecificToJobTestCase(ScoringModelTestBase('advice-specific-to-job')):
+class AdviceSpecificToJobTestCase(ScoringModelTestBase):
     """Unit tests for the "Specicif to Job" advice."""
+
+    model_id = 'advice-specific-to-job'
 
     def setUp(self):
         super(AdviceSpecificToJobTestCase, self).setUp()
         self.database.specific_to_job_advice.insert_one({
             'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            'shortTitle': 'Astuces de boulanger',
             'filters': ['for-job-group(D1102)', 'not-for-job(12006)'],
             'cardText':
             'Allez à la boulangerie la veille pour savoir à quelle '
@@ -751,8 +777,10 @@ class AdviceSpecificToJobTestCase(ScoringModelTestBase('advice-specific-to-job')
         self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
 
 
-class AdviceBodyLanguageTestCase(ScoringModelTestBase('advice-body-language')):
+class AdviceBodyLanguageTestCase(ScoringModelTestBase):
     """Unit tests for the "Body Language" advice."""
+
+    model_id = 'advice-body-language'
 
     def test_frustrated_by_interviews(self):
         """User is frustrated by their performance in interviews."""
@@ -773,8 +801,10 @@ class AdviceBodyLanguageTestCase(ScoringModelTestBase('advice-body-language')):
         self.assertEqual(score, 1, msg='Failed for "{}":'.format(persona.name))
 
 
-class AdviceFollowUpEmailTestCase(ScoringModelTestBase('advice-follow-up')):
+class AdviceFollowUpEmailTestCase(ScoringModelTestBase):
     """Unit tests for the "Follow Up" advice."""
+
+    model_id = 'advice-follow-up'
 
     def test_should_apply_in_person(self):
         """User is looking for a job that does not use email for applications."""

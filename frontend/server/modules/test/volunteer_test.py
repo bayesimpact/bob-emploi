@@ -8,8 +8,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase('advice-volunteer')):
+class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Volunteer" advice."""
+
+    model_id = 'advice-volunteer'
 
     def setUp(self):
         super(VolunteerAdviceTestCase, self).setUp()

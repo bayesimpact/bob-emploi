@@ -1,0 +1,30 @@
+{
+  "Targets": [
+    {
+      "Arn": "arn:aws:ecs:eu-west-3:951168128976:cluster/default",
+      "EcsParameters": {
+        "TaskCount": 1,
+        "TaskDefinitionArn": "arn:aws:ecs:eu-west-3:951168128976:task-definition/frontend-flask"
+      },
+      "Id": "frontend-flask",
+      "Input": {
+        "containerOverrides": [
+          {
+            "command": [
+              "python bob_emploi/frontend/server/asynchronous/sync_user_elasticsearch.py -r 2017-01-01 --no-dry-run --index bobusers"
+            ],
+            "environment": [
+              {
+                "name": "USERS_MONGO_URL",
+                "value": "REDACTED"
+              }
+            ],
+            "name": "flask"
+          }
+        ],
+        "taskRoleArn": "arn:aws:iam::951168128976:role/ECS-ElasticSearch"
+      },
+      "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
+    }
+  ]
+}

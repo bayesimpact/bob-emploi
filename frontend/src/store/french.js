@@ -66,6 +66,12 @@ export const toTitleCase = text => {
 // e.g. "Toulouse" => "à ", "Le Mans", "au ". Also return the part of the city
 // name without the prefix.
 export const inCityPrefix = fullName => {
+  if (!fullName) {
+    return {
+      cityName: '',
+      prefix: '',
+    }
+  }
   if (fullName.match(/^Le /)) {
     return {
       cityName: fullName.substr(3),
@@ -156,4 +162,16 @@ export const genderize = (neutralSentence, herSentence, hisSentence, gender) => 
       return hisSentence
   }
   return neutralSentence
+}
+
+
+// TODO(cyrille): Test this one.
+const monthsShort = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+export const getDateString = timestamp => {
+  const date = new Date(timestamp)
+  const day = date.getDate()
+  const month = date.getMonth()
+  const year = date.getFullYear()
+  return `${day} ${monthsShort[month]} ${year}`
 }

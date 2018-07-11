@@ -8,7 +8,7 @@ of jobseekers that have the same criteria.
 
 If you managed to get your hands on the FHS dataset, you can run:
     docker-compose run --rm data-analysis-prepare python \
-        bob_emploi/importer/fhs_salaries.py \
+        bob_emploi/data_analysis/importer/fhs_salaries.py \
         "data/pole_emploi/FHS/FHS*201512" \
         data/fhs_salaries.csv
 """

@@ -66,8 +66,12 @@ message DiagnosticSentenceTemplate {
   // sentences would require at least one sentence with the same rank to be
   // present.
   bool optional = 4;
+
+  // Which topic this sentence is relevant to. If this is for general diagnostic, leave empty.
+  DiagnosticTopic topic = 5;
 }
 
+// TODO(cyrille): Clean this one and its uses, since we won't use it much more.
 message DiagnosticSubmetricsSentenceTemplate {
   // Scorer for the given metric.
   string trigger_scoring_model = 1;
@@ -87,4 +91,42 @@ message DiagnosticSubmetricsSentenceTemplate {
   // populate_template method in scoring for the full list of variables). It
   // uses markup language.
   string negative_sentence_template = 5;
+}
+
+// A quick diagnostic for a partial project. It does not contain any semantics,
+// only formatted string that the user can display.
+message QuickDiagnostic {
+  // A set of comments with at most one comment per field.
+  repeated DiagnosticComment comments = 1;
+}
+
+message DiagnosticComment {
+  // The field that the comment is targeted for.
+  ProjectOrProfileField field = 1;
+
+  // Whether the comment should be shown before the field, or as a comment
+  // after it's been set.
+  bool is_before_question = 2;
+
+  // The actual comment.
+  BoldedString comment = 3;
+}
+
+// A formatted string that can be used to express a diagnostic with no
+// semantics other than the display in normal / bold font weight.
+message BoldedString {
+  // The whole string broken into normal and bolded parts. The first part is
+  // not bolded, so a string starting with bold text should have a list
+  // starting with an empty string.
+  repeated string string_parts = 1;
+}
+
+enum ProjectOrProfileField {
+  UNKNOWN_PROJECT_FIELD = 0;
+  CITY_FIELD = 1;
+  SALARY_FIELD = 2;
+  TARGET_JOB_FIELD = 3;
+  REQUESTED_DIPLOMA_FIELD = 4;
+  NETWORK_FIELD = 5;
+  WEEKLY_APPLICATION_FIELD = 6;
 }

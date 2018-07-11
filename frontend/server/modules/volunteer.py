@@ -15,7 +15,8 @@ class _AdviceVolunteer(scoring_base.ModelBase):
     def volunteering_missions(self, project):
         """Return a list of volunteering mission close to the project."""
 
-        departement_id = project.details.mobility.city.departement_id
+        departement_id = project.details.city.departement_id \
+            or project.details.mobility.city.departement_id
 
         # Get data from MongoDB.
         volunteering_missions_dict = collections.defaultdict(association_pb2.VolunteeringMissions)

@@ -1,6 +1,12 @@
 const path = require('path')
+const webpack = require('webpack')
+const mapKeys = require('lodash/mapKeys')
+const mapValues = require('lodash/mapValues')
 
 const baseConfig = require('./base')
+const colors = require('./colors.json')
+const constants = require('./const.json')
+
 
 module.exports = {
   devtool: 'eval',
@@ -22,5 +28,11 @@ module.exports = {
       },
     ],
   },
+  plugins: [
+    new webpack.DefinePlugin({
+      ...mapKeys(mapValues(colors, () => '""'), (color, name) => `colors.${name}`),
+      ...mapKeys(mapValues(constants, () => '""'), (value, key) => `config.${key}`),
+    }),
+  ],
   resolve: baseConfig.resolve,
 }

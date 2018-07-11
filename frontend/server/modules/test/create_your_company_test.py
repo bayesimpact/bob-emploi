@@ -12,23 +12,15 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceCreateYourCompanyTestCase(
-        scoring_test.ScoringModelTestBase('advice-create-your-company')):
+class AdviceCreateYourCompanyTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Create your company" scoring model."""
 
-    def test_too_late(self):
-        """Test the score after the date of all events."""
-
-        persona = self._random_persona().clone()
-        self.now = datetime.datetime(2018, 2, 25)
-        score = self._score_persona(persona)
-        self.assertEqual(0, score, msg='Fail for "{}"'.format(persona.name))
+    model_id = 'advice-create-your-company'
 
     def test_atypic_profile(self):
         """Test the scoring function before the events with an atypic profile."""
 
         persona = self._random_persona().clone()
-        self.now = datetime.datetime(2018, 1, 25)
         persona.user_profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
         score = self._score_persona(persona)
         self.assertEqual(2, score, msg='Fail for "{}"'.format(persona.name))
@@ -50,10 +42,6 @@ class ExtraDataTestCase(base_test.ServerTestCase):
 
     def setUp(self):  # pylint: disable=missing-docstring,invalid-name
         super(ExtraDataTestCase, self).setUp()
-        patcher = mock.patch(now.__name__ + '.get')
-        mock_now = patcher.start()
-        mock_now.return_value = datetime.datetime(2018, 1, 25)
-        self.addCleanup(patcher.stop)
         self._db.advice_modules.insert_one({
             'adviceId': 'my-advice',
             'triggerScoringModel': 'advice-create-your-company',
@@ -75,14 +63,22 @@ class ExtraDataTestCase(base_test.ServerTestCase):
             'latitude': 45.7667,
             'longitude': 4.88333,
         })
-        self._db.adie_events.insert_many([
+        self._db.adie_events.insert_one(
             {
                 'title': 'Create your company',
                 'cityName': 'Lyon',
                 'latitude': 45.7589,
                 'longitude': 4.84139,
             },
-        ])
+        )
+        self._db.adie_testimonials.insert_one(
+            {
+                'authorName': 'Sara',
+                'authorJobName': 'House builder',
+                'description': 'Sara worked as a software engineer and then...',
+                'preferred_job_group_ids': 'A1, B2',
+            },
+        )
 
         response = self.app.post(
             '/api/project/compute-advices',
@@ -94,7 +90,8 @@ class ExtraDataTestCase(base_test.ServerTestCase):
             a for a in advices.get('advices', [])
             if a.get('adviceId') == 'my-advice')
 
-        self.assertEqual('du 5 au 7 février', advice.get('createYourCompanyData', {}).get('period'))
+        self.assertEqual(
+            'du 28 mai au 1ᵉʳ juin', advice.get('createYourCompanyData', {}).get('period'))
         self.assertEqual('Lyon', advice.get('createYourCompanyData', {}).get('city'))
 
     def test_far_from_any_city_with_events(self):
@@ -130,8 +127,9 @@ class ExtraDataTestCase(base_test.ServerTestCase):
             a for a in advices.get('advices', [])
             if a.get('adviceId') == 'my-advice')
 
-        self.assertEqual('du 5 au 7 février', advice.get('createYourCompanyData', {}).get('period'))
-        self.assertFalse(advice.get('createYourCompanyData', {}).get('city'))
+        self.assertEqual(
+            'du 28 mai au 1ᵉʳ juin', advice.get('createYourCompanyData', {}).get('period'))
+        self.assertNotIn('city', advice.get('createYourCompanyData', {}))
 
     def test_no_events(self):
         """Test without any events."""
@@ -158,14 +156,15 @@ class ExtraDataTestCase(base_test.ServerTestCase):
             a for a in advices.get('advices', [])
             if a.get('adviceId') == 'my-advice')
 
-        self.assertEqual('du 5 au 7 février', advice.get('createYourCompanyData', {}).get('period'))
-        self.assertFalse(advice.get('createYourCompanyData', {}).get('city'))
+        self.assertEqual(
+            'du 28 mai au 1ᵉʳ juin', advice.get('createYourCompanyData', {}).get('period'))
+        self.assertNotIn('city', advice.get('createYourCompanyData', {}))
 
 
 class EndpointTestCase(base_test.ServerTestCase):
-    """Unit tests for the project/.../events endpoint."""
+    """Unit tests for the project/.../create-your-company endpoint."""
 
-    def setUp(self):
+    def setUp(self):  # pylint: disable=missing-docstring,invalid-name
         super(EndpointTestCase, self).setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'create-your-company',
@@ -204,10 +203,54 @@ class EndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
 
         data = self.json_from_response(response)
-        self.assertEqual('Lyon', data.get('city'))
+        self.assertEqual('Lyon', data.get('closeByEvents', {}).get('city'))
         self.assertEqual(
             ['Create your company', 'Work as a freelance'],
-            [event.get('title') for event in data.get('events', [])])
+            [event.get('title') for event in data.get('closeByEvents', {}).get('events')])
+
+    def test_related_testimonials(self):
+        """Test when testimonials related to the user's project exist."""
+
+        self._db.adie_testimonials.insert_many([
+            {
+                'author_name': 'Bob',
+                'author_job_name': 'coach',
+                'link': 'www.here.org',
+                'image_link': 'www.image.org',
+                'description': 'I will help you',
+                'filters': [],
+                'preferred_job_group_ids': ['A1', 'B2'],
+            },
+            {
+                'author_name': 'Bill',
+                'author_job_name': 'witch',
+                'link': 'www.away.org',
+                'image_link': 'www.no-image.org',
+                'description': 'I will put a spell on you',
+                'filters': [],
+                'preferred_job_group_ids': ['A2', 'B1'],
+            },
+            {
+                'author_name': 'Lola',
+                'author_job_name': 'driver',
+                'link': 'www.there.org',
+                'image_link': 'www.this-image.org',
+                'description': 'I will try to help you',
+                'filters': [],
+                'preferred_job_group_ids': ['A12', 'B3'],
+            },
+        ])
+        response = self.app.post(
+            '/api/advice/create-your-company',
+            data='{"projects": [{"targetJob": {"jobGroup": {"romeId": "A1234"}}}]}',
+            content_type='application/json')
+
+        data = self.json_from_response(response)
+        self.assertEqual(2, len(data.get('relatedTestimonials', []).get('testimonials', [])))
+        self.assertEqual(
+            ['Bob', 'Lola'],
+            [testimonial.get('authorName') for testimonial in data.get(
+                'relatedTestimonials', []).get('testimonials', [])])
 
     def test_far_from_any_city_with_events(self):
         """Test far from any city with events."""
@@ -238,10 +281,10 @@ class EndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
 
         data = self.json_from_response(response)
-        self.assertEqual({'events'}, data.keys())
+        self.assertEqual({'closeByEvents'}, data.keys())
         self.assertEqual(
             ['Entrepreneur in Dijon', 'Create your company'],
-            [event.get('title') for event in data['events']])
+            [event.get('title') for event in data.get('closeByEvents', {}).get('events')])
 
     def test_no_location(self):
         """Test city without no coordinates."""
@@ -266,10 +309,10 @@ class EndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
 
         data = self.json_from_response(response)
-        self.assertEqual({'events'}, data.keys())
+        self.assertEqual({'closeByEvents'}, data.keys())
         self.assertEqual(
             {'Entrepreneur in Dijon', 'Create your company'},
-            {event.get('title') for event in data['events']})
+            {event.get('title') for event in data.get('closeByEvents', {}).get('events')})
 
     def test_no_events(self):
         """Test without any events."""
@@ -280,7 +323,52 @@ class EndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
 
         data = self.json_from_response(response)
-        self.assertFalse(data)
+        self.assertFalse(data.get('closeByEvents'))
+
+    @mock.patch(now.__name__ + '.get', mock.MagicMock(
+        return_value=datetime.datetime(2018, 5, 9)))
+    def test_start_date(self):
+        """Test events with start dates."""
+
+        self._db.adie_events.insert_many([
+            {
+                'title': 'Past date',
+                'cityName': 'Lyon',
+                'latitude': 45.7589,
+                'longitude': 4.84139,
+                'startDate': '2018-05-02',
+            },
+            {
+                'title': 'No date',
+                'cityName': 'Dijon',
+                'latitude': 47.322047,
+                'longitude': 5.04148,
+            },
+            {
+                'title': 'Today',
+                'cityName': 'Dijon',
+                'latitude': 47.322047,
+                'longitude': 5.04148,
+                'startDate': '2018-05-09',
+            },
+            {
+                'title': 'Future date',
+                'cityName': 'Dijon',
+                'latitude': 47.322047,
+                'longitude': 5.04148,
+                'startDate': '2018-06-01',
+            },
+        ])
+        response = self.app.post(
+            '/api/advice/create-your-company',
+            data='{"projects": [{"mobility": {"city": {"cityId": "69266"}}}]}',
+            content_type='application/json')
+
+        data = self.json_from_response(response)
+        self.assertEqual({'closeByEvents'}, data.keys())
+        self.assertEqual(
+            {'No date', 'Today', 'Future date'},
+            {event.get('title') for event in data.get('closeByEvents', {}).get('events')})
 
 
 if __name__ == '__main__':

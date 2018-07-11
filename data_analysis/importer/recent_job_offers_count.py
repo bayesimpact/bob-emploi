@@ -14,7 +14,7 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/recent_job_offers_count.py \
+        python bob_emploi/data_analysis/importer/recent_job_offers_count.py \
         --mongo_url mongodb://frontend-db/test
 """
 
@@ -22,11 +22,12 @@ import collections
 import os
 
 import emploi_store
+import tqdm
 
 from bob_emploi.data_analysis.lib import mongo
 
 
-def download_and_count():
+def download_and_count(file=None):
     """Import the # of job offers available per job group and dept in MongoDB.
 
     Returns:
@@ -34,7 +35,7 @@ def download_and_count():
     """
 
     counts = collections.defaultdict(int)
-    for job_offer in _iterate_job_offers():
+    for job_offer in tqdm.tqdm(_iterate_job_offers(), file=file):
         local_id = '{}:{}'.format(
             job_offer['DEPARTEMENT_CODE'],
             job_offer['ROME_PROFESSION_CARD_CODE'])

@@ -10,10 +10,10 @@ import Picto from 'images/advices/picto-volunteer.png'
 import {connectExpandedCardWithContent, Mission, MoreMissionsLink} from './base'
 
 
-const getPreviewData = ({advice, project}) => {
+const getPreviewData = ({advice, project: {city = {}}}) => {
   const {volunteerData} = advice
   const associationNames = volunteerData.associationNames || ['SNC', 'Missions Locales']
-  const {modfifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
+  const {modfifiedName: cityName, prefix} = ofPrefix(city.name)
   return {associationNames, cityName, prefix}
 }
 
@@ -45,11 +45,16 @@ class ExpandedAdviceCardContentBase extends React.Component {
     adviceData: PropTypes.shape({
       missions: PropTypes.array,
     }).isRequired,
-    project: PropTypes.object.isRequired,
+    onExplore: PropTypes.func.isRequired,
+    project: PropTypes.shape({
+      city: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+      }),
+    }).isRequired,
   }
 
   render() {
-    const {adviceData, project} = this.props
+    const {adviceData, onExplore, project: {city = {}}} = this.props
     const associationMap = {}
     const missions = (adviceData.missions || []).filter(({associationName}) => {
       if (associationMap[associationName]) {
@@ -58,7 +63,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
       associationMap[associationName] = true
       return true
     })
-    const {modifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
+    const {modifiedName: cityName, prefix} = ofPrefix(city.name)
     return <div>
       {missions.length ? <PaddedOnMobile style={{marginBottom: 15}}>
         Nous avons trouvé <strong>
@@ -68,11 +73,13 @@ class ExpandedAdviceCardContentBase extends React.Component {
 
       <AppearingList>
         {[
-          ...missions.map((mission, index) => <Mission aggregatorName="Tous Bénévoles"
+          ...missions.map((mission, index) => <Mission
+            aggregatorName="Tous Bénévoles" onContentShown={() => onExplore('mission')}
             {...mission} style={{marginTop: index ? -1 : 0}} key={`mission-${index}`} />),
           <MoreMissionsLink
             style={{marginTop: -1}} key="more" logo={logoTousBenevoles} altLogo="Tous bénévoles"
             onClick={() => {
+              onExplore('more missions')
               window.open('http://www.tousbenevoles.org/?utm_source=bob-emploi', '_blank')
             }}>
             Trouver d'autres missions de bénévolat sur Tous Bénévoles

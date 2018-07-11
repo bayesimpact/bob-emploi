@@ -11,9 +11,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceReorientCloseTestCase(
-        scoring_test.ScoringModelTestBase('advice-reorient-to-close-job')):
+class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "reorient-jobbing" advice."""
+
+    model_id = 'advice-reorient-to-close-job'
 
     def setUp(self):  # pylint: disable=missing-docstring,invalid-name
         super(AdviceReorientCloseTestCase, self).setUp()

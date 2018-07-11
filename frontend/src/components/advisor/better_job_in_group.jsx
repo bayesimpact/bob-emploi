@@ -1,4 +1,4 @@
-import keyBy from 'lodash/keyBy'
+import _keyBy from 'lodash/keyBy'
 import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
@@ -7,9 +7,8 @@ import {connect} from 'react-redux'
 import {getJobs} from 'store/actions'
 import {lowerFirstLetter} from 'store/french'
 import {genderizeJob, getJobSearchURL} from 'store/job'
-import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {AppearingList, Colors, PaddedOnMobile, Styles} from 'components/theme'
+import {AppearingList, ExternalLink, PaddedOnMobile, Styles} from 'components/theme'
 import Picto from 'images/advices/picto-better-job-in-group.png'
 
 import {DataSource} from './base'
@@ -20,14 +19,16 @@ class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     fontSize: PropTypes.number.isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
+    profile: PropTypes.shape({
+      gender: PropTypes.string,
+    }).isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice, fontSize, profile, userYou} = this.props
+    const {advice, fontSize, profile: {gender}, userYou} = this.props
     const {betterJob} = advice.betterJobInGroupData || {}
-    const jobName = job => lowerFirstLetter(genderizeJob(job, profile.gender))
+    const jobName = job => lowerFirstLetter(genderizeJob(job, gender))
     if (!betterJob) {
       return null
     }
@@ -44,10 +45,12 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
-    advice: PropTypes.object.isRequired,
     dispatch: PropTypes.func.isRequired,
     jobGroupInfo: PropTypes.object,
-    profile: USER_PROFILE_SHAPE.isRequired,
+    onExplore: PropTypes.func.isRequired,
+    profile: PropTypes.shape({
+      gender: PropTypes.string,
+    }).isRequired,
     project: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
@@ -55,60 +58,55 @@ class ExpandedAdviceCardContentBase extends React.Component {
   state = {
     areAllJobsShown: false,
     hoveredJob: null,
+    jobGroupInfo: null,
     weightedJobs: [],
   }
 
-  componentWillMount() {
-    const {dispatch, jobGroupInfo, project} = this.props
-    if (!jobGroupInfo) {
-      dispatch(getJobs(project.targetJob.jobGroup))
-    }
-    this.updateWeightedJobs({}, this.props)
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const {advice, jobGroupInfo} = this.props
-    this.updateWeightedJobs({advice, jobGroupInfo}, nextProps)
-  }
-
-  updateWeightedJobs(prevProps, nextProps) {
-    const {advice, jobGroupInfo} = nextProps
-    if (jobGroupInfo === prevProps.jobGroupInfo && (jobGroupInfo || advice === prevProps.advice)) {
-      return
+  static getDerivedStateFromProps(nextProps, prevState) {
+    const {jobGroupInfo} = nextProps
+    if (jobGroupInfo === prevState.jobGroupInfo) {
+      return null
     }
     if (!jobGroupInfo) {
-      this.setState({weightedJobs: []})
-      return
+      return {weightedJobs: []}
     }
     const {jobs, requirements} = jobGroupInfo
-    const weights = keyBy(requirements.specificJobs || [], 'codeOgr')
+    const weights = _keyBy(requirements.specificJobs || [], 'codeOgr')
     const weightedJobs = (jobs || []).map(job => ({
       job,
       weight: weights[job.codeOgr] && weights[job.codeOgr].percentSuggested / 100 || 0,
     })).sort((jobA, jobB) => jobB.weight - jobA.weight)
-    this.setState({weightedJobs})
+    return {weightedJobs}
+  }
+
+  componentDidMount() {
+    const {dispatch, jobGroupInfo, project: {targetJob: {jobGroup} = {}} = {}} = this.props
+    if (!jobGroupInfo) {
+      dispatch(getJobs(jobGroup))
+    }
   }
 
   openJob(job) {
-    const {profile} = this.props
-    window.open(getJobSearchURL(job, profile.gender), '_blank')
+    const {onExplore, profile: {gender}} = this.props
+    window.open(getJobSearchURL(job, gender), '_blank')
+    onExplore('job')
   }
 
   renderWeightedJob({job, weight}, style, maxWeight, isTargetJob, isBetterThanTarget) {
-    const {profile, userYou} = this.props
+    const {profile: {gender}, userYou} = this.props
     const {hoveredJob} = this.state
     const isHovered = hoveredJob === job
     const containerStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       display: 'flex',
       height: 50,
       padding: '0 15px 0 0',
       ...style,
     }
     const jobNameStyle = {
-      color: isHovered ? Colors.BOB_BLUE : 'initial',
+      color: isHovered ? colors.BOB_BLUE : 'initial',
       cursor: 'pointer',
       fontWeight: isTargetJob ? 'bold' : 'initial',
       paddingLeft: 20,
@@ -116,19 +114,19 @@ class ExpandedAdviceCardContentBase extends React.Component {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const offersCountStyle = {
-      color: isBetterThanTarget ? Colors.GREENISH_TEAL : Colors.COOL_GREY,
+      color: isBetterThanTarget ? colors.GREENISH_TEAL : colors.COOL_GREY,
       fontWeight: 500,
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const rangeStyle = {
-      backgroundColor: Colors.MODAL_PROJECT_GREY,
+      backgroundColor: colors.MODAL_PROJECT_GREY,
       height: 22,
       marginLeft: 15,
       position: 'relative',
       width: 200,
     }
     const progressStyle = {
-      backgroundColor: isBetterThanTarget ? Colors.GREENISH_TEAL : Colors.SLATE,
+      backgroundColor: isBetterThanTarget ? colors.GREENISH_TEAL : colors.SLATE,
       bottom: 0,
       left: 0,
       position: 'absolute',
@@ -140,7 +138,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
         style={jobNameStyle}
         onMouseEnter={() => this.setState({hoveredJob: job})}
         onMouseLeave={() => this.setState({hoveredJob: hoveredJob === job ? null : hoveredJob})}>
-        {genderizeJob(job, profile.gender)}
+        {genderizeJob(job, gender)}
         {isTargetJob ? userYou(' (toi)', ' (vous)') : ''}
       </span>
       <span style={{flex: 1}} />
@@ -160,7 +158,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     const style = {
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       cursor: 'pointer',
       display: 'flex',
       fontWeight: 500,
@@ -172,14 +170,13 @@ class ExpandedAdviceCardContentBase extends React.Component {
       <span style={Styles.CENTER_FONT_VERTICALLY}>
         Voir tous les métiers
       </span>
-      <ChevronDownIcon style={{fill: Colors.CHARCOAL_GREY, height: 20, width: 20}} />
+      <ChevronDownIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
     </div>
   }
 
   render() {
-    const {project} = this.props
+    const {project: {targetJob: {codeOgr, jobGroup} = {}} = {}} = this.props
     const {areAllJobsShown, weightedJobs} = this.state
-    const {codeOgr, jobGroup} = project.targetJob
     const targetJobIndex = weightedJobs.findIndex(({job}) => job.codeOgr === codeOgr)
     const maxWeight = Math.min((weightedJobs.length && weightedJobs[0].weight || 1) + .1, 1)
 
@@ -198,18 +195,19 @@ class ExpandedAdviceCardContentBase extends React.Component {
       {areAllJobsShown ? null : this.renderShowMoreButton()}
 
       <DataSource>
-        ROME  <a
+        ROME <ExternalLink
           href={`http://candidat.pole-emploi.fr/marche-du-travail/fichemetierrome?codeRome=${jobGroup.romeId}`}
-          style={{color: Colors.COOL_GREY}}
-          target="_blank" rel="noopener noreferrer">{jobGroup.romeId}</a> / Pôle emploi
+          style={{color: colors.COOL_GREY}}>{jobGroup.romeId}</ExternalLink> / Pôle emploi
       </DataSource>
 
     </div>
   }
 }
-const ExpandedAdviceCardContent = connect(({app}, props) => ({
-  jobGroupInfo: app.specificJobs[props.project.targetJob.jobGroup.romeId],
-}))(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = connect(
+  ({app}, {project: {targetJob: {jobGroup: {romeId} = {}} = {}} = {}}) => ({
+    jobGroupInfo: app.specificJobs[romeId],
+  })
+)(ExpandedAdviceCardContentBase)
 
 
 export default {AdviceCard, ExpandedAdviceCardContent, Picto}

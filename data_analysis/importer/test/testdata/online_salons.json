@@ -1,0 +1,38 @@
+[
+    {
+        "salonEnCours": true,
+        "localisation": "LIEVIN",
+        "dateDebutCandidature": "05/03/2018",
+        "dateFinCandidature": "30/04/2018",
+        "description": "<h1><span style=\"font-size:1.1em\">Salon en ligne SAP sur le Bassin de Lens - Li&eacute;vin / H&eacute;nin - Carvin</span></h1>\r\n&nbsp;\r\n\r\n<p>PARTICIPEZ AU SALON DE RECRUTEMENT EN LIGNE ET ACCEDEZ A DE NOMBREUSES OPPORTUNITES D&#39;EMPLOI DANS LE SECTEUR DES SERVICES A LA PERSONNE</p>\r\n\r\n<ul>\r\n\t<li>D&eacute;couvrez les stands</li>\r\n\t<li>postulez aux offres d&#39;emploi propos&eacute;es</li>\r\n\t<li>effectuez des candidatures spontan&eacute;es</li>\r\n\t<li>depuis votre smartphone, tablette ou ordinateur: participez &agrave; des entretiens avec des recruteurs sans vous d&eacute;placer !</li>\r\n</ul>\r\n\r\n<p>INSCRIVEZ&nbsp; VOUS DES MAINTENANT ET</p>\r\n<a href=\"http://www.emploi-store.fr/portail/services/monEntretienDEmbauche\" target=\"_blank\" title=\"Ouverture dans une nouvelle fen\u00c3\u00aatre\">Entrainez-vous aux entretiens d&#39;embauche avec un simulateur</a>",
+        "urlSalonEnLigne": "https://salonenligne.pole-emploi.fr/candidat/?salonId=640",
+        "dateDebut": "20/02/2018",
+        "nombreOffres": 3,
+        "dateFin": "31/05/2018",
+        "titre": "SALON EN LIGNE SAP"
+    },
+    {
+        "salonEnCours": true,
+        "localisation": "RIOM (dept 63)",
+        "dateDebutCandidature": "26/03/2018",
+        "dateFinCandidature": "07/04/2018",
+        "description": "Venez travailler en Auvergne, l&rsquo;industrie recrute ! Des entreprises de l&rsquo;industrie agro-alimentaire et de la sid&eacute;rurgie se d&eacute;veloppent et recrutent dans le Puy-de-D&ocirc;me. Vous &ecirc;tes conducteur de ligne, agent de maintenance industrielle, &eacute;lectricien de maintenance industrielle, op&eacute;rateur parach&egrave;vement, op&eacute;rateur lamineur, conducteur de four... Candidatez en ligne !",
+        "urlSalonEnLigne": "https://salonenligne.pole-emploi.fr/candidat/?salonId=684",
+        "dateDebut": "26/03/2018",
+        "nombreOffres": 7,
+        "dateFin": "25/05/2018",
+        "titre": "L\u2019INDUSTRIE RECRUTE DANS LE PUYDE-D\u00d4ME"
+    },
+    {
+        "salonEnCours": true,
+        "localisation": "CORSE",
+        "dateDebutCandidature": "26/03/2018",
+        "dateFinCandidature": "18/05/2018",
+        "description": "<h3 class=\"titreSalon\"></h3>\r\n<strong style=\"-webkit-text-stroke-width:0px; background-color:rgb(255, 255, 255); border:0px; color:rgb(71, 71, 71); font-family:verdana,sans-serif; font-size:12px; font-style:normal; font-variant-caps:normal; font-variant-ligatures:normal; letter-spacing:normal; line-height:12px; margin:0px; orphans:2; outline:0px; padding:0px; text-align:justify; text-decoration-color:initial; text-decoration-style:initial; text-indent:0px; text-transform:none; white-space:normal; widows:2; word-spacing:0px\">Farmor, filiale de la Soci&eacute;t&eacute; Bretonne de Volaille</strong><span style=\"-webkit-text-stroke-width:0px; background-color:rgb(255, 255, 255); color:rgb(71, 71, 71); display:inline !important; float:none; font-family:verdana,sans-serif; font-size:12px; font-style:normal; font-variant-caps:normal; font-variant-ligatures:normal; font-weight:400; letter-spacing:normal; orphans:2; text-align:justify; text-decoration-color:initial; text-decoration-style:initial; text-indent:0px; text-transform:none; white-space:normal; widows:2; word-spacing:0px\"> </span>",
+        "urlSalonEnLigne": "https://salonenligne.pole-emploi.fr/candidat/?salonId=674",
+        "dateDebut": "26/03/2018",
+        "nombreOffres": 9,
+        "dateFin": "25/05/2018",
+        "titre": "Vos comp\u00e9tences sont attendues chez FARMOR interim"
+    }
+]

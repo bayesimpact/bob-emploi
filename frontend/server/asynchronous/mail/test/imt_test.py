@@ -7,8 +7,10 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous.mail.test import mail_blast_test
 
 
-class ImtVarsTestCase(mail_blast_test.CampaignTestBase('imt')):
+class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
     """Unit tests for the imt_vars method."""
+
+    campaign_id = 'imt'
 
     def test_basic(self):
         """Test basic usage."""
@@ -70,6 +72,7 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase('imt')):
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'patrick'
         self.user.profile.email = 'patrick@bayes.org'
+        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_MAXIMUM
         self.project.target_job.masculine_name = 'Juriste'
         self.project.target_job.job_group.rome_id = 'B1234'
         self.project.target_job.code_ogr = '123123'
@@ -79,6 +82,9 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase('imt')):
         self._assert_user_receives_campaign()
 
         self._assert_has_unsubscribe_link()
+        self._assert_has_unsubscribe_url('changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_MAXIMUM',
+        })
 
         self._assert_has_status_update_link(field='statusUpdateUrl')
 
@@ -115,7 +121,6 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase('imt')):
             'months': {'showSection': ''},
             'ofJobNameInDepartement': 'de juriste dans le Rhône',
             'ofJobName': 'de juriste',
-            'showPs': ''
         })
 
 

@@ -11,8 +11,6 @@ import {composeWithDevTools} from 'redux-devtools-extension'
 import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
 
-import config from 'config'
-
 import {computeAdvicesForProject, diagnoseProject, getEvalUseCasePools,
   getEvalUseCases} from 'store/actions'
 
@@ -20,7 +18,8 @@ import {app, asyncState} from 'store/app_reducer'
 import {createProjectTitleComponents} from 'store/project'
 
 import {Snackbar} from 'components/snackbar'
-import {Button, Colors, Select, SmoothTransitions} from 'components/theme'
+import {Button, SmoothTransitions} from 'components/theme'
+import {Select} from 'components/pages/connected/form_utils'
 import {Routes} from 'components/url'
 
 import {AdvicesRecap} from './eval/advices_recap'
@@ -53,15 +52,15 @@ function getUseCaseTitle(title, userData) {
 class EvalPage extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
-    googleIdToken: PropTypes.string.isRequired,
+    fetchGoogleIdToken: PropTypes.func.isRequired,
     location: PropTypes.shape({
       search: PropTypes.string.isRequired,
     }).isRequired,
     match: PropTypes.shape({
       params: PropTypes.shape({
         useCaseId: PropTypes.string,
-      }),
-    }),
+      }).isRequired,
+    }).isRequired,
   }
 
   static contextTypes = {
@@ -86,8 +85,22 @@ class EvalPage extends React.Component {
     useCases: [],
   }
 
-  componentWillMount() {
-    const {dispatch, location, match} = this.props
+  static getDerivedStateFromProps({location: {search}, match: {params}}, {selectedPoolName}) {
+    if (selectedPoolName) {
+      return null
+    }
+    const {poolName} = parse(search)
+    if (!poolName) {
+      return null
+    }
+    return {
+      initialUseCaseId: params.useCaseId,
+      selectedPoolName: poolName,
+    }
+  }
+
+  componentDidMount() {
+    const {dispatch} = this.props
     dispatch(getEvalUseCasePools()).then(pools => {
       this.setState({
         pools,
@@ -95,13 +108,6 @@ class EvalPage extends React.Component {
           (pools.length ? pools[0].name : undefined),
       }, this.fetchPoolUseCases)
     })
-    const {poolName} = parse(location.search)
-    if (poolName) {
-      this.setState({
-        initialUseCaseId: match.params.useCaseId,
-        selectedPoolName: poolName,
-      })
-    }
   }
 
   componentWillUnmount() {
@@ -291,28 +297,30 @@ class EvalPage extends React.Component {
         return useCase
       }),
     })
-    fetch(`/api/eval/use-case/${useCaseId}`, {
-      body: JSON.stringify(evaluation),
-      headers: {
-        'Authorization': 'Bearer ' + this.props.googleIdToken,
-        'Content-Type': 'application/json',
-      },
-      method: 'post',
-    }).then(() => {
-      if (selectedUseCase !== this.state.selectedUseCase) {
-        return
-      }
-      this.setState({
-        isModified: false,
-        isSaved: true,
+    this.props.fetchGoogleIdToken().
+      then(googleIdToken => fetch(`/api/eval/use-case/${useCaseId}`, {
+        body: JSON.stringify(evaluation),
+        headers: {
+          'Authorization': 'Bearer ' + googleIdToken,
+          'Content-Type': 'application/json',
+        },
+        method: 'post',
+      })).
+      then(() => {
+        if (selectedUseCase !== this.state.selectedUseCase) {
+          return
+        }
+        this.setState({
+          isModified: false,
+          isSaved: true,
+        })
+        this.selectNextUseCase()
       })
-      this.selectNextUseCase()
-    })
   }
 
   renderCreatePoolModal() {
     return <CreatePoolModal
-      googleIdToken={this.props.googleIdToken}
+      fetchGoogleIdToken={this.props.fetchGoogleIdToken}
       isShown={this.state.isCreatePoolModalShown}
       onClose={() => this.setState({isCreatePoolModalShown: false})} />
   }
@@ -379,9 +387,9 @@ class EvalPage extends React.Component {
     const toggleTitleStyle = isSelected => {
       return {
         ':hover': {
-          borderBottom: `2px solid ${Colors.BOB_BLUE_HOVER}`,
+          borderBottom: `2px solid ${colors.BOB_BLUE_HOVER}`,
         },
-        borderBottom: isSelected ? `2px solid ${Colors.BOB_BLUE}` : 'initial',
+        borderBottom: isSelected ? `2px solid ${colors.BOB_BLUE}` : 'initial',
         paddingBottom: 5,
       }
     }
@@ -512,7 +520,7 @@ const ScoreButton = Radium(ScoreButtonBase)
 class AuthenticateEvalPageBase extends React.Component {
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
-    googleIdToken: PropTypes.string,
+    fetchGoogleIdToken: PropTypes.func,
     history: PropTypes.shape({
       push: PropTypes.func.isRequired,
       replace: PropTypes.func.isRequired,
@@ -535,9 +543,9 @@ class AuthenticateEvalPageBase extends React.Component {
     return {history}
   }
 
-  handleGoogleLogin = googleAuth => {
+  handleGoogleLogin = googleUser => {
     const {dispatch} = this.props
-    const googleIdToken = googleAuth.getAuthResponse().id_token
+    const googleIdToken = googleUser.getAuthResponse().id_token
     fetch('/api/eval/authorized', {
       headers: {'Authorization': 'Bearer ' + googleIdToken},
     }).then(response => {
@@ -545,7 +553,7 @@ class AuthenticateEvalPageBase extends React.Component {
         this.handleGoogleFailure()
         return
       }
-      dispatch({googleIdToken, type: 'AUTH'})
+      dispatch({googleUser, type: 'AUTH'})
     })
   }
 
@@ -554,9 +562,9 @@ class AuthenticateEvalPageBase extends React.Component {
   }
 
   render() {
-    const {googleIdToken, ...extraProps} = this.props
-    if (googleIdToken) {
-      return <EvalPage googleIdToken={googleIdToken} {...extraProps} />
+    const {fetchGoogleIdToken} = this.props
+    if (fetchGoogleIdToken) {
+      return <EvalPage {...this.props} />
     }
 
     return <div style={{padding: 20, textAlign: 'center'}}>
@@ -573,15 +581,17 @@ class AuthenticateEvalPageBase extends React.Component {
   }
 }
 const AuthenticateEvalPage = connect(({auth}) => ({
-  googleIdToken: auth.googleIdToken,
+  fetchGoogleIdToken: auth.fetchGoogleIdToken,
 }))(AuthenticateEvalPageBase)
 
 
-function evalAuthReducer(state = {}, action) {
-  if (action.type === 'AUTH' && action.googleIdToken) {
+function evalAuthReducer(state = {}, {googleUser, type}) {
+  if (type === 'AUTH' && googleUser) {
     return {
       ...state,
-      googleIdToken: action.googleIdToken,
+      // TODO(pascal): Make it a bit smarter not to reload the response each time.
+      fetchGoogleIdToken: () => googleUser.reloadAuthResponse().then(
+        ({id_token: googleIdToken}) => googleIdToken),
     }
   }
   return state
@@ -665,7 +675,7 @@ class App extends React.Component {
   render() {
     return <Provider store={store}>
       <Radium.StyleRoot>
-        <div style={{backgroundColor: Colors.BACKGROUND_GREY}}>
+        <div style={{backgroundColor: colors.BACKGROUND_GREY}}>
           <BrowserRouter>
             <Route path={Routes.EVAL_PATH} component={AuthenticateEvalPage} />
           </BrowserRouter>

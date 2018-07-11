@@ -7,7 +7,7 @@ import {getAdviceTips, showAllTips} from 'store/actions'
 import {getAdviceModules} from 'store/french'
 
 import {Action, ActionDescriptionModal} from 'components/actions'
-import {Button, Colors, PaddedOnMobile} from 'components/theme'
+import {Button, PaddedOnMobile} from 'components/theme'
 
 const DEFAULT_TIPS_SHOWN = 5
 
@@ -30,7 +30,7 @@ class TipsListBase extends React.Component {
     openTip: null,
   }
 
-  componentWillMount() {
+  componentDidMount() {
     const {advice, dispatch, project, tips} = this.props
     if (advice && project && !tips.length) {
       dispatch(getAdviceTips(project, advice))
@@ -65,7 +65,7 @@ class TipsListBase extends React.Component {
       return <div style={style} />
     }
     const titleStyle = {
-      color: Colors.CHARCOAL_GREY,
+      color: colors.CHARCOAL_GREY,
       fontSize: 16,
       marginBottom: 10,
     }
@@ -114,7 +114,7 @@ class AppearingComponent extends React.Component {
     opacity: 0,
   }
 
-  componentWillMount() {
+  componentDidMount() {
     this.timeout = setTimeout(() => this.setState({opacity: 1}), 100)
   }
 

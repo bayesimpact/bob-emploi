@@ -9,8 +9,10 @@ from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 
 
-class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase('advice-reorient-jobbing')):
+class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "reorient-jobbing" advice."""
+
+    model_id = 'advice-reorient-jobbing'
 
     def setUp(self):  # pylint: disable=missing-docstring,invalid-name
         super(AdviceReorientJobbingTestCase, self).setUp()
@@ -19,8 +21,10 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase('advice-re
         self.persona.project.target_job.job_group.rome_id = 'M1601'
         self.database.local_diagnosis.insert_one({
             '_id': '09:M1601',
-            'numJobOffersLastYear': 20,
-            'numJobOffersPreviousYear': 20,
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 1,
+                },
         })
         self.database.reorient_jobbing.insert_one(
             {
@@ -33,14 +37,14 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase('advice-re
                                 'masculineName': 'Aide caviste',
                                 'feminineName': 'Aide caviste',
                                 'name': 'Aide caviste',
-                                'offers': 123,
+                                'marketScore': 6,
                             },
                             {
                                 'romeId': 'A1401',
                                 'feminineName': 'Aide arboricole',
                                 'masculineName': 'Aide arboricole',
                                 'name': 'Aide arboricole',
-                                'offers': 60,
+                                'marketScore': 3,
                             },
                         ],
                     },
@@ -89,8 +93,10 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase('advice-re
         self.database.local_diagnosis.drop()
         self.database.local_diagnosis.insert_one({
             '_id': '09:M1601',
-            'numJobOffersLastYear': 200,
-            'numJobOffersPreviousYear': 200,
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 7,
+                },
         })
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
@@ -163,7 +169,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase('advice-re
                                 'masculineName': 'Aide caviste',
                                 'feminineName': 'Aide caviste',
                                 'name': 'Aide caviste',
-                                'offers': 123,
+                                'marketScore': 6,
                             },
                         ],
                     },
@@ -184,8 +190,10 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
         })
         self._db.local_diagnosis.insert_one({
             '_id': '45:A1234',
-            'numJobOffersLastYear': 20,
-            'numJobOffersPreviousYear': 20,
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 1,
+                },
         })
         self.user_id, self.auth_token = self.create_user_with_token(
             modifiers=[self._add_project_modifier], advisor=True)
@@ -217,8 +225,10 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
 
         self._db.local_diagnosis.insert_one({
             '_id': '14:A1234',
-            'numJobOffersLastYear': 20,
-            'numJobOffersPreviousYear': 20,
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 1,
+                },
         })
 
         self._db.reorient_jobbing.insert_one(
@@ -232,14 +242,14 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
                                 'masculineName': 'Superman',
                                 'feminineName': 'Wonderwoman',
                                 'name': 'Superhero',
-                                'offers': 123,
+                                'marketScore': 6,
                             },
                             {
                                 'romeId': 'A1401',
                                 'feminineName': 'Aide arboricole',
                                 'masculineName': 'Aide arboricole',
                                 'name': 'Aide arboricole',
-                                'offers': 60,
+                                'marketScore': 4,
                             },
                         ],
                     },
@@ -254,11 +264,11 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
             [
                 {
                     'name': 'Wonderwoman',
-                    'offersPercentGain': 207.5,
+                    'offersPercentGain': 500.0,
                 },
                 {
                     'name': 'Aide arboricole',
-                    'offersPercentGain': 50.0,
+                    'offersPercentGain': 300.0,
                 }
             ],
             jobs['reorientJobbingJobs'])
@@ -279,8 +289,10 @@ class ExtraDataTestCase(base_test.ServerTestCase):
         }
         self._db.local_diagnosis.insert_one({
             '_id': '14:A1234',
-            'numJobOffersLastYear': 20,
-            'numJobOffersPreviousYear': 20,
+            'imt':
+                {
+                    'yearlyAvgOffersPer10Candidates': 1,
+                },
         })
         self._db.advice_modules.insert_one({
             'adviceId': 'reorient-jobbing',
@@ -299,21 +311,21 @@ class ExtraDataTestCase(base_test.ServerTestCase):
                                 'masculineName': 'Superman',
                                 'feminineName': 'Wonderwoman',
                                 'name': 'Superhero',
-                                'offers': 123,
+                                'marketScore': 6,
                             },
                             {
                                 'romeId': 'A1401',
                                 'feminineName': 'Aide arboricole',
                                 'masculineName': 'Aide arboricole',
                                 'name': 'Aide arboricole',
-                                'offers': 60,
+                                'marketScore': 4,
                             },
                             {
                                 'romeId': 'A1406',
                                 'feminineName': 'Aide agricole',
                                 'masculineName': 'Aide agricole',
                                 'name': 'Aide agricole',
-                                'offers': 30,
+                                'marketScore': 2,
                             },
                         ],
                     },

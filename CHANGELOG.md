@@ -1,5 +1,337 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2018-08-22_00
+
+- Fix updating city and area of search.
+- Small fixes and enhancements.
+- Under the hoods: Bob Point locking/unlocking in workbench.
+Deployed on Wed, 22 Aug 2018 13:29:05 +0000
+
+# 2018-08-09_00
+
+- Fix crash induced by missing city.
+- Small UI fixes.
+Deployed on Fri, 10 Aug 2018 07:25:00 +0000
+
+# 2018-07-27_02
+
+- Under the hood, prepare the "Bob Points" experiment.
+- Small UI fixes, especially on mobile.
+- For i-milo integration, use shorter URLs.
+Deployed on Fri, 27 Jul 2018 18:02:04 +0000
+
+# 2018-07-27_01
+
+- Under the hood, prepare the "Bob Points" experiment.
+- Small UI fixes, especially on mobile.
+- For i-milo integration, use shorter URLs.
+
+# 2018-07-27_00
+
+- Under the hood, prepare the "Bob Points" experiment.
+- Small UI fixes, especially on mobile.
+- For i-milo integration, use shorter URLs.
+
+# 2018-07-23_00
+
+- Fix updating the project in the forms after cliking "Modify the project".
+- Small UI change in the Landing Page.
+Deployed on Mon, 23 Jul 2018 13:59:37 +0000
+
+# 2018-07-19_00
+
+- Improve Desktop UI of the diagnostic.
+- Small fixes in the onboarding and landing page.
+- Fixes mobile display of some advice pages.
+- Various fixes of bugs affecting IE and some rare browsers.
+Deployed on Thu, 19 Jul 2018 09:47:46 +0000
+
+# 2018-07-17_01
+
+- Rewording in the welcome message.
+- Add a coaching email about interview follow ups.
+- Fix diagnostic UI on desktop.
+- Small fix "use strict".
+Deployed on Tue, 17 Jul 2018 11:35:32 +0000
+
+# 2018-07-17_00
+
+- Rewording in the welcome message.
+- Add a coaching email about interview follow ups.
+- Fix diagnostic UI on desktop.
+- Small fix "use strict".
+
+# 2018-07-16_00
+
+- Small fix "use strict".
+- Rewording in the welcome message.
+- Add a coaching email about interview follow ups.
+
+# 2018-07-13_02
+
+- Quick fix after release
+Deployed on Fri, 13 Jul 2018 15:02:11 +0000
+
+# 2018-07-13_01
+
+- Rebrand diagnostic
+- Change navigation UI for advice page
+- Bob talks in onboarding and diagnostic
+- Press review section on landing page
+Deployed on Fri, 13 Jul 2018 12:45:53 +0000
+
+# 2018-07-04_00
+
+- Add comments from Bob in onboarding
+Deployed on Thu, 05 Jul 2018 08:15:21 +0000
+
+# 2018-06-29_02
+
+- Bob Talks improvement (Under the hood)
+- Add a route to update a user project
+Deployed on Fri, 29 Jun 2018 13:42:35 +0000
+
+# 2018-06-29_01
+
+- Bob Talks improvement (Under the hood)
+- Add a route to update a user project
+
+# 2018-06-18_00
+
+- Put back #BobAction thank-you page
+- Clean code, small fixes
+Deployed on Mon, 18 Jun 2018 14:12:23 +0000
+
+# 2018-06-15_00
+
+- Fix bugs
+- Switch to BMO 2018 data
+- Enhancing BobAction review process
+Deployed on Fri, 15 Jun 2018 09:08:52 +0000
+
+# 2018-06-14_00
+
+- Small bug fixes.
+- Add direct links to companies hiring in alternance.
+Deployed on Thu, 14 Jun 2018 15:51:18 +0000
+
+# 2018-06-11_00
+
+- Drop the waves on the landing page.
+- Automate entirely coaching email blasts.
+- Interface to select advice for counselors with external profile.
+Deployed on Mon, 11 Jun 2018 15:31:10 +0000
+
+# 2018-06-06_01
+
+- improvements on online salons advice
+Deployed on Wed, 06 Jun 2018 12:18:41 +0000
+
+# 2018-06-05_01
+
+- Online Salons advice
+- Special page to unsubscribe from coaching emails.
+- UI fixes in advices
+Deployed on Tue, 05 Jun 2018 10:36:35 +0000
+
+# 2018-06-01_00
+
+- Finalize mobile workbench.
+- Fix UI glitches.
+- Update transparency numbers.
+- Under the hood, big progress on the Online Salons advice module.
+Deployed on Fri, 01 Jun 2018 17:36:00 +0000
+
+# 2018-05-28_00
+
+- Nicer workbench UI
+- Online Salon advice, first version
+Deployed on Mon, 28 May 2018 14:12:13 +0000
+
+# 2018-05-24_01
+
+- Revamp Workbench UI
+- Match helpers and users for Bob Action coffee
+- Add alternance and email frequency in the onboarding
+- Improve logging
+Deployed on Thu, 24 May 2018 13:48:28 +0000
+
+# 2018-05-18_00
+
+- Fix authentication for accepting/declining coffees.
+- Fix slight UI transition on workbench menu.
+- Improves logging.
+Deployed on Fri, 18 May 2018 12:06:13 +0000
+
+# 2018-05-17_00
+
+- Start cleaning up the workbench.
+- Add share buttons on Contribute page.
+- Hunder the hood work for online salons advice.
+Deployed on Thu, 17 May 2018 08:48:49 +0000
+
+# 2018-05-15_00
+
+- Small improvement on advice model server side
+- Under the hood, prepare Online salons advice
+- Bob Action matching : improvement of document review pipeline, and prepare algorithm review.
+Deployed on Tue, 15 May 2018 15:25:09 +0000
+
+# 2018-05-11_00
+
+- Fix some of our processes when user has no email.
+- Improve matching of CVs and cover letters reviews.
+- Make better use of Mailjet API (check status, custom campaign).
+- Start hashing emails in our DB for RGPD.
+Deployed on Fri, 11 May 2018 15:53:00 +0000
+
+# 2018-05-09_01
+
+- Page to manage answers to CV reviews.
+- Update ADIE events data and filter on past events.
+Deployed on Wed, 09 May 2018 12:24:44 +0000
+
+# 2018-05-07_00
+
+- Small fixes on NPS mailing
+- Small fixes on Mayday coffee page UI
+- Preparation for Mayday admin page
+- Allow 404 error for /api and /assets
+Deployed on Mon, 07 May 2018 12:58:50 +0000
+
+# 2018-05-04_03
+
+- Closing MayDay app
+- Server fixes
+Deployed on Fri, 04 May 2018 14:06:59 +0000
+
+# 2018-05-04_01
+
+- Fix advice cards on bootstrap page so that they can be expanded.
+- #BobAction matching: various improvements.
+- Fix blocking bug in coffe page form.
+Deployed on Fri, 04 May 2018 09:58:51 +0000
+
+# 2018-05-03_00
+
+- Close Bob Action first part (before May the 1st)
+ - First follow up for Bob Actions:
+    - Page to gather Bob Action helper information.
+    - Send CVs to be reviewed.
+Deployed on Thu, 03 May 2018 10:42:00 +0000
+
+# 2018-04-30_02
+
+- Mark Bob Action "Coffee" as disabled.
+- Small UI changes in #BobAction
+- Keep track of people needing help from #BobAction in Bob
+- Prepare new ADIE advice
+Deployed on Mon, 30 Apr 2018 20:06:02 +0000
+
+# 2018-04-27_00
+
+- Guide people needing a #BobAction back to Bob
+- Counter at top of #BobAction
+- Optimization for second page loading time
+Deployed on Fri, 27 Apr 2018 10:37:57 +0000
+
+# 2018-04-26_00
+
+- Send a confirmation email to check helper's email addresses.
+Deployed on Thu, 26 Apr 2018 15:19:24 +0000
+
+# 2018-04-25_00
+
+Small fixes for #BobAction:
+- Ping Slack for each new promise.
+- Prepare the confirmation email.
+- UI and logging fixes.
+- Bug fix with modal in landing page.
+- Cleanup the hiding of BobAction before launch date.
+Deployed on Wed, 25 Apr 2018 13:09:00 +0000
+
+# 2018-04-24_03
+
+Final cut for #BobAction
+Deployed on Tue, 24 Apr 2018 22:00:06 +0000
+
+# 2018-04-24_01
+
+- Prepare #BobAction launch
+- Stop sending confirmations email for BobAction as it's not ready.
+Deployed on Tue, 24 Apr 2018 17:26:07 +0000
+
+# 2018-04-24_00
+
+- UI Fixes on #BobAction.
+- Add a Open Graph content for BobAction.
+- Add #BobAction modal on Bob.
+Deployed on Tue, 24 Apr 2018 10:04:34 +0000
+
+# 2018-04-23_00
+
+- Fixes on #BobAction
+- Change Route for #BobAction
+Deployed on Mon, 23 Apr 2018 09:02:10 +0000
+
+# 2018-04-20_01
+
+- Countdown page for #BobAction
+- More UI for #BobAction app
+- Small fixes, clean code, ...
+Deployed on Fri, 20 Apr 2018 10:04:16 +0000
+
+# 2018-04-16_00
+
+- Prepare \#BobAction application
+- Split JS app in chunks (faster page load)
+- Remove deprecated Dashboard export
+- Small fixes, Clean code, ...
+Deployed on Wed, 18 Apr 2018 06:55:46 +0000
+
+# 2018-04-10_00
+
+- Under the hood: prepare the Mayday campaign.
+- Security Upgrade of Amplitude library.
+- Small fix for Mission Locales.
+Deployed on Tue, 10 Apr 2018 10:53:15 +0000
+
+# 2018-04-09_00
+
+- Multiple fixes of Js warnings.
+- Fix authentication when syncing Mongo and ElasticSearch
+- MayDay: under the hood, getting prepared.
+- Fix Facebook Analytics.
+Deployed on Mon, 09 Apr 2018 10:32:13 +0000
+
+# 2018-04-05_01
+
+- Revamp of the login flow, especially on mobile.
+- First page for May Day operation.
+- Add PIMMS to the list of origins.
+- Fix Google Analytics tracking of the first page view.
+- Add Facebook Ads conversion tracking.
+Deployed on Thu, 05 Apr 2018 11:42:40 +0000
+
+# 2018-03-28_00
+
+- Fix some of the Mobile UI issues, especially in onboarding.
+- Ask for referral in many places in the app.
+- Fix PE Connect button to follow their conventions closely.
+- Add more logging on static advice pages.
+- Favicon now use the new logo.
+- Waves on the team page.
+Deployed on Wed, 28 Mar 2018 09:15:12 +0000
+
+# 2018-03-20_00
+
+- Sign in or Sign up with LinkedIn.
+- Add Alizée to the team page.
+- Mobile UI improvements.
+- Prepopulate city and job when signing up with Pôle emploi.
+- Add social buttons in Share modal.
+Deployed on Tue, 20 Mar 2018 14:34:45 +0000
+
 # 2018-03-14_01
 
 - Login/Sign Up with Pôle emploi Connect
@@ -28,14 +360,6 @@ Deployed on Fri, 09 Mar 2018 11:36:33 +0000
 - Better Mobile navigation (still a long way to go)
 - Small changes in UI, clean code, ...
 Deployed on Tue, 06 Mar 2018 14:17:58 +0000
-
-# 2018-03-06_00
-
-- Add share links and keep track of channel of user acquisition
-- Update landing page
-- Early public content page for "Better Resume"
-- Better Mobile navigation (still a long way to go)
-- Small changes in UI, clean code, ...
 
 # 2018-02-27_00
 

@@ -10,7 +10,7 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/local_diagnosis.py \
+        python bob_emploi/data_analysis/importer/local_diagnosis.py \
         --bmo_csv data/bmo/bmo_2015.csv \
         --fap_rome_crosswalk data/crosswalks/passage_fap2009_romev3.txt \
         --pcs_rome_crosswalk data/crosswalks/passage_pcs_romev3.csv \
@@ -265,12 +265,16 @@ def _get_bmo_rome_data(bmo_csv, fap_rome_crosswalk):
         'NB_SEASON_RECRUT_PROJECTS': 'seasonal_hiring_planned',
         'NB_DIFF_RECRUT_PROJECTS': 'difficult_hiring_planned',
     }, inplace=True)
+    nb_columns = ['hiring_planned', 'seasonal_hiring_planned', 'difficult_hiring_planned']
+    bmo.loc[:, nb_columns] = bmo.loc[:, nb_columns].replace('*', '0')
+    for column in nb_columns:
+        bmo[column] = bmo[column].str.replace(' ', '').astype(float)
     bmo['rome_id'] = bmo.fap.map(fap_to_rome)
+    bmo = bmo[bmo.hiring_planned > 0]
 
     # Sum up data by département (because it's based on bassins d'emploi).
     # TODO: Get the user's bassin d'emploi and stop grouping it.
-    bmo_rome = bmo.groupby(
-        ['rome_id', 'departement_id'], sort=False, as_index=False).sum()
+    bmo_rome = bmo.groupby(['rome_id', 'departement_id'], sort=False, as_index=False).sum()
     bmo_rome['percentSeasonal'] = (
         bmo_rome.seasonal_hiring_planned * 100 /
         bmo_rome.hiring_planned).round().astype(int)
@@ -385,6 +389,7 @@ def _get_market_score(market_score_csv):
     market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
     seasonal_stats = market_stats[[
         column for column in market_stats.columns if column.startswith('SEASONAL_')]]
+    # TODO(cyrille): Replace reduce=True by result_type='reduce' once notebook pandas reaches v0.23
     seasonality_months = seasonal_stats.apply(_get_active_months, axis='columns', reduce=True)
     market_stats['seasonality'] = seasonality_months.seasonality
 
@@ -493,18 +498,13 @@ def _get_salaries_imt(pcs_rome_crosswalk, imt_salaries_csv):
         'juniorSalary', 'seniorSalary', 'local_id']].drop_duplicates('local_id')
 
 
-def _get_salaries_details(market):
-    return {
-        'juniorSalary': _get_single_salary_detail(
-            market.junior_min_salaries, market.junior_max_salaries),
-        'seniorSalary': _get_single_salary_detail(
-            market.senior_min_salaries, market.senior_max_salaries)
-    }
-
-
 def _get_single_salary_detail(min_salary, max_salary):
+    if _isnan(min_salary) and _isnan(max_salary):
+        return {}
     salary_unit = job_pb2.SalaryUnit.Name(_SALARY_UNIT_PROTO_FIELDS[1])
-    short_text = 'De {}€ à {}€'.format(min_salary, max_salary)
+    short_text = 'De {}\xa0€ à {}\xa0€'.format(
+        locale.format('%d', min_salary, grouping=True).replace(' ', '\xa0'),
+        locale.format('%d', max_salary, grouping=True).replace(' ', '\xa0'))
     return {
         'unit': salary_unit,
         'shortText': short_text,

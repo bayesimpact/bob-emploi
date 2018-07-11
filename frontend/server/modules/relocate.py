@@ -28,7 +28,8 @@ def _find_best_departements(unused_, project):
             departement_local_stats.get('imt', {}).get('yearlyAvgOffersPer10Candidates', 0) or 0
 
     # If we do not have data about our own departement, we chose not to say anything.
-    own_departement = project.details.mobility.city.departement_id
+    own_departement = project.details.city.departement_id \
+        or project.details.mobility.city.departement_id
     if own_departement:
         try:
             geo.get_departement_name(project.database, own_departement)
@@ -70,8 +71,8 @@ class _AdviceRelocateScoringModel(scoring_base.ModelBase):
         """Compute a score for the given ScoringProject."""
 
         reasons = []
-        if project.details.mobility.area_type != geo_pb2.COUNTRY and \
-                project.details.mobility.area_type != geo_pb2.WORLD:
+        area_type = project.details.area_type or project.details.mobility.area_type
+        if area_type < geo_pb2.COUNTRY:
             return scoring_base.NULL_EXPLAINED_SCORE
         reasons.append(project.translate_string(
             'vous nous avez dit être prêt%eFeminine à déménager'))
@@ -89,7 +90,7 @@ class _GoodMobilityModel(scoring_base.ModelHundredBase):
     def score_to_hundred(self, project):
         """Compute a score for the given ScoringProject."""
 
-        area_type = project.details.mobility.area_type
+        area_type = project.details.area_type or project.details.mobility.area_type
 
         if not area_type:
             raise scoring_base.NotEnoughDataException()
@@ -124,7 +125,7 @@ class _ProfileMobilityScorerModel(scoring_base.ModelHundredBase):
     def score_to_hundred(self, project):
         """Compute a score for the given ScoringProject."""
 
-        area_type = project.details.mobility.area_type
+        area_type = project.details.area_type or project.details.mobility.area_type
 
         if not area_type:
             raise scoring_base.NotEnoughDataException()

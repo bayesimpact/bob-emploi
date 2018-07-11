@@ -13,6 +13,7 @@ docker-compose run --rm \
 import datetime
 import logging
 import os
+import re
 import signal
 import sys
 from urllib import parse
@@ -104,7 +105,6 @@ def _send_reports(count, errors):
     report.notify_slack(
         "Report for NPS blast: I've sent {:d} emails (with {:d} errors).".format(
             count, len(errors)))
-    report.send_to_admins('NPS', count, errors)
 
 
 # TODO(pascal): Move to mail_blast module.
@@ -113,6 +113,7 @@ def main(user_db, base_url, now, days_before_sending):
 
     query = {
         'emailsSent': {'$not': {'$elemMatch': {'campaignId': _CAMPAIGN_ID}}},
+        'profile.email': re.compile('@'),
         'projects': {'$exists': True},
         'projects.isIncomplete': {'$ne': True},
         'registeredAt': {'$gt': '2018-01-01'},
@@ -152,7 +153,10 @@ def main(user_db, base_url, now, days_before_sending):
 
         if not DRY_RUN:
             sent_response = result.json()
-            message_id = next(iter(sent_response.get('Sent', [])), {}).get('MessageID', 0)
+            message_id = 0
+            message_id = next(iter(
+                next(iter(sent_response.get('Messages', [])), {}).get('To', {})
+            ), {}).get('MessageID', 0)
             if not message_id:
                 logging.warning('Impossible to retrieve the sent email ID:\n%s', sent_response)
             email_sent = user.emails_sent.add()

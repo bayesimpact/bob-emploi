@@ -11,8 +11,8 @@ RUN apt-get update -qqy && \
 
 # Requirements for python code (outside of notebooks). Keep them sorted.
 RUN pip install --upgrade \
-  airtable>=0.3.1 \
-  airtablemock>=0.0.3 \
+  airtable \
+  airtablemock \
   algoliasearch \
   coverage \
   csvkit \
@@ -26,14 +26,13 @@ RUN pip install --upgrade \
   nose-watch \
   pandas \
   polib \
-# TODO(cyrille): Fix this by checking latest version common to github and pypi.
-  protobuf==3.5.1 \
+  protobuf \
   pycodestyle \
-  pylint>=1.7 \
+  pylint \
   pylint-doc-spacing \
   pylint-quotes \
   pymongo \
-  python-emploi-store>=0.5.2 \
+  python-emploi-store \
   requests \
   requests_mock \
   runipy \
@@ -46,8 +45,8 @@ RUN pip install --upgrade \
 
 # Install Protobuf compiler.
 RUN \
-  PROTOBUF_VERSION=$(pip show protobuf | grep ^Version | grep -o '[0-9][0-9.]\+[0-9]') \
-  bash -c 'wget --quiet https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip' && \
+  PROTOBUF_VERSION=$(curl -i https://github.com/protocolbuffers/protobuf/releases/latest | grep ^Location: | sed -e "s/^.*\/v//;s/\s*$//") \
+  bash -c 'wget --quiet https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip' && \
   unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto
 
 ENV PYTHONPATH=/work:/usr/lib/python3/dist-packages/

@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/job.proto";
+
 package bayes.bob;
 
 message Training {
@@ -17,6 +19,12 @@ message Training {
 
   // Hiring potential after training: 0 means unknown, then the scale is from 1 to 5.
   int32 hiring_potential = 5;
+
+  // IDs for the job groups this training is relevant for.
+  repeated string rome_ids = 6;
+
+  // The level of studies needed for this training, if any.
+  DegreeLevel degree_level = 7;
 }
 
 message Trainings {

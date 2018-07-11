@@ -8,13 +8,13 @@
           "feminineName": "Aide caviste",
           "masculineName": "Aide caviste",
           "name": "Aide caviste",
-          "offers": 123
+          "marketScore": 6
         },
         {
           "romeId": "A1401",
           "feminineName": "Aide arboricole",
           "masculineName": "Aide arboricole",
-          "offers": 60
+          "marketScore": 4
         }
       ]
     }
@@ -28,7 +28,7 @@
           "masculineName": "Aide caviste",
           "feminineName": "Aide caviste",
           "name": "Aide caviste",
-          "offers": 123
+          "marketScore": 6
          }
        ]
     }

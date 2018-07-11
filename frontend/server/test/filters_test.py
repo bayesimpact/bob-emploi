@@ -13,32 +13,31 @@ from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import scoring_test
 
 
-# TODO(pasca): Split in several test modules and remove following comment.
+# This is a collection of many small tests, but it's not worth splitting in
+# several small modules so we just accept the fact that it's long.
 # pylint: disable=too-many-lines
 
 
-def FilterTestBase(model_id):  # pylint: disable=invalid-name
+class FilterTestBase(scoring_test.ScoringModelTestBase):
     """A base class for tests for filters."""
 
-    class _TestCase(scoring_test.ScoringModelTestBase(model_id)):
+    def setUp(self):
+        super(FilterTestBase, self).setUp()
+        self.persona = self._random_persona().clone()
 
-        def setUp(self):
-            super(_TestCase, self).setUp()
-            self.persona = self._random_persona().clone()
+    def _assert_pass_filter(self):
+        score = self._score_persona(self.persona)
+        self.assertGreater(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
-        def _assert_pass_filter(self):
-            score = self._score_persona(self.persona)
-            self.assertGreater(score, 0, msg='Failed for "{}"'.format(self.persona.name))
-
-        def _assert_fail_filter(self):
-            score = self._score_persona(self.persona)
-            self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
-
-    return _TestCase
+    def _assert_fail_filter(self):
+        score = self._score_persona(self.persona)
+        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
 
-class ActiveSearcherFilterTestCase(FilterTestBase('for-active-search')):
+class ActiveSearcherFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users that have started their search."""
+
+    model_id = 'for-active-search'
 
     def test_active_searcher(self):
         """Users that have already started their search."""
@@ -53,8 +52,10 @@ class ActiveSearcherFilterTestCase(FilterTestBase('for-active-search')):
         self._assert_fail_filter()
 
 
-class EnoughTrainingFilterTestCase(FilterTestBase('for-training-fulfilled')):
+class EnoughTrainingFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users with sufficient training."""
+
+    model_id = 'for-training-fulfilled'
 
     def test_enough_training(self):
         """Users that have sufficient training."""
@@ -69,8 +70,10 @@ class EnoughTrainingFilterTestCase(FilterTestBase('for-training-fulfilled')):
         self._assert_fail_filter()
 
 
-class SingleParentFilterTestCase(FilterTestBase('for-single-parent')):
+class SingleParentFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for single parents."""
+
+    model_id = 'for-single-parent'
 
     def test_single_parent(self):
         """Single parent."""
@@ -92,8 +95,10 @@ class SingleParentFilterTestCase(FilterTestBase('for-single-parent')):
         self._assert_fail_filter()
 
 
-class YoungFilterTestCase(FilterTestBase('for-young(25)')):
+class YoungFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for young people."""
+
+    model_id = 'for-young(25)'
 
     year = datetime.date.today().year
 
@@ -110,8 +115,10 @@ class YoungFilterTestCase(FilterTestBase('for-young(25)')):
         self._assert_fail_filter()
 
 
-class ApplicantFilterTestCase(FilterTestBase('for-application(2)')):
+class ApplicantFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users that have applied for some jobs."""
+
+    model_id = 'for-application(2)'
 
     def test_had_applied(self):
         """User have applied three times per week."""
@@ -132,8 +139,10 @@ class ApplicantFilterTestCase(FilterTestBase('for-application(2)')):
         self._assert_fail_filter()
 
 
-class InterviewFilterTestCase(FilterTestBase('for-many-interviews(2)')):
+class InterviewFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users that have had some interviews."""
+
+    model_id = 'for-many-interviews(2)'
 
     def test_had_interviews(self):
         """User have had three interviews."""
@@ -148,8 +157,10 @@ class InterviewFilterTestCase(FilterTestBase('for-many-interviews(2)')):
         self._assert_fail_filter()
 
 
-class ExactInterviewFilterTestCase(FilterTestBase('for-exact-interview(1)')):
+class ExactInterviewFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users that have had exactly one interview."""
+
+    model_id = 'for-exact-interview(1)'
 
     def test_had_interviews(self):
         """User have had three interviews."""
@@ -170,8 +181,10 @@ class ExactInterviewFilterTestCase(FilterTestBase('for-exact-interview(1)')):
         self._assert_fail_filter()
 
 
-class InterviewSmallRateFilterTestCase(FilterTestBase('for-many-interviews-per-month(0.5)')):
+class InterviewSmallRateFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users that have had exactly one interview."""
+
+    model_id = 'for-many-interviews-per-month(0.5)'
 
     def test_had_interviews(self):
         """User have had three interviews in two months."""
@@ -192,8 +205,10 @@ class InterviewSmallRateFilterTestCase(FilterTestBase('for-many-interviews-per-m
         self._assert_fail_filter()
 
 
-class InterviewRateFilterTestCase(FilterTestBase('for-many-interviews-per-month(1)')):
+class InterviewRateFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users that have had exactly one interview."""
+
+    model_id = 'for-many-interviews-per-month(1)'
 
     def test_had_interviews(self):
         """User have had three interviews in two months."""
@@ -214,8 +229,10 @@ class InterviewRateFilterTestCase(FilterTestBase('for-many-interviews-per-month(
         self._assert_fail_filter()
 
 
-class NoInterviewFilterTestCase(FilterTestBase('for-no-interview')):
+class NoInterviewFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users that have had some interviews."""
+
+    model_id = 'for-no-interview'
 
     def test_had_interviews(self):
         """User have had three interviews."""
@@ -236,8 +253,10 @@ class NoInterviewFilterTestCase(FilterTestBase('for-no-interview')):
         self._assert_pass_filter()
 
 
-class OldFilterTestCase(FilterTestBase('for-old(50)')):
+class OldFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for old people."""
+
+    model_id = 'for-old(50)'
 
     year = datetime.date.today().year
 
@@ -260,8 +279,10 @@ class OldFilterTestCase(FilterTestBase('for-old(50)')):
         self._assert_pass_filter()
 
 
-class FrustratedOldFilterTestCase(FilterTestBase('for-frustrated-old(50)')):
+class FrustratedOldFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for 50 yo frustrated old people."""
+
+    model_id = 'for-frustrated-old(50)'
 
     year = datetime.date.today().year
 
@@ -293,8 +314,10 @@ class FrustratedOldFilterTestCase(FilterTestBase('for-frustrated-old(50)')):
         self._assert_pass_filter()
 
 
-class OtherFrustratedOldFilterTestCase(FilterTestBase('for-frustrated-old(45)')):
+class OtherFrustratedOldFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for 45 yo frustrated old people."""
+
+    model_id = 'for-frustrated-old(45)'
 
     year = datetime.date.today().year
 
@@ -319,8 +342,10 @@ class OtherFrustratedOldFilterTestCase(FilterTestBase('for-frustrated-old(45)'))
         self._assert_pass_filter()
 
 
-class FrustratedYoungFilterTestCase(FilterTestBase('for-frustrated-young(25)')):
+class FrustratedYoungFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for frustrated young people."""
+
+    model_id = 'for-frustrated-young(25)'
 
     year = datetime.date.today().year
 
@@ -346,8 +371,10 @@ class FrustratedYoungFilterTestCase(FilterTestBase('for-frustrated-young(25)')):
         self._assert_pass_filter()
 
 
-class UnemployedFilterTestCase(FilterTestBase('for-unemployed')):
+class UnemployedFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for unemployed."""
+
+    model_id = 'for-unemployed'
 
     def test_lost_quit(self):
         """User lost or quit their last job."""
@@ -368,8 +395,10 @@ class UnemployedFilterTestCase(FilterTestBase('for-unemployed')):
         self._assert_fail_filter()
 
 
-class EmployedFilterTestCase(FilterTestBase('for-employed')):
+class EmployedFilterTestCase(FilterTestBase):
     """Unit tests for the BaseFilter class for employed."""
+
+    model_id = 'for-employed'
 
     def test_first_job(self):
         """This is the first job for the user."""
@@ -391,8 +420,10 @@ class EmployedFilterTestCase(FilterTestBase('for-employed')):
         self._assert_pass_filter()
 
 
-class NotEmployedAnymoreFilterTestCase(FilterTestBase('for-not-employed-anymore')):
+class NotEmployedAnymoreFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for users that lost or quit their last job."""
+
+    model_id = 'for-not-employed-anymore'
 
     def test_lost_quit(self):
         """User lost or quit their last job."""
@@ -413,8 +444,10 @@ class NotEmployedAnymoreFilterTestCase(FilterTestBase('for-not-employed-anymore'
         self._assert_fail_filter()
 
 
-class QualifiedFilterTestCase(FilterTestBase('for-qualified(bac+3)')):
+class QualifiedFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for users that are qualified."""
+
+    model_id = 'for-qualified(bac+3)'
 
     def test_phd(self):
         """User has a PhD."""
@@ -435,9 +468,11 @@ class QualifiedFilterTestCase(FilterTestBase('for-qualified(bac+3)')):
         self._assert_fail_filter()
 
 
-class NegateFilterTestCase(FilterTestBase('not-for-searching-forever')):
+class NegateFilterTestCase(FilterTestBase):
     """Unit tests for the negate filter."""
 
+    model_id = 'not-for-searching-forever'
+
     def test_just_started(self):
         """User has just started this project."""
 
@@ -455,9 +490,11 @@ class NegateFilterTestCase(FilterTestBase('not-for-searching-forever')):
         self._assert_fail_filter()
 
 
-class SearchingForeverFilterTestCase(FilterTestBase('for-searching-forever')):
+class SearchingForeverFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for projects about searching for a looong time."""
 
+    model_id = 'for-searching-forever'
+
     def test_just_started(self):
         """User has just started this project."""
 
@@ -475,8 +512,10 @@ class SearchingForeverFilterTestCase(FilterTestBase('for-searching-forever')):
         self._assert_pass_filter()
 
 
-class JobGroupFilterTestCase(FilterTestBase('for-job-group(M16)')):
+class JobGroupFilterTestCase(FilterTestBase):
     """Unit tests for the _JobGroupFilter class for projects about M16* job groups."""
+
+    model_id = 'for-job-group(M16)'
 
     def test_secretary(self):
         """User is looking for a secretary job."""
@@ -491,8 +530,10 @@ class JobGroupFilterTestCase(FilterTestBase('for-job-group(M16)')):
         self._assert_fail_filter()
 
 
-class HighSalaryFilterTestCase(FilterTestBase('for-high-salary-expectations')):
+class HighSalaryFilterTestCase(FilterTestBase):
     """Unit tests for the _BaseFilter class for projects with expectations above median salary."""
+
+    model_id = 'for-high-salary-expectations'
 
     def test_high_expectations(self):
         """User is looking for a secretary job."""
@@ -519,8 +560,10 @@ class HighSalaryFilterTestCase(FilterTestBase('for-high-salary-expectations')):
         self._assert_fail_filter()
 
 
-class HighMarketStressFilterTestCase(FilterTestBase('for-unstressed-market(10/7)')):
+class HighMarketStressFilterTestCase(FilterTestBase):
     """Unit tests for the _BaseFilter class for projects with low market stress."""
+
+    model_id = 'for-unstressed-market(10/7)'
 
     def test_low_market_stress(self):
         """User looking for a job that had 7 offers per 10 candidates."""
@@ -566,8 +609,10 @@ class HighMarketStressFilterTestCase(FilterTestBase('for-unstressed-market(10/7)
         self._assert_fail_filter()
 
 
-class ExperienceInDomainTestCase(FilterTestBase('for-experience-in-domain')):
+class ExperienceInDomainTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users with previous experience in the domain."""
+
+    model_id = 'for-experience-in-domain'
 
     def test_high_expectations(self):
         """User have experience in the domain in which they are searching."""
@@ -582,9 +627,11 @@ class ExperienceInDomainTestCase(FilterTestBase('for-experience-in-domain')):
         self._assert_fail_filter()
 
 
-class ExperienceInSimilarDomainTestCase(FilterTestBase('for-experience-in-similar-domain')):
+class ExperienceInSimilarDomainTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users with previous experience in similar domain.
     """
+
+    model_id = 'for-experience-in-similar-domain'
 
     def test_high_expectations(self):
         """User have experience in a similar domain to the one in which they are searching."""
@@ -600,8 +647,10 @@ class ExperienceInSimilarDomainTestCase(FilterTestBase('for-experience-in-simila
         self._assert_fail_filter()
 
 
-class NoExperienceInDomainTestCase(FilterTestBase('for-first-time-in-job')):
+class NoExperienceInDomainTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for users with previous experience in the domain."""
+
+    model_id = 'for-first-time-in-job'
 
     def test_high_expectations(self):
         """User have experience in the domain in which they are searching or similar."""
@@ -616,8 +665,10 @@ class NoExperienceInDomainTestCase(FilterTestBase('for-first-time-in-job')):
         self._assert_pass_filter()
 
 
-class MultiJobGroupFilterTestCase(FilterTestBase('for-job-group(L15,L13)')):
+class MultiJobGroupFilterTestCase(FilterTestBase):
     """Unit tests for the _JobGroupFilter class for projects about L15* or L13* job groups."""
+
+    model_id = 'for-job-group(L15,L13)'
 
     def test_secretary(self):
         """User is looking for a secretary job."""
@@ -638,8 +689,10 @@ class MultiJobGroupFilterTestCase(FilterTestBase('for-job-group(L15,L13)')):
         self._assert_pass_filter()
 
 
-class JobFilterTestCase(FilterTestBase('for-job(12006)')):
+class JobFilterTestCase(FilterTestBase):
     """Unit tests for the _JobFilter class for projects about 12006 job."""
+
+    model_id = 'for-job(12006)'
 
     def test_chief_baker(self):
         """User is looking for a chief baker job."""
@@ -654,8 +707,10 @@ class JobFilterTestCase(FilterTestBase('for-job(12006)')):
         self._assert_fail_filter()
 
 
-class FrustrationFilterTestCase(FilterTestBase('for-frustrated(INTERVIEW)')):
+class FrustrationFilterTestCase(FilterTestBase):
     """Unit tests for the FrustrationFilter class for projects about INTERVIEW frustration."""
+
+    model_id = 'for-frustrated(INTERVIEW)'
 
     def test_frustrated_user(self):
         """User is frustrated by their interviews."""
@@ -681,8 +736,10 @@ class UnknownFrustrationFilterTestCase(unittest.TestCase):
             scoring.get_scoring_model('for-frustrated(INEXISTANT)')
 
 
-class DepartementFilterTestCase(FilterTestBase('for-departement(31)')):
+class DepartementFilterTestCase(FilterTestBase):
     """Unit tests for the _DepartementFilter class for projects about département 31."""
+
+    model_id = 'for-departement(31)'
 
     def test_toulouse(self):
         """User is looking for a job in Toulouse."""
@@ -697,8 +754,10 @@ class DepartementFilterTestCase(FilterTestBase('for-departement(31)')):
         self._assert_fail_filter()
 
 
-class MultiDepartementFilterTestCase(FilterTestBase('for-departement(31, 69)')):
+class MultiDepartementFilterTestCase(FilterTestBase):
     """Unit tests for the _DepartementFilter class for projects about multiple départements."""
+
+    model_id = 'for-departement(31, 69)'
 
     def test_toulouse(self):
         """User is looking for a job in Toulouse."""
@@ -719,8 +778,10 @@ class MultiDepartementFilterTestCase(FilterTestBase('for-departement(31, 69)')):
         self._assert_fail_filter()
 
 
-class FilterApplicationComplexityTestCase(FilterTestBase('for-complex-application')):
+class FilterApplicationComplexityTestCase(FilterTestBase):
     """Unit tests for the _ApplicationComplexityFilter class."""
+
+    model_id = 'for-complex-application'
 
     def test_special_complexity(self):
         """User is in a job with a special complexity."""
@@ -739,8 +800,10 @@ class FilterApplicationComplexityTestCase(FilterTestBase('for-complex-applicatio
         self._assert_pass_filter()
 
 
-class FilterActiveExperimentTestCase(FilterTestBase('for-active-experiment(lbb_integration)')):
+class FilterActiveExperimentTestCase(FilterTestBase):
     """Unit tests for the _ActiveExperimentFilter class."""
+
+    model_id = 'for-active-experiment(lbb_integration)'
 
     def test_in_control(self):
         """User is in the control group."""
@@ -777,8 +840,10 @@ class FilterActiveUnknownExperimentTestCase(unittest.TestCase):
             scoring.get_scoring_model('for-active-experiment(alpha)')
 
 
-class FilterGoodOverallScoreTestCase(FilterTestBase('for-good-overall-score(50)')):
+class FilterGoodOverallScoreTestCase(FilterTestBase):
     """Unit tests for the for-good-overall-score filter."""
+
+    model_id = 'for-good-overall-score(50)'
 
     def test_low_score(self):
         """Low score."""
@@ -793,8 +858,10 @@ class FilterGoodOverallScoreTestCase(FilterTestBase('for-good-overall-score(50)'
         self._assert_pass_filter()
 
 
-class FilterGoodNetworkScoreTestCase(FilterTestBase('for-network(3)')):
+class FilterGoodNetworkScoreTestCase(FilterTestBase):
     """Unit tests for the for-network(3) filter."""
+
+    model_id = 'for-network(3)'
 
     def test_lower_network_estimation(self):
         """User only has a medium network."""
@@ -809,8 +876,10 @@ class FilterGoodNetworkScoreTestCase(FilterTestBase('for-network(3)')):
         self._assert_pass_filter()
 
 
-class FilterPassionateLevelTestCase(FilterTestBase('for-passionate(LIFE_GOAL_JOB)')):
+class FilterPassionateLevelTestCase(FilterTestBase):
     """Unit tests for the for-passionate-level(LIFE_GOAL_JOB) filter."""
+
+    model_id = 'for-passionate(LIFE_GOAL_JOB)'
 
     def test_not_really_passionate(self):
         """User only likes their job."""
@@ -836,8 +905,10 @@ class UnknownPassionateFilterTestCase(unittest.TestCase):
             scoring.get_scoring_model('for-passionate(INEXISTANT)')
 
 
-class FilterShortSearchTestCase(FilterTestBase('for-short-search(-3)')):
+class FilterShortSearchTestCase(FilterTestBase):
     """Unit tests for the for-short-search(-3) filter."""
+
+    model_id = 'for-short-search(-3)'
 
     def test_just_started(self):
         """User has just started this project."""
@@ -898,8 +969,10 @@ class FilterUsingScoreTestCase(unittest.TestCase):
         self.assertEqual([], list(filtered))
 
 
-class LBBFilterTestCase(FilterTestBase('for-recruiting-sector')):
+class LBBFilterTestCase(FilterTestBase):
     """Unit tests for the _LBBFilter class."""
+
+    model_id = 'for-recruiting-sector'
 
     @mock.patch(companies.__name__ + '.get_lbb_companies')
     def test_big_company_recruiting(self, mock_get_lbb_companies):
@@ -944,8 +1017,10 @@ class LBBFilterTestCase(FilterTestBase('for-recruiting-sector')):
         mock_log_warning.assert_called()
 
 
-class ContractTypeFilterTestCase(FilterTestBase('for-most-likely-short-contract')):
+class ContractTypeFilterTestCase(FilterTestBase):
     """Unit tests for the _ContractTypeFilter class."""
+
+    model_id = 'for-most-likely-short-contract'
 
     def test_recruiting_through_cdi(self):
         """Test that main contract CDI does not pass the filter."""
@@ -1035,8 +1110,10 @@ class ContractTypeFilterTestCase(FilterTestBase('for-most-likely-short-contract'
         self._assert_pass_filter()
 
 
-class OffersEvolutionFilterTestCase(FilterTestBase('for-evolution-of-offers(+10%)')):
+class OffersEvolutionFilterTestCase(FilterTestBase):
     """Unit tests for the filter on evolution of offers."""
+
+    model_id = 'for-evolution-of-offers(+10%)'
 
     def test_negative_evolution(self):
         """Test that a market which is not recruiting more than before fails the filter."""
@@ -1070,6 +1147,78 @@ class OffersEvolutionFilterTestCase(FilterTestBase('for-evolution-of-offers(+10%
         self.persona.project.target_job.job_group.rome_id = 'M1403'
         self.persona.project.mobility.city.departement_id = '69'
         self._assert_pass_filter()
+
+
+class InterimFilterTestCase(FilterTestBase):
+    """Unit tests for the filter on interim employement type."""
+
+    model_id = 'for-very-short-contract'
+
+    def test_interim(self):
+        """Test that a user willing to do interim passes the filter."""
+
+        self.persona.project.employment_types.append(job_pb2.INTERIM)
+        self._assert_pass_filter()
+
+    def test_not_interim(self):
+        """Test that a user unwilling to do interim fails the filter."""
+
+        try:
+            self.persona.project.employment_types.remove(job_pb2.INTERIM)
+        except ValueError:
+            # Persona is already not interested in INTERIM.
+            pass
+        self._assert_fail_filter()
+
+
+class GoodScorerTestCase(FilterTestBase):
+    """Unit tests for the filter on good score for a given scorer."""
+
+    model_id = 'for-good-score(network-score)'
+
+    def test_with_good_score(self):
+        """Test that a good enough score passes the filter."""
+
+        # This makes a 60% score.
+        self.persona.project.network_estimate = 2
+        self._assert_pass_filter()
+
+    def test_with_bad_score(self):
+        """Test that a bad score fails the filter."""
+
+        self.persona.project.network_estimate = 1
+        self._assert_fail_filter()
+
+    def test_unscored(self):
+        """Test that no score fails the filter."""
+
+        self.persona.project.network_estimate = 0
+        self._assert_fail_filter()
+
+
+class BadScorerTestCase(FilterTestBase):
+    """Unit tests for the filter on bad score for a given scorer."""
+
+    model_id = 'for-bad-score(network-score)'
+
+    def test_with_good_score(self):
+        """Test that a good enough score fails the filter."""
+
+        # This makes a 60% score.
+        self.persona.project.network_estimate = 2
+        self._assert_fail_filter()
+
+    def test_with_bad_score(self):
+        """Test that a bad score passes the filter."""
+
+        self.persona.project.network_estimate = 1
+        self._assert_pass_filter()
+
+    def test_unscored(self):
+        """Test that no score fails the filter."""
+
+        self.persona.project.network_estimate = 0
+        self._assert_fail_filter()
 
 
 if __name__ == '__main__':

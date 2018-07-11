@@ -1,4 +1,4 @@
-import omit from 'lodash/omit'
+import _omit from 'lodash/omit'
 import AccountOutlineIcon from 'mdi-react/AccountOutlineIcon'
 import EmailOutlineIcon from 'mdi-react/EmailOutlineIcon'
 import GoogleIcon from 'mdi-react/GoogleIcon'
@@ -7,26 +7,25 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import {connect} from 'react-redux'
 import {parse, stringify} from 'query-string'
-import {Link} from 'react-router-dom'
+import {Link, Redirect} from 'react-router-dom'
 
 import FacebookLogin from 'react-facebook-login'
 import GoogleLogin from 'react-google-login'
-import config from 'config'
 
 import linkedInIcon from 'images/linked-in.png'
 import peConnectIcon from 'images/pole-emploi-connect.svg'
 import signupCoverImage from 'images/signup-cover.jpg?multi&sizes[]=1440&sizes[]=600'
 
 import {FastForward} from 'components/fast_forward'
+import {isMobileVersion} from 'components/mobile'
 import {validateEmail} from 'store/validations'
 import {facebookAuthenticateUser, googleAuthenticateUser, emailCheck,
   registerNewUser, loginUser, displayToasterMessage, resetPassword, peConnectAuthenticateUser,
   askPasswordReset, openLoginModal, openRegistrationModal, closeLoginModal,
   linkedInAuthenticateUser, AUTHENTICATE_USER, EMAIL_CHECK,
   RESET_USER_PASSWORD} from 'store/actions'
-import {chooseImageVersion, Colors, colorToAlpha, IconInput,
+import {CircularProgress, chooseImageVersion, colorToAlpha, IconInput,
   LabeledToggle, Button, Styles} from 'components/theme'
-import {upperFirstLetter} from 'store/french'
 import {Modal, ModalCloseButton} from 'components/modal'
 import {Routes} from 'components/url'
 
@@ -36,7 +35,8 @@ class LoginFormBase extends React.Component {
     defaultEmail: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
     isAskingForPasswordReset: PropTypes.bool,
-    isAuthenticating: PropTypes.bool,
+    isAuthenticatingEmail: PropTypes.bool,
+    isAuthenticatingOther: PropTypes.bool,
     onLogin: PropTypes.func.isRequired,
     onShowRegistrationFormClick: PropTypes.func.isRequired,
   }
@@ -63,17 +63,30 @@ class LoginFormBase extends React.Component {
     }
     dispatch(emailCheck(this.state.email)).
       then(response => {
-        this.setState({hashSalt: response.hashSalt})
+        if (response && response.hashSalt) {
+          this.setState({hashSalt: response.hashSalt})
+        }
         return response
       }).
       then(response => {
+        if (!response) {
+          return response
+        }
         if (response.isNewUser) {
           // TODO: Emphasize to registration form if response.isNewUser
           dispatch(displayToasterMessage("L'utilisateur n'existe pas."))
           return
         }
         const {email, password, hashSalt} = this.state
-        this.props.onLogin(email, password, hashSalt)
+        // TODO: Use different API endpoints for login and registration.
+        dispatch(loginUser(email, password, hashSalt)).then(response => {
+          if (response && response.authenticatedUser) {
+            this.props.onLogin(response.authenticatedUser)
+            // TODO: Take care of the else case when the authentication was
+            // not successful but we got back some new salt. (response.hashSalt)
+          }
+          return response
+        })
         return response
       })
   }
@@ -81,7 +94,9 @@ class LoginFormBase extends React.Component {
   handleLostPasswordClick = event => {
     const {dispatch} = this.props
     const {email} = this.state
-    event.preventDefault()
+    if (event) {
+      event.preventDefault()
+    }
     if (!validateEmail(email)) {
       dispatch(displayToasterMessage(
         'Entrez correctement votre email dans le champs ci-dessus pour récupérer ' +
@@ -90,8 +105,10 @@ class LoginFormBase extends React.Component {
       return
     }
     dispatch(askPasswordReset(email)).then(response => {
-      this.setState({passwordResetRequestedEmail: email})
-      return response
+      if (response) {
+        this.setState({passwordResetRequestedEmail: email})
+        return response
+      }
     })
   }
 
@@ -115,7 +132,8 @@ class LoginFormBase extends React.Component {
 
   render() {
     const {email, isTryingToResetPassword, password, passwordResetRequestedEmail} = this.state
-    const {isAskingForPasswordReset, isAuthenticating} = this.props
+    const {isAskingForPasswordReset, isAuthenticatingEmail,
+      isAuthenticatingOther, onLogin} = this.props
     const loginBoxStyle = {
       display: 'flex',
       flexDirection: 'column',
@@ -123,32 +141,39 @@ class LoginFormBase extends React.Component {
       marginTop: 15,
     }
     const lostPasswordLinkStyle = {
-      color: Colors.COOL_GREY,
+      color: colors.COOL_GREY,
       display: 'inline-block',
       fontSize: 13,
       marginLeft: 15,
       marginTop: 12,
       textDecoration: 'none',
     }
-    return <form style={loginBoxStyle} onSubmit={this.handleLogin}>
+    const handleSubmit = isTryingToResetPassword ? this.handleLostPasswordClick : this.handleLogin
+    return <form style={loginBoxStyle} onSubmit={handleSubmit}>
       <FastForward onForward={this.fastForward} />
       <FormHeader
         title={isTryingToResetPassword ? 'Mot de passe oublié ?' : "S'identifier"}
         question={isTryingToResetPassword ? '' : 'Pas encore de compte ?'}
         linkText="Inscrivez-vous !"
         onClick={this.props.onShowRegistrationFormClick} />
-      <IconInput
-        shouldFocusOnMount={!email}
-        type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
-        applyFunc={email => email.toLocaleLowerCase()}
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
-        onChange={this.handleChange('email')} />
-      {isTryingToResetPassword ? null : <IconInput
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
-        type="password" shouldFocusOnMount={!!email}
-        placeholder="Mot de passe" value={password} iconComponent={LockOutlineIcon}
-        onChange={this.handleChange('password')}
-        style={{marginTop: 10}} />}
+
+      <SocialLoginButtons onLogin={onLogin} />
+
+      <FormSection title="Identification par mot de passe">
+        <IconInput
+          shouldFocusOnMount={!email}
+          type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
+          applyFunc={email => email.toLocaleLowerCase()}
+          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+          onChange={this.handleChange('email')} />
+        {isTryingToResetPassword ? null : <IconInput
+          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+          type="password" shouldFocusOnMount={!!email}
+          placeholder="Mot de passe" value={password} iconComponent={LockOutlineIcon}
+          onChange={this.handleChange('password')}
+          style={{marginTop: 10}} />}
+      </FormSection>
+
       {isTryingToResetPassword ? null : <a
         style={{...lostPasswordLinkStyle, cursor: 'pointer'}}
         onClick={this.handleLostPasswordClick}>
@@ -159,28 +184,32 @@ class LoginFormBase extends React.Component {
           Un email a été envoyé à {passwordResetRequestedEmail}
         </span>
         : <Button
-          disabled={!this.isFormValid()}
-          onClick={isTryingToResetPassword ? this.handleLostPasswordClick : this.handleLogin}
+          disabled={!this.isFormValid() || isAuthenticatingOther || isAuthenticatingEmail}
+          onClick={() => handleSubmit()}
           style={{alignSelf: 'center', marginTop: 30}}
           isNarrow={true}
-          isProgressShown={(isAuthenticating || isAskingForPasswordReset)}
+          isProgressShown={(isAuthenticatingEmail || isAskingForPasswordReset)}
           type="validation">
           {isTryingToResetPassword ? 'Récupérer son mot de passe' : "S'identifier"}
         </Button>}
     </form>
   }
 }
-const LoginForm = connect(({asyncState}) => ({
-  isAskingForPasswordReset: asyncState.isFetching[RESET_USER_PASSWORD],
-  isAuthenticating: asyncState.isFetching[EMAIL_CHECK] || asyncState.isFetching[AUTHENTICATE_USER],
+const LoginForm = connect(({asyncState: {authMethod, isFetching}}) => ({
+  isAskingForPasswordReset: isFetching[RESET_USER_PASSWORD],
+  isAuthenticatingEmail:
+    isFetching[EMAIL_CHECK] || isFetching[AUTHENTICATE_USER] && authMethod === 'password',
+  isAuthenticatingOther: isFetching[AUTHENTICATE_USER] && authMethod !== 'password',
 }))(LoginFormBase)
 
 
 class ResetPasswordFormBase extends React.Component {
   static propTypes = {
     defaultEmail: PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
     isAuthenticating: PropTypes.bool,
-    onResetPassword: PropTypes.func.isRequired,
+    onLogin: PropTypes.func.isRequired,
+    resetToken: PropTypes.string.isRequired,
   }
 
   state = {
@@ -193,7 +222,6 @@ class ResetPasswordFormBase extends React.Component {
   }
 
   handleResetPassword = event => {
-    const {onResetPassword} = this.props
     if (event && event.preventDefault) {
       event.preventDefault()
     }
@@ -201,7 +229,13 @@ class ResetPasswordFormBase extends React.Component {
       return
     }
     const {email, password} = this.state
-    onResetPassword(email, password)
+    const {dispatch, onLogin, resetToken} = this.props
+    dispatch(resetPassword(email, password, resetToken)).then(response => {
+      if (response && response.authenticatedUser) {
+        onLogin(response.authenticatedUser)
+      }
+      return response
+    })
   }
 
   isFormValid = () => {
@@ -221,13 +255,13 @@ class ResetPasswordFormBase extends React.Component {
     return <form style={loginBoxStyle} onSubmit={this.handleResetPassword}>
       <FormHeader title="Changez votre mot de passe" />
       <IconInput
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
+        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
         shouldFocusOnMount={!email}
         type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
         applyFunc={email => email.toLocaleLowerCase()}
         onChange={this.handleChange('email')} />
       <IconInput
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
+        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
         type="password" shouldFocusOnMount={!!email}
         placeholder="Nouveau mot de passe" value={password} iconComponent={LockOutlineIcon}
         onChange={this.handleChange('password')}
@@ -252,8 +286,9 @@ const ResetPasswordForm = connect(({asyncState}) => ({
 class RegistrationFormBase extends React.Component {
   static propTypes = {
     defaultEmail: PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
     isAuthenticating: PropTypes.bool,
-    onRegister: PropTypes.func.isRequired,
+    onLogin: PropTypes.func.isRequired,
     onShowLoginFormClick: PropTypes.func.isRequired,
   }
 
@@ -274,7 +309,22 @@ class RegistrationFormBase extends React.Component {
       return
     }
     const {email, password, name, lastName} = this.state
-    this.props.onRegister(email, password, name, lastName)
+    const {dispatch, onLogin, onShowLoginFormClick} = this.props
+    return dispatch(registerNewUser(email, password, name, lastName)).then(response => {
+      if (!response) {
+        return response
+      }
+      // TODO: Handle this more explicitly after switch to two endpoints.
+      // User already exists
+      if (!response.authenticatedUser) {
+        dispatch(displayToasterMessage(
+          'Ce compte existe déjà, merci de vous connecter avec vos identifiants'))
+        onShowLoginFormClick()
+        return
+      }
+      onLogin(response.authenticatedUser)
+      return response
+    })
   }
 
   isFormValid = () => {
@@ -299,7 +349,7 @@ class RegistrationFormBase extends React.Component {
 
   render() {
     const {email, hasAcceptedTerms, password, name, lastName} = this.state
-    const {isAuthenticating} = this.props
+    const {isAuthenticating, onLogin} = this.props
     const registrationBoxStyle = {
       display: 'flex',
       flexDirection: 'column',
@@ -313,28 +363,34 @@ class RegistrationFormBase extends React.Component {
         question="Déjà un compte ?"
         linkText="Connectez-vous !"
         onClick={this.props.onShowLoginFormClick} />
-      <IconInput
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
-        shouldFocusOnMount={true}
-        type="text" placeholder="Prénom" value={name} iconComponent={AccountOutlineIcon}
-        onChange={this.handleChange('name')} />
-      <IconInput
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
-        type="text" placeholder="Nom" value={lastName} iconComponent={AccountOutlineIcon}
-        onChange={this.handleChange('lastName')}
-        style={{marginTop: 10}} />
-      <IconInput
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
-        type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
-        applyFunc={email => email.toLocaleLowerCase()}
-        onChange={this.handleChange('email')}
-        style={{marginTop: 10}} />
-      <IconInput
-        iconStyle={{fill: Colors.PINKISH_GREY, width: 20}}
-        type="password"
-        placeholder="Créer un mot de passe" value={password} iconComponent={LockOutlineIcon}
-        onChange={this.handleChange('password')}
-        style={{marginTop: 10}} />
+
+      <SocialLoginButtons onLogin={onLogin} isNewUser={true} />
+
+      <FormSection title="Inscription par mot de passe">
+        <IconInput
+          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+          shouldFocusOnMount={true}
+          type="text" placeholder="Prénom" value={name} iconComponent={AccountOutlineIcon}
+          onChange={this.handleChange('name')} />
+        <IconInput
+          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+          type="text" placeholder="Nom" value={lastName} iconComponent={AccountOutlineIcon}
+          onChange={this.handleChange('lastName')}
+          style={{marginTop: 10}} />
+        <IconInput
+          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+          type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
+          applyFunc={email => email.toLocaleLowerCase()}
+          onChange={this.handleChange('email')}
+          style={{marginTop: 10}} />
+        <IconInput
+          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+          type="password"
+          placeholder="Créer un mot de passe" value={password} iconComponent={LockOutlineIcon}
+          onChange={this.handleChange('password')}
+          style={{marginTop: 10}} />
+      </FormSection>
+
       <div style={{fontSize: 12, margin: '10px auto 0', maxWidth: 325}}>
         Nous sommes une association loi 1901 à but non lucratif&nbsp;:
         {' '}{config.productName} est <strong>gratuit</strong> et le restera
@@ -343,7 +399,7 @@ class RegistrationFormBase extends React.Component {
       <LabeledToggle
         type="checkbox" label={<span>
             J'ai lu et j'accepte les <Link
-            to={Routes.TERMS_AND_CONDITIONS_PAGE} target="_blank"
+            to={Routes.TERMS_AND_CONDITIONS_PAGE} target="_blank" rel="noopener noreferrer"
             onClick={event => event.stopPropagation()}>
               conditions générales d'utilisation
           </Link>
@@ -373,6 +429,30 @@ const RegistrationForm = connect(({app, asyncState}) => {
 })(RegistrationFormBase)
 
 
+class FormSection extends React.Component {
+  static propTypes = {
+    children: PropTypes.node,
+    title: PropTypes.node.isRequired,
+  }
+
+  render() {
+    const {children, title} = this.props
+    const titleStyle = {
+      color: colors.GREYISH_BROWN,
+      fontSize: 14,
+      margin: '30px 0 15px',
+      textAlign: 'center',
+    }
+    return <React.Fragment>
+      <div style={titleStyle}>
+        {title}
+      </div>
+      {children}
+    </React.Fragment>
+  }
+}
+
+
 class FormHeader extends React.Component {
   static propTypes = {
     linkText: PropTypes.string,
@@ -384,20 +464,20 @@ class FormHeader extends React.Component {
   render() {
     const {linkText, onClick, question, title} = this.props
     const headlineStyle = {
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       fontSize: 23,
       fontWeight: 500,
       lineHeight: 1.6,
       textAlign: 'center',
     }
     const contentStyle = {
-      color: Colors.GREYISH_BROWN,
+      color: colors.GREYISH_BROWN,
       fontSize: 14,
       lineHeight: 1.4,
       textAlign: 'center',
     }
     const linkStyle = {
-      color: Colors.BOB_BLUE,
+      color: colors.BOB_BLUE,
       cursor: 'pointer',
       textDecoration: 'underline',
     }
@@ -425,13 +505,13 @@ class OAuth2ConnectLogin extends React.Component {
     style: PropTypes.object,
   }
 
-  componentWillMount() {
+  componentDidMount() {
     const {onFailure, onSuccess} = this.props
     const {search} = window.location
     if (!search) {
       return
     }
-    const {code, state} = parse(search.substr(1))
+    const {code, error, error_description: errorDescription, state} = parse(search.substr(1))
     if (!state) {
       return
     }
@@ -447,6 +527,17 @@ class OAuth2ConnectLogin extends React.Component {
     }
     if (!nonce) {
       onFailure(new Error(`Invalid state: "${state}".`))
+      return
+    }
+    if (error || !code) {
+      if (/Owner did not authorize/.test(errorDescription)) {
+        // User canceled their request so they are aware of what happened.
+        onFailure(new Error('Authentification annulée'))
+        return
+      }
+      onFailure(new Error(
+        errorDescription || error || "Erreur lors de l'authentification, code manquant"))
+      return
     }
     onSuccess({code, nonce})
   }
@@ -491,9 +582,9 @@ class OAuth2ConnectLogin extends React.Component {
       width: 34,
     }
     return <button
-      {...omit(extraProps,
+      {..._omit(extraProps,
         ['authorizeEndpoint', 'authorizeParams', 'clientId', 'onFailure', 'onSuccess', 'scopes'])}
-      onClick={this.startSigninFlow} style={buttonStyle}>
+      onClick={this.startSigninFlow} style={buttonStyle} type="button">
       <img style={imageStyle} src={logo} alt="Icône Pôle emploi" />
       {children}
     </button>
@@ -503,153 +594,42 @@ class OAuth2ConnectLogin extends React.Component {
 
 class LoginModalBase extends React.Component {
   static propTypes = {
-    defaultEmail: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
     isLoginFormShownByDefault: PropTypes.bool,
     isShown: PropTypes.bool,
-    onLogin: PropTypes.func,
+    onLogin: PropTypes.func.isRequired,
     resetToken: PropTypes.string,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool.isRequired,
-  }
-
   state = {
-    isLoginFormShown: false,
     isShown: false,
+    isShownAsFullPage: false,
   }
 
-  componentWillMount() {
-    const {isLoginFormShownByDefault, isShown} = this.props
-    this.componentWillReceiveProps({isLoginFormShownByDefault, isShown})
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const wantShown = nextProps.isShown || !!nextProps.resetToken
-    if (wantShown === this.state.isShown) {
-      return
+  static getDerivedStateFromProps(nextProps, {isShown: wasShown}) {
+    const {isLoginFormShownByDefault, isShown, resetToken} = nextProps
+    const wantShown = isShown || !!resetToken
+    if (wantShown === wasShown) {
+      return null
     }
-    this.setState({isShown: wantShown})
+    const newState = {
+      isShown: wantShown,
+    }
     if (wantShown) {
-      this.setState({isLoginFormShown: nextProps.isLoginFormShownByDefault})
+      newState.isShownAsFullPage = !isMobileVersion && !resetToken && !isLoginFormShownByDefault
     }
-  }
-
-  handleActualLogin = user => {
-    const {onLogin} = this.props
-    onLogin && onLogin(user)
-    this.close(false)
+    return newState
   }
 
   close = hasCanceledLogin => {
-    this.props.dispatch(closeLoginModal(hasCanceledLogin))
-  }
-
-  handleFacebookLogin = facebookAuth => {
-    const {dispatch} = this.props
-    // The facebookAuth object contains:
-    //  - the email address: email
-    //  - the facebook user ID: userID
-    //  - the full name: name
-    //  - the URL of a profile picture: picture.data.url
-    const email = facebookAuth && facebookAuth.email
-    if (email) {
-      dispatch(facebookAuthenticateUser(facebookAuth)).then(response => {
-        this.handleActualLogin(response.authenticatedUser)
-        return response
-      })
+    const {dispatch, onLogin} = this.props
+    dispatch(closeLoginModal(hasCanceledLogin))
+    if (!hasCanceledLogin) {
+      onLogin()
     }
-  }
-
-  handleGoogleLogin = googleAuth => {
-    const {dispatch} = this.props
-    // The googleAuth object contains the profile in getBasicProfile()
-    //  - the Google ID: getId()
-    //  - the email address: getEmail()
-    //  - the first name: getGivenName()
-    //  - the last name: getFamilyName()
-    //  - the full name: getName()
-    //  - the URL of a profile picture: getImageUrl()
-    const email = googleAuth && googleAuth.getBasicProfile().getEmail()
-    if (email) {
-      dispatch(googleAuthenticateUser(googleAuth)).then(response => {
-        this.handleActualLogin(response.authenticatedUser)
-        return response
-      })
-    }
-  }
-
-  handleGoogleFailure = ({details}) => {
-    const {dispatch} = this.props
-    dispatch(displayToasterMessage(details))
-  }
-
-  handleConnectFailure = error => {
-    const {dispatch} = this.props
-    dispatch(displayToasterMessage(error.message))
-  }
-
-  handlePEConnectLogin = ({code, nonce}) => {
-    const {dispatch} = this.props
-    dispatch(peConnectAuthenticateUser(code, nonce)).then(response => {
-      // TODO(pascal): Make sure we go to /confidentialite page on first registration.
-      this.handleActualLogin(response.authenticatedUser)
-      return response
-    })
-  }
-
-  handleLinkedinLogin = ({code}) => {
-    const {dispatch} = this.props
-    dispatch(linkedInAuthenticateUser(code)).then(response => {
-      this.handleActualLogin(response.authenticatedUser)
-      return response
-    })
-  }
-
-  // TODO: Use different API endpoints for login and registration.
-  handleRegister = (email, password, name, lastName) => {
-    const {dispatch} = this.props
-    name = upperFirstLetter(name.trim())
-    lastName = upperFirstLetter(lastName.trim())
-    return dispatch(registerNewUser(email.trim(), password, name, lastName)).then(response => {
-      // TODO: Handle this more explicitly after switch to two endpoints.
-      // User already exists
-      if (!response.authenticatedUser) {
-        dispatch(displayToasterMessage(
-          'Ce compte existe déjà, merci de vous connecter avec vos identifiants'))
-        this.setState({isLoginFormShown: true})
-        return
-      }
-      this.handleActualLogin(response.authenticatedUser)
-      return response
-    })
-  }
-
-  handleLogin = (email, password, hashSalt) => {
-    const {dispatch} = this.props
-    dispatch(loginUser(email.trim(), password, hashSalt)).then(response => {
-      if (response.authenticatedUser) {
-        this.handleActualLogin(response.authenticatedUser)
-        // TODO: Take care of the else case when the authentication was
-        // not successful but we got back some new salt. (response.hashSalt)
-      }
-      return response
-    })
-  }
-
-  handleResetPassword = (email, password) => {
-    const {dispatch, resetToken} = this.props
-    dispatch(resetPassword(email.trim(), password, resetToken)).then(response => {
-      if (response.authenticatedUser) {
-        this.handleActualLogin(response.authenticatedUser)
-      }
-      return response
-    })
   }
 
   renderIntro(style) {
-    const {isMobileVersion} = this.context
     const containerStyle = {
       minHeight: '100vh',
       position: 'relative',
@@ -685,7 +665,7 @@ class LoginModalBase extends React.Component {
       fontSize: 60,
       fontWeight: 'bold',
       lineHeight: 1,
-      textShadow: `0 2px 6px ${colorToAlpha(Colors.BOB_BLUE_HOVER, .5)}`,
+      textShadow: `0 2px 6px ${colorToAlpha(colors.BOB_BLUE_HOVER, .5)}`,
     }
     const quoteStyle = {
       fontSize: 128,
@@ -695,7 +675,7 @@ class LoginModalBase extends React.Component {
     }
 
     return <div style={containerStyle}>
-      <div style={{...coverAll, backgroundColor: Colors.BOB_BLUE, opacity: .9, zIndex: -1}} />
+      <div style={{...coverAll, backgroundColor: colors.BOB_BLUE, opacity: .9, zIndex: -1}} />
       <div style={coverImageStyle} />
       <div style={contentStyle}>
         <div style={titleStyle}>
@@ -711,8 +691,8 @@ class LoginModalBase extends React.Component {
           <br /><br />
 
           Certains vous ouvriront de nouvelles pistes de réflexion, d'autres
-          peut-être moins. Faites-nous vos retours :
-          Bob s'améliore grâce à vous&nbsp;!
+          peut-être moins. Faites-nous vos retours&nbsp;: {config.productName} s'améliore grâce
+          à vous&nbsp;!
         </div>
 
         <div style={{fontSize: 20, marginTop: 40}}>
@@ -723,32 +703,16 @@ class LoginModalBase extends React.Component {
   }
 
   render() {
-    const {defaultEmail, resetToken} = this.props
-    const {isMobileVersion} = this.context
-    const {isLoginFormShown} = this.state
-    const isFullRegistrationFormShown = !isMobileVersion && !resetToken && !isLoginFormShown
-    const actionBoxStyle = {
-      alignItems: 'center',
-      alignSelf: 'stretch',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: isMobileVersion ? '30px 20px' : '30px 60px',
-    }
-    const socialLoginBox = {
-      ...actionBoxStyle,
-      backgroundColor: isFullRegistrationFormShown ? 'initial' : Colors.BACKGROUND_GREY,
-      borderRadius: '0 0 5px 5px',
-      fontFamily: 'Lato, Helvetica',
-      fontSize: 15,
-    }
-    const containerStyle = isFullRegistrationFormShown ? {
+    const {resetToken} = this.props
+    const {isShownAsFullPage} = this.state
+
+    const containerStyle = isShownAsFullPage ? {
       alignItems: 'center',
       display: 'flex',
       transition: 'none',
       width: '100vw',
     } : {
       borderRadius: 5,
-      margin: isMobileVersion ? 15 : 'initial',
       width: isMobileVersion ? 'initial' : 400,
     }
     const closeButtonStyle = {
@@ -761,6 +725,186 @@ class LoginModalBase extends React.Component {
       top: 50,
       transform: 'initial',
     }
+
+    if ((this.state.isShown || !!resetToken) && isMobileVersion) {
+      // Search and hash might contain variables required to sign in, so we forward them.
+      const {hash, search} = window.location
+      return <Redirect to={Routes.SIGNUP_PAGE + search + hash} push={true} />
+    }
+
+    return <Modal
+      isShown={this.state.isShown || !!resetToken} style={containerStyle}
+      onClose={(resetToken || isShownAsFullPage) ? null : () => this.close(true)}>
+      {isShownAsFullPage ? this.renderIntro({flex: 1}) : null}
+      {isShownAsFullPage ?
+        <ModalCloseButton onClick={() => this.close(true)} style={closeButtonStyle} /> : null}
+      <LoginMethods onFinish={this.close} />
+    </Modal>
+  }
+}
+const LoginModal = connect(({app: {loginModal}}) => {
+  const {isReturningUser, resetToken} = loginModal && loginModal.defaultValues || {}
+  return {
+    isLoginFormShownByDefault: !!isReturningUser,
+    isShown: !!loginModal,
+    resetToken,
+  }
+})(LoginModalBase)
+
+
+class LoginMethodsBase extends React.Component {
+  static propTypes = {
+    defaultEmail: PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
+    isLoginFormShownByDefault: PropTypes.bool,
+    onFinish: PropTypes.func,
+    onLogin: PropTypes.func,
+    resetToken: PropTypes.string,
+  }
+
+  state = {
+    isLoginFormShown: this.props.isLoginFormShownByDefault,
+  }
+
+  handleActualLogin = user => {
+    const {onFinish, onLogin} = this.props
+    onLogin && onLogin(user)
+    onFinish && onFinish(false)
+  }
+
+
+  handleLogin = (email, password, hashSalt) => {
+    const {dispatch} = this.props
+    dispatch(loginUser(email, password, hashSalt)).then(response => {
+      if (response && response.authenticatedUser) {
+        this.handleActualLogin(response.authenticatedUser)
+        // TODO: Take care of the else case when the authentication was
+        // not successful but we got back some new salt. (response.hashSalt)
+      }
+      return response
+    })
+  }
+
+  render() {
+    const {defaultEmail, resetToken} = this.props
+    const {isLoginFormShown} = this.state
+    const actionBoxStyle = {
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '30px 20px',
+    }
+    let form
+    if (resetToken) {
+      form = <ResetPasswordForm
+        defaultEmail={defaultEmail} onLogin={this.handleActualLogin} resetToken={resetToken} />
+    } else if (isLoginFormShown) {
+      form = <LoginForm
+        onLogin={this.handleActualLogin} defaultEmail={defaultEmail}
+        onShowRegistrationFormClick={() => this.setState({isLoginFormShown: false})} />
+    } else {
+      form = <RegistrationForm
+        onLogin={this.handleActualLogin}
+        onShowLoginFormClick={() => this.setState({isLoginFormShown: true})} />
+    }
+    // TODO(pascal): Simplify and cleanup styling here.
+    return <div style={{flex: 1, ...Styles.CENTERED_COLUMN}}>
+      <div style={actionBoxStyle}>
+        {form}
+      </div>
+    </div>
+  }
+}
+const LoginMethods = connect(({app: {loginModal}}) => {
+  const {email, isReturningUser, resetToken} = loginModal && loginModal.defaultValues || {}
+  return {
+    defaultEmail: email,
+    isLoginFormShownByDefault: !!isReturningUser,
+    resetToken,
+  }
+})(LoginMethodsBase)
+
+
+class SocialLoginButtonsBase extends React.Component {
+  static propTypes = {
+    authMethod: PropTypes.string,
+    dispatch: PropTypes.func.isRequired,
+    isAuthenticating: PropTypes.bool,
+    isNewUser: PropTypes.bool,
+    onLogin: PropTypes.func.isRequired,
+    style: PropTypes.object,
+  }
+
+  handleAuthResponse = response => {
+    if (!response) {
+      return response
+    }
+    const {dispatch, isNewUser: wantsNewUser, onLogin} = this.props
+    const {authenticatedUser, isNewUser} = response
+    if (isNewUser && !wantsNewUser) {
+      dispatch(displayToasterMessage("Création d'un nouveau compte"))
+    } else if (!isNewUser && wantsNewUser) {
+      dispatch(displayToasterMessage('Connexion avec le compte existant'))
+    }
+    // TODO(pascal): Make sure we go to /confidentialite page on first registration.
+    onLogin(authenticatedUser)
+  }
+
+  handleFacebookLogin = facebookAuth => {
+    // The facebookAuth object contains:
+    //  - the email address: email
+    //  - the facebook user ID: userID
+    //  - the full name: name
+    //  - the URL of a profile picture: picture.data.url
+    const email = facebookAuth && facebookAuth.email
+    if (email) {
+      this.props.dispatch(facebookAuthenticateUser(facebookAuth)).then(this.handleAuthResponse)
+    }
+  }
+
+  handleGoogleLogin = googleAuth => {
+    // The googleAuth object contains the profile in getBasicProfile()
+    //  - the Google ID: getId()
+    //  - the email address: getEmail()
+    //  - the first name: getGivenName()
+    //  - the last name: getFamilyName()
+    //  - the full name: getName()
+    //  - the URL of a profile picture: getImageUrl()
+    const email = googleAuth && googleAuth.getBasicProfile().getEmail()
+    if (email) {
+      this.props.dispatch(googleAuthenticateUser(googleAuth)).then(this.handleAuthResponse)
+    }
+  }
+
+  handleGoogleFailure = ({details}) => {
+    const {dispatch} = this.props
+    dispatch(displayToasterMessage(details))
+  }
+
+  handleConnectFailure = error => {
+    const {dispatch} = this.props
+    dispatch(displayToasterMessage(error.message))
+  }
+
+  handlePEConnectLogin = ({code, nonce}) => {
+    this.props.dispatch(peConnectAuthenticateUser(code, nonce)).then(this.handleAuthResponse)
+  }
+
+  handleLinkedinLogin = ({code}) => {
+    this.props.dispatch(linkedInAuthenticateUser(code)).then(this.handleAuthResponse)
+  }
+
+  render() {
+    const {authMethod, isAuthenticating, style} = this.props
+    const socialLoginBox = {
+      ...style,
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: 'Lato, Helvetica',
+      fontSize: 15,
+    }
     const googleIconStyle = {
       fill: '#fff',
       height: 24,
@@ -768,94 +912,67 @@ class LoginModalBase extends React.Component {
       verticalAlign: 'middle',
       width: 34,
     }
-    const socialLoginPrefix = isLoginFormShown ? 'Connexion' : 'Inscription'
-    let form
-    if (resetToken) {
-      form = <ResetPasswordForm
-        defaultEmail={defaultEmail} onResetPassword={this.handleResetPassword} />
-    } else if (isLoginFormShown) {
-      form = <LoginForm
-        onLogin={this.handleLogin} defaultEmail={defaultEmail}
-        onShowRegistrationFormClick={() => this.setState({isLoginFormShown: false})} />
-    } else {
-      form = <RegistrationForm
-        onRegister={this.handleRegister}
-        onShowLoginFormClick={() => this.setState({isLoginFormShown: true})} />
+    const circularProgressStyle = {
+      color: '#fff',
+      display: 'inline-block',
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      width: 170,
     }
-    const orStyle = {
-      alignItems: 'center',
-      color: Colors.DARK_TWO,
-      display: 'flex',
-      fontSize: 15,
-      width: isMobileVersion ? '100%' : 325,
-    }
-    return <Modal
-      isShown={this.state.isShown || !!resetToken} style={containerStyle}
-      onClose={(resetToken || isFullRegistrationFormShown) ? null : () => this.close(true)}>
-      {isFullRegistrationFormShown ? this.renderIntro({flex: 1}) : null}
-      {isFullRegistrationFormShown ?
-        <ModalCloseButton onClick={() => this.close(true)} style={closeButtonStyle} /> : null}
-      <div style={{flex: 1, ...Styles.CENTERED_COLUMN}}>
-        <div style={actionBoxStyle}>
-          {form}
-        </div>
-        <div style={orStyle}>
-          <span style={{borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`, flex: 1}} />
-          <span style={{margin: '0 20px', ...Styles.CENTER_FONT_VERTICALLY}}>ou</span>
-          <span style={{borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`, flex: 1}} />
-        </div>
-        {resetToken ? null : <div style={socialLoginBox}>
-          <FacebookLogin
-            appId={config.facebookSSOAppId} language="fr"
-            callback={this.handleFacebookLogin}
-            fields="email,name,picture,gender,birthday"
-            size="small" icon="fa-facebook"
-            textButton={`${socialLoginPrefix} avec Facebook`}
-            cssClass="login facebook-login" />
-          <GoogleLogin
-            clientId={config.googleSSOClientId} offline={false}
-            onSuccess={this.handleGoogleLogin}
-            onFailure={this.handleGoogleFailure}
-            className="login google-login">
-            <GoogleIcon style={googleIconStyle} />{`${socialLoginPrefix} avec Google`}
-          </GoogleLogin>
-          <OAuth2ConnectLogin
-            authorizeEndpoint="https://authentification-candidat.pole-emploi.fr/connexion/oauth2/authorize"
-            scopes={['api_peconnect-individuv1', 'profile', 'email',
-              'coordonnees', 'api_peconnect-coordonneesv1', 'openid',
-              'competences', 'api_peconnect-competencesv1']}
-            authorizeParams={{realm: '/individu'}}
-            clientId={config.emploiStoreClientId}
-            className="login pe-connect-login"
-            logo={peConnectIcon}
-            onSuccess={this.handlePEConnectLogin}
-            onFailure={this.handleConnectFailure}>
-            {socialLoginPrefix} avec Pôle emploi
-          </OAuth2ConnectLogin>
-          <OAuth2ConnectLogin
-            clientId={config.linkedInClientId}
-            authorizeEndpoint="https://www.linkedin.com/oauth/v2/authorization"
-            onSuccess={this.handleLinkedinLogin}
-            onFailure={this.handleConnectFailure}
-            logo={linkedInIcon}
-            className="login linkedin-login">
-            {socialLoginPrefix} avec LinkedIn
-          </OAuth2ConnectLogin>
-        </div>}
-      </div>
-    </Modal>
+    return <div style={socialLoginBox}>
+      <FacebookLogin
+        appId={config.facebookSSOAppId} language="fr" disabled={isAuthenticating}
+        callback={this.handleFacebookLogin}
+        fields="email,name,picture,gender,birthday"
+        size="small" icon="fa-facebook"
+        textButton={isAuthenticating && authMethod === 'facebook' ?
+          <CircularProgress size={23} style={circularProgressStyle} thickness={2} /> :
+          <React.Fragment>Se connecter avec Facebook</React.Fragment>}
+        cssClass="login facebook-login" />
+      <GoogleLogin
+        clientId={config.googleSSOClientId} offline={false} disabled={isAuthenticating}
+        onSuccess={this.handleGoogleLogin}
+        onFailure={this.handleGoogleFailure}
+        className="login google-login">
+        <GoogleIcon style={googleIconStyle} />{isAuthenticating && authMethod === 'google' ?
+          <CircularProgress size={23} style={circularProgressStyle} thickness={2} /> :
+          <React.Fragment>Se connecter avec Google</React.Fragment>}
+      </GoogleLogin>
+      <OAuth2ConnectLogin
+        authorizeEndpoint="https://authentification-candidat.pole-emploi.fr/connexion/oauth2/authorize"
+        scopes={['api_peconnect-individuv1', 'profile', 'email',
+          'coordonnees', 'api_peconnect-coordonneesv1', 'openid',
+          // TODO(cyrille): Add 'pfccompetences', 'api_peconnect-competencesv2' once we have
+          // upgraded to competences v2.
+        ]}
+        authorizeParams={{realm: '/individu'}} disabled={isAuthenticating}
+        clientId={config.emploiStoreClientId}
+        className="login pe-connect-login"
+        logo={peConnectIcon}
+        onSuccess={this.handlePEConnectLogin}
+        onFailure={this.handleConnectFailure}>
+        {isAuthenticating && authMethod === 'peConnect' ?
+          <CircularProgress size={23} style={circularProgressStyle} thickness={2} /> :
+          <React.Fragment>Se connecter avec pôle emploi</React.Fragment>}
+      </OAuth2ConnectLogin>
+      <OAuth2ConnectLogin
+        clientId={config.linkedInClientId} disabled={isAuthenticating}
+        authorizeEndpoint="https://www.linkedin.com/oauth/v2/authorization"
+        onSuccess={this.handleLinkedinLogin}
+        onFailure={this.handleConnectFailure}
+        logo={linkedInIcon} style={{marginBottom: 0}}
+        className="login linkedin-login">
+        {isAuthenticating && authMethod === 'linkedIn' ?
+          <CircularProgress size={23} style={circularProgressStyle} thickness={2} /> :
+          <React.Fragment>Se connecter avec LinkedIn</React.Fragment>}
+      </OAuth2ConnectLogin>
+    </div>
   }
 }
-const LoginModal = connect(({app}) => {
-  const {loginModal} = app
-  const {email, isReturningUser, resetToken} = loginModal && loginModal.defaultValues || {}
-  return {
-    defaultEmail: email,
-    isLoginFormShownByDefault: !!isReturningUser,
-    isShown: !!loginModal,
-    resetToken,
-  }
-})(LoginModalBase)
+const SocialLoginButtons = connect(({asyncState: {authMethod, isFetching}}) => ({
+  authMethod,
+  isAuthenticating: isFetching[EMAIL_CHECK] || isFetching[AUTHENTICATE_USER],
+}))(SocialLoginButtonsBase)
 
 
 class LoginButtonBase extends React.Component {
@@ -869,16 +986,14 @@ class LoginButtonBase extends React.Component {
     visualElement: PropTypes.string,
   }
 
-  static contextTypes = {
-    history: PropTypes.shape({
-      push: PropTypes.func.isRequired,
-    }).isRequired,
+  state = {
+    isClicked: false,
   }
 
   handleClick = () => {
     const {email, isLoggedIn, isSignUpButton, dispatch, visualElement} = this.props
     if (isLoggedIn) {
-      this.context.history.push(Routes.PROJECT_PAGE)
+      this.setState({isClicked: true})
       return
     }
     if (isSignUpButton) {
@@ -889,8 +1004,11 @@ class LoginButtonBase extends React.Component {
   }
 
   render() {
+    if (this.state.isClicked) {
+      return <Redirect to={Routes.PROJECT_PAGE} push={true} />
+    }
     const {children} = this.props
-    const extraProps = omit(this.props, [
+    const extraProps = _omit(this.props, [
       'children', 'dispatch', 'email', 'isLoggedIn', 'isSignUpButton', 'visualElement',
     ])
     return <Button type="deletion" onClick={this.handleClick} {...extraProps}>
@@ -903,4 +1021,4 @@ const LoginButton = connect(({user}) => ({
 }))(LoginButtonBase)
 
 
-export {LoginModal, LoginButton}
+export {LoginModal, LoginMethods, LoginButton}

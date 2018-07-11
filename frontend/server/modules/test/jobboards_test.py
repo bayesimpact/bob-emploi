@@ -9,8 +9,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceJobBoardsTestCase(scoring_test.ScoringModelTestBase('advice-job-boards')):
+class AdviceJobBoardsTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Other Work Environments" advice."""
+
+    model_id = 'advice-job-boards'
 
     def test_frustrated(self):
         """Frustrated by not enough offers."""

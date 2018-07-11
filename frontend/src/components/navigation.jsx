@@ -1,4 +1,4 @@
-import omit from 'lodash/omit'
+import _forEach from 'lodash/forEach'
 import AccountCircleIcon from 'mdi-react/AccountCircleIcon'
 import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
@@ -7,30 +7,32 @@ import MenuIcon from 'mdi-react/MenuIcon'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
+import {withRouter} from 'react-router'
 import {Link} from 'react-router-dom'
 import {connect} from 'react-redux'
 
-import config from 'config'
 import {logoutAction, modifyProject, openLoginModal} from 'store/actions'
 import {onboardingComplete} from 'store/main_selectors'
 
 import bellImage from 'images/bell.svg'
-import facebookImage from 'images/facebook.svg'
 import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
 import logoProductBetaImage from 'images/logo-bob-beta.svg'
-import twitterImage from 'images/twitter.svg'
 
 import {DebugModal} from 'components/debug'
 import {FastForward} from 'components/fast_forward'
+import {isMobileVersion} from 'components/mobile'
 import {ShortKey} from 'components/shortkey'
-import {STATIC_ADVICE_MODULES} from 'components/static_advice'
 import {Modal} from 'components/modal'
+import {PointsCounter} from 'components/points'
+import {ZendeskChatButton} from 'components/zendesk'
+
+import {getPageDescription} from '../../release/opengraph_redirect'
+
 import {CookieMessage} from './cookie_message'
 import {BetaMessage} from './beta_message'
-import {Button, Colors, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
+import {Button, ExternalLink, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
   OutsideClickHandler, SmoothTransitions, Styles, UpDownIcon} from './theme'
 import {Routes} from './url'
-import {ZendeskChatButton} from 'components/zendesk'
 
 export const NAVIGATION_BAR_HEIGHT = 56
 
@@ -81,8 +83,8 @@ class Notifications extends React.Component {
     const notificationStyle = index => ({
       alignItems: 'center',
       backgroundColor: '#fff',
-      borderTop: index ? `solid 1px ${Colors.BACKGROUND_GREY}` : 'initial',
-      color: Colors.DARK_TWO,
+      borderTop: index ? `solid 1px ${colors.BACKGROUND_GREY}` : 'initial',
+      color: colors.DARK_TWO,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,
@@ -106,7 +108,7 @@ class Notifications extends React.Component {
       display: 'inline-block',
     }
     const chevronIconStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
       height: 31,
       marginRight: 20,
       width: 25,
@@ -143,9 +145,9 @@ class Notifications extends React.Component {
 
 
 const navLinkStyle = {
-  color: Colors.COOL_GREY,
+  color: colors.VERY_LIGHT_BLUE,
   fontSize: 13,
-  fontWeight: 500,
+  fontWeight: 600,
   letterSpacing: 1,
   padding: '20px 25px 21px',
   textTransform: 'uppercase',
@@ -181,13 +183,12 @@ class NavigationLink extends React.Component {
       cursor: 'pointer',
       position: 'relative',
       textDecoration: 'none',
-      textShadow: isHighlighted ? '0 1px 2px rgba(0, 0, 0, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.9)',
       ...SmoothTransitions,
       ...style,
       ...(isHighlighted && style && style[':highlight'] || null),
     }
     const selectMarkStyle = {
-      backgroundColor: Colors.RED_PINK,
+      backgroundColor: colors.RED_PINK,
       borderRadius: isSelectionOnTop ? '0 0 3px 3px' : '3px 3px 0 0',
       bottom: isSelectionOnTop ? 'initial' : 0,
       height: 4,
@@ -221,38 +222,49 @@ class NavigationLink extends React.Component {
 const MENU_LINK_HEIGHT = 50
 
 
+const RadiumLink = Radium(Link)
+const RadiumExternalLink = Radium(ExternalLink)
+
+
 class MenuLinkBase extends React.Component {
   static propTypes = {
     children: PropTypes.node,
     style: PropTypes.object,
+    to: PropTypes.string,
   }
 
   render() {
-    const {children, style, ...extraProps} = this.props
+    const {children, style, to, ...extraProps} = this.props
     const containerStyle = {
       alignItems: 'center',
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       display: 'flex',
       fontWeight: 'normal',
       height: MENU_LINK_HEIGHT,
       paddingLeft: 25,
       textAlign: 'left',
+      textDecoration: 'none',
       ...style,
       // eslint-disable-next-line sort-keys
       ':focus': {
-        backgroundColor: Colors.BOB_BLUE,
+        backgroundColor: colors.BOB_BLUE,
         color: '#fff',
         ...(style && style[':hover'] || {}),
       },
       ':hover': {
-        backgroundColor: Colors.BOB_BLUE,
+        backgroundColor: colors.BOB_BLUE,
         color: '#fff',
         ...(style && style[':hover'] || {}),
       },
     }
-    return <div {...extraProps} style={containerStyle}>
+    if (to) {
+      return <RadiumLink {...extraProps} to={to} style={containerStyle}>
+        {children}
+      </RadiumLink>
+    }
+    return <RadiumExternalLink {...extraProps} style={containerStyle}>
       {children}
-    </div>
+    </RadiumExternalLink>
   }
 }
 const MenuLink = Radium(MenuLinkBase)
@@ -260,9 +272,13 @@ const MenuLink = Radium(MenuLinkBase)
 
 class NavigationBarBase extends React.Component {
   static propTypes = {
+    areBobPointsEnabled: PropTypes.bool,
     // Allow only one child: it will be part of a flex flow so it can use
     // alignSelf to change its own layout.
-    children: PropTypes.element,
+    children: PropTypes.oneOfType([
+      PropTypes.element,
+      PropTypes.string,
+    ]),
     dispatch: PropTypes.func.isRequired,
     featuresEnabled: PropTypes.shape({
       poleEmploi: PropTypes.bool,
@@ -270,8 +286,10 @@ class NavigationBarBase extends React.Component {
     isLoggedIn: PropTypes.bool.isRequired,
     isOnboardingComplete: PropTypes.bool,
     isTransparent: PropTypes.bool,
-    onBackClick: PropTypes.func,
+    // A string is handled as a URL to route back to.
+    onBackClick: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
     page: PropTypes.string,
+    points: PropTypes.number,
     project: PropTypes.shape({
       projectId: PropTypes.string,
     }),
@@ -281,16 +299,8 @@ class NavigationBarBase extends React.Component {
     }).isRequired,
   }
 
-  static contextTypes = {
-    history: PropTypes.shape({
-      push: PropTypes.func.isRequired,
-    }).isRequired,
-    isMobileVersion: PropTypes.bool.isRequired,
-  }
-
   state = {
-    isLogOutDropDownShown: false,
-    isMobileMenuOpen: false,
+    isMenuShown: false,
     isModifyProjectModalShown: false,
   }
 
@@ -298,43 +308,25 @@ class NavigationBarBase extends React.Component {
     clearTimeout(this.timeout)
   }
 
-  closeMobileMenu = () => {
-    this.timeout = setTimeout(() => this.setState({isMobileMenuOpen: false}), 50)
-  }
-
-  logOut = event => {
-    event.stopPropagation()
-    this.props.dispatch(logoutAction)
-    this.context.history.push(Routes.ROOT)
-  }
-
-  toggleMenuDropDown = () => {
-    this.setState({isLogOutDropDownShown: !this.state.isLogOutDropDownShown})
-  }
-
-  collapseDropDown = () => {
-    this.setState({isLogOutDropDownShown: false})
-  }
-
-  handleLogoClick = () => {
-    const {page, isOnboardingComplete} = this.props
-    if ((page === 'profile' || page === 'new_project') && !isOnboardingComplete) {
+  closeMenu = () => {
+    if (!this.state.isMenuShown) {
       return
     }
-    this.context.history.push(Routes.ROOT)
+    this.timeout = setTimeout(() => this.setState({isMenuShown: false}), 50)
   }
 
-  renderOnMobile() {
-    const {children, dispatch, isLoggedIn, onBackClick, project} = this.props
-    const {isMobileMenuOpen, isModifyProjectModalShown} = this.state
-    const style = {
-      alignItems: 'center',
-      backgroundColor: Colors.DARK,
-      color: '#fff',
-      display: 'flex',
-      height: 50,
-      justifyContent: 'center',
-      position: 'relative',
+  logOut = () => {
+    this.props.dispatch(logoutAction)
+  }
+
+  toggleMenuShown = () => {
+    this.setState({isMenuShown: !this.state.isMenuShown})
+  }
+
+  renderBackChevron() {
+    const {areBobPointsEnabled, onBackClick} = this.props
+    if (!onBackClick) {
+      return null
     }
     const backIconStyle = {
       alignItems: 'center',
@@ -342,27 +334,49 @@ class NavigationBarBase extends React.Component {
       fill: '#fff',
       height: 50,
       justifyContent: 'center',
-      left: 0,
+      left: areBobPointsEnabled ? 30 : 0,
       padding: 10,
       position: 'absolute',
       top: 0,
       width: 50,
     }
+    if (typeof onBackClick === 'string') {
+      return <Link to={onBackClick}>
+        <ChevronLeftIcon style={backIconStyle} />
+      </Link>
+    }
+    return <ChevronLeftIcon style={backIconStyle} onClick={onBackClick} />
+  }
+
+  renderOnMobile() {
+    const {children, dispatch, areBobPointsEnabled, isLoggedIn, page, points,
+      project} = this.props
+    const {isMenuShown, isModifyProjectModalShown} = this.state
+    const style = {
+      alignItems: 'center',
+      backgroundColor: colors.BOB_BLUE,
+      color: '#fff',
+      display: 'flex',
+      height: 50,
+      justifyContent: 'center',
+      position: 'relative',
+    }
     const menuIconStyle = {
       alignItems: 'center',
       display: 'flex',
-      fill: isLoggedIn && !isMobileMenuOpen ? Colors.SLATE : '#fff',
+      fill: '#fff',
       height: 50,
       justifyContent: 'center',
-      left: isLoggedIn ? 'initial' : 0,
+      left: isLoggedIn && !areBobPointsEnabled ? 'initial' : 0,
+      opacity: isLoggedIn && !isMenuShown ? 0.5 : 1,
       padding: isLoggedIn ? 10 : 15,
       position: 'absolute',
-      right: isLoggedIn ? 0 : 'initial',
+      right: isLoggedIn && !areBobPointsEnabled ? 0 : 'initial',
       top: 0,
       width: 50,
     }
     const menuStyle = {
-      backgroundColor: Colors.CHARCOAL_GREY,
+      backgroundColor: colors.CHARCOAL_GREY,
       color: '#fff',
       left: 0,
       paddingTop: 50,
@@ -371,8 +385,14 @@ class NavigationBarBase extends React.Component {
       top: 0,
       zIndex: 2,
     }
+    const pointStyle = {
+      color: 'inherit',
+      position: 'absolute',
+      right: 10,
+      textDecoration: 'none',
+    }
     const linkStyle = page => ({
-      backgroundColor: page === this.props.page ? Colors.RED_PINK : 'inherit',
+      backgroundColor: page === this.props.page ? colors.RED_PINK : 'inherit',
       color: '#fff',
       display: 'block',
       padding: '20px 40px',
@@ -387,21 +407,19 @@ class NavigationBarBase extends React.Component {
           isShown={isModifyProjectModalShown}
           onClose={() => this.setState({isModifyProjectModalShown: false})}
           onConfirm={() => dispatch(modifyProject(project))} /> : null}
-        {onBackClick ? <ChevronLeftIcon
-          style={backIconStyle} onClick={onBackClick}
-        /> : null}
-        {isMobileMenuOpen ?
-          <OutsideClickHandler onOutsideClick={this.closeMobileMenu}>
+        {this.renderBackChevron()}
+        {isMenuShown ?
+          <OutsideClickHandler onOutsideClick={this.closeMenu}>
             <div style={menuStyle}>
               <CloseIcon
-                onClick={() => this.setState({isMobileMenuOpen: false})}
+                onClick={() => this.setState({isMenuShown: false})}
                 style={menuIconStyle}
               />
               {isLoggedIn ? <React.Fragment>
                 {isProjectModifiable ? <a
                   style={linkStyle()}
                   onClick={() => {
-                    this.closeMobileMenu()
+                    this.closeMenu()
                     this.setState({isModifyProjectModalShown: true})
                   }}>
                   Modifer votre projet
@@ -412,9 +430,9 @@ class NavigationBarBase extends React.Component {
                 <a style={linkStyle()} onClick={() => window.open(config.helpRequestUrl, '_blank')}>
                   Nous contacter
                 </a>
-                <a style={linkStyle('logout')} onClick={this.logOut}>
+                <Link to={Routes.ROOT} style={linkStyle('logout')} onClick={this.logOut}>
                   Déconnexion
-                </a>
+                </Link>
               </React.Fragment> : <React.Fragment>
                 <Link to={Routes.ROOT} style={linkStyle('landing')}>
                   Accueil
@@ -423,7 +441,7 @@ class NavigationBarBase extends React.Component {
                   Notre mission
                 </Link>
                 <Link to={Routes.TEAM_PAGE} style={linkStyle('equipe')}>
-                  Qui est Bob&nbsp;?
+                  Qui est {config.productName}&nbsp;?
                 </Link>
                 <Link to={Routes.TRANSPARENCY_PAGE} style={linkStyle('transparency')}>
                   Où en sommes-nous&nbsp;?
@@ -437,30 +455,35 @@ class NavigationBarBase extends React.Component {
           </OutsideClickHandler>
           : <Icon
             name="menu" style={menuIconStyle} tabIndex={0}
-            onClick={() => this.setState({isMobileMenuOpen: true})} />
+            onClick={() => this.setState({isMenuShown: true})} />
         }
-        <Link to={Routes.ROOT}>
+        {areBobPointsEnabled && isLoggedIn && page !== 'points' ? <Link
+          to={Routes.POINTS_PAGE} style={pointStyle}>
+          <PointsCounter count={points} />
+        </Link> : null}
+        {/* TODO(cyrille): Make sure text is centered vertically here. */}
+        {children || <Link to={Routes.ROOT}>
           <img src={logoProductWhiteImage} alt={config.productName} style={{height: 22}} />
-        </Link>
+        </Link>}
       </nav>
-      {children}
     </React.Fragment>
   }
 
+  // TODO(cyrille): Add points counter.
   render() {
-    const {dispatch, children, featuresEnabled, isLoggedIn, isTransparent,
+    const {dispatch, children, featuresEnabled, isLoggedIn, isOnboardingComplete, isTransparent,
       page, project, style, userProfile} = this.props
-    const {isMobileVersion, history} = this.context
     const {name} = userProfile
-    const {isLogOutDropDownShown, isModifyProjectModalShown} = this.state
+    const {isMenuShown, isModifyProjectModalShown} = this.state
     if (isMobileVersion) {
       return this.renderOnMobile()
     }
     const containerStyle = {
       alignItems: 'center',
-      backgroundColor: isTransparent ? 'initial' : Colors.DARK,
+      backgroundColor: isTransparent ? 'initial' : colors.BOB_BLUE,
       color: '#fff',
       display: 'flex',
+      fontFamily: 'Lato, Helvetica',
       height: NAVIGATION_BAR_HEIGHT,
       justifyContent: 'flex-end',
       position: isTransparent ? 'absolute' : 'relative',
@@ -468,24 +491,7 @@ class NavigationBarBase extends React.Component {
       zIndex: isTransparent ? 2 : 'initial',
       ...style,
     }
-    const linkContainerStyle = {
-      alignSelf: 'stretch',
-      cursor: 'pointer',
-      fontSize: 13,
-      fontWeight: 500,
-      letterSpacing: 1,
-      padding: '7px 40px',
-      textAlign: 'center',
-      textDecoration: 'none',
-    }
-    const logoStyle = {
-      cursor: 'pointer',
-      height: 30,
-    }
-    const logo = <img
-      src={logoProductBetaImage}
-      style={logoStyle}
-      onClick={this.handleLogoClick} alt={config.productName} />
+    const logo = <img src={logoProductBetaImage} style={{height: 30}} alt={config.productName} />
     if (!isLoggedIn) {
       const reducedContainerStyle = {
         ...containerStyle,
@@ -520,7 +526,7 @@ class NavigationBarBase extends React.Component {
       return <nav style={reducedContainerStyle}>
         <div style={reducedNavBarStyle}>
           <div style={logoContainerStyle}>
-            {logo}
+            <Link to={Routes.ROOT}>{logo}</Link>
           </div>
 
           <NavigationLink
@@ -551,6 +557,18 @@ class NavigationBarBase extends React.Component {
         </div>
       </nav>
     }
+    const isDuringOnboarding =
+      (page === 'profile' || page === 'new_project') && !isOnboardingComplete
+    const linkContainerStyle = {
+      alignSelf: 'stretch',
+      cursor: 'pointer',
+      fontSize: 13,
+      fontWeight: 600,
+      letterSpacing: 1,
+      padding: '7px 40px',
+      textAlign: 'center',
+      textDecoration: 'none',
+    }
     const menuStyle = {
       ...linkContainerStyle,
       cursor: 'pointer',
@@ -563,12 +581,12 @@ class NavigationBarBase extends React.Component {
         backgroundColor: '#fff',
       },
       ':hover': {
-        backgroundColor: isLogOutDropDownShown ? '#fff' : 'rgba(255, 255, 255, .2)',
+        backgroundColor: isMenuShown ? '#fff' : colors.NICE_BLUE,
       },
       alignItems: 'center',
-      backgroundColor: isLogOutDropDownShown ? '#fff' : 'initial',
+      backgroundColor: isMenuShown ? '#fff' : 'initial',
       bottom: 0,
-      color: isLogOutDropDownShown ? Colors.DARK_TWO : '#fff',
+      color: isMenuShown ? colors.DARK_TWO : '#fff',
       display: 'flex',
       justifyContent: 'center',
       left: 0,
@@ -578,41 +596,15 @@ class NavigationBarBase extends React.Component {
       top: 0,
       ...SmoothTransitions,
     }
-    const openInNewTab = href => window.open(href, '_blank')
     const isProjectModifiable = project && project.projectId && !project.isIncomplete
-    const menuItems = [
-      <MenuLink key="profile" onClick={() => history.push(Routes.PROFILE_PAGE)}>
-        Vos informations
-      </MenuLink>,
-      isProjectModifiable ? <MenuLink
-        key="modify-project"
-        onClick={() => this.setState({isModifyProjectModalShown: true})}>
-        Modifer votre projet
-      </MenuLink> : null,
-      <MenuLink key="contribute" onClick={() => history.push(Routes.CONTRIBUTION_PAGE)}>
-        Contribuer
-      </MenuLink>,
-      <MenuLink key="help" onClick={() => openInNewTab('https://aide.bob-emploi.fr/hc/fr')}>
-        Aide
-      </MenuLink>,
-      <MenuLink key="contact" onClick={() => {
-        openInNewTab(config.helpRequestUrl)
-      }}>
-        Nous contacter
-      </MenuLink>,
-      <MenuLink key="logout"
-        onClick={this.logOut}
-        style={{':hover': {color: '#fff'}, color: Colors.COOL_GREY}}>
-        Déconnexion
-      </MenuLink>,
-    ].filter(menuLink => menuLink)
     const dropDownStyle = {
       ...linkContainerStyle,
       alignItems: 'center',
       backgroundColor: dropDownButtonStyle.backgroundColor,
-      borderTop: isLogOutDropDownShown ? 'solid 1px rgba(255, 255, 255, .2)' : 'none',
-      fontWeight: isLogOutDropDownShown ? 'bold' : 500,
-      height: isLogOutDropDownShown ? menuItems.length * MENU_LINK_HEIGHT : 0,
+      borderTop: isMenuShown ? 'solid 1px rgba(255, 255, 255, .2)' : 'none',
+      boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.2)',
+      fontWeight: isMenuShown ? 'bold' : 'normal',
+      height: isMenuShown ? 'initial' : 0,
       justifyContent: 'center',
       left: 0,
       overflow: 'hidden',
@@ -635,240 +627,119 @@ class NavigationBarBase extends React.Component {
       paddingRight: 1,
       width: 26,
     }
+    // TODO(cyrille): Unify behavior for menu between Mobile and Desktop.
     return <nav style={containerStyle}>
       {isProjectModifiable ? <ModifyProjectModal
         isShown={isModifyProjectModalShown}
         onClose={() => this.setState({isModifyProjectModalShown: false})}
         onConfirm={() => dispatch(modifyProject(project))} /> : null}
+      {/* TODO(marielaure): Make it possible to put the logo in the middle for the onboarding. */}
       <div style={logoOnLeftStyle}>
-        {logo}
+        {isDuringOnboarding ? logo : <Link to={Routes.ROOT}>
+          {logo}
+        </Link>}
       </div>
 
-      {children ? React.cloneElement(children, {
+      {children && children.props ? React.cloneElement(children, {
         style: {
           flex: 1,
           textAlign: 'center',
           ...children.props.style,
         },
-      }) : <span style={{flex: 1}} />}
+      }) : <span style={{flex: 1, textAlign: 'center'}}>{children}</span>}
 
       <Notifications
         page={page} notifications={featuresEnabled.poleEmploi ? [
           {
             href: 'https://projects.invisionapp.com/boards/SK39VCS276T8J/',
-            subtitle: 'Trouvez ici nos resources pour présenter Bob',
+            subtitle: `Trouvez ici nos resources pour présenter ${config.productName}`,
             title: 'Vous êtes conseiller Pôle emploi ?',
           },
         ] : []} />
 
-      <div
-        style={menuStyle} onClick={this.toggleMenuDropDown}
-        onBlur={this.collapseDropDown} tabIndex="0">
-        <div style={dropDownButtonStyle}>
-          {name}&nbsp;<div style={{flex: 1}} /><UpDownIcon
-            icon="menu"
-            isUp={isLogOutDropDownShown}
-            style={menuIconStyle} />
+      <OutsideClickHandler
+        onOutsideClick={isMenuShown ? this.closeMenu : () => {}} style={menuStyle}
+        onClick={this.toggleMenuShown} tabIndex="0">
+        <div>
+          <div style={dropDownButtonStyle}>
+            {name}&nbsp;<div style={{flex: 1}} /><UpDownIcon
+              icon="menu"
+              isUp={isMenuShown}
+              style={menuIconStyle} />
+          </div>
+          <div style={dropDownStyle}>
+            <MenuLink to={Routes.PROFILE_PAGE}>Vos informations</MenuLink>
+            {isProjectModifiable ?
+              <MenuLink onClick={() => this.setState({isModifyProjectModalShown: true})}>
+                Modifer votre projet
+              </MenuLink> : null}
+            <MenuLink to={Routes.CONTRIBUTION_PAGE}>Contribuer</MenuLink>
+            <MenuLink href="https://aide.bob-emploi.fr/hc/fr">Aide</MenuLink>
+            <MenuLink href={config.helpRequestUrl}>Nous contacter</MenuLink>
+            <MenuLink
+              onClick={this.logOut} to={Routes.ROOT}
+              style={{':hover': {color: '#fff'}, color: colors.COOL_GREY}}>
+              Déconnexion
+            </MenuLink>
+          </div>
         </div>
-        <div style={dropDownStyle}>
-          {menuItems}
-        </div>
-      </div>
+      </OutsideClickHandler>
     </nav>
   }
 }
 const NavigationBar = connect(({user}) => ({
+  areBobPointsEnabled: user.featuresEnabled && user.featuresEnabled.bobPoints === 'ACTIVE',
   featuresEnabled: user.featuresEnabled || {},
   isLoggedIn: !!(user.profile && user.profile.name),
   isOnboardingComplete: onboardingComplete(user),
+  points: user.appPoints && user.appPoints.current || 0,
   project: user.projects && user.projects[0],
   userProfile: user.profile,
 }))(Radium(NavigationBarBase))
 
 
-const RadiumLink = Radium(Link)
-class FooterLink extends React.Component {
+// Pseudo component that listens to location changes (from React Router) and
+// updates the HTML title and meta description.
+class TitleUpdaterBase extends React.Component {
   static propTypes = {
-    isSelected: PropTypes.bool,
-    style: PropTypes.object,
+    location: PropTypes.shape({
+      pathname: PropTypes.string.isRequired,
+    }).isRequired,
+  }
+
+  componentDidMount() {
+    this.componentDidUpdate({location: {}})
+  }
+
+  componentDidUpdate({location: {pathname: previousPathname}}) {
+    const {location: {pathname}} = this.props
+    if (previousPathname && previousPathname === pathname) {
+      return
+    }
+    const {description, title} = getPageDescription(pathname.substr(1))
+
+    // Update the title.
+    _forEach(document.getElementsByTagName('title'), titleElement => {
+      titleElement.innerText = title
+    })
+
+    // Update the description.
+    _forEach(document.getElementsByTagName('meta'), metaElement => {
+      if (metaElement.getAttribute('name') === 'description') {
+        metaElement.setAttribute('content', description || '')
+      }
+    })
   }
 
   render() {
-    const style = {
-      ':focus': {
-        color: '#fff',
-      },
-      ':hover': {
-        color: '#fff',
-      },
-      color: this.props.isSelected ? '#fff' : Colors.COOL_GREY,
-      display: 'block',
-      fontSize: 13,
-      fontWeight: 'bold',
-      padding: '5px 0',
-      textDecoration: 'none',
-      ...SmoothTransitions,
-      ...this.props.style,
-    }
-    return <RadiumLink style={style} {...omit(this.props, ['isSelected', 'style'])} />
+    return null
   }
 }
+const TitleUpdater = withRouter(TitleUpdaterBase)
 
 
-class Footer extends React.Component {
-  static propTypes = {
-    page: PropTypes.string,
-    style: PropTypes.object,
-  }
-
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool.isRequired,
-  }
-
-  renderLinkSection(title, border, children) {
-    const {isMobileVersion} = this.context
-    const linkPadding = isMobileVersion ? 12 : 10
-    const containerStyle = {
-      paddingBottom: linkPadding,
-      paddingTop: linkPadding,
-      width: 170,
-    }
-    const headerStyle = {
-      color: '#fff',
-      fontSize: 11,
-      marginBottom: 15,
-      textTransform: 'uppercase',
-    }
-    return <section style={containerStyle}>
-      <header style={headerStyle}>
-        {title}
-      </header>
-
-      {children}
-    </section>
-  }
-
-  render() {
-    const {page, style} = this.props
-    const {isMobileVersion} = this.context
-    const containerStyle = {
-      backgroundColor: Colors.DARK_BLUE,
-      color: Colors.COOL_GREY,
-      fontFamily: 'Lato, Helvetica',
-      padding: isMobileVersion ? '35px 0' : `80px ${MIN_CONTENT_PADDING}px`,
-      textAlign: isMobileVersion ? 'center' : 'left',
-      ...style,
-    }
-    const linksContainerStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      fontWeight: 'bold',
-      padding: '20px 0',
-    }
-    const logoStyle = {
-      height: 30,
-      marginBottom: isMobileVersion ? 35 : 0,
-    }
-    const iconPadding = 8
-    const iconStyle = {
-      ':highlight': {opacity: 1},
-      display: 'block',
-      fontSize: 'inherit',
-      fontWeight: 'inherit',
-      marginLeft: 'initial',
-      opacity: .5,
-      paddingBottom: iconPadding,
-      paddingLeft: iconPadding,
-      paddingRight: iconPadding,
-      paddingTop: iconPadding,
-    }
-    return <footer style={containerStyle}>
-      <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
-        <div style={{textAlign: isMobileVersion ? 'center' : 'initial'}}>
-          <img src={logoProductWhiteImage} style={logoStyle} alt={config.productName} />
-        </div>
-
-        <div style={linksContainerStyle}>
-          <div style={{...linksContainerStyle, alignItems: 'stretch'}}>
-            {this.renderLinkSection(config.productName, 'left', <React.Fragment>
-              <FooterLink to={Routes.ROOT} isSelected={page === 'landing'}>
-                Découvrir
-              </FooterLink>
-
-              <FooterLink to={Routes.TRANSPARENCY_PAGE} isSelected={page === 'transparency'}>
-                Métriques
-              </FooterLink>
-            </React.Fragment>)}
-
-            {this.renderLinkSection('Nos conseils', null, <React.Fragment>
-              {STATIC_ADVICE_MODULES.map(({adviceId, name}) =>
-                <FooterLink
-                  to={Routes.STATIC_ADVICE_PAGE(adviceId)}
-                  isSelected={page === `static-${adviceId}`} key={adviceId}>
-                  {name}
-                </FooterLink>)}
-            </React.Fragment>)}
-
-            {this.renderLinkSection('À propos', null, <React.Fragment>
-              <FooterLink to={Routes.TEAM_PAGE} isSelected={page === 'equipe'}>
-                Équipe
-              </FooterLink>
-
-              <FooterLink to="https://www.bayesimpact.org" target="_blank" rel="noopener noreferrer">
-                Bayes Impact
-              </FooterLink>
-            </React.Fragment>)}
-
-            {this.renderLinkSection('Aide', null, <React.Fragment>
-              <FooterLink
-                target="_blank" to={config.helpRequestUrl} rel="noopener noreferrer">
-                Nous contacter
-              </FooterLink>
-
-              <FooterLink to={Routes.PROFESSIONALS_PAGE} isSelected={page === 'professionals'}>
-                Accompagnateurs
-              </FooterLink>
-
-              <FooterLink to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'}>
-                Contribuer
-              </FooterLink>
-            </React.Fragment>)}
-
-            {this.renderLinkSection('Légal', null, <React.Fragment>
-              <FooterLink to={Routes.TERMS_AND_CONDITIONS_PAGE} isSelected={page === 'terms'}>
-                CGU
-              </FooterLink>
-
-              <FooterLink to={Routes.PRIVACY_PAGE} isSelected={page === 'privacy'}>
-                Vie privée
-              </FooterLink>
-
-              <FooterLink to={Routes.COOKIES_PAGE} isSelected={page === 'cookies'}>
-                Cookies
-              </FooterLink>
-            </React.Fragment>)}
-          </div>
-
-          <div style={{flex: 1}} />
-
-          <NavigationLink
-            style={iconStyle} to="https://www.facebook.com/bobemploi" target="_blank"
-            rel="noopener noreferrer">
-            <img src={facebookImage} alt="Facebook" />
-          </NavigationLink>
-
-          <NavigationLink
-            style={{...iconStyle, paddingRight: isMobileVersion ? iconPadding : 0}}
-            to="https://twitter.com/bobemploi" target="_blank"
-            rel="noopener noreferrer">
-            <img src={twitterImage} alt="Twitter" />
-          </NavigationLink>
-        </div>
-      </div>
-    </footer>
-  }
-}
+const ConnectedZendeskChatButton =
+  connect(({user: {profile}}) => ({user: profile}))(ZendeskChatButton)
 
 
 class PageWithNavigationBar extends React.Component {
@@ -878,8 +749,12 @@ class PageWithNavigationBar extends React.Component {
     isContentScrollable: PropTypes.bool,
     isCookieDisclaimerShown: PropTypes.bool,
     isNavBarTransparent: PropTypes.bool,
-    navBarContent: PropTypes.element,
-    onBackClick: PropTypes.func,
+    navBarContent: PropTypes.oneOfType([
+      PropTypes.element,
+      PropTypes.string,
+    ]),
+    // A string is handled as a URL to route back to.
+    onBackClick: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
     onScroll: PropTypes.func,
     page: PropTypes.string,
     style: PropTypes.object,
@@ -887,13 +762,6 @@ class PageWithNavigationBar extends React.Component {
 
   static defaultProps = {
     isCookieDisclaimerShown: true,
-  }
-
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-    store: PropTypes.shape({
-      getState: PropTypes.func.isRequired,
-    }).isRequired,
   }
 
   state = {
@@ -911,6 +779,13 @@ class PageWithNavigationBar extends React.Component {
     const {isContentScrollable, onScroll} = this.props
     if (!isContentScrollable && onScroll) {
       window.removeEventListener('scroll', onScroll)
+    }
+  }
+
+  scroll(options) {
+    const dom = this.props.isContentScrollable ? this.scrollableDom : window.document.body
+    if (dom) {
+      dom.scroll(options)
     }
   }
 
@@ -934,17 +809,10 @@ class PageWithNavigationBar extends React.Component {
     }
   }
 
-  getUserProfile() {
-    const {store} = this.context
-    const {profile} = store.getState().user
-    return profile
-  }
-
   render() {
     const {children, isChatButtonShown, isContentScrollable, isCookieDisclaimerShown,
       isNavBarTransparent, navBarContent, onBackClick, onScroll, page, style,
       ...extraProps} = this.props
-    const {isMobileVersion} = this.context
     let content
     const containerStyle = {
       display: 'flex',
@@ -976,22 +844,24 @@ class PageWithNavigationBar extends React.Component {
         {children}
       </div>
     }
+    // TODO(marielaure): Propagate font family to children that still needs GTWalsheim.
     return <div style={containerStyle}>
+      <TitleUpdater />
       {isCookieDisclaimerShown ? <CookieMessage style={{flexShrink: 0}} /> : null}
       <BetaMessage style={{flexShrink: 0}} />
       <div style={{display: 'flex', flex: 1, flexDirection: 'column'}}>
         <NavigationBar
           page={page} onBackClick={onBackClick}
-          isTransparent={isNavBarTransparent} style={{flexShrink: 0}}>
+          isTransparent={isNavBarTransparent} style={{flexShrink: 0, fontFamily: 'GTWalsheim'}}>
           {navBarContent}
         </NavigationBar>
-        <ZendeskChatButton
+        <ConnectedZendeskChatButton
           isShown={isChatButtonShown && !isMobileVersion} language="fr"
-          domain={config.zendeskDomain} user={this.getUserProfile()} />
+          domain={config.zendeskDomain} />
 
         <ShortKey
           keyCode="KeyE" hasCtrlModifier={true} hasShiftModifier={true}
-          onKeyPress={() => this.setState({isDebugModalShown: true})} />
+          onKeyUp={() => this.setState({isDebugModalShown: true})} />
         <DebugModal
           onClose={() => this.setState({isDebugModalShown: false})}
           isShown={this.state.isDebugModalShown} />
@@ -1011,13 +881,8 @@ class ModifyProjectModal extends React.Component {
     onConfirm: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
     const {onClose, onConfirm, ...extraProps} = this.props
-    const {isMobileVersion} = this.context
     const modalStyle = {
       borderRadius: isMobileVersion ? 10 : 0,
       margin: isMobileVersion ? '0 20px' : 0,
@@ -1048,4 +913,4 @@ class ModifyProjectModal extends React.Component {
 }
 
 
-export {Footer, ModifyProjectModal, NavigationBar, PageWithNavigationBar}
+export {ModifyProjectModal, NavigationBar, PageWithNavigationBar}

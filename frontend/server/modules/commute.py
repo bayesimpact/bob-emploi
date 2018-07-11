@@ -30,7 +30,9 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
         if not nearby_cities:
             return scoring_base.NULL_EXPLAINED_SCORE
 
-        if project.details.mobility.area_type > geo_pb2.CITY and \
+        area_type = project.details.area_type or project.details.mobility.area_type
+
+        if area_type > geo_pb2.CITY and \
                 any(c.relative_offers_per_inhabitant >= 2 for c in nearby_cities):
             return scoring_base.ExplainedScore(
                 3, ["il y a beaucoup plus d'offres par habitants dans d'autres villes"])
@@ -61,7 +63,7 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
             return []
 
         mongo_city = project.database.cities.find_one(
-            {'_id': project.details.mobility.city.city_id})
+            {'_id': project.details.city.city_id or project.details.mobility.city.city_id})
         if not mongo_city:
             return []
         target_city = proto.create_from_mongo(mongo_city, geo_pb2.FrenchCity)

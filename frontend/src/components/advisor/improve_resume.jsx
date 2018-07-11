@@ -3,7 +3,6 @@ import React from 'react'
 
 import {lowerFirstLetter} from 'store/french'
 import {genderizeJob} from 'store/job'
-import {USER_PROFILE_SHAPE} from 'store/user'
 
 import Picto from 'images/advices/picto-resume.png'
 
@@ -28,24 +27,22 @@ class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     fontSize: PropTypes.number.isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
+    profile: PropTypes.shape({
+      gender: PropTypes.string,
+    }).isRequired,
     project: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
-    const {advice, fontSize, profile, project, userYou} = this.props
+    const {advice, fontSize, profile: {gender}, project, userYou} = this.props
     const {improveSuccessRateData} = advice
     const personalizedItems = getPersonalizedItems(improveSuccessRateData)
     if (personalizedItems.length) {
       return <div style={{fontSize: fontSize}}>
         <strong>{personalizedItems[0]}</strong> pour augmenter
         {userYou(' tes chances quand tu postules ', ' vos chances quand vous postulez ')}
-        comme <strong>{lowerFirstLetter(genderizeJob(project.targetJob, profile.gender))}</strong>.
+        comme <strong>{lowerFirstLetter(genderizeJob(project.targetJob, gender))}</strong>.
       </div>
     }
     return <div style={{fontSize: fontSize}}>

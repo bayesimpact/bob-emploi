@@ -5,10 +5,12 @@ import Radium from 'radium'
 import React from 'react'
 import {connect} from 'react-redux'
 
-import {Modal, ModalHeader} from './modal'
-import {Routes} from 'components/url'
-import {Colors, Markdown, Button, Styles} from './theme'
 import {readTip, openTipExternalLink} from 'store/actions'
+
+import {isMobileVersion} from 'components/mobile'
+
+import {Modal, ModalHeader} from './modal'
+import {ExternalLink, Markdown, Styles} from './theme'
 
 
 const ACTION_SHAPE = PropTypes.shape({
@@ -44,10 +46,10 @@ class ActionDescriptionModalBase extends React.Component {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.isShown && !this.props.isShown &&
-        nextProps.action && nextProps.action.status === 'ACTION_UNREAD') {
-      this.props.dispatch(readTip(nextProps.action))
+  componentDidUpdate(prevProps) {
+    const {action, dispatch, isShown} = this.props
+    if (isShown && !prevProps.isShown && action && action.status === 'ACTION_UNREAD') {
+      dispatch(readTip(action))
     }
   }
 
@@ -69,26 +71,23 @@ class ActionDescriptionModalBase extends React.Component {
       marginTop: 30,
     }
     const contentStyle = {
-      maxHeight: '80vh',
-      overflow: 'auto',
-      padding: 35,
+      padding: isMobileVersion ? 15 : 35,
     }
     const linkStyle = {
-      color: Colors.BOB_BLUE,
+      color: colors.BOB_BLUE,
       fontWeight: 'bold',
     }
     return <div>
-      <ActionModalHeader action={action} gender={gender} />
+      <ActionModalHeader {...{action, gender}} />
       <div style={contentStyle}>
         <Markdown content={shortDescription} />
         <div style={titleStyle}>
-          {userYou('Tu ne sais ', 'Vous ne savez ')}pas par où commencer ?
+          {userYou('Tu ne sais ', 'Vous ne savez ')}pas par où commencer&nbsp;?
         </div>
         <div style={{marginBottom: 15, marginTop: 5}}>
-          <a
-            style={linkStyle} target="_blank" rel="noopener noreferrer"
-            href={action.link} onClick={this.handleLinkClick}>
-          Cliquez ici</a> pour avoir un coup de pouce.
+          <ExternalLink
+            style={linkStyle} href={action.link} onClick={this.handleLinkClick}>
+          Cliquez ici</ExternalLink> pour avoir un coup de pouce.
         </div>
       </div>
     </div>
@@ -98,7 +97,7 @@ class ActionDescriptionModalBase extends React.Component {
     const {action, isShown, onClose} = this.props
     const style = {
       fontSize: 14,
-      width: 700,
+      maxWidth: 700,
     }
     return <Modal isShown={isShown} onClose={onClose} style={style}>
       {this.renderAsTip(action)}
@@ -114,14 +113,13 @@ class ActionModalHeader extends React.Component {
     gender: PropTypes.string,
   }
 
-
   render() {
     const {action, gender} = this.props
     const title = gender === 'FEMININE' && action.titleFeminine || action.title
     const headerStyle = {
-      display: 'block',
       fontSize: 17,
-      padding: 35,
+      minHeight: isMobileVersion ? 50 : 90,
+      padding: isMobileVersion ? 15 : 35,
     }
     return <ModalHeader style={headerStyle}>
       {title}
@@ -140,17 +138,11 @@ class ActionBase extends React.Component {
     style: PropTypes.object,
   }
 
-  static contextTypes = {
-    history: PropTypes.shape({
-      push: PropTypes.func.isRequired,
-    }).isRequired,
-  }
-
   renderRightButton() {
     const {action} = this.props
     const isDone = action.status === 'ACTION_DONE'
     const doneMarkerStyle = {
-      fill: Colors.GREENISH_TEAL,
+      fill: colors.GREENISH_TEAL,
       height: 38,
       verticalAlign: 'textBottom',
       width: 27,
@@ -160,44 +152,25 @@ class ActionBase extends React.Component {
         <CheckCircleIcon style={doneMarkerStyle} />
       </div>
     }
-    const buttonStyle = {
-      ':hover': {
-        backgroundColor: Colors.COOL_GREY,
-        color: '#fff',
-      },
-      alignItems: 'center',
-      backgroundColor: Colors.MODAL_PROJECT_GREY,
-      color: Colors.COOL_GREY,
-      display: 'flex',
-      height: 24,
-      justifyContent: 'center',
-      padding: 2,
-      transition: 'background-color 450ms, color 450ms',
-      width: 24,
-    }
     const chevronStyle = {
-      fill: Colors.COOL_GREY,
+      fill: colors.CHARCOAL_GREY,
       height: 20,
+      // To align with chevron in advice content, because they have an
+      // additional border.
+      marginRight: 1,
       width: 20,
     }
-    return <Button isNarrow={true} type="discreet" style={buttonStyle}>
-      <ChevronRightIcon style={chevronStyle} />
-    </Button>
-  }
-
-  handleProjectClick = event => {
-    event.stopPropagation()
-    this.context.history.push(Routes.PROJECT_PAGE + '/' + this.props.project.projectId)
+    return <ChevronRightIcon style={chevronStyle} />
   }
 
   getBulletColor(actionStatus) {
     if (actionStatus === 'ACTION_SAVED') {
-      return Colors.GREENISH_TEAL
+      return colors.GREENISH_TEAL
     }
     if (actionStatus === 'ACTION_UNREAD') {
-      return Colors.BOB_BLUE
+      return colors.BOB_BLUE
     }
-    return Colors.SILVER
+    return colors.SILVER
   }
 
   renderBullet() {
@@ -215,8 +188,8 @@ class ActionBase extends React.Component {
     const {action, context, gender, onOpen, project} = this.props
     const isRead = action.status === 'ACTION_UNREAD'
     const style = {
-      ':focus': {backgroundColor: Colors.LIGHT_GREY},
-      ':hover': {backgroundColor: Colors.LIGHT_GREY},
+      ':focus': {backgroundColor: colors.LIGHT_GREY},
+      ':hover': {backgroundColor: colors.LIGHT_GREY},
       backgroundColor: '#fff',
       marginBottom: 1,
       position: 'relative',
@@ -224,7 +197,7 @@ class ActionBase extends React.Component {
     }
     const contentStyle = {
       alignItems: 'center',
-      color: Colors.DARK,
+      color: colors.DARK,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 14,
@@ -242,7 +215,7 @@ class ActionBase extends React.Component {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const contextStyle = {
-      color: Colors.COOL_GREY,
+      color: colors.COOL_GREY,
       fontSize: 13,
       fontStyle: 'italic',
       fontWeight: 'normal',

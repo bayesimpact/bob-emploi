@@ -1,32 +1,21 @@
-import omit from 'lodash/omit'
+import _omit from 'lodash/omit'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
 
-import {getEvents} from 'store/french'
+import {getEvents, getDateString} from 'store/french'
 
+import {isMobileVersion} from 'components/mobile'
 import jobteaserImage from 'images/jobteaser-picto.png'
 import meetupImage from 'images/meetup-picto.png'
 import poleEmploiEventsImage from 'images/pole-emploi-evenements-picto.png'
 import poleEmploiImage from 'images/pee-picto.png'
 import recrutImage from 'images/recrut-picto.png'
-import {Colors, PaddedOnMobile, Styles} from 'components/theme'
+import {PaddedOnMobile, Styles} from 'components/theme'
 import Picto from 'images/advices/picto-events.png'
 
 import {AdviceSuggestionList, ToolCard, connectExpandedCardWithContent} from './base'
-
-
-// Move to library if needed somewhere else
-const monthsShort = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
-const niceDate = timestamp => {
-  const date = new Date(timestamp)
-  const day = date.getDay()
-  const month = date.getMonth()
-  const year = date.getFullYear()
-  return `${day} ${monthsShort[month]} ${year}`
-}
 
 
 const getEventName = ({advice, project, userYou}) => {
@@ -110,17 +99,15 @@ class ExpandedAdviceCardContentBase extends React.Component {
         title: PropTypes.string.isRequired,
       }).isRequired),
     }).isRequired,
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.shape({
       projectId: PropTypes.string.isRequired,
     }).isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   renderEvents(events) {
+    const {onExplore} = this.props
     return <div>
       <PaddedOnMobile style={{marginBottom: 15}}>
         Nous avons trouvé <strong>{events.length} évènement{events.length > 1 ? 's' : ''}</strong>
@@ -129,14 +116,14 @@ class ExpandedAdviceCardContentBase extends React.Component {
       </PaddedOnMobile>
 
       <AdviceSuggestionList style={{marginBottom: 20}}>
-        {events.map(event => <Event {...event} key={event.link} />)}
+        {events.map(event => <Event
+          {...event} key={event.link} onClick={() => onExplore('event')} />)}
       </AdviceSuggestionList>
     </div>
   }
 
   render() {
-    const {events} = this.props.adviceData
-    const {isMobileVersion} = this.context
+    const {adviceData: {events}, onExplore} = this.props
     const cardStyle = {
       marginTop: isMobileVersion ? 2 : 20,
       width: isMobileVersion ? '100%' : 465,
@@ -156,7 +143,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
       <div style={toolsContainerStyle}>
         {EVENT_TOOLS.map(({title, ...props}, index) =>
           <ToolCard
-            {...props} key={index}
+            {...props} key={index} onClick={() => onExplore('tool')}
             style={{marginRight: index % 2 ? 0 : 20, ...cardStyle}}>
             {title}
           </ToolCard>
@@ -180,7 +167,7 @@ class EventBase extends React.Component {
   render() {
     const {link, organiser, startDate, title, ...extraProps} = this.props
     const chevronStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
       flexShrink: 0,
       fontSize: 20,
       height: 20,
@@ -188,7 +175,7 @@ class EventBase extends React.Component {
       width: 20,
     }
     return <div
-      onClick={() => window.open(link, '_blank')} {...omit(extraProps, ['filters'])}>
+      onClick={() => window.open(link, '_blank')} {..._omit(extraProps, ['filters'])}>
       <strong style={Styles.CENTER_FONT_VERTICALLY}>
         {title}
       </strong>
@@ -196,7 +183,7 @@ class EventBase extends React.Component {
         par {organiser}
       </span>
       <span style={{flex: 1}} />
-      <span style={Styles.CENTER_FONT_VERTICALLY}>{niceDate(startDate)}</span>
+      <span style={Styles.CENTER_FONT_VERTICALLY}>{getDateString(startDate)}</span>
       <ChevronRightIcon style={chevronStyle} />
     </div>
   }

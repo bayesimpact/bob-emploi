@@ -1,13 +1,22 @@
-"""Importer for WorkUp events.
-
-See http://go/pe:notebooks/datasets/workup_events.ipynb for analysis on the
-WorkUp dataset.
+"""Importer for ADIE events.
 """
+
+import re
 
 import js2py
 from scrapy import selector
 
 from bob_emploi.data_analysis.lib import mongo
+
+# Matches short dates, e.g. "23 février", "1er juin".
+_DATE_REGEXP = re.compile(r'(?P<day>\d+)(?:er)? (?P<month>\w+)')
+
+_FRENCH_MONTHS = {
+    name: index + 1
+    for index, name in enumerate((
+        'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+        'août', 'septembre', 'octobre', 'novembre', 'décembre'))
+}
 
 
 def adie_events2dicts(events_html):
@@ -51,9 +60,19 @@ def adie_events2dicts(events_html):
     return [_adie_event_to_proto(dict(a, **b)) for a, b in zip(markers, events)]
 
 
+def _parse_date(date):
+    match = _DATE_REGEXP.match(date)
+    if not match:
+        raise ValueError('Date "{}" could not be parsed'.format(date))
+    day = int(match.group('day'))
+    month = _FRENCH_MONTHS[match.group('month')]
+    return '2018-{:02d}-{:02d}'.format(month, day)
+
+
 def _adie_event_to_proto(props):
+    timing_text = _drop_first_word(props['date_ev_festival'])
     return {
-        '_id': '2018-02_{}'.format(props['index_ev_festival']),
+        '_id': '2018-06_{}'.format(props['index_ev_festival']),
         'cityName': props['ville_ev_festival'],
         'description':
             '***Ça parle de quoi ?***\n\n'
@@ -66,8 +85,8 @@ def _adie_event_to_proto(props):
             '{heure_ev_festival}'.format(**props),
         'latitude': props['data-lat'],
         'longitude': props['data-lng'],
-        # TODO(pascal): Parse the date as well if this repeats after February 2018
-        'timingText': 'le {}'.format(_drop_first_word(props['date_ev_festival'])),
+        'timingText': 'le {}'.format(timing_text),
+        'startDate': _parse_date(_drop_first_word(props['date_ev_festival'])),
         'title': props['nom_ev_festival'],
     }
 

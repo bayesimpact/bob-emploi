@@ -276,8 +276,8 @@ class ImporterTestCase(unittest.TestCase):
             set(['Foo', 'Bar']),
             set(c['_id'] for c in self.db_client.test.my_collec.find()))
         meta = self.db_client.test.meta.find_one({'_id': 'my_collec'})
-        self.assertLessEqual(before, meta['updated_at'])
-        self.assertLessEqual(meta['updated_at'], after)
+        self.assertLessEqual(before - datetime.timedelta(seconds=1), meta['updated_at'])
+        self.assertLessEqual(meta['updated_at'], after + datetime.timedelta(seconds=1))
 
     def test_import_in_collection_with_previous_conflicting_data(self):
         """Test usage with data already there that conflicts."""
@@ -317,7 +317,9 @@ class ImporterTestCase(unittest.TestCase):
 
         self.flag_values(['', '--mongo_url', 'my-db_client-url'])
         self.assertRaises(
-            pymongo.errors.PyMongoError,
+            # TODO(pascal): revert to pymongo.errors.PyMongoError once
+            # https://github.com/mongomock/mongomock/issues/312 is fixed.
+            Exception,
             self.importer.import_in_collection,
             [{'_id': 'Foo'}, {'_id': 'Bar'}, {'_id': 'Foo'}],
             'my_collec')

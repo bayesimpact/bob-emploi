@@ -6,10 +6,11 @@ import React from 'react'
 
 import {genderizeJob} from 'store/job'
 import {lowerFirstLetter, ofPrefix, toTitleCase} from 'store/french'
-import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {Colors, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
+import {isMobileVersion} from 'components/mobile'
+import {StringJoiner, Styles} from 'components/theme'
 import laBonneBoiteImage from 'images/labonneboite-picto.png'
+import laBonneAlternanceImage from 'images/labonnealternance-picto.svg'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
 import Picto from 'images/advices/picto-spontaneous-application.png'
 
@@ -28,7 +29,7 @@ class AdviceCard extends React.Component {
     const {advice, fontSize, project, userYou} = this.props
     const {companies} = advice.spontaneousApplicationData || {}
     if (companies && companies.length) {
-      const {modifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
+      const {modifiedName: cityName, prefix} = ofPrefix(project.city.name)
       const companiesMap = {}
       const companyNames = companies.map(({name}) => toTitleCase(name)).filter(name => {
         if (companiesMap[name]) {
@@ -55,73 +56,115 @@ class AdviceCard extends React.Component {
 }
 
 
+const utmTrackingQuery = '?utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-rech'
+
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
-    project: PropTypes.object.isRequired,
+    onExplore: PropTypes.func.isRequired,
+    profile: PropTypes.shape({
+      gender: PropTypes.string,
+    }).isRequired,
+    project: PropTypes.shape({
+      city: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+      }),
+      targetJob: PropTypes.shape({
+        jobGroup: PropTypes.shape({
+          romeId: PropTypes.string,
+        }),
+      }),
+    }).isRequired,
   }
 
-  createLBBLink() {
-    const {project} = this.props
-    const {cityId} = project.mobility.city || {}
-    const {romeId} = project.targetJob.jobGroup || {}
-    return `https://labonneboite.pole-emploi.fr/entreprises/commune/${cityId}/rome/${romeId}?utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-rech`
+  createLink(isForAlternance) {
+    const {project: {
+      city: {cityId = ''} = {},
+      targetJob: {jobGroup: {romeId = ''} = {}} = {},
+    }} = this.props
+    const baseUrl = isForAlternance ? 'https://labonnealternance.pole-emploi.fr/' :
+      'https://labonneboite.pole-emploi.fr/'
+    return `${baseUrl}entreprises/commune/${cityId}/rome/${romeId}${utmTrackingQuery}`
   }
 
-  renderCompanies(companies) {
-    const {profile, project} = this.props
+  renderCompanies(companies, isForAlternance) {
+    const {onExplore, profile: {gender}, project: {
+      city: {name = ''} = {},
+      targetJob,
+    }} = this.props
     if (!companies || !companies.length) {
       return null
     }
 
-    const {modifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
+    const {modifiedName: cityName, prefix} = ofPrefix(name)
+    const {jobGroup: {romeId = ''} = {}} = targetJob
 
-    return <div>
-      <PaddedOnMobile style={{fontSize: 16, marginBottom: 15}}>
+    const moreLink = this.createLink(isForAlternance)
+    const appTitle = `La Bonne ${isForAlternance ? 'Alternance' : 'Boîte'}`
+
+    return <React.Fragment>
+      <div style={{fontSize: 16, marginBottom: 15}}>
         <strong>{companies.length} entreprise{companies.length > 1 ? 's' : ''}</strong> à
-        fort potentiel d'embauche pour {profile.gender === 'FEMININE' ? 'une ' : 'un '}
-        {lowerFirstLetter(genderizeJob(project.targetJob, profile.gender))} près {prefix}{cityName}
-      </PaddedOnMobile>
+        fort potentiel d'embauche pour {gender === 'FEMININE' ? 'une ' : 'un '}
+        {lowerFirstLetter(genderizeJob(targetJob, gender))}
+        {isForAlternance ? ' en alternance' : ''} près {prefix}{cityName}
+      </div>
       <AdviceSuggestionList>
         {[
           ...companies.map((company, index) => <CompanyLink
-            key={`company-${index}`} {...company} isNotClickable={!company.siret} />),
+            key={`company-${index}`} {...company}
+            {...{isForAlternance, romeId}}
+            onClick={() => onExplore(isForAlternance ? 'alternance' : 'company')}
+            isNotClickable={!company.siret} />),
           <MoreCompaniesLink
             key="more" onClick={() => {
-              window.open(this.createLBBLink(), '_blank')
+              onExplore(`more ${isForAlternance ? 'alternances' : 'companies'}`)
+              window.open(moreLink, '_blank')
             }}>
-            Voir d'autres entreprises sur La Bonne Boîte
+            Voir d'autres entreprises sur {appTitle}
           </MoreCompaniesLink>,
         ]}
       </AdviceSuggestionList>
       <DataSource>
-        La Bonne Boîte / Pôle emploi
+        {appTitle} / Pôle emploi
       </DataSource>
-    </div>
+    </React.Fragment>
   }
 
   render() {
-    const {advice} = this.props
-    const {companies} = advice.spontaneousApplicationData || {}
+    const {advice, project: {employmentTypes = []}} = this.props
+    const {alternanceCompanies, companies} = advice.spontaneousApplicationData || {}
+    const isLookingForAlternance = employmentTypes.indexOf('ALTERNANCE') >= 0
+    const isOnlyLookingForAlternance = isLookingForAlternance && employmentTypes.length === 1
     const toolCardStyle = {
       maxWidth: 470,
     }
-    if (companies && companies.length) {
-      return this.renderCompanies(companies)
+    const usefulCompanies = !isOnlyLookingForAlternance && companies || []
+    const usefulAlternanceCompanies = isLookingForAlternance && alternanceCompanies || []
+    if (usefulCompanies.length || usefulAlternanceCompanies.length) {
+      return <React.Fragment>
+        {this.renderCompanies(usefulCompanies)}
+        {this.renderCompanies(usefulAlternanceCompanies, true)}
+      </React.Fragment>
     }
-    return <div>
-      <PaddedOnMobile style={{fontSize: 21}}>
-        Trouver des entreprises sur&nbsp;:
-        <div style={toolCardStyle}>
-          <ToolCard imageSrc={laBonneBoiteImage} href={this.createLBBLink()}>
-            La Bonne Boite
-            <div style={{fontSize: 13, fontWeight: 'normal'}}>
-              pour trouver des entreprises à fort potentiel d'embauche
-            </div>
-          </ToolCard>
+    return <div style={{fontSize: 21}}>
+      Trouver des entreprises {isOnlyLookingForAlternance ? 'qui recrutent en alternance ' : ' '}
+      sur&nbsp;:
+
+      {isOnlyLookingForAlternance ? null : <ToolCard
+        imageSrc={laBonneBoiteImage} href={this.createLink()} style={toolCardStyle}>
+        La Bonne Boite
+        <div style={{fontSize: 13, fontWeight: 'normal'}}>
+          pour trouver des entreprises à fort potentiel d'embauche
         </div>
-      </PaddedOnMobile>
+      </ToolCard>}
+      {isLookingForAlternance ? <ToolCard
+        imageSrc={laBonneAlternanceImage} href={this.createLink(true)} style={toolCardStyle}>
+        La Bonne Alternance
+        <div style={{fontSize: 13, fontWeight: 'normal'}}>
+          pour trouver des entreprises qui embauchent en alternance
+        </div>
+      </ToolCard> : null}
     </div>
   }
 }
@@ -131,15 +174,31 @@ class CompanyLinkBase extends React.Component {
   static propTypes = {
     cityName: PropTypes.string,
     hiringPotential: PropTypes.number,
+    isForAlternance: PropTypes.bool,
     name: PropTypes.string.isRequired,
+    onClick: PropTypes.func,
+    romeId: PropTypes.string.isRequired,
     siret: PropTypes.string,
     style: PropTypes.object,
   }
 
+  createLBBUrl(siret, tracking) {
+    return `https://labonneboite.pole-emploi.fr/${siret}/details?${tracking}`
+  }
+
+  createLBAUrl(siret, tracking) {
+    const {romeId} = this.props
+    const baseUrl = 'https://labonnealternance.pole-emploi.fr/details-entreprises/'
+    return `${baseUrl}${siret}?${tracking}&rome=${romeId}`
+  }
+
   open = () => {
-    const {siret} = this.props
+    const {isForAlternance, onClick, siret} = this.props
     const tracking = 'utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-ent'
-    window.open(`https://labonneboite.pole-emploi.fr/${siret}/details?${tracking}`, '_blank')
+    const url = isForAlternance ? this.createLBAUrl(siret, tracking) :
+      this.createLBBUrl(siret, tracking)
+    window.open(url, '_blank')
+    onClick && onClick()
   }
 
   renderStars() {
@@ -148,18 +207,18 @@ class CompanyLinkBase extends React.Component {
       return null
     }
     const titleStyle = {
-      color: Colors.COOL_GREY,
+      color: colors.COOL_GREY,
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const starStyle = starIndex => ({
-      fill: starIndex < hiringPotential - 1 ? Colors.GREENISH_TEAL : Colors.PINKISH_GREY,
+      fill: starIndex < hiringPotential - 1 ? colors.GREENISH_TEAL : colors.PINKISH_GREY,
       height: 20,
       width: 20,
     })
     return <span style={{alignItems: 'center', display: 'flex'}}>
-      <span style={titleStyle}>
+      {isMobileVersion ? null : <span style={titleStyle}>
         Potentiel d'embauche&nbsp;:
-      </span>
+      </span>}
       {new Array(3).fill(null).map((unused, index) =>
         <StarIcon style={starStyle(index)} key={`star-${index}`} />)}
     </span>
@@ -171,8 +230,11 @@ class CompanyLinkBase extends React.Component {
       ...style,
       fontWeight: 'normal',
     }
+    if (isMobileVersion) {
+      containerStyle.paddingRight = 0
+    }
     const chevronStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
       flexShrink: 0,
       height: 25,
       opacity: siret ? 1 : 0,
@@ -181,9 +243,10 @@ class CompanyLinkBase extends React.Component {
     }
     return <div style={containerStyle} onClick={siret ? this.open : null}>
       <strong style={Styles.CENTER_FONT_VERTICALLY}>{toTitleCase(name)}</strong>
-      {cityName ? <span style={{paddingLeft: '.3em', ...Styles.CENTER_FONT_VERTICALLY}}>
-        - {toTitleCase(cityName)}
-      </span> : null}
+      {cityName && !isMobileVersion ?
+        <span style={{paddingLeft: '.3em', ...Styles.CENTER_FONT_VERTICALLY}}>
+          - {toTitleCase(cityName)}
+        </span> : null}
       <span style={{flex: 1}} />
       {this.renderStars()}
       <ChevronRightIcon style={chevronStyle} />
@@ -202,13 +265,15 @@ class MoreCompaniesLinkBase extends React.Component {
   render() {
     const {children, style, ...extraProps} = this.props
     const chevronStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
+      flexShrink: 0,
       height: 25,
       lineHeight: 1,
       padding: '0 10px',
       width: 45,
     }
-    return <div style={style} {...extraProps}>
+    const containerStyle = isMobileVersion ? {...style, paddingRight: 0} : style
+    return <div style={containerStyle} {...extraProps}>
       <strong style={Styles.CENTER_FONT_VERTICALLY}>
         {children}
       </strong>

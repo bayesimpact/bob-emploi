@@ -2,12 +2,14 @@ import CloseIcon from 'mdi-react/CloseIcon'
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
+import {Link} from 'react-router-dom'
 
 import {acceptCookiesUsageAction} from 'store/actions'
 
-import {Banner} from './banner'
-import {Routes} from './url'
-import {Button, Colors, SmoothTransitions} from './theme'
+import {Banner} from 'components/banner'
+import {isMobileVersion} from 'components/mobile'
+import {Button, SmoothTransitions} from 'components/theme'
+import {Routes} from 'components/url'
 
 
 const connectCookieMessage = connect(
@@ -21,29 +23,22 @@ const connectCookieMessage = connect(
 
 
 class SimpleCookieMessage extends React.Component {
-  static contextTypes = {
-    history: PropTypes.shape({
-      push: PropTypes.func.isRequired,
-    }).isRequired,
-  }
-
   render() {
-    const {history} = this.context
     const linkStyle = {
       color: 'inherit',
       cursor: 'pointer',
-      fontWeight: 500,
-      textDecoration: 'none',
+      fontWeight: 600,
+      textDecoration: isMobileVersion ? 'underline' : 'none',
     }
     return <div>
-      En poursuivant votre navigation sur ce site, vous acceptez l'utilisation
-      de cookies pour améliorer la qualité du service et pour réaliser des
-      statistiques de visite. Vos données ne seront ni cédées à des tiers, ni
-      exploitées à des fins commerciales. <a
+      {isMobileVersion ? 'Ce site utilise des ' : 'En poursuivant votre navigation sur ce ' +
+      "site, vous acceptez l'utilisation de cookies pour améliorer la qualité du service et pour " +
+      'réaliser des statistiques de visite. Vos données ne seront ni cédées à des tiers, ni ' +
+      'exploitées à des fins commerciales.'} <Link
         style={linkStyle}
-        onClick={() => history.push(Routes.COOKIES_PAGE)}>
-        En savoir plus
-      </a>
+        to={Routes.COOKIES_PAGE}>
+        {isMobileVersion ? 'cookies.' : 'En savoir plus'}
+      </Link>
     </div>
   }
 }
@@ -62,10 +57,12 @@ class CookieMessageBase extends React.Component {
       return null
     }
     const cookieBoxStyle = {
-      background: Colors.CHARCOAL_GREY,
-      color: Colors.SILVER,
+      background: colors.CHARCOAL_GREY,
+      color: isMobileVersion ? '#fff' : colors.SILVER,
+      fontFamily: 'Lato, Helvetica',
       ...this.props.style,
     }
+    // TODO(marielaure): Change close button style to round in Banner component.
     return <Banner style={cookieBoxStyle} onClose={onAcceptCookieUsage}>
       <SimpleCookieMessage />
     </Banner>
@@ -87,7 +84,8 @@ class CookieMessageOverlayBase extends React.Component {
       borderRadius: 2,
       bottom: isMessageShown ? 15 : -200,
       boxShadow: '0 18px 25px 0 rgba(0, 0, 0, 0.15)',
-      color: Colors.DARK,
+      color: colors.DARK,
+      fontFamily: 'Lato, Helvetica',
       fontSize: 14,
       left: 15,
       opacity: isMessageShown ? 1 : 0,
@@ -99,9 +97,9 @@ class CookieMessageOverlayBase extends React.Component {
     }
     const closeButtonStyle = {
       ':hover': {
-        backgroundColor: Colors.COOL_GREY,
+        backgroundColor: colors.COOL_GREY,
       },
-      backgroundColor: Colors.LIGHT_MODAL_GREY,
+      backgroundColor: colors.MODAL_PROJECT_GREY,
       borderRadius: 50,
       height: 30,
       padding: 3,

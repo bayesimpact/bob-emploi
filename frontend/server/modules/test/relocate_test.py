@@ -6,8 +6,10 @@ from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase('project-mobility-score')):
+class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase):
     """Unit tests for the module."""
+
+    model_id = 'project-mobility-score'
 
     def setUp(self):
         super(GoodMobilityTestCase, self).setUp()
@@ -71,8 +73,10 @@ class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase('project-mob
         self.assert_good_score(score, limit=35, msg='Fail for "{}"'.format(self.persona.name))
 
 
-class ProfileMobilityTestCase(scoring_test.HundredScoringModelTestBase('profile-mobility-scorer')):
+class ProfileMobilityTestCase(scoring_test.HundredScoringModelTestBase):
     """Unit tests for the module."""
+
+    model_id = 'profile-mobility-scorer'
 
     def test_unknown_mobility(self):
         """User's mobility is unknown."""

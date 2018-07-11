@@ -1,12 +1,10 @@
 FROM bayesimpact/react-base:latest
 
-ENV PROTOBUF_VERSION=3.4.0
-
 # Install Protobuf compiler.
 COPY frontend/vendor/install-protoc.sh ./vendor/install-protoc.sh
 RUN apt-get update -qqy && \
   apt-get install -qqy --no-install-recommends wget unzip && \
-  vendor/install-protoc.sh ${PROTOBUF_VERSION} /usr/local
+  vendor/install-protoc.sh /usr/local
 
 RUN ln -s node_modules/google-protobuf/google
 
@@ -18,6 +16,7 @@ RUN apt-get install -qqy --no-install-recommends gconf-service libasound2 \
   ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils
 
 # TODO(pascal): Cleanup once mozjpeg is fixed.
+# TODO(pascal): Use curl and stop installing wget.
 RUN wget http://ftp.fr.debian.org/debian/pool/main/libp/libpng1.6/libpng16-16_1.6.28-1_amd64.deb \
   -O /tmp/libpng16-16_1.6.28-1_amd64.deb && \
   dpkg -i /tmp/libpng16-16_1.6.28-1_amd64.deb && \
@@ -32,7 +31,8 @@ COPY frontend/api bob_emploi/frontend/api/
 COPY frontend/cfg cfg/
 COPY frontend/src src/
 COPY frontend/test test/
-COPY frontend/.babelrc frontend/download.js frontend/entrypoint.sh frontend/favicon.ico frontend/lint_and_test.sh .eslintrc.json .eslintignore frontend/karma.conf.js frontend/check-color-themes.sh frontend/check-common-typos.sh ./
+COPY frontend/release/*.js release/
+COPY frontend/.babelrc frontend/download.js frontend/entrypoint.sh frontend/favicon.ico frontend/lint_and_test.sh .eslintrc.json .eslintignore frontend/karma.conf.js frontend/check-color-config.sh frontend/check-common-typos.sh ./
 # This is actually part of the frontend-db, but it makes it way easier to lint
 # with the same rules.
 COPY frontend/server/db server/db/

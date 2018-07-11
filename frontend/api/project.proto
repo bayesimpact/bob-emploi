@@ -13,7 +13,7 @@ import "bob_emploi/frontend/api/training.proto";
 
 package bayes.bob;
 
-// Next available tag: 40.
+// Next available tag: 42.
 message Project {
   // A unique identifier for this project.
   string project_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
@@ -31,7 +31,19 @@ message Project {
   ActivitySector activity_sector = 30;
 
   // Geographic mobility for this project.
-  Location mobility = 7;
+  // DEPRECATED: Use city and area_type in Project directly. For now providers
+  // of this field shoud populate both versions, and clients of this field
+  // should check both. If they conflict, the flatten version is preferred.
+  // TODO(pascal): Clean usage, migrate data and remove that field.
+  Location mobility = 7 [deprecated = true];
+
+  // The target city for this project, or one of the targeted area (see `area_type`).
+  FrenchCity city = 40;
+
+  // The type of geographic area for this project. If the field `city` is set
+  // and this is a type bigger than a city, then only the larger fields of the
+  // FrenchCity message are relevant.
+  AreaType area_type = 41;
 
   // Minimal salary requested by the user if any. The unit of this field is ANNUAL_GROSS_SALARY.
   float min_salary = 8;
@@ -162,7 +174,7 @@ message ProjectFeedback {
   map<string, bool> useful_advice_modules = 3;
 }
 
-// Next ID: 30.
+// Next ID: 32.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -236,6 +248,11 @@ message Advice {
   // client, but for some advice modules the server can decide what to display.
   string title = 23;
 
+  // Short version of the title of the advice. Most of the time this is empty
+  // and is decided by the client, but for some advice modules the server can
+  // decide what to display.
+  string short_title = 30;
+
   // Content for the advice card. Most of the time this is empty and is decided
   // by the client, but for some advice modules the server can decide what to
   // display. This is using Markdown.
@@ -254,6 +271,11 @@ message Advice {
   // A set of explanations why this advice was picked for this particular
   // project. This is human readable text.
   repeated string explanations = 29;
+
+  // Number of explorations done inside the advice: opening an email template,
+  // clicking on an external link, playing a video, etc. Note that not all
+  // advice modules implement that properly.
+  int32 num_explorations = 31;
 }
 
 message AdviceCategory {
@@ -308,6 +330,9 @@ message JobBoardsData {
 message SpontaneousApplicationData {
   // Specific companies to which the user could apply to.
   repeated Company companies = 1;
+
+  // Specific companies to which the user could apply to, to get an alternance contract.
+  repeated Company alternance_companies = 2;
 }
 
 message BetterJobInGroupData {

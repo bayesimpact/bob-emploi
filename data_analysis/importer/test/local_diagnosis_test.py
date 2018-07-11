@@ -34,7 +34,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
             self.unemployment_duration_csv, self.job_offers_changes_json,
             self.imt_folder, self.mobility_csv, self.data_folder)
 
-        self.assertEqual(30, len(collection))
+        self.assertEqual(31, len(collection))
         try:
             protos = dict(mongo.collection_to_proto_mapping(
                 collection, job_pb2.LocalJobStats))
@@ -64,7 +64,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         proto = protos['09:F1402']
         self.assertEqual(2900, proto.imt.junior_salary.max_salary)
         self.assertEqual(1550, proto.imt.junior_salary.min_salary)
-        self.assertEqual('De 1550€ à 2900€', proto.imt.junior_salary.short_text)
+        self.assertEqual('De 1\xa0550\xa0€ à 2\xa0900\xa0€', proto.imt.junior_salary.short_text)
         employment_type_percentages = [
             employment_type.percentage for employment_type in proto.imt.employment_type_percentages]
         employment_type_codes = [
@@ -72,6 +72,10 @@ class BmoRomeImporterTestCase(unittest.TestCase):
             proto.imt.employment_type_percentages]
         self.assertCountEqual([51., 49.0], employment_type_percentages)
         self.assertCountEqual([3, 4], employment_type_codes)
+
+        proto = protos['55:K2103']
+        self.assertFalse(proto.imt.junior_salary.short_text)
+        self.assertEqual('De 3\xa0500\xa0€ à 5\xa0550\xa0€', proto.imt.senior_salary.short_text)
 
         proto = protos['10:F1402']
         self.assertEqual(5, len(proto.less_stressful_job_groups))

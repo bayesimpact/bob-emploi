@@ -4,7 +4,7 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/unverified_data_zones.py \
+        python bob_emploi/data_analysis/importer/unverified_data_zones.py \
         --data_folder data \
         --mongo_url mongodb://frontend-db/test
 """

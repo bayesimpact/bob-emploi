@@ -1,0 +1,20 @@
+[{
+    "applicationDates": "du 05/03/2018 au 30/04/2018",
+    "domain": "Service à la personne",
+    "applicationEndDate": "2018-07-01T00:00:00Z",
+    "jobGroupIds": ["K1302", "K1303", "K1304"],
+    "location": {
+        "areaType": "CITY",
+        "city": {
+            "cityId": "62510",
+            "departementId": "62",
+            "name": "Liévin",
+            "regionId": "32"
+        }
+    },
+    "offerCount": 3,
+    "openDates": "du 20/02/2018 au 30/06/2018",
+    "startDate": "2018-02-20T00:00:00Z",
+    "title": "Salon en ligne SAP",
+    "url": "https://salonenligne.pole-emploi.fr/candidat/detaildusalon?salonId=640"
+}]

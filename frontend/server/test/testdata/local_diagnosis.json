@@ -153,6 +153,8 @@
     "numJobOffersLastYear": 17,
     "numJobOffersPreviousYear": 15,
     "imt": {
+      "yearlyAvgOffersDenominator": 10,
+      "yearlyAvgOffersPer10Candidates": 2,
       "employmentTypePercentages": [
         {"employmentType": "CDI" , "percentage": 5},
         {"employmentType": "CDD_OVER_3_MONTHS" , "percentage": 95}

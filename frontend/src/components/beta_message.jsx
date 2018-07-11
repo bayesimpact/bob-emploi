@@ -3,10 +3,8 @@ import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import Cookies from 'js-cookie'
 
-import config from 'config'
-
 import {Banner} from './banner'
-import {Colors} from './theme'
+import {ExternalLink} from './theme'
 
 const HAS_SEEN_BETA_BANNER = 'has-seen-2-beta-banner'
 
@@ -33,7 +31,7 @@ class BetaMessageBase extends React.Component {
       return null
     }
     const betaMessageBoxStyle = {
-      background: Colors.BOB_BLUE_HOVER,
+      background: colors.BOB_BLUE_HOVER,
       color: '#fff',
       ...this.props.style,
     }
@@ -44,10 +42,9 @@ class BetaMessageBase extends React.Component {
     return <Banner style={betaMessageBoxStyle} onClose={this.handleCloseClick}>
       Grâce à vos retours la nouvelle version de {config.productName} est
       désormais disponible&nbsp;! Si certaines fonctionnalités de l'ancienne
-      version vous manquent, n'hésitez pas à nous le signaler en <a
+      version vous manquent, n'hésitez pas à nous le signaler en <ExternalLink
         style={linkStyle} href="https://bayes.typeform.com/to/ZHuGiM"
-        target="_blank" rel="noopener noreferrer"
-      >cliquant ici</a>.
+      >cliquant ici</ExternalLink>.
     </Banner>
   }
 }

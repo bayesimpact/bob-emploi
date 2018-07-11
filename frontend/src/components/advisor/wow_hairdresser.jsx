@@ -1,9 +1,7 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import {USER_PROFILE_SHAPE} from 'store/user'
-
-import {AppearingList, Colors} from 'components/theme'
+import {AppearingList} from 'components/theme'
 import Picto from 'images/advices/picto-specific-to-job.png'
 
 
@@ -28,17 +26,19 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
-    profile: USER_PROFILE_SHAPE.isRequired,
+    profile: PropTypes.shape({
+      gender: PropTypes.string,
+    }).isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {profile, userYou} = this.props
-    const maybeE = profile.gender === 'FEMININE' ? 'e' : ''
+    const {profile: {gender}, userYou} = this.props
+    const maybeE = gender === 'FEMININE' ? 'e' : ''
     const itemStyle = isFirst => ({
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       display: 'flex',
       marginTop: isFirst ? 0 : -1,
       minHeight: 50,

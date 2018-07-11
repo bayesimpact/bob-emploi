@@ -1,4 +1,4 @@
-import omit from 'lodash/omit'
+import _omit from 'lodash/omit'
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
@@ -29,7 +29,7 @@ class DashboardExportCreatorBase extends React.Component {
 
   render() {
     const {children, ...otherProps} = this.props
-    return <div {...omit(otherProps, ['disatch', 'userId'])} onClick={this.handleClick}>
+    return <div {..._omit(otherProps, ['disatch', 'userId'])} onClick={this.handleClick}>
       {children}
     </div>
   }

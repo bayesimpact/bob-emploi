@@ -1,4 +1,3 @@
-import browsingMetrics from 'browser-metrics/lib/browsingMetrics'
 import ArrowRightThickIcon from 'mdi-react/ArrowRightThickIcon'
 import PropTypes from 'prop-types'
 import {parse} from 'query-string'
@@ -6,14 +5,13 @@ import React from 'react'
 import LazyLoad from 'react-lazyload'
 import {connect} from 'react-redux'
 import {Link} from 'react-router-dom'
+import Swipeable from 'react-swipeable'
 import VisibilitySensor from 'react-visibility-sensor'
-
-import config from 'config'
 
 import {landingPageSectionIsShown, openLoginModal, openRegistrationModal,
   loadLandingPage} from 'store/actions'
 
-import bobBlueImage from 'images/bob-logo.svg?fill=#1888ff' // Colors.BOB_BLUE
+import bobBlueImage from 'images/bob-logo.svg?fill=#1888ff' // colors.BOB_BLUE
 import step1Image from 'images/step-1.svg'
 import step2Image from 'images/step-2.svg'
 import step3Image from 'images/step-3.svg'
@@ -21,15 +19,24 @@ import franceEngageImage from 'images/francengage-ico.png'
 import frenchImpactImage from 'images/french-impact-logo.png'
 import googleOrgImage from 'images/google-org-ico.svg'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
+import pressConsolabImage from 'images/press/consolab.png'
+import pressEchoStartImage from 'images/press/echos.png'
+import pressEurope1Image from 'images/press/europe1.png'
+import pressFemmeActuelleImage from 'images/press/femme-actuelle.png'
+import pressFranceInfoImage from 'images/press/franceinfo.png'
+import pressNouvelleVieImage from 'images/press/nouvellevie.png'
+import pressPositivrImage from 'images/press/positivr.png'
 import sncImage from 'images/snc-ico.png'
 
 import {CookieMessageOverlay} from 'components/cookie_message'
 import {FastForward} from 'components/fast_forward'
 import {LoginButton} from 'components/login'
-import {StaticPage, TitleWavesSection} from 'components/static'
+import {isMobileVersion} from 'components/mobile'
+import {StaticPage, TitleSection} from 'components/static'
 import {fetchFirstSuggestedJob} from 'components/suggestions'
 import {TestimonialCard, Testimonials} from 'components/testimonials'
-import {Colors, SmoothTransitions, colorToAlpha} from 'components/theme'
+import {ExternalLink, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions,
+  colorToAlpha} from 'components/theme'
 import {Routes} from 'components/url'
 
 
@@ -51,7 +58,6 @@ const landingPageContents = {
     fontSize: 42,
     match: /deploy/,
     title: <span style={emStyle}>Déployons vos opportunités d'embauche</span>,
-    weight: 1,
   },
   ease: {
     match: /ease|simplicity/,
@@ -86,7 +92,6 @@ const landingPageContents = {
     title: <span style={emStyle}>
       Repensons votre recherche d'emploi
     </span>,
-    weight: 1,
   },
   'specific-job': {
     buttonCaption: "Inscrivez-vous, c'est gratuit !",
@@ -107,8 +112,7 @@ const landingPageContents = {
     fontSize: 42,
     match: /evaluation/,
     title: <span style={emStyle}>
-      Obtenez des conseils personnalisés pour
-      accélérer votre recherche d'emploi
+      Évaluez votre recherche d'emploi en 10 minutes
     </span>,
   },
 }
@@ -131,21 +135,15 @@ function getRandomLandingPageKind() {
 }
 
 
-const sectionTitleStyle = isMobileVersion => ({
-  color: Colors.SLATE,
-  fontSize: isMobileVersion ? 28 : 30,
-  fontWeight: 'bold',
-  lineHeight: 1.34,
-  marginTop: 0,
+const subtitleStyle = {
+  color: colors.SLATE,
+  fontSize: 20,
+  fontWeight: 'normal',
   textAlign: 'center',
-})
+}
 
 
 class DiagnosticSection extends React.Component {
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   renderStep(content, image) {
     return <div style={{maxWidth: 300, textAlign: 'center'}}>
       <img src={image} alt="" /><br />
@@ -154,11 +152,9 @@ class DiagnosticSection extends React.Component {
   }
 
   render() {
-    const {isMobileVersion} = this.context
     const style = {
       backgroundColor: '#fff',
-      color: Colors.SLATE,
-      fontFamily: 'Lato, Helvetica',
+      color: colors.SLATE,
       fontSize: 16,
       lineHeight: 1.69,
       minHeight: 365,
@@ -166,7 +162,7 @@ class DiagnosticSection extends React.Component {
       textAlign: 'center',
     }
     const headerStyle = {
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       fontSize: isMobileVersion ? 28 : 33,
       fontWeight: 'bold',
       lineHeight: 1,
@@ -182,7 +178,7 @@ class DiagnosticSection extends React.Component {
       backgroundColor: '#fff',
       borderRadius: 10,
       boxShadow: '0 10px 30px 0 rgba(0, 0, 0, 0.2)',
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       display: 'flex',
       flexDirection: 'column',
       fontSize: 13,
@@ -196,14 +192,14 @@ class DiagnosticSection extends React.Component {
     }
     const buttonStyle = {
       fontSize: 15,
-      padding: '15px 28px 12px',
+      padding: '15px 28px',
     }
     return <section style={style}>
-      <div style={{margin: 'auto', maxWidth: 1000}}>
+      <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
         <h2 style={headerStyle}>
-          Découvrez dès à présent <span style={{color: Colors.BOB_BLUE}}>votre diagnostic</span>
+          Découvrez dès à présent <span style={{color: colors.BOB_BLUE}}>votre diagnostic</span>
         </h2>
-        <div style={{fontSize: 20, marginBottom: 35}}>
+        <div style={{...subtitleStyle, marginBottom: 35}}>
           Construit sur mesure et adapté pour vous&nbsp;!
         </div>
         <div style={layoutStyle}>
@@ -218,22 +214,21 @@ class DiagnosticSection extends React.Component {
               fill="none" viewBox="-4 -4 93 93"
               style={{margin: '20px auto 30px', width: 97}}>
               <circle
-                cx="42.154" cy="42.14" r="41.95" stroke={Colors.GREENISH_TEAL}
+                cx="42.154" cy="42.14" r="41.95" stroke={colors.GREENISH_TEAL}
                 strokeOpacity=".2" strokeWidth="4" />
               <path
-                stroke={Colors.GREENISH_TEAL} strokeLinecap="round" strokeLinejoin="round"
+                stroke={colors.GREENISH_TEAL} strokeLinecap="round" strokeLinejoin="round"
                 strokeWidth="8" d="M3.345 26.184A41.827 41.827 0 0 0 .204 42.14c0 23.168 18.781
                 41.95 41.95 41.95 23.168 0 41.95-18.782 41.95-41.95C84.104 18.97 65.322.19
                 42.154.19" />
-              <text
-                fill={Colors.DARK_TWO} fontFamily="Lato-Heavy, Lato" fontSize="22" fontWeight="600">
+              <text fill={colors.DARK_TWO} fontSize="22" fontWeight="600">
                 <tspan x="20.297" y="50.716">81%</tspan>
               </text>
             </svg>
             <div>
               Votre profil est pertinent et répond aux attentes du marché.
             </div>
-            <div style={{color: Colors.BOB_BLUE, fontSize: 14}}>
+            <div style={{color: colors.BOB_BLUE, fontSize: 14}}>
               3 solutions à découvrir
             </div>
             <div style={{
@@ -253,25 +248,25 @@ class DiagnosticSection extends React.Component {
               fill="none" style={{display: 'block', margin: '36px auto', width: 142}}
               viewBox="0 0 142 101">
               <path
-                stroke={Colors.RED_PINK} strokeLinecap="round" strokeLinejoin="round"
+                stroke={colors.RED_PINK} strokeLinecap="round" strokeLinejoin="round"
                 strokeWidth="9.244"
                 d="M7.997 50.462a66.074 66.074 0 0 0-3.19 20.346c0 8.962 1.783 17.507 5.014 25.3" />
               <path
-                stroke={Colors.SQUASH} strokeLinecap="round" strokeLinejoin="round"
+                stroke={colors.SQUASH} strokeLinecap="round" strokeLinejoin="round"
                 strokeWidth="9.244"
                 d="M70.877 4.712c-19.833 0-37.626 8.743-49.736 22.586
                   a66.283 66.283 0 0 0-7.673 10.772" />
               <path
-                stroke={Colors.GREENISH_TEAL} strokeLinecap="round" strokeLinejoin="round"
+                stroke={colors.GREENISH_TEAL} strokeLinecap="round" strokeLinejoin="round"
                 strokeWidth="9.244"
                 d="M131.934 96.108c3.23-7.793 5.013-16.338 5.013-25.3 0-29.785-19.694-54.969
                   -46.765-63.23a65.563 65.563 0 0 0-5.288-1.376" />
               <g transform="translate(4.808 4.712)">
                 <circle fill="#fff" cx="113.864" cy="19.748" r="11.344" />
                 <circle
-                  cx="113.864" cy="19.748" r="7.61" stroke={Colors.GREENISH_TEAL}
+                  cx="113.864" cy="19.748" r="7.61" stroke={colors.GREENISH_TEAL}
                   strokeWidth="7.47" />
-                <text fill={Colors.DARK_TWO} fontSize="33" fontWeight="bold">
+                <text fill={colors.DARK_TWO} fontSize="33" fontWeight="bold">
                   <tspan x="30.638" y="65.336">70%</tspan>
                 </text>
               </g>
@@ -293,21 +288,21 @@ class DiagnosticSection extends React.Component {
               fill="none" viewBox="-4 -4 93 93"
               style={{margin: '20px auto 30px', width: 97}}>
               <circle
-                cx="42.154" cy="42.14" r="41.95" stroke={Colors.GREENISH_TEAL}
+                cx="42.154" cy="42.14" r="41.95" stroke={colors.GREENISH_TEAL}
                 strokeOpacity=".2" strokeWidth="4" />
               <path
-                stroke={Colors.GREENISH_TEAL} strokeLinecap="round" strokeLinejoin="round"
+                stroke={colors.GREENISH_TEAL} strokeLinecap="round" strokeLinejoin="round"
                 strokeWidth="8" d="M11.143 70.392c7.672 8.416 18.725 13.698 31.01 13.698 23.17 0
                   41.951-18.782 41.951-41.95C84.104 18.97 65.322.19 42.154.19" />
               <text
-                fill={Colors.DARK_TWO} fontFamily="Lato-Heavy, Lato" fontSize="22" fontWeight="600">
+                fill={colors.DARK_TWO} fontSize="22" fontWeight="600">
                 <tspan x="20.297" y="50.716">65%</tspan>
               </text>
             </svg>
             <div>
               Votre projet est réalisable. Vous avez une bonne carte à jouer.
             </div>
-            <div style={{color: Colors.BOB_BLUE, fontSize: 14}}>
+            <div style={{color: colors.BOB_BLUE, fontSize: 14}}>
               5 solutions à découvrir
             </div>
             <div style={{
@@ -321,7 +316,7 @@ class DiagnosticSection extends React.Component {
           </div>}
         </div>
         <div style={{
-          backgroundColor: Colors.BACKGROUND_GREY,
+          backgroundColor: colors.BACKGROUND_GREY,
           borderRadius: 1,
           height: 2,
           margin: '45px auto',
@@ -340,10 +335,6 @@ class DiagnosticSection extends React.Component {
 
 
 class StepsSection extends React.Component {
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   renderStep(content, image) {
     return <div style={{maxWidth: 300, textAlign: 'center'}}>
       <img src={image} alt="" /><br />
@@ -352,11 +343,9 @@ class StepsSection extends React.Component {
   }
 
   render() {
-    const {isMobileVersion} = this.context
     const style = {
       backgroundColor: '#fff',
-      color: Colors.SLATE,
-      fontFamily: 'Lato, Helvetica',
+      color: colors.SLATE,
       fontSize: 16,
       lineHeight: 1.69,
       minHeight: 365,
@@ -364,7 +353,7 @@ class StepsSection extends React.Component {
       textAlign: 'center',
     }
     const headerStyle = {
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       fontSize: isMobileVersion ? 28 : 33,
       fontWeight: 'bold',
       lineHeight: 1,
@@ -380,14 +369,14 @@ class StepsSection extends React.Component {
       justifyContent: 'space-between',
     }
     const emStyle = {
-      backgroundColor: colorToAlpha(Colors.BOB_BLUE, .1),
-      color: Colors.BOB_BLUE,
+      backgroundColor: colorToAlpha(colors.BOB_BLUE, .1),
+      color: colors.BOB_BLUE,
       fontStyle: 'normal',
     }
     return <section style={style}>
-      <div style={{margin: 'auto', maxWidth: 1000}}>
+      <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
         <h2 style={headerStyle}>
-          C'est gratuit et ça ne prend que <span style={{color: Colors.BOB_BLUE}}>15 minutes</span>
+          C'est gratuit et ça ne prend que <span style={{color: colors.BOB_BLUE}}>10 minutes</span>
         </h2>
         <div style={{fontSize: 20, marginBottom: 35}}>
           Trois étapes pour tout changer !
@@ -425,20 +414,14 @@ class StepsSection extends React.Component {
 
 
 class TestimonialsSection extends React.Component {
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
-    const {isMobileVersion} = this.context
     const sectionStyle = {
-      backgroundColor: Colors.BOB_BLUE,
+      backgroundColor: colors.BOB_BLUE,
       color: '#fff',
       padding: '20px 0',
       position: 'relative',
     }
     const headerStyle = {
-      fontFamily: 'Lato, Helvetica',
       fontSize: isMobileVersion ? 28 : 30,
       fontWeight: 'bold',
       marginTop: 0,
@@ -446,7 +429,6 @@ class TestimonialsSection extends React.Component {
       textAlign: 'center',
     }
     const subHeaderStyle = {
-      fontFamily: 'Lato, Helvetica',
       fontSize: 16,
       lineHeight: '26px',
       margin: '20px 0 50px',
@@ -454,7 +436,7 @@ class TestimonialsSection extends React.Component {
     }
     return <section style={sectionStyle}>
       <h2 style={headerStyle}>
-        Déployons vos opportunités d'embauche
+        Ils ont essayé et ça marche
       </h2>
       <div style={subHeaderStyle}>
         Déjà plus de <strong style={{fontSize: 23}}>130 000 personnes</strong> ont
@@ -507,15 +489,9 @@ const partnersContent = [
 ]
 
 
-class PartnersSection extends React.Component {
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
+class PartnersSubSection extends React.Component {
   render() {
-    const {isMobileVersion} = this.context
     const style = {
-      fontFamily: 'Lato, Helvetica',
       margin: 'auto',
       maxWidth: 1200,
       padding: isMobileVersion ? '45px 30px 30px' : '70px 100px 55px',
@@ -528,9 +504,9 @@ class PartnersSection extends React.Component {
     }
     return <section style={{backgroundColor: '#fff'}}>
       <div style={style}>
-        <h2 style={sectionTitleStyle(isMobileVersion)}>
-          Nos partenaires
-        </h2>
+        <h3 style={subtitleStyle}>
+          avec le soutien de
+        </h3>
         <div style={partnerBoxStyle}>
           {partnersContent.map(partner => {
             return <PartnerCard
@@ -578,6 +554,172 @@ class PartnerCard extends React.Component {
 }
 
 
+class SpeakingAboutBobSection extends React.Component {
+  static pressLinkWidth = isMobileVersion ? 280 : 320
+
+  static pressLinkMargin = 20
+
+  static pressArticles = [
+    {
+      imageAltText: 'PositivR',
+      imageSrc: pressPositivrImage,
+      title: "Développer le conseil à l'emploi grâce aux nouvelles technologies, avec Bob Emploi.",
+      url: 'https://positivr.fr/humain-et-ia-bob-emploi-positiveimpact/',
+    },
+    {
+      imageAltText: 'Les Échos Start',
+      imageSrc: pressEchoStartImage,
+      title: "Bob Emploi, l'algorithme qui s'attaque au chômage",
+      url: 'https://start.lesechos.fr/entreprendre/actu-startup/bob-emploi-l-algorithme-qui-s-attaque-au-chomage-12226.php',
+    },
+    {
+      imageAltText: 'Europe 1',
+      imageSrc: pressEurope1Image,
+      title: 'Cinq choses à savoir sur Bob Emploi, le site qui veut enrayer le chômage',
+      url: 'http://www.europe1.fr/economie/cinq-choses-a-savoir-sur-bob-emploi-le-site-qui-veut-enrayer-le-chomage-2901977 ',
+    },
+    {
+      imageAltText: 'Nouvelle Vie Pro',
+      imageSrc: pressNouvelleVieImage,
+      title: "Bob Emploi\u00A0: besoin d'aide dans vos recherches\u00A0? Demandez Bob\u00A0!",
+      url: 'https://www.nouvelleviepro.fr/actualite/587/bob-emploi-besoin-daide-dans-vos-recherches-demandez-bob',
+    },
+    {
+      imageAltText: 'Femme Actuelle',
+      imageSrc: pressFemmeActuelleImage,
+      title: 'Quel site choisir pour trouver un emploi\u00A0?',
+      url: 'https://www.femmeactuelle.fr/actu/vie-pratique/quel-site-choisir-pour-trouver-un-emploi-48341',
+    },
+    {
+      imageAltText: 'France Info',
+      imageSrc: pressFranceInfoImage,
+      title: "VIDEO. Pour endiguer le chômage, il crée un site de recherche d'emplois personnalisé",
+      url: 'https://www.francetvinfo.fr/economie/emploi/chomage/video-pour-endiguer-le-chomage-il-cree-un-site-de-recherche-demplois-personnalise_2801901.html',
+    },
+    {
+      imageAltText: 'Conso Collaborative',
+      imageSrc: pressConsolabImage,
+      title: 'Big Data et bonnes volontés, la recette de Bob Emploi pour lutter ' +
+        'contre le chômage',
+      url: 'http://consocollaborative.com/article/big-data-et-bonnes-volontes-la-recette-de-bob-emploi-pour-lutter-contre-le-chomage/ ',
+    },
+  ]
+
+  static numPressArticlesShown = isMobileVersion ? 1 : 3
+
+  static numPressArticlesBullets =
+    (SpeakingAboutBobSection.pressArticles.length +
+      SpeakingAboutBobSection.numPressArticlesShown - 1) /
+    SpeakingAboutBobSection.numPressArticlesShown
+
+  state = {
+    skipPress: 0,
+  }
+
+  createPressSwipeHandler = delta => () => {
+    this.setState(({skipPress}) => ({skipPress: Math.max(
+      Math.min(skipPress + delta, SpeakingAboutBobSection.numPressArticlesBullets - 1),
+      0,
+    )}))
+  }
+
+  renderPress({url, title, imageSrc, imageAltText}, index, allPress) {
+    const isLast = index === allPress.length - 1
+    const style = {
+      border: `solid 1px ${colors.SILVER}`,
+      borderRadius: 3,
+      color: colors.DARK_TWO,
+      display: 'block',
+      fontSize: 13,
+      fontWeight: 900,
+      height: 235,
+      lineHeight: 1.46,
+      marginRight: isLast ? 0 : SpeakingAboutBobSection.pressLinkMargin,
+      textDecoration: 'none',
+      width: SpeakingAboutBobSection.pressLinkWidth,
+    }
+    const imageStyle = {
+      display: 'block',
+      width: '100%',
+    }
+    const titleStyle = {
+      display: 'block',
+      padding: 20,
+    }
+    return <ExternalLink style={style} href={url} key={`press-${index}`}>
+      <img src={imageSrc} alt={imageAltText} style={imageStyle} />
+      <span style={titleStyle}>
+        {title}
+      </span>
+    </ExternalLink>
+  }
+
+  render() {
+    const {skipPress} = this.state
+    const titleStyle = {
+      color: colors.DARK_BLUE,
+      fontSize: 33,
+      fontWeight: 900,
+      margin: 0,
+      paddingTop: 70,
+      textAlign: 'center',
+    }
+    const sectionHeaderStyle = {
+      ...subtitleStyle,
+      marginBottom: 20,
+      marginTop: 55,
+    }
+    const bulletStyle = isSelected => ({
+      backgroundColor: isSelected ? colors.BOB_BLUE : colors.PINKISH_GREY,
+      borderRadius: 6,
+      cursor: 'pointer',
+      display: 'inline-block',
+      height: 6,
+      margin: 5,
+      width: 6,
+    })
+    const skipPressPixels = skipPress *
+      (SpeakingAboutBobSection.pressLinkWidth + SpeakingAboutBobSection.pressLinkMargin) *
+      SpeakingAboutBobSection.numPressArticlesShown
+    const allPressLinksStyle = {
+      display: 'flex',
+      transform: `translateX(-${skipPressPixels}px)`,
+      width: (SpeakingAboutBobSection.pressLinkWidth + SpeakingAboutBobSection.pressLinkMargin) *
+        SpeakingAboutBobSection.pressArticles.length,
+      ...SmoothTransitions,
+    }
+    return <section
+      style={{backgroundColor: '#fff', padding: `0 ${MIN_CONTENT_PADDING}px`}}>
+      <h2 style={titleStyle}>
+        Ils parlent de <span style={{color: colors.BOB_BLUE}}>{config.productName}</span>
+      </h2>
+
+      <h3 style={sectionHeaderStyle}>Dans la presse</h3>
+      <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH, overflow: 'hidden', width: '100%'}}>
+        <Swipeable
+          onSwipedLeft={this.createPressSwipeHandler(1)}
+          onSwipedRight={this.createPressSwipeHandler(-1)}
+          style={allPressLinksStyle}>
+          {SpeakingAboutBobSection.pressArticles.map(this.renderPress)}
+        </Swipeable>
+      </div>
+      {SpeakingAboutBobSection.numPressArticlesBullets > 1 ? <ol
+        style={{padding: 0, textAlign: 'center'}}>
+        {SpeakingAboutBobSection.pressArticles.
+          slice(0, SpeakingAboutBobSection.numPressArticlesBullets).
+          map((article, index) => <li
+            key={`press-bullet-${index}`} style={bulletStyle(index === skipPress)}
+            onClick={() => this.setState({skipPress: index})} />)}
+      </ol> : null}
+
+      {/* TODO(pascal): Add tweets. */}
+
+      <PartnersSubSection />
+    </section>
+  }
+}
+
+
 // A link with an arrow on the right.
 // Move this to theme if it's used somewhere else.
 class ArrowLink extends React.Component {
@@ -597,7 +739,7 @@ class ArrowLink extends React.Component {
     const {isFocused, isHovered} = this.state
     const isHighlighted = isFocused || isHovered
     const containerStyle = {
-      color: isHighlighted ? Colors.BOB_BLUE_HOVER : Colors.BOB_BLUE,
+      color: isHighlighted ? colors.BOB_BLUE_HOVER : colors.BOB_BLUE,
       fontSize: 16,
       fontWeight: 600,
       padding: 10,
@@ -615,7 +757,7 @@ class ArrowLink extends React.Component {
       top: 0,
     }
     const arrowStyle = {
-      fill: isHighlighted ? Colors.BOB_BLUE_HOVER : Colors.BOB_BLUE,
+      fill: isHighlighted ? colors.BOB_BLUE_HOVER : colors.BOB_BLUE,
       height: 14,
       transform: `translateX(${isHighlighted ? -10 : 0}px)`,
       ...SmoothTransitions,
@@ -651,10 +793,6 @@ class LandingPageBase extends React.Component {
     }),
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   static childContextTypes = {
     landingPageContent: PropTypes.shape({
       buttonCaption: PropTypes.string,
@@ -667,7 +805,7 @@ class LandingPageBase extends React.Component {
 
   state = {
     isScrollNavBarShown: false,
-    landingPageContent: {},
+    ...this.getLandingPageContentState(),
   }
 
   getChildContext() {
@@ -675,11 +813,22 @@ class LandingPageBase extends React.Component {
     return {landingPageContent}
   }
 
-  componentWillMount() {
+  componentDidMount() {
+    if (window.performance && window.performance.now) {
+      // TODO (cyrille): Maybe sample this measurement if we don't want to slow down everyone.
+      const timeToInteractiveMillisecs = window.performance.now()
+      const landingPageKind = this.state.landingPageContent.kind
+      this.maybeFetchSpecificJob().then(specificJob =>
+        this.props.dispatch(loadLandingPage(
+          timeToInteractiveMillisecs, landingPageKind, specificJob))
+      )
+    }
+
     const {dispatch, location} = this.props
     const {hash, pathname, search} = location
     const query = parse(search)
-    const isLandingPageWithSpecialPath = this.setLandingPageContent()
+    const {isForSpecificJob} = this.state
+
     if (hash === '#inscription') {
       dispatch(openRegistrationModal({email: query.email || ''}, 'urlHash'))
       return
@@ -692,7 +841,7 @@ class LandingPageBase extends React.Component {
       return
     }
     // Some specific landing pages like /metier/D1102/boulanger have a path different than the root.
-    const pathIsLandingPage = pathname === Routes.ROOT || isLandingPageWithSpecialPath
+    const pathIsLandingPage = pathname === Routes.ROOT || isForSpecificJob
     // If the path the user is trying to access is authenticated (like /profile for example),
     // they will be redirected to the landing page to authenticate. In this case we prompt
     // the user directly to log in.
@@ -703,35 +852,25 @@ class LandingPageBase extends React.Component {
     }
   }
 
-  componentDidMount() {
-    browsingMetrics({
-      log: false,
-      // TODO (cyrille): add sampleRate as percentage if we don't want to slow down everyone
-      trackTiming: (category, name, durationMillisecs) => {
-        if (name === 'timeToInteractive') {
-          const landingPageKind = this.state.landingPageContent.kind
-          this.maybeFetchSpecificJob().then(specificJob =>
-            this.props.dispatch(loadLandingPage(durationMillisecs, landingPageKind, specificJob))
-          )
-        }
-      },
-    })
+  componentWillUnmount() {
+    clearTimeout(this.timeout)
   }
 
-  // Figure out what landing page kind should be displayed and save it to the state.
-  // Returns true if we are in a case where we are on a specific landing page that has a path
-  // different from the root path.
-  setLandingPageContent() {
+  // Figure out what landing page kind should be displayed and return the
+  // corresponding state vars.
+  getLandingPageContentState() {
     const {romeId, specificJobName} = this.props.match.params
+    if (specificJobName) {
+      return {
+        isForSpecificJob: true,
+        landingPageContent: this.getLandingPageContentForSpecificJob(romeId, specificJobName),
+      }
+    }
     const query = parse(this.props.location.search)
     const utmContent = query['utm_content'] || ''
-    const landingPageContent = specificJobName ?
-      this.getLandingPageContentForSpecificJob(romeId, specificJobName) :
-      this.getLandingPageContentForUtmContent(utmContent)
-    this.setState({landingPageContent})
-    // If specificJobName is defined, it means the path is like /metier/:romeId/:specificJobName.
-    const isLandingPageWithSpecialPath = !!specificJobName
-    return isLandingPageWithSpecialPath
+    return {
+      landingPageContent: this.getLandingPageContentForUtmContent(utmContent),
+    }
   }
 
   getLandingPageContentForSpecificJob(romeId, specificJobName) {
@@ -791,7 +930,7 @@ class LandingPageBase extends React.Component {
     const style = {
       backgroundColor: '#fff',
       boxShadow: '0 0 5px 0 rgba(0, 0, 0, 0.2)',
-      color: Colors.DARK,
+      color: colors.DARK,
       fontSize: 14,
       height: 70,
       left: 0,
@@ -808,7 +947,7 @@ class LandingPageBase extends React.Component {
       display: 'flex',
       height: style.height,
       margin: 'auto',
-      maxWidth: 1000,
+      maxWidth: MAX_CONTENT_WIDTH,
     }
     return <div style={style}>
       <div style={contentStyle}>
@@ -823,7 +962,6 @@ class LandingPageBase extends React.Component {
   }
 
   render() {
-    const {isMobileVersion} = this.context
     const {isScrollNavBarShown, landingPageContent} = this.state
     return <StaticPage
       page="landing" isContentScrollable={false} isNavBarTransparent={true}
@@ -831,9 +969,8 @@ class LandingPageBase extends React.Component {
       isCookieDisclaimerShown={!!isMobileVersion}>
       <FastForward onForward={this.handleOpenLoginModal} />
 
-      {isMobileVersion ? null : <CookieMessageOverlay />}
-
-      {this.renderScrollNavBar(isScrollNavBarShown)}
+      {/* NOTE: The beginning of the DOM is what Google use in its snippet,
+        make sure it's important. */}
 
       <VisibilitySensor
         onChange={isTopShown => this.setState({isScrollNavBarShown: !isTopShown})}
@@ -841,7 +978,8 @@ class LandingPageBase extends React.Component {
         <div style={{height: 70, position: 'absolute', width: '100%'}} />
       </VisibilitySensor>
 
-      <TitleWavesSection isLoginButtonShown={true} pageContent={landingPageContent} />
+      <TitleSection
+        isLoginButtonShown={true} pageContent={landingPageContent} areWavesShown={false} />
 
       <VisibilitySensor
         onChange={this.handleVisibility('diagnostic')} partialVisibility={true}
@@ -862,14 +1000,18 @@ class LandingPageBase extends React.Component {
       </VisibilitySensor>
 
       <VisibilitySensor
-        onChange={this.handleVisibility('partners')} partialVisibility={true}
+        onChange={this.handleVisibility('speaking-about')} partialVisibility={true}
         intervalDelay={250}>
-        <PartnersSection />
+        <SpeakingAboutBobSection />
       </VisibilitySensor>
+
+      {isMobileVersion ? null : <CookieMessageOverlay />}
+
+      {this.renderScrollNavBar(isScrollNavBarShown)}
     </StaticPage>
   }
 }
 const LandingPage = connect()(LandingPageBase)
 
 
-export {LandingPage}
+export default LandingPage

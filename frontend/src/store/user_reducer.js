@@ -1,13 +1,14 @@
+import Cookies from 'js-cookie'
+
 import {POST_USER_DATA, SET_USER_PROFILE, GET_USER_DATA, AUTHENTICATE_USER,
   LOGOUT, ADVICE_PAGE_IS_SHOWN, CREATE_PROJECT, CREATE_PROJECT_SAVE,
-  DELETE_USER_DATA, MODIFY_PROJECT, ACTIVATE_DEMO,
+  DELETE_USER_DATA, MODIFY_PROJECT, ACTIVATE_DEMO, EXPLORE_ADVICE,
   FINISH_PROFILE_SITUATION, ACCEPT_PRIVACY_NOTICE, EDIT_FIRST_PROJECT,
   FINISH_PROFILE_FRUSTRATIONS, SEND_PROJECT_FEEDBACK, MARK_CHANGELOG_AS_SEEN,
-  FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL,
-  FINISH_PROJECT_EXPERIENCE, MIGRATE_USER_TO_ADVISOR, SCORE_ADVICE,
-  MARK_NOTIFICATION_AS_SEEN, CLOSE_LOGIN_MODAL} from './actions'
+  FINISH_PROJECT_CRITERIA, FINISH_PROJECT_GOAL, FINISH_PROFILE_SETTINGS,
+  FINISH_PROJECT_EXPERIENCE, MIGRATE_USER_TO_ADVISOR, SCORE_ADVICE, DIAGNOSE_ONBOARDING,
+  CLOSE_LOGIN_MODAL, SEND_POINTS_TRANSACTION} from './actions'
 import {increaseRevision, keepMostRecentRevision} from './user'
-import Cookies from 'js-cookie'
 
 // All data for a user of the companion app, a job seeker.
 // Keep in sync with User protobuf.
@@ -26,16 +27,26 @@ const USER_ID_COOKIE_NAME = 'userId'
 
 // Updates the given properties of a project.
 function updateProject(state, project) {
+  if (!project) {
+    return increaseRevision(state)
+  }
   return increaseRevision({
     ...state,
-    projects: (state.projects || []).map(stateProject => {
-      if (stateProject.projectId === project.projectId) {
-        return {
-          ...stateProject,
-          ...project,
+    projects: (state.projects || [{}]).map(stateProject => {
+      if (project.projectId && stateProject.projectId !== project.projectId) {
+        return stateProject
+      }
+      const updatedProject = {
+        ...stateProject,
+        ...project,
+      }
+      if (project.mobility) {
+        updatedProject.mobility = {
+          ...stateProject.mobility,
+          ...project.mobility,
         }
       }
-      return stateProject
+      return updatedProject
     }),
   })
 }
@@ -79,6 +90,7 @@ function userReducer(state = initialData, action) {
   switch (action.type) {
     case ACCEPT_PRIVACY_NOTICE: // Fallthrough intended.
     case FINISH_PROFILE_FRUSTRATIONS: // Fallthrough intended.
+    case FINISH_PROFILE_SETTINGS: // Fallthrough intended.
     case FINISH_PROFILE_SITUATION: // Fallthrough intended.
     case SET_USER_PROFILE:
       return increaseRevision({
@@ -180,6 +192,11 @@ function userReducer(state = initialData, action) {
         adviceId: action.advice.adviceId,
         score: action.score || 0,
       })
+    case EXPLORE_ADVICE:
+      return updateAdvice(state, action.project, {
+        adviceId: action.advice.adviceId,
+        numExplorations: (action.advice.numExplorations || 0) + 1,
+      })
     case SEND_PROJECT_FEEDBACK:
       return updateProject(state, {
         feedback: action.feedback,
@@ -193,17 +210,6 @@ function userReducer(state = initialData, action) {
         })
       }
       return state
-    case MARK_NOTIFICATION_AS_SEEN:
-      if (!action.notification) {
-        return state
-      }
-      return increaseRevision({
-        ...state,
-        notificationsSeen: {
-          ...state.notificationsSeen,
-          [action.notification]: true,
-        },
-      })
     case ACTIVATE_DEMO:
       return {
         ...state,
@@ -212,6 +218,25 @@ function userReducer(state = initialData, action) {
           [action.demo]: 'ACTIVE',
         },
       }
+    case DIAGNOSE_ONBOARDING:
+      if (action.status || !action.user) {
+        return state
+      }
+      return updateProject({
+        ...state,
+        profile: {
+          ...state.profile,
+          ...action.user.profile,
+        },
+      }, action.user.projects && action.user.projects[0])
+    case SEND_POINTS_TRANSACTION:
+      if (success) {
+        return {
+          ...state,
+          appPoints: action.response,
+        }
+      }
+      return state
     default:
       return state
   }

@@ -13,22 +13,24 @@ _JOB_GROUP_ROME_IDS = {
 }
 
 
-def _get_vars(user, unused_database):
+def _get_vars(user, **unused_kwargs):
     """Compute vars for one user's email."""
 
     project = next((p for p in user.projects), project_pb2.Project())
 
     is_local = False
-    if not project.mobility.area_type:
+    area_type = project.area_type or project.mobility.area_type
+    if not area_type:
         return
-    if project.mobility.area_type < geo_pb2.COUNTRY:
-        if project.mobility.city.region_id != '93':
+    city = project.city if project.HasField('city') else project.mobility.city
+    if area_type < geo_pb2.COUNTRY:
+        if city.region_id != '93':
             return
-        if project.mobility.area_type < geo_pb2.REGION:
-            if project.mobility.city.departement_id != '13':
+        if area_type < geo_pb2.REGION:
+            if city.departement_id != '13':
                 return
-            if project.mobility.area_type < geo_pb2.DEPARTEMENT:
-                if project.mobility.city.city_id != '13004':
+            if area_type < geo_pb2.DEPARTEMENT:
+                if city.city_id != '13004':
                     return
                 is_local = True
 

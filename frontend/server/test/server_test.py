@@ -9,11 +9,13 @@ from urllib import parse
 from bson import objectid
 import mock
 import mongomock
+import requests_mock
 
+from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import server
-from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server.test import base_test
+from bob_emploi.frontend.server.test import mailjetmock
 
 
 def _add_chantier(project_index, new_chantier):
@@ -45,8 +47,14 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         }
         return self.create_user_with_token(data=user_data, email='foo@bar.fr')
 
-    def test_feedback(self):
+    @mock.patch(server.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
+    @requests_mock.mock()
+    def test_feedback(self, mock_requests):
         """Basic call to "/api/feedback"."""
+
+        mock_requests.post('slack://bob-bots', json={
+            'text': ':mega: Aaaaaaaaaaaaawesome',
+        })
 
         user_id, auth_token = self._create_user_joe_the_cheminot()
 
@@ -60,7 +68,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(
             ['Aaaaaaaaaaaaawesome!\nsecond line'],
-            [d.get('feedback') for d in self._db.feedbacks.find()])
+            [d.get('feedback') for d in self._user_db.feedbacks.find()])
 
     def test_feedback_no_user(self):
         """Testing /api/feedback with missing user ID."""
@@ -128,7 +136,6 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         response = self.app.get('/api/usage/stats')
         self.assertEqual(
             {
-                'dailyScoresCount': {'2': 1, '5': 1},
                 'totalUserCount': 8,
                 'weeklyNewUserCount': 3,
             },
@@ -188,10 +195,11 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
         tokens = self.json_from_response(response)
         self.assertEqual(
-            {'auth', 'employment-status', 'nps', 'unsubscribe', 'user'}, tokens.keys())
-        auth.check_token('pascal@example.com', tokens['unsubscribe'], role='unsubscribe')
+            {'auth', 'employment-status', 'nps', 'settings', 'unsubscribe', 'user'}, tokens.keys())
+        auth.check_token(user_id, tokens['unsubscribe'], role='unsubscribe')
         auth.check_token(user_id, tokens['employment-status'], role='employment-status')
         auth.check_token(user_id, tokens['nps'], role='nps')
+        auth.check_token(user_id, tokens['settings'], role='settings')
         auth.check_token(user_id, tokens['auth'], role='')
         self.assertEqual(user_id, tokens['user'])
 
@@ -280,88 +288,17 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             advice_category)
 
 
-class UsersCountsEndpointTestCase(base_test.ServerTestCase):
-    """Unit test for the users counts endpoint."""
-
-    def test_users_count(self):
-        """The counts of users should be returned."""
-
-        self._db.user_count.insert_one({
-            'aggregatedAt': '2016-11-15T16:51:55Z',
-            'departementCount': {
-                '31': 365,
-            },
-            'jobGroupCount': {
-                'L1510': 256
-            }
-        })
-        response = self.app.get('api/users/counts')
-        user_counts = self.json_from_response(response)
-        self.assertIsNotNone(user_counts)
-        self.assertEqual(365, user_counts.get('departementCount', {}).get('31'))
-        self.assertEqual(256, user_counts.get('jobGroupCount', {}).get('L1510'))
-
-    def test_get_most_recent_user_counts(self):
-        """Test that we get most recent counts for all IDs."""
-
-        self._db.user_count.insert_many([
-            {
-                'aggregatedAt': '2016-11-15T16:51:55Z',
-                'departementCount': {
-                    '31': 365,
-                },
-                'jobGroupCount': {
-                    'L1510': 256
-                }
-            },
-            {
-                'aggregatedAt': '2016-12-15T16:51:55Z',
-                'departementCount': {
-                    '31': 700,
-                },
-                'jobGroupCount': {
-                    'L1510': 300
-                }
-            },
-        ])
-        response = self.app.get('api/users/counts')
-        user_counts = self.json_from_response(response)
-        self.assertIsNotNone(user_counts)
-        self.assertEqual(700, user_counts.get('departementCount', {}).get('31'))
-        self.assertEqual(300, user_counts.get('jobGroupCount', {}).get('L1510'))
-
-    def test_no_such_count_for(self):
-        """Test that we get nothing if database is empty."""
-
-        response = self.app.get('api/users/counts')
-        self.assertEqual(500, response.status_code)
-
-
 class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the requirements endpoints."""
 
-    def test_no_input(self):
-        """Test with no input."""
+    def test_unknown_job_group(self):
+        """Test with an uknown job group."""
 
-        response = self.app.post(
-            '/api/project/requirements', data='{}',
-            content_type='application/json')
+        response = self.app.get('/api/job/requirements/UNKNOWN_JOB_GROUP')
         self.assertEqual(200, response.status_code)
         self.assertEqual('{}', response.get_data(as_text=True))
 
-    def test_target_job(self):
-        """Test with a target job."""
-
-        response = self.app.post(
-            '/api/project/requirements', data='{"targetJob":{"jobGroup":{'
-            '"romeId":"A1234"}}}',
-            content_type='application/json')
-        requirements = self.json_from_response(response)
-        self.assertEqual(set(['skills', 'diplomas', 'extras']), set(requirements))
-        # Point check.
-        self.assertEqual('1235', requirements['skills'][1]['skill']['skillId'])
-
-    def test_job_endpoint(self):
+    def test_job_requirements(self):
         """Test the endpoint using only the job group ID."""
 
         response = self.app.get('/api/job/requirements/A1234')
@@ -372,7 +309,7 @@ class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
 
 
 class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
-    """Unit tests for the project/.../advice/.../tips endpoint."""
+    """Unit tests for the /advice/tips endpoint."""
 
     def setUp(self):  # pylint: disable=invalid-name,missing-docstring
         super(ProjectAdviceTipsTestCase, self).setUp()
@@ -394,6 +331,9 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
                 'title': 'Second tip',
             },
         ])
+        patcher = mailjetmock.patch()
+        patcher.start()
+        self.addCleanup(patcher.stop)
         server.clear_cache()
         self.user_id, self.auth_token = self.create_user_with_token(
             modifiers=[base_test.add_project], advisor=True)
@@ -426,11 +366,23 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             'Conseil &quot;unknown-advice&quot; inconnu.',
             response.get_data(as_text=True))
 
-    def test_get_tips(self):
-        """Test with a non existing project ID."""
+    def test_get_tips_old_route(self):
+        """Test getting tips using the old route."""
 
         response = self.app.get(
             '/api/project/{}/{}/advice/other-work-env/tips'.format(self.user_id, self.project_id),
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        advice_tips = self.json_from_response(response)
+
+        self.assertEqual(
+            ['First tip', 'Second tip'],
+            [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
+
+    def test_get_tips(self):
+        """Test getting tips."""
+
+        response = self.app.get(
+            '/api/advice/tips/other-work-env/{}/{}'.format(self.user_id, self.project_id),
             headers={'Authorization': 'Bearer ' + self.auth_token})
         advice_tips = self.json_from_response(response)
 
@@ -443,10 +395,7 @@ class CacheClearEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the cache/clear endpoint."""
 
     def _get_requirements(self, job_group_id):
-        response = self.app.post(
-            '/api/project/requirements', data='{{"targetJob":{{"jobGroup":{{'
-            '"romeId":"{}"}}}}}}'.format(job_group_id),
-            content_type='application/json')
+        response = self.app.get('/api/job/requirements/{}'.format(job_group_id))
         requirements = json.loads(response.get_data(as_text=True))
         return [s['skill']['skillId'] for s in requirements['skills']]
 
@@ -533,7 +482,7 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
             r'^http://localhost/historique-des-actions/[a-f0-9]+$')
         dashboard_export_id = re.sub(r'^.*/', '', response.location)
 
-        dashboard_export = self._db.dashboard_exports.find_one({
+        dashboard_export = self._user_db.dashboard_exports.find_one({
             '_id': mongomock.ObjectId(dashboard_export_id)})
         self.assertGreaterEqual(
             dashboard_export['createdAt'], before.isoformat(), msg=dashboard_export)
@@ -565,7 +514,7 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
             r'^http://localhost/historique-des-actions/[a-f0-9]+$')
         dashboard_export_id = re.sub(r'^.*/', '', response.location)
 
-        dashboard_export = self._db.dashboard_exports.find_one({
+        dashboard_export = self._user_db.dashboard_exports.find_one({
             '_id': mongomock.ObjectId(dashboard_export_id)})
         stored_user_info = self.user_info_from_db(user_id)
         self.assertEqual(stored_user_info['projects'], dashboard_export['projects'])
@@ -607,6 +556,7 @@ class CreateDashboardExportTestCase(base_test.ServerTestCase):
             r'^http://localhost/historique-des-actions/[a-f0-9]+$')
 
 
+@mailjetmock.patch()
 class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the user/migrate-to-advisor endpoint."""
 
@@ -631,8 +581,8 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(200, response.status_code)
 
         user_info = self.get_user_info(user_id, auth_token)
-        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
-        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisorEmail'))
+        self.assertFalse(user_info.get('featuresEnabled', {}).get('advisor'))
+        self.assertFalse(user_info.get('featuresEnabled', {}).get('advisorEmail'))
         self.assertTrue(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
         self.assertTrue(user_info['projects'][0].get('advices'))
 
@@ -646,8 +596,8 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(200, response.status_code)
 
         user_info = self.get_user_info(user_id, auth_token)
-        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
-        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisorEmail'))
+        self.assertFalse(user_info.get('featuresEnabled', {}).get('advisor'))
+        self.assertFalse(user_info.get('featuresEnabled', {}).get('advisorEmail'))
         self.assertFalse(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
 
     def test_migrate_user_multiple_projects(self):
@@ -661,8 +611,8 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(200, response.status_code)
 
         user_info = self.get_user_info(user_id, auth_token)
-        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
-        self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisorEmail'))
+        self.assertFalse(user_info.get('featuresEnabled', {}).get('advisor'))
+        self.assertFalse(user_info.get('featuresEnabled', {}).get('advisorEmail'))
         self.assertTrue(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
         self.assertTrue(user_info['projects'][0].get('advices'))
 
@@ -713,7 +663,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
     """Unit tests for employment-status endpoints."""
 
     def test_employment_status(self):
-        """Test expected use case of employment-survey endpoint."""
+        """Test expected use case of employment-survey endpoints."""
 
         user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
         survey_token = auth.create_token(user_id, role='employment-status')
@@ -729,18 +679,17 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         self.assertIn('id', redirect_args)
         self.assertEqual(survey_token, redirect_args['token'])
         self.assertEqual(user_id, redirect_args['user'])
-        self.assertEqual(redirect_args['id'], '0')
         self.assertEqual(user['employmentStatus'][0]['seeking'], 'STILL_SEEKING')
+
         survey_response = {
             'situation': 'lalala',
             'bobHasHelped': 'bidulechose'
         }
-        response2 = self.app.get('/api/employment-status', query_string={
-            'user': user_id,
-            'token': survey_token,
-            'id': redirect_args['id'],
-            **survey_response
-        })
+        response2 = self.app.post(
+            '/api/employment-status/{}'.format(user_id),
+            data=json.dumps(survey_response),
+            headers={'Authorization': 'Bearer ' + survey_token},
+            content_type='application/json')
         self.assertEqual(200, response2.status_code)
         user = self.get_user_info(user_id, auth_token)
         self.assertTrue(len(user['employmentStatus']) == 1)
@@ -821,39 +770,6 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         })
         self.assertEqual(403, response.status_code)
 
-    def test_employment_status_invalid_id(self):
-        """EmploymentSurvey endpoint should not save anything if called with an invalid ID."""
-
-        user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
-        survey_token = auth.create_token(user_id, role='employment-status')
-        response = self.app.get('/api/employment-status', query_string={
-            'user': user_id,
-            'token': survey_token,
-            'seeking': '1',
-            'redirect': 'http://www.tutut.org'
-        })
-        self.assertEqual(302, response.status_code)
-        user = self.get_user_info(user_id, auth_token)
-        redirect_args = dict(parse.parse_qsl(parse.urlparse(response.location).query))
-        self.assertIn('id', redirect_args)
-        self.assertEqual(survey_token, redirect_args['token'])
-        self.assertEqual(user_id, redirect_args['user'])
-        self.assertEqual(redirect_args['id'], '0')
-        self.assertEqual(user['employmentStatus'][0]['seeking'], 'STILL_SEEKING')
-        survey_response = {
-            'situation': 'lalala',
-            'bobHasHelped': 'bidulechose'
-        }
-        response2 = self.app.get('/api/employment-status', query_string={
-            'user': user_id,
-            'token': survey_token,
-            'id': int(redirect_args['id']) + 3,
-            **survey_response
-        })
-        self.assertEqual(422, response2.status_code)
-        for key in survey_response:
-            self.assertNotIn(key, user['employmentStatus'][0])
-
     def test_update_employment_status(self):
         """Update the employment status through the POST endpoint."""
 
@@ -918,6 +834,30 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         self.assertEqual(
             ['STOP_SEEKING', 'STILL_SEEKING'],
             [s.get('seeking') for s in user.get('employmentStatus', [])])
+
+    def test_convert_user_proto(self):
+        """Converts a proto of a user with advice selection from JSON to compressed format."""
+
+        response = self.app.post(
+            '/api/user/proto',
+            data='{"user":{"profile":{"familySituation": "SINGLE_PARENT_SITUATION","frustrations":['
+            '"NO_OFFERS", "SELF_CONFIDENCE", "TIME_MANAGEMENT"],"gender":"FEMININE",'
+            '"hasCarDrivingLicense": true,"highestDegree": "NO_DEGREE","lastName": "Dupont",'
+            '"name": "Angèle","yearOfBirth": 1999}},"adviceIds":["a","b","c"]}',
+            headers={'Accept': 'application/x-protobuf-base64'},
+            content_type='application/json')
+
+        proto_token = response.get_data(as_text=True)
+        self.assertLessEqual(len(proto_token), 80, msg=proto_token)
+
+        response_json = self.app.post(
+            '/api/user/proto',
+            data=proto_token,
+            content_type='application/x-protobuf-base64')
+        user_with_advice = self.json_from_response(response_json)
+
+        self.assertEqual(['a', 'b', 'c'], user_with_advice.get('adviceIds'))
+        self.assertEqual('Angèle', user_with_advice.get('user', {}).get('profile', {}).get('name'))
 
 
 if __name__ == '__main__':

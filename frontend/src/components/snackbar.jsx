@@ -1,10 +1,11 @@
-import omit from 'lodash/omit'
+import _omit from 'lodash/omit'
 import PropTypes from 'prop-types'
 import React from 'react'
 import {connect} from 'react-redux'
 
 import {hideToasterMessageAction} from 'store/actions'
 
+import {isMobileVersion} from 'components/mobile'
 import {OutsideClickHandler} from './theme'
 
 
@@ -16,96 +17,73 @@ class SnackbarBase extends React.Component {
     timeoutMillisecs: PropTypes.number.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   state = {
     isVisible: false,
+    nextSnacks: [],
     snack: null,
   }
 
-  componentWillMount() {
-    if (this.props.snack) {
-      this.showSnack(this.props.snack)
-    }
+  componentDidMount() {
+    this.componentDidUpdate({snack: null}, {isVisible: false})
   }
 
-  componentWillReceiveProps(nextProps) {
-    const {snack} = this.props
-    const nextSnack = nextProps.snack
-    if (nextSnack && snack !== nextSnack) {
-      // A new snack wants to be shown. Show it!
-      this.showSnack(nextSnack)
-    } else if (!nextSnack && snack) {
-      // The current snack has been removed. Hide it!
-      this.hideSnack()
+  componentDidUpdate({snack: previousSnack}, {isVisible: wasVisible}) {
+    const {snack, timeoutMillisecs} = this.props
+    const {isVisible, nextSnacks, snack: visibleSnack} = this.state
+
+    // Start timer just after isVisible becomes true.
+    if (isVisible && !wasVisible) {
+      clearTimeout(this.timer)
+      this.timer = setTimeout(this.hide, timeoutMillisecs)
+    }
+
+    // Handle new snack content.
+    if (snack && previousSnack !== snack) {
+      if (!isVisible && !visibleSnack && !nextSnacks.length) {
+        this.setState({isVisible: true, snack})
+        return
+      }
+      this.setState({nextSnacks: nextSnacks.concat([snack])})
     }
   }
 
   componentWillUnmount() {
-    this.clearDismissTimer()
+    clearTimeout(this.timer)
   }
 
-  showSnack = (snack) => {
-    const {dispatch, timeoutMillisecs} = this.props
-    this.hideSnack().then(() => {
-      this.setState({
-        isVisible: false,
-        snack,
-      })
-      this.showSnackTimer = setTimeout(() => {
-        this.setState({
-          isVisible: true,
-        })
-        this.snackTimer = setTimeout(() => {
-          dispatch(hideToasterMessageAction)
-        }, timeoutMillisecs)
-      }, 1)
-    })
-  }
-
-  hideSnack = () => {
-    if (!this.state.snack) {
-      return Promise.resolve()
+  hide = () => {
+    if (!this.state.isVisible) {
+      return
     }
-    return new Promise((resolve) => {
-      this.clearDismissTimer()
+    clearTimeout(this.timer)
+    this.setState({isVisible: false})
+    this.props.dispatch(hideToasterMessageAction)
+  }
+
+  handleTransitionEnd = () => {
+    const {isVisible, nextSnacks, snack} = this.state
+    if (isVisible) {
+      return
+    }
+    if (snack) {
+      const nextSnack = nextSnacks.length && nextSnacks[0]
       this.setState({
-        isVisible: false,
+        isVisible: !!nextSnack,
+        nextSnacks: nextSnacks.slice(1),
+        snack: nextSnack || null,
       })
-      this.afterTransition = () => {
-        this.setState({
-          snack: null,
-        }, resolve)
-      }
-    })
-  }
-
-  clearDismissTimer = () => {
-    clearTimeout(this.snackTimer)
-    clearTimeout(this.showSnackTimer)
-    this.snackTimer = null
-    this.showSnackTimer = null
-  }
-
-  transitionEndHandler = () => {
-    if (this.afterTransition) {
-      this.afterTransition()
-      this.afterTransition = null
+    } else {
+      this.setState({snack: null})
     }
   }
 
   render() {
     const {snack, isVisible} = this.state
-    if (!snack) {
-      return null
-    }
-    const {isMobileVersion} = this.context
-    const {dispatch, style, ...otherProps} = this.props
+    const {style, ...otherProps} = this.props
     const containerStyle = {
       bottom: 0,
       display: 'flex',
+      height: snack ? 'initial' : 0,
       justifyContent: 'center',
       left: 0,
       position: 'fixed',
@@ -128,20 +106,18 @@ class SnackbarBase extends React.Component {
       width: isMobileVersion ? 'calc(100% - 48px)' : 'auto',
       willChange: 'transform',
     }
-    return (
-      <OutsideClickHandler
-        onOutsideClick={() => dispatch(hideToasterMessageAction)}
-        style={containerStyle}
-        {...omit(otherProps, ['snack', 'timeoutMillisecs'])}
+    return <OutsideClickHandler
+      onOutsideClick={this.hide}
+      style={containerStyle}
+      {..._omit(otherProps, ['dispatch', 'snack', 'timeoutMillisecs'])}
+    >
+      <div
+        style={{...snackStyle, ...(style || {})}}
+        onTransitionEnd={this.handleTransitionEnd}
       >
-        <div
-          style={{...snackStyle, ...(style || {})}}
-          onTransitionEnd={this.transitionEndHandler}
-        >
-          <span style={labelStyle}>{snack}</span>
-        </div>
-      </OutsideClickHandler>
-    )
+        <span style={labelStyle}>{snack}</span>
+      </div>
+    </OutsideClickHandler>
   }
 
 }

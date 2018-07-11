@@ -6,19 +6,19 @@ import React from 'react'
 import {connect} from 'react-redux'
 
 import {getExpandedCardContent} from 'store/actions'
-import {USER_PROFILE_SHAPE} from 'store/user'
 
-import {AppearingList, CircularProgress, Colors, UpDownIcon, Markdown,
-  PaddedOnMobile, SmoothTransitions, Styles, Tag} from 'components/theme'
+import {isMobileVersion} from 'components/mobile'
+import {AppearingList, CircularProgress, ExternalLink, Markdown,
+  PaddedOnMobile, SmoothTransitions, Styles, Tag, UpDownIcon} from 'components/theme'
 
 // TODO: Find a better place for those tags if we don't need them elsewhere in this file.
 const typeTags = {
   'apply-to-offer': {
-    color: Colors.SQUASH,
+    color: colors.SQUASH,
     value: 'candidature à une offre',
   },
   'spontaneous-application': {
-    color: Colors.GREENISH_TEAL,
+    color: colors.GREENISH_TEAL,
     value: 'candidature spontanée',
   },
 }
@@ -28,6 +28,7 @@ class ExpandableActionBase extends React.Component {
   static propTypes = {
     children: PropTypes.element,
     contentName: PropTypes.string.isRequired,
+    onContentShown: PropTypes.func,
     style: PropTypes.object,
     title: PropTypes.node.isRequired,
     type: PropTypes.oneOf(Object.keys(typeTags)),
@@ -43,7 +44,19 @@ class ExpandableActionBase extends React.Component {
     isContentShown: false,
   }
 
+  handleClick = () => {
+    const {isContentShown} = this.state
+    const {onContentShown} = this.props
+    this.setState({isContentShown: !isContentShown})
+    if (!isContentShown) {
+      onContentShown && onContentShown()
+    }
+  }
+
   renderType() {
+    if (isMobileVersion) {
+      return null
+    }
     const {type} = this.props
     const {color, value} = typeTags[type] || {}
     if (!value) {
@@ -61,23 +74,23 @@ class ExpandableActionBase extends React.Component {
     const {isContentShown} = this.state
     const containerStyle = {
       ':hover': {
-        backgroundColor: isContentShown ? '#fff' : Colors.LIGHT_GREY,
+        backgroundColor: isContentShown ? '#fff' : colors.LIGHT_GREY,
       },
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      padding: '0 25px',
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+      padding: isMobileVersion ? '0 15px' : '0 25px',
       ...style,
     }
     const headerStyle = {
       alignItems: 'center',
-      color: Colors.CHARCOAL_GREY,
+      color: colors.CHARCOAL_GREY,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,
       height: 50,
     }
     const iconStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
       height: 20,
       lineHeight: '13px',
       marginLeft: 5,
@@ -102,18 +115,18 @@ class ExpandableActionBase extends React.Component {
     })
     // TODO(guillaume): Print reason when the user mouseovers the tag.
     return <div style={containerStyle}>
-      <header style={headerStyle} onClick={() => this.setState({isContentShown: !isContentShown})}>
+      <header style={headerStyle} onClick={this.handleClick}>
         <strong style={Styles.CENTER_FONT_VERTICALLY}>
           {title}
         </strong>
-        {whyForYou ? <Tag style={{backgroundColor: Colors.BOB_BLUE, marginLeft: 10}}>
+        {whyForYou ? <Tag style={{backgroundColor: colors.BOB_BLUE, marginLeft: 10}}>
           {userYou('Selectionné pour toi', 'Selectionné pour vous')}
         </Tag> : null}
         {this.renderType()}
         <span style={{flex: 1}} />
-        <span style={linkStyle}>
+        {isMobileVersion ? null : <span style={linkStyle}>
           Voir {isContentShown ? 'moins' : contentName}{' '}
-        </span>
+        </span>}
         <UpDownIcon icon="chevron" isUp={isContentShown} style={iconStyle} />
       </header>
       {React.cloneElement(children, {
@@ -137,8 +150,8 @@ class EmailTemplate extends React.Component {
   render() {
     const {content, tip} = this.props
     const contentStyle = {
-      borderLeft: `solid 4px ${Colors.MODAL_PROJECT_GREY}`,
-      color: Colors.CHARCOAL_GREY,
+      borderLeft: `solid 4px ${colors.MODAL_PROJECT_GREY}`,
+      color: colors.CHARCOAL_GREY,
       fontSize: 13,
       marginBottom: tip ? 10 : 25,
       marginTop: 25,
@@ -169,18 +182,25 @@ class ToolCardBase extends React.Component {
     children: PropTypes.node,
     href: PropTypes.string.isRequired,
     imageSrc: PropTypes.string.isRequired,
+    onClick: PropTypes.func,
     style: PropTypes.object,
   }
 
+  handleClick = () => {
+    const {href, onClick} = this.props
+    window.open(href, '_blank')
+    onClick && onClick()
+  }
+
   render() {
-    const {children, imageSrc, href, style} = this.props
+    const {children, imageSrc, style} = this.props
     const cardStyle = {
       ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
+        backgroundColor: colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       borderRadius: 4,
       cursor: 'pointer',
       display: 'flex',
@@ -195,13 +215,13 @@ class ToolCardBase extends React.Component {
       fontSize: 14,
       fontWeight: 'bold',
     }
-    return <div style={cardStyle} onClick={() => window.open(href, '_blank')}>
+    return <div style={cardStyle} onClick={this.handleClick}>
       <div style={titleStyle}>
         <img src={imageSrc}
           style={{height: 55, width: 55}} alt="" />
         <div style={{paddingLeft: 20}}>{children}</div>
       </div>
-      <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, width: 20}} />
+      <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, width: 20}} />
     </div>
   }
 }
@@ -220,11 +240,11 @@ const connectExpandedCardWithContent = reduceFunc => Component => {
       }).isRequired,
       dispatch: PropTypes.func.isRequired,
       project: PropTypes.shape({
-        projectId: PropTypes.string.isRequired,
+        projectId: PropTypes.string,
       }).isRequired,
     }
 
-    componentWillMount() {
+    componentDidMount() {
       const {advice, dispatch, project} = this.props
       dispatch(getExpandedCardContent(project, advice.adviceId))
     }
@@ -249,7 +269,10 @@ class ImproveApplicationTipsBase extends React.Component {
       contentMasculine: PropTypes.string,
       filters: PropTypes.arrayOf(PropTypes.string.isRequired),
     }).isRequired)).isRequired,
-    profile: USER_PROFILE_SHAPE.isRequired,
+    onExplore: PropTypes.func.isRequired,
+    profile: PropTypes.shape({
+      gender: PropTypes.string,
+    }).isRequired,
     sections: PropTypes.arrayOf(PropTypes.shape({
       data: PropTypes.string.isRequired,
       title: PropTypes.node.isRequired,
@@ -260,14 +283,14 @@ class ImproveApplicationTipsBase extends React.Component {
   state = {}
 
   renderSection(id, title, items, style) {
-    const {profile, userYou} = this.props
+    const {onExplore, profile, userYou} = this.props
     const isMasculine = profile.gender === 'MASCULINE'
     const areAllItemsShownId = `areAllItemsShown-${id}`
     const areAllItemsShown = this.state[areAllItemsShownId]
     const itemStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       display: 'flex',
       fontSize: 13,
       minHeight: 50,
@@ -289,18 +312,21 @@ class ImproveApplicationTipsBase extends React.Component {
           {isSpecificToJob(tip) ?
             this.renderTag(
               userYou('Pour ton métier', 'Pour votre métier'),
-              Colors.GREENISH_TEAL,
+              colors.GREENISH_TEAL,
             ) : null
           }
         </div>)}
       </AppearingList>
       {(areAllItemsShown || items.length <= 4) ? null : <div
         key={`${id}-more`} style={showMoreStyle}
-        onClick={() => this.setState({[areAllItemsShownId]: true})}>
+        onClick={() => {
+          this.setState({[areAllItemsShownId]: true})
+          onExplore(`more tips ${id}`)
+        }}>
         <span style={Styles.CENTER_FONT_VERTICALLY}>
           Voir plus
         </span>
-        <ChevronDownIcon style={{fill: Colors.CHARCOAL_GREY, height: 20, width: 20}} />
+        <ChevronDownIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
       </div>}
     </section>
   }
@@ -338,7 +364,7 @@ class PercentageBoxes extends React.Component {
 
   renderBox(percentage, isTarget, key) {
     const boxStyle = {
-      backgroundColor: isTarget ? Colors.SLATE : Colors.HOVER_GREEN,
+      backgroundColor: isTarget ? colors.SLATE : colors.HOVER_GREEN,
       borderRadius: 2,
       marginLeft: 5,
       width: `${percentage * 22}px`,
@@ -361,7 +387,7 @@ class PercentageBoxes extends React.Component {
       boxes.push({percentage: .5})
       new Array(maxBoxes / 2 - 1).fill().forEach(() => boxes.push({percentage: 1}))
       const dotsStyle = {
-        color: Colors.HOVER_GREEN,
+        color: colors.HOVER_GREEN,
         fontWeight: 'bold',
         marginLeft: 5,
         marginTop: 8,
@@ -394,19 +420,19 @@ class AdviceSuggestionListBase extends React.Component {
     const {children, isNotClickable, ...extraProps} = this.props
     const childStyle = (index, props) => ({
       ':hover': (isNotClickable || props.isNotClickable) ? {} : {
-        backgroundColor: Colors.LIGHT_GREY,
+        backgroundColor: colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       cursor: (isNotClickable || props.isNotClickable) ? 'initial' : 'pointer',
       display: 'flex',
       fontSize: 13,
       fontWeight: 'bold',
       marginTop: index ? -1 : 0,
       minHeight: 50,
-      paddingLeft: 20,
-      paddingRight: 20,
+      paddingLeft: isMobileVersion ? 10 : 20,
+      paddingRight: isMobileVersion ? 10 : 20,
       ...SmoothTransitions,
       ...props.style,
     })
@@ -443,16 +469,14 @@ class JobSuggestionBase extends React.Component {
   static propTypes = {
     isCaption: PropTypes.bool,
     job: PropTypes.object,
+    onClick: PropTypes.func,
     style: PropTypes.object,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   handleClick = () => {
-    const {job} = this.props
+    const {job, onClick} = this.props
     window.open(`https://www.google.fr/search?q=${encodeURIComponent(job.name)}`, '_blank')
+    onClick && onClick()
   }
 
   renderCaption(style) {
@@ -470,9 +494,8 @@ class JobSuggestionBase extends React.Component {
 
   renderJob(style) {
     const {job} = this.props
-    const {isMobileVersion} = this.context
     const multiplierStyle = {
-      color: Colors.HOVER_GREEN,
+      color: colors.HOVER_GREEN,
       flex: 1,
       fontWeight: 'bold',
       marginRight: 0,
@@ -485,7 +508,7 @@ class JobSuggestionBase extends React.Component {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const chevronStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
     }
     const textStyle = {
       ...Styles.CENTER_FONT_VERTICALLY,
@@ -515,14 +538,13 @@ class JobSuggestionBase extends React.Component {
 
   render() {
     const {isCaption, style} = this.props
-    const {isMobileVersion} = this.context
     const containerStyle = {
       ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
+        backgroundColor: colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,
@@ -545,6 +567,7 @@ class MissionBase extends React.Component {
     description: PropTypes.node,
     isAvailableEverywhere: PropTypes.bool,
     link: PropTypes.string,
+    onContentShown: PropTypes.func,
     style: PropTypes.object,
     title: PropTypes.string,
   }
@@ -553,30 +576,39 @@ class MissionBase extends React.Component {
     isContentShown: false,
   }
 
+  handleClick = () => {
+    const {isContentShown} = this.state
+    const {onContentShown} = this.props
+    this.setState({isContentShown: !isContentShown})
+    if (!isContentShown) {
+      onContentShown && onContentShown()
+    }
+  }
+
   render() {
     const {aggregatorName, associationName, description, isAvailableEverywhere,
       link, style, title} = this.props
     const {isContentShown} = this.state
     const containerStyle = {
       ':hover': {
-        backgroundColor: isContentShown ? '#fff' : Colors.LIGHT_GREY,
+        backgroundColor: isContentShown ? '#fff' : colors.LIGHT_GREY,
       },
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       padding: '0 25px',
       ...style,
     }
     const headerStyle = {
       alignItems: 'center',
-      color: Colors.CHARCOAL_GREY,
+      color: colors.CHARCOAL_GREY,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,
       height: 50,
     }
     const contentStyle = {
-      borderLeft: `solid 4px ${Colors.MODAL_PROJECT_GREY}`,
-      color: Colors.CHARCOAL_GREY,
+      borderLeft: `solid 4px ${colors.MODAL_PROJECT_GREY}`,
+      color: colors.CHARCOAL_GREY,
       fontSize: 13,
       lineHeight: 1.6,
       margin: isContentShown ? '25px 0' : 0,
@@ -587,11 +619,11 @@ class MissionBase extends React.Component {
       ...SmoothTransitions,
     }
     const tagStyle = {
-      backgroundColor: Colors.GREENISH_TEAL,
+      backgroundColor: colors.GREENISH_TEAL,
       marginLeft: 15,
     }
     const chevronStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
       flexShrink: 0,
       height: 20,
       lineHeight: '13px',
@@ -599,11 +631,11 @@ class MissionBase extends React.Component {
       width: 20,
     }
     return <div style={containerStyle}>
-      <header style={headerStyle} onClick={() => this.setState({isContentShown: !isContentShown})}>
+      <header style={headerStyle} onClick={this.handleClick}>
         <strong style={Styles.CENTER_FONT_VERTICALLY}>
           {associationName}
         </strong>
-        {isAvailableEverywhere ? <Tag style={tagStyle}>
+        {isAvailableEverywhere && !isMobileVersion ? <Tag style={tagStyle}>
           depuis chez vous
         </Tag> : null}
         <span style={{flex: 1}} />
@@ -629,8 +661,7 @@ class MissionBase extends React.Component {
         </div>
 
         {link ? <div style={{marginTop: 20}}>
-        Lire la suite sur <a href={link} target="_blank" rel="noopener noreferrer">{aggregatorName}
-          </a>
+        Lire la suite sur <ExternalLink href={link}>{aggregatorName}</ExternalLink>
         </div> : null}
       </div>
     </div>
@@ -651,12 +682,12 @@ class MoreMissionsLinkBase extends React.Component {
     const {altLogo, children, logo, style, ...extraProps} = this.props
     const containerStyle = {
       ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
+        backgroundColor: colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      color: Colors.CHARCOAL_GREY,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+      color: colors.CHARCOAL_GREY,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,
@@ -665,7 +696,7 @@ class MoreMissionsLinkBase extends React.Component {
       ...style,
     }
     const chevronStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
       height: 20,
       lineHeight: '13px',
       marginLeft: 5,
@@ -692,7 +723,7 @@ class DataSource extends React.Component {
   render() {
     const {children, style} = this.props
     const sourceStyle = {
-      color: Colors.COOL_GREY,
+      color: colors.COOL_GREY,
       fontSize: 13,
       fontStyle: 'italic',
       margin: '15px 0',
