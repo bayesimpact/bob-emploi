@@ -4,7 +4,7 @@ import React from 'react'
 import commentImage from 'images/comment-picto.svg'
 import optimizeImage from 'images/optimize-picto.svg'
 
-import {Colors, Styles, Tag} from 'components/theme'
+import {Styles, Tag} from 'components/theme'
 
 import {ADVICE_SCORES, EVAL_SCORES} from './score_levels'
 
@@ -25,7 +25,7 @@ class PoolOverview extends React.Component {
 
   renderHeader() {
     const containerStyle = {
-      backgroundColor: Colors.BOB_BLUE_HOVER,
+      backgroundColor: colors.BOB_BLUE_HOVER,
       color: '#fff',
     }
     const cellStyle = {
@@ -63,16 +63,16 @@ class PoolOverview extends React.Component {
     const {onSelectUseCase} = this.props
     const {evaluation, indexInPool, title, useCaseId} = useCase
     const containerStyle = {
-      backgroundColor: index % 2 ? Colors.LIGHT_GREY : '#fff',
-      color: Colors.DARK_TWO,
+      backgroundColor: index % 2 ? colors.LIGHT_GREY : '#fff',
+      color: colors.DARK_TWO,
     }
     const cellStyle = {
       padding: 14,
     }
     const adviceTagStyle = tagColor => ({
-      backgroundColor: tagColor || Colors.SILVER,
+      backgroundColor: tagColor || colors.SILVER,
       borderRadius: 4,
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       fontSize: 'inherit',
       fontWeight: 'initial',
       margin: 4,

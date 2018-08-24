@@ -494,6 +494,89 @@ class JobSeekerTestCase(unittest.TestCase):
             ],
             periods)
 
+    def test_get_training_periods(self):
+        """Basic usages of all_training_periods."""
+
+        job_seeker = fhs.JobSeeker({
+            'region': '21',
+            'IDX': '1.0',
+            'de': [
+                {
+                    'IDX': '1.0',
+                    'DATINS': datetime.date(2013, 5, 1),
+                    'DATANN': datetime.date(2013, 5, 22),
+                    'CATREGR': '1',
+                    'ROME': 'H1234',
+                    'DEPCOM': 'Here',
+                    'MOTINS': 'aaa',
+                    'SEXE': '1',
+                },
+                {
+                    'IDX': '1.0',
+                    'DATINS': datetime.date(2015, 5, 1),
+                    'DATANN': datetime.date(2015, 5, 22),
+                    'CATREGR': '1',
+                    'ROME': 'B1234',
+                    'DEPCOM': 'There',
+                    'MOTINS': 'aaa',
+                    'SEXE': '1',
+                }
+            ],
+            'p2': [
+                {
+                    'IDX': '1.0',
+                    'P2DATDEB': datetime.date(2013, 5, 25),
+                    'P2DATFIN': datetime.date(2013, 5, 30),
+                    'FORMACOD': '42745',
+                    'OBJFORM': '1',
+                    'P2NIVFOR': 1,
+                },
+                {
+                    'IDX': '1.0',
+                    'P2DATDEB': datetime.date(2016, 5, 1),
+                    'P2DATFIN': datetime.date(2016, 5, 10),
+                    'FORMACOD': '31685',
+                    'OBJFORM': 'A',
+                    'P2NIVFOR': 2,
+                }
+            ]
+        })
+
+        periods = job_seeker.all_training_periods()
+        expected_periods = fhs.DateIntervals([
+            (
+                datetime.date(2013, 5, 25),
+                datetime.date(2013, 5, 30),
+                {
+                    'IDX': '1.0',
+                    'P2DATDEB': datetime.date(2013, 5, 25),
+                    'P2DATFIN': datetime.date(2013, 5, 30),
+                    'FORMACOD': '42745',
+                    'OBJFORM': '1',
+                    'ROME': 'H1234',
+                    'DEPCOM': 'Here',
+                    'P2NIVFOR': 1,
+                }
+            ),
+            (
+                datetime.date(2016, 5, 1),
+                datetime.date(2016, 5, 10),
+                {
+                    'IDX': '1.0',
+                    'P2DATDEB': datetime.date(2016, 5, 1),
+                    'P2DATFIN': datetime.date(2016, 5, 10),
+                    'FORMACOD': '31685',
+                    'OBJFORM': 'A',
+                    'ROME': 'B1234',
+                    'DEPCOM': 'There',
+                    'P2NIVFOR': 2,
+                }
+            ),
+
+        ])
+
+        self.assertEqual(expected_periods, periods)
+
 
 if __name__ == '__main__':
     unittest.main()

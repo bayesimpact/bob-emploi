@@ -9,7 +9,7 @@ const srcPath = path.join(__dirname, '../src')
 
 module.exports = {
   devServer: {
-    contentBase: './src/',
+    contentBase: './',
     historyApiFallback: {
       rewrites: Object.values(entrypoints).filter(({rewrite}) => rewrite).
         map(({rewrite, htmlFilename}) => ({from: rewrite, to: `/${htmlFilename}`})),
@@ -17,6 +17,9 @@ module.exports = {
     hot: true,
     noInfo: false,
     port: 80,
+    proxy: {
+      '/api': 'http://frontend-flask',
+    },
     public: 'localhost.bayes.org:3000',
     publicPath: '/',
   },
@@ -49,7 +52,7 @@ module.exports = {
             loader: 'url-loader',
             query: {limit: 8192},
           },
-          'svg-fill-loader',
+          'svg-transform-loader',
           {
             loader: 'img-loader',
             options: {
@@ -95,8 +98,6 @@ module.exports = {
       'src/**/*.*',
       '!**/README.md',
       '!src/config/*.*',
-      '!src/import-from-imilo/import-from-imilo-bookmarlet.js',
-      '!src/import-from-imilo/import-from-imilo.gif',
     ]}),
   ],
   resolve: {

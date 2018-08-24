@@ -119,7 +119,7 @@ class ScoringProject(object):
             return self._local_diagnosis
 
         local_id = '{}:{}'.format(
-            self.details.mobility.city.departement_id,
+            self.details.city.departement_id or self.details.mobility.city.departement_id,
             self.details.target_job.job_group.rome_id)
         self._local_diagnosis = proto.create_from_mongo(
             self._db.local_diagnosis.find_one({'_id': local_id}),
@@ -204,7 +204,8 @@ class ScoringProject(object):
         if self._trainings is not None:
             return self._trainings
         self._trainings = carif.get_trainings(
-            self.details.target_job.job_group.rome_id, self.details.mobility.city.departement_id)
+            self.details.target_job.job_group.rome_id,
+            self.details.city.departement_id or self.details.mobility.city.departement_id)
         return self._trainings
 
     def list_application_tips(self):
@@ -234,15 +235,17 @@ class ScoringProject(object):
             return self._region
         all_regions = _REGIONS.get_collection(self._db)
         try:
-            self._region = all_regions[self.details.mobility.city.region_id]
+            self._region = all_regions[
+                self.details.city.region_id or self.details.mobility.city.region_id]
         except KeyError:
             logging.warning(
-                'Region "%s" is missing in the database.', self.details.mobility.city.region_id)
+                'Region "%s" is missing in the database.',
+                self.details.city.region_id or self.details.mobility.city.region_id)
         return self._region
 
     def _fetch_mission_locale_data(self):
 
-        if not self.details.mobility.city.departement_id:
+        if not self.details.city.departement_id and not self.details.mobility.city.departement_id:
             # Do not even try finding a Mission Locale.
             return association_pb2.MissionLocaleData()
 
@@ -257,7 +260,7 @@ class ScoringProject(object):
         except StopIteration:
             logging.warning(
                 'Could not find a mission locale for département "%s"',
-                self.details.mobility.city.departement_id)
+                self.details.city.departement_id or self.details.mobility.city.departement_id)
             return association_pb2.MissionLocaleData()
 
         return association_pb2.MissionLocaleData(
@@ -384,16 +387,25 @@ def _total_interview_count(scoring_project):
 
 
 def _postcode(scoring_project):
-    city = scoring_project.details.mobility.city
+    if scoring_project.details.city.postcodes:
+        city = scoring_project.details.city
+    else:
+        city = scoring_project.details.mobility.city
     return city.postcodes.split('-')[0] or (
         city.departement_id + '0' * (5 - len(city.departement_id)))
 
 
 _TEMPLATE_VARIABLES = {
     '%aJobName': _a_job_name,
-    '%cityId': lambda scoring_project: scoring_project.details.mobility.city.city_id,
-    '%cityName': lambda scoring_project: parse.quote(scoring_project.details.mobility.city.name),
-    '%departementId': lambda scoring_project: scoring_project.details.mobility.city.departement_id,
+    '%cityId':
+    lambda scoring_project:
+        scoring_project.details.city.city_id or scoring_project.details.mobility.city.city_id,
+    '%cityName': lambda scoring_project: parse.quote(
+        scoring_project.details.city.name or scoring_project.details.mobility.city.name),
+    '%departementId':
+    lambda scoring_project:
+        scoring_project.details.city.departement_id or
+        scoring_project.details.mobility.city.departement_id,
     '%eFeminine': lambda scoring_project: (
         'e' if scoring_project.user_profile.gender == user_pb2.FEMININE else ''),
     '%experienceDuration': lambda scoring_project: _EXPERIENCE_DURATION.get(
@@ -401,7 +413,8 @@ _TEMPLATE_VARIABLES = {
     '%feminineJobName': lambda scoring_project: french.lower_first_letter(
         scoring_project.details.target_job.feminine_name),
     '%inAWorkplace': lambda scoring_project: scoring_project.job_group_info().in_a_workplace,
-    '%inCity': lambda scoring_project: french.in_city(scoring_project.details.mobility.city.name),
+    '%inCity': lambda scoring_project: french.in_city(
+        scoring_project.details.city.name or scoring_project.details.mobility.city.name),
     '%inDomain': lambda scoring_project: scoring_project.job_group_info().in_domain,
     '%inRegion': _in_region,
     '%jobGroupNameUrl': lambda scoring_project: parse.quote(unidecode.unidecode(
@@ -412,6 +425,7 @@ _TEMPLATE_VARIABLES = {
     # This in only the **number** of months, use as '%jobSearchLengthMonthsAtCreation mois'.
     '%jobSearchLengthMonthsAtCreation': _job_search_length_months_at_creation,
     '%latin1CityName': lambda scoring_project: parse.quote(
+        scoring_project.details.city.name.encode('latin-1', 'replace') or
         scoring_project.details.mobility.city.name.encode('latin-1', 'replace')),
     '%latin1MasculineJobName': lambda scoring_project: parse.quote(
         scoring_project.details.target_job.masculine_name.encode('latin-1', 'replace')),
@@ -421,12 +435,15 @@ _TEMPLATE_VARIABLES = {
     '%masculineJobName': lambda scoring_project: french.lower_first_letter(
         scoring_project.details.target_job.masculine_name),
     '%name': lambda scoring_project: scoring_project.user_profile.name,
-    '%ofCity': lambda scoring_project: french.of_city(scoring_project.details.mobility.city.name),
+    '%ofCity': lambda scoring_project: french.of_city(
+        scoring_project.details.city.name or scoring_project.details.mobility.city.name),
     '%ofJobName': lambda scoring_project: french.maybe_contract_prefix(
         'de ', "d'", _job_name(scoring_project)),
     '%placePlural': lambda scoring_project: scoring_project.job_group_info().place_plural,
     '%postcode': _postcode,
-    '%regionId': lambda scoring_project: scoring_project.details.mobility.city.region_id,
+    '%regionId':
+    lambda scoring_project:
+        scoring_project.details.city.region_id or scoring_project.details.mobility.city.region_id,
     '%romeId': lambda scoring_project: scoring_project.details.target_job.job_group.rome_id,
     '%totalInterviewCount': _total_interview_count,
     '%whatILoveAbout': lambda scoring_project: scoring_project.job_group_info().what_i_love_about,

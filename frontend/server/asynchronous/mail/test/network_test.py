@@ -33,8 +33,10 @@ class StripDistrictTestCase(unittest.TestCase):
             network.strip_district('Le Mans'))
 
 
-class NetworkVarsTestCase(mail_blast_test.CampaignTestBase('focus-network')):
+class NetworkVarsTestCase(mail_blast_test.CampaignTestBase):
     """Unit tests for the network_vars method."""
+
+    campaign_id = 'focus-network'
 
     def test_basic(self):
         """Test basic usage."""
@@ -47,6 +49,7 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase('focus-network')):
         self.user.profile.name = 'Patrick'
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.frustrations.append(user_pb2.MOTIVATION)
+        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
         self.project.target_job.masculine_name = 'Juriste'
         self.project.target_job.job_group.rome_id = 'B1234'
         self.project.network_estimate = 1
@@ -56,11 +59,13 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase('focus-network')):
         self._assert_user_receives_campaign()
 
         self._assert_has_unsubscribe_link()
+        self._assert_has_unsubscribe_url('changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
+        })
         self._assert_has_status_update_link(field='statusUpdateUrl')
         self._assert_remaining_variables({
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
-            'registeredMonthsAgo': 'trois',
             'inTargetDomain': 'dans la vie',
             'frustration': 'MOTIVATION',
             'otherJobInCity': 'coiffeur à Marseille',
@@ -69,8 +74,10 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase('focus-network')):
         })
 
 
-class NetworkPlusTestCase(mail_blast_test.CampaignTestBase('network-plus')):
+class NetworkPlusTestCase(mail_blast_test.CampaignTestBase):
     """Test for the new_year_vars function."""
+
+    campaign_id = 'network-plus'
 
     def test_basic(self):
         """Basic usage."""
@@ -128,6 +135,7 @@ class NetworkPlusTestCase(mail_blast_test.CampaignTestBase('network-plus')):
             'prefix': 'dans le ',
         })
 
+        self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
         self.user.profile.frustrations.append(user_pb2.MOTIVATION)
         self.user.profile.frustrations.append(user_pb2.SELF_CONFIDENCE)
         self.user.profile.gender = user_pb2.MASCULINE
@@ -147,6 +155,10 @@ class NetworkPlusTestCase(mail_blast_test.CampaignTestBase('network-plus')):
         self._assert_user_receives_campaign()
 
         self._assert_has_unsubscribe_link()
+        self._assert_has_unsubscribe_url(field='changeEmailSettingsUrl', **{
+            'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
+        })
+        self._assert_has_status_update_link(field='statusUpdateUrl')
 
         self._assert_remaining_variables({
             'firstName': 'Patrick',

@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
+import {isMobileVersion} from 'components/mobile'
 import Picto from 'images/advices/picto-body-language.png'
 
 
@@ -21,12 +22,8 @@ class AdviceCard extends React.Component {
 
 
 class ExpandedAdviceCardContent extends React.Component {
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
 
   render() {
-    const {isMobileVersion} = this.context
     const coverallStyle = {
       bottom: 0,
       left: 0,
@@ -34,6 +31,7 @@ class ExpandedAdviceCardContent extends React.Component {
       right: 0,
       top: 0,
     }
+    // TODO(pascal): Call onExplore when embedded video is played.
     return <div style={{margin: 'auto', maxWidth: 854}}>
       <div style={{height: 0, paddingBottom: '56.25%', position: 'relative'}}>
         <iframe

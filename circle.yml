@@ -10,7 +10,7 @@ dependencies:
     - ./should_run_ci.sh "$CIRCLE_BRANCH" "$CIRCLE_TAG"
     - ./should_run_slow_tests.sh
     # Build all containers.
-    - test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 docker-compose build frontend-db frontend-dev-webpack frontend-flask frontend-flask-test
+    - test -e skip-frontend || GIT_SHA1=$CIRCLE_SHA1 docker-compose build frontend-db frontend-dev frontend-flask frontend-flask-test
     - test -e skip-data-analysis || GIT_SHA1=$CIRCLE_SHA1 docker-compose build data-analysis-prepare data-analysis-notebook
 test:
   pre:

@@ -19,12 +19,12 @@ class _AdviceSeasonalRelocate(scoring_base.ModelBase):
 
         reasons = []
 
+        area_type = project.details.area_type or project.details.mobility.area_type
+
         # For now we just match for people willing to move to the whole country.
         # There might be cases where we should be able to recommend to people who want to move to
         # their own region, but it would add complexity to find them.
-        is_not_ready_to_move = (
-            project.details.mobility.area_type != geo_pb2.COUNTRY and
-            project.details.mobility.area_type != geo_pb2.WORLD)
+        is_not_ready_to_move = area_type < geo_pb2.COUNTRY
 
         is_not_single = project.user_profile.family_situation != user_pb2.SINGLE
         has_advanced_degree = project.user_profile.highest_degree >= job_pb2.LICENCE_MAITRISE

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 import {lowerFirstLetter} from 'store/french'
 
-import {AppearingList, Colors, GrowingNumber, PaddedOnMobile, StringJoiner} from 'components/theme'
+import {AppearingList, GrowingNumber, StringJoiner} from 'components/theme'
 import Picto from 'images/advices/picto-other-work-env.png'
 
 
@@ -73,6 +73,7 @@ class ExpandedAdviceCardContent extends React.Component {
         }),
       }),
     }).isRequired,
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
@@ -84,6 +85,7 @@ class ExpandedAdviceCardContent extends React.Component {
           workEnvironmentKeywords: {domains = [], sectors = [], structures = []} = {},
         } = {},
       },
+      onExplore,
       project,
       userYou,
     } = this.props
@@ -96,10 +98,14 @@ class ExpandedAdviceCardContent extends React.Component {
       <div style={style}>
         {(domains.length > 1) ?
           <Section kind="secteurs" items={domains.map(({name}) => name)}
-            {...{project, userYou}} /> :
-          <Section kind="secteurs" items={sectors} {...{project, userYou}} />}
+            {...{project, userYou}} onExplore={() => onExplore('domain')} /> :
+          <Section
+            kind="secteurs" items={sectors} {...{project, userYou}}
+            onExplore={() => onExplore('sector')} />}
         {(areSectorsShown && areStructuresShown) ? <div style={{height: 20, width: 35}} /> : null}
-        <Section kind="types de structure" items={structures} {...{project, userYou}} />
+        <Section
+          kind="types de structure" items={structures} {...{project, userYou}}
+          onExplore={() => onExplore('structure')} />
       </div>
     </div>
   }
@@ -108,15 +114,17 @@ class ExpandedAdviceCardContent extends React.Component {
 
 class SearchableElement extends React.Component {
   static propTypes = {
+    onClick: PropTypes.func,
     project: PropTypes.object.isRequired,
     style: PropTypes.object.isRequired,
     title: PropTypes.string.isRequired,
   }
 
   handleClick = () => {
-    const {project, title} = this.props
+    const {onClick, project, title} = this.props
     const url = `https://www.google.fr/search?q=${encodeURIComponent(title + ' ' + project.title)}`
     window.open(url, '_blank')
+    onClick && onClick()
   }
 
   render() {
@@ -124,7 +132,7 @@ class SearchableElement extends React.Component {
     const fullStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,
@@ -144,27 +152,26 @@ class Section extends React.Component {
   static propTypes = {
     items: PropTypes.arrayOf(PropTypes.node.isRequired),
     kind: PropTypes.oneOf(['secteurs', 'types de structure']).isRequired,
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {items, kind, project, userYou, ...extraProps} = this.props
+    const {items, kind, onExplore, project, userYou, ...extraProps} = this.props
     if (!items || items.length < 2) {
       return null
     }
     return <div {...extraProps}>
-      <PaddedOnMobile style={{marginBottom: 5}}>
-        <div style={{color: Colors.DARK_TWO, fontSize: 30, lineHeight: '60px'}}>
-          <strong>
-            <GrowingNumber number={items.length} /> {kind}
-          </strong> qui recrutent dans {userYou('ton', 'votre')} métier
-        </div>
-      </PaddedOnMobile>
+      <div style={{marginBottom: 10}}>
+        <strong>
+          <GrowingNumber number={items.length} /> {kind}
+        </strong> qui recrutent dans {userYou('ton', 'votre')} métier
+      </div>
       <AppearingList>
         {items.map((title, index) => <SearchableElement
           title={title} project={project} key={`job-board-${index}`}
-          style={index > 0 ? {marginTop: -1} : {}} />)}
+          onClick={onExplore} style={index > 0 ? {marginTop: -1} : {}} />)}
       </AppearingList>
     </div>
   }

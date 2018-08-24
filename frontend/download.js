@@ -5,15 +5,19 @@ const forEach = require('lodash/forEach')
 const fromPairs = require('lodash/fromPairs')
 const keyBy = require('lodash/keyBy')
 const mapValues = require('lodash/mapValues')
+const pick = require('lodash/pick')
 
 const adviceBase = new Airtable().base('appXmyc7yYj0pOcae')
 const romeBase = new Airtable().base('appMRMtWV61Kibt37')
+const maydayBase = new Airtable().base('app6I08170BlnyxnI')
+
+/* eslint-disable no-console */
 
 // TODO(cyrille): Test this file.
 // TODO(cyrille): Make config more declarative.
 // This file downloads from airtable static data to be put in the JavaScript application. To use it
 // run :
-// docker-compose run --rm frontend-dev-webpack npm run download
+// docker-compose run --rm frontend-dev npm run download
 //
 // For each data file, the gathering of information is in five steps:
 // - download the data from airtable as a list of records (easy step).
@@ -45,7 +49,7 @@ const romeBase = new Airtable().base('appMRMtWV61Kibt37')
 
 const throwError = err => {
   if (err) {
-    throw err
+    throw JSON.stringify(err)
   }
 }
 
@@ -77,12 +81,16 @@ const emailTemplatesFromAirtable =
 const eventsFromAirtable =
   romeBase.table('Event Types').select({view: 'viwUsUaBuIuYmz4ZK'}).all()
 
+
 // STEP 2 //
 
 const getTranslationOrThrow = (object, lang, sentence) => {
   if (!object) {
-    throw `The sentence "${sentence}" was not found in the translation table. Please collect
-    sentences to translate first.`
+    console.log('To collect the sentences to translate:')
+    console.log('    docker-compose run --rm data-analysis-prepare i18n/collect_strings.py')
+    console.log('To translate sentences:')
+    console.log('    https://airtable.com/tblQL7A5EgRJWhQFo/viwBe1ySNM4IvXCsN')
+    throw `The sentence "${sentence}" was not found in the translation table.`
   }
   const translated = object[lang]
   if (translated) {
@@ -147,6 +155,7 @@ const mapAdviceModules = record => {
     diagnostic_topics: diagnosticTopics,
     'explanations (for client)': explanations,
     goal,
+    short_title: shortTitle,
     title,
     title_1_star: title1Star,
     title_2_stars: title2Stars,
@@ -162,6 +171,7 @@ const mapAdviceModules = record => {
   const newModule = {
     callToAction,
     goal,
+    shortTitle,
     title,
     titleXStars: {
       1: title1Star,
@@ -170,6 +180,9 @@ const mapAdviceModules = record => {
     },
     userGainCallout,
     userGainDetails,
+  }
+  if (!goal) {
+    throw `Advice ${adviceId} does not have a goal set.`
   }
   if (explanations) {
     newModule.explanations = explanations.split('\n').
@@ -306,3 +319,27 @@ fromAirtableToObjects(
   eventsTranslatableFields,
   reduceEvents,
 ).then(writeWithTranslations('src/components/advisor/data/events'), throwError)
+
+
+const testFieldsWhitespaceAndQuotes = fieldNames => recordList => recordList.map(fields => {
+  fieldNames.map(fieldName => checkNotRegexp(
+    /(^\s+|\s+$)/,
+    `${fieldName} should not have extra spaces before or after: "${fields[fieldName]}".`,
+    checkNoCurlyQuotes(fields[fieldName], `field "${fieldName}"`),
+  ))
+  return fields
+})
+
+maydayBase.table('BobAction').select({view: 'Ready to Import'}).all().
+  then(actions => actions.map(({fields}) =>
+    pick(fields, [
+      'id', 'title', 'titleMe', 'description', 'example', 'mean', 'shortDescription',
+      'duration', 'isDisabled',
+    ]))).
+  then(actions => actions.map(({duration, ...otherFields}) => ({
+    durationMinutes: duration / 60,
+    ...otherFields,
+  }))).
+  then(testFieldsWhitespaceAndQuotes(
+    ['id', 'title', 'titleMe', 'description', 'example', 'mean', 'shortDescription'])).
+  then(writeToJson('src/components/pages/mayday/actions.json'), throwError)

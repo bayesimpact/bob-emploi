@@ -266,6 +266,9 @@ enum EmploymentType {
 
   // Any contract that is less than 30 days.
   ANY_CONTRACT_LESS_THAN_A_MONTH = 6;
+
+  // Alternance contract: part time working, part time studying.
+  ALTERNANCE = 7;
 }
 
 message JobRequirements {

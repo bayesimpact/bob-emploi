@@ -6,7 +6,7 @@ the code are used at least once in one of the collections.
 
 Run it regularly with the command:
     docker-compose run --rm data-analysis-prepare \
-        bob_emploi/frontend/asynchronous/maintenance.py mongodb://frontend-db/test
+        importer/maintenance.py mongodb://frontend-db/test
 """
 
 # TODO(pascal): Run it automatically (weekly ?) and send the results to slack.
@@ -22,6 +22,15 @@ from bob_emploi.frontend.server import scoring
 
 _MongoField = collections.namedtuple('MongoField', ['collection', 'field_name'])
 
+_INDICES = {
+    _MongoField('helper', 'email'),
+    _MongoField('user', 'hashedEmail'),
+    _MongoField('user', 'facebookId'),
+    _MongoField('user', 'googleId'),
+    _MongoField('user', 'peConnectId'),
+    _MongoField('user', 'linkedInId'),
+}
+
 _SCORING_MODEL_FIELDS = {
     _MongoField('advice_modules', 'triggerScoringModel'),
     _MongoField('application_tips', 'filters'),
@@ -33,6 +42,7 @@ _SCORING_MODEL_FIELDS = {
     _MongoField('tip_templates', 'filters'),
 }
 
+# TODO(cyrille): Add recently added url fields.
 _URL_FIELDS = {
     _MongoField('associations', 'link'),
     _MongoField('jobboards', 'link'),
@@ -48,7 +58,11 @@ _HTTP_HEADERS = {
 
 
 def _iterate_all_records(mongo_db, mongo_fields, field_type):
+    db_collections = set(mongo_db.collection_names())
     for collection, field_name in mongo_fields:
+        if collection not in db_collections:
+            logging.error('The collection "%s" does not exist.', collection)
+            continue
         records = mongo_db.get_collection(collection).\
             find({field_name: {'$exists': True}}, {field_name: 1})
         if not records.count():
@@ -119,10 +133,22 @@ def check_urls(mongo_db):
                 type(exception).__name__, record.get('_id'), collection, url)
 
 
+def ensure_indices(mongo_db):
+    """Ensure that indices exist on relevant collections."""
+
+    db_collections = set(mongo_db.collection_names())
+    for collection, field in _INDICES:
+        if collection not in db_collections:
+            logging.error('The collection "%s" does not exist.', collection)
+            continue
+        mongo_db.get_collection(collection).create_index({field: 1})
+
+
 def main(mongo_url):
     """Handle all maintenance tasks."""
 
     mongo_db = pymongo.MongoClient(mongo_url).get_default_database()
+    ensure_indices(mongo_db)
     check_scoring_models(mongo_db)
     check_urls(mongo_db)
 

@@ -8,7 +8,7 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/fhs_global_diagnosis.py \
+        python bob_emploi/data_analysis/importer/fhs_global_diagnosis.py \
         --durations_csv data/fhs_category_abc_duration.csv \
         --mongo_url mongodb://frontend-db/test
 """

@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/options.proto";
+import "bob_emploi/frontend/api/user.proto";
+
+package bayes.bob;
+
+// All data for a helper (user that wants to help jobseekers).
+// Next ID: 14
+message Helper {
+  // Internal ID for this user.
+  string user_id = 10;
+
+  // User's email.
+  string email = 2 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // User's first name (e.g.: Stephan).
+  string name = 3 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // User's last name (e.g.: Corpet).
+  string last_name = 4 [(field_usage) = PERSONAL_IDENTIFIER];
+
+  // The date and time at which the user has registered with the app.
+  google.protobuf.Timestamp registered_at = 5;
+
+  // The date and time at which the user has unsubscribed.
+  google.protobuf.Timestamp deleted_at = 1;
+
+  // The emails that were sent to the user.
+  repeated EmailSent emails_sent = 6;
+
+  // List of current promises for this user.
+  repeated Promise promises = 7;
+
+  // A flag to exclude user from analytics, because it was created for test purposes only.
+  bool exclude_from_analytics = 8;
+
+  // TODO(marielaure): Start the boolean name with *is*.
+  // Whether user confirmed they own the email address.
+  bool email_confirmed = 9;
+
+  // Cities in which the helper is OK to meet a helpee.
+  repeated FrenchCity cities = 11;
+
+  // If the helper is OK to do online interviews.
+  bool is_available_remotely = 13;
+
+  // Domains in which the helper is competent to help.
+  repeated string domains = 12;
+}
+
+// A promise made by a helper (they commit to do it in favor of a jobseeker).
+message Promise {
+  // A type of promise (e.g reading a resume or a cover letter).
+  HelperActionKind kind = 1;
+
+  // The date and time at which the user has made the promise.
+  google.protobuf.Timestamp registered_at = 2;
+
+  // An ID to link this promise with data from TypeForm, when importing.
+  string promise_id = 4;
+
+  // Whether the promise is fulfilled by the user.
+  bool is_fulfilled = 5;
+
+  // Map of IDs of documents the helper was sent to review (CV or resume), indexed by document owner
+  // first name. Name is in lower case and without accents.
+  map<string, string> documents_by_owner_name = 6;
+
+  // The date and time at which the user fulfilled the promise.
+  google.protobuf.Timestamp fulfilled_at = 7;
+}
+
+// Global information on the whole helping campaign.
+message MaydayInfo {
+  // The number of helpers who promised something excluding the test accounts.
+  int32 total_helper_count = 1;
+
+  // The number of helpers who promised a given action, excluding test accounts.
+  map<string, int32> action_helper_count = 2;
+}
+
+enum HelperActionKind {
+  UNKNOWN_HELPER_ACTION_COUNT = 0;
+  HELP_COVER_LETTER = 1;
+  HELP_RESUME = 2;
+  HELP_TRAIN_ALGO = 3;
+  HELP_COFFEE = 4;
+}

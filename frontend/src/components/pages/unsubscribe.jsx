@@ -1,12 +1,13 @@
-import fromPairs from 'lodash/fromPairs'
+import {parse} from 'query-string'
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-import config from 'config'
+import {COACHING_EMAILS_OPTIONS} from 'store/user'
 
 import logoProductImage from 'images/logo-bob-beta.svg'
 
-import {Button, Colors} from 'components/theme'
+import {Button} from 'components/theme'
+import {Select} from 'components/pages/connected/form_utils'
 
 require('styles/App.css')
 
@@ -16,26 +17,7 @@ class UnsubscribePage extends React.Component {
     errorMessage: null,
     isDeleted: false,
     isDeleting: false,
-    params: {},
-  }
-
-  componentWillMount() {
-    const {search} = window.location
-    if (search) {
-      const params = fromPairs(
-        search.slice(1).split('&').map(keyValue => {
-          const parts = keyValue.split('=')
-          if (parts.length !== 2) {
-            return {}
-          }
-          return [
-            decodeURIComponent(parts[0]),
-            decodeURIComponent(parts[1]),
-          ]
-        }),
-      )
-      this.setState({params})
-    }
+    params: window.location.search ? parse(window.location.search.slice(1)) : {},
   }
 
   handleCancel() {
@@ -43,14 +25,14 @@ class UnsubscribePage extends React.Component {
   }
 
   handleDelete = () => {
-    const {auth, email} = this.state.params || {}
+    // TODO(pascal): Drop the use of email after 2018-09-01, until then we need
+    // to keep it as the link is used in old emails.
+    const {auth = '', email = '', user = ''} = this.state.params || {}
     this.setState({errorMessage: null, isDeleting: true})
     fetch('/api/user', {
-      body: JSON.stringify({
-        profile: {email: email || ''},
-      }),
+      body: JSON.stringify({profile: {email}, userId: user}),
       headers: {
-        'Authorization': `Bearer ${auth || ''}`,
+        'Authorization': `Bearer ${auth}`,
         'Content-Type': 'application/json',
       },
       method: 'delete',
@@ -73,10 +55,47 @@ class UnsubscribePage extends React.Component {
     this.setState({isDeleted: true, isDeleting: false})
   }
 
+  handleCoachingEmailFrequencyChange = coachingEmailFrequency => {
+    const {params: {auth = '', user = '', coachingEmailFrequency: prevCoachingEmailFrequency}} =
+      this.state
+    if (prevCoachingEmailFrequency === coachingEmailFrequency) {
+      return
+    }
+    this.setState({
+      errorMessage: '',
+      isUpdating: true,
+      params: {...this.state.params, coachingEmailFrequency},
+    })
+
+    fetch(`/api/user/${user}/settings`, {
+      body: JSON.stringify({coachingEmailFrequency}),
+      headers: {
+        'Authorization': `Bearer ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      method: 'post',
+    }).then(response => {
+      if (response.status >= 400 || response.status < 200) {
+        response.text().then(errorMessage => {
+          const page = document.createElement('html')
+          page.innerHTML = errorMessage
+          const content = page.getElementsByTagName('P')
+          this.setState({
+            errorMessage: content.length && content[0].innerText || page.innerText,
+            isUpdating: false,
+            params: {...this.state.params, coachingEmailFrequency: prevCoachingEmailFrequency},
+          })
+        })
+        return
+      }
+      this.setState({isUpdating: false})
+    })
+  }
+
   renderHeader() {
     const style = {
       alignItems: 'center',
-      backgroundColor: Colors.DARK,
+      backgroundColor: colors.DARK,
       display: 'flex',
       height: 56,
       justifyContent: 'center',
@@ -89,27 +108,34 @@ class UnsubscribePage extends React.Component {
     </header>
   }
 
-  render() {
-    const {errorMessage, isDeleted, isDeleting} = this.state
-    if (isDeleted) {
-      return <div>Votre compte a bien été supprimé</div>
-    }
-    const pageStyle = {
-      alignItems: 'center',
-      color: Colors.DARK_TWO,
+  renderEmailFrequency() {
+    const {errorMessage, isUpdating, params: {coachingEmailFrequency}} = this.state
+    const containerStyle = {
       display: 'flex',
       flexDirection: 'column',
-      fontSize: 15,
-      fontWeight: 500,
-      justifyContent: 'center',
-      lineHeight: 1.5,
-      minHeight: '100vh',
-      textAlign: 'center',
+      marginTop: 15,
+      textAlign: 'left',
+      width: 340,
     }
-    return <div style={pageStyle}>
-      {this.renderHeader()}
-      <div style={{flex: 1}} />
-      <div style={{maxWidth: 500}}>
+    return <div>
+      Activer le coaching mail de {config.productName}&nbsp;?
+      <div style={containerStyle}>
+        <Select
+          onChange={this.handleCoachingEmailFrequencyChange}
+          value={coachingEmailFrequency}
+          options={COACHING_EMAILS_OPTIONS} />
+      </div>
+      {isUpdating ? <div style={{marginTop: 15}}>Application du changement en cours…</div> : null}
+      {errorMessage ? <div style={{marginTop: 15, maxWidth: 340}}>
+        {errorMessage}
+      </div> : null}
+    </div>
+  }
+
+  renderUnsubscribe() {
+    const {errorMessage, isDeleting} = this.state
+    return <React.Fragment>
+      <div>
         La desinscription de {config.productName} supprimera l'ensemble de vos
         données sur notre site.
         <br />
@@ -127,6 +153,32 @@ class UnsubscribePage extends React.Component {
         {errorMessage ? <div style={{marginTop: 20}}>
           {errorMessage}
         </div> : null}
+      </div>
+    </React.Fragment>
+  }
+
+  render() {
+    const {params: {coachingEmailFrequency}} = this.state
+    if (this.state.isDeleted) {
+      return <div>Votre compte a bien été supprimé</div>
+    }
+    const pageStyle = {
+      alignItems: 'center',
+      color: colors.DARK_TWO,
+      display: 'flex',
+      flexDirection: 'column',
+      fontSize: 15,
+      fontWeight: 500,
+      justifyContent: 'center',
+      lineHeight: 1.5,
+      minHeight: '100vh',
+      textAlign: 'center',
+    }
+    return <div style={pageStyle}>
+      {this.renderHeader()}
+      <div style={{flex: 1}} />
+      <div style={{maxWidth: 500}}>
+        {coachingEmailFrequency ? this.renderEmailFrequency() : this.renderUnsubscribe()}
       </div>
 
       <div style={{flex: 1}} />

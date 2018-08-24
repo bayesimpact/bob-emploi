@@ -2,7 +2,8 @@ import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import {Button} from './theme'
+import {isMobileVersion} from 'components/mobile'
+import {Button} from 'components/theme'
 
 
 class Banner extends React.Component {
@@ -12,13 +13,9 @@ class Banner extends React.Component {
     style: PropTypes.object,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  };
 
   render() {
     const {children, onClose} = this.props
-    const {isMobileVersion} = this.context
     const boxStyle = {
       display: 'flex',
       fontSize: 14,

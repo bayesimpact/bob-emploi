@@ -1,4 +1,4 @@
-import omit from 'lodash/omit'
+import _omit from 'lodash/omit'
 import CheckIcon from 'mdi-react/CheckIcon'
 import React from 'react'
 import PropTypes from 'prop-types'
@@ -7,18 +7,17 @@ import {connect} from 'react-redux'
 import Swipeable from 'react-swipeable'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {adviceCardIsShown, advicePageIsShown, scoreAdvice, selectAdvice,
+import {adviceCardIsShown, exploreAdvice, scoreAdvice,
   seeAdvice, sendAdviceFeedback} from 'store/actions'
 import {getAdviceTitle} from 'store/advice'
 import {genderize, lowerFirstLetter, getAdviceModules} from 'store/french'
 import {youForUser} from 'store/user'
 
 import constructionImage from 'images/construction-picto.svg'
-import rocketIcon from 'images/rocket.svg'
-import starIcon from 'images/star.svg'
-import starOutlineIcon from 'images/star-outline.svg'
+import {RocketChain} from 'components/rocket_chain'
+import {isMobileVersion} from 'components/mobile'
 import {Modal} from 'components/modal'
-import {Button, Colors, SmoothTransitions, StringJoiner, Styles, Tag,
+import {Button, SmoothTransitions, StringJoiner, Styles, Tag,
   colorToAlpha} from 'components/theme'
 import {TipsList} from 'components/tips'
 
@@ -45,6 +44,7 @@ import MotivationEmail from './advisor/motivation_email'
 import NetworkApplication from './advisor/network_bad'
 import NetworkApplicationMedium from './advisor/network_medium'
 import NetworkApplicationGood from './advisor/network_good'
+import OnlineSalons from './advisor/online_salons'
 import OtherWorkEnv from './advisor/other_work_env'
 import Relocate from './advisor/relocate'
 import ReorientJobbing from './advisor/reorient_jobbing'
@@ -60,7 +60,8 @@ import WowHairdresser from './advisor/wow_hairdresser'
 
 
 // Map of advice recommendation modules keyed by advice module IDs.
-const ADVICE_MODULES = {
+// Exported for testing only.
+export const ADVICE_MODULES = {
   'association-help': AssociationHelp,
   'better-job-in-group': BetterJobInGroup,
   'body-language': BodyLanguage,
@@ -83,6 +84,7 @@ const ADVICE_MODULES = {
   'network-application': NetworkApplication,
   'network-application-good': NetworkApplicationGood,
   'network-application-medium': NetworkApplicationMedium,
+  'online-salons': OnlineSalons,
   'other-work-env': OtherWorkEnv,
   'relocate': Relocate,
   'reorient-jobbing': ReorientJobbing,
@@ -117,10 +119,8 @@ class WhiteAdviceCard extends React.Component {
     advice: PropTypes.object.isRequired,
     dispatch: PropTypes.func.isRequired,
     isFeedbackButtonShown: PropTypes.bool,
-    isScorable: PropTypes.bool,
     isTitleShown: PropTypes.bool.isRequired,
     onClick: PropTypes.func,
-    onExpandChanged: PropTypes.func,
     onHoverChanged: PropTypes.func,
     onShow: PropTypes.func,
     project: PropTypes.object.isRequired,
@@ -137,28 +137,15 @@ class WhiteAdviceCard extends React.Component {
     isHovered: false,
   }
 
-  componentWillMount() {
+  componentDidMount() {
     const {advice, dispatch, project} = this.props
     dispatch(adviceCardIsShown(project, advice))
-  }
-
-  changeExpand = isExpanded => {
-    const {onExpandChanged} = this.props
-    onExpandChanged && onExpandChanged(isExpanded)
   }
 
   changeHover = isHovered => {
     const {onHoverChanged} = this.props
     this.setState({isHovered})
     onHoverChanged && onHoverChanged(isHovered)
-  }
-
-  gotoAdvicePage = visualElement => event => {
-    const {advice, dispatch, project} = this.props
-    event.stopPropagation()
-    this.changeExpand(true)
-    dispatch(selectAdvice(project, advice, visualElement))
-    dispatch(advicePageIsShown(project, advice))
   }
 
   handleVisibilityChange = isVisible => {
@@ -171,10 +158,6 @@ class WhiteAdviceCard extends React.Component {
     onShow && onShow()
   }
 
-  collapse = () => {
-    this.changeExpand(false)
-  }
-
   handleStarClick = event => {
     const {advice, dispatch, project} = this.props
     event.stopPropagation()
@@ -182,64 +165,40 @@ class WhiteAdviceCard extends React.Component {
     dispatch(scoreAdvice(project, advice, newScore))
   }
 
-  handleCardClick = event => {
-    const {onClick} = this.props
-    if (onClick) {
-      onClick()
-    } else {
-      this.gotoAdvicePage('advice-card')(event)
-    }
-  }
-
   renderTitle() {
-    const {advice, isScorable, onClick, userYou} = this.props
+    const {advice, userYou} = this.props
     const style = {
       alignItems: 'center',
-      color: Colors.CHARCOAL_GREY,
+      color: colors.CHARCOAL_GREY,
       display: 'flex',
       fontSize: 18,
       fontStyle: 'normal',
       fontWeight: 500,
     }
     const tagStyle = {
-      backgroundColor: Colors.GREENISH_TEAL,
+      backgroundColor: colors.GREENISH_TEAL,
       marginLeft: 20,
-    }
-    const starStyle = {
-      cursor: 'pointer',
-      width: 20,
     }
     return <header style={style}>
       <span style={Styles.CENTER_FONT_VERTICALLY}>
         {getAdviceTitle(advice, userYou)}
       </span>
-      {/* TODO(cyrille): Remove if unused.*/}
-      {(onClick || !isScorable) ? null : <div
-        className="tooltip" style={{alignItems: 'center', display: 'flex', marginLeft: 15}}>
-        <img
-          src={advice.score ? starIcon : starOutlineIcon}
-          style={starStyle} onClick={this.handleStarClick} alt="Très bon conseil" />
-        <div
-          className="tooltiptext tooltip-bottom"
-          style={{fontSize: 13, fontWeight: 'initial', padding: '10px 13px', width: 160}}>
-          Ce conseil m'est utile
-        </div>
-      </div>}
       <Tag style={tagStyle}>Nouveau</Tag>
       <span style={{flex: 1}} />
     </header>
   }
 
+  // TODO(cyrille): Remove expandability, since unused.
   renderExpandButtonBar(style) {
     const {advice, onClick, userYou} = this.props
     const {isHovered} = this.state
     const {callToAction} = getAdviceModules(userYou)[advice.adviceId] || {}
     const isExpandable = !onClick
     const plusStyle = {
-      backgroundColor: isHovered ? Colors.BOB_BLUE : 'transparent',
-      border: `solid 1px ${isHovered ? Colors.BOB_BLUE : Colors.MODAL_PROJECT_GREY}`,
+      backgroundColor: isHovered ? colors.BOB_BLUE : 'transparent',
+      border: `solid 1px ${isHovered ? colors.BOB_BLUE : colors.MODAL_PROJECT_GREY}`,
       borderRadius: 25,
-      color: isHovered ? '#fff' : Colors.CHARCOAL_GREY,
+      color: isHovered ? '#fff' : colors.CHARCOAL_GREY,
       display: 'inline-block',
       height: 25,
       lineHeight: '25px',
@@ -265,12 +224,12 @@ class WhiteAdviceCard extends React.Component {
     const {advice, isFeedbackButtonShown, isTitleShown,
       project, style, userYou} = this.props
     const cardStyle = {
-      color: Colors.CHARCOAL_GREY,
+      color: colors.CHARCOAL_GREY,
       ...SmoothTransitions,
       ...style,
     }
     const headerStyle = {
-      borderBottom: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      borderBottom: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       padding: '35px 40px',
     }
     return <VisibilitySensor
@@ -308,10 +267,6 @@ class AdviceCardBase extends React.Component {
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
     const {advice, refDom, style, ...extraProps} = this.props
     return <div style={style} ref={refDom} id={advice.adviceId}>
@@ -333,6 +288,7 @@ class ExplorerAdviceCardBase extends React.Component {
       numStars: PropTypes.number,
       score: PropTypes.number,
     }).isRequired,
+    howToSeeMore: PropTypes.node,
     onClick: PropTypes.func,
     onSelectionTransitionEnd: PropTypes.func,
     onSwipedLeft: PropTypes.func,
@@ -341,18 +297,24 @@ class ExplorerAdviceCardBase extends React.Component {
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   state = {
     hasJustBeenSelected: false,
+    isSelected: !!this.props.advice.score,
   }
 
-  componentWillReceiveProps(nextProps) {
+  static getDerivedStateFromProps(nextProps, prevState) {
     const {advice: {score}} = nextProps
-    if (score && !this.props.advice.score) {
-      this.setState({hasJustBeenSelected: true})
+    if (!!score === prevState.isSelected) {
+      return null
+    }
+    return {
+      hasJustBeenSelected: !!score,
+      isSelected: !!score,
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (this.state.hasJustBeenSelected && !prevState.hasJustBeenSelected) {
       this.timeout = setTimeout(() => {
         const {onSelectionTransitionEnd} = this.props
         this.setState({hasJustBeenSelected: false})
@@ -366,14 +328,13 @@ class ExplorerAdviceCardBase extends React.Component {
   }
 
   renderLeftPanel(style) {
-    const {advice, userYou} = this.props
-    const {isMobileVersion} = this.context
-    const title = getAdviceTitle(advice)
+    const {advice, howToSeeMore, userYou} = this.props
+    const title = getAdviceTitle(advice, userYou)
     const {explanations: staticExplanations} = getAdviceModules(userYou)[advice.adviceId] || {}
     const allExplanations = (staticExplanations || []).concat(advice.explanations || [])
     const containerStyle = {
       background: '#fff',
-      color: Colors.DARK_TWO,
+      color: colors.DARK_TWO,
       display: 'flex',
       flexDirection: 'column',
       padding: isMobileVersion ? '15px 30px' : '25px 30px',
@@ -381,8 +342,8 @@ class ExplorerAdviceCardBase extends React.Component {
     }
     const titleStyle = {
       alignItems: 'center',
-      borderBottom: isMobileVersion ? 'initial' : `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
-      color: Colors.DARK,
+      borderBottom: isMobileVersion ? 'initial' : `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+      color: colors.DARK,
       display: 'flex',
       flexDirection: isMobileVersion ? 'column' : 'row',
       flexShrink: 0,
@@ -397,14 +358,14 @@ class ExplorerAdviceCardBase extends React.Component {
       overflow: isMobileVersion ? 'hidden' : 'initial',
     }
     const explanationsTitleStyle = {
-      color: Colors.BOB_BLUE,
+      color: colors.BOB_BLUE,
       fontSize: 11,
       fontStyle: 'italic',
       fontWeight: 'bold',
       textTransform: 'uppercase',
     }
     const explanationStyle = {
-      backgroundColor: Colors.MODAL_PROJECT_GREY,
+      backgroundColor: colors.MODAL_PROJECT_GREY,
       borderRadius: 4,
       display: 'inline-block',
       fontSize: 13,
@@ -415,7 +376,7 @@ class ExplorerAdviceCardBase extends React.Component {
       +
     </span>
     const selectForMoreStyle = {
-      color: Colors.BOB_BLUE,
+      color: colors.BOB_BLUE,
       fontSize: 15,
       fontStyle: 'italic',
       fontWeight: 500,
@@ -428,6 +389,7 @@ class ExplorerAdviceCardBase extends React.Component {
       [isMobileVersion ? 'marginBottom' : 'marginRight']: 14,
       maxWidth: 48,
     }
+    const pointerEvents = howToSeeMore ? 'none' : 'initial'
     return <div style={containerStyle}>
       <div style={titleStyle}>
         <AdvicePicto style={pictoStyle} adviceId={advice.adviceId} />
@@ -444,36 +406,35 @@ class ExplorerAdviceCardBase extends React.Component {
           </span>)}
         </StringJoiner>
       </div> : null}
-      <div style={{flex: 1, overflow: 'hidden', pointerEvents: 'none', position: 'relative'}}>
-        <ExpandedAdviceCardContent {...omit(this.props, ['style'])} />
-        <div style={{
+      <div style={{flex: 1, overflow: 'hidden', pointerEvents, position: 'relative'}}>
+        <ExpandedAdviceCardContent
+          backgroundColor={containerStyle.background} {..._omit(this.props, ['style'])} />
+        {howToSeeMore ? <div style={{
           backgroundImage: 'linear-gradient(to bottom, transparent, #fff)',
           bottom: 0,
           height: 90,
           left: 0,
           position: 'absolute',
           right: 0,
-        }} />
+        }} /> : null}
       </div>
       <div style={selectForMoreStyle}>
-        Découvre{userYou('', 'z')} d'autres astuces en sélectionnant ce conseil.
+        {howToSeeMore}
       </div>
     </div>
   }
 
   renderRightPanel(style) {
     const {advice: {adviceId, numStars}, userYou} = this.props
-    const {isMobileVersion} = this.context
     const {userGainCallout, userGainDetails} = getAdviceModules(userYou)[adviceId] || {}
     if (!userGainCallout && !userGainDetails && isMobileVersion) {
       return null
     }
-    const numRockets = Math.round((numStars || 0) * 2 - 1)
     const containerStyle = {
       alignItems: isMobileVersion ? 'stretch' : 'center',
       backgroundImage: isMobileVersion ?
-        `linear-gradient(101deg, ${Colors.BOB_BLUE}, ${Colors.ROBINS_EGG})` :
-        `linear-gradient(to bottom, ${Colors.BOB_BLUE}, ${Colors.ROBINS_EGG})`,
+        `linear-gradient(101deg, ${colors.BOB_BLUE}, ${colors.ROBINS_EGG})` :
+        `linear-gradient(to bottom, ${colors.BOB_BLUE}, ${colors.ROBINS_EGG})`,
       color: '#fff',
       display: 'flex',
       flexDirection: 'column',
@@ -519,8 +480,7 @@ class ExplorerAdviceCardBase extends React.Component {
     return <div style={containerStyle}>
       {isMobileVersion ? null : <div style={rocketsStyle}>
         <div style={{marginBottom: 10}}>Notre avis</div>
-        {new Array(numRockets).fill().map((_, index) =>
-          <img style={{height: 20}} src={rocketIcon} key={`rocket-${index}`} alt="*" />)}
+        <RocketChain numStars={numStars} rocketHeight={20} />
       </div>}
       {userGainCallout || userGainDetails ? <div style={userGainStyle}>
         {isMobileVersion ? null : <div style={titleStyle}>
@@ -539,16 +499,16 @@ class ExplorerAdviceCardBase extends React.Component {
   }
 
   renderSelectionOverlay() {
-    const {advice: {score}, userYou} = this.props
-    const {hasJustBeenSelected} = this.state
+    const {userYou} = this.props
+    const {hasJustBeenSelected, isSelected} = this.state
     const selectionStyle = {
       alignItems: 'center',
-      backgroundColor: colorToAlpha(Colors.BOB_BLUE, .4),
+      backgroundColor: colorToAlpha(colors.BOB_BLUE, .4),
       bottom: 0,
       display: 'flex',
       justifyContent: 'center',
       left: 0,
-      opacity: score ? 1 : 0,
+      opacity: isSelected ? 1 : 0,
       pointerEvents: 'none',
       position: 'absolute',
       right: 0,
@@ -557,7 +517,7 @@ class ExplorerAdviceCardBase extends React.Component {
     }
     const selectMarkStyle = {
       alignItems: 'center',
-      backgroundColor: colorToAlpha(Colors.GREENISH_TEAL, .9),
+      backgroundColor: colorToAlpha(colors.GREENISH_TEAL, .9),
       border: 'solid 3px #fff',
       borderRadius: 40,
       display: 'flex',
@@ -583,7 +543,7 @@ class ExplorerAdviceCardBase extends React.Component {
     }
     return <div style={selectionStyle}>
       <div style={selectMarkStyle}>
-        <CheckIcon fill="#fff" height={35} />
+        <CheckIcon style={{fill: '#fff', height: 35}} />
         <div style={selectedTextStyle}>
           Conseil ajouté à {userYou('ta', 'votre')} liste
         </div>
@@ -593,7 +553,6 @@ class ExplorerAdviceCardBase extends React.Component {
 
   render() {
     const {onClick, onSwipedLeft, onSwipedRight, style} = this.props
-    const {isMobileVersion} = this.context
     const containerStyle = {
       boxShadow: '0 10px 30px rgba(0, 0, 0, .2)',
       cursor: onClick ? 'pointer' : 'initial',
@@ -616,12 +575,21 @@ const ExplorerAdviceCard = connect(({user}) => ({
 }))(ExplorerAdviceCardBase)
 
 
-class ExpandedAdviceCardContent extends React.Component {
+class ExpandedAdviceCardContentBase extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    dispatch: PropTypes.func.isRequired,
     profile: PropTypes.object.isRequired,
+    project: PropTypes.shape({
+      projectId: PropTypes.string,
+    }).isRequired,
     style: PropTypes.object,
     userYou: PropTypes.func.isRequired,
+  }
+
+  handleExplore = visualElement => {
+    const {advice, dispatch, project} = this.props
+    dispatch(exploreAdvice(project, advice, visualElement))
   }
 
   renderGeneric(style) {
@@ -655,11 +623,14 @@ class ExpandedAdviceCardContent extends React.Component {
     const module = ADVICE_MODULES[advice.adviceId] || null
     const PageComponent = module && module.ExpandedAdviceCardContent || null
     if (PageComponent) {
-      return <PageComponent {...this.props} />
+      return <PageComponent {...this.props} onExplore={this.handleExplore} />
     }
     return this.renderGeneric(style)
   }
 }
+const ExpandedAdviceCardContent = connect(({user}) => ({
+  userYou: youForUser(user),
+}))(ExpandedAdviceCardContentBase)
 
 
 class FeedbackButtonBase extends React.Component {
@@ -694,13 +665,13 @@ class FeedbackButtonBase extends React.Component {
     const {hasFeedback} = this.state
     const buttonStyle = {
       ':hover': {
-        backgroundColor: Colors.BOB_BLUE_HOVER,
+        backgroundColor: colors.BOB_BLUE_HOVER,
         border: 'solid 1px transparent',
         color: '#fff',
       },
       backgroundColor: 'transparent',
-      border: `solid 1px ${Colors.SILVER}`,
-      color: Colors.DARK_TWO,
+      border: `solid 1px ${colors.SILVER}`,
+      color: colors.DARK_TWO,
       fontSize: 13,
       fontWeight: 'normal',
       marginLeft: 10,
@@ -747,13 +718,18 @@ class AdvicePicto extends React.Component {
   }
 
   state = {
+    adviceId: this.props.adviceId,
     pictoSrc: getAdvicePicto(this.props.adviceId),
   }
 
-  componentWillReceiveProps(nextProps) {
+  static getDerivedStateFromProps(nextProps, prevState) {
     const {adviceId} = nextProps
-    if (adviceId !== this.props.adviceId) {
-      this.setState({pictoSrc: getAdvicePicto(adviceId)})
+    if (adviceId === prevState.adviceId) {
+      return null
+    }
+    return {
+      adviceId,
+      pictoSrc: getAdvicePicto(adviceId),
     }
   }
 
@@ -762,7 +738,7 @@ class AdvicePicto extends React.Component {
     if (!pictoSrc) {
       return null
     }
-    return <img src={pictoSrc} alt="" {...omit(this.props, 'adviceId')} />
+    return <img src={pictoSrc} alt="" {..._omit(this.props, 'adviceId')} />
   }
 }
 

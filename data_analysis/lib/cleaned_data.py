@@ -24,7 +24,7 @@ import re
 import pandas
 from scrapy import selector
 
-_ROME_VERSION = 'v333'
+_ROME_VERSION = 'v335'
 
 
 # TODO: Use this function in city suggest importer to read the stats file.
@@ -422,6 +422,32 @@ def french_cities(data_folder='data', filename=None, unique=False):
         'name', 'departement_id', 'region_id', 'current', 'current_city_id', 'arrondissement']]
 
 
+def french_urban_areas(data_folder='data', filename=None):
+    """French urban entities.
+
+    The index are the IDs (Code Officiel Geographique) of the cities, and the columns are
+    - "AU2010": ID of the urban area it's part of, except when it is not part of any.
+    - "periurban": a mode:
+        - 1: rural, not being part of any urban nor periurban area.
+        - 2: periurban, more than 40% of inhabitants work in one or several urban areas.
+        - 3: urban, part of an urban entities with more than 10k jobs.
+    """
+
+    if not filename:
+        filename = path.join(data_folder, 'geo/french_urban_areas.xls')
+    cities = pandas.read_excel(
+        filename,
+        sheet_name='Composition_communale',
+        skiprows=5,
+        index_col=0)
+    cities['periurban'] = cities.CATAEU2010.map({
+        111: 3,
+        112: 2,
+        120: 2,
+    }).fillna(1).astype(int)
+    return cities[['AU2010', 'periurban']]
+
+
 def french_urban_entities(data_folder='data', filename=None):
     """French urban entities.
 
@@ -442,11 +468,9 @@ def french_urban_entities(data_folder='data', filename=None):
 
     if not filename:
         filename = path.join(data_folder, 'geo/french_urban_entities.xls')
-    # TODO(pascal): Switch param to sheet_name once we update past pandas v0.21
-    # in notebooks as well.
     sheets = pandas.read_excel(
         filename,
-        sheetname=['UU2010', 'Composition_communale'],
+        sheet_name=['UU2010', 'Composition_communale'],
         skiprows=5,
         index_col=0)
     entities = pandas.merge(

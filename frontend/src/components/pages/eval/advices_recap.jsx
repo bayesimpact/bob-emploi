@@ -1,4 +1,5 @@
-import {groupBy, mapValues} from 'lodash'
+import _groupBy from 'lodash/groupBy'
+import _mapValues from 'lodash/mapValues'
 import Radium from 'radium'
 import React from 'react'
 import PropTypes from 'prop-types'
@@ -9,7 +10,7 @@ import threeStarsImage from 'images/3-stars-picto.svg'
 import twoStarsImage from 'images/2-stars-picto.svg'
 
 import {ExplorerAdviceCard} from 'components/advisor'
-import {Colors, LabeledToggle, Styles} from 'components/theme'
+import {LabeledToggle, Styles} from 'components/theme'
 
 import {ADVICE_SCORES} from './score_levels'
 
@@ -42,25 +43,25 @@ class AdvicesRecap extends React.Component {
   }
 
   state = {
-    showAdviceCards: false,
+    areAdviceCardsShown: false,
   }
 
   render() {
     const {advices, adviceEvaluations, moduleNewScores, onRescoreAdvice,
       onEvaluateAdvice, profile, project, style} = this.props
-    const {showAdviceCards} = this.state
+    const {areAdviceCardsShown} = this.state
     const containerStyle = {
       backgroundColor: '#fff',
       padding: 10,
       ...style,
     }
-    const adviceGroups = groupBy(advices, 'numStars')
+    const adviceGroups = _groupBy(advices, 'numStars')
     const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse()
     return <div style={containerStyle}>
       <LabeledToggle
         label="Afficher les cartes des conseils"
-        type="checkbox" isSelected={showAdviceCards}
-        onClick={() => this.setState({showAdviceCards: !showAdviceCards})} />
+        type="checkbox" isSelected={areAdviceCardsShown}
+        onClick={() => this.setState({areAdviceCardsShown: !areAdviceCardsShown})} />
       <div>
         {groupKeys.map(numStars => (
           <AdvicesRecapSection
@@ -69,7 +70,7 @@ class AdvicesRecap extends React.Component {
             adviceEvaluations={adviceEvaluations}
             onEvaluateAdvice={onEvaluateAdvice}
             onRescoreAdvice={onRescoreAdvice} moduleNewScores={moduleNewScores}
-            numStars={numStars} showAdviceCards={showAdviceCards} />
+            numStars={numStars} areAdviceCards={areAdviceCardsShown} />
         ))}
       </div>
     </div>
@@ -80,19 +81,19 @@ class AdvicesRecapSection extends React.Component {
   static propTypes = {
     adviceEvaluations: PropTypes.objectOf(PropTypes.object.isRequired).isRequired,
     advices: PropTypes.array.isRequired,
+    areAdviceCardsShown: PropTypes.bool.isRequired,
     moduleNewScores: PropTypes.objectOf(PropTypes.number.isRequired).isRequired,
     numStars: PropTypes.oneOf(Object.keys(ADVICE_GROUP_PROPS)).isRequired,
     onEvaluateAdvice: PropTypes.func.isRequired,
     onRescoreAdvice: PropTypes.func.isRequired,
     profile: PropTypes.object.isRequired,
     project: PropTypes.object.isRequired,
-    showAdviceCards: PropTypes.bool.isRequired,
   }
 
   constructor(props) {
     super(props)
     this.state = {
-      isCommentShownByAdviceId: mapValues(props.adviceEvaluations, function(adviceEvaluation) {
+      isCommentShownByAdviceId: _mapValues(props.adviceEvaluations, function(adviceEvaluation) {
         return !!adviceEvaluation.comment
       }),
     }
@@ -165,7 +166,7 @@ class AdvicesRecapSection extends React.Component {
     const adviceEvaluation = adviceEvaluations[advice.adviceId] || {}
     const {comment} = adviceEvaluation
     const textareaStyle = {
-      borderColor: Colors.BOB_BLUE,
+      borderColor: colors.BOB_BLUE,
       fontSize: 14,
       marginTop: -10,
       width: '100%',
@@ -177,7 +178,7 @@ class AdvicesRecapSection extends React.Component {
   }
 
   renderAdvice = advice => {
-    const {profile, project, showAdviceCards} = this.props
+    const {profile, project, areAdviceCardsShown} = this.props
     return <div key={advice.adviceId}>
       <div style={{display: 'flex', fontSize: 15, padding: 5}}>
         <span style={{flex: 1}}>
@@ -188,7 +189,7 @@ class AdvicesRecapSection extends React.Component {
         {this.renderCommentButton(advice)}
       </div>
       {this.renderComment(advice)}
-      {showAdviceCards ? <ScaledAdvice
+      {areAdviceCardsShown ? <ScaledAdvice
         scale={.5} advice={advice} profile={profile} project={project}
         style={{marginLeft: 20}} /> : null}
     </div>
@@ -202,7 +203,7 @@ class AdvicesRecapSection extends React.Component {
       adviceId => !advicesShown.has(adviceId) &&
       (moduleNewScores[adviceId] + '') === numStars)
     const extraAdviceStyle = {
-      border: `solid 1px ${Colors.BOB_BLUE}`,
+      border: `solid 1px ${colors.BOB_BLUE}`,
       margin: '5px 0',
       padding: 6,
     }

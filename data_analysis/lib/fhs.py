@@ -21,6 +21,10 @@ PART_TIME_WORK_TABLE = 'e0'
 # change during one unemployment period.
 TARGETED_JOB_TABLE = 'rome'
 
+# A table containing historical values for the training programs that job seekers
+# have followed.
+TRAINING_TABLE = 'p2'
+
 
 # The fields in FHS.
 
@@ -74,6 +78,12 @@ JOB_GROUP_START_DATE_FIELD = 'JOURDV'
 
 # Date at which the job seeker made its job group change.
 JOB_GROUP_END_DATE_FIELD = 'JOURFV'
+
+# Date at which the job seeker starts a training.
+TRAINING_START_DATE = 'P2DATDEB'
+
+# Date at which the job seeker ends a training.
+TRAINING_END_DATE = 'P2DATFIN'
 
 
 # Regular expression to search the number of the region in an FHS filename.
@@ -221,9 +231,10 @@ class JobSeeker(object):
 
     def __init__(self, data):
         self._data = data
-        self._data['de'].sort(key=lambda de: de[REGISRATION_DATE_FIELD])
+        self._data.get('de', []).sort(key=lambda de: de[REGISRATION_DATE_FIELD])
         self._data.get('e0', []).sort(key=lambda e0: e0[PART_TIME_WORK_MONTH_FIELD])
         self._data.get('rome', []).sort(key=lambda rome: rome['JOURFV'])
+        self._data.get('p2', []).sort(key=lambda p2: p2[TRAINING_START_DATE])
 
     def _unemployment_periods(self, cover_holes_up_to, period_type):
         # Category A, B and C are defined by: CATREGR being 1, 2 or 3.
@@ -247,6 +258,32 @@ class JobSeeker(object):
 
         return periods
 
+    def all_training_periods(self):
+        """Periods of training at Pôle emploi for this job seeker.
+
+        Returns:
+            a DateIntervals object covering all dates for which this job seeker
+            was registered as in training by Pôle emploi.
+            The metadata in this object are dictionaries
+            coming from the "training" table and as such contain all the fields like
+            FORMACOD, OBJFORM, P2NIVFOR, P2DATDEB, etc.
+        """
+
+        registration_periods = self._unemployment_periods(cover_holes_up_to=-1, period_type=None)
+        training_periods = []
+        for p2_record in self._data[TRAINING_TABLE]:
+            last_registration_period = registration_periods.last_contiguous_period_before(
+                p2_record[TRAINING_START_DATE])
+            p2_record[JOB_GROUP_ID_FIELD] = last_registration_period.metadata[JOB_GROUP_ID_FIELD]
+            p2_record[CITY_ID_FIELD] = last_registration_period.metadata[CITY_ID_FIELD]
+            training_periods.append((
+                p2_record[TRAINING_START_DATE],
+                p2_record[TRAINING_END_DATE] if p2_record[TRAINING_END_DATE] else None,
+                p2_record
+            ))
+
+        return DateIntervals(training_periods)
+
     def all_registration_periods(self, cover_holes_up_to=-1):
         """Periods of registration at Pôle emploi for this job seeker.
 
@@ -254,6 +291,7 @@ class JobSeeker(object):
             cover_holes_up_to: consecutive unemployment periods with up to
                 cover_holes_up_to days in between will be merged into a
                 single unemployment period.
+            period_type: Unemployment categories like category a, b or C.
 
         Raises:
             KeyError: if the JobSeeker was created without "de" data.
@@ -525,6 +563,12 @@ class DateIntervals(object):
         """Last contiguous period of time."""
 
         return self._periods[-1] if self._periods else None
+
+    def last_contiguous_period_before(self, begin):
+        """Last contiguous period of time before a given date."""
+
+        periods_before = [p for p in self._periods if p.end and p.end < begin]
+        return periods_before[-1] if periods_before else None
 
     def is_unfinished(self):
         """Whether the intervals contain the future as well."""

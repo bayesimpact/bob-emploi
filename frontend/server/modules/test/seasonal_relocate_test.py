@@ -14,8 +14,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase('advice-seasonal-relocate')):
+class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Advice Seasonal Relocate" advice."""
+
+    model_id = 'advice-seasonal-relocate'
 
     def setUp(self):  # pylint: disable=missing-docstring,invalid-name
         super(AdviceSeasonalRelocateTestCase, self).setUp()

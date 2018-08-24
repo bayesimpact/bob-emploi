@@ -4,6 +4,7 @@ import unittest
 from urllib import parse
 
 import mock
+import requests_mock
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server.test import base_test
@@ -225,6 +226,35 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         self.assertEqual(
             'My own comment',
             user.get('netPromoterScoreSurveyResponse').get('generalFeedbackComment'))
+
+    # TODO(cyrille): Externalize in own module (or add PR to requests_mock).
+    def _match_request_data(self, request):
+        self.assertEqual(
+            ':mega: [NPS Score: 0] ObjectId("{}")\n> This is a bad comment'.format(self.user_id),
+            request.json().get('text', ''))
+        return True
+
+    @mock.patch(base_test.server.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
+    @requests_mock.mock()
+    def test_nps_zero_score_and_comment(self, mock_requests):
+        """Set the NPS score to 0 then comment"""
+
+        mock_requests.post(
+            'slack://bob-bots', request_headers={'Content-Type': 'application/json'},
+            additional_matcher=self._match_request_data)
+
+        self.app.get('/api/nps', query_string={
+            'score': '0',
+            'token': self.nps_auth_token,
+            'user': self.user_id,
+        })
+
+        response = self.app.post(
+            '/api/nps',
+            data='{{"userId": "{}", "comment": "This is a bad comment"}}'.format(self.user_id),
+            headers={'Authorization': 'Bearer ' + self.nps_auth_token})
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(response.get_data(as_text=True))
 
 
 if __name__ == '__main__':

@@ -41,3 +41,5 @@ AGE_GROUP_CODE,AGE_GROUP_NAME,AREA_CODE,AREA_NAME,AREA_TYPE_CODE,AREA_TYPE_NAME,
 2,35 ans et plus,12,AVEYRON,D,Département,2850,1850,621g,"Mineurs de fond qualifiés et autres ouvriers qualifiés des industries d'extraction (carrières, pétrole, gaz...)"
 1,Moins de 35 ans,12,AVEYRON,D,Département,-2,-2,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales
 2,35 ans et plus,12,AVEYRON,D,Département,2450,1850,671a,Ouvriers non qualifiés des travaux publics de l'Etat et des collectivités locales
+1,Moins de 35 ans,55,MEUSE,D,Département,-1,-1,341b,Chefs d'établissement de l'enseignement secondaire et inspecteurs
+2,35 ans et plus,55,MEUSE,D,Département,5550,3500,341b,Chefs d'établissement de l'enseignement secondaire et inspecteurs

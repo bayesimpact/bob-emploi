@@ -6,46 +6,66 @@ import re
 import unittest
 from urllib import parse
 
+from bson import objectid
 from google.protobuf import json_format
 import mock
 import mongomock
 
-from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import helper_pb2
+from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server.asynchronous.mail import campaign
 from bob_emploi.frontend.server.asynchronous.mail import mail_blast
+from bob_emploi.frontend.server.test import mailjetmock
 
 
-def CampaignTestBase(campaign_id):  # pylint: disable=invalid-name
-    """Creates a base class for unit tests of a campaign."""
+_FAKE_CAMPAIGNS = {'fake-user-campaign': campaign.Campaign(
+    '000000', {},
+    lambda user, **unused_kwargs: {'key': 'value'},
+    'Sender', 'sender@example.com',
+    users_collection=campaign.BOB_USERS)}
 
-    class _TestCase(unittest.TestCase):
 
-        @classmethod
-        def setUpClass(cls):
-            super(_TestCase, cls).setUpClass()
-            cls._campaign_id = campaign_id
+class CampaignTestBase(unittest.TestCase):
+    """Base class for unit tests of a campaign."""
 
-        def setUp(self):
-            super(_TestCase, self).setUp()
+    # Need to be overriden in subclasses.
+    campaign_id = None
+    # May be overriden in subclasses.
+    mongo_collection = 'user'
 
-            self.database = mongomock.MongoClient().test
-            db_patcher = mock.patch(mail_blast.__name__ + '._DB', self.database)
-            db_patcher.start()
-            self.addCleanup(db_patcher.stop)
-            self._user_database = mongomock.MongoClient().test
-            user_db_patcher = mock.patch(mail_blast.__name__ + '._USER_DB', self._user_database)
-            user_db_patcher.start()
-            self.addCleanup(user_db_patcher.stop)
-            # TODO(cyrille): Use this to mock time whenever necessary.
-            self.now = None
-            # Default values that shouldn't be expected, and should be overridden when necessary.
+    @classmethod
+    def setUpClass(cls):
+        super(CampaignTestBase, cls).setUpClass()
+        if cls.campaign_id is None:
+            raise NotImplementedError(
+                'The class "{}" is missing a campaing_id'.format(cls.__name__))
+
+    def setUp(self):
+        super(CampaignTestBase, self).setUp()
+
+        self.database = mongomock.MongoClient().test
+        db_patcher = mock.patch(mail_blast.__name__ + '._DB', self.database)
+        db_patcher.start()
+        self.addCleanup(db_patcher.stop)
+        self._user_database = mongomock.MongoClient().test
+        user_db_patcher = mock.patch(mail_blast.__name__ + '._USER_DB', self._user_database)
+        user_db_patcher.start()
+        self.addCleanup(user_db_patcher.stop)
+        # TODO(cyrille): Use this to mock time whenever necessary.
+        self.now = None
+        # Default values that shouldn't be expected, and should be overridden when necessary.
+        user_name = 'Patrick'
+        user_email = 'patrick@bayes.org'
+        user_user_id = '%024x' % random.randrange(16**24)
+        user_registration_date = datetime.datetime.now() - datetime.timedelta(days=90)
+        if self.mongo_collection == 'user':
             # TODO(cyrille): Replace these values by personas.
-            self.user = user_pb2.User(user_id='%024x' % random.randrange(16**24))
-            self.user.registered_at.FromDatetime(
-                datetime.datetime.now() - datetime.timedelta(days=90))
+            self.user = user_pb2.User(user_id=user_user_id)
+            self.user.registered_at.FromDatetime(user_registration_date)
             self.user.profile.gender = user_pb2.MASCULINE
-            self.user.profile.name = 'Patrick'
-            self.user.profile.email = 'patrick@bayes.org'
+            self.user.profile.name = user_name
+            self.user.profile.email = user_email
             self.user.profile.year_of_birth = 1990
             self.project = self.user.projects.add()
             self.project.target_job.masculine_name = 'Coiffeur'
@@ -63,406 +83,102 @@ def CampaignTestBase(campaign_id):  # pylint: disable=invalid-name
             self.project.mobility.city.region_id = '84'
             self.project.mobility.city.region_name = 'Auvergne-Rhône-Alpes'
 
-            self._variables = None
+        elif self.mongo_collection == 'helper':
+            self.user = helper_pb2.Helper(user_id=user_user_id)
+            self.user.registered_at.FromDatetime(user_registration_date)
+            self.user.name = user_name
+            self.user.email = user_email
+            self.user.email_confirmed = True
+            self.promise = self.user.promises.add()
+            self.promise.kind = helper_pb2.HELP_RESUME
 
-        @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
-        @mock.patch(mail_blast.mail.__name__ + '.send_template')
-        def _assert_user_receives_campaign(self, mock_mail=None, should_be_sent=True):
-            json_user = json_format.MessageToDict(self.user)
-            json_user['_id'] = mongomock.ObjectId(json_user.pop('userId'))
-            self._user_database.user.insert_one(json_user)
-            mock_mail().status_code = 200
-            mock_mail().json.return_value = {'Sent': [{'MessageID': 18014679230180635}]}
-            mock_mail.reset_mock()
+        elif self.mongo_collection == 'cvs_and_cover_letters':
+            self.user = review_pb2.DocumentToReview(user_id=user_user_id)
+
+        self._variables = None
+
+    @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
+    @mailjetmock.patch()
+    def _assert_user_receives_campaign(self, should_be_sent=True):
+        json_user = json_format.MessageToDict(self.user)
+        json_user['_id'] = mongomock.ObjectId(json_user.pop('userId'))
+        self._user_database.get_collection(self.mongo_collection).insert_one(json_user)
+        if self.mongo_collection == 'cvs_and_cover_letters':
+            # This is not actually needed, we just need to avoid calling self.user.registered_at.
+            year = 2018
+        else:
             year = self.user.registered_at.ToDatetime().year
-            mail_blast.main([
-                self._campaign_id,
-                'send',
-                '--disable-sentry',
-                '--registered-from',
-                str(year),
-                '--registered-to',
-                str(year + 1),
-            ])
-            if not should_be_sent:
-                self.assertFalse(mock_mail.called)
-                return
-            mock_mail.assert_called_once()
-            self._variables = mock_mail.call_args[0][2]
+        mail_blast.main([
+            self.campaign_id,
+            'send',
+            '--disable-sentry',
+            '--registered-from',
+            str(year),
+            '--registered-to',
+            str(year + 1),
+        ])
+        all_sent_messages = mailjetmock.get_all_sent_messages()
+        if not should_be_sent:
+            self.assertFalse(all_sent_messages)
+            return
+        self.assertEqual(1, len(all_sent_messages), msg=all_sent_messages)
+        self.assertEqual(self.campaign_id, all_sent_messages[0].properties['CustomCampaign'])
+        self._variables = all_sent_messages[0].properties['Variables']
 
-        def _assert_regex_field(self, field, regex):
-            try:
-                field_value = self._variables.pop(field)
-            except KeyError:
-                self.fail('Variables do not contain field "{}"'.format(field))
-            self.assertRegex(field_value, regex)
+    def _assert_regex_field(self, field, regex):
+        try:
+            field_value = self._variables.pop(field)
+        except KeyError:
+            self.fail('Variables do not contain field "{}":\n{}'.format(field, self._variables))
+        self.assertRegex(field_value, regex)
 
-        def _assert_has_unsubscribe_link(self, field='unsubscribeLink'):
-            self._assert_regex_field(
-                field,
-                r'^{}&auth=\d+\.[a-f0-9]+$'.format(re.escape(
-                    'https://www.bob-emploi.fr/unsubscribe.html?email={}'.format(
-                        parse.quote(self.user.profile.email)))))
+    def _assert_url_field(self, field, url, **args_matcher):
+        try:
+            field_value = self._variables.pop(field)
+        except KeyError:
+            self.fail('Variables do not contain field "{}"\n{}'.format(field, self._variables))
+        self.assertEqual(url, field_value[:len(url)], msg=field_value)
+        self.assertEqual('?', field_value[len(url):len(url) + 1], msg=field_value)
+        args = parse.parse_qs(field_value[len(url) + 1:])
+        for key, matcher in args_matcher.items():
+            self.assertIn(key, args, msg=field_value)
+            msg = 'For key {} of {}'.format(key, field_value)
+            if isinstance(matcher, str):
+                self.assertEqual(matcher, args[key][0], msg=msg)
+            else:
+                self.assertRegex(args[key][0], matcher, msg=msg)
+        self.assertFalse(
+            args.keys() - args_matcher.keys(), msg='Not all URL arguments are accounted for')
 
-        def _assert_has_status_update_link(self, field='statusUpdateLink'):
-            self._assert_regex_field(
-                field,
-                r'^{}&token=\d+\.[a-f0-9]+&gender=MASCULINE$'.format(re.escape(
-                    'https://www.bob-emploi.fr/statut/mise-a-jour?user={}'
-                    .format(self.user.user_id))))
+    def _assert_has_unsubscribe_link(self, field='unsubscribeLink'):
+        if self.mongo_collection == 'user':
+            self._assert_has_unsubscribe_url(field)
+        elif self.mongo_collection == 'helper':
+            self.assertEqual(
+                self._variables.pop(field),
+                'https://www.bob-emploi.fr/api/mayday/unsubscribe?userId={}'.format(
+                    self.user.user_id))
+        else:
+            self.fail('"{}" mongo collection is not known.'.format(self.mongo_collection))
 
-        def _assert_remaining_variables(self, variables):
-            self.assertEqual(variables, self._variables)
+    def _assert_has_unsubscribe_url(self, field='unsubscribeLink', **kwargs):
+        self._assert_url_field(
+            field, 'https://www.bob-emploi.fr/unsubscribe.html',
+            **dict({
+                'user': self.user.user_id,
+                'auth': re.compile(r'^\d+\.[a-f0-9]+$'),
+            }, **kwargs))
 
-    return _TestCase
-
-
-class SpontaneousVarsTestCase(unittest.TestCase):
-    """Test for the spontaneous_vars function."""
-
-    @mock.patch(
-        mail_blast.__name__ + '._DB',
-        new_callable=lambda: mongomock.MongoClient().test)
-    def test_basic(self, mock_database):
-        """Basic usage."""
-
-        mock_database.job_group_info.insert_one({
-            '_id': 'A1234',
-            'applicationComplexity': 'SIMPLE_APPLICATION_PROCESS',
-            'applicationModes': {
-                'juriste': {
-                    'modes': [{'mode': 'SPONTANEOUS_APPLICATION', 'percentage': 100}],
-                },
-            },
-            'preferredApplicationMedium': 'APPLY_BY_EMAIL',
-            'toTheWorkplace': 'au cabinet',
-            'placePlural': 'des cabinets juridiques',
-            'inAWorkplace': 'dans un cabinet',
-            'likeYourWorkplace': 'comme le vôtre',
-            'atVariousCompanies': 'Auchan, Carrefour ou Lidl',
-            'whatILoveAbout': 'where I can belong',
-            'whySpecificCompany': 'different business styles',
-        })
-        user = user_pb2.User()
-        user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        user.profile.gender = user_pb2.MASCULINE
-        user.profile.name = 'Patrick'
-        user.profile.last_name = 'Benguigui'
-        user.profile.email = 'patrick@bayes.org'
-        project = user.projects.add()
-        project.target_job.masculine_name = 'Juriste'
-        project.target_job.job_group.rome_id = 'A1234'
-        project.mobility.city.name = 'Lyon'
-        project.mobility.city.departement_id = '69'
-        project.mobility.city.city_id = '69123'
-        project.seniority = project_pb2.SENIOR
-        project.weekly_applications_estimate = project_pb2.A_LOT
-
-        spontaneous_vars = mail_blast.spontaneous_vars(user, 'focus-email')
-
-        # Verify variable var.
-        unsubscribe_link = spontaneous_vars.pop('unsubscribeLink')
-        self.assertRegex(
-            unsubscribe_link,
-            r'^{}&auth=\d+\.[a-f0-9]+$'.format(
-                re.escape('https://www.bob-emploi.fr/unsubscribe.html?email=patrick%40bayes.org')))
-        status_update_link = spontaneous_vars.pop('statusUpdateUrl')
-        self.assertRegex(
-            status_update_link,
+    def _assert_has_status_update_link(self, field='statusUpdateLink'):
+        # TODO(pascal): Use _assert_url_field.
+        self._assert_regex_field(
+            field,
             r'^{}&token=\d+\.[a-f0-9]+&gender=MASCULINE$'.format(re.escape(
                 'https://www.bob-emploi.fr/statut/mise-a-jour?user={}'
-                .format(user.user_id))))
+                .format(self.user.user_id))))
 
-        self.assertEqual(
-            {
-                'applicationComplexity': 'SIMPLE_APPLICATION_PROCESS',
-                'atVariousCompanies': 'Auchan, Carrefour ou Lidl',
-                'contactMode': 'BY_EMAIL',
-                'deepLinkLBB':
-                    'https://labonneboite.pole-emploi.fr/entreprises/commune/69123/'
-                    'rome/A1234?utm_medium=web&utm_source=bob&utm_campaign=bob-email',
-                'emailInUrl': 'patrick%40bayes.org',
-                'experienceAsText': 'plus de 6 ans',
-                'firstName': 'Patrick',
-                'gender': 'MASCULINE',
-                'hasReadPreviousEmail': '',
-                'inWorkPlace': 'dans un cabinet',
-                'jobName': 'juriste',
-                'lastName': 'Benguigui',
-                'likeYourWorkplace': 'comme le vôtre',
-                'registeredMonthsAgo': 'trois',
-                'someCompanies': 'des cabinets juridiques',
-                'toTheWorkplace': 'au cabinet',
-                'weeklyApplicationOptions': '15',
-                'whatILoveAbout': 'where I can belong',
-                'whySpecificCompany': 'different business styles',
-            },
-            spontaneous_vars)
-
-
-class SelfDevelopmentVarsTestCase(unittest.TestCase):
-    """Test for the self_development_vars function."""
-
-    def test_basic(self):
-        """Basic usage."""
-
-        user = user_pb2.User()
-        user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        user.profile.gender = user_pb2.MASCULINE
-        user.profile.name = 'Patrick'
-        user.profile.last_name = 'Benguigui'
-        user.profile.email = 'patrick@bayes.org'
-        project = user.projects.add()
-        project.job_search_started_at.FromDatetime(
-            datetime.datetime.now() - datetime.timedelta(days=180))
-        project.target_job.masculine_name = 'Juriste'
-        project.target_job.job_group.rome_id = 'A1234'
-        project.seniority = project_pb2.SENIOR
-
-        self_development_vars = mail_blast.self_development_vars(user)
-
-        # Verify variable var.
-        unsubscribe_link = self_development_vars.pop('unsubscribeLink')
-        self.assertRegex(
-            unsubscribe_link,
-            r'^{}&auth=\d+\.[a-f0-9]+$'.format(
-                re.escape('https://www.bob-emploi.fr/unsubscribe.html?email=patrick%40bayes.org')))
-
-        self.assertEqual(
-            {
-                'firstName': 'Patrick',
-                'gender': 'MASCULINE',
-                'hasEnoughExperience': 'True',
-                'isAdministrativeAssistant': '',
-                'isOld': 'True',
-                'isOldNotWoman': 'True',
-                'isYoung': '',
-                'isYoungNotWoman': '',
-                'jobName': 'juriste',
-                'ofJobName': 'de juriste',
-                'registeredMonthsAgo': 'trois',
-            },
-            self_development_vars)
-
-
-class BodyLanguageVarsTestCase(unittest.TestCase):
-    """Test for the body_language_vars function."""
-
-    def test_basic(self):
-        """Basic usage."""
-
-        user = user_pb2.User()
-        user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        user.profile.gender = user_pb2.MASCULINE
-        user.profile.name = 'Patrick'
-        user.profile.last_name = 'Benguigui'
-        user.profile.email = 'patrick@bayes.org'
-        user.profile.frustrations.append(user_pb2.NO_OFFERS)
-        user.profile.frustrations.append(user_pb2.INTERVIEW)
-        user.profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
-        user.emails_sent.add(campaign_id='focus-network', status=user_pb2.EMAIL_SENT_CLICKED)
-        project = user.projects.add()
-        project.job_search_started_at.FromDatetime(
-            datetime.datetime.now() - datetime.timedelta(days=180))
-        project.target_job.masculine_name = 'Juriste'
-        project.target_job.job_group.rome_id = 'A1234'
-        project.seniority = project_pb2.SENIOR
-
-        body_language_vars = mail_blast.body_language_vars(user)
-
-        # Verify variable var.
-        unsubscribe_link = body_language_vars.pop('unsubscribeLink')
-        self.assertRegex(
-            unsubscribe_link,
-            r'^{}&auth=\d+\.[a-f0-9]+$'.format(
-                re.escape('https://www.bob-emploi.fr/unsubscribe.html?email=patrick%40bayes.org')))
-
-        self.assertEqual(
-            {
-                'firstName': 'Patrick',
-                'gender': 'MASCULINE',
-                'hasReadLastFocusEmail': 'True',
-                'registeredMonthsAgo': 'trois',
-                'worstFrustration': 'INTERVIEW',
-            },
-            body_language_vars)
-
-
-class EmploymentVarsTestCase(unittest.TestCase):
-    """Test for the employment_vars function."""
-
-    def test_basic(self):
-        """Basic usage."""
-
-        user = user_pb2.User()
-        user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        user.profile.gender = user_pb2.MASCULINE
-        user.profile.name = 'Patrick'
-        user.profile.last_name = 'Benguigui'
-        user.profile.email = 'patrick@bayes.org'
-        project = user.projects.add()
-        project.target_job.masculine_name = 'Juriste'
-        project.target_job.job_group.rome_id = 'A1234'
-        project.mobility.city.name = 'Lyon'
-        project.mobility.city.departement_id = '69'
-        project.mobility.city.city_id = '69123'
-        project.seniority = project_pb2.SENIOR
-        project.weekly_applications_estimate = project_pb2.A_LOT
-
-        employment_vars = mail_blast.employment_vars(user)
-
-        self.assertRegex(
-            employment_vars.pop('unsubscribeLink'),
-            r'^{}&auth=\d+\.[a-f0-9]+$'.format(
-                re.escape('https://www.bob-emploi.fr/unsubscribe.html?email=patrick%40bayes.org')))
-        self.assertEqual(employment_vars['firstName'], 'Patrick')
-        self.assertEqual(employment_vars['registeredMonthsAgo'], 'trois')
-        self.assertRegex(
-            employment_vars['seekingUrl'],
-            r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*$'
-        )
-        self.assertRegex(
-            employment_vars['stopSeekingUrl'],
-            r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*$'
-        )
-
-    def test_status_updated_recently(self):
-        """Test that employment_vars returns None for user whose employment status has been updated
-        recently."""
-
-        user = user_pb2.User()
-        user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=90))
-        status = user.employment_status.add()
-        status.situation = 'SEEKING'
-        status.created_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=17))
-        self.assertFalse(mail_blast.employment_vars(user))
-
-    def test_status_updated_long_ago(self):
-        """Test that employment_vars returns something for user whose employment status has not been
-        updated recently."""
-
-        user = user_pb2.User()
-        user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=180))
-        status = user.employment_status.add()
-        status.situation = 'SEEKING'
-        status.created_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=58))
-        self.assertTrue(mail_blast.employment_vars(user))
-
-
-class NewDiagnosticVarsTestCase(unittest.TestCase):
-    """Test for the new_diagnostic_vars function."""
-
-    def test_basic(self):
-        """Basic usage."""
-
-        user = user_pb2.User()
-        user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
-        user.user_id = '123456'
-        user.profile.gender = user_pb2.MASCULINE
-        user.profile.email = 'patrick@bayes.org'
-        user.profile.name = 'Patrick'
-        user.profile.year_of_birth = 1965
-        user.profile.family_situation = user_pb2.FAMILY_WITH_KIDS
-        user.profile.frustrations.append(user_pb2.NO_OFFERS)
-        user.profile.frustrations.append(user_pb2.INTERVIEW)
-        user.profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
-
-        new_diagnostic_vars = mail_blast.new_diagnostic_vars(user)
-
-        # Verify variable vars.
-        unsubscribe_link = new_diagnostic_vars.pop('unsubscribeLink')
-        self.assertRegex(
-            unsubscribe_link,
-            r'^{}&auth=\d+\.[a-f0-9]+$'.format(
-                re.escape('https://www.bob-emploi.fr/unsubscribe.html?email=patrick%40bayes.org')))
-        login_url = new_diagnostic_vars.pop('loginUrl')
-        self.assertRegex(
-            login_url,
-            r'^{}&authToken=\d+\.[a-f0-9]+$'.format(
-                re.escape('https://www.bob-emploi.fr?userId=123456')))
-        stop_seeking_url = new_diagnostic_vars.pop('stopSeekingUrl')
-        self.assertRegex(
-            stop_seeking_url,
-            r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*$')
-
-        self.assertEqual(
-            {
-                'firstName': 'Patrick',
-                'gender': 'MASCULINE',
-                'mayHaveSeekingChildren': 'True',
-                'frustration_NO_OFFERS': 'True',
-                'frustration_INTERVIEW': 'True',
-                'frustration_ATYPIC_PROFILE': 'True',
-            },
-            new_diagnostic_vars)
-
-
-class Galita1VarsTestCase(CampaignTestBase('galita-1')):
-    """Test of galita1 mail campaign variables."""
-
-    def test_basic(self):
-        """Basic usage."""
-
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
-        # TODO(cyrille): Move tests on firstName and gender to a test on get_default_variables.
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-        self.user.profile.frustrations.append(user_pb2.MOTIVATION)
-
-        self._assert_user_receives_campaign()
-
-        self._assert_has_unsubscribe_link()
-
-        self._assert_remaining_variables({
-            'firstName': 'Patrick',
-            'gender': 'MASCULINE',
-        })
-
-
-class ViralSharingVarsTestCase(CampaignTestBase('viral-sharing-1')):
-    """Test of galita1 mail campaign variables."""
-
-    def test_recent_user(self):
-        """User registered less than a year ago."""
-
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    @mock.patch(mail_blast.hashlib.__name__ + '.sha1')
-    def test_not_good_hash_user(self, mock_hasher):
-        """User hash is not selected."""
-
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-
-        mock_hasher().digest.return_value = '12345'.encode('utf-8')
-        mock_hasher().hexdigest.return_value = '12345'
-
-        self._assert_user_receives_campaign(should_be_sent=False)
-
-    @mock.patch(mail_blast.hashlib.__name__ + '.sha1')
-    def test_old_user(self, mock_hasher):
-        """User registered more than a year ago."""
-
-        self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=400))
-        self.user.profile.gender = user_pb2.MASCULINE
-        self.user.profile.name = 'Patrick'
-
-        mock_hasher().digest.return_value = '012345'.encode('utf-8')
-        mock_hasher().hexdigest.return_value = '012345'
-
-        self._assert_user_receives_campaign()
-
-        self._assert_has_unsubscribe_link()
-
-        self._assert_remaining_variables({
-            'firstName': 'Patrick',
-            'gender': 'MASCULINE',
-        })
+    def _assert_remaining_variables(self, variables):
+        self.assertEqual(variables, self._variables)
 
 
 class EmailPolicyTestCase(unittest.TestCase):
@@ -570,30 +286,27 @@ class EmailPolicyTestCase(unittest.TestCase):
 
 
 @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
-class FocusEmailTestCase(unittest.TestCase):
+@mailjetmock.patch()
+class BlastCampaignTest(unittest.TestCase):
     """Tests for the blast_campaign function."""
 
     @mock.patch(mail_blast.logging.__name__ + '.info')
-    @mock.patch(mail_blast.mail.__name__ + '.send_template')
     @mock.patch(
         mail_blast.__name__ + '._USER_DB',
         new_callable=lambda: mongomock.MongoClient().user_test)
     @mock.patch(
         mail_blast.__name__ + '._DB',
         new_callable=lambda: mongomock.MongoClient().test)
-    def test_blast_campaign(self, mock_db, mock_user_db, mock_mail, mock_logging):
+    def test_blast_campaign(self, mock_db, mock_user_db, mock_logging):
         """Basic test."""
 
-        mock_mail().status_code = 200
-        mock_mail().json.return_value = {'Sent': [{'MessageID': 18014679230180635}]}
-        mock_mail.reset_mock()
         mock_db.job_group_info.insert_one({
             '_id': 'A1234',
             'inDomain': 'dans la vie',
         })
         mock_user_db.user.insert_many([
             {
-                '_id': '%d' % month,
+                '_id': objectid.ObjectId('7b18313aa35d807e631ea3d%d' % month),
                 'registeredAt': '2017-%02d-15T00:00:00Z' % month,
                 'profile': {
                     'name': '{} user'.format(month),
@@ -644,22 +357,28 @@ class FocusEmailTestCase(unittest.TestCase):
             '--registered-to', '2017-07-10',
             '--disable-sentry'])
 
+        mails_sent = mailjetmock.get_all_sent_messages()
         self.assertEqual(
-            3, mock_mail.call_count,
+            ['email4@corpet.net', 'email5@corpet.net', 'email6@corpet.net'],
+            sorted(m.recipient['Email'] for m in mails_sent),
             msg='3 emails expected: one per month from April to June\n{}'.format(
-                mock_mail.call_args_list))
+                mails_sent))
         self.assertEqual(
-            {'sender_email': 'margaux@bob-emploi.fr', 'sender_name': 'Margaux de Bob'},
-            mock_mail.call_args[1])
-        february_user = mock_user_db.user.find_one({'_id': '2'})
+            {'margaux@bob-emploi.fr'},
+            {m.properties['From']['Email'] for m in mails_sent})
+        february_user = mock_user_db.user.find_one(
+            {'_id': objectid.ObjectId('7b18313aa35d807e631ea3d2')})
         self.assertFalse(february_user.get('emailsSent'))
 
-        april_user = mock_user_db.user.find_one({'_id': '4'})
+        april_user = mock_user_db.user.find_one(
+            {'_id': objectid.ObjectId('7b18313aa35d807e631ea3d4')})
         self.assertEqual(
             [{'sentAt', 'mailjetTemplate', 'campaignId', 'mailjetMessageId'}],
             [e.keys() for e in april_user.get('emailsSent', [])])
         self.assertEqual('focus-network', april_user['emailsSent'][0]['campaignId'])
-        self.assertEqual(18014679230180635, int(april_user['emailsSent'][0]['mailjetMessageId']))
+        self.assertEqual(
+            next(mailjetmock.get_messages_sent_to('email4@corpet.net')).message_id,
+            int(april_user['emailsSent'][0]['mailjetMessageId']))
 
         mock_logging.assert_any_call('Email sent to %s', 'email4@corpet.net')
         mock_logging.assert_called_with('%d emails sent.', 3)
@@ -668,16 +387,12 @@ class FocusEmailTestCase(unittest.TestCase):
         mail_blast.__name__ + '._DB',
         new_callable=lambda: mongomock.MongoClient().test)
     @mock.patch(mail_blast.now.__name__ + '.get')
-    @mock.patch(mail_blast.mail.__name__ + '.send_template')
     @mock.patch(
         mail_blast.__name__ + '._USER_DB',
         new_callable=lambda: mongomock.MongoClient().user_test)
-    def test_change_policy(self, mock_user_db, mock_mail, mock_now, unused_mock_db):
+    def test_change_policy(self, mock_user_db, mock_now, unused_mock_db):
         """Test with non-default emailing policy."""
 
-        mock_mail().status_code = 200
-        mock_mail().json.return_value = {'Sent': [{'MessageID': 18014679230180635}]}
-        mock_mail.reset_mock()
         mock_now.return_value = datetime.datetime(2017, 5, 24)
         mock_user_db.user.insert_many([
             {
@@ -714,32 +429,25 @@ class FocusEmailTestCase(unittest.TestCase):
             '--days-since-any-email', '10',
             '--disable-sentry'])
 
-        self.assertEqual(
-            1, mock_mail.call_count,
-            msg='1 emails expected:\n{}'.format(
-                mock_mail.call_args_list))
+        emails_sent = mailjetmock.get_all_sent_messages()
+        self.assertEqual(1, len(emails_sent), msg=emails_sent)
 
     @mock.patch(mail_blast.logging.__name__ + '.info')
-    @mock.patch(mail_blast.mail.__name__ + '.send_template')
     @mock.patch(
         mail_blast.__name__ + '._DB',
         new_callable=lambda: mongomock.MongoClient().test)
     @mock.patch(
         mail_blast.__name__ + '._USER_DB',
         new_callable=lambda: mongomock.MongoClient().user_test)
-    def test_stop_seeking(self, mock_user_db, mock_db, mock_mail, mock_logging):
+    def test_stop_seeking(self, mock_user_db, mock_db, mock_logging):
         """Basic test."""
 
-        mock_mail().status_code = 200
-        mock_mail().json.return_value = {'Sent': [{'MessageID': 18014679230180635}]}
-        mock_mail.reset_mock()
         mock_db.job_group_info.insert_one({
             '_id': 'A1234',
             'inDomain': 'dans la vie',
         })
         mock_user_db.user.insert_many([
             {
-                '_id': '%s' % seeking,
                 'registeredAt': '2017-04-15T00:00:00Z',
                 'profile': {
                     'name': '{} user'.format(seeking),
@@ -762,10 +470,141 @@ class FocusEmailTestCase(unittest.TestCase):
             '--disable-sentry'])
 
         self.assertEqual(
-            1, mock_mail.call_count,
-            msg='1 email expected: only for the user who is still seeking\n{}'.format(
-                mock_mail.call_args_list))
+            ['emailSTILL_SEEKING@corpet.net'],
+            [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
         mock_logging.assert_any_call('Email sent to %s', 'emailSTILL_SEEKING@corpet.net')
+
+    @mock.patch(mail_blast.logging.__name__ + '.info')
+    @mock.patch(
+        mail_blast.__name__ + '._USER_DB',
+        new_callable=lambda: mongomock.MongoClient().user_test)
+    def test_blast_helpers(self, mock_user_db, mock_logging):
+        """Send a campaign to helpers (and not users)."""
+
+        mock_user_db.user.insert_one({
+            'registeredAt': '2018-04-15T00:00:00Z',
+            'profile': {
+                'email': 'user@corpet.net',
+            },
+        })
+        mock_user_db.helper.insert_one({
+            'email': 'helper@corpet.net',
+            'promises': [{'kind': 'HELP_COVER_LETTER'}],
+            'registeredAt': '2018-04-15T00:00:00Z',
+        })
+        mail_blast.main([
+            'mayday-confirmation', 'send',
+            '--registered-from', '2018-04-01',
+            '--registered-to', '2018-05-10',
+            '--disable-sentry'])
+
+        self.assertEqual(
+            ['helper@corpet.net'],
+            [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
+        self.assertFalse(mock_user_db.user.find_one().get('emailsSent'))
+        self.assertTrue(mock_user_db.helper.find_one().get('emailsSent'))
+
+        mock_logging.assert_any_call('Email sent to %s', 'helper@corpet.net')
+        mock_logging.assert_called_with('%d emails sent.', 1)
+
+    @mock.patch(mail_blast.logging.__name__ + '.info')
+    @mock.patch(
+        mail_blast.__name__ + '._USER_DB',
+        new_callable=lambda: mongomock.MongoClient().user_test)
+    @mock.patch(mail_blast.campaign.__name__ + '._CAMPAIGNS', new=_FAKE_CAMPAIGNS)
+    @mock.patch(mail_blast.hashlib.__name__ + '.sha1')
+    def test_blast_hash_start(self, mock_hasher, mock_user_db, mock_logging):
+        """Send mail to users with given hash start."""
+
+        hash_values = ['12345', '01234']
+        mock_hasher.reset_mock()
+        mock_hasher().hexdigest.side_effect = hash_values
+
+        mock_user_db.user.insert_many([
+            {
+                'registeredAt': '2017-04-15T00:00:00Z',
+                'profile': {
+                    'name': 'user {}'.format(hash_value),
+                    'email': 'email{}@corpet.net'.format(hash_value),
+                },
+            }
+            for hash_value in hash_values
+        ])
+
+        mail_blast.main([
+            'fake-user-campaign', 'send',
+            '--registered-from', '2017-04-01',
+            '--registered-to', '2017-07-10',
+            '--disable-sentry', '--user-hash', '1'])
+
+        sent_messages = mailjetmock.get_all_sent_messages()
+        self.assertEqual(
+            1, len(sent_messages),
+            msg='1 email expected: only for the user whith hash starting with 1\n{}'.format(
+                sent_messages))
+        mock_logging.assert_any_call('Email sent to %s', 'email12345@corpet.net')
+
+
+@mock.patch(campaign.__name__ + '._CAMPAIGNS', new={'fake-document': campaign.Campaign(
+    mailjet_template='123456',
+    users_collection=campaign.BOB_ACTION_DOCUMENTS,
+    mongo_filters={},
+    get_vars=lambda document, **unused_kwargs: {'kind': document.kind},
+    sender_name='Margaux de Bob',
+    sender_email='margaux@bob-emploi.fr',
+)})
+class BobActionDocumentsCollectionTestCase(unittest.TestCase):
+    """Testing blasts for the document collection."""
+
+    def setUp(self):
+        super(BobActionDocumentsCollectionTestCase, self).setUp()
+        self._user_database = mongomock.MongoClient().test
+        user_db_patcher = mock.patch(mail_blast.__name__ + '._USER_DB', self._user_database)
+        user_db_patcher.start()
+        self.addCleanup(user_db_patcher.stop)
+        self._user_database.cvs_and_cover_letters.insert_one({
+            '_id': objectid.ObjectId('5b2173b9362bf80840db6c2a'),
+            'name': 'Nathalie',
+            'anonymizedUrl': 'https://dl.airtable.com/fakeurl.pdf',
+            'kind': 'DOCUMENT_COVER_LETTER',
+            'ownerEmail': 'nathalie@bayes.org',
+            'numDoneReviews': 1,
+        })
+
+    @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
+    @mailjetmock.patch()
+    def test_send(self):
+        """Test really sending to a document owner."""
+
+        mail_blast.main(['fake-document', 'send', '--disable-sentry'])
+        messages = mailjetmock.get_all_sent_messages()
+        self.assertTrue(messages)
+        self.assertEqual(1, len(messages))
+        message = messages.pop()
+        self.assertEqual('Nathalie ', message.recipient['Name'])
+        self.assertEqual('nathalie@bayes.org', message.recipient['Email'])
+
+    @mailjetmock.patch()
+    def test_dry_run(self):
+        """Test a dry run for documents."""
+
+        mail_blast.main(['fake-document', 'dry-run', '--dry-run-email', 'cyrille@bayes.org'])
+        messages = mailjetmock.get_all_sent_messages()
+        self.assertTrue(messages)
+        self.assertEqual(1, len(messages))
+        message = messages.pop()
+        self.assertEqual('Nathalie ', message.recipient['Name'])
+        self.assertEqual('cyrille@bayes.org', message.recipient['Email'])
+
+    @mock.patch(mail_blast.campaign.logging.__name__ + '.info')
+    def test_list(self, mock_logging):
+        """Test a list for documents blast."""
+
+        mail_blast.main(['fake-document', 'list'])
+        messages = mailjetmock.get_all_sent_messages()
+        self.assertFalse(messages)
+        mock_logging.assert_any_call(
+            '%s: %s %s', 'fake-document', '5b2173b9362bf80840db6c2a', 'nathalie@bayes.org')
 
 
 if __name__ == '__main__':

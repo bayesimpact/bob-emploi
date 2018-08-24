@@ -4,6 +4,7 @@ import PropTypes from 'prop-types'
 // user.proto.
 const USER_PROFILE_FIELDS = {
   city: PropTypes.object,
+  coachingEmailFrequency: PropTypes.string,
   customFrustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
   drivingLicenses: PropTypes.arrayOf(PropTypes.string.isRequired),
   email: PropTypes.string.isRequired,
@@ -69,6 +70,7 @@ const ORIGIN_OPTIONS = [
   {name: "Par un groupe de recherche d'emploi", value: 'FROM_JOBSEEKER_GROUP'},
   {name: 'Présenté dans une information collective Pôle emploi', value: 'FROM_PE_WORKSHOP'},
   {name: "Mon conseiller Pôle emploi me l'a recommandé", value: 'FROM_PE_COUNSELOR'},
+  {name: 'Recommandé par un médiateur PIMMS', value: 'FROM_PIMMS'},
   {name: 'Recommandé par un autre site ou moteur de recherche', value: 'FROM_WEBSITE'},
   {name: 'Autre', value: 'FROM_OTHER'},
 ]
@@ -150,12 +152,18 @@ function keepMostRecentRevision(clientUser, serverUser) {
 }
 
 
-const youForUser = user => user.profile && user.profile.canTutoie ?
-  tuSentence => tuSentence :
+const youForUser = ({profile: {canTutoie} = {}}) => canTutoie ? tuSentence => tuSentence :
   (unusedTuSentence, vousSentence) => vousSentence
+
+
+const COACHING_EMAILS_OPTIONS = [
+  {name: 'Oui de temps en temps (~1 mail par mois)', value: 'EMAIL_ONCE_A_MONTH'},
+  {name: 'Oui, autant que possible', value: 'EMAIL_MAXIMUM'},
+  {name: 'Non, pas de coaching, merci', value: 'EMAIL_NONE'},
+]
 
 
 export {getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision, youForUser,
   USER_PROFILE_SHAPE, userAge, getHighestDegreeDescription, keepMostRecentRevision,
   getFamilySituationOptions, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
-  projectMatchAllFilters}
+  projectMatchAllFilters, COACHING_EMAILS_OPTIONS}

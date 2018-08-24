@@ -24,7 +24,17 @@ from bob_emploi.frontend.server.asynchronous import report as report_helper
 _SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
 
 
-def _compute_nps_report(users, **unused_kwargs):
+def _report_comments(comments, display_func):
+    if not comments:
+        return 'There are no individual comments.'
+    return 'And here {} the individual comment{}:\n{}'.format(
+        'is' if len(comments) == 1 else 'are',
+        '' if len(comments) == 1 else 's',
+        '\n'.join(display_func(comment) for comment in comments),
+    )
+
+
+def _compute_nps_report(users, from_date, to_date):
     score_distribution = collections.defaultdict(int)
     nps_total = 0
     num_users = 0
@@ -42,24 +52,35 @@ def _compute_nps_report(users, **unused_kwargs):
         if response.general_feedback_comment:
             responses_with_comment.append((user.user_id, response))
 
-    if responses_with_comment:
-        comments = 'And here {} the individual comment{}:\n{}'.format(
-            'is' if len(responses_with_comment) == 1 else 'are',
-            '' if len(responses_with_comment) == 1 else 's',
-            '\n'.join(
-                '[Score: {}] ObjectId("{}")\n> {}'.format(
-                    response.score, user_id,
-                    '\n> '.join(response.general_feedback_comment.split('\n')))
-                for user_id, response in sorted(responses_with_comment, key=lambda r: -r[1].score)
-            ),
-        )
-    else:
-        comments = 'There are no individual comments.'
+    # Total number of users that we asked for NPS during that time.
+    total_num_users = _USER_DB.user.count_documents({
+        'emailsSent': {'$elemMatch': {
+            'campaignId': 'nps',
+            # Note that this is not taking the same base, as we are counting
+            # users for which we sent an NPS during a given period, and then
+            # those who answered during the same period.
+            'sentAt': {
+                '$gt': from_date,
+                '$lt': to_date,
+            },
+            }},
+    })
+
+    comments = _report_comments(
+        sorted(responses_with_comment, key=lambda r: -r[1].score),
+        lambda id_and_response: '[Score: {}] ObjectId("{}")\n> {}'.format(
+            id_and_response[1].score, id_and_response[0],
+            '\n> '.join(id_and_response[1].general_feedback_comment.split('\n'))),
+    )
 
     return (
-        '{num_users} user{users_plural} answered the NPS survey for a global NPS of *{nps}%*\n'
+        '{num_users} user{users_plural} answered the NPS survey '
+        '(out of {total_num_users} - {answer_rate}% answer rate) '
+        'for a global NPS of *{nps}%*\n'
         '{score_distribution}\n{comments}'.format(
             num_users=num_users,
+            total_num_users=total_num_users,
+            answer_rate=round(num_users * 100 / total_num_users) if total_num_users else 0,
             users_plural='' if num_users == 1 else 's',
             nps=round(nps_total * 1000 / num_users) / 10 if num_users else 0,
             score_distribution='\n'.join(
@@ -71,7 +92,7 @@ def _compute_nps_report(users, **unused_kwargs):
     )
 
 
-def _compute_stars_report(users, **unused_kwargs):
+def _compute_stars_report(users, from_date, to_date):
     score_distribution = collections.defaultdict(int)
     stars_total = 0
     num_projects = 0
@@ -87,29 +108,45 @@ def _compute_stars_report(users, **unused_kwargs):
             if feedback.text:
                 responses_with_comment.append(feedback)
 
+    # Total number of finished projects during that time.
+    total_num_projects = _USER_DB.user.count_documents({
+        'projects.diagnostic': {'$exists': True},
+        'projects.createdAt': {
+            '$gt': from_date,
+            '$lt': to_date,
+        }
+    })
+
     return (
-        '{num_projects} project{projects_plural} were scored in the app '
+        '{num_projects} project{projects_plural} {was_or_were} scored in the app '
+        '(out of {total_num_projects} - {answer_rate}% answer rate) '
         'for a global average of *{average_stars} :star:*\n'
-        '{score_distribution}\nAnd here are the individual comments:\n{comments}'.format(
+        '{score_distribution}\n{comments}'.format(
             num_projects=num_projects,
             projects_plural='' if num_projects == 1 else 's',
+            was_or_were='was' if num_projects == 1 else 'were',
             average_stars=round(stars_total * 10 / num_projects) / 10 if num_projects else 0,
+            total_num_projects=total_num_projects,
+            answer_rate=round(num_projects * 100 / total_num_projects) if total_num_projects else 0,
             score_distribution='\n'.join(
                 '{}: {} project{}'.format(
                     ':star:' * score, score_distribution[score],
                     '' if score_distribution[score] == 1 else 's')
                 for score in sorted(score_distribution.keys(), reverse=True)),
-            comments='\n'.join(
-                '[{}]\n> {}'.format(
+            comments=_report_comments(
+                sorted(responses_with_comment, key=lambda r: -r.score),
+                lambda response: '[{}]\n> {}'.format(
                     ':star:' * response.score,
-                    '\n> '.join(response.text.split('\n')))
-                for response in sorted(responses_with_comment, key=lambda r: -r.score)),
+                    '\n> '.join(response.text.split('\n')),
+                ),
+            ),
         ))
 
 
 def _compute_rer_report(users, from_date, to_date):
     seeking_distribution = collections.defaultdict(int)
     bob_has_helped = collections.defaultdict(int)
+    answered_bob_helped = collections.defaultdict(int)
     num_users = 0
     for user in users:
         # Find the first status that is in the date range.
@@ -126,8 +163,10 @@ def _compute_rer_report(users, from_date, to_date):
 
         num_users += 1
         seeking_distribution[user_status.seeking] += 1
-        if 'YES' in user_status.bob_has_helped:
-            bob_has_helped[user_status.seeking] += 1
+        if user_status.bob_has_helped:
+            answered_bob_helped[user_status.seeking] += 1
+            if 'YES' in user_status.bob_has_helped:
+                bob_has_helped[user_status.seeking] += 1
 
     return (
         '{num_users} user{users_plural} have answered the survey, '
@@ -142,11 +181,14 @@ def _compute_rer_report(users, from_date, to_date):
                 seeking_distribution[0]) if 0 in seeking_distribution else '',
             seeking_distribution='\n'.join(
                 '*{seeking}*: {num_users} user{plural_users} '
-                '({percent_helped:.1f}% said Bob helped)'.format(
+                '({percent_helped:.1f}% said Bob helped{helped_note})'.format(
                     seeking=user_pb2.SeekingStatus.Name(seeking),
                     num_users=seeking_distribution[seeking],
                     plural_users='' if seeking_distribution[seeking] == 1 else 's',
-                    percent_helped=bob_has_helped[seeking] * 100 / seeking_distribution[seeking])
+                    percent_helped=(
+                        bob_has_helped[seeking] * 100 / (answered_bob_helped[seeking] or 1)),
+                    helped_note='' if answered_bob_helped[seeking] == seeking_distribution[seeking]
+                    else ' - excluding N/A')
                 for seeking in sorted(seeking_distribution.keys())),
         ))
 

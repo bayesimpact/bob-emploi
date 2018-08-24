@@ -20,9 +20,9 @@ You can try it out on a local instance:
         python bob_emploi/data_analysis/importer/reorient_jobbing.py \
         --market_score_csv data/imt/market_score.csv \
         --offers_csv reorient_jobbing_offers_2015_2017.csv \
-        --rome_item_arborescence data/rome/csv/unix_item_arborescence_v332_utf8.csv \
-        --referentiel_code_rome_csv data/rome/csv/unix_referentiel_code_rome_v332_utf8.csv \
-        --referentiel_apellation_rome_csv data/rome/csv/unix_referentiel_appellation_v333_utf8.csv \
+        --rome_item_arborescence data/rome/csv/unix_item_arborescence_v335_utf8.csv \
+        --referentiel_code_rome_csv data/rome/csv/unix_referentiel_code_rome_v335_utf8.csv \
+        --referentiel_apellation_rome_csv data/rome/csv/unix_referentiel_appellation_v335_utf8.csv \
         --mongo_url mongodb://frontend-db/test
 """
 

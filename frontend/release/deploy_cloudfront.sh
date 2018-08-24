@@ -53,7 +53,7 @@ fi
 readonly ETAG_ON_MASTER="$(git show "origin/master:./$CONFIG_FILE" | jq -r .ETag)"
 
 # Extract the distribution config.
-readonly TEMP_CONFIG_FILE="$(mktemp --suffix=.json)"
+readonly TEMP_CONFIG_FILE="$(mktemp -t XXXXXXXX.json)"
 jq .DistributionConfig "$CONFIG_FILE" > "$TEMP_CONFIG_FILE"
 
 # Update AWS Cloudfront.

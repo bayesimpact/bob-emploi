@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+import "bob_emploi/frontend/api/geo.proto";
+
+package bayes.bob;
+
+// Data about an online salon, specifically from pôle emploi:
+// https://salonenligne.pole-emploi.fr/candidat/voirtouslessalons
+// An online salon is an online gathering of job offers for a given job market
+// (location and job group or domain), where people can apply and be interviewed remotely.
+message OnlineSalon {
+  // The title of the salon.
+  string title = 1;
+
+  // The location where the job offers from the salon will be. It could be a specific city or a
+  // larger area, such as a departement.
+  Location location = 2 [deprecated = true];
+
+  // The locations where the job offers from the salon will be. It could be specific cities or
+  // larger areas, such as departements or regions.
+  repeated Location locations = 13;
+
+  // The date when this salon opens.
+  google.protobuf.Timestamp start_date = 3;
+
+  // The date when this salon starts receiving application.
+  google.protobuf.Timestamp application_start_date = 11;
+
+  // The date when this salon stops receiving application.
+  google.protobuf.Timestamp application_end_date = 4;
+
+  // The date period where this salon is open as a French phrase: du ... au ...
+  string open_dates = 5 [deprecated = true];
+
+  // The date period where this salon receives application as a French phrase: du ... au ...
+  string application_dates = 6 [deprecated = true];
+
+  // The number of job offers that are expected to be filled in this salon.
+  int32 offer_count = 7;
+
+  // A link to go to the salon online.
+  string url = 8;
+
+  // The job_groups to which this salon is relevant.
+  repeated string job_group_ids = 9;
+
+  // A human readable string to say the domain of this salon. Might be job group related.
+  string domain = 10 [deprecated = true];
+
+  // Filters a scoring project must pass for this salon to be relevant.
+  repeated string filters = 12;
+}
+
+// A list of salons, to send to the client.
+message OnlineSalons {
+  repeated OnlineSalon salons = 1;
+}
+
+// A rule to check help the importer find what a salon is about. It matches a regexp against some
+// fields of the imported salon (from Pôle emploi API), and outputs some information about job
+// groups and/or location.
+message SalonFilterRule {
+  // The fields in which to look for the specific rule.
+  repeated string fields = 1;
+
+  // The regexp to be matched to apply this rule. It allows grouping to be used in output. Use \1
+  // notation to use grouping in the results. It will be matched against each field in `fields`.
+  string regexp = 2;
+
+  // The kind of locations this rule output, if any.
+  AreaType location_kind = 3;
+
+  // The location IDs this rule output. Depending on location_kind, thise might be city_ids,
+  // departement_ids or region_ids.
+  repeated string location_ids = 4;
+
+  // The job groups this rule output.
+  repeated string job_group_ids = 5;
+
+  // Filters this rule can add for the salon.
+  repeated string filters = 6;
+}

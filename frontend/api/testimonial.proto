@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+message Testimonial {
+  // The name of the testimonial's author.
+  string author_name = 1;
+
+  // Name of the author's job.
+  string author_job_name = 2;
+
+  // Link to the testimonial's page.
+  string link = 3;
+
+  // Link to the image illustrating the testimonial.
+  string image_link = 4;
+
+  // Short description of the testimonial.
+  string description = 5;
+
+  // A set of filter IDs: do not show the testimonial if one these
+  // filters returns false for the project.
+  // See the list of available filters in scoring.py.
+  repeated string filters = 6;
+
+  // A set of job group IDs: testimonials are preferentially shown to users searching
+  // for work in these job groups.
+  repeated string preferred_job_group_ids = 7;
+}
+
+message Testimonials {
+  repeated Testimonial testimonials = 1;
+}

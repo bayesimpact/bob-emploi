@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "bob_emploi/frontend/api/event.proto";
+import "bob_emploi/frontend/api/testimonial.proto";
+
+package bayes.bob;
+
+// Expanded data for create your company advice.
+message CreateCompanyExpandedData {
+  // The testimonials relevant for the user project.
+  Testimonials related_testimonials = 1;
+
+  // The events relevant for the user project.
+  CloseByEvents close_by_events = 2;
+}

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 import {getJobPlacesFromDepartementStats} from 'store/job'
 
-import {Colors, PaddedOnMobile} from 'components/theme'
+import {PaddedOnMobile} from 'components/theme'
 import Picto from 'images/advices/picto-seasonal-relocate.png'
 
 import {AdviceSuggestionList} from './base'
@@ -81,7 +81,7 @@ class ExpandedAdviceCardContent extends React.Component {
     const jobPlaces = getJobPlacesFromDepartementStats(departementStats)
 
     return <div style={{position: 'relative'}}>
-      <PaddedOnMobile style={{color: Colors.DARK_TWO, fontSize: 20, marginBottom: 20}}>
+      <PaddedOnMobile style={{color: colors.DARK_TWO, fontSize: 20, marginBottom: 20}}>
           Il y a beaucoup d'offres d'emplois saisonniers en ce moment pour la prochaine saison
           touristique.
       </PaddedOnMobile>
@@ -106,7 +106,7 @@ class SeasonalJobSuggestion extends React.Component {
     const fullStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,

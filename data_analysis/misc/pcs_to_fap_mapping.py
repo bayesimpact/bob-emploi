@@ -17,7 +17,7 @@ def main(output_csv, filename=None, data_folder='data'):
 
     if not filename:
         filename = os.path.join(data_folder, 'crosswalks/c2rp_table_supra_def_fap_pcs_rome.xlsx')
-    pcs_fap_rome_xlsx = pd.read_excel(filename, sheetname=None)
+    pcs_fap_rome_xlsx = pd.read_excel(filename, sheet_name=None)
 
     if hasattr(output_csv, 'write'):
         output_file = output_csv

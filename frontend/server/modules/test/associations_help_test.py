@@ -9,8 +9,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase('advice-association-help')):
+class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Find an association to help you" advice."""
+
+    model_id = 'advice-association-help'
 
     def test_no_data(self):
         """No associations data."""

@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import {Colors, PaddedOnMobile, Styles} from 'components/theme'
+import {ExternalLink, PaddedOnMobile, Styles} from 'components/theme'
 import Picto from 'images/advices/picto-vae.png'
 
 import {AdviceSuggestionList} from './base'
@@ -26,10 +26,12 @@ class AdviceCard extends React.Component {
 
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
+    onExplore: PropTypes.func.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   renderTip(tip, index) {
+    const {onExplore} = this.props
     const trainingNameStyle = {
       fontStyle: 'italic',
       marginRight: 10,
@@ -37,9 +39,9 @@ class ExpandedAdviceCardContent extends React.Component {
     }
     return <div style={trainingNameStyle} key={`tip-${index}`}>
       {tip.text} {tip.url ? <span>
-        &nbsp;:&nbsp; <a
-          href={tip.url} style={{color: Colors.BOB_BLUE}}
-          target="_blank" rel="noopener noreferer">{tip.url}</a>
+        &nbsp;:&nbsp; <ExternalLink
+          onClick={() => onExplore('vae tip')}
+          href={tip.url} style={{color: colors.BOB_BLUE}}>{tip.url}</ExternalLink>
       </span> : null}
     </div>
   }

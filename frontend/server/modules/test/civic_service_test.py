@@ -10,9 +10,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceCivicServiceTestCase(
-        scoring_test.ScoringModelTestBase('advice-civic-service')):
+class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the civic service advice scoring model."""
+
+    model_id = 'advice-civic-service'
 
     def setUp(self):
         super(AdviceCivicServiceTestCase, self).setUp()

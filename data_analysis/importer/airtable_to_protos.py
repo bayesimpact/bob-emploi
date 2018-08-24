@@ -9,7 +9,7 @@ To use it:
  - Finally run this script:
     docker-compose run -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \
         --rm data-analysis-prepare \
-        python bob_emploi/importer/airtable_to_protos.py \
+        python bob_emploi/data_analysis/importer/airtable_to_protos.py \
         --table chantiers \
         --proto Chantier \
         --mongo_collection chantiers \
@@ -18,7 +18,7 @@ To use it:
         --mongo_url mongodb://frontend-db/test
     docker-compose run -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \
         --rm data-analysis-prepare \
-        python bob_emploi/importer/airtable_to_protos.py \
+        python bob_emploi/data_analysis/importer/airtable_to_protos.py \
         --table action_templates \
         --proto ActionTemplate \
         --mongo_collection action_templates \
@@ -49,7 +49,9 @@ from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import driving_license_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import network_pb2
+from bob_emploi.frontend.api import online_salon_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import user_pb2
 
 
@@ -61,11 +63,18 @@ _LINK_REGEXP = re.compile(r'^[^/]+://[^/]*[^/.](?:/|$)')
 _TEMPLATE_VAR = re.compile(r'%\w+')
 
 
-class _ProtoAirtableConverter(collections.namedtuple(
+def _split_field(record, field, separator=','):
+    if field in record:
+        return dict(record, **{field: [elem.strip() for elem in record[field].split(separator)]})
+    return record
+
+
+class ProtoAirtableConverter(collections.namedtuple(
         'ProtoCsvDescriptor', ['proto_type', 'id_field', 'required_fields'])):
+    """A converter for Airtable records to proto-JSON formatted dict."""
 
     def __new__(cls, *args, **kwargs):
-        self = super(_ProtoAirtableConverter, cls).__new__(cls, *args, **kwargs)
+        self = super(ProtoAirtableConverter, cls).__new__(cls, *args, **kwargs)
         self.snake_to_camelcase = {
             name: field.camelcase_name for name, field in
             self.proto_type.DESCRIPTOR.fields_by_name.items()}
@@ -112,10 +121,6 @@ class _ProtoAirtableConverter(collections.namedtuple(
             raise KeyError(
                 'Some require fields are missing ({}) in the record: {}'
                 .format(self.required_fields_set - airtable_fields, airtable_record))
-        if '’' in json.dumps(airtable_record, ensure_ascii=False):
-            raise ValueError(
-                'Curly quotes ’ are not allowed in the record: {}'
-                .format(airtable_record))
 
         # Convert all existing fields in the AirTable record to their proto
         # equivalent if they have one. The key (k) is converted to camelCase
@@ -130,7 +135,7 @@ class _ProtoAirtableConverter(collections.namedtuple(
         return fields
 
 
-class _ProtoAirtableFiltersConverter(_ProtoAirtableConverter):
+class _ProtoAirtableFiltersConverter(ProtoAirtableConverter):
 
     def convert_record(self, airtable_record):
         """Convert an AirTable record to a dict proto-Json ready."""
@@ -216,7 +221,7 @@ class _ActionTemplateConverter(_ProtoAirtableFiltersConverter):
         return fields
 
 
-class _AdviceModuleConverter(_ProtoAirtableConverter):
+class _AdviceModuleConverter(ProtoAirtableConverter):
 
     def convert_record(self, airtable_record):
         """Convert an AirTable record to a dict proto-Json ready."""
@@ -252,13 +257,51 @@ class _DiagnosticSentenceConverter(_ProtoAirtableFiltersConverter):
         return fields
 
 
-class _DiagnosticSubmetricsSentencesConverter(_AdviceModuleConverter):
+class _DiagnosticSubmetricSentenceConverter(_ProtoAirtableFiltersConverter):
+
+    def sort_key(self, airtable_record):
+        """Function to compute the sort key of a record."""
+
+        record = airtable_record['fields']
+        return (
+            record.get('topic'),
+            0 if record.get('filters', '') else 1,
+            -record.get('priority', 0),
+        )
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+
+        fields = super(_DiagnosticSubmetricSentenceConverter, self).convert_record(airtable_record)
+        self._check_template_vars_fields(airtable_record, ('sentence_template',))
+        return fields
+
+
+class _DiagnosticScorerSentenceConverter(_AdviceModuleConverter):
 
     def sort_key(self, airtable_record):
         """Function to compute the sort key of a record."""
 
         record = airtable_record['fields']
         return record.get('submetric')
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+
+        fields = super(_DiagnosticScorerSentenceConverter, self)\
+            .convert_record(airtable_record)
+
+        for field in ('positive_sentence_template', 'negative_sentence_template'):
+            value = airtable_record['fields'][field]
+            if value[0].lower() != value[0]:
+                raise ValueError('The field "{}" must not be capitalized for "{}": {}'.format(
+                    field, airtable_record['id'], value))
+            if value[-1] in {'.', '!'}:
+                raise ValueError(
+                    'The field "{}" must not end with a punctuation for "{}": {}'.format(
+                        field, airtable_record['id'], value))
+
+        return fields
 
 
 class _FilteredLinkConverter(_ProtoAirtableFiltersConverter):
@@ -329,6 +372,31 @@ class _DynamicAdviceConverter(_FilteredLinkConverter):
         return fields
 
 
+class _EntrepreneurTestimonialConverter(_ProtoAirtableFiltersConverter):
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+
+        fields = super(_EntrepreneurTestimonialConverter, self).convert_record(airtable_record)
+
+        fields = _split_field(fields, 'preferredJobGroupIds')
+
+        return fields
+
+
+class _SalonRuleConverter(_ProtoAirtableFiltersConverter):
+
+    def convert_record(self, airtable_record):
+        """Convert an AirTable record to a dict proto-Json ready."""
+
+        fields = super(_SalonRuleConverter, self).convert_record(airtable_record)
+        fields = _split_field(fields, 'fields')
+        fields = _split_field(fields, 'locationIds')
+        fields = _split_field(fields, 'jobGroupIds')
+
+        return fields
+
+
 def _create_mock_scoring_project():
     """Create a mock scoring_project."""
 
@@ -339,7 +407,7 @@ def _create_mock_scoring_project():
 
 
 PROTO_CLASSES = {
-    'Chantier': _ProtoAirtableConverter(
+    'Chantier': ProtoAirtableConverter(
         chantier_pb2.Chantier, 'chantier_id', required_fields=[]),
     'ActionTemplate': _ActionTemplateConverter(
         action_pb2.ActionTemplate, 'action_template_id', required_fields=[]),
@@ -354,22 +422,32 @@ PROTO_CLASSES = {
         association_pb2.Association, None, required_fields=['name', 'link']),
     'DynamicAdvice': _DynamicAdviceConverter(
         advisor_pb2.DynamicAdvice, None,
-        required_fields=['title', 'card_text', 'expanded_card_items', 'for-job-group']),
+        required_fields=[
+            'title', 'short_title', 'card_text', 'expanded_card_items', 'for-job-group']),
     'ContactLead': _ContactLeadConverter(
         network_pb2.ContactLeadTemplate, None, required_fields=('name', 'email_template')),
     'DiagnosticSentenceTemplate': _DiagnosticSentenceConverter(
         diagnostic_pb2.DiagnosticSentenceTemplate, None,
         required_fields=['sentence_template', 'order']),
-    'DiagnosticSubmetricsSentenceTemplate': _DiagnosticSubmetricsSentencesConverter(
+    'DiagnosticSubmetricSentenceTemplate': _DiagnosticSubmetricSentenceConverter(
+        diagnostic_pb2.DiagnosticSentenceTemplate, None,
+        required_fields=['sentence_template', 'topic']),
+    # TODO(cyrille): Drop sentence templates, keep only the scorers.
+    'DiagnosticScorerSentenceTemplate': _DiagnosticScorerSentenceConverter(
         diagnostic_pb2.DiagnosticSubmetricsSentenceTemplate, None,
         required_fields=[
             'name', 'submetric', 'weight', 'trigger_scoring_model',
             'positive_sentence_template', 'negative_sentence_template']),
-    'OneEuroProgramPartnerBank': _ProtoAirtableConverter(
+    'OneEuroProgramPartnerBank': ProtoAirtableConverter(
         driving_license_pb2.OneEuroProgramPartnerBank,
         None, required_fields=['link', 'logo', 'name']),
     'DrivingSchool': _FilteredLinkConverter(
         driving_license_pb2.DrivingSchool, None, required_fields=[]),
+    'Testimonial': _EntrepreneurTestimonialConverter(
+        testimonial_pb2.Testimonial, None,
+        required_fields=['author_name', 'author_job_name', 'description']),
+    'SalonFilterRule': _SalonRuleConverter(
+        online_salon_pb2.SalonFilterRule, None, required_fields=['regexp', 'fields'])
 }
 
 

@@ -13,6 +13,7 @@ from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server.asynchronous import report
 
+
 _, _DB = mongo.get_connections_from_env()
 
 _AMPLITUDE_API_URL = 'https://amplitude.com/api/2'

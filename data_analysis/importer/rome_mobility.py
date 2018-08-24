@@ -13,7 +13,7 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up plan-comparator-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/rome_mobility.py \
+        python bob_emploi/data_analysis/importer/rome_mobility.py \
         --rome_csv_pattern data/rome/csv/unix_{}_v331_utf8.csv \
         --mongo_url mongodb://frontend-db/test
 """

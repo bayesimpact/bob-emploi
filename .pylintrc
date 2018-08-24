@@ -10,7 +10,7 @@ notes=FIXME,XXX
 string-quote=single-avoid-escape
 
 [VARIABLES]
-dummy-variables-rgx=unused_.*
+dummy-variables-rgx=_?unused_.*
 
 [DESIGN]
 ignored-argument-names=unused_.*

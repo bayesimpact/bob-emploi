@@ -20,7 +20,8 @@ class _AdviceCivicService(scoring_base.ModelBase):
     def get_local_missions(self, project):
         """Get the civic service missions for the user departement"""
 
-        departement_id = project.details.mobility.city.departement_id
+        departement_id = project.details.city.departement_id \
+            or project.details.mobility.city.departement_id
         if not departement_id:
             return association_pb2.VolunteeringMissions()
         try:

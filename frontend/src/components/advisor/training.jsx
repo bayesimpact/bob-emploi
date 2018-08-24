@@ -5,7 +5,7 @@ import React from 'react'
 
 import {lowerFirstLetter, ofPrefix} from 'store/french'
 
-import {Colors, GrowingNumber, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
+import {GrowingNumber, PaddedOnMobile, StringJoiner, Styles} from 'components/theme'
 import laBonneFormationImage from 'images/labonneformation-picto.png'
 import Picto from 'images/advices/picto-training.png'
 
@@ -14,11 +14,11 @@ import {AdviceSuggestionList, ToolCard} from './base'
 const valueToColor = {
   // 0 is unknown
   0: 'initial',
-  1: Colors.RED_PINK,
-  2: Colors.BUTTERSCOTCH,
-  3: Colors.BOB_BLUE,
-  4: Colors.GREENISH_TEAL,
-  5: Colors.GREENISH_TEAL,
+  1: colors.RED_PINK,
+  2: colors.BUTTERSCOTCH,
+  3: colors.BOB_BLUE,
+  4: colors.GREENISH_TEAL,
+  5: colors.GREENISH_TEAL,
 }
 
 const valueToText = {
@@ -46,7 +46,7 @@ class AdviceCard extends React.Component {
 
   render() {
     const {advice: {trainingData: {trainings = []} = {}}, fontSize, project} = this.props
-    const {modifiedName: cityName, prefix} = ofPrefix(project.mobility.city.name)
+    const {modifiedName: cityName, prefix} = ofPrefix(project.city.name)
 
     if (!trainings.length) {
       return <div style={{fontSize: fontSize}}>
@@ -166,7 +166,7 @@ class TrainingSuggestionBase extends React.Component {
     }
 
     const selectedColor = valueToColor[score]
-    const defaultColor = Colors.MODAL_PROJECT_GREY
+    const defaultColor = colors.MODAL_PROJECT_GREY
     // There might be a more elegant way to do that, but it would be overkill and less readable.
     return <div style={containerStyle}>
       <div style={{color: valueToColor[score], textAlign: 'center'}}>
@@ -195,7 +195,7 @@ class TrainingSuggestionBase extends React.Component {
       ...Styles.CENTER_FONT_VERTICALLY,
     }
     const chevronStyle = {
-      fill: Colors.CHARCOAL_GREY,
+      fill: colors.CHARCOAL_GREY,
       flexShrink: 0,
       height: 20,
       lineHeight: 1,

@@ -16,9 +16,9 @@ import datetime
 import logging
 from os import path
 import subprocess
-import termcolor
 
 import pymongo
+import termcolor
 
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
@@ -33,19 +33,24 @@ from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import export_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import helper_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import network_pb2
+from bob_emploi.frontend.api import online_salon_pb2
 from bob_emploi.frontend.api import reorient_jobbing_pb2
+from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.api import seasonal_jobbing_pb2
+from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
-_ROME_VERSION = 'v333'
+_ROME_VERSION = 'v335'
 
 
 class Importer(collections.namedtuple(
-        'Importer', ['name', 'script', 'args', 'is_imported', 'proto_type', 'key'])):
+        # PII means Personally Identifiable Information, i.e. a name, an email.
+        'Importer', ['name', 'script', 'args', 'is_imported', 'proto_type', 'key', 'has_pii'])):
     """Description of an importer."""
 
     def __str__(self):
@@ -66,26 +71,32 @@ IMPORTERS = {
         args={'rome_csv_pattern': 'data/rome/csv/unix_{{}}_{}_utf8.csv'''.format(_ROME_VERSION)},
         is_imported=True,
         proto_type=discovery_pb2.JobsExploration,
-        key='job group ID'),
+        key='job group ID',
+        has_pii=False),
     'recent_job_offers': Importer(
         name='Available Job Offers',
         script='recent_job_offers_count',
         args=None,
         is_imported=True,
         proto_type=job_pb2.LocalJobStats,
-        key='<département ID>:<job group ID>'),
+        key='<département ID>:<job group ID>',
+        has_pii=False),
     'chantiers': Importer(
         name='Chantiers',
         script='airtable_to_protos',
         args={
-            'table': 'changiers',
+            'table': 'Chantier',
             'proto': 'Chantier',
-            'base_id': 'appXmyc7yYj0pOcae',
-            'view': 'viwbjlYBDlD1Fd7Ob',
+            'base_id': 'appb3ENBY5uTDr30B',
+            'view': 'viwkpWz2amJn7YW0J',
         },
         is_imported=True,
         proto_type=chantier_pb2.Chantier,
-        key='chantier_id'),
+        key='chantier_id',
+        has_pii=False),
+    'helper': Importer(
+        name='Mayday App User', script=None, args=None, is_imported=False,
+        proto_type=helper_pb2.Helper, key='user_id', has_pii=True),
     'job_group_info': Importer(
         name='Job Group Info',
         script='job_group_info',
@@ -102,12 +113,13 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=job_pb2.JobGroup,
-        key='job group ID'),
+        key='job group ID',
+        has_pii=False),
     'local_diagnosis': Importer(
         name='Local Diagnosis',
         script='local_diagnosis',
         args={
-            'bmo_csv': 'data/bmo/bmo_2016.csv',
+            'bmo_csv': 'data/bmo/bmo_2018.csv',
             'fap_rome_crosswalk': 'data/crosswalks/passage_fap2009_romev3.txt',
             'pcs_rome_crosswalk': 'data/crosswalks/passage_pcs_romev3.csv',
             'salaries_csv': 'data/fhs_salaries.csv',
@@ -119,36 +131,39 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=job_pb2.LocalJobStats,
-        key='<département ID>:<job group ID>'),
+        key='<département ID>:<job group ID>',
+        has_pii=False),
     'use_case': Importer(
         name='Use Case', script=None, args=None, is_imported=False, proto_type=use_case_pb2.UseCase,
-        key='use_case_id'),
+        key='use_case_id', has_pii=False),
     'user': Importer(
         name='App User', script=None, args=None, is_imported=False,
-        proto_type=user_pb2.User, key='user_id'),
+        proto_type=user_pb2.User, key='user_id', has_pii=True),
     'user_auth': Importer(
         name='App User Auth Data', script=None, args=None, is_imported=False,
-        proto_type=user_pb2.UserAuth, key='user_id'),
+        proto_type=user_pb2.UserAuth, key='user_id', has_pii=True),
     'dashboard_exports': Importer(
         name='Dashboard Export', script=None, args=None, is_imported=False,
-        proto_type=export_pb2.DashboardExport, key='dashboard_export_id'),
+        proto_type=export_pb2.DashboardExport, key='dashboard_export_id', has_pii=False),
     'feedbacks': Importer(
         name='Feedbacks', script=None, args=None, is_imported=False,
-        proto_type=feedback_pb2.Feedback, key='Mongo key'),
+        proto_type=feedback_pb2.Feedback, key='Mongo key', has_pii=False),
     'unverified_data_zones': Importer(
         name='Unverified Data Zones',
         script='unverified_data_zones',
         args={'data_folder': 'data'},
         is_imported=True,
         proto_type=user_pb2.UnverifiedDataZone,
-        key='default'),
+        key='default',
+        has_pii=False),
     'cities': Importer(
         name='City locations',
         script='city_locations',
         args={'stats_filename': 'data/geo/french_cities.csv'},
         is_imported=True,
         proto_type=geo_pb2.FrenchCity,
-        key='Code officiel géographique'),
+        key='Code officiel géographique',
+        has_pii=False),
     'advice_modules': Importer(
         name='Advice modules',
         script='airtable_to_protos',
@@ -160,7 +175,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=advisor_pb2.AdviceModule,
-        key='AirTable key'),
+        key='AirTable key',
+        has_pii=False),
     'tip_templates': Importer(
         name='Tip templates',
         script='airtable_to_protos',
@@ -172,7 +188,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=action_pb2.ActionTemplate,
-        key='AirTable key'),
+        key='AirTable key',
+        has_pii=False),
     'show_unverified_data_users': Importer(
         name='Show unverified data Users',
         script='show_unverified_data_users',
@@ -182,7 +199,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=None,
-        key='User Email'),
+        key='User Email',
+        has_pii=True),
     'jobboards': Importer(
         name='Job Boards',
         script='airtable_to_protos',
@@ -194,7 +212,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=jobboard_pb2.JobBoard,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'associations': Importer(
         name='Associations',
         script='airtable_to_protos',
@@ -206,14 +225,16 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=association_pb2.Association,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'volunteering_missions': Importer(
         name='Volunteering Missions',
         script='volunteering_missions',
         args=None,
         is_imported=True,
         proto_type=association_pb2.VolunteeringMissions,
-        key='departement ID'),
+        key='departement ID',
+        has_pii=False),
     'hiring_cities': Importer(
         name='Hiring Cities',
         script='offers_per_city',
@@ -224,7 +245,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=commute_pb2.HiringCities,
-        key='ROME ID'),
+        key='ROME ID',
+        has_pii=False),
     'application_tips': Importer(
         name='Appliction Tips',
         script='airtable_to_protos',
@@ -235,14 +257,16 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=application_pb2.ApplicationTip,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'eterritoire_links': Importer(
         name='e-Territoire Links',
         script='eterritoire',
         args=None,
         is_imported=True,
         proto_type=None,
-        key='Code officiel géographique'),
+        key='Code officiel géographique',
+        has_pii=False),
     'events': Importer(
         name='WorkUp Events',
         script='workup_events',
@@ -252,14 +276,16 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=event_pb2.Event,
-        key='WorkUp ID'),
+        key='WorkUp ID',
+        has_pii=False),
     'adie_events': Importer(
         name='ADIE Events',
         script='adie_events',
         args={'events_html': 'data/adie-evenements.html'},
         is_imported=True,
         proto_type=event_pb2.Event,
-        key='ADIE ID'),
+        key='ADIE ID',
+        has_pii=False),
     'specific_to_job_advice': Importer(
         name='Specific to Job Advice',
         script='airtable_to_protos',
@@ -271,14 +297,16 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=advisor_pb2.DynamicAdvice,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'seasonal_jobbing': Importer(
         name='Top Places for Seasonal Jobs Per Month',
         script='seasonal_jobbing',
         args={'offer_types_csv': 'data/job_offers/seasonal_offers_2015_2017.csv'},
         is_imported=True,
         proto_type=seasonal_jobbing_pb2.MonthlySeasonalJobbingStats,
-        key='Month as number from 1'),
+        key='Month as number from 1',
+        has_pii=False),
     'contact_lead': Importer(
         name='Contact lead to expand or use your network',
         script='airtable_to_protos',
@@ -290,7 +318,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=network_pb2.ContactLeadTemplate,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'departements': Importer(
         name='Basic information for French départements and territoires',
         script='departements',
@@ -300,7 +329,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=geo_pb2.Departement,
-        key='Departement ID'),
+        key='Departement ID',
+        has_pii=False),
     'diagnostic_sentences': Importer(
         name='Templates of sentences to build a Diagnostic',
         script='airtable_to_protos',
@@ -312,19 +342,35 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=diagnostic_pb2.DiagnosticSentenceTemplate,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
+    # TODO(cyrille): Rename once the one below is hard-coded.
+    'diagnostic_submetrics_sentences_new': Importer(
+        name='Templates of sentences for a Diagnostic submetric',
+        script='airtable_to_protos',
+        args={
+            'base_id': 'appXmyc7yYj0pOcae',
+            'table': 'tblIY6Ba6KaRzJ0ko',
+            'view': 'viwNgJMaZpm8TibUy',
+            'proto': 'DiagnosticSubmetricSentenceTemplate',
+        },
+        is_imported=True,
+        proto_type=diagnostic_pb2.DiagnosticSentenceTemplate,
+        key='Airtable key',
+        has_pii=False),
     'diagnostic_submetrics_sentences': Importer(
-        name='Templates of sentences to build a Diagnostic submetric',
+        name='Templates of scorers to build a Diagnostic submetric',
         script='airtable_to_protos',
         args={
             'base_id': 'appXmyc7yYj0pOcae',
             'table': 'diagnostic_submetrics_sentences',
             'view': 'viwoe6r6IqlMeRQLU',
-            'proto': 'DiagnosticSubmetricsSentenceTemplate',
+            'proto': 'DiagnosticScorerSentenceTemplate',
         },
         is_imported=True,
         proto_type=diagnostic_pb2.DiagnosticSubmetricsSentenceTemplate,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'regions': Importer(
         name='Basic information for French régions',
         script='regions',
@@ -334,7 +380,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=geo_pb2.Region,
-        key='Region ID'),
+        key='Region ID',
+        has_pii=False),
     'reorient_jobbing': Importer(
         name='Reorient to jobbing positions',
         script='reorient_jobbing',
@@ -350,7 +397,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=reorient_jobbing_pb2.LocalJobbingStats,
-        key='Departement ID'),
+        key='Departement ID',
+        has_pii=False),
     'translations': Importer(
         name='Strings translations',
         script='translations',
@@ -361,7 +409,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=None,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'local_missions': Importer(
         name='Civic service missions',
         script='civic_service',
@@ -370,7 +419,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=None,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'banks_one_euro_driving_license': Importer(
         name='Partner banks of the "1 euro" driving license program',
         script='airtable_to_protos',
@@ -382,7 +432,8 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=driving_license_pb2.OneEuroProgramPartnerBank,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
     'schools_one_euro_driving_license': Importer(
         name='Partner schools of the "1 euro" driving license program',
         script='airtable_to_protos',
@@ -394,22 +445,81 @@ IMPORTERS = {
         },
         is_imported=True,
         proto_type=driving_license_pb2.DrivingSchool,
-        key='Airtable key'),
+        key='Airtable key',
+        has_pii=False),
+    'adie_testimonials': Importer(
+        name='Adie entrepreneurs testimonials',
+        script='airtable_to_protos',
+        args={
+            'table': 'entrepreneur_testimonials',
+            'proto': 'Testimonial',
+            'base_id': 'appXmyc7yYj0pOcae',
+            'view': 'viw7KWiq3c33COzHp',
+        },
+        is_imported=True,
+        proto_type=testimonial_pb2.Testimonial,
+        key='Airtable key',
+        has_pii=False),
+    'cvs_and_cover_letters': Importer(
+        name='CVs & Cover Letters to review',
+        script='document_to_review',
+        args={
+            'table': 'Job seekers',
+            'view': 'Ready to Import',
+            'base_id': 'app6I08170BlnyxnI',
+        },
+        is_imported=True,
+        proto_type=review_pb2.DocumentToReview,
+        key='Unique mongo ID',
+        has_pii=True),
+    'online_salons': Importer(
+        name='Online salons',
+        script='online_salons',
+        args={'events_file_name': 'data/pole_emploi/online-salons-{}.json'.format(NOW)},
+        is_imported=True,
+        proto_type=online_salon_pb2.OnlineSalon,
+        key='Unique mongo ID',
+        has_pii=False),
+    'volunteer': Importer(
+        name='Volunteer for future Bayes Campaigns', script=None, args=None, is_imported=False,
+        # TODO(cyrille): Use other proto type if we use it sometime. For now, we just populate
+        # the 'email' field.
+        proto_type=helper_pb2.Helper, key='user_id', has_pii=True),
 }
+
+
+_MAINTENANCE_COLLECTIONS = {'meta', 'system.indexes', 'objectlabs-system'}
+
+
+def is_personal_database(collection_names):
+    """Determines if this is a database with PII collections or not."""
+
+    imported = collection_names & IMPORTERS.keys()
+    # We consider a DB to be personal if at least 2 collections are personal,
+    # that way we can detect when a personal collection landed wrongly in a
+    # non-personal database.
+    return sum(1 for name in imported if IMPORTERS[name].has_pii) > 1
 
 
 def compute_collections_diff(importers, db_client):
     """Determine which collections have been imported and which are missing."""
 
-    collection_names = [name for name in db_client.collection_names()
-                        if name not in ['meta', 'system.indexes']]
-    importers_to_import = set([
-        key for key, importer in importers.items()
-        if importer.is_imported])
+    collection_names = {
+        name for name in db_client.collection_names() if name not in _MAINTENANCE_COLLECTIONS
+    }
+    is_personal = is_personal_database(collection_names)
+    personal_safe_importers = {
+        key: importer for key, importer in importers.items()
+        if importer.has_pii == is_personal
+    }
+
+    importers_to_import = {
+        key for key, importer in personal_safe_importers.items() if importer.is_imported
+    }
     return CollectionsDiff(
-        collection_missing=importers_to_import - set(collection_names),
-        importer_missing=collection_names - importers.keys(),
-        imported=collection_names & importers.keys()
+        collection_missing=importers_to_import - collection_names,
+        importer_missing=collection_names - personal_safe_importers.keys(),
+        imported=collection_names & personal_safe_importers.keys(),
     )
 
 
@@ -502,7 +612,8 @@ def main(string_args=None):
         _bold(n_importers_missing), _plural(n_importers_missing))
     if diff.importer_missing:
         logging.info(
-            'The collections with missing importer%s: %s\n',
+            'The collection%s with missing importer%s: %s\n',
+            's' if n_importers_missing > 1 else '',
             _plural(n_importers_missing),
             termcolor.colored(str(diff.importer_missing), 'red'))
 
@@ -510,7 +621,7 @@ def main(string_args=None):
         'Status report on imported collections (%d):',
         len(diff.imported))
     meta_info = get_meta_info(db_client)
-    for collection_name in diff.imported:
+    for collection_name in sorted(diff.imported):
         importer = IMPORTERS[collection_name]
         if not importer.is_imported:
             status = termcolor.colored('No import needed', 'green')

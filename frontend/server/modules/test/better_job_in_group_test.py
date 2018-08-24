@@ -8,9 +8,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class AdviceBetterJobInGroupTestCase(
-        scoring_test.ScoringModelTestBase('advice-better-job-in-group')):
+class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Find a better job in job group" advice."""
+
+    model_id = 'advice-better-job-in-group'
 
     def test_no_data(self):
         """No data for job group."""

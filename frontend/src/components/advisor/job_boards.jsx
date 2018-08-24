@@ -5,7 +5,7 @@ import React from 'react'
 
 import {lowerFirstLetter, ofPrefix} from 'store/french'
 
-import {CircularProgress, Colors, GrowingNumber, PaddedOnMobile, Tag} from 'components/theme'
+import {CircularProgress, GrowingNumber, PaddedOnMobile, Tag} from 'components/theme'
 import Picto from 'images/advices/picto-find-a-jobboard.png'
 
 import {AdviceSuggestionList, connectExpandedCardWithContent} from './base'
@@ -15,14 +15,23 @@ class AdviceCard extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
     fontSize: PropTypes.number.isRequired,
-    project: PropTypes.object.isRequired,
+    project: PropTypes.shape({
+      city: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+      }),
+      targetJob: PropTypes.shape({
+        jobGroup: PropTypes.shape({
+          name: PropTypes.string.isRequired,
+        }).isRequired,
+      }),
+    }).isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   render() {
-    const {advice, fontSize, project, userYou} = this.props
+    const {advice, fontSize, project: {city = {}, targetJob = {}}, userYou} = this.props
     const {isSpecificToJobGroup, isSpecificToRegion, jobBoardTitle} = advice.jobBoardsData || {}
-    const {prefix, modifiedName: cityName} = ofPrefix(project.mobility.city.name)
+    const {prefix, modifiedName: cityName} = ofPrefix(city.name)
 
     return <div style={{fontSize: fontSize}}>
       {jobBoardTitle ? <div>
@@ -31,7 +40,7 @@ class AdviceCard extends React.Component {
         {(isSpecificToJobGroup || isSpecificToRegion) ? <span>
           {' '}Un portail d'offres spécialisé
           {isSpecificToJobGroup ? <span>
-            {' '}en <strong>{lowerFirstLetter(project.targetJob.jobGroup.name)}</strong>
+            {' '}en <strong>{lowerFirstLetter(targetJob.jobGroup.name)}</strong>
           </span> : null}
           {isSpecificToRegion ? <span>
             {' '}dans la région {prefix}<strong>{cityName}</strong>
@@ -53,18 +62,16 @@ class ExpandedAdviceCardContentBase extends React.Component {
     adviceData: PropTypes.shape({
       jobBoards: PropTypes.arrayOf(PropTypes.object.isRequired),
     }).isRequired,
+    onExplore: PropTypes.func.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   renderJobBoards(style) {
-    const {adviceData: {jobBoards}, userYou} = this.props
+    const {adviceData: {jobBoards}, onExplore, userYou} = this.props
     return <AdviceSuggestionList style={style}>
       {(jobBoards || []).map(({filters, link: href, title}, index) => <JobBoardLink
-        key={`job-board-${index}`} {...{filters, href, userYou}}>
+        key={`job-board-${index}`} {...{filters, href, userYou}}
+        onClick={() => onExplore('jobboard')}>
         {title}
       </JobBoardLink>)}
     </AdviceSuggestionList>
@@ -119,19 +126,19 @@ class JobBoardLinkBase extends React.Component {
     const tags = []
     if (/\.pole-emploi\.fr/.test(href)) {
       tags.push({
-        color: Colors.SQUASH,
+        color: colors.SQUASH,
         value: 'officiel',
       })
     }
     if ((filters || []).some(f => /^for-job-group/.test(f))) {
       tags.push({
-        color: Colors.GREENISH_TEAL,
+        color: colors.GREENISH_TEAL,
         value: userYou('spécialisé pour ton métier', 'spécialisé pour votre métier'),
       })
     }
     if ((filters || []).some(f => /^for-departement/.test(f))) {
       tags.push({
-        color: Colors.BOB_BLUE,
+        color: colors.BOB_BLUE,
         value: userYou('spécialisé pour ta région', 'spécialisé pour votre région'),
       })
     }
@@ -147,7 +154,7 @@ class JobBoardLinkBase extends React.Component {
         {value}
       </Tag>)}
       <div style={{flex: 1}} />
-      <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, height: 20, width: 20}} />
+      <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
     </div>
   }
 }

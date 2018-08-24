@@ -7,9 +7,10 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class DrivingLicenseHelpScoringModelTestCase(
-        scoring_test.ScoringModelTestBase('advice-driving-license-low-income')):
+class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Get help for getting your driving license" advice."""
+
+    model_id = 'advice-driving-license-low-income'
 
     def _create_scoreable_persona(self, rome_id='A1234', departement='69'):
         """Assumes user does not have CAR driving license,
@@ -63,6 +64,7 @@ class DrivingLicenseHelpScoringModelTestCase(
     def test_not_searched_enough(self):
         """User hasn't been searching for long."""
 
+        self.now = datetime.datetime(2018, 2, 2)
         persona = self._random_persona().clone()
         persona.project.job_search_started_at.FromDatetime(datetime.datetime(2017, 11, 1))
         score = self._score_persona(persona)
@@ -111,7 +113,7 @@ class DrivingLicenseHelpScoringModelTestCase(
             'requirements': {
                 'drivingLicenses': [{
                     'drivingLicense': 'CAR',
-                    'percentRequired': 50,
+                    'percentRequired': 90,
                 }],
             },
         })
@@ -160,9 +162,10 @@ class DrivingLicenseHelpScoringModelTestCase(
         self.assertEqual(result.longitude, 4.5, msg='Failed for "{}"'.format(persona.name))
 
 
-class DrivingLicenseOneEuroScoringModelTestCase(
-        scoring_test.ScoringModelTestBase('advice-driving-license-euro')):
+class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Driving License at 1 euro / day" advice."""
+
+    model_id = 'advice-driving-license-euro'
 
     def _create_scoreable_persona(self):
         """Assumes user does not have CAR driving license,
@@ -238,7 +241,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(
             'requirements': {
                 'drivingLicenses': [{
                     'drivingLicense': 'CAR',
-                    'percentRequired': 50,
+                    'percentRequired': 90,
                 }],
             },
         })
@@ -270,9 +273,10 @@ class DrivingLicenseOneEuroScoringModelTestCase(
         self.assertGreaterEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
 
 
-class DrivingLicenseWrittenScoringModelTestCase(
-        scoring_test.ScoringModelTestBase('advice-driving-license-written')):
+class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBase):
     """Unit tests for the "Prepare your driving license written exam" advice."""
+
+    model_id = 'advice-driving-license-written'
 
     def _create_scoreable_persona(self):
         """Assumes user does not have CAR driving license,
@@ -338,7 +342,7 @@ class DrivingLicenseWrittenScoringModelTestCase(
             'requirements': {
                 'drivingLicenses': [{
                     'drivingLicense': 'CAR',
-                    'percentRequired': 50,
+                    'percentRequired': 90,
                 }],
             },
         })

@@ -27,7 +27,10 @@ class DecoratorTestCase(unittest.TestCase):
             job.rome_id = 'A1234'
             return job
 
-        self.assertEqual('{\n  "romeId": "A1234"\n}', _func())
+        with app.test_request_context(method='POST',
+                                      data='{"romeId": "A1234"}',
+                                      content_type='application/json'):
+            self.assertEqual('{\n  "romeId": "A1234"\n}', _func())
 
     def test_proto_api_wrong_return(self):
         """Check that @flask_api enforces the type of the return value."""
@@ -115,6 +118,66 @@ class DecoratorTestCase(unittest.TestCase):
         self.assertEqual(['A1234'], [job_group.rome_id for job_group in calls])
         self.assertEqual(r'A1234 \o/', result)
 
+    def test_proto_api_unicode_error(self):
+        """Check that @flask_api does not choke too hard on a unicode error."""
+
+        test_app = app.test_client()
+        calls = []
+
+        @app.route('/wrong_encoding', methods=['POST'])
+        @proto.flask_api(in_type=job_pb2.JobGroup, out_type=job_pb2.JobGroup)
+        def _unused_pass_through(job_group):
+            calls.append(job_group)
+            return job_group
+
+        response = test_app.post(
+            '/wrong_encoding', data=b'{"name" : "Fer \xe0 repasser"}',
+            content_type='application/json')
+
+        self.assertEqual(422, response.status_code)
+        self.assertFalse(calls)
+
+    def test_proto_api_wire_format_output(self):
+        """Wire format for output of @flask_api."""
+
+        @proto.flask_api(in_type=job_pb2.JobGroup, out_type=job_pb2.JobGroup)
+        def _func(job):
+            return job
+
+        with app.test_request_context(method='POST',
+                                      data='{"romeId": "A1234"}',
+                                      headers=[('Accept', 'application/x-protobuf-base64')],
+                                      content_type='application/json'):
+            response = _func()  # pylint: disable=no-value-for-parameter
+            self.assertEqual('CgVBMTIzNA==', response.get_data(as_text=True).strip())
+
+    def test_proto_api_wire_format_input(self):
+        """Wire format for output of @flask_api."""
+
+        @proto.flask_api(in_type=job_pb2.JobGroup, out_type=job_pb2.JobGroup)
+        def _func(job):
+            return job
+
+        with app.test_request_context(method='POST',
+                                      data='CgVBMTIzNA==',
+                                      content_type='application/x-protobuf-base64'):
+            self.assertEqual(
+                '{\n  "romeId": "A1234"\n}', _func())  # pylint: disable=no-value-for-parameter
+
+    def test_proto_api_default_format_output(self):
+        """The default format for output of @flask_api json."""
+
+        @proto.flask_api(in_type=job_pb2.JobGroup, out_type=job_pb2.JobGroup)
+        def _func(job):
+            return job
+
+        with app.test_request_context(method='POST',
+                                      data='{"romeId": "A1234"}',
+                                      headers=[('Accept', '*/*')],
+                                      content_type='application/json'):
+            self.assertEqual(
+                '{\n  "romeId": "A1234"\n}', _func())  # pylint: disable=no-value-for-parameter
+
 
 class CacheMongoTestCase(unittest.TestCase):
     """Unit tests for the MongoCachedCollection class."""
@@ -179,7 +242,7 @@ class CacheMongoTestCase(unittest.TestCase):
         collection = self._collection.get_collection(self._db)
         self.assertEqual(set(['A124']), set(collection.keys()))
 
-        self._db.basic.remove({})
+        self._db.basic.drop()
         self._db.basic.insert_one(
             {'_id': 'A124', 'romeId': 'A124', 'name': 'New content in the DB'},
         )
@@ -198,7 +261,7 @@ class CacheMongoTestCase(unittest.TestCase):
         mock_now.return_value = datetime.datetime(2018, 2, 2, 0)
         self.assertEqual(set(['A124']), set(collection.keys()))
 
-        self._db.basic.remove({})
+        self._db.basic.drop()
         self._db.basic.insert_one(
             {'_id': 'A124', 'romeId': 'A124', 'name': 'New content in the DB'},
         )
@@ -218,7 +281,7 @@ class CacheMongoTestCase(unittest.TestCase):
         collection = self._collection.get_collection(self._db)
         self.assertEqual(set(['A124']), set(collection.keys()))
 
-        self._db.basic.remove({})
+        self._db.basic.drop()
         self._db.basic.insert_one(
             {'_id': 'A124', 'romeId': 'A124', 'name': 'New content in the DB'},
         )

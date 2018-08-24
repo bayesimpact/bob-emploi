@@ -5,7 +5,7 @@ import React from 'react'
 import {getEmailTemplates, inDepartement} from 'store/french'
 import {missionLocaleUrl} from 'store/job'
 
-import {Colors, GrowingNumber, PaddedOnMobile, Styles} from 'components/theme'
+import {ExternalLink, GrowingNumber, PaddedOnMobile, Styles} from 'components/theme'
 import Picto from 'images/advices/picto-driving-license-euro.png'
 import missionLocaleImage from 'images/missions-locales-logo.png'
 
@@ -36,19 +36,14 @@ class ExpandedAdviceCardContentBase extends React.Component {
     }),
     gender: PropTypes.string,
     isMinor: PropTypes.bool,
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.shape({
-      mobility: PropTypes.shape({
-        city: PropTypes.shape({
-          departementName: PropTypes.string,
-          departementPrefix: PropTypes.string,
-        }),
+      city: PropTypes.shape({
+        departementName: PropTypes.string,
+        departementPrefix: PropTypes.string,
       }),
     }).isRequired,
     userYou: PropTypes.func.isRequired,
-  }
-
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
   }
 
   renderAgeSpecificParagraph = () => {
@@ -98,7 +93,8 @@ class ExpandedAdviceCardContentBase extends React.Component {
   renderFindingSchool(key) {
     const {
       adviceData: {schoolListLink, schools = []},
-      project: {mobility},
+      onExplore,
+      project: {city},
       userYou,
     } = this.props
 
@@ -112,11 +108,11 @@ class ExpandedAdviceCardContentBase extends React.Component {
     }
     const maybeMore = schools.length ? "Plus d'auto-écoles" :
       'Accédez à la liste des auto-écoles'
-    const inDepartment = mobility && mobility.city && inDepartement(mobility.city) ||
-      `dans ${userYou('ton', 'votre')} département`
+    const inDepartment = inDepartement(city) || `dans ${userYou('ton', 'votre')} département`
     return <ExpandableAction key={key}
       contentName="la liste des auto-écoles"
       title="Trouver une auto-école agréée pour le permis à 1&nbsp;€"
+      onContentShown={() => onExplore('schools list')}
       userYou={userYou}>
       <div style={{marginBottom: 20}}>
         Nous avons trouvé {schools.length ?
@@ -127,7 +123,11 @@ class ExpandedAdviceCardContentBase extends React.Component {
         <AdviceSuggestionList style={{marginTop: 10}}>
           {[
             ...schools.map(({address, link, name}, index) =>
-              <div onClick={() => window.open(link, '_blank')}
+              <div
+                onClick={() => {
+                  window.open(link, '_blank')
+                  onExplore && onExplore('school')
+                }}
                 style={itemStyle} key={`school-${index}`}>
                 <div style={{marginRight: 10, width: 200, ...Styles.CENTER_FONT_VERTICALLY}}>
                   {name}
@@ -141,7 +141,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
                 onClick={() => window.open(schoolListLink, '_blank')}>
                 {maybeMore} agréées pour le permis à 1&nbsp;€ {inDepartment}
                 <div style={{flex: 1}} />
-                <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, width: 20}} />
+                <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, width: 20}} />
               </div> : null,
           ]}
         </AdviceSuggestionList>
@@ -150,18 +150,25 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   renderDocumentation(key) {
-    const {adviceData: {missionLocale}, isMinor, project: {mobility}, userYou} = this.props
+    const {
+      adviceData: {missionLocale},
+      isMinor,
+      onExplore,
+      project: {city: {departementName = ''} = {}},
+      userYou,
+    } = this.props
     if (isMinor) {
       const comparatorStyle = {
-        color: Colors.COOL_GREY,
+        color: colors.COOL_GREY,
         fontSize: 13,
         fontStyle: 'italic',
         fontWeight: 'normal',
       }
-      const departementName = mobility && mobility.city && mobility.city.departementName || ''
       const missionLocaleLink = missionLocaleUrl(missionLocale, departementName)
-      return <ExpandableAction {...{key, userYou}}
-        title={`Expliquer le permis à 1\xa0€ à ${userYou('tes', 'vos')} parents ou bien
+      return <ExpandableAction
+        {...{key, userYou}}
+        onContentShown={() => onExplore('documentation-minor')}
+        title={`Expliquer le permis à 1\xA0€ à ${userYou('tes', 'vos')} parents ou bien
           contacter ${userYou('ta', 'votre')} Mission Locale`}>
         <div>
           Si ce sont {userYou('tes', 'vos')} parents qui empruntent
@@ -186,6 +193,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
           <ToolCard
             imageSrc={missionLocaleImage}
             href={missionLocaleLink}
+            onClick={() => onExplore('tool')}
             style={{margin: '35px 0'}}>
             Mission Locale
             <div style={{fontSize: 13, fontWeight: 'normal'}}>
@@ -199,7 +207,8 @@ class ExpandedAdviceCardContentBase extends React.Component {
     const youCanRefundYour =
       userYou('tu pourras rembourser ton', 'vous pourrez rembourser votre')
 
-    return <ExpandableAction {...{key, userYou}}
+    return <ExpandableAction
+      {...{key, userYou}} onContentShown={() => onExplore('documentation')}
       contentName="les options possibles"
       title={`Réunir les documents pour montrer que ${youCanRefundYour} prêt`}>
       <div>
@@ -227,11 +236,12 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   renderFindABank(key) {
-    const {adviceData: {partnerBanks}, userYou} = this.props
+    const {adviceData: {partnerBanks}, onExplore, userYou} = this.props
     if (!partnerBanks || !partnerBanks.length) {
       return null
     }
-    return <ExpandableAction {...{key, userYou}}
+    return <ExpandableAction
+      {...{key, userYou}} onContentShown={() => onExplore('banks list')}
       contentName="la liste des banques"
       title={`Trouver un partenaire financier pour
         faire ${userYou('ta', 'votre')} demande de prêt`}>
@@ -248,9 +258,10 @@ class ExpandedAdviceCardContentBase extends React.Component {
           justifyContent: 'space-between',
         }}>
           {partnerBanks.map(({link, logo, name}) =>
-            <a href={link} target="_blank" key={`partner-${name}`}>
+            <ExternalLink
+              href={link} key={`partner-${name}`} onClick={() => onExplore('bank')}>
               <img src={logo} alt={name} style={{margin: 10, maxHeight: 60, maxWidth: 160}} />
-            </a>
+            </ExternalLink>
           )}
         </div>
       </div>
@@ -258,10 +269,12 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   render() {
-    const {advice: {adviceId}, userYou} = this.props
+    const {advice: {adviceId}, onExplore, userYou} = this.props
 
     const emails = (getEmailTemplates(userYou)[adviceId] || []).map((template, index) =>
-      <EmailTemplate {...template} key={`email-${index}`} userYou={userYou} />
+      <EmailTemplate
+        {...template} key={`email-${index}`} userYou={userYou}
+        onContentShown={() => onExplore('email')} />
     )
     const actions = [
       this.renderFindingSchool('finding-school'),

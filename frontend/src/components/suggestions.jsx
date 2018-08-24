@@ -1,4 +1,4 @@
-import omit from 'lodash/omit'
+import _omit from 'lodash/omit'
 import React from 'react'
 import PropTypes from 'prop-types'
 import algoliasearch from 'algoliasearch/reactnative'
@@ -150,6 +150,19 @@ function genderizeJob(job, gender) {
   return job.name
 }
 
+function maybeLowerFirstLetter(word, isLowercased) {
+  if (!isLowercased || !word) {
+    return word
+  }
+  // Matches the first visible letter (ignoring HTML tag that would come
+  // before): e.g. "Fireman" => "F", "<em>Gre</em>mlin" => "G".
+  const matchFirstLetter = word.match(/^(<.*?>)?(\w)(.*)$/)
+  if (!matchFirstLetter) {
+    return word
+  }
+  return (matchFirstLetter[1] || '') + matchFirstLetter[2].toLowerCase() + matchFirstLetter[3]
+}
+
 // Assemble a Job proto from a JobSuggest suggestion.
 function jobFromSuggestion(suggestion) {
   if (!suggestion) {
@@ -181,6 +194,12 @@ const GENDERIZED_DISPLAY_KEY_SUFFIX = {
 
 // A Job autocomplete input.
 class JobSuggest extends React.Component {
+  static algoliaApp = 'K6ACI9BKKT'
+
+  static algoliaApiKey = 'da4db0bf437e37d6d49cefcb8768c67a'
+
+  static algoliaIndex = 'jobs'
+
   static propTypes = {
     // Delay the calling of `onError` by this amount after the user stopped typing.
     // Defaults to 3 seconds.
@@ -207,43 +226,32 @@ class JobSuggest extends React.Component {
     errorDelaySeconds: 3,
   }
 
-  static algoliaApp = 'K6ACI9BKKT'
-
-  static algoliaApiKey = 'da4db0bf437e37d6d49cefcb8768c67a'
-
-  static algoliaIndex = 'jobs'
-
-  componentWillMount() {
-    this.reset()
+  state = {
+    jobName: '',
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.value && nextProps.value.codeOgr) {
-      const genderizedJobName = genderizeJob(nextProps.value, nextProps.gender)
-      const jobName = this.maybeLowerFirstLetter(genderizedJobName)
-      this.setState({jobName})
+  static getDerivedStateFromProps({gender, isLowercased, value}, prevState) {
+    if (prevState.gender === gender && !!prevState.isLowercased === !!isLowercased
+      && prevState.value === value) {
+      return null
+    }
+    if (!value || !value.codeOgr) {
+      return {
+        gender,
+        isLowercased,
+        value,
+      }
+    }
+    const jobName = maybeLowerFirstLetter(genderizeJob(value, gender), isLowercased) || ''
+    return {
+      gender,
+      isLowercased,
+      jobName,
+      value,
     }
   }
 
-  reset() {
-    const {value, gender} = this.props
-    this.setState({
-      jobName: genderizeJob(value, gender),
-    })
-  }
-
-  maybeLowerFirstLetter = word => {
-    if (!this.props.isLowercased || !word) {
-      return word
-    }
-    // Matches the first visible letter (ignoring HTML tag that would come
-    // before): e.g. "Fireman" => "F", "<em>Gre</em>mlin" => "G".
-    const matchFirstLetter = word.match(/^(<.*?>)?(\w)(.*)$/)
-    if (!matchFirstLetter) {
-      return word
-    }
-    return (matchFirstLetter[1] || '') + matchFirstLetter[2].toLowerCase() + matchFirstLetter[3]
-  }
+  maybeLowerFirstLetter = word => maybeLowerFirstLetter(word, this.props.isLowercased)
 
   renderSuggestion = (suggestion) => {
     const {gender} = this.props
@@ -298,7 +306,7 @@ class JobSuggest extends React.Component {
     const displayKey = 'libelleAppellationCourt' + (GENDERIZED_DISPLAY_KEY_SUFFIX[gender] || '')
     const display = suggestion => this.maybeLowerFirstLetter(suggestion[displayKey])
     return <AlgoliaSuggest
-      {...omit(otherProps, ['onChange', 'value'])} algoliaIndex={this.constructor.algoliaIndex}
+      {..._omit(otherProps, ['onChange', 'value'])} algoliaIndex={this.constructor.algoliaIndex}
       algoliaApp={this.constructor.algoliaApp} algoliaApiKey={this.constructor.algoliaApiKey}
       displayValue={this.state.jobName} hint={true} autoselect={true}
       autoselectOnBlur={true} style={fieldStyle} display={display}
@@ -334,14 +342,20 @@ class CitySuggest extends React.Component {
   }
 
   state = {
-    cityName: this.props.value && this.props.value.name || '',
+    cityName: '',
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.value && nextProps.value.cityId) {
-      this.setState({
-        cityName: nextProps.value.name,
-      })
+  static getDerivedStateFromProps({value}, prevState) {
+    if (prevState.value === value) {
+      return null
+    }
+    if (!value || !value.cityId) {
+      return {value}
+
+    }
+    return {
+      cityName: value && value.name || '',
+      value,
     }
   }
 
@@ -405,7 +419,7 @@ class CitySuggest extends React.Component {
       fieldStyle.borderColor = 'red'
     }
     return <AlgoliaSuggest
-      {...omit(otherProps, ['onChange'])} algoliaIndex="cities"
+      {..._omit(otherProps, ['onChange'])} algoliaIndex="cities"
       algoliaApp="K6ACI9BKKT" algoliaApiKey="da4db0bf437e37d6d49cefcb8768c67a"
       displayValue={cityName} hint={true} autoselect={true} autoselectOnBlur={true}
       hitsPerPage={5} displayKey="name"
@@ -427,14 +441,19 @@ class ActivitySuggest extends React.Component {
   }
 
   state = {
-    name: this.props.value && this.props.value.name || '',
+    name: '',
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.value && nextProps.value.naf) {
-      this.setState({
-        name: nextProps.value.name,
-      })
+  static getDerivedStateFromProps({value}, prevState) {
+    if (prevState.value === value) {
+      return null
+    }
+    if (!value || !value.naf) {
+      return {value}
+    }
+    return {
+      name: value && value.name || '',
+      value,
     }
   }
 
@@ -464,7 +483,7 @@ class ActivitySuggest extends React.Component {
       fieldStyle.borderColor = 'red'
     }
     return <AlgoliaSuggest
-      {...omit(otherProps, ['onChange'])} algoliaIndex="activities"
+      {..._omit(otherProps, ['onChange'])} algoliaIndex="activities"
       algoliaApp="K6ACI9BKKT" algoliaApiKey="da4db0bf437e37d6d49cefcb8768c67a"
       displayValue={name} hint={true} autoselect={true} autoselectOnBlur={true}
       hitsPerPage={5} displayKey="name"

@@ -17,7 +17,7 @@ import requests
 
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import use_case_pb2
-from bob_emploi.frontend.server import advisor
+from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
@@ -27,7 +27,7 @@ from bob_emploi.frontend.server.asynchronous import report
 # WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
 _SLACK_ASSESSER_URL = os.getenv('SLACK_ASSESSER_URL')
 
-_DB, _USER_DB = mongo.get_connections_from_env()
+_DB, _ = mongo.get_connections_from_env()
 
 # The base URL to use as the prefix of all links to the website. E.g. in dev,
 # you should use http://localhost:3000.
@@ -37,14 +37,14 @@ _SUBDIAGNOSTIC_PREFIX = 'subdiagnostic: '
 
 
 def _list_missing_properties_for_assessed_use_case(user, title):
-    diagnostic, missing_sentences = advisor.diagnose(user, user.projects[0], _DB)
+    user_diagnostic, missing_sentences = diagnostic.diagnose(user, user.projects[0], _DB)
     for order in missing_sentences:
         logging.debug('Missing sentences %d in text:%s', order, title)
         yield 'text: sentence ' + str(order)
-    if not diagnostic.overall_score:
+    if not user_diagnostic.overall_score:
         logging.debug("Diagnostic doesn't have overall score: %s", title)
         yield 'score'
-    submetrics = {sub.topic for sub in diagnostic.sub_diagnostics if sub.text}
+    submetrics = {sub.topic for sub in user_diagnostic.sub_diagnostics if sub.text}
     for topic in diagnostic_pb2.DiagnosticTopic.values():
         if topic and (topic not in submetrics):
             yield _SUBDIAGNOSTIC_PREFIX + diagnostic_pb2.DiagnosticTopic.Name(topic)
@@ -73,7 +73,7 @@ def _reservoir_sample(reservoir, max_size, new_element, new_index):
 def _compute_assessment_report(example_count, since, until):
     """Count the use cases that are assessed, and reports which and why are not."""
 
-    cursor = _USER_DB.use_case.find(
+    cursor = _DB.use_case.find(
         {'poolName': {'$gte': str(since), '$lt': str(until), '$regex': r'\d{4}-\d{2}-\d{2}'}})
 
     unassessed_count = 0

@@ -22,18 +22,14 @@ class DebugModalBase extends React.Component {
     user: PropTypes.object.isRequired,
   }
 
-  componentWillMount() {
-    this.updateUser(this.props.user)
+  state = {
+    initialUserJson: '',
   }
 
-  componentWillReceiveProps(nextProps) {
-    this.updateUser(nextProps.user)
-  }
-
-  updateUser(user) {
-    this.setState({
+  static getDerivedStateFromProps({user}) {
+    return {
       initialUserJson: JSON.stringify(user, undefined, 2),
-    })
+    }
   }
 
   saveAndClose(filterUserFunc) {

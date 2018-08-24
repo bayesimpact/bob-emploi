@@ -8,9 +8,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class ImproveYourNetworkScoringModelTestCase(
-        scoring_test.ScoringModelTestBase('advice-improve-network')):
+class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
     """Unit test for the "Improve your network" scoring model."""
+
+    model_id = 'advice-improve-network'
 
     def setUp(self):  # pylint: disable=missing-docstring,invalid-name
         super(ImproveYourNetworkScoringModelTestCase, self).setUp()

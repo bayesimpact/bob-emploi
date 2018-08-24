@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 // Description of a French city.
-// next ID: 14
+// next ID: 15
 message FrenchCity {
   // ID of the city: "Code Officiel Géographique". E.g. "31555" for Toulouse.
   string city_id = 1;
@@ -26,6 +26,9 @@ message FrenchCity {
 
   // Name of the region (on January 1st, 2016).
   string region_name = 6;
+
+  // Prefix to use with region name.
+  string region_prefix = 14;
 
   // A string of dash separated postcodes associated with this city, as we also have them in the
   // Algolia `cities` index. As an example for Toulouse: `31000-31100-31200-31300-31400-31500`.
@@ -58,7 +61,7 @@ message FrenchCity {
   // A public transportation score: score given by people living in the city in
   // https://www.ville-ideale.fr/classements.php. 0 means unknown, otherwise, value is between
   // 0.1 (worst) and 10 (greatest).
-  // As of 2018-02-07, only 100 worst scores are kept. 
+  // As of 2018-02-07, only 100 worst scores are kept.
   // TODO(cyrille): Populate old users so that we can use it more reliably.
   float public_transportation_score = 13;
 }

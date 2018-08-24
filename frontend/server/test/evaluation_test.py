@@ -116,6 +116,7 @@ class EvalTestCase(base_test.ServerTestCase):
                 'indexInPool': 1,
                 'userData': {
                     'profile': {'yearOfBirth': 1983},
+                    'projects': [{'mobility': {'city': {'name': 'Toulouse'}}}],
                 },
             },
             {
@@ -124,6 +125,7 @@ class EvalTestCase(base_test.ServerTestCase):
                 'indexInPool': 0,
                 'userData': {
                     'profile': {'yearOfBirth': 1982},
+                    'projects': [{'city': {'name': 'Lyon'}}],
                 },
             },
         ])
@@ -138,6 +140,10 @@ class EvalTestCase(base_test.ServerTestCase):
         self.assertEqual(
             [1982, 1983],
             [u.get('userData', {}).get('profile', {}).get('yearOfBirth')
+             for u in use_cases.get('useCases')])
+        self.assertEqual(
+            ['Lyon', 'Toulouse'],
+            [u.get('userData', {}).get('projects', [{}])[0].get('city', {}).get('name')
              for u in use_cases.get('useCases')])
 
     def test_eval_use_case(self, mock_verify_id_token):
@@ -200,6 +206,10 @@ class EvalTestCase(base_test.ServerTestCase):
         use_case = self.json_from_response(response)
 
         self.assertEqual('newPool_00', use_case.get('useCaseId'))
+
+        db_use_case = self._db.use_case.find_one()
+        db_use_case['useCaseId'] = db_use_case.pop('_id')
+        self.assertEqual(use_case, db_use_case)
 
         # Creating a second time, actually creates a second use case.
         use_case2 = self.json_from_response(self.app.post(

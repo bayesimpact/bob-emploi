@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
 
-import {Colors, Styles} from 'components/theme'
+import {Styles} from 'components/theme'
 import cinemaIcon from 'images/hobbies/cinema.svg'
 import cookIcon from 'images/hobbies/cook.svg'
 import fitnessIcon from 'images/hobbies/fitness.svg'
@@ -69,17 +69,18 @@ const hobbies = [
 
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
+    onExplore: PropTypes.func.isRequired,
     project: PropTypes.shape({
-      mobility: PropTypes.shape({
-        city: PropTypes.object.isRequired,
-      }).isRequired,
+      city: PropTypes.object.isRequired,
     }).isRequired,
   }
 
   render() {
-    const {city} = this.props.project.mobility
+    const {onExplore, project: {city}} = this.props
     return <AdviceSuggestionList>
-      {hobbies.map((hobby, index) => <Hobby {...hobby} key={`hobby-${index}`} city={city} />)}
+      {hobbies.map((hobby, index) => <Hobby
+        {...hobby} key={`hobby-${index}`} city={city}
+        onClick={() => onExplore('hobby')} />)}
     </AdviceSuggestionList>
   }
 }
@@ -87,19 +88,24 @@ class ExpandedAdviceCardContent extends React.Component {
 
 class HobbyBase extends React.Component {
   static propTypes = {
-    city: PropTypes.object.isRequired,
+    city: PropTypes.shape({
+      cityId: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
     icon: PropTypes.string,
     keywords: PropTypes.string,
+    onClick: PropTypes.func.isRequired,
     style: PropTypes.object,
     title: PropTypes.node.isRequired,
     url: PropTypes.string,
   }
 
   handleClick = () => {
-    const {city, keywords, url} = this.props
-    const finalUrl = url && url.replace('%cityId', city.cityId) ||
-      `https://www.google.fr/search?q=${encodeURIComponent(keywords + ' ' + city.name)}`
+    const {city: {cityId = '', name = ''} = {}, keywords, onClick, url} = this.props
+    const finalUrl = url && url.replace('%cityId', cityId) ||
+      `https://www.google.fr/search?q=${encodeURIComponent(keywords + ' ' + name)}`
     window.open(finalUrl, '_blank')
+    onClick && onClick()
   }
 
   render() {
@@ -115,7 +121,7 @@ class HobbyBase extends React.Component {
         {title}
       </span>
       <span style={{flex: 1}} />
-      <ChevronRightIcon style={{fill: Colors.CHARCOAL_GREY, height: 20, width: 20}} />
+      <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
     </div>
   }
 }

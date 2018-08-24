@@ -1,14 +1,16 @@
-import {push} from 'react-router-redux'
 import sha1 from 'sha1'
 
-import {adviceTipsGet, dashboardExportGet, evalUseCasePoolsGet, evalUseCasesGet,
-  jobRequirementsGet, jobsGet, userDelete, markUsedAndRetrievePost,
-  userPost, feedbackPost, userAuthenticate, resetPasswordPost,
-  migrateUserToAdvisorPost, projectComputeAdvicesPost, expandedCardContentGet,
-  projectDiagnosePost, userCountGet} from './api'
 import {splitFullName} from 'store/auth'
+import {upperFirstLetter} from 'store/french'
 import {newProject} from 'store/project'
-import {Routes} from 'components/url'
+
+import {adviceTipsGet, evalUseCasePoolsGet, evalUseCasesGet,
+  jobRequirementsGet, jobsGet, userDelete, markUsedAndRetrievePost,
+  userPost, feedbackPost, userAuthenticate, resetPasswordPost, onboardingDiagnosePost,
+  migrateUserToAdvisorPost, projectComputeAdvicesPost, expandedCardContentGet,
+  projectDiagnosePost, maydayHelperCountGet, maydayHelperPost,
+  convertUserWithAdviceSelectionFromProtoPost, pointTransactionPost,
+  convertUserWithAdviceSelectionToProtoPost} from './api'
 
 const ASYNC_MARKER = 'ASYNC_MARKER'
 
@@ -25,6 +27,7 @@ export const SET_USER_PROFILE = 'SET_USER_PROFILE'
 export const ACCEPT_PRIVACY_NOTICE = 'ACCEPT_PRIVACY_NOTICE'
 export const FINISH_PROFILE_SITUATION = 'FINISH_PROFILE_SITUATION'
 export const FINISH_PROFILE_FRUSTRATIONS = 'FINISH_PROFILE_FRUSTRATIONS'
+export const FINISH_PROFILE_SETTINGS = 'FINISH_PROFILE_SETTINGS'
 export const READ_TIP = 'READ_TIP'
 export const CREATE_PROJECT = 'CREATE_PROJECT'
 export const CREATE_PROJECT_SAVE = 'CREATE_PROJECT_SAVE'
@@ -32,21 +35,23 @@ export const EDIT_FIRST_PROJECT = 'EDIT_FIRST_PROJECT'
 export const FINISH_PROJECT_GOAL = 'FINISH_PROJECT_GOAL'
 export const FINISH_PROJECT_CRITERIA = 'FINISH_PROJECT_CRITERIA'
 export const FINISH_PROJECT_EXPERIENCE = 'FINISH_PROJECT_EXPERIENCE'
-export const GET_DASHBOARD_EXPORT = 'GET_DASHBOARD_EXPORT'
-export const SELECT_ADVICE = 'SELECT_ADVICE'
 export const MIGRATE_USER_TO_ADVISOR = 'MIGRATE_USER_TO_ADVISOR'
 export const MODIFY_PROJECT = 'MODIFY_PROJECT'
 export const SCORE_ADVICE = 'SCORE_ADVICE'
 export const MARK_CHANGELOG_AS_SEEN = 'MARK_CHANGELOG_AS_SEEN'
-export const MARK_NOTIFICATION_AS_SEEN = 'MARK_NOTIFICATION_AS_SEEN'
+export const EXPLORE_ADVICE = 'EXPLORE_ADVICE'
+export const DIAGNOSE_ONBOARDING = 'DIAGNOSE_ONBOARDING'
+export const SEND_POINTS_TRANSACTION = 'SEND_POINTS_TRANSACTION'
 
 // App actions.
 
 export const ACTIVATE_DEMO = 'ACTIVATE_DEMO'
 export const CLOSE_LOGIN_MODAL = 'CLOSE_LOGIN_MODAL'
+export const CONVERT_PROTO = 'CONVERT_PROTO'
 export const OPEN_LOGIN_MODAL = 'OPEN_LOGIN_MODAL'
 export const OPEN_REGISTER_MODAL = 'OPEN_REGISTER_MODAL'
 export const GET_PROJECT_REQUIREMENTS = 'GET_PROJECT_REQUIREMENTS'
+export const GET_MAYDAY_HELPER_COUNT = 'GET_MAYDAY_HELPER_COUNT'
 export const HIDE_TOASTER_MESSAGE = 'HIDE_TOASTER_MESSAGE'
 export const DISPLAY_TOAST_MESSAGE = 'DISPLAY_TOAST_MESSAGE'
 export const ACCEPT_COOKIES_USAGE = 'ACCEPT_COOKIES_USAGE'
@@ -68,20 +73,25 @@ export const SHARE_PRODUCT_MODAL_IS_SHOWN = 'SHARE_PRODUCT_MODAL_IS_SHOWN'
 export const SHARE_PRODUCT_TO_NETWORK = 'SHARE_PRODUCT_TO_NETWORK'
 export const TRACK_INITIAL_UTM = 'TRACK_INITIAL_UTM'
 export const DIAGNOSTIC_IS_SHOWN = 'DIAGNOSTIC_IS_SHOWN'
-export const EXPLORER_IS_SHOWN = 'EXPLORER_IS_SHOWN'
 export const SEND_NEW_ADVICE_IDEA = 'SEND_NEW_ADVICE_IDEA'
 export const COMPUTE_ADVICES_FOR_PROJECT = ' COMPUTE_ADVICES_FOR_PROJECT'
 export const DIAGNOSE_PROJECT = 'DIAGNOSE_PROJECT'
 export const GET_EVAL_USE_CASE_POOLS = 'GET_EVAL_USE_CASE_POOLS'
 export const GET_EVAL_USE_CASES = 'GET_EVAL_USE_CASES'
 export const GET_EXPANDED_CARD_CONTENT = 'GET_EXPANDED_CARD_CONTENT'
-export const GET_USER_COUNT = 'GET_USER_COUNT'
 export const DOWNLOAD_DIAGNOSTIC_PDF = 'DOWNLOAD_DIAGNOSTIC_PDF'
 export const WILL_ACTIVATE_DEMO = 'WILL_ACTIVATE_DEMO'
 export const PRODUCT_UPDATED_PAGE_IS_SHOWN = 'PRODUCT_UPDATED_PAGE_IS_SHOWN'
+export const PAGE_IS_LOADED = 'PAGE_IS_LOADED'
+export const MAYDAY_SELECT_ACTION = 'MAYDAY_SELECT_ACTION'
+export const MAYDAY_SEND_EMAIL = 'MAYDAY_SEND_EMAIL'
+export const MAYDAY_SEND_HELPER_INFO = 'MAYDAY_SEND_HELPER_INFO'
+export const WORKBENCH_IS_SHOWN = 'WORKBENCH_IS_SHOWN'
+
 
 // Logging only.
 const LANDING_PAGE_SECTION_IS_SHOWN = 'LANDING_PAGE_SECTION_IS_SHOWN'
+const STATIC_ADVICE_PAGE_IS_SHOWN = 'STATIC_ADVICE_PAGE_IS_SHOWN'
 
 // Set of actions we want to log in the analytics
 export const actionTypesToLog = {
@@ -95,19 +105,21 @@ export const actionTypesToLog = {
   [DIAGNOSTIC_IS_SHOWN]: 'Diagnostic is shown',
   [DISPLAY_TOAST_MESSAGE]: 'Display toast message',
   [DOWNLOAD_DIAGNOSTIC_PDF]: 'Download the diagnostic as a PDF',
-  [EXPLORER_IS_SHOWN]: 'Explorer is shown',
+  [EXPLORE_ADVICE]: 'Explore advice (link or info)',
   [FINISH_PROFILE_FRUSTRATIONS]: 'Finish profile frustrations',
+  [FINISH_PROFILE_SETTINGS]: 'Finish profile settings',
   [FINISH_PROFILE_SITUATION]: 'Finish profile situation',
   [FINISH_PROJECT_CRITERIA]: 'Finish project criteria',
   [FINISH_PROJECT_EXPERIENCE]: 'Finish project experience',
   [FINISH_PROJECT_GOAL]: 'Finish project goal',
-  [GET_DASHBOARD_EXPORT]: 'View dashbord export',
   [GET_USER_DATA]: 'Load app',
   [LANDING_PAGE_SECTION_IS_SHOWN]: 'A landing page section is shown',
   [LOAD_LANDING_PAGE]: 'Load landing page',
   [LOGOUT]: 'Log out',
   [MARK_CHANGELOG_AS_SEEN]: 'Mark Changelog as seen',
-  [MARK_NOTIFICATION_AS_SEEN]: 'Mark notification as seen',
+  [MAYDAY_SELECT_ACTION]: 'Pick an action to help',
+  [MAYDAY_SEND_EMAIL]: "Register helper's email",
+  [MAYDAY_SEND_HELPER_INFO]: 'Send helper info for HELP_COFFEE action',
   [MIGRATE_USER_TO_ADVISOR]: 'Migrate to advisor',
   [MODIFY_PROJECT]: 'Modify project',
   [OPEN_LOGIN_MODAL]: 'Open login modal',
@@ -119,7 +131,6 @@ export const actionTypesToLog = {
   [RESET_USER_PASSWORD]: 'Ask password email',
   [SCORE_ADVICE]: 'Star/Unstar an advice card',
   [SEE_ADVICE]: 'See advice in dashboard',
-  [SELECT_ADVICE]: 'Select advice',
   [SEND_ADVICE_FEEDBACK]: 'Send advice feedback',
   [SEND_CHANGELOG_FEEDBACK]: 'Send feedback from the changelog modal',
   [SEND_NEW_ADVICE_IDEA]: 'Send a new advice idea',
@@ -129,6 +140,12 @@ export const actionTypesToLog = {
   [SHARE_PRODUCT_MODAL_IS_SHOWN]: 'Share product modal is shown',
   [SHARE_PRODUCT_TO_NETWORK]: 'Share product to network',
   [SHOW_ALL_TIPS]: 'Show all tips',
+  [STATIC_ADVICE_PAGE_IS_SHOWN]: 'A static advice page is shown',
+  [WORKBENCH_IS_SHOWN]: 'The workbench is shown',
+}
+
+function isActionRegister({response, type}) {
+  return type === AUTHENTICATE_USER && response && response.isNewUser
 }
 
 // Actions and action generators follow the following conventions:
@@ -176,12 +193,12 @@ function downloadDiagnosticAsPdf(project) {
   return dispatch => dispatch({project, type: DOWNLOAD_DIAGNOSTIC_PDF})
 }
 
-function explorerIsShown(project) {
-  return dispatch => dispatch({project, type: EXPLORER_IS_SHOWN})
-}
-
 function landingPageSectionIsShown(sectionName) {
   return dispatch => dispatch({type: LANDING_PAGE_SECTION_IS_SHOWN, visualElement: sectionName})
+}
+
+function modifyProject(project) {
+  return dispatch => dispatch({project, type: MODIFY_PROJECT})
 }
 
 function openLoginModal(defaultValues, visualElement) {
@@ -209,12 +226,6 @@ function readTip(action, feedback) {
   return dispatch => dispatch({action, feedback, type: READ_TIP})
 }
 
-function selectAdvice(project, advice, visualElement) {
-  return dispatch => {
-    dispatch({advice, project, type: SELECT_ADVICE, visualElement})
-  }
-}
-
 function seeAdvice(project, advice) {
   return dispatch => dispatch({advice, project, type: SEE_ADVICE})
 }
@@ -231,6 +242,15 @@ function showAllTips(project, advice) {
   return dispatch => dispatch({advice, project, type: SHOW_ALL_TIPS})
 }
 
+// TODO(marielaure): Use a  dedicated field here instead of visualElement.
+function staticAdvicePageIsShown(adviceId) {
+  return dispatch => dispatch({type: STATIC_ADVICE_PAGE_IS_SHOWN, visualElement: adviceId})
+}
+
+function workbenchIsShown(project) {
+  return dispatch => dispatch({project, type: WORKBENCH_IS_SHOWN})
+}
+
 function trackInitialUtm(utm) {
   return dispatch => dispatch({type: TRACK_INITIAL_UTM, utm})
 }
@@ -242,16 +262,22 @@ function trackInitialUtm(utm) {
 // final action has the same type and marker but also a status 'success' or
 // 'error' with additional response or error var. The asyncFunc doesn't take
 // any parameter and should return a promise.
+// The promise returned by this function always resolve, to undefined if
+// there's an error.
 function wrapAsyncAction(actionType, asyncFunc, options) {
   return (dispatch) => {
     const action = {...options, ASYNC_MARKER, type: actionType}
     dispatch(action)
     const promise = asyncFunc()
-    promise.then(
-      result => dispatch({...action, response: result, status: 'success'}),
-      error => dispatch({...action, error: error, status: 'error'}),
+    return promise.then(
+      result => {
+        dispatch({...action, response: result, status: 'success'})
+        return result
+      },
+      error => {
+        dispatch({...action, error: error, status: 'error'})
+      },
     )
-    return promise
   }
 }
 
@@ -259,6 +285,14 @@ function wrapAsyncAction(actionType, asyncFunc, options) {
 
 function computeAdvicesForProject(user) {
   return wrapAsyncAction(COMPUTE_ADVICES_FOR_PROJECT, () => projectComputeAdvicesPost(user))
+}
+
+function convertUserWithAdviceSelectionFromProto(proto) {
+  return wrapAsyncAction(CONVERT_PROTO, () => convertUserWithAdviceSelectionFromProtoPost(proto))
+}
+
+function convertUserWithAdviceSelectionToProto(proto) {
+  return wrapAsyncAction(CONVERT_PROTO, () => convertUserWithAdviceSelectionToProtoPost(proto))
 }
 
 function diagnoseProject(user) {
@@ -272,10 +306,6 @@ function getAdviceTips(project, advice) {
       GET_ADVICE_TIPS, () => adviceTipsGet(user, project, advice, app.authToken),
       {advice, project}))
   }
-}
-
-function getDashboardExport(dashboardExportId) {
-  return wrapAsyncAction(GET_DASHBOARD_EXPORT, () => dashboardExportGet(dashboardExportId))
 }
 
 function getExpandedCardContent(project, adviceId) {
@@ -321,6 +351,14 @@ function fetchUser(userId, ignoreFailure) {
   }
 }
 
+function saveMaydayHelperInfo(helper) {
+  return wrapAsyncAction(MAYDAY_SEND_HELPER_INFO, () => maydayHelperPost(helper))
+}
+
+function getMaydayHelperCount() {
+  return wrapAsyncAction(GET_MAYDAY_HELPER_COUNT, () => maydayHelperCountGet())
+}
+
 function saveUser(user) {
   return (dispatch, getState) => {
     const {authToken, initialUtm} = getState().app
@@ -328,14 +366,20 @@ function saveUser(user) {
       ...user,
       origin: initialUtm || undefined,
     }
-    return dispatch(wrapAsyncAction(POST_USER_DATA, () => userPost(trackedUser, authToken))).
-      then(response => {
-        if (response.appNotAvailable) {
-          dispatch(logoutAction)
-          push(Routes.APP_NOT_AVAILABLE_PAGE)
-        }
-        return response
-      })
+    return dispatch(wrapAsyncAction(POST_USER_DATA, () => userPost(trackedUser, authToken)))
+  }
+}
+
+function diagnoseOnboarding(userDiff) {
+  return (dispatch, getState) => {
+    const {app: {authToken}, user: {userId}} = getState()
+    // Make an empty incomplete project if there's none.
+    if (userDiff.projects && userDiff.projects.length) {
+      userDiff.projects[0].isIncomplete = true
+    }
+    userDiff.userId = userId
+    return dispatch(wrapAsyncAction(DIAGNOSE_ONBOARDING, () =>
+      onboardingDiagnosePost({user: userDiff}, authToken), {user: userDiff}))
   }
 }
 
@@ -346,10 +390,37 @@ function activateDemo(demo) {
   }
 }
 
+// TODO(cyrille): Create a different action for each reason.
+function sendPointsTransaction(transaction) {
+  return (dispatch, getState) => {
+    const {app: {authToken}, user: {userId}} = getState()
+    return dispatch(wrapAsyncAction(
+      SEND_POINTS_TRANSACTION, () => pointTransactionPost(transaction, userId, authToken)))
+  }
+}
+
+function unlockAdvice(adviceId) {
+  return sendPointsTransaction({adviceId, reason: 'UNLOCK_ADVICE_MODULE'})
+}
+
 function advicePageIsShown(project, advice) {
   return (dispatch, getState) => {
     dispatch({advice, project, type: ADVICE_PAGE_IS_SHOWN})
-    return dispatch(saveUser(getState().user))
+    const maybeSendPoints = (advice.status !== 'ADVICE_READ') ?
+      dispatch(
+        sendPointsTransaction({adviceId: advice.adviceId, reason: 'EXPLORE_ADVICE_REWARD'})) :
+      Promise.resolve()
+    return maybeSendPoints.then(() => dispatch(saveUser(getState().user)))
+  }
+}
+
+function exploreAdvice(project, advice, visualElement) {
+  return (dispatch, getState) => {
+    dispatch({advice, project, type: EXPLORE_ADVICE, visualElement})
+    const {user} = getState()
+    if (user.userId) {
+      return dispatch(saveUser(user))
+    }
   }
 }
 
@@ -365,17 +436,21 @@ function sendFeedback(type, source, feedback, extraFields) {
         ...extraFields,
       }, app.authToken),
       {feedback},
-    )).then(() => dispatch(displayToasterMessage('Merci pour ce retour')))
+    )).then(response => {
+      if (response) {
+        dispatch(displayToasterMessage('Merci pour ce retour'))
+      }
+      return response
+    })
   }
 }
 
-function sendAdviceFeedback(project, advice, feedback) {
-  return sendFeedback(SEND_ADVICE_FEEDBACK, 'ADVICE_FEEDBACK', feedback, {
-    adviceId: advice.adviceId,
-    projectId: project.projectId,
-  })
+function sendAdviceFeedback({projectId = ''} = {}, {adviceId}, feedback, score = 0) {
+  return sendFeedback(
+    SEND_ADVICE_FEEDBACK, 'ADVICE_FEEDBACK', feedback, {adviceId, projectId, score})
 }
 
+// TODO(pascal): Check if it is used and maybe cleanup.
 function sendNewAdviceIdea({projectId}, feedback) {
   return sendFeedback(SEND_NEW_ADVICE_IDEA, 'NEW_ADVICE_FEEDBACK', feedback, {
     projectId,
@@ -390,7 +465,12 @@ function sendProjectFeedback(project, feedback) {
   return (dispatch, getState) => {
     dispatch({feedback, project, type: SEND_PROJECT_FEEDBACK})
     return dispatch(saveUser(getState().user)).
-      then(() => dispatch(displayToasterMessage('Merci pour ce retour !')))
+      then(response => {
+        if (response) {
+          dispatch(displayToasterMessage('Merci pour ce retour !'))
+        }
+        return response
+      })
   }
 }
 
@@ -415,7 +495,7 @@ function facebookAuthenticateUser(facebookAuth, mockApi) {
   return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
     email: facebookAuth.email,
     facebookSignedRequest: facebookAuth.signedRequest,
-  }).then(authResponse => {
+  }, {method: 'facebook'}).then(authResponse => {
     // The signed request sent to the server only contains the facebook ID. If
     // it is verified we trust the full facebookAuth object and add non-signed
     // fields that we need.
@@ -461,7 +541,7 @@ function googleAuthenticateUser(googleAuth, mockApi) {
   const authenticate = mockApi ? mockApi.userAuthenticate : userAuthenticate
   return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
     googleTokenId: googleAuth.getAuthResponse().id_token,
-  }).then(authResponse => {
+  }, {method: 'google'}).then(authResponse => {
     // The signed request sent to the server only contains some fields. If it
     // is verified we trust the full googleAuth object and add non-signed
     // fields that we need.
@@ -490,34 +570,37 @@ function peConnectAuthenticateUser(code, nonce, mockApi) {
   return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
     peConnectCode: code,
     peConnectNonce: nonce,
-  }))
+  }), {method: 'peConnect'})
 }
 
 function linkedInAuthenticateUser(code, mockApi) {
   const authenticate = mockApi ? mockApi.userAuthenticate : userAuthenticate
   return wrapAsyncAction(AUTHENTICATE_USER, () => authenticate({
     linkedInCode: code,
-  }))
+  }), {method: 'linkedIn'})
 }
 
 function emailCheck(email) {
-  return wrapAsyncAction(EMAIL_CHECK, () => userAuthenticate({email}))
+  return wrapAsyncAction(EMAIL_CHECK, () => userAuthenticate({email}), {method: 'password'})
 }
 
 function registerNewUser(email, password, firstName, lastName) {
+  const cleanEmail = email.trim()
   return wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
-    email,
-    firstName,
-    hashedPassword: sha1(email + password),
-    lastName,
-  }))
+    email: cleanEmail,
+    firstName: upperFirstLetter(firstName.trim()),
+    hashedPassword: sha1(cleanEmail + password),
+    lastName: upperFirstLetter(lastName.trim()),
+  }), {method: 'password'})
 }
 
 function loginUser(email, password, hashSalt) {
+  const cleanEmail = email.trim()
   return dispatch => {
     return dispatch(wrapAsyncAction(
       AUTHENTICATE_USER, () => userAuthenticate({
-        email, hashSalt, hashedPassword: sha1(hashSalt + sha1(email + password))})))
+        email: cleanEmail, hashSalt, hashedPassword: sha1(hashSalt + sha1(cleanEmail + password))}),
+      {method: 'password'}))
   }
 }
 
@@ -533,13 +616,6 @@ function markChangelogAsSeen(changelog) {
   }
 }
 
-function markNotificationAsSeen(notification) {
-  return (dispatch, getState) => {
-    dispatch({notification, type: MARK_NOTIFICATION_AS_SEEN})
-    dispatch(saveUser(getState().user))
-  }
-}
-
 function migrateUserToAdvisor() {
   return (dispatch, getState) => {
     const {authToken} = getState().app
@@ -548,9 +624,14 @@ function migrateUserToAdvisor() {
   }
 }
 
+function pageIsLoaded(location) {
+  return {location: location || window.location, type: PAGE_IS_LOADED}
+}
+
 function resetPassword(email, password, authToken) {
+  const cleanEmail = email.trim()
   return wrapAsyncAction(AUTHENTICATE_USER, () => userAuthenticate({
-    authToken, email, hashedPassword: sha1(email + password)}))
+    authToken, email: cleanEmail, hashedPassword: sha1(cleanEmail + password)}))
 }
 
 function setUserProfile(userProfile, shouldAlsoSaveUser, type) {
@@ -584,20 +665,11 @@ function editFirstProject(newProjectData, actionType) {
 
 function createFirstProject() {
   return (dispatch, getState) => {
-    const {projects} = getState().user
-    const {authToken} = getState().app
-    const project = projects && projects[0] || {}
+    const {app: {authToken}, user: {projects: [project = {}] = []}} = getState()
     dispatch({project, type: CREATE_PROJECT})
     // Don't use normal saveUser to be able to distinguish between project creation and user saving.
     return dispatch(wrapAsyncAction(
       CREATE_PROJECT_SAVE, () => userPost(getState().user, authToken)))
-  }
-}
-
-function modifyProject(project) {
-  return dispatch => {
-    push(`${Routes.PROFILE_PAGE}/profil`)
-    dispatch({project, type: MODIFY_PROJECT})
   }
 }
 
@@ -607,24 +679,17 @@ function askPasswordReset(email) {
 
 function getEvalUseCasePools() {
   return (dispatch, getState) => {
-    const {googleIdToken} = getState().auth || {}
-    return dispatch(wrapAsyncAction(
-      GET_EVAL_USE_CASE_POOLS, () => evalUseCasePoolsGet(googleIdToken)))
+    const {fetchGoogleIdToken} = getState().auth || {}
+    return dispatch(wrapAsyncAction(GET_EVAL_USE_CASE_POOLS, () => fetchGoogleIdToken().
+      then(googleIdToken => evalUseCasePoolsGet(googleIdToken))))
   }
 }
 
 function getEvalUseCases(poolName) {
   return (dispatch, getState) => {
-    const {googleIdToken} = getState().auth || {}
-    return dispatch(wrapAsyncAction(
-      GET_EVAL_USE_CASES, () => evalUseCasesGet(poolName, googleIdToken)))
-  }
-}
-
-function getUserCount() {
-  return dispatch => {
-    return dispatch(wrapAsyncAction(
-      GET_USER_COUNT, () => userCountGet()))
+    const {fetchGoogleIdToken} = getState().auth || {}
+    return dispatch(wrapAsyncAction(GET_EVAL_USE_CASES, () => fetchGoogleIdToken().
+      then(googleIdToken => evalUseCasesGet(poolName, googleIdToken))))
   }
 }
 
@@ -633,17 +698,19 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
   createFirstProject, fetchProjectRequirements, resetPassword,
   editFirstProject, sendProfessionalFeedback, diagnoseProject,
-  getDashboardExport, displayToasterMessage, closeLoginModal,
+  displayToasterMessage, closeLoginModal,
   openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
-  loadLandingPage, deleteUser, askPasswordReset, selectAdvice,
+  loadLandingPage, deleteUser, askPasswordReset,
   openTipExternalLink, advicePageIsShown, seeAdvice, markChangelogAsSeen,
-  adviceCardIsShown, getAdviceTips, explorerIsShown,
-  showAllTips, migrateUserToAdvisor, getJobs, markNotificationAsSeen,
+  adviceCardIsShown, getAdviceTips, showAllTips, migrateUserToAdvisor, getJobs,
   shareProductToNetwork, trackInitialUtm, peConnectAuthenticateUser,
   sendProjectFeedback, scoreAdvice, sendChangelogFeedback,
   landingPageSectionIsShown, openRegistrationModal, sendNewAdviceIdea, computeAdvicesForProject,
   getEvalUseCasePools, getEvalUseCases, getExpandedCardContent,
-  getUserCount, activateDemoInFuture, activateDemo, diagnosticIsShown, downloadDiagnosticAsPdf,
+  activateDemoInFuture, activateDemo, diagnosticIsShown, downloadDiagnosticAsPdf,
   productUpdatedPageIsShownAction, loginUserFromToken, shareProductModalIsShown,
-  linkedInAuthenticateUser,
+  staticAdvicePageIsShown, linkedInAuthenticateUser, pageIsLoaded,
+  isActionRegister, getMaydayHelperCount, saveMaydayHelperInfo, workbenchIsShown,
+  exploreAdvice, diagnoseOnboarding, convertUserWithAdviceSelectionFromProto,
+  convertUserWithAdviceSelectionToProto, unlockAdvice,
 }

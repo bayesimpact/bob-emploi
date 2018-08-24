@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 package bayes.bob;
 
 // The definition of an Advice Module. See http://go/bob:advisor-design.
-// Next ID: 20
+// Next ID: 21
 message AdviceModule {
   // Unique readable ID for the module.
   string advice_id = 4;
@@ -15,6 +15,9 @@ message AdviceModule {
 
   // Title for the advice module.
   string title = 14;
+
+  // A short version of the title.
+  string short_title = 20;
 
   // Adapted title corresponding to x stars.
   map<int32, string> title_x_stars = 15;
@@ -85,9 +88,13 @@ message EmailHistory {
 
 // Definition of an advice which content is fully dynamic and determined by the
 // server, e.g. the "Specific to Job" advice.
+// Next ID: 8.
 message DynamicAdvice {
   // Title of this advice.
   string title = 1;
+
+  // A short version of the title.
+  string short_title = 8;
 
   // Content for the advice card. This is using Markdown.
   string card_text = 2;

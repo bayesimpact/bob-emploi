@@ -1,0 +1,81 @@
+{
+    "Rules": [
+        {
+            "Name": "assess-assessment",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/assess-assessment",
+            "State": "ENABLED",
+            "Description": "Runs the assessment assessment and pushes results to slack.",
+            "ScheduleExpression": "cron(0 9 ? * MON *)"
+        },
+        {
+            "Name": "count-users",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/count-users",
+            "State": "ENABLED",
+            "Description": "Count users by departement and ROME and populate the user_count table in mongo",
+            "ScheduleExpression": "rate(30 days)"
+        },
+        {
+            "Name": "create-eval-pool",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/create-eval-pool",
+            "State": "ENABLED",
+            "Description": "Create a pool of use cases daily.",
+            "ScheduleExpression": "cron(20 6 * * ? *)"
+        },
+        {
+            "Name": "report-feedbacks-weekly",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/report-feedbacks-weekly",
+            "State": "ENABLED",
+            "Description": "Send a weekly report about feedback from our users, coming from NPS and RER.",
+            "ScheduleExpression": "cron(30 12 ? * FRI *)"
+        },
+        {
+            "Name": "report-stars",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/report-stars",
+            "State": "ENABLED",
+            "Description": "Send a daily report to Slack on # of users giving 5 stars in the feedback form in the app.",
+            "ScheduleExpression": "cron(30 6 * * ? *)"
+        },
+        {
+            "Name": "send-coaching-emails",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/send-coaching-emails",
+            "State": "ENABLED",
+            "Description": "Send coaching emails every day to users that match.",
+            "ScheduleExpression": "cron(30 8 * * ? *)"
+        },
+        {
+            "Name": "send-daily-nps-email",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/send-daily-nps-email",
+            "State": "ENABLED",
+            "Description": "Send a NPS email daily to the users that registered 2 days ago.",
+            "ScheduleExpression": "cron(15 8 * * ? *)"
+        },
+        {
+            "Name": "send-daily-rer-email",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/send-daily-rer-email",
+            "State": "ENABLED",
+            "Description": "Send an RER email daily to the users that registered 3 months ago.",
+            "ScheduleExpression": "cron(15 8 * * ? *)"
+        },
+        {
+            "Name": "sync-amplitude",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/sync-amplitude",
+            "State": "ENABLED",
+            "Description": "Sync MongoDB users with Amplitude",
+            "ScheduleExpression": "rate(1 hour)"
+        },
+        {
+            "Name": "sync-user-elasticsearch",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/sync-user-elasticsearch",
+            "State": "ENABLED",
+            "Description": "Sync users from MongoDB to ElasticSearch for our http://go/bob:kibana dashboard.",
+            "ScheduleExpression": "rate(12 hours)"
+        },
+        {
+            "Name": "update-email-sent-status",
+            "Arn": "arn:aws:events:eu-west-3:951168128976:rule/update-email-sent-status",
+            "State": "ENABLED",
+            "Description": "Update the \"sent status\" of the emails that we sent with Mailjet.",
+            "ScheduleExpression": "rate(24 hours)"
+        }
+    ]
+}

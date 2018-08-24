@@ -55,6 +55,13 @@ data/geo/french_urban_entities.xls:
 	rm "$@.zip"
 	mv "$(@D)/UU2010 au 01-01-2017.xls" "$@"
 
+data/geo/french_urban_areas.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" https://www.insee.fr/fr/statistiques/fichier/2115011/AU2010%20au%2001-01-2017.zip
+	unzip "$@.zip" -d "$(@D)"
+	rm "$@.zip"
+	mv "$(@D)/AU2010 au 01-01-2017.xls" "$@"
+
 rome: data/rome/ficheMetierXml/ficheMetierXml.zip data/rome/RefRomeCsv.zip
 
 data/rome/ficheMetierXml/ficheMetierXml.zip:
@@ -66,8 +73,6 @@ data/rome/RefRomeCsv.zip:
 	mkdir -p data/rome/csv
 	wget -P data/rome/ 'https://api.emploi-store.fr/api/docs/romeopen/REF_ROME_CSV/1/RefRomeCsv.zip'
 	unzip data/rome/RefRomeCsv.zip -d data/rome/csv
-	# Check that the "trcie" bug is still there.
-	grep -q -r trcie data/rome/csv
 	# Check that the "2 D" bug is still there.
 	grep -q -r "2 D" data/rome/csv
 	# Check that the "3 D" bug is still there.
@@ -101,27 +106,15 @@ data/crosswalks/Correspondance_Rome_Formacode.csv: data/crosswalks/Correspondanc
 	sed -i '/Montage de produits électriques et électroniques H2604/d' $^
 	python bob_emploi/data_analysis/parsers/formacode_parser.py $^ > $@
 
-bmo: data/bmo/bmo_2015.csv data/bmo/bmo_2014.csv data/bmo/bmo_2016.csv
+bmo: data/bmo/bmo_2015.csv data/bmo/bmo_2014.csv data/bmo/bmo_2016.csv data/bmo/bmo_2017.csv data/bmo/bmo_2018.csv
 
-data/bmo/bmo_2014.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py bmo ".*2014.*" "$@"
-
-data/bmo/bmo_2015.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py bmo ".*2015.*" "$@"
-
-data/bmo/bmo_2016.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py bmo ".*2016.*" "$@"
-
-data/bmo/bmo_2017.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py bmo ".*2017.*" "$@"
+data/bmo/bmo_%.csv:
+	mkdir -p $(@D)
+	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py bmo '.*$(subst data/bmo/bmo_,,$(subst .csv,,$@)).*' "$@"
 
 data/pole-emploi-agencies.csv:
 	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py agences "Agences.*" "$@"
+	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py agences "Agences.*" "$@"
 
 data/intitule_fap2009.txt:
 	mkdir -p $(@D)
@@ -155,7 +148,7 @@ data/rome/sample_job_names.txt: data/rome/RefRomeCsv.zip
 
 data/recent_job_offers.csv:
 	mkdir -p $(@D)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py offres Offres.*d.emploi $@
+	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py offres Offres.*d.emploi $@
 
 data/tous_benevoles.xml:
 	wget http://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml -O $@
@@ -164,23 +157,27 @@ data/workup.json:
 	wget https://www.workuper.com/events/index_json.json -O $@
 
 data/imt/application_modes.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py imt "Canaux de reprise*" "$@"
+	mkdir -p $(@D)/$$(date +%Y-%m-%d)
+	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Canaux de reprise*" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
+	ln -s $$(date +%Y-%m-%d)/$(@F) $@
 
 # This may take several minutes.
 data/imt/market_score.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py imt "Statistiques offres et demandes" "$@"
+	mkdir -p $(@D)/$$(date +%Y-%m-%d)
+	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Statistiques offres et demandes" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
+	ln -s $$(date +%Y-%m-%d)/$(@F) $@
 
 # This may take several minutes.
 data/imt/employment_type.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py imt "Types de contrats*" "$@"
+	mkdir -p $(@D)/$$(date +%Y-%m-%d)
+	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Types de contrats*" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
+	ln -s $$(date +%Y-%m-%d)/$(@F) $@
 
 # This may take several minutes.
 data/imt/salaries.csv:
-	mkdir -p $(dir $@)
-	python bob_emploi/data_analysis/misc/emploi_store_downloader.py imt "Salaires*" "$@"
+	mkdir -p $(@D)/$$(date +%Y-%m-%d)
+	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py imt "Salaires*" "$(@D)/$$(date +%Y-%m-%d)/$(@F)"
+	ln -s $$(date +%Y-%m-%d)/$(@F) $@
 
 data/crosswalks/passage_pcs_romev3.csv:
 	mkdir -p $(dir $@)
@@ -213,3 +210,25 @@ data/adie-evenements.html:
 data/geo/ville-ideale-transports.html:
 	mkdir -p "$(@D)"
 	curl -XPOST https://www.ville-ideale.fr/scripts/ajaxclsst.php -d "chsens=ASC&nbh_tab2=> 0&crit=tra" > "$@"
+
+data/pole_emploi/online-salons%.json:
+	mkdir -p "$(@D)"
+	python bob_emploi/data_analysis/emploi_store_api/online_events.py "$(@D)/online-salons-$$(date +%Y-%m-%d).json"
+
+# Bob-US datasets
+# The O*net database contains a rich set of variables that describe work and worker characteristics,
+# including skill requirements.
+# Note that this rule creates 35 files.
+data/usa/onet_v22_3/Occupation_Data.txt:
+	mkdir -p "$(@D)"
+	wget -O "$@.zip" "https://www.onetcenter.org/dl_files/database/db_22_3_text.zip"
+	unzip "$@.zip" -d $(@D)
+	cd $(@D)/db_22_3_text ; for file in * ; do mv "$$file" $$(echo ../$$file | tr ' ' '_') ; done
+	rm -rf "$@.zip" "$(@D)/db_22_3_text"
+
+# The Bureau of Labor Statistics (BLS) of the U.S. Department of Labor is the principal federal
+# agency responsible for measuring labor market activity, working conditions,
+# and price changes in the economy.
+data/usa/national_occupational_projections.xls:
+	mkdir -p "$(@D)"
+	wget -O "$@" "https://www.bls.gov/emp/ind-occ-matrix/occupation.xlsx"

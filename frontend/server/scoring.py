@@ -29,6 +29,7 @@ from bob_emploi.frontend.server.modules import events
 from bob_emploi.frontend.server.modules import immersion
 from bob_emploi.frontend.server.modules import jobboards
 from bob_emploi.frontend.server.modules import network
+from bob_emploi.frontend.server.modules import online_salons
 from bob_emploi.frontend.server.modules import relocate
 from bob_emploi.frontend.server.modules import reorient_jobbing
 from bob_emploi.frontend.server.modules import reorient_to_close_job
@@ -39,6 +40,7 @@ from bob_emploi.frontend.server.scoring_base import ConstantScoreModel
 from bob_emploi.frontend.server.scoring_base import ExplainedScore
 from bob_emploi.frontend.server.scoring_base import filter_using_score
 from bob_emploi.frontend.server.scoring_base import get_scoring_model
+from bob_emploi.frontend.server.scoring_base import LowPriorityAdvice
 from bob_emploi.frontend.server.scoring_base import ModelBase
 from bob_emploi.frontend.server.scoring_base import NotEnoughDataException
 from bob_emploi.frontend.server.scoring_base import NULL_EXPLAINED_SCORE
@@ -138,6 +140,7 @@ class _AdviceSpecificToJob(scoring_base.ModelBase):
 
         return project_pb2.Advice(
             title=config.title,
+            short_title=config.short_title,
             card_text=config.card_text,
             expanded_card_header=expanded_card_header,
             expanded_card_items=expanded_card_items,
@@ -225,7 +228,8 @@ class _DepartementFilter(_ProjectFilter):
         self._departements = set(d.strip() for d in departements.split(','))
 
     def _filter(self, project):
-        return project.mobility.city.departement_id in self._departements
+        departement_id = project.city.departement_id or project.mobility.city.departement_id
+        return departement_id in self._departements
 
 
 class _OldUserFilter(scoring_base.BaseFilter):
@@ -338,6 +342,7 @@ class _JobGroupWithoutJobFilter(_ProjectFilter):
         return False
 
 
+# TODO(cyrille): Extend BaseFilter.
 class _ApplicationComplexityFilter(scoring_base.ModelBase):
     """A scoring model to filter on job group application complexity."""
 
@@ -351,6 +356,28 @@ class _ApplicationComplexityFilter(scoring_base.ModelBase):
         if self._application_complexity == project.job_group_info().application_complexity:
             return 3
         return 0
+
+
+class _ScorerFilter(scoring_base.BaseFilter):
+    """A scoring model to filter on above/below average values on a given scorer."""
+
+    def __init__(self, scorer, is_good=False):
+        super(_ScorerFilter, self).__init__(self._filter)
+        self._scorer = get_scoring_model(scorer)
+        if not self._scorer:
+            raise ValueError('Could not find scoring model {}'.format(scorer))
+        self._is_good = is_good
+
+    def _filter(self, project):
+        """Compute a score for the given ScoringProject."""
+
+        try:
+            score = self._scorer.score(project)
+        except NotEnoughDataException:
+            return False
+        if self._is_good:
+            return score >= 1.5
+        return score < 1.5
 
 
 class _AdviceOtherWorkEnv(scoring_base.ModelBase):
@@ -590,6 +617,15 @@ scoring_base.register_regexp(
     re.compile(r'^for-young\(([0-9]+)\)$'), _YoungUserFilter, 'for-young(25)')
 scoring_base.register_regexp(
     re.compile(r'^for-passionate\((\w+)\)$'), _PassionateFilter, 'for-passionate(LIFE_GOAL_JOB)')
+scoring_base.register_regexp(
+    re.compile(r'^for-good-score\((.+)\)$'),
+    lambda scorer: _ScorerFilter(scorer, is_good=True),
+    'for-good-score(constant(2))')
+# This is not the reverse of the previous one, because some scorers might not give any value.
+scoring_base.register_regexp(
+    re.compile(r'^for-bad-score\((.+)\)$'),
+    lambda scorer: _ScorerFilter(scorer, is_good=False),
+    'for-bad-score(constant(2))')
 
 
 scoring_base.register_model(
@@ -601,7 +637,7 @@ scoring_base.register_model(
 scoring_base.register_model(
     'advice-life-balance', _AdviceLifeBalanceScoringModel())
 scoring_base.register_model(
-    'advice-more-offer-answers', scoring_base.LowPriorityAdvice(user_pb2.NO_OFFER_ANSWERS))
+    'advice-more-offer-answers', LowPriorityAdvice(user_pb2.NO_OFFER_ANSWERS))
 scoring_base.register_model(
     'advice-other-work-env', _AdviceOtherWorkEnv())
 scoring_base.register_model(
@@ -623,7 +659,7 @@ scoring_base.register_model(
         lambda project: project.weekly_applications_estimate >= project_pb2.SOME))
 scoring_base.register_model(
     'for-big-city-inhabitant(100000)', _ProjectFilter(
-        lambda project: project.mobility.city.population >= 100000))
+        lambda project: (project.city.population or project.mobility.city.population) >= 100000))
 scoring_base.register_model(
     'for-complex-application', _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS))
 scoring_base.register_model(
@@ -669,10 +705,10 @@ scoring_base.register_model(
         lambda project: project.diagnostic.overall_score > 50))
 scoring_base.register_model(
     'for-medium-mobility(region)', _ProjectFilter(
-        lambda project: project.mobility.area_type >= geo_pb2.REGION))
+        lambda project: (project.area_type or project.mobility.area_type) >= geo_pb2.REGION))
 scoring_base.register_model(
     'for-high-mobility(country)', _ProjectFilter(
-        lambda project: project.mobility.area_type >= geo_pb2.COUNTRY))
+        lambda project: (project.area_type or project.mobility.area_type) >= geo_pb2.COUNTRY))
 scoring_base.register_model(
     'for-no-interview', _ProjectFilter(
         lambda project: project.total_interview_count == -1))
@@ -682,6 +718,9 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-many-interviews(2)', _ProjectFilter(
         lambda project: project.total_interview_count > 2))
+scoring_base.register_model(
+    'for-many-interviews(15)', _ProjectFilter(
+        lambda project: project.total_interview_count > 15))
 scoring_base.register_model(
     'for-many-interviews-per-month(0.5)', scoring_base.BaseFilter(
         lambda scoring_project: 2 * scoring_project.details.total_interview_count >
@@ -693,6 +732,9 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-handicaped', _UserProfileFilter(
         lambda user: user_pb2.HANDICAPED in user.frustrations or user.has_handicap))
+scoring_base.register_model(
+    'for-very-short-contract', _ProjectFilter(
+        lambda project: job_pb2.INTERIM in project.employment_types))
 scoring_base.register_model(
     'for-job-applied-by-mail', _ApplicationMediumFilter(job_pb2.APPLY_BY_EMAIL))
 scoring_base.register_model(
@@ -746,8 +788,9 @@ scoring_base.register_model(
         user.family_situation == user_pb2.SINGLE_PARENT_SITUATION))
 scoring_base.register_model(
     'for-small-city-inhabitant(20000)', _ProjectFilter(
-        lambda project: project.mobility.city.population > 0 and
-        project.mobility.city.population <= 20000))
+        lambda project:
+        (project.city.population or project.mobility.city.population) > 0 and
+        (project.city.population or project.mobility.city.population) <= 20000))
 scoring_base.register_model(
     'for-training-fulfilled', _TrainingFullfilmentFilter(project_pb2.ENOUGH_DIPLOMAS))
 # TODO(cyrille): Replace by more relevant field once it's been added in the onboarding.

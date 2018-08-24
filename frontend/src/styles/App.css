@@ -1,7 +1,7 @@
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: 'GTWalsheim';
+  font-family: Lato, Helvetica;
 }
 
 /* We do most of the styling as inline styles using React. Only the text that we render
@@ -27,7 +27,12 @@ input:hover, select:hover, textarea:hover {
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #1888ff;  /* Colors.BOB_BLUE */
+  border-color: #1888ff;  /* colors.BOB_BLUE */
+}
+
+.no-hover input:hover, .no-hover select:hover, .no-hover textarea:hover,
+.no-focus input:focus, .no-focus select:focus, .no-focus textarea:focus {
+  border-color: #d9d9e0;  /* silver */
 }
 
 .marked-invalid input, .marked-invalid select {
@@ -70,7 +75,7 @@ button.login:hover {
   box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.25);
 }
 
-button.login:focus {
+button.login:focus, button.login:disabled {
   opacity: .7;
 }
 
@@ -86,7 +91,7 @@ button.login {
   padding: 7px 18px;
   text-align: left;
   transition: background-color 450ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms;
-  width: 250px;
+  width: 265px;
 }
 
 button.login .fa {
@@ -221,7 +226,7 @@ button.login .fa {
   height: 39px !important;
 }
 .Select-control {
-  border-color: #d9d9e0; /* Colors.SILVER */
+  border-color: #d9d9e0; /* colors.SILVER */
   transition: all 450ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms;
 }
 .Select:not(.is-open) > .Select-control:hover {
@@ -229,17 +234,17 @@ button.login .fa {
   box-shadow: initial;
 }
 .Select.is-focused:not(.is-open) > .Select-control {
-  border-color: #1888ff !important; /* Colors.BOB_BLUE */
+  border-color: #1888ff !important; /* colors.BOB_BLUE */
   box-shadow: initial;
 }
 .marked-invalid .Select:not(.is-open) > .Select-control {
-  border-color: #ee4266 !important; /* Colors.RED_PINK */
+  border-color: #ee4266 !important; /* colors.RED_PINK */
 }
 .Select.has-value.Select--single > .Select-control .Select-value .Select-value-label, .Select.has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
-  color: #383f52 !important; /* Colors.CHARCOAL_GREY */
+  color: #383f52 !important; /* colors.CHARCOAL_GREY */
 }
 .Select-placeholder {
-  color: #9596a0 !important; /* Colors.COOL_GREY */
+  color: #9596a0 !important; /* colors.COOL_GREY */
 }
 .Select-placeholder, .Select--single > .Select-control .Select-value, .Select-input {
   padding: 7px 1px 1px 15px !important;
@@ -255,13 +260,19 @@ input::-ms-reveal, input::-ms-clear {
 }
 
 .blue-select::selection {
-  background: rgba(24, 136, 255, .2);  /* Colors.BOB_BLUE */
+  background: rgba(24, 136, 255, .2);  /* colors.BOB_BLUE */
 }
 
 @keyframes bounce {
   from, 10%, 25%, 45%, to {bottom: 0}
   20%  {bottom: 20px}
   30%  {bottom: 10px}
+}
+
+@keyframes jump {
+    25% {-webkit-transform:translateY(-35%)}
+    75% {-webkit-transform:translateY(35%)}
+    100% {-webkit-transform:translateY(0%)}
 }
 
 @import url('https://fonts.googleapis.com/css?family=Droid+Serif:italic&subset=latin,latin-ext')

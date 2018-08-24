@@ -1,8 +1,5 @@
 """Tests for the authentication endpoints of the server module."""
 
-import base64
-import hashlib
-import hmac
 import time
 import unittest
 from urllib import parse
@@ -10,16 +7,11 @@ from urllib import parse
 import mailjet_rest
 import mock
 import requests_mock
-from oauth2client import crypt
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
-
-
-# TODO(pascal): Split in smaller test modules and remove the next line.
-# pylint: disable=too-many-lines
 
 
 class AuthenticateEndpointTestCase(base_test.ServerTestCase):
@@ -64,6 +56,10 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(auth_response2['authToken'])
         self.assertEqual(
             'foo@bar.fr', auth_response2['authenticatedUser']['profile']['email'])
+        self.assertEqual(
+            # This is sha1('bob-emploifoo@bar.fr').
+            'bb96b62f3ded5182d555e2452cc4125a1ea4201d',
+            auth_response2['authenticatedUser']['hashedEmail'])
         user_id = auth_response2['authenticatedUser']['userId']
         self.assertTrue(user_id)
 
@@ -88,6 +84,27 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertFalse(auth_response4.get('isNewUser', False))
         self.assertEqual(user_id, auth_response4['authenticatedUser']['userId'])
         self.assertTrue(auth_response4['authToken'])
+
+    def test_weird_email(self):
+        """Email authentication with non-ascii email."""
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=(
+                '{{"email": "œil@body.fr", "firstName": "foo", "lastName": "bar", '
+                '"hashedPassword": "{}"}}').format(base_test.sha1('œil@body.fr', 'psswd')),
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        self.assertTrue(auth_response['isNewUser'])
+        self.assertTrue(auth_response['authToken'])
+        self.assertEqual(
+            'œil@body.fr', auth_response['authenticatedUser']['profile']['email'])
+        self.assertEqual(
+            # This is sha1('bob-emploiœil@body.fr').
+            '30f8f216d08e4aaaf45d9f081330432838e580b9',
+            auth_response['authenticatedUser']['hashedEmail'])
+        user_id = auth_response['authenticatedUser']['userId']
+        self.assertTrue(user_id)
 
     @mock.patch(mailjet_rest.__name__ + '.Client')
     def test_reset_password(self, mock_mailjet_client):
@@ -216,13 +233,16 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         # Extract link from email.
         send_mail_kwargs = mock_mailjet_client().send.create.call_args[1]
         self.assertIn('data', send_mail_kwargs)
-        self.assertEqual('Bob', send_mail_kwargs['data'].get('FromName'))
-        self.assertEqual('bob@bob-emploi.fr', send_mail_kwargs['data'].get('FromEmail'))
-        self.assertIn('Recipients', send_mail_kwargs['data'])
+        self.assertIn('Messages', send_mail_kwargs['data'])
+        self.assertTrue(send_mail_kwargs['data']['Messages'])
+        message = send_mail_kwargs['data']['Messages'][0]
+        self.assertEqual('Bob', message.get('From', {}).get('Name'))
+        self.assertEqual('bob@bob-emploi.fr', message.get('From', {}).get('Email'))
+        self.assertIn('To', message)
         if recipients:
-            self.assertEqual(recipients, send_mail_kwargs['data']['Recipients'])
-        self.assertIn('Vars', send_mail_kwargs['data'])
-        mail_vars = send_mail_kwargs['data']['Vars']
+            self.assertEqual(recipients, message['To'])
+        self.assertIn('Variables', message)
+        mail_vars = message['Variables']
         reset_link = mail_vars['resetLink']
         mock_mailjet_client.reset()
 
@@ -253,7 +273,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
         self.assertIn(
-            "L'utilisateur existe mais utilise un autre moyen de connexion (Google).",
+            "L'utilisateur existe mais utilise un autre moyen de connexion: Google.",
             response.get_data(as_text=True))
 
     @mock.patch(auth.__name__ + '.time')
@@ -286,187 +306,6 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
 
 def _sha1(*args):
     return base_test.sha1(*args)
-
-
-def _base64_encode(content):
-    if isinstance(content, bytes):
-        content_as_bytes = content
-    else:
-        content_as_bytes = content.encode('utf-8')
-    base64_encoded_as_bytes = base64.urlsafe_b64encode(content_as_bytes)
-    base64_encoded = base64_encoded_as_bytes.decode('ascii', 'ignore')
-    return base64_encoded.rstrip('=')
-
-
-def _facebook_sign(content):
-    payload = _base64_encode(content).encode('utf-8')
-    return _base64_encode(hmac.new(
-        b'aA12bB34cC56dD78eE90fF12aA34bB56', payload, hashlib.sha256).digest())
-
-
-class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
-    """Unit tests for the authenticate endpoint."""
-
-    fake_signature = _facebook_sign('stupid content')
-
-    def test_bad_token_missing_dot(self):
-        """Auth request with a facebook token missing a dot."""
-
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{"facebookSignedRequest": "wrong-token"}',
-            content_type='application/json')
-        self.assertEqual(422, response.status_code)
-        self.assertIn('not enough values to unpack', response.get_data(as_text=True))
-
-    def test_bad_token_bad_json(self):
-        """Auth request with a facebook token unreadable json."""
-
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'
-            .format(self.fake_signature, _base64_encode('a4')),
-            content_type='application/json')
-        self.assertEqual(422, response.status_code)
-
-    def test_no_algorithm(self):
-        """Auth request with a facebook token missing the algorithm field."""
-
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'
-            .format(self.fake_signature, _base64_encode('{}')),
-            content_type='application/json')
-        self.assertEqual(422, response.status_code)
-        self.assertIn('Le champs &quot;algorithm&quot; est requis', response.get_data(as_text=True))
-
-    def test_wrong_algorithm(self):
-        """Auth request with a facebook token with a bad algorithm field."""
-
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                self.fake_signature, _base64_encode('{"algorithm": "plain", "user_id": "1234"}')),
-            content_type='application/json')
-        self.assertEqual(422, response.status_code)
-        self.assertIn(
-            "Algorithme d'encryption inconnu &quot;plain&quot;", response.get_data(as_text=True))
-
-    def test_bad_signature(self):
-        """Auth request with a facebook token but wrong signature."""
-
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                self.fake_signature, _base64_encode(
-                    '{"algorithm": "HMAC-SHA256", "user_id": "1234"}')),
-            content_type='application/json')
-        self.assertEqual(403, response.status_code)
-        self.assertIn('Mauvaise signature', response.get_data(as_text=True))
-
-    def test_new_user(self):
-        """Auth request with a facebook token for a new user."""
-
-        facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "12345"}'
-        good_signature = _facebook_sign(facebook_data)
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-
-        self.assertTrue(auth_response['isNewUser'])
-        self.assertEqual('12345', auth_response['authenticatedUser']['facebookId'])
-        user_id = auth_response['authenticatedUser']['userId']
-        self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
-        auth_token = auth_response['authToken']
-
-        # Try with an invalid email.
-        response = self.app.post(
-            '/api/user',
-            data='{{"userId": "{}", "facebookId": "12345", '
-            '"profile": {{"email": "invalidemail"}}}}'.format(user_id),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertEqual(403, response.status_code)
-
-        # Try with an email that is already in use.
-        self.authenticate_new_user(email='used@email.fr', password='psswd')
-        response = self.app.post(
-            '/api/user',
-            data='{{"userId": "{}", "facebookId": "12345", '
-            '"profile": {{"email": "used@email.fr"}}}}'.format(user_id),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertEqual(403, response.status_code)
-
-        # Set email from client.
-        response = self.app.post(
-            '/api/user',
-            data='{{"userId": "{}", "facebookId": "12345", '
-            '"profile": {{"email": "me@facebook.com"}}}}'.format(user_id),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        user_info = self.json_from_response(response)
-        self.assertEqual({'email': 'me@facebook.com'}, user_info['profile'])
-
-    def test_new_user_with_email(self):
-        """Auth request with a facebook token for a new user using an existing email."""
-
-        facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "12345"}'
-        good_signature = _facebook_sign(facebook_data)
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}", "email": "pascal@facebook.com"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
-            content_type='application/json')
-        auth_info = self.json_from_response(response)
-        self.assertEqual(
-            'pascal@facebook.com', auth_info['authenticatedUser'].get('profile', {}).get('email'))
-
-    def test_new_user_with_existing_email(self):
-        """Auth request with a facebook token for a new user using an existing email."""
-
-        self.authenticate_new_user(email='pascal@facebook.com', password='psswd')
-
-        facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "12345"}'
-        good_signature = _facebook_sign(facebook_data)
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}", "email": "pascal@facebook.com"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
-            content_type='application/json')
-        self.assertEqual(403, response.status_code)
-
-    def test_load_user(self):
-        """Auth request retrieves user."""
-
-        # Create a new user.
-        facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "13579"}'
-        good_signature = _facebook_sign(facebook_data)
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-        user_id = auth_response['authenticatedUser']['userId']
-
-        # Now try to get the user again.
-        facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "13579"}'
-        good_signature = _facebook_sign(facebook_data)
-        response = self.app.post(
-            '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-
-        self.assertFalse(auth_response.get('isNewUser', False))
-        returned_user = auth_response['authenticatedUser']
-        self.assertEqual('13579', returned_user.get('facebookId'))
-        self.assertEqual(user_id, returned_user.get('userId'))
 
 
 @requests_mock.mock()
@@ -794,6 +633,9 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
             '/api/user/authenticate',
             data='{"linkedInCode": "correct-code"}', content_type='application/json')
         self.assertEqual(403, response.status_code)
+        self.assertIn(
+            "L'utilisateur existe mais utilise un autre moyen de connexion: Email/Mot de passe.",
+            response.get_data(as_text=True))
 
     def test_load_user(self, mock_requests):
         """Auth request retrieves user."""
@@ -826,197 +668,6 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         self.assertFalse(auth_response.get('isNewUser', False))
         returned_user = auth_response['authenticatedUser']
         self.assertEqual('linked-in-user-id-1', returned_user.get('linkedInId'))
-        self.assertEqual(user_id, returned_user.get('userId'))
-
-
-@mock.patch(server.__name__ + '.auth.client.verify_id_token')
-class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
-    """Unit tests for the authenticate endpoint."""
-
-    def test_bad_token(self, mock_verify_id_token):
-        """Auth request with a bad google token."""
-
-        mock_verify_id_token.side_effect = crypt.AppIdentityError('foo bar')
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "wrong-token"}',
-            content_type='application/json')
-        self.assertEqual(401, response.status_code)
-        self.assertIn(
-            "Mauvais jeton d'authentification : foo bar",
-            response.get_data(as_text=True))
-
-    def test_wrong_token_issuer(self, mock_verify_id_token):
-        """Auth request, Google token issued by Facebook."""
-
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.facebook.com',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        self.assertEqual(401, response.status_code)
-        self.assertIn(
-            "Fournisseur d'authentification invalide : accounts.facebook.com",
-            response.get_data(as_text=True))
-
-    def test_new_user(self, mock_verify_id_token):
-        """Auth request, create a new user on the first time."""
-
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'pascal@bayes.org',
-            'sub': '12345',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-
-        auth_response = self.json_from_response(response)
-
-        self.assertTrue(auth_response['isNewUser'])
-        self.assertEqual('pascal@bayes.org', auth_response['authenticatedUser']['profile']['email'])
-        self.assertEqual('12345', auth_response['authenticatedUser']['googleId'])
-        user_id = auth_response['authenticatedUser']['userId']
-        self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
-
-    def test_when_user_already_exists(self, mock_verify_id_token):
-        """The user had previously signed up via email registration."""
-
-        self.authenticate_new_user(email='used@email.fr', password='psswd')
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'used@email.fr',
-            'sub': '12345',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        self.assertEqual(403, response.status_code)
-
-    def test_email_address_change(self, mock_verify_id_token):
-        """Change the email address of a Google SSO user."""
-
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'pascal@bayes.org',
-            'sub': '12345',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-        user_id = auth_response['authenticatedUser']['userId']
-        auth_token = auth_response['authToken']
-
-        response = self.app.post(
-            '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"email": "valid@email.fr"}}}}'.format(user_id),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertEqual(200, response.status_code)
-
-    def test_email_address_change_invalid(self, mock_verify_id_token):
-        """Change the email address of a Google SSO user to invalid email."""
-
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'pascal@bayes.org',
-            'sub': '12345',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-        user_id = auth_response['authenticatedUser']['userId']
-        auth_token = auth_response['authToken']
-
-        response = self.app.post(
-            '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"email": "invalidemail"}}}}'.format(user_id),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertEqual(403, response.status_code)
-
-    def test_email_address_change_to_used(self, mock_verify_id_token):
-        """Change the email address of a Google SSO user to an address already used."""
-
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'pascal@bayes.org',
-            'sub': '12345',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-        user_id = auth_response['authenticatedUser']['userId']
-        auth_token = auth_response['authToken']
-
-        self.authenticate_new_user(email='used@email.fr', password='psswd')
-        response = self.app.post(
-            '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"email": "used@email.fr"}}}}'.format(user_id),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertEqual(403, response.status_code)
-
-    def test_update_no_email_change(self, mock_verify_id_token):
-        """Update a Google signed-in user without changing the email."""
-
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'pascal@bayes.org',
-            'sub': '12345',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-        user_id = auth_response['authenticatedUser']['userId']
-        auth_token = auth_response['authToken']
-
-        response = self.app.post(
-            '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"name": "Pascal", "email": "pascal@bayes.org"}}}}'.format(user_id),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertEqual(200, response.status_code)
-
-    def test_load_user(self, mock_verify_id_token):
-        """Auth request retrieves user."""
-
-        # First create a new user.
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'pascal@bayes.org',
-            'sub': '13579',
-        }
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-        user_id = auth_response['authenticatedUser']['userId']
-
-        # Now try to get the user again.
-        mock_verify_id_token.return_value = {
-            'iss': 'accounts.google.com',
-            'email': 'pascal@bayes.org',
-            'sub': '13579',
-        }
-
-        response = self.app.post(
-            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
-        auth_response = self.json_from_response(response)
-
-        self.assertFalse(auth_response.get('isNewUser', False))
-        returned_user = auth_response['authenticatedUser']
-        self.assertEqual('13579', returned_user.get('googleId'))
-        self.assertEqual('pascal@bayes.org', returned_user.get('profile', {}).get('email'))
         self.assertEqual(user_id, returned_user.get('userId'))
 
 

@@ -9,7 +9,7 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/seasonal_jobbing.py \
+        python bob_emploi/data_analysis/importer/seasonal_jobbing.py \
         --offer_types_csv data/job_offers/offer_types_2015_2017.csv \
         --mongo_url mongodb://frontend-db/test
 """

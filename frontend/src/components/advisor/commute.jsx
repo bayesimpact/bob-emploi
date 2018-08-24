@@ -4,7 +4,8 @@ import Radium from 'radium'
 
 import {inCityPrefix, lowerFirstLetter} from 'store/french'
 
-import {AppearingList, Colors, GrowingNumber, PaddedOnMobile, StringJoiner,
+import {isMobileVersion} from 'components/mobile'
+import {AppearingList, GrowingNumber, PaddedOnMobile, StringJoiner,
   Styles, Tag} from 'components/theme'
 import Picto from 'images/advices/picto-commute.png'
 
@@ -55,16 +56,26 @@ class ExpandedAdviceCardContentBase extends React.Component {
     adviceData: PropTypes.shape({
       cities: PropTypes.array,
     }).isRequired,
-    project: PropTypes.object.isRequired,
+    onExplore: PropTypes.func.isRequired,
+    project: PropTypes.shape({
+      city: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+      }),
+      targetJob: PropTypes.shape({
+        jobGroup: PropTypes.shape({
+          name: PropTypes.string.isRequired,
+        }).isRequired,
+      }),
+    }).isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   computeAllCities() {
-    const {adviceData, project, userYou} = this.props
+    const {adviceData, onExplore, project: {city = {}}, userYou} = this.props
     const cities = adviceData.cities || []
 
     const interestingCities =
-      cities.filter(({name}) => name !== project.mobility.city.name).slice(0, 6)
+      cities.filter(({name}) => name !== city.name).slice(0, 6)
     interestingCities.sort(function(a, b) {
       return b.relativeOffersPerInhabitant - a.relativeOffersPerInhabitant
     })
@@ -72,14 +83,14 @@ class ExpandedAdviceCardContentBase extends React.Component {
     const otherCitiesList = interestingCities.map((city, index) => <CommuteCitySuggestion
       key={`city-${index}`}
       {...{city, userYou}}
-      targetCity={project.mobility.city}
-      style={{marginTop: -1}} />)
+      targetCity={city}
+      style={{marginTop: -1}} onClick={() => onExplore('city')} />)
 
     return otherCitiesList
   }
 
   render() {
-    const {project, userYou} = this.props
+    const {project: {city = {}, targetJob = {}}, userYou} = this.props
     const otherCities = this.computeAllCities()
 
     if (!otherCities.length) {
@@ -88,8 +99,8 @@ class ExpandedAdviceCardContentBase extends React.Component {
 
     const targetCityList = <CommuteCitySuggestion
       key="target-city"
-      city={project.mobility.city}
-      targetCity={project.mobility.city}
+      city={city}
+      targetCity={city}
       isTargetCity={true}
       userYou={userYou} />
 
@@ -100,7 +111,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
         {maybeS(otherCities.length)} proche{maybeS(otherCities.length)} de chez
         {userYou(' toi', ' vous')} {otherCities.length > 1 ? 'ont' : 'a'} beaucoup
         embauché en <strong>
-          {lowerFirstLetter(project.targetJob.jobGroup.name)}
+          {lowerFirstLetter(targetJob.jobGroup.name)}
         </strong> ces deux dernières années :
       </PaddedOnMobile>
       <AppearingList style={{marginTop: 15}}>
@@ -116,16 +127,18 @@ class CommuteCitySuggestionBase extends React.Component {
   static propTypes = {
     city: PropTypes.object.isRequired,
     isTargetCity: PropTypes.bool,
+    onClick: PropTypes.func,
     style: PropTypes.object,
     targetCity: PropTypes.object.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
   handleClick = () => {
-    const {city, targetCity} = this.props
+    const {city, onClick, targetCity} = this.props
     const searchOrigin = encodeURIComponent(`${targetCity.name}, france`)
     const searchTarget = encodeURIComponent(`${city.name}, france`)
     window.open(`https://www.google.fr/maps/dir/${searchOrigin}/${searchTarget}`, '_blank')
+    onClick && onClick()
   }
 
   renderTargetCity(style) {
@@ -139,19 +152,20 @@ class CommuteCitySuggestionBase extends React.Component {
     }
     return <div style={style} onClick={this.handleClick}>
       <span style={targetCityStyle}>
-        {city.name} ({userYou('ta', 'votre')} ville)
+        {isMobileVersion ? "Plus d'offres à\u00A0:" :
+          `${city.name} ${userYou('ta', 'votre')} ville`}
       </span>
       <div style={{flex: 1}} />
       <div style={{fontStyle: 'italic', fontWeight: 'normal'}}>
-        Offres par habitant {prefix}{cityName} :
-      </div> <PercentageBoxes percentage={1} />
+        {isMobileVersion ? null : `Offres par habitant ${prefix}${cityName}\u00A0:`}
+      </div> {isMobileVersion ? null : <PercentageBoxes percentage={1} />}
     </div>
   }
 
   renderOtherCity(style) {
     const {city} = this.props
     const multiplierStyle = {
-      color: Colors.HOVER_GREEN,
+      color: colors.HOVER_GREEN,
       fontWeight: 'bold',
       marginRight: 0,
       ...Styles.CENTER_FONT_VERTICALLY,
@@ -159,7 +173,7 @@ class CommuteCitySuggestionBase extends React.Component {
     const roundedOffers = Math.round(city.relativeOffersPerInhabitant * 10) / 10
 
     const tagStyle = {
-      backgroundColor: city.distanceKm > 20 ? Colors.SQUASH : Colors.GREENISH_TEAL,
+      backgroundColor: city.distanceKm > 20 ? colors.SQUASH : colors.GREENISH_TEAL,
     }
 
     return <div style={style} onClick={this.handleClick}>
@@ -174,7 +188,8 @@ class CommuteCitySuggestionBase extends React.Component {
         {roundedOffers > 1.1 ? <span style={{alignItems: 'center', display: 'flex'}}>
           <div style={multiplierStyle}>
             {roundedOffers}x plus
-          </div> <PercentageBoxes percentage={roundedOffers} /></span> : null}
+          </div> {isMobileVersion ? null : <PercentageBoxes percentage={roundedOffers} />}</span> :
+          null}
       </span>
     </div>
   }
@@ -183,11 +198,11 @@ class CommuteCitySuggestionBase extends React.Component {
     const {isTargetCity, style} = this.props
     const containerStyle = {
       ':hover': {
-        backgroundColor: Colors.LIGHT_GREY,
+        backgroundColor: colors.LIGHT_GREY,
       },
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       cursor: 'pointer',
       display: 'flex',
       fontSize: 13,

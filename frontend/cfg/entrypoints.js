@@ -1,3 +1,4 @@
+// ATTENTION: Keep in sync with frontend/release/nginx.conf.
 module.exports = {
   app: {
     entry: './src/entry',
@@ -7,7 +8,7 @@ module.exports = {
   bootstrap: {
     entry: './src/bootstrap_entry',
     htmlFilename: 'bootstrap.html',
-    rewrite: /^\/conseiller\/nouveau-profil-et-projet/,
+    rewrite: /^\/conseiller\/(nouveau-profil-et-projet|ressources)/,
     usesHotLoader: true,
   },
   eval: {
@@ -18,6 +19,11 @@ module.exports = {
   },
   'import-from-imilo': {
     entry: './src/import-from-imilo/entry',
+  },
+  'mayday-admin': {
+    entry: './src/components/pages/mayday/admin',
+    htmlFilename: 'mayday_admin.html',
+    rewrite: /^\/BobAction\/admin/,
   },
   nps: {
     entry: './src/components/pages/nps',

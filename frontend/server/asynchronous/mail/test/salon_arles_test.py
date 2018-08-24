@@ -7,8 +7,10 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous.mail.test import mail_blast_test
 
 
-class SalonArlesTestCase(mail_blast_test.CampaignTestBase('salon-arles')):
+class SalonArlesTestCase(mail_blast_test.CampaignTestBase):
     """Unit tests for the salon_arles module."""
+
+    campaign_id = 'salon-arles'
 
     def test_local(self):
         """Test user is a local from Arles, not willing to move."""

@@ -128,7 +128,7 @@ def transform_categorial_vars(data_frame, codebook_or_path):
 
     codebook = codebook_or_path
     if isinstance(codebook, str):
-        codebook = pd.read_excel(codebook_or_path, sheetname=None)
+        codebook = pd.read_excel(codebook_or_path, sheet_name=None)
 
     for varname, mapping in codebook.items():
         mapping[varname] = mapping[varname].astype(str)

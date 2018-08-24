@@ -1,17 +1,41 @@
-import omit from 'lodash/omit'
+import _keyBy from 'lodash/keyBy'
+import _omit from 'lodash/omit'
 import Cookies from 'js-cookie'
 
 import {AUTHENTICATE_USER, HIDE_TOASTER_MESSAGE, DISPLAY_TOAST_MESSAGE,
-  GET_PROJECT_REQUIREMENTS, GET_DASHBOARD_EXPORT, LOAD_LANDING_PAGE, TRACK_INITIAL_UTM,
+  GET_PROJECT_REQUIREMENTS, LOAD_LANDING_PAGE, TRACK_INITIAL_UTM,
   OPEN_LOGIN_MODAL, CLOSE_LOGIN_MODAL, GET_JOBS, ACCEPT_COOKIES_USAGE,
   SWITCH_TO_MOBILE_VERSION, LOGOUT, DELETE_USER_DATA, GET_ADVICE_TIPS,
   MODIFY_PROJECT, OPEN_REGISTER_MODAL, PRODUCT_UPDATED_PAGE_IS_SHOWN,
-  GET_EXPANDED_CARD_CONTENT, GET_USER_COUNT, ACTIVATE_DEMO, WILL_ACTIVATE_DEMO} from './actions'
+  GET_EXPANDED_CARD_CONTENT, ACTIVATE_DEMO, WILL_ACTIVATE_DEMO,
+  SHARE_PRODUCT_MODAL_IS_SHOWN, GET_MAYDAY_HELPER_COUNT, DIAGNOSE_ONBOARDING} from './actions'
 
 // Name of the cookie to accept cookies.
 const ACCEPT_COOKIES_COOKIE_NAME = 'accept-cookies'
 // Name of the cookie to store the auth token.
 const AUTH_TOKEN_COOKIE_NAME = 'authToken'
+// Name of the local storage key to store the UTM initial information.
+const UTM_LOCAL_STORAGE_NAME = 'utm'
+
+
+function getUtmFromStorage(storage) {
+  if (!storage) {
+    return null
+  }
+  const utmContent = storage.getItem(UTM_LOCAL_STORAGE_NAME)
+  if (!utmContent) {
+    return null
+  }
+  return JSON.parse(utmContent)
+}
+
+
+function setUtmToStorage(storage, utm) {
+  if (!storage || storage.getItem(UTM_LOCAL_STORAGE_NAME)) {
+    return
+  }
+  storage.setItem(UTM_LOCAL_STORAGE_NAME, JSON.stringify(utm))
+}
 
 
 const appInitialData = {
@@ -22,17 +46,22 @@ const appInitialData = {
   adviceTips: {},
   // Authentication token.
   authToken: Cookies.get(AUTH_TOKEN_COOKIE_NAME),
-  // Cache for dashboard exports.
-  dashboardExports: {},
   // Default props to use when creating a new project.
   defaultProjectProps: {},
-  initialUtm: null,
+  // Default for props storing if user has seen Bob Sharing modal.
+  hasSeenShareModal: false,
+  initialUtm: getUtmFromStorage(localStorage),
   isMobileVersion: false,
   // Cache of job requirements.
   jobRequirements: {},
   lastAccessAt: null,
   loginModal: null,
+  maydayData: null,
   newProjectProps: {},
+  quickDiagnostic: {
+    after: {},
+    before: {},
+  },
   // Cache for specific jobs.
   specificJobs: {},
   userHasAcceptedCookiesUsage: Cookies.get(ACCEPT_COOKIES_COOKIE_NAME),
@@ -101,13 +130,16 @@ function app(state = appInitialData, action) {
         }
       }
       break
-    case GET_DASHBOARD_EXPORT:
+    case GET_MAYDAY_HELPER_COUNT:
       if (action.status === 'success') {
         return {
           ...state,
-          dashboardExports: {
-            ...state.dashboardExports,
-            [action.response.dashboardExportId]: action.response,
+          maydayData: {
+            ...action.response,
+            actionHelperCount: {
+              ...action.response.actionHelperCount,
+            },
+            totalHelperCount: action.response.totalHelperCount || 0,
           },
         }
       }
@@ -144,9 +176,12 @@ function app(state = appInitialData, action) {
     case MODIFY_PROJECT:
       return {
         ...state,
-        adviceData: omit(state.adviceData, action.project.projectId),
+        adviceData: _omit(state.adviceData, action.project.projectId),
       }
     case TRACK_INITIAL_UTM:
+      if (!state.initialUtm && action.utm) {
+        setUtmToStorage(localStorage, action.utm)
+      }
       return {
         ...state,
         initialUtm: state.initialUtm || action.utm,
@@ -161,23 +196,38 @@ function app(state = appInitialData, action) {
         authToken: action.response.authToken,
         lastAccessAt: action.response.lastAccessAt,
       }
-    case GET_USER_COUNT:
-      if (action.status === 'success') {
-        return {
-          ...state,
-          userCounts: action.response,
-        }
-      }
-      break
     case WILL_ACTIVATE_DEMO:
       return {
         ...state,
         demo: action.demo,
       }
     case ACTIVATE_DEMO:
-      return omit(state, ['demo'])
+      return _omit(state, ['demo'])
     case PRODUCT_UPDATED_PAGE_IS_SHOWN:
-      return omit(state, ['lastAccessAt'])
+      return _omit(state, ['lastAccessAt'])
+    case SHARE_PRODUCT_MODAL_IS_SHOWN:
+      return {
+        ...state,
+        hasSeenShareModal: true,
+      }
+    case DIAGNOSE_ONBOARDING:
+      if (action.status === 'success') {
+        const {comments = []} = action.response
+        // TODO(cyrille): first group by field, then split by isBeforeQuestion.
+        return {
+          ...state,
+          quickDiagnostic: {
+            after: {
+              ...state.quickDiagnostic.after,
+              ..._keyBy(comments.filter(({isBeforeQuestion}) => !isBeforeQuestion), 'field'),
+            },
+            before: {
+              ...state.quickDiagnostic.before,
+              ..._keyBy(comments.filter(({isBeforeQuestion}) => isBeforeQuestion), 'field'),
+            },
+          },
+        }
+      }
   }
   return state
 }
@@ -199,15 +249,23 @@ function asyncState(state = asyncInitialData, action) {
   }
   if (action.status === 'error') {
     return {
-      ...state,
+      ..._omit(state, ['authMethod']),
       errorMessage: (action.ignoreFailure || !action.error) ? '' : action.error.toString(),
       isFetching: {...state.isFetching, [action.type]: false},
     }
   }
   if (action.status === 'success') {
-    return {...state, errorMessage: null, isFetching: {...state.isFetching, [action.type]: false}}
+    return {
+      ..._omit(state, ['authMethod']),
+      errorMessage: null,
+      isFetching: {...state.isFetching, [action.type]: false},
+    }
   }
-  return {...state, isFetching: {...state.isFetching, [action.type]: true}}
+  return {
+    ...state,
+    authMethod: action.method || state.authMethod,
+    isFetching: {...state.isFetching, [action.type]: true},
+  }
 }
 
 

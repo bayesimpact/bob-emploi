@@ -75,10 +75,14 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'emailsSent': [{'mailjetMessageId': 1234}],
         }
         user_id, auth_token = self.create_user_with_token(data=user_info, email='foo@bar.fr')
+        tokens = self.json_from_response(self.app.get(
+            '/api/user/{}/generate-auth-tokens'.format(user_id),
+            headers={'Authorization': 'Bearer ' + auth_token}))
+        unsubscribe_token = tokens['unsubscribe']
         response = self.app.delete(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"email": "foo@bar.fr"}}}}'.format(user_id),
-            headers={'Authorization': 'Bearer ' + auth_token})
+            data='{{"userId": "{}"}}'.format(user_id),
+            headers={'Authorization': 'Bearer ' + unsubscribe_token})
         self.assertEqual(200, response.status_code)
         auth_object = self._user_db.user_auth.find_one({'_id': mongomock.ObjectId(user_id)})
         self.assertFalse(auth_object)
@@ -155,6 +159,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info.pop('projects')
         user_info2.pop('featuresEnabled')
         user_info2.pop('revision')
+        user_info2.pop('hashedEmail')
         self.assertEqual(user_info, user_info2)
 
         self.assertEqual(1, len(projects), projects)
@@ -205,9 +210,11 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         projects = user_info.pop('projects')
         _clean_up_variable_flags(user_info['featuresEnabled'])
 
+        # sha1('bob-emploifoo@bar.fr') = 'bb96b62f3ded5182d555e2452cc4125a1ea4201d'
         self.assertEqual(
             {
                 'featuresEnabled': {},
+                'hashedEmail': 'bb96b62f3ded5182d555e2452cc4125a1ea4201d',
                 'profile': {
                     'city': {'name': 'fobar'},
                     'email': 'foo@bar.fr',
@@ -237,9 +244,11 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(registered_at, stored_user_info.pop('registeredAt'))
         self.assertEqual(projects, stored_user_info.pop('projects'))
         _clean_up_variable_flags(stored_user_info['featuresEnabled'])
+        # sha1('bob-emploifoo@bar.fr') = 'bb96b62f3ded5182d555e2452cc4125a1ea4201d'
         self.assertEqual(
             {
                 'featuresEnabled': {},
+                'hashedEmail': 'bb96b62f3ded5182d555e2452cc4125a1ea4201d',
                 'profile': {
                     'city': {'name': 'fobar'},
                     'email': 'foo@bar.fr',
@@ -277,12 +286,72 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             {'%.4f: Tick %s (%.4f since last tick)'},
             set(c[0][0] for c in mock_warning.call_args_list[1:]))
 
-    # TODO(pascal): Add a test back (check history before 97d087e for instance)
-    # to check that users cannot modify feature flags. For now we do not have a
-    # feature flag that is supposed to be stable.
+    def test_save_user_keeps_points(self):
+        """Clients cannot modify Bob Points just by saving a user."""
+
+        initial_user_info = {'profile': {'gender': 'FEMININE'}}
+        user_id, auth_token = self.create_user_with_token(
+            email='joe@lafrite.com', data=initial_user_info)
+
+        # Modify current points without the API.
+        self._user_db.user.update_one(
+            {'_id': mongomock.ObjectId(user_id)},
+            {'$set': {'appPoints': {'current': 150}}})
+
+        # Try to modify the current points and the gender.
+        response = self.app.post(
+            '/api/user',
+            data='{{"userId": "{}", '
+            '"profile": {{"gender": "MASCULINE", "email": "joe@lafrite.com"}},'
+            '"appPoints": {{"current": 1500}}}}'.format(user_id),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        user_info = self.json_from_response(response)
+
+        self.assertEqual(
+            'MASCULINE', user_info.get('profile', {}).get('gender'),
+            msg='Gender was updated')
+        self.assertEqual(
+            150, user_info.get('appPoints', {}).get('current'),
+            msg='App points were not updated')
 
     # TODO(pascal): Add tests for user ID mod when we have new features
     # enabled that way. See code at 6cfd9e0.
+
+    def test_update_project(self):
+        """User project is updated."""
+
+        user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
+        # Populate user.
+        self.app.post(
+            '/api/user',
+            data=json.dumps({
+                'userId': user_id,
+                'profile': {'email': 'foo@bar.fr'},
+                'projects': [{
+                    'isIncomplete': True,
+                    'projectId': '0',
+                    'title': 'Awesome Title',
+                }],
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        response = self.app.post(
+            '/api/user/{}/project/0'.format(user_id),
+            data=json.dumps({
+                'projectId': '0',
+                'totalInterviewCount': 5,
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        project_info = self.json_from_response(response)
+        self.assertTrue(project_info.get('projectId'))
+        self.assertFalse(project_info.get('isIncomplete'))
+        self.assertEqual(5, project_info.get('totalInterviewCount'))
+
+        user_info = self.get_user_info(user_id, auth_token)
+        self.assertEqual(1, len(user_info.get('projects', [])))
+        self.assertEqual(project_info, user_info['projects'].pop())
 
     def test_project_diagnosis_added(self):
         """Local diagnosis should be added to a new project."""
@@ -614,7 +683,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'postcodes': '12345',
             'romeId': 'A1234',
         })
-        self._db.show_unverified_data_users.insert_one({'_id': 'foo@bar.fr'})
+        self._user_db.show_unverified_data_users.insert_one({'_id': 'foo@bar.fr'})
         user_id, auth_token = self.create_user_with_token(email='foo@bar.fr')
 
         response = self.app.post(
@@ -698,6 +767,152 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertFalse(user_info.get('appNotAvailable'))
         user_in_db = self.user_info_from_db(user_id)
         self.assertFalse(user_in_db.get('appNotAvailable'))
+
+    def test_update_settings(self):
+        """Update user settings."""
+
+        user_info = {
+            'profile': {'city': {'name': 'foobar'}, 'name': 'Albert', 'yearOfBirth': 1973},
+            'projects': [{}],
+        }
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+        tokens = self.json_from_response(self.app.get(
+            '/api/user/{}/generate-auth-tokens'.format(user_id),
+            headers={'Authorization': 'Bearer ' + auth_token}))
+        settings_token = tokens['settings']
+
+        response = self.app.post(
+            '/api/user/{}/settings'.format(user_id),
+            data='{"coachingEmailFrequency": "EMAIL_ONCE_A_MONTH"}',
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + settings_token})
+        self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertEqual('Albert', updated_user.get('profile', {}).get('name'), msg=updated_user)
+        self.assertEqual(
+            'EMAIL_ONCE_A_MONTH', updated_user['profile'].get('coachingEmailFrequency'))
+
+    def test_update_email_settings_invalidate(self):
+        """Updating user settings for email frequency invalidates the next email date."""
+
+        user_info = {
+            'profile': {'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH'},
+        }
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+        tokens = self.json_from_response(self.app.get(
+            '/api/user/{}/generate-auth-tokens'.format(user_id),
+            headers={'Authorization': 'Bearer ' + auth_token}))
+        settings_token = tokens['settings']
+
+        # Fake sending a coaching email and updating the user.
+        self._user_db.user.update_one({'_id': objectid.ObjectId(user_id)}, {'$set': {
+            'sendCoachingEmailAfter': '2018-01-15T15:24:34Z',
+        }})
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertTrue(updated_user.get('sendCoachingEmailAfter'))
+
+        self.app.post(
+            '/api/user/{}/settings'.format(user_id),
+            data='{"coachingEmailFrequency": "EMAIL_MAXIMUM"}',
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + settings_token})
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertFalse(updated_user.get('sendCoachingEmailAfter'))
+
+    def test_update_email_frequency_invalidate(self):
+        """Updating user's profile and changing email frequency invalidates the next email date."""
+
+        user_info = {
+            'profile': {'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH'},
+        }
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        # Fake sending a coaching email and updating the user.
+        self._user_db.user.update_one({'_id': objectid.ObjectId(user_id)}, {'$set': {
+            'sendCoachingEmailAfter': '2018-01-15T15:24:34Z',
+        }})
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertTrue(updated_user.get('sendCoachingEmailAfter'))
+
+        updated_user['profile']['coachingEmailFrequency'] = 'EMAIL_MAXIMUM'
+        self.app.post(
+            '/api/user',
+            data=json.dumps(updated_user),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertFalse(updated_user.get('sendCoachingEmailAfter'))
+
+    def test_update_profile_with_quick_diagnostic(self):
+        """Update the user but with the quick diagnostic route."""
+
+        user_info = {'profile': {'name': 'Albert', 'yearOfBirth': 1973}}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        response = self.app.post(
+            '/api/user/{}/update-and-quick-diagnostic'.format(user_id),
+            data=json.dumps({'user': {'profile': {'name': 'Alfred'}}}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertEqual('Alfred', updated_user.get('profile', {}).get('name'))
+        self.assertEqual(1973, updated_user.get('profile', {}).get('yearOfBirth'))
+
+    def test_create_project_with_quick_diagnostic(self):
+        """Create a project but with the quick diagnostic route."""
+
+        user_info = {'profile': {'name': 'Albert'}}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        response = self.app.post(
+            '/api/user/{}/update-and-quick-diagnostic'.format(user_id),
+            data=json.dumps({'user': {'projects': [{'targetJob': {'name': 'Fou'}}]}}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertEqual('Albert', updated_user.get('profile', {}).get('name'))
+        self.assertEqual('Fou', updated_user['projects'][0]['targetJob']['name'])
+
+    def test_update_project_with_quick_diagnostic(self):
+        """Update the project but with the quick diagnostic route."""
+
+        user_info = {'projects': [{'projectId': '0'}], 'profile': {'name': 'Albert'}}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        response = self.app.post(
+            '/api/user/{}/update-and-quick-diagnostic/0'.format(user_id),
+            data=json.dumps({'user': {'projects': [{'targetJob': {'name': 'Fou'}}]}}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertEqual('Albert', updated_user.get('profile', {}).get('name'))
+        self.assertEqual('Fou', updated_user['projects'][0]['targetJob']['name'])
+
+    def test_update_custom_frustrations_with_quick_diagnostic(self):
+        """Update the custom frustrations with the quick diagnostic route."""
+
+        user_info = {'profile': {'customFrustrations': ['Pascal']}}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        response = self.app.post(
+            '/api/user/{}/update-and-quick-diagnostic'.format(user_id),
+            data=json.dumps({'user': {'profile': {'customFrustrations': ['Bad jokes']}}}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertEqual(['Bad jokes'], updated_user.get('profile', {}).get('customFrustrations'))
 
 
 if __name__ == '__main__':

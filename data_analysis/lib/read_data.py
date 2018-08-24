@@ -181,7 +181,7 @@ def load_applications_sample_df(database):
     # Load column names transformation dict from column_descriptions spreadsheet
     column_names_df = pd.read_excel(
         '../../data/mixed_sources/FHS_column_descriptions.xlsx',
-        sheetname='en__users')
+        sheet_name='en__users')
     column_names_df = column_names_df[
         column_names_df['english_column_name'].map(str) != 'nan']
     column_names = dict(zip(
@@ -190,7 +190,7 @@ def load_applications_sample_df(database):
     # Load codebook from spreadsheet and replace column codes with column names
     # everywhere
     codebook = pd.read_excel(
-        '../../data/mixed_sources/FHS_en_table_codebook.xlsx', sheetname=None)
+        '../../data/mixed_sources/FHS_en_table_codebook.xlsx', sheet_name=None)
     codebook = {
         column_names[key]: mapping.rename(columns=_rename_column)
         for key, mapping in codebook.items()}

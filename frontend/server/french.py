@@ -66,7 +66,6 @@ _NUMBER_WORDS = {
 }
 
 
-# TODO(cyrille): Ensure that imported sentences are not capitalized or punctuated.
 def join_sentences_properly(sentences):
     """
     Returns a nice sentence, depending on the length of the array 'sentences'.
@@ -76,10 +75,7 @@ def join_sentences_properly(sentences):
     if not sentences:
         return ''
     full_sentence = ' mais '.join(sentences).strip()
-    without_added_period = full_sentence[0].upper() + full_sentence[1:]
-    if without_added_period[-1] in ['.', '!']:
-        return without_added_period
-    return without_added_period + '.'
+    return full_sentence[0].upper() + full_sentence[1:] + '.'
 
 
 def try_stringify_number(value):

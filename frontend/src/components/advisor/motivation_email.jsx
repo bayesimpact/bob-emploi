@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 import {getEmailTemplates} from 'store/french'
 
-import {AppearingList, GrowingNumber, PaddedOnMobile} from 'components/theme'
+import {AppearingList, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-motivation-email.png'
 
 import {EmailTemplate} from './base'
@@ -31,28 +31,28 @@ class AdviceCard extends React.Component {
 class ExpandedAdviceCardContent extends React.Component {
   static propTypes = {
     advice: PropTypes.object.isRequired,
+    onExplore: PropTypes.func.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
-    const {advice: {adviceId}, userYou} = this.props
+    const {advice: {adviceId}, onExplore, userYou} = this.props
     const templates = getEmailTemplates(userYou)[adviceId] || []
     const boxStyle = index => ({
       marginTop: index ? -1 : 0,
     })
-    // TODO(cyrille): Change the plural to singular if templates.length === 1.
+    const maybeS = templates.length <= 1 ? '' : 's'
     return <div>
-      <PaddedOnMobile style={{fontSize: 21, marginBottom: 15}}>
-        Nous avons trouvé <strong><GrowingNumber number={templates.length} /> exemples</strong> de
+      <div style={{marginBottom: 15}}>
+        Nous avons trouvé <strong>
+          <GrowingNumber number={templates.length} /> exemple{maybeS}
+        </strong> de
         structures d'email
-      </PaddedOnMobile>
+      </div>
 
       <AppearingList>
-        {templates.map((template, index) => <EmailTemplate userYou={userYou}
+        {templates.map((template, index) => <EmailTemplate
+          userYou={userYou} onContentShown={() => onExplore('template')}
           {...template} style={boxStyle(index)} key={`template-${index}`} />)}
       </AppearingList>
     </div>

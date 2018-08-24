@@ -50,21 +50,49 @@ function deleteJson(path, data, authToken) {
 }
 
 function getJson(path, authToken) {
-  const args = authToken ? {headers: {'Authorization': 'Bearer ' + authToken}} : {}
-  return fetch(path, args).then(handleJsonResponse)
+  const headers = {
+    'Accept': 'application/json',
+  }
+  if (authToken) {
+    headers['Authorization'] = 'Bearer ' + authToken
+  }
+  return fetch(path, {headers}).then(handleJsonResponse)
 }
 
 function adviceTipsGet({userId}, {projectId}, {adviceId}, authToken) {
-  return getJson(`/api/project/${userId}/${projectId}/advice/${adviceId}/tips`, authToken).
+  return getJson(`/api/advice/tips/${adviceId}/${userId}/${projectId}`, authToken).
     then(response => response.tips)
+}
+
+function confirmReviewDonePost(reviewerEmail, documentOwnerName, googleIdToken, extra) {
+  return postJson(
+    '/api/mayday/review/done', {documentOwnerName, reviewerEmail, ...extra}, true, googleIdToken)
+}
+
+function convertUserWithAdviceSelectionFromProtoPost(proto) {
+  return fetch('/api/user/proto', {
+    body: proto,
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/x-protobuf-base64',
+    },
+    method: 'post',
+  }).then(handleJsonResponse)
+}
+
+function convertUserWithAdviceSelectionToProtoPost(proto) {
+  return fetch('/api/user/proto', {
+    body: JSON.stringify(proto),
+    headers: {
+      'Accept': 'application/x-protobuf-base64',
+      'Content-Type': 'application/json',
+    },
+    method: 'post',
+  }).then(response => response.text()).then(response => response.replace(/\n/g, ''))
 }
 
 function createEvalUseCasePost(poolName, email, googleIdToken) {
   return postJson('/api/eval/use-case/create', {email, poolName}, true, googleIdToken)
-}
-
-function dashboardExportGet(dashboardExportId) {
-  return getJson(`/api/dashboard-export/${dashboardExportId}`)
 }
 
 function evalUseCasePoolsGet(authToken) {
@@ -102,8 +130,23 @@ function markUsedAndRetrievePost(userId, authToken) {
   return postJson(`/api/app/use/${userId}`, undefined, true, authToken)
 }
 
+function maydayHelperCountGet() {
+  return getJson('/api/mayday/count')
+}
+
+function maydayHelperPost(helper) {
+  return postJson('/api/mayday/user', helper, true)
+}
+
 function migrateUserToAdvisorPost({userId}, authToken) {
   return postJson(`/api/user/${userId}/migrate-to-advisor`, undefined, true, authToken)
+}
+
+function onboardingDiagnosePost(data, authToken) {
+  const {userId, projects: [{projectId} = {}] = []} = data.user
+  const path = projectId ? `/api/user/${userId}/update-and-quick-diagnostic/project/${projectId}` :
+    `/api/user/${userId}/update-and-quick-diagnostic`
+  return postJson(path, data, true, authToken)
 }
 
 function projectComputeAdvicesPost(user) {
@@ -116,10 +159,6 @@ function projectDiagnosePost(user) {
 
 function resetPasswordPost(email) {
   return postJson('/api/user/reset-password', {email}, true)
-}
-
-function userCountGet() {
-  return getJson('/api/users/counts')
 }
 
 function userPost(user, token) {
@@ -138,10 +177,16 @@ function feedbackPost(feedback, authToken) {
   return postJson('/api/feedback', feedback, false, authToken)
 }
 
+function pointTransactionPost(transaction, userId, authToken) {
+  return postJson(`/api/user/points/${userId}`, transaction, true, authToken)
+}
+
 export {
   adviceTipsGet,
+  confirmReviewDonePost,
+  convertUserWithAdviceSelectionFromProtoPost,
+  convertUserWithAdviceSelectionToProtoPost,
   createEvalUseCasePost,
-  dashboardExportGet,
   evalUseCasePoolsGet,
   evalUseCasesGet,
   expandedCardContentGet,
@@ -149,12 +194,15 @@ export {
   jobRequirementsGet,
   jobsGet,
   markUsedAndRetrievePost,
+  maydayHelperCountGet,
+  maydayHelperPost,
   migrateUserToAdvisorPost,
+  onboardingDiagnosePost,
+  pointTransactionPost,
   projectComputeAdvicesPost,
   projectDiagnosePost,
   resetPasswordPost,
   userAuthenticate,
-  userCountGet,
   userDelete,
   userPost,
 }

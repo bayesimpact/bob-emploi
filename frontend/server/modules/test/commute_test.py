@@ -7,8 +7,10 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase('advice-commute')):
+class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
     """Unit test for the "Commute" scoring model."""
+
+    model_id = 'advice-commute'
 
     # TODO(guillaume): Add more tests when the scoring model takes the city into account.
 

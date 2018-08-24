@@ -24,7 +24,7 @@ Category A.
 
 If you managed to get your hands on the FHS dataset, you can run:
     docker-compose run --rm data-analysis-prepare python \
-        bob_emploi/importer/fhs_category_duration.py \
+        bob_emploi/data_analysis/importer/fhs_category_duration.py \
         "data/pole_emploi/FHS/FHS*201512" \
         2015-12-01 \
         ABC \

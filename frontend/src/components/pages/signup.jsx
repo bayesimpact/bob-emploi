@@ -1,55 +1,51 @@
 import PropTypes from 'prop-types'
-import {parse} from 'query-string'
 import React from 'react'
+import {connect} from 'react-redux'
+import {Redirect} from 'react-router-dom'
 
-import {LoginButton} from 'components/login'
-import {PageWithNavigationBar} from 'components/navigation'
+import {closeLoginModal, openLoginModal} from 'store/actions'
+import {LoginMethods} from 'components/login'
+import {Routes} from 'components/url'
 
 
-class VideoSignUpPage extends React.Component {
+class SignUpPageBase extends React.Component {
   static propTypes = {
-    location: PropTypes.shape({
-      search: PropTypes.string.isRequired,
-    }).isRequired,
+    dispatch: PropTypes.func.isRequired,
+    isUserSignedIn: PropTypes.bool,
+    shouldLoginModalBeOpened: PropTypes.bool,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
+  // In desktop loginModal is expected to be opened.
+  // Here, for mobile, if it is not set, we set it.
+  componentDidMount() {
+    const {dispatch, shouldLoginModalBeOpened} = this.props
+    if (shouldLoginModalBeOpened) {
+      dispatch(openLoginModal({}, ''))
+    }
   }
 
-  state = {
-    email: parse(this.props.location.search).email,
+  componentWillUnmount() {
+    this.props.dispatch(closeLoginModal())
   }
 
   render() {
-    const {isMobileVersion} = this.context
-    const style = {
+    if (this.props.isUserSignedIn) {
+      return <Redirect to={Routes.ROOT} />
+    }
+    const containerStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
       display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
     }
-    const buttonStyle = {
-      fontSize: 15,
-      letterSpacing: 1,
-      marginTop: 30,
-      padding: '18px 28px 12px',
-      textTransform: 'uppercase',
-    }
-    return <PageWithNavigationBar isContentScrollable={true} style={style}>
-      <iframe
-        width={isMobileVersion ? 320 : 900} height={isMobileVersion ? 200 : 506}
-        allowFullScreen={true}
-        src="https://www.youtube.com/embed/KSsVpeFqcaU?autoplay=1" frameBorder="0" />
-      <LoginButton
-        style={buttonStyle} email={this.state.email}
-        isSignUpButton={true} visualElement="video-signup" type="navigation">
-        Inscrivez vous, c'est gratuit&nbsp;!
-      </LoginButton>
-    </PageWithNavigationBar>
+    return <div style={containerStyle}>
+      <LoginMethods />
+    </div>
   }
 }
+const SignUpPage = connect(({app: {loginModal}, user: {userId}}) => ({
+  isUserSignedIn: !!userId,
+  shouldLoginModalBeOpened: !loginModal,
+}))(SignUpPageBase)
 
 
-export {VideoSignUpPage}
+export {SignUpPage}

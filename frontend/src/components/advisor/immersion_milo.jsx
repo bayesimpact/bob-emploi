@@ -4,7 +4,7 @@ import React from 'react'
 import {genderize, inDepartement} from 'store/french'
 import {missionLocaleUrl} from 'store/job'
 
-import {Colors, UpDownIcon, colorToAlpha} from 'components/theme'
+import {ExternalLink, UpDownIcon, colorToAlpha} from 'components/theme'
 import Picto from 'images/advices/picto-immersion.png'
 
 import {connectExpandedCardWithContent} from './base'
@@ -15,15 +15,14 @@ class ExpandedAdviceCardContentBase extends React.Component {
     adviceData: PropTypes.shape({
       agenciesListLink: PropTypes.string,
     }).isRequired,
+    onExplore: PropTypes.func.isRequired,
     profile: PropTypes.shape({
       gender: PropTypes.string,
     }).isRequired,
     project: PropTypes.shape({
-      mobility: PropTypes.shape({
-        city: PropTypes.shape({
-          departementName: PropTypes.string,
-          departementPrefix: PropTypes.string,
-        }),
+      city: PropTypes.shape({
+        departementName: PropTypes.string,
+        departementPrefix: PropTypes.string,
       }),
     }).isRequired,
     userYou: PropTypes.func.isRequired,
@@ -34,16 +33,17 @@ class ExpandedAdviceCardContentBase extends React.Component {
   }
 
   renderMiloLink() {
-    const {adviceData, project: {mobility}, userYou} = this.props
-    const inYourDepartement = mobility && inDepartement(mobility.city)
+    const {adviceData, onExplore, project: {city}, userYou} = this.props
+    const inYourDepartement = inDepartement(city)
     if (!inYourDepartement) {
       return null
     }
-    const url = missionLocaleUrl(adviceData, mobility.city.departementName)
+    const url = missionLocaleUrl(adviceData, city.departementName)
     return <React.Fragment>
-      Pour accéder à la <a href={url} target="_blank" rel="noopener norefer">
+      Pour accéder à la <ExternalLink
+        href={url} onClick={() => onExplore('milo list')}>
         liste des missions Locales {inYourDepartement} clique{userYou('', 'z')} ici
-      </a>.
+      </ExternalLink>.
     </React.Fragment>
   }
 
@@ -52,7 +52,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     const {isContactMiloExpanded} = this.state
     const containerStyle = {
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.SILVER}`,
+      border: `solid 1px ${colors.SILVER}`,
       padding: '0 20px',
       ...style,
     }
@@ -101,7 +101,7 @@ class ExpandedAdviceCardContentBase extends React.Component {
     const {profile: {gender}, userYou} = this.props
     const maybeE = genderize('.e', 'e', '', gender)
     const highlightStyle = {
-      backgroundColor: colorToAlpha(Colors.SUN_YELLOW_80, .8),
+      backgroundColor: colorToAlpha(colors.SUN_YELLOW_80, .8),
       fontWeight: 'inherit',
     }
     return <div>

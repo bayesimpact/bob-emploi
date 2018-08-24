@@ -5,7 +5,7 @@ Check out https://www.algolia.com/api-keys to find such a key.
 
 docker-compose run --rm -e ALGOLIA_API_KEY=<the key> \
     data-analysis-prepare python \
-    bob_emploi/importer/french_activity_suggest.py
+    bob_emploi/data_analysis/importer/french_activity_suggest.py
 """
 
 import json

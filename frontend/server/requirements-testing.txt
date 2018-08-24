@@ -1,6 +1,6 @@
 Babel
 coverage
-mongomock
+mongomock==3.9.0
 nose
 nose-watch
 pycodestyle

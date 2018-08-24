@@ -7,7 +7,7 @@ group.
 
 If you managed to get your hands on the offers dataset, you can run:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/importer/offers_per_city.py \
+        python bob_emploi/data_analysis/importer/offers_per_city.py \
         --offers_file="data/job_offers/OFFRE_EXTRACT_ENRICHIE_FGU_17JANV2017_FGU.csv" \
         --colnames="data/job_offers/column_names.txt" \
         --min_creation_date="2015/01/01" \

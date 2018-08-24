@@ -11,6 +11,17 @@
 #
 # The client gets released by deploying static files on OVH storage.
 #
+# Environment variables required:
+# - GITHUB_TOKEN: GitHub credentials to check CI status, update the release and
+#   the prod branch.
+# - OS_PASSWORD, OS_USERNAME, etc: OpenStack credentials to push client app to OVH server.
+# - SLACK_INTEGRATION_URL: Webhook to report deploy status to Slack.
+#
+# Optional:
+# - CIRCLE_STAGE: if "deploy", the script will know it's run as part of Circle
+#   CI deployment.
+# - DRY_RUN: do not actually deploy.
+#
 # Usage:
 # frontend/release/deploy.sh $CIRCLE_TAG
 
@@ -82,9 +93,9 @@ if ! pip show python-keystoneclient > /dev/null; then
   exit 8
 fi
 
-# TODO(florian): Use Github 'deploy key' instead of a personal access token.
 if [ -z "$GITHUB_TOKEN" ]; then
   echo_error 'Setup GITHUB_TOKEN env variable to get `hub` to work.'
+  echo '* If trying to deploy from Circle CI, use the bob-emploi GitHub user.'
   echo '* Create one on https://github.com/settings/tokens'
   exit 9
 fi
@@ -234,9 +245,6 @@ echo "Deployed on $(date -R -u)" >> $RELEASE_NOTES
 readonly PREVIOUS_RELEASE="$(git describe --tags origin/prod)"
 if [ -z "$DRY_RUN" ]; then
   hub release edit --draft=false --file=$RELEASE_NOTES $TAG
-  # By default, git uses the read-only deploy key from the Github-CircleCI integration.
-  # We need to use the GITHUB_TOKEN that has write permissions instead to be able to push the tag.
-  # TODO(florian): See if we can simplify this, maybe by changing permissions of the Github-CircleCI integration.
   git remote set-url origin $GIT_ORIGIN_WITH_WRITE_PERMISSION
   git push -f origin $TAG:prod
 fi

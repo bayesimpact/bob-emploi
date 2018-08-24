@@ -30,7 +30,7 @@ class CompaniesTestCase(unittest.TestCase):
         mock_emploi_store_client.assert_called_with(
             client_id='client-id', client_secret='secret')
         mock_emploi_store_client().get_lbb_companies.assert_called_with(
-            city_id='69123', rome_codes=['A5432'], distance=10)
+            city_id='69123', rome_codes=['A5432'], distance=10, contract=None)
 
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_CLIENT_ID', 'client-id')
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_SECRET', 'secret')

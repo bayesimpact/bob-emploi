@@ -4,9 +4,7 @@ See http://go/bob:advisor-design.
 """
 
 import collections
-import itertools
 import logging
-import os
 import threading
 
 import mailjet_rest
@@ -18,25 +16,10 @@ from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
-from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
 _ScoredAdvice = collections.namedtuple('ScoredAdvice', ['advice', 'score'])
-
-_EMAIL_ACTIVATION_ENABLED = not os.getenv('DEBUG', '')
-
-
-def maybe_diagnose(user, project, database):
-    """Check if a project needs a diagnostic and populate the diagnostic if so."""
-
-    if project.is_incomplete:
-        return False
-    if project.HasField('diagnostic'):
-        return False
-
-    diagnose(user, project, database)
-    return True
 
 
 def maybe_advise(user, project, database, base_url='http://localhost:3000'):
@@ -57,7 +40,7 @@ def maybe_advise(user, project, database, base_url='http://localhost:3000'):
 
 
 def _maybe_recommend_advice(user, project, database):
-    if user.features_enabled.advisor != user_pb2.ACTIVE or project.advices:
+    if user.features_enabled.advisor == user_pb2.CONTROL or project.advices:
         return False
     advices = compute_advices_for_project(user, project, database)
     for piece_of_advice in advices.advices:
@@ -77,179 +60,11 @@ def maybe_categorize_advice(user, project, database):
 
     if project.is_incomplete or not project.advices:
         return False
-    if user.features_enabled.workbench != user_pb2.ACTIVE or project.advice_categories:
+    # TODO(pascal): Drop the workbench feature flag.
+    if user.features_enabled.workbench == user_pb2.CONTROL or project.advice_categories:
         return False
     project.advice_categories.extend(compute_advice_categories(project, database).advice_categories)
     return True
-
-
-def diagnose(user, project, database):
-    """Diagnose a project.
-
-    Args:
-        user: the user's data, mainly used for their profile and features_enabled.
-        project: the project data. It will be modified, as its diagnostic field
-            will be populated.
-        database: access to the MongoDB with market data.
-        diagnostic: a protobuf to fill, if none it will be created.
-    Returns:
-        the modified diagnostic protobuf.
-    """
-
-    diagnostic = project.diagnostic
-
-    scoring_project = scoring.ScoringProject(
-        project, user.profile, user.features_enabled, database, now=now.get())
-    return diagnose_scoring_project(scoring_project, diagnostic)
-
-
-def diagnose_scoring_project(scoring_project, diagnostic):
-    """Diagnose a scoring project.
-    Helper function that can be used for real users and personas.
-
-    Args:
-        scoring_project: the scoring project we wish to diagnose.
-        diagnostic: a protobuf to fill, if none it will be created.
-    Returns:
-        a tuple with the modified diagnostic protobuf and a list of the orders of missing sentences.
-    """
-
-    _compute_sub_diagnostics(scoring_project, diagnostic)
-    # Combine the sub metrics to create the overall score.
-    sum_score = 0
-    sum_weight = 0
-    for sub_diagnostic in diagnostic.sub_diagnostics:
-        sum_score += sub_diagnostic.score
-        sum_weight += 1
-    if sum_weight:
-        diagnostic.overall_score = round(sum_score / sum_weight)
-
-    diagnostic.text, missing_sentences_orders = _compute_diagnostic_text(
-        scoring_project, diagnostic.overall_score)
-
-    return diagnostic, missing_sentences_orders
-
-
-_SENTENCE_TEMPLATES = proto.MongoCachedCollection(
-    diagnostic_pb2.DiagnosticSentenceTemplate, 'diagnostic_sentences')
-
-
-def _compute_diagnostic_text(scoring_project, unused_overall_score):
-    """Create the left-side text of the diagnostic for a given project.
-
-    Returns:
-        A tuple containing the text,
-        and a list of the orders of missing sentences (if text is empty).
-    """
-
-    sentences = []
-    missing_sentences_orders = []
-    templates_per_order = itertools.groupby(
-        _SENTENCE_TEMPLATES.get_collection(scoring_project.database),
-        key=lambda template: template.order)
-    for order, templates_iterator in templates_per_order:
-        templates = list(templates_iterator)
-        template = next(
-            scoring.filter_using_score(
-                templates, lambda template: template.filters, scoring_project),
-            None)
-        if not template:
-            if any(template.optional for template in templates):
-                continue
-            # TODO(pascal): Set to warning when we have theoretical complete coverage.
-            logging.debug('Could not find a sentence %d for user.', order)
-            missing_sentences_orders.append(order)
-            continue
-        translated_template = scoring_project.translate_string(template.sentence_template)
-        sentences.append(scoring_project.populate_template(translated_template))
-    return '\n\n'.join(sentences) if not missing_sentences_orders else '', missing_sentences_orders
-
-
-_SUBTOPIC_SENTENCE_TEMPLATES = proto.MongoCachedCollection(
-    diagnostic_pb2.DiagnosticSubmetricsSentenceTemplate, 'diagnostic_submetrics_sentences')
-
-
-_SCORE_AVERAGE = 1.5
-
-
-def _compute_diagnostic_topic_score_and_text(topic, scorers, scoring_project):
-    """Create the score and text for a given diagnostic submetric on a given project.
-
-    Args:
-        topic: the diagnostic topic we wish to evaluate
-        scorers: a list of scorers for the given topic, with their template sentences
-        scoring_project: the project we want to score
-    Returns:
-        the populated subdiagnostic protobuf.
-    """
-
-    topic_score = 0
-    topic_weight = 0
-    min_score = None
-    max_score = None
-    max_scorer = None
-    min_scorer = None
-    for scorer in scorers:
-        model = scoring.get_scoring_model(scorer.trigger_scoring_model)
-        if not model:
-            logging.error(
-                'Diagnostic for topic "%s" uses the scoring model "%s" which does not exist.',
-                diagnostic_pb2.DiagnosticTopic.Name(topic), scorer.trigger_scoring_model)
-            continue
-        try:
-            score = model.score(scoring_project)
-        except scoring.NotEnoughDataException:
-            continue
-        # Use default weight of 1
-        weight = scorer.weight or 1
-        weighted_score = score * weight
-        topic_score += weighted_score
-        topic_weight += weight
-        # Use positive sentence only for scores above average.
-        if score > _SCORE_AVERAGE:
-            positive_score = (score - _SCORE_AVERAGE) * weight
-            if max_score is None or positive_score > max_score:
-                max_score = positive_score
-                max_scorer = scorer
-        # Use negative sentence only for scores below average.
-        else:
-            negative_score = (_SCORE_AVERAGE - score) * weight
-            if min_score is None or negative_score > min_score:
-                min_score = negative_score
-                min_scorer = scorer
-    if not topic_weight:
-        return None
-
-    sub_diagnostic = diagnostic_pb2.SubDiagnostic(
-        topic=topic, score=round(topic_score / topic_weight * 100 / 3))
-    sentences = []
-
-    def _append_sentence(template):
-        translated_template = scoring_project.translate_string(template)
-        sentences.append(scoring_project.populate_template(translated_template))
-
-    # Do not put positive sentence if score is below 40.
-    if max_scorer and sub_diagnostic.score > 40:
-        _append_sentence(max_scorer.positive_sentence_template)
-    # Do not put negative sentence if score is above 80.
-    if min_scorer and sub_diagnostic.score < 80:
-        _append_sentence(min_scorer.negative_sentence_template)
-
-    sub_diagnostic.text = french.join_sentences_properly(sentences)
-
-    return sub_diagnostic
-
-
-def _compute_sub_diagnostics(scoring_project, diagnostic):
-    """populate the submetrics of the diagnostic for a given project."""
-
-    scorers_per_topic = itertools.groupby(
-        _SUBTOPIC_SENTENCE_TEMPLATES.get_collection(scoring_project.database),
-        key=lambda scorer: scorer.submetric)
-    for topic, scorers in scorers_per_topic:
-        sub_diagnostic = _compute_diagnostic_topic_score_and_text(topic, scorers, scoring_project)
-        if sub_diagnostic:
-            diagnostic.sub_diagnostics.extend([sub_diagnostic])
 
 
 def compute_advices_for_project(user, project, database, scoring_timeout_seconds=3):
@@ -447,9 +262,8 @@ def _send_activation_email(user, project, database, base_url):
             for a in advices
         ],
     }
-    response = mail.send_template(
-        # https://app.mailjet.com/template/168827/build
-        '168827', user.profile, data, dry_run=not _EMAIL_ACTIVATION_ENABLED)
+    # https://app.mailjet.com/template/168827/build
+    response = mail.send_template('168827', user.profile, data)
     if response.status_code != 200:
         logging.warning(
             'Error while sending diagnostic email: %s\n%s', response.status_code, response.text)
@@ -521,5 +335,3 @@ def clear_cache():
 
     _ADVICE_MODULES.reset_cache()
     _TIP_TEMPLATES.reset_cache()
-    _SENTENCE_TEMPLATES.reset_cache()
-    _SUBTOPIC_SENTENCE_TEMPLATES.reset_cache()

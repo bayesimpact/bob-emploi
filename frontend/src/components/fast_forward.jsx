@@ -1,5 +1,7 @@
 import PropTypes from 'prop-types'
 import React from 'react'
+
+import {isMobileVersion} from 'components/mobile'
 import {ShortKey} from 'components/shortkey'
 
 
@@ -107,12 +109,7 @@ class FastForward extends React.Component {
     onForward: PropTypes.func.isRequired,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
-  componentWillMount() {
-    const {isMobileVersion} = this.context
+  componentDidMount() {
     if (!isMobileVersion) {
       return
     }
@@ -127,7 +124,6 @@ class FastForward extends React.Component {
   }
 
   componentWillUnmount() {
-    const {isMobileVersion} = this.context
     if (!isMobileVersion) {
       return
     }
@@ -139,7 +135,7 @@ class FastForward extends React.Component {
   render() {
     return <ShortKey
       keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
-      onKeyPress={this.props.onForward} />
+      onKeyUp={this.props.onForward} />
   }
 }
 

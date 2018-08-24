@@ -1,10 +1,205 @@
+import _omit from 'lodash/omit'
+import Radium from 'radium'
 import React from 'react'
+import {Link} from 'react-router-dom'
 import PropTypes from 'prop-types'
 
+import facebookImage from 'images/facebook.svg'
+import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
+import twitterImage from 'images/twitter.svg'
+
 import {LoginButton} from 'components/login'
-import {Footer, PageWithNavigationBar} from 'components/navigation'
-import {Colors, MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH} from 'components/theme'
-import {Waves} from 'components/waves'
+import {isMobileVersion} from 'components/mobile'
+import {PageWithNavigationBar} from 'components/navigation'
+import {STATIC_ADVICE_MODULES} from 'components/pages/static/static_advice/base'
+import {ExternalLink, MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH,
+  SmoothTransitions} from 'components/theme'
+import {Routes} from 'components/url'
+
+
+const RadiumLink = Radium(Link)
+const RadiumExternalLink = Radium(ExternalLink)
+class FooterLink extends React.Component {
+  static propTypes = {
+    isSelected: PropTypes.bool,
+    style: PropTypes.object,
+    to: PropTypes.string,
+  }
+
+  render() {
+    const style = {
+      ':focus': {
+        color: '#fff',
+      },
+      ':hover': {
+        color: '#fff',
+      },
+      color: this.props.isSelected ? '#fff' : colors.COOL_GREY,
+      display: 'block',
+      fontSize: 13,
+      fontWeight: 'bold',
+      padding: '5px 0',
+      textDecoration: 'none',
+      ...SmoothTransitions,
+      ...this.props.style,
+    }
+    const LinkComponent = this.props.to ? RadiumLink : RadiumExternalLink
+    return <LinkComponent style={style} {..._omit(this.props, ['isSelected', 'style'])} />
+  }
+}
+
+
+class Footer extends React.Component {
+  static propTypes = {
+    page: PropTypes.string,
+    style: PropTypes.object,
+  }
+
+  renderLinkSection(title, border, children) {
+    const linkPadding = isMobileVersion ? 12 : 10
+    const containerStyle = {
+      paddingBottom: linkPadding,
+      paddingTop: linkPadding,
+      width: 170,
+    }
+    const headerStyle = {
+      color: '#fff',
+      fontSize: 11,
+      marginBottom: 15,
+      textTransform: 'uppercase',
+    }
+    return <section style={containerStyle}>
+      <header style={headerStyle}>
+        {title}
+      </header>
+
+      {children}
+    </section>
+  }
+
+  render() {
+    const {page, style} = this.props
+    const containerStyle = {
+      backgroundColor: colors.DARK_BLUE,
+      color: colors.COOL_GREY,
+      fontFamily: 'Lato, Helvetica',
+      padding: isMobileVersion ? '35px 0' : `80px ${MIN_CONTENT_PADDING}px`,
+      textAlign: isMobileVersion ? 'center' : 'left',
+      ...style,
+    }
+    const linksContainerStyle = {
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      fontWeight: 'bold',
+      padding: '20px 0',
+    }
+    const logoStyle = {
+      height: 30,
+      marginBottom: isMobileVersion ? 35 : 0,
+    }
+    const iconPadding = 8
+    const iconStyle = {
+      ':focus': {opacity: 1},
+      ':hover': {opacity: 1},
+      cursor: 'pointer',
+      display: 'block',
+      fontSize: 'inherit',
+      fontWeight: 'inherit',
+      marginLeft: 'initial',
+      opacity: .5,
+      paddingBottom: iconPadding,
+      paddingLeft: iconPadding,
+      paddingRight: iconPadding,
+      paddingTop: iconPadding,
+      ...SmoothTransitions,
+    }
+    return <footer style={containerStyle}>
+      <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
+        <div style={{textAlign: isMobileVersion ? 'center' : 'initial'}}>
+          <img src={logoProductWhiteImage} style={logoStyle} alt={config.productName} />
+        </div>
+
+        <div style={linksContainerStyle}>
+          <div style={{...linksContainerStyle, alignItems: 'stretch'}}>
+            {this.renderLinkSection(config.productName, 'left', <React.Fragment>
+              <FooterLink to={Routes.ROOT} isSelected={page === 'landing'}>
+                Découvrir
+              </FooterLink>
+
+              <FooterLink to={Routes.MAYDAY_PAGE}>
+                Bob Action
+              </FooterLink>
+
+              <FooterLink to={Routes.TRANSPARENCY_PAGE} isSelected={page === 'transparency'}>
+                Métriques
+              </FooterLink>
+            </React.Fragment>)}
+
+            {this.renderLinkSection('Nos conseils', null, <React.Fragment>
+              {STATIC_ADVICE_MODULES.map(({adviceId, name}) =>
+                <FooterLink
+                  to={Routes.STATIC_ADVICE_PAGE + `/${adviceId}`}
+                  isSelected={page === `static-${adviceId}`} key={adviceId}>
+                  {name}
+                </FooterLink>)}
+            </React.Fragment>)}
+
+            {this.renderLinkSection('À propos', null, <React.Fragment>
+              <FooterLink to={Routes.TEAM_PAGE} isSelected={page === 'equipe'}>
+                Équipe
+              </FooterLink>
+
+              <FooterLink href="https://www.bayesimpact.org">
+                Bayes Impact
+              </FooterLink>
+            </React.Fragment>)}
+
+            {this.renderLinkSection('Aide', null, <React.Fragment>
+              <FooterLink href={config.helpRequestUrl}>
+                Nous contacter
+              </FooterLink>
+
+              <FooterLink to={Routes.PROFESSIONALS_PAGE} isSelected={page === 'professionals'}>
+                Accompagnateurs
+              </FooterLink>
+
+              <FooterLink to={Routes.CONTRIBUTION_PAGE} isSelected={page === 'contribution'}>
+                Contribuer
+              </FooterLink>
+            </React.Fragment>)}
+
+            {this.renderLinkSection('Légal', null, <React.Fragment>
+              <FooterLink to={Routes.TERMS_AND_CONDITIONS_PAGE} isSelected={page === 'terms'}>
+                CGU
+              </FooterLink>
+
+              <FooterLink to={Routes.PRIVACY_PAGE} isSelected={page === 'privacy'}>
+                Vie privée
+              </FooterLink>
+
+              <FooterLink to={Routes.COOKIES_PAGE} isSelected={page === 'cookies'}>
+                Cookies
+              </FooterLink>
+            </React.Fragment>)}
+          </div>
+
+          <div style={{flex: 1}} />
+
+          <RadiumExternalLink style={iconStyle} href="https://www.facebook.com/bobemploi">
+            <img src={facebookImage} alt="Facebook" />
+          </RadiumExternalLink>
+
+          <RadiumExternalLink
+            style={{...iconStyle, paddingRight: isMobileVersion ? iconPadding : 0}}
+            href="https://twitter.com/bobemploi">
+            <img src={twitterImage} alt="Twitter" />
+          </RadiumExternalLink>
+        </div>
+      </div>
+    </footer>
+  }
+}
 
 
 class StrongTitle extends React.Component {
@@ -13,7 +208,7 @@ class StrongTitle extends React.Component {
   }
 
   render() {
-    return <strong style={{color: Colors.BOB_BLUE}}>
+    return <strong style={{color: colors.BOB_BLUE}}>
       {this.props.children}
     </strong>
   }
@@ -31,16 +226,11 @@ class StaticPage extends React.Component {
     title: PropTypes.node,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   render() {
     const {children, page, style, title, ...extraProps} = this.props
-    const {isMobileVersion} = this.context
     const pageStyle = {
       backgroundColor: '#fff',
-      color: Colors.CHARCOAL_GREY,
+      color: colors.CHARCOAL_GREY,
       margin: 'auto',
       maxWidth: 1200,
       overflowX: 'hidden',
@@ -48,8 +238,9 @@ class StaticPage extends React.Component {
     const headerStyle = {
       alignItems: 'center',
       alignSelf: 'center',
-      color: Colors.SLATE,
+      color: colors.SLATE,
       display: 'flex',
+      fontFamily: style && style.fontFamily || 'inherit',
       fontSize: 50,
       justifyContent: 'center',
       lineHeight: 1,
@@ -58,7 +249,7 @@ class StaticPage extends React.Component {
       textAlign: 'center',
     }
     const separatorStyle = {
-      backgroundColor: Colors.BACKGROUND_GREY,
+      backgroundColor: colors.BACKGROUND_GREY,
       border: 'none',
       height: 1,
       width: '100%',
@@ -86,10 +277,9 @@ class StaticPage extends React.Component {
 }
 
 
-class TitleWavesSection extends React.Component {
+class TitleSection extends React.Component {
   static propTypes = {
     isLoginButtonShown: PropTypes.bool,
-    isNarrow: PropTypes.bool,
     pageContent: PropTypes.shape({
       buttonCaption: PropTypes.string,
       fontSize: PropTypes.number,
@@ -99,13 +289,8 @@ class TitleWavesSection extends React.Component {
     style: PropTypes.object,
   }
 
-  static contextTypes = {
-    isMobileVersion: PropTypes.bool,
-  }
-
   renderLoginButtons() {
     const {pageContent} = this.props
-    const {isMobileVersion} = this.context
     const {buttonCaption} = pageContent
     const buttonStyle = {
       fontSize: 15,
@@ -121,12 +306,10 @@ class TitleWavesSection extends React.Component {
   }
 
   render() {
-    const {isLoginButtonShown, isNarrow, pageContent} = this.props
-    const {isMobileVersion} = this.context
+    const {isLoginButtonShown, pageContent} = this.props
     const {fontSize, subtitle, title} = pageContent
-    const backgroundHeight = isNarrow ? 250 : 300
     const style = {
-      backgroundColor: '#fff',
+      backgroundColor: colors.BOB_BLUE,
       color: '#fff',
       fontSize: isMobileVersion ? 39 : (fontSize || 55),
       padding: isMobileVersion ? '0 10px 60px' : `60px ${MIN_CONTENT_PADDING}px`,
@@ -134,14 +317,6 @@ class TitleWavesSection extends React.Component {
       textAlign: isMobileVersion ? 'center' : 'left',
       zIndex: 0,
       ...this.props.style,
-    }
-    const backgroundStyle = {
-      bottom: 0,
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      zIndex: -1,
     }
     const titleStyle = {
       fontSize: isMobileVersion ? 35 : 55,
@@ -153,12 +328,6 @@ class TitleWavesSection extends React.Component {
       marginBottom: 20,
     }
     return <section style={style}>
-      <div style={backgroundStyle}>
-        <div
-          style={{backgroundColor: Colors.BOB_BLUE,
-            height: isMobileVersion ? backgroundHeight : backgroundHeight + 10}} />
-        <Waves style={{maxHeight: 250, transform: 'translateY(-2px)', width: '100%'}} />
-      </div>
       <div style={{margin: '0 auto', maxWidth: MAX_CONTENT_WIDTH, padding: '40px 0 20px'}}>
         <h1 style={titleStyle}>{title}</h1>
         {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : <div style={{height: 30}} />}
@@ -169,4 +338,4 @@ class TitleWavesSection extends React.Component {
 }
 
 
-export {StaticPage, StrongTitle, TitleWavesSection}
+export {StaticPage, StrongTitle, TitleSection}

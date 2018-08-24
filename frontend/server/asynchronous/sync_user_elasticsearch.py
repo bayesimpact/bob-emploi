@@ -9,6 +9,8 @@ import os
 import certifi as _  # Needed to handle SSL in elasticsearch connections, for production use.
 import elasticsearch
 from google.protobuf import json_format
+import requests
+import requests_aws4auth
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
@@ -19,9 +21,6 @@ from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 
 _, _DB = mongo.get_connections_from_env()
-
-_ES = elasticsearch.Elasticsearch(os.getenv(
-    'ELASTICSEARCH_URL', 'http://elastic:changeme@elastic-dev:9200').split(','))
 
 
 def age_group(year_of_birth):
@@ -142,14 +141,20 @@ def _user_to_analytics_data(user):
     data = {
         'registeredAt': user.registered_at.ToJsonString(),
         'profile': {
-            'gender': user_pb2.Gender.Name(user.profile.gender),
             'ageGroup': age_group(user.profile.year_of_birth),
+            'coachingEmailFrequency': user_pb2.EmailFrequency.Name(
+                user.profile.coaching_email_frequency),
+            'frustrations': [user_pb2.Frustration.Name(f) for f in user.profile.frustrations],
+            'gender': user_pb2.Gender.Name(user.profile.gender),
             'hasHandicap': user.profile.has_handicap,
             'highestDegree': job_pb2.DegreeLevel.Name(user.profile.highest_degree),
-            'frustrations': [user_pb2.Frustration.Name(f) for f in user.profile.frustrations],
             'origin': user_pb2.UserOrigin.Name(user.profile.origin),
         },
         'featuresEnabled': json_format.MessageToDict(user.features_enabled),
+        'origin': {
+            'medium': user.origin.medium,
+            'source': user.origin.source,
+        },
     }
     if user.net_promoter_score_survey_response.HasField('responded_at'):
         data['nps_response'] = {
@@ -167,10 +172,13 @@ def _user_to_analytics_data(user):
                 },
             },
             'mobility': {
-                'areaType': geo_pb2.AreaType.Name(last_project.mobility.area_type),
+                'areaType': geo_pb2.AreaType.Name(
+                    last_project.area_type or last_project.mobility.area_type),
                 'city': {
-                    'regionName': last_project.mobility.city.region_name,
-                    'urbanScore': last_project.mobility.city.urban_score,
+                    'regionName':
+                    last_project.city.region_name or last_project.mobility.city.region_name,
+                    'urbanScore':
+                    last_project.city.urban_score or last_project.mobility.city.urban_score,
                 },
             },
             # TODO(pascal): clean up and use new fields, jobSearchLengthMonths field is deprecated.
@@ -183,6 +191,8 @@ def _user_to_analytics_data(user):
         if last_project.feedback.score:
             data['project']['feedbackScore'] = last_project.feedback.score
             data['project']['feedbackLoveScore'] = feedback_love_score(last_project.feedback.score)
+        if last_project.min_salary:
+            data['project']['minSalary'] = last_project.min_salary
     last_status = _get_employment_status(user)
     if last_status:
         data['employmentStatus'] = json_format.MessageToDict(last_status)
@@ -205,15 +215,15 @@ def _user_to_analytics_data(user):
     return _remove_null_fields(data)
 
 
-def export_user_to_elasticsearch(index, registered_from, dry_run=True):
+def export_user_to_elasticsearch(es_client, index, registered_from, dry_run=True):
     """Synchronize users to elasticsearch for analytics purpose."""
 
     if not dry_run:
-        if _ES.indices.exists(index=index):
+        if es_client.indices.exists(index=index):
             logging.info('Removing old bobusers index ...')
-            _ES.indices.delete(index=index)
+            es_client.indices.delete(index=index)
         logging.info('Creating bobusers index ...')
-        _ES.indices.create(index=index)
+        es_client.indices.create(index=index)
 
     nb_users = 0
     nb_docs = 0
@@ -231,16 +241,16 @@ def export_user_to_elasticsearch(index, registered_from, dry_run=True):
         logging.debug(data)
 
         if not dry_run:
-            _ES.create(index=index, doc_type='user', id=user_id, body=json.dumps(data))
+            es_client.create(index=index, doc_type='user', id=user_id, body=json.dumps(data))
             nb_docs += 1
             if nb_docs % 1000 == 0:
                 logging.info('%i users processed', nb_docs)
 
     if not dry_run:
-        _ES.indices.flush(index=index)
+        es_client.indices.flush(index=index)
 
 
-def main(string_args=None):
+def main(es_client, string_args=None):
     """Parse command line arguments and trigger sync_employment_status function."""
 
     parser = argparse.ArgumentParser(
@@ -257,8 +267,39 @@ def main(string_args=None):
 
     logging.basicConfig(level='DEBUG' if args.verbose else 'INFO')
 
-    export_user_to_elasticsearch(args.index, args.registered_from, dry_run=args.dry_run)
+    export_user_to_elasticsearch(es_client, args.index, args.registered_from, dry_run=args.dry_run)
+
+
+def _get_auth_from_env(env):
+    aws_in_docker = env.get('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
+    if aws_in_docker:
+        # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
+        response = requests.get('http://169.254.170.2{}'.format(aws_in_docker))
+        response.raise_for_status()
+        credentials = response.json()
+        access_key_id = credentials.get('AccessKeyId')
+        secret_access_key = credentials.get('SecretAccessKey')
+        session_token = credentials.get('Token')
+    else:
+        access_key_id = env.get('AWS_ACCESS_KEY_ID')
+        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
+        session_token = None
+    if not access_key_id:
+        return None
+    return requests_aws4auth.AWS4Auth(
+        access_key_id, secret_access_key, 'eu-central-1', 'es', session_token=session_token)
+
+
+def get_es_client_from_env(env=None):
+    """Get an Elasticsearch client configured from environment variables."""
+
+    if env is None:
+        env = os.environ
+    return elasticsearch.Elasticsearch(
+        env.get('ELASTICSEARCH_URL', 'http://elastic:changeme@elastic-dev:9200').split(','),
+        http_auth=_get_auth_from_env(env),
+        connection_class=elasticsearch.RequestsHttpConnection)
 
 
 if __name__ == '__main__':
-    main()
+    main(get_es_client_from_env())

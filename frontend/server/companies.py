@@ -11,7 +11,7 @@ _EMPLOI_STORE_DEV_CLIENT_ID = os.getenv('EMPLOI_STORE_CLIENT_ID')
 _EMPLOI_STORE_DEV_SECRET = os.getenv('EMPLOI_STORE_CLIENT_SECRET')
 
 
-def get_lbb_companies(project, distance=10):
+def get_lbb_companies(project, distance=10, contract=None):
     """Retrieve a list of companies from LaBonneBoite API."""
 
     if not _EMPLOI_STORE_DEV_CLIENT_ID or not _EMPLOI_STORE_DEV_SECRET:
@@ -23,15 +23,16 @@ def get_lbb_companies(project, distance=10):
         client_secret=_EMPLOI_STORE_DEV_SECRET)
     try:
         companies = client.get_lbb_companies(
-            city_id=project.mobility.city.city_id,
+            city_id=project.city.city_id or project.mobility.city.city_id,
             rome_codes=[project.target_job.job_group.rome_id],
-            distance=distance)
+            distance=distance, contract=contract)
         for company in companies:
             yield company
     except (IOError, ValueError) as error:
         logging.error(
             'Error while calling LBB API: %s\nCity: %s\nJob group: %s',
-            error, project.mobility.city.city_id, project.target_job.job_group)
+            error, project.city.city_id or project.mobility.city.city_id,
+            project.target_job.job_group)
         return
 
 

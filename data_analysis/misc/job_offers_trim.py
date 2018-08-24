@@ -5,7 +5,7 @@ it in RAM run this script to remove the fields you do not need.
 
 Example of usage:
 docker-compose run --rm data-analysis-prepare \
-    python bob_emploi/job_offers_trim.py \
+    python bob_emploi/data_analysis/misc/job_offers_trim.py \
     data/job_offers/sample_10perc.csv \
     data/job_offers/column_names.txt \
     data/job_offers/trimmed_offers.csv \

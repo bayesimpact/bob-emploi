@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import React from 'react'
 
 
-import {AppearingList, Colors} from 'components/theme'
+import {AppearingList} from 'components/theme'
 import Picto from 'images/advices/picto-specific-to-job.png'
 
 
@@ -27,7 +27,7 @@ class ExpandedAdviceCardContent extends React.Component {
     const itemStyle = isFirst => ({
       alignItems: 'center',
       backgroundColor: '#fff',
-      border: `solid 1px ${Colors.MODAL_PROJECT_GREY}`,
+      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       display: 'flex',
       marginTop: isFirst ? 0 : -1,
       minHeight: 50,

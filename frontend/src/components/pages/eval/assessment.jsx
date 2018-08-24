@@ -1,12 +1,13 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
+import {computeBobScore} from 'store/score'
+import {Markdown} from 'components/theme'
+
 import commentImage from 'images/comment-picto.svg'
 
 import {EvalElementButton} from './advices_recap'
-import {BobScoreCircle, ComponentScore} from '../project/diagnostic'
-import {computeNewBobScore} from 'store/score'
-import {Colors, Markdown} from 'components/theme'
+import {BobScoreCircle, ComponentScore} from '../connected/project/diagnostic'
 
 
 class Assessment extends React.Component {
@@ -59,7 +60,7 @@ class Assessment extends React.Component {
     const {onEvaluateSection, diagnosticEvaluations} = this.props
     const {comment} = diagnosticEvaluations[sectionId] || {}
     const textareaStyle = {
-      borderColor: Colors.BOB_BLUE,
+      borderColor: colors.BOB_BLUE,
       fontSize: 14,
       width: '100%',
     }
@@ -92,7 +93,7 @@ class Assessment extends React.Component {
       marginTop: 20,
     }
     const pepTalkStyle = {
-      borderTop: `1px solid ${Colors.MODAL_PROJECT_GREY}`,
+      borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`,
       fontSize: 14,
       lineHeight: '22px',
       marginBottom: 25,
@@ -103,7 +104,7 @@ class Assessment extends React.Component {
       paddingBottom: 20,
     }
     const componentStyle = {
-      borderTop: `1px solid ${Colors.MODAL_PROJECT_GREY}`,
+      borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`,
       marginBottom: 25,
       // TODO(cyrille):
       // Find a way to leave low opacity on div while comment/button are fully opaque.
@@ -111,8 +112,8 @@ class Assessment extends React.Component {
       paddingTop: 24,
       position: 'relative',
     }
-    const {components, percent, title} = computeNewBobScore(diagnostic)
-    return <div style={{color: Colors.DARK_TWO}}>
+    const {components, percent, title} = computeBobScore(diagnostic)
+    return <div style={{color: colors.DARK_TWO}}>
       <div style={{marginBottom: 20, position: 'relative'}}>
         <div style={bobScoreStyle}>
           <BobScoreCircle
@@ -136,12 +137,10 @@ class Assessment extends React.Component {
         </div>
         <div style={subDiagnosticsStyle}>
           <div style={{alignItems: 'center', display: 'flex', flexDirection: 'column'}}>
-            {components.map((component, index) => {
+            {components.map(component => {
               return <ComponentScore
                 component={component}
-                isFirstSubmetric={index === 0}
-                isTextShown={true}
-                key={index}
+                key={component.topic}
                 style={componentStyle}
                 userYou={(tu, vous) => vous}
               >

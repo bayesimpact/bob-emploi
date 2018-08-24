@@ -29,11 +29,26 @@ Routes.JOB_SIGNUP_PAGE = Routes.ROOT + 'metier/:romeId/:specificJobName'
 Routes.EVAL_PAGE = Routes.ROOT + 'eval'
 Routes.EVAL_PATH = Routes.EVAL_PAGE + '/:useCaseId?'
 Routes.BOOTSTRAP_PAGE = Routes.ROOT + 'conseiller/nouveau-profil-et-projet'
+Routes.RESOURCES_PAGE = Routes.ROOT + 'conseiller/ressources'
 Routes.INVITE_PATH = Routes.ROOT + 'invite'
-Routes.STATIC_ADVICE_PATH = Routes.ROOT + 'conseil'
-Routes.STATIC_ADVICE_PAGE = adviceId => Routes.STATIC_ADVICE_PATH + '/' + adviceId
+Routes.STATIC_ADVICE_PAGE = Routes.ROOT + 'conseil'
+Routes.STATIC_ADVICE_PATH = Routes.STATIC_ADVICE_PAGE + '/:adviceId?'
+Routes.SIGNUP_PAGE = Routes.ROOT + 'nouvelle-inscription'
+Routes.IMILO_INTEGRATION_PAGE = Routes.ROOT + 'conseiller/integration-imilo'
+Routes.OLD_MAYDAY_PAGE = Routes.ROOT + 'bob-action'
+Routes.MAYDAY_PAGE = Routes.ROOT + 'BobAction'
+Routes.MAYDAY_THANK_YOU_PAGE = Routes.MAYDAY_PAGE + '/merci'
+Routes.MAYDAY_COFFEE_PAGE = Routes.MAYDAY_PAGE + '/formulaire-cafe'
+Routes.POINTS_PAGE = Routes.ROOT + 'points'
 
 export const NEW_PROJECT_ID = 'nouveau'
+
+
+// Builds an absolute URL from a relative URL, as given in the Routes object.
+export const getAbsoluteUrl = relativeUrl => {
+  const {protocol, host} = window.location
+  return `${protocol}//${host}${relativeUrl}`
+}
 
 
 export {Routes}

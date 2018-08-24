@@ -11,14 +11,11 @@ message UsersCount {
   // Number of new registered users since last week (rolling 7 days).
   int32 weekly_new_user_count = 2;
 
-  // Number of projects scored for each score since yesterday (rolling 24 hours).
-  map<int32, int32> daily_scores_count = 3;
-
   // Number of users for each department.
-  map<string, int32> departement_count = 4;
+  map<string, int32> departement_counts = 4;
 
   // Number of users for each job group.
-  map<string, int32> job_group_count = 5;
+  map<string, int32> job_group_counts = 5;
 
   // Time when aggregation of data happened.
   google.protobuf.Timestamp aggregated_at = 6;

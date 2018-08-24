@@ -31,22 +31,17 @@ services:
     ports:
       - "27016:27017"
   frontend-dev:
-    image: nginx:latest
-    links:
-      - frontend-flask
-      - frontend-dev-webpack
-    volumes:
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "3000:80"
-  frontend-dev-webpack:
-    image: bayesimpact/bob-emploi-dev-webpack
+    image: bayesimpact/bob-emploi-dev
     build:
       context: .
       dockerfile: frontend/Dockerfile
     command: npm start
     entrypoint: ./entrypoint.sh
     tty: true
+    links:
+      - frontend-flask
+    ports:
+      - "3000:80"
   frontend-flask:
     build:
       context: frontend

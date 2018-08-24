@@ -12,6 +12,7 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import mail_nps
+from bob_emploi.frontend.server.test import mailjetmock
 
 _USER_PENDING_NPS_DICT = {
     'profile': {
@@ -26,8 +27,10 @@ _USER_PENDING_NPS_DICT = {
 }
 
 
-@mock.patch(mail_nps.report.__name__ + '.mail')
-@mock.patch(mail_nps.__name__ + '.mail')
+# TODO(marielaure): Add tests for slack report.
+@mock.patch(mail_nps.report.__name__ + '.requests.post')
+@mock.patch(mail_nps.report.__name__ + '._SLACK_WEBHOOK_URL', 'https://slack.example.com/webhook')
+@mailjetmock.patch()
 class MailingTestCase(unittest.TestCase):
     """Unit tests."""
 
@@ -37,7 +40,7 @@ class MailingTestCase(unittest.TestCase):
         self._db = mongomock.MongoClient().database
         self._now = datetime.datetime(2018, 1, 24, 10, 0, 0)
 
-    def test_main(self, mock_mail, mock_report_mail):
+    def test_main(self, mock_post):
         """Overall test."""
 
         self._db.user.insert_one({
@@ -52,18 +55,13 @@ class MailingTestCase(unittest.TestCase):
                 'title': 'Project Title',
             }],
         })
-        mock_mail.send_template.return_value.status_code = 200
-        mock_mail.send_template.return_value.json.return_value = {'Sent': [{
-            'MessageID': 123456,
-        }]}
-        mock_report_mail.send_template_to_admins.return_value.status_code = 200
 
         mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
 
-        self.assertTrue(mock_mail.send_template.called)
-        template_id, profile, template_vars = mock_mail.send_template.call_args[0]
-        self.assertEqual('100819', template_id)
-        self.assertEqual('pascal+test@bayes.org', profile.email)
+        sent_messages = mailjetmock.get_all_sent_messages()
+        self.assertEqual(['pascal+test@bayes.org'], [m.recipient['Email'] for m in sent_messages])
+        self.assertEqual(100819, sent_messages[0].properties['TemplateID'])
+        template_vars = sent_messages[0].properties['Variables']
         nps_form_urlstring = template_vars.pop('npsFormUrl')
         self.assertEqual(
             {
@@ -80,21 +78,23 @@ class MailingTestCase(unittest.TestCase):
         self.assertEqual(['my-own-user-id'], nps_form_args['user'])
         auth.check_token('my-own-user-id', nps_form_args['token'][0], role='nps')
         self.assertEqual(['http://localhost:3000/retours'], nps_form_args['redirect'])
-        self.assertTrue(mock_report_mail.send_template_to_admins.called)
+        mock_post.assert_called_once_with(
+            'https://slack.example.com/webhook',
+            json={
+                'text': "Report for NPS blast: I've sent 1 emails (with 0 errors)."
+            },
+        )
 
         modified_user = user_pb2.User()
         proto.parse_from_mongo(self._db.user.find_one(), modified_user)
-        self.assertEqual(123456, modified_user.emails_sent[0].mailjet_message_id)
+        self.assertEqual(
+            sent_messages[0].message_id,
+            modified_user.emails_sent[0].mailjet_message_id)
         self.assertEqual('nps', modified_user.emails_sent[0].campaign_id)
 
-    def test_too_soon(self, mock_mail, mock_report_mail):
+    def test_too_soon(self, mock_post):
         """Test that we do not send the NPS email if the user registered recently."""
 
-        mock_mail.send_template.return_value.status_code = 200
-        mock_mail.send_template.return_value.json.return_value = {'Sent': [{
-            'MessageID': 123456,
-        }]}
-        mock_report_mail.send_template_to_admins.return_value.status_code = 200
         self._db.user.insert_one(
             dict(
                 _USER_PENDING_NPS_DICT,
@@ -102,10 +102,16 @@ class MailingTestCase(unittest.TestCase):
 
         mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '0')
 
-        self.assertFalse(mock_mail.send_template.called)
-        self.assertTrue(mock_report_mail.send_template_to_admins.called)
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+        mock_post.assert_called_once_with(
+            'https://slack.example.com/webhook',
+            json={
+                'text':
+                    "Report for NPS blast: I've sent 0 emails (with 0 errors)."
+            },
+        )
 
-    def test_no_incomplete(self, mock_mail, mock_report_mail):
+    def test_no_incomplete(self, mock_post):
         """Do not send if project is not complete."""
 
         self._db.user.insert_one({
@@ -120,46 +126,75 @@ class MailingTestCase(unittest.TestCase):
                 'isIncomplete': True,
             }],
         })
-        mock_mail.send_template.return_value.status_code = 200
-        mock_mail.send_template.return_value.json.return_value = {'Sent': [{
-            'MessageID': 123456,
-        }]}
-        mock_report_mail.send_template_to_admins.return_value.status_code = 200
 
         mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
-        self.assertFalse(mock_mail.send_template.called)
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+        mock_post.assert_called_once_with(
+            'https://slack.example.com/webhook',
+            json={
+                'text':
+                    "Report for NPS blast: I've sent 0 emails (with 0 errors)."
+            },
+        )
 
-    def test_no_dupes(self, mock_mail, mock_report_mail):
+    def test_no_missing_email(self, mock_post):
+        """Do not send if there's no email address."""
+
+        self._db.user.insert_one({
+            '_id': 'my-own-user-id',
+            'profile': {
+                'name': 'Pascal',
+                'lastName': 'Corpet',
+            },
+            'registeredAt': datetime.datetime(2018, 1, 22, 10, 0, 0).isoformat() + 'Z',
+            'projects': [{
+                'title': 'Project Title',
+            }],
+        })
+
+        mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+        mock_post.assert_called_once_with(
+            'https://slack.example.com/webhook',
+            json={
+                'text':
+                    "Report for NPS blast: I've sent 0 emails (with 0 errors)."
+            },
+        )
+
+    def test_no_dupes(self, mock_post):
         """Test that we do not send duplicate emails if we run the script twice."""
 
-        mock_mail.send_template.return_value.status_code = 200
-        mock_mail.send_template.return_value.json.return_value = {'Sent': [{
-            'MessageID': 123456,
-        }]}
-        mock_report_mail.send_template_to_admins.return_value.status_code = 200
         self._db.user.insert_one(_USER_PENDING_NPS_DICT)
 
         mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
 
-        self.assertTrue(mock_mail.send_template.called)
-        self.assertTrue(mock_report_mail.send_template_to_admins.called)
-        mock_mail.send_template.reset_mock()
-        mock_report_mail.send_template_to_admins.reset_mock()
+        self.assertTrue(mailjetmock.get_all_sent_messages())
+        mailjetmock.clear_sent_messages()
 
         # Running the script again 10 minutes later.
         mail_nps.main(
             self._db.user, 'http://localhost:3000', self._now + datetime.timedelta(minutes=10), '1')
-        self.assertFalse(mock_mail.send_template.called)
-        self.assertTrue(mock_report_mail.send_template_to_admins.called)
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+        calls = [
+            mock.call(
+                'https://slack.example.com/webhook',
+                json={
+                    'text':
+                        "Report for NPS blast: I've sent 1 emails (with 0 errors)."
+                },),
+            mock.call(
+                'https://slack.example.com/webhook',
+                json={
+                    'text':
+                        "Report for NPS blast: I've sent 0 emails (with 0 errors)."
+                },)
+            ]
+        self.assertEqual(calls, mock_post.mock_calls)
 
-    def test_signal(self, mock_mail, mock_report_mail):
+    def test_signal(self, mock_post):
         """Test that the batch send fails gracefully on SIGTERM."""
 
-        mock_mail.send_template.return_value.status_code = 200
-        mock_mail.send_template.return_value.json.return_value = {'Sent': [{
-            'MessageID': 123456,
-        }]}
-        mock_report_mail.send_template_to_admins.return_value.status_code = 200
         self._db.user.insert_many([
             dict(
                 _USER_PENDING_NPS_DICT,
@@ -174,9 +209,16 @@ class MailingTestCase(unittest.TestCase):
 
         mail_nps.main(db_user, 'http://localhost:3000', self._now, '1')
 
-        self.assertEqual(4, mock_mail.send_template.call_count)
+        sent_messages = mailjetmock.get_all_sent_messages()
+        self.assertEqual(4, len(sent_messages), msg=sent_messages)
         self.assertEqual(4, db_user.update_one.call_count)
-        self.assertTrue(mock_report_mail.send_template_to_admins.called)
+        mock_post.assert_called_once_with(
+            'https://slack.example.com/webhook',
+            json={
+                'text':
+                    "Report for NPS blast: I've sent 4 emails (with 0 errors)."
+            },
+        )
 
 
 class _SigtermAfterNItems(object):
