@@ -4,8 +4,7 @@ import csv
 import glob
 import itertools
 import logging
-import os
-import re
+import typing
 
 import pandas as pd
 from sas7bdat import SAS7BDAT
@@ -13,34 +12,7 @@ from sas7bdat import SAS7BDAT
 _LOGGER = logging.getLogger('alembic')
 
 
-def region_iteratior(base_path, file_name):
-    """Iterate over all region folders.
-
-    The data we received is split over 26 folders for the individual regions.
-    This iterator helps to load a specific data file for each region and to
-    extract the region ID from the path.
-
-    base_path -- folder containing the folders for individual regions
-    file_name -- which of the 12 files per folder should be loaded
-    returns -- iterator of (region_id, DataFrame) tuples
-    """
-
-    input_path = os.path.join(base_path, '**', file_name)
-    for f_name in glob.glob(input_path):
-        region_id = re.search(r'/Reg(\d+)/', f_name).group(1)
-        _LOGGER.info('>>> importing data for region %s', region_id)
-        _LOGGER.info('reading from SAS file')
-        if file_name.endswith('.sas7bdat'):
-            data_frame = SAS7BDAT(f_name).to_data_frame()
-        elif file_name.endswith('.csv'):
-            data_frame = pd.DataFrame.from_csv(f_name)
-        else:
-            raise ValueError(
-                'Expected sas7bdat or csv files only, got {}'.format(file_name))
-        yield (region_id, data_frame)
-
-
-def flatten_iterator(files_pattern):
+def flatten_iterator(files_pattern: str) -> typing.Iterator[typing.Dict[str, str]]:
     """Iterate over all FHS files as if they were one big file.
 
     It iterates through the file and yields each result separately. It adds an
@@ -88,7 +60,9 @@ def flatten_iterator(files_pattern):
             yield dict(zip(headers, line + [current_file]))
 
 
-def sample_data_frame(files_pattern, sampling=100, seed=97, limit=None):
+def sample_data_frame(
+        files_pattern: str, sampling: int = 100, seed: int = 97,
+        limit: typing.Optional[int] = None) -> pd.DataFrame:
     """Create a pandas.DataFrame from a sample of a full FHS table.
 
     Args:
@@ -114,7 +88,9 @@ def sample_data_frame(files_pattern, sampling=100, seed=97, limit=None):
     return pd.DataFrame(data, columns=columns)
 
 
-def transform_categorial_vars(data_frame, codebook_or_path):
+def transform_categorial_vars(
+        data_frame: pd.DataFrame, codebook_or_path: typing.Union[pd.DataFrame, str]) \
+        -> pd.DataFrame:
     """Transform coded categorial variables to human readable values.
 
     Many variables contain short codes and the explanation of it's meaning
@@ -126,9 +102,11 @@ def transform_categorial_vars(data_frame, codebook_or_path):
     _LOGGER.info('transforming categorials')
     data_frame = data_frame.copy()
 
-    codebook = codebook_or_path
-    if isinstance(codebook, str):
+    codebook: pd.DataFrame
+    if isinstance(codebook_or_path, str):
         codebook = pd.read_excel(codebook_or_path, sheet_name=None)
+    else:
+        codebook = codebook_or_path
 
     for varname, mapping in codebook.items():
         mapping[varname] = mapping[varname].astype(str)
@@ -136,48 +114,4 @@ def transform_categorial_vars(data_frame, codebook_or_path):
             col_name = varname + postfix
             mapping_dict = mapping.set_index(varname).to_dict()[col_name]
             data_frame[col_name] = data_frame[varname].map(mapping_dict)
-    return data_frame
-
-
-def transform_ids(data_frame, region_id):
-    """Compute a globally unique ID.
-
-    The user IDs from the SAS files are only unique per region. Prefixing
-    the IDs by the `region_id` makes them globally unique. I furthermore
-    compute an `application_id`, each user can have several applications with
-    PE.
-    """
-
-    _LOGGER.info('transforming IDs')
-    data_frame = data_frame.copy()
-    data_frame['user_id'] = (
-        region_id + '_' + data_frame.IDX.astype(int).astype(str))
-    data_frame.drop(['IDX'], axis=1, inplace=True)
-    if 'NDEM' in data_frame.columns:
-        # cast to `int` because they are currently floats
-        data_frame['application_id'] = (
-            data_frame.user_id + '_' + data_frame.NDEM.astype(int).astype(str))
-        data_frame.drop(['NDEM'], axis=1, inplace=True)
-    return data_frame
-
-
-def rename_columns(data_frame, rename_dict):
-    """Get rid of the cryptic column names.
-
-    Most of the columns from the SAS files have cryptic all caps names. Rename
-    all this names and also the 'translations' of transformed categorial
-    variables.
-    """
-
-    _LOGGER.info('renaming columns')
-    data_frame = data_frame.copy()
-    rename_dict = rename_dict.copy()
-    trans_columns = [
-        c for c in data_frame.columns
-        if c.endswith('_english') or c.endswith('_french')]
-    for trans_column in trans_columns:
-        var_name, suffix = trans_column.rsplit('_', 1)
-        rename_dict[trans_column] = rename_dict[var_name] + '_' + suffix
-
-    data_frame.rename(columns=rename_dict, inplace=True)
     return data_frame

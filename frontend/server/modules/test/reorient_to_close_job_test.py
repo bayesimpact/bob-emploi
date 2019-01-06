@@ -2,11 +2,13 @@
 
 import datetime
 import json
+import typing
 import unittest
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server import now
+from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -16,10 +18,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
 
     model_id = 'advice-reorient-to-close-job'
 
-    def setUp(self):  # pylint: disable=missing-docstring,invalid-name
+    def setUp(self) -> None:
         super(AdviceReorientCloseTestCase, self).setUp()
         self.persona = self._random_persona().clone()
-        self.persona.project.mobility.city.departement_id = '09'
+        self.persona.project.city.departement_id = '09'
         self.persona.project.target_job.job_group.rome_id = 'M1601'
         self.database.local_diagnosis.insert_one({
             '_id': '09:M1601',
@@ -40,10 +42,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
                 }],
         })
 
-    def test_search_for_very_long_time(self):
+    def test_search_for_very_long_time(self) -> None:
         """User searching for 13 months should have a high score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         self.persona.project.job_search_has_not_started = False
         self.persona.project.job_search_started_at.FromDatetime(
@@ -53,10 +55,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.assertEqual(score, 3, msg='Failed for "{}"'.format(self.persona.name))
         self.assertEqual(['vous cherchez depuis 13 mois'], explanations)
 
-    def test_search_for_long_time(self):
+    def test_search_for_long_time(self) -> None:
         """User searching for 11 months should have a medium score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         self.persona.project.job_search_has_not_started = False
         self.persona.project.job_search_started_at.FromDatetime(
@@ -64,10 +66,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_search_for_quite_long_time(self):
+    def test_search_for_quite_long_time(self) -> None:
         """User searching for 7 months should have a low score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         self.persona.project.job_search_has_not_started = False
         self.persona.project.job_search_started_at.FromDatetime(
@@ -75,10 +77,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_search_just_started(self):
+    def test_search_just_started(self) -> None:
         """User searching for 15 days should have a medium score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         if self.persona.project.passionate_level >= project_pb2.PASSIONATING_JOB:
             self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
@@ -88,10 +90,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_passionate_search_just_started(self):
+    def test_passionate_search_just_started(self) -> None:
         """User passionate about their job and searching for 15 days should have a low score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         self.persona.project.job_search_has_not_started = False
@@ -100,10 +102,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_search_reasonable_time(self):
+    def test_search_reasonable_time(self) -> None:
         """User searching for 4 months should have a 0 score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         self.persona.project.job_search_has_not_started = False
         self.persona.project.job_search_started_at.FromDatetime(
@@ -111,10 +113,10 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_search_not_started(self):
+    def test_search_not_started(self) -> None:
         """User has not started their research should have a medium score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         if self.persona.project.passionate_level >= project_pb2.PASSIONATING_JOB:
             self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
@@ -122,25 +124,25 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_passionate_search_not_started(self):
+    def test_passionate_search_not_started(self) -> None:
         """User passionate about their job that has not started their research
         should have a low score."""
 
-        if self.persona.user_profile.year_of_birth < datetime.date.today().year - 45:
+        if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         self.persona.project.job_search_has_not_started = True
         score = self._score_persona(self.persona)
         self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_user_old(self):
+    def test_user_old(self) -> None:
         """Users older than 44 y.o should have a zero score."""
 
         self.persona.user_profile.year_of_birth = datetime.date.today().year - 50
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_not_enough_offers(self):
+    def test_not_enough_offers(self) -> None:
         """Users with job with more offers than recommended jobs don't trigger the
         advice."""
 
@@ -155,7 +157,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_not_enough_recommendations(self):
+    def test_not_enough_recommendations(self) -> None:
         """Users without enough recommended jobs don't trigger the advice."""
 
         self.database.local_diagnosis.drop()
@@ -175,7 +177,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
-    def test_recommendations_in_both_categories(self):
+    def test_recommendations_in_both_categories(self) -> None:
         """Users with a total of two recommended jobs should have a high score."""
 
         self.database.local_diagnosis.drop()
@@ -208,7 +210,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
 class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/reorient-to-close endpoint."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(ReorientCloseEndpointTestCase, self).setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'reorient-to-close-job',
@@ -237,15 +239,29 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def _add_project_modifier(self, user):
+    def _add_project_modifier(self, user: typing.Dict[str, typing.Any]) -> None:
         """Modifier to add a custom project."""
 
         user['projects'] = user.get('projects', []) + [{
             'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'departementId': '45'}},
+            'city': {'departementId': '45'},
         }]
 
-    def test_bad_project_id(self):
+    def _reset_project(self, rome_id: str, departement_id: str) -> None:
+        """Recompute the whole project, to avoid cached local_stats."""
+
+        proto.clear_mongo_fetcher_cache()
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        user_info['projects'][0] = {
+            'targetJob': {'jobGroup': {'romeId': rome_id}},
+            'city': {'departementId': departement_id},
+        }
+        response = self.app.post(
+            '/api/user', data=json.dumps(user_info),
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        self.assertEqual(200, response.status_code)
+
+    def test_bad_project_id(self) -> None:
         """Test with a non existing project ID."""
 
         response = self.app.get(
@@ -255,7 +271,7 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(404, response.status_code)
         self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
 
-    def test_four_jobs(self):
+    def test_four_jobs(self) -> None:
         """Basic test with four recommended jobs."""
 
         self._db.local_diagnosis.drop()
@@ -287,6 +303,7 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
                     'mobilityType': job_pb2.EVOLUTION,
                 }],
         })
+        self._reset_project(rome_id='A1234', departement_id='45')
 
         response = self.app.get(
             '/api/advice/reorient-to-close-job/{}/{}'.format(self.user_id, self.project_id),
@@ -319,65 +336,5 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
             jobs['evolutionJobs'])
 
 
-class ExtraDataTestCase(base_test.ServerTestCase):
-    """Unit tests for maybe_advise to compute extra data for advice modules."""
-
-    def test_advice_reorient_to_close_extra_data(self):
-        """Test that the advisor computes extra data for the "reorient to close job" advice."""
-
-        project = {
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'departementId': '14'}},
-            'jobSearchStartedAt': '2015-11-01T13:00:00Z',
-        }
-        profile = {
-            'yearOfBirth': 1985,
-            'gender': 'FEMININE',
-        }
-        self._db.local_diagnosis.insert_one({
-            '_id': '14:A1234',
-            'imt':
-                {
-                    'yearlyAvgOffersPer10Candidates': 4,
-                },
-            'lessStressfulJobGroups': [
-                {
-                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 12}},
-                    'jobGroup': {'romeId': 'A1413', 'name': 'Superhero'},
-                    'mobilityType': job_pb2.CLOSE,
-                },
-                {
-                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 6}},
-                    'jobGroup': {'romeId': 'A1401', 'name': 'Aide arboricole'},
-                    'mobilityType': job_pb2.CLOSE,
-                },
-                {
-                    'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 3}},
-                    'jobGroup': {'romeId': 'A1412', 'name': 'Aide agricole'},
-                    'mobilityType': job_pb2.CLOSE,
-                }],
-        })
-        self._db.advice_modules.insert_one({
-            'adviceId': 'reorient-to-close-job',
-            'triggerScoringModel': 'advice-reorient-to-close-job',
-            'extraDataFieldName': 'reorient_data',
-            'isReadyForProd': True,
-        })
-
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'profile': profile, 'projects': [project]}),
-            content_type='application/json')
-
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'reorient-to-close-job')
-        jobs = advice.get('reorientData', {}).get('jobs')
-        self.assertEqual(
-            ['Superhero', 'Aide arboricole'], [job['name'] for job in jobs])
-
-
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

@@ -4,6 +4,8 @@
 import collections
 import itertools
 import logging
+import random
+import typing
 
 import pymongo
 
@@ -14,11 +16,16 @@ from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
+from bob_emploi.frontend.api import user_pb2
 
 _ScoredAdvice = collections.namedtuple('ScoredAdvice', ['advice', 'score'])
 
+_RANDOM = random.Random()
 
-def maybe_diagnose(user, project, database):
+
+def maybe_diagnose(
+        user: user_pb2.User, project: project_pb2.Project, database: pymongo.database.Database) \
+        -> bool:
     """Check if a project needs a diagnostic and populate the diagnostic if so."""
 
     if project.is_incomplete:
@@ -30,7 +37,9 @@ def maybe_diagnose(user, project, database):
     return True
 
 
-def diagnose(user, project, database):
+def diagnose(
+        user: user_pb2.User, project: project_pb2.Project, database: pymongo.database.Database) \
+        -> typing.Tuple[diagnostic_pb2.Diagnostic, typing.Optional[typing.List[int]]]:
     """Diagnose a project.
 
     Args:
@@ -50,7 +59,9 @@ def diagnose(user, project, database):
     return diagnose_scoring_project(scoring_project, diagnostic)
 
 
-def diagnose_scoring_project(scoring_project, diagnostic):
+def diagnose_scoring_project(
+        scoring_project: scoring.ScoringProject, diagnostic: diagnostic_pb2.Diagnostic) \
+        -> typing.Tuple[diagnostic_pb2.Diagnostic, typing.Optional[typing.List[int]]]:
     """Diagnose a scoring project.
     Helper function that can be used for real users and personas.
 
@@ -62,26 +73,47 @@ def diagnose_scoring_project(scoring_project, diagnostic):
     """
 
     _compute_sub_diagnostics_scores(scoring_project, diagnostic)
+    # TODO(cyrille): Drop overall score computation once overall covers all possible cases.
     # Combine the sub metrics to create the overall score.
     sum_score = 0
     sum_weight = 0
     for sub_diagnostic in diagnostic.sub_diagnostics:
         sum_score += sub_diagnostic.score
         text = _compute_sub_diagnostic_text(scoring_project, sub_diagnostic)
-        # TODO(cyrille): Remove test once we've removed the previous way to populate text.
-        if text:
-            sub_diagnostic.text = text
+        if not text:
+            logging.warning(
+                'Uncovered case for subdiagnostic sentences in topic %s:\n%s',
+                diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
+                scoring_project)
+        sub_diagnostic.text = text
+        observations = list(
+            compute_sub_diagnostic_observations(scoring_project, sub_diagnostic.topic))
+        if not observations:
+            logging.warning(
+                'No observation found on topic %s for project:\n%s',
+                diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
+                scoring_project)
+        del sub_diagnostic.observations[:]
+        sub_diagnostic.observations.extend(observations)
         sum_weight += 1
     if sum_weight:
         diagnostic.overall_score = round(sum_score / sum_weight)
 
+    _compute_diagnostic_overall(scoring_project, diagnostic)
+
+    if diagnostic.text:
+        return diagnostic, None
+
+    # TODO(cyrille): Drop fallback once overall covers all possible cases.
     diagnostic.text, missing_sentences_orders = _compute_diagnostic_text(
         scoring_project, diagnostic.overall_score)
 
     return diagnostic, missing_sentences_orders
 
 
-def quick_diagnose(user, project, user_diff, database):
+def quick_diagnose(
+        user: user_pb2.User, project: project_pb2.Project, user_diff: user_pb2.User,
+        database: pymongo.database.Database) -> diagnostic_pb2.QuickDiagnostic:
     """Create a quick diagnostic of a project or user profile focused on the given field."""
 
     scoring_project = scoring.ScoringProject(
@@ -89,14 +121,11 @@ def quick_diagnose(user, project, user_diff, database):
         database, now=now.get())
 
     response = diagnostic_pb2.QuickDiagnostic()
-    has_departement_diff = user_diff.projects and (
-        user_diff.projects[0].city.departement_id or
-        user_diff.projects[0].mobility.city.departement_id)
+    has_departement_diff = user_diff.projects and user_diff.projects[0].city.departement_id
     if has_departement_diff:
         all_counts = _get_users_counts(database)
         if all_counts:
-            departement_count = all_counts.departement_counts[
-                project.city.departement_id or project.mobility.city.departement_id]
+            departement_count = all_counts.departement_counts[project.city.departement_id]
             if departement_count:
                 response.comments.add(
                     field=diagnostic_pb2.CITY_FIELD,
@@ -154,11 +183,34 @@ def quick_diagnose(user, project, user_diff, database):
     return response
 
 
-_SENTENCE_TEMPLATES = proto.MongoCachedCollection(
-    diagnostic_pb2.DiagnosticSentenceTemplate, 'diagnostic_sentences')
+_SENTENCE_TEMPLATES: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
+    proto.MongoCachedCollection(diagnostic_pb2.DiagnosticTemplate, 'diagnostic_sentences')
 
 
-def _compute_diagnostic_text(scoring_project, unused_overall_score):
+_DIAGNOSTIC_OVERALL: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
+    proto.MongoCachedCollection(diagnostic_pb2.DiagnosticTemplate, 'diagnostic_overall')
+
+
+def _compute_diagnostic_overall(
+        project: scoring.ScoringProject,
+        diagnostic: diagnostic_pb2.Diagnostic) -> diagnostic_pb2.Diagnostic:
+    all_overalls = _DIAGNOSTIC_OVERALL.get_collection(project.database)
+    overall_template = next((
+        scoring.filter_using_score(all_overalls, lambda t: t.filters, project)), None)
+    if not overall_template:
+        # TODO(cyrille): Put a warning here once enough cases are covered with overall templates.
+        return diagnostic
+    diagnostic.overall_sentence = project.populate_template(
+        project.translate_string(overall_template.sentence_template))
+    diagnostic.text = project.populate_template(
+        project.translate_string(overall_template.text_template))
+    diagnostic.overall_score = overall_template.score
+    return diagnostic
+
+
+def _compute_diagnostic_text(
+        scoring_project: scoring.ScoringProject, unused_overall_score: float) \
+        -> typing.Tuple[str, typing.List[int]]:
     """Create the left-side text of the diagnostic for a given project.
 
     Returns:
@@ -190,11 +242,14 @@ def _compute_diagnostic_text(scoring_project, unused_overall_score):
 
 
 # TODO(cyrille): Rename to diagnostic_submetrics_sentences once scorers are hard-coded.
-_SUBTOPIC_SENTENCE_TEMPLATES = proto.MongoCachedCollection(
-    diagnostic_pb2.DiagnosticSentenceTemplate, 'diagnostic_submetrics_sentences_new')
+_SUBTOPIC_SENTENCE_TEMPLATES: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
+    proto.MongoCachedCollection(
+        diagnostic_pb2.DiagnosticTemplate, 'diagnostic_submetrics_sentences_new')
 
 
-def _compute_sub_diagnostic_text(scoring_project, sub_diagnostic):
+def _compute_sub_diagnostic_text(
+        scoring_project: scoring.ScoringProject, sub_diagnostic: diagnostic_pb2.SubDiagnostic) \
+        -> str:
     """Create the sentence of the diagnostic for a given project on a given topic.
 
     Returns:
@@ -216,16 +271,40 @@ def _compute_sub_diagnostic_text(scoring_project, sub_diagnostic):
     return scoring_project.populate_template(translated_template)
 
 
-_SUBTOPIC_SCORERS = proto.MongoCachedCollection(
-    diagnostic_pb2.DiagnosticSubmetricsSentenceTemplate, 'diagnostic_submetrics_sentences')
+_SUBTOPIC_OBSERVATION_TEMPLATES: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
+    proto.MongoCachedCollection(
+        diagnostic_pb2.DiagnosticTemplate, 'diagnostic_observations')
 
 
-_SCORE_AVERAGE = 1.5
+def compute_sub_diagnostic_observations(
+        scoring_project: scoring.ScoringProject, topic: diagnostic_pb2.DiagnosticTopic) \
+        -> typing.Iterator[diagnostic_pb2.SubDiagnosticObservation]:
+    """Find all relevant observations for a given sub-diagnostic topic."""
+
+    templates = scoring.filter_using_score((
+        template
+        for template in _SUBTOPIC_OBSERVATION_TEMPLATES.get_collection(scoring_project.database)
+        if template.topic == topic
+    ), lambda template: template.filters, scoring_project)
+    for template in templates:
+        yield diagnostic_pb2.SubDiagnosticObservation(
+            text=scoring_project.populate_template(
+                scoring_project.translate_string(template.sentence_template)),
+            is_attention_needed=template.is_attention_needed)
 
 
-# TODO(cyrille): Remove sentences logic from here, once new sentence logic is completed.
-# TODO(cyrille): Hard-code scorers instead of importing them.
-def _compute_diagnostic_topic_score(topic, scorers, scoring_project):
+_SUBTOPIC_SCORERS: \
+    proto.MongoCachedCollection[diagnostic_pb2.DiagnosticSubmetricScorer] = \
+    proto.MongoCachedCollection(
+        diagnostic_pb2.DiagnosticSubmetricScorer, 'diagnostic_submetrics_scorers')
+
+
+# TODO(cyrille): Rethink scoring for submetrics.
+def _compute_diagnostic_topic_score(
+        topic: 'diagnostic_pb2.DiagnosticTopic',
+        scorers: typing.Iterable[diagnostic_pb2.DiagnosticSubmetricScorer],
+        scoring_project: scoring.ScoringProject) \
+        -> typing.Optional[diagnostic_pb2.SubDiagnostic]:
     """Create the score for a given diagnostic submetric on a given project.
 
     Args:
@@ -236,21 +315,13 @@ def _compute_diagnostic_topic_score(topic, scorers, scoring_project):
         the populated subdiagnostic protobuf.
     """
 
-    topic_score = 0
-    topic_weight = 0
-    min_score = None
-    max_score = None
-    max_scorer = None
-    min_scorer = None
+    topic_score = 0.
+    topic_weight = 0.
+    sub_diagnostic = diagnostic_pb2.SubDiagnostic(topic=topic)
+
     for scorer in scorers:
-        model = scoring.get_scoring_model(scorer.trigger_scoring_model)
-        if not model:
-            logging.error(
-                'Diagnostic for topic "%s" uses the scoring model "%s" which does not exist.',
-                diagnostic_pb2.DiagnosticTopic.Name(topic), scorer.trigger_scoring_model)
-            continue
         try:
-            score = model.score(scoring_project)
+            score = scoring_project.score(scorer.trigger_scoring_model)
         except scoring.NotEnoughDataException:
             continue
         # Use default weight of 1
@@ -258,42 +329,16 @@ def _compute_diagnostic_topic_score(topic, scorers, scoring_project):
         weighted_score = score * weight
         topic_score += weighted_score
         topic_weight += weight
-        # Use positive sentence only for scores above average.
-        if score > _SCORE_AVERAGE:
-            positive_score = (score - _SCORE_AVERAGE) * weight
-            if max_score is None or positive_score > max_score:
-                max_score = positive_score
-                max_scorer = scorer
-        # Use negative sentence only for scores below average.
-        else:
-            negative_score = (_SCORE_AVERAGE - score) * weight
-            if min_score is None or negative_score > min_score:
-                min_score = negative_score
-                min_scorer = scorer
     if not topic_weight:
         return None
 
-    sub_diagnostic = diagnostic_pb2.SubDiagnostic(
-        topic=topic, score=round(topic_score / topic_weight * 100 / 3))
-    sentences = []
-
-    def _append_sentence(template):
-        translated_template = scoring_project.translate_string(template)
-        sentences.append(scoring_project.populate_template(translated_template))
-
-    # Do not put positive sentence if score is below 40.
-    if max_scorer and sub_diagnostic.score > 40:
-        _append_sentence(max_scorer.positive_sentence_template)
-    # Do not put negative sentence if score is above 80.
-    if min_scorer and sub_diagnostic.score < 80:
-        _append_sentence(min_scorer.negative_sentence_template)
-
-    sub_diagnostic.text = french.join_sentences_properly(sentences)
+    sub_diagnostic.score = round(topic_score / topic_weight * 100 / 3)
 
     return sub_diagnostic
 
 
-def _compute_sub_diagnostics_scores(scoring_project, diagnostic):
+def _compute_sub_diagnostics_scores(
+        scoring_project: scoring.ScoringProject, diagnostic: diagnostic_pb2.Diagnostic) -> None:
     """populate the submetrics of the diagnostic for a given project."""
 
     scorers_per_topic = itertools.groupby(
@@ -305,18 +350,10 @@ def _compute_sub_diagnostics_scores(scoring_project, diagnostic):
             diagnostic.sub_diagnostics.extend([sub_diagnostic])
 
 
-# TODO(cyrille): Add a cache for the last value served.
-def _get_users_counts(database):
+# TODO(cyrille): Use fetch_from_mongo once counts are saved under ID 'values'.
+def _get_users_counts(database: pymongo.database.Database) -> typing.Optional[stats_pb2.UsersCount]:
     """Get the count of users in departements and in job groups."""
 
     all_counts = next(
         database.user_count.find({}).sort('aggregatedAt', pymongo.DESCENDING).limit(1), None)
     return proto.create_from_mongo(all_counts, stats_pb2.UsersCount, always_create=False)
-
-
-# TODO(cyrille): Replace this with cache deprecation mechanism from proto module.
-def clear_cache():
-    """Clear all caches for this module."""
-
-    _SENTENCE_TEMPLATES.reset_cache()
-    _SUBTOPIC_SENTENCE_TEMPLATES.reset_cache()

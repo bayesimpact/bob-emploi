@@ -241,6 +241,7 @@ popd
 rm -r $TMP_DIR
 
 echo_info 'Logging the deployment on GitHub…'
+echo >> $RELEASE_NOTES
 echo "Deployed on $(date -R -u)" >> $RELEASE_NOTES
 readonly PREVIOUS_RELEASE="$(git describe --tags origin/prod)"
 if [ -z "$DRY_RUN" ]; then
@@ -248,6 +249,8 @@ if [ -z "$DRY_RUN" ]; then
   git remote set-url origin $GIT_ORIGIN_WITH_WRITE_PERMISSION
   git push -f origin $TAG:prod
 fi
+
+# TODO(cyrille): Add release info to Sentry, with sourcemap url.
 
 # Ping Slack to say the deployment is done.
 readonly SLACK_MESSAGE=$(mktemp)

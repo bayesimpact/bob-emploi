@@ -11,7 +11,7 @@ class ParseIntituleTestCase(unittest.TestCase):
 
     testdata_dir = path.join(path.dirname(__file__), 'testdata')
 
-    def test_parse_intitule_fap(self):
+    def test_parse_intitule_fap(self) -> None:
         """Test basic case."""
 
         fap_names = read_data.parse_intitule_fap(
@@ -37,4 +37,4 @@ class ParseIntituleTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

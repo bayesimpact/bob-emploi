@@ -350,4 +350,4 @@ def csv2dicts(job_offers_csv, colnames_txt):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(csv2dicts, 'job_requirements')  # pragma: no cover
+    mongo.importer_main(csv2dicts, 'job_requirements')

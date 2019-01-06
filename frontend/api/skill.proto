@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package bayes.bob;
+
+message Skill {
+  // French name of the skill.
+  string name = 1;
+
+  // Short description, in French, of what this skill represents.
+  string description = 2;
+
+  // URL of a web page to discover this skill (video, MOOC, tool).
+  string discover_url = 3;
+
+  // A sorted list of assets of this skill (most relevant first).
+  repeated SkillAsset assets = 4;
+}
+
+enum SkillAsset {
+  UNKNOWN_SKILL_ASSET = 0;
+
+  // Skill is a good help to get a job quickly.
+  TIME_TO_MARKET = 1;
+
+  // Skill useful in many different jobs.
+  BREADTH_OF_JOBS = 2;
+
+  // Skill that increases satisfaction at work.
+  JOB_SATISFACTION = 3;
+
+  // Skill that will help to get a better salary.
+  BETTER_INCOME = 4;
+
+  // Negative risk of automatisation of this skill.
+  NO_AUTOMATISATION = 5;
+}
+
+message JobSkills {
+  // A sorted list of skills useful for a given job. The most relevant first.
+  repeated Skill skills = 1;
+}

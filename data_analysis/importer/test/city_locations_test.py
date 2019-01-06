@@ -11,12 +11,14 @@ from bob_emploi.frontend.api import geo_pb2
 class CityLocationsImporterTestCase(unittest.TestCase):
     """Unit tests for the city locations importer."""
 
-    stats_filename = path.join(path.dirname(__file__), 'testdata/french_cities.csv')
+    test_data_folder = path.join(path.dirname(__file__), 'testdata')
+    stats_filename = path.join(test_data_folder, 'french_cities.csv')
+    urban_context_filename = path.join(test_data_folder, 'geo/french_urban_areas.xls')
 
     def test_csv2dicts(self):
         """Test basic usage of the csv2dicts function."""
 
-        collection = city_locations.csv2dicts(self.stats_filename)
+        collection = city_locations.csv2dicts(self.stats_filename, self.urban_context_filename)
 
         protos = dict(mongo.collection_to_proto_mapping(collection, geo_pb2.FrenchCity))
         self.assertEqual(11, len(protos))
@@ -25,7 +27,9 @@ class CityLocationsImporterTestCase(unittest.TestCase):
         city = protos['39001']
         self.assertAlmostEqual(47.0667, city.latitude, places=5)
         self.assertAlmostEqual(5.38333, city.longitude, places=5)
+        other_city = protos['01002']
+        self.assertEqual(geo_pb2.PERIURBAN, other_city.urban_context)
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

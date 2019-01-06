@@ -2,8 +2,19 @@
 
 set -e
 
-protoc -I . -I /usr/local/share/proto/ bob_emploi/frontend/api/*.proto --python_out=.
-touch bob_emploi/frontend/api/__init__.py
+PROTO_FOLDERS="frontend/api"
+
+if [ -n "$TEST_ENV" ]; then
+  readonly TEST_FLAGS="--mypy_out=quiet:."
+  PROTO_FOLDERS="$PROTO_FOLDERS frontend/server/test/testdata"
+else
+  readonly TEST_FLAGS=""
+fi
+
+for folder in $PROTO_FOLDERS; do
+  protoc -I . -I /usr/local/share/proto/ bob_emploi/$folder/*.proto --python_out=. $TEST_FLAGS
+  touch "bob_emploi/$folder/__init__.py"
+done
 
 # Try to be smart and run Python files:
 if [[ $1 == *.py ]]; then

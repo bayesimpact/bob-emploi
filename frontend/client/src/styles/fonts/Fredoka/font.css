@@ -1,0 +1,12 @@
+@font-face {
+    font-family: 'Fredoka One';
+    font-style: normal;
+    font-weight: 400;
+    src: url(Fredoka+One_400_normal.eot); /* http://fonts.gstatic.com/s/fredokaone/v5/k3kUo8kEI-tA1RRcTZGmTlHGCaM.eot */
+    src: local('☺'),
+        url(Fredoka+One_400_normal.eot?#iefix) format('embedded-opentype'), /* http://fonts.gstatic.com/s/fredokaone/v5/k3kUo8kEI-tA1RRcTZGmTlHGCaM.eot */
+        url(Fredoka+One_400_normal.woff2) format('woff2'), /* http://fonts.gstatic.com/s/fredokaone/v5/k3kUo8kEI-tA1RRcTZGmTlHGCac.woff2 */
+        url(Fredoka+One_400_normal.woff) format('woff'), /* http://fonts.gstatic.com/s/fredokaone/v5/k3kUo8kEI-tA1RRcTZGmTlHGCaE.woff */
+        url(Fredoka+One_400_normal.ttf) format('truetype'), /* http://fonts.gstatic.com/s/fredokaone/v5/k3kUo8kEI-tA1RRcTZGmTlHGCaKn8wf-.ttf */
+        url(Fredoka+One_400_normal.svg#Fredoka+One_400_normal) format('svg'); /* http://fonts.gstatic.com/l/font?kit=k3kUo8kEI-tA1RRcTZGmTlHGCaA&skey=fac42792a60c2aba&v=v5#FredokaOne */
+}

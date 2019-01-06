@@ -3,7 +3,6 @@
 from os import path
 import unittest
 
-from google.protobuf import json_format
 from bob_emploi.data_analysis.importer import local_diagnosis
 from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.frontend.api import job_pb2
@@ -34,12 +33,9 @@ class BmoRomeImporterTestCase(unittest.TestCase):
             self.unemployment_duration_csv, self.job_offers_changes_json,
             self.imt_folder, self.mobility_csv, self.data_folder)
 
-        self.assertEqual(31, len(collection))
-        try:
-            protos = dict(mongo.collection_to_proto_mapping(
-                collection, job_pb2.LocalJobStats))
-        except json_format.ParseError:
-            self.fail("csv2dicts() returns an object that can't be parsed into a proto!")
+        self.assertEqual(35, len(collection))
+        protos = dict(mongo.collection_to_proto_mapping(
+            collection, job_pb2.LocalJobStats))
 
         # Point checks.
         a1301 = protos['971:A1301']
@@ -82,15 +78,18 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         less_stressful = proto.less_stressful_job_groups[0]
         self.assertEqual('F1702', less_stressful.job_group.rome_id)
         self.assertEqual(18, less_stressful.local_stats.imt.yearly_avg_offers_per_10_candidates)
+        self.assertEqual(1, proto.num_less_stressful_departements)
 
         proto = protos['09:F1702']
         self.assertEqual(24, proto.imt.last_week_demand)
         self.assertEqual(2, proto.imt.last_week_offers)
         self.assertEqual(True, proto.imt.seasonal)
         self.assertCountEqual([job_pb2.OCTOBER], proto.imt.active_months)
+        self.assertEqual(1, proto.num_less_stressful_departements)
 
         proto = protos['12:F1402']
         self.assertFalse(proto.imt.active_months)
+        self.assertEqual(2, proto.num_less_stressful_departements)
 
     def test_finalize_salary_estimation(self):
         """Basic usage of finalize_salary_estimation."""
@@ -103,4 +102,4 @@ class BmoRomeImporterTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

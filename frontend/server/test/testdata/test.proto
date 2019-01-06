@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package bayes.bob.test;
+
+
+message Simple {
+  string name = 1;
+
+  // Another field with multiple words in the field name to check the snake
+  // case / camel case behavior.
+  string multiple_words = 2;
+}
+
+message Different {
+  string name = 2;
+}
+
+message Timely {
+  google.protobuf.Timestamp created_at = 1;
+  
+  repeated google.protobuf.Timestamp modified_at = 2;
+}

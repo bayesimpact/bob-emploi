@@ -34,7 +34,7 @@ services:
     image: bayesimpact/bob-emploi-dev
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: frontend/client/Dockerfile
     command: npm start
     entrypoint: ./entrypoint.sh
     tty: true

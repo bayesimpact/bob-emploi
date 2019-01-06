@@ -1,12 +1,13 @@
 """Module to advise the user to extend their commute to get more offers."""
 
 import math
+import typing
 
+from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import geo_pb2
-from bob_emploi.frontend.api import project_pb2
 
 # Distance below which the city is so close that it is obvious.
 _MIN_CITY_DISTANCE = 8
@@ -15,24 +16,45 @@ _MIN_CITY_DISTANCE = 8
 _MAX_CITY_DISTANCE = 35
 
 
+def _get_commuting_cities(
+        interesting_cities_for_rome: typing.Iterable[commute_pb2.HiringCity],
+        target_city: geo_pb2.FrenchCity) -> typing.Iterator[commute_pb2.CommutingCity]:
+    # Get the reference offers per inhabitant.
+    ref = next(
+        # TODO(cyrille): Replace with h.offers_per_inhabitant once it's been imported.
+        (h.offers / h.city.population
+         for h in interesting_cities_for_rome
+         if h.city.city_id == target_city.city_id and h.city.population), 0)
+
+    for hiring_city in interesting_cities_for_rome:
+        distance = math.sqrt(_compute_square_distance(hiring_city.city, target_city))
+        if distance >= _MAX_CITY_DISTANCE:
+            continue
+
+        try:
+            relative_offers = (hiring_city.offers / hiring_city.city.population) / ref
+        except ZeroDivisionError:
+            relative_offers = 0
+
+        yield commute_pb2.CommutingCity(
+            departement_id=hiring_city.city.departement_id,
+            name=hiring_city.city.name,
+            relative_offers_per_inhabitant=relative_offers,
+            distance_km=distance)
+
+
 class _AdviceCommuteScoringModel(scoring_base.ModelBase):
     """A scoring model to trigger the "Commute" advice."""
 
-    def compute_extra_data(self, project):
-        """Compute extra data for this module to render a card in the client."""
-
-        return project_pb2.CommuteData(cities=[c.name for c in self.list_nearby_cities(project)])
-
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         nearby_cities = self.list_nearby_cities(project)
         if not nearby_cities:
             return scoring_base.NULL_EXPLAINED_SCORE
 
-        area_type = project.details.area_type or project.details.mobility.area_type
-
-        if area_type > geo_pb2.CITY and \
+        if project.details.area_type > geo_pb2.CITY and \
                 any(c.relative_offers_per_inhabitant >= 2 for c in nearby_cities):
             return scoring_base.ExplainedScore(
                 3, ["il y a beaucoup plus d'offres par habitants dans d'autres villes"])
@@ -40,13 +62,15 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
         return scoring_base.ExplainedScore(
             2, ["il est toujours bon d'avoir une idée des offres dans les autres villes"])
 
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> commute_pb2.CommutingCities:
         """Retrieve data for the expanded card."""
 
         return commute_pb2.CommutingCities(cities=self.list_nearby_cities(project))
 
     @scoring_base.ScoringProject.cached('commute')
-    def list_nearby_cities(self, project):
+    def list_nearby_cities(self, project: scoring_base.ScoringProject) \
+            -> typing.List[commute_pb2.CommutingCity]:
         """Compute and store all interesting cities that are not too close and not too far.
 
         Those cities will be used by the Commute advice.
@@ -54,19 +78,17 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
 
         job_group = project.details.target_job.job_group.rome_id
 
-        all_cities = proto.create_from_mongo(
-            project.database.hiring_cities.find_one({'_id': job_group}),
-            commute_pb2.HiringCities)
-        interesting_cities_for_rome = all_cities.hiring_cities
+        interesting_cities_for_rome = (
+            proto.fetch_from_mongo(
+                project.database, commute_pb2.HiringCities, 'hiring_cities', job_group) or
+            commute_pb2.HiringCities()).hiring_cities
 
         if not interesting_cities_for_rome:
             return []
 
-        mongo_city = project.database.cities.find_one(
-            {'_id': project.details.city.city_id or project.details.mobility.city.city_id})
-        if not mongo_city:
+        target_city = geo.get_city_location(project.database, project.details.city.city_id)
+        if not target_city:
             return []
-        target_city = proto.create_from_mongo(mongo_city, geo_pb2.FrenchCity)
 
         commuting_cities = list(_get_commuting_cities(interesting_cities_for_rome, target_city))
 
@@ -86,30 +108,7 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
         return interesting_cities
 
 
-def _get_commuting_cities(interesting_cities_for_rome, target_city):
-    # Get the reference offers per inhabitant.
-    ref = next(
-        (h.offers / h.city.population
-         for h in interesting_cities_for_rome
-         if h.city.city_id == target_city.city_id and h.city.population), 0)
-
-    for hiring_city in interesting_cities_for_rome:
-        distance = math.sqrt(_compute_square_distance(hiring_city.city, target_city))
-        if distance >= _MAX_CITY_DISTANCE:
-            continue
-
-        try:
-            relative_offers = (hiring_city.offers / hiring_city.city.population) / ref
-        except ZeroDivisionError:
-            relative_offers = 0
-
-        yield commute_pb2.CommutingCity(
-            name=hiring_city.city.name,
-            relative_offers_per_inhabitant=relative_offers,
-            distance_km=distance)
-
-
-def _compute_square_distance(city_a, city_b):
+def _compute_square_distance(city_a: geo_pb2.FrenchCity, city_b: geo_pb2.FrenchCity) -> float:
     """Compute the approximative distance between two cities.
 
     Since we only look at short distances, we can approximate that:

@@ -85,4 +85,4 @@ def _workup_to_proto(event, departements):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(events2dicts, 'events')  # pragma: no-cover
+    mongo.importer_main(events2dicts, 'events')

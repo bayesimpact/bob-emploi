@@ -138,17 +138,15 @@
               "feminineName" : "Assistante administrative"
             },
             "diplomaFulfillmentEstimate" : "NOTHING_REQUIRED",
-            "mobility" : {
-              "areaType" : "CITY",
-              "city" : {
-                "name" : "Sochaux",
-                "regionId" : "27",
-                "departementName" : "Doubs",
-                "postcodes" : "25600",
-                "departementId" : "25",
-                "cityId" : "25547",
-                "regionName" : "Bourgogne-Franche-Comté"
-              }
+            "areaType" : "CITY",
+            "city" : {
+              "name" : "Sochaux",
+              "regionId" : "27",
+              "departementName" : "Doubs",
+              "postcodes" : "25600",
+              "departementId" : "25",
+              "cityId" : "25547",
+              "regionName" : "Bourgogne-Franche-Comté"
             },
             "actions" : [
               {
@@ -201,18 +199,16 @@
       {
         "source" : "PROJECT_MANUALLY_CREATED",
         "createdAt" : "2016-11-15T23:17:26.833410Z",
-        "mobility" : {
-          "city" : {
-            "departementName" : "Rhône",
-            "postcodes" : "69001-69002-69003-69004-69005-69006-69007-69008-69009",
-            "departementId" : "69",
-            "regionId" : "84",
-            "regionName" : "Auvergne-Rhône-Alpes",
-            "name" : "Lyon",
-            "cityId" : "69123"
-          },
-          "areaType" : "CITY"
+        "city" : {
+          "departementName" : "Rhône",
+          "postcodes" : "69001-69002-69003-69004-69005-69006-69007-69008-69009",
+          "departementId" : "69",
+          "regionId" : "84",
+          "regionName" : "Auvergne-Rhône-Alpes",
+          "name" : "Lyon",
+          "cityId" : "69123"
         },
+        "areaType" : "CITY",
         "previousJobSimilarity" : "DONE_THIS",
         "title" : "Chef de produit à Lyon",
         "actionsGeneratedAt" : "2016-11-15T23:17:38.639131Z",
@@ -463,17 +459,15 @@
         },
         "kind" : "FIND_JOB",
         "source" : "PROJECT_MANUALLY_CREATED",
-        "mobility" : {
-          "areaType" : "DEPARTEMENT",
-          "city" : {
-            "departementName" : "Drôme",
-            "postcodes" : "26000",
-            "departementId" : "26",
-            "regionName" : "Auvergne-Rhône-Alpes",
-            "name" : "Valence",
-            "cityId" : "26362",
-            "regionId" : "84"
-          }
+        "areaType" : "DEPARTEMENT",
+        "city" : {
+          "departementName" : "Drôme",
+          "postcodes" : "26000",
+          "departementId" : "26",
+          "regionName" : "Auvergne-Rhône-Alpes",
+          "name" : "Valence",
+          "cityId" : "26362",
+          "regionId" : "84"
         },
         "title" : "Infographiste à Valence",
         "shortDescription" : "This is a dummy short description. We will add something better in the future.",
@@ -788,18 +782,16 @@
           "PART_TIME",
           "FULL_TIME"
         ],
-        "mobility" : {
-          "city" : {
-            "departementName" : "Côtes-d'Armor",
-            "postcodes" : "22000",
-            "name" : "Saint-Brieuc",
-            "regionId" : "53",
-            "regionName" : "Bretagne",
-            "cityId" : "22278",
-            "departementId" : "22"
-          },
-          "areaType" : "REGION"
+        "city" : {
+          "departementName" : "Côtes-d'Armor",
+          "postcodes" : "22000",
+          "name" : "Saint-Brieuc",
+          "regionId" : "53",
+          "regionName" : "Bretagne",
+          "cityId" : "22278",
+          "departementId" : "22"
         },
+        "areaType" : "REGION",
         "createdAt" : "2016-11-16T08:36:57.685304Z",
         "weeklyApplicationsEstimate" : "SOME",
         "totalInterviewsEstimate" : "DECENT_AMOUNT",
@@ -904,18 +896,16 @@
         "workloads" : [
           "FULL_TIME"
         ],
-        "mobility" : {
-          "city" : {
-            "departementName" : "Côtes-d'Armor",
-            "postcodes" : "22000",
-            "name" : "Saint-Brieuc",
-            "regionId" : "53",
-            "regionName" : "Bretagne",
-            "cityId" : "22278",
-            "departementId" : "22"
-          },
-          "areaType" : "CITY"
+        "city" : {
+          "departementName" : "Côtes-d'Armor",
+          "postcodes" : "22000",
+          "name" : "Saint-Brieuc",
+          "regionId" : "53",
+          "regionName" : "Bretagne",
+          "cityId" : "22278",
+          "departementId" : "22"
         },
+        "areaType" : "CITY",
         "createdAt" : "2016-11-16T09:03:29.370292Z",
         "jobSearchLengthMonths" : -1,
         "targetJob" : {

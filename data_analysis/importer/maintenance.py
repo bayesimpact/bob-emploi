@@ -12,13 +12,18 @@ Run it regularly with the command:
 # TODO(pascal): Run it automatically (weekly ?) and send the results to slack.
 import collections
 import logging
+import re
 import sys
 
 import pymongo
 import requests
 import tqdm
 
+from bob_emploi.data_analysis.importer import airtable_to_protos
+from bob_emploi.data_analysis.importer import import_status
+from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server import scoring_base
 
 _MongoField = collections.namedtuple('MongoField', ['collection', 'field_name'])
 
@@ -31,24 +36,6 @@ _INDICES = {
     _MongoField('user', 'linkedInId'),
 }
 
-_SCORING_MODEL_FIELDS = {
-    _MongoField('advice_modules', 'triggerScoringModel'),
-    _MongoField('application_tips', 'filters'),
-    _MongoField('associations', 'filters'),
-    _MongoField('contact_lead', 'filters'),
-    _MongoField('diagnostic_sentences', 'filters'),
-    _MongoField('events', 'filters'),
-    _MongoField('jobboards', 'filters'),
-    _MongoField('tip_templates', 'filters'),
-}
-
-# TODO(cyrille): Add recently added url fields.
-_URL_FIELDS = {
-    _MongoField('associations', 'link'),
-    _MongoField('jobboards', 'link'),
-    _MongoField('tip_templates', 'link'),
-}
-
 # Some websites return error codes when no header is set.
 _HTTP_HEADERS = {
     'User-Agent': (
@@ -58,7 +45,7 @@ _HTTP_HEADERS = {
 
 
 def _iterate_all_records(mongo_db, mongo_fields, field_type):
-    db_collections = set(mongo_db.collection_names())
+    db_collections = set(mongo_db.list_collection_names())
     for collection, field_name in mongo_fields:
         if collection not in db_collections:
             logging.error('The collection "%s" does not exist.', collection)
@@ -90,8 +77,11 @@ def _is_application_internal_url(url):
 def check_scoring_models(mongo_db):
     """Check that all scoring models are valid and warn on unused ones."""
 
+    scoring_model_fields = \
+        _list_formatted_fields(import_status.IMPORTERS.items(), options_pb2.SCORING_MODEL_ID)
+
     used_scoring_models = set()
-    records = list(_iterate_all_records(mongo_db, _SCORING_MODEL_FIELDS, 'scoring model'))
+    records = list(_iterate_all_records(mongo_db, scoring_model_fields, 'scoring model'))
     for field_value, record, collection in tqdm.tqdm(records):
         if isinstance(field_value, list):
             field_values = field_value
@@ -109,12 +99,33 @@ def check_scoring_models(mongo_db):
         logging.warning('Scoring model unused: %s', scoring_model)
 
 
+# TODO(cyrille): Deal with fields from proto which are unused in some collections.
+def _list_formatted_fields(importers, field_format):
+    for collection_name, importer in importers:
+        if not importer.proto_type:
+            continue
+        for field in importer.proto_type.DESCRIPTOR.fields_by_name.values():
+            field_string_formats = field.GetOptions().Extensions[options_pb2.string_format]
+            if field_format in field_string_formats:
+                yield _MongoField(collection_name, field.camelcase_name)
+
+
 def check_urls(mongo_db):
     """Check that all links are valid."""
 
-    records = list(_iterate_all_records(mongo_db, _URL_FIELDS, 'link'))
+    url_fields = _list_formatted_fields(import_status.IMPORTERS.items(), options_pb2.URL_FORMAT)
+    url_checker = airtable_to_protos.UrlChecker()
+
+    records = list(_iterate_all_records(mongo_db, url_fields, 'link'))
     for url, record, collection in tqdm.tqdm(records):
         if _is_application_internal_url(url):
+            continue
+        try:
+            url_checker.check_value(url)
+        except ValueError:
+            logging.error(
+                'Malformed URL in record "%s" in collection "%s":\n%s',
+                record.get('_id'), collection, url)
             continue
         try:
             res = requests.get(url, headers=_HTTP_HEADERS)
@@ -133,10 +144,37 @@ def check_urls(mongo_db):
                 type(exception).__name__, record.get('_id'), collection, url)
 
 
+def _get_variables_from(template):
+    if '%' not in template:
+        return set()
+    # pylint: disable=protected-access
+    pattern = re.compile('|'.join(scoring_base._TEMPLATE_VARIABLES.keys()))
+    return set(pattern.findall(template))
+
+
+def check_template_variables(mongo_db):
+    """Check that all template variables are defined and well used."""
+
+    template_checker = airtable_to_protos.MissingTemplateVarsChecker()
+    unused_vars = set(scoring_base._TEMPLATE_VARIABLES.keys())  # pylint: disable=protected-access
+    template_fields = _list_formatted_fields(
+        import_status.IMPORTERS.items(), options_pb2.SCORING_PROJECT_TEMPLATE)
+
+    records = list(_iterate_all_records(mongo_db, template_fields, 'template'))
+    for template, record, collection in tqdm.tqdm(records):
+        try:
+            template_checker.check_value(template)
+        except ValueError as err:
+            logging.error('%s in record "%s" from collection "%s"', err, record['_id'], collection)
+        unused_vars -= _get_variables_from(template)
+    if unused_vars:
+        logging.error('There were some unused variables:\n%s', ', '.join(unused_vars))
+
+
 def ensure_indices(mongo_db):
     """Ensure that indices exist on relevant collections."""
 
-    db_collections = set(mongo_db.collection_names())
+    db_collections = set(mongo_db.list_collection_names())
     for collection, field in _INDICES:
         if collection not in db_collections:
             logging.error('The collection "%s" does not exist.', collection)
@@ -151,6 +189,7 @@ def main(mongo_url):
     ensure_indices(mongo_db)
     check_scoring_models(mongo_db)
     check_urls(mongo_db)
+    check_template_variables(mongo_db)
 
 
 if __name__ == '__main__':

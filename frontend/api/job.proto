@@ -3,6 +3,8 @@ syntax = "proto3";
 import "bob_emploi/frontend/api/geo.proto";
 import "google/protobuf/timestamp.proto";
 
+package bayes.bob;
+
 // Description of a job, like plumber or school teacher.
 message Job {
   // The group this job is part of. Might be empty if this job is a sample in a
@@ -114,6 +116,18 @@ message JobGroup {
 
   // Feminine version of what_i_love_about field.
   string what_i_love_about_feminine = 25;
+
+  // The (at most 11) top departements in terms of offer/demand ratio, in descending order.
+  repeated DepartementStats best_departements = 26;
+}
+
+message DepartementStats {
+  // the ID of the departement.
+  string departement_id = 1;
+
+  // Shallow stats containing merely the important stats that defines the
+  // relation with the job group, e.g. the IMT market stress.
+  LocalJobStats local_stats = 2;
 }
 
 message RecruitingModesDistribution {
@@ -170,6 +184,13 @@ message LocalJobStats {
 
   // Count of job offers by Pôle Emploi during each year.
   map<int32, int32> num_job_offers_per_year = 12;
+
+  // Count of departements with a less stressful market for that job. When using this field, always
+  // check the imt.yearly_avg_offers_per_10_candidates is set before, to make sure this one has any
+  // meaning.
+  // TODO(cyrille): Drop comment below.
+  // Until this field is imported in database, value 0 can also mean we don't have the data yet.
+  int32 num_less_stressful_departements = 13;
 }
 
 // Stats for a job group related to another one, e.g. a similar job group that
@@ -272,9 +293,6 @@ enum EmploymentType {
 }
 
 message JobRequirements {
-  // A set of required skills.
-  repeated JobRequirement skills = 1;
-
   // A set of required diplomas.
   repeated JobRequirement diplomas = 2;
 
@@ -322,9 +340,6 @@ message JobRequirement {
 
   // Additional info depending on the type of requirement.
   oneof extra_info {
-    // Skill information (the name may be omitted).
-    Skill skill = 3;
-
     // Diploma information (the name may be omitted).
     Diploma diploma = 4;
 
@@ -348,25 +363,6 @@ message WeightedJob {
   Job job = 1;
 
   float weight = 2;
-}
-
-message Skill {
-  // French name of the skill.
-  string name = 1;
-
-  // Unique ID for the skill (based on OGR code from ROME).
-  string skill_id = 2;
-
-  // The kind of skill (theoretical vs practical).
-  SkillKind kind = 3;
-}
-
-enum SkillKind {
-  UNDEFINED_SKILL_KIND = 0;
-
-  THEORETICAL_SKILL = 1;
-
-  PRACTICAL_SKILL = 2;
 }
 
 message Diploma {

@@ -56,5 +56,4 @@ def _iterate_job_offers():
 
 
 if __name__ == '__main__':
-    mongo.importer_main(  # pragma: no-cover
-        download_and_count, 'recent_job_offers')
+    mongo.importer_main(download_and_count, 'recent_job_offers')

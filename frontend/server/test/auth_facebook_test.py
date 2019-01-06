@@ -3,12 +3,13 @@
 import base64
 import hashlib
 import hmac
+import typing
 import unittest
 
 from bob_emploi.frontend.server.test import base_test
 
 
-def _base64_encode(content):
+def _base64_encode(content: typing.Union[str, bytes]) -> str:
     if isinstance(content, bytes):
         content_as_bytes = content
     else:
@@ -18,7 +19,7 @@ def _base64_encode(content):
     return base64_encoded.rstrip('=')
 
 
-def _facebook_sign(content):
+def _facebook_sign(content: str) -> str:
     payload = _base64_encode(content).encode('utf-8')
     return _base64_encode(hmac.new(
         b'aA12bB34cC56dD78eE90fF12aA34bB56', payload, hashlib.sha256).digest())
@@ -29,7 +30,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
 
     fake_signature = _facebook_sign('stupid content')
 
-    def test_bad_token_missing_dot(self):
+    def test_bad_token_missing_dot(self) -> None:
         """Auth request with a facebook token missing a dot."""
 
         response = self.app.post(
@@ -39,7 +40,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         self.assertEqual(422, response.status_code)
         self.assertIn('not enough values to unpack', response.get_data(as_text=True))
 
-    def test_bad_token_bad_json(self):
+    def test_bad_token_bad_json(self) -> None:
         """Auth request with a facebook token unreadable json."""
 
         response = self.app.post(
@@ -49,7 +50,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(422, response.status_code)
 
-    def test_no_algorithm(self):
+    def test_no_algorithm(self) -> None:
         """Auth request with a facebook token missing the algorithm field."""
 
         response = self.app.post(
@@ -60,7 +61,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         self.assertEqual(422, response.status_code)
         self.assertIn('Le champs &quot;algorithm&quot; est requis', response.get_data(as_text=True))
 
-    def test_wrong_algorithm(self):
+    def test_wrong_algorithm(self) -> None:
         """Auth request with a facebook token with a bad algorithm field."""
 
         response = self.app.post(
@@ -72,7 +73,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         self.assertIn(
             "Algorithme d'encryption inconnu &quot;plain&quot;", response.get_data(as_text=True))
 
-    def test_bad_signature(self):
+    def test_bad_signature(self) -> None:
         """Auth request with a facebook token but wrong signature."""
 
         response = self.app.post(
@@ -84,7 +85,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         self.assertEqual(403, response.status_code)
         self.assertIn('Mauvaise signature', response.get_data(as_text=True))
 
-    def test_new_user(self):
+    def test_new_user(self) -> None:
         """Auth request with a facebook token for a new user."""
 
         facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "12345"}'
@@ -131,7 +132,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         user_info = self.json_from_response(response)
         self.assertEqual({'email': 'me@facebook.com'}, user_info['profile'])
 
-    def test_new_user_with_email(self):
+    def test_new_user_with_email(self) -> None:
         """Auth request with a facebook token for a new user using an existing email."""
 
         facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "12345"}'
@@ -145,7 +146,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         self.assertEqual(
             'pascal@facebook.com', auth_info['authenticatedUser'].get('profile', {}).get('email'))
 
-    def test_new_user_with_existing_email(self):
+    def test_new_user_with_existing_email(self) -> None:
         """Auth request with a facebook token for a new user using an existing email."""
 
         self.authenticate_new_user(email='pascal@facebook.com', password='psswd')
@@ -159,7 +160,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
 
-    def test_load_user(self):
+    def test_load_user(self) -> None:
         """Auth request retrieves user."""
 
         # Create a new user.
@@ -190,4 +191,4 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

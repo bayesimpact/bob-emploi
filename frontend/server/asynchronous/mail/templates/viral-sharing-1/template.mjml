@@ -1,0 +1,373 @@
+{
+  "attributes": {
+    "version": "3.3.5"
+  },
+  "children": [
+    {
+      "children": [
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "color": "#000000",
+            "font-family": "Arial, sans-serif"
+          },
+          "children": [
+            {
+              "attributes": {
+                "background-color": "transparent",
+                "background-repeat": "repeat",
+                "full-width": "full-width",
+                "padding": "20px 0px 20px 0px",
+                "padding-bottom": "12px",
+                "padding-top": "12px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span></span></p>",
+                      "id": "H1EcZEA19f",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"font-size: 18px; line-height: 1.38; margin: 10px 0; color: #1888ff;\"><b>De toute l’équipe, un grand merci&nbsp;!</b></p>",
+                      "id": "rkH5WN0k9G",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\">Il y a un an vous aviez été parmi les premi{%if var:gender == \"FEMININE\" %}ère{%else%}er{%endif%}s à vous inscrire sur Bob&nbsp;!</p>",
+                      "id": "ByUqb4AJ9z",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial,sans-serif; font-size:14px\">Avec le nouveau Bob, nous avons déjà aidé plus 130 000 personnes. Mais nous, c’est des<span>&nbsp;</span></span><span style=\"color:#000000\"><span style=\"font-family:Arial,sans-serif; font-size:14px\"><b>millions de personnes</b></span></span><span style=\"color:#000000; font-family:Arial,sans-serif; font-size:14px\"><span>&nbsp;</span>en recherche d’emploi qu’on veut aider et pour y arriver<span>&nbsp;</span></span><span style=\"color:#000000\"><span style=\"font-family:Arial,sans-serif; font-size:14px\"><b>on a besoin de vous&nbsp;!</b></span></span></p>",
+                      "id": "H1D9b401cf",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><b>Pour nous donner un coup de main, c'est hyper simple :</b></p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial,sans-serif; font-size:14px\">Il vous suffit de <b>partager Bob</b>, et on prend le relais pour <b>aider vos proches</b> en recherche d’emploi.</span></p>",
+                      "id": "HyO9WNRk9G",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><a target=\"_blank\" href=\"mailto:?subject=%C3%87a%20m%27a%20fait%20penser%20%C3%A0%20toi&amp;body=Salut%2C%0D%0A%0D%0AEst-ce%20que%20tu%20connais%20Bob%20%3F%20C%27est%20un%20site%20qui%20propose%20de%20t%27aider%20dans%20ta%20recherche%20d%27emploi%20en%20te%20proposant%20un%20diagnostic%20et%20des%20conseils%20personnalis%C3%A9s.%20Tu%20verras%2C%20%C3%A7a%20vaut%20le%20coup%20%3A%20en%2015%20minutes%2C%20tu%20en%20sauras%20plus%20sur%20o%C3%B9%20tu%20en%20es%2C%20et%20ce%20que%20tu%20peux%20faire%20pour%20avancer%20plus%20efficacement.%20Et%20en%20plus%2C%20c%27est%20gratuit%20%21%0D%0A%0D%0Ahttps%3A%2F%2Fwww.bob-emploi.fr%2Finvite%23vm2m%0D%0A%0D%0AEn%20tous%20cas%2C%20bon%20courage%20pour%20la%20suite%2C%0D%0A%0D%0A{{var:firstName}}\"><span style=\"color:#1888ff\"><b>Partager Bob</b>, c’est&nbsp;<b>simple</b>&nbsp;comme un email</span></a> et<span>&nbsp;</span><b>ça aide vos proches à trouver du boulot</b>, on compte sur vous&nbsp;:</p>",
+                      "id": "SyFq-ER19M",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "center",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "",
+                        "padding": "10px 25px",
+                        "passport": {
+                          "image-id": 6001193
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/2529n.jpeg",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "600px"
+                      },
+                      "id": "H15q-4AJ9G",
+                      "tagName": "mj-image"
+                    }
+                  ],
+                  "id": "SJm5ZN0J9G",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "SkG9ZN0Jqz",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "vertical-align": "top"
+                  },
+                  "children": [
+                    {
+                      "attributes": {},
+                      "children": [
+                        {
+                          "attributes": {
+                            "align": "center",
+                            "alt": "",
+                            "border": "none",
+                            "container-background-color": "#FFFFFF",
+                            "height": "auto",
+                            "href": "mailto:?subject=%C3%87a%20m%27a%20fait%20penser%20%C3%A0%20toi&body=Salut%2C%0D%0A%0D%0AEst-ce%20que%20tu%20connais%20Bob%20%3F%20C%27est%20un%20site%20qui%20propose%20de%20t%27aider%20dans%20ta%20recherche%20d%27emploi%20en%20te%20proposant%20un%20diagnostic%20et%20des%20conseils%20personnalis%C3%A9s.%20Tu%20verras%2C%20%C3%A7a%20vaut%20le%20coup%20%3A%20en%2015%20minutes%2C%20tu%20en%20sauras%20plus%20sur%20o%C3%B9%20tu%20en%20es%2C%20et%20ce%20que%20tu%20peux%20faire%20pour%20avancer%20plus%20efficacement.%20Et%20en%20plus%2C%20c%27est%20gratuit%20%21%0D%0A%0D%0Ahttps%3A%2F%2Fwww.bob-emploi.fr%2Finvite%23vm2m%0D%0A%0D%0AEn%20tous%20cas%2C%20bon%20courage%20pour%20la%20suite%2C%0D%0A%0D%0A{{var:firstName}}",
+                            "padding": "10px 25px",
+                            "padding-bottom": "0px",
+                            "padding-left": "0px",
+                            "padding-right": "0px",
+                            "padding-top": "0px",
+                            "passport": {},
+                            "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/252yv.jpeg",
+                            "target": "_blank",
+                            "title": "",
+                            "width": "266px"
+                          },
+                          "id": "HkCq-VRk5G",
+                          "tagName": "mj-image"
+                        }
+                      ],
+                      "id": "rJpqZE0yqM",
+                      "tagName": "mj-column"
+                    },
+                    {
+                      "attributes": {},
+                      "children": [
+                        {
+                          "attributes": {
+                            "align": "center",
+                            "alt": "",
+                            "border": "none",
+                            "container-background-color": "#FFFFFF",
+                            "height": "auto",
+                            "href": "https://www.facebook.com/sharer/sharer.php?u=https%3A//www.bob-emploi.fr/invite%23vm2f",
+                            "padding": "10px 25px",
+                            "padding-bottom": "0px",
+                            "padding-left": "0px",
+                            "padding-right": "0px",
+                            "padding-top": "0px",
+                            "passport": {},
+                            "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/252yg.jpeg",
+                            "target": "_blank",
+                            "title": "",
+                            "width": "266px"
+                          },
+                          "id": "HJxgcZNCyqG",
+                          "tagName": "mj-image"
+                        }
+                      ],
+                      "id": "r1yl9-NRJ9G",
+                      "tagName": "mj-column"
+                    },
+                    {
+                      "attributes": {},
+                      "children": [
+                        {
+                          "attributes": {
+                            "align": "center",
+                            "alt": "",
+                            "border": "none",
+                            "container-background-color": "#FFFFFF",
+                            "height": "auto",
+                            "href": "https://twitter.com/home?status=Vous%20connaissez%20Bob%20?%20Un%20diagnostic%20et%20des%20conseils%20personnalis%C3%A9s%20pour%20vous%20accompagner%20dans%20votre%20recherche%20d'emploi%20%3A%20https%3A//www.bob-emploi.fr/invite%23vm2t",
+                            "padding": "10px 25px",
+                            "padding-bottom": "0px",
+                            "padding-left": "0px",
+                            "padding-right": "0px",
+                            "padding-top": "0px",
+                            "passport": {},
+                            "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/252y6.jpeg",
+                            "target": "_blank",
+                            "title": "",
+                            "width": "266px"
+                          },
+                          "id": "ryzxqZV019G",
+                          "tagName": "mj-image"
+                        }
+                      ],
+                      "id": "B1ZecW40Jqf",
+                      "tagName": "mj-column"
+                    }
+                  ],
+                  "id": "HJ3qZNAJqG",
+                  "tagName": "mj-group"
+                }
+              ],
+              "id": "Hyj9W4RJcz",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"font-size: 14px; margin: 10px 0;\">À très vite,</p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\">&nbsp;</p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
+                      "id": "BySe9WN019z",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "alt": "Bob",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {},
+                        "src": "https://www.bob-emploi.fr/assets/mail/bob-logo.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "124px"
+                      },
+                      "id": "SJUl9W4A15f",
+                      "tagName": "mj-image"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"font-size: 14px; margin: 10px 0;\">PS :&nbsp;<span>&nbsp;</span><span style=\"font-size:14px\"><span style=\"color:#222222; font-family:Arial; text-decoration:none\">Oscar Wilde disait : “Il faut toujours <b>viser la lune</b>, car même en cas d'échec, on atterrit dans les étoiles”</span></span><span>&nbsp;</span></p>",
+                      "id": "HyPxqZERkqz",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#000000",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "15px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous souhaitez vous désinscrire.</span></p>",
+                      "id": "BJOl5Z4Cycf",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "HyExcZNR15z",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "rJ7x9-4Ay5M",
+              "tagName": "mj-section"
+            }
+          ],
+          "id": "H1WcZVC1qz",
+          "tagName": "mj-container"
+        }
+      ],
+      "id": "Syg5b4Akcf",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "SJqW40yqz",
+  "tagName": "mjml"
+}

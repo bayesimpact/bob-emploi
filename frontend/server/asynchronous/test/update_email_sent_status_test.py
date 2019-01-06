@@ -1,10 +1,11 @@
 """Tests for the update_email_sent_status module."""
 
 import datetime
+import typing
 import unittest
+from unittest import mock
 
 import mailjet_rest
-import mock
 import mongomock
 
 from bob_emploi.frontend.server.asynchronous import update_email_sent_status
@@ -15,19 +16,19 @@ from bob_emploi.frontend.server.test import mailjetmock
 class MainTestCase(unittest.TestCase):
     """Unit tests for the update_email_sent_status module."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(MainTestCase, self).setUp()
         self.database = mongomock.MongoClient().test
         db_patcher = mock.patch(update_email_sent_status.__name__ + '._DB', self.database)
         db_patcher.start()
         self.addCleanup(db_patcher.stop)
 
-    def _send_email(self, email_address='hello@example.com'):
-        return mailjet_rest.Client(version='v3.1').send.create({'Messages': [{
+    def _send_email(self, email_address: str = 'hello@example.com') -> int:
+        return typing.cast(int, mailjet_rest.Client(version='v3.1').send.create({'Messages': [{
             'To': [{'Email': email_address}],
-        }]}).json()['Messages'][0]['To'][0]['MessageID']
+        }]}).json()['Messages'][0]['To'][0]['MessageID'])
 
-    def test_with_message_id(self):
+    def test_with_message_id(self) -> None:
         """Test retrieving info when message ID is present."""
 
         message_id = self._send_email('pascal@example.com')
@@ -55,7 +56,7 @@ class MainTestCase(unittest.TestCase):
             updated_data.get('emailsSent')[0].get('status'))
 
     @mock.patch(update_email_sent_status.__name__ + '.now')
-    def test_refresh_old_status(self, mock_now):
+    def test_refresh_old_status(self, mock_now: mock.MagicMock) -> None:
         """Test refreshing old status."""
 
         # On Nov. the 5th, the email had been opened.
@@ -83,7 +84,7 @@ class MainTestCase(unittest.TestCase):
             updated_data.get('emailsSent')[0].get('status'))
 
     @mock.patch(update_email_sent_status.mail_blast.__name__ + '.campaign')
-    def test_campaign_specific(self, mock_campaigns):
+    def test_campaign_specific(self, mock_campaigns: mock.MagicMock) -> None:
         """Test retrieving info for a specific campaign."""
 
         message_id = self._send_email('pascal@example.com')
@@ -126,7 +127,7 @@ class MainTestCase(unittest.TestCase):
 
     @mock.patch(update_email_sent_status.__name__ + '.now')
     @mock.patch(update_email_sent_status.__name__ + '.mail')
-    def test_multiple_checks(self, mock_mail, mock_now):
+    def test_multiple_checks(self, mock_mail: mock.MagicMock, mock_now: mock.MagicMock) -> None:
         """Test checking the status of an email several times."""
 
         # Note that in this test we do not use mailjetmock because what's
@@ -183,7 +184,7 @@ class MainTestCase(unittest.TestCase):
 
         mock_mail.get_message.assert_not_called()
 
-    def test_update_helper(self):
+    def test_update_helper(self) -> None:
         """Test updating the sent emails for the helper collection."""
 
         message_id = self._send_email('pascal@example.com')
@@ -206,6 +207,26 @@ class MainTestCase(unittest.TestCase):
             'EMAIL_SENT_OPENED',
             updated_data.get('emailsSent')[0].get('status'))
 
+    def test_mailjet_unknown(self) -> None:
+        """Test retrieving info but MailJet never heard of the message."""
+
+        self.database.user.insert_one({
+            'other': 'field',
+            'profile': {'email': 'pascal@example.com'},
+            'emailsSent': [{
+                'sentAt': '2017-09-08T09:25:46.145001Z',
+                'mailjetMessageId': 9876554,
+            }],
+        })
+
+        update_email_sent_status.main(['--disable-sentry'])
+
+        updated_data = self.database.user.find_one()
+        self.assertEqual('field', updated_data.get('other'))
+        self.assertEqual(
+            9876554, int(updated_data.get('emailsSent')[0].get('mailjetMessageId')))
+        self.assertNotIn('status', updated_data.get('emailsSent')[0])
+
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

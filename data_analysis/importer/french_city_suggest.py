@@ -10,6 +10,8 @@ docker-compose run --rm -e ALGOLIA_API_KEY=<the key> \
 
 import json
 import os
+from os import path
+import sys
 import time
 
 from algoliasearch import algoliasearch
@@ -45,8 +47,8 @@ def prepare_cities(
         'objectID', 'cityId', 'name', 'departementId', 'departementName',
         'departementPrefix', 'regionId', 'regionName']
 
-    # Keep only cities that are still cities on 2016-01-01 and arrondissements.
-    cities = cities[cities.current | cities.arrondissement]
+    # Keep only cities that are still cities on 2016-01-01.
+    cities = cities[cities.current]
 
     # Set city ID on objectID as this is what Algolia uses.
     cities['objectID'] = cities.index
@@ -74,13 +76,8 @@ def prepare_cities(
         cities.population.fillna(0, inplace=True)
         useful_columns.extend(['zipCode', 'population'])
 
+    # cityId is the ID used throughout the app.
     cities['cityId'] = cities['objectID']
-    # Treat arrondissements specifically: remove the full cities and use the
-    # full city ID for the arrondissements..
-    cities.loc[cities.objectID.str.startswith('132'), 'cityId'] = '13055'
-    cities.loc[cities.objectID.str.startswith('751'), 'cityId'] = '75056'
-    cities.loc[cities.objectID.str.startswith('6938'), 'cityId'] = '69123'
-    cities.drop(['13055', '75056', '69123'], errors='ignore', inplace=True)
 
     # The urban score is 0 for rural, 1 for cities in urban areas between
     # 2k and 5k inhabitants, 2 for urban areas below 10k, 3 for 20k, 4 for
@@ -98,21 +95,21 @@ def prepare_cities(
         cities.transport.fillna(0, inplace=True)
         useful_columns.append('transport')
 
-    return cities[useful_columns].to_dict(orient='records')
+    return cities.sort_index()[useful_columns].to_dict(orient='records')
 
 
-def upload(batch_size=5000):
+def upload(batch_size=5000, data_folder='data', out=sys.stdout):
     """Upload French city suggestions to Algolia index."""
 
     suggestions = prepare_cities(
-        'data',
-        'data/geo/french_cities.csv',
-        'data/geo/french_urban_entities.xls',
-        'data/geo/ville-ideale-transports.html')
+        data_folder,
+        path.join(data_folder, 'geo/french_cities.csv'),
+        path.join(data_folder, 'geo/french_urban_entities.xls'),
+        path.join(data_folder, 'geo/ville-ideale-transports.html'))
     client = algoliasearch.Client(
-        os.getenv('ALGOLIA_APP_ID', 'K6ACI9BKKT'),
-        os.getenv('ALGOLIA_API_KEY'))
-    index_name = os.getenv('ALGOLIA_CITIES_INDEX', 'cities')
+        os.environ.get('ALGOLIA_APP_ID', 'K6ACI9BKKT'),
+        os.environ.get('ALGOLIA_API_KEY'))
+    index_name = os.environ.get('ALGOLIA_CITIES_INDEX', 'cities')
     cities_index = client.init_index(index_name)
     tmp_index_name = '{}_{}'.format(index_name, round(time.time()))
     tmp_cities_index = client.init_index(tmp_index_name)
@@ -127,7 +124,7 @@ def upload(batch_size=5000):
         client.move_index(tmp_index_name, index_name)
     except helpers.AlgoliaException:
         tmp_cities_index.clear_index()
-        print(json.dumps(suggestions[:10], indent=2))
+        out.write(json.dumps(suggestions[:10], indent=2))
         raise
 
 

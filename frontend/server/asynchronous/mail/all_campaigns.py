@@ -3,7 +3,10 @@
 import datetime
 import hashlib
 import logging
+import typing
 from urllib import parse
+
+import pymongo
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -15,7 +18,6 @@ from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server.asynchronous.mail import campaign
 # pylint: disable=unused-import
 # Import all plugins: they register themselves when imported.
-from bob_emploi.frontend.server.asynchronous.mail import bob_actions_help
 from bob_emploi.frontend.server.asynchronous.mail import holiday
 from bob_emploi.frontend.server.asynchronous.mail import imt
 from bob_emploi.frontend.server.asynchronous.mail import network
@@ -29,6 +31,7 @@ _READ_EMAIL_STATUSES = frozenset([
 
 
 _ONE_YEAR_AGO = now.get() - datetime.timedelta(365)
+_SIX_MONTHS_AGO = now.get() - datetime.timedelta(180)
 _ONE_MONTH_AGO = now.get() - datetime.timedelta(30)
 _EXPERIENCE_AS_TEXT = {
     project_pb2.JUNIOR: 'quelques temps',
@@ -38,7 +41,9 @@ _EXPERIENCE_AS_TEXT = {
 }
 
 
-def _get_spontaneous_vars(user, database=None, **unused_kwargs):
+def _get_spontaneous_vars(
+        user: user_pb2.User, database: pymongo.database.Database = None,
+        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the spontaneous email.
 
     Returns:
@@ -46,9 +51,6 @@ def _get_spontaneous_vars(user, database=None, **unused_kwargs):
         should be sent.
     """
 
-    if not user.projects or user.projects[0].is_incomplete:
-        logging.info('User has no complete project')
-        return None
     project = user.projects[0]
 
     job_search_length = campaign.job_search_started_months_ago(project)
@@ -62,7 +64,7 @@ def _get_spontaneous_vars(user, database=None, **unused_kwargs):
             'Could not find job group info for "%s"', project.target_job.job_group.rome_id)
         return None
 
-    def _should_use_spontaneous(modes):
+    def _should_use_spontaneous(modes: job_pb2.RecruitingModesDistribution) -> bool:
         return any(
             mode.mode == job_pb2.SPONTANEOUS_APPLICATION and mode.percentage > 20
             for mode in modes.modes)
@@ -76,10 +78,11 @@ def _get_spontaneous_vars(user, database=None, **unused_kwargs):
             'There is no contact mode for the job group "%s"',
             project.target_job.job_group.rome_id)
         return None
-    contact_mode = job_pb2.ApplicationMedium.Name(contact_mode).replace('APPLY_', '')
+    contact_mode_str = job_pb2.ApplicationMedium.Name(contact_mode).replace('APPLY_', '')
 
     in_a_workplace = job_group_info.in_a_workplace
-    if not in_a_workplace and contact_mode != 'BY_EMAIL':
+    # TODO(pascal): use contact_mode to compare, not contact_mode_str.
+    if not in_a_workplace and contact_mode_str != 'BY_EMAIL':
         logging.error(
             'There is no "in_a_workplace" field for the job group "%s".',
             project.target_job.job_group.rome_id)
@@ -105,7 +108,7 @@ def _get_spontaneous_vars(user, database=None, **unused_kwargs):
         what_i_love_about_feminine = job_group_info.what_i_love_about_feminine
         if what_i_love_about_feminine:
             what_i_love_about = what_i_love_about_feminine
-    if not what_i_love_about and contact_mode == 'BY_EMAIL':
+    if not what_i_love_about and contact_mode_str == 'BY_EMAIL':
         logging.error(
             'There is no "What I love about" field for the job group "%s".',
             project.target_job.job_group.rome_id)
@@ -131,13 +134,11 @@ def _get_spontaneous_vars(user, database=None, **unused_kwargs):
         'applicationComplexity':
             job_pb2.ApplicationProcessComplexity.Name(job_group_info.application_complexity),
         'atVariousCompanies': at_various_companies,
-        'contactMode': contact_mode,
+        'contactMode': contact_mode_str,
         'deepLinkLBB':
             'https://labonneboite.pole-emploi.fr/entreprises/commune/{}/rome/'
             '{}?utm_medium=web&utm_source=bob&utm_campaign=bob-email'
-            .format(
-                project.city.city_id or project.mobility.city.city_id,
-                project.target_job.job_group.rome_id),
+            .format(project.city.city_id, project.target_job.job_group.rome_id),
         'emailInUrl': parse.quote(user.profile.email),
         'experienceAsText': _EXPERIENCE_AS_TEXT.get(project.seniority, 'peu'),
         'inWorkPlace': in_a_workplace,
@@ -154,7 +155,8 @@ def _get_spontaneous_vars(user, database=None, **unused_kwargs):
     })
 
 
-def _get_self_development_vars(user, **unused_kwargs):
+def _get_self_development_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
+        -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the self-development email.
 
     Returns:
@@ -162,9 +164,6 @@ def _get_self_development_vars(user, **unused_kwargs):
         should be sent.
     """
 
-    if not user.projects or user.projects[0].is_incomplete:
-        logging.info('User has no project')
-        return None
     project = user.projects[0]
 
     job_search_length = campaign.job_search_started_months_ago(project)
@@ -199,17 +198,14 @@ def _get_self_development_vars(user, **unused_kwargs):
     })
 
 
-def _body_language_vars(user, **unused_kwargs):
+def _body_language_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
+        -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the body language email.
 
     Returns:
         a dict with all vars required for the template, or None if no email
         should be sent.
     """
-
-    if not user.projects or user.projects[0].is_incomplete:
-        logging.info('User has no complete project')
-        return None
 
     worst_frustration = next(
         (user_pb2.Frustration.Name(frustration)
@@ -224,7 +220,8 @@ def _body_language_vars(user, **unused_kwargs):
     })
 
 
-def _employment_vars(user, **unused_kwargs):
+def _employment_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
+        -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the employment survey.
 
     Returns:
@@ -255,7 +252,8 @@ def _employment_vars(user, **unused_kwargs):
     })
 
 
-def new_diagnostic_vars(user, **unused_kwargs):
+def new_diagnostic_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
+        -> typing.Dict[str, str]:
     """Compute vars for the "New Diagnostic"."""
 
     frustrations_vars = {
@@ -279,7 +277,8 @@ def new_diagnostic_vars(user, **unused_kwargs):
     })
 
 
-def _get_galita1_vars(user, **unused_kwargs):
+def _get_galita1_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
+        -> typing.Optional[typing.Dict[str, str]]:
     if user_pb2.MOTIVATION not in user.profile.frustrations:
         logging.info('User is motivated enough')
         return None
@@ -289,7 +288,8 @@ def _get_galita1_vars(user, **unused_kwargs):
     return campaign.get_default_coaching_email_vars(user)
 
 
-def _get_galita3_vars(user, **unused_kwargs):
+def _get_galita3_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
+        -> typing.Optional[typing.Dict[str, str]]:
     if user_pb2.NO_OFFER_ANSWERS not in user.profile.frustrations:
         logging.info('User is having enough answers.')
         return None
@@ -308,7 +308,8 @@ def _get_galita3_vars(user, **unused_kwargs):
     })
 
 
-def _viral_sharing_vars(user, hash_start=''):
+def _viral_sharing_vars(user: user_pb2.User, hash_start: str = '') \
+        -> typing.Optional[typing.Dict[str, str]]:
     """Template variables for viral sharing emails."""
 
     if user.registered_at.ToDatetime() > _ONE_YEAR_AGO:
@@ -322,6 +323,59 @@ def _viral_sharing_vars(user, hash_start=''):
     return campaign.get_default_vars(user)
 
 
+def _open_classrooms_vars(
+        user: user_pb2.User, database: pymongo.database.Database = None,
+        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
+    """Template variables for viral sharing emails."""
+
+    if user.registered_at.ToDatetime() < _SIX_MONTHS_AGO:
+        return None
+
+    age = datetime.date.today().year - user.profile.year_of_birth
+    if age < 18 or age > 54:
+        return None
+    if user.profile.highest_degree > job_pb2.BAC_BACPRO:
+        return None
+
+    if user.employment_status and user.employment_status[-1].seeking != user_pb2.STILL_SEEKING:
+        return None
+    # User has not project.
+    if not (user.projects and user.projects[0]):
+        return None
+
+    # If the user is happy with their job (no reorientation and enthusiastic about their job)
+    project = user.projects[0]
+    if project.kind != project_pb2.REORIENTATION and not (
+            project.kind == project_pb2.FIND_A_NEW_JOB and
+            project.passionate_level == project_pb2.ALIMENTARY_JOB):
+        return None
+
+    has_children = user.profile.family_situation in {
+        user_pb2.FAMILY_WITH_KIDS,
+        user_pb2.SINGLE_PARENT_SITUATION,
+    }
+
+    job_group_info = jobs.get_group_proto(database, project.target_job.job_group.rome_id)
+    if not job_group_info:
+        return None
+
+    return dict(campaign.get_default_coaching_email_vars(user), **{
+        'hasAtypicProfile': campaign.as_template_boolean(
+            user_pb2.ATYPIC_PROFILE in user.profile.frustrations),
+        'hasFamilyAndManagementIssue': campaign.as_template_boolean(
+            has_children and user_pb2.TIME_MANAGEMENT in user.profile.frustrations),
+        'hasSeniority': campaign.as_template_boolean(
+            project.seniority > project_pb2.INTERMEDIARY),
+        'hasSimpleApplication': campaign.as_template_boolean(
+            job_group_info.application_complexity == job_pb2.SIMPLE_APPLICATION_PROCESS),
+        'isReorienting': campaign.as_template_boolean(
+            project.kind == project_pb2.REORIENTATION),
+        'isFrustratedOld': campaign.as_template_boolean(
+            age >= 40 and user_pb2.AGE_DISCRIMINATION in user.profile.frustrations),
+        'ofFirstName': french.maybe_contract_prefix('de ', "d'", user.profile.name)
+    })
+
+
 # TODO(cyrille): Modularize.
 _CAMPAIGNS = {
     'focus-spontaneous': campaign.Campaign(
@@ -333,8 +387,8 @@ _CAMPAIGNS = {
             }},
         },
         get_vars=_get_spontaneous_vars,
-        sender_name='Margaux de Bob',
-        sender_email='margaux@bob-emploi.fr',
+        sender_name="Joanna et l'équipe de Bob",
+        sender_email='joanna@bob-emploi.fr',
         is_coaching=True,
         is_big_focus=True,
     ),
@@ -347,8 +401,8 @@ _CAMPAIGNS = {
             }}
         },
         get_vars=_get_self_development_vars,
-        sender_name='Margaux de Bob',
-        sender_email='margaux@bob-emploi.fr',
+        sender_name="Joanna et l'équipe de Bob",
+        sender_email='joanna@bob-emploi.fr',
         is_coaching=True,
         is_big_focus=True,
     ),
@@ -361,8 +415,8 @@ _CAMPAIGNS = {
             'profile.frustrations': {'$in': ['SELF_CONFIDENCE', 'INTERVIEW', 'ATYPIC_PROFILE']},
         },
         get_vars=_body_language_vars,
-        sender_name='Margaux de Bob',
-        sender_email='margaux@bob-emploi.fr',
+        sender_name="Joanna et l'équipe de Bob",
+        sender_email='joanna@bob-emploi.fr',
         is_coaching=True,
     ),
     'employment-status': campaign.Campaign(
@@ -384,8 +438,8 @@ _CAMPAIGNS = {
             'requestedByUserAtDate': {'$not': {'$gt': '2017-11'}},
         },
         get_vars=new_diagnostic_vars,
-        sender_name='Margaux de Bob',
-        sender_email='margaux@bob-emploi.fr',
+        sender_name='Joanna de Bob',
+        sender_email='joanna@bob-emploi.fr',
     ),
     'galita-1': campaign.Campaign(
         mailjet_template='315773',
@@ -394,8 +448,16 @@ _CAMPAIGNS = {
             'projects.jobSearchHasNotStarted': {'$ne': True},
         },
         get_vars=_get_galita1_vars,
-        sender_name='Margaux de Bob',
-        sender_email='margaux@bob-emploi.fr',
+        sender_name="Joanna et l'équipe de Bob",
+        sender_email='joanna@bob-emploi.fr',
+        is_coaching=True,
+    ),
+    'galita-2': campaign.Campaign(
+        mailjet_template='572106',
+        mongo_filters={},
+        get_vars=campaign.get_default_coaching_email_vars,
+        sender_name="Joanna et l'équipe de Bob",
+        sender_email='joanna@bob-emploi.fr',
         is_coaching=True,
     ),
     'galita-3': campaign.Campaign(
@@ -405,8 +467,8 @@ _CAMPAIGNS = {
             'projects.jobSearchHasNotStarted': {'$ne': True},
         },
         get_vars=_get_galita3_vars,
-        sender_name='Margaux de Bob',
-        sender_email='margaux@bob-emploi.fr',
+        sender_name="Joanna et l'équipe de Bob",
+        sender_email='joanna@bob-emploi.fr',
         is_coaching=True,
         is_big_focus=True,
     ),
@@ -414,8 +476,29 @@ _CAMPAIGNS = {
         mailjet_template='334851',
         mongo_filters={},
         get_vars=lambda user, **unused_kwargs: _viral_sharing_vars(user, hash_start='1'),
-        sender_name='Margaux de Bob',
-        sender_email='margaux@bob-emploi.fr',
+        sender_name='Joanna de Bob',
+        sender_email='joanna@bob-emploi.fr',
+    ),
+    'open-classrooms': campaign.Campaign(
+        mailjet_template='536272',
+        mongo_filters={
+            '$or': [
+                {'employmentStatus': {'$exists': False}},
+                {'employmentStatus.seeking': 'STILL_SEEKING'}
+            ],
+            'profile.highestDegree': {
+                '$in': ['UNKNOWN_DEGREE', 'NO_DEGREE', 'CAP_BEP', 'BAC_BACPRO']
+            },
+            'profile.yearOfBirth': {
+                '$gt': now.get().year - 54,
+                '$lt': now.get().year - 18,
+            },
+            'registeredAt': {'$gt': _SIX_MONTHS_AGO},
+        },
+        get_vars=_open_classrooms_vars,
+        is_coaching=True,
+        sender_name="Joanna et l'équipe de Bob",
+        sender_email='joanna@bob-emploi.fr',
     ),
 }
 

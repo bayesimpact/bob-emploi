@@ -12,14 +12,16 @@ RUN apt-get update -qqy && \
 # Requirements for python code (outside of notebooks). Keep them sorted.
 RUN pip install --upgrade \
   airtable \
-  airtablemock \
+  'airtablemock>=0.0.7' \
   algoliasearch \
   coverage \
   csvkit \
   google-api-python-client \
   httplib2 \
   js2py \
-  mongomock \
+  'mongomock>=3.13' \
+  'mypy>=0.650' \
+  'mypy-protobuf>=1.8' \
   nbformat \
   nose \
   nose-exclude \
@@ -41,6 +43,7 @@ RUN pip install --upgrade \
   sklearn \
   termcolor \
   tqdm \
+  typing_extensions \
   xmltodict
 
 # Install Protobuf compiler.
@@ -56,8 +59,10 @@ CMD ["make", "all"]
 COPY data_analysis/ /work/bob_emploi/data_analysis/
 COPY data_analysis/.coveragerc data_analysis/entrypoint.sh data_analysis/lint_and_test.sh data_analysis/Makefile* .pylintrc /work/
 COPY .pycodestyle /work/setup.cfg
-COPY frontend/api/ /work/bob_emploi/frontend/api/
+COPY frontend/api/*.proto /work/bob_emploi/frontend/api/
 COPY frontend/server/ /work/bob_emploi/frontend/server/
 
+RUN /work/bob_emploi/data_analysis/vendor/patch.sh
+
 ARG SKIP_TEST=
-RUN test -n "$SKIP_TEST" && echo "Skipping tests" || ./entrypoint.sh ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html
+RUN test -n "$SKIP_TEST" && echo "Skipping tests" || ./entrypoint.sh ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html --cover-xml

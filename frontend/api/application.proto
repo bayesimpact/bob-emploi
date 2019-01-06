@@ -1,19 +1,20 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 
 message ApplicationTip {
   // Content of the tip. Using markup language for formatting.
-  string content = 1;
+  string content = 1 [(string_format) = NATURAL_LANGUAGE];
 
   // Same as content, but a particular version for masculine if it differs from
   // the feminine version.
-  string content_masculine = 2;
+  string content_masculine = 2 [(string_format) = NATURAL_LANGUAGE];
 
   // A set of filter IDs: do not show the tip if one of these filters return
   // false for the project.
-  // See the list of available filters in scoring.py.
-  repeated string filters = 3;
+  repeated string filters = 3 [(string_format) = SCORING_MODEL_ID];
 
   // Type of tip.
   ApplicationTipType type = 4;

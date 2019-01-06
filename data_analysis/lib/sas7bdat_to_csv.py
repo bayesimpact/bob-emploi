@@ -2,11 +2,12 @@
 
 import os
 import sys
+import typing
 
 from sas7bdat import SAS7BDAT
 
 
-def convert_files(files):
+def convert_files(files: typing.List[str]) -> None:
     """Create a csv file for each matching sas7bdat file."""
 
     matching = [f for f in files if f.endswith('.sas7bdat')]
@@ -28,4 +29,4 @@ def convert_files(files):
 
 
 if __name__ == '__main__':
-    convert_files(sys.argv[1:])  # pragma: no-cover
+    convert_files(sys.argv[1:])

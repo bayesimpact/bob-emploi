@@ -1,10 +1,12 @@
 """Unit tests for the focus script to send focus emails."""
 
 import datetime
+import os
 import unittest
+from unittest import mock
 
-import mock
 import mongomock
+import requests
 
 from bob_emploi.frontend.server.asynchronous.mail import focus
 from bob_emploi.frontend.server.test import mailjetmock
@@ -13,7 +15,7 @@ from bob_emploi.frontend.server.test import mailjetmock
 # updated as the tests here depend on it to be complete and accurate.
 _GOLDEN_FOCUS_CAMPAIGNS = (
     'focus-body-language', 'focus-network', 'focus-self-develop', 'focus-spontaneous',
-    'galita-1', 'galita-3', 'imt', 'network-plus',
+    'galita-1', 'galita-2', 'galita-3', 'imt', 'network-plus', 'open-classrooms',
 )
 
 
@@ -22,13 +24,13 @@ _GOLDEN_FOCUS_CAMPAIGNS = (
 class SendFocusEmailTest(unittest.TestCase):
     """Unit tests for the main function."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(SendFocusEmailTest, self).setUp()
         patcher = mock.patch(focus.mongo.__name__ + '.get_connections_from_env')
         mock_mongo = patcher.start()
         self.addCleanup(patcher.stop)
         self._db = mongomock.MongoClient()
-        mock_mongo.return_value = (self._db.test, self._db.user_test)
+        mock_mongo.return_value = (self._db.test, self._db.user_test, self._db.eval_test)
 
         patcher = mock.patch(focus.now.__name__ + '.get')
         self.mock_now = patcher.start()
@@ -42,6 +44,7 @@ class SendFocusEmailTest(unittest.TestCase):
                 'frustrations': ['SELF_CONFIDENCE', 'INTERVIEW'],
             },
             'projects': [{
+                'network_estimate': 1,
                 'jobSearchStartedAt': '2017-10-01T09:34:00Z',
                 'targetJob': {'jobGroup': {'romeId': 'A1234'}},
             }],
@@ -53,7 +56,7 @@ class SendFocusEmailTest(unittest.TestCase):
         })
 
     @mock.patch(focus.logging.__name__ + '.info')
-    def test_list_campaigns(self, mock_logging):
+    def test_list_campaigns(self, mock_logging: mock.MagicMock) -> None:
         """List existing focus email campaigns."""
 
         self._db.user_test.user.drop()
@@ -67,11 +70,11 @@ class SendFocusEmailTest(unittest.TestCase):
                     list(_GOLDEN_FOCUS_CAMPAIGNS), logging_call[0][1],
                     msg="Update the golden focus campaigns as it's used in other tests.")
                 break
-        else:
-            self.fail('No logging call about potential focus emails.')  # pragma: no-cover
+        else:  # pragma: no-cover
+            self.fail('No logging call about potential focus emails.')
 
     @mock.patch(focus.__name__ + '.logging')
-    def test_list_emails(self, mock_logging):
+    def test_list_emails(self, mock_logging: mock.MagicMock) -> None:
         """List uses logging extensively but does not send any email."""
 
         focus.main(['list'])
@@ -80,7 +83,7 @@ class SendFocusEmailTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
 
-    def test_send_first(self):
+    def test_send_first(self) -> None:
         """Sending a first focus email."""
 
         focus.main(['send', '--disable-sentry'])
@@ -93,7 +96,7 @@ class SendFocusEmailTest(unittest.TestCase):
         self.assertEqual(1, len(user_data.get('emailsSent')))
         self.assertIn(user_data['emailsSent'][0]['campaignId'], _GOLDEN_FOCUS_CAMPAIGNS)
 
-    def test_send_first_too_early(self):
+    def test_send_first_too_early(self) -> None:
         """Sending a first focus email too soon after a registration."""
 
         self._db.user_test.user.update_one(
@@ -109,7 +112,7 @@ class SendFocusEmailTest(unittest.TestCase):
             '2018-06-02T14:22:00Z',
             user_data.get('sendCoachingEmailAfter'))
 
-    def test_send_shortly_after_another(self):
+    def test_send_shortly_after_another(self) -> None:
         """Sending a second focus email shortly after the first one."""
 
         focus.main(['send', '--disable-sentry'])
@@ -125,7 +128,7 @@ class SendFocusEmailTest(unittest.TestCase):
         user_data = self._db.user_test.user.find_one()
         self.assertEqual(1, len(user_data.get('emailsSent')))
 
-    def test_send_a_week_after_another(self):
+    def test_send_a_week_after_another(self) -> None:
         """Sending a second focus email a week after the first one."""
 
         focus.main(['send', '--disable-sentry'])
@@ -144,7 +147,7 @@ class SendFocusEmailTest(unittest.TestCase):
         self.assertEqual(2, len(user_data.get('emailsSent')))
         self.assertIn(user_data['emailsSent'][1]['campaignId'], _GOLDEN_FOCUS_CAMPAIGNS)
 
-    def test_send_only_once_a_month(self):
+    def test_send_only_once_a_month(self) -> None:
         """Sending focus emails to user on "once-a-month" frequency."""
 
         self._db.user_test.user.update_one(
@@ -177,7 +180,7 @@ class SendFocusEmailTest(unittest.TestCase):
         user_data = self._db.user_test.user.find_one()
         self.assertEqual(2, len(user_data.get('emailsSent')))
 
-    def test_send_after_not_focus(self):
+    def test_send_after_not_focus(self) -> None:
         """Sending a second focus email shortly after another random email."""
 
         self._db.user_test.user.update_one(
@@ -197,7 +200,7 @@ class SendFocusEmailTest(unittest.TestCase):
         self.assertIn(user_data['emailsSent'][1]['campaignId'], _GOLDEN_FOCUS_CAMPAIGNS)
 
     @mock.patch(focus.logging.__name__ + '.info')
-    def test_send_all_focus_emails(self, unused_mock_logging):
+    def test_send_all_focus_emails(self, unused_mock_logging: mock.MagicMock) -> None:
         """Sending all focus emails in 6 months."""
 
         for unused_day in range(180):
@@ -221,7 +224,7 @@ class SendFocusEmailTest(unittest.TestCase):
 
     @mock.patch(focus.logging.__name__ + '.info')
     @mock.patch(focus.random.__name__ + '.random', new=lambda: 0.5)
-    def test_change_setting(self, unused_mock_logging):
+    def test_change_setting(self, unused_mock_logging: mock.MagicMock) -> None:
         """Changing the settings after the first email has been sent."""
 
         focus.main(['send', '--disable-sentry'])
@@ -244,7 +247,7 @@ class SendFocusEmailTest(unittest.TestCase):
 
         # A month later, there should be another email.
         for unused_data in range(30):
-            self.mock_now.return_value += datetime.timedelta(days=30)
+            self.mock_now.return_value += datetime.timedelta(days=1)
             focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
@@ -254,7 +257,7 @@ class SendFocusEmailTest(unittest.TestCase):
         self.assertEqual(2, len(user_data.get('emailsSent')))
         self.assertIn(user_data['emailsSent'][1]['campaignId'], _GOLDEN_FOCUS_CAMPAIGNS)
 
-    def test_dont_send_to_deleted(self):
+    def test_dont_send_to_deleted(self) -> None:
         """Do not send focus emails to deleted users."""
 
         self._db.user_test.user.update_one({}, {'$set': {
@@ -266,6 +269,71 @@ class SendFocusEmailTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
 
+    @mock.patch(focus.__name__ + '._POTENTIAL_CAMPAIGNS', {'galita-2'})
+    def test_restrict_campaign(self) -> None:
+        """Restrict to only one campaign."""
+
+        focus.main(['send', '--disable-sentry'])
+        user_data = self._db.user_test.user.find_one()
+        self.assertEqual('galita-2', user_data['emailsSent'][0]['campaignId'])
+
+    @mock.patch('bob_emploi.frontend.server.mail.send_template')
+    @mock.patch('logging.warning')
+    def test_error_while_sending(
+            self, mock_warning: mock.MagicMock, mock_send_template: mock.MagicMock) -> None:
+        """Error when sending a focus email get caught and logged as warning."""
+
+        mock_send_template().raise_for_status.side_effect = requests.exceptions.HTTPError
+
+        focus.main(['send', '--disable-sentry'])
+
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+        user_data = self._db.user_test.user.find_one()
+        self.assertFalse(user_data.get('emailsSent'))
+
+        mock_warning.assert_called_once()
+        self.assertEqual('Error while sending an email: %s', mock_warning.call_args[0][0])
+
+    @mock.patch('bob_emploi.frontend.server.mail.send_template')
+    def test_error_while_dry_run(self, mock_send_template: mock.MagicMock) -> None:
+        """Error when sending a focus email in dry run mode."""
+
+        mock_send_template().raise_for_status.side_effect = requests.exceptions.HTTPError
+
+        with self.assertRaises(requests.exceptions.HTTPError):
+            focus.main(['dry-run', '--disable-sentry'])
+
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+        user_data = self._db.user_test.user.find_one()
+        self.assertFalse(user_data.get('emailsSent'))
+
+    def test_error_no_secret_salt(self) -> None:
+        """Error when trying to send without a secret salt."""
+
+        with mock.patch(focus.auth.__name__ + '.SECRET_SALT', new=focus.auth.FAKE_SECRET_SALT):
+            with self.assertRaises(ValueError):
+                focus.main(['send', '--disable-sentry'])
+
+    @mock.patch(focus.report.__name__ + '.setup_sentry_logging')
+    @mock.patch.dict(os.environ, {'SENTRY_DSN': 'fake-sentry'})
+    def test_setup_report(self, mock_setup_sentry: mock.MagicMock) -> None:
+        """Make sure the report is setup."""
+
+        focus.main(['send'])
+
+        mock_setup_sentry.assert_called_once_with('fake-sentry')
+        self.assertTrue(mailjetmock.get_all_sent_messages())
+
+    @mock.patch('logging.error')
+    def test_failed_setup_report(self, mock_error: mock.MagicMock) -> None:
+        """Warn if the report is not correctly setup."""
+
+        focus.main(['send'])
+
+        mock_error.assert_called_once_with(
+            'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

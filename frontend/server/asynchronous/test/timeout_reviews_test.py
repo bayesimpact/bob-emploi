@@ -1,10 +1,12 @@
 """Unit tests for the timeout_reviews module."""
 
 import datetime
+import typing
 import unittest
+from unittest import mock
 
-import mock
 import mongomock
+import pymongo
 
 from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.server import proto
@@ -20,7 +22,7 @@ from bob_emploi.frontend.server.asynchronous import timeout_reviews
 class TestCase(unittest.TestCase):
     """Unit tests for the timeout_reviews module."""
 
-    def test_timeout(self, mock_db):
+    def test_timeout(self, mock_db: pymongo.database.Database) -> None:
         """Simple timeout."""
 
         mock_db.cvs_and_cover_letters.insert_one({
@@ -39,14 +41,14 @@ class TestCase(unittest.TestCase):
         })
         timeout_reviews.main([])
 
-        document = proto.create_from_mongo(
-            mock_db.cvs_and_cover_letters.find_one(), review_pb2.DocumentToReview)
+        document = typing.cast(review_pb2.DocumentToReview, proto.create_from_mongo(
+            mock_db.cvs_and_cover_letters.find_one(), review_pb2.DocumentToReview))
         self.assertFalse(document.num_pending_reviews)
         self.assertEqual(review_pb2.REVIEW_TIME_OUT, document.reviews[0].status)
         self.assertEqual('aca69757aff44770db7d7e49', document.reviews[0].reviewer_id)
         self.assertEqual('pascal@wanadoo.fr', document.owner_email)
 
-    def test_timeout_only_some_reviews(self, mock_db):
+    def test_timeout_only_some_reviews(self, mock_db: pymongo.database.Database) -> None:
         """Timeout some reviews but not all."""
 
         mock_db.cvs_and_cover_letters.insert_one({
@@ -84,8 +86,8 @@ class TestCase(unittest.TestCase):
         })
         timeout_reviews.main([])
 
-        document = proto.create_from_mongo(
-            mock_db.cvs_and_cover_letters.find_one(), review_pb2.DocumentToReview)
+        document = typing.cast(review_pb2.DocumentToReview, proto.create_from_mongo(
+            mock_db.cvs_and_cover_letters.find_one(), review_pb2.DocumentToReview))
         self.assertEqual(1, document.num_pending_reviews)
         self.assertEqual(
             [
@@ -100,4 +102,4 @@ class TestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

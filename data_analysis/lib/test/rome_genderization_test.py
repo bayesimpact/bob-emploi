@@ -1,5 +1,6 @@
 """Tests for the bob_emploi.lib.rome_genderization module."""
 
+import typing
 import unittest
 
 import pandas
@@ -10,7 +11,8 @@ from bob_emploi.data_analysis.lib import rome_genderization
 class _GenderizeTestCase(unittest.TestCase):
     """Base for unit tests for the genderize function."""
 
-    def _genderize_lists(self, names):
+    def _genderize_lists(self, names: typing.List[str]) \
+            -> typing.Tuple[typing.List[str], typing.List[str]]:
         """Helper function to call genderize using lists instead of Series."""
 
         masculine, feminine = rome_genderization.genderize(pandas.Series(names))
@@ -18,7 +20,7 @@ class _GenderizeTestCase(unittest.TestCase):
         self.assertEqual(len(feminine), len(names))
         return masculine.tolist(), feminine.tolist()
 
-    def _genderize_one(self, name):
+    def _genderize_one(self, name: str) -> typing.Tuple[str, str]:
         """Helper function to call genderize using only one name."""
 
         masculine, feminine = self._genderize_lists([name])
@@ -28,21 +30,21 @@ class _GenderizeTestCase(unittest.TestCase):
 class GenderizeTestCase(_GenderizeTestCase):
     """General unit tests for the genderize function."""
 
-    def test_genderize_empty(self):
+    def test_genderize_empty(self) -> None:
         """Test genderize with an empty input."""
 
         masculine, feminine = self._genderize_lists([])
         self.assertEqual([], masculine)
         self.assertEqual([], feminine)
 
-    def test_genderize_invariant(self):
+    def test_genderize_invariant(self) -> None:
         """Test genderize with an invariant name."""
 
         masculine, feminine = self._genderize_one('Artist')
         self.assertEqual('Artist', masculine)
         self.assertEqual('Artist', feminine)
 
-    def test_genderize_all_cases_at_once(self):
+    def test_genderize_all_cases_at_once(self) -> None:
         """Test genderize with a list of multiple genderization cases."""
 
         masculine, feminine = self._genderize_lists([
@@ -64,7 +66,7 @@ class GenderizeTestCase(_GenderizeTestCase):
             'Pompière',
             'Manageuse'], feminine)
 
-    def test_genderize_bracket_and_slash(self):
+    def test_genderize_bracket_and_slash(self) -> None:
         """Test genderize with a name using both bracket and slash."""
 
         masculine, feminine = self._genderize_one(
@@ -76,14 +78,14 @@ class GenderizeTestCase(_GenderizeTestCase):
 class BracketNotationTestCase(_GenderizeTestCase):
     """Unit tests for the genderize function using bracket notation."""
 
-    def test_genderize_bracket_notation(self):
+    def test_genderize_bracket_notation(self) -> None:
         """Test genderize with simple bracket notation."""
 
         masculine, feminine = self._genderize_one('Vendeur(euse)')
         self.assertEqual('Vendeur', masculine)
         self.assertEqual('Vendeuse', feminine)
 
-    def test_genderize_multiple_bracket_notations(self):
+    def test_genderize_multiple_bracket_notations(self) -> None:
         """Test genderize with several bracket notations."""
 
         masculine, feminine = self._genderize_one(
@@ -91,7 +93,7 @@ class BracketNotationTestCase(_GenderizeTestCase):
         self.assertEqual('Manager-inspecteur', masculine)
         self.assertEqual('Manageuse-inspectrice', feminine)
 
-    def test_genderize_ignore_plural_bracket_notations(self):
+    def test_genderize_ignore_plural_bracket_notations(self) -> None:
         """Test genderize with a plural in bracket notation."""
 
         masculine, feminine = self._genderize_one(
@@ -99,13 +101,13 @@ class BracketNotationTestCase(_GenderizeTestCase):
         self.assertEqual('Vendeur commercial tissu(s)', masculine)
         self.assertEqual('Vendeuse commerciale tissu(s)', feminine)
 
-    def test_genderize_unknown_suffix(self):
+    def test_genderize_unknown_suffix(self) -> None:
         """Test genderize with unknown suffix in bracket notation."""
 
         self.assertRaises(
             ValueError, self._genderize_one, 'Title with unknown(foo) suffix')
 
-    def test_genderize_known_suffix_not_matching(self):
+    def test_genderize_known_suffix_not_matching(self) -> None:
         """Test genderize with suffix not matching the one in brackets."""
 
         self.assertRaises(
@@ -116,21 +118,21 @@ class BracketNotationTestCase(_GenderizeTestCase):
 class SlashNotationTestCase(_GenderizeTestCase):
     """Unit tests for the genderize function using slash notation."""
 
-    def test_genderize_slash_notation(self):
+    def test_genderize_slash_notation(self) -> None:
         """Test genderize with simple slash notation."""
 
         masculine, feminine = self._genderize_one('Vendeur / Vendeuse')
         self.assertEqual('Vendeur', masculine)
         self.assertEqual('Vendeuse', feminine)
 
-    def test_genderize_slash_notation_no_blanks(self):
+    def test_genderize_slash_notation_no_blanks(self) -> None:
         """Test genderize with slash notation without blanks around slash."""
 
         masculine, feminine = self._genderize_one('Vendeur/Vendeuse')
         self.assertEqual('Vendeur', masculine)
         self.assertEqual('Vendeuse', feminine)
 
-    def test_genderize_slash_notation_distribute_right(self):
+    def test_genderize_slash_notation_distribute_right(self) -> None:
         """Test genderize with slash notation with more context on the right."""
 
         masculine, feminine = self._genderize_one(
@@ -138,7 +140,7 @@ class SlashNotationTestCase(_GenderizeTestCase):
         self.assertEqual('Vendeur expert retail', masculine)
         self.assertEqual('Vendeuse experte retail', feminine)
 
-    def test_genderize_slash_notation_distribute_left(self):
+    def test_genderize_slash_notation_distribute_left(self) -> None:
         """Test genderize with slash notation with more context on the left."""
 
         masculine, feminine = self._genderize_one(
@@ -146,14 +148,14 @@ class SlashNotationTestCase(_GenderizeTestCase):
         self.assertEqual('Super vendeur expert retail', masculine)
         self.assertEqual('Super vendeuse experte retail', feminine)
 
-    def test_genderize_slash_notation_distribute_right_one(self):
+    def test_genderize_slash_notation_distribute_right_one(self) -> None:
         """Slash notation with more context on the right but no common root."""
 
         masculine, feminine = self._genderize_one('Homme / Femme de pied')
         self.assertEqual('Homme de pied', masculine)
         self.assertEqual('Femme de pied', feminine)
 
-    def test_genderize_multiple_slash_notation(self):
+    def test_genderize_multiple_slash_notation(self) -> None:
         """Test genderize with extra slashes in slash notation."""
 
         masculine, feminine = self._genderize_one(
@@ -161,7 +163,7 @@ class SlashNotationTestCase(_GenderizeTestCase):
         self.assertEqual('Empoteuse/dépoteuse', feminine)
         self.assertEqual('Empoteur/dépoteur', masculine)
 
-    def test_genderize_multiple_slash_notation_distribute_right(self):
+    def test_genderize_multiple_slash_notation_distribute_right(self) -> None:
         """Test genderize with extra slash in slash notation to distribute."""
 
         masculine, feminine = self._genderize_one(
@@ -180,7 +182,7 @@ class SlashNotationTestCase(_GenderizeTestCase):
 class GenderizationInernalsTestCase(unittest.TestCase):
     """Unit tests of internals of the genderization module."""
 
-    def test_check_mapping_specification(self):
+    def test_check_mapping_specification(self) -> None:
         """Make sure the postfix dictionary is in the right format.
 
         Check whether the mapping of postfix to word endings correctly returns
@@ -190,11 +192,11 @@ class GenderizationInernalsTestCase(unittest.TestCase):
 
         postfix_map = rome_genderization._POSTFIX_MAP
 
-        for postfix_map in postfix_map.values():
+        for substitution in postfix_map.values():
             self.assertEqual(
-                sorted(postfix_map, key=len, reverse=True),
-                postfix_map)
+                sorted(substitution, key=len, reverse=True),
+                substitution)
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

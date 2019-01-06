@@ -13,9 +13,9 @@ FROM python:3.6
 WORKDIR /work
 
 # Install dependencies
-RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends wget unzip && \
+RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends wget unzip locales && \
   # Install needed Python dependencies.
-  pip install algoliasearch python-emploi-store>=0.7.0 certifi 'elasticsearch<6.0.0' flask mailjet_rest mongo oauth2client protobuf pyfarmhash raven[flask] requests-aws4auth unidecode uwsgi xmltodict && \
+  pip install algoliasearch 'python-emploi-store>=0.7.0' certifi 'elasticsearch<6.0.0' flask mailjet_rest mongo mypy_extensions oauth2client protobuf pyfarmhash requests-aws4auth sentry-sdk[flask] typing_extensions unidecode uwsgi xmltodict && \
   # Install Protobuf compiler.
   PROTOBUF_VERSION=$(curl -i https://github.com/protocolbuffers/protobuf/releases/latest | grep ^Location: | sed -e "s/^.*\/v//;s/\s*$//") \
   bash -c 'wget --quiet https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip' && \
@@ -23,7 +23,9 @@ RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends wget unz
   # Prepare the frontend module.
   mkdir -p bob_emploi/frontend && \
     touch bob_emploi/__init__.py && \
-    touch bob_emploi/frontend/__init__.py
+    touch bob_emploi/frontend/__init__.py && \
+    echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen && \
+    locale-gen
 
 # TEST ONLY.
 COPY frontend/server/requirements-testing.txt /work
@@ -34,7 +36,7 @@ COPY frontend/server/*.py bob_emploi/frontend/server/
 COPY frontend/server/modules/*.py bob_emploi/frontend/server/modules/
 COPY frontend/server/asynchronous/*.py bob_emploi/frontend/server/asynchronous/
 COPY frontend/server/asynchronous/mail/*.py bob_emploi/frontend/server/asynchronous/mail/
-COPY frontend/api bob_emploi/frontend/api
+COPY frontend/api/*.proto bob_emploi/frontend/api/
 
 # TEST ONLY.
 COPY frontend/server/lint_and_test.sh .pylintrc .pycodestyle frontend/server/.coveragerc /work/
@@ -43,10 +45,9 @@ COPY frontend/server/modules/test /work/bob_emploi/frontend/server/modules/test/
 COPY frontend/server/asynchronous/test /work/bob_emploi/frontend/server/asynchronous/test/
 COPY frontend/server/asynchronous/mail/test /work/bob_emploi/frontend/server/asynchronous/mail/test/
 COPY frontend/server/Dockerfile* /work/bob_emploi/frontend/server/
-RUN /work/bob_emploi/frontend/server/test/vendor/install.sh
 
 # TEST ONLY.
-RUN pybabel extract bob_emploi/frontend/server/ -k translate_static_string -o strings.pot
+RUN pybabel extract bob_emploi/frontend/server/ -k translate_string -o strings.pot
 
 # Setup environment.
 EXPOSE 80
@@ -63,6 +64,8 @@ ENV SERVER_VERSION=git-$GIT_SHA1 \
   PYTHONPATH=/work
 
 # TEST ONLY.
+ENV TEST_ENV=1
 ARG SKIP_TEST=
-RUN test -n "$SKIP_TEST" && echo "Skipping tests" || ./entrypoint.sh ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html --cover-min-percentage=90
+RUN protoc -I . -I /usr/local/share/proto/ bob_emploi/frontend/server/test/testdata/*.proto --python_out=. --mypy_out=quiet:.
+RUN test -n "$SKIP_TEST" && echo "Skipping tests" || ./entrypoint.sh ./lint_and_test.sh --with-coverage --cover-inclusive --cover-package=. --cover-html --cover-min-percentage=90 --cover-xml
 CMD ["nosetests", "--with-watch"]

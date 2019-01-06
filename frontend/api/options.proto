@@ -2,11 +2,18 @@ syntax = "proto3";
 
 import "google/protobuf/descriptor.proto";
 
+package bayes.bob;
 
 extend google.protobuf.FieldOptions {
   // Give a bit more semantics to a field so that we can programatically
   // identify sensitive fields to handle with care.
   FieldUsage field_usage = 50000;
+
+  // Give more information about the format of a string field.
+  repeated StringFormat string_format = 50001;
+
+  // Give more information about the format of a list field.
+  ListFormat list_format = 50002;
 }
 
 
@@ -24,9 +31,42 @@ enum FieldUsage {
   // actual user data.
   APP_ONLY = 2;
 
-  // A field which value is provided by the user as a feedback.
+  // A field whose value is provided by the user as a feedback.
   USER_FEEDBACK = 3;
 
   // A field populated by the app as a result of an algorithm.
   ALGORITHM_RESULT = 4;
+}
+
+// TODO(cyrille): Add at least SCORING_MODEL and URL.
+enum StringFormat {
+  // Many fields are not tagged, this is either because they have not been
+  // tagged yet or because they do not have a specific format.
+  UNKNOWN_STRING_FORMAT = 0;
+
+  // A field whose value(s) are in natural language.
+  NATURAL_LANGUAGE = 1;
+
+  // A field whose value is a scoring model ID. See the list of available models in scoring.py.
+  SCORING_MODEL_ID = 2;
+
+  // A field whose value is a URL.
+  URL_FORMAT = 3;
+
+  // A field whose value may contain template variables, as defined in
+  // frontend.server.scoring.ScoringProject.populate_template.
+  SCORING_PROJECT_TEMPLATE = 4;
+
+  // A field whose value is only a partial sentence, and as such should never start with an
+  // uppercase letter or end with a punctuation mark.
+  PARTIAL_SENTENCE = 5;
+}
+
+enum ListFormat {
+  // Many fields are not tagged, this is either because they have not been
+  // tagged yet or because they do not have a specific format.
+  UNKNOWN_LIST_FORMAT = 0;
+
+  // A list field that should be replaced and not appended by the client.
+  REPLACEABLE = 1;
 }

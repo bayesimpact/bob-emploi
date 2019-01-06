@@ -1,3 +1,19 @@
+[report]
+exclude_lines =
+  # Original exclusion pattern
+  pragma: no cover
+  # Repr is used for logging purposes only, and should not need to be tested.
+  def __repr__
+  # Assertion errors are meant to be reached only if tests fail so they cannot be covered by passing
+  # tests.
+  raise AssertionError
+  self\.fail
+  # Abstract method don't need testing.
+  raise NotImplementedError
+  # This branch cannot be reached by nosetest.
+  if __name__ == '__main__':
+  # Protocols are for typing only.
+  \(typing_extensions\.Protocol\):
 [run]
 omit =
   bob_emploi/frontend/api/*

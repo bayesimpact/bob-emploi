@@ -3,16 +3,17 @@
 import argparse
 import datetime
 import logging
+import typing
 
 from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import now
 
-_, _USER_DB = mongo.get_connections_from_env()
+_, _USER_DB, _ = mongo.get_connections_from_env()
 
 
-def main(string_args=None):
+def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     """Time out CVS and motivation letters reviews."""
 
     parser = argparse.ArgumentParser(
@@ -35,9 +36,12 @@ def main(string_args=None):
         _timeout_old_reviews(document, timeout_date)
 
 
-def _timeout_old_reviews(document_dict, timeout_date):
+def _timeout_old_reviews(
+        document_dict: typing.Dict[str, typing.Any], timeout_date: datetime.datetime) -> None:
     document_id = document_dict.pop('_id')
-    document = proto.create_from_mongo(document_dict, review_pb2.DocumentToReview)
+    document = typing.cast(
+        review_pb2.DocumentToReview,
+        proto.create_from_mongo(document_dict, review_pb2.DocumentToReview))
     timeout_review_indices = [
         review_index
         for review_index, review in enumerate(document.reviews)
@@ -59,4 +63,4 @@ def _timeout_old_reviews(document_dict, timeout_date):
 
 
 if __name__ == '__main__':
-    main()  # pragma: no cover
+    main()

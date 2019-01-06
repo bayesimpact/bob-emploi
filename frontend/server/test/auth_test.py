@@ -1,30 +1,67 @@
 """Tests for the authentication endpoints of the server module."""
 
+import datetime
+import json
 import time
+import typing
 import unittest
+from unittest import mock
 from urllib import parse
 
+from bson import objectid
 import mailjet_rest
-import mock
+import requests
 import requests_mock
+import typing_extensions
 
 from bob_emploi.frontend.api import geo_pb2
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
+
+# TODO(pascal): Split in smaller test files and remove the pylint below.
+# pylint: disable=too-many-lines
+
+
+# TODO(pascal): Drop once requests_mock gets typed.
+class _MockRequest(typing_extensions.Protocol):
+    @property
+    def text(self) -> str:
+        """Body content as text."""
+
+
+# TODO(pascal): Drop once requests_mock gets typed.
+class _RequestsMock(typing_extensions.Protocol):
+
+    def get(  # pylint: disable=invalid-name
+            self, path: str, status_code: int = 200, text: str = '',
+            json: typing.Any = None,  # pylint: disable=redefined-outer-name
+            headers: typing.Optional[typing.Dict[str, str]] = None,
+            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
+            -> requests.Response:
+        """Decide what to do when a get request is sent."""
+
+    def post(  # pylint: disable=invalid-name
+            self, path: str, status_code: int = 200, text: str = '',
+            json: typing.Any = None,  # pylint: disable=redefined-outer-name
+            headers: typing.Optional[typing.Dict[str, str]] = None,
+            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
+            -> requests.Response:
+        """Decide what to do when a post request is sent."""
 
 
 class AuthenticateEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint."""
 
-    def test_no_token(self):
+    def test_no_token(self) -> None:
         """Auth request with no token."""
 
         response = self.app.post(
             '/api/user/authenticate', data='{}', content_type='application/json')
         self.assertEqual(422, response.status_code)
 
-    def test_fields_missing(self):
+    def test_fields_missing(self) -> None:
         """Auth request with missing name."""
 
         response = self.app.post(
@@ -32,7 +69,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(422, response.status_code)
 
-    def test_new_user(self):
+    def test_new_user(self) -> None:
         """Full flow to create a user with email + password."""
 
         # First request: check if user exists.
@@ -85,7 +122,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(user_id, auth_response4['authenticatedUser']['userId'])
         self.assertTrue(auth_response4['authToken'])
 
-    def test_weird_email(self):
+    def test_weird_email(self) -> None:
         """Email authentication with non-ascii email."""
 
         response = self.app.post(
@@ -107,7 +144,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(user_id)
 
     @mock.patch(mailjet_rest.__name__ + '.Client')
-    def test_reset_password(self, mock_mailjet_client):
+    def test_reset_password(self, mock_mailjet_client: mock.MagicMock) -> None:
         """Full flow to reset a user's password."""
 
         # Create password.
@@ -166,7 +203,119 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         response5 = self.app.post('/api/user/authenticate', data=request5)
         self.assertEqual(401, response5.status_code)
 
-    def test_reset_password_bad_format_auth_token(self):
+    @mock.patch(auth.proto.__name__ + '._IS_TEST_ENV', False)
+    @mock.patch(mailjet_rest.__name__ + '.Client')
+    @mock.patch('logging.warning')
+    def test_corrupted_mongo_while_reset(
+            self, mock_warning: mock.MagicMock, mock_mailjet_client: mock.MagicMock) -> None:
+        """Corrupted user dict in MongoDB."""
+
+        self.create_user_with_token(email='foo@bar.fr', password='aa')
+        # Screw the data in Mongo.
+        self._user_db.user.update_one({}, {'$set': {'revision': {'hack': 1}}})
+
+        auth_token = self._get_reset_token(
+            'foo@bar.fr', mock_mailjet_client,
+            recipients=[{'Email': 'foo@bar.fr', 'Name': ' '}])
+        request = (
+            '{{"email": "foo@bar.fr", "authToken": "{}", "hashedPassword": "{}"}}'
+            .format(auth_token, _sha1('foo@bar.fr', 'new password')))
+        response = self.app.post('/api/user/authenticate', data=request)
+        self.assertEqual(500, response.status_code)
+        self.assertIn('Les données utilisateur sont corrompues', response.get_data(as_text=True))
+        mock_warning.assert_called_once()
+        self.assertIn(
+            'Failed to parse revision',
+            mock_warning.call_args[0][0] % mock_warning.call_args[0][1:])
+
+    def test_missing_salt(self) -> None:
+        """Forgot to send the salt."""
+
+        self.create_user_with_token(email='foo@bar.fr')
+
+        response = self.json_from_response(self.app.post(
+            '/api/user/authenticate', data='{"email": "foo@bar.fr", "hashedPassword": "salt"}'))
+        self.assertIn('hashSalt', response)
+
+    def test_wrong_salt(self) -> None:
+        """Forgot to send the salt."""
+
+        self.create_user_with_token(email='foo@bar.fr')
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{"email": "foo@bar.fr", "hashSalt": "aaa.111", "hashedPassword": "salt"}')
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Le sel n'a pas été généré par ce serveur", response.get_data(as_text=True))
+
+    @mock.patch('time.time')
+    def test_outdated_salt(self, mock_time: mock.MagicMock) -> None:
+        """Use outdated salt returns fresh salt."""
+
+        mock_time.return_value = 1544180477.9767606
+
+        self.create_user_with_token(email='foo@bar.fr', password='uuu')
+        salt = self._get_salt('foo@bar.fr')
+
+        mock_time.return_value = 1544180477.9767606 + datetime.timedelta(hours=4).total_seconds()
+
+        request = (
+            '{{"email": "foo@bar.fr", "hashSalt": "{}", '
+            '"hashedPassword": "{}"}}').format(
+                salt, _sha1(salt, _sha1('foo@bar.fr', 'uuu')))
+        response = self.json_from_response(self.app.post('/api/user/authenticate', data=request))
+        self.assertNotIn('authenticatedUser', response)
+
+        new_salt = response.get('hashSalt', '')
+        request = (
+            '{{"email": "foo@bar.fr", "hashSalt": "{}", '
+            '"hashedPassword": "{}"}}').format(
+                new_salt, _sha1(new_salt, _sha1('foo@bar.fr', 'uuu')))
+        response = self.json_from_response(self.app.post('/api/user/authenticate', data=request))
+        self.assertTrue(response.get('authenticatedUser'))
+
+    @mock.patch('time.time')
+    def test_future_salt(self, mock_time: mock.MagicMock) -> None:
+        """Using future is forbidden."""
+
+        mock_time.return_value = 1544180477.9767606
+
+        self.create_user_with_token(email='foo@bar.fr', password='uuu')
+        salt = self._get_salt('foo@bar.fr')
+
+        mock_time.return_value = 1544180477.9767606 - datetime.timedelta(hours=1).total_seconds()
+
+        request = (
+            '{{"email": "foo@bar.fr", "hashSalt": "{}", '
+            '"hashedPassword": "{}"}}').format(
+                salt, _sha1(salt, _sha1('foo@bar.fr', 'uuu')))
+        response = self.app.post('/api/user/authenticate', data=request)
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Le sel n'a pas été généré par ce serveur", response.get_data(as_text=True))
+
+    @mock.patch(auth.proto.__name__ + '._IS_TEST_ENV', False)
+    @mock.patch('logging.warning')
+    def test_corrupted_mongo(self, mock_warning: mock.MagicMock) -> None:
+        """Corrupted user dict in MongoDB."""
+
+        self.create_user_with_token(email='foo@bar.fr', password='aa')
+        # Screw the data in Mongo.
+        self._user_db.user.update_one({}, {'$set': {'revision': {'hack': 1}}})
+
+        salt = self._get_salt('foo@bar.fr')
+        request = (
+            '{{"email": "foo@bar.fr", "hashSalt": "{}", '
+            '"hashedPassword": "{}"}}').format(
+                salt, _sha1(salt, _sha1('foo@bar.fr', 'aa')))
+        response = self.app.post('/api/user/authenticate', data=request)
+        self.assertEqual(500, response.status_code)
+        self.assertIn('Les données utilisateur sont corrompues', response.get_data(as_text=True))
+        mock_warning.assert_called_once()
+        self.assertIn(
+            'Failed to parse revision',
+            mock_warning.call_args[0][0] % mock_warning.call_args[0][1:])
+
+    def test_reset_password_bad_format_auth_token(self) -> None:
         """Try reseting a password with a wrongly fomatted token."""
 
         self.authenticate_new_user(email='foo@bar.fr', password='psswd')
@@ -178,7 +327,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(401, response.status_code)
 
     @mock.patch(mailjet_rest.__name__ + '.Client')
-    def test_reset_password_bad_auth_token(self, mock_mailjet_client):
+    def test_reset_password_bad_auth_token(self, mock_mailjet_client: mock.MagicMock) -> None:
         """Try reseting a password with a bad token."""
 
         self.authenticate_new_user(email='foo@bar.fr', password='psswd')
@@ -196,7 +345,8 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
 
     @mock.patch(mailjet_rest.__name__ + '.Client')
     @mock.patch(auth.__name__ + '.time')
-    def test_reset_password_old_auth_token(self, mock_time, mock_mailjet_client):
+    def test_reset_password_old_auth_token(
+            self, mock_time: mock.MagicMock, mock_mailjet_client: mock.MagicMock) -> None:
         """Try reseting a password with an old token."""
 
         self.authenticate_new_user(email='foo@bar.fr', password='psswd')
@@ -214,14 +364,16 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             "Le jeton d'authentification est périmé.",
             response.get_data(as_text=True))
 
-    def _get_salt(self, email):
+    def _get_salt(self, email: str) -> str:
         # Check again if user exists.
         response = self.app.post(
             '/api/user/authenticate', data='{{"email": "{}"}}'.format(email),
             content_type='application/json')
-        return self.json_from_response(response)['hashSalt']
+        return typing.cast(str, self.json_from_response(response)['hashSalt'])
 
-    def _get_reset_token(self, email, mock_mailjet_client, recipients=None):
+    def _get_reset_token(
+            self, email: str, mock_mailjet_client: mock.MagicMock,
+            recipients: typing.Optional[typing.List[typing.Dict[str, str]]] = None) -> str:
         self.assertFalse(mock_mailjet_client().send.create.called)
         mock_mailjet_client().send.create().status_code = 200
         response = self.app.post(
@@ -250,10 +402,10 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         url_args = parse.parse_qs(parse.urlparse(reset_link).query)
         self.assertIn('resetToken', url_args)
         self.assertEqual(1, len(url_args['resetToken']), msg=url_args)
-        return url_args['resetToken'][0]
+        return typing.cast(str, url_args['resetToken'][0])
 
     @mock.patch(server.__name__ + '.auth.client.verify_id_token')
-    def test_user_after_google_signup(self, mock_verify_id_token):
+    def test_user_after_google_signup(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Trying to connect with a password a user registered with Google."""
 
         # Register user with Google (note that verify_id_token accepts any
@@ -277,7 +429,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             response.get_data(as_text=True))
 
     @mock.patch(auth.__name__ + '.time')
-    def test_auth_user_id_token(self, mock_time):
+    def test_auth_user_id_token(self, mock_time: mock.MagicMock) -> None:
         """Authenticate using the user ID and a token."""
 
         now = time.time()
@@ -303,8 +455,174 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             auth_response.get('authenticatedUser', {}).get('profile', {}).get('name'))
         self.assertTrue(auth_response.get('lastAccessAt'))
 
+    def test_auth_user_id_token_wrong_format_id(self) -> None:
+        """Authenticate using a token but a wrongly formatted user ID."""
 
-def _sha1(*args):
+        # Create password.
+        user_id = self.authenticate_new_user(
+            email='foo@bar.fr', password='psswd', first_name='Pascal', last_name='Corpet')
+
+        timed_token = auth.create_token(user_id, is_using_timestamp=True)
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{{"userId": "aaa", "authToken": "{}"}}'.format(timed_token),
+            content_type='application/json')
+        self.assertEqual(400, response.status_code)
+        self.assertIn(
+            "L'identifiant utilisateur &quot;aaa&quot; n'a pas le bon format",
+            response.get_data(as_text=True))
+
+    def test_auth_user_id_token_unknown_user(self) -> None:
+        """Authenticate using a token but the user ID does not correspond to anything."""
+
+        user_id = str(objectid.ObjectId())
+        timed_token = auth.create_token(user_id, is_using_timestamp=True)
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{{"userId": "{}", "authToken": "{}"}}'.format(user_id, timed_token),
+            content_type='application/json')
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Utilisateur inconnu', response.get_data(as_text=True))
+
+    def test_auth_user_id_token_malformed(self) -> None:
+        """Authenticate using the user ID and a malformed token."""
+
+        # Create password.
+        user_id = self.authenticate_new_user(
+            email='foo@bar.fr', password='psswd', first_name='Pascal', last_name='Corpet')
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{{"userId": "{}", "authToken": "aaa.111"}}'.format(user_id),
+            content_type='application/json')
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Le sel n'a pas été généré par ce serveur", response.get_data(as_text=True))
+
+    @mock.patch(auth.__name__ + '.time')
+    def test_auth_user_id_token_outdated(self, mock_time: mock.MagicMock) -> None:
+        """Authenticate using the user ID and a very old token."""
+
+        now = time.time()
+        mock_time.time.return_value = now
+
+        # Create password.
+        user_id = self.authenticate_new_user(
+            email='foo@bar.fr', password='psswd', first_name='Pascal', last_name='Corpet')
+
+        timed_token = auth.create_token(user_id, is_using_timestamp=True)
+
+        # 10 days later…
+        mock_time.time.return_value = now + 86400 * 10
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{{"userId": "{}", "authToken": "{}"}}'.format(user_id, timed_token),
+            content_type='application/json')
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Token d'authentification périmé", response.get_data(as_text=True))
+
+    @mock.patch(auth.proto.__name__ + '._IS_TEST_ENV', False)
+    @mock.patch('logging.warning')
+    def test_auth_user_id_token_corrupted_data(self, mock_warning: mock.MagicMock) -> None:
+        """Authenticate using the user ID and a token but data is corrupted."""
+
+        # Create password.
+        user_id = self.authenticate_new_user(
+            email='foo@bar.fr', password='psswd', first_name='Pascal', last_name='Corpet')
+        timed_token = auth.create_token(user_id, is_using_timestamp=True)
+
+        # Screw the data in Mongo.
+        self._user_db.user.update_one({}, {'$set': {'revision': {'hack': 1}}})
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{{"userId": "{}", "authToken": "{}"}}'.format(user_id, timed_token),
+            content_type='application/json')
+        self.assertEqual(500, response.status_code)
+        self.assertIn('Les données utilisateur sont corrompues', response.get_data(as_text=True))
+        mock_warning.assert_called_once()
+        self.assertIn(
+            'Failed to parse revision',
+            mock_warning.call_args[0][0] % mock_warning.call_args[0][1:])
+
+    def test_new_user_additional_data(self) -> None:
+        """Authenticate user with additional information."""
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=json.dumps({
+                'email': 'cyrille@me.fr',
+                'firstName': 'Cyrille',
+                'hashedPassword': 'psswd',
+                'lastName': 'Corpet',
+                'userData': {'quickDiagnostic': 'ACTIVE'}
+            }),
+            content_type='application/json')
+
+        auth_response = self.json_from_response(response)
+        self.assertEqual(
+            'ACTIVE',
+            auth_response.get(
+                'authenticatedUser', {}).get('featuresEnabled', {}).get('quickDiagnostic'))
+
+    @mock.patch(mailjet_rest.__name__ + '.Client')
+    def test_reset_password_bad_email(self, mock_mailjet_client: mock.MagicMock) -> None:
+        """Try reseting a password with a bad token."""
+
+        response = self.app.post(
+            '/api/user/reset-password', data='{"email":"foo@bar.fr"}',
+            content_type='application/json')
+        self.assertEqual(403, response.status_code)
+        mock_mailjet_client.assert_not_called()
+
+    @mock.patch(mailjet_rest.__name__ + '.Client')
+    @mock.patch(server.__name__ + '.auth.client.verify_id_token')
+    def test_reset_password_after_google_signup(
+            self, mock_verify_id_token: mock.MagicMock,
+            mock_mailjet_client: mock.MagicMock) -> None:
+        """Try reseting a password for a user that signed up with Google."""
+
+        # Register user with Google (note that verify_id_token accepts any
+        # token including "my-token" and returns a Google account).
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'pascal@bayes.org',
+            'sub': '12345',
+        }
+        self.app.post(
+            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
+            content_type='application/json')
+
+        response = self.app.post(
+            '/api/user/reset-password', data='{"email":"pascal@bayes.org"}',
+            content_type='application/json')
+        self.assertEqual(403, response.status_code)
+        self.assertIn('Google', response.get_data(as_text=True))
+        mock_mailjet_client.assert_not_called()
+
+    @mock.patch(mailjet_rest.__name__ + '.Client')
+    @mock.patch('logging.error')
+    def test_reset_password_failed_email(
+            self, mock_logging_error: mock.MagicMock, mock_mailjet_client: mock.MagicMock) -> None:
+        """Try reseting a password with a bad token."""
+
+        self.create_user_with_token(email='foo@bar.fr')
+        mock_mailjet_client().send.create().status_code = 500
+
+        response = self.app.post(
+            '/api/user/reset-password', data='{"email":"foo@bar.fr"}',
+            content_type='application/json')
+        self.assertEqual(500, response.status_code, msg=response.get_data(as_text=True))
+        self.assertEqual(True, mock_mailjet_client().send.create.called)
+        mock_logging_error.assert_called_once()
+        self.assertIn(
+            'Failed to send an email with MailJet',
+            mock_logging_error.call_args[0][0] % mock_logging_error.call_args[0][1:])
+
+
+def _sha1(*args: str) -> str:
     return base_test.sha1(*args)
 
 
@@ -313,7 +631,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint using PE Connect."""
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_bad_code(self, mock_requests, mock_logging):
+    def test_bad_code(self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
         """Auth request with a PE Connect code that is not correct."""
 
         mock_requests.post(
@@ -332,7 +650,8 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         mock_logging.assert_called_once()
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_redirect_uri_mismatch(self, mock_requests, mock_logging):
+    def test_redirect_uri_mismatch(
+            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
         """Auth request with a redirect_uri that is not registered."""
 
         mock_requests.post(
@@ -354,7 +673,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
             mock_logging.call_args[0][2:],
         )
 
-    def test_bad_nonce(self, mock_requests):
+    def test_bad_nonce(self, mock_requests: _RequestsMock) -> None:
         """Auth request with a PE Connect nonce that does not match."""
 
         mock_requests.post(
@@ -370,7 +689,8 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         self.assertIn('Mauvais paramètre nonce', response.get_data(as_text=True))
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_pe_server_fails(self, mock_requests, mock_logging):
+    def test_pe_server_fails(
+            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
         """Auth request with PE Connect, but userinfo fails."""
 
         mock_requests.post(
@@ -393,10 +713,13 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         mock_logging.assert_called_once()
 
     @mock.patch(auth.geo.__name__ + '.get_city_proto')
-    def test_new_user(self, mock_requests, mock_get_city_proto):
+    @mock.patch(auth.jobs.__name__ + '.get_job_proto')
+    def test_new_user(
+            self, mock_requests: _RequestsMock, mock_get_job_proto: mock.MagicMock,
+            mock_get_city_proto: mock.MagicMock) -> None:
         """Auth request with PE Connect for a new user."""
 
-        def _match_correct_code(request):
+        def _match_correct_code(request: _MockRequest) -> bool:
             return 'code=correct-code' in (request.text or '')
 
         mock_requests.post(
@@ -407,10 +730,24 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
                 'nonce': 'correct-nonce',
                 'scope':
                     'api_peconnect-individuv1 openid profile email api_peconnect-coordonneesv1 '
-                    'coordonnees',
+                    'coordonnees competences',
                 'token_type': 'Bearer',
             },
             additional_matcher=_match_correct_code)
+        mock_requests.get(
+            'https://api.emploi-store.fr/partenaire/peconnect-competences/v1/competences',
+            headers={'Authorization': 'Bearer 123456'},
+            json=[
+                {
+                    'codeAppellation': '86420',
+                    'codeRome': 'A1234',
+                },
+                {
+                    'codeAppellation': '86421',
+                    'codeRome': 'A1235',
+                },
+            ],
+        )
         mock_requests.get(
             'https://api.emploi-store.fr/partenaire/peconnect-individu/v1/userinfo',
             headers={'Authorization': 'Bearer 123456'},
@@ -429,6 +766,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
                 'address1': '55 rue du lac',
             })
         mock_get_city_proto.return_value = geo_pb2.FrenchCity(name='Lyon', city_id='69386')
+        mock_get_job_proto.return_value = job_pb2.Job(name='Plombier')
 
         response = self.app.post(
             '/api/user/authenticate',
@@ -443,14 +781,16 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         self.assertEqual('Corpet', user.get('profile', {}).get('lastName'))
         self.assertEqual('MASCULINE', user.get('profile', {}).get('gender'))
         self.assertEqual([True], [p.get('isIncomplete') for p in user.get('projects', [])])
-        self.assertEqual(
-            'Lyon', user['projects'][0].get('mobility', {}).get('city', {}).get('name'))
+        self.assertEqual('Lyon', user['projects'][0].get('city', {}).get('name'))
+        self.assertEqual('Plombier', user['projects'][0].get('targetJob', {}).get('name'))
         user_id = user['userId']
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
 
         mock_get_city_proto.assert_called_once_with('69386')
+        mock_get_job_proto.assert_called_once()
+        self.assertEqual(('86420', 'A1234'), mock_get_job_proto.call_args[0][1:])
 
-    def test_new_user_with_existing_email(self, mock_requests):
+    def test_new_user_with_existing_email(self, mock_requests: _RequestsMock) -> None:
         """Auth request with a facebook token for a new user using an existing email."""
 
         self.authenticate_new_user(email='pascal@pole-emploi.fr', password='psswd')
@@ -476,7 +816,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
 
-    def test_load_user(self, mock_requests):
+    def test_load_user(self, mock_requests: _RequestsMock) -> None:
         """Auth request retrieves user."""
 
         mock_requests.post(
@@ -520,7 +860,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint using LinkedIn Auth."""
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_bad_code(self, mock_requests, mock_logging):
+    def test_bad_code(self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
         """Auth request with a OAuth2 code that is not correct."""
 
         mock_requests.post(
@@ -537,7 +877,8 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         mock_logging.assert_called_once()
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_redirect_uri_mismatch(self, mock_requests, mock_logging):
+    def test_redirect_uri_mismatch(
+            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
         """Auth request with a redirect_uri that is not registered."""
 
         mock_requests.post(
@@ -559,7 +900,8 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         )
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_linked_in_server_fails(self, mock_requests, mock_logging):
+    def test_linked_in_server_fails(
+            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
         """Auth request with LinkedIn, but people request fails."""
 
         mock_requests.post(
@@ -579,10 +921,10 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 
         mock_logging.assert_called_once()
 
-    def test_new_user(self, mock_requests):
+    def test_new_user(self, mock_requests: _RequestsMock) -> None:
         """Auth request with LinkedIn for a new user."""
 
-        def _match_correct_code(request):
+        def _match_correct_code(request: _MockRequest) -> bool:
             return 'code=correct-code' in (request.text or '')
 
         mock_requests.post(
@@ -612,7 +954,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         self.assertEqual('Corpet', user.get('profile', {}).get('lastName'))
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
 
-    def test_new_user_with_existing_email(self, mock_requests):
+    def test_new_user_with_existing_email(self, mock_requests: _RequestsMock) -> None:
         """Auth request with a LinkedIn code for a new user using an existing email."""
 
         self.authenticate_new_user(email='pascal@linkedin.com', password='psswd')
@@ -637,7 +979,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
             "L'utilisateur existe mais utilise un autre moyen de connexion: Email/Mot de passe.",
             response.get_data(as_text=True))
 
-    def test_load_user(self, mock_requests):
+    def test_load_user(self, mock_requests: _RequestsMock) -> None:
         """Auth request retrieves user."""
 
         mock_requests.post(
@@ -674,7 +1016,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 class TokenTestCase(unittest.TestCase):
     """Unit tests for the token functions."""
 
-    def test_create_token(self):
+    def test_create_token(self) -> None:
         """Basic usage of create_token."""
 
         token_1 = auth.create_token('pascal@example.fr', 'login')
@@ -688,19 +1030,19 @@ class TokenTestCase(unittest.TestCase):
         self.assertTrue(token_3)
         self.assertNotEqual(token_1, token_3)
 
-    def test_check_token(self):
+    def test_check_token(self) -> None:
         """Basic usage of check_token (round trip with create_token)."""
 
         login_token = auth.create_token('pascal@example.fr', 'login')
         auth.check_token('pascal@example.fr', login_token, 'login')
 
-    def test_check_token_empty(self):
+    def test_check_token_empty(self) -> None:
         """Check that an empty token fails."""
 
         with self.assertRaises(ValueError):
             auth.check_token('pascal@example.fr', '', 'login')
 
-    def test_check_token_wrong_role(self):
+    def test_check_token_wrong_role(self) -> None:
         """check_token fails if wrong role."""
 
         login_token = auth.create_token('pascal@example.fr', 'login')
@@ -709,4 +1051,4 @@ class TokenTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

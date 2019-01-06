@@ -1,13 +1,15 @@
 """Helper for all scoring modules."""
 
-import collections
 import datetime
 import functools
 import logging
 import random
 import re
+import typing
 from urllib import parse
 
+from google.protobuf import message
+from pymongo import database as pymongo_database
 import unidecode
 
 from bob_emploi.frontend.api import application_pb2
@@ -16,10 +18,14 @@ from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import carif
 from bob_emploi.frontend.server import french
+from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import i18n
+from bob_emploi.frontend.server import jobs
+from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.server import proto
 
 
@@ -43,15 +49,17 @@ _WEEKS_PER_MONTH = 52 / 12
 # Maximum of the estimation scale for English skills, or office tools.
 _ESTIMATION_SCALE_MAX = 3
 
-_APPLICATION_TIPS = proto.MongoCachedCollection(application_pb2.ApplicationTip, 'application_tips')
+_APPLICATION_TIPS: proto.MongoCachedCollection[application_pb2.ApplicationTip] = \
+    proto.MongoCachedCollection(application_pb2.ApplicationTip, 'application_tips')
 
-_REGIONS = proto.MongoCachedCollection(geo_pb2.Region, 'regions')
+_REGIONS: proto.MongoCachedCollection[geo_pb2.Region] = \
+    proto.MongoCachedCollection(geo_pb2.Region, 'regions')
 
-_SPECIFIC_TO_JOB_ADVICE = proto.MongoCachedCollection(
-    advisor_pb2.DynamicAdvice, 'specific_to_job_advice')
+_SPECIFIC_TO_JOB_ADVICE: proto.MongoCachedCollection[advisor_pb2.DynamicAdvice] = \
+    proto.MongoCachedCollection(advisor_pb2.DynamicAdvice, 'specific_to_job_advice')
 
 _EXPERIENCE_DURATION = {
-    project_pb2.INTERNSHIP: 'peu',
+    project_pb2.INTERN: 'peu',
     project_pb2.JUNIOR: 'peu',
     project_pb2.INTERMEDIARY: 'plus de 2 ans',
     project_pb2.SENIOR: 'plus de 6 ans',
@@ -62,7 +70,7 @@ _TEMPLATE_VAR = re.compile('.*%[a-z]+')
 # Matches tutoiement choices to be replaced by populate_template.
 _YOU_PATTERN = re.compile('%you<(.*?)/(.*?)>')
 
-_TO_GROSS_ANNUAL_FACTORS = {
+_TO_GROSS_ANNUAL_FACTORS: typing.Dict[int, float] = {
     # net = gross x 80%
     job_pb2.ANNUAL_GROSS_SALARY: 1,
     job_pb2.HOURLY_NET_SALARY: 52 * 35 / 0.8,
@@ -70,13 +78,21 @@ _TO_GROSS_ANNUAL_FACTORS = {
     job_pb2.MONTHLY_NET_SALARY: 12 / 0.8,
 }
 
-ASSOCIATIONS = proto.MongoCachedCollection(association_pb2.Association, 'associations')
+ASSOCIATIONS: proto.MongoCachedCollection[association_pb2.Association] = \
+    proto.MongoCachedCollection(association_pb2.Association, 'associations')
+
+_AType = typing.TypeVar('_AType')
 
 
-def _keep_only_departement_filters(association):
+def _keep_only_departement_filters(
+        association: association_pb2.Association) -> typing.Iterator[str]:
     for association_filter in association.filters:
         if association_filter.startswith('for-departement'):
             yield association_filter
+
+
+def _add_left_pad_to_message(text: str, tab: str = '\t') -> str:
+    return '\n'.join(tab + line if line else line for line in text.split('\n'))
 
 
 class ScoringProject(object):
@@ -87,53 +103,76 @@ class ScoringProject(object):
     responsible to make them accessible to the scoring function.
     """
 
-    def __init__(self, project, user_profile, features_enabled, database, now=None):
+    def __init__(
+            self,
+            project: project_pb2.Project,
+            user_profile: user_pb2.UserProfile,
+            features_enabled: user_pb2.Features,
+            database: pymongo_database.Database,
+            now: typing.Optional[datetime.datetime] = None):
         self.details = project
         self.user_profile = user_profile
         self.features_enabled = features_enabled
         self._db = database
         self.now = now or datetime.datetime.utcnow()
 
+        # Cache for scoring models.
+        self._scores: typing.Dict[str, typing.Union[Exception, float]] = {}
+
         # Cache for DB data.
-        self._job_group_info = None
-        self._local_diagnosis = None
-        self._application_tips = None
-        self._region = None
-        self._trainings = None
-        self._mission_locale_data = None
+        self._job_group_info: typing.Optional[job_pb2.JobGroup] = None
+        self._local_diagnosis: typing.Optional[job_pb2.LocalJobStats] = None
+        self._application_tips: typing.List[application_pb2.ApplicationTip] = []
+        self._region: typing.Optional[geo_pb2.Region] = None
+        self._trainings: typing.Optional[typing.List[training_pb2.Training]] = None
+        self._mission_locale_data: typing.Optional[association_pb2.MissionLocaleData] = None
 
         # Cache for modules.
-        self._module_cache = {}
+        self._module_cache: typing.Dict[str, typing.Any] = {}
 
         # Cache for template variables
-        self._template_variables = {}
+        self._template_variables: typing.Dict[str, str] = {}
+
+    def __str__(self) -> str:
+        return 'Profile:\n{profile}Project:\n{project}Features:\n{features}'.format(**{
+            k: _add_left_pad_to_message(str(privacy.get_redacted_copy(v))) for k, v in {
+                'features': self.features_enabled,
+                'profile': self.user_profile,
+                'project': self.details,
+            }.items()
+        })
 
     # When scoring models need it, add methods to access data from DB:
     # project requirements from job offers, IMT, median unemployment duration
     # from FHS, etc.
 
-    def local_diagnosis(self):
-        """Get local stats for the project's job group and département."""
+    def local_diagnosis(self) -> job_pb2.LocalJobStats:
+        """Get local stats for the project's job group and département.
+
+        If the project is missing either a job group or a departement,
+        it will return an empty proto.
+        """
 
         if self._local_diagnosis is not None:
             return self._local_diagnosis
 
-        local_id = '{}:{}'.format(
-            self.details.city.departement_id or self.details.mobility.city.departement_id,
-            self.details.target_job.job_group.rome_id)
-        self._local_diagnosis = proto.create_from_mongo(
-            self._db.local_diagnosis.find_one({'_id': local_id}),
-            job_pb2.LocalJobStats)
+        if self.details.HasField('local_stats'):
+            self._local_diagnosis = self.details.local_stats
+            return self._local_diagnosis
 
-        return self._local_diagnosis
+        local_diagnosis = jobs.get_local_stats(
+            self.database, self.details.city.departement_id, self._rome_id())
+        self.details.local_stats.CopyFrom(local_diagnosis)
+        self._local_diagnosis = local_diagnosis
+        return local_diagnosis
 
-    def imt_proto(self):
+    def imt_proto(self) -> job_pb2.ImtLocalJobStats:
         """Get IMT data for the project's job and département."""
 
         return self.local_diagnosis().imt
 
     # TODO(cyrille): Account for seniority, workload, and maybe other parameters...
-    def salary_estimation(self, unit=job_pb2.ANNUAL_GROSS_SALARY):
+    def salary_estimation(self, unit: int = job_pb2.ANNUAL_GROSS_SALARY) -> float:
         """Get salary data from IMT for the project's job and département."""
 
         salary = self.local_diagnosis().salary
@@ -141,7 +180,9 @@ class ScoringProject(object):
         return base_value * _TO_GROSS_ANNUAL_FACTORS[salary.unit] / _TO_GROSS_ANNUAL_FACTORS[unit] \
             if salary.unit else base_value
 
-    def market_stress(self):
+    # TODO(cyrille): Check the zero behavior for denominator and offers in importer
+    # and imt raw data.
+    def market_stress(self) -> typing.Optional[float]:
         """Get the ratio of # applicants / # job offers for the project."""
 
         imt = self.imt_proto()
@@ -153,15 +194,16 @@ class ScoringProject(object):
             return 1000
         return imt.yearly_avg_offers_denominator / offers
 
-    def _rome_id(self):
+    def _rome_id(self) -> str:
         return self.details.target_job.job_group.rome_id
 
     @classmethod
-    def cached(cls, cache_key):
+    def cached(cls, cache_key: str) \
+            -> typing.Callable[[typing.Callable[..., _AType]], typing.Callable[..., _AType]]:
         """Decorator to cache the result of a function inside the project."""
 
-        def _decorator(func):
-            def _project_decorated_func(self, project):
+        def _decorator(func: typing.Callable[..., _AType]) -> typing.Callable[..., _AType]:
+            def _project_decorated_func(self: typing.Any, project: 'ScoringProject') -> typing.Any:
                 # TODO(cyrille): Find a way to make this work inside class definition also.
                 if not isinstance(project, cls):
                     raise TypeError(
@@ -177,75 +219,86 @@ class ScoringProject(object):
         return _decorator
 
     @property
-    def database(self):
+    def database(self) -> pymongo_database.Database:
         """Access to the MongoDB behind this project."""
 
         return self._db
 
-    def job_group_info(self):
+    def job_group_info(self) -> job_pb2.JobGroup:
         """Get the info for job group info."""
 
         if self._job_group_info is not None:
             return self._job_group_info
 
-        self._job_group_info = proto.create_from_mongo(
-            self._db.job_group_info.find_one({'_id': self._rome_id()}),
-            job_pb2.JobGroup)
+        self._job_group_info = jobs.get_group_proto(self.database, self._rome_id()) or \
+            job_pb2.JobGroup()
         return self._job_group_info
 
-    def requirements(self):
+    def requirements(self) -> job_pb2.JobRequirements:
         """Get the project requirements."""
 
         return self.job_group_info().requirements
 
-    def get_trainings(self):
+    def get_trainings(self) -> typing.List[training_pb2.Training]:
         """Get the training opportunities from our partner's API."""
 
         if self._trainings is not None:
             return self._trainings
         self._trainings = carif.get_trainings(
-            self.details.target_job.job_group.rome_id,
-            self.details.city.departement_id or self.details.mobility.city.departement_id)
+            self.details.target_job.job_group.rome_id, self.details.city.departement_id)
         return self._trainings
 
-    def list_application_tips(self):
+    def _translate_tip(self, tip: application_pb2.ApplicationTip) -> application_pb2.ApplicationTip:
+        new_tip = application_pb2.ApplicationTip()
+        new_tip.CopyFrom(tip)
+        new_tip.ClearField('content_masculine')
+
+        content = tip.content
+        if tip.content_masculine and self.user_profile.gender == user_pb2.MASCULINE:
+            content = tip.content_masculine
+        content = self.translate_string(content)
+        new_tip.content = content
+        return new_tip
+
+    def list_application_tips(self) -> typing.List[application_pb2.ApplicationTip]:
         """List all application tips available for this project."""
 
         if self._application_tips:
             return self._application_tips
 
         all_application_tips = _APPLICATION_TIPS.get_collection(self._db)
-        self._application_tips = list(filter_using_score(
-            all_application_tips, lambda j: j.filters, self))
+        self._application_tips = [
+            self._translate_tip(tip)
+            for tip in filter_using_score(all_application_tips, lambda j: j.filters, self)
+        ]
         return self._application_tips
 
-    def specific_to_job_advice_config(self):
+    def specific_to_job_advice_config(self) -> typing.Optional[advisor_pb2.DynamicAdvice]:
         """Find the first specific to job advice config that matches this project."""
 
         _configs = _SPECIFIC_TO_JOB_ADVICE.get_collection(self._db)
-        return next(filter_using_score(_configs, lambda c: c.filters, self), None)
+        possible_configs = filter_using_score(_configs, lambda c: c.filters, self)
+        return next(possible_configs, None)
 
-    def _can_tutoie(self):
+    def _can_tutoie(self) -> bool:
         return self.user_profile.can_tutoie
 
-    def get_region(self):
+    def get_region(self) -> typing.Optional[geo_pb2.Region]:
         """The region proto for this project."""
 
         if self._region:
             return self._region
         all_regions = _REGIONS.get_collection(self._db)
         try:
-            self._region = all_regions[
-                self.details.city.region_id or self.details.mobility.city.region_id]
+            self._region = all_regions[self.details.city.region_id]
         except KeyError:
             logging.warning(
-                'Region "%s" is missing in the database.',
-                self.details.city.region_id or self.details.mobility.city.region_id)
+                'Region "%s" is missing in the database.', self.details.city.region_id)
         return self._region
 
-    def _fetch_mission_locale_data(self):
+    def _fetch_mission_locale_data(self) -> association_pb2.MissionLocaleData:
 
-        if not self.details.city.departement_id and not self.details.mobility.city.departement_id:
+        if not self.details.city.departement_id:
             # Do not even try finding a Mission Locale.
             return association_pb2.MissionLocaleData()
 
@@ -260,14 +313,14 @@ class ScoringProject(object):
         except StopIteration:
             logging.warning(
                 'Could not find a mission locale for département "%s"',
-                self.details.city.departement_id or self.details.mobility.city.departement_id)
+                self.details.city.departement_id)
             return association_pb2.MissionLocaleData()
 
         return association_pb2.MissionLocaleData(
             agencies_list_link=my_mission_locale.link,
         )
 
-    def mission_locale_data(self):
+    def mission_locale_data(self) -> association_pb2.MissionLocaleData:
         """The information about the most relevant mission locale for this project."""
 
         if self._mission_locale_data:
@@ -276,14 +329,15 @@ class ScoringProject(object):
         self._mission_locale_data = self._fetch_mission_locale_data()
         return self._mission_locale_data
 
-    def _get_template_variable(self, name, constructor):
+    def _get_template_variable(
+            self, name: str, constructor: typing.Callable[['ScoringProject'], str]) -> str:
         if name in self._template_variables:
             return self._template_variables[name]
         cache = constructor(self)
         self._template_variables[name] = cache
         return cache
 
-    def populate_template(self, template, raise_on_missing_var=False):
+    def populate_template(self, template: str, raise_on_missing_var: bool = False) -> str:
         """Populate a template with project variables.
 
         Args:
@@ -308,7 +362,7 @@ class ScoringProject(object):
             logging.warning(msg)
         return new_template
 
-    def translate_string(self, string):
+    def translate_string(self, string: str) -> str:
         """Translate a string to a language and locale defined by the project."""
 
         if self.user_profile.can_tutoie:
@@ -319,28 +373,27 @@ class ScoringProject(object):
 
         return string
 
-    def get_search_length_at_creation(self):
+    def get_search_length_at_creation(self) -> float:
         """Compute job search length (in months) relatively to a project creation date."""
 
-        if self.details.job_search_has_not_started\
-                or not self.details.HasField('job_search_started_at'):
+        if self.details.WhichOneof('job_search_length') != 'job_search_started_at':
+            # TODO(marielaure): Check if it still makes sense to prioritize this field.
             if self.details.job_search_length_months:
                 return self.details.job_search_length_months
             return -1
-        delta = self.details.created_at.ToDatetime()\
-            - self.details.job_search_started_at.ToDatetime()
+        delta = self.details.created_at.ToDatetime() - \
+            self.details.job_search_started_at.ToDatetime()
         return delta.days / 30.5
 
-    def get_search_length_now(self):
+    def get_search_length_now(self) -> float:
         """Compute job search length (in months) until now."""
 
-        if self.details.job_search_has_not_started\
-                or not self.details.HasField('job_search_started_at'):
+        if self.details.WhichOneof('job_search_length') != 'job_search_started_at':
             return -1
         delta = self.now - self.details.job_search_started_at.ToDatetime()
         return delta.days / 30.5
 
-    def get_user_age(self):
+    def get_user_age(self) -> int:
         """Returns the age of the user.
 
         As we have only the user's year of birth, this number can be 1 more
@@ -350,27 +403,70 @@ class ScoringProject(object):
 
         return self.now.year - self.user_profile.year_of_birth
 
+    def score(self, scoring_model_name: str) -> float:
+        """Returns the score for a given scoring model.
 
-def _a_job_name(scoring_project):
+        This assumes the score can never change after it's been first computed.
+        """
+
+        if scoring_model_name in self._scores:
+            score = self._scores[scoring_model_name]
+            if isinstance(score, Exception):
+                raise score
+            return score
+        model = get_scoring_model(scoring_model_name)
+        if not model:
+            logging.error(
+                'Scoring model "%s" unknown, falling back to default.', scoring_model_name)
+            return self.score('')
+        try:
+            score = model.score(self)
+        except Exception as err:
+            self._scores[scoring_model_name] = err
+            raise
+        self._scores[scoring_model_name] = score
+        return score
+
+
+def _a_job_name(scoring_project: ScoringProject) -> str:
     is_feminine = scoring_project.user_profile.gender == user_pb2.FEMININE
     genderized_determiner = 'une' if is_feminine else 'un'
     return '{} {}'.format(genderized_determiner, _job_name(scoring_project))
 
 
-def _in_region(scoring_project):
+def _in_city(scoring_project: ScoringProject) -> str:
+    return french.in_city(scoring_project.details.city.name)
+
+
+def _in_region(scoring_project: ScoringProject) -> str:
     region = scoring_project.get_region()
     return region.prefix + region.name if region else 'dans la région'
 
 
-def _job_name(scoring_project):
-    return french.lower_first_letter(french.genderize_job(
-        scoring_project.details.target_job, scoring_project.user_profile.gender))
+def _in_area_type(scoring_project: ScoringProject) -> str:
+    area_type = scoring_project.details.area_type
+    if area_type == geo_pb2.CITY:
+        return _in_city(scoring_project)
+    elif area_type == geo_pb2.DEPARTEMENT:
+        return geo.get_in_a_departement_text(
+            scoring_project.database,
+            scoring_project.details.city.departement_id)
+    elif area_type == geo_pb2.REGION:
+        return _in_region(scoring_project)
+    else:
+        return 'dans le pays'
 
 
-def _job_search_length_months_at_creation(scoring_project):
+def _job_name(scoring_project: ScoringProject) -> str:
+    return french.genderize_job(
+        scoring_project.details.target_job, scoring_project.user_profile.gender, is_lowercased=True)
+
+
+def _job_search_length_months_at_creation(scoring_project: ScoringProject) -> str:
     count = round(scoring_project.get_search_length_at_creation())
     if count < 0:
-        logging.warning('Trying to show negative job search length at creation.')
+        logging.warning(
+            'Trying to show negative job search length at creation:\n%s', scoring_project)
         return 'quelques'
     try:
         return french.try_stringify_number(count)
@@ -378,7 +474,7 @@ def _job_search_length_months_at_creation(scoring_project):
         return 'quelques'
 
 
-def _total_interview_count(scoring_project):
+def _total_interview_count(scoring_project: ScoringProject) -> str:
     number = scoring_project.details.total_interview_count
     try:
         return french.try_stringify_number(number)
@@ -386,35 +482,34 @@ def _total_interview_count(scoring_project):
         return str(number)
 
 
-def _postcode(scoring_project):
-    if scoring_project.details.city.postcodes:
-        city = scoring_project.details.city
-    else:
-        city = scoring_project.details.mobility.city
+def _postcode(scoring_project: ScoringProject) -> str:
+    city = scoring_project.details.city
     return city.postcodes.split('-')[0] or (
         city.departement_id + '0' * (5 - len(city.departement_id)))
+
+
+def _what_i_love_about(project: ScoringProject) -> str:
+    return project.user_profile.gender == user_pb2.FEMININE and \
+        project.job_group_info().what_i_love_about_feminine or \
+        project.job_group_info().what_i_love_about
 
 
 _TEMPLATE_VARIABLES = {
     '%aJobName': _a_job_name,
     '%cityId':
-    lambda scoring_project:
-        scoring_project.details.city.city_id or scoring_project.details.mobility.city.city_id,
-    '%cityName': lambda scoring_project: parse.quote(
-        scoring_project.details.city.name or scoring_project.details.mobility.city.name),
+    lambda scoring_project: scoring_project.details.city.city_id,
+    '%cityName': lambda scoring_project: parse.quote(scoring_project.details.city.name),
     '%departementId':
-    lambda scoring_project:
-        scoring_project.details.city.departement_id or
-        scoring_project.details.mobility.city.departement_id,
+    lambda scoring_project: scoring_project.details.city.departement_id,
     '%eFeminine': lambda scoring_project: (
         'e' if scoring_project.user_profile.gender == user_pb2.FEMININE else ''),
     '%experienceDuration': lambda scoring_project: _EXPERIENCE_DURATION.get(
         scoring_project.details.seniority),
     '%feminineJobName': lambda scoring_project: french.lower_first_letter(
         scoring_project.details.target_job.feminine_name),
+    '%inAreaType': _in_area_type,
     '%inAWorkplace': lambda scoring_project: scoring_project.job_group_info().in_a_workplace,
-    '%inCity': lambda scoring_project: french.in_city(
-        scoring_project.details.city.name or scoring_project.details.mobility.city.name),
+    '%inCity': _in_city,
     '%inDomain': lambda scoring_project: scoring_project.job_group_info().in_domain,
     '%inRegion': _in_region,
     '%jobGroupNameUrl': lambda scoring_project: parse.quote(unidecode.unidecode(
@@ -425,8 +520,7 @@ _TEMPLATE_VARIABLES = {
     # This in only the **number** of months, use as '%jobSearchLengthMonthsAtCreation mois'.
     '%jobSearchLengthMonthsAtCreation': _job_search_length_months_at_creation,
     '%latin1CityName': lambda scoring_project: parse.quote(
-        scoring_project.details.city.name.encode('latin-1', 'replace') or
-        scoring_project.details.mobility.city.name.encode('latin-1', 'replace')),
+        scoring_project.details.city.name.encode('latin-1', 'replace')),
     '%latin1MasculineJobName': lambda scoring_project: parse.quote(
         scoring_project.details.target_job.masculine_name.encode('latin-1', 'replace')),
     '%lastName': lambda scoring_project: scoring_project.user_profile.last_name,
@@ -435,28 +529,29 @@ _TEMPLATE_VARIABLES = {
     '%masculineJobName': lambda scoring_project: french.lower_first_letter(
         scoring_project.details.target_job.masculine_name),
     '%name': lambda scoring_project: scoring_project.user_profile.name,
-    '%ofCity': lambda scoring_project: french.of_city(
-        scoring_project.details.city.name or scoring_project.details.mobility.city.name),
+    '%ofCity': lambda scoring_project: french.of_city(scoring_project.details.city.name),
     '%ofJobName': lambda scoring_project: french.maybe_contract_prefix(
         'de ', "d'", _job_name(scoring_project)),
     '%placePlural': lambda scoring_project: scoring_project.job_group_info().place_plural,
     '%postcode': _postcode,
-    '%regionId':
-    lambda scoring_project:
-        scoring_project.details.city.region_id or scoring_project.details.mobility.city.region_id,
+    '%regionId': lambda scoring_project: scoring_project.details.city.region_id,
     '%romeId': lambda scoring_project: scoring_project.details.target_job.job_group.rome_id,
     '%totalInterviewCount': _total_interview_count,
-    '%whatILoveAbout': lambda scoring_project: scoring_project.job_group_info().what_i_love_about,
+    '%whatILoveAbout': _what_i_love_about,
 }
 
 
 class NotEnoughDataException(Exception):
     """Exception raised while scoring if there's not enough data to compute a score."""
 
-    pass
+
+class ExplainedScore(typing.NamedTuple):
+    """Score for a metric and its explanations."""
+
+    score: float
+    explanations: typing.List[str]
 
 
-ExplainedScore = collections.namedtuple('ExplainedScore', ['score', 'explanations'])
 NULL_EXPLAINED_SCORE = ExplainedScore(0, [])
 
 
@@ -470,17 +565,17 @@ class ModelBase(object):
     # If we do standard computation across models, add it here and use this one
     # as a base class.
 
-    def score(self, project):
+    def score(self, project: ScoringProject) -> float:
         """Compute a score for the given ScoringProject.
 
         If not overriden, will return the score part of score_and_explain.
         """
 
         if self.score_and_explain.__code__ == ModelBase.score_and_explain.__code__:
-            return NotImplementedError()
+            raise NotImplementedError()
         return self.score_and_explain(project).score
 
-    def _explain(self, unused_project):
+    def _explain(self, unused_project: ScoringProject) -> typing.List[str]:
         """Compute the explanations for the score of the given ScoringProject.
 
         It should be overriden if explanations are independant from the score. Otherwise override
@@ -489,7 +584,7 @@ class ModelBase(object):
 
         return []
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: ScoringProject) -> ExplainedScore:
         """Compute a score for the given ScoringProject, and with why it's received this score.
 
         It should return an `ExplainedScore`.
@@ -497,6 +592,20 @@ class ModelBase(object):
         """
 
         return ExplainedScore(self.score(project), self._explain(project))
+
+    def get_advice_override(
+            self,
+            unused_project: ScoringProject,
+            unused_advice: project_pb2.Advice) -> typing.Optional[project_pb2.Advice]:
+        """Get override data for an advice."""
+
+        return None
+
+    def get_expanded_card_data(self, unused_project: ScoringProject) -> message.Message:
+        """Retrieve data for the expanded card."""
+
+        raise AttributeError(
+            '{} does not have a get_expanded_card_data method'.format(self.__class__))
 
 
 class ModelHundredBase(ModelBase):
@@ -506,13 +615,13 @@ class ModelHundredBase(ModelBase):
     """
 
     # Do smarter overrides if and when we want to start giving reasons for those scoring models.
-    def score(self, unused_project):
+    def score(self, unused_project: ScoringProject) -> float:
         """Compute a score for the given ScoringProject."""
 
         hundred_score = self.score_to_hundred(unused_project)
         return max(0, min(hundred_score, 100)) * 3 / 100
 
-    def score_to_hundred(self, unused_project):
+    def score_to_hundred(self, unused_project: ScoringProject) -> float:
         """Compute a score for the given ScoringProject.
 
         Descendants of this class should overwrite `score_to_hundred`
@@ -525,10 +634,10 @@ class ModelHundredBase(ModelBase):
 class ConstantScoreModel(ModelBase):
     """A scoring model that always return the same score."""
 
-    def __init__(self, constant_score):
+    def __init__(self, constant_score: str) -> None:
         self.constant_score = float(constant_score)
 
-    def score(self, unused_project):
+    def score(self, unused_project: ScoringProject) -> float:
         """Compute a score for the given ScoringProject."""
 
         return self.constant_score
@@ -545,18 +654,21 @@ class BaseFilter(ModelBase):
         Create an actions filter to restrict to users with a computer:
         BaseFilter(lambda scoring_project: scoring_project.user_profile.has_access_to_computer)"""
 
-    def __init__(self, filter_func, reasons=None):
+    def __init__(
+            self,
+            filter_func: typing.Callable[[ScoringProject], bool],
+            reasons: typing.Optional[typing.List[str]] = None):
         self.filter_func = filter_func
         self._reasons = reasons
 
-    def score(self, project):
+    def score(self, project: ScoringProject) -> float:
         """Compute a score for the given ScoringProject."""
 
         if self.filter_func(project):
             return 3
         return 0
 
-    def _explain(self, unused_project):
+    def _explain(self, unused_project: ScoringProject) -> typing.List[str]:
         return self._reasons if self._reasons else []
 
 
@@ -567,11 +679,11 @@ class LowPriorityAdvice(ModelBase):
     A reason can be given in the frustrated case.
     """
 
-    def __init__(self, main_frustration):
+    def __init__(self, main_frustration: int):
         super(LowPriorityAdvice, self).__init__()
         self._main_frustration = main_frustration
 
-    def score(self, project):
+    def score(self, project: ScoringProject) -> float:
         """Compute a score for the given ScoringProject."""
 
         if self._main_frustration in project.user_profile.frustrations:
@@ -579,13 +691,18 @@ class LowPriorityAdvice(ModelBase):
         return 1
 
 
-_ScoringModelRegexp = collections.namedtuple('ScoringModelRegexp', ['regexp', 'constructor'])
+class _ScoringModelRegexp(typing.NamedTuple):
+    regexp: typing.Pattern[str]
+    constructor: typing.Callable[..., ModelBase]
 
 
-SCORING_MODEL_REGEXPS = []
+SCORING_MODEL_REGEXPS: typing.List[
+        typing.Tuple[typing.Pattern[str], typing.Callable[..., ModelBase]]] \
+    = []
 
 
-def get_scoring_model(scoring_model_name, cache_generated_model=True):
+def get_scoring_model(
+        scoring_model_name: str, cache_generated_model: bool = True) -> typing.Optional[ModelBase]:
     """Get a scoring model by its name, may generate it if needed and possible."""
 
     if scoring_model_name in SCORING_MODELS:
@@ -594,7 +711,14 @@ def get_scoring_model(scoring_model_name, cache_generated_model=True):
     for regexp, constructor in SCORING_MODEL_REGEXPS:
         regexp_match = regexp.match(scoring_model_name)
         if regexp_match:
-            scoring_model = constructor(regexp_match.group(1))
+            try:
+                scoring_model = constructor(*regexp_match.groups())
+            except ValueError:
+                logging.error(
+                    'Model ID "%s" raised an error for constructor "%s".',
+                    scoring_model_name,
+                    constructor.__name__)
+                return None
             if scoring_model and cache_generated_model:
                 SCORING_MODELS[scoring_model_name] = scoring_model
             return scoring_model
@@ -605,58 +729,21 @@ def get_scoring_model(scoring_model_name, cache_generated_model=True):
 class RandomModel(ModelBase):
     """A ScoringModel which returns a random score without any reason."""
 
-    def score(self, unused_project):
+    def score(self, unused_project: ScoringProject) -> float:
         """Compute a score for the given ScoringProject."""
 
         return random.random() * 3
 
 
-SCORING_MODELS = {
+SCORING_MODELS: typing.Dict[str, ModelBase] = {
     '': RandomModel(),
 }
 
 
-class _Scorer(object):
-    """Helper to compute the scores of multiple models for a given project."""
-
-    def __init__(self, project):
-        self._project = project
-        # A cache of scores keyed by scoring model names.
-        self._scores = {}
-
-    def _get_score(self, scoring_model_name):
-        if scoring_model_name in self._scores:
-            return self._scores[scoring_model_name]
-
-        scoring_model = get_scoring_model(scoring_model_name)
-        if scoring_model is None:
-            logging.warning(
-                'Scoring model "%s" unknown, falling back to default.', scoring_model_name)
-            score = self._get_score('')
-            self._scores[scoring_model_name] = score
-            return score
-
-        score = scoring_model.score(self._project)
-        if scoring_model_name:
-            self._scores[scoring_model_name] = score
-        return score
-
-
-class _FilterHelper(_Scorer):
-    """A helper object to cache scoring in the filter function."""
-
-    def apply(self, filters):
-        """Apply all filters to the project.
-
-        Returns:
-            False if any of the filters returned a negative value for the
-            project. True if there are no filters.
-        """
-
-        return all(self._get_score(f) > 0 for f in filters)
-
-
-def filter_using_score(iterable, get_scoring_func, project):
+def filter_using_score(
+        iterable: typing.Iterable[_AType],
+        get_scoring_func: typing.Callable[[_AType], typing.Iterable[str]],
+        project: ScoringProject) -> typing.Iterator[_AType]:
     """Filter the elements of an iterable using scores.
 
     Args:
@@ -670,13 +757,12 @@ def filter_using_score(iterable, get_scoring_func, project):
         an item from iterable if it passes the filters.
     """
 
-    helper = _FilterHelper(project)
     for item in iterable:
-        if helper.apply(get_scoring_func(item)):
+        if all(project.score(f) > 0 for f in get_scoring_func(item)):
             yield item
 
 
-def register_model(model_name, model):
+def register_model(model_name: str, model: ModelBase) -> None:
     """Register a scoring model."""
 
     if model_name in SCORING_MODELS:
@@ -684,7 +770,9 @@ def register_model(model_name, model):
     SCORING_MODELS[model_name] = model
 
 
-def register_regexp(regexp, constructor, example):
+def register_regexp(
+        regexp: typing.Pattern[str],
+        constructor: typing.Callable[..., ModelBase], example: str) -> None:
     """Register regexp based scoring models."""
 
     if not regexp.match(example):

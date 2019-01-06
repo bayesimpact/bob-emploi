@@ -92,4 +92,4 @@ def csv2dicts(civic_service_missions_csv, today=None):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(csv2dicts, 'local_missions')  # pragma: no-cover
+    mongo.importer_main(csv2dicts, 'local_missions')

@@ -11,21 +11,21 @@ from bob_emploi.frontend.server.asynchronous.mail.test import mail_blast_test
 class StripDistrictTestCase(unittest.TestCase):
     """Unit tests for the strip_district method."""
 
-    def test_with_district(self):
+    def test_with_district(self) -> None:
         """Test district stripping when city has a district."""
 
         self.assertEqual(
             'Lyon',
             network.strip_district('Lyon 8e  Arrondissement'))
 
-    def test_with_first_district(self):
+    def test_with_first_district(self) -> None:
         """Test stripping for the first (i.e 1er) district."""
 
         self.assertEqual(
             'Paris',
             network.strip_district('Paris 1er Arrondissement'))
 
-    def test_without_district(self):
+    def test_without_district(self) -> None:
         """Test no stripping when city does not have a district."""
 
         self.assertEqual(
@@ -38,8 +38,8 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase):
 
     campaign_id = 'focus-network'
 
-    def test_basic(self):
-        """Test basic usage."""
+    def setUp(self) -> None:
+        super(NetworkVarsTestCase, self).setUp()
 
         self.database.job_group_info.insert_one({
             '_id': 'B1234',
@@ -53,8 +53,11 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase):
         self.project.target_job.masculine_name = 'Juriste'
         self.project.target_job.job_group.rome_id = 'B1234'
         self.project.network_estimate = 1
-        self.project.mobility.city.name = 'Lyon'
-        self.project.mobility.city.departement_id = '69'
+        self.project.city.name = 'Lyon'
+        self.project.city.departement_id = '69'
+
+    def test_basic(self) -> None:
+        """Test basic usage."""
 
         self._assert_user_receives_campaign()
 
@@ -73,14 +76,66 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase):
             'emailInUrl': 'patrick%40bayes.org',
         })
 
+    def test_no_project(self) -> None:
+        """No project, no email."""
+
+        del self.user.projects[:]
+        self._assert_user_receives_focus(should_be_sent=False)
+        self._user_database.user.drop()
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_incomplete_project(self) -> None:
+        """Incomplete project."""
+
+        self.project.is_incomplete = True
+
+        self._assert_user_receives_focus(should_be_sent=False)
+        self._user_database.user.drop()
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_unknown_network(self) -> None:
+        """Network is not known, no email."""
+
+        self.project.network_estimate = 0
+
+        self._assert_user_receives_focus(should_be_sent=False)
+        self._user_database.user.drop()
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_missing_job_group_info(self) -> None:
+        """Missing job group info."""
+
+        self.database.job_group_info.drop()
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_missing_target_domain(self) -> None:
+        """Missing target domain."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$unset': {'inDomain': 1}})
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_other_job_example(self) -> None:
+        """Which other job when hairdresser in Marseille."""
+
+        self.project.city.departement_id = '13'
+        self.project.target_job.job_group.rome_id = 'D1234'
+        self.database.job_group_info.insert_one(
+            dict(self.database.job_group_info.find_one({}), _id='D1234'))
+
+        self._assert_user_receives_campaign()
+
+        self.assertEqual('secrétaire à Lyon', self._variables['otherJobInCity'])
+
 
 class NetworkPlusTestCase(mail_blast_test.CampaignTestBase):
     """Test for the new_year_vars function."""
 
     campaign_id = 'network-plus'
 
-    def test_basic(self):
-        """Basic usage."""
+    def setUp(self) -> None:
+        super(NetworkPlusTestCase, self).setUp()
 
         self.database.job_group_info.insert_one({
             '_id': 'B1234',
@@ -147,10 +202,13 @@ class NetworkPlusTestCase(mail_blast_test.CampaignTestBase):
         self.project.target_job.job_group.rome_id = 'B1234'
         self.project.target_job.job_group.name = 'Aide et médiation judiciaire'
         self.project.network_estimate = 3
-        self.project.mobility.city.departement_id = '69'
-        self.project.mobility.city.departement_name = 'Rhône'
-        self.project.mobility.city.departement_prefix = 'dans le'
-        self.project.mobility.city.name = 'Lyon'
+        self.project.city.departement_id = '69'
+        self.project.city.departement_name = 'Rhône'
+        self.project.city.departement_prefix = 'dans le'
+        self.project.city.name = 'Lyon'
+
+    def test_basic(self) -> None:
+        """Basic usage."""
 
         self._assert_user_receives_campaign()
 
@@ -176,6 +234,122 @@ class NetworkPlusTestCase(mail_blast_test.CampaignTestBase):
             'networkApplicationPercentage': "qu'un tiers",
         })
 
+    def test_empty_departement(self) -> None:
+        """Empty departement."""
+
+        self.project.city.departement_id = ''
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_missing_job_group_info(self) -> None:
+        """Missing job group info."""
+
+        self.database.job_group_info.drop()
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_missing_target_domain(self) -> None:
+        """Missing target domain."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$unset': {'inDomain': 1}})
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_missing_application_modes(self) -> None:
+        """Missing application modes."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$unset': {
+            'applicationModes.R4Z92.modes': 1,
+            'applicationModes.R4Z91.modes': 1,
+        }})
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_missing_network_application_mode(self) -> None:
+        """Missing network application mode."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
+            'applicationModes.R4Z92.modes': [{
+                'percentage': 100,
+                'mode': 'SPONTANEOUS_APPLICATION'
+            }],
+            'applicationModes.R4Z91.modes': [{
+                'percentage': 100,
+                'mode': 'SPONTANEOUS_APPLICATION'
+            }],
+        }})
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_not_enough_network_application_mode(self) -> None:
+        """Missing network application mode."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
+            'applicationModes.R4Z92.modes': [{
+                'percentage': 20,
+                'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+            }],
+            'applicationModes.R4Z91.modes': [{
+                'percentage': 20,
+                'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+            }],
+        }})
+
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_network_application_mode_is_80_percent(self) -> None:
+        """Network application mode is for 80% of recruitements."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
+            'applicationModes.R4Z92.modes': [{
+                'percentage': 80,
+                'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+            }],
+            'applicationModes.R4Z91.modes': [{
+                'percentage': 80,
+                'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+            }],
+        }})
+
+        self._assert_user_receives_campaign()
+
+        self.assertEqual('que la majorité', self._variables['networkApplicationPercentage'])
+
+    def test_network_application_mode_is_50_percent(self) -> None:
+        """Network application mode is for 50% of recruitements."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
+            'applicationModes.R4Z92.modes': [{
+                'percentage': 50,
+                'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+            }],
+            'applicationModes.R4Z91.modes': [{
+                'percentage': 50,
+                'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+            }],
+        }})
+
+        self._assert_user_receives_campaign()
+
+        self.assertEqual('que la moitié', self._variables['networkApplicationPercentage'])
+
+    def test_no_project(self) -> None:
+        """No project, no email."""
+
+        del self.user.projects[:]
+        self._assert_user_receives_focus(should_be_sent=False)
+        self._user_database.user.drop()
+        self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_incomplete_project(self) -> None:
+        """Incomplete project."""
+
+        self.project.is_incomplete = True
+
+        self._assert_user_receives_focus(should_be_sent=False)
+        self._user_database.user.drop()
+        self._assert_user_receives_campaign(should_be_sent=False)
+
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

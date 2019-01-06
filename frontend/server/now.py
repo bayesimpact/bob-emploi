@@ -3,7 +3,7 @@
 import datetime
 
 
-def get():
+def get() -> datetime.datetime:
     """Returns the current date and time."""
 
     return datetime.datetime.now()

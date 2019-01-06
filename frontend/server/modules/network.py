@@ -1,23 +1,25 @@
 """Advice module to recommend using your network to find opportunities."""
 
 import random
+import typing
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import network_pb2
-from bob_emploi.frontend.api import project_pb2
 
 
 class _ImproveYourNetworkScoringModel(scoring_base.ModelBase):
     """A scoring model for Advice that user needs to improve their network."""
 
-    def __init__(self, network_level):
+    def __init__(self, network_level: int) -> None:
         super(_ImproveYourNetworkScoringModel, self).__init__()
-        self._db = proto.MongoCachedCollection(network_pb2.ContactLeadTemplate, 'contact_lead')
+        self._db: proto.MongoCachedCollection[network_pb2.ContactLeadTemplate] = \
+            proto.MongoCachedCollection(network_pb2.ContactLeadTemplate, 'contact_lead')
         self._network_level = network_level
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         if project.details.network_estimate != self._network_level:
@@ -31,33 +33,23 @@ class _ImproveYourNetworkScoringModel(scoring_base.ModelBase):
                 'le réseau est le canal n°1 pour trouver un métier %inDomain'])
         return scoring_base.ExplainedScore(2, [])
 
-    def get_advice_override(self, project, unused_advice):
-        """Get override data for an advice."""
-
-        best_lead = next(
-            (lead for lead in self._list_contact_leads(project) if lead.card_content),
-            None)
-        if not best_lead:
-            return
-
-        card_content = project.populate_template(best_lead.card_content)
-        return project_pb2.Advice(card_text=card_content)
-
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> network_pb2.ContactLeads:
         """Retrieve data for the expanded card."""
 
         contact_leads = self._list_contact_leads(project)
         sorted_leads = sorted(contact_leads, key=lambda l: (-len(l.filters), random.random()))
         return network_pb2.ContactLeads(leads=[
             network_pb2.ContactLead(
-                name=project.populate_template(template.name),
+                name=project.populate_template(project.translate_string(template.name)),
                 email_example=project.populate_template(template.email_template),
-                contact_tip=template.contact_tip)
+                contact_tip=project.translate_string(template.contact_tip))
             for template in sorted_leads
         ])
 
     @scoring_base.ScoringProject.cached('contact-leads')
-    def _list_contact_leads(self, project):
+    def _list_contact_leads(self, project: scoring_base.ScoringProject) \
+            -> typing.Iterator[network_pb2.ContactLeadTemplate]:
         return scoring_base.filter_using_score(
             self._db.get_collection(project.database), lambda l: l.filters, project)
 

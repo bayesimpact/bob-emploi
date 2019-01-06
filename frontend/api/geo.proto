@@ -1,7 +1,9 @@
 syntax = "proto3";
 
+package bayes.bob;
+
 // Description of a French city.
-// next ID: 15
+// next ID: 16
 message FrenchCity {
   // ID of the city: "Code Officiel Géographique". E.g. "31555" for Toulouse.
   string city_id = 1;
@@ -64,6 +66,9 @@ message FrenchCity {
   // As of 2018-02-07, only 100 worst scores are kept.
   // TODO(cyrille): Populate old users so that we can use it more reliably.
   float public_transportation_score = 13;
+
+  // This specifies if the city is being part of a urban, periurban or rural area.
+  UrbanContext urban_context = 15;
 }
 
 // Type of geographical area (order matters).
@@ -106,4 +111,12 @@ message Region {
   // A prefix to put before the name whenever we wish to say "in that region".
   // For instance "en " for "Ile de France"
   string prefix = 2;
+}
+
+// A urban context.
+enum UrbanContext {
+  UNKNOWN_URBAN_CONTEXT = 0;
+  RURAL = 1;
+  PERIURBAN = 2;
+  URBAN = 3;
 }

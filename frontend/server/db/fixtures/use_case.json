@@ -26,18 +26,16 @@
 											"masculineName" : "Assistant administratif",
 											"feminineName" : "Assistante administrative"
 									},
-									"mobility" : {
-											"city" : {
-													"cityId" : "29046",
-													"name" : "Douarnenez",
-													"departementId" : "29",
-													"departementName" : "Finistère",
-													"regionId" : "53",
-													"regionName" : "Bretagne",
-													"postcodes" : "29100"
-											},
-											"areaType" : "CITY"
-									},
+                  "city" : {
+                      "cityId" : "29046",
+                      "name" : "Douarnenez",
+                      "departementId" : "29",
+                      "departementName" : "Finistère",
+                      "regionId" : "53",
+                      "regionName" : "Bretagne",
+                      "postcodes" : "29100"
+                  },
+                  "areaType" : "CITY",
 									"trainingFulfillmentEstimate" : "NO_TRAINING_REQUIRED",
 									"createdAt" : "2017-07-19T23:00:00Z",
 									"kind" : "FIND_ANOTHER_JOB",
@@ -89,18 +87,16 @@
 											"masculineName" : "Gardien de propriété",
 											"feminineName" : "Gardienne de propriété"
 									},
-									"mobility" : {
-											"city" : {
-													"cityId" : "06112",
-													"name" : "Le Rouret",
-													"departementId" : "06",
-													"departementName" : "Alpes-Maritimes",
-													"regionId" : "93",
-													"regionName" : "Provence-Alpes-Côte d'Azur",
-													"postcodes" : "06650"
-											},
-											"areaType" : "CITY"
-									},
+                  "city" : {
+                      "cityId" : "06112",
+                      "name" : "Le Rouret",
+                      "departementId" : "06",
+                      "departementName" : "Alpes-Maritimes",
+                      "regionId" : "93",
+                      "regionName" : "Provence-Alpes-Côte d'Azur",
+                      "postcodes" : "06650"
+                  },
+                  "areaType" : "CITY",
 									"trainingFulfillmentEstimate" : "ENOUGH_EXPERIENCE",
 									"totalInterviewCount" : -1,
 									"createdAt" : "2017-07-19T22:00:00Z",
@@ -157,25 +153,23 @@
 											"masculineName" : "Employé de libre-service",
 											"feminineName" : "Employée de libre-service"
 									},
-									"mobility" : {
-											"city" : {
-													"cityId" : "10387",
-													"name" : "Troyes",
-													"departementId" : "10",
-													"departementName" : "Aube",
-													"regionId" : "44",
-													"regionName" : "Alsace-Champagne-Ardenne-Lorraine",
-													"postcodes" : "10000"
-											},
-											"areaType" : "DEPARTEMENT"
-									},
+                  "city" : {
+                      "cityId" : "10387",
+                      "name" : "Troyes",
+                      "departementId" : "10",
+                      "departementName" : "Aube",
+                      "regionId" : "44",
+                      "regionName" : "Alsace-Champagne-Ardenne-Lorraine",
+                      "postcodes" : "10000"
+                  },
+                  "areaType" : "DEPARTEMENT",
 									"trainingFulfillmentEstimate" : "TRAINING_FULFILLMENT_NOT_SURE",
 									"totalInterviewCount" : -1,
 									"createdAt" : "2017-07-20T23:00:00Z",
 									"kind" : "FIND_A_NEW_JOB",
 									"previousJobSimilarity" : "DONE_THIS",
 									"networkEstimate" : 1,
-									"seniority" : "INTERNSHIP",
+									"seniority" : "INTERN",
 									"jobSearchLengthMonths" : 1,
 									"weeklyOffersEstimate" : "SOME",
 									"weeklyApplicationsEstimate" : "LESS_THAN_2",

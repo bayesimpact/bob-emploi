@@ -20,15 +20,17 @@ import codecs
 import collections
 from os import path
 import re
+import typing
 
 import pandas
 from scrapy import selector
 
-_ROME_VERSION = 'v335'
+_ROME_VERSION = 'v337'
 
 
 # TODO: Use this function in city suggest importer to read the stats file.
-def french_city_stats(data_folder='data', filename_city_stats=None):
+def french_city_stats(data_folder: str = 'data', filename_city_stats: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """Read the french city stats."""
 
     if not filename_city_stats:
@@ -47,12 +49,13 @@ def french_city_stats(data_folder='data', filename_city_stats=None):
         }).set_index('city_id', drop=False)
 
 
-def job_offers(data_folder='data',
-               filename_offers=None, filename_colnames=None):
+def job_offers(
+        data_folder: str = 'data', filename_offers: typing.Optional[str] = None,
+        filename_colnames: typing.Optional[str] = None) -> pandas.DataFrame:
     """Read the job offers dataset we got from Pole Emploi.
 
     More info about the structure of this dataset can be found
-    in the notebook datasets/job_offers.ipynb
+    in the notebook job_offers/pe_historical_offers.ipynb
     """
 
     default_offers_path = 'job_offers/OFFRE_EXTRACT_ENRICHIE_FGU_18JANV2016.csv'
@@ -101,8 +104,9 @@ def job_offers(data_folder='data',
     return offers
 
 
-def rome_to_skills(data_folder='data',
-                   filename_items=None, filename_skills=None):
+def rome_to_skills(
+        data_folder: str = 'data', filename_items: typing.Optional[str] = None,
+        filename_skills: typing.Optional[str] = None) -> pandas.DataFrame:
     """Load a dictionary that maps rome ID to a list of skill IDs.
 
     The 'coherence' table contains a general mapping from rome ID to items
@@ -127,7 +131,8 @@ def rome_to_skills(data_folder='data',
     return merged[['code_rome', 'code_ogr', 'skill_name', 'skill_is_practical']]
 
 
-def rome_job_groups(data_folder='data', filename=None):
+def rome_job_groups(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """A list of all job groups in ROME with their names.
 
     The only column is "name" and the index is the ROME code. Each row
@@ -150,7 +155,8 @@ def rome_job_groups(data_folder='data', filename=None):
     return job_groups[['name']]
 
 
-def rome_holland_codes(data_folder='data', filename=None):
+def rome_holland_codes(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """A list of all job groups in ROME with their Holland Codes.
 
     The only columns are the "major" and the "minor" Holland Code and the index
@@ -169,7 +175,8 @@ def rome_holland_codes(data_folder='data', filename=None):
     return holland_codes.set_index('code_rome')
 
 
-def rome_texts(data_folder='data', filename=None):
+def rome_texts(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """A list of all job groups in ROME with some lengthy text definitions.
 
     The columns are "definition", "requirements" and "working_environment".
@@ -192,7 +199,8 @@ def rome_texts(data_folder='data', filename=None):
 
 
 def rome_work_environments(
-        data_folder='data', links_filename=None, ref_filename=None):
+        data_folder: str = 'data', links_filename: typing.Optional[str] = None,
+        ref_filename: typing.Optional[str] = None) -> pandas.DataFrame:
     """A list of all work environment of job groups in ROME.
 
     The columns are "code_rome", "code_ogr" (a unique ID for a work environment
@@ -218,7 +226,7 @@ def rome_work_environments(
     })[['name', 'code_ogr', 'code_rome', 'section']]
 
 
-def rome_jobs(data_folder='data', filename=None):
+def rome_jobs(data_folder: str = 'data', filename: typing.Optional[str] = None) -> pandas.DataFrame:
     """A list of all jobs in ROME with their names and their groups.
 
     The columns are "name" and "code_rome" and the index is the OGR code. Each
@@ -241,7 +249,9 @@ def rome_jobs(data_folder='data', filename=None):
     return jobs[['name', 'code_rome']]
 
 
-def rome_job_groups_mobility(data_folder='data', filename=None, expand_jobs=False):
+def rome_job_groups_mobility(
+        data_folder: str = 'data', filename: typing.Optional[str] = None,
+        expand_jobs: bool = False) -> pandas.DataFrame:
     """A list of oriented edges in the ROME mobility graph.
 
     The expand_jobs parameter defines what to do with edges going from or to
@@ -291,7 +301,8 @@ def rome_job_groups_mobility(data_folder='data', filename=None, expand_jobs=Fals
     ]]
 
 
-def rome_fap_mapping(data_folder='data', filename=None):
+def rome_fap_mapping(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """Mapping from ROME ID to FAP codes.
 
     The index are the ROME IDs and the only column "fap_codes" is a list of
@@ -301,7 +312,7 @@ def rome_fap_mapping(data_folder='data', filename=None):
     if not filename:
         filename = path.join(data_folder, 'crosswalks/passage_fap2009_romev3.txt')
     with codecs.open(filename, 'r', 'latin-1') as fap_file:
-        mapping = collections.defaultdict(set)
+        mapping: typing.Dict[str, typing.Set[str]] = collections.defaultdict(set)
         for line in fap_file:
             matches = re.search(r'"(.*?)"+\s+=\s+"(.*?)"', line)
             if not matches:
@@ -314,7 +325,8 @@ def rome_fap_mapping(data_folder='data', filename=None):
     return pandas.Series(mapping, name='fap_codes').to_frame()
 
 
-def naf_subclasses(data_folder='data', filename=None):
+def naf_subclasses(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """NAF Sub classes.
 
     The index are the IDs of the sub classes (e.g. "0111Z"), and the only
@@ -331,7 +343,9 @@ def naf_subclasses(data_folder='data', filename=None):
 
 
 def french_departements(
-        data_folder='data', filename=None, oversea_filename=None, prefix_filename=None):
+        data_folder: str = 'data', filename: typing.Optional[str] = None,
+        oversea_filename: typing.Optional[str] = None,
+        prefix_filename: typing.Optional[str] = None) -> pandas.DataFrame:
     """French départements.
 
     The index are the IDs of the départements, and the columns are "name",
@@ -361,7 +375,9 @@ def french_departements(
     return departements[['name', 'region_id', 'prefix']]
 
 
-def french_regions(data_folder='data', filename=None, prefix_filename=None):
+def french_regions(
+        data_folder: str = 'data', filename: typing.Optional[str] = None,
+        prefix_filename: typing.Optional[str] = None) -> pandas.DataFrame:
     """French régions (on January 1st, 2017).
 
     The index are the IDs of the régions, and the column are "name" and "prefix".
@@ -381,7 +397,9 @@ def french_regions(data_folder='data', filename=None, prefix_filename=None):
     return regions[['name', 'prefix']]
 
 
-def french_cities(data_folder='data', filename=None, unique=False):
+def french_cities(
+        data_folder: str = 'data', filename: typing.Optional[str] = None,
+        unique: bool = False) -> pandas.DataFrame:
     """French cities (all the ones that have existed until January 1st, 2016).
 
     The index are the IDs (Code Officiel Géographique) of the cities, and the
@@ -422,7 +440,8 @@ def french_cities(data_folder='data', filename=None, unique=False):
         'name', 'departement_id', 'region_id', 'current', 'current_city_id', 'arrondissement']]
 
 
-def french_urban_areas(data_folder='data', filename=None):
+def french_urban_areas(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """French urban entities.
 
     The index are the IDs (Code Officiel Geographique) of the cities, and the columns are
@@ -448,7 +467,8 @@ def french_urban_areas(data_folder='data', filename=None):
     return cities[['AU2010', 'periurban']]
 
 
-def french_urban_entities(data_folder='data', filename=None):
+def french_urban_entities(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """French urban entities.
 
     The index are the IDs (Code Officiel Geographique) of the cities, and the columns are
@@ -476,11 +496,12 @@ def french_urban_entities(data_folder='data', filename=None):
     entities = pandas.merge(
         sheets['Composition_communale'], sheets['UU2010'], how='left',
         left_on='UU2010', right_index=True)
-    entities['urban'] = entities.TUU2014.fillna(0).astype(int)
+    entities['urban'] = entities.TUU2015.fillna(0).astype(int)
     return entities[['UU2010', 'urban']]
 
 
-def scraped_imt(data_folder='data', filename=None):
+def scraped_imt(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """IMT - Information sur le Marché du Travail.
 
     This is information on the labor market scraped from the Pôle emploi website.
@@ -497,7 +518,8 @@ def scraped_imt(data_folder='data', filename=None):
     return imt.set_index(['departement_id', 'rome_id'])
 
 
-def transport_scores(data_folder='data', filename=None):
+def transport_scores(data_folder: str = 'data', filename: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """Table of public transportation scores by city ID from ville-ideale.fr."""
 
     if not filename:
@@ -529,7 +551,7 @@ _UNACCENTED_E_MATCH = re.compile(
     'm([aeiuyéèêë]|o[^j])))')
 
 
-def maybe_add_accents(title):
+def maybe_add_accents(title: str) -> str:
     """Add an accent on capitalized letters if needed.
 
     In the ROME, most of the capitalized letters have no accent even if the
@@ -538,3 +560,76 @@ def maybe_add_accents(title):
     """
 
     return _UNACCENTED_E_MATCH.sub('É', title)
+
+
+def _merge_hard_skills(
+        skill_ids: typing.Union[float, typing.List[str]],
+        activitie_ids: typing.Union[float, typing.List[str]]) -> typing.List[str]:
+    """Merging skill and activity ids."""
+
+    skill_ids = skill_ids if isinstance(skill_ids, list) else []
+    activitie_ids = activitie_ids if isinstance(activitie_ids, list) else []
+    return skill_ids + activitie_ids
+
+
+def job_offers_skills(
+        data_folder: str = 'data', job_offers_filename: typing.Optional[str] = None,
+        skills_filename: typing.Optional[str] = None,
+        activities_filename: typing.Optional[str] = None) -> pandas.DataFrame:
+    """Job offers gathered and provided by Pôle emploi and their unwinded skills.
+
+    Each row represents a skill required for a specific job offer. Columns are:
+    the job offer original index, the job group rome code, the job group name and
+    the skill ID (ogr code).
+    """
+
+    if not job_offers_filename:
+        job_offers_filename = path.join(data_folder, 'job_offers/recent_job_offers.csv')
+    offers = pandas.read_csv(
+        job_offers_filename,
+        dtype={'POSTCODE': str, 'ROME_LIST_SKILL_CODE': str, 'ROME_LIST_ACTIVITY_CODE': str},
+        parse_dates=['CREATION_DATE', 'MODIFICATION_DATE'],
+        dayfirst=True, infer_datetime_format=True, low_memory=False)
+    if not skills_filename:
+        skills_filename = path.join(
+            data_folder, 'rome/csv/unix_referentiel_competence_{}_utf8.csv'.format(_ROME_VERSION))
+    skills = pandas.read_csv(skills_filename)
+    skills.set_index('code_ogr', inplace=True)
+    if not activities_filename:
+        activities_filename = path.join(
+            data_folder, 'rome/csv/unix_referentiel_activite_{}_utf8.csv'.format(_ROME_VERSION))
+    activities = pandas.read_csv(activities_filename)
+    activities.set_index('code_ogr', inplace=True)
+
+    # Cleaning columns.
+    offers.columns = offers.columns.str.lower()
+    offers['skill_ids'] = offers.rome_list_skill_code.str.split(';')
+    offers['activitie_ids'] = offers.rome_list_activity_code.str.split(';')
+
+    offers['all_skill_ids'] = offers.apply(
+        lambda row: _merge_hard_skills(row.skill_ids, row.activitie_ids), axis=1)
+
+    # Getting skills per job group.
+    offers = offers.reset_index().rename(index=str, columns={'index': 'offer_num'})
+
+    skills_per_job_offer = []
+    offers.apply(
+        lambda row: skills_per_job_offer.extend([
+            [
+                row.offer_num, row.rome_profession_card_code,
+                row.rome_profession_name, int(skill_id)
+            ]
+            for skill_id in row.all_skill_ids]),
+        axis=1)
+    unwind_offers_skills = pandas.DataFrame(
+        skills_per_job_offer, columns=[
+            'offer_num', 'rome_profession_card_code', 'rome_profession_card_name', 'code_ogr'])
+
+    # Fix skill names that contain double '.
+    unwind_offers_skills['skill_name'] = unwind_offers_skills.code_ogr\
+        .map(skills.libelle_competence.str.replace("''", "'"))
+    unwind_offers_skills['activity_name'] = unwind_offers_skills.code_ogr\
+        .map(activities.libelle_activite.str.replace("''", "'"))
+    unwind_offers_skills['skill_activity_name'] = unwind_offers_skills.skill_name\
+        .combine_first(unwind_offers_skills.activity_name)
+    return unwind_offers_skills

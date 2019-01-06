@@ -4,6 +4,7 @@ import collections
 import datetime
 from os import path
 import re
+import typing
 
 from bob_emploi.data_analysis.lib import migration_helpers
 
@@ -99,7 +100,9 @@ _JobseekerCriteria = collections.namedtuple('JobseekerCriteria', [
     'gender'])
 
 
-def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
+def job_seeker_iterator(
+        fhs_folder: str, tables: typing.Iterable[str] = (UNEMPLOYMENT_PERIOD_TABLE,)) \
+        -> typing.Iterator['JobSeeker']:
     """Iterator on job seekers based of the FHS.
 
     This function assumes that the FHS has a specific structure:
@@ -120,7 +123,7 @@ def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
         'IDX': ...}
     """
 
-    def _table_iterator(table):
+    def _table_iterator(table: str) -> PeekIterator[typing.Dict[str, str]]:
         return PeekIterator(migration_helpers.flatten_iterator(
             path.join(fhs_folder, '*/{}.csv'.format(table))))
     iterators = {table: _table_iterator(table) for table in set(tables)}
@@ -131,9 +134,9 @@ def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
         key = min(
             job_seeker_key(i.peek())
             for i in iterators.values() if not i.done)
-        job_seeker = {}
+        job_seeker: typing.Dict[str, typing.List[typing.Dict[str, str]]] = {}
         for table, i in iterators.items():
-            values = []
+            values: typing.List[typing.Dict[str, str]] = []
             while not i.done:
                 current = i.peek()
                 if job_seeker_key(current) != key:
@@ -141,9 +144,7 @@ def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
                 values.append(current)
                 next(i)
             job_seeker[table] = values
-        job_seeker[JOBSEEKER_ID_FIELD] = str(key.IDX)
-        job_seeker[JOBSEEKER_REGION_FIELD] = str(key.region)
-        yield JobSeeker(job_seeker)
+        yield JobSeeker(key.IDX, key.region, job_seeker)
 
 
 # A key representing a job seeker.
@@ -157,23 +158,30 @@ def job_seeker_iterator(fhs_folder, tables=(UNEMPLOYMENT_PERIOD_TABLE,)):
 # The main benefit of this key compared to the raw IDX field is that it knows
 # about the grouping by regions and make sure to keep increasing when going
 # into a new region file (whereas the IDX would return to a very small number).
-_JobSeekerKey = collections.namedtuple('JobSeekerKey', ['region', 'IDX'])
+class _JobSeekerKey(typing.NamedTuple):
+    region: str
+    IDX: int
 
 
-def job_seeker_key(row):
+def job_seeker_key(row: typing.Dict[str, str]) -> _JobSeekerKey:
     """Compute the key from some job seeker's data."""
 
     return _JobSeekerKey(
         extract_region(row['__file__']), int(float(row[JOBSEEKER_ID_FIELD])))
 
 
-def extract_region(filename):
+def extract_region(filename: str) -> str:
     """Extract region from filename."""
 
-    return _REGION_MATCHER.search(filename).group(1)
+    match = _REGION_MATCHER.search(filename)
+    assert match
+    return match.group(1)
 
 
-class PeekIterator(object):
+_T = typing.TypeVar('_T')
+
+
+class PeekIterator(typing.Iterable[_T]):
     """An iterator that allows peeking on the next value without consuming it.
 
     It wraps an existing iterator and works exactly like it except that for the
@@ -184,15 +192,16 @@ class PeekIterator(object):
             will raise a StopIteration exception.
     """
 
-    def __init__(self, iterator):
+    def __init__(self, iterator: typing.Iterator[_T]) -> None:
         self._iterator = iterator
         self.done = False
+        self._next: _T
         self._pre_next()
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[_T]:
         return self
 
-    def peek(self):  # pylint: disable=invalid-name
+    def peek(self) -> _T:  # pylint: disable=invalid-name
         """Take a peek at the next value.
 
         Returns:
@@ -203,7 +212,7 @@ class PeekIterator(object):
             raise StopIteration()
         return self._next
 
-    def __next__(self):
+    def __next__(self) -> _T:
         """Works as the usual next() method for an iterator."""
 
         if self.done:
@@ -212,14 +221,13 @@ class PeekIterator(object):
         self._pre_next()
         return latest
 
-    def _pre_next(self):
+    def _pre_next(self) -> None:
         if self.done:
             return
         try:
             self._next = next(self._iterator)
         except StopIteration:
             self.done = True
-            self._next = None
 
 
 class JobSeeker(object):
@@ -229,14 +237,20 @@ class JobSeeker(object):
     or compute properties that feels more natural.
     """
 
-    def __init__(self, data):
+    def __init__(
+            self, job_seeker_id: int, region_id: str,
+            data: typing.Dict[str, typing.List[typing.Dict[str, typing.Any]]]) \
+            -> None:
         self._data = data
+        self._job_seeker_id = job_seeker_id
+        self._region_id = region_id
         self._data.get('de', []).sort(key=lambda de: de[REGISRATION_DATE_FIELD])
         self._data.get('e0', []).sort(key=lambda e0: e0[PART_TIME_WORK_MONTH_FIELD])
         self._data.get('rome', []).sort(key=lambda rome: rome['JOURFV'])
         self._data.get('p2', []).sort(key=lambda p2: p2[TRAINING_START_DATE])
 
-    def _unemployment_periods(self, cover_holes_up_to, period_type):
+    def _unemployment_periods(
+            self, cover_holes_up_to: int, period_type: typing.Optional[str]) -> 'DateIntervals':
         # Category A, B and C are defined by: CATREGR being 1, 2 or 3.
 
         # Find disjoint periods from "de" table which have CATREGR 1, 2, or 3.
@@ -258,7 +272,7 @@ class JobSeeker(object):
 
         return periods
 
-    def all_training_periods(self):
+    def all_training_periods(self) -> 'DateIntervals':
         """Periods of training at Pôle emploi for this job seeker.
 
         Returns:
@@ -274,6 +288,7 @@ class JobSeeker(object):
         for p2_record in self._data[TRAINING_TABLE]:
             last_registration_period = registration_periods.last_contiguous_period_before(
                 p2_record[TRAINING_START_DATE])
+            assert last_registration_period
             p2_record[JOB_GROUP_ID_FIELD] = last_registration_period.metadata[JOB_GROUP_ID_FIELD]
             p2_record[CITY_ID_FIELD] = last_registration_period.metadata[CITY_ID_FIELD]
             training_periods.append((
@@ -284,7 +299,7 @@ class JobSeeker(object):
 
         return DateIntervals(training_periods)
 
-    def all_registration_periods(self, cover_holes_up_to=-1):
+    def all_registration_periods(self, cover_holes_up_to: int = -1) -> 'DateIntervals':
         """Periods of registration at Pôle emploi for this job seeker.
 
         Args:
@@ -306,7 +321,7 @@ class JobSeeker(object):
 
         return self._unemployment_periods(cover_holes_up_to, period_type=None)
 
-    def unemployment_abc_periods(self, cover_holes_up_to=0):
+    def unemployment_abc_periods(self, cover_holes_up_to: int = 0) -> 'DateIntervals':
         """Periods of category ABC unemployment for this job seeker.
 
         Args:
@@ -327,7 +342,7 @@ class JobSeeker(object):
 
         return self._unemployment_periods(cover_holes_up_to, 'abc')
 
-    def unemployment_a_periods(self, cover_holes_up_to=0):
+    def unemployment_a_periods(self, cover_holes_up_to: int = 0) -> 'DateIntervals':
         """Periods of category A unemployment for this job seeker.
 
         Args:
@@ -348,7 +363,7 @@ class JobSeeker(object):
 
         return self._unemployment_periods(cover_holes_up_to, 'a')
 
-    def _exclude_worked_months(self, periods):
+    def _exclude_worked_months(self, periods: 'DateIntervals') -> None:
         """Exlude months where the job seeker worked at least one hour."""
 
         for work_time_month in self._data[PART_TIME_WORK_TABLE]:
@@ -364,7 +379,7 @@ class JobSeeker(object):
                     CANCELATION_DATE_FIELD: begin}),  # pylint: disable=cell-var-from-loop
             )
 
-    def state_at_date(self, when):
+    def state_at_date(self, when: datetime.datetime) -> typing.Optional['_PeriodMetadata']:
         """Computes the state of the job seeker at a given date.
 
         Raises:
@@ -383,8 +398,11 @@ class JobSeeker(object):
             # TODO: Handle updates of variables that have history in other
             # tables.
             return period
+        return None
 
-    def get_rome_per_period(self, cover_holes_up_to, period_type, now):
+    def get_rome_per_period(
+            self, cover_holes_up_to: int, period_type: str, now: datetime.date) \
+            -> typing.Iterator[_JobseekerCriteria]:
         """Get the job group, departement and gender at jobseeker's unemployment periods
             and periods when the jobseeker has changed the job group they were looking for.
             The periods are sorted by earliest ending.
@@ -400,7 +418,7 @@ class JobSeeker(object):
         unemployment_periods.exclude_after(now, lambda m: dict(m, MOTANN=CancellationReason.NOW))
         job_group_history = self._data[TARGETED_JOB_TABLE]
         for unemployment_period in unemployment_periods:
-            periods_including_changes = []
+            periods_including_changes: typing.List[Period] = []
             state = unemployment_period.metadata
             if job_group_history:
                 for change in self._data[TARGETED_JOB_TABLE]:
@@ -408,8 +426,7 @@ class JobSeeker(object):
                         change[JOB_GROUP_START_DATE_FIELD],
                         change[JOB_GROUP_END_DATE_FIELD],
                         change)
-                    if unemployment_period.end >= change_period.begin and \
-                            change_period.end >= unemployment_period.begin:
+                    if change_period.touches(unemployment_period):
                         periods_including_changes.append(change_period)
             periods_including_changes.append(unemployment_period)
             for period in sorted(periods_including_changes, key=lambda p: p.end):
@@ -421,10 +438,10 @@ class JobSeeker(object):
                     departement=state.get(CITY_ID_FIELD),
                     gender=state.get(GENDER_FIELD))
 
-    def get_unique_id(self):
+    def get_unique_id(self) -> str:
         """Returns an unique ID for this jobseeker."""
 
-        return '{}_{}'.format(self._data[JOBSEEKER_ID_FIELD], self._data[JOBSEEKER_REGION_FIELD])
+        return '{}_{}'.format(self._job_seeker_id, self._region_id)
 
 
 class RegistrationReason(object):
@@ -487,44 +504,71 @@ class CancellationReason(object):
     STARTING_PART_TIME_WORK = '91'
 
 
+_PeriodMetadata = typing.Dict[str, typing.Any]
+
+
 class Period(object):
     """Defines a single contiguous period of time (whole days)."""
 
-    def __init__(self, begin, end, metadata):
+    def __init__(
+            self, begin: typing.Union[str, datetime.date, None],
+            end: typing.Union[str, datetime.date, None], metadata: _PeriodMetadata):
         """Initialize with begin/end dates (or string dates) and metadata."""
 
-        if isinstance(begin, str):
-            begin = datetime.datetime.strptime(begin, '%Y-%m-%d').date()
-        if isinstance(end, str):
-            end = datetime.datetime.strptime(end, '%Y-%m-%d').date()
-        self.begin = begin
-        self.end = end
-        self.metadata = metadata
-        self.as_tuple = (begin, end, metadata)
+        self.begin: typing.Optional[datetime.date]
+        self.end: typing.Optional[datetime.date]
 
-    def duration_days(self):
+        if isinstance(begin, str):
+            self.begin = datetime.datetime.strptime(begin, '%Y-%m-%d').date()
+        else:
+            self.begin = begin
+
+        if isinstance(end, str):
+            self.end = datetime.datetime.strptime(end, '%Y-%m-%d').date()
+        else:
+            self.end = end
+
+        self.metadata = metadata
+        self.as_tuple = (self.begin, self.end, metadata)
+
+    def duration_days(self) -> typing.Optional[int]:
         """Return the length of the period in complete days."""
 
         if self.end and self.begin:
             return (self.end - self.begin).days
         return None
 
-    def __lt__(self, other):
+    def __lt__(self, other: 'Period') -> bool:
+        if other.begin is None:
+            return False
+        if self.begin is None:
+            return True
         return self.begin < other.begin
 
-    def __eq__(self, other):
-        return self.as_tuple == other.as_tuple
+    def __eq__(self, other: typing.Any) -> bool:
+        return isinstance(other, Period) and self.as_tuple == other.as_tuple
 
-    def __repr__(self):
+    def touches(self, other: 'Period') -> bool:
+        """Check if another period touches this one."""
+
+        if self.begin and other.end and self.begin > other.end:
+            return False
+        if other.begin and self.end and other.begin > self.end:
+            return False
+        return True
+
+    def __repr__(self) -> str:
         return repr(self.as_tuple)
 
 
 class DateIntervals(object):
     """Defines potentially non-contiguous periods of time."""
 
-    # Period = collections.namedtuple('Period', ['begin', 'end', 'metadata'])
-
-    def __init__(self, periods):
+    def __init__(self, periods: typing.Iterable[typing.Tuple[
+            typing.Union[str, datetime.date, None],
+            typing.Union[str, datetime.date, None],
+            _PeriodMetadata,
+    ]]) -> None:
         """Initialize with a list of non-overlapping periods.
 
         Args:
@@ -542,40 +586,43 @@ class DateIntervals(object):
 
         self._periods = sorted(Period(*p) for p in periods)
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[Period]:
         for period in self._periods:
             yield period
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._periods)
 
-    def __eq__(self, other):
+    def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__) and
             self._periods == other._periods)  # pylint: disable=protected-access
 
-    def first_contiguous_period(self):
+    def first_contiguous_period(self) -> typing.Optional[Period]:
         """First contiguous period of time."""
 
         return self._periods[0] if self._periods else None
 
-    def last_contiguous_period(self):
+    def last_contiguous_period(self) -> typing.Optional[Period]:
         """Last contiguous period of time."""
 
         return self._periods[-1] if self._periods else None
 
-    def last_contiguous_period_before(self, begin):
+    def last_contiguous_period_before(self, begin: datetime.date) -> typing.Optional[Period]:
         """Last contiguous period of time before a given date."""
 
         periods_before = [p for p in self._periods if p.end and p.end < begin]
         return periods_before[-1] if periods_before else None
 
-    def is_unfinished(self):
+    def is_unfinished(self) -> bool:
         """Whether the intervals contain the future as well."""
 
-        return self._periods and self._periods[-1].end is None
+        return bool(self._periods) and self._periods[-1].end is None
 
-    def exclude_period(self, begin, end, metadata_cut_begin, metadata_cut_end):
+    def exclude_period(
+            self, begin: datetime.date, end: datetime.date,
+            metadata_cut_begin: typing.Callable[[_PeriodMetadata], _PeriodMetadata],
+            metadata_cut_end: typing.Callable[[_PeriodMetadata], _PeriodMetadata]) -> None:
         """Exclude a period from the existing interval.
 
         Note that the period to exclude can be completely unrelated to the
@@ -595,7 +642,7 @@ class DateIntervals(object):
 
         periods_before = [
             p for p in self._periods if p.end and p.end < begin]
-        periods_after = [p for p in self._periods if p.begin > end]
+        periods_after = [p for p in self._periods if p.begin and p.begin > end]
         if len(periods_before) + len(periods_after) == len(self._periods):
             return
 
@@ -603,7 +650,7 @@ class DateIntervals(object):
             len(periods_before):len(self._periods) - len(periods_after)]
         modified_periods = []
         for period in affected_periods:
-            if period.begin < begin:
+            if period.begin is None or period.begin < begin:
                 modified_periods.append(Period(
                     period.begin, begin, metadata_cut_end(period.metadata)))
             if period.end is None or end < period.end:
@@ -612,19 +659,24 @@ class DateIntervals(object):
 
         self._periods = periods_before + modified_periods + periods_after
 
-    def exclude_after(self, date, update_metadata):
+    def exclude_after(
+            self, date: datetime.date,
+            update_metadata: typing.Callable[[_PeriodMetadata], _PeriodMetadata]) -> None:
         """Exclude all dates after a given date."""
 
         periods = []
         for period in self._periods:
             if period.end and period.end <= date:
                 periods.append(period)
-            elif period.begin < date:
+            elif period.begin and period.begin < date:
                 periods.append(Period(
                     period.begin, date, update_metadata(period.metadata)))
         self._periods = periods
 
-    def cover_holes(self, max_duration, merge_metadata):
+    def cover_holes(
+            self, max_duration: datetime.timedelta,
+            merge_metadata: typing.Callable[[_PeriodMetadata, _PeriodMetadata], _PeriodMetadata]) \
+            -> None:
         """Cover holes between contiguous periods.
 
         In order to ignore little gaps in the interval when using the
@@ -642,7 +694,9 @@ class DateIntervals(object):
         periods = []
         period = self._periods[0]
         for next_period in self._periods[1:]:
-            if period.end + max_duration < next_period.begin:
+            assert period.end
+            assert next_period.begin
+            if (period.end + max_duration) < next_period.begin:
                 # The hole is too big.
                 periods.append(period)
                 period = next_period
@@ -654,7 +708,7 @@ class DateIntervals(object):
         self._periods = periods
 
 
-def _month_bounds(year_month):
+def _month_bounds(year_month: str) -> typing.Tuple[datetime.date, datetime.date]:
     """Compute a month's bounds.
 
     Args:
@@ -672,7 +726,7 @@ def _month_bounds(year_month):
     return (begin, end)
 
 
-def extract_departement_id(depcom):
+def extract_departement_id(depcom: str) -> str:
     """Extract the département ID from the DEPCOM field in FHS."""
 
     departement_id = depcom[:2]

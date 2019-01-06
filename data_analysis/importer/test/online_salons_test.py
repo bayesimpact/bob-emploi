@@ -3,10 +3,10 @@
 import datetime
 from os import path
 import unittest
+from unittest import mock
 
 from airtable import airtable
 import airtablemock
-import mock
 
 from bob_emploi.data_analysis.importer import online_salons
 from bob_emploi.data_analysis.lib import mongo
@@ -19,7 +19,7 @@ class OnlineSalonsImporterTestCase(airtablemock.TestCase):
 
     events_filename = path.join(path.dirname(__file__), 'testdata/online_salons.json')
 
-    @mock.patch.dict(online_salons.airtable_to_protos.os.environ, {'AIRTABLE_API_KEY': 'apikey'})
+    @mock.patch(online_salons.airtable_to_protos.__name__ + '._AIRTABLE_API_KEY', new='apikey')
     @mock.patch(online_salons.__name__ + '._REGIONS', new=[{'94': {'prefix': 'en '}}])
     @mock.patch(online_salons.__name__ + '.algoliasearch')
     @mock.patch(online_salons.logging.__name__ + '.warning')
@@ -190,4 +190,4 @@ class FetchLocationTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

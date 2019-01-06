@@ -1,6 +1,8 @@
 Babel
 coverage
-mongomock==3.9.0
+mongomock>=3.12
+mypy>=0.650
+mypy-protobuf>=1.8
 nose
 nose-watch
 pycodestyle

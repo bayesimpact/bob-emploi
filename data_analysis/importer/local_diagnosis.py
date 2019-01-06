@@ -145,6 +145,7 @@ def csv2dicts(
     imt_full = imt_full[imt_full.columns.difference(['local_id'])]
     imt['imt'] = imt_full.apply(lambda x: x.to_dict(), axis='columns')
     less_stressful = _get_less_stressful_job_groups(data_folder, mobility_csv, market_score_csv)
+    num_less_stressful_departements = _get_less_stressful_departements_count(market_score_csv)
     local_diagnosis = pandas.merge(
         bmo_rome_data, fhs_salaries, on='local_id', how='outer')
     local_diagnosis = pandas.merge(
@@ -155,7 +156,10 @@ def csv2dicts(
         local_diagnosis, imt, on='local_id', how='outer')
     local_diagnosis = pandas.merge(
         local_diagnosis, less_stressful, on='local_id', how='outer')
-    int_columns = (set(job_offers_changes.columns) - set(['local_id']))
+    int_columns = (
+        set(job_offers_changes.columns) | set(num_less_stressful_departements) - set(['local_id']))
+    local_diagnosis = pandas.merge(
+        local_diagnosis, num_less_stressful_departements, on='local_id', how='outer')
     return [
         dict(_namedtuple_to_json_dict(item, [
             'local_id', 'bmo', 'salary', 'imt', 'lessStressfulJobGroups',
@@ -163,7 +167,7 @@ def csv2dicts(
             # precise one (per city).
             'unemploymentDuration',
             'jobOffersChange', 'numJobOffersLastYear',
-            'numJobOffersPreviousYear'], int_columns))
+            'numJobOffersPreviousYear', 'numLessStressfulDepartements'], int_columns))
         for item in local_diagnosis.itertuples()]
 
 
@@ -385,12 +389,35 @@ def _get_less_stressful_job_groups(data_folder, mobility_csv, market_score_csv):
         for unused_index, r in best_reorientations.iterrows()])
 
 
+def _get_less_stressful_departements_count(market_score_csv):
+    market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
+    market_stats['departement_id'] = market_stats.AREA_CODE
+    market_stats['local_id'] = market_stats.AREA_CODE + ':' \
+        + market_stats.ROME_PROFESSION_CARD_CODE
+    market_stats['market_score'] = market_stats.TENSION_RATIO.div(_YEARLY_AVG_OFFERS_DENOMINATOR)
+    market_stats['yearlyAvgOffersPer10Candidates'] = market_stats.TENSION_RATIO
+    market_stats['code_rome'] = market_stats.ROME_PROFESSION_CARD_CODE
+    market_stats['yearlyAvgOffersDenominator'] = _YEARLY_AVG_OFFERS_DENOMINATOR
+    market_stats = market_stats.set_index(['code_rome', 'departement_id'])
+    market_stats.dropna(subset=['market_score'], inplace=True)
+    market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D']
+
+    compare_in_job_group = market_stats_dept.merge(
+        market_stats_dept, how='outer', on='code_rome', suffixes=('', '_dest'))
+    num_better_departements = compare_in_job_group[
+        (compare_in_job_group.market_score < compare_in_job_group.market_score_dest)]\
+        .groupby(['local_id'])\
+        .size()\
+        .to_frame('numLessStressfulDepartements')
+    return num_better_departements
+
+
 def _get_market_score(market_score_csv):
     market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
     seasonal_stats = market_stats[[
         column for column in market_stats.columns if column.startswith('SEASONAL_')]]
-    # TODO(cyrille): Replace reduce=True by result_type='reduce' once notebook pandas reaches v0.23
-    seasonality_months = seasonal_stats.apply(_get_active_months, axis='columns', reduce=True)
+    seasonality_months = seasonal_stats.apply(
+        _get_active_months, axis='columns', result_type='reduce')
     market_stats['seasonality'] = seasonality_months.seasonality
 
     # Converting to int from np.int32 so that json serialization does not choke.
@@ -532,4 +559,4 @@ def finalize_salary_estimation(estimation):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(csv2dicts, 'local_diagnosis')  # pragma: no cover
+    mongo.importer_main(csv2dicts, 'local_diagnosis')

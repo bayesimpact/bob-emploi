@@ -5,11 +5,13 @@ import collections
 import csv
 import logging
 import sys
+import typing
 
 import pandas as pd
 
 
-def double_property_frequency(job_offers, column, req_column):
+def double_property_frequency(job_offers: pd.DataFrame, column: str, req_column: str) \
+        -> pd.DataFrame:
     """List one property and their frequency.
 
     Job offers contain many properties that are doubled (degree, driving
@@ -52,7 +54,10 @@ def double_property_frequency(job_offers, column, req_column):
     return frequencies.sort_values('frequency', ascending=False)
 
 
-def iterate(job_offers_csv, colnames_txt, required_fields=None):
+def iterate(
+        job_offers_csv: str, colnames_txt: str,
+        required_fields: typing.Optional[typing.Set[str]] = None) \
+        -> typing.Iterator[typing.Tuple[typing.Optional[str], ...]]:
     """Iterate on all job offers lazily.
 
     Args:
@@ -80,7 +85,7 @@ def iterate(job_offers_csv, colnames_txt, required_fields=None):
             field_index = column_names.index(field)
             if field_index + 1 > min_num_required_fields:
                 min_num_required_fields = field_index + 1
-    job_offer_type = collections.namedtuple('JobOffer', column_names)
+    job_offer_type = collections.namedtuple('JobOffer', column_names)  # type: ignore
     with codecs.open(job_offers_csv, encoding='latin-1') as job_offers_file:
         # The CSV file has some very long fields.
         csv.field_size_limit(sys.maxsize)
@@ -91,8 +96,8 @@ def iterate(job_offers_csv, colnames_txt, required_fields=None):
             if len(row) != len(column_names):
                 logging.warning('A line does not contain enough values:\n%s', row)
                 if required_fields and min_num_required_fields < len(row):
-                    row = row + [None] * (len(column_names) - len(row))
+                    row = row + [None] * (len(column_names) - len(row))  # type: ignore
                 else:
                     logging.warning('Skipping this line')
                     continue
-            yield job_offer_type(*row)
+            yield job_offer_type(*row)  # type: ignore

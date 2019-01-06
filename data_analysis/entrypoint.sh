@@ -2,8 +2,9 @@
 
 set -e
 
-protoc -I . -I /usr/local/share/proto/ bob_emploi/frontend/api/*.proto --python_out=.
+protoc -I . -I /usr/local/share/proto/ bob_emploi/frontend/api/*.proto --python_out=. --mypy_out=quiet:.
 touch bob_emploi/__init__.py
+touch bob_emploi/data_analysis/__init__.py
 touch bob_emploi/frontend/__init__.py
 touch bob_emploi/frontend/api/__init__.py
 

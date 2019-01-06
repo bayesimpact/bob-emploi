@@ -2,11 +2,12 @@
 
 import datetime
 import unittest
+from unittest import mock
 
-import mock
 import mongomock
 
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
@@ -14,7 +15,7 @@ from bob_emploi.frontend.api import user_pb2
 class PopulateProjectTemplateTest(unittest.TestCase):
     """All unit tests for populate_template."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(PopulateProjectTemplateTest, self).setUp()
         # Pre-populate project's fields that are usualldy set. Individual tests
         # should not count on those values.
@@ -23,11 +24,11 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.target_job.masculine_name = 'Boulanger'
         self.project.target_job.feminine_name = 'Boulangère'
         self.project.target_job.job_group.rome_id = 'Z9007'
-        self.project.mobility.city.city_id = '69123'
-        self.project.mobility.city.departement_id = '69'
-        self.project.mobility.city.region_id = '84'
-        self.project.mobility.city.postcodes = '69001-69002-69003-69004'
-        self.project.mobility.city.name = 'Lyon'
+        self.project.city.city_id = '69123'
+        self.project.city.departement_id = '69'
+        self.project.city.region_id = '84'
+        self.project.city.postcodes = '69001-69002-69003-69004'
+        self.project.city.name = 'Lyon'
         self.database = mongomock.MongoClient().test
         self.database.regions.insert_one({
             '_id': '84',
@@ -37,14 +38,14 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.scoring_project = scoring.ScoringProject(
             self.project, user_pb2.UserProfile(), user_pb2.Features(), self.database)
 
-    def _populate_template(self, template):
+    def _populate_template(self, template: str) -> str:
         return self.scoring_project.populate_template(template)
 
-    def test_pole_emploi(self):
+    def test_pole_emploi(self) -> None:
         """Test Pôle emploi basic URL."""
 
         self.project.target_job.job_group.rome_id = 'A1234'
-        self.project.mobility.city.departement_id = '45'
+        self.project.city.departement_id = '45'
 
         link = self._populate_template(
             'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?'
@@ -55,11 +56,11 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'codeRome=A1234&codeZoneGeographique=45&typeZoneGeographique=DEPARTEMENT',
             link)
 
-    def test_le_bon_coin(self):
+    def test_le_bon_coin(self) -> None:
         """Test LeBonCoin basic URL."""
 
         self.project.target_job.masculine_name = 'Boucher'
-        self.project.mobility.city.name = 'Toulouse'
+        self.project.city.name = 'Toulouse'
 
         link = self._populate_template(
             'https://www.leboncoin.fr/offres_d_emploi/offres/ile_de_france/occasions/'
@@ -69,11 +70,11 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             '?th=1&q=Boucher&location=Toulouse&parrot=0 ',
             link)
 
-    def test_le_bon_coin_spaces(self):
+    def test_le_bon_coin_spaces(self) -> None:
         """Test LeBonCoin URLs when job and city names contain white spaces."""
 
         self.project.target_job.masculine_name = 'Data scientist'
-        self.project.mobility.city.name = 'Le Havre'
+        self.project.city.name = 'Le Havre'
 
         link = self._populate_template(
             'https://www.leboncoin.fr/offres_d_emploi/offres/ile_de_france/occasions/'
@@ -83,11 +84,11 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             '?th=1&q=Data%20scientist&location=Le%20Havre&parrot=0 ',
             link)
 
-    def test_le_bon_coin_special_chars(self):
+    def test_le_bon_coin_special_chars(self) -> None:
         """Test LeBonCoin URLs when job and city names contain special chars."""
 
         self.project.target_job.masculine_name = 'Employé de ménage'
-        self.project.mobility.city.name = 'Orléans-cœur'
+        self.project.city.name = 'Orléans-cœur'
 
         link = self._populate_template(
             'https://www.leboncoin.fr/offres_d_emploi/offres/ile_de_france/occasions/'
@@ -97,12 +98,12 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             '?th=1&q=Employ%E9%20de%20m%E9nage&location=Orl%E9ans-c%3Fur&parrot=0 ',
             link)
 
-    def test_la_bonne_boite(self):
+    def test_la_bonne_boite(self) -> None:
         """Test LaBonneBoite basic URL."""
 
         self.project.target_job.job_group.name = 'Boucherie'
-        self.project.mobility.city.name = 'Toulouse'
-        self.project.mobility.city.departement_id = '31'
+        self.project.city.name = 'Toulouse'
+        self.project.city.departement_id = '31'
 
         link = self._populate_template(
             'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
@@ -112,13 +113,13 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'boucherie?sort=distance&d=10&h=1',
             link)
 
-    def test_la_bonne_boite_dom(self):
+    def test_la_bonne_boite_dom(self) -> None:
         """Test LaBonneBoite URL when city is in a DOM and does not have a postcode."""
 
         self.project.target_job.job_group.name = 'Assistanat de direction'
-        self.project.mobility.city.name = 'Saint-Denis'
-        self.project.mobility.city.departement_id = '974'
-        self.project.mobility.city.postcodes = ''
+        self.project.city.name = 'Saint-Denis'
+        self.project.city.departement_id = '974'
+        self.project.city.postcodes = ''
 
         link = self._populate_template(
             'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%postcode/'
@@ -128,12 +129,12 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'assistanat-de-direction?sort=distance&d=10&h=1',
             link)
 
-    def test_la_bonne_boite_spaces(self):
+    def test_la_bonne_boite_spaces(self) -> None:
         """Test LaBonneBoite URL when city and job group names contain spaces."""
 
         self.project.target_job.job_group.name = 'Assistanat de direction'
-        self.project.mobility.city.name = 'Le Havre'
-        self.project.mobility.city.departement_id = '76'
+        self.project.city.name = 'Le Havre'
+        self.project.city.departement_id = '76'
 
         link = self._populate_template(
             'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
@@ -143,13 +144,13 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'assistanat-de-direction?sort=distance&d=10&h=1',
             link)
 
-    def test_la_bonne_boite_special_chars(self):
+    def test_la_bonne_boite_special_chars(self) -> None:
         """Test LaBonneBoite URL when city and job group names contain special chars."""
 
         self.project.target_job.job_group.name = (
             "Recherche en sciences de l'homme et de la société")
-        self.project.mobility.city.name = 'Orléans'
-        self.project.mobility.city.departement_id = '45'
+        self.project.city.name = 'Orléans'
+        self.project.city.departement_id = '45'
 
         link = self._populate_template(
             'https://labonneboite.pole-emploi.fr/entreprises/%cityName-%departementId000/'
@@ -159,10 +160,10 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'recherche-en-sciences-de-l-homme-et-de-la-societe?sort=distance&d=10&h=1',
             link)
 
-    def test_mayor_advice(self):
+    def test_mayor_advice(self) -> None:
         """All required vars for the contact your mayor advice."""
 
-        self.project.mobility.city.name = 'Le Mans'
+        self.project.city.name = 'Le Mans'
         self.project.target_job.masculine_name = 'Steward'
         self.project.target_job.feminine_name = 'Hôtesse'
         self.scoring_project.user_profile.gender = user_pb2.FEMININE
@@ -176,7 +177,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             "emploi d'hôtesse.",
             card_content)
 
-    def test_situation_presentation(self):
+    def test_situation_presentation(self) -> None:
         """Present a jobseeker's situation."""
 
         self.scoring_project.user_profile.gender = user_pb2.MASCULINE
@@ -189,7 +190,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.assertEqual('Je suis steward à 5% depuis plus de 6 ans.', sentence)
 
     @mock.patch(scoring.logging.__name__ + '.warning')
-    def test_missing_variables(self, mock_warning):
+    def test_missing_variables(self, mock_warning: mock.MagicMock) -> None:
         """ Template still has some variable not replaced."""
 
         self.project.target_job.masculine_name = 'Steward'
@@ -205,7 +206,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
 
         self.assertEqual('Je suis steward en %random.', sentence)
 
-    def test_job_presentation(self):
+    def test_job_presentation(self) -> None:
         """Present a job name."""
 
         self.project.target_job.masculine_name = 'Steward VIP'
@@ -217,7 +218,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.assertEqual(
             'Je suis une hôtesse VIP ! Je suis une hôtesse VIP ! pas un steward VIP', sentence)
 
-    def test_in_domain_network_advice(self):
+    def test_in_domain_network_advice(self) -> None:
         """Var required for a network advice in a specific job group domain."""
 
         self.database.job_group_info.insert_one(
@@ -227,7 +228,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template('Contactez des gens qui travaillent %inDomain')
         self.assertEqual('Contactez des gens qui travaillent en boulangerie', sentence)
 
-    def test_workplace_presentation(self):
+    def test_workplace_presentation(self) -> None:
         """Var required for presenting a workplace."""
 
         self.database.job_group_info.insert_one({
@@ -242,7 +243,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.assertEqual(
             'Il y a des boulangeries, mais dans une boulangerie comme la vôtre…', sentence)
 
-    def test_positive_feedback(self):
+    def test_positive_feedback(self) -> None:
         """Var required for presenting a workplace."""
 
         self.database.job_group_info.insert_one({
@@ -254,7 +255,36 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template('Je voudrais rencontrer votre chef car %whatILoveAbout')
         self.assertEqual("Je voudrais rencontrer votre chef car j'adore vos patisseries", sentence)
 
-    def test_user_presentation(self):
+    def test_positive_feminine_feedback(self) -> None:
+        """Var required for presenting a workplace as a woman."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'Z9007',
+            'whatILoveAbout': 'je suis intéressé par vos patisseries',
+            'whatILoveAboutFeminine': 'je suis intéressée par vos patisseries',
+        })
+        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.project.target_job.job_group.rome_id = 'Z9007'
+
+        sentence = self._populate_template('Je voudrais rencontrer votre chef car %whatILoveAbout')
+        self.assertEqual(
+            'Je voudrais rencontrer votre chef car je suis intéressée par vos patisseries',
+            sentence)
+
+    def test_positive_missing_feminine_feedback(self) -> None:
+        """Var required for presenting a workplace as a woman when sentence is neutral."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'Z9007',
+            'whatILoveAbout': "j'adore vos patisseries"
+            })
+        self.scoring_project.user_profile.gender = user_pb2.FEMININE
+        self.project.target_job.job_group.rome_id = 'Z9007'
+
+        sentence = self._populate_template('Je voudrais rencontrer votre chef car %whatILoveAbout')
+        self.assertEqual("Je voudrais rencontrer votre chef car j'adore vos patisseries", sentence)
+
+    def test_user_presentation(self) -> None:
         """Present a user."""
 
         self.scoring_project.user_profile.name = 'Dan'
@@ -263,7 +293,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template("Je m'appelle %name %lastName et je me dandine")
         self.assertEqual("Je m'appelle Dan Diner et je me dandine", sentence)
 
-    def test_feminine_user(self):
+    def test_feminine_user(self) -> None:
         """Add e to feminine users."""
 
         self.scoring_project.user_profile.gender = user_pb2.FEMININE
@@ -271,7 +301,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template('Hier, tu es allé%eFeminine au marché')
         self.assertEqual(sentence, 'Hier, tu es allée au marché')
 
-    def test_masculine_user(self):
+    def test_masculine_user(self) -> None:
         """Don't add e to not-feminine users."""
 
         self.scoring_project.user_profile.gender = user_pb2.MASCULINE
@@ -279,7 +309,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template('Hier, tu es allé%eFeminine au marché')
         self.assertEqual(sentence, 'Hier, tu es allé au marché')
 
-    def test_you_singular(self):
+    def test_you_singular(self) -> None:
         """Tutoie a user."""
 
         self.scoring_project.user_profile.can_tutoie = True
@@ -287,7 +317,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template('Contacte%you</z> %you<tes/vos> connaissances.')
         self.assertEqual(sentence, 'Contacte tes connaissances.')
 
-    def test_you_plural(self):
+    def test_you_plural(self) -> None:
         """Vouvoie a user."""
 
         self.scoring_project.features_enabled.alpha = True
@@ -296,7 +326,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template('Contacte%you</z> %you<tes/vos> connaissances.')
         self.assertEqual(sentence, 'Contactez vos connaissances.')
 
-    def test_you_in_template(self):
+    def test_you_in_template(self) -> None:
         """Vouvoie a user in a template var."""
 
         self.database.job_group_info.insert_one({
@@ -311,7 +341,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'Je voudrais %you<te/vous> rencontrer car %whatILoveAbout')
         self.assertEqual("Je voudrais vous rencontrer car j'adore vos patisseries", sentence)
 
-    def test_in_region_template(self):
+    def test_in_region_template(self) -> None:
         """Use inRegion template."""
 
         self.database.regions.insert_one({
@@ -319,16 +349,15 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'name': 'Mayotte',
             'prefix': 'à ',
         })
-        self.project.mobility.city.region_id = '06'
+        self.project.city.region_id = '06'
         sentence = self._populate_template('Bienvenue %inRegion !')
         self.assertEqual('Bienvenue à Mayotte !', sentence)
 
-    def test_job_search_length_months(self):
+    def test_job_search_length_months(self) -> None:
         """Give the length of the user's search in months."""
 
         self.project.job_search_started_at.FromDatetime(
             self.scoring_project.now - datetime.timedelta(days=90))
-        self.project.job_search_has_not_started = False
         self.project.created_at.FromDatetime(self.scoring_project.now)
 
         sentence = self._populate_template(
@@ -336,7 +365,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.assertEqual('Je cherche un emploi depuis trois mois', sentence)
 
     @mock.patch(scoring.logging.__name__ + '.warning')
-    def test_undefined_job_search_length(self, mock_warning):
+    def test_undefined_job_search_length(self, mock_warning: mock.MagicMock) -> None:
         """Put a placeholder and issue a warning for the length of the user's search in months."""
 
         self.project.job_search_has_not_started = False
@@ -347,7 +376,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.assertEqual('Je cherche un emploi depuis quelques mois', sentence)
         mock_warning.assert_called_once()
 
-    def test_long_job_search_length_months(self):
+    def test_long_job_search_length_months(self) -> None:
         """Put a placeholder for the length of the user's search in months."""
 
         self.project.job_search_started_at.FromDatetime(
@@ -359,21 +388,21 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'Je cherche un emploi depuis %jobSearchLengthMonthsAtCreation mois')
         self.assertEqual('Je cherche un emploi depuis quelques mois', sentence)
 
-    def test_total_interview(self):
+    def test_total_interview(self) -> None:
         """Give the number of interviews."""
 
         self.project.total_interview_count = 5
         sentence = self._populate_template("J'ai déjà obtenu %totalInterviewCount entretiens.")
         self.assertEqual("J'ai déjà obtenu cinq entretiens.", sentence)
 
-    def test_many_total_interview(self):
+    def test_many_total_interview(self) -> None:
         """Give the number of interviews when there are many."""
 
         self.project.total_interview_count = 10
         sentence = self._populate_template("J'ai déjà obtenu %totalInterviewCount entretiens.")
         self.assertEqual("J'ai déjà obtenu 10 entretiens.", sentence)
 
-    def test_values_are_cached(self):
+    def test_values_are_cached(self) -> None:
         """Test that template variables values are actually cached."""
 
         self.scoring_project.user_profile.name = 'Dan'
@@ -382,6 +411,41 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence2 = self._populate_template("Je m'appelle %name.")
         self.assertEqual(sentence1, sentence2)
 
+    def test_country_search_area(self) -> None:
+        """Give the area type when user is willing to search in the entire country."""
+
+        self.project.area_type = geo_pb2.COUNTRY
+        sentence = self._populate_template('Je cherche un emploi %inAreaType.')
+        self.assertEqual('Je cherche un emploi dans le pays.', sentence)
+
+    def test_region_search_area(self) -> None:
+        """Give the area type when user is willing to search in the entire region."""
+
+        self.project.area_type = geo_pb2.REGION
+        sentence = self._populate_template('Je cherche un emploi %inAreaType.')
+        self.assertEqual('Je cherche un emploi en Auvergne-Rhône-Alpes.', sentence)
+
+    def test_departement_search_area(self) -> None:
+        """Give the area type when user is willing to search in the entire departement."""
+
+        self.database.departements.insert_one({
+            '_id': '75',
+            'prefix': 'en ',
+            'name': 'Ile-de-France',
+        })
+        self.project.city.departement_id = '75'
+        self.project.area_type = geo_pb2.DEPARTEMENT
+        sentence = self._populate_template('Je cherche un emploi %inAreaType.')
+        self.assertEqual('Je cherche un emploi en Ile-de-France.', sentence)
+
+    def test_city_search_area(self) -> None:
+        """Give the area type when user is not willing to search outside the city."""
+
+        self.project.area_type = geo_pb2.CITY
+        self.project.city.name = 'Paris'
+        sentence = self._populate_template('Je cherche un emploi %inAreaType.')
+        self.assertEqual('Je cherche un emploi à Paris.', sentence)
+
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()
