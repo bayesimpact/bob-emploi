@@ -1,8 +1,10 @@
 """Upload strings from a POT file to Airtable to translate."""
 
+import logging
 import os
 from os import path
 import sys
+import typing
 
 import polib
 
@@ -11,8 +13,10 @@ from bob_emploi.data_analysis.i18n import collect_strings
 _I18N_BASE_ID = 'appkEc8N0Bw4Uok43'
 
 
-def main(pot_filename, api_key):
+def main(pot_filename: str, api_key: typing.Optional[str]) -> None:
     """Collect all the strings in Airtable to translate."""
+
+    logging.basicConfig(level='INFO')
 
     if not api_key:
         raise ValueError(

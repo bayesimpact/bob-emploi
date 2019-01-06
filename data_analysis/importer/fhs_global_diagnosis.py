@@ -63,4 +63,4 @@ def fhs2dicts(durations_csv):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(fhs2dicts, 'global_diagnosis')  # pragma: no cover
+    mongo.importer_main(fhs2dicts, 'global_diagnosis')

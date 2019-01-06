@@ -1,5 +1,9 @@
 """Module to translate strings on the frontend server."""
 
+import typing
+
+from pymongo import database as pymongo_database
+
 from bob_emploi.frontend.server import proto
 
 
@@ -9,16 +13,17 @@ class TranslationMissingException(Exception):
 
 class _MongoCachedTranslations(object):
 
-    def __init__(self):
-        self._cache = None
-        self._database = None
+    def __init__(self) -> None:
+        self._cache: typing.Optional[proto.CachedCollection[typing.Dict[str, str]]] = None
+        self._database: typing.Optional[pymongo_database.Database] = None
 
-    def get_dict(self, database):
+    def get_dict(self, database: pymongo_database.Database) \
+            -> proto.CachedCollection[typing.Dict[str, str]]:
         """Get the translations dictionary from the database."""
 
-        if database != self._database:
+        if self._cache is None or database != self._database:
 
-            def _populate_cache(cache):
+            def _populate_cache(cache: typing.Dict[str, typing.Dict[str, str]]) -> None:
                 for document in database.translations.find():
                     cache[document.get('string')] = document
 
@@ -30,11 +35,14 @@ class _MongoCachedTranslations(object):
 _TRANSLATIONS = _MongoCachedTranslations()
 
 
-def translate_string(string, locale, database):
+def translate_string(string: str, locale: str, database: pymongo_database.Database) -> str:
     """Translate a string in a given locale."""
 
-    translated_string = _TRANSLATIONS.get_dict(database).get(string, {}).get(locale)
-    if translated_string is None:
+    if not string:
+        return ''
+
+    try:
+        return _TRANSLATIONS.get_dict(database)[string][locale]
+    except KeyError:
         raise TranslationMissingException(
             'Could not find a translation in "{}" for "{}".'.format(locale, string))
-    return translated_string

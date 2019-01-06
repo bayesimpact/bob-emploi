@@ -1,8 +1,7 @@
 """Unit tests for the companies module."""
 
 import unittest
-
-import mock
+from unittest import mock
 
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.api import project_pb2
@@ -14,14 +13,14 @@ class CompaniesTestCase(unittest.TestCase):
 
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_CLIENT_ID', 'client-id')
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_SECRET', 'secret')
-    def test_get_lbb_companies(self, mock_emploi_store_client):
+    def test_get_lbb_companies(self, mock_emploi_store_client: mock.MagicMock) -> None:
         """Basic usage of LBB call."""
 
         mock_emploi_store_client().get_lbb_companies.return_value = [
             'Auchan', 'Carrefour', 'Leclerc',
         ]
         project = project_pb2.Project()
-        project.mobility.city.city_id = '69123'
+        project.city.city_id = '69123'
         project.target_job.job_group.rome_id = 'A5432'
 
         all_companies = list(companies.get_lbb_companies(project))
@@ -35,12 +34,13 @@ class CompaniesTestCase(unittest.TestCase):
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_CLIENT_ID', 'client-id')
     @mock.patch(companies.__name__ + '._EMPLOI_STORE_DEV_SECRET', 'secret')
     @mock.patch(companies.logging.__name__ + '.error')
-    def test_get_lbb_companies_fail(self, mock_log_error, mock_emploi_store_client):
+    def test_get_lbb_companies_fail(
+            self, mock_log_error: mock.MagicMock, mock_emploi_store_client: mock.MagicMock) -> None:
         """LBB crashed."""
 
         mock_emploi_store_client().get_lbb_companies.side_effect = IOError
         project = project_pb2.Project()
-        project.mobility.city.city_id = '69123'
+        project.city.city_id = '69123'
         project.target_job.job_group.rome_id = 'A5432'
 
         # Should not crash.
@@ -50,11 +50,13 @@ class CompaniesTestCase(unittest.TestCase):
         mock_log_error.assert_called()
 
     @mock.patch(companies.logging.__name__ + '.warning')
-    def test_get_lbb_companies_no_credentials(self, mock_log_warning, mock_emploi_store_client):
+    def test_get_lbb_companies_no_credentials(
+            self, mock_log_warning: mock.MagicMock, mock_emploi_store_client: mock.MagicMock) \
+            -> None:
         """Missing Emploi Store Dev credentials."""
 
         project = project_pb2.Project()
-        project.mobility.city.city_id = '69123'
+        project.city.city_id = '69123'
         project.target_job.job_group.rome_id = 'A5432'
 
         # Should not crash.
@@ -66,4 +68,4 @@ class CompaniesTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

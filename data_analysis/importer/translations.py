@@ -21,4 +21,4 @@ def airtable2dicts(base_id, table, view=None):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(airtable2dicts, 'test')  # pragma: no-cover
+    mongo.importer_main(airtable2dicts, 'test')

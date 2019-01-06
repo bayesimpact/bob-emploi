@@ -1,15 +1,21 @@
 """Helper for the mail campaign modules."""
 
-import collections
 import datetime
 import logging
 import os
+import typing
 from urllib import parse
 
 from bson import objectid
 from google.protobuf import json_format
+from google.protobuf import message
+import mypy_extensions
+import pymongo
+import typing_extensions
 
 from bob_emploi.frontend.api import helper_pb2
+from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import auth
@@ -23,6 +29,18 @@ from bob_emploi.frontend.server import mail
 BASE_URL = os.getenv('BASE_URL', 'https://www.bob-emploi.fr')
 
 
+class _Profile(typing_extensions.Protocol):
+    email: str
+
+    @property
+    def name(self) -> str:
+        """First name."""
+
+    @property
+    def last_name(self) -> str:
+        """Last name."""
+
+
 class _DocumentProfile(object):
     """This is to set up a 'profile' from a BobAction document.
 
@@ -30,13 +48,13 @@ class _DocumentProfile(object):
     in the blasting process.
     """
 
-    def __init__(self, document):
+    def __init__(self, document: review_pb2.DocumentToReview) -> None:
         self._document = document
 
-    def _get_email(self):
+    def _get_email(self) -> str:
         return self._document.owner_email
 
-    def _set_email(self, value):
+    def _set_email(self, value: str) -> None:
         self._document.owner_email = value
 
     email = property(_get_email, _set_email)
@@ -46,33 +64,55 @@ class _DocumentProfile(object):
     last_name = property(lambda self: '')
 
 
-_UserCollection = collections.namedtuple(
-    'UserCollection', (
-        'proto', 'email_field', 'get_profile',
-        'can_send_email', 'mongo_collection', 'has_registered_at'))
+_UserProto = typing.TypeVar('_UserProto', bound=message.Message)
 
-# Set default for 'has_registered_at'.
-_UserCollection.__new__.__defaults__ = (True,)
+
+class _UserCollection(typing.Generic[_UserProto]):
+
+    def __init__(
+            self, proto: typing.Type[_UserProto], email_field: str,
+            get_profile: typing.Callable[[_UserProto], _Profile],
+            can_send_email: typing.Callable[[_UserProto], bool], mongo_collection: str,
+            get_id: typing.Callable[[_UserProto], str],
+            has_registered_at: bool = True):
+        self._proto = proto
+        self._email_field = email_field
+        self._get_profile = get_profile
+        self._can_send_email = can_send_email
+        self._mongo_collection = mongo_collection
+        self._has_registered_at = has_registered_at
+        self._get_id = get_id
+
+    proto = property(lambda self: self._proto)
+    email_field = property(lambda self: self._email_field)
+    get_profile = property(lambda self: self._get_profile)
+    can_send_email = property(lambda self: self._can_send_email)
+    mongo_collection = property(lambda self: self._mongo_collection)
+    has_registered_at = property(lambda self: self._has_registered_at)
+    get_id = property(lambda self: self._get_id)
+
 
 # Don't forget to remove filter on registeredAt when blasting on documents.
 BOB_ACTION_DOCUMENTS = _UserCollection(
-    proto=review_pb2.DocumentToReview, email_field='ownerEmail', get_profile=_DocumentProfile,
+    proto=review_pb2.DocumentToReview, email_field='ownerEmail',
+    get_profile=typing.cast(
+        typing.Callable[[review_pb2.DocumentToReview], _Profile], _DocumentProfile),
     can_send_email=lambda doc: True, mongo_collection='cvs_and_cover_letters',
-    has_registered_at=False)
+    get_id=lambda doc: doc.user_id, has_registered_at=False)
 BOB_ACTION_HELPERS = _UserCollection(
     proto=helper_pb2.Helper, email_field='email', get_profile=lambda helper: helper,
-    can_send_email=lambda helper: True, mongo_collection='helper')
+    can_send_email=lambda helper: True, mongo_collection='helper',
+    get_id=lambda helper: helper.user_id, has_registered_at=True)
 BOB_USERS = _UserCollection(
-    proto=user_pb2.User, email_field='profile.email', get_profile=lambda user: user.profile,
+    proto=user_pb2.User, email_field='profile.email',
+    get_profile=lambda user: user.profile,
     # Do not send emails to users who said they have stopped seeking.
     can_send_email=lambda user: not any(
         status.seeking == user_pb2.STOP_SEEKING for status in user.employment_status),
-    mongo_collection='user')
+    mongo_collection='user', get_id=lambda user: user.user_id)
 
 
-class Campaign(collections.namedtuple('Campaign', [
-        'mailjet_template', 'mongo_filters', 'get_vars', 'sender_name', 'sender_email',
-        'on_email_sent', 'users_collection', 'is_coaching', 'is_big_focus'])):
+class Campaign(typing.Generic[_UserProto]):
     """A Named tuple to define a campaign for blasting mails.
 
         - mailjet_template: the mailjet ID for the template.
@@ -96,19 +136,58 @@ class Campaign(collections.namedtuple('Campaign', [
         - is_big_focus: whether it's a big focus on a topic.
     """
 
+    def __init__(
+            self, mailjet_template: str, mongo_filters: typing.Dict[str, typing.Any],
+            get_vars: typing.Callable[
+                [
+                    _UserProto,
+                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'database'),
+                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'users_database'),
+                ],
+                typing.Optional[typing.Dict[str, str]],
+            ],
+            sender_name: str, sender_email: str,
+            on_email_sent: typing.Optional[typing.Callable[
+                [
+                    _UserProto,
+                    mypy_extensions.DefaultNamedArg(user_pb2.EmailSent, 'email_sent'),
+                    mypy_extensions.DefaultNamedArg(typing.Dict[str, str], 'template_vars'),
+                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'database'),
+                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'user_database'),
+                ], None]] = None,  # pylint: disable=bad-whitespace
+            users_collection: _UserCollection[typing.Any] = BOB_USERS, is_coaching: bool = False,
+            is_big_focus: bool = False) -> None:
+        self._mailjet_template = mailjet_template
+        self._mongo_filters = mongo_filters
+        self._get_vars = get_vars
+        self._sender_name = sender_name
+        self._sender_email = sender_email
+        self._on_email_sent = on_email_sent
+        self._users_collection = users_collection
+        self._is_coaching = is_coaching
+        self._is_big_focus = is_big_focus
+
+    is_coaching = property(lambda self: self._is_coaching)
+    is_big_focus = property(lambda self: self._is_big_focus)
+    mongo_filters = property(lambda self: self._mongo_filters)
+    users_collection = property(lambda self: self._users_collection)
+
     def send_mail(
-            self, campaign_id, user, database, users_database, action='dry-run',
-            dry_run_email='pascal@bayes.org', mongo_user_update=None):
+            self, campaign_id: str, user: _UserProto, database: pymongo.database.Database,
+            users_database: pymongo.database.Database, action: str = 'dry-run',
+            dry_run_email: str = 'pascal@bayes.org',
+            mongo_user_update: typing.Optional[typing.Dict[str, typing.Any]] = None) -> bool:
         """Send an email for this campaign."""
 
-        template_vars = self.get_vars(user, database=database, users_database=users_database)
+        template_vars = self._get_vars(user, database=database, users_database=users_database)
         if not template_vars:
             return False
 
-        collection = self.users_collection
+        collection = self._users_collection
 
         if action == 'list':
-            logging.info('%s: %s %s', campaign_id, user.user_id, collection.get_profile(user).email)
+            user_id = collection.get_id(user)
+            logging.info('%s: %s %s', campaign_id, user_id, collection.get_profile(user).email)
             return True
 
         if action not in ('dry-run', 'send'):
@@ -118,8 +197,8 @@ class Campaign(collections.namedtuple('Campaign', [
             collection.get_profile(user).email = dry_run_email
 
         res = mail.send_template(
-            self.mailjet_template, collection.get_profile(user), template_vars,
-            sender_email=self.sender_email, sender_name=self.sender_name,
+            self._mailjet_template, collection.get_profile(user), template_vars,
+            sender_email=self._sender_email, sender_name=self._sender_name,
             campaign_id=campaign_id)
         logging.info('Email sent to %s', collection.get_profile(user).email)
 
@@ -128,37 +207,34 @@ class Campaign(collections.namedtuple('Campaign', [
         email_sent = mail.create_email_sent_proto(res)
         if not email_sent:
             logging.warning('Impossible to retrieve the sent email ID:\n%s', res.json())
+            return False
         if action == 'dry-run':
             return True
 
-        email_sent.mailjet_template = self.mailjet_template
+        email_sent.mailjet_template = self._mailjet_template
         email_sent.campaign_id = campaign_id
-        if mongo_user_update and '$push' in mongo_user_update:
-            raise ValueError(  # pragma: no-cover
-                '$push operations are not allowed in mongo_user_update:\n{}'  # pragma: no-cover
-                .format(mongo_user_update))  # pragma: no-cover
+        if mongo_user_update and '$push' in mongo_user_update:  # pragma: no-cover
+            raise ValueError(
+                '$push operations are not allowed in mongo_user_update:\n{}'
+                .format(mongo_user_update))
         users_database.get_collection(collection.mongo_collection).update_one(
-            {'_id': objectid.ObjectId(user.user_id)},
+            {'_id': objectid.ObjectId(collection.get_id(user))},
             dict(mongo_user_update or {}, **{'$push': {
                 'emailsSent': json_format.MessageToDict(email_sent),
             }}))
 
-        if self.on_email_sent:
-            self.on_email_sent(
+        if self._on_email_sent:
+            self._on_email_sent(
                 user, email_sent=email_sent, template_vars=template_vars,
                 database=database, user_database=users_database)
 
         return True
 
 
-# Set default for 'on_email_sent', 'users_collection', 'is_coaching', 'is_big_focus'.
-Campaign.__new__.__defaults__ = (None, BOB_USERS, False, False)
+_CAMPAIGNS: typing.Dict[str, Campaign[typing.Any]] = {}
 
 
-_CAMPAIGNS = {}
-
-
-def register_campaign(campaign_id, campaign):
+def register_campaign(campaign_id: str, campaign: Campaign[_UserProto]) -> None:
     """Registers an email campaign."""
 
     if campaign_id in _CAMPAIGNS:
@@ -166,31 +242,31 @@ def register_campaign(campaign_id, campaign):
     _CAMPAIGNS[campaign_id] = campaign
 
 
-def get_campaign(campaign_id):
+def get_campaign(campaign_id: str) -> Campaign[_UserProto]:
     """Fetch an email campaign."""
 
     return _CAMPAIGNS[campaign_id]
 
 
-def list_all_campaigns():
+def list_all_campaigns() -> typing.KeysView[str]:
     """Fetch all available campaign IDs."""
 
     return _CAMPAIGNS.keys()
 
 
-def get_coaching_campaigns():
+def get_coaching_campaigns() -> typing.Dict[str, Campaign[typing.Any]]:
     """Fetch all coaching campaigns as a dict."""
 
     return {k: v for k, v in _CAMPAIGNS.items() if v.is_coaching}
 
 
-def as_template_boolean(truth):
+def as_template_boolean(truth: typing.Any) -> str:
     """puts truth value of input as 'True' or '' in template vars."""
 
     return 'True' if truth else ''
 
 
-def get_status_update_link(user_id, profile):
+def get_status_update_link(user_id: str, profile: user_pb2.UserProfile) -> str:
     """Make link with token from user ID for RER status update."""
 
     survey_token = parse.quote(auth.create_token(user_id, role='employment-status'))
@@ -203,7 +279,8 @@ def get_status_update_link(user_id, profile):
 
 
 # TODO(cyrille): Fix this to account for same mode in different FAPs.
-def get_application_modes(rome_id, database):
+def get_application_modes(rome_id: str, database: pymongo.database.Database) \
+        -> typing.Optional[typing.List[job_pb2.ModePercentage]]:
     """Fetch all possible application modes for all FAP corresponding to the given ROME."""
 
     job_group_info = jobs.get_group_proto(database, rome_id)
@@ -216,7 +293,7 @@ def get_application_modes(rome_id, database):
     return [mode for modes in fap_modes for mode in modes]
 
 
-def get_french_months_ago(instant):
+def get_french_months_ago(instant: datetime.datetime) -> typing.Optional[str]:
     """Duration in months from given instant to now, in a French phrase.
     If duration is negative, returns None.
     """
@@ -233,18 +310,17 @@ def get_french_months_ago(instant):
         return 'quelques'
 
 
-def create_logged_url(user_id, path=''):
+def create_logged_url(user_id: str, path: str = '') -> str:
     """Returns a route with given path and necessary query parameters for authentication."""
 
     auth_token = parse.quote(auth.create_token(user_id, role='auth', is_using_timestamp=True))
     return '{}{}?user={}&authToken={}'.format(BASE_URL, path, user_id, auth_token)
 
 
-def job_search_started_months_ago(project):
+def job_search_started_months_ago(project: project_pb2.Project) -> float:
     """Number of months since project started until now. If project has not started, return -1."""
 
-    if project.job_search_has_not_started\
-            or not project.HasField('job_search_started_at'):
+    if project.WhichOneof('job_search_length') != 'job_search_started_at':
         # TODO(pascal): Clean this up when this field is fully redundant in the DB.
         if project.job_search_length_months and project.HasField('created_at'):
             delta = datetime.datetime.now() - project.created_at.ToDatetime()
@@ -254,7 +330,7 @@ def job_search_started_months_ago(project):
     return delta.days / 30.5
 
 
-def get_default_vars(user):
+def get_default_vars(user: user_pb2.User) -> typing.Dict[str, str]:
     """Compute default variables used in all emails: firstName, gender and unsubscribeLink."""
 
     unsubscribe_token = parse.quote(auth.create_token(user.profile.email, role='unsubscribe'))
@@ -267,7 +343,8 @@ def get_default_vars(user):
     }
 
 
-def get_default_coaching_email_vars(user):
+def get_default_coaching_email_vars(
+        user: user_pb2.User, **unused_kwargs: typing.Any) -> typing.Dict[str, str]:
     """Compute default variables used in all coaching emails."""
 
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))

@@ -4,10 +4,11 @@ Created by Stephan on Nov 3, 2015
 """
 
 import codecs
-import re
-import os
-import glob
 from copy import copy, deepcopy
+import glob
+import os
+import re
+import typing
 
 import pandas as pd
 import xmltodict
@@ -20,7 +21,7 @@ _FAP_NAME_REGEXP = re.compile(
     r'^"(?P<fap_code>[A-Z0-9]{1,5})"="(?P=fap_code) : (?P<fap_name>.*)"$')
 
 
-def parse_fap_rome_crosswalk(lines):
+def parse_fap_rome_crosswalk(lines: typing.Iterable[str]) -> pd.DataFrame:
     """docstring for parse_FAP_ROME_crosswalk"""
 
     collect = []
@@ -38,7 +39,7 @@ def parse_fap_rome_crosswalk(lines):
     return res
 
 
-def parse_intitule_fap(filename='data/intitule_fap2009.txt'):
+def parse_intitule_fap(filename: str = 'data/intitule_fap2009.txt') -> pd.DataFrame:
     """Parse the name of the FAP from the official file.
 
     Args:
@@ -59,7 +60,7 @@ def parse_intitule_fap(filename='data/intitule_fap2009.txt'):
     return faps_df
 
 
-def load_fiches_from_xml(xml_folder):
+def load_fiches_from_xml(xml_folder: str) -> typing.List[typing.Dict[typing.Any, typing.Any]]:
     """Load ROME files ("fiches" in French) from XML."""
 
     fiche_dicts = []
@@ -70,16 +71,17 @@ def load_fiches_from_xml(xml_folder):
     return fiche_dicts
 
 
-def _extract_path(tree, path):
+def _extract_path(tree: typing.Dict[str, typing.Any], path: typing.Iterable[str]) \
+        -> typing.List[typing.Any]:
     res = copy(tree)
     for elem in path:
-        res = res.get(elem)
-    if not isinstance(res, list):
-        res = [res]
-    return res
+        res = typing.cast(typing.Dict[str, typing.Any], res.get(elem))
+    if isinstance(res, list):
+        return res
+    return [res]
 
 
-def _extract_activities(tree):
+def _extract_activities(tree: typing.Dict[str, typing.Any]) -> typing.List[typing.Dict[str, str]]:
     acts = _extract_path(
         tree, ['bloc_activites_de_base', 'activites_de_base', 'item_ab'])
     for act in acts:
@@ -89,7 +91,8 @@ def _extract_activities(tree):
     return acts
 
 
-def _compute_riasec_profile(activities):
+def _compute_riasec_profile(activities: typing.Iterable[typing.Dict[str, str]]) \
+        -> typing.Dict[str, int]:
     riasec_profile = {c: 0 for c in 'RIASEC'}
     for act in activities:
         if 'riasec_majeur' in act:
@@ -97,8 +100,9 @@ def _compute_riasec_profile(activities):
     return riasec_profile
 
 
-def _extract_skills(tree):
-    action_skills = []
+def _extract_skills(tree: typing.Dict[str, typing.Dict[str, str]]) \
+        -> typing.List[typing.Dict[str, str]]:
+    action_skills: typing.List[typing.Dict[str, str]] = []
     acts_block = tree['bloc_activites_de_base']
     theory_skills = _extract_path(
         acts_block, ['savoir_theorique_et_proceduraux', 'item_ab_stp'])
@@ -112,7 +116,7 @@ def _extract_skills(tree):
     return res
 
 
-def fiche_extractor(fiche):
+def fiche_extractor(fiche: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
     """Extract info from a ROME file ("fiche" in French).
 
     Args:
@@ -122,7 +126,7 @@ def fiche_extractor(fiche):
     """
 
     fiche = deepcopy(fiche)
-    rome = copy(fiche['bloc_code_rome'])
+    rome = typing.cast(typing.Dict[str, typing.Any], copy(fiche['bloc_code_rome']))
     rome['description'] = _extract_path(fiche, ['definition', '#text'])
     rome['work_cond'] = _extract_path(
         fiche, ['condition_exercice_activite', '#text'])
@@ -136,26 +140,7 @@ def fiche_extractor(fiche):
     return rome
 
 
-def load_french_cities_df(path):
-    """Load French cities as a pandas Data Frame."""
-
-    # got column names from SQL version of file
-    # (http://sql.sh/ressources/sql-villes-france/villes_france.sql)
-    cities = pd.read_csv(path)
-    cols = ['ville_id', 'ville_departement', 'ville_slug', 'ville_nom',
-            'ville_nom_simple', 'ville_nom_reel', 'ville_nom_soundex',
-            'ville_nom_metaphone', 'ville_code_postal', 'ville_commune',
-            'ville_code_commune', 'ville_arrondissement', 'ville_canton',
-            'ville_amdi', 'ville_population_2010', 'ville_population_1999',
-            'ville_population_2012', 'ville_densite_2010', 'ville_surface',
-            'ville_longitude_deg', 'ville_latitude_deg', 'ville_longitude_grd',
-            'ville_latitude_grd', 'ville_longitude_dms',
-            'ville_latitude_dms', 'ville_zmin', 'ville_zmax']
-    cities.columns = cols
-    return cities
-
-
-def load_applications_sample_df(database):
+def load_applications_sample_df(database: typing.Any) -> pd.DataFrame:
     """
     Given a DB object, loads a deterministic sample of 100,000 user
     applications, postprocesses it into a more human-readable format, and
@@ -170,14 +155,6 @@ def load_applications_sample_df(database):
                 USING (application_id)
     '''
 
-    def _rename_column(col):
-        if '_french' in col:
-            return '{}_french'.format(column_names[col[:-7]])
-        elif '_english' in col:
-            return '{}_english'.format(column_names[col[:-8]])
-        else:
-            return column_names[col]
-
     # Load column names transformation dict from column_descriptions spreadsheet
     column_names_df = pd.read_excel(
         '../../data/mixed_sources/FHS_column_descriptions.xlsx',
@@ -185,7 +162,16 @@ def load_applications_sample_df(database):
     column_names_df = column_names_df[
         column_names_df['english_column_name'].map(str) != 'nan']
     column_names = dict(zip(
-        column_names_df.orig_column_name, column_names_df.english_column_name))
+        typing.cast(typing.Iterable[str], column_names_df.orig_column_name),
+        typing.cast(typing.Iterable[str], column_names_df.english_column_name)))
+
+    def _rename_column(col: str) -> str:
+        if '_french' in col:
+            return '{}_french'.format(column_names[col[:-7]])
+        elif '_english' in col:
+            return '{}_english'.format(column_names[col[:-8]])
+        else:
+            return column_names[col]
 
     # Load codebook from spreadsheet and replace column codes with column names
     # everywhere

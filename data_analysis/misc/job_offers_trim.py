@@ -52,5 +52,4 @@ def trim_job_offers_csv(
 
 
 if __name__ == '__main__':
-    # pylint: disable=no-value-for-parameter
-    trim_job_offers_csv(*sys.argv[1:], out=None)  # pragma: no-cover;
+    trim_job_offers_csv(*sys.argv[1:], out=None)  # pylint: disable=no-value-for-parameter

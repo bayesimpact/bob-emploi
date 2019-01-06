@@ -71,7 +71,7 @@ def csv2dicts(offer_types_csv):
 
     # Adding the job groups inside.
     def _create_jobgroups(jobs):
-        return jobs[['name', 'romeId', 'offers']].to_dict(orient='records')
+        return jobs[['name', 'romeId', 'offers']][:5].to_dict(orient='records')
 
     romes_per_dep_month = top_departements_per_month.groupby(
         ['departementId', 'creationMonth', 'departementSeasonalOffers'])\
@@ -94,4 +94,4 @@ def csv2dicts(offer_types_csv):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(csv2dicts, 'seasonal_jobbing')  # pragma: no cover
+    mongo.importer_main(csv2dicts, 'seasonal_jobbing')

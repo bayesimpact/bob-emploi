@@ -5,7 +5,6 @@ import json
 import unittest
 
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -15,44 +14,44 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
 
     model_id = 'advice-civic-service'
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(AdviceCivicServiceTestCase, self).setUp()
         self.now = datetime.datetime(2018, 2, 2)
 
-    def test_is_young_with_handicap(self):
+    def test_is_young_with_handicap(self) -> None:
         """User already is young and has handicap."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.has_handicap = user_pb2.TRUE
+        persona.user_profile.has_handicap = True
         persona.user_profile.year_of_birth = 1989
-        persona.project.seniority = project_pb2.INTERNSHIP
+        persona.project.seniority = project_pb2.INTERN
         score = self._score_persona(persona)
 
         self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
 
-    def test_is_young_without_handicap(self):
+    def test_is_young_without_handicap(self) -> None:
         """User is young and has no handicap."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.has_handicap = user_pb2.FALSE
+        persona.user_profile.has_handicap = True
         persona.user_profile.year_of_birth = 1995
-        persona.project.seniority = project_pb2.INTERNSHIP
+        persona.project.seniority = project_pb2.INTERN
         score = self._score_persona(persona)
 
         self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
 
-    def test_is_too_old(self):
+    def test_is_too_old(self) -> None:
         """User is older than required age for civic service."""
 
         persona = self._random_persona().clone()
-        persona.user_profile.has_handicap = user_pb2.FALSE
+        persona.user_profile.has_handicap = False
         persona.user_profile.year_of_birth = 1987
-        persona.project.seniority = project_pb2.INTERNSHIP
+        persona.project.seniority = project_pb2.INTERN
         score = self._score_persona(persona)
 
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
 
-    def test_is_too_young(self):
+    def test_is_too_young(self) -> None:
         """User is younger than required age for civic service."""
 
         persona = self._random_persona().clone()
@@ -61,7 +60,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
 
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
 
-    def test_has_experience(self):
+    def test_has_experience(self) -> None:
         """User has too much experience."""
 
         persona = self._random_persona().clone()
@@ -74,7 +73,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
 class CivicServiceEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/civic-service endpoint."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(CivicServiceEndpointTestCase, self).setUp()
         self.now = datetime.datetime(2018, 2, 2)
         self._db.advice_modules.insert_one({
@@ -82,7 +81,7 @@ class CivicServiceEndpointTestCase(base_test.ServerTestCase):
             'triggerScoringModel': 'advice-civic-service',
         })
 
-    def test_two_missions(self):
+    def test_two_missions(self) -> None:
         """Basic test with two recommended missions."""
 
         self._db.local_missions.insert_one(
@@ -109,9 +108,7 @@ class CivicServiceEndpointTestCase(base_test.ServerTestCase):
         response = self.app.post(
             '/api/advice/civic-service',
             data=json.dumps({
-                'projects': [{
-                    'mobility': {'city': {'departementId': '45'}},
-                }],
+                'projects': [{'city': {'departementId': '45'}}],
                 'profile': {
                     'yearOfBirth': datetime.date.today().year - 22,
                 },
@@ -138,7 +135,7 @@ class CivicServiceEndpointTestCase(base_test.ServerTestCase):
             ],
             missions_data.get('missions'))
 
-    def test_bad_departement(self):
+    def test_bad_departement(self) -> None:
         """Test with bad departement."""
 
         self._db.local_missions.insert_one(
@@ -158,9 +155,7 @@ class CivicServiceEndpointTestCase(base_test.ServerTestCase):
         response = self.app.post(
             '/api/advice/civic-service',
             data=json.dumps({
-                'projects': [{
-                    'mobility': {'city': {'departementId': 'XX'}},
-                }],
+                'projects': [{'city': {'departementId': 'XX'}}],
                 'profile': {
                     'yearOfBirth': datetime.date.today().year - 22,
                 },
@@ -172,4 +167,4 @@ class CivicServiceEndpointTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

@@ -16,7 +16,7 @@ message MonthlySeasonalDepartementStats {
   // The total number of seasonal offers in this departement for a given month.
   int32 departement_seasonal_offers = 2;
 
-  // The job groups which hire the most sorted by most to least.
+  // The 5 job groups which hire the most sorted by most to least.
   repeated JobGroupStats job_groups = 3;
 
   // Departement with location formulation, e.g.: "en Corrèze".

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="17px" height="17px" viewBox="0 0 17 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.2 (67145) - http://www.bohemiancoding.com/sketch -->
+    <title>warning-sign</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Diagnostic-Copy-17" transform="translate(-690.000000, -284.000000)">
+            <g id="Group-6" transform="translate(420.000000, 107.000000)">
+                <g id="warning-sign" transform="translate(269.000000, 175.000000)">
+                    <path d="M11.2888544,3.57770876 L17.5527864,16.1055728 C18.0467649,17.0935298 17.6463162,18.2948759 16.6583592,18.7888544 C16.3806483,18.9277098 16.0744222,19 15.763932,19 L3.23606798,19 C2.13149848,19 1.23606798,18.1045695 1.23606798,17 C1.23606798,16.6895098 1.30835816,16.3832837 1.4472136,16.1055728 L7.71114562,3.57770876 C8.20512412,2.58975177 9.4064702,2.18930308 10.3944272,2.68328157 C10.781482,2.87680898 11.095327,3.19065396 11.2888544,3.57770876 Z" id="Triangle" fill="#EE4366" fill-rule="nonzero"></path>
+                    <text id="!" font-family="Lato-Black, Lato" font-size="10" font-weight="700" fill="#FFFFFF">
+                        <tspan x="8" y="16">!</tspan>
+                    </text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

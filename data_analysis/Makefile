@@ -50,17 +50,17 @@ data/geo/insee_france_regions.tsv:
 
 data/geo/french_urban_entities.xls:
 	mkdir -p "$(@D)"
-	wget -O "$@.zip" 'https://www.insee.fr/fr/statistiques/fichier/2115018/UU2010%20au%2001-01-2017.zip'
+	wget -O "$@.zip" 'https://www.insee.fr/fr/statistiques/fichier/2115018/UU2010%20au%2001-01-2018.zip'
 	unzip "$@.zip" -d "$(@D)"
 	rm "$@.zip"
-	mv "$(@D)/UU2010 au 01-01-2017.xls" "$@"
+	mv "$(@D)/UU2010 au 01-01-2018.xls" "$@"
 
 data/geo/french_urban_areas.xls:
 	mkdir -p "$(@D)"
-	wget -O "$@.zip" https://www.insee.fr/fr/statistiques/fichier/2115011/AU2010%20au%2001-01-2017.zip
+	wget -O "$@.zip" https://www.insee.fr/fr/statistiques/fichier/2115011/AU2010_au_01-01-2018_V2.zip
 	unzip "$@.zip" -d "$(@D)"
 	rm "$@.zip"
-	mv "$(@D)/AU2010 au 01-01-2017.xls" "$@"
+	mv "$(@D)/AU2010 au 01-01-2018_V2.xls" "$@"
 
 rome: data/rome/ficheMetierXml/ficheMetierXml.zip data/rome/RefRomeCsv.zip
 
@@ -78,7 +78,7 @@ data/rome/RefRomeCsv.zip:
 	# Check that the "3 D" bug is still there.
 	grep -q -r "3 D" data/rome/csv
 	# TODO: Get rid of this once the ROME has been cleaned up.
-	sed -i -e "s/trcie/trice/g;s/2 D/2D/g;s/3 D/3D/g" data/rome/csv/*.csv
+	sed -i -e "s/2 D/2D/g;s/3 D/3D/g" data/rome/csv/*.csv
 
 data/dares/caracteristiques_des_personnes_en_emploi_2014.xls:
 	mkdir -p $(@D)
@@ -146,7 +146,7 @@ data/rome/sample_job_names.txt: data/rome/RefRomeCsv.zip
 	mkdir -p $(@D)
 	python bob_emploi/data_analysis/misc/sample_rome_jobs.py $(<D)/csv/*referentiel_appellation*.csv $@
 
-data/recent_job_offers.csv:
+data/job_offers/recent_job_offers.csv:
 	mkdir -p $(@D)
 	python bob_emploi/data_analysis/emploi_store_api/emploi_store_downloader.py offres Offres.*d.emploi $@
 

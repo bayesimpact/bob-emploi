@@ -3,7 +3,10 @@
 import datetime
 import logging
 import re
+import typing
 from urllib import parse
+
+import pymongo
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -19,7 +22,7 @@ from bob_emploi.frontend.server.asynchronous.mail import campaign
 _DISTRICT_MATCHER = re.compile(r'(\w+)\s(\d+e)r?(\s{1,2}Arrondissement)')
 
 
-def strip_district(city):
+def strip_district(city: str) -> str:
     """Strip district from a city name, ie keep 'Lyon' from 'Lyon 5e Arrondissement'.
 
     Returns:
@@ -32,7 +35,9 @@ def strip_district(city):
     return city
 
 
-def _get_network_vars(user, database=None, **unused_kwargs):
+def _get_network_vars(
+        user: user_pb2.User, database: pymongo.database.Database = None,
+        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the network email.
 
     Returns:
@@ -40,9 +45,6 @@ def _get_network_vars(user, database=None, **unused_kwargs):
         should be sent.
     """
 
-    if not user.projects or user.projects[0].is_incomplete:
-        logging.info('User has no complete project')
-        return None
     project = user.projects[0]
 
     if project.network_estimate != 1:
@@ -67,8 +69,7 @@ def _get_network_vars(user, database=None, **unused_kwargs):
 
     is_hairdresser_or_in_marseille = \
         project.target_job.job_group.rome_id.startswith('D') or \
-        project.city.departement_id == '13' or \
-        project.mobility.city.departement_id == '13'
+        project.city.departement_id == '13'
     other_job_in_city = 'coiffeur à Marseille'
     if is_hairdresser_or_in_marseille:
         other_job_in_city = 'secrétaire à Lyon'
@@ -79,12 +80,14 @@ def _get_network_vars(user, database=None, **unused_kwargs):
         'jobInCity': '{} {}'.format(
             french.lower_first_letter(french.genderize_job(
                 project.target_job, user.profile.gender)),
-            french.in_city(strip_district(project.city.name or project.mobility.city.name))),
+            french.in_city(strip_district(project.city.name))),
         'emailInUrl': parse.quote(user.profile.email),
     })
 
 
-def network_plus_vars(user, database=None, **unused_kwargs):
+def network_plus_vars(
+        user: user_pb2.User, database: pymongo.database.Database = None,
+        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the network email.
 
     Returns:
@@ -92,9 +95,6 @@ def network_plus_vars(user, database=None, **unused_kwargs):
         should be sent.
     """
 
-    if not user.projects:
-        logging.info('User has no project')
-        return None
     project = user.projects[0]
 
     if project.network_estimate < 2:
@@ -123,11 +123,11 @@ def network_plus_vars(user, database=None, **unused_kwargs):
     if not network_percentages:
         return None
     average_network_percentage = sum(network_percentages) / len(network_percentages)
-    if average_network_percentage < 55:
+    if average_network_percentage > 55:
         network_application_importance = 'que la majorité'
-    if average_network_percentage >= 45 and average_network_percentage <= 55:
+    elif average_network_percentage >= 45:
         network_application_importance = 'que la moitié'
-    if average_network_percentage >= 25 and average_network_percentage < 45:
+    elif average_network_percentage >= 25:
         network_application_importance = "qu'un tiers"
     else:
         return None
@@ -142,6 +142,12 @@ def network_plus_vars(user, database=None, **unused_kwargs):
     age = datetime.date.today().year - user.profile.year_of_birth
     max_young = 35
 
+    try:
+        in_departement = geo.get_in_a_departement_text(database, project.city.departement_id)
+    except KeyError:
+        logging.warning('Could not find departement (%s)', project.city.departement_id)
+        return None
+
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'frustration': user_pb2.Frustration.Name(worst_frustration) if worst_frustration else '',
         'hasChildren': campaign.as_template_boolean(has_children),
@@ -151,13 +157,11 @@ def network_plus_vars(user, database=None, **unused_kwargs):
         'hasLargeNetwork': campaign.as_template_boolean(project.network_estimate >= 2),
         'hasWorkedBefore': campaign.as_template_boolean(
             project.kind != project_pb2.FIND_A_FIRST_JOB),
-        'inCity': french.in_city(project.city.name or project.mobility.city.name),
+        'inCity': french.in_city(project.city.name),
         'inTargetDomain': in_target_domain,
         'isYoung': campaign.as_template_boolean(age <= max_young),
         'jobGroupInDepartement': '{} {}'.format(
-            french.lower_first_letter(project.target_job.job_group.name),
-            geo.get_in_a_departement_text(
-                database, project.city.departement_id or project.mobility.city.departement_id)),
+            french.lower_first_letter(project.target_job.job_group.name), in_departement),
         'networkApplicationPercentage': network_application_importance,
     })
 
@@ -165,11 +169,14 @@ def network_plus_vars(user, database=None, **unused_kwargs):
 campaign.register_campaign('focus-network', campaign.Campaign(
     mailjet_template='205970',
     mongo_filters={
-        'projects.networkEstimate': 1,
+        'projects': {'$elemMatch': {
+            'networkEstimate': 1,
+            'isIncomplete': {'$ne': True},
+        }},
     },
     get_vars=_get_network_vars,
-    sender_name='Margaux de Bob',
-    sender_email='margaux@bob-emploi.fr',
+    sender_name="Joanna et l'équipe de Bob",
+    sender_email='joanna@bob-emploi.fr',
     is_coaching=True,
     is_big_focus=True,
 ))
@@ -177,12 +184,14 @@ campaign.register_campaign('focus-network', campaign.Campaign(
 campaign.register_campaign('network-plus', campaign.Campaign(
     mailjet_template='300528',
     mongo_filters={
-        'projects': {'$exists': True},
-        'projects.networkEstimate': {'$gte': 2},
+        'projects': {'$elemMatch': {
+            'networkEstimate': {'$gte': 2},
+            'isIncomplete': {'$ne': True},
+        }},
     },
     get_vars=network_plus_vars,
-    sender_name='Margaux de Bob',
-    sender_email='margaux@bob-emploi.fr',
+    sender_name="Joanna et l'équipe de Bob",
+    sender_email='joanna@bob-emploi.fr',
     is_coaching=True,
     is_big_focus=True,
 ))

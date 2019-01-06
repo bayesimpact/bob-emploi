@@ -1,6 +1,7 @@
 """Tests on Dockerfiles."""
 
 from os import path
+import typing
 import unittest
 
 _BLOCK_SEPARATOR = '\n\n'
@@ -16,7 +17,7 @@ class SyncTestCase(unittest.TestCase):
     testing.
     """
 
-    def test_sync(self):
+    def test_sync(self) -> None:
         """Dockerfiles are in sync."""
 
         self.maxDiff = None  # pylint: disable=invalid-name
@@ -35,11 +36,11 @@ class SyncTestCase(unittest.TestCase):
         )
 
 
-def _read_blocks(filename):
+def _read_blocks(filename: str) -> typing.List[str]:
     with open(path.join(path.dirname(path.dirname(__file__)), filename), 'r') as file_handle:
         file_content = file_handle.read()
     return [block.strip() for block in file_content.split(_BLOCK_SEPARATOR)]
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

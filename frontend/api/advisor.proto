@@ -2,6 +2,9 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
+import "bob_emploi/frontend/api/diagnostic.proto";
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 
 // The definition of an Advice Module. See http://go/bob:advisor-design.
@@ -23,7 +26,7 @@ message AdviceModule {
   map<int32, string> title_x_stars = 15;
 
   // Name of the scoring model to decide whether to trigger this advice.
-  string trigger_scoring_model = 1;
+  string trigger_scoring_model = 1 [(string_format) = SCORING_MODEL_ID];
 
   // ID of the sticky action template to engage the user when they have
   // accepted the advice.
@@ -35,7 +38,7 @@ message AdviceModule {
 
   // Name of the Advice message's field to store extra data for this module to
   // render a card in the client.
-  string extra_data_field_name = 5;
+  string extra_data_field_name = 5 [deprecated = true];
 
   // Unordered list of ID of all tips to help apply this advice concretely.
   repeated string tip_template_ids = 6;
@@ -88,33 +91,39 @@ message EmailHistory {
 
 // Definition of an advice which content is fully dynamic and determined by the
 // server, e.g. the "Specific to Job" advice.
-// Next ID: 8.
+// Next ID: 11.
 message DynamicAdvice {
   // Title of this advice.
-  string title = 1;
+  string title = 1 [(string_format) = NATURAL_LANGUAGE];
 
   // A short version of the title.
-  string short_title = 8;
+  string short_title = 8 [(string_format) = NATURAL_LANGUAGE];
+
+  // A set of diagnostic topics that the dynamic advice belongs to.
+  repeated DiagnosticTopic diagnostic_topics = 9;
+
+  // A goal that can be reached by applying this piece of advice.
+  // It starts with a lowercase and can finish the sentence "5 more tips to ..."
+  string goal = 10 [(string_format) = NATURAL_LANGUAGE, (string_format) = PARTIAL_SENTENCE];
 
   // Content for the advice card. This is using Markdown.
-  string card_text = 2;
+  string card_text = 2 [(string_format) = NATURAL_LANGUAGE];
 
   // Header content for the expanded advice card. This is using Mardown.
-  string expanded_card_header = 6;
+  string expanded_card_header = 6 [(string_format) = NATURAL_LANGUAGE];
 
   // Header content for the expanded advice card, feminine version. This is
   // using Mardown.
-  string expanded_card_header_feminine = 7;
+  string expanded_card_header_feminine = 7 [(string_format) = NATURAL_LANGUAGE];
 
   // Content for the expanded advice card. This is using Markdown.
-  repeated string expanded_card_items = 3;
+  repeated string expanded_card_items = 3 [(string_format) = NATURAL_LANGUAGE];
 
   // Content for the expanded advice card, feminine version. This is using
   // Markdown.
-  repeated string expanded_card_items_feminine = 4;
+  repeated string expanded_card_items_feminine = 4 [(string_format) = NATURAL_LANGUAGE];
 
   // A set of filter IDs: do not show the advice card if one these filters
   // returns false for the project.
-  // See the list of available filters in scoring.py.
-  repeated string filters = 5;
+  repeated string filters = 5 [(string_format) = SCORING_MODEL_ID];
 }

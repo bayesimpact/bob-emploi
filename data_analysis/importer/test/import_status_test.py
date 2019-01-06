@@ -4,9 +4,10 @@ import datetime
 import logging
 import re
 import unittest
+from unittest import mock
 
-import mock
 import mongomock
+import pymongo
 import termcolor
 
 from bob_emploi.frontend.api import job_pb2
@@ -23,9 +24,7 @@ class _AnyColorText(object):
         self.text = _strip_colors(str(text))
 
     def __eq__(self, other_text):
-        if not isinstance(other_text, str):
-            return False
-        return self.text == _strip_colors(other_text)
+        return isinstance(other_text, str) and self.text == _strip_colors(other_text)
 
     def __repr__(self):
         return 'AnyColorText({})'.format(self.text)
@@ -117,8 +116,8 @@ class ImportStatusBasicTests(unittest.TestCase):
             two_days_ago + datetime.timedelta(seconds=1),
             meta_info['test_collection']['updated_at'])
 
+    @mongomock.patch(('test_url',))
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'missing-in-db-importer': import_status.Importer(
             name='missing in db', script=None, args=None, is_imported=True,
@@ -133,11 +132,10 @@ class ImportStatusBasicTests(unittest.TestCase):
             name='in both not needed', script=None, args=None, is_imported=False,
             proto_type=None, key=None, has_pii=False)
         })
-    def test_main_function(self, pymongo_mock, mock_log_info):
+    def test_main_function(self, mock_log_info):
         """Basic usage."""
 
-        client = mongomock.MongoClient('mongodb://test_url/test_db')
-        pymongo_mock.MongoClient.return_value = client
+        client = pymongo.MongoClient('mongodb://test_url/test_db')
 
         mongo_db = client.get_database('test_db')
         mongo_db.create_collection('missing-in-importers')
@@ -173,8 +171,8 @@ class ImportStatusBasicTests(unittest.TestCase):
             _AnyColorText('in both with meta (JobGroup)'),
             _AnyColorText('last import: {}'.format(two_days_ago)))
 
+    @mongomock.patch(('test_url',))
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'non-personal': import_status.Importer(
             name='non personal', script=None, args=None, is_imported=True,
@@ -186,11 +184,10 @@ class ImportStatusBasicTests(unittest.TestCase):
             name='personal not imported', script=None, args=None, is_imported=False,
             proto_type=None, key=None, has_pii=True)
         })
-    def test_personal_database(self, pymongo_mock, mock_log_info):
+    def test_personal_database(self, mock_log_info):
         """Check division between personal/non personal databases."""
 
-        client = mongomock.MongoClient('mongodb://test_url/test_db')
-        pymongo_mock.MongoClient.return_value = client
+        client = pymongo.MongoClient('mongodb://test_url/test_db')
 
         mongo_db = client.get_database('test_db')
         mongo_db.create_collection('non-personal')
@@ -205,8 +202,8 @@ class ImportStatusBasicTests(unittest.TestCase):
             'The collection%s with missing importer%s: %s\n',
             '', ' is', _AnyColorText("{'non-personal'}"))
 
+    @mongomock.patch(('test_url',))
     @mock.patch(logging.__name__ + '.info')
-    @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'collection_id': import_status.Importer(
             name='Collection name',
@@ -215,11 +212,8 @@ class ImportStatusBasicTests(unittest.TestCase):
             is_imported=True,
             proto_type=None, key=None, has_pii=False),
         })
-    def test_display_command(self, pymongo_mock, mock_log_info):
+    def test_display_command(self, mock_log_info):
         """Display the command to import a missing collection."""
-
-        client = mongomock.MongoClient('mongodb://test_url/test_db')
-        pymongo_mock.MongoClient.return_value = client
 
         import_status.main(['mongodb://test_url/test_db'])
         mock_log_info.assert_any_call(
@@ -248,9 +242,9 @@ class ImportStatusBasicTests(unittest.TestCase):
                     self.assertNotIn(key, '\n', msg=name)
                     self.assertNotIn(value, '\n', msg='Importer "{}", arg "{}"'.format(name, key))
 
+    @mongomock.patch(('test_url',))
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
     @mock.patch(import_status.subprocess.__name__ + '.run')
-    @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'collection_id': import_status.Importer(
             name='Collection name',
@@ -259,11 +253,8 @@ class ImportStatusBasicTests(unittest.TestCase):
             is_imported=True,
             proto_type=None, key=None, has_pii=False),
         })
-    def test_run_importer(self, pymongo_mock, mock_subprocess_run):
+    def test_run_importer(self, mock_subprocess_run):
         """Run the command to import a collection."""
-
-        client = mongomock.MongoClient('mongodb://test_url/test_db')
-        pymongo_mock.MongoClient.return_value = client
 
         import_status.main(['mongodb://test_url/test_db', '--run', 'collection_id'])
         mock_subprocess_run.assert_called_once_with([
@@ -273,9 +264,9 @@ class ImportStatusBasicTests(unittest.TestCase):
             '--mongo_collection', 'collection_id',
         ])
 
+    @mongomock.patch(('test_url',))
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
     @mock.patch(import_status.subprocess.__name__ + '.run')
-    @mock.patch(import_status.__name__ + '.pymongo', autospec=mongomock)
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
         'collection_id': import_status.Importer(
             name='Collection name',
@@ -290,11 +281,8 @@ class ImportStatusBasicTests(unittest.TestCase):
             is_imported=True,
             proto_type=None, key=None, has_pii=False),
         })
-    def test_run_multiple_importers(self, pymongo_mock, mock_subprocess_run):
+    def test_run_multiple_importers(self, mock_subprocess_run):
         """Run the commands to import multiple collections."""
-
-        client = mongomock.MongoClient('mongodb://test_url/test_db')
-        pymongo_mock.MongoClient.return_value = client
 
         import_status.main([
             'mongodb://test_url/test_db',

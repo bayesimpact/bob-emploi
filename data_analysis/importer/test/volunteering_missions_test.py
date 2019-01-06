@@ -1,8 +1,8 @@
 """Unit tests for the bob_emploi.importer.volunteering_missions module."""
 
 import unittest
+from unittest import mock
 
-import mock
 import requests
 
 from bob_emploi.frontend.api import association_pb2
@@ -157,4 +157,4 @@ class VolunteeringMissionImporterTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

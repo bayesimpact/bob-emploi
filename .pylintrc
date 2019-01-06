@@ -4,6 +4,7 @@ output=colorized
 # https://github.com/PyCQA/pylint/issues/1276 is solved.
 disable=I,R,no-member
 reports=no
+enable=useless-suppression
 
 [MISCELLANEOUS]
 notes=FIXME,XXX
@@ -19,4 +20,4 @@ ignored-argument-names=unused_.*
 method-rgx=([a-z_][a-z0-9_]{4,30}|test_[a-z0-9_]+)$
 
 [TYPECHECK]
-ignored-modules=pandas.*,numpy.*,farmhash,bob_emploi.frontend.api.*
+ignored-modules=pandas.*,numpy.*,bob_emploi.frontend.api.*

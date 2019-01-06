@@ -31,7 +31,10 @@ class SeasonalJobbingImporterTestCase(unittest.TestCase):
         first_departement_proto = march_proto.departement_stats[0]
         self.assertEqual('06', first_departement_proto.departement_id)
         self.assertEqual(793, first_departement_proto.departement_seasonal_offers)
-        self.assertEqual(11, len(first_departement_proto.job_groups))
+
+        job_groups_offers = [jg.offers for jg in first_departement_proto.job_groups]
+        self.assertEqual(5, len(job_groups_offers))
+        self.assertEqual(sorted(job_groups_offers, reverse=True), job_groups_offers)
         self.assertEqual(
             'Personnel de cuisine',
             first_departement_proto.job_groups[0].name.strip())
@@ -40,4 +43,4 @@ class SeasonalJobbingImporterTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

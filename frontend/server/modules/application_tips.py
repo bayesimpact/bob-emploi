@@ -2,6 +2,7 @@
 
 import itertools
 import random
+import typing
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import application_pb2
@@ -9,7 +10,8 @@ from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 
 
-def _get_handcrafted_job_requirements(project):
+def _get_handcrafted_job_requirements(project: scoring_base.ScoringProject) \
+        -> typing.Optional[job_pb2.JobRequirements]:
     """Handcrafted job requirements for the target job."""
 
     handcrafted_requirements = job_pb2.JobRequirements()
@@ -28,21 +30,31 @@ def _get_handcrafted_job_requirements(project):
     return handcrafted_requirements
 
 
-class _ModelBase(scoring_base.ModelBase):
+def _get_expanded_card_data_for_resume(project: scoring_base.ScoringProject) \
+        -> application_pb2.ResumeTips:
+    resume_tips = project.list_application_tips()
+    sorted_tips = sorted(resume_tips, key=lambda t: (-len(t.filters), random.random()))
+    tips_proto = application_pb2.ResumeTips(
+        qualities=[t for t in sorted_tips if t.type == application_pb2.QUALITY],
+        improvements=[t for t in sorted_tips if t.type == application_pb2.CV_IMPROVEMENT])
+    for tip in itertools.chain(tips_proto.qualities, tips_proto.improvements):
+        tip.ClearField('type')
+    return tips_proto
 
-    def compute_extra_data(self, project):  # pylint: disable=no-self-use
-        """Compute extra data for this module to render a card in the client."""
 
-        requirements = _get_handcrafted_job_requirements(project)
-        if not requirements:
-            return None
-        return project_pb2.ImproveSuccessRateData(requirements=requirements)
+def _max_monthly_interviews(project: scoring_base.ScoringProject) -> int:
+    """Maximum number of monthly interviews one should have."""
+
+    if project.job_group_info().application_complexity == job_pb2.COMPLEX_APPLICATION_PROCESS:
+        return 5
+    return 3
 
 
-class _AdviceFreshResume(_ModelBase):
+class _AdviceFreshResume(scoring_base.ModelBase):
     """A scoring model to trigger the "To start, prepare your resume" advice."""
 
-    def score_and_explain(self, project):  # pylint: disable=no-self-use
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         if project.details.weekly_applications_estimate <= project_pb2.LESS_THAN_2 or \
@@ -52,13 +64,14 @@ class _AdviceFreshResume(_ModelBase):
                 'vos candidatures')])
         return scoring_base.NULL_EXPLAINED_SCORE
 
-    def get_expanded_card_data(self, project):  # pylint: disable=no-self-use
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> application_pb2.ResumeTips:
         """Retrieve data for the expanded card."""
 
         return _get_expanded_card_data_for_resume(project)
 
 
-class _AdviceImproveResume(_ModelBase):
+class _AdviceImproveResume(scoring_base.ModelBase):
     """A scoring model to trigger the "Improve your resume to get more interviews" advice."""
 
     _APPLICATION_PER_WEEK = {
@@ -75,14 +88,14 @@ class _AdviceImproveResume(_ModelBase):
         project_pb2.A_LOT: 10,
     }
 
-    def _num_interviews(self, project):
+    def _num_interviews(self, project: scoring_base.ScoringProject) -> int:
         if project.details.total_interview_count < 0:
             return 0
         if project.details.total_interview_count:
             return project.details.total_interview_count
         return self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
 
-    def _num_interviews_increase(self, project):
+    def _num_interviews_increase(self, project: scoring_base.ScoringProject) -> float:
         """Compute the increase (in ratio) of # of interviews that one could hope for."""
 
         if project.details.total_interviews_estimate >= project_pb2.A_LOT or \
@@ -97,7 +110,8 @@ class _AdviceImproveResume(_ModelBase):
         num_potential_interviews = num_applications / num_applicants_per_offer
         return num_potential_interviews / (self._num_interviews(project) or 1)
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         if (self._num_interviews_increase(project) >= 2 and
@@ -107,32 +121,14 @@ class _AdviceImproveResume(_ModelBase):
                 "décrocher plus d'entretiens")])
         return scoring_base.NULL_EXPLAINED_SCORE
 
-    def get_expanded_card_data(self, project):  # pylint: disable=no-self-use
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> application_pb2.ResumeTips:
         """Retrieve data for the expanded card."""
 
         return _get_expanded_card_data_for_resume(project)
 
 
-def _get_expanded_card_data_for_resume(project):
-    resume_tips = project.list_application_tips()
-    sorted_tips = sorted(resume_tips, key=lambda t: (-len(t.filters), random.random()))
-    tips_proto = application_pb2.ResumeTips(
-        qualities=[t for t in sorted_tips if t.type == application_pb2.QUALITY],
-        improvements=[t for t in sorted_tips if t.type == application_pb2.CV_IMPROVEMENT])
-    for tip in itertools.chain(tips_proto.qualities, tips_proto.improvements):
-        tip.ClearField('type')
-    return tips_proto
-
-
-def _max_monthly_interviews(project):
-    """Maximum number of monthly interviews one should have."""
-
-    if project.job_group_info().application_complexity == job_pb2.COMPLEX_APPLICATION_PROCESS:
-        return 5
-    return 3
-
-
-class _AdviceImproveInterview(_ModelBase):
+class _AdviceImproveInterview(scoring_base.ModelBase):
     """A scoring model to trigger the "Improve your interview skills" advice."""
 
     _NUM_INTERVIEWS = {
@@ -142,7 +138,7 @@ class _AdviceImproveInterview(_ModelBase):
         project_pb2.A_LOT: 10,
     }
 
-    def score(self, project):
+    def score(self, project: scoring_base.ScoringProject) -> int:
         """Compute a score for the given ScoringProject."""
 
         if project.details.total_interview_count < 0:
@@ -160,11 +156,12 @@ class _AdviceImproveInterview(_ModelBase):
             return 3
         return 0
 
-    def _explain(self, project):
+    def _explain(self, project: scoring_base.ScoringProject) -> typing.List[str]:
         return [project.translate_string(
             "vous nous avez dit avoir passé beaucoup d'entretiens sans succès")]
 
-    def get_expanded_card_data(self, project):  # pylint: disable=no-self-use
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> application_pb2.InterviewTips:
         """Retrieve data for the expanded card."""
 
         interview_tips = project.list_application_tips()

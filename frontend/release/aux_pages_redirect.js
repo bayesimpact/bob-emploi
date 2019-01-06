@@ -21,8 +21,8 @@ const AUX_PAGES = [
     urlTest: /^\/eval/,
   },
   {
-    redirect: '/mayday_admin.html',
-    urlTest: /^\/BobAction\/admin/,
+    redirect: '/mini-onboarding.html',
+    urlTest: /^\/mini/,
   },
   {
     redirect: '/nps.html',

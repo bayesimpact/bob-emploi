@@ -1,0 +1,32 @@
+Bonjour, {{var:firstName}} !
+
+Il y a {{var:registeredMonthAgo:"3"}} mois, Bob vous a donné des conseils pour vous aider dans votre recherche d'emploi. Afin de nous améliorer et de mieux vous rendre service, nous souhaitons vraiment savoir comment votre situation a évolué. Pouvez-vous répondre à quelques questions ? Celà ne devrait pas prendre plus de 2 minutes.
+
+
+
+Aujourd'hui, êtes-vous toujours toujours à la recherche d'un emploi ?
+
+
+
+<<Oui, je cherche toujours>> [{{var:seekingUrl}}]
+
+
+<<Non, je ne cherche plus>> [{{var:stopSeekingUrl}}]
+
+
+
+
+Si vous avez des idées ou remarques à nous partager, n’hésitez-pas à répondre à cet email ! Nous serions ravis d’échanger avec vous :)
+
+Merci beaucoup,
+
+Margaux, de Bob
+
+
+
+
+--------------------------------------------------------------------------------
+Vous recevez cet email car vous êtes inscrit sur Bob [https://www.bob-emploi.fr]. Cliquez ici [{{var:unsubscribeLink}}]  si vous souhaitez vous désinscrire.
+--------------------------------------------------------------------------------
+[https://www.facebook.com/bobemploi]
+[https://twitter.com/bobemploi]

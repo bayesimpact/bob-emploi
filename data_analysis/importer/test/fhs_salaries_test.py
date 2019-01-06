@@ -2,6 +2,7 @@
 
 import collections
 import unittest
+from unittest import mock
 
 from bob_emploi.data_analysis.importer import fhs_salaries
 
@@ -64,6 +65,7 @@ SALARY_TESTS = [
 ]
 
 
+@mock.patch(fhs_salaries.tqdm.__name__ + '.tqdm', lambda iterable: iterable)
 class FHSSalariesTestCase(unittest.TestCase):
     """Unit tests for the FHS salaries helper functions."""
 
@@ -98,4 +100,4 @@ class FHSSalariesTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

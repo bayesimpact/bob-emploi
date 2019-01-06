@@ -11,7 +11,7 @@ from bob_emploi.data_analysis.lib import job_offers
 class LibJobOffersTestCase(unittest.TestCase):
     """Unit tests."""
 
-    def test_double_property_frequency(self):
+    def test_double_property_frequency(self) -> None:
         """Basic usage of double_property_frequency"""
 
         offers = pd.DataFrame({
@@ -39,7 +39,7 @@ class IterateTestCase(unittest.TestCase):
     testdata_folder = path.join(
         path.dirname(__file__), 'testdata/job_offers')
 
-    def test_basic(self):
+    def test_basic(self) -> None:
         """Test basic usage."""
 
         offers = list(job_offers.iterate(
@@ -47,10 +47,10 @@ class IterateTestCase(unittest.TestCase):
             path.join(self.testdata_folder, 'column_names.txt')))
         # Golden values.
         self.assertEqual(9, len(offers))
-        self.assertEqual('000053Q', offers[1].id_offre)
-        self.assertEqual('Contrat travail', offers[2].contract_nature_name)
+        self.assertEqual('000053Q', offers[1].id_offre)  # type: ignore
+        self.assertEqual('Contrat travail', offers[2].contract_nature_name)  # type: ignore
 
-    def test_missing_required_fields(self):
+    def test_missing_required_fields(self) -> None:
         """Test missing required field."""
 
         offers = job_offers.iterate(
@@ -61,4 +61,4 @@ class IterateTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

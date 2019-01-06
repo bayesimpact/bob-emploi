@@ -2,13 +2,16 @@
 
 import math
 import random
+import typing
+
+import typing_extensions
 
 from bob_emploi.frontend.api import create_company_expanded_data_pb2
 from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import geo_pb2
-from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 
@@ -16,7 +19,17 @@ from bob_emploi.frontend.server import scoring_base
 _SQUARE_DEGREES_TO_SQUARE_KMS = 111.7 * 111.7
 
 
-def _compute_square_degree_distance(location_a, location_b):
+# TODO(cyrille): Move to a lib if we need it somewhere else.
+class GeoLocalizationProtocol(typing_extensions.Protocol):
+    """Typing protocol for protos localized on a sphere."""
+
+    latitude: float
+    longitude: float
+
+
+def _compute_square_degree_distance(
+        location_a: GeoLocalizationProtocol,
+        location_b: GeoLocalizationProtocol) -> float:
     delta_lat = abs(location_a.latitude - location_b.latitude)
     delta_lng = abs(location_a.longitude - location_b.longitude)
     lng_stretch = math.cos(math.radians(location_a.longitude))
@@ -24,7 +37,9 @@ def _compute_square_degree_distance(location_a, location_b):
     return delta_lng_stretched * delta_lng_stretched + delta_lat * delta_lat
 
 
-def _find_closest_city_with_events(events, target):
+def _find_closest_city_with_events(
+        events: typing.Iterable[event_pb2.Event],
+        target: geo_pb2.FrenchCity) -> typing.Tuple[str, float]:
     """Find the closest city from target location with at least one event.
 
     Args:
@@ -43,13 +58,15 @@ def _find_closest_city_with_events(events, target):
 class _AdviceCreateYourCompany(scoring_base.ModelBase):
     """A scoring model to trigger the "Create your company" advice."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(_AdviceCreateYourCompany, self).__init__()
-        self.testimonial_db = proto.MongoCachedCollection(
-            testimonial_pb2.Testimonial, 'adie_testimonials')
-        self.event_db = proto.MongoCachedCollection(event_pb2.Event, 'adie_events')
+        self.testimonial_db: proto.MongoCachedCollection[testimonial_pb2.Testimonial] = \
+            proto.MongoCachedCollection(testimonial_pb2.Testimonial, 'adie_testimonials')
+        self.event_db: proto.MongoCachedCollection[event_pb2.Event] = \
+            proto.MongoCachedCollection(event_pb2.Event, 'adie_events')
 
-    def _get_frustrations_reasons(self, project):
+    def _get_frustrations_reasons(self, project: scoring_base.ScoringProject) \
+            -> typing.Set[str]:
         discrimination_reason = project.translate_string(
             'vous nous avez dit que les employeurs ne '
             'vous donnent pas votre chance')
@@ -66,7 +83,8 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
             if frustration in relevant_frustrations}
         return frustration_reasons
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         frustration_reasons = list(self._get_frustrations_reasons(project))
@@ -77,20 +95,11 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
             return scoring_base.ExplainedScore(2, frustration_reasons or [its_easy])
         return scoring_base.ExplainedScore(1, [its_easy])
 
-    def compute_extra_data(self, project):
-        """Compute extra data for this module to render a card in the client."""
-
-        return project_pb2.CreateYourCompanyData(
-            city=self.find_closest_city_with_events(project),
-            # TODO(pascal): Make this dynamic if we get data for after June 2018.
-            period=project.translate_string('du 28 mai au 1ᵉʳ juin'),
-        )
-
     @scoring_base.ScoringProject.cached('create_your_company')
-    def find_closest_city_with_events(self, project):
+    def find_closest_city_with_events(self, project: scoring_base.ScoringProject) -> str:
         """Find the closest city of project's location with events."""
 
-        target_city = _get_target_city_proto(project)
+        target_city = geo.get_city_location(project.database, project.details.city.city_id)
         if not target_city:
             return ''
         all_events = self.event_db.get_collection(project.database)
@@ -102,7 +111,7 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
             return city_name
         return ''
 
-    def _find_closest_events(self, project):
+    def _find_closest_events(self, project: scoring_base.ScoringProject) -> event_pb2.CloseByEvents:
         """Find the events nearest to the project's location."""
 
         now_date = project.now.strftime('%Y-%m-%d')
@@ -114,22 +123,22 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
         city_name = self.find_closest_city_with_events(project)
         if not city_name:
             all_events = list(event_collection)
-            target_city = _get_target_city_proto(project)
-            if target_city and target_city.latitude:
-                sorted_events = sorted(
-                    all_events,
-                    key=lambda event: _compute_square_degree_distance(event, target_city))
-                events = sorted_events[:5]
-            else:
-                events = random.sample(all_events, min(5, len(all_events)))
-            return event_pb2.CloseByEvents(events=events)
+            target_city = geo.get_city_location(
+                project.database, project.details.city.city_id) or geo_pb2.FrenchCity()
+            if not target_city.latitude:
+                return event_pb2.CloseByEvents(
+                    events=random.sample(all_events, min(5, len(all_events))))
+            sorted_events = sorted(
+                all_events, key=lambda event: _compute_square_degree_distance(event, target_city))
+            return event_pb2.CloseByEvents(events=sorted_events[:5])
 
         return event_pb2.CloseByEvents(
             city=city_name,
             events=[event for event in event_collection if event.city_name == city_name],
         )
 
-    def _find_relevant_testimonials(self, project):
+    def _find_relevant_testimonials(self, project: scoring_base.ScoringProject) \
+            -> typing.Optional[testimonial_pb2.Testimonials]:
         """Find the testimonials relevant for the user's project."""
 
         max_testimonial_num = 8
@@ -154,7 +163,8 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
         return testimonial_pb2.Testimonials(
             testimonials=same_job_testimonials[:max_testimonial_num])
 
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> create_company_expanded_data_pb2.CreateCompanyExpandedData:
         """Retrieve data for the expanded card."""
 
         events = self._find_closest_events(project)
@@ -163,16 +173,11 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
             close_by_events=events, related_testimonials=testimonials)
 
 
-def _get_target_city_proto(project):
-    city_dict = project.database.cities.find_one({
-        '_id': project.details.city.city_id or project.details.mobility.city.city_id})
-    return proto.create_from_mongo(city_dict, geo_pb2.FrenchCity, always_create=False)
-
-
-def _is_in_job_group(target_job_group_id, job_group_ids):
+def _is_in_job_group(target_job_group_id: str, job_group_ids: typing.Iterable[str]) -> bool:
     for job_group_id in job_group_ids:
         if target_job_group_id.startswith(job_group_id):
             return True
+    return False
 
 
 scoring_base.register_model('advice-create-your-company', _AdviceCreateYourCompany())

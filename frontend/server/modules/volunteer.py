@@ -1,25 +1,26 @@
 """Module to advise the user to volunteer with non-profits."""
 
 import collections
+import typing
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import association_pb2
-from bob_emploi.frontend.api import project_pb2
 
 
 class _AdviceVolunteer(scoring_base.ModelBase):
     """A scoring model to trigger the "Try volunteering" Advice."""
 
     @scoring_base.ScoringProject.cached('volunteering')
-    def volunteering_missions(self, project):
+    def volunteering_missions(self, project: scoring_base.ScoringProject) \
+            -> association_pb2.VolunteeringMissions:
         """Return a list of volunteering mission close to the project."""
 
-        departement_id = project.details.city.departement_id \
-            or project.details.mobility.city.departement_id
+        departement_id = project.details.city.departement_id
 
         # Get data from MongoDB.
-        volunteering_missions_dict = collections.defaultdict(association_pb2.VolunteeringMissions)
+        volunteering_missions_dict: typing.Dict[str, association_pb2.VolunteeringMissions] = \
+            collections.defaultdict(association_pb2.VolunteeringMissions)
         collection = project.database.volunteering_missions
         for record in collection.find({'_id': {'$in': [departement_id, '']}}):
             record_id = record.pop('_id')
@@ -36,19 +37,8 @@ class _AdviceVolunteer(scoring_base.ModelBase):
 
         return project_missions
 
-    def compute_extra_data(self, project):
-        """Compute extra data for this module to render a card in the client."""
-
-        association_names = [
-            m.association_name for m in self.volunteering_missions(project).missions]
-
-        # Deduplicate association names.
-        seen = set()
-        association_names = [n for n in association_names if not (n in seen or seen.add(n))]
-
-        return project_pb2.VolunteerData(association_names=association_names[:3])
-
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         missions = self.volunteering_missions(project).missions
@@ -59,7 +49,8 @@ class _AdviceVolunteer(scoring_base.ModelBase):
         return scoring_base.ExplainedScore(2, [
             'ça fait du bien de garder une activité sociale dans une recherche longue'])
 
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> association_pb2.VolunteeringMissions:
         """Retrieve data for the expanded card."""
 
         return self.volunteering_missions(project)

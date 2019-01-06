@@ -10,6 +10,7 @@ import hashlib
 import logging
 import os
 import re
+import typing
 
 import requests
 
@@ -17,6 +18,8 @@ from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.api import helper_pb2
+from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous import report
 from bob_emploi.frontend.server.asynchronous.mail import campaign
@@ -24,8 +27,6 @@ from bob_emploi.frontend.server.asynchronous.mail import campaign
 # Import plugins: they register themselves when imported.
 from bob_emploi.frontend.server.asynchronous.mail import all_campaigns
 # pylint: enable=unused-import
-
-_DB, _USER_DB = mongo.get_connections_from_env()
 
 _READ_EMAIL_STATUSES = frozenset([
     user_pb2.EMAIL_SENT_OPENED, user_pb2.EMAIL_SENT_CLICKED])
@@ -35,8 +36,8 @@ class EmailPolicy(object):
     """Implements our email policy."""
 
     def __init__(
-            self, days_since_any_email=7, days_since_same_campaign_unread=0,
-            days_since_same_campaign=0):
+            self, days_since_any_email: int = 7, days_since_same_campaign_unread: int = 0,
+            days_since_same_campaign: int = 0) -> None:
         """Constructor for an EmailPolicy object.
 
         Args:
@@ -54,18 +55,22 @@ class EmailPolicy(object):
         instant = now.get()
         self.last_email_datetime = instant - datetime.timedelta(days=days_since_any_email)
 
+        self.retry_campaign_date_unread: typing.Optional[datetime.datetime]
+
         if days_since_same_campaign_unread > 0:
             self.retry_campaign_date_unread = \
                 instant - datetime.timedelta(days=days_since_same_campaign_unread)
         else:
             self.retry_campaign_date_unread = None
 
+        self.retry_campaign_date: typing.Optional[datetime.datetime]
+
         if days_since_same_campaign > 0:
             self.retry_campaign_date = instant - datetime.timedelta(days=days_since_same_campaign)
         else:
             self.retry_campaign_date = None
 
-    def can_send(self, campaign_id, emails_sent):
+    def can_send(self, campaign_id: str, emails_sent: typing.Iterable[user_pb2.EmailSent]) -> bool:
         """Check whether we can send this campaign to a user having the given sent emails."""
 
         for email in emails_sent:
@@ -108,23 +113,23 @@ class EmailPolicy(object):
         return True
 
 
-def _hash_user_id(user_id):
+def _hash_user_id(user_id: str) -> str:
     uniform_hash = hashlib.sha1()
     uniform_hash.update(user_id.encode('ascii'))
     return uniform_hash.hexdigest()
 
 
 def blast_campaign(
-        campaign_id, action, registered_from, registered_to,
-        dry_run_email='', user_hash='', user_id_start='',
-        email_policy=EmailPolicy(days_since_any_email=2, days_since_same_campaign_unread=0)):
+        campaign_id: str, action: str, registered_from: str, registered_to: str,
+        dry_run_email: str, user_hash: str, user_id_start: str, email_policy: EmailPolicy) -> int:
     """Send a campaign of personalized emails."""
 
     if action == 'send' and auth.SECRET_SALT == auth.FAKE_SECRET_SALT:
         raise ValueError('Set the prod SECRET_SALT env var before continuing.')
-    this_campaign = campaign.get_campaign(campaign_id)
+    database, user_database, unused_ = mongo.get_connections_from_env()
+    this_campaign: campaign.Campaign[typing.Any] = campaign.get_campaign(campaign_id)
     collection = this_campaign.users_collection
-    mongo_filters = this_campaign.mongo_filters
+    mongo_filters = dict(this_campaign.mongo_filters)
     mongo_filters[collection.email_field] = {
         '$not': re.compile(r'@example.com$'),
         '$regex': re.compile(r'@'),
@@ -134,7 +139,7 @@ def blast_campaign(
             '$gt': registered_from,
             '$lt': registered_to,
         }
-    selected_users = _USER_DB.get_collection(collection.mongo_collection).find(mongo_filters)
+    selected_users = user_database.get_collection(collection.mongo_collection).find(mongo_filters)
     email_count = 0
     email_errors = 0
     users_processed_count = 0
@@ -148,7 +153,9 @@ def blast_campaign(
         users_processed_count += 1
 
         user_id = user_dict.pop('_id')
-        user = proto.create_from_mongo(user_dict, collection.proto)
+        user = typing.cast(
+            typing.Union[helper_pb2.Helper, review_pb2.DocumentToReview, user_pb2.User],
+            proto.create_from_mongo(user_dict, collection.proto))
         user.user_id = str(user_id)
 
         if user_id_start and not user.user_id.startswith(user_id_start):
@@ -169,7 +176,8 @@ def blast_campaign(
             continue
 
         try:
-            if not this_campaign.send_mail(campaign_id, user, _DB, _USER_DB, action, dry_run_email):
+            if not this_campaign.send_mail(
+                    campaign_id, user, database, user_database, action, dry_run_email):
                 no_template_vars_count += 1
                 continue
         except requests.exceptions.HTTPError as error:
@@ -203,15 +211,14 @@ def blast_campaign(
 
 
 # TODO(cyrille): Put that in common with the other async tools.
-def _date_from_today(absolute_date, num_days_ago):
-
+def _date_from_today(absolute_date: str, num_days_ago: typing.Optional[int]) \
+        -> str:
     if num_days_ago is None:
         return absolute_date
-    return (datetime.datetime.today() - datetime.timedelta(days=num_days_ago))\
-        .strftime('%Y-%m-%d')
+    return (now.get() - datetime.timedelta(days=num_days_ago)).strftime('%Y-%m-%d')
 
 
-def main(string_args=None):
+def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     """Parse command line arguments and send mails."""
 
     parser = argparse.ArgumentParser(
@@ -298,4 +305,4 @@ def main(string_args=None):
 
 
 if __name__ == '__main__':
-    main()  # pragma: no cover
+    main()

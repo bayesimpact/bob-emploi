@@ -1,8 +1,8 @@
 """Tests for the Google authentication."""
 
 import unittest
+from unittest import mock
 
-import mock
 from oauth2client import crypt
 
 from bob_emploi.frontend.server import server
@@ -13,7 +13,7 @@ from bob_emploi.frontend.server.test import base_test
 class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint."""
 
-    def test_bad_token(self, mock_verify_id_token):
+    def test_bad_token(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Auth request with a bad google token."""
 
         mock_verify_id_token.side_effect = crypt.AppIdentityError('foo bar')
@@ -25,7 +25,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             "Mauvais jeton d'authentification : foo bar",
             response.get_data(as_text=True))
 
-    def test_wrong_token_issuer(self, mock_verify_id_token):
+    def test_wrong_token_issuer(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Auth request, Google token issued by Facebook."""
 
         mock_verify_id_token.return_value = {
@@ -39,7 +39,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             "Fournisseur d'authentification invalide : accounts.facebook.com",
             response.get_data(as_text=True))
 
-    def test_new_user(self, mock_verify_id_token):
+    def test_new_user(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Auth request, create a new user on the first time."""
 
         mock_verify_id_token.return_value = {
@@ -59,7 +59,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
         user_id = auth_response['authenticatedUser']['userId']
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
 
-    def test_when_user_already_exists(self, mock_verify_id_token):
+    def test_when_user_already_exists(self, mock_verify_id_token: mock.MagicMock) -> None:
         """The user had previously signed up via email registration."""
 
         self.authenticate_new_user(email='used@email.fr', password='psswd')
@@ -73,7 +73,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
 
-    def test_email_address_change(self, mock_verify_id_token):
+    def test_email_address_change(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Change the email address of a Google SSO user."""
 
         mock_verify_id_token.return_value = {
@@ -96,7 +96,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
 
-    def test_email_address_change_invalid(self, mock_verify_id_token):
+    def test_email_address_change_invalid(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Change the email address of a Google SSO user to invalid email."""
 
         mock_verify_id_token.return_value = {
@@ -119,7 +119,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response.status_code)
 
-    def test_email_address_change_to_used(self, mock_verify_id_token):
+    def test_email_address_change_to_used(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Change the email address of a Google SSO user to an address already used."""
 
         mock_verify_id_token.return_value = {
@@ -143,7 +143,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response.status_code)
 
-    def test_update_no_email_change(self, mock_verify_id_token):
+    def test_update_no_email_change(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Update a Google signed-in user without changing the email."""
 
         mock_verify_id_token.return_value = {
@@ -166,7 +166,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
 
-    def test_load_user(self, mock_verify_id_token):
+    def test_load_user(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Auth request retrieves user."""
 
         # First create a new user.
@@ -201,4 +201,4 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

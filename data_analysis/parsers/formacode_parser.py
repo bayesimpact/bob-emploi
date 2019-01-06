@@ -66,4 +66,4 @@ def main(args, out=sys.stdout):
 
 
 if __name__ == '__main__':
-    main(sys.argv)  # pragma: no cover
+    main(sys.argv)

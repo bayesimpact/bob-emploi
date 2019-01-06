@@ -12,10 +12,12 @@ import logging
 import os
 import random
 import sys
+import typing
 
 import requests
 
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import mongo
@@ -27,7 +29,7 @@ from bob_emploi.frontend.server.asynchronous import report
 # WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
 _SLACK_ASSESSER_URL = os.getenv('SLACK_ASSESSER_URL')
 
-_DB, _ = mongo.get_connections_from_env()
+_DATA_DB, _, _DB = mongo.get_connections_from_env()
 
 # The base URL to use as the prefix of all links to the website. E.g. in dev,
 # you should use http://localhost:3000.
@@ -36,8 +38,13 @@ _BASE_URL = os.getenv('BASE_URL', 'https://www.bob-emploi.fr')
 _SUBDIAGNOSTIC_PREFIX = 'subdiagnostic: '
 
 
-def _list_missing_properties_for_assessed_use_case(user, title):
-    user_diagnostic, missing_sentences = diagnostic.diagnose(user, user.projects[0], _DB)
+def _list_missing_properties_for_assessed_use_case(user: user_pb2.User, title: str) \
+        -> typing.Iterator[str]:
+    user_diagnostic, missing_sentences = diagnostic.diagnose(user, user.projects[0], _DATA_DB)
+    if missing_sentences is None:
+        return
+    logging.debug('Missing new diagnostic: %s', title)
+    yield 'overall'
     for order in missing_sentences:
         logging.debug('Missing sentences %d in text:%s', order, title)
         yield 'text: sentence ' + str(order)
@@ -54,13 +61,17 @@ def _list_missing_properties_for_assessed_use_case(user, title):
         yield 'subdiagnostics'
 
 
-def _get_use_case_url(use_case):
+def _get_use_case_url(use_case: use_case_pb2.UseCase) -> str:
     return '{}/eval/{}_{:02x}?poolName={}'.format(
         _BASE_URL, use_case.pool_name, use_case.index_in_pool, use_case.pool_name)
 
 
+_T = typing.TypeVar('_T')
+
+
 # Implementation of reservoir sampling https://en.wikipedia.org/wiki/Reservoir_sampling
-def _reservoir_sample(reservoir, max_size, new_element, new_index):
+def _reservoir_sample(
+        reservoir: typing.List[_T], max_size: int, new_element: _T, new_index: int) -> None:
     if len(reservoir) < max_size:
         reservoir.append(new_element)
         return
@@ -70,16 +81,16 @@ def _reservoir_sample(reservoir, max_size, new_element, new_index):
     reservoir[next_place] = new_element
 
 
-def _compute_assessment_report(example_count, since, until):
+def _compute_assessment_report(example_count: int, since: str, until: str) -> str:
     """Count the use cases that are assessed, and reports which and why are not."""
 
     cursor = _DB.use_case.find(
         {'poolName': {'$gte': str(since), '$lt': str(until), '$regex': r'\d{4}-\d{2}-\d{2}'}})
 
     unassessed_count = 0
-    num_cases_missing_a_field = collections.defaultdict(int)
+    num_cases_missing_a_field: typing.Dict[str, int] = collections.defaultdict(int)
     project_count = 0
-    examples = []
+    examples: typing.List[typing.Tuple[str, typing.List[str]]] = []
     for use_case_json in cursor:
         use_case = proto.create_from_mongo(use_case_json, use_case_pb2.UseCase, always_create=False)
         if not use_case:
@@ -128,7 +139,8 @@ def _compute_assessment_report(example_count, since, until):
     return report_text
 
 
-def main(string_args=None, out=sys.stdout):
+def main(string_args: typing.Optional[typing.List[str]] = None, out: typing.TextIO = sys.stdout) \
+        -> None:
     """Parse command line arguments and trigger _compute_assessment_report function.
     docker-compose run --rm -e MONGO_URL="$PROD_MONGO" frontend-flask \
         python /work/bob_emploi/frontend/server/asynchronous/assess_assessment.py -s 2017-11-01
@@ -170,11 +182,12 @@ def main(string_args=None, out=sys.stdout):
     if args.dry_run:
         out.write(report_text)
         return
-    requests.post(_SLACK_ASSESSER_URL, json={'attachments': [{
-        'mrkdwn_in': ['text'],
-        'title': 'Assessment coverage from {} to {}'.format(from_date, to_date),
-        'text': report_text,
-    }]})
+    if _SLACK_ASSESSER_URL:
+        requests.post(_SLACK_ASSESSER_URL, json={'attachments': [{
+            'mrkdwn_in': ['text'],
+            'title': 'Assessment coverage from {} to {}'.format(from_date, to_date),
+            'text': report_text,
+        }]})
 
 
 if __name__ == '__main__':

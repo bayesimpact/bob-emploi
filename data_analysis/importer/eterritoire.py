@@ -20,4 +20,4 @@ def get_cities_dicts():
 
 
 if __name__ == '__main__':
-    mongo.importer_main(get_cities_dicts, 'eterritoire_links')  # pragma: no-cover
+    mongo.importer_main(get_cities_dicts, 'eterritoire_links')

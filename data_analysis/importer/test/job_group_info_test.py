@@ -25,6 +25,8 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         path.dirname(__file__), 'testdata/passage_fap2009_romev3.txt')
     fap_growth_2012_2022_csv = path.join(
         path.dirname(__file__), 'testdata/evolution-emplois.csv')
+    imt_market_score_csv = path.join(
+        path.dirname(__file__), 'testdata/imt/market_score.csv')
 
     @airtablemock.patch(job_group_info.__name__ + '.airtable')
     def test_make_dicts(self):
@@ -77,7 +79,8 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             'app01234567:advice:viw012345',
             'app4242:domains',
             'app4242:info_by_prefix',
-            self.fap_growth_2012_2022_csv)
+            self.fap_growth_2012_2022_csv,
+            self.imt_market_score_csv)
 
         self.assertEqual(532, len(collection))
         for info in collection:
@@ -91,14 +94,11 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual('Animateur de vente', d1501.samples[0].masculine_name)
         self.assertEqual(1, len(d1501.jobs), d1501.jobs)
         self.assertEqual(
-            'Argumentation commerciale', d1501.requirements.skills[0].name)
-        self.assertEqual(
             ['Bac', 'Brevet'],
             [d.name for d in d1501.requirements.diplomas])
         self.assertEqual(
             ['Anglais courant'],
             [e.name for e in d1501.requirements.extras])
-        self.assertEqual('* Être créatif', d1501.requirements.skills_short_text)
         self.assertEqual("* Avoir le sens de l'humour", d1501.requirements.bonus_skills_short_text)
         self.assertEqual('* Maîtriser des logiciels', d1501.requirements.trainings_short_text)
         self.assertEqual('E', d1501.holland_code_major)
@@ -135,6 +135,10 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual('vous aimez être au service des autres', d1501.why_specific_company)
         self.assertEqual('à la MAIF, à la MATMUT', d1501.at_various_companies)
         self.assertEqual("j'adore vos allées", d1501.what_i_love_about_feminine)
+        self.assertEqual(4, len(d1501.best_departements))
+        best_departement_scores = [
+            d.local_stats.imt.yearly_avg_offers_per_10_candidates for d in d1501.best_departements]
+        self.assertEqual(sorted(best_departement_scores, reverse=True), best_departement_scores)
 
         # Test default values.
         g1204 = job_group_protos['G1204']
@@ -152,4 +156,4 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

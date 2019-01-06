@@ -49,7 +49,8 @@ def make_dicts(
         handcrafted_assets_airtable,
         domains_airtable,
         info_by_prefix_airtable,
-        fap_growth_2012_2022_csv):
+        fap_growth_2012_2022_csv,
+        imt_market_score_csv):
     """Import job info in MongoDB.
 
     Args:
@@ -75,6 +76,7 @@ def make_dicts(
             job group (by ROME ID prefix).
         fap_growth_2012_2022_csv: path to a CSV file containing the growth of
             FAP job groups for the period 2012-2022.
+        imt_market_score_csv: path to a CSV containing market score info from IMT.
     Returns:
         A list of dict that maps the JSON representation of JobGroup protos.
     """
@@ -117,26 +119,16 @@ def make_dicts(
     # Add info by prefix.
     job_groups = job_groups.join(info_by_prefix)
 
-    # Add skills.
-    rome_to_skills = cleaned_data.rome_to_skills(
-        filename_items=rome_csv_pattern.format('coherence_item'),
-        filename_skills=rome_csv_pattern.format('referentiel_competence'))
-    skills_grouped = rome_to_skills.groupby('code_rome')
-    job_groups['requirements'] = skills_grouped.apply(
-        _group_skills_as_proto_list)
-    # Replace NaN by empty dicts.
-    job_groups['requirements'] = job_groups.requirements.apply(
-        lambda r: r if isinstance(r, dict) else {})
-
     # Combine requirements from json file.
     with open(job_requirements_json) as job_requirements_file:
         job_requirements_list = json.load(job_requirements_file)
         job_requirements_dict = {
             job_requirement.pop('_id'): job_requirement
             for job_requirement in job_requirements_list}
-    for job_group in job_groups.itertuples():
-        job_group.requirements.update(
-            job_requirements_dict.get(job_group.Index, {}))
+    job_groups['requirements'] = job_groups.index.map(job_requirements_dict)
+    # Replace NaN by empty dicts.
+    job_groups['requirements'] = job_groups.requirements.apply(
+        lambda r: r if isinstance(r, dict) else {})
 
     # Combine requirements from AirTable.
     for job_group in job_groups.itertuples():
@@ -181,6 +173,11 @@ def make_dicts(
     job_groups.loc[job_groups.growth20122022 == 0, 'growth20122022'] = .000001
     job_groups['growth20122022'].fillna(0, inplace=True)
 
+    job_groups['bestDepartements'] = _get_less_stressful_departements_count(imt_market_score_csv)
+    # Fill NaN with empty [].
+    job_groups['bestDepartements'] = job_groups.bestDepartements.apply(
+        lambda s: s if isinstance(s, list) else [])
+
     # Set index as field.
     job_groups.index.name = 'romeId'
     job_groups.reset_index(inplace=True)
@@ -189,25 +186,36 @@ def make_dicts(
     return job_groups.to_dict('records')
 
 
+# TODO(cyrille): Factorize with local_diagnosis.
+def _get_less_stressful_departements_count(market_score_csv):
+    yearly_avg_offers_denominator = 10
+    market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
+    market_stats['market_score'] = market_stats.TENSION_RATIO.div(yearly_avg_offers_denominator)
+    market_stats.dropna(subset=['market_score'], inplace=True)
+    market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D']
+
+    # We keep only the first ten because we'll never use more examples.
+    return market_stats_dept\
+        .sort_values('market_score', ascending=False)\
+        .groupby(['ROME_PROFESSION_CARD_CODE'])\
+        .apply(lambda x: x[:11].to_dict(orient='records'))\
+        .apply(lambda dpts: [{
+            'departementId': d['AREA_CODE'],
+            'localStats': {
+                'imt': {
+                    'yearlyAvgOffersPer10Candidates': d['TENSION_RATIO'],
+                    'yearlyAvgOffersDenominator': yearly_avg_offers_denominator
+                },
+            },
+        } for d in dpts])
+
+
 def _create_jobs_sampler(num_samples):
     def _sampling(jobs):
         if num_samples is not None and len(jobs) > num_samples:
             jobs = jobs.sample(n=num_samples)
         return jobs[_JOB_PROTO_JSON_FIELDS].to_dict('records')
     return _sampling
-
-
-def _group_skills_as_proto_list(skills):
-    """Combine a dataframe of skills as a JSON-proto list."""
-
-    return {'skills': [
-        {'name': skill.skill_name,
-         'skill': {
-             'skillId': skill.code_ogr,
-             'kind': (
-                 'PRACTICAL_SKILL' if skill.skill_is_practical
-                 else 'THEORETICAL_SKILL')}}
-        for skill in skills.itertuples()]}
 
 
 def _group_work_environment_items(work_environments):
@@ -448,4 +456,4 @@ def _get_growth_2012_2022(fap_growth, rome_fap_crosswalk_txt):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(make_dicts, 'job_group_info')  # pragma: no cover
+    mongo.importer_main(make_dicts, 'job_group_info')

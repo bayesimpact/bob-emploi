@@ -54,4 +54,4 @@ class UploadTestCase(airtablemock.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

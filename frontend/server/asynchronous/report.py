@@ -2,11 +2,12 @@
 
 import logging
 import os
+import typing
 
-import raven
-from raven import conf as raven_conf
-from raven.handlers import logging as raven_logging
 import requests
+import sentry_sdk
+from sentry_sdk.integrations import logging as sentry_logging
+
 
 # A Slack WebHook URL to send final reports to. Defined in the Incoming
 # WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
@@ -17,20 +18,20 @@ _SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
 _MAILJET_REPORT_TEMPLATE_ID = '74071'
 
 
-def notify_slack(message):
+def notify_slack(message: str) -> None:
     """Send a message on slack channel #bob-bot as Bob the mailman."""
 
     if _SLACK_WEBHOOK_URL:
         requests.post(_SLACK_WEBHOOK_URL, json={'text': message})
 
 
-def setup_sentry_logging(sentry_dsn):
+def setup_sentry_logging(sentry_dsn: typing.Optional[str]) -> None:
     """Set up logging with sentry."""
 
     logging.basicConfig()
     if not sentry_dsn:
         raise ValueError()
-    client = raven.Client(sentry_dsn)
-    handler = raven_logging.SentryHandler(client)
-    handler.setLevel(logging.WARNING)
-    raven_conf.setup_logging(handler)
+    logging_integration = sentry_logging.LoggingIntegration(
+        level=logging.DEBUG,
+        event_level=logging.WARNING)
+    sentry_sdk.init(dsn=sentry_dsn, integrations=[logging_integration])

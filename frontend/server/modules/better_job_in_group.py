@@ -1,7 +1,5 @@
 """Module to advise the user to switch to a better job in their job group."""
 
-import logging
-
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import project_pb2
 
@@ -9,7 +7,8 @@ from bob_emploi.frontend.api import project_pb2
 class _AdviceBetterJobInGroup(scoring_base.ModelBase):
     """A scoring model to trigger the "Change to better job in your job group" advice."""
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         # This job group has jobs that are too different to consider them as a
@@ -48,37 +47,6 @@ class _AdviceBetterJobInGroup(scoring_base.ModelBase):
             return scoring_base.ExplainedScore(3, reasons)
         return scoring_base.ExplainedScore(2, [project.translate_string(
             "il y a un bon nombre d'offres dans des métiers proches")])
-
-    def compute_extra_data(self, project):
-        """Compute extra data for this module to render a card in the client."""
-
-        specific_jobs = project.requirements().specific_jobs
-
-        if not specific_jobs:
-            return None
-
-        extra_data = project_pb2.BetterJobInGroupData()
-        try:
-            extra_data.num_better_jobs = next(
-                i for i, job in enumerate(specific_jobs)
-                if job.code_ogr == project.details.target_job.code_ogr)
-        except StopIteration:
-            # Target job is not mentionned in the specific jobs, do not mention
-            # the number of better jobs.
-            pass
-
-        all_jobs = project.job_group_info().jobs
-        try:
-            best_job = next(
-                job for job in all_jobs
-                if job.code_ogr == specific_jobs[0].code_ogr)
-            extra_data.better_job.CopyFrom(best_job)
-        except StopIteration:
-            logging.warning(
-                'Better job "%s" is not listed in the group "%s"', specific_jobs[0].code_ogr,
-                project.job_group_info().rome_id)
-
-        return extra_data
 
 
 scoring_base.register_model('advice-better-job-in-group', _AdviceBetterJobInGroup())

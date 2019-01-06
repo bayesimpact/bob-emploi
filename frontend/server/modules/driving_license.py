@@ -3,25 +3,29 @@
 from bob_emploi.frontend.api import driving_license_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 
 
 # Keep this in sync with
 # frontend/src/components/pages/profile/experience.jsx isDrivingLicenseRequired.
-def _license_helps_mobility(mobility):
+def _license_helps_mobility(project: project_pb2.Project) -> bool:
     # urban_score below 5 means urban areas with less than 100,000 inhabitants.
     return (
-        mobility.city.urban_score and mobility.city.urban_score <= 5
+        bool(project.city.urban_score) and project.city.urban_score <= 5
     ) or (
         # public_transportation_score below 5 means public transportation system is not appreciated,
         # so a car is relevant.
-        mobility.city.public_transportation_score and mobility.city.public_transportation_score <= 5
+        bool(project.city.public_transportation_score) and
+        project.city.public_transportation_score <= 5
     )
 
 
-def _score_and_explain_after_filters(project):
+def _score_and_explain_after_filters(project: scoring_base.ScoringProject) \
+        -> scoring_base.ExplainedScore:
     """A helper function to give a score and an explanation for all advices in the module,
     once some prerequisite filters have been met.
     """
@@ -37,8 +41,7 @@ def _score_and_explain_after_filters(project):
         reasons.append(project.translate_string(
             'le permis est important dans votre métier'))
     score_modifier = 0
-    if _license_helps_mobility(project.details) or \
-            _license_helps_mobility(project.details.mobility):
+    if _license_helps_mobility(project.details):
         reasons.append(project.translate_string(
             'le permis augmenterait votre mobilité'))
         score_modifier = 1
@@ -59,7 +62,8 @@ class _DrivingLicenseLowIncomeScoringModel(scoring_base.ModelBase):
 
     """
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute the score for a given project and explains it.
 
         Requirements are:
@@ -79,27 +83,27 @@ class _DrivingLicenseLowIncomeScoringModel(scoring_base.ModelBase):
             return scoring_base.NULL_EXPLAINED_SCORE
         return _score_and_explain_after_filters(project)
 
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) -> geo_pb2.FrenchCity:
         """Retrieve data for the expanded card."""
 
-        # TODO(cyrille): Cache coordinates in ScoringProject.
-        return proto.create_from_mongo(
-            project.database.cities.find_one({
-                '_id': project.details.city.city_id or project.details.mobility.city.city_id}),
-            geo_pb2.FrenchCity)
+        return geo.get_city_location(project.database, project.details.city.city_id) or \
+            geo_pb2.FrenchCity()
 
 
-_PARTNER_BANKS = proto.MongoCachedCollection(
-    driving_license_pb2.OneEuroProgramPartnerBank, 'banks_one_euro_driving_license')
+_PARTNER_BANKS: proto.MongoCachedCollection[driving_license_pb2.OneEuroProgramPartnerBank] = \
+    proto.MongoCachedCollection(
+        driving_license_pb2.OneEuroProgramPartnerBank, 'banks_one_euro_driving_license')
 
-_PARTNER_SCHOOLS = proto.MongoCachedCollection(
-    driving_license_pb2.DrivingSchool, 'schools_one_euro_driving_license')
+_PARTNER_SCHOOLS: proto.MongoCachedCollection[driving_license_pb2.DrivingSchool] = \
+    proto.MongoCachedCollection(
+        driving_license_pb2.DrivingSchool, 'schools_one_euro_driving_license')
 
 
 class _DrivingLicenseOneEuroScoringModel(scoring_base.ModelBase):
     """A scoring model for the "Driving license at 1 euro / day" advice."""
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute the score for a given project and explains it."""
 
         age = project.get_user_age()
@@ -107,7 +111,8 @@ class _DrivingLicenseOneEuroScoringModel(scoring_base.ModelBase):
             return scoring_base.NULL_EXPLAINED_SCORE
         return _score_and_explain_after_filters(project)
 
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> driving_license_pb2.OneEuroProgram:
         """Retrieve data for the expanded card."""
 
         banks = _PARTNER_BANKS.get_collection(project.database)
@@ -127,7 +132,8 @@ class _DrivingLicenseOneEuroScoringModel(scoring_base.ModelBase):
 class _DrivingLicenseWrittenScoringModel(scoring_base.ModelBase):
     """A scoring model for the "Driving license written examination" advice."""
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute the score for a given project and explains it."""
 
         age = project.get_user_age()
@@ -136,6 +142,8 @@ class _DrivingLicenseWrittenScoringModel(scoring_base.ModelBase):
         score, reasons = _score_and_explain_after_filters(project)
         if not score:
             return scoring_base.NULL_EXPLAINED_SCORE
+        # We bring more value in the driving-license-euro and
+        # driving-license-low-income so we show this one after (lower score).
         return scoring_base.ExplainedScore(max(1, score - 1), reasons)
 
 

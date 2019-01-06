@@ -2,8 +2,8 @@
 
 import io
 import unittest
+from unittest import mock
 
-import mock
 import mongomock
 import requests
 
@@ -13,34 +13,26 @@ from bob_emploi.frontend.server.asynchronous import report
 
 @mock.patch(requests.__name__ + '.post')
 @mock.patch(report.__name__ + '.setup_sentry_logging')
+# TODO(pascal) -> None: Use requests_mock.
+@mock.patch(feedback_report.__name__ + '._SLACK_FEEDBACK_URL', 'https://slack/')
 class FeedbackReportTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
-    _mongomock_count_documents_patched = False
-
-    def setUp(self):
+    def setUp(self) -> None:
         super(FeedbackReportTestCase, self).setUp()
         self._db = mongomock.MongoClient().test
         patcher = mock.patch(feedback_report.__name__ + '._USER_DB', new=self._db)
         patcher.start()
         self.addCleanup(patcher.stop)
-        if not self._mongomock_count_documents_patched:
-            # TODO(pascal): Remove when mongomock handles the count_documents method.
-            self.assertFalse(
-                hasattr(self._db.user.__class__, 'count_documents'),
-                'mongomock has been upgraded, drop the patch')
-            self._db.user.__class__.count_documents = \
-                lambda self, filters, **kwargs: self.find(filters).count(**kwargs)
-            cls = self.__class__
-            cls._mongomock_count_documents_patched = True  # pylint: disable=protected-access
 
         feedback_report.os.environ['SENTRY_DSN'] = 'https://42:42@sentry.io/42'
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         del feedback_report.os.environ['SENTRY_DSN']
         super(FeedbackReportTestCase, self).tearDown()
 
-    def test_send_report(self, mock_sentry_logging, mock_post):
+    def test_send_report(
+            self, mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
         """Test sending the report for real."""
 
         output = io.StringIO()
@@ -55,7 +47,7 @@ class FeedbackReportTestCase(unittest.TestCase):
         self.assertIn('0 users answered the NPS survey', slack_json['attachments'][0]['text'])
         mock_sentry_logging.assert_called_once_with('https://42:42@sentry.io/42')
 
-    def test_dry_run(self, mock_sentry_logging, mock_post):
+    def test_dry_run(self, mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
         """Test sending the report using dry run."""
 
         output = io.StringIO()
@@ -64,7 +56,8 @@ class FeedbackReportTestCase(unittest.TestCase):
         self.assertFalse(mock_sentry_logging.called)
         self.assertIn('0 users answered the NPS survey', output.getvalue())
 
-    def test_compute_nps_report(self, unused_mock_sentry_logging, mock_post):
+    def test_compute_nps_report(
+            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
         """Test computing the NPS report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -153,7 +146,8 @@ class FeedbackReportTestCase(unittest.TestCase):
             '> The app was blocked for me :-(',
             slack_json['attachments'][0]['text'])
 
-    def test_compute_nps_report_no_comments(self, unused_mock_sentry_logging, mock_post):
+    def test_compute_nps_report_no_comments(
+            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
         """Test computing the NPS report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -216,7 +210,8 @@ class FeedbackReportTestCase(unittest.TestCase):
             'There are no individual comments.',
             slack_json['attachments'][0]['text'])
 
-    def test_compute_stars_report(self, unused_mock_sentry_logging, mock_post):
+    def test_compute_stars_report(
+            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
         """Test computing the stars report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -284,7 +279,8 @@ class FeedbackReportTestCase(unittest.TestCase):
             '> Well well',
             slack_json['attachments'][0]['text'])
 
-    def test_compute_rer_report(self, unused_mock_sentry_logging, mock_post):
+    def test_compute_rer_report(
+            self, unused_mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:
         """Test computing the RER report on multiple user feedback."""
 
         self._db.user.insert_many([
@@ -367,4 +363,4 @@ class FeedbackReportTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

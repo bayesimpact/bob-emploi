@@ -2,9 +2,9 @@
 
 import os
 import unittest
+from unittest import mock
 
 import airtablemock
-import mock
 
 from bob_emploi.data_analysis.importer import translations
 
@@ -36,4 +36,4 @@ class ImporterTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

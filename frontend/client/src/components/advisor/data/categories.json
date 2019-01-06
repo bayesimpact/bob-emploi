@@ -1,0 +1,51 @@
+{
+  "JOB_OF_THE_FUTURE_DIAGNOSTIC": [
+    "skill-for-future"
+  ],
+  "JOB_SEARCH_DIAGNOSTIC": [
+    "body-language",
+    "events",
+    "find-a-jobboard",
+    "follow-up",
+    "fresh-resume",
+    "improve-interview",
+    "improve-resume",
+    "less-applications",
+    "motivation-email",
+    "network-application",
+    "network-application-good",
+    "network-application-medium",
+    "spontaneous-application",
+    "wow-baker",
+    "wow-hairdresser",
+    "online-salons"
+  ],
+  "MARKET_DIAGNOSTIC": [
+    "reorient-jobbing",
+    "reorient-to-close-job",
+    "seasonal-relocate"
+  ],
+  "PROFILE_DIAGNOSTIC": [
+    "association-help",
+    "driving-license-euro",
+    "driving-license-low-income",
+    "driving-license-written",
+    "life-balance",
+    "senior",
+    "specific-to-job",
+    "training",
+    "training-alternance",
+    "vae",
+    "volunteer",
+    "long-term-mom"
+  ],
+  "PROJECT_DIAGNOSTIC": [
+    "better-job-in-group",
+    "civic-service",
+    "commute",
+    "create-your-company",
+    "immersion-milo",
+    "other-work-env",
+    "relocate"
+  ]
+}

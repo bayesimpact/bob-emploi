@@ -23,13 +23,15 @@ function get_var_value() {
   grep "^${key} " "${mapfile}" | sed -e "s/^[^ ]* //"
 }
 
+readonly JS_APP_FILES="/usr/share/bob-emploi/html/assets/*.js"
+
 function replace_var_if_value() {
   env_var=${!1}; key=$2
   if [ -n "${env_var}" ]; then
     replace_string \
       "$(get_var_value "$key" "${DIST_VARS}")" \
       "${env_var}" \
-      /usr/share/bob-emploi/html/assets/*.js
+      "$JS_APP_FILES"
   fi
 }
 
@@ -39,6 +41,7 @@ replace_var_if_value GOOGLE_SSO_CLIENT_ID googleSSOClientId
 replace_var_if_value GOOGLE_UA_ID googleUAID
 replace_var_if_value LINKED_IN_CLIENT_ID linkedInClientId
 replace_var_if_value SENTRY_PUBLIC_DSN sentryDSN
+replace_string "$(cat /usr/share/bob-emploi/version)" "$CLIENT_VERSION" "$JS_APP_FILES"
 
 rm "${DIST_VARS}"
 

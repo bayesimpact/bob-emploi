@@ -1,7 +1,6 @@
 """Unit tests for the associations_help module."""
 
 import datetime
-import json
 import unittest
 
 from bob_emploi.frontend.api import user_pb2
@@ -14,14 +13,14 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
 
     model_id = 'advice-association-help'
 
-    def test_no_data(self):
+    def test_no_data(self) -> None:
         """No associations data."""
 
         persona = self._random_persona().clone()
         score = self._score_persona(persona)
         self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
 
-    def test_motivated(self):
+    def test_motivated(self) -> None:
         """User is motivated."""
 
         persona = self._random_persona().clone()
@@ -36,7 +35,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(2, score, msg='Failed for "{}"'.format(persona.name))
 
-    def test_need_motivation(self):
+    def test_need_motivation(self) -> None:
         """User needs motivation."""
 
         persona = self._random_persona().clone()
@@ -45,7 +44,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg='Failed for "{}"'.format(persona.name))
 
-    def test_many_assos_and_long_search(self):
+    def test_many_assos_and_long_search(self) -> None:
         """User searches for a long time and there are a lot of associations."""
 
         persona = self._random_persona().clone()
@@ -57,7 +56,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg='Failed for "{}"'.format(persona.name))
 
-    def test_very_long_search(self):
+    def test_very_long_search(self) -> None:
         """User searches for a very long time."""
 
         persona = self._random_persona().clone()
@@ -69,47 +68,10 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         self.assertEqual(3, score, msg='Failed for "{}"'.format(persona.name))
 
 
-class ExtraDataTestCase(base_test.ServerTestCase):
-    """Unit tests for maybe_advise to compute extra data for advice modules."""
-
-    def test_advice_association_help_extra_data(self):
-        """Test that the advisor computes extra data for the "Find an association" advice."""
-
-        project = {
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'departementId': '14'}},
-            'jobSearchLengthMonths': 7, 'weeklyApplicationsEstimate': 'A_LOT',
-            'totalInterviewCount': 1,
-        }
-        self._db.associations.insert_many([
-            {'name': 'Pôle emploi'},
-            {'name': 'SNC', 'filters': ['for-departement(14,15,16)']},
-            {'name': 'Ressort', 'filters': ['for-departement(69)']},
-        ])
-        self._db.advice_modules.insert_one({
-            'adviceId': 'my-advice',
-            'triggerScoringModel': 'advice-association-help',
-            'extraDataFieldName': 'associations_data',
-            'isReadyForProd': True,
-        })
-
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'my-advice')
-
-        self.assertEqual('SNC', advice.get('associationsData').get('associationName'))
-
-
 class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../association-help endpoint."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(EndpointTestCase, self).setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'association-help',
@@ -120,7 +82,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def test_bad_project_id(self):
+    def test_bad_project_id(self) -> None:
         """Test with a non existing project ID."""
 
         response = self.app.get(
@@ -130,7 +92,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(404, response.status_code)
         self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
 
-    def test_one_association(self):
+    def test_one_association(self) -> None:
         """Basic test with one association only."""
 
         self._db.associations.insert_one({'name': 'SNC'})
@@ -141,7 +103,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         associations = self.json_from_response(response)
         self.assertEqual({'associations': [{'name': 'SNC'}]}, associations)
 
-    def test_filtered_associations(self):
+    def test_filtered_associations(self) -> None:
         """Association not useful for this project is filtered."""
 
         self._db.associations.insert_many([
@@ -157,7 +119,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             {'associations': [{'name': 'Keep this one', 'filters': ['constant(1)']}]},
             associations)
 
-    def test_sorted_associations(self):
+    def test_sorted_associations(self) -> None:
         """More specialized associations come first."""
 
         self._db.associations.insert_many([
@@ -176,4 +138,4 @@ class EndpointTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

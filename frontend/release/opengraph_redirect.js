@@ -95,6 +95,11 @@ const pages = {
     description: 'Ensemble créons le service public de demain.',
     title: 'Contribuer',
   },
+  'diagnostic': {
+    description: `${productName} vous permet de savoir comment se porte votre marché`,
+    image: 'https://www.bob-emploi.fr/assets/quick_diagnostic_screenshot.png',
+    title: "Évaluez l'avenir de votre métier en un clic",
+  },
   'equipe': {
     description: `Voici l'équipe qui développe ${productName}`,
     title: 'Équipe',
@@ -118,11 +123,13 @@ const pages = {
 }
 
 function isOpenGraphBot(userAgent) {
-  return /facebot|facebookexternalhit|slackbot|twitterbot/.test(userAgent.value.toLowerCase())
+  return /facebot|facebookexternalhit|slackbot|twitterbot|linkedinbot/.test(
+    userAgent.value.toLowerCase())
 }
 
 function getPageDescription(pageUrl) {
-  const {description, fullTitle, image, title} = pages[pageUrl] || pages[''] || {}
+  const {description, fullTitle, image, title} =
+    pages[pageUrl] || pages[pageUrl.split('/')[0]] || pages[''] || {}
   return {
     description,
     image: image || 'https://www.bob-emploi.fr/assets/bob-circle-picto.png',

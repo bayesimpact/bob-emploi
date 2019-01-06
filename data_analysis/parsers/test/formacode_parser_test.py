@@ -74,4 +74,4 @@ def _parse_line(line):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()
