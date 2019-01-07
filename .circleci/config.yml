@@ -46,6 +46,10 @@ jobs:
                 docker cp data-analysis-prepare-$CIRCLE_BUILD_NUM:/work/cover /tmp/data-analysis-coverage
                 docker rm data-analysis-prepare-$CIRCLE_BUILD_NUM
               }
+      - run:
+          name: Make sure the export can be submitted
+          command: |
+            [[ "$(git log -1 --pretty=%B)" != *"DO NOT SUBMIT"* ]]
       - store_artifacts:
           path: /tmp/frontend-coverage
       - store_artifacts:
