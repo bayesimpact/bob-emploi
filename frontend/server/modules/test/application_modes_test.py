@@ -1,14 +1,13 @@
 """Unit tests for the application_tips module."""
 
 import datetime
-import json
+import typing
 import unittest
+from unittest import mock
 
-import mock
-
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server import companies
-from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -18,12 +17,12 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
 
     model_id = 'advice-spontaneous-application'
 
-    def test_best_channel(self):
+    def test_best_channel(self) -> None:
         """User is in a market where spontaneous application is the best channel."""
 
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'A1234'
-        persona.project.mobility.city.departement_id = '69'
+        persona.project.city.departement_id = '69'
         persona.project.job_search_length_months = 2
         persona.project.job_search_started_at.FromDatetime(
             persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
@@ -57,12 +56,12 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
 
         self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
 
-    def test_second_best_channel(self):
+    def test_second_best_channel(self) -> None:
         """User is in a market where spontaneous application is the second best channel."""
 
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'A1234'
-        persona.project.mobility.city.departement_id = '69'
+        persona.project.city.departement_id = '69'
         persona.project.job_search_length_months = 2
         persona.project.job_search_started_at.FromDatetime(
             persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
@@ -104,12 +103,12 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
 
         self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
 
-    def test_not_best_channel(self):
+    def test_not_best_channel(self) -> None:
         """User is in a market where spontaneous application is not the best channel."""
 
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'A1234'
-        persona.project.mobility.city.departement_id = '69'
+        persona.project.city.departement_id = '69'
         persona.project.job_search_length_months = 2
         persona.project.job_search_started_at.FromDatetime(
             persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
@@ -145,23 +144,16 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
 
 
 @mock.patch(companies.__name__ + '.get_lbb_companies')
-class ExtraDataTestCase(base_test.ServerTestCase):
+class ExtraDataTestCase(scoring_test.AdviceScoringModelTestBase):
     """Unit tests for maybe_advise to compute extra data for advice modules."""
 
-    def setUp(self):  # pylint: disable=missing-docstring,invalid-name
-        super(ExtraDataTestCase, self).setUp()
-        self._db.advice_modules.insert_one({
-            'adviceId': 'my-advice',
-            'triggerScoringModel': 'advice-spontaneous-application',
-            'extraDataFieldName': 'spontaneous_application_data',
-            'isReadyForProd': True,
-        })
+    model_id = 'advice-spontaneous-application'
 
-    def test_alternance_extra_data(self, mock_get_lbb_companies):
+    def test_alternance_extra_data(self, mock_get_lbb_companies: mock.MagicMock) -> None:
         """Get also companies for alternance."""
 
-        self._db.job_group_info.drop()
-        self._db.job_group_info.insert_one({
+        self.database.job_group_info.drop()
+        self.database.job_group_info.insert_one({
             '_id': 'A1234',
             'applicationModes': {'R4Z92': {'modes': [
                 {
@@ -175,36 +167,28 @@ class ExtraDataTestCase(base_test.ServerTestCase):
             [{'name': 'Company {}'.format(i)} for i in range(10)],
         ]
 
-        project = {
-            'employmentTypes': ['ALTERNANCE', 'CDI'],
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-        }
+        persona = self._random_persona().clone()
+        del persona.project.employment_types[:]
+        persona.project.employment_types.extend([job_pb2.ALTERNANCE, job_pb2.CDI])
+        persona.project.target_job.job_group.rome_id = 'A1234'
 
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
+        extra_data = typing.cast(
+            project_pb2.SpontaneousApplicationData, self._compute_expanded_card_data(persona))
 
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'my-advice')
-        extra_data = advice.get('spontaneousApplicationData')
-        self.assertEqual({'companies', 'alternanceCompanies'}, extra_data.keys())
-        self.assertEqual(['Carrefour', 'Leclerc'], [c.get('name') for c in extra_data['companies']])
+        self.assertEqual(['Carrefour', 'Leclerc'], [c.name for c in extra_data.companies])
         self.assertEqual(
             ['Company 0', 'Company 1', 'Company 2', 'Company 3', 'Company 4'],
-            [c.get('name') for c in extra_data['alternanceCompanies']])
+            [c.name for c in extra_data.alternance_companies])
 
         self.assertEqual(
             [None, 'alternance'],
             [kwarg.get('contract') for arg, kwarg in mock_get_lbb_companies.call_args_list])
 
-    def test_only_alternance_extra_data(self, mock_get_lbb_companies):
+    def test_only_alternance_extra_data(self, mock_get_lbb_companies: mock.MagicMock) -> None:
         """Get only companies for alternance."""
 
-        self._db.job_group_info.drop()
-        self._db.job_group_info.insert_one({
+        self.database.job_group_info.drop()
+        self.database.job_group_info.insert_one({
             '_id': 'A1234',
             'applicationModes': {'R4Z92': {'modes': [
                 {
@@ -218,28 +202,70 @@ class ExtraDataTestCase(base_test.ServerTestCase):
             [{'name': 'Company {}'.format(i)} for i in range(10)],
         ]
 
-        project = {
-            'employmentTypes': ['ALTERNANCE'],
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-        }
+        persona = self._random_persona().clone()
+        del persona.project.employment_types[:]
+        persona.project.employment_types.append(job_pb2.ALTERNANCE)
+        persona.project.target_job.job_group.rome_id = 'A1234'
 
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'my-advice')
-        extra_data = advice.get('spontaneousApplicationData')
-        self.assertEqual({'alternanceCompanies'}, extra_data.keys())
+        extra_data = typing.cast(
+            project_pb2.SpontaneousApplicationData, self._compute_expanded_card_data(persona))
+        self.assertFalse(extra_data.companies)
         self.assertEqual(
-            ['Carrefour', 'Leclerc'], [c.get('name') for c in extra_data['alternanceCompanies']])
+            ['Carrefour', 'Leclerc'], [c.name for c in extra_data.alternance_companies])
 
         self.assertEqual(
             ['alternance'],
             [kwarg.get('contract') for arg, kwarg in mock_get_lbb_companies.call_args_list])
+
+    def test_advice_spontaneous_application_extra_data(
+            self, mock_get_lbb_companies: mock.MagicMock) -> None:
+        """Test that the advisor computes extra data for the "Spontaneous Application" advice."""
+
+        persona = self._random_persona().clone()
+        persona.project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
+            job_search_length_months=7,
+            weekly_applications_estimate=project_pb2.A_LOT,
+            employment_types=[job_pb2.CDI],
+            total_interview_count=1,
+        )
+        persona.project.city.departement_id = '14'
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        }
+                    ],
+                }
+            },
+        })
+        mock_get_lbb_companies.return_value = iter([
+            {'name': 'EX NIHILO'},
+            {'name': 'M.F.P MULTIMEDIA FRANCE PRODUCTIONS'},
+        ])
+
+        extra_data = typing.cast(
+            project_pb2.SpontaneousApplicationData, self._compute_expanded_card_data(persona))
+        self.assertEqual(
+            ['EX NIHILO', 'M.F.P MULTIMEDIA FRANCE PRODUCTIONS'],
+            [c.name for c in extra_data.companies])
 
 
 class MainlySpontaneousFilterTestCase(filters_test.FilterTestBase):
@@ -247,7 +273,7 @@ class MainlySpontaneousFilterTestCase(filters_test.FilterTestBase):
 
     model_id = 'for-mainly-hiring-through-spontaneous(±15%)'
 
-    def test_best_application_mode(self):
+    def test_best_application_mode(self) -> None:
         """User is in a market where spontaneous application is the best channel."""
 
         self.persona.project.target_job.job_group.rome_id = 'A1234'
@@ -278,7 +304,7 @@ class MainlySpontaneousFilterTestCase(filters_test.FilterTestBase):
         })
         self._assert_pass_filter()
 
-    def test_second_best_channel(self):
+    def test_second_best_channel(self) -> None:
         """Spontaneous application is the second best channel by a small margin."""
 
         self.persona.project.target_job.job_group.rome_id = 'A1234'
@@ -317,7 +343,7 @@ class MainlySpontaneousFilterTestCase(filters_test.FilterTestBase):
         })
         self._assert_pass_filter()
 
-    def test_second_best_channel_by_far(self):
+    def test_second_best_channel_by_far(self) -> None:
         """Spontaneous application is the second best channel by a large margin."""
 
         self.persona.project.target_job.job_group.rome_id = 'A1234'
@@ -356,7 +382,7 @@ class MainlySpontaneousFilterTestCase(filters_test.FilterTestBase):
         })
         self._assert_fail_filter()
 
-    def test_not_best_channel(self):
+    def test_not_best_channel(self) -> None:
         """User is in a market where spontaneous application is not a great channel."""
 
         self.persona.project.target_job.job_group.rome_id = 'A1234'
@@ -389,4 +415,4 @@ class MainlySpontaneousFilterTestCase(filters_test.FilterTestBase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

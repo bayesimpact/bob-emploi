@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 
 message Association {
@@ -7,12 +9,11 @@ message Association {
   string name = 1;
 
   // Link to the association home page.
-  string link = 2;
+  string link = 2 [(string_format) = URL_FORMAT];
 
   // A set of filter IDs: do not show the association if one these filters
   // returns false for the project.
-  // See the list of available filters in scoring.py.
-  repeated string filters = 3;
+  repeated string filters = 3 [(string_format) = SCORING_MODEL_ID];
 }
 
 message Associations {
@@ -32,7 +33,7 @@ message VolunteeringMission {
   string description = 3;
 
   // Link to the mission page with full info and way to apply.
-  string link = 4;
+  string link = 4 [(string_format) = URL_FORMAT];
 
   // Whether the mission can be done from anywhere.
   bool is_available_everywhere = 5;

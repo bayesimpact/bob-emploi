@@ -28,148 +28,6 @@
         }
     },
     "requirements": {
-      "skills": [
-        {
-          "skill": {
-            "kind": "PRACTICAL_SKILL",
-            "skillId": "21252"
-          },
-          "name": "Utilisation de logiciels de gestion comptable"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21871"
-          },
-          "name": "Eléments de base en gestion comptable et administrative"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22454"
-          },
-          "name": "Procédures d'encaissement"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "23168"
-          },
-          "name": "Techniques de vente"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22609"
-          },
-          "name": "Règles de gestion de stocks"
-        },
-        {
-          "skill": {
-            "kind": "PRACTICAL_SKILL",
-            "skillId": "20813"
-          },
-          "name": "Chiffrage/calcul de coût"
-        },
-        {
-          "skill": {
-            "kind": "PRACTICAL_SKILL",
-            "skillId": "21330"
-          },
-          "name": "Utilisation de matériel de nettoyage"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21701"
-          },
-          "name": "Chaîne du froid"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22649"
-          },
-          "name": "Règles d'hygiène et de sécurité alimentaire"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21907"
-          },
-          "name": "Eléments de base en production culinaire"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21742"
-          },
-          "name": "Conditions de stockage de produits alimentaires"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "23289"
-          },
-          "name": "Traçabilité des produits"
-        },
-        {
-          "skill": {
-            "kind": "PRACTICAL_SKILL",
-            "skillId": "21295"
-          },
-          "name": "Utilisation de machine de découpe de viande"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21506"
-          },
-          "name": "Anatomie animale"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22878"
-          },
-          "name": "Techniques de découpe des viandes"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "23353"
-          },
-          "name": "Typologie des pièces de viande"
-        },
-        {
-          "skill": {
-            "kind": "PRACTICAL_SKILL",
-            "skillId": "20900"
-          },
-          "name": "Ficelage des viandes"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22886"
-          },
-          "name": "Techniques de désossage"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "23019"
-          },
-          "name": "Techniques de parage des viandes"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "23193"
-          },
-          "name": "Techniques d'embossage"
-        }
-      ],
       "drivingLicenses": [
         {
           "drivingLicense": "CAR",
@@ -212,29 +70,29 @@
         "percentSuggested": 2
        }
       ],
-      "diplomas" : [ 
+      "diplomas" : [
         {
           "name" : "Bac+2",
           "percentSuggested" : 19,
           "percentRequired" : 100
         }
       ],
-      "contractTypes" : [ 
+      "contractTypes" : [
             {
                 "percentSuggested" : 54,
                 "contractType" : "CDD_LESS_EQUAL_3_MONTHS",
                 "percentRequired" : 100
-            }, 
+            },
             {
                 "percentSuggested" : 30,
                 "contractType" : "CDD_OVER_3_MONTHS",
                 "percentRequired" : 100
-            }, 
+            },
             {
                 "percentSuggested" : 14,
                 "contractType" : "CDI",
                 "percentRequired" : 100
-            }, 
+            },
             {
                 "percentSuggested" : 2,
                 "contractType" : "INTERIM",
@@ -302,26 +160,33 @@
         }
     },
     "requirements" : {
-        "contractTypes" : [ 
+        "contractTypes" : [
             {
                 "percentSuggested" : 54,
                 "contractType" : "CDD_LESS_EQUAL_3_MONTHS",
                 "percentRequired" : 100
-            }, 
+            },
             {
                 "percentSuggested" : 30,
                 "contractType" : "CDD_OVER_3_MONTHS",
                 "percentRequired" : 100
-            }, 
+            },
             {
                 "percentSuggested" : 14,
                 "contractType" : "CDI",
                 "percentRequired" : 100
-            }, 
+            },
             {
                 "percentSuggested" : 2,
                 "contractType" : "INTERIM",
                 "percentRequired" : 100
+            }
+        ],
+        "diplomas" : [
+            {
+                "name" : "Bac+2",
+                "percentSuggested" : 19,
+                "percentRequired" : 40
             }
         ]
     }
@@ -332,120 +197,6 @@
     "romeId": "M1705",
     "hasFreelancers": true,
     "requirements": {
-      "skills": [
-        {
-          "skill": {
-            "kind": "PRACTICAL_SKILL",
-            "skillId": "21467"
-          },
-          "name": "Utilisation d'outils bureautiques (traitement de texte, tableur,...)"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21995"
-          },
-          "name": "Gestion comptable et administrative"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21746"
-          },
-          "name": "Conduite de projet"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "23348"
-          },
-          "name": "Typologie des clients/consommateurs"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22554"
-          },
-          "name": "Réglementation du commerce électronique"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "38836"
-          },
-          "name": "E-procurement - Gestion électronique des achats"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22956"
-          },
-          "name": "Techniques de management"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22977"
-          },
-          "name": "Techniques de merchandising"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21794"
-          },
-          "name": "Droit commercial"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22086"
-          },
-          "name": "Législation sociale"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22721"
-          },
-          "name": "Analyse statistique"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21713"
-          },
-          "name": "Circuits de distribution commerciale"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "22843"
-          },
-          "name": "Techniques de conduite de réunion"
-        },
-        {
-          "skill": {
-            "kind": "PRACTICAL_SKILL",
-            "skillId": "21471"
-          },
-          "name": "Utilisation d'outils de planification"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "23033"
-          },
-          "name": "Techniques de planification"
-        },
-        {
-          "skill": {
-            "kind": "THEORETICAL_SKILL",
-            "skillId": "21820"
-          },
-          "name": "Econométrie"
-        }
-      ],
       "contractTypes": [
         {
           "percentSuggested": 12,

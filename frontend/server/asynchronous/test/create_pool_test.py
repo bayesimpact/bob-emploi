@@ -1,8 +1,8 @@
 """Tests for the create_pool module."""
 
 import unittest
+from unittest import mock
 
-import mock
 import mongomock
 
 from bob_emploi.frontend.server.asynchronous import create_pool
@@ -11,7 +11,7 @@ from bob_emploi.frontend.server.asynchronous import create_pool
 class CreatePoolTestCase(unittest.TestCase):
     """Unit tests for the create pool script."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(CreatePoolTestCase, self).setUp()
         client = mongomock.MongoClient()
 
@@ -28,7 +28,7 @@ class CreatePoolTestCase(unittest.TestCase):
     @mock.patch(create_pool.__name__ + '.requests.post')
     @mock.patch(
         create_pool.__name__ + '._SLACK_CREATE_POOL_URL', 'https://slack.example.com/webhook')
-    def test_basic_usage(self, mock_post):
+    def test_basic_usage(self, mock_post: mock.MagicMock) -> None:
         """Basic usage."""
 
         self._user_db.user.insert_many([
@@ -66,4 +66,4 @@ class CreatePoolTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

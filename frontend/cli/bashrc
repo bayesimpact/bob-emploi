@@ -1,0 +1,44 @@
+# Bash functions that makes it easier to use the command line to interface with
+# Bob frontend.
+
+function _ecs_var_from_json {
+  local container=$1
+  local var=$2
+  shift 2
+  jq -r ".taskDefinition.containerDefinitions[] | select(.name == \"$container\") | .environment[] | select(.name ==\"$var\") | .value" "$@"
+}
+
+# Access a production environment var of Bob.
+#
+# You need to have awscli and jq installed, as well have read access to the
+# prod configuration.
+function bob_prod_var {
+  aws ecs describe-task-definition --task-definition=frontend-flask | _ecs_var_from_json flask "$@"
+}
+
+# Access a demo environment var of Bob.
+#
+# You need to have ssh access to the demo server.
+function bob_demo_var {
+  ssh demo-mygameplan.bayes.org 'bash --login -c "echo \$'$1'"'
+}
+
+# Access multiple production environment vars of Bob for a local docker run.
+#
+# You need to have awscli and jq installed, as well have read access to the
+# prod configuration.
+function bob_prod_vars {
+  tmpfile=$(mktemp)
+  aws ecs describe-task-definition --task-definition=frontend-flask > $tmpfile
+  for var in "$@"; do
+    value="$(_ecs_var_from_json flask "$var" "$tmpfile")"
+    echo -n "-e $var=$value "
+  done
+  # Finalize the line with a linebreak to conform to unix standards.
+  echo
+  rm "$tmpfile"
+}
+
+function bob_importer_var {
+  aws ecs describe-task-definition --task-definition=data-importer | _ecs_var_from_json master "$@"
+}

@@ -2,9 +2,9 @@
 
 import collections
 import datetime
+import typing
 import unittest
-
-import mock
+from unittest import mock
 
 from bob_emploi.data_analysis.lib import fhs
 
@@ -20,10 +20,10 @@ class FhsTestCase(unittest.TestCase):
     """Unit tests for FHS functions."""
 
     @mock.patch(fhs.__name__ + '.migration_helpers.flatten_iterator')
-    def test_job_seeker_iterator(self, mock_flatten_iterator):
+    def test_job_seeker_iterator(self, mock_flatten_iterator: mock.MagicMock) -> None:
         """Basic usage of job_seeker_iterator."""
 
-        def _flatten_iterator(filename):
+        def _flatten_iterator(filename: str) -> typing.Iterator[typing.Dict[str, typing.Any]]:
             if '/de.csv' in filename:
                 return iter([
                     {
@@ -66,6 +66,7 @@ class FhsTestCase(unittest.TestCase):
                         '__file__': filename.replace('*', 'Reg21'),
                     },
                 ])
+            raise ValueError('Called with "{}"'.format(filename))
         mock_flatten_iterator.side_effect = _flatten_iterator
 
         seekers = list(
@@ -73,8 +74,6 @@ class FhsTestCase(unittest.TestCase):
         data = [j._data for j in seekers]  # pylint: disable=protected-access
         self.assertEqual([
             {
-                'region': '01',
-                'IDX': '1',
                 'de': [{
                     'IDX': '1',
                     'ROME': 'foo',
@@ -97,8 +96,6 @@ class FhsTestCase(unittest.TestCase):
                 ],
             },
             {
-                'region': '01',
-                'IDX': '15',
                 'de': [{
                     'IDX': '15',
                     'ROME': 'foo',
@@ -108,8 +105,6 @@ class FhsTestCase(unittest.TestCase):
                 'e0': [],
             },
             {
-                'region': '21',
-                'IDX': '2',
                 'de': [{
                     'IDX': '2',
                     'ROME': 'foo',
@@ -125,7 +120,7 @@ class FhsTestCase(unittest.TestCase):
             },
         ], data)
 
-    def test_job_seeker_key_idx(self):
+    def test_job_seeker_key_idx(self) -> None:
         """Test of the IDX property of key created by job_seeker_key."""
 
         key = fhs.job_seeker_key({
@@ -134,7 +129,7 @@ class FhsTestCase(unittest.TestCase):
         })
         self.assertEqual('47', str(key.IDX))
 
-    def test_job_seeker_key_equality_across_tables(self):
+    def test_job_seeker_key_equality_across_tables(self) -> None:
         """Test that job_seeker_key creates equal keys across 2 FHS tables."""
 
         key_de = fhs.job_seeker_key({
@@ -147,7 +142,7 @@ class FhsTestCase(unittest.TestCase):
         })
         self.assertEqual(key_de, key_e0)
 
-    def test_job_seeker_key_increasing(self):
+    def test_job_seeker_key_increasing(self) -> None:
         """Test that job_seeker_key creates increasing keys."""
 
         key_1 = fhs.job_seeker_key({
@@ -160,7 +155,7 @@ class FhsTestCase(unittest.TestCase):
         })
         self.assertLess(key_1, key_2)
 
-    def test_job_seeker_key_increasing_integers(self):
+    def test_job_seeker_key_increasing_integers(self) -> None:
         """Test that job_seeker_key creates increasing keys for integers."""
 
         key_2 = fhs.job_seeker_key({
@@ -173,7 +168,7 @@ class FhsTestCase(unittest.TestCase):
         })
         self.assertLess(key_2, key_15)
 
-    def test_job_seeker_key_increasing_regions(self):
+    def test_job_seeker_key_increasing_regions(self) -> None:
         """Test that job_seeker_key creates increasing keys across regions."""
 
         key_15_reg01 = fhs.job_seeker_key({
@@ -186,13 +181,13 @@ class FhsTestCase(unittest.TestCase):
         })
         self.assertLess(key_15_reg01, key_2_reg02)
 
-    def test_extract_departement_id(self):
+    def test_extract_departement_id(self) -> None:
         """Basic usage of extract_departement_id."""
 
         departement_id = fhs.extract_departement_id('31555')
         self.assertEqual('31', departement_id)
 
-    def test_extract_departement_id_oversee(self):
+    def test_extract_departement_id_oversee(self) -> None:
         """Test extract_departement_id on an oversee locality."""
 
         departement_id = fhs.extract_departement_id('97613')
@@ -209,10 +204,10 @@ StateAtDateTestCase = collections.namedtuple(
 class JobSeekerTestCase(unittest.TestCase):
     """Unit tests for the JobSeeker class."""
 
-    def test_unemployment_a_periods(self):
+    def test_unemployment_a_periods(self) -> None:
         """Basic usage of unemployment_a_periods."""
 
-        job_seeker = fhs.JobSeeker({
+        job_seeker = fhs.JobSeeker(1, '01', {
             'de': [{
                 'DATINS': datetime.date(2015, 5, 1),
                 'DATANN': datetime.date(2015, 5, 22),
@@ -229,10 +224,10 @@ class JobSeekerTestCase(unittest.TestCase):
                  'CATREGR': '1'})]),
             periods)
 
-    def test_unemployment_a_periods_switching_to_b(self):
+    def test_unemployment_a_periods_switching_to_b(self) -> None:
         """unemployment_a_periods when job seeker starts partial work."""
 
-        job_seeker = fhs.JobSeeker({
+        job_seeker = fhs.JobSeeker(1, '01', {
             'de': [{
                 'DATINS': datetime.date(2015, 5, 1),
                 'DATANN': datetime.date(2015, 12, 22),
@@ -250,10 +245,10 @@ class JobSeekerTestCase(unittest.TestCase):
                  'MOTANN': fhs.CancellationReason.STARTING_PART_TIME_WORK})]),
             periods)
 
-    def test_unemployment_a_periods_useless_change(self):
+    def test_unemployment_a_periods_useless_change(self) -> None:
         """unemployment_a_periods whith a change from CATREGR 1 to 2."""
 
-        job_seeker = fhs.JobSeeker({
+        job_seeker = fhs.JobSeeker(1, '01', {
             'de': [
                 {
                     'DATINS': datetime.date(2015, 5, 1),
@@ -283,10 +278,10 @@ class JobSeekerTestCase(unittest.TestCase):
                  'MOTANN': 'ddd'})]),
             periods)
 
-    def test_unemployment_a_periods_switching_to_e(self):
+    def test_unemployment_a_periods_switching_to_e(self) -> None:
         """unemployment_a_periods when job seeker starts a training."""
 
-        job_seeker = fhs.JobSeeker({
+        job_seeker = fhs.JobSeeker(1, '01', {
             'de': [
                 {
                     'DATINS': datetime.date(2015, 5, 1),
@@ -310,7 +305,7 @@ class JobSeekerTestCase(unittest.TestCase):
                  'CATREGR': '1'})]),
             periods)
 
-    def test_unemployment_a_periods_mistakenly_kicked_out(self):
+    def test_unemployment_a_periods_mistakenly_kicked_out(self) -> None:
         """unemployment_a_periods with a mistaken kick-out.
 
         Frequently some job seeker forget the required monthly updated of
@@ -323,7 +318,7 @@ class JobSeekerTestCase(unittest.TestCase):
         for a short period, and treat such gaps as if they had never left.
         """
 
-        job_seeker = fhs.JobSeeker({
+        job_seeker = fhs.JobSeeker(1, '01', {
             'de': [
                 {
                     'DATINS': datetime.date(2015, 5, 1),
@@ -376,10 +371,10 @@ class JobSeekerTestCase(unittest.TestCase):
                  'MOTANN': 'ddd'}),
             periods.first_contiguous_period())
 
-    def test_state_at_date(self):
+    def test_state_at_date(self) -> None:
         """Basic usages of state_at_date."""
 
-        job_seeker = fhs.JobSeeker({
+        job_seeker = fhs.JobSeeker(1, '01', {
             'de': [
                 {
                     'DATINS': datetime.date(2015, 5, 1),
@@ -431,13 +426,11 @@ class JobSeekerTestCase(unittest.TestCase):
             state = job_seeker.state_at_date(test.date)
             self.assertEqual(test.expect, state, msg=test.name)
 
-    def test_get_rome_per_period(self):
+    def test_get_rome_per_period(self) -> None:
         """Basic usages of get_rome_per_period."""
 
         now = datetime.date(2015, 12, 1)
-        job_seeker = fhs.JobSeeker({
-            'region': '21',
-            'IDX': '1.0',
+        job_seeker = fhs.JobSeeker(1, '21', {
             'de': [
                 {
                     'IDX': '1.0',
@@ -474,19 +467,19 @@ class JobSeekerTestCase(unittest.TestCase):
         self.assertEqual(
             [
                 _JobseekerCriteria(
-                    jobseeker_unique_id='1.0_21',
+                    jobseeker_unique_id='1_21',
                     code_rome='N1234',
                     departement=None,
                     gender=None,
                 ),
                 _JobseekerCriteria(
-                    jobseeker_unique_id='1.0_21',
+                    jobseeker_unique_id='1_21',
                     code_rome='H1234',
                     departement='Here',
                     gender='1',
                 ),
                 _JobseekerCriteria(
-                    jobseeker_unique_id='1.0_21',
+                    jobseeker_unique_id='1_21',
                     code_rome='A1001',
                     departement='There',
                     gender='1',
@@ -494,12 +487,10 @@ class JobSeekerTestCase(unittest.TestCase):
             ],
             periods)
 
-    def test_get_training_periods(self):
+    def test_get_training_periods(self) -> None:
         """Basic usages of all_training_periods."""
 
-        job_seeker = fhs.JobSeeker({
-            'region': '21',
-            'IDX': '1.0',
+        job_seeker = fhs.JobSeeker(1, '21', {
             'de': [
                 {
                     'IDX': '1.0',

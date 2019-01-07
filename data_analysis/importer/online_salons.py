@@ -206,4 +206,4 @@ def json2dicts(events_file_name):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(json2dicts, 'online_salons')  # pragma: no-cover
+    mongo.importer_main(json2dicts, 'online_salons')

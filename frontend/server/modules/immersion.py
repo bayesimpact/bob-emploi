@@ -1,21 +1,25 @@
 """Module to advise the user to try an immersion."""
 
+import typing
+
 from bob_emploi.frontend.server import scoring_base
+from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import project_pb2
 
 
 class _ImmersionMissionLocale(scoring_base.ModelBase):
     """A scoring model to trigger the "Immersion with Mission Locale" advice."""
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         if project.details.previous_job_similarity != project_pb2.NEVER_DONE or \
                 project.get_user_age() > 25:
             return scoring_base.NULL_EXPLAINED_SCORE
 
-        explanations = []
-        score = 2
+        explanations: typing.List[str] = []
+        score: float = 2
 
         if project.details.network_estimate <= 2:
             explanations.append(project.translate_string('ça vous aide à développer votre réseau'))
@@ -27,7 +31,8 @@ class _ImmersionMissionLocale(scoring_base.ModelBase):
 
         return scoring_base.ExplainedScore(score, explanations)
 
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> association_pb2.MissionLocaleData:
         """Retrieve data for the expanded card."""
 
         return project.mission_locale_data()

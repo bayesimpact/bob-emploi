@@ -3,8 +3,8 @@
 import datetime
 import io
 import unittest
+from unittest import mock
 
-import mock
 import mongomock
 
 from bob_emploi.frontend.api import diagnostic_pb2
@@ -14,7 +14,7 @@ from bob_emploi.frontend.server.asynchronous import assess_assessment
 class AssessAssessmentTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(AssessAssessmentTestCase, self).setUp()
         self._db = mongomock.MongoClient().test
         patcher = mock.patch(assess_assessment.__name__ + '._DB', new=self._db)
@@ -25,7 +25,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
         assess_assessment.now.__name__ + '.get',
         new=mock.MagicMock(return_value=datetime.datetime(2017, 11, 16)))
     @mock.patch(assess_assessment.diagnostic.__name__ + '.diagnose')
-    def test_main(self, mock_diagnose):
+    def test_main(self, mock_diagnose: mock.MagicMock) -> None:
         """Test the assessment of diagnostic."""
 
         full_diagnostic = diagnostic_pb2.Diagnostic(overall_score=10, text='Successful text')
@@ -51,7 +51,8 @@ class AssessAssessmentTestCase(unittest.TestCase):
             (full_diagnostic, []),
             (no_overall_score, []),
             (no_overall_text, [1, 3]),
-            (missing_sub_diagnostic, [])
+            (missing_sub_diagnostic, []),
+            (full_diagnostic, None),
         ]
 
         self._db.use_case.insert_many([
@@ -97,19 +98,27 @@ class AssessAssessmentTestCase(unittest.TestCase):
                 'user_data': {
                     'projects': [{}],
                 },
-            }
+            },
+            {
+                'indexInPool': 5,
+                'poolName': '2017-11-11',
+                'user_data': {
+                    'projects': [{}],
+                },
+            },
         ])
 
         out = io.StringIO()
         assess_assessment.main(['-d', '7', '-e', '1'], out=out)
         result = out.getvalue().split('\n')
-        self.assertEqual('4 use cases tested', result.pop(0))
+        self.assertEqual('5 use cases tested', result.pop(0))
         self.assertEqual('1 use case successfully assessed', result.pop(0))
-        self.assertEqual('Success rate: 25.0%', result.pop(0))
+        self.assertEqual('Success rate: 20.0%', result.pop(0))
         empty_row = result.pop()
         self.assertFalse(empty_row)
         example = result.pop()
         expected_examples_url = [
+            '/eval/2017-11-11_01?poolName=2017-11-11',
             '/eval/2017-11-11_02?poolName=2017-11-11',
             '/eval/2017-11-11_03?poolName=2017-11-11',
             '/eval/2017-11-11_04?poolName=2017-11-11',
@@ -122,6 +131,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
             '"text: sentence 3"',
             '"subdiagnostic: PROFILE_DIAGNOSTIC"',
             '"score"',
+            '"overall"',
         ]
         self.assertTrue(any(
             missing_field in example_missing_fields
@@ -130,4 +140,4 @@ class AssessAssessmentTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

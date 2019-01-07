@@ -2,14 +2,14 @@
 
 from os import path
 import unittest
-
-import mock
+from unittest import mock
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.data_analysis.importer import recent_job_offers_count
 from bob_emploi.data_analysis.lib import mongo
 
 
+@mock.patch(recent_job_offers_count.tqdm.__name__ + '.tqdm', new=lambda iterable, **kw: iterable)
 class RecentJobOffersCountTestCase(unittest.TestCase):
     """Tests for the recent job offers download_and_count function."""
 
@@ -39,4 +39,4 @@ class RecentJobOffersCountTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

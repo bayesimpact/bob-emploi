@@ -1,25 +1,39 @@
 """Module to ease interaction with MongoDB."""
 
+import collections
 import datetime
 import inspect
 import json
 import re
 import sys
 import time
+import typing
 
 import pymongo
+from pymongo import database
 import tqdm
 
 from google.protobuf import json_format
+from google.protobuf import message
 
 import gflags
 
+_GET_NOW = datetime.datetime.now
 
+JsonType = typing.Dict[str, typing.Any]
+_FlagableCallable = typing.Callable[..., typing.List[JsonType]]
+
+
+# TODO(cyrille): Replace gflags with argparse.
 class Importer(object):
     """A helper to import data in a MongoDB collection."""
 
-    def __init__(self, flag_values=gflags.FLAGS):
+    def __init__(
+            self,
+            flag_values: gflags.FlagValues = gflags.FLAGS,
+            out: typing.TextIO = sys.stdout) -> None:
         self.flag_values = flag_values
+        self.out = out
 
         gflags.DEFINE_string(
             'mongo_url', None,
@@ -32,14 +46,27 @@ class Importer(object):
             'chunk_size', '10000', 'Import data in chunks of chunk_size.',
             flag_values=flag_values)
 
-    def import_in_collection(self, items, collection_name=None):
+    def _print(self, arg: typing.Any) -> None:
+        self.out.write('{}\n'.format(arg))
+
+    def import_in_collection(
+            self,
+            items: typing.List[JsonType],
+            collection_name: str) -> None:
         """Import items in a MongoDB collection."""
 
-        unique_suffix = '_{:x}'.format(round(time.time()))
+        real_collection = self._collection_from_flags(collection_name)
+        has_old_data = bool(real_collection.estimated_document_count())
+
+        if has_old_data and not self.review_diff(items, real_collection):
+            return
+
+        unique_suffix = '_{:x}'.format(round(time.time() * 1e6))
         collection = self._collection_from_flags(
             collection_name, suffix=unique_suffix)
         collection.drop()
-        collection = collection.database.get_collection(collection.name)
+        collection = typing.cast(
+            typing.Iterator[JsonType], collection.database.get_collection(collection.name))
         chunk_size = int(self.flag_values.chunk_size or 0)
         total = len(items)
         try:
@@ -47,43 +74,87 @@ class Importer(object):
             # already cut it in small pieces:
             # https://api.mongodb.com/python/current/examples/bulk.html
             if not chunk_size or chunk_size >= total:
-                print('Inserting all {:d} objects at once.'.format(total))
+                self._print('Inserting all {:d} objects at once.'.format(total))
                 collection.insert_many(items)
             else:
-                print('Inserting {:d} objects in chunks of {}'.format(total, chunk_size))
+                self._print('Inserting {:d} objects in chunks of {}'.format(total, chunk_size))
                 for pos in tqdm.tqdm(range(0, total, chunk_size), file=sys.stdout):
                     try:
                         collection.insert_many(items[pos:pos + chunk_size])
                     except pymongo.errors.BulkWriteError as error:
-                        print(error.details)
+                        self._print(error.details)
                         raise
         except Exception:
             collection.drop()
             raise
-        real_collection = self._collection_from_flags(collection_name)
+
+        # Archive current content if any.
+        if has_old_data:
+            today = _GET_NOW().date().isoformat()
+            archive_collection = self._collection_from_flags(
+                collection_name, suffix='.{}{}'.format(today, unique_suffix))
+            real_collection.aggregate([{'$out': archive_collection.name}])
+            # Drop old archives (exclude the ones archived today and keep only one additional).
+            old_versions = sorted(
+                name for name in real_collection.database.list_collection_names()
+                if name.startswith(real_collection.name + '.') and
+                not name.startswith(real_collection.name + '.{}'.format(today))
+            )
+            for old_version in old_versions[:-1]:
+                real_collection.database.drop_collection(old_version)
+
         collection.rename(real_collection.name, dropTarget=True)
         meta = self._collection_from_flags('meta', collection_name_from_flags=False)
         meta.update_one(
             {'_id': real_collection.name},
-            {'$set': {'updated_at': datetime.datetime.now()}},
+            {'$set': {'updated_at': _GET_NOW()}},
             upsert=True)
 
-    def _collection_from_flags(self, collection_name, suffix='', collection_name_from_flags=True):
+    def _collection_from_flags(
+            self,
+            collection_name: str,
+            suffix: str = '',
+            collection_name_from_flags: bool = True) -> database.Collection:
         if collection_name_from_flags and self.flag_values.mongo_collection:
             collection_name = self.flag_values.mongo_collection
         client = pymongo.MongoClient(self.flag_values.mongo_url)
-        database = client.get_default_database()
-        return database.get_collection(collection_name + suffix)
+        _database = client.get_default_database()
+        return typing.cast(
+            typing.Iterator[JsonType], _database.get_collection(collection_name + suffix))
+
+    def review_diff(
+            self,
+            new_list: typing.List[JsonType],
+            old_mongo_collection: database.Collection) -> bool:
+        """Review the difference between an old and new dataset."""
+
+        if len(new_list) > 1000:
+            return True
+
+        old_list = list(old_mongo_collection.find())
+
+        diff = _compute_diff(old_list, new_list)
+        if not diff:
+            self._print('The data is already up to date.')
+            return False
+
+        self._print(json.dumps(diff, indent=2))
+        while True:
+            answer = input('Do you approve this diff? Y/N ').upper()
+            if answer == 'Y':
+                return True
+            if answer == 'N':
+                return False
 
 
-def _get_doc_section(docstring, section_name):
+def _get_doc_section(docstring: str, section_name: str) -> typing.Optional[str]:
     for doc_part in docstring.split('\n\n'):
         if doc_part.strip().startswith(section_name + ':\n'):
             return doc_part
     return None
 
 
-def _remove_left_padding(lines, min_padding):
+def _remove_left_padding(lines: typing.List[str], min_padding: int) -> typing.Iterator[str]:
     if not lines:
         return []
     padding = len(lines[0]) - len(lines[0].lstrip())
@@ -95,7 +166,7 @@ def _remove_left_padding(lines, min_padding):
         yield line[padding:]
 
 
-def parse_args_doc(docstring):
+def parse_args_doc(docstring: typing.Optional[str]) -> typing.Dict[str, str]:
     """Parse the args documentation in a function's docstring.
 
     This function expects a very specific documentation format and parses it to
@@ -151,13 +222,13 @@ def parse_args_doc(docstring):
     return args_doc
 
 
-def _arg_names(func):
+def _arg_names(func: _FlagableCallable) -> typing.Mapping[str, typing.Any]:
     """Return the tuple of a function's args."""
 
     return inspect.signature(func).parameters
 
 
-def _define_flags_args(func, flag_values):
+def _define_flags_args(func: _FlagableCallable, flag_values: gflags.FlagValues) -> None:
     """Define string flags from the name and doc of a function's args."""
 
     args_doc = parse_args_doc(func.__doc__)
@@ -172,17 +243,25 @@ def _define_flags_args(func, flag_values):
             gflags.MarkFlagAsRequired(func_arg, flag_values=flag_values)
 
 
-def _exec_from_flags(func, flag_values):
+_AType = typing.TypeVar('_AType')
+
+
+def _exec_from_flags(func: _FlagableCallable, flag_values: gflags.FlagValues) \
+        -> typing.List[JsonType]:
     """Execute a function pulling arguments from flags."""
 
-    args = []
+    args: typing.List[str] = []
     for func_arg in _arg_names(func):
         args.append(getattr(flag_values, func_arg))
     return func(*args)
 
 
 def importer_main(
-        func, collection_name, args=None, flag_values=gflags.FLAGS):
+        func: _FlagableCallable,
+        collection_name: str,
+        args: typing.Optional[typing.List[str]] = None,
+        flag_values: gflags.FlagValues = gflags.FLAGS,
+        out: typing.TextIO = sys.stdout) -> None:
     """Main function for an importer to MongoDB.
 
     Use this function as the main function in an importer script, e.g.
@@ -222,7 +301,7 @@ def importer_main(
         'it drops the whole collection to replace it only with a subset of it',
         flag_values=flag_values)
 
-    importer = Importer(flag_values=flag_values)
+    importer = Importer(flag_values=flag_values, out=out)
     _define_flags_args(func, flag_values=flag_values)
     if not args:
         args = sys.argv
@@ -251,7 +330,13 @@ def importer_main(
         importer.import_in_collection(data, collection_name)
 
 
-def collection_to_proto_mapping(collection, proto_type):
+_ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
+
+
+def collection_to_proto_mapping(
+        collection: database.Collection,
+        proto_type: typing.Type[_ProtoType]
+) -> typing.Iterator[typing.Tuple[typing.Any, _ProtoType]]:
     """Iterate over a Mongo collection parsing documents to protobuffers.
 
     Args:
@@ -267,7 +352,7 @@ def collection_to_proto_mapping(collection, proto_type):
         KeyError: if an ID is found more than once.
     """
 
-    ids = set()
+    ids: typing.Set[typing.Any] = set()
     for document in collection:
         document_id = document['_id']
         del document['_id']
@@ -278,7 +363,7 @@ def collection_to_proto_mapping(collection, proto_type):
         yield document_id, parse_doc_to_proto(document, proto_type)
 
 
-def parse_doc_to_proto(document, proto_type):
+def parse_doc_to_proto(document: JsonType, proto_type: typing.Type[_ProtoType]) -> _ProtoType:
     """Parse a single proto from a document."""
 
     proto = proto_type()
@@ -289,3 +374,36 @@ def parse_doc_to_proto(document, proto_type):
             'Error while parsing item {}: {}\n{}'.format(
                 id, error, json.dumps(document, indent=2)))
     return proto
+
+
+def _compute_diff(
+        list_a: typing.List[JsonType],
+        list_b: typing.List[JsonType],
+        key: str = '_id') -> typing.Dict[typing.Any, typing.Any]:
+    dict_a = collections.OrderedDict((value.get(key), value) for value in list_a)
+    dict_b = collections.OrderedDict((value.get(key), value) for value in list_b)
+
+    return _compute_dict_diff(dict_a, dict_b)
+
+
+def _compute_dict_diff(
+        dict_a: typing.Dict[typing.Any, typing.Any],
+        dict_b: typing.Dict[typing.Any, typing.Any]) -> typing.Dict[typing.Any, typing.Any]:
+    diff: typing.Dict[typing.Any, typing.Any] = collections.OrderedDict()
+
+    for a_key, a_value in dict_a.items():
+        if a_key not in dict_b:
+            diff[a_key] = 'removed'
+            continue
+        b_value = dict_b[a_key]
+        if a_value != b_value:
+            if isinstance(a_value, dict) and isinstance(b_value, dict):
+                diff[a_key] = _compute_dict_diff(a_value, b_value)
+            else:
+                diff[a_key] = {'before': a_value, 'after': b_value}
+
+    for b_key, b_value in dict_b.items():
+        if b_key not in dict_a:
+            diff[b_key] = {'added': b_value}
+
+    return diff

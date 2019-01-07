@@ -1,0 +1,23 @@
+Bonjour {{var:firstName}},
+
+Vous avez utilisé Bob récemment et nous aimerions beaucoup en savoir plus sur votre expérience :
+
+
+
+Dans quelle mesure seriez-vous prêt à recommander Bob à un ami ?
+0 [https://ci3.googleusercontent.com/proxy/bXO4KZKJ1xx-ShY0_3WVpCuEuPwZ2USrBPljYvBJtzzARq9EXCQj3WPSQgJV-TQcQJ2URZeZHAr5rEz7m-axRLOksLOZekT47g=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l14w1.png] [{{var:npsFormUrl}}&score=0]1 [https://ci6.googleusercontent.com/proxy/pkQBzkS50FQE9KyIuY5Ou7p3FvLxcCxTuWS_v2hhcjzlvVXN8asBVL3oMqxj4eEj1eLKGdt-sFD8SzMdt0ULIgFFVzhR8Vo-3w=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l14wj.png] [{{var:npsFormUrl}}&score=1]2 [https://ci5.googleusercontent.com/proxy/twbH6pu6cDIDCH9yK13zu2Zr3Dfud5vG5Imf2DheT8CxQoqEF-OFdQARC_HvSfFAPQN8WbkYqY1ngxLGkGm2qCyQPUkfYjSuuA=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l14wk.png] [{{var:npsFormUrl}}&score=2]3 [https://ci4.googleusercontent.com/proxy/hovBtXeesOmLFMkMnGC_GsE83WlV1O4jspBkvjNjCLxAw1kCXib3vhlA62SSqobi8OshtwbwrqNJv2mvDbi0UerD9fKkpAZW7A=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l14wn.png] [{{var:npsFormUrl}}&score=3]4 [https://ci6.googleusercontent.com/proxy/QL5by2hHB61DRRzgY_2DcVxuBCqmhq0WEbrwOS5u7de_-6n82qycNEiA6-1eSfh_c-6glSbkuyiYZd8WW5DXKPYhYU-ucvxn1Q=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l14xy.png] [{{var:npsFormUrl}}&score=4]5 [https://ci6.googleusercontent.com/proxy/2N-Kx-QA3_5H8wWq5YmZ4tk_6PW3Gz3QauVU7Vi7SC9cAzARTiancLrWoGEvr8Y9GQCZHRjFBQ-6ddHHtpPJ3uBUAeRVIn5Svg=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l14x9.png] [{{var:npsFormUrl}}&score=5]6 [https://ci6.googleusercontent.com/proxy/LZ0jMq1a8NeK0xi1gt7dqqt2a92W9vFvkS47417c_b3knIQmNB1a_m8uB6fSaCuhYJcbHlNXk9WtNbB703QAVzIhFHTa7DDWbw=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l140w.png] [{{var:npsFormUrl}}&score=6]7 [https://ci6.googleusercontent.com/proxy/oERNo4TUSJh_0tuInQhEOMhQCndW45SKNvOJMf7NI8AaDZit_i5EnAi2RMWDlywoHh80IJ8aj3up2dghWezAjv7qtu1MGAA7hg=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l140x.png] [{{var:npsFormUrl}}&score=7]8 [https://ci5.googleusercontent.com/proxy/ppV6m0YEsPzmCgPGU-vZBKqRrgVioLxnq_F4pwIW3EQ9NkhCgpAOO_E2pBaZt2wPtLzzzifVfM5WzjYfFNwZxNCoNiQ4QmsEhg=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l1400.png] [{{var:npsFormUrl}}&score=8]9 [https://ci4.googleusercontent.com/proxy/2zsbq1p9dBCQ_VZyGAZTb3EXts5LQluV6MD5q-lhQN2_e5M_XB5_ojtrC3WYyVKqM_GqC1QclRdjoxcRijG9WTfpskgYQ2fy2g=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l140s.png] [{{var:npsFormUrl}}&score=9]10 [https://ci3.googleusercontent.com/proxy/GY99SAd5EPYhWrO-va_BhysTIohDFk_rpkPrXNgcERRIQTSd7iSHpxUE_ZePK91YAcnrg-ABmIsG8ipGdJlbm_X4FjBPiAovqQ=s0-d-e1-ft#http://r.bob-emploi.fr/tplimg/6u2u/b/skwh/l1401.png] [{{var:npsFormUrl}}&score=10]
+0 : Pas du tout, 10 : Absolument
+
+
+
+Merci pour votre retour !
+
+L'équipe de Bayes Impact
+--------------------------------------------------------------------------------
+
+
+
+Ce message vous a été envoyé à la suite du recueil de vos données sur Bob. La fréquence des envois est limitée, mais peut être plus importante en fonction de l’action de l’association. Vous avez la possibilité d’exercer vos droits d’accès, de rectification et de suppression en écrivant à l’adresse suivante : donnees@bob-emploi.fr.
+--------------------------------------------------------------------------------
+[https://www.facebook.com/bobemploi/?fref=ts]
+[https://twitter.com/bobemploi]

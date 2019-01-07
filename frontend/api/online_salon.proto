@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/options.proto";
 
 package bayes.bob;
 
@@ -50,7 +51,7 @@ message OnlineSalon {
   string domain = 10 [deprecated = true];
 
   // Filters a scoring project must pass for this salon to be relevant.
-  repeated string filters = 12;
+  repeated string filters = 12 [(string_format) = SCORING_MODEL_ID];
 }
 
 // A list of salons, to send to the client.
@@ -80,5 +81,5 @@ message SalonFilterRule {
   repeated string job_group_ids = 5;
 
   // Filters this rule can add for the salon.
-  repeated string filters = 6;
+  repeated string filters = 6 [(string_format) = SCORING_MODEL_ID];
 }

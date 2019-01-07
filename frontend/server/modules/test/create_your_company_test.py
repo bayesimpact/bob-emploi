@@ -1,10 +1,8 @@
-"""Unit tests for the module TODO: module name."""
+"""Unit tests for the module create-your-company."""
 
 import datetime
-import json
 import unittest
-
-import mock
+from unittest import mock
 
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import now
@@ -17,7 +15,7 @@ class AdviceCreateYourCompanyTestCase(scoring_test.ScoringModelTestBase):
 
     model_id = 'advice-create-your-company'
 
-    def test_atypic_profile(self):
+    def test_atypic_profile(self) -> None:
         """Test the scoring function before the events with an atypic profile."""
 
         persona = self._random_persona().clone()
@@ -25,7 +23,7 @@ class AdviceCreateYourCompanyTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(2, score, msg='Fail for "{}"'.format(persona.name))
 
-    def test_not_really_needed_yet(self):
+    def test_not_really_needed_yet(self) -> None:
         """Test the scoring function for someone that has just started their search."""
 
         persona = self._random_persona().clone()
@@ -37,134 +35,10 @@ class AdviceCreateYourCompanyTestCase(scoring_test.ScoringModelTestBase):
         self.assertEqual(1, score, msg='Fail for "{}"'.format(persona.name))
 
 
-class ExtraDataTestCase(base_test.ServerTestCase):
-    """Unit tests for maybe_advise to compute extra data for advice modules."""
-
-    def setUp(self):  # pylint: disable=missing-docstring,invalid-name
-        super(ExtraDataTestCase, self).setUp()
-        self._db.advice_modules.insert_one({
-            'adviceId': 'my-advice',
-            'triggerScoringModel': 'advice-create-your-company',
-            'extraDataFieldName': 'create_your_company_data',
-            'isReadyForProd': True,
-        })
-
-    def test_close_to_city_with_events(self):
-        """Test close to a city with multiple events."""
-
-        project = {
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'cityId': '69266'}},
-            'jobSearchLengthMonths': 7, 'weeklyApplicationsEstimate': 'A_LOT',
-            'totalInterviewCount': 1,
-        }
-        self._db.cities.insert_one({
-            '_id': '69266',
-            'latitude': 45.7667,
-            'longitude': 4.88333,
-        })
-        self._db.adie_events.insert_one(
-            {
-                'title': 'Create your company',
-                'cityName': 'Lyon',
-                'latitude': 45.7589,
-                'longitude': 4.84139,
-            },
-        )
-        self._db.adie_testimonials.insert_one(
-            {
-                'authorName': 'Sara',
-                'authorJobName': 'House builder',
-                'description': 'Sara worked as a software engineer and then...',
-                'preferred_job_group_ids': 'A1, B2',
-            },
-        )
-
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'my-advice')
-
-        self.assertEqual(
-            'du 28 mai au 1ᵉʳ juin', advice.get('createYourCompanyData', {}).get('period'))
-        self.assertEqual('Lyon', advice.get('createYourCompanyData', {}).get('city'))
-
-    def test_far_from_any_city_with_events(self):
-        """Test far from any city with events."""
-
-        project = {
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'cityId': '67462'}},
-            'jobSearchLengthMonths': 7, 'weeklyApplicationsEstimate': 'A_LOT',
-            'totalInterviewCount': 1,
-        }
-        self._db.cities.insert_one({
-            '_id': '67462',
-            'latitude': 48.2667,
-            'longitude': 7.45,
-        })
-        self._db.adie_events.insert_many([
-            {
-                'title': 'Create your company',
-                'cityName': 'Lyon',
-                'latitude': 45.7589,
-                'longitude': 4.84139,
-            },
-        ])
-
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'my-advice')
-
-        self.assertEqual(
-            'du 28 mai au 1ᵉʳ juin', advice.get('createYourCompanyData', {}).get('period'))
-        self.assertNotIn('city', advice.get('createYourCompanyData', {}))
-
-    def test_no_events(self):
-        """Test without any events."""
-
-        project = {
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'cityId': '67462'}},
-            'jobSearchLengthMonths': 7, 'weeklyApplicationsEstimate': 'A_LOT',
-            'totalInterviewCount': 1,
-        }
-        self._db.cities.insert_one({
-            '_id': '67462',
-            'latitude': 48.2667,
-            'longitude': 7.45,
-        })
-
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'my-advice')
-
-        self.assertEqual(
-            'du 28 mai au 1ᵉʳ juin', advice.get('createYourCompanyData', {}).get('period'))
-        self.assertNotIn('city', advice.get('createYourCompanyData', {}))
-
-
 class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../create-your-company endpoint."""
 
-    def setUp(self):  # pylint: disable=missing-docstring,invalid-name
+    def setUp(self) -> None:
         super(EndpointTestCase, self).setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'create-your-company',
@@ -173,7 +47,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             'isReadyForProd': True,
         })
 
-    def test_close_to_city_with_events(self):
+    def test_close_to_city_with_events(self) -> None:
         """Test close to a city with multiple events."""
 
         self._db.cities.insert_one({
@@ -199,7 +73,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         ])
         response = self.app.post(
             '/api/advice/create-your-company',
-            data='{"projects": [{"mobility": {"city": {"cityId": "69266"}}}]}',
+            data='{"projects": [{"city": {"cityId": "69266"}}]}',
             content_type='application/json')
 
         data = self.json_from_response(response)
@@ -208,7 +82,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             ['Create your company', 'Work as a freelance'],
             [event.get('title') for event in data.get('closeByEvents', {}).get('events')])
 
-    def test_related_testimonials(self):
+    def test_related_testimonials(self) -> None:
         """Test when testimonials related to the user's project exist."""
 
         self._db.adie_testimonials.insert_many([
@@ -252,7 +126,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             [testimonial.get('authorName') for testimonial in data.get(
                 'relatedTestimonials', []).get('testimonials', [])])
 
-    def test_far_from_any_city_with_events(self):
+    def test_far_from_any_city_with_events(self) -> None:
         """Test far from any city with events."""
 
         self._db.cities.insert_one({
@@ -277,7 +151,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         ])
         response = self.app.post(
             '/api/advice/create-your-company',
-            data='{"projects": [{"mobility": {"city": {"cityId": "67462"}}}]}',
+            data='{"projects": [{"city": {"cityId": "67462"}}]}',
             content_type='application/json')
 
         data = self.json_from_response(response)
@@ -286,7 +160,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             ['Entrepreneur in Dijon', 'Create your company'],
             [event.get('title') for event in data.get('closeByEvents', {}).get('events')])
 
-    def test_no_location(self):
+    def test_no_location(self) -> None:
         """Test city without no coordinates."""
 
         self._db.adie_events.insert_many([
@@ -305,7 +179,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         ])
         response = self.app.post(
             '/api/advice/create-your-company',
-            data='{"projects": [{"mobility": {"city": {"cityId": "69266"}}}]}',
+            data='{"projects": [{"city": {"cityId": "69266"}}]}',
             content_type='application/json')
 
         data = self.json_from_response(response)
@@ -314,12 +188,12 @@ class EndpointTestCase(base_test.ServerTestCase):
             {'Entrepreneur in Dijon', 'Create your company'},
             {event.get('title') for event in data.get('closeByEvents', {}).get('events')})
 
-    def test_no_events(self):
+    def test_no_events(self) -> None:
         """Test without any events."""
 
         response = self.app.post(
             '/api/advice/create-your-company',
-            data='{"projects": [{"mobility": {"city": {"cityId": "69266"}}}]}',
+            data='{"projects": [{"city": {"cityId": "69266"}}]}',
             content_type='application/json')
 
         data = self.json_from_response(response)
@@ -327,7 +201,7 @@ class EndpointTestCase(base_test.ServerTestCase):
 
     @mock.patch(now.__name__ + '.get', mock.MagicMock(
         return_value=datetime.datetime(2018, 5, 9)))
-    def test_start_date(self):
+    def test_start_date(self) -> None:
         """Test events with start dates."""
 
         self._db.adie_events.insert_many([
@@ -361,7 +235,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         ])
         response = self.app.post(
             '/api/advice/create-your-company',
-            data='{"projects": [{"mobility": {"city": {"cityId": "69266"}}}]}',
+            data='{"projects": [{"city": {"cityId": "69266"}}]}',
             content_type='application/json')
 
         data = self.json_from_response(response)
@@ -372,4 +246,4 @@ class EndpointTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

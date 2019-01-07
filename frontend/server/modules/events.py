@@ -1,22 +1,24 @@
 """Module to advise the user to go to events."""
 
 import random
+import typing
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import event_pb2
 from bob_emploi.frontend.api import job_pb2
-from bob_emploi.frontend.api import project_pb2
 
 
 class _AdviceEventScoringModel(scoring_base.ModelBase):
     """A scoring model for Advice that user needs to go to events."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(_AdviceEventScoringModel, self).__init__()
-        self._db = proto.MongoCachedCollection(event_pb2.Event, 'events')
+        self._db: proto.MongoCachedCollection[event_pb2.Event] = \
+            proto.MongoCachedCollection(event_pb2.Event, 'events')
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         application_modes = project.job_group_info().application_modes.values()
@@ -31,22 +33,14 @@ class _AdviceEventScoringModel(scoring_base.ModelBase):
             "c'est un bon moyen d'étendre votre réseau")])
 
     @scoring_base.ScoringProject.cached('events')
-    def list_events(self, project):
+    def list_events(self, project: scoring_base.ScoringProject) -> typing.List[event_pb2.Event]:
         """List all events close to the project's target."""
 
         today = project.now.strftime('%Y-%m-%d')
         all_events = [e for e in self._db.get_collection(project.database) if e.start_date >= today]
         return list(scoring_base.filter_using_score(all_events, lambda e: e.filters, project))
 
-    def compute_extra_data(self, project):
-        """Compute extra data for this module to render a card in the client."""
-
-        all_events = self.list_events(project)
-        if not all_events:
-            return None
-        return project_pb2.EventsData(event_name=all_events[0].title)
-
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) -> event_pb2.Events:
         """Retrieve data for the expanded card."""
 
         events = self.list_events(project)

@@ -4,9 +4,11 @@ import argparse
 import datetime
 import logging
 import os
-
 import random
 import re
+import typing
+
+import pymongo
 import requests
 
 from bob_emploi.frontend.api import user_pb2
@@ -27,11 +29,12 @@ _EMAIL_PERIOD_DAYS = {
 }
 
 _FOCUS_CAMPAIGNS = campaign.get_coaching_campaigns()
+_POTENTIAL_CAMPAIGNS = set(_FOCUS_CAMPAIGNS)
 _DURATION_BEFORE_FIRST_EMAIL = datetime.timedelta(days=3)
 
 
-def _send_focus_emails(action, dry_run_email):
-    database, users_database = mongo.get_connections_from_env()
+def _send_focus_emails(action: str, dry_run_email: str) -> None:
+    database, users_database, unused_eval_database = mongo.get_connections_from_env()
 
     instant = now.get()
     email_errors = 0
@@ -49,7 +52,7 @@ def _send_focus_emails(action, dry_run_email):
     })
     for user_dict in potential_users:
         user_id = user_dict.pop('_id')
-        user = proto.create_from_mongo(user_dict, user_pb2.User)
+        user = typing.cast(user_pb2.User, proto.create_from_mongo(user_dict, user_pb2.User))
         user.user_id = str(user_id)
 
         if not user.HasField('send_coaching_email_after'):
@@ -63,7 +66,7 @@ def _send_focus_emails(action, dry_run_email):
                 continue
 
         # Compute next send_coaching_email_after.
-        send_coaching_email_after = proto.datetime_to_json_string(
+        next_send_coaching_email_after = proto.datetime_to_json_string(
             instant + _compute_duration_to_next_coaching_email(user)
         )
 
@@ -71,7 +74,7 @@ def _send_focus_emails(action, dry_run_email):
             campaign_id = _send_focus_email_to_user(
                 action, dry_run_email, user, database, users_database,
                 mongo_user_update={'$set': {
-                    'sendCoachingEmailAfter': send_coaching_email_after,
+                    'sendCoachingEmailAfter': next_send_coaching_email_after,
                 }})
         except requests.exceptions.HTTPError as error:
             if action == 'dry-run':
@@ -88,8 +91,9 @@ def _send_focus_emails(action, dry_run_email):
         # ones we had. However maybe in the future we'll add more focus
         # emails so let's wait the same amount of time we have waited until
         # this email (this makes to wait 1 period, then 2, 4, …).
-        last_coaching_email_sent_at = _compute_last_coaching_email_date(
-            user, user.registered_at.ToDatetime())
+        last_coaching_email_sent_at = typing.cast(
+            datetime.datetime,
+            _compute_last_coaching_email_date(user, user.registered_at.ToDatetime()))
         send_coaching_email_after = instant + (instant - last_coaching_email_sent_at)
         users_database.user.update_one({'_id': user_id}, {'$set': {
             'sendCoachingEmailAfter': proto.datetime_to_json_string(send_coaching_email_after),
@@ -105,7 +109,9 @@ def _send_focus_emails(action, dry_run_email):
 
 
 def _send_focus_email_to_user(
-        action, dry_run_email, user, database, users_database, mongo_user_update):
+        action: str, dry_run_email: str, user: user_pb2.User,
+        database: pymongo.database.Database, users_database: pymongo.database.Database,
+        mongo_user_update: typing.Dict[str, typing.Any]) -> typing.Optional[str]:
     focus_emails_sent = set()
     last_focus_email_sent = None
     for email_sent in user.emails_sent:
@@ -117,7 +123,7 @@ def _send_focus_email_to_user(
     last_one_was_big = last_focus_email_sent and \
         _FOCUS_CAMPAIGNS[last_focus_email_sent.campaign_id].is_big_focus
     potential_campaigns = sorted(
-        _FOCUS_CAMPAIGNS.keys() - focus_emails_sent,
+        _POTENTIAL_CAMPAIGNS - focus_emails_sent,
         key=lambda c: (
             1 if _FOCUS_CAMPAIGNS[c].is_big_focus == last_one_was_big else 0,
             random.random(),
@@ -131,18 +137,24 @@ def _send_focus_email_to_user(
             return campaign_id
 
     logging.debug('No more available focus email for "%s"', user.user_id)
+    return None
 
 
-def _compute_last_coaching_email_date(user, default):
+# TODO(pascal): If/When pylint accepts typing overload, drop the Optional part in the response.
+def _compute_last_coaching_email_date(
+        user: user_pb2.User, default: typing.Optional[datetime.datetime]) \
+        -> typing.Optional[datetime.datetime]:
     return max(
-        (e.sent_at.ToDatetime()
-         for e in user.emails_sent
-         if e.campaign_id in _FOCUS_CAMPAIGNS),
+        typing.cast(
+            typing.Iterator[typing.Optional[datetime.datetime]],
+            (e.sent_at.ToDatetime()
+             for e in user.emails_sent
+             if e.campaign_id in _FOCUS_CAMPAIGNS)),
         default=default
     )
 
 
-def _compute_next_coaching_email_date(user):
+def _compute_next_coaching_email_date(user: user_pb2.User) -> datetime.datetime:
     last_coaching_email_date = _compute_last_coaching_email_date(user, None)
     if last_coaching_email_date is None:
         # First time coaching email.
@@ -151,12 +163,12 @@ def _compute_next_coaching_email_date(user):
     return last_coaching_email_date + _compute_duration_to_next_coaching_email(user)
 
 
-def _compute_duration_to_next_coaching_email(user):
+def _compute_duration_to_next_coaching_email(user: user_pb2.User) -> datetime.timedelta:
     period_days = _EMAIL_PERIOD_DAYS[user.profile.coaching_email_frequency]
     return datetime.timedelta(days=period_days) * (1 + .2 * (2 * random.random() - 1))
 
 
-def main(string_args=None):
+def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     """Parse command line arguments and send mails."""
 
     parser = argparse.ArgumentParser(
@@ -190,4 +202,4 @@ def main(string_args=None):
 
 
 if __name__ == '__main__':
-    main()  # pragma: no cover
+    main()

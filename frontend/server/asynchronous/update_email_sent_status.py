@@ -11,9 +11,10 @@ import argparse
 import datetime
 import logging
 import os
+import typing
 
 from google.protobuf import json_format
-from google.protobuf import timestamp_pb2
+import requests
 
 from bob_emploi.frontend.server import mail
 from bob_emploi.frontend.server import mongo
@@ -23,19 +24,27 @@ from bob_emploi.frontend.server.asynchronous import report
 from bob_emploi.frontend.server.asynchronous.mail import mail_blast
 from bob_emploi.frontend.api import user_pb2
 
-_, _DB = mongo.get_connections_from_env()
+_, _DB, _ = mongo.get_connections_from_env()
 
 
-def _find_message(email_sent):
+def _find_message(email_sent: user_pb2.EmailSent) -> typing.Optional[typing.Dict[str, typing.Any]]:
     if email_sent.mailjet_message_id:
-        return mail.get_message(email_sent.mailjet_message_id)
+        try:
+            return mail.get_message(email_sent.mailjet_message_id)
+        except requests.exceptions.HTTPError as error:
+            if error.response.status_code == 404:
+                return None
 
     # Could not find message.
     return None
 
 
-def _update_email_sent_status(email_sent_dict, yesterday, campaign_ids=None):
-    email_sent = proto.create_from_mongo(email_sent_dict, user_pb2.EmailSent)
+def _update_email_sent_status(
+        email_sent_dict: typing.Dict[str, typing.Any], yesterday: str,
+        campaign_ids: typing.Optional[typing.List[str]] = None) \
+        -> typing.Dict[str, typing.Any]:
+    email_sent = typing.cast(
+        user_pb2.EmailSent, proto.create_from_mongo(email_sent_dict, user_pb2.EmailSent))
     if campaign_ids and email_sent.campaign_id not in campaign_ids:
         # Email is not from a campaign we wish to update, skipping.
         return email_sent_dict
@@ -65,13 +74,7 @@ def _update_email_sent_status(email_sent_dict, yesterday, campaign_ids=None):
     return json_format.MessageToDict(email_sent)
 
 
-def _datetime_to_json(instant):
-    timestamp_proto = timestamp_pb2.Timestamp()
-    timestamp_proto.FromDatetime(instant)
-    return timestamp_proto.ToJsonString()
-
-
-def main(string_args=None):
+def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     """Check the status of sent emails on MailJet and update our Database.
     """
 
@@ -104,7 +107,7 @@ def main(string_args=None):
     }
     if args.campaigns:
         email_mongo_filter['campaignId'] = {'$in': args.campaigns}
-    yesterday = _datetime_to_json(now.get() - datetime.timedelta(days=1))
+    yesterday = proto.datetime_to_json_string(now.get() - datetime.timedelta(days=1))
     mongo_filter = {
         '$or': [
             # Emails that we've never checked.

@@ -1,20 +1,61 @@
 """Unit tests for the module TODO: module name."""
 
+import typing
 import unittest
+from unittest import mock
 from urllib import parse
 
-import mock
+import requests
 import requests_mock
+import typing_extensions
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server.test import base_test
+
+
+# TODO(pascal): Drop once requests_mock gets typed.
+_requests_mock_mock = typing.cast(  # pylint: disable=invalid-name
+    typing.Callable[[], typing.Callable[
+        [typing.Callable[..., typing.Any]], typing.Callable[..., typing.Any]]],
+    requests_mock.mock)
+
+
+# TODO(pascal): Drop once requests_mock gets typed.
+class _MockRequest(typing_extensions.Protocol):
+    @property
+    def text(self) -> str:
+        """Body content as text."""
+
+    def json(self) -> typing.Any:  # pylint: disable=invalid-name
+        """Body content encoded as JSON, decoded."""
+
+
+# TODO(pascal): Drop once requests_mock gets typed.
+class _RequestsMock(typing_extensions.Protocol):
+
+    def get(  # pylint: disable=invalid-name
+            self, path: str, status_code: int = 200, text: str = '',
+            json: typing.Any = None,
+            headers: typing.Optional[typing.Dict[str, str]] = None,
+            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
+            -> requests.Response:
+        """Decide what to do when a get request is sent."""
+
+    def post(  # pylint: disable=invalid-name
+            self, path: str, status_code: int = 200, text: str = '',
+            json: typing.Any = None,
+            headers: typing.Optional[typing.Dict[str, str]] = None,
+            request_headers: typing.Optional[typing.Dict[str, str]] = None,
+            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
+            -> requests.Response:
+        """Decide what to do when a post request is sent."""
 
 
 class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
     """Tests for the /api/user/nps-survey-response endpoint."""
 
     @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='')
-    def test_set_nps_survey_response(self):
+    def test_set_nps_survey_response(self) -> None:
         """Calls to "/api/user/<user_email>/nps-survey-response"."""
 
         user_email = 'foo@bar.fr'
@@ -58,7 +99,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(old_user_data, other_fields_in_new_user_data)
 
     @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='')
-    def test_set_nps_survey_response_wrong_email(self):
+    def test_set_nps_survey_response_wrong_email(self) -> None:
         """Testing /api/user/<user_email>/nps-survey-response with wrong user email."""
 
         user_email = 'foo@bar.fr'
@@ -71,7 +112,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(404, response.status_code, response.get_data(as_text=True))
 
     @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
-    def test_set_nps_survey_response_missing_auth(self):
+    def test_set_nps_survey_response_missing_auth(self) -> None:
         """Endpoint protected and no auth token sent"."""
 
         user_email = 'foo@bar.fr'
@@ -85,7 +126,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(401, response.status_code)
 
     @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
-    def test_set_nps_survey_response_wrong_auth(self):
+    def test_set_nps_survey_response_wrong_auth(self) -> None:
         """Endpoint protected and wrong auth token sent"."""
 
         user_email = 'foo@bar.fr'
@@ -100,7 +141,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(403, response.status_code)
 
     @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', new='cryptic-admin-auth-token-123')
-    def test_set_nps_survey_response_correct_auth(self):
+    def test_set_nps_survey_response_correct_auth(self) -> None:
         """Endpoint protected and correct auth token sent"."""
 
         user_email = 'foo@bar.fr'
@@ -118,14 +159,14 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
 class NPSUpdateTestCase(base_test.ServerTestCase):
     """Unit tests for the /api/nps endpoints"""
 
-    def setUp(self):  # pylint: disable=invalid-name
+    def setUp(self) -> None:
         """Create a user and get its nps auth token."""
 
         super(NPSUpdateTestCase, self).setUp()
         self.user_id, self.auth_token = self.create_user_with_token()
         self.nps_auth_token = auth.create_token(self.user_id, role='nps')
 
-    def test_set_nps_and_redirect(self):
+    def test_set_nps_and_redirect(self) -> None:
         """Set the NPS score and redirect to end of survey."""
 
         response = self.app.get('/api/nps', query_string={
@@ -146,9 +187,9 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             redirect_args)
 
         user = self.get_user_info(self.user_id, self.auth_token)
-        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse').get('score'))
+        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse', {}).get('score'))
 
-    def test_set_nps_no_redirect(self):
+    def test_set_nps_no_redirect(self) -> None:
         """Set the NPS but do not redirect."""
 
         response = self.app.get('/api/nps', query_string={
@@ -161,9 +202,9 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         self.assertFalse(response.get_data(as_text=True))
 
         user = self.get_user_info(self.user_id, self.auth_token)
-        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse').get('score'))
+        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse', {}).get('score'))
 
-    def test_bad_score_format(self):
+    def test_bad_score_format(self) -> None:
         """The score parameter is not an int."""
 
         response = self.app.get('/api/nps', query_string={
@@ -174,7 +215,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         self.assertEqual(422, response.status_code)
         self.assertIn('Paramètre score invalide', response.get_data(as_text=True))
 
-    def test_score_too_high(self):
+    def test_score_too_high(self) -> None:
         """The score parameter is bigger than 10."""
 
         response = self.app.get('/api/nps', query_string={
@@ -185,7 +226,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         self.assertEqual(422, response.status_code)
         self.assertIn('Paramètre score invalide', response.get_data(as_text=True))
 
-    def test_wrong_auth_token(self):
+    def test_wrong_auth_token(self) -> None:
         """Wrong auth token."""
 
         response = self.app.get('/api/nps', query_string={
@@ -196,7 +237,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         self.assertEqual(403, response.status_code)
         self.assertIn('Accès non autorisé', response.get_data(as_text=True))
 
-    def test_set_nps_comment_with_wrong_token(self):
+    def test_set_nps_comment_with_wrong_token(self) -> None:
         """Try to set the NPS score then comment but with wrong token."""
 
         response = self.app.post(
@@ -205,7 +246,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + self.auth_token})
         self.assertEqual(403, response.status_code)
 
-    def test_set_nps_comment(self):
+    def test_set_nps_comment(self) -> None:
         """Set the NPS score then comment."""
 
         self.app.get('/api/nps', query_string={
@@ -222,21 +263,21 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         self.assertFalse(response.get_data(as_text=True))
 
         user = self.get_user_info(self.user_id, self.auth_token)
-        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse').get('score'))
+        self.assertEqual(8, user.get('netPromoterScoreSurveyResponse', {}).get('score'))
         self.assertEqual(
             'My own comment',
-            user.get('netPromoterScoreSurveyResponse').get('generalFeedbackComment'))
+            user.get('netPromoterScoreSurveyResponse', {}).get('generalFeedbackComment'))
 
     # TODO(cyrille): Externalize in own module (or add PR to requests_mock).
-    def _match_request_data(self, request):
+    def _match_request_data(self, request: _MockRequest) -> bool:
         self.assertEqual(
             ':mega: [NPS Score: 0] ObjectId("{}")\n> This is a bad comment'.format(self.user_id),
             request.json().get('text', ''))
         return True
 
-    @mock.patch(base_test.server.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
-    @requests_mock.mock()
-    def test_nps_zero_score_and_comment(self, mock_requests):
+    @mock.patch(base_test.server.__name__ + '._SLACK_WEBHOOK_URL', new='slack://bob-bots')
+    @_requests_mock_mock()
+    def test_nps_zero_score_and_comment(self, mock_requests: _RequestsMock) -> None:
         """Set the NPS score to 0 then comment"""
 
         mock_requests.post(
@@ -258,4 +299,4 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

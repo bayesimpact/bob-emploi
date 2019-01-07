@@ -12,6 +12,7 @@ import datetime
 import re
 import os
 import sys
+import typing
 
 import requests
 
@@ -23,8 +24,10 @@ from bob_emploi.frontend.server.asynchronous import report as report_helper
 # A Slack WebHook URL to send reports to.
 _SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
 
+_T = typing.TypeVar('_T')
 
-def _report_comments(comments, display_func):
+
+def _report_comments(comments: typing.List[_T], display_func: typing.Callable[[_T], str]) -> str:
     if not comments:
         return 'There are no individual comments.'
     return 'And here {} the individual comment{}:\n{}'.format(
@@ -34,8 +37,8 @@ def _report_comments(comments, display_func):
     )
 
 
-def _compute_nps_report(users, from_date, to_date):
-    score_distribution = collections.defaultdict(int)
+def _compute_nps_report(users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+    score_distribution: typing.Dict[int, int] = collections.defaultdict(int)
     nps_total = 0
     num_users = 0
     responses_with_comment = []
@@ -92,8 +95,9 @@ def _compute_nps_report(users, from_date, to_date):
     )
 
 
-def _compute_stars_report(users, from_date, to_date):
-    score_distribution = collections.defaultdict(int)
+def _compute_stars_report(
+        users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+    score_distribution: typing.Dict[int, int] = collections.defaultdict(int)
     stars_total = 0
     num_projects = 0
     responses_with_comment = []
@@ -143,10 +147,10 @@ def _compute_stars_report(users, from_date, to_date):
         ))
 
 
-def _compute_rer_report(users, from_date, to_date):
-    seeking_distribution = collections.defaultdict(int)
-    bob_has_helped = collections.defaultdict(int)
-    answered_bob_helped = collections.defaultdict(int)
+def _compute_rer_report(users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+    seeking_distribution: typing.Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
+    bob_has_helped: typing.Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
+    answered_bob_helped: typing.Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
     num_users = 0
     for user in users:
         # Find the first status that is in the date range.
@@ -178,7 +182,8 @@ def _compute_rer_report(users, from_date, to_date):
                 (seeking_distribution[user_pb2.STOP_SEEKING] / num_users * 100)
                 if num_users else 0),
             maybe_unknown_seeking='{} with an unknown seeking status\n'.format(
-                seeking_distribution[0]) if 0 in seeking_distribution else '',
+                seeking_distribution[user_pb2.SEEKING_STATUS_UNDEFINED]
+            ) if user_pb2.SEEKING_STATUS_UNDEFINED in seeking_distribution else '',
             seeking_distribution='\n'.join(
                 '*{seeking}*: {num_users} user{plural_users} '
                 '({percent_helped:.1f}% said Bob helped{helped_note})'.format(
@@ -229,17 +234,20 @@ _REPORTS = {
     ),
 }
 
-_, _USER_DB = mongo.get_connections_from_env()
+_, _USER_DB, _ = mongo.get_connections_from_env()
 
 
-def _create_user_proto_with_user_id(user_dict):
+def _create_user_proto_with_user_id(user_dict: typing.Dict[str, typing.Any]) -> user_pb2.User:
     user_id = user_dict.pop('_id')
     user_proto = proto.create_from_mongo(user_dict, user_pb2.User)
+    assert user_proto
     user_proto.user_id = str(user_id)
     return user_proto
 
 
-def _compute_and_send_report(report_id, from_date, to_date, out, dry_run=True):
+def _compute_and_send_report(
+        report_id: str, from_date: str, to_date: str, out: typing.TextIO, dry_run: bool = True) \
+        -> None:
     if not to_date:
         to_date = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M')
     report = _REPORTS[report_id]
@@ -258,15 +266,17 @@ def _compute_and_send_report(report_id, from_date, to_date, out, dry_run=True):
     if dry_run:
         out.write(report_text)
         return
-    requests.post(_SLACK_FEEDBACK_URL, json={'attachments': [{
-        'color': report.color,
-        'mrkdwn_in': ['text'],
-        'title': '{} from {} to {}'.format(report.title, from_date, to_date),
-        'text': report_text,
-    }]})
+    if _SLACK_FEEDBACK_URL:
+        requests.post(_SLACK_FEEDBACK_URL, json={'attachments': [{
+            'color': report.color,
+            'mrkdwn_in': ['text'],
+            'title': '{} from {} to {}'.format(report.title, from_date, to_date),
+            'text': report_text,
+        }]})
 
 
-def main(string_args=None, out=sys.stdout):
+def main(string_args: typing.Optional[typing.List[str]] = None, out: typing.TextIO = sys.stdout) \
+        -> None:
     """Parse command line arguments, computes a report and send it."""
 
     parser = argparse.ArgumentParser(
@@ -299,4 +309,4 @@ def main(string_args=None, out=sys.stdout):
 
 
 if __name__ == '__main__':
-    main()  # pragma: no cover
+    main()

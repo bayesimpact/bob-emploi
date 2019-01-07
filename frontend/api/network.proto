@@ -1,27 +1,27 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 
 message ContactLeadTemplate {
   // Short name of the type of contact lead. May contain template vars (see
   // populate_template on server code).
-  string name = 1;
+  string name = 1 [(string_format) = NATURAL_LANGUAGE];
 
   // A list of filter IDs: do not present this lead if one these filters
-  // returns false for the project. See the list of available filters in
-  // scoring.py.
-  repeated string filters = 2;
+  // returns false for the project.
+  repeated string filters = 2 [(string_format) = SCORING_MODEL_ID];
 
-  // An example of email one should send to a contact to get their help. May
-  // contain template vars (see populate_template on server code).
-  string email_template = 3;
+  // An example of email one should send to a contact to get their help.
+  string email_template = 3 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 
   // An extra tip on how to approach the lead, or send the email.
-  string contact_tip = 4;
+  string contact_tip = 4 [(string_format) = NATURAL_LANGUAGE];
 
   // Text to display in the card before it's expanded if this lead is promoted
   // as the first thing we want to show.
-  string card_content = 5;
+  string card_content = 5 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 }
 
 message ContactLeads {

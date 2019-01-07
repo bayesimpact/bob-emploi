@@ -27,4 +27,4 @@ def make_dicts(french_departements_tsv, french_oversea_departements_tsv, prefix_
 
 
 if __name__ == '__main__':
-    mongo.importer_main(make_dicts, 'departements')  # pragma: no cover
+    mongo.importer_main(make_dicts, 'departements')

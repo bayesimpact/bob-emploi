@@ -1,0 +1,647 @@
+{
+  "attributes": {
+    "version": "3.3.5"
+  },
+  "children": [
+    {
+      "children": [
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "color": "#55575d",
+            "font-family": "Arial, sans-serif"
+          },
+          "children": [
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "padding": "20px 0px 20px 0px",
+                "passport": {
+                  "header": true,
+                  "hidden": true
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "hidden": true
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "11px",
+                        "line-height": "22px",
+                        "padding": "0px 0px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "hidden": true
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
+                      "id": "BkE25h-Nl7",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "r1X35hbEg7",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "rkzn53Z4xX",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "transparent",
+                "background-repeat": "repeat",
+                "full-width": "full-width",
+                "padding": "20px 0px 20px 0px",
+                "padding-bottom": "12px",
+                "padding-top": "12px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\">&nbsp;<span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Patrick\"}},</span>&nbsp;</span></p>",
+                      "id": "ByDn52WVem",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "Bk8n53WVxm",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "S1Snq3-EgX",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {},
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Comment allez-vous aujourd'hui ?</span></span></p>",
+                      "id": "BJ5253-NlX",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "rkFnchWNlm",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "Hyd2c3bVxQ",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">En ce moment, ce que j'entends beaucoup&nbsp;c’est&nbsp;: je ne trouve pas assez d'offres intéressantes. Comme vous, beaucoup répondent à {%if var:weeklyApplicationCount:\"\" == \"\"%}très peu d’offres chaque semaine car ils ne trouvent que des offres qui ne leur plaisent pas vraiment{%else%}{{var:weeklyAplicationCount:\"\"}} offres chaque semaine, mais ces {{var:weeklyApplicationCount:\"\"}} offres ne leur plaisent qu’à moitié{%endif%} et ils ont le sentiment de stagner.</span></span></p>",
+                      "id": "SJ6h52bNlX",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "S1h25hb4gX",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "Syshq3WNgQ",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Si je ne me trompe pas et que vous êtes dans ce cas, ce mail est pour vous.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Pour moi, il est inutile d'attendre l'offre&nbsp;{%if var:contactMode:\"\"==\"BY_EMAIL\"%}de vos rêves{%else%}parfaite{%endif%} : elle n’existe pas.&nbsp;</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Enfin <span style=\"background-color:transparent\">elle existe peut-être, mais elle n’est probablement pas en ligne</span>. Comme la majorité des offres d'emploi elle est cachée (60% des offres d'emploi ne sont pas postées en ligne !). 🙈&nbsp;</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Alors que faire ? Abandonner la recherche d'emploi et faire autre chose à la place ? Non.</span></span></p>",
+                      "id": "rJee3qnW4xQ",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "BykxnqnZVx7",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "HJAn5h-4e7",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><b><span style=\"font-size:15px\">Il faut la dénicher.</span></b></span></p>",
+                      "id": "rJ7g39nW4lm",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">Au lieu d'attendre l'offre {%if var:contactMode:\"\"==\"BY_EMAIL\"%}de vos rêves{%else%}faite pour vous{%endif%}, ou de tout faire pour rentrer dans les cases d'une offre qui ne vous plaît pas vraiment, changez de&nbsp;stratégie : allez la chercher.&nbsp;</span></span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\">&nbsp;</p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">Prenez le temps de trouver les entreprises pour lesquelles vous avez vraiment envie de travailler. Vous êtes unique, et les entreprises sont toutes différentes. {%if var:variousCompanies:\"\"!=\"\"%}Travailler chez {{var:variousCompanies:\"\"}} ça n’est pas la même chose. {%endif%}Il y a forcément {{var:somePlaces:\"des entreprises\"}} qui vous parlent plus que d'autres, parce que {{var:whySpecificCompany:\"vous vous reconnaissez dans leurs valeurs, leur équipe, leur service client ou ce qu'elles vendent\"}}.&nbsp;</span></span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\">&nbsp;</p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">{%if var:applicationComplexity:\"\" == \"SIMPLE_APPLICATION_PROCESS\"%}Cela peut paraître contre-intuitif et un peu fou de vous dire de ne pas postuler partout. Mais l{%else%}L{%endif%}'idée est simple,<span style=\"background-color:#fff42b\"> il vaut mieux parier sur une entreprise qui vous plaît que sur une entreprise qui embauche</span>. Quand une offre ne nous intéresse pas vraiment, ça se voit, et le poste revient à quelqu’un d’autre. Mais l'inverse est vrai aussi : ça se voit quand une entreprise vous correspond, et ça fait toute la différence. ⭐️</span></span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\">&nbsp;</p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">L’autre jour, j’ai rencontré Agnès. Sans diplôme autre que le bac, Agnès faisait des candidatures à la pelle, {%if var:weeklyApplicationOptions:\"\" == \"A_LOT\"%}comme vous elle faisait plus de 15 candidatures par semaine{%else%}30 par semaine{%endif%}. Elle n’avait pas envie de travailler dans les entreprises pour lesquelles elle postulait, mais elle le faisait quand même, parce qu’elle ne voyait pas quoi faire d’autre.&nbsp;</span></span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\">&nbsp;</p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">Et puis elle a décidé de tout changer. Elle a ciblé uniquement 5 opticiens, et leur a écrit pour leur expliquer pourquoi elle avait envie de travailler avec eux. Quand on l’appelait, elle savait exactement à qui elle s’adressait ! Elle n’avait pas besoin d’inventer des arguments : elle savait pourquoi elle voulait travailler chez eux. Cela a beaucoup plu au deuxième opticien qui l'a appelée et lui a proposé un entretien dans la foulée. Elle a été embauchée quelques jours plus tard. Elle avait changé de méthode depuis seulement un mois.</span></span></span></p>",
+                      "id": "B1Eg252-4lX",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "B1Gg353Z4xX",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "Hybxhc3-Egm",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "passport": {
+                  "conditions": [
+                    {
+                      "operator": "!=",
+                      "varName": "contactMode",
+                      "varValue": "BY_EMAIL"
+                    }
+                  ]
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:16px\"><b><span style=\"font-family:Arial; text-decoration:none\">Ok, mais comment je fais ?</span></b></span></span></p>",
+                      "id": "H1wg292ZEgX",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<ol><li style=\"line-height:1.38\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Trouvez les entreprises qui vous branchent. Vous pouvez décider de n'en contacter que 5 par semaine, par exemple. Mais sélectionnez vraiment : faites une liste et ne gardez que les entreprises qui vous plaisent pour de vrai. <span style=\"background-color:#fff42b\">N'oubliez pas que le recrutement, ça va dans les deux sens ! Ils vous choisissent, mais vous aussi, vous les choisissez.</span>&nbsp;</span></span></li><li style=\"line-height:1.38\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Allez les rencontrer. Pas besoin de vous prendre la tête : rentrez {{var:inWorkPlace:\"dans une boulangerie\"}}, parlez avec la personne qui pourrait être votre collègue ou votre supérieur et nouez le contact. L’objectif est de tâter le terrain et de vous présenter pour qu’il pense à vous dès qu’ils auront un poste disponible.</span></span></li></ol>",
+                      "id": "S1_l3chbVeX",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">Personnellement, j’ai testé cette approche qui marche plutôt bien (à adapter à votre façon d'être !). Attention l’objectif n’est pas de demander un job, c’est encore trop tôt.</span></span></span></p>",
+                      "id": "SyKlh53-4x7",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "40px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">Bonjour,</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">Je suis à la recherche d’un emploi en ce moment.&nbsp;</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">J'adorerais travailler {{var:inWorkPlace:\"dans une boulangerie\"}} {{var:likeYourWorkPlace:\"comme la vôtre\"}}, mais j'ai l'impression que mon CV n'est pas encore au top. &nbsp;</span></span></span><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">Auriez-vous quelques minutes à me consacrer, pour me donner quelques conseils ?&nbsp;</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">Si ça n'est pas le bon moment je peux aussi passer plus tard.</span></span></span></p>",
+                      "id": "S15xnch-ElQ",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "Bk8gh9h-Vgm",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "r1Hx292bNe7",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "passport": {
+                  "conditions": [
+                    {
+                      "operator": "==",
+                      "varName": "contactMode",
+                      "varValue": "BY_EMAIL"
+                    }
+                  ]
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:16px\"><b><span style=\"font-family:Arial; text-decoration:none\">Ok, mais comment je fais ?</span></b></span></span></p>",
+                      "id": "ByTx352Z4g7",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<ol><li style=\"line-height:1.38\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Trouvez les entreprises qui vous branchent. Vous pouvez décider de n'en contacter que 5 par semaine, par exemple. Mais sélectionnez vraiment : faites une liste et ne gardez que les entreprises qui vous plaisent pour de vrai. Mais n'oubliez pas que le recrutement, ça va dans les deux sens ! Ils vous choisissent, mais vous aussi, vous les choisissez.&nbsp;</span></span></li><li style=\"line-height:1.38\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Trouvez LA personne avec laquelle vous voulez travailler, celle qui pourrait être votre collègue ou votre supérieur. C’est à eux que vous écrirez, car c’est eux qui connaissent les besoins et qui comprendront ce que vous pouvez apporter {{var:toTheWorkPlace:\"à l'entreprise\"}}. Pour les trouver, faites des recherches sur leur site, sur Linkedin ou appelez le standard.&nbsp;</span></span></li><li style=\"line-height:1.38\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Enfin, contactez-les. Pas besoin de faire un roman : dites leur simplement comment vous les avez trouvés, votre intérêt pour la boîte et que vous voudriez les rencontrer. <span style=\"background-color:#fff42b\">Gardez en tête que vous êtes autant une chance pour l’entreprise qu'ils sont une opportunité pour vous ! 💌</span></span></span></li></ol>",
+                      "id": "ryRenq3bExQ",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">Personnellement, j’ai testé ce mail qui marche plutôt bien (à adapter à votre façon d'être !). Attention ne joignez pas de CV, c’est encore trop tôt.</span></span></span></p>",
+                      "id": "Sy1ZnchWNxX",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "40px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">Bonjour,&nbsp;</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">J’ai trouvé vos coordonnées sur Linkedin et je trouve votre parcours très inspirant.&nbsp;Un de mes amis m’a fait découvrir votre entreprise en 2016. Depuis j'ai suivi ses développements et {{var:whatILoveAbout:\"j'adore\"}}</span></span><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">.&nbsp;</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">Je suis {{var:jobName:\"community manager\"}}&nbsp;depuis {{var:experienceAsText:\"2 ans\"}}. J'ai travaillé récemment sur plusieurs projets, qui je pense, pourront vous intéresser, je suis sûr{%if var:gender:\"\"==\"FEMININE\"%}e{%endif%} que nous aurons des choses à partager.&nbsp;</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">J'aimerais beaucoup vous rencontrer autour d'un café, seriez-vous disponible jeudi à 17h ?&nbsp;</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">Merci et à bientôt,&nbsp;</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">{{var:firstName:\"Patrick\"}} {{var:lastName:\"Duchêne\"}}</span></span></span></p><p style=\"line-height: 20px; margin: 10px 0;\"><span style=\"font-size:13px\"><span style=\"color:#000000\"><span style=\"font-family:Arial; text-decoration:none\">&nbsp;PS : Voici mon Linkedin, pour le contexte: https://www.linkedin.com/in/{{var:firstName:\"Patrick\"}}{{var:lastName:\"Duchêne\"}}/.</span></span></span></p>",
+                      "id": "HJx-252-NgQ",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "rk2x2c2WVlQ",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "Hkox252WNl7",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Vous ne savez pas par où commencer ? Vous n'avez aucune idée d'entreprise qui vous plairait ? En cherchant <a target=\"_blank\" href=\"{{var:deepLinkLBB}}\">{{var:jobName:\"votre métier\"}} sur La Bonne Boîte</a>, vous trouverez des entreprises qui embauchent près de chez vous ! Ici, on adore.</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Mon conseil est donc de ne pas attendre l'offre {%if var:contactMode:\"\"==\"BY_EMAIL\"%}de vos rêves{%else%}parfaite{%endif%}, mais d'aller la chercher en contactant une entreprise qui vous plait vraiment puis deux puis trois...</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Parce qu'elle vous attend quelque part, je le sais.&nbsp;</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Tenez-moi au courant ! (Vous pouvez répondre à ce mail) 😉&nbsp;</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Je suis sûre que ça va marcher </span><span style=\"font-size:14px\"><span style=\"font-family:Arial; text-decoration:none\">{{var:firstName:\"Patrick\"}}</span></span><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">,&nbsp;</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">Tout le meilleur,&nbsp;</span></span></p>",
+                      "id": "Hy7Z25hWVeX",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux et l'équipe de Bob&nbsp;</span></span></p>",
+                      "id": "ByEW392WNg7",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "15px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-family:Arial; font-size:11pt; text-decoration:none\">PS : René Char disait : \"Impose ta chance, serre ton bonheur et va vers ton risque. À&nbsp;te regarder, ils s'habitueront\".</span></span></p>",
+                      "id": "rkr-h93-VxX",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "HkfZ292bNx7",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "BJ--hq2Z4eX",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "savedSectionID": 408382,
+                  "version": "3.3.5"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "",
+                        "padding": "10px 25px",
+                        "padding-left": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "image-id": 6036334
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "102px"
+                      },
+                      "id": "Sk_W2cn-4lQ",
+                      "tagName": "mj-image"
+                    }
+                  ],
+                  "id": "Byv-nq3W4xm",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "ByLZnqhZExm",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "savedSectionID": 408701,
+                  "version": "3.3.5"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {},
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px"
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
+                      "id": "BkoW2qhW4lQ",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "rkqW3chbNxQ",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "S1FWn53WElm",
+              "tagName": "mj-section"
+            }
+          ],
+          "id": "ryZhchbEeX",
+          "tagName": "mj-container"
+        }
+      ],
+      "id": "rkgnc2ZNxQ",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "By25nZVgQ",
+  "tagName": "mjml"
+}

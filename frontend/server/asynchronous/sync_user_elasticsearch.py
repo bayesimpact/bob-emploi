@@ -2,9 +2,12 @@
 
 import argparse
 import datetime
+import functools
 import json
 import logging
 import os
+import random
+import typing
 
 import certifi as _  # Needed to handle SSL in elasticsearch connections, for production use.
 import elasticsearch
@@ -19,17 +22,19 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server.asynchronous import report
 
-_, _DB = mongo.get_connections_from_env()
+_DB, _USER_DB, _ = mongo.get_connections_from_env()
 
 
-def age_group(year_of_birth):
+def age_group(year_of_birth: int) -> str:
     """Estimate age group from year of birth."""
 
     if year_of_birth < 1920:
         return 'Unknown'
-    age = now.get() - datetime.datetime(year_of_birth, 7, 1)
-    age = age.days / 365
+    precise_age = now.get() - datetime.datetime(year_of_birth, 7, 1)
+    age = precise_age.days / 365
     if age < 18:
         return '-18'
     if age < 25:
@@ -45,7 +50,7 @@ def age_group(year_of_birth):
     return '65+'
 
 
-def nps_love_score(nps_score):
+def nps_love_score(nps_score: int) -> typing.Optional[int]:
     """Convert NPS scode to lovers/detractors values.
 
     Returns -1 for detractors, meaning NPS score is between 1 and 5.
@@ -53,8 +58,6 @@ def nps_love_score(nps_score):
     Returns 1 for lovers, meaning NPS score is 8, 9, 10.
     Returns None otherwise."""
 
-    if nps_score is None:
-        return None
     if nps_score <= 5:
         return -1
     if nps_score <= 7:
@@ -65,24 +68,22 @@ def nps_love_score(nps_score):
     return None
 
 
-def bob_has_helped_love_score(answer):
+def bob_has_helped_love_score(answer: str) -> typing.Optional[int]:
     """Convert 'Bob has helped ?' answers to lovers/detractors values.
 
     Return -1 if answer is 'NO'
     Return 1 if answer is 'YES' or 'YES_A_LOT'
     Return None otherwise."""
 
-    if answer is None:
-        return None
     if answer in ('NO', 'NOT_AT_ALL'):
         return -1
     if answer in ('YES', 'YES_A_LOT'):
         return 1
-    logging.warning('bobHasHelped field has unknown answer %s', answer)
+    logging.warning('bobHasHelped field has unknown answer "%s"', answer)
     return None
 
 
-def feedback_love_score(feedback_score):
+def feedback_love_score(feedback_score: int) -> typing.Optional[int]:
     """Convert online feedback score to lovers/detractors values.
 
     Returns -1 if score is 1 or 2.
@@ -90,8 +91,6 @@ def feedback_love_score(feedback_score):
     Returns 1 if score is 4 or 5.
     Returns None otherwise."""
 
-    if feedback_score is None:
-        return None
     if feedback_score in (1, 2):
         return -1
     if feedback_score == 3:
@@ -102,7 +101,7 @@ def feedback_love_score(feedback_score):
     return None
 
 
-def _get_employment_status(user):
+def _get_employment_status(user: user_pb2.User) -> typing.Optional[user_pb2.EmploymentStatus]:
     """Get the last employmentStatus for which we have an answer to bobHasHelped question, or get
     the last employmentStatus."""
 
@@ -115,7 +114,7 @@ def _get_employment_status(user):
     return last_status
 
 
-def _get_last_complete_project(user):
+def _get_last_complete_project(user: user_pb2.User) -> typing.Optional[project_pb2.Project]:
     """Get last project which is not is_incomplete."""
 
     return next(
@@ -124,24 +123,43 @@ def _get_last_complete_project(user):
         None)
 
 
-def _remove_null_fields(mydict):
-    out = {}
+_T = typing.TypeVar('_T')
+_U = typing.TypeVar('_U')
+
+
+def _remove_null_fields(mydict: typing.Dict[_T, typing.Optional[_U]]) -> typing.Dict[_T, _U]:
+    out: typing.Dict[_T, _U] = {}
     for key, value in mydict.items():
+        clean_value: typing.Optional[_U]
         if isinstance(value, dict):
-            value = _remove_null_fields(value) or None
-        if value is None:
-            continue
-        out[key] = value
+            clean_value = typing.cast(_U, _remove_null_fields(value)) or None
+        else:
+            clean_value = value
+        if clean_value is not None:
+            out[key] = clean_value
     return out
 
 
-def _user_to_analytics_data(user):
+# Cache (from MongoDB) of known cities.
+@functools.lru_cache(maxsize=256, typed=False)
+def _get_urban_context(city_id: str) -> typing.Optional[str]:
+    target_city = _DB.cities.find_one({'_id': city_id})
+    if target_city:
+        target_city_proto = typing.cast(
+            geo_pb2.FrenchCity, proto.create_from_mongo(target_city, geo_pb2.FrenchCity))
+        return geo_pb2.UrbanContext.Name(target_city_proto.urban_context)
+    return None
+
+
+def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]:
     """Gather analytics data to insert into elasticsearch."""
 
-    data = {
+    data: typing.Dict[str, typing.Any] = {
         'registeredAt': user.registered_at.ToJsonString(),
+        'randomGroup': random.randint(0, 100) / 100,
         'profile': {
             'ageGroup': age_group(user.profile.year_of_birth),
+            'canTutoie': user.profile.can_tutoie,
             'coachingEmailFrequency': user_pb2.EmailFrequency.Name(
                 user.profile.coaching_email_frequency),
             'frustrations': [user_pb2.Frustration.Name(f) for f in user.profile.frustrations],
@@ -164,6 +182,8 @@ def _user_to_analytics_data(user):
         }
     last_project = _get_last_complete_project(user)
     if last_project:
+        scoring_project = scoring.ScoringProject(
+            last_project, user.profile, user.features_enabled, _DB)
         data['project'] = {
             'targetJob': {
                 'name': last_project.target_job.name,
@@ -171,19 +191,15 @@ def _user_to_analytics_data(user):
                     'name': last_project.target_job.job_group.name,
                 },
             },
-            'mobility': {
-                'areaType': geo_pb2.AreaType.Name(
-                    last_project.area_type or last_project.mobility.area_type),
-                'city': {
-                    'regionName':
-                    last_project.city.region_name or last_project.mobility.city.region_name,
-                    'urbanScore':
-                    last_project.city.urban_score or last_project.mobility.city.urban_score,
-                },
+            'areaType': geo_pb2.AreaType.Name(last_project.area_type),
+            'city': {
+                'regionName': last_project.city.region_name,
+                'urbanScore': last_project.city.urban_score,
             },
-            # TODO(pascal): clean up and use new fields, jobSearchLengthMonths field is deprecated.
-            'job_search_length_months': last_project.job_search_length_months,
+            'job_search_length_months': round(scoring_project.get_search_length_at_creation()),
             'advices': [a.advice_id for a in last_project.advices if a.num_stars >= 2],
+            'numAdvicesRead': sum(
+                1 for a in last_project.advices if a.status == project_pb2.ADVICE_READ),
             'isComplete': not last_project.is_incomplete,
         }
         if last_project.kind:
@@ -191,14 +207,26 @@ def _user_to_analytics_data(user):
         if last_project.feedback.score:
             data['project']['feedbackScore'] = last_project.feedback.score
             data['project']['feedbackLoveScore'] = feedback_love_score(last_project.feedback.score)
-        if last_project.min_salary:
+        if last_project.min_salary and last_project.min_salary < 1000000000:
             data['project']['minSalary'] = last_project.min_salary
+        urban_context = _get_urban_context(last_project.city.city_id)
+        if urban_context:
+            data['project']['city']['urbanContext'] = urban_context
     last_status = _get_employment_status(user)
     if last_status:
         data['employmentStatus'] = json_format.MessageToDict(last_status)
+        data['employmentStatus']['daysSinceRegistration'] = \
+            (last_status.created_at.ToDatetime() - user.registered_at.ToDatetime()).days
         if last_status.bob_has_helped:
             data['employmentStatus']['bobHasHelpedScore'] = bob_has_helped_love_score(
                 last_status.bob_has_helped)
+        if last_status.other_coaches_used:
+            data['employmentStatus']['otherCoachesUsed'] = [
+                user_pb2.OtherCoach.Name(c) for c in last_status.other_coaches_used
+            ]
+        if last_status.bob_relative_personalization:
+            data['employmentStatus']['bobRelativePersonalization'] = \
+                last_status.bob_relative_personalization
 
     if user.emails_sent:
         data['emailsSent'] = {
@@ -211,11 +239,17 @@ def _user_to_analytics_data(user):
         data['clientMetrics'] = {
             'firstSessionDurationSeconds': user.client_metrics.first_session_duration_seconds,
         }
+    if user.client_metrics.is_first_session_mobile:
+        data['clientMetrics'] = data.get('clientMetrics', {})
+        data['clientMetrics']['isFirstSessionMobile'] = \
+            user_pb2.OptionalBool.Name(user.client_metrics.is_first_session_mobile)
 
     return _remove_null_fields(data)
 
 
-def export_user_to_elasticsearch(es_client, index, registered_from, dry_run=True):
+def export_user_to_elasticsearch(
+        es_client: elasticsearch.Elasticsearch, index: str, registered_from: str,
+        dry_run: bool = True) -> None:
     """Synchronize users to elasticsearch for analytics purpose."""
 
     if not dry_run:
@@ -227,7 +261,7 @@ def export_user_to_elasticsearch(es_client, index, registered_from, dry_run=True
 
     nb_users = 0
     nb_docs = 0
-    cursor = _DB.user.find({
+    cursor = _USER_DB.user.find({
         'registeredAt': {'$gt': registered_from},
         'featuresEnabled.excludeFromAnalytics': {'$ne': True},
     })
@@ -235,7 +269,7 @@ def export_user_to_elasticsearch(es_client, index, registered_from, dry_run=True
 
         nb_users += 1
         user_id = str(row.pop('_id'))
-        user = proto.create_from_mongo(row, user_pb2.User)
+        user = typing.cast(user_pb2.User, proto.create_from_mongo(row, user_pb2.User))
         data = _user_to_analytics_data(user)
 
         logging.debug(data)
@@ -250,7 +284,9 @@ def export_user_to_elasticsearch(es_client, index, registered_from, dry_run=True
         es_client.indices.flush(index=index)
 
 
-def main(es_client, string_args=None):
+def main(
+        es_client: elasticsearch.Elasticsearch,
+        string_args: typing.Optional[typing.List[str]] = None) -> None:
     """Parse command line arguments and trigger sync_employment_status function."""
 
     parser = argparse.ArgumentParser(
@@ -263,14 +299,24 @@ def main(es_client, string_args=None):
         help='No dry run really store in elasticsearch.')
     parser.add_argument('--index', default='bobusers', help='Elasticsearch index to write to')
     parser.add_argument('--verbose', '-v', action='store_true', help='More detailed output.')
+    parser.add_argument(
+        '--disable-sentry', action='store_true', help='Disable logging to Sentry.')
     args = parser.parse_args(string_args)
 
     logging.basicConfig(level='DEBUG' if args.verbose else 'INFO')
+    if not args.dry_run and not args.disable_sentry:
+        try:
+            report.setup_sentry_logging(os.getenv('SENTRY_DSN'))
+        except ValueError:
+            logging.error(
+                'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
+            return
 
     export_user_to_elasticsearch(es_client, args.index, args.registered_from, dry_run=args.dry_run)
 
 
-def _get_auth_from_env(env):
+def _get_auth_from_env(
+        env: typing.Mapping[str, str]) -> typing.Optional[requests_aws4auth.AWS4Auth]:
     aws_in_docker = env.get('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
     if aws_in_docker:
         # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
@@ -290,11 +336,10 @@ def _get_auth_from_env(env):
         access_key_id, secret_access_key, 'eu-central-1', 'es', session_token=session_token)
 
 
-def get_es_client_from_env(env=None):
+def get_es_client_from_env() -> elasticsearch.Elasticsearch:
     """Get an Elasticsearch client configured from environment variables."""
 
-    if env is None:
-        env = os.environ
+    env = os.environ
     return elasticsearch.Elasticsearch(
         env.get('ELASTICSEARCH_URL', 'http://elastic:changeme@elastic-dev:9200').split(','),
         http_auth=_get_auth_from_env(env),

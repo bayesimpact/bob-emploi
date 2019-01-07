@@ -14,13 +14,13 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
 
     # TODO(guillaume): Add more tests when the scoring model takes the city into account.
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(CommuteScoringModelTestCase, self).setUp()
         self.persona = self._random_persona().clone()
         self.database.cities.insert_one({
             '_id': '69123',
-            'longitude': 4.6965532,
-            'latitude': 45.7179675
+            'longitude': 4.8363116,
+            'latitude': 45.7640454,
         })
 
         self.database.hiring_cities.insert_one({
@@ -29,6 +29,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
                 {
                     'offers': 10,
                     'city': {
+                        'cityId': '69028',
                         'name': 'Brindas',
                         'longitude': 4.6965532,
                         'latitude': 45.7179675,
@@ -38,6 +39,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
                 {
                     'offers': 40,
                     'city': {
+                        'cityId': '69123',
                         'name': 'Lyon',
                         'longitude': 4.8363116,
                         'latitude': 45.7640454,
@@ -47,6 +49,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
                 {
                     'offers': 40,
                     'city': {
+                        'cityId': '69290',
                         'name': 'Saint-Priest',
                         'longitude': 4.9123846,
                         'latitude': 45.7013617,
@@ -56,6 +59,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
                 {
                     'offers': 40,
                     'city': {
+                        'cityId': '69256',
                         'name': 'Vaulx-en-Velin',
                         'longitude': 4.8892431,
                         'latitude': 45.7775502,
@@ -65,46 +69,37 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
             ]
         })
 
-    def test_lyon(self):
+    def test_lyon(self) -> None:
         """Test that people in Lyon match."""
 
-        self.persona.project.mobility.city.city_id = '69123'
+        self.persona.project.city.city_id = '69123'
         self.persona.project.target_job.job_group.rome_id = 'M1604'
         score = self._score_persona(self.persona)
         self.assertGreater(score, 1, msg='Fail for "{}"'.format(self.persona.name))
 
-    def test_non_valid(self):
+    def test_non_valid(self) -> None:
         """Test that people with a non-valid INSEE code should not get any commute advice."""
 
-        self.persona.project.mobility.city.city_id = '691234'
+        self.persona.project.city.city_id = '691234'
         self.persona.project.target_job.job_group.rome_id = 'M1604'
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Fail for "{}"'.format(self.persona.name))
 
-    def test_super_commute(self):
+    def test_super_commute(self) -> None:
         """Test that people that wants to move and with super commute cities have score 3."""
 
-        self.persona.project.mobility.city.city_id = '69123'
+        self.persona.project.city.city_id = '69123'
         self.persona.project.target_job.job_group.rome_id = 'M1604'
-        if self.persona.project.mobility.area_type <= geo_pb2.CITY:
-            self.persona.project.mobility.area_type = geo_pb2.DEPARTEMENT
+        if self.persona.project.area_type <= geo_pb2.CITY:
+            self.persona.project.area_type = geo_pb2.DEPARTEMENT
         score = self._score_persona(self.persona)
         self.assertEqual(score, 3, msg='Fail for "{}"'.format(self.persona.name))
-
-    def test_extra_data(self):
-        """Compute extra data."""
-
-        self.persona.project.mobility.city.city_id = '69123'
-        self.persona.project.target_job.job_group.rome_id = 'M1604'
-        project = self.persona.scoring_project(self.database)
-        result = self.model.compute_extra_data(project)
-        self.assertGreater(len(result.cities), 1, msg='Failed for "{}"'.format(self.persona.name))
 
 
 class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../commute endpoint."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(EndpointTestCase, self).setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'commute',
@@ -115,7 +110,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def test_bad_project_id(self):
+    def test_bad_project_id(self) -> None:
         """Test with a non existing project ID."""
 
         response = self.app.get(
@@ -125,7 +120,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(404, response.status_code)
         self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
 
-    def test_no_cities(self):
+    def test_no_cities(self) -> None:
         """Basic test with no cities."""
 
         response = self.app.get(
@@ -134,12 +129,12 @@ class EndpointTestCase(base_test.ServerTestCase):
 
         self.assertEqual({}, self.json_from_response(response))
 
-    def test_lyon(self):
+    def test_lyon(self) -> None:
         """Cities available close to Lyon."""
 
         user_id, auth_token = self.create_user_with_token(
             data={'projects': [{
-                'mobility': {'city': {'cityId': '69123'}},
+                'city': {'cityId': '69123'},
                 'targetJob': {'jobGroup': {'romeId': 'A6789'}},
             }]})
         self._db.cities.insert_one({
@@ -155,7 +150,8 @@ class EndpointTestCase(base_test.ServerTestCase):
                 {
                     'offers': 10,
                     'city': {
-                        'cityId': '69124',
+                        'cityId': '69028',
+                        'departementId': '69',
                         'name': 'Brindas',
                         'longitude': 4.6965532,
                         'latitude': 45.7179675,
@@ -166,6 +162,7 @@ class EndpointTestCase(base_test.ServerTestCase):
                     'offers': 40,
                     'city': {
                         'cityId': '69123',
+                        'departementId': '69',
                         'name': 'Lyon',
                         'longitude': 4.8363116,
                         'latitude': 45.7640454,
@@ -180,10 +177,10 @@ class EndpointTestCase(base_test.ServerTestCase):
             '/api/advice/commute/{}/{}'.format(user_id, project_id),
             headers={'Authorization': 'Bearer ' + auth_token})
 
-        self.assertEqual(
-            ['Brindas'],
-            [m.get('name') for m in self.json_from_response(response).get('cities', [])])
+        hiring_cities = self.json_from_response(response).get('cities', [])
+        self.assertEqual(['Brindas'], [h.get('name') for h in hiring_cities])
+        self.assertEqual('69', hiring_cities[0].get('departementId'))
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

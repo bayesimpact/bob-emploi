@@ -30,13 +30,6 @@ message Project {
   // Sector of activity targeted by this project.
   ActivitySector activity_sector = 30;
 
-  // Geographic mobility for this project.
-  // DEPRECATED: Use city and area_type in Project directly. For now providers
-  // of this field shoud populate both versions, and clients of this field
-  // should check both. If they conflict, the flatten version is preferred.
-  // TODO(pascal): Clean usage, migrate data and remove that field.
-  Location mobility = 7 [deprecated = true];
-
   // The target city for this project, or one of the targeted area (see `area_type`).
   FrenchCity city = 40;
 
@@ -49,7 +42,7 @@ message Project {
   float min_salary = 8;
 
   // A set of employment types requested by the user if any (e.g. CDI).
-  repeated EmploymentType employment_types = 36;
+  repeated EmploymentType employment_types = 36 [(list_format) = REPLACEABLE];
 
   // Set of chantiers templates that have been seen by the user: keys are
   // chantier template ids, values are the activation state of the chantiers.
@@ -101,7 +94,7 @@ message Project {
   TrainingFulfillmentEstimate training_fulfillment_estimate = 12;
 
   // A set of workload types that the user could accept (e.g. full time).
-  repeated ProjectWorkload workloads = 37;
+  repeated ProjectWorkload workloads = 37 [(list_format) = REPLACEABLE];
 
   // How good is their network for this project from 1 to 3. 1 = weak, 3 =
   // super strong, -1 = unknown.
@@ -115,11 +108,13 @@ message Project {
   // and remove the field.
   int32 job_search_length_months = 31 [deprecated = true];
 
-  // Whether the user has started searching in this field.
-  bool job_search_has_not_started = 24;
+  oneof job_search_length {
+    // Whether the user has started searching in this field.
+    bool job_search_has_not_started = 24;
 
-  // When the user started searching in this field.
-  google.protobuf.Timestamp job_search_started_at = 26;
+    // When the user started searching in this field.
+    google.protobuf.Timestamp job_search_started_at = 26;
+  }
 
   // Users estimate of how many offers they usually have access to per week.
   NumberOfferEstimateOption weekly_offers_estimate = 32;
@@ -158,9 +153,6 @@ message Project {
 
   // User level of involvement in this job.
   PassionateLevel passionate_level = 38;
-
-  // Sorted list of categories of advice that we should show to the user in the Explorer.
-  repeated AdviceCategory advice_categories = 39 [(field_usage) = ALGORITHM_RESULT];
 }
 
 message ProjectFeedback {
@@ -174,7 +166,7 @@ message ProjectFeedback {
   map<string, bool> useful_advice_modules = 3;
 }
 
-// Next ID: 32.
+// Next ID: 35.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -189,6 +181,7 @@ message Advice {
   // Number of stars (1 to 3) assigned to this advice when first scored.
   float num_stars = 5;
 
+  // TODO(cyrille): Check that this is not used, and drop in all modules.
   oneof extra_data {
     // Extra data needed to recommend the "Other work environments" piece of
     // advice.
@@ -242,7 +235,10 @@ message Advice {
   // The score the user gave to the piece of advice. A low score means they do
   // not think it was a good advice, for any reasons. A high score means they
   // think the advice was good and they need to work on it.
-  int32 score = 11;
+  // DEPRECATED: Advice are not scored by users anymore.
+  // TODO(pascal): Cleanup usage and remove the field, or maybe keep it for
+  // historical value.
+  int32 score = 11 [deprecated = true];
 
   // Title of the advice. Most of the time this is empty and is decided by the
   // client, but for some advice modules the server can decide what to display.
@@ -252,6 +248,12 @@ message Advice {
   // and is decided by the client, but for some advice modules the server can
   // decide what to display.
   string short_title = 30;
+
+  // Goal that can be reached when following the piece of advice.
+  // Most of the time it is decided at the advice module level but for some
+  // advice it is overriden (and translated) by the server.
+  // It starts with a lowercase and can finish the sentence "5 more tips to ..."
+  string goal = 34;
 
   // Content for the advice card. Most of the time this is empty and is decided
   // by the client, but for some advice modules the server can decide what to
@@ -276,6 +278,15 @@ message Advice {
   // clicking on an external link, playing a video, etc. Note that not all
   // advice modules implement that properly.
   int32 num_explorations = 31;
+
+  // Whether this advice is given only because the user is using the Alpha
+  // version of the advisor.
+  bool is_for_alpha_only = 32;
+
+  // Diagnostic categories to which the advice belongs. Most of the time it is
+  // decided at the advice module level but for some advice it is overriden by
+  // the server.
+  repeated DiagnosticTopic diagnostic_topics = 33;
 }
 
 message AdviceCategory {
@@ -289,11 +300,6 @@ message AdviceCategory {
 message Advices {
   // Sorted list of advices that we want to give for a project.
   repeated Advice advices = 1;
-}
-
-message AdviceCategories {
-  // Sorted list of advice categories that we want to give for a project.
-  repeated AdviceCategory advice_categories = 1;
 }
 
 message CommuteData {
@@ -426,7 +432,8 @@ enum TrainingFulfillmentEstimate {
 
 enum ProjectSeniority {
   UNKNOWN_PROJECT_SENIORITY = 0;
-  INTERNSHIP = 1;
+
+  INTERN = 1;
 
   // Less than 2 years
   JUNIOR = 2;

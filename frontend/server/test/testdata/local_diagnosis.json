@@ -37,7 +37,8 @@
         },
         "mobilityType": "CLOSE"
       }
-    ]
+    ],
+    "numLessStressfulDepartements": 3
   },
   {
     "_id": "06:N4105",

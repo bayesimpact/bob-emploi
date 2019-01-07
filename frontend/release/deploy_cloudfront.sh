@@ -20,11 +20,15 @@ readonly CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/cloudfront.json"
 
 function download_live_config() {
   aws cloudfront get-distribution-config --id "$DISTRIBUTION_ID" | \
-    jq . --sort-keys > "$CONFIG_FILE"
+    jq . --sort-keys
+}
+
+function mktemp_json() {
+  mktemp -t XXXXXXXX.json
 }
 
 if [ "$1" == "download" ]; then
-  download_live_config
+  download_live_config | jq .DistributionConfig > "$CONFIG_FILE"
   exit
 fi
 
@@ -35,7 +39,9 @@ fi
 
 if [ -n "$(git diff HEAD --shortstat 2> /dev/null | tail -n1)" ]; then
   echo "Current git status is dirty. Commit, stash or revert your changes before uploading." 1>&2
-  exit 2
+  if [ -z "$DRY_RUN" ]; then
+    exit 2
+  fi
 fi
 
 # Ensures that the Continuous Integration is successful.
@@ -43,29 +49,54 @@ if [ -x "$(which hub)" ]; then
   readonly CI_STATUS="$(hub ci-status "${BRANCH:-HEAD}")"
   if [ "${CI_STATUS}" != "success" ]; then
     echo "Continuous integration is \"${CI_STATUS}\", fix before uploading:"
-    hub ci-status -v "${BRANCH:-HEAD}"
-    exit 3
+    if [ -z "$DRY_RUN" ]; then
+      hub ci-status -v "${BRANCH:-HEAD}"
+      exit 3
+    fi
   fi
 fi
 
-# Get the ETag from the latest config that was in Git. If this does not match
-# with the current version in the console, the automatic upload won't work.
-readonly ETAG_ON_MASTER="$(git show "origin/master:./$CONFIG_FILE" | jq -r .ETag)"
+# Check that the live version is in sync with origin/master.
+readonly TEMP_PROD_FILE="$(mktemp_json)"
+readonly TEMP_PROD_CONFIG_FILE="$(mktemp_json)"
+download_live_config > "$TEMP_PROD_FILE"
+readonly ETAG_IN_PROD="$(jq -r .ETag "$TEMP_PROD_FILE")"
+jq .DistributionConfig "$TEMP_PROD_FILE" > "$TEMP_PROD_CONFIG_FILE"
+rm "$TEMP_PROD_FILE"
 
-# Extract the distribution config.
-readonly TEMP_CONFIG_FILE="$(mktemp -t XXXXXXXX.json)"
-jq .DistributionConfig "$CONFIG_FILE" > "$TEMP_CONFIG_FILE"
+readonly TEMP_MASTER_CONFIG_FILE="$(mktemp_json)"
+git show "origin/master:./$CONFIG_FILE" > "$TEMP_MASTER_CONFIG_FILE"
+
+if diff "$TEMP_PROD_CONFIG_FILE" "$TEMP_MASTER_CONFIG_FILE"; then
+  echo "AWS live config and the config in origin/master are out of sync. Fix that first, then run this script again."
+  rm "$TEMP_PROD_CONFIG_FILE"
+  rm "$TEMP_MASTER_CONFIG_FILE"
+  if [ -z "$DRY_RUN" ]; then
+    exit 5
+  fi
+fi
+
+rm "$TEMP_MASTER_CONFIG_FILE"
+
+if diff "$TEMP_PROD_CONFIG_FILE" "$CONFIG_FILE"; then
+  echo "There is no diff to upload."
+  if [ -z "$DRY_RUN" ]; then
+    exit 6
+  fi
+fi
+
+rm "$TEMP_PROD_CONFIG_FILE"
+
+if [ -n "$DRY_RUN" ]; then
+  echo "Dry run, not trying to upload to AWS."
+  exit 7
+fi
 
 # Update AWS Cloudfront.
 if ! aws cloudfront update-distribution \
   --id "$DISTRIBUTION_ID" \
-  --distribution-config "file://$TEMP_CONFIG_FILE" \
-  --if-match "$ETAG_ON_MASTER"; then
+  --distribution-config "file://$CONFIG_FILE" \
+  --if-match "$ETAG_IN_PROD"; then
   echo "AWS live config and the config in origin/master are out of sync. Fix that first, then run this script again."
   exit 4
 fi
-
-rm "$TEMP_CONFIG_FILE"
-
-# Get latest ETag and config locally.
-download_live_config

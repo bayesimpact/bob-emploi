@@ -1,6 +1,8 @@
 """Module to get information on companies."""
 
 import logging
+import typing
+
 import requests
 import xmltodict
 
@@ -9,20 +11,20 @@ from bob_emploi.frontend.api import training_pb2
 _CARIF_URL = 'http://www.intercariforef.org/serviceweb2/offre-info/?versionLHEO=2.2&typeListe=max'
 
 
-def _make_key(title, city):
+def _make_key(title: str, city: str) -> str:
     """Create a unique key for a training."""
 
     return title + city
 
 
-def get_trainings(rome_id, departement_id):
+def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2.Training]:
     """Helper function to get trainings from the CARIF API.
 
     Carif sends us multiple trainings that have the same city and title, this function only return
     one training per city/title.
     """
 
-    no_trainings = []
+    no_trainings: typing.List[training_pb2.Training] = []
 
     try:
         xml = requests.get(
@@ -31,7 +33,7 @@ def get_trainings(rome_id, departement_id):
         logging.warning('XML request for intercarif failed:\n%s', error)
         return no_trainings
 
-    trainings = []
+    trainings: typing.List[training_pb2.Training] = []
 
     if xml.status_code != 200:
         logging.warning('XML request for intercarif failed with error code %d', xml.status_code)
@@ -47,7 +49,7 @@ def get_trainings(rome_id, departement_id):
 
     info = xmltodict.parse(xml.text)
 
-    offers = []
+    offers: typing.List[typing.Dict[str, typing.Any]] = []
     try:
         offers = info['lheo-index']['resumes-offres']['resume-offre']
     except KeyError:
@@ -55,7 +57,7 @@ def get_trainings(rome_id, departement_id):
 
     # Since our goal is not to give a super tool to find all the precise training and their
     # differences, we just show one, and dedup them on a key composed of city and name.
-    trainings_keys = set()
+    trainings_keys: typing.Set[str] = set()
 
     for offer in offers:
         try:

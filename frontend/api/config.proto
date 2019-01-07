@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package bayes.bob;
+
 message ClientConfig {
   // Client ID for Google Single Sign On, e.g.
   // 1052239456978-tgef7mpqd3qoq723hag0v45035nqnivt.apps.googleusercontent.com.

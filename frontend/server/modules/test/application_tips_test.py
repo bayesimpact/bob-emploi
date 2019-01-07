@@ -13,7 +13,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
 
     model_id = 'advice-improve-interview'
 
-    def test_not_enough_interviews(self):
+    def test_not_enough_interviews(self) -> None:
         """Users does not get enough interviews."""
 
         persona = self._random_persona().clone()
@@ -25,7 +25,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
 
-    def test_many_interviews(self):
+    def test_many_interviews(self) -> None:
         """Users has maximum interviews."""
 
         persona = self._random_persona().clone()
@@ -36,7 +36,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
 
-    def test_many_interviews_long_time(self):
+    def test_many_interviews_long_time(self) -> None:
         """Users has maximum interviews."""
 
         persona = self._random_persona().clone()
@@ -52,12 +52,12 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
 
     model_id = 'advice-improve-resume'
 
-    def test_not_enough_interviews(self):
+    def test_not_enough_interviews(self) -> None:
         """Users does not get enough interviews."""
 
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'I1202'
-        persona.project.mobility.city.departement_id = '14'
+        persona.project.city.departement_id = '14'
         if persona.project.job_search_length_months < 3:
             persona.project.job_search_length_months = 3
         if persona.project.job_search_length_months > 6:
@@ -75,12 +75,12 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
 
-    def test_many_interviews(self):
+    def test_many_interviews(self) -> None:
         """Users has maximum interviews."""
 
         persona = self._random_persona().clone()
         persona.project.target_job.job_group.rome_id = 'I1202'
-        persona.project.mobility.city.departement_id = '14'
+        persona.project.city.departement_id = '14'
         persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 21
         self.database.local_diagnosis.insert_one({
@@ -93,7 +93,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
 
-    def test_no_applications(self):
+    def test_no_applications(self) -> None:
         """Users has never sent an application."""
 
         persona = self._random_persona().clone()
@@ -102,7 +102,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
 
-    def test_imt_data_missing(self):
+    def test_imt_data_missing(self) -> None:
         """Users does not get enough interview although IMT is missing."""
 
         persona = self._random_persona().clone()
@@ -120,7 +120,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
 class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/improve-resume endpoint."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(ProjectResumeEndpointTestCase, self).setUp()
         self._db.advice_modules.insert_many([
             {
@@ -137,7 +137,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def test_bad_project_id(self):
+    def test_bad_project_id(self) -> None:
         """Test with a non existing project ID."""
 
         response = self.app.get(
@@ -147,7 +147,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(404, response.status_code)
         self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
 
-    def test_two_tips(self):
+    def test_two_tips(self) -> None:
         """Basic test with one quality and one improvement tip only."""
 
         self._db.application_tips.insert_many([
@@ -166,7 +166,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             },
             tips)
 
-    def test_filtered_tips(self):
+    def test_filtered_tips(self) -> None:
         """Tips not useful for this project is filtered."""
 
         self._db.application_tips.insert_many([
@@ -182,7 +182,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             {'qualities': [{'content': 'Keep this one', 'filters': ['constant(1)']}]},
             tips)
 
-    def test_sorted_tips(self):
+    def test_sorted_tips(self) -> None:
         """More specialized tips come first."""
 
         self._db.application_tips.insert_many([
@@ -203,7 +203,40 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             ['Very specialized', 'Specialized', 'Generic'],
             [t.get('content') for t in tips.get('qualities', [])])
 
-    def test_fresh_resume_expanded_card(self):
+    def test_translated_tips(self) -> None:
+        """Tips are genderized and translated for the user."""
+
+        self._db.application_tips.insert_one({
+            'content': 'Vous êtes spéciale',
+            'contentMasculine': 'Vous êtes spécial',
+            'type': 'QUALITY'
+        })
+        self._db.translations.insert_one({
+            'string': 'Vous êtes spécial',
+            'fr_FR@tu': 'Tu es spécial',
+        })
+
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        user_info['profile']['gender'] = 'MASCULINE'
+        user_info['profile']['canTutoie'] = True
+
+        self.app.post(
+            'api/user',
+            content_type='application/json',
+            data=json.dumps(user_info),
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+
+        response = self.app.get(
+            '/api/advice/improve-resume/{}/{}'.format(self.user_id, self.project_id),
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+
+        tips = self.json_from_response(response).get('qualities')
+        assert tips
+        tip = tips.pop()
+        self.assertFalse(tips)
+        self.assertEqual({'content': 'Tu es spécial'}, tip)
+
+    def test_fresh_resume_expanded_card(self) -> None:
         """Get expanded data from a "Fresh Resume" advice card instead of "Improve Resume"."""
 
         self._db.application_tips.insert_one({
@@ -218,101 +251,10 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             [t.get('content') for t in tips.get('improvements', [])])
 
 
-class ExtraDataTestCase(base_test.ServerTestCase):
-    """Unit tests for maybe_advise to compute extra data for advice modules."""
-
-    def test_advice_improve_success_rate_extra_data(self):
-        """Test that the advisor computes extra data for the "Improve Success Rate" advice."""
-
-        project = {
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'departementId': '14'}},
-            'jobSearchLengthMonths': 6, 'weeklyApplicationsEstimate': 'A_LOT',
-            'totalInterviewCount': 1,
-        }
-        self._db.local_diagnosis.insert_one({
-            '_id': '14:A1234',
-            'imt': {
-                'yearlyAvgOffersDenominator': 10,
-                'yearlyAvgOffersPer10Candidates': 2,
-            },
-        })
-        self._db.job_group_info.drop()
-        self._db.job_group_info.insert_one({
-            '_id': 'A1234',
-            'requirements': {
-                'skills': [{'name': 'Humour'}, {'name': 'Empathie'}],
-                'skillsShortText': '**Humour** et **empathie**',
-            },
-        })
-        self._db.advice_modules.insert_one({
-            'adviceId': 'improve-success',
-            'triggerScoringModel': 'advice-improve-resume',
-            'extraDataFieldName': 'improve_success_rate_data',
-            'isReadyForProd': True,
-        })
-
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'improve-success')
-        self.assertFalse(
-            advice.get('improveSuccessRateData', {}).get('requirements', {}).get('skills'))
-        self.assertEqual(
-            '**Humour** et **empathie**',
-            advice.get('improveSuccessRateData', {}).get('requirements', {}).get('skillsShortText'))
-
-    def test_advice_improve_success_rate_no_extra_data(self):
-        """Test that the advisor has no extra data when there is no personnalization."""
-
-        project = {
-            'targetJob': {'jobGroup': {'romeId': 'A1234'}},
-            'mobility': {'city': {'departementId': '14'}},
-            'jobSearchLengthMonths': 6, 'weeklyApplicationsEstimate': 'A_LOT',
-            'totalInterviewCount': 1,
-        }
-        self._db.local_diagnosis.insert_one({
-            '_id': '14:A1234',
-            'imt': {
-                'yearlyAvgOffersDenominator': 10,
-                'yearlyAvgOffersPer10Candidates': 2,
-            },
-        })
-        self._db.job_group_info.drop()
-        self._db.job_group_info.insert_one({
-            '_id': 'A1234',
-            'requirements': {
-                'skills': [{'name': 'Humour'}, {'name': 'Empathie'}],
-            },
-        })
-        self._db.advice_modules.insert_one({
-            'adviceId': 'improve-success',
-            'triggerScoringModel': 'advice-improve-resume',
-            'extraDataFieldName': 'improve_success_rate_data',
-            'isReadyForProd': True,
-        })
-
-        response = self.app.post(
-            '/api/project/compute-advices',
-            data=json.dumps({'projects': [project]}),
-            content_type='application/json')
-        advices = self.json_from_response(response)
-
-        advice = next(
-            a for a in advices.get('advices', [])
-            if a.get('adviceId') == 'improve-success')
-        self.assertFalse(any(key.endswith('Data') for key in advice.keys()), advice.keys())
-
-
 class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/improve-interview endpoint."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(ProjectInterviewEndpointTestCase, self).setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'improve-interview',
@@ -323,7 +265,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def test_bad_project_id(self):
+    def test_bad_project_id(self) -> None:
         """Test with a non existing project ID."""
 
         response = self.app.get(
@@ -333,7 +275,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(404, response.status_code)
         self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
 
-    def test_two_tips(self):
+    def test_two_tips(self) -> None:
         """Basic test with one quality and one improvement tip only."""
 
         self._db.application_tips.insert_many([
@@ -352,7 +294,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
             },
             tips)
 
-    def test_filtered_tips(self):
+    def test_filtered_tips(self) -> None:
         """Tips not useful for this project is filtered."""
 
         self._db.application_tips.insert_many([
@@ -368,7 +310,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
             {'qualities': [{'content': 'Keep this one', 'filters': ['constant(1)']}]},
             tips)
 
-    def test_sorted_tips(self):
+    def test_sorted_tips(self) -> None:
         """More specialized tips come first."""
 
         self._db.application_tips.insert_many([
@@ -391,4 +333,4 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

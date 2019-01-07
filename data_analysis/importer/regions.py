@@ -24,4 +24,4 @@ def make_dicts(french_regions_tsv, prefix_tsv):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(make_dicts, 'regions')  # pragma: no cover
+    mongo.importer_main(make_dicts, 'regions')

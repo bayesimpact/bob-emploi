@@ -13,6 +13,11 @@ if [ -z "$BUILD_DIR" ]; then
   BUILD_DIR="$TEMP_BUILD_DIR"
 fi
 
+if [ -z "$CLIENT_VERSION" ]; then
+  CLIENT_VERSION="$(echo $GIT_SHA1 | cut -c -7)"
+fi
+readonly PROD_CLIENT_VERSION="prod.$CLIENT_VERSION"
+
 function build_dist_folder {
   tag=$1
   build_dir=$2
@@ -25,7 +30,7 @@ function build_dist_folder {
   docker tag bayesimpact/bob-emploi-dev:${tag} bayesimpact/bob-emploi-dev:${image_hash}
   sed -e 's/^FROM.*$/\0:'${image_hash}/ < frontend/release/Dockerfile.build > "$dockerfile"
   readonly image="bayesimpact/bob-emploi-frontend-build:${tag}"
-  time docker build -f "$dockerfile" -t "$image" "$build_dir"
+  time docker build --build-arg CLIENT_VERSION="$PROD_CLIENT_VERSION" -f "$dockerfile" -t "$image" "$build_dir"
   rm "$dockerfile"
 
   readonly container=$(docker create "$image")
@@ -42,10 +47,11 @@ cp \
   frontend/release/nginx.conf \
   frontend/release/entrypoint.sh \
   frontend/release/Dockerfile \
-  frontend/cfg/const_dist.json \
+  frontend/client/cfg/const_dist.json \
   "$BUILD_DIR"
 time docker build --pull \
   --build-arg GIT_SHA1="$GIT_SHA1" \
+  --build-arg CLIENT_VERSION="$PROD_CLIENT_VERSION" \
   -t "bayesimpact/bob-emploi-frontend:$TAG" \
   "$BUILD_DIR"
 

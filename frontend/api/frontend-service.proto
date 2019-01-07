@@ -31,6 +31,9 @@ service FrontendService {
   // Save the user's data.
   rpc SaveUser(User) returns (User);
 
+  // Save data for one of the user's advice module.
+  rpc SaveUserAdvice(Advice) returns (Advice);
+
   // Gives some feedback about the app or a specific part of the app.
   rpc GiveFeedback(Feedback) returns (google.protobuf.Empty);
 
@@ -57,9 +60,6 @@ service FrontendService {
   // and projects. Note that the user does not need to have an ID nor to exist
   // in the database.
   rpc AdviseOnProject(User) returns (Advices);
-
-  // Assign categories to advice for a given project.
-  rpc CategorizeOnAdvice(User) returns (AdviceCategories);
 
   // Authenticate a user: retrieve a user's data or create a new user.
   rpc Authenticate(AuthRequest) returns (AuthResponse);

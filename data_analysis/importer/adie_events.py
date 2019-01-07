@@ -96,4 +96,4 @@ def _drop_first_word(text):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(adie_events2dicts, 'adie_events')  # pragma: no-cover
+    mongo.importer_main(adie_events2dicts, 'adie_events')

@@ -2,14 +2,14 @@
 
 import datetime
 import json
-import re
+import typing
 import unittest
+from unittest import mock
 from urllib import parse
 
-from bson import objectid
-import mock
-import mongomock
+import requests
 import requests_mock
+import typing_extensions
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import now
@@ -18,24 +18,41 @@ from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import mailjetmock
 
 
-def _add_chantier(project_index, new_chantier):
-    def _modifier(user):
-        if 'activatedChantiers' not in user['projects'][project_index]:
-            user['projects'][project_index]['activatedChantiers'] = {}
-        user['projects'][project_index]['activatedChantiers'][new_chantier] = True
-    return _modifier
+# TODO(pascal): Drop once requests_mock gets typed.
+class _RequestsMock(typing_extensions.Protocol):
+
+    def get(  # pylint: disable=invalid-name
+            self, path: str, status_code: int = 200, text: str = '',
+            json: typing.Any = None,  # pylint: disable=redefined-outer-name
+            headers: typing.Optional[typing.Dict[str, str]] = None) \
+            -> requests.Response:
+        """Decide what to do when a get request is sent."""
+
+    def post(  # pylint: disable=invalid-name
+            self, path: str, status_code: int = 200, text: str = '',
+            json: typing.Any = None,  # pylint: disable=redefined-outer-name
+            headers: typing.Optional[typing.Dict[str, str]] = None) \
+            -> requests.Response:
+        """Decide what to do when a post request is sent."""
+
+
+# TODO(pascal): Drop once requests_mock gets typed.
+_requests_mock_mock = typing.cast(  # pylint: disable=invalid-name
+    typing.Callable[[], typing.Callable[
+        [typing.Callable[..., typing.Any]], typing.Callable[..., typing.Any]]],
+    requests_mock.mock)
 
 
 class OtherEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the other small endpoints."""
 
-    def test_health_check(self):
+    def test_health_check(self) -> None:
         """Basic call to "/"."""
 
         response = self.app.get('/')
         self.assertEqual(200, response.status_code)
 
-    def _create_user_joe_the_cheminot(self):
+    def _create_user_joe_the_cheminot(self) -> typing.Tuple[str, str]:
         """Joe is a special user used to analyse feedback."""
 
         user_data = {
@@ -48,8 +65,8 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         return self.create_user_with_token(data=user_data, email='foo@bar.fr')
 
     @mock.patch(server.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
-    @requests_mock.mock()
-    def test_feedback(self, mock_requests):
+    @_requests_mock_mock()
+    def test_feedback(self, mock_requests: _RequestsMock) -> None:
         """Basic call to "/api/feedback"."""
 
         mock_requests.post('slack://bob-bots', json={
@@ -70,7 +87,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             ['Aaaaaaaaaaaaawesome!\nsecond line'],
             [d.get('feedback') for d in self._user_db.feedbacks.find()])
 
-    def test_feedback_no_user(self):
+    def test_feedback_no_user(self) -> None:
         """Testing /api/feedback with missing user ID."""
 
         self._create_user_joe_the_cheminot()
@@ -82,7 +99,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(200, response.status_code)
 
-    def test_feedback_wrong_user(self):
+    def test_feedback_wrong_user(self) -> None:
         """Testing /api/feedback with wrong user ID, this should fail."""
 
         auth_token = self._create_user_joe_the_cheminot()[1]
@@ -95,7 +112,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response.status_code)
 
-    def test_feedback_missing_project(self):
+    def test_feedback_missing_project(self) -> None:
         """Testing /api/feedback with missing project ID but correct user ID."""
 
         user_id, auth_token = self._create_user_joe_the_cheminot()
@@ -110,7 +127,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(200, response.status_code)
 
     @mock.patch(now.__name__ + '.get')
-    def test_usage_stats(self, mock_now):
+    def test_usage_stats(self, mock_now: mock.MagicMock) -> None:
         """Testing /api/usage/stats endpoint."""
 
         self._user_db.user.insert_many([
@@ -141,7 +158,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             },
             self.json_from_response(response))
 
-    def test_redirect_eterritoire(self):
+    def test_redirect_eterritoire(self) -> None:
         """Check the /api/redirect/eterritoire endpoint."""
 
         self._db.eterritoire_links.insert_one({
@@ -153,7 +170,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(302, response.status_code)
         self.assertEqual('http://www.eterritoire.fr/lyon/69123', response.location)
 
-    def test_redirect_eterritoire_missing(self):
+    def test_redirect_eterritoire_missing(self) -> None:
         """Check the /api/redirect/eterritoire endpoint for missing city."""
 
         self._db.eterritoire_links.insert_one({
@@ -165,14 +182,14 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(302, response.status_code)
         self.assertEqual('http://www.eterritoire.fr', response.location)
 
-    def test_compute_advices_for_missing_project(self):
+    def test_compute_advices_for_missing_project(self) -> None:
         """Check the /api/project/compute-advices endpoint without projects."""
 
         response = self.app.post(
             '/api/project/compute-advices', data='{}', content_type='application/json')
         self.assertEqual(422, response.status_code)
 
-    def test_compute_advices_for_project(self):
+    def test_compute_advices_for_project(self) -> None:
         """Check the /api/project/compute-advices endpoint without projects."""
 
         self._db.advice_modules.insert_one({
@@ -186,7 +203,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         advice = self.json_from_response(response)
         self.assertEqual({'advices': [{'adviceId': 'one-ring', 'numStars': 1}]}, advice)
 
-    def test_generate_tokens(self):
+    def test_generate_tokens(self) -> None:
         """Check the /api/user/.../generate-auth-tokens."""
 
         user_id, auth_token = self.create_user_with_token(email='pascal@example.com')
@@ -203,14 +220,14 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         auth.check_token(user_id, tokens['auth'], role='')
         self.assertEqual(user_id, tokens['user'])
 
-    def test_generate_tokens_missing_auth(self):
+    def test_generate_tokens_missing_auth(self) -> None:
         """Check that the /api/user/.../generate-auth-tokens is protected."""
 
         user_id, unused_auth_token = self.create_user_with_token(email='pascal@example.com')
         response = self.app.get('/api/user/{}/generate-auth-tokens'.format(user_id))
         self.assertEqual(401, response.status_code)
 
-    def test_diagnose_missing_project(self):
+    def test_diagnose_missing_project(self) -> None:
         """Check the /api/project/diagnose endpoint without projects."""
 
         self._db.diagnostic_sentences.insert_one({
@@ -221,20 +238,18 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             '/api/project/diagnose', data='{}', content_type='application/json')
         self.assertEqual(422, response.status_code)
 
-    def test_diagnose_for_project(self):
+    def test_diagnose_for_project(self) -> None:
         """Check the /api/project/diagnose endpoint."""
 
         self._db.diagnostic_sentences.insert_one({
             'order': 1,
             'sentenceTemplate': 'Yay',
         })
-        self._db.diagnostic_submetrics_sentences.insert_one({
+        self._db.diagnostic_submetrics_scorers.insert_one({
             '_id': 'recJ3ugOeIIM6BlN3',
             'triggerScoringModel': 'constant(3)',
-            'positiveSentenceTemplate': "Vous avez de l'expérience.",
             'submetric': 'PROFILE_DIAGNOSTIC',
             'weight': 1,
-            'negativeSentenceTemplate': "Vous manquez d'expérience.",
         })
         response = self.app.post(
             '/api/project/diagnose',
@@ -242,76 +257,64 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         diagnostic = self.json_from_response(response)
         self.assertEqual({'overallScore', 'subDiagnostics', 'text'}, diagnostic.keys())
 
-    def test_categorize_missing_project(self):
-        """Check the /api/project/compute-categories endpoint without projects."""
+    def test_log_diagnose(self) -> None:
+        """Check that calls to /api/project/diagnose with quick-diagnostic source are
+        logged to mongo."""
 
-        self._db.advice_modules.insert_one({
-            'adviceId': 'one-ring',
-            'isReadyForProd': True,
-            'categories': ['three-stars'],
-            'triggerScoringModel': 'constant(1)',
-        })
+        user = {'projects': [{
+            'targetJob': {
+                'codeOgr': '123456',
+                'jobGroup': {'romeId': 'A1234'},
+            },
+            'city': {
+                'cityId': '31555',
+                'departementId': '31',
+                'regionId': '76',
+            },
+        }]}
+        expected = {
+            'source': 'quick-diagnostic',
+            'codeOgr': '123456',
+            'romeId': 'A1234',
+            'cityId': '31555',
+            'departementId': '31',
+            'regionId': '76',
+        }
+
         response = self.app.post(
-            '/api/project/compute-categories', data='{}', content_type='application/json')
-        self.assertEqual(422, response.status_code)
-
-    def test_categorize_project_missing_advice(self):
-        """Check the /api/project/compute-categories endpoint with a project without advice."""
-
-        self._db.advice_modules.insert_one({
-            'adviceId': 'one-ring',
-            'isReadyForProd': True,
-            'categories': ['three-stars'],
-            'triggerScoringModel': 'constant(1)',
-        })
-        response = self.app.post(
-            '/api/project/compute-categories',
-            data='{"projects": [{}]}', content_type='application/json')
-        self.assertEqual(422, response.status_code)
-
-    def test_categorize_advice_for_project(self):
-        """Check the /api/project/compute-categories endpoint."""
-
-        self._db.advice_modules.insert_one({
-            'adviceId': 'one-ring',
-            'isReadyForProd': True,
-            'categories': ['hidden-market'],
-            'triggerScoringModel': 'constant(1)',
-        })
-        response = self.app.post(
-            '/api/project/compute-categories',
-            data='{"projects": [{"advices": [{"adviceId": "one-ring", "numStars": 2}]}]}',
-            content_type='application/json')
-        advice_category = self.json_from_response(response)
-        self.assertEqual(
-            {'adviceCategories': [{'categoryId': 'hidden-market', 'adviceIds': ['one-ring']}]},
-            advice_category)
+            '/api/project/diagnose?source=quick-diagnostic',
+            data=json.dumps(user), content_type='application/json')
+        self.assertEqual(200, response.status_code)
+        logged_diagnostic = self._user_db.diagnostic_call.find_one()
+        logged_diagnostic.pop('_id')
+        self.assertTrue(logged_diagnostic.pop('diagnosedAt'))
+        self.assertEqual(expected, logged_diagnostic)
 
 
 class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the requirements endpoints."""
 
-    def test_unknown_job_group(self):
+    def test_unknown_job_group(self) -> None:
         """Test with an uknown job group."""
 
         response = self.app.get('/api/job/requirements/UNKNOWN_JOB_GROUP')
         self.assertEqual(200, response.status_code)
         self.assertEqual('{}', response.get_data(as_text=True))
 
-    def test_job_requirements(self):
+    def test_job_requirements(self) -> None:
         """Test the endpoint using only the job group ID."""
 
         response = self.app.get('/api/job/requirements/A1234')
         requirements = self.json_from_response(response)
-        self.assertEqual(set(['skills', 'diplomas', 'extras']), set(requirements))
+        self.assertEqual(set(['diplomas', 'extras']), set(requirements))
         # Point check.
-        self.assertEqual('1235', requirements['skills'][1]['skill']['skillId'])
+        self.assertEqual('bar', requirements['diplomas'][0]['name'])
 
 
 class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
     """Unit tests for the /advice/tips endpoint."""
 
-    def setUp(self):  # pylint: disable=invalid-name,missing-docstring
+    def setUp(self) -> None:
         super(ProjectAdviceTipsTestCase, self).setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'other-work-env',
@@ -324,6 +327,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
                 '_id': 'tip1',
                 'actionTemplateId': 'tip1',
                 'title': 'First tip',
+                'title_feminine': 'First tip for women',
             },
             {
                 '_id': 'tip2',
@@ -344,21 +348,21 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             '/api/user', data=json.dumps(user_info), content_type='application/json',
             headers={'Authorization': 'Bearer ' + self.auth_token}))
 
-    def test_bad_project_id(self):
+    def test_bad_project_id(self) -> None:
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/project/{}/foo/advice/other-work-env/tips'.format(self.user_id),
+            '/api/advice/tips/other-work-env/{}/foo'.format(self.user_id),
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
         self.assertIn('Projet &quot;foo&quot; inconnu.', response.get_data(as_text=True))
 
-    def test_bad_advice_id(self):
+    def test_bad_advice_id(self) -> None:
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/project/{}/{}/advice/unknown-advice/tips'.format(self.user_id, self.project_id),
+            '/api/advice/tips/unknown-advice/{}/{}'.format(self.user_id, self.project_id),
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -366,19 +370,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             'Conseil &quot;unknown-advice&quot; inconnu.',
             response.get_data(as_text=True))
 
-    def test_get_tips_old_route(self):
-        """Test getting tips using the old route."""
-
-        response = self.app.get(
-            '/api/project/{}/{}/advice/other-work-env/tips'.format(self.user_id, self.project_id),
-            headers={'Authorization': 'Bearer ' + self.auth_token})
-        advice_tips = self.json_from_response(response)
-
-        self.assertEqual(
-            ['First tip', 'Second tip'],
-            [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
-
-    def test_get_tips(self):
+    def test_get_tips(self) -> None:
         """Test getting tips."""
 
         response = self.app.get(
@@ -390,27 +382,68 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             ['First tip', 'Second tip'],
             [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
 
+    def test_translated_tips(self) -> None:
+        """Test getting translated tips."""
+
+        self._db.translations.insert_one({
+            'string': 'First tip',
+            'fr_FR@tu': 'Premier tip',
+        })
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        user_info['profile']['canTutoie'] = True
+        self.json_from_response(self.app.post(
+            '/api/user', data=json.dumps(user_info), content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token}))
+
+        response = self.app.get(
+            '/api/advice/tips/other-work-env/{}/{}'.format(self.user_id, self.project_id),
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        advice_tips = self.json_from_response(response)
+
+        self.assertEqual(
+            ['Premier tip', 'Second tip'],
+            [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
+
+    def test_feminine_tips(self) -> None:
+        """Test getting genderized tips."""
+
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        user_info['profile']['gender'] = 'FEMININE'
+        self.json_from_response(self.app.post(
+            '/api/user', data=json.dumps(user_info), content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token}))
+
+        response = self.app.get(
+            '/api/advice/tips/other-work-env/{}/{}'.format(self.user_id, self.project_id),
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        advice_tips = self.json_from_response(response)
+
+        self.assertEqual(
+            ['First tip for women', 'Second tip'],
+            [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
+        self.assertFalse(any([t.get('titleFeminine') for t in advice_tips.get('tips', [])]))
+
 
 class CacheClearEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the cache/clear endpoint."""
 
-    def _get_requirements(self, job_group_id):
+    def _get_requirements(self, job_group_id: str) -> typing.List[str]:
         response = self.app.get('/api/job/requirements/{}'.format(job_group_id))
         requirements = json.loads(response.get_data(as_text=True))
-        return [s['skill']['skillId'] for s in requirements['skills']]
+        return [d['name'] for d in requirements['diplomas']]
 
-    def _update_job_group_db(self, data):
+    def _update_job_group_db(self, data: typing.List[typing.Dict[str, typing.Any]]) -> None:
         self._db.job_group_info.drop()
         self._db.job_group_info.insert_many(data)
 
-    def test_mongo_db_updated(self):
+    def test_mongo_db_updated(self) -> None:
         """Test access to project/requirements after a MongoDB update."""
 
         self._update_job_group_db([{
             '_id': 'A1234',
-            'requirements': {'skills': [
-                {'skill': {'skillId': '1234'}},
-                {'skill': {'skillId': '1235'}},
+            'requirements': {'diplomas': [
+                {'name': '1234'},
+                {'name': '1235'},
             ]},
         }])
         self.assertEqual(['1234', '1235'], self._get_requirements('A1234'))
@@ -418,7 +451,7 @@ class CacheClearEndpointTestCase(base_test.ServerTestCase):
         # Update DB with new data.
         self._update_job_group_db([{
             '_id': 'A1234',
-            'requirements': {'skills': [{'skill': {'skillId': '6789'}}]},
+            'requirements': {'diplomas': [{'name': '6789'}]},
         }])
 
         # DB content is cached, no change.
@@ -433,134 +466,11 @@ class CacheClearEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(['6789'], self._get_requirements('A1234'))
 
 
-class CreateDashboardExportTestCase(base_test.ServerTestCase):
-    """Unit test for create_dashboard_export endpoint."""
-
-    def setUp(self):  # pylint: disable=invalid-name,missing-docstring
-        super(CreateDashboardExportTestCase, self).setUp()
-        self._db.chantiers.drop()
-        self._db.chantiers.insert_many([
-            {
-                '_id': 'c1',
-                'chantierId': 'c1',
-                'title': 'Chantier 1',
-            },
-            {
-                '_id': 'c2',
-                'chantierId': 'c2',
-                'title': 'Chantier 2',
-            }
-        ])
-
-    def test_user_id_missing(self):
-        """Test misssing ID."""
-
-        response = self.app.post('/api/dashboard-export/open/.')
-        self.assertEqual(401, response.status_code)
-
-    def test_create_export(self):
-        """Standard usage.
-
-        The time from the objectId is random, so it might sometimes happen that
-        it is close to the current time, but with a low probability.
-        """
-
-        user_id, auth_token = self.create_user_with_token([
-            base_test.add_project,
-            base_test.add_project,
-            _add_chantier(0, 'c1'),
-            _add_chantier(1, 'c2'),
-        ])
-        before = datetime.datetime.now()
-        response = self.app.post(
-            '/api/dashboard-export/open/{}'.format(user_id),
-            headers={'Authorization': 'Bearer ' + auth_token})
-        after = datetime.datetime.now() + datetime.timedelta(seconds=1)
-        self.assertEqual(302, response.status_code)
-        self.assertRegex(
-            response.location,
-            r'^http://localhost/historique-des-actions/[a-f0-9]+$')
-        dashboard_export_id = re.sub(r'^.*/', '', response.location)
-
-        dashboard_export = self._user_db.dashboard_exports.find_one({
-            '_id': mongomock.ObjectId(dashboard_export_id)})
-        self.assertGreaterEqual(
-            dashboard_export['createdAt'], before.isoformat(), msg=dashboard_export)
-        self.assertLessEqual(dashboard_export['createdAt'], after.isoformat(), msg=dashboard_export)
-        stored_user_info = self.user_info_from_db(user_id)
-        self.assertEqual(stored_user_info['projects'], dashboard_export['projects'])
-        self.assertEqual(
-            set(['Chantier 1', 'Chantier 2']),
-            set([c['title'] for c in dashboard_export['chantiers'].values()]))
-        export_object_id = objectid.ObjectId(dashboard_export_id)
-        id_generation_time = export_object_id.generation_time.replace(tzinfo=None)
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
-        self.assertTrue(id_generation_time < yesterday or id_generation_time > tomorrow)
-
-    def test_create_export_missing_chantier(self):
-        """Standard usage."""
-
-        user_id, auth_token = self.create_user_with_token([
-            base_test.add_project,
-            _add_chantier(0, 'unknown-chantier-id'),
-            _add_chantier(0, 'c1'),
-        ])
-        response = self.app.post(
-            '/api/dashboard-export/open/{}'.format(user_id),
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertRegex(
-            response.location,
-            r'^http://localhost/historique-des-actions/[a-f0-9]+$')
-        dashboard_export_id = re.sub(r'^.*/', '', response.location)
-
-        dashboard_export = self._user_db.dashboard_exports.find_one({
-            '_id': mongomock.ObjectId(dashboard_export_id)})
-        stored_user_info = self.user_info_from_db(user_id)
-        self.assertEqual(stored_user_info['projects'], dashboard_export['projects'])
-        self.assertEqual(
-            set(['Chantier 1']),
-            set([c['title'] for c in dashboard_export['chantiers'].values()]))
-
-    def test_retrieve_export_missing_id(self):
-        """Test to get a 404 when ID does not exist."""
-
-        not_existing_id = '580f4f8ac9b89b00072ec1ca'
-        response = self.app.get(
-            '/api/dashboard-export/{}'.format(not_existing_id), content_type='application/json')
-        self.assertEqual(404, response.status_code)
-
-    def test_retrieve_export_bad_id(self):
-        """Test to get a 4xx error when ID is not well formatted."""
-
-        not_existing_id = 'abc'
-        response = self.app.get(
-            '/api/dashboard-export/{}'.format(not_existing_id), content_type='application/json')
-        self.assertEqual(400, response.status_code)
-
-    def test_open_export(self):
-        """Test basic usage of the endpoint to create and open a dashboard export."""
-
-        user_id, auth_token = self.create_user_with_token([
-            base_test.add_project,
-            base_test.add_project,
-            _add_chantier(0, 'c1'),
-            _add_chantier(1, 'c2'),
-        ])
-        creation_response = self.app.post(
-            '/api/dashboard-export/open/{}'.format(user_id),
-            headers={'Authorization': 'Bearer ' + auth_token})
-        self.assertEqual(302, creation_response.status_code)
-        self.assertRegex(
-            creation_response.location,
-            r'^http://localhost/historique-des-actions/[a-f0-9]+$')
-
-
 @mailjetmock.patch()
 class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the user/migrate-to-advisor endpoint."""
 
-    def setUp(self):  # pylint: disable=invalid-name,missing-docstring
+    def setUp(self) -> None:
         super(MigrateAdvisorEndpointTestCase, self).setUp()
         self._db.advice_modules.insert_many([
             {
@@ -571,7 +481,7 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         ])
         server.clear_cache()
 
-    def test_migrate_user(self):
+    def test_migrate_user(self) -> None:
         """Test a simple user migration."""
 
         user_id, auth_token = self.create_user_with_token([base_test.add_project], advisor=False)
@@ -586,7 +496,7 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
         self.assertTrue(user_info['projects'][0].get('advices'))
 
-    def test_migrate_user_already_in_advisor(self):
+    def test_migrate_user_already_in_advisor(self) -> None:
         """Test a user migration for a user already in advisor."""
 
         user_id, auth_token = self.create_user_with_token(advisor=True)
@@ -600,7 +510,7 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         self.assertFalse(user_info.get('featuresEnabled', {}).get('advisorEmail'))
         self.assertFalse(user_info.get('featuresEnabled', {}).get('switchedFromMashupToAdvisor'))
 
-    def test_migrate_user_multiple_projects(self):
+    def test_migrate_user_multiple_projects(self) -> None:
         """Test a migration for a user with multiple projects."""
 
         user_id, auth_token = self.create_user_with_token(
@@ -620,13 +530,13 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
 class JobsEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the jobs endpoint."""
 
-    def test_unknown_job_group(self):
+    def test_unknown_job_group(self) -> None:
         """Get jobs for unknown job group."""
 
         response = self.app.get('/api/jobs/Z1234')
         self.assertEqual(404, response.status_code)
 
-    def test_job_group(self):
+    def test_job_group(self) -> None:
         """Get all jobs info for a job group."""
 
         self._db.job_group_info.insert_one({
@@ -662,7 +572,7 @@ class JobsEndpointTestCase(base_test.ServerTestCase):
 class EmploymentStatusTestCase(base_test.ServerTestCase):
     """Unit tests for employment-status endpoints."""
 
-    def test_employment_status(self):
+    def test_employment_status(self) -> None:
         """Test expected use case of employment-survey endpoints."""
 
         user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
@@ -699,7 +609,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         # check other fields have not been lost.
         self.assertEqual(user['profile']['email'], 'foo@bar.com')
 
-    def test_employment_status_stop_seeking(self):
+    def test_employment_status_stop_seeking(self) -> None:
         """Test expected use case of employment-survey when user click on stop seeking."""
 
         user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
@@ -714,7 +624,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         user = self.get_user_info(user_id, auth_token)
         self.assertEqual(user['employmentStatus'][0]['seeking'], 'STOP_SEEKING')
 
-    def test_employment_status_seeking_string(self):
+    def test_employment_status_seeking_string(self) -> None:
         """Test passing seeking parameter as string."""
 
         user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
@@ -729,7 +639,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         user = self.get_user_info(user_id, auth_token)
         self.assertEqual(user['employmentStatus'][0]['seeking'], 'STOP_SEEKING')
 
-    def test_employment_status_seeking_wrong_string(self):
+    def test_employment_status_seeking_wrong_string(self) -> None:
         """Test passing seeking parameter as string."""
 
         user_id = self.create_user(email='foo@bar.com')
@@ -742,7 +652,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         })
         self.assertEqual(422, response.status_code)
 
-    def test_missing_parameters(self):
+    def test_missing_parameters(self) -> None:
         """EmploymentSurvey endpoint expect user and token parameters"""
 
         user_id = self.create_user(email='foo@bar.com')
@@ -758,7 +668,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         })
         self.assertEqual(422, response.status_code)
 
-    def test_employment_status_invalid_token(self):
+    def test_employment_status_invalid_token(self) -> None:
         """EmploymentSurvey endpoint should fail if called with an invalid token."""
 
         user_id = self.create_user(email='foo@bar.com')
@@ -770,7 +680,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         })
         self.assertEqual(403, response.status_code)
 
-    def test_update_employment_status(self):
+    def test_update_employment_status(self) -> None:
         """Update the employment status through the POST endpoint."""
 
         user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
@@ -785,7 +695,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         user = self.get_user_info(user_id, auth_token)
         self.assertEqual(['STILL_SEEKING'], [s.get('seeking') for s in user['employmentStatus']])
 
-    def test_update_existing_employment_status(self):
+    def test_update_existing_employment_status(self) -> None:
         """Update an existing employment status through the POST endpoint."""
 
         user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
@@ -809,7 +719,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
             [s.get('seeking') for s in user.get('employmentStatus', [])])
 
     @mock.patch(server.now.__name__ + '.get')
-    def test_update_create_new_employment_status(self, mock_now):
+    def test_update_create_new_employment_status(self, mock_now: mock.MagicMock) -> None:
         """Create a new employment status when update is a day later."""
 
         mock_now.return_value = datetime.datetime.now()
@@ -835,7 +745,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
             ['STOP_SEEKING', 'STILL_SEEKING'],
             [s.get('seeking') for s in user.get('employmentStatus', [])])
 
-    def test_convert_user_proto(self):
+    def test_convert_user_proto(self) -> None:
         """Converts a proto of a user with advice selection from JSON to compressed format."""
 
         response = self.app.post(
@@ -861,4 +771,4 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

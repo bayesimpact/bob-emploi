@@ -25,6 +25,9 @@ Nomenclature in this module:
 """
 
 import re
+import typing
+
+import pandas as pd
 
 # This variable is a {postfix: [word_endings]} dictionary of lists
 # describing how a postfix is supposed to transform a word based on its
@@ -67,7 +70,7 @@ _KNOWN_GENDERIZATION = frozenset([
 _SLASH_PLACEHOLDER_CHARS = '##'
 
 
-def _substitute_postfix(word, postfix):
+def _substitute_postfix(word: str, postfix: str) -> str:
     """Given a word and a postfix, return the transformed word.
 
     Perform the correct postfix substitution from a masculine word to a
@@ -109,7 +112,7 @@ def _substitute_postfix(word, postfix):
     raise ValueError(error_string)
 
 
-def _extract_bracket_notation(raw_job_name):
+def _extract_bracket_notation(raw_job_name: str) -> typing.Optional[typing.Tuple[str, str]]:
     """Parse a genderized string in the bracket notation.
 
     Extract the genderized strings from a job title with the bracket notation,
@@ -157,7 +160,7 @@ def _extract_bracket_notation(raw_job_name):
     return masculine_name, feminine_name
 
 
-def _expand_qualifiers(left_string, right_string, n_comparison_chars=3):
+def _expand_qualifiers(left_string: str, right_string: str) -> typing.Tuple[str, str]:
     """Distribute qualifiers from the left side to the right and vice-versa.
 
     When a proposition is gendered in the slash format (e.g. "Senior
@@ -184,9 +187,6 @@ def _expand_qualifiers(left_string, right_string, n_comparison_chars=3):
             (ie. the part before the slash) for a phrase in the slash notation.
         right_string: A string representing the left side of the proposition
             (ie. the part after the slash) for a phrase in the slash notation.
-        n_comparison_chars: An int indicating how many first characters must
-            be shared between a word on the right and on the left before we
-            consider it is part of the same root.
 
     Return:
         A pair of strings, representing the left_string and right_string passed
@@ -208,7 +208,7 @@ def _expand_qualifiers(left_string, right_string, n_comparison_chars=3):
     # genderization usually only changes the word ending.
     to_insert = []
     for word in left_words:
-        if word[:n_comparison_chars] == right_words[0][:n_comparison_chars]:
+        if word[:3] == right_words[0][:3]:
             break
         if (word.lower(), right_words[0].lower()) in _KNOWN_GENDERIZATION:
             break
@@ -230,7 +230,7 @@ def _expand_qualifiers(left_string, right_string, n_comparison_chars=3):
     return expanded_left_string, expanded_right_string
 
 
-def _extract_slash_notation(raw_job_name):
+def _extract_slash_notation(raw_job_name: str) -> typing.Optional[typing.Tuple[str, str]]:
     """Parse a genderized string in the slash notation.
 
     Extract the genderized strings from a job title with the slash notation,
@@ -295,7 +295,7 @@ def _extract_slash_notation(raw_job_name):
     return masculine_name, feminine_name
 
 
-def genderize(raw_job_names):
+def genderize(raw_job_names: pd.Series) -> typing.Tuple[pd.Series, pd.Series]:
     """Normalize the genderization of a dataframe of ROME job titles.
 
     Take a pandas Series of the raw job titles as present in the ROME and

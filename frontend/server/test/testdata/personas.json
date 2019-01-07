@@ -20,7 +20,7 @@
       "workloads": ["FULL_TIME"],
       "projectId": "57e92a5e-f35b",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "employmentTypes": ["CDI", "INTERIM"],
       "networkEstimate": 3,
       "totalInterviewCount": -1,
@@ -40,17 +40,16 @@
       "title": "Trouver un emploi d'assistante de direction autour de Lyon",
       "createdAt": "2016-09-26T14:02:06.228413Z",
       "previousJobSimilarity": "DONE_SIMILAR",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "name": "Lyon",
-          "regionName": "Auvergne-Rhône-Alpes",
-          "departementName": "Rhône",
-          "departementId": "69",
-          "cityId": "69123",
-          "regionId": "84",
-          "population": 484344
-        }
+      "areaType": "CITY",
+      "city": {
+        "name": "Lyon",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Rhône",
+        "departementId": "69",
+        "cityId": "69123",
+        "regionId": "84",
+        "urbanScore": -1,
+        "population": 484344
       },
       "diagnostic": {
         "overallScore": 99,
@@ -93,11 +92,11 @@
       "lbbIntegration": "ACTIVE"
     },
     "project": {
-      "kind": "FIND_A_FIRST_JOB",
+      "kind": "CREATE_OR_TAKE_OVER_COMPANY",
       "workloads": ["FULL_TIME"],
       "projectId": "57e92ce5-3153",
       "jobSearchLengthMonths": 24,
-      "job_search_started_at": "2014-09-25T14:12:52.717220Z",
+      "jobSearchStartedAt": "2014-09-25T14:12:52.717220Z",
       "employmentTypes": ["CDI"],
       "networkEstimate": 1,
       "weeklyOffersEstimate": "A_LOT",
@@ -119,16 +118,15 @@
       "createdAt": "2016-09-26T14:12:52.717220Z",
       "passionateLevel": "LIFE_GOAL_JOB",
       "previousJobSimilarity": "DONE_THIS",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "name": "Toulouse",
-          "regionName": "Occitanie",
-          "departementName": "Rhône",
-          "departementId": "31",
-          "cityId": "31555",
-          "regionId": "85"
-        }
+      "areaType": "REGION",
+      "city": {
+        "name": "Toulouse",
+        "regionName": "Occitanie",
+        "departementName": "Rhône",
+        "departementId": "31",
+        "cityId": "31555",
+        "regionId": "85",
+        "urbanScore": -1
       }
     }
   },
@@ -150,7 +148,7 @@
       "workloads": ["FULL_TIME"],
       "projectId": "57e92ce5-3153",
       "jobSearchLengthMonths": 24,
-      "job_search_started_at": "2014-09-25T14:12:52.717220Z",
+      "jobSearchStartedAt": "2014-09-25T14:12:52.717220Z",
       "employmentTypes": ["CDI"],
       "networkEstimate": 1,
       "weeklyOffersEstimate": "A_LOT",
@@ -172,16 +170,14 @@
       "createdAt": "2016-09-26T14:12:52.717220Z",
       "passionateLevel": "LIFE_GOAL_JOB",
       "previousJobSimilarity": "DONE_THIS",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "name": "Toulouse",
-          "regionName": "Occitanie",
-          "departementName": "Rhône",
-          "departementId": "31",
-          "cityId": "31555",
-          "regionId": "85"
-        }
+      "areaType": "REGION",
+      "city": {
+        "name": "Toulouse",
+        "regionName": "Occitanie",
+        "departementName": "Rhône",
+        "departementId": "31",
+        "cityId": "31555",
+        "regionId": "85"
       }
     }
   },
@@ -196,7 +192,7 @@
     },
     "project": {
       "jobSearchLengthMonths": 3,
-      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-06-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
       "workloads": ["FULL_TIME"],
       "projectId": "57e92dc0-d824",
@@ -218,17 +214,15 @@
       "title": "Trouver un emploi de boucher autour de Bourg-en-Bresse",
       "createdAt": "2016-09-26T14:16:32.199172Z",
       "previousJobSimilarity": "NEVER_DONE",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "name": "Bourg-en-Bresse",
-          "regionName": "Auvergne-Rhône-Alpes",
-          "departementName": "Ain",
-          "departementId": "01",
-          "cityId": "01053",
-          "regionId": "84",
-          "population": 39882
-        }
+      "areaType": "CITY",
+      "city": {
+        "name": "Bourg-en-Bresse",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Ain",
+        "departementId": "01",
+        "cityId": "01053",
+        "regionId": "84",
+        "population": 39882
       },
       "diagnostic": {
         "overallScore": 60,
@@ -264,8 +258,9 @@
       "name": "Persisteuse",
       "situation": "LOST_QUIT",
       "yearOfBirth": 1964,
-      "hasCarDrivingLicense": "FALSE",
+      "hasCarDrivingLicense": "TRUE",
       "frustrations": ["NO_OFFERS", "TIME_MANAGEMENT", "INTERVIEW"],
+      "customFrustrations": ["le salaire", "discrimiation sur mon accent"],
       "gender": "FEMININE"
     },
     "featuresEnabled": {
@@ -281,7 +276,7 @@
       "weeklyOffersEstimate": "SOME",
       "weeklyApplicationsEstimate": "SOME",
       "jobSearchLengthMonths": 18,
-      "job_search_started_at": "2015-02-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2015-02-25T07:54:02.514215Z",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "jobGroup": {
@@ -297,18 +292,16 @@
       "title": "Trouver un emploi de responsable marketing autour de Lyon",
       "createdAt": "2016-09-26T14:23:39.352518Z",
       "previousJobSimilarity": "DONE_THIS",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "name": "Lyon",
-          "regionName": "Auvergne-Rhône-Alpes",
-          "departementName": "Rhône",
-          "departementId": "69",
-          "cityId": "69123",
-          "regionId": "84",
-          "population": 484344,
-          "urbanScore": 5
-        }
+      "areaType": "CITY",
+      "city": {
+        "name": "Lyon",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Rhône",
+        "departementId": "69",
+        "cityId": "69123",
+        "regionId": "84",
+        "population": 484344,
+        "urbanScore": 5
       },
       "diagnostic": {
         "overallScore": 60,
@@ -361,7 +354,7 @@
       "weeklyOffersEstimate": "SOME",
       "weeklyApplicationsEstimate": "SOME",
       "jobSearchLengthMonths": 18,
-      "job_search_started_at": "2015-02-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2015-02-25T07:54:02.514215Z",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "jobGroup": {
@@ -377,18 +370,16 @@
       "title": "Trouver un emploi de responsable marketing autour de Lyon",
       "createdAt": "2016-09-26T14:23:39.352518Z",
       "previousJobSimilarity": "DONE_THIS",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "name": "Lyon",
-          "regionName": "Auvergne-Rhône-Alpes",
-          "departementName": "Rhône",
-          "departementId": "69",
-          "cityId": "69123",
-          "regionId": "84",
-          "population": 484344,
-          "urbanScore": 5
-        }
+      "areaType": "CITY",
+      "city": {
+        "name": "Lyon",
+        "regionName": "Auvergne-Rhône-Alpes",
+        "departementName": "Rhône",
+        "departementId": "69",
+        "cityId": "69123",
+        "regionId": "84",
+        "population": 484344,
+        "urbanScore": 5
       },
       "diagnostic": {
         "overallScore": 60,
@@ -424,19 +415,17 @@
       "previousJobSimilarity": "DONE_THIS",
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 31000.0,
-      "job_search_has_not_started": true,
+      "jobSearchHasNotStarted": true,
       "trainingFulfillmentEstimate": "TRAINING_FULFILLMENT_NOT_SURE",
-      "mobility": {
-        "areaType": "WORLD",
-        "city": {
-          "cityId": "94011",
-          "departementId": "94",
-          "departementName": "Val-de-Marne",
-          "name": "Bonneuil-sur-Marne",
-          "regionId": "11",
-          "regionName": "Île-de-France",
-          "population": 16437
-        }
+      "areaType": "WORLD",
+      "city": {
+        "cityId": "94011",
+        "departementId": "94",
+        "departementName": "Val-de-Marne",
+        "name": "Bonneuil-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France",
+        "population": 16437
       },
       "networkEstimate": 3,
       "projectId": "57ecded3-b55b",
@@ -503,23 +492,21 @@
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 20000.0,
       "trainingFulfillmentEstimate": "CURRENTLY_IN_TRAINING",
-      "mobility": {
-        "areaType": "DEPARTEMENT",
-        "city": {
-          "cityId": "77337",
-          "departementId": "77",
-          "departementName": "Seine-et-Marne",
-          "name": "Noisiel",
-          "regionId": "11",
-          "regionName": "Île-de-France",
-          "population": 15429
-        }
+      "areaType": "DEPARTEMENT",
+      "city": {
+        "cityId": "77337",
+        "departementId": "77",
+        "departementName": "Seine-et-Marne",
+        "name": "Noisiel",
+        "regionId": "11",
+        "regionName": "Île-de-France",
+        "population": 15429
       },
       "networkEstimate": 2,
       "passionateLevel": "LIFE_GOAL_JOB",
       "projectId": "57ecc7dc-321cf",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "totalInterviewCount": 21,
       "status": "PROJECT_CURRENT",
       "targetJob": {
@@ -552,16 +539,14 @@
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 20000.0,
       "trainingFulfillmentEstimate": "CURRENTLY_IN_TRAINING",
-      "mobility": {
-        "areaType": "DEPARTEMENT",
-        "city": {
-          "cityId": "77337",
-          "departementId": "77",
-          "departementName": "Seine-et-Marne",
-          "name": "Noisiel",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "DEPARTEMENT",
+      "city": {
+        "cityId": "77337",
+        "departementId": "77",
+        "departementName": "Seine-et-Marne",
+        "name": "Noisiel",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 2,
       "projectId": "57ecc7dc-695a",
@@ -569,7 +554,7 @@
       "weeklyApplicationsEstimate": "SOME",
       "jobSearchLengthMonths": 2,
       "totalInterviewCount": -1,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "19364",
@@ -601,19 +586,17 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "regionId": "11",
-          "regionName": "Île-de-France",
-          "population": 2244000
-        }
+      "areaType": "CITY",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France",
+        "population": 2244000
       },
       "networkEstimate": 3,
       "projectId": "57ecc89b-16cf",
@@ -647,19 +630,17 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 1,
-      "job_search_started_at": "2016-08-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-08-25T07:54:02.514215Z",
       "totalInterviewCount": 1,
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "CITY",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 4,
       "projectId": "57ed175d-215a",
@@ -691,20 +672,18 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "NEVER_DONE",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 35000.0,
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "publicTransportationScore": 3,
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "publicTransportationScore": 3,
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 3,
       "projectId": "57ecc916-88b8",
@@ -739,18 +718,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_SIMILAR",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 4,
       "projectId": "57ecddf8-30ab",
@@ -783,16 +760,14 @@
       "previousJobSimilarity": "DONE_THIS",
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 20000.0,
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "77468",
-          "departementId": "77",
-          "departementName": "Seine-et-Marne",
-          "name": "Torcy",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "77468",
+        "departementId": "77",
+        "departementName": "Seine-et-Marne",
+        "name": "Torcy",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 4,
       "projectId": "57eccc48-f767",
@@ -826,23 +801,21 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 1400.0,
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "CITY",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 4,
       "projectId": "57ece21e-5850",
-      "seniority": "INTERNSHIP",
+      "seniority": "INTERN",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "20613",
@@ -872,18 +845,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2013-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2013-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "CITY",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 2,
       "projectId": "57ecc9a7-5f0a",
@@ -918,18 +889,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
       "totalInterviewCount": -1,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "REORIENTATION",
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "CITY",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 1,
       "projectId": "57ece175-df63",
@@ -963,18 +932,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "REORIENTATION",
-      "mobility": {
-        "areaType": "DEPARTEMENT",
-        "city": {
-          "cityId": "94028",
-          "departementId": "94",
-          "departementName": "Val-de-Marne",
-          "name": "Créteil",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "DEPARTEMENT",
+      "city": {
+        "cityId": "94028",
+        "departementId": "94",
+        "departementName": "Val-de-Marne",
+        "name": "Créteil",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 4,
       "projectId": "57ecc950-a9a1",
@@ -997,19 +964,17 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
       "minSalary": 40000.0,
-      "mobility": {
-        "areaType": "CITY",
-        "city": {
-          "cityId": "75056",
-          "departementId": "75",
-          "departementName": "Paris",
-          "name": "Paris",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "CITY",
+      "city": {
+        "cityId": "75056",
+        "departementId": "75",
+        "departementName": "Paris",
+        "name": "Paris",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 3,
       "projectId": "57eccbe9-22f1",
@@ -1043,18 +1008,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "93050",
-          "departementId": "93",
-          "departementName": "Seine-Saint-Denis",
-          "name": "Neuilly-sur-Marne",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "93050",
+        "departementId": "93",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
@@ -1088,18 +1051,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "93050",
-          "departementId": "93",
-          "departementName": "Seine-Saint-Denis",
-          "name": "Neuilly-sur-Marne",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "93050",
+        "departementId": "93",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
@@ -1133,18 +1094,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "93050",
-          "departementId": "93",
-          "departementName": "Seine-Saint-Denis",
-          "name": "Neuilly-sur-Marne",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "93050",
+        "departementId": "93",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
@@ -1177,18 +1136,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "93050",
-          "departementId": "15",
-          "departementName": "Seine-Saint-Denis",
-          "name": "Neuilly-sur-Marne",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "93050",
+        "departementId": "15",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
@@ -1221,18 +1178,16 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "93050",
-          "departementId": "14",
-          "departementName": "Seine-Saint-Denis",
-          "name": "Neuilly-sur-Marne",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "93050",
+        "departementId": "14",
+        "departementName": "Seine-Saint-Denis",
+        "name": "Neuilly-sur-Marne",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
@@ -1265,19 +1220,17 @@
       "employmentTypes": ["CDI"],
       "previousJobSimilarity": "DONE_THIS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "97416212321",
-          "name": "Saint-Pierre",
-          "departementId": "974",
-          "departementName": "La Réunion",
-          "regionId": "04",
-          "regionName": "La Réunion",
-          "postcodes": "97432"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "97416212321",
+        "name": "Saint-Pierre",
+        "departementId": "974",
+        "departementName": "La Réunion",
+        "regionId": "04",
+        "regionName": "La Réunion",
+        "postcodes": "97432"
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
@@ -1311,19 +1264,17 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "REGION",
-        "city": {
-          "cityId": "97416212321",
-          "name": "Saint-Pierre",
-          "departementId": "974",
-          "departementName": "La Réunion",
-          "regionId": "04",
-          "regionName": "La Réunion",
-          "postcodes": "97432"
-        }
+      "areaType": "REGION",
+      "city": {
+        "cityId": "97416212321",
+        "name": "Saint-Pierre",
+        "departementId": "974",
+        "departementName": "La Réunion",
+        "regionId": "04",
+        "regionName": "La Réunion",
+        "postcodes": "97432"
       },
       "networkEstimate": 3,
       "projectId": "57ecddb3-bfe8",
@@ -1358,19 +1309,17 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_DIPLOMAS",
       "jobSearchLengthMonths": 2,
-      "job_search_started_at": "2016-07-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-07-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "31555",
-          "name": "Toulouse",
-          "departementId": "31",
-          "departementName": "Haute-Garonne",
-          "regionId": "85",
-          "regionName": "Occitanie",
-          "postcodes": "31000"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "31555",
+        "name": "Toulouse",
+        "departementId": "31",
+        "departementName": "Haute-Garonne",
+        "regionId": "85",
+        "regionName": "Occitanie",
+        "postcodes": "31000"
       },
       "networkEstimate": 1,
       "projectId": "57ecddb3-bfe8",
@@ -1392,7 +1341,7 @@
       "highestDegree": "BAC_BACPRO",
       "email": "rxxxx@hotmail.fr",
       "gender": "MASCULINE",
-      "hasCarDrivingLicense": "FALSE",
+      "hasCarDrivingLicense": "TRUE",
       "name": "Chat Botté",
       "familySituation": "SINGLE",
       "yearOfBirth": 1999
@@ -1405,18 +1354,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 3,
-      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-06-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "77337",
-          "departementId": "77",
-          "departementName": "Seine-et-Marne",
-          "name": "Noisiel",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "77337",
+        "departementId": "77",
+        "departementName": "Seine-et-Marne",
+        "name": "Noisiel",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",
@@ -1476,18 +1423,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 3,
-      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-06-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "77337",
-          "departementId": "32",
-          "departementName": "Gers",
-          "name": "Lectoure",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "77337",
+        "departementId": "32",
+        "departementName": "Gers",
+        "name": "Lectoure",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",
@@ -1547,18 +1492,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 3,
-      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-06-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "77337",
-          "departementId": "59",
-          "departementName": "Nord",
-          "name": "Arras",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "77337",
+        "departementId": "59",
+        "departementName": "Nord",
+        "name": "Arras",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",
@@ -1618,18 +1561,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 3,
-      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-06-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "77337",
-          "departementId": "32",
-          "departementName": "Gers",
-          "name": "Lectoure",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "77337",
+        "departementId": "32",
+        "departementName": "Gers",
+        "name": "Lectoure",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",
@@ -1689,18 +1630,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 3,
-      "job_search_started_at": "2016-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2016-06-25T07:54:02.514215Z",
       "kind": "FIND_A_FIRST_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "77337",
-          "departementId": "59",
-          "departementName": "Nord",
-          "name": "Arras",
-          "regionId": "11",
-          "regionName": "Île-de-France"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "77337",
+        "departementId": "59",
+        "departementName": "Nord",
+        "name": "Arras",
+        "regionId": "11",
+        "regionName": "Île-de-France"
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",
@@ -1760,18 +1699,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 23,
-      "job_search_started_at": "2015-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2015-06-25T07:54:02.514215Z",
       "kind": "FIND_ANOTHER_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "45234",
-          "departementId": "45",
-          "departementName": "Loiret",
-          "name": "Orléans",
-          "regionId": "6",
-          "regionName": "Centre-Val de Loire"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "45234",
+        "departementId": "45",
+        "departementName": "Loiret",
+        "name": "Orléans",
+        "regionId": "6",
+        "regionName": "Centre-Val de Loire"
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",
@@ -1799,6 +1736,50 @@
       "yearOfBirth": 1985
     }
   },
+  "Jeanne d'Arc stay-at-home": {
+    "project": {
+      "createdAt": "2016-01-06T09:24:02.698094Z",
+      "employmentTypes": ["CDI"],
+      "previousJobSimilarity": "DONE_THIS",
+      "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
+      "jobSearchLengthMonths": 23,
+      "jobSearchStartedAt": "2015-06-25T07:54:02.514215Z",
+      "kind": "FIND_ANOTHER_JOB",
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "45234",
+        "departementId": "45",
+        "departementName": "Loiret",
+        "name": "Orléans",
+        "regionId": "6",
+        "regionName": "Centre-Val de Loire"
+      },
+      "networkEstimate": 2,
+      "projectId": "57ecddb3-bfe8",
+      "status": "PROJECT_CURRENT",
+      "targetJob": {
+        "codeOgr": "11564",
+        "feminineName": "Bouchère",
+        "jobGroup": {
+          "name": "Boucherie",
+          "romeId": "D1101"
+        },
+        "masculineName": "Boucher",
+        "name": "Boucher / Bouchère"
+      },
+      "title": "Trouver un emploi d'acheteur en Île-de-France",
+      "workloads": ["FULL_TIME", "PART_TIME"]
+    },
+    "user": {
+      "highestDegree": "CAP_BEP",
+      "email": "bxxxx@hotmail.fr",
+      "gender": "FEMININE",
+      "name": "Jeanne d'Arc",
+      "familySituation": "SINGLE",
+      "frustrations": ["NO_OFFERS", "STAY_AT_HOME_PARENT"],
+      "yearOfBirth": 1985
+    }
+  },
   "Jeanne d'Arc AVS": {
     "project": {
       "createdAt": "2016-01-06T09:24:02.698094Z",
@@ -1806,18 +1787,16 @@
       "previousJobSimilarity": "DONE_THIS",
       "trainingFulfillmentEstimate": "ENOUGH_EXPERIENCE",
       "jobSearchLengthMonths": 23,
-      "job_search_started_at": "2015-06-25T07:54:02.514215Z",
+      "jobSearchStartedAt": "2015-06-25T07:54:02.514215Z",
       "kind": "FIND_ANOTHER_JOB",
-      "mobility": {
-        "areaType": "COUNTRY",
-        "city": {
-          "cityId": "45234",
-          "departementId": "45",
-          "departementName": "Loiret",
-          "name": "Orléans",
-          "regionId": "6",
-          "regionName": "Centre-Val de Loire"
-        }
+      "areaType": "COUNTRY",
+      "city": {
+        "cityId": "45234",
+        "departementId": "45",
+        "departementName": "Loiret",
+        "name": "Orléans",
+        "regionId": "6",
+        "regionName": "Centre-Val de Loire"
       },
       "networkEstimate": 2,
       "projectId": "57ecddb3-bfe8",

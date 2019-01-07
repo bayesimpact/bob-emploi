@@ -74,4 +74,4 @@ def _get_random_missions_picker(num_missions):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(get_missions_dicts, 'volunteering_missions')  # pragma: no-cover
+    mongo.importer_main(get_missions_dicts, 'volunteering_missions')

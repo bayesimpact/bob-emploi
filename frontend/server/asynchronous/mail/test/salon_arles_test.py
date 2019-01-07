@@ -12,16 +12,16 @@ class SalonArlesTestCase(mail_blast_test.CampaignTestBase):
 
     campaign_id = 'salon-arles'
 
-    def test_local(self):
+    def test_local(self) -> None:
         """Test user is a local from Arles, not willing to move."""
 
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.project.target_job.job_group.rome_id = 'G1204'
-        self.project.mobility.area_type = geo_pb2.CITY
-        self.project.mobility.city.city_id = '13004'
-        self.project.mobility.city.departement_id = '13'
-        self.project.mobility.city.region_id = '93'
+        self.project.area_type = geo_pb2.CITY
+        self.project.city.city_id = '13004'
+        self.project.city.departement_id = '13'
+        self.project.city.region_id = '93'
 
         self._assert_user_receives_campaign()
 
@@ -33,29 +33,29 @@ class SalonArlesTestCase(mail_blast_test.CampaignTestBase):
             'isLocal': 'True',
         })
 
-    def test_local_wrong_job_group(self):
+    def test_local_wrong_job_group(self) -> None:
         """Test user is a local from Arles but not in the right job group."""
 
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.project.target_job.job_group.rome_id = 'A1204'
-        self.project.mobility.area_type = geo_pb2.CITY
-        self.project.mobility.city.city_id = '13004'
-        self.project.mobility.city.departement_id = '13'
-        self.project.mobility.city.region_id = '93'
+        self.project.area_type = geo_pb2.CITY
+        self.project.city.city_id = '13004'
+        self.project.city.departement_id = '13'
+        self.project.city.region_id = '93'
 
         self._assert_user_receives_campaign(should_be_sent=False)
 
-    def test_ready_to_move(self):
+    def test_ready_to_move(self) -> None:
         """Test user is ready to move."""
 
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.project.target_job.job_group.rome_id = 'G1204'
-        self.project.mobility.area_type = geo_pb2.COUNTRY
-        self.project.mobility.city.city_id = '69123'
-        self.project.mobility.city.departement_id = '69'
-        self.project.mobility.city.region_id = '84'
+        self.project.area_type = geo_pb2.COUNTRY
+        self.project.city.city_id = '69123'
+        self.project.city.departement_id = '69'
+        self.project.city.region_id = '84'
 
         self._assert_user_receives_campaign()
 
@@ -67,19 +67,19 @@ class SalonArlesTestCase(mail_blast_test.CampaignTestBase):
             'isLocal': '',
         })
 
-    def test_not_ready_to_move(self):
+    def test_not_ready_to_move(self) -> None:
         """Test user is not ready to move."""
 
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.project.target_job.job_group.rome_id = 'G1204'
-        self.project.mobility.area_type = geo_pb2.REGION
-        self.project.mobility.city.city_id = '69123'
-        self.project.mobility.city.departement_id = '69'
-        self.project.mobility.city.region_id = '84'
+        self.project.area_type = geo_pb2.REGION
+        self.project.city.city_id = '69123'
+        self.project.city.departement_id = '69'
+        self.project.city.region_id = '84'
 
         self._assert_user_receives_campaign(should_be_sent=False)
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

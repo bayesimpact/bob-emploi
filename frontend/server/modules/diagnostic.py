@@ -1,6 +1,8 @@
 """Module to score a user project according to different metrics."""
 
+import logging
 import re
+import typing
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import diagnostic_pb2
@@ -16,8 +18,9 @@ _ESTIMATE_OPTION_TO_NUMBER = {
 }
 
 
-def _interpolate_points(var, point_list):
-    total = 0
+def _interpolate_points(var: float, point_list: typing.Iterable[typing.Tuple[float, float]]) \
+        -> float:
+    total = 0.
     for abscissa, ordinate in point_list:
         if not ordinate:
             continue
@@ -33,14 +36,12 @@ def _interpolate_points(var, point_list):
 class _SearchLengthScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the length of the search."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> float:
         """Compute a score for the given ScoringProject."""
 
-        if project.details.job_search_has_not_started:
-            raise scoring_base.NotEnoughDataException()
-        if not project.details.HasField('job_search_started_at'):
-            raise scoring_base.NotEnoughDataException()
         search_since_nb_months = project.get_search_length_at_creation()
+        if search_since_nb_months < 0:
+            raise scoring_base.NotEnoughDataException()
         if search_since_nb_months > 12:
             return 0
         return _interpolate_points(search_since_nb_months, [(0, 100), (3, 50), (6, 30), (12, 0)])
@@ -49,18 +50,16 @@ class _SearchLengthScoringModel(scoring_base.ModelHundredBase):
 class _InterviewRateScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the ability of the user to get interviews."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> float:
         """Compute a score for the given ScoringProject."""
 
-        if project.details.job_search_has_not_started:
-            raise scoring_base.NotEnoughDataException()
         if project.details.weekly_applications_estimate == project_pb2.LESS_THAN_2:
             raise scoring_base.NotEnoughDataException()
         if project.details.total_interview_count < 0:
             raise scoring_base.NotEnoughDataException()
-        if not project.details.HasField('job_search_started_at'):
-            raise scoring_base.NotEnoughDataException()
         search_since_nb_months = project.get_search_length_at_creation()
+        if search_since_nb_months < 0:
+            raise scoring_base.NotEnoughDataException()
         interviews_per_month = project.details.total_interview_count / search_since_nb_months
         return interviews_per_month * 15
 
@@ -70,7 +69,7 @@ class _TooManyInterviewsScoringModel(scoring_base.ModelHundredBase):
     This probably means they don't know how to convince the recruiters.
     """
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a score for the given ScoringProject."""
 
         if project.details.total_interview_count < 10:
@@ -83,13 +82,19 @@ class _TooManyInterviewsScoringModel(scoring_base.ModelHundredBase):
 class _TooManyApplicationsScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the fact that user makes too many applications."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a score for the given ScoringProject."""
 
         if project.details.job_search_has_not_started:
             raise scoring_base.NotEnoughDataException()
-        nb_applications = _ESTIMATE_OPTION_TO_NUMBER.get(
-            project.details.weekly_applications_estimate)
+        try:
+            nb_applications = _ESTIMATE_OPTION_TO_NUMBER[
+                project.details.weekly_applications_estimate]
+        except KeyError:
+            logging.error(
+                '_ESTIMATE_OPTION_TO_NUMBER should have all keys from '
+                'project_pb2.NumberOfferEstimateOption')
+            raise scoring_base.NotEnoughDataException()
         if nb_applications <= 5:
             # This is just to ensure that too many applications get sanctionned,
             # we don't look at what happens below.
@@ -100,13 +105,12 @@ class _TooManyApplicationsScoringModel(scoring_base.ModelHundredBase):
 class _TooFewApplicationsScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the ability of the user to apply to offers."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a score for the given ScoringProject."""
 
         if project.details.job_search_has_not_started:
             raise scoring_base.NotEnoughDataException()
-        nb_applications = _ESTIMATE_OPTION_TO_NUMBER.get(
-            project.details.weekly_applications_estimate)
+        nb_applications = _ESTIMATE_OPTION_TO_NUMBER[project.details.weekly_applications_estimate]
         if nb_applications == 0 or nb_applications > 5:
             raise scoring_base.NotEnoughDataException()
         # rescale: 0 -> 0, 5 -> 100
@@ -116,12 +120,9 @@ class _TooFewApplicationsScoringModel(scoring_base.ModelHundredBase):
 class _TrainingFullfillmentScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the training fullfillment the user has."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a percentage score for the given ScoringProject."""
 
-        if (project.details.training_fulfillment_estimate ==
-                project_pb2.UNKNOWN_TRAINING_FULFILLMENT):
-            raise scoring_base.NotEnoughDataException()
         if (project.details.training_fulfillment_estimate ==
                 project_pb2.TRAINING_FULFILLMENT_NOT_SURE):
             return 0
@@ -131,12 +132,13 @@ class _TrainingFullfillmentScoringModel(scoring_base.ModelHundredBase):
             return 100
         if project.details.training_fulfillment_estimate == project_pb2.CURRENTLY_IN_TRAINING:
             return 50
+        raise scoring_base.NotEnoughDataException()
 
 
 class _RequiredDiplomasScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the necessity for required diplomas."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         # Only score if user is not sure about this.
         if (project.details.training_fulfillment_estimate is not
                 project_pb2.TRAINING_FULFILLMENT_NOT_SURE):
@@ -156,12 +158,10 @@ class _SeniorityScoringModel(scoring_base.ModelHundredBase):
     whether they are searching for the same or not.
     """
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a percentage score for the given ScoringProject."""
 
-        if project.details.seniority == project_pb2.UNKNOWN_PROJECT_SENIORITY:
-            raise scoring_base.NotEnoughDataException()
-        if project.details.seniority == project_pb2.INTERNSHIP:
+        if project.details.seniority == project_pb2.INTERN:
             return 0
         if project.details.seniority == project_pb2.JUNIOR:
             return 33
@@ -169,16 +169,15 @@ class _SeniorityScoringModel(scoring_base.ModelHundredBase):
             return 67
         if project.details.seniority >= project_pb2.SENIOR:
             return 100
+        raise scoring_base.NotEnoughDataException()
 
 
 class _JobSimilarityScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the experience of the user in similar jobs."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a percentage score for the given ScoringProject."""
 
-        if project.details.previous_job_similarity == project_pb2.UNKNOWN_PROJECT_EXPERIENCE:
-            raise scoring_base.NotEnoughDataException()
         if project.details.previous_job_similarity == project_pb2.NEVER_DONE:
             return 0
         if project.details.previous_job_similarity == project_pb2.DONE_SIMILAR:
@@ -189,12 +188,13 @@ class _JobSimilarityScoringModel(scoring_base.ModelHundredBase):
             if user_pb2.MOTIVATION in project.user_profile.frustrations:
                 return 100
             return 90
+        raise scoring_base.NotEnoughDataException()
 
 
 class _AgeScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the age of the user."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         # rescale user age: <=18 -> 100, >=68 -> 0
         return (68 - project.get_user_age()) * 2
 
@@ -202,7 +202,7 @@ class _AgeScoringModel(scoring_base.ModelHundredBase):
 class _MarketStressScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the market stress of the job that the user is interested in."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> float:
         market_stress = project.market_stress()
         if not market_stress:
             raise scoring_base.NotEnoughDataException()
@@ -214,7 +214,7 @@ class _MarketStressScoringModel(scoring_base.ModelHundredBase):
 class _OffersChangeScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the offers change of the job that the user is interested in."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> float:
         local_diagnosis = project.local_diagnosis()
         offers_change = local_diagnosis.job_offers_change
         if local_diagnosis.num_job_offers_previous_year < 5\
@@ -229,7 +229,7 @@ class _OffersChangeScoringModel(scoring_base.ModelHundredBase):
 class _ReturnToEmploymentScoringModel(scoring_base.ModelHundredBase):
     """A model that scores the time to return to employment for a project."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> float:
         """Compute a percentage score for the given ScoringProject."""
 
         local_diagnosis = project.local_diagnosis()
@@ -250,7 +250,7 @@ class _JobOfTheFutureScoringModel(scoring_base.ModelHundredBase):
     The bounds are -0.168856 and 0.292818. The mean is 0.0688136.
     """
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> float:
         """Compute a percentage score for the given ScoringProject."""
 
         growth_2012_2022 = project.job_group_info().growth_2012_2022
@@ -262,7 +262,7 @@ class _JobOfTheFutureScoringModel(scoring_base.ModelHundredBase):
 class _NetworkScoringModel(scoring_base.ModelHundredBase):
     """A model that scores whether the user has a good network."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a percentage score for the given ScoringProject."""
 
         if project.details.network_estimate == 1:
@@ -277,7 +277,7 @@ class _NetworkScoringModel(scoring_base.ModelHundredBase):
 class _JobPassionScoringModel(scoring_base.ModelHundredBase):
     """A model that scores whether the user is passionate about their job."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         """Compute a percentage score for the given ScoringProject."""
 
         if project.details.passionate_level == project_pb2.ALIMENTARY_JOB:
@@ -296,14 +296,10 @@ class _FrustrationScoringModel(scoring_base.ModelHundredBase):
     to lower the overall score of a submetric.
     """
 
-    def __init__(self, frustration):
-        if frustration not in user_pb2.Frustration.values():
-            # This happens only if someone calls this private class wrongly,
-            # so it should never happen and does not need to be tested.
-            raise ValueError()  # pragma: no-cover
+    def __init__(self, frustration: user_pb2.Frustration) -> None:
         self.frustration = frustration
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         if self.frustration in project.user_profile.frustrations:
             return 0
         raise scoring_base.NotEnoughDataException()
@@ -312,7 +308,7 @@ class _FrustrationScoringModel(scoring_base.ModelHundredBase):
 class _HiringNeedScoringModel(scoring_base.ModelHundredBase):
     """A model that gives a good score if hiring is considered difficult in local stats."""
 
-    def score_to_hundred(self, project):
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
         bmo = project.local_diagnosis().bmo
         if not bmo.percent_difficult:
             raise scoring_base.NotEnoughDataException()
@@ -322,15 +318,19 @@ class _HiringNeedScoringModel(scoring_base.ModelHundredBase):
 class _DiagnosticTopicFilter(scoring_base.BaseFilter):
     """A filter that passes when a given diagnostic submetric satisfies a predicate."""
 
-    def __init__(self, diagnostic_topic, predicate):
+    def __init__(
+            self,
+            diagnostic_topic: str,
+            predicate: typing.Callable[[typing.Optional[diagnostic_pb2.SubDiagnostic]], bool]
+    ) -> None:
         self._diagnostic_topic = diagnostic_pb2.DiagnosticTopic.Value(diagnostic_topic)
         self._predicate = predicate
         super(_DiagnosticTopicFilter, self).__init__(self._filter)
 
-    def _filter(self, scoring_project):
+    def _filter(self, project: scoring_base.ScoringProject) -> bool:
         """The filter function for this scoring model."""
 
-        sub_diagnostics = scoring_project.details.diagnostic.sub_diagnostics
+        sub_diagnostics = project.details.diagnostic.sub_diagnostics
         sub_diagnostic = next(
             (sub for sub in sub_diagnostics if sub.topic == self._diagnostic_topic), None)
         return self._predicate(sub_diagnostic)
@@ -339,14 +339,14 @@ class _DiagnosticTopicFilter(scoring_base.BaseFilter):
 class _GoodDiagnosticCountFilter(scoring_base.BaseFilter):
     """A filter that passes when a given number of diagnostic submetrics have a good score."""
 
-    def __init__(self, count):
+    def __init__(self, count: int) -> None:
         self._count = count
         super(_GoodDiagnosticCountFilter, self).__init__(self._filter)
 
-    def _filter(self, scoring_project):
+    def _filter(self, project: scoring_base.ScoringProject) -> bool:
         """The filter function for this scoring model."""
 
-        sub_diagnostics = scoring_project.details.diagnostic.sub_diagnostics
+        sub_diagnostics = project.details.diagnostic.sub_diagnostics
         valid_sub_diagnostics = [sub for sub in sub_diagnostics if sub.score >= 60]
         return len(valid_sub_diagnostics) >= self._count
 
@@ -393,10 +393,12 @@ scoring_base.register_regexp(
     lambda name: _DiagnosticTopicFilter(name, lambda sub: sub is None),
     'for-empty-diagnostic(PROFILE_DIAGNOSTIC)')
 scoring_base.register_regexp(
-    re.compile(r'^for-bad-diagnostic\((.*?)\)$'),
-    lambda name: _DiagnosticTopicFilter(name, lambda sub: sub and sub.score < 40),
-    'for-bad-diagnostic(PROFILE_DIAGNOSTIC)')
+    re.compile(r'^for-low-diagnostic\((.*?), (\d+)\)$'),
+    lambda name, percent: _DiagnosticTopicFilter(
+        name, lambda sub: sub is not None and sub.score < int(percent)),
+    'for-low-diagnostic(PROFILE_DIAGNOSTIC, 40)')
 scoring_base.register_regexp(
-    re.compile(r'^for-good-diagnostic\((.*?)\)$'),
-    lambda name: _DiagnosticTopicFilter(name, lambda sub: sub and sub.score >= 60),
-    'for-good-diagnostic(PROFILE_DIAGNOSTIC)')
+    re.compile(r'^for-high-diagnostic\((.*?), (\d+)\)$'),
+    lambda name, percent: _DiagnosticTopicFilter(
+        name, lambda sub: sub is not None and sub.score >= int(percent)),
+    'for-high-diagnostic(PROFILE_DIAGNOSTIC, 40)')

@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 
 message Testimonial {
@@ -20,8 +22,7 @@ message Testimonial {
 
   // A set of filter IDs: do not show the testimonial if one these
   // filters returns false for the project.
-  // See the list of available filters in scoring.py.
-  repeated string filters = 6;
+  repeated string filters = 6 [(string_format) = SCORING_MODEL_ID];
 
   // A set of job group IDs: testimonials are preferentially shown to users searching
   // for work in these job groups.

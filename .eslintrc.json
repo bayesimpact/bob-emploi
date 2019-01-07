@@ -13,7 +13,10 @@
     "unicorn"
   ],
   "settings": {
-    "import/resolver": "webpack"
+    "import/resolver": "webpack",
+    "react": {
+      "version": "16.4"
+    }
   },
   "parserOptions": {
     "ecmaFeatures": {
@@ -68,7 +71,7 @@
     "operator-assignment": "error",
     "prefer-const": "error",
     "quotes": ["error", "single", "avoid-escape"],
-    "react/boolean-prop-naming": ["error", {"rule": "^(is|are|has|should)[A-Z].*"}],
+    "react/boolean-prop-naming": ["error", {"rule": "^(is|are|has|should|can)[A-Z].*"}],
     "react/jsx-curly-brace-presence": ["error", "never"],
     "react/jsx-curly-spacing": "error",
     "react/jsx-equals-spacing": "error",

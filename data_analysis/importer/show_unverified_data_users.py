@@ -35,4 +35,4 @@ def airtable2dicts(base_id, table, view=None):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(airtable2dicts, 'show_unverified_data_users')  # pragma: no-cover
+    mongo.importer_main(airtable2dicts, 'show_unverified_data_users')

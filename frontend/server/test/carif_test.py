@@ -2,8 +2,7 @@
 
 from os import path
 import unittest
-
-import mock
+from unittest import mock
 
 from bob_emploi.frontend.server import carif
 
@@ -11,13 +10,15 @@ from bob_emploi.frontend.server import carif
 class CarifTestCase(unittest.TestCase):
     """Unit tests for the carif module."""
 
+    _carif_xml_response: str
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         with open(path.join(path.dirname(__file__), 'testdata/carif.xml')) as carif_file:
             cls._carif_xml_response = carif_file.read()
 
     @mock.patch('requests.get')
-    def test_get_trainings(self, mock_get):
+    def test_get_trainings(self, mock_get: mock.MagicMock) -> None:
         """Basic usage of get_trainings."""
 
         mock_get().text = self._carif_xml_response
@@ -60,7 +61,7 @@ class CarifTestCase(unittest.TestCase):
         self.assertEqual(['14201', '14270', '15254'], trainings[7].formacodes)
 
     @mock.patch('requests.get')
-    def test_error_code(self, mock_get):
+    def test_error_code(self, mock_get: mock.MagicMock) -> None:
         """Error 500 on InterCarif."""
 
         mock_get().text = self._carif_xml_response
@@ -72,7 +73,7 @@ class CarifTestCase(unittest.TestCase):
         self.assertEqual([], trainings)
 
     @mock.patch('requests.get')
-    def test_empty_response(self, mock_get):
+    def test_empty_response(self, mock_get: mock.MagicMock) -> None:
         """Missing text when calling InterCarif."""
 
         mock_get().text = ''
@@ -85,4 +86,4 @@ class CarifTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

@@ -1,5 +1,9 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
+import "bob_emploi/frontend/api/options.proto";
+
 package bayes.bob;
 
 message Diagnostic {
@@ -11,6 +15,11 @@ message Diagnostic {
 
   // A textual personalized diagnostic. This uses markup language.
   string text = 3;
+
+  // Overall sentence for a project, to give the main point of this diagnostic.
+  // For instance: "Projet pas assez clair"
+  // This is in the user's locale and uses markup language.
+  string overall_sentence = 4;
 }
 
 message SubDiagnostic {
@@ -24,6 +33,18 @@ message SubDiagnostic {
   // A textual personalized diagnostic for this submetric. This uses markup
   // language.
   string text = 3;
+
+  // Different observations on the user related to the given topic.
+  repeated SubDiagnosticObservation observations = 4;
+}
+
+message SubDiagnosticObservation {
+  // The observation as a Markdown text, given as a short description (just a few words).
+  string text = 1;
+
+  // Whether this observation should be flagged as notice-worthy. In particular, it's a warning
+  // flag for observations that will most likely hinder the user in their search.
+  bool is_attention_needed = 2;
 }
 
 enum DiagnosticTopic {
@@ -45,52 +66,55 @@ enum DiagnosticTopic {
   JOB_OF_THE_FUTURE_DIAGNOSTIC = 5;
 }
 
-message DiagnosticSentenceTemplate {
-  // Sentence template to show to the user. It uses % vars (see the
-  // populate_template method in scoring for the full list of variables). It
-  // uses markup language.
-  string sentence_template = 1;
+// Rules to decide which overall diagnostic the user will get. Also used as a text generator and an
+// observation generator for submetrics.
+// TODO(cyrille): Deprecate its use as a sentence generator for the text field in Diagnostic.
+message DiagnosticTemplate {
+  // Main sentence to be shown to the user. It uses markup language.
+  string sentence_template = 1 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 
+  // DEPRECATED (since 2018-11): Diagnostic text is now generated directly from a single
+  // DiagnosticTemplate, and not several sentences.
   // Rank of the sentence. The final diagnostic text will be composed of one
   // sentence of each rank.
   // TODO(pascal): Rename to rank.
-  uint32 order = 2;
+  uint32 order = 2 [deprecated = true];
 
-  // A list of filter IDs: do not show the sentence if one of these filters
+  // A list of filter IDs: do not show the diagnostic if one of these filters
   // return false for the project.
-  // See the list of available filters in scoring.py.
-  repeated string filters = 3;
+  repeated string filters = 3 [(string_format) = SCORING_MODEL_ID];
 
+  // DEPRECATED (since 2018-11): Diagnostic text is now generated directly from a single
+  // DiagnosticTemplate, and not several sentences.
   // Whether this sentence is optional. Optional sentence don't block the
   // publication of the overall diagnostic if they are missing. Non-optional
   // sentences would require at least one sentence with the same rank to be
   // present.
   bool optional = 4;
 
-  // Which topic this sentence is relevant to. If this is for general diagnostic, leave empty.
+  // Which topic this diagnostic is relevant to. If this is for general diagnostic, leave empty.
   DiagnosticTopic topic = 5;
+
+  // The score assigned with this diagnostic.
+  uint32 score = 6;
+
+  // The explanation text for this score and sentence. It uses markup language.
+  string text_template = 7 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
+
+  // When used as an observation generator, say whether this needs attention from the user.
+  bool is_attention_needed = 8;
 }
 
 // TODO(cyrille): Clean this one and its uses, since we won't use it much more.
-message DiagnosticSubmetricsSentenceTemplate {
+message DiagnosticSubmetricScorer {
   // Scorer for the given metric.
-  string trigger_scoring_model = 1;
+  string trigger_scoring_model = 1 [(string_format) = SCORING_MODEL_ID];
 
   // Submetric that this scorer will influence.
   DiagnosticTopic submetric = 2;
 
   // Weight given to the scorer in the final submetric score.
   float weight = 3;
-
-  // Sentence template to show to the user if their score is good. It uses % vars (see the
-  // populate_template method in scoring for the full list of variables). It
-  // uses markup language.
-  string positive_sentence_template = 4;
-
-  // Sentence template to show to the user if their score is bad. It uses % vars (see the
-  // populate_template method in scoring for the full list of variables). It
-  // uses markup language.
-  string negative_sentence_template = 5;
 }
 
 // A quick diagnostic for a partial project. It does not contain any semantics,
@@ -129,4 +153,30 @@ enum ProjectOrProfileField {
   REQUESTED_DIPLOMA_FIELD = 4;
   NETWORK_FIELD = 5;
   WEEKLY_APPLICATION_FIELD = 6;
+}
+
+// The trace of a diagnostic request made by a client. This is mainly used for analytics.
+// TODO(cyrille): Add info from the result too (and drop the 'Request' in the name).
+message LoggedDiagnosticRequest {
+
+  // When the diagnostic was called for.
+  google.protobuf.Timestamp diagnosed_at = 1;
+
+  // The source that asked for a diagnostic for a user.
+  string source = 2;
+
+  // The code OGR of the job in the diagnostic.
+  string code_ogr = 3;
+
+  // The code ROME of the job group in the diagnostic.
+  string rome_id = 4;
+
+  // The ID of the city in the diagnostic.
+  string city_id = 5;
+
+  // The ID of the departement.
+  string departement_id = 6;
+
+  // The ID of the region.
+  string region_id = 7;
 }

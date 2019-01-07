@@ -1,23 +1,29 @@
 """Mail modules for holiday (christmas, new year, ...) mailings."""
 
+import typing
 from urllib import parse
 
+import pymongo
+
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server.asynchronous.mail import campaign
 
 
-def christmas_vars(user, database=None, **unused_kwargs):
+def christmas_vars(
+        user: user_pb2.User, database: pymongo.database.Database = None,
+        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
     """Compute all variables required for the Christmas campaign."""
 
     project = next((p for p in user.projects), project_pb2.Project())
 
     job_search_started_months_ago = campaign.job_search_started_months_ago(project)
     if job_search_started_months_ago < 0:
-        return None
-    if job_search_started_months_ago < 2:
+        started_searching_since = ''
+    elif job_search_started_months_ago < 2:
         started_searching_since = 'depuis peu'
     else:
         try:
@@ -45,7 +51,7 @@ def christmas_vars(user, database=None, **unused_kwargs):
 
     # Whether the job may have freelancers.
     job_group_info = jobs.get_group_proto(database, project.target_job.job_group.rome_id)
-    could_freelance = job_group_info.has_freelancers
+    could_freelance = job_group_info and job_group_info.has_freelancers
 
     return dict(campaign.get_default_vars(user), **{
         'couldFreelance': campaign.as_template_boolean(could_freelance),
@@ -56,7 +62,8 @@ def christmas_vars(user, database=None, **unused_kwargs):
     })
 
 
-def new_year_vars(user, **unused_kwargs):
+def new_year_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
+        -> typing.Optional[typing.Dict[str, str]]:
     """Compute all variables required for the New Year campaign."""
 
     project = next((p for p in user.projects), project_pb2.Project())
@@ -72,18 +79,15 @@ def new_year_vars(user, **unused_kwargs):
 
 campaign.register_campaign('christmas', campaign.Campaign(
     mailjet_template='279688',
-    mongo_filters={
-        'projects': {'$exists': True},
-        'projects.job_search_has_not_started': {'$ne': True},
-    },
+    mongo_filters={},
     get_vars=christmas_vars,
-    sender_name='Margaux de Bob',
-    sender_email='margaux@bob-emploi.fr',
+    sender_name='Joanna de Bob',
+    sender_email='joanna@bob-emploi.fr',
 ))
 campaign.register_campaign('new-year', campaign.Campaign(
     mailjet_template='293296',
     mongo_filters={},
     get_vars=new_year_vars,
-    sender_name='Margaux de Bob',
-    sender_email='margaux@bob-emploi.fr',
+    sender_name='Joanna de Bob',
+    sender_email='joanna@bob-emploi.fr',
 ))

@@ -164,4 +164,4 @@ def _sample_jobs(num_samples):
 
 
 if __name__ == '__main__':
-    mongo.importer_main(csv2dicts, 'similar_jobs')  # pragma: no cover
+    mongo.importer_main(csv2dicts, 'similar_jobs')

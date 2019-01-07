@@ -16,7 +16,9 @@ import datetime
 import logging
 from os import path
 import subprocess
+import typing
 
+from google.protobuf import message
 import pymongo
 import termcolor
 
@@ -24,7 +26,6 @@ from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
-from bob_emploi.frontend.api import chantier_pb2
 from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import driving_license_pb2
@@ -41,19 +42,27 @@ from bob_emploi.frontend.api import online_salon_pb2
 from bob_emploi.frontend.api import reorient_jobbing_pb2
 from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.api import seasonal_jobbing_pb2
+from bob_emploi.frontend.api import skill_pb2
 from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
-_ROME_VERSION = 'v335'
+_ROME_VERSION = 'v337'
 
 
-class Importer(collections.namedtuple(
-        # PII means Personally Identifiable Information, i.e. a name, an email.
-        'Importer', ['name', 'script', 'args', 'is_imported', 'proto_type', 'key', 'has_pii'])):
+class Importer(typing.NamedTuple):
     """Description of an importer."""
 
-    def __str__(self):
+    name: str
+    script: typing.Optional[str]
+    args: typing.Optional[typing.Dict[str, str]]
+    is_imported: bool
+    proto_type: typing.Optional[typing.Type[message.Message]]
+    key: str
+    # PII means Personally Identifiable Information, i.e. a name, an email.
+    has_pii: bool
+
+    def __str__(self) -> str:
         if not self.proto_type:
             return self.name
         return '{} ({})'.format(self.name, self.proto_type.__name__)
@@ -81,19 +90,6 @@ IMPORTERS = {
         proto_type=job_pb2.LocalJobStats,
         key='<département ID>:<job group ID>',
         has_pii=False),
-    'chantiers': Importer(
-        name='Chantiers',
-        script='airtable_to_protos',
-        args={
-            'table': 'Chantier',
-            'proto': 'Chantier',
-            'base_id': 'appb3ENBY5uTDr30B',
-            'view': 'viwkpWz2amJn7YW0J',
-        },
-        is_imported=True,
-        proto_type=chantier_pb2.Chantier,
-        key='chantier_id',
-        has_pii=False),
     'helper': Importer(
         name='Mayday App User', script=None, args=None, is_imported=False,
         proto_type=helper_pb2.Helper, key='user_id', has_pii=True),
@@ -110,6 +106,7 @@ IMPORTERS = {
             'domains_airtable': 'appMRMtWV61Kibt37:domains',
             'info_by_prefix_airtable': 'appMRMtWV61Kibt37:info_by_prefix',
             'fap_growth_2012_2022_csv': 'data/france-strategie/evolution-emploi.csv',
+            'imt_market_score_csv': 'data/imt/market_score.csv',
         },
         is_imported=True,
         proto_type=job_pb2.JobGroup,
@@ -142,24 +139,20 @@ IMPORTERS = {
     'user_auth': Importer(
         name='App User Auth Data', script=None, args=None, is_imported=False,
         proto_type=user_pb2.UserAuth, key='user_id', has_pii=True),
+    # TODO(cyrille): Drop this importer, we don't use dashboard exports anymore.
     'dashboard_exports': Importer(
         name='Dashboard Export', script=None, args=None, is_imported=False,
         proto_type=export_pb2.DashboardExport, key='dashboard_export_id', has_pii=False),
     'feedbacks': Importer(
         name='Feedbacks', script=None, args=None, is_imported=False,
         proto_type=feedback_pb2.Feedback, key='Mongo key', has_pii=False),
-    'unverified_data_zones': Importer(
-        name='Unverified Data Zones',
-        script='unverified_data_zones',
-        args={'data_folder': 'data'},
-        is_imported=True,
-        proto_type=user_pb2.UnverifiedDataZone,
-        key='default',
-        has_pii=False),
     'cities': Importer(
         name='City locations',
         script='city_locations',
-        args={'stats_filename': 'data/geo/french_cities.csv'},
+        args={
+            'stats_filename': 'data/geo/french_cities.csv',
+            'urban_context_filename': 'data/geo/french_urban_areas.xls',
+        },
         is_imported=True,
         proto_type=geo_pb2.FrenchCity,
         key='Code officiel géographique',
@@ -341,7 +334,33 @@ IMPORTERS = {
             'proto': 'DiagnosticSentenceTemplate',
         },
         is_imported=True,
-        proto_type=diagnostic_pb2.DiagnosticSentenceTemplate,
+        proto_type=diagnostic_pb2.DiagnosticTemplate,
+        key='Airtable key',
+        has_pii=False),
+    'diagnostic_overall': Importer(
+        name='Possiblities of diagnostic overall score and sentences.',
+        script='airtable_to_protos',
+        args={
+            'base_id': 'appXmyc7yYj0pOcae',
+            'table': 'diagnostic_overall',
+            'view': 'viwZzhAx5mFbPWX1m',
+            'proto': 'DiagnosticTemplate',
+        },
+        is_imported=True,
+        proto_type=diagnostic_pb2.DiagnosticTemplate,
+        key='Airtable key',
+        has_pii=False),
+    'diagnostic_observations': Importer(
+        name='Templates of observations for a given diagnostic submtric.',
+        script='airtable_to_protos',
+        args={
+            'base_id': 'appXmyc7yYj0pOcae',
+            'table': 'diagnostic_observations',
+            'view': 'viwOuKXBD3NP1FHqe',
+            'proto': 'DiagnosticObservation',
+        },
+        is_imported=True,
+        proto_type=diagnostic_pb2.DiagnosticTemplate,
         key='Airtable key',
         has_pii=False),
     # TODO(cyrille): Rename once the one below is hard-coded.
@@ -350,25 +369,25 @@ IMPORTERS = {
         script='airtable_to_protos',
         args={
             'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'tblIY6Ba6KaRzJ0ko',
+            'table': 'diagnostic_submetric_sentences_new',
             'view': 'viwNgJMaZpm8TibUy',
             'proto': 'DiagnosticSubmetricSentenceTemplate',
         },
         is_imported=True,
-        proto_type=diagnostic_pb2.DiagnosticSentenceTemplate,
+        proto_type=diagnostic_pb2.DiagnosticTemplate,
         key='Airtable key',
         has_pii=False),
-    'diagnostic_submetrics_sentences': Importer(
-        name='Templates of scorers to build a Diagnostic submetric',
+    'diagnostic_submetrics_scorers': Importer(
+        name='Scorers to compute a Diagnostic submetric score',
         script='airtable_to_protos',
         args={
             'base_id': 'appXmyc7yYj0pOcae',
-            'table': 'diagnostic_submetrics_sentences',
+            'table': 'diagnostic_submetrics_scorers',
             'view': 'viwoe6r6IqlMeRQLU',
-            'proto': 'DiagnosticScorerSentenceTemplate',
+            'proto': 'DiagnosticSubmetricScorer',
         },
         is_imported=True,
-        proto_type=diagnostic_pb2.DiagnosticSubmetricsSentenceTemplate,
+        proto_type=diagnostic_pb2.DiagnosticSubmetricScorer,
         key='Airtable key',
         has_pii=False),
     'regions': Importer(
@@ -485,13 +504,22 @@ IMPORTERS = {
         # TODO(cyrille): Use other proto type if we use it sometime. For now, we just populate
         # the 'email' field.
         proto_type=helper_pb2.Helper, key='user_id', has_pii=True),
+    'skills_for_future': Importer(
+        name='Skills for Future',
+        script='skills_for_future',
+        args={
+            'base_id': 'appXmyc7yYj0pOcae',
+            'table': 'skills_for_future',
+            'view': 'viwfJ3L3qKPMVV2wp',
+        },
+        is_imported=True, proto_type=skill_pb2.JobSkills, key='ROME prefix', has_pii=False),
 }
 
 
 _MAINTENANCE_COLLECTIONS = {'meta', 'system.indexes', 'objectlabs-system'}
 
 
-def is_personal_database(collection_names):
+def is_personal_database(collection_names: typing.Set[str]) -> bool:
     """Determines if this is a database with PII collections or not."""
 
     imported = collection_names & IMPORTERS.keys()
@@ -501,11 +529,12 @@ def is_personal_database(collection_names):
     return sum(1 for name in imported if IMPORTERS[name].has_pii) > 1
 
 
-def compute_collections_diff(importers, db_client):
+def compute_collections_diff(
+        importers: typing.Dict[str, Importer], db_client: pymongo.MongoClient) -> CollectionsDiff:
     """Determine which collections have been imported and which are missing."""
 
     collection_names = {
-        name for name in db_client.collection_names() if name not in _MAINTENANCE_COLLECTIONS
+        name for name in db_client.list_collection_names() if name not in _MAINTENANCE_COLLECTIONS
     }
     is_personal = is_personal_database(collection_names)
     personal_safe_importers = {
@@ -523,22 +552,23 @@ def compute_collections_diff(importers, db_client):
     )
 
 
-def get_meta_info(db_client):
+def get_meta_info(db_client: pymongo.MongoClient) -> typing.Dict[str, typing.Dict[str, typing.Any]]:
     """Get meta information for a specific collection."""
 
     meta_collection = db_client.meta.find()
     return {meta['_id']: meta for meta in meta_collection}
 
 
-def _plural(count):
+def _plural(count: int) -> str:
     return ' is' if count == 1 else 's are'
 
 
-def _bold(value):
+def _bold(value: typing.Any) -> str:
     return termcolor.colored(str(value), 'white', attrs=['bold'])
 
 
-def print_single_importer(importer, collection_name, mongo_url):
+def print_single_importer(
+        importer: typing.Optional[Importer], collection_name: str, mongo_url: str) -> None:
     """Show detailed information for a single importer."""
 
     logging.info('')
@@ -565,7 +595,7 @@ def print_single_importer(importer, collection_name, mongo_url):
         importer.name, collection_name, command)
 
 
-def _run_importer(collection_name, mongo_url):
+def _run_importer(collection_name: str, mongo_url: str) -> None:
     importer = IMPORTERS[collection_name]
 
     args = collections.OrderedDict(importer.args or {})
@@ -577,7 +607,7 @@ def _run_importer(collection_name, mongo_url):
         [arg for key, value in args.items() for arg in ('--{}'.format(key), value)])
 
 
-def main(string_args=None):
+def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     """Print a report on which collections have been imported."""
 
     parser = argparse.ArgumentParser(

@@ -19,12 +19,13 @@ fi
 # TODO(florian): When CircleCI opens an API endpoint to validate the approval steps remotely,
 # use it to allow team members to validate directly from Slack.
 # New line in Slack message (https://github.com/cleentfaar/slack/issues/21).
-readonly SLACK_MESSAGE="A demo for the release candidate $TAG is <http://go/bob:demo/tag-$TAG|ready for review>. See <${REPOSITORY_URL}/compare/prod...$TAG|Git changes>. After getting 2 manual approvals, <https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID|approve the release workflow>.
+readonly SLACK_MESSAGE="<!here> A demo for the release candidate $TAG is <http://go/bob:demo/tag-$TAG|ready for review>. See <${REPOSITORY_URL}/compare/prod...$TAG|Git changes>. After getting 3 manual approvals, <https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID|approve the release workflow>.
 
 Fellow reviewers, do not forget to:
 • check that a new user can go through the workflow, see their assessment and select and read some advice, without being blocked. :rocket:
 • check the flow for desktop and mobile. :iphone: :computer:
-• go to 'conseiller/integration-imilo' to check all the pieces of advice.
+• go to the <http://go/bob:demo/tag-$TAG/conseiller/integration-imilo|integration-imilo page> to check all the pieces of advice.
+• @eng, make sure no error has been logged to <https://sentry.io/bayes-impact/bob-emploi-demo/|bob-emploi-demo> on Sentry.
 • of course have a look to the release notes to know where to be even more careful.
 Bob will be forever grateful :heart:"
 readonly SLACK_PAYLOAD=$(jq -n -r \

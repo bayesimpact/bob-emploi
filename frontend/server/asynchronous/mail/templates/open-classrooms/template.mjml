@@ -1,0 +1,575 @@
+{
+  "attributes": {
+    "version": "3.3.5"
+  },
+  "children": [
+    {
+      "children": [
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "color": "#55575d",
+            "font-family": "Arial, sans-serif",
+            "passport": {
+              "id": "PS1NBDYIj"
+            }
+          },
+          "children": [
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "padding": "20px 0px 20px 0px",
+                "passport": {
+                  "header": true,
+                  "hidden": true,
+                  "id": "9iM3ZjlDcQGrB"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "hidden": true,
+                      "id": "dTvlZ4Wtu3w8b"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "11px",
+                        "line-height": "22px",
+                        "padding": "0px 0px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "hidden": true,
+                          "id": "2w-Zo_3hsopF8"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
+                      "id": "hhVgZM32zxo8b",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "ZD8ctpPaTTLj6",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "Mg3qaeVAiJ6xj",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "transparent",
+                "background-repeat": "repeat",
+                "full-width": "full-width",
+                "padding": "20px 0px 20px 0px",
+                "padding-bottom": "12px",
+                "padding-top": "12px",
+                "passport": {
+                  "id": "7h0zvVuMFL"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "6k8vSpxKz0"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "wrm4OQyPYM"
+                        }
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\">&nbsp;<span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Alice\"}},</span>&nbsp;</span></p>",
+                      "id": "drQwkBXmviTkU",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "u501aWrO_22aa",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "37-jMTx71DZ3A",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "id": "ORuASkQDrT"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "Blr1LDx0et"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "WrP2nxO_84"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">J’espère que vous allez bien.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">La semaine dernière j’ai rencontré {%if var:gender:\"\"==\"FEMININE\"%}Anne{%else%}Romain{%endif%}. {%if var:gender:\"\"==\"FEMININE\"%}Anne{%else%}Romain{%endif%} avait {%if var:hasSeniority:\"\"==\"True\"%}15{%else%}5{%endif%} ans&nbsp;d’expérience dans {%if var:hasSimpleApplication:\"\"==\"True\"%}le bâtiment{%else%}les ressources humaines,{%endif%}&nbsp;quand {%if var:gender:\"\"==\"FEMININE\"%}elle{%else%}il{%endif%} s'est retrouvé{%if var:gender:\"\"==\"FEMININE\"%}e{%endif%} au chômage. Au bout de quelques mois de recherche sans succès, {%if var:gender:\"\"==\"FEMININE\"%}elle{%else%}il{%endif%} a réalisé qu'{%if var:gender:\"\"==\"FEMININE\"%}elle{%else%}il{%endif%} avait envie d'autres choses. {%if var:gender:\"\"==\"FEMININE\"%}Elle{%else%}Il{%endif%} a pris son courage à deux mains et a décidé de changer de métier pour retrouver l’envie de se lever chaque matin.</span></span></p>",
+                      "id": "oUhiGFj-RQp05",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "Wi-Cd1mNbiUO8",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "_iHpO2dBUmZf3",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "id": "KY8XUSWNoF"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "TuIc9h4ADa"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "24px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "ha4gsSm_Q"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">{%if var:gender:\"\"==\"FEMININE\"%}Elle{%else%}Il{%endif%} sera développ{%if var:gender:\"\"==\"FEMININE\"%}euse{%else%}eur{%endif%} web !</span></span></p>",
+                      "id": "_Kqdm-q0mkkOKn",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "vvWVBVj9U5hVH",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "ylv0k_YU8bK5V",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "id": "gQFafus70Ri"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "cia8x4T94Ir"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "PmtJm85ugwd"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:16px\"><b><span style=\"color:#000000\">Réussir à se lancer</span></b></span></p>",
+                      "id": "x95VtIgFoPwXp_",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "Bdb6LY3M0Us"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Je suis toujours impressionnée par les gens qui arrivent à se réinventer. Je lui ai demandé comment {%if var:gender:\"\"==\"FEMININE\"%}elle{%else%}il{%endif%} avait fait pour dépasser la peur de se lancer.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Son secret ? <b>Se concentrer sur les premières étapes sans écouter la petite voix qui lui disait que c’était impossible{%if var:isFrustratedOld:\"\"==\"True\"%},&nbsp;qu’elle n’était pas assez jeune{%endif%}{%if var:hasAtypicProfile:\"\"==\"True\"%}, que les recruteurs&nbsp;ne choisiraient pas quelqu'un comme {%if var:gender:\"\"==\"FEMININE\"%}elle{%else%}lui{%endif%}{%endif%}{%if var:hasFamilyAndManagementIssue:\"\"==\"True\"%},&nbsp;qu’elle n’arriverait pas à s’organiser avec sa famille et ses enfants{%endif%}{%if var:gender:\"\"==\"FEMININE\"%},&nbsp;que le métier de développeur ça n’était pas pour les femmes{%endif%}.</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">{%if var:gender:\"\"==\"FEMININE\"%}Elle{%else%}Il{%endif%} a foncé, {%if var:gender:\"\"==\"FEMININE\"%}elle{%else%}il{%endif%} est resté{%if var:gender:\"\"==\"FEMININE\"%}e{%endif%} concentré{%if var:gender:\"\"==\"FEMININE\"%}e{%endif%} sur son premier objectif : trouver une formation et la faire financer. Ça ne s’est pas fait en un jour, mais après 1 mois d'effort, {%if var:gender:\"\"==\"FEMININE\"%}elle{%else%}il{%endif%} commençait sa formation en ligne et en alternance. Ensuite tout s’est enchaîné. {%if var:gender:\"\"==\"FEMININE\"%}Elle{%else%}Il{%endif%} a travaillé pour une première entreprise, puis une deuxième et maintenant {%if var:gender:\"\"==\"FEMININE\"%}elle travaille pour une agence de développement web{%else%}il travaille dans une grande entreprise&nbsp;du web{%endif%}.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">L’histoire {%if var:gender:\"\"==\"FEMININE\"%}d'Anne{%else%}de Romain{%endif%} m’a beaucoup inspirée parce qu’elle m’a rappelé que pour <b>se rapprocher de son rêve, il fallait juste commencer.</b> En se concentrant sur la première étape et pas sur les 2000 autres qui l’angoissaient {%if var:gender:\"\"==\"FEMININE\"%}Anne{%else%}Romain{%endif%} a réussi à changer de vie.</span></span></p>",
+                      "id": "O0DQoP40346_a-",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "k80HrwXwPIPX1o",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "-Gi7ZR2yUhpZeY",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "passport": {
+                  "id": "K2XHB0ACli-s1T"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "9pu8eoV5_Xl"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "0px 25px 0px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "gctG1qbnWTv"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><b><span style=\"font-size:16px\">Mon idée folle</span></b></span></p>",
+                      "id": "XtOg-1r9AuYx8a",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "dM2JtlAqHW-"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">En l’écoutant, j’ai pensé à vous. Je me suis souvenue que {%if var:isReorienting:\"\"==\"True\"%}</span></span><span style=\"background-color:transparent; font-size:14px\"><span style=\"background-color:transparent; color:#000000\"><span style=\"background-color:transparent\">vous aviez envie de vous réorienter{%else%}vous nous aviez dit que votre métier ne vous passionne pas{%endif%}</span> </span></span><span style=\"font-size:14px\"><span style=\"color:#000000\">et je me suis dit <b>\"et si cette histoire devenait celle {{var:ofFirstName:\"d'Alice\"}} ?\"</b>.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Je ne sais pas si le métier de web développeur vous parle, si vous avez envie de vous lancer dans une nouvelle aventure, dans le doute, j’ai fait quelques recherches pour vous.</span></span></p>",
+                      "id": "SaUHrUAR7BD_Zp",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "1e8AU99f2x_"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">J’ai trouvé des formations en ligne et en alternance pour les métiers<b> web développeur ou community manager ou encore gestionnaire de paie.</b></span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">J’ai aussi cherché les critères pour que ce type de formations soit financé par Pôle emploi. Les critères essentiels apparemment&nbsp;sont d’</span></span><b style=\"color:#000000; font-size:14px\">être inscrit comme demandeur d’emploi, et d’avoir un niveau bac, ou moins</b><span style=\"font-size:14px\"><span style=\"color:#000000\"><b>.</b> Si vous rentrez dans les cases, vous pouvez </span><a target=\"_blank\" href=\"https://openclassrooms.com/fr/training-partners/1-open-declic\">vous inscrire ici</a><span style=\"color:#000000\"> et vous aurez un entretien par téléphone pour tester votre motivation.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\">Je vous donne tous ces détails pour vous aider à vous projeter, car c’est une étape essentielle pour réfléchir à un nouveau projet.</span></span></p>",
+                      "id": "vwd-F5vqnYWgpW",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "fd3eGnyR2rc6-3",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "ilPfOrjdQWj8fT",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "passport": {
+                  "id": "TjjnYstOeEF"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "9HGOlvzk5jq"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "24px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "SPsCfx2pQ"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><b><span style=\"color:#000000\"><span style=\"font-size:16px\">Ok mais comment je fais ? </span></span></b></p>",
+                      "id": "EQNnFYgK7ZhOMR",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "Dq4JJQnIDx-"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Si l’idée vous inspire, gardez-la en tête pendant quelques jours.</span></span><span style=\"color:#000000\"><span style=\"font-size:14px\"> </span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Imaginez votre vie dans ce poste. </span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Pensez à l’engagement que représente le fait de faire une formation. Cette formation en alternance, par exemple, dure près d’un an.</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Donnez-vous du temps. Ce n’est pas une décision à prendre à la légère. </span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Et si l’idée ne vous a pas quitté dans une semaine alors <span style=\"color:#2eabe0\"><a target=\"_blank\" rel=\"noFollow \" href=\"https://openclassrooms.com/fr/training-partners/1-open-declic\"><u>allez-y cliquez ici</u></a> </span>et lancez-vous.</span></span></p><p style=\"margin: 10px 0;\">&nbsp;</p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Tenez-moi au courant,</span></span></p>",
+                      "id": "x_5OidbwTMhcPB",
+                      "tagName": "mj-text"
+                    },
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "khymIhNYHVS"
+                        }
+                      },
+                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux et l'équipe de Bob&nbsp;</span></span></p>",
+                      "id": "Eo5Ja9jNqoWVrF",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "F6b8nYRjYNhWL9",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "svMiulWwV-eoHt",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "id": "cr91fkZ8iMclAg",
+                  "version": "3.3.5"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "y_hc5WyFJxA"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "alt": "",
+                        "border": "none",
+                        "height": "auto",
+                        "href": "",
+                        "padding": "10px 25px",
+                        "padding-left": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "2VHaJLx_uBIEeK",
+                          "image-id": 6036334
+                        },
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+                        "target": "_blank",
+                        "title": "",
+                        "width": "102px"
+                      },
+                      "id": "KdkmBHYTpMw9-r",
+                      "tagName": "mj-image"
+                    }
+                  ],
+                  "id": "dkwF3JmAKsmsNQ",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "-ZKQVHLZ-e9j_G",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "id": "TyJ1t0M2z1nbAo",
+                  "version": "3.3.5"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "I21v804IyIV"
+                    }
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "align": "left",
+                        "color": "#55575d",
+                        "font-family": "Arial, sans-serif",
+                        "font-size": "13px",
+                        "line-height": "22px",
+                        "padding": "10px 25px",
+                        "padding-bottom": "0px",
+                        "padding-left": "0px",
+                        "padding-right": "0px",
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "DoCMI9JIOcn"
+                        }
+                      },
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
+                      "id": "UgJcXrFVZWKxQj",
+                      "tagName": "mj-text"
+                    }
+                  ],
+                  "id": "-h_j6jg7PfFgkx",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "BCnelRSYbn09dI",
+              "tagName": "mj-section"
+            }
+          ],
+          "id": "RUcCmjiKrhpst",
+          "tagName": "mj-container"
+        }
+      ],
+      "id": "XQ7WfHDJ0u68U",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "dGtefKI84srDt",
+  "tagName": "mjml"
+}

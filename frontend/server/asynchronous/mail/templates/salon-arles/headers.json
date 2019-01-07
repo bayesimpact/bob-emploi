@@ -1,0 +1,5 @@
+{
+  "From": "Margaux de Bob <margaux@bob-emploi.fr>",
+  "Reply-To": "",
+  "Subject": "{{var:firstName:\"Marie\"}}, {%if var:isLocal:\"\" == \"True\" %}les maisons d'Arles recherchent des profils comme le vôtre{%else%}avez-vous déjà pensé à bouger à Arles ?{%endif%}"
+}

@@ -66,6 +66,7 @@ def _list_hiring_cities(offers_rows, min_creation_date, data_folder):
 
         city_name = offer.city_name
         city_code = offer.city_code
+        departement_id = offer.departement_code
         job_group_code = offer.rome_profession_card_code
         latitude = offer.latitude
         longitude = offer.longitude
@@ -96,6 +97,8 @@ def _list_hiring_cities(offers_rows, min_creation_date, data_folder):
             if not city_name or city_name == 'NULL':
                 continue
             city_info[city_code] = {
+                'cityId': city_code,
+                'departementId': departement_id,
                 'name': city_name,
                 'latitude': latitude,
                 'longitude': longitude,
@@ -137,10 +140,17 @@ def extract_offers_per_cities(offers_file, colnames, min_creation_date, data_fol
         kept_cities = []
         for city_id, offer_count in city_ids.items():
             if offer_count > job_group_threshold[job_group]:
-                kept_cities.append({'city': city_data.city_info[city_id], 'offers': offer_count})
+                city_info = city_data.city_info[city_id]
+                population = city_info.get('population')
+                if population:
+                    kept_cities.append({
+                        'city': city_info,
+                        'offers': offer_count,
+                        'offersPerInhabitant': offer_count / population
+                    })
 
         job_group_to_kept_cities[job_group] = sorted(
-            kept_cities, key=lambda k: k['offers'], reverse=True)
+            kept_cities, key=lambda k: k['offersPerInhabitant'], reverse=True)
 
     return [
         {'_id': job_group_id, 'hiringCities': job_group_weighted_cities}
@@ -148,4 +158,4 @@ def extract_offers_per_cities(offers_file, colnames, min_creation_date, data_fol
 
 
 if __name__ == '__main__':
-    mongo.importer_main(extract_offers_per_cities, 'hiring_cities')  # pragma: no cover
+    mongo.importer_main(extract_offers_per_cities, 'hiring_cities')

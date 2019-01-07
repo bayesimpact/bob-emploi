@@ -1,5 +1,209 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2018-12-21_00
+
+- UI Fixes
+- Server Optimizations
+- Bug Fixes
+- Onboarding for UNML
+
+Deployed on Fri, 21 Dec 2018 10:41:10 +0000
+
+# 2018-12-19_00
+
+- Bug Fixes, Clean Code, ...
+
+Deployed on Wed, 19 Dec 2018 15:42:44 +0000
+
+# 2018-12-14_00
+
+- Bug fixes, time optimization, ...
+
+Deployed on Fri, 14 Dec 2018 13:31:27 +0000
+
+# 2018-12-07_00
+
+- Clean PDF diagnostic
+- Small wording/UI/UX improvements
+- Optimize some server computations
+- App available everywhere now that data is complete
+
+Deployed on Fri, 07 Dec 2018 14:32:14 +0000
+
+# 2018-12-06_00
+
+- Clean PDF diagnostic
+- Small wording/UI/UX improvements
+- Optimize some server computations
+- App available everywhere now that data is complete
+
+# 2018-12-03_02
+
+- New submetrics
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 04 Dec 2018 09:43:38 +0000
+
+# 2018-12-03_01
+
+- New submetrics
+- Clean Code, Bug Fixes, ...
+
+# 2018-12-03_00
+
+- New submetrics (for alpha)
+- Clean Code, Bug Fixes, ...
+
+# 2018-11-28_00
+
+- Prepare submetrics in alpha
+- Clean Code, Bug Fixes, ...
+
+# 2018-11-22_01
+
+- New diagnostic score generation mechanism
+- New UI on long term mom piece of advice
+- Clean Code, Bug Fixes, ...
+
+Deployed on Thu, 22 Nov 2018 09:29:34 +0000
+
+# 2018-11-21_01
+
+- New diagnostic score generation mechanism
+- New UI on long term mom piece of advice
+- Clean Code, Bug Fixes, ...
+
+# 2018-11-21_00
+
+- New diagnostic score generation mechanism
+- New UI on long term mom piece of advice
+- Clean Code, Bug Fixes, ...
+
+# 2018-11-20_00
+
+- Clean Code, Bug Fixes, ...
+
+# 2018-11-14_01
+
+- Reduce A/B testing for Quick Diagnostic
+- Small UI/UX changes
+- Client-Server requests optimization
+- Bug Fixes, Clean Code, ...
+Deployed on Wed, 14 Nov 2018 14:21:45 +0000
+
+# 2018-11-14_00
+
+- Reduce A/B testing for Quick Diagnostic
+- Small UI/UX changes
+- Client-Server requests optimization
+- Bug Fixes, Clean Code, ...
+
+# 2018-11-13_02
+
+- Reduce A/B testing for Quick Diagnostic
+- Small UI/UX changes
+- Client-Server requests optimization
+- Bug Fixes, Clean Code, ...
+
+# 2018-11-13_01
+
+- Reduce A/B testing for Quick Diagnostic
+- Small UI/UX changes
+- Client-Server requests optimization
+- Bug Fixes, Clean Code, ...
+
+# 2018-11-05_00
+
+- Small UI fixes
+- Dev enhancements
+- Under the hood advice cleaning
+Deployed on Mon, 05 Nov 2018 14:08:10 +0000
+
+# 2018-10-30_00
+
+- Change the questions for feedback:
+   - in the app it's now less about the advice.
+   - in the survey 3 months after, it's now focused on comparing personalization with other coaching serices.
+- Make specific-to-job advice module more dynamic (goal and categories)
+- Analytics report on urban/periurban/rural in Kibana
+- Various bug fixes and improvements (colors).
+Deployed on Tue, 30 Oct 2018 13:18:27 +0000
+
+# 2018-10-18_00
+
+- Fix login workflow on mobile, especially stopping the flow.
+- Improve text input edition in profile.
+- Prepare dynamic specific-to-job goal and categories.
+- Small UI improvement on Landing Page.
+Deployed on Thu, 18 Oct 2018 12:33:00 +0000
+
+# 2018-10-11_00
+
+- Bug fixes
+Deployed on Thu, 11 Oct 2018 12:40:58 +0000
+
+# 2018-10-09_00
+
+- Re-enable Quick Diagnostic experiment
+- Twitter feed in landing page
+- Allow users to be 'tutoyés'
+Deployed on Tue, 09 Oct 2018 13:41:15 +0000
+
+# 2018-10-05_00
+
+- New coaching email for Open Classrooms
+- New advice on skills of the future
+- Small fixes, Clean code, ...
+Deployed on Mon, 08 Oct 2018 09:33:32 +0000
+
+# 2018-09-24_00
+
+- Stop the Bob points experiment.
+- Stop (temporarily) the Quick Diagnostic experiment.
+- Better UX when coming back to the diagnostic after visiting an advice.
+- Nicer UI on mobile for many advice pages.
+Deployed on Mon, 24 Sep 2018 12:31:24 +0000
+
+# 2018-09-17_00
+
+- Bug fixes
+- Better tracking for Quick Diagnostic experiment
+Deployed on Mon, 17 Sep 2018 15:02:34 +0000
+
+# 2018-09-12_00
+
+- Start the Quick-Diagnostic experiment
+- Add the 'Forgot my password' feature
+Deployed on Wed, 12 Sep 2018 10:42:04 +0000
+
+# 2018-09-07_00
+
+- Do not assign the bob points experiment to old users.
+- Fix the sync amplitude script for REDACTED users.
+Deployed on Fri, 07 Sep 2018 12:18:42 +0000
+
+# 2018-09-06_01
+
+- Under the hood, prepare a way to get a quick diagnostic in the landing page (not done yet).
+- Get rid of GTWalsheim font.
+- Small fix to the Bob Points flow.
+- Change from recommending Impala to Pixis for reorientation.
+Deployed on Thu, 06 Sep 2018 12:37:09 +0000
+
+# 2018-09-03_00
+
+- Start Points experiment
+Deployed on Mon, 03 Sep 2018 15:07:37 +0000
+
+# 2018-08-31_00
+
+- Under the hood, final implementation of Bob Points
+- Move the feedback form (stars) to the diagnostic page (also reenable on mobile).
+- Team page updates.
+- Make the mobile version UI responsive.
+- Switch more pages to Lato font.
+Deployed on Mon, 03 Sep 2018 07:42:50 +0000
+
 # 2018-08-22_00
 
 - Fix updating city and area of search.
@@ -19,18 +223,6 @@ Deployed on Fri, 10 Aug 2018 07:25:00 +0000
 - Small UI fixes, especially on mobile.
 - For i-milo integration, use shorter URLs.
 Deployed on Fri, 27 Jul 2018 18:02:04 +0000
-
-# 2018-07-27_01
-
-- Under the hood, prepare the "Bob Points" experiment.
-- Small UI fixes, especially on mobile.
-- For i-milo integration, use shorter URLs.
-
-# 2018-07-27_00
-
-- Under the hood, prepare the "Bob Points" experiment.
-- Small UI fixes, especially on mobile.
-- For i-milo integration, use shorter URLs.
 
 # 2018-07-23_00
 
@@ -53,19 +245,6 @@ Deployed on Thu, 19 Jul 2018 09:47:46 +0000
 - Fix diagnostic UI on desktop.
 - Small fix "use strict".
 Deployed on Tue, 17 Jul 2018 11:35:32 +0000
-
-# 2018-07-17_00
-
-- Rewording in the welcome message.
-- Add a coaching email about interview follow ups.
-- Fix diagnostic UI on desktop.
-- Small fix "use strict".
-
-# 2018-07-16_00
-
-- Small fix "use strict".
-- Rewording in the welcome message.
-- Add a coaching email about interview follow ups.
 
 # 2018-07-13_02
 

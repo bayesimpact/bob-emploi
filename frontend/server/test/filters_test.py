@@ -2,9 +2,9 @@
 
 import datetime
 import unittest
+from unittest import mock
 
-import mock
-
+from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -21,15 +21,15 @@ from bob_emploi.frontend.server.test import scoring_test
 class FilterTestBase(scoring_test.ScoringModelTestBase):
     """A base class for tests for filters."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(FilterTestBase, self).setUp()
         self.persona = self._random_persona().clone()
 
-    def _assert_pass_filter(self):
+    def _assert_pass_filter(self) -> None:
         score = self._score_persona(self.persona)
         self.assertGreater(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
-    def _assert_fail_filter(self):
+    def _assert_fail_filter(self) -> None:
         score = self._score_persona(self.persona)
         self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
 
@@ -39,13 +39,22 @@ class ActiveSearcherFilterTestCase(FilterTestBase):
 
     model_id = 'for-active-search'
 
-    def test_active_searcher(self):
+    def test_active_searcher(self) -> None:
         """Users that have already started their search."""
 
+        if not self.persona.project.HasField('created_at'):
+            self.persona.project.created_at.GetCurrentTime()
         self.persona.project.job_search_has_not_started = False
         self._assert_pass_filter()
 
-    def test_inactive_searcher(self):
+    def test_not_searcher(self) -> None:
+        """Users that have not created their project."""
+
+        self.persona.project.ClearField('created_at')
+        self.persona.project.job_search_has_not_started = False
+        self._assert_fail_filter()
+
+    def test_inactive_searcher(self) -> None:
         """Users that have not yet started their search."""
 
         self.persona.project.job_search_has_not_started = True
@@ -57,13 +66,13 @@ class EnoughTrainingFilterTestCase(FilterTestBase):
 
     model_id = 'for-training-fulfilled'
 
-    def test_enough_training(self):
+    def test_enough_training(self) -> None:
         """Users that have sufficient training."""
 
         self.persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
         self._assert_pass_filter()
 
-    def test_not_enough_training(self):
+    def test_not_enough_training(self) -> None:
         """Users that have not sufficient training."""
 
         self.persona.project.training_fulfillment_estimate = project_pb2.CURRENTLY_IN_TRAINING
@@ -75,19 +84,19 @@ class SingleParentFilterTestCase(FilterTestBase):
 
     model_id = 'for-single-parent'
 
-    def test_single_parent(self):
+    def test_single_parent(self) -> None:
         """Single parent."""
 
         self.persona.user_profile.family_situation = user_pb2.SINGLE_PARENT_SITUATION
         self._assert_pass_filter()
 
-    def test_single_parent_old_field(self):
+    def test_single_parent_old_field(self) -> None:
         """Single parent using the old field."""
 
         self.persona.user_profile.frustrations.append(user_pb2.SINGLE_PARENT)
         self._assert_pass_filter()
 
-    def test_non_single_parent(self):
+    def test_non_single_parent(self) -> None:
         """Non single parent."""
 
         del self.persona.user_profile.frustrations[:]
@@ -102,13 +111,13 @@ class YoungFilterTestCase(FilterTestBase):
 
     year = datetime.date.today().year
 
-    def test_young_person(self):
+    def test_young_person(self) -> None:
         """Young person."""
 
         self.persona.user_profile.year_of_birth = self.year - 21
         self._assert_pass_filter()
 
-    def test_old_person(self):
+    def test_old_person(self) -> None:
         """Old person."""
 
         self.persona.user_profile.year_of_birth = self.year - 28
@@ -120,22 +129,23 @@ class ApplicantFilterTestCase(FilterTestBase):
 
     model_id = 'for-application(2)'
 
-    def test_had_applied(self):
+    def test_had_applied(self) -> None:
         """User have applied three times per week."""
 
         self.persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         self._assert_pass_filter()
 
-    def test_had_not_applied(self):
+    def test_had_not_applied(self) -> None:
         """User have never applied."""
 
-        self.persona.project.weekly_applications_estimate = -1
+        self.persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
         self._assert_fail_filter()
 
-    def test_had_unknown_application(self):
-        """User have never applied."""
+    def test_had_unknown_application(self) -> None:
+        """We do not know whether the user has applied."""
 
-        self.persona.project.weekly_applications_estimate = 0
+        self.persona.project.weekly_applications_estimate = \
+            project_pb2.UNKNOWN_NUMBER_ESTIMATE_OPTION
         self._assert_fail_filter()
 
 
@@ -144,13 +154,13 @@ class InterviewFilterTestCase(FilterTestBase):
 
     model_id = 'for-many-interviews(2)'
 
-    def test_had_interviews(self):
+    def test_had_interviews(self) -> None:
         """User have had three interviews."""
 
         self.persona.project.total_interview_count = 3
         self._assert_pass_filter()
 
-    def test_had_no_interview(self):
+    def test_had_no_interview(self) -> None:
         """User have had no interviews."""
 
         self.persona.project.total_interview_count = -1
@@ -162,19 +172,19 @@ class ExactInterviewFilterTestCase(FilterTestBase):
 
     model_id = 'for-exact-interview(1)'
 
-    def test_had_interviews(self):
+    def test_had_interviews(self) -> None:
         """User have had three interviews."""
 
         self.persona.project.total_interview_count = 3
         self._assert_fail_filter()
 
-    def test_had_one_interview(self):
+    def test_had_one_interview(self) -> None:
         """User have had one interview."""
 
         self.persona.project.total_interview_count = 1
         self._assert_pass_filter()
 
-    def test_had_no_interview(self):
+    def test_had_no_interview(self) -> None:
         """User have had no interviews."""
 
         self.persona.project.total_interview_count = -1
@@ -182,11 +192,11 @@ class ExactInterviewFilterTestCase(FilterTestBase):
 
 
 class InterviewSmallRateFilterTestCase(FilterTestBase):
-    """Unit tests for the _ProjectFilter class for users that have had exactly one interview."""
+    """Tests for the _ProjectFilter class for users that have had 1 interview in 2 months."""
 
     model_id = 'for-many-interviews-per-month(0.5)'
 
-    def test_had_interviews(self):
+    def test_had_interviews(self) -> None:
         """User have had three interviews in two months."""
 
         self.persona.project.job_search_length_months = 2
@@ -195,8 +205,8 @@ class InterviewSmallRateFilterTestCase(FilterTestBase):
         self.persona.project.total_interview_count = 3
         self._assert_pass_filter()
 
-    def test_had_few_interviews(self):
-        """User have had few interviews."""
+    def test_had_few_interviews(self) -> None:
+        """User have had one interview in two months."""
 
         self.persona.project.job_search_length_months = 5
         self.persona.project.job_search_started_at.FromDatetime(
@@ -204,13 +214,22 @@ class InterviewSmallRateFilterTestCase(FilterTestBase):
         self.persona.project.total_interview_count = 2
         self._assert_fail_filter()
 
+    def test_had_not_started(self) -> None:
+        """User have not started their research."""
+
+        if not self.persona.project.HasField('created_at'):
+            self.persona.project.created_at.GetCurrentTime()
+        self.persona.project.job_search_length_months = -1
+        self.persona.project.job_search_has_not_started = True
+        self._assert_fail_filter()
+
 
 class InterviewRateFilterTestCase(FilterTestBase):
-    """Unit tests for the _ProjectFilter class for users that have had exactly one interview."""
+    """Unit tests for the _ProjectFilter class for users that have had >=1 interview per month."""
 
     model_id = 'for-many-interviews-per-month(1)'
 
-    def test_had_interviews(self):
+    def test_had_interviews(self) -> None:
         """User have had three interviews in two months."""
 
         self.persona.project.job_search_length_months = 2
@@ -219,13 +238,22 @@ class InterviewRateFilterTestCase(FilterTestBase):
         self.persona.project.total_interview_count = 3
         self._assert_pass_filter()
 
-    def test_had_few_interviews(self):
-        """User have had few interviews."""
+    def test_had_few_interviews(self) -> None:
+        """User have had one interview in two months."""
 
         self.persona.project.job_search_length_months = 2
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
         self.persona.project.total_interview_count = 1
+        self._assert_fail_filter()
+
+    def test_had_not_started(self) -> None:
+        """User have not started their research."""
+
+        if not self.persona.project.HasField('created_at'):
+            self.persona.project.created_at.GetCurrentTime()
+        self.persona.project.job_search_length_months = -1
+        self.persona.project.job_search_has_not_started = True
         self._assert_fail_filter()
 
 
@@ -234,19 +262,19 @@ class NoInterviewFilterTestCase(FilterTestBase):
 
     model_id = 'for-no-interview'
 
-    def test_had_interviews(self):
+    def test_had_interviews(self) -> None:
         """User have had three interviews."""
 
         self.persona.project.total_interview_count = 3
         self._assert_fail_filter()
 
-    def test_had_unknown_interviews(self):
+    def test_had_unknown_interviews(self) -> None:
         """User have had three interviews."""
 
         self.persona.project.total_interview_count = 0
         self._assert_fail_filter()
 
-    def test_had_no_interview(self):
+    def test_had_no_interview(self) -> None:
         """User have had no interviews."""
 
         self.persona.project.total_interview_count = -1
@@ -260,19 +288,19 @@ class OldFilterTestCase(FilterTestBase):
 
     year = datetime.date.today().year
 
-    def test_young_person(self):
+    def test_young_person(self) -> None:
         """Young person."""
 
         self.persona.user_profile.year_of_birth = self.year - 21
         self._assert_fail_filter()
 
-    def test_mature_person(self):
+    def test_mature_person(self) -> None:
         """Mature person."""
 
         self.persona.user_profile.year_of_birth = self.year - 45
         self._assert_fail_filter()
 
-    def test_very_old_person(self):
+    def test_very_old_person(self) -> None:
         """Old person."""
 
         self.persona.user_profile.year_of_birth = self.year - 60
@@ -286,27 +314,27 @@ class FrustratedOldFilterTestCase(FilterTestBase):
 
     year = datetime.date.today().year
 
-    def test_young_person(self):
+    def test_young_person(self) -> None:
         """Young person."""
 
         self.persona.user_profile.year_of_birth = self.year - 21
         self._assert_fail_filter()
 
-    def test_old_person(self):
+    def test_old_person(self) -> None:
         """Old person."""
 
         self.persona.user_profile.year_of_birth = self.year - 60
         del self.persona.user_profile.frustrations[:]
         self._assert_fail_filter()
 
-    def test_not_so_old_frustrated_person(self):
+    def test_not_so_old_frustrated_person(self) -> None:
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 47
         self.persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
         self._assert_fail_filter()
 
-    def test_old_frustrated_person(self):
+    def test_old_frustrated_person(self) -> None:
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 60
@@ -321,20 +349,20 @@ class OtherFrustratedOldFilterTestCase(FilterTestBase):
 
     year = datetime.date.today().year
 
-    def test_young_person(self):
+    def test_young_person(self) -> None:
         """Young person."""
 
         self.persona.user_profile.year_of_birth = self.year - 21
         self._assert_fail_filter()
 
-    def test_old_person(self):
+    def test_old_person(self) -> None:
         """Old person."""
 
         self.persona.user_profile.year_of_birth = self.year - 60
         del self.persona.user_profile.frustrations[:]
         self._assert_fail_filter()
 
-    def test_old_frustrated_person(self):
+    def test_old_frustrated_person(self) -> None:
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 47
@@ -349,21 +377,21 @@ class FrustratedYoungFilterTestCase(FilterTestBase):
 
     year = datetime.date.today().year
 
-    def test_young_person(self):
+    def test_young_person(self) -> None:
         """Young person."""
 
         self.persona.user_profile.year_of_birth = self.year - 21
         del self.persona.user_profile.frustrations[:]
         self._assert_fail_filter()
 
-    def test_old_frustrated_person(self):
+    def test_old_frustrated_person(self) -> None:
         """Old and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 60
         self.persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
         self._assert_fail_filter()
 
-    def test_young_frustrated_person(self):
+    def test_young_frustrated_person(self) -> None:
         """Young and frustrated person."""
 
         self.persona.user_profile.year_of_birth = self.year - 21
@@ -376,19 +404,19 @@ class UnemployedFilterTestCase(FilterTestBase):
 
     model_id = 'for-unemployed'
 
-    def test_lost_quit(self):
+    def test_lost_quit(self) -> None:
         """User lost or quit their last job."""
 
         self.persona.user_profile.situation = user_pb2.LOST_QUIT
         self._assert_pass_filter()
 
-    def test_student(self):
+    def test_student(self) -> None:
         """Student."""
 
         self.persona.user_profile.situation = user_pb2.FIRST_TIME
         self._assert_pass_filter()
 
-    def test_employed(self):
+    def test_employed(self) -> None:
         """User has a job."""
 
         self.persona.user_profile.situation = user_pb2.EMPLOYED
@@ -400,20 +428,20 @@ class EmployedFilterTestCase(FilterTestBase):
 
     model_id = 'for-employed'
 
-    def test_first_job(self):
+    def test_first_job(self) -> None:
         """This is the first job for the user."""
 
         self.persona.user_profile.situation = user_pb2.FIRST_TIME
         self.persona.project.kind = project_pb2.FIND_A_FIRST_JOB
         self._assert_fail_filter()
 
-    def test_looking_for_another_job(self):
+    def test_looking_for_another_job(self) -> None:
         """User is looking for another job (so they already have one)."""
 
         self.persona.project.kind = project_pb2.FIND_ANOTHER_JOB
         self._assert_pass_filter()
 
-    def test_employed(self):
+    def test_employed(self) -> None:
         """User has a job."""
 
         self.persona.user_profile.situation = user_pb2.EMPLOYED
@@ -425,47 +453,126 @@ class NotEmployedAnymoreFilterTestCase(FilterTestBase):
 
     model_id = 'for-not-employed-anymore'
 
-    def test_lost_quit(self):
+    def test_lost_quit(self) -> None:
         """User lost or quit their last job."""
 
         self.persona.user_profile.situation = user_pb2.LOST_QUIT
         self._assert_pass_filter()
 
-    def test_student(self):
+    def test_student(self) -> None:
         """Student."""
 
         self.persona.user_profile.situation = user_pb2.FIRST_TIME
         self._assert_fail_filter()
 
-    def test_employed(self):
+    def test_employed(self) -> None:
         """User has a job."""
 
         self.persona.user_profile.situation = user_pb2.EMPLOYED
         self._assert_fail_filter()
 
 
-class QualifiedFilterTestCase(FilterTestBase):
+class CompanyCreatorFilterTestCase(FilterTestBase):
+    """Unit tests for the BaseFilter class for users who wants to create a company."""
+
+    model_id = 'for-company-creator'
+
+    def test_first_job(self) -> None:
+        """This is the first job for the user."""
+
+        self.persona.user_profile.situation = user_pb2.FIRST_TIME
+        self.persona.project.kind = project_pb2.FIND_A_FIRST_JOB
+        self._assert_fail_filter()
+
+    def test_looking_for_another_job(self) -> None:
+        """User wants to create or takeover a company."""
+
+        self.persona.project.kind = project_pb2.CREATE_OR_TAKE_OVER_COMPANY
+        self._assert_pass_filter()
+
+
+class GoodQualificationFilterTestCase(FilterTestBase):
     """Unit tests for the _UserProfileFilter class for users that are qualified."""
 
     model_id = 'for-qualified(bac+3)'
 
-    def test_phd(self):
+    def test_phd(self) -> None:
         """User has a PhD."""
 
         self.persona.user_profile.highest_degree = job_pb2.DEA_DESS_MASTER_PHD
         self._assert_pass_filter()
 
-    def test_no_degree(self):
+    def test_bachelor(self) -> None:
+        """User has a bachelor degree."""
+
+        self.persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
+        self._assert_pass_filter()
+
+    def test_no_degree(self) -> None:
         """User has no degree."""
 
         self.persona.user_profile.highest_degree = job_pb2.NO_DEGREE
         self._assert_fail_filter()
 
-    def test_dut(self):
+    def test_dut(self) -> None:
         """User has a DUT."""
 
         self.persona.user_profile.highest_degree = job_pb2.BTS_DUT_DEUG
         self._assert_fail_filter()
+
+
+class VeryGoodQualificationFilterTestCase(FilterTestBase):
+    """Unit tests for the _UserProfileFilter class for users that are qualified."""
+
+    model_id = 'for-qualified(bac+5)'
+
+    def test_phd(self) -> None:
+        """User has a PhD."""
+
+        self.persona.user_profile.highest_degree = job_pb2.DEA_DESS_MASTER_PHD
+        self._assert_pass_filter()
+
+    def test_bachelor(self) -> None:
+        """User has a bachelor degree."""
+
+        self.persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
+        self._assert_fail_filter()
+
+    def test_no_degree(self) -> None:
+        """User has no degree."""
+
+        self.persona.user_profile.highest_degree = job_pb2.NO_DEGREE
+        self._assert_fail_filter()
+
+    def test_dut(self) -> None:
+        """User has a DUT."""
+
+        self.persona.user_profile.highest_degree = job_pb2.BTS_DUT_DEUG
+        self._assert_fail_filter()
+
+
+class MediumQualificationFilterTestCase(FilterTestBase):
+    """Unit tests for the _UserProfileFilter class for users that are qualified."""
+
+    model_id = 'for-qualified(bac+2)'
+
+    def test_phd(self) -> None:
+        """User has a PhD."""
+
+        self.persona.user_profile.highest_degree = job_pb2.DEA_DESS_MASTER_PHD
+        self._assert_pass_filter()
+
+    def test_no_degree(self) -> None:
+        """User has no degree."""
+
+        self.persona.user_profile.highest_degree = job_pb2.NO_DEGREE
+        self._assert_fail_filter()
+
+    def test_dut(self) -> None:
+        """User has a DUT."""
+
+        self.persona.user_profile.highest_degree = job_pb2.BTS_DUT_DEUG
+        self._assert_pass_filter()
 
 
 class NegateFilterTestCase(FilterTestBase):
@@ -473,7 +580,7 @@ class NegateFilterTestCase(FilterTestBase):
 
     model_id = 'not-for-searching-forever'
 
-    def test_just_started(self):
+    def test_just_started(self) -> None:
         """User has just started this project."""
 
         self.persona.project.job_search_length_months = 1
@@ -481,7 +588,7 @@ class NegateFilterTestCase(FilterTestBase):
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
         self._assert_pass_filter()
 
-    def test_started_2_years_ago(self):
+    def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
         self.persona.project.job_search_length_months = 24
@@ -490,12 +597,23 @@ class NegateFilterTestCase(FilterTestBase):
         self._assert_fail_filter()
 
 
+class NotWorkingNegateFilterTestCase(unittest.TestCase):
+    """Unit tests for a negate filter on a non-existing scorer."""
+
+    @mock.patch(scoring.logging.__name__ + '.error')
+    def test_cant_create(self, mock_error: mock.MagicMock) -> None:
+        """Cannot create a negated filter if the original one does not exist."""
+
+        scoring.get_scoring_model('not-unknown-scorer')
+        mock_error.assert_called_once()
+
+
 class SearchingForeverFilterTestCase(FilterTestBase):
     """Unit tests for the _ProjectFilter class for projects about searching for a looong time."""
 
     model_id = 'for-searching-forever'
 
-    def test_just_started(self):
+    def test_just_started(self) -> None:
         """User has just started this project."""
 
         self.persona.project.job_search_length_months = 1
@@ -503,7 +621,7 @@ class SearchingForeverFilterTestCase(FilterTestBase):
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
         self._assert_fail_filter()
 
-    def test_started_2_years_ago(self):
+    def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
         self.persona.project.job_search_length_months = 24
@@ -517,13 +635,13 @@ class JobGroupFilterTestCase(FilterTestBase):
 
     model_id = 'for-job-group(M16)'
 
-    def test_secretary(self):
+    def test_secretary(self) -> None:
         """User is looking for a secretary job."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1601'
         self._assert_pass_filter()
 
-    def test_data_scientist(self):
+    def test_data_scientist(self) -> None:
         """User is looking for a data scientist job."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1403'
@@ -535,11 +653,11 @@ class HighSalaryFilterTestCase(FilterTestBase):
 
     model_id = 'for-high-salary-expectations'
 
-    def test_high_expectations(self):
+    def test_high_expectations(self) -> None:
         """User is looking for a secretary job."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1601'
-        self.persona.project.mobility.city.departement_id = '19'
+        self.persona.project.city.departement_id = '19'
         self.persona.project.min_salary = 22000
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1601',
@@ -547,11 +665,11 @@ class HighSalaryFilterTestCase(FilterTestBase):
         })
         self._assert_pass_filter()
 
-    def test_low_expectations(self):
+    def test_low_expectations(self) -> None:
         """User is looking for a secretary job."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1602'
-        self.persona.project.mobility.city.departement_id = '19'
+        self.persona.project.city.departement_id = '19'
         self.persona.project.min_salary = 18000
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
@@ -565,11 +683,11 @@ class HighMarketStressFilterTestCase(FilterTestBase):
 
     model_id = 'for-unstressed-market(10/7)'
 
-    def test_low_market_stress(self):
+    def test_low_market_stress(self) -> None:
         """User looking for a job that had 7 offers per 10 candidates."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1601'
-        self.persona.project.mobility.city.departement_id = '19'
+        self.persona.project.city.departement_id = '19'
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1601',
             'imt': {
@@ -579,11 +697,11 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         })
         self._assert_pass_filter()
 
-    def test_high_market_stress(self):
+    def test_high_market_stress(self) -> None:
         """User looking for a job that had 6 offers per 10 candidates."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1602'
-        self.persona.project.mobility.city.departement_id = '19'
+        self.persona.project.city.departement_id = '19'
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
@@ -594,11 +712,60 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         self._assert_fail_filter()
 
     # This should never happen but we test it anyway to be sure it doesn't crash.
-    def test_zero_market_stress(self):
+    def test_zero_market_stress(self) -> None:
         """User looking for a job that had no offers."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1602'
-        self.persona.project.mobility.city.departement_id = '19'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1602',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 0,
+            }
+        })
+        self._assert_fail_filter()
+
+
+class AllMarketStressFilterTestCase(FilterTestBase):
+    """Unit tests for the _BaseFilter class for projects with high market stress."""
+
+    model_id = 'for-lower-market-tension(10/3)'
+
+    def test_lower_market_stress(self) -> None:
+        """User looking for a job that had 7 offers per 10 candidates."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1601',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 7,
+            }
+        })
+        self._assert_pass_filter()
+
+    def test_higher_market_stress(self) -> None:
+        """User looking for a job that had 6 offers per 10 candidates."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1602',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 2,
+            }
+        })
+        self._assert_fail_filter()
+
+    # This should never happen but we test it anyway to be sure it doesn't crash.
+    def test_zero_market_stress(self) -> None:
+        """User looking for a job that had no offers."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.persona.project.city.departement_id = '19'
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
@@ -614,13 +781,13 @@ class ExperienceInDomainTestCase(FilterTestBase):
 
     model_id = 'for-experience-in-domain'
 
-    def test_high_expectations(self):
+    def test_high_expectations(self) -> None:
         """User have experience in the domain in which they are searching."""
 
         self.persona.project.previous_job_similarity = project_pb2.DONE_THIS
         self._assert_pass_filter()
 
-    def test_low_expectations(self):
+    def test_low_expectations(self) -> None:
         """User does not have experience in the domain in which they are searching."""
 
         self.persona.project.previous_job_similarity = project_pb2.DONE_SIMILAR
@@ -633,13 +800,13 @@ class ExperienceInSimilarDomainTestCase(FilterTestBase):
 
     model_id = 'for-experience-in-similar-domain'
 
-    def test_high_expectations(self):
+    def test_high_expectations(self) -> None:
         """User have experience in a similar domain to the one in which they are searching."""
 
         self.persona.project.previous_job_similarity = project_pb2.DONE_SIMILAR
         self._assert_pass_filter()
 
-    def test_low_expectations(self):
+    def test_low_expectations(self) -> None:
         """User does not have experience in a similar domain to the one in which they are searching.
         """
 
@@ -652,13 +819,13 @@ class NoExperienceInDomainTestCase(FilterTestBase):
 
     model_id = 'for-first-time-in-job'
 
-    def test_high_expectations(self):
+    def test_high_expectations(self) -> None:
         """User have experience in the domain in which they are searching or similar."""
 
         self.persona.project.previous_job_similarity = project_pb2.DONE_SIMILAR
         self._assert_fail_filter()
 
-    def test_low_expectations(self):
+    def test_low_expectations(self) -> None:
         """User does not have experience in the domain in which they are searching."""
 
         self.persona.project.previous_job_similarity = project_pb2.NEVER_DONE
@@ -670,19 +837,19 @@ class MultiJobGroupFilterTestCase(FilterTestBase):
 
     model_id = 'for-job-group(L15,L13)'
 
-    def test_secretary(self):
+    def test_secretary(self) -> None:
         """User is looking for a secretary job."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1601'
         self._assert_fail_filter()
 
-    def test_first_job_group(self):
+    def test_first_job_group(self) -> None:
         """User is looking for a job in the first group of the list."""
 
         self.persona.project.target_job.job_group.rome_id = 'L1502'
         self._assert_pass_filter()
 
-    def test_second_job_group(self):
+    def test_second_job_group(self) -> None:
         """User is looking for a job in the second group of the list."""
 
         self.persona.project.target_job.job_group.rome_id = 'L1302'
@@ -694,13 +861,13 @@ class JobFilterTestCase(FilterTestBase):
 
     model_id = 'for-job(12006)'
 
-    def test_chief_baker(self):
+    def test_chief_baker(self) -> None:
         """User is looking for a chief baker job."""
 
         self.persona.project.target_job.code_ogr = '12006'
         self._assert_pass_filter()
 
-    def test_prefix(self):
+    def test_prefix(self) -> None:
         """User is looking for a job that starts with the chief baker code."""
 
         self.persona.project.target_job.code_ogr = '120060'
@@ -712,13 +879,13 @@ class FrustrationFilterTestCase(FilterTestBase):
 
     model_id = 'for-frustrated(INTERVIEW)'
 
-    def test_frustrated_user(self):
+    def test_frustrated_user(self) -> None:
         """User is frustrated by their interviews."""
 
         self.persona.user_profile.frustrations.append(user_pb2.INTERVIEW)
         self._assert_pass_filter()
 
-    def test_not_frustrated(self):
+    def test_not_frustrated(self) -> None:
         """User has no frustration."""
 
         self.persona.user_profile.ClearField('frustrations')
@@ -729,11 +896,12 @@ class UnknownFrustrationFilterTestCase(unittest.TestCase):
     """Unit test for the FrustrationFilter class for projects about a
     frustration that does not exist."""
 
-    def test_inexistant_frustration(self):
+    @mock.patch(scoring.logging.__name__ + '.error')
+    def test_inexistant_frustration(self, mock_error: mock.MagicMock) -> None:
         """Cannot make scoring model for inexistant frustration."""
 
-        with self.assertRaises(ValueError):
-            scoring.get_scoring_model('for-frustrated(INEXISTANT)')
+        self.assertFalse(scoring.get_scoring_model('for-frustrated(INEXISTANT)'))
+        mock_error.assert_called_once()
 
 
 class DepartementFilterTestCase(FilterTestBase):
@@ -741,16 +909,16 @@ class DepartementFilterTestCase(FilterTestBase):
 
     model_id = 'for-departement(31)'
 
-    def test_toulouse(self):
+    def test_toulouse(self) -> None:
         """User is looking for a job in Toulouse."""
 
-        self.persona.project.mobility.city.departement_id = '31'
+        self.persona.project.city.departement_id = '31'
         self._assert_pass_filter()
 
-    def test_lyon(self):
+    def test_lyon(self) -> None:
         """User is looking for a job in Lyon."""
 
-        self.persona.project.mobility.city.departement_id = '69'
+        self.persona.project.city.departement_id = '69'
         self._assert_fail_filter()
 
 
@@ -759,22 +927,22 @@ class MultiDepartementFilterTestCase(FilterTestBase):
 
     model_id = 'for-departement(31, 69)'
 
-    def test_toulouse(self):
+    def test_toulouse(self) -> None:
         """User is looking for a job in Toulouse."""
 
-        self.persona.project.mobility.city.departement_id = '31'
+        self.persona.project.city.departement_id = '31'
         self._assert_pass_filter()
 
-    def test_lyon(self):
+    def test_lyon(self) -> None:
         """User is looking for a job in Lyon."""
 
-        self.persona.project.mobility.city.departement_id = '69'
+        self.persona.project.city.departement_id = '69'
         self._assert_pass_filter()
 
-    def test_paris(self):
+    def test_paris(self) -> None:
         """User is looking for a job in Paris."""
 
-        self.persona.project.mobility.city.departement_id = '75'
+        self.persona.project.city.departement_id = '75'
         self._assert_fail_filter()
 
 
@@ -783,7 +951,7 @@ class FilterApplicationComplexityTestCase(FilterTestBase):
 
     model_id = 'for-complex-application'
 
-    def test_special_complexity(self):
+    def test_special_complexity(self) -> None:
         """User is in a job with a special complexity."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1601'
@@ -791,7 +959,7 @@ class FilterApplicationComplexityTestCase(FilterTestBase):
             '_id': 'M1601', 'applicationComplexity': 'SPECIAL_APPLICATION_PROCESS'})
         self._assert_fail_filter()
 
-    def test_complex_application(self):
+    def test_complex_application(self) -> None:
         """User is in a job with a complex application process."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1601'
@@ -805,19 +973,19 @@ class FilterActiveExperimentTestCase(FilterTestBase):
 
     model_id = 'for-active-experiment(lbb_integration)'
 
-    def test_in_control(self):
+    def test_in_control(self) -> None:
         """User is in the control group."""
 
         self.persona.features_enabled.lbb_integration = user_pb2.CONTROL
         self._assert_fail_filter()
 
-    def test_not_in_experiment(self):
+    def test_not_in_experiment(self) -> None:
         """User is not in the experiment at all."""
 
         self.persona.features_enabled.ClearField('lbb_integration')
         self._assert_fail_filter()
 
-    def test_in_experiment(self):
+    def test_in_experiment(self) -> None:
         """User is in the experiment."""
 
         self.persona.features_enabled.lbb_integration = user_pb2.ACTIVE
@@ -827,17 +995,19 @@ class FilterActiveExperimentTestCase(FilterTestBase):
 class FilterActiveUnknownExperimentTestCase(unittest.TestCase):
     """Unit tests for the _ActiveExperimentFilter class when experiment does not exist."""
 
-    def test_unknown_field(self):
+    @mock.patch(scoring.logging.__name__ + '.error')
+    def test_unknown_field(self, mock_error: mock.MagicMock) -> None:
         """Tries to create a filter based on an experiment that does not exist."""
 
-        with self.assertRaises(ValueError):
-            scoring.get_scoring_model('for-active-experiment(unknown)')
+        self.assertFalse(scoring.get_scoring_model('for-active-experiment(unknown)'))
+        mock_error.assert_called_once()
 
-    def test_wrong_type_field(self):
+    @mock.patch(scoring.logging.__name__ + '.error')
+    def test_wrong_type_field(self, mock_error: mock.MagicMock) -> None:
         """Tries to create a filter based on a field that is not a binary experiment."""
 
-        with self.assertRaises(ValueError):
-            scoring.get_scoring_model('for-active-experiment(alpha)')
+        self.assertFalse(scoring.get_scoring_model('for-active-experiment(alpha)'))
+        mock_error.assert_called_once()
 
 
 class FilterGoodOverallScoreTestCase(FilterTestBase):
@@ -845,13 +1015,13 @@ class FilterGoodOverallScoreTestCase(FilterTestBase):
 
     model_id = 'for-good-overall-score(50)'
 
-    def test_low_score(self):
+    def test_low_score(self) -> None:
         """Low score."""
 
         self.persona.project.diagnostic.overall_score = 30
         self._assert_fail_filter()
 
-    def test_high_score(self):
+    def test_high_score(self) -> None:
         """High score."""
 
         self.persona.project.diagnostic.overall_score = 90
@@ -863,13 +1033,13 @@ class FilterGoodNetworkScoreTestCase(FilterTestBase):
 
     model_id = 'for-network(3)'
 
-    def test_lower_network_estimation(self):
+    def test_lower_network_estimation(self) -> None:
         """User only has a medium network."""
 
         self.persona.project.network_estimate = 2
         self._assert_fail_filter()
 
-    def test_high_score(self):
+    def test_high_score(self) -> None:
         """User only has a good network."""
 
         self.persona.project.network_estimate = 3
@@ -881,13 +1051,13 @@ class FilterPassionateLevelTestCase(FilterTestBase):
 
     model_id = 'for-passionate(LIFE_GOAL_JOB)'
 
-    def test_not_really_passionate(self):
+    def test_not_really_passionate(self) -> None:
         """User only likes their job."""
 
         self.persona.project.passionate_level = project_pb2.LIKEABLE_JOB
         self._assert_fail_filter()
 
-    def test_passionate(self):
+    def test_passionate(self) -> None:
         """User is really fond of their job."""
 
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
@@ -898,11 +1068,12 @@ class UnknownPassionateFilterTestCase(unittest.TestCase):
     """Unit test for the PassionateFilter class for projects about a
     passionate level that does not exist."""
 
-    def test_inexistant_passionate(self):
+    @mock.patch(scoring.logging.__name__ + '.error')
+    def test_inexistant_passionate(self, mock_error: mock.MagicMock) -> None:
         """Cannot make scoring model for inexistant passionate level."""
 
-        with self.assertRaises(ValueError):
-            scoring.get_scoring_model('for-passionate(INEXISTANT)')
+        self.assertFalse(scoring.get_scoring_model('for-passionate(INEXISTANT)'))
+        mock_error.assert_called_once()
 
 
 class FilterShortSearchTestCase(FilterTestBase):
@@ -910,7 +1081,7 @@ class FilterShortSearchTestCase(FilterTestBase):
 
     model_id = 'for-short-search(-3)'
 
-    def test_just_started(self):
+    def test_just_started(self) -> None:
         """User has just started this project."""
 
         self.persona.project.job_search_length_months = 1
@@ -918,7 +1089,7 @@ class FilterShortSearchTestCase(FilterTestBase):
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
         self._assert_pass_filter()
 
-    def test_started_2_years_ago(self):
+    def test_started_2_years_ago(self) -> None:
         """User has been working on this project for 2 years."""
 
         self.persona.project.job_search_length_months = 24
@@ -927,46 +1098,22 @@ class FilterShortSearchTestCase(FilterTestBase):
         self._assert_fail_filter()
 
 
-class FilterUsingScoreTestCase(unittest.TestCase):
-    """Unit tests for the filter_using_score function."""
+class RuralAreaFilterTestCase(FilterTestBase):
+    """Unit tests for users living in a rural area."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Test setup."""
+    model_id = 'for-rural-area-inhabitant'
 
-        super(FilterUsingScoreTestCase, cls).setUpClass()
-        scoring.SCORING_MODELS['test-zero'] = scoring.ConstantScoreModel(0)
-        scoring.SCORING_MODELS['test-two'] = scoring.ConstantScoreModel(2)
+    def test_rural_area_inhabitant(self) -> None:
+        """User is living in a rural area (urban score == -1)."""
 
-    def test_filter_list_with_no_filters(self):
-        """Filter a list with no filters to apply."""
+        self.persona.project.city.urban_score = -1
+        self._assert_pass_filter()
 
-        filtered = scoring.filter_using_score(range(5), lambda a: [], None)
-        self.assertEqual([0, 1, 2, 3, 4], list(filtered))
+    def test_urban_area_inhabitant(self) -> None:
+        """User is living in Paris (urban score == 8)."""
 
-    def test_filter_list_constant_scorer(self):
-        """Filter a list returning constant scorer."""
-
-        get_scoring_func = mock.MagicMock()
-        get_scoring_func.side_effect = [['test-zero'], ['test-two'], ['test-zero']]
-        filtered = scoring.filter_using_score(range(3), get_scoring_func, None)
-        self.assertEqual([1], list(filtered))
-
-    def test_unknown_filter(self):
-        """Filter an item with an unknown filter."""
-
-        get_scoring_func = mock.MagicMock()
-        get_scoring_func.return_value = ['unknown-filter']
-        filtered = scoring.filter_using_score([42], get_scoring_func, None)
-        self.assertEqual([42], list(filtered))
-
-    def test_multiple_filters(self):
-        """Filter an item with multiple filters."""
-
-        get_scoring_func = mock.MagicMock()
-        get_scoring_func.return_value = ['test-two', 'test-zero']
-        filtered = scoring.filter_using_score([42], get_scoring_func, None)
-        self.assertEqual([], list(filtered))
+        self.persona.project.city.urban_score = 8
+        self._assert_fail_filter()
 
 
 class LBBFilterTestCase(FilterTestBase):
@@ -975,7 +1122,7 @@ class LBBFilterTestCase(FilterTestBase):
     model_id = 'for-recruiting-sector'
 
     @mock.patch(companies.__name__ + '.get_lbb_companies')
-    def test_big_company_recruiting(self, mock_get_lbb_companies):
+    def test_big_company_recruiting(self, mock_get_lbb_companies: mock.MagicMock) -> None:
         """Test that big companies return pass the filter."""
 
         mock_get_lbb_companies.return_value = iter([
@@ -985,7 +1132,7 @@ class LBBFilterTestCase(FilterTestBase):
         self._assert_pass_filter()
 
     @mock.patch(companies.__name__ + '.get_lbb_companies')
-    def test_medium_companies_recruiting(self, mock_get_lbb_companies):
+    def test_medium_companies_recruiting(self, mock_get_lbb_companies: mock.MagicMock) -> None:
         """Test that multiple medium companies pass the filter."""
 
         mock_get_lbb_companies.return_value = iter([
@@ -995,7 +1142,7 @@ class LBBFilterTestCase(FilterTestBase):
         self._assert_pass_filter()
 
     @mock.patch(companies.__name__ + '.get_lbb_companies')
-    def test_companies_not_recruiting(self, mock_get_lbb_companies):
+    def test_companies_not_recruiting(self, mock_get_lbb_companies: mock.MagicMock) -> None:
         """Test that companies not recruiting does not pass the filter."""
 
         mock_get_lbb_companies.return_value = iter([
@@ -1006,7 +1153,8 @@ class LBBFilterTestCase(FilterTestBase):
 
     @mock.patch(companies.__name__ + '.get_lbb_companies')
     @mock.patch(companies.logging.__name__ + '.warning')
-    def test_failed_lbb_response_parsing(self, mock_log_warning, mock_get_lbb_companies):
+    def test_failed_lbb_response_parsing(
+            self, mock_log_warning: mock.MagicMock, mock_get_lbb_companies: mock.MagicMock) -> None:
         """Test that companies not recruiting does not pass the filter."""
 
         mock_get_lbb_companies.return_value = iter([
@@ -1022,7 +1170,7 @@ class ContractTypeFilterTestCase(FilterTestBase):
 
     model_id = 'for-most-likely-short-contract'
 
-    def test_recruiting_through_cdi(self):
+    def test_recruiting_through_cdi(self) -> None:
         """Test that main contract CDI does not pass the filter."""
 
         self.database.job_group_info.insert_one({
@@ -1051,7 +1199,7 @@ class ContractTypeFilterTestCase(FilterTestBase):
         self.persona.project.target_job.job_group.rome_id = 'A1204'
         self._assert_fail_filter()
 
-    def test_recruiting_through_cdd(self):
+    def test_recruiting_through_cdd(self) -> None:
         """Test that main contract short CDD passes the filter."""
 
         self.database.job_group_info.insert_one({
@@ -1080,7 +1228,7 @@ class ContractTypeFilterTestCase(FilterTestBase):
         self.persona.project.target_job.job_group.rome_id = 'A1204'
         self._assert_pass_filter()
 
-    def test_recruiting_through_cdds(self):
+    def test_recruiting_through_cdds(self) -> None:
         """Test that compounded short contract are over 50% passes the filter."""
 
         self.database.job_group_info.insert_one({
@@ -1110,12 +1258,132 @@ class ContractTypeFilterTestCase(FilterTestBase):
         self._assert_pass_filter()
 
 
+class NarrowContractSearchTestCase(FilterTestBase):
+    """Unit tests for the filter on narrow search on contract types."""
+
+    model_id = 'for-narrow-contract-search'
+
+    def test_no_data(self) -> None:
+        """Fails if we don't have info on the market."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1204',
+            'requirements': {
+                'contractTypes': []
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1204'
+        self._assert_fail_filter()
+
+    def test_main_employment_type(self) -> None:
+        """User is asking for the main kind of contract."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1204',
+            'requirements': {
+                'contractTypes': [
+                    {
+                        'percentSuggested': 60,
+                        'contractType': 'CDI',
+                    },
+                    {
+                        'percentSuggested': 40,
+                        'contractType': 'INTERIM',
+                    },
+                ]
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1204'
+        self.persona.project.employment_types.append(job_pb2.CDI)
+        self._assert_fail_filter()
+
+    def test_minor_employment_type(self) -> None:
+        """User is asking for a kind of contract which is minor in market."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1204',
+            'requirements': {
+                'contractTypes': [
+                    {
+                        'percentSuggested': 60,
+                        'contractType': 'CDI',
+                    },
+                    {
+                        'percentSuggested': 40,
+                        'contractType': 'INTERIM',
+                    },
+                ]
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1204'
+        del self.persona.project.employment_types[:]
+        self.persona.project.employment_types.append(job_pb2.INTERIM)
+        self._assert_pass_filter()
+
+    def test_several_minor_employment_types(self) -> None:
+        """User is asking for several types of contract, which make a majority."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1204',
+            'requirements': {
+                'contractTypes': [
+                    {
+                        'percentSuggested': 45,
+                        'contractType': 'CDI',
+                    },
+                    {
+                        'percentSuggested': 30,
+                        'contractType': 'CDD_OVER_3_MONTHS',
+                    },
+                    {
+                        'percentSuggested': 25,
+                        'contractType': 'INTERIM',
+                    },
+                ]
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1204'
+        self.persona.project.employment_types.extend([job_pb2.CDD_OVER_3_MONTHS, job_pb2.INTERIM])
+        self._assert_fail_filter()
+
+    def test_several_too_minor_employment_types(self) -> None:
+        """User is asking for several types of contract, which still make a minority."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1204',
+            'requirements': {
+                'contractTypes': [
+                    {
+                        'percentSuggested': 45,
+                        'contractType': 'CDI',
+                    },
+                    {
+                        'percentSuggested': 30,
+                        'contractType': 'CDD_OVER_3_MONTHS',
+                    },
+                    {
+                        'percentSuggested': 15,
+                        'contractType': 'CDD_LESS_EQUAL_3_MONTHS',
+                    },
+                    {
+                        'percentSuggested': 10,
+                        'contractType': 'INTERIM',
+                    },
+                ]
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1204'
+        del self.persona.project.employment_types[:]
+        self.persona.project.employment_types.extend([job_pb2.CDD_OVER_3_MONTHS, job_pb2.INTERIM])
+        self._assert_pass_filter()
+
+
 class OffersEvolutionFilterTestCase(FilterTestBase):
     """Unit tests for the filter on evolution of offers."""
 
     model_id = 'for-evolution-of-offers(+10%)'
 
-    def test_negative_evolution(self):
+    def test_negative_evolution(self) -> None:
         """Test that a market which is not recruiting more than before fails the filter."""
 
         self.database.local_diagnosis.insert_one({
@@ -1123,10 +1391,10 @@ class OffersEvolutionFilterTestCase(FilterTestBase):
             'job_offers_change': -5
         })
         self.persona.project.target_job.job_group.rome_id = 'M1403'
-        self.persona.project.mobility.city.departement_id = '69'
+        self.persona.project.city.departement_id = '69'
         self._assert_fail_filter()
 
-    def test_not_much_evolution(self):
+    def test_not_much_evolution(self) -> None:
         """Test that a market which is not recruiting much more than before fails the filter."""
 
         self.database.local_diagnosis.insert_one({
@@ -1134,10 +1402,10 @@ class OffersEvolutionFilterTestCase(FilterTestBase):
             'job_offers_change': 5
         })
         self.persona.project.target_job.job_group.rome_id = 'M1403'
-        self.persona.project.mobility.city.departement_id = '69'
+        self.persona.project.city.departement_id = '69'
         self._assert_fail_filter()
 
-    def test_good_evolution(self):
+    def test_good_evolution(self) -> None:
         """Test that a market which is recruiting much more than before passes the filter."""
 
         self.database.local_diagnosis.insert_one({
@@ -1145,7 +1413,7 @@ class OffersEvolutionFilterTestCase(FilterTestBase):
             'job_offers_change': 15
         })
         self.persona.project.target_job.job_group.rome_id = 'M1403'
-        self.persona.project.mobility.city.departement_id = '69'
+        self.persona.project.city.departement_id = '69'
         self._assert_pass_filter()
 
 
@@ -1154,13 +1422,13 @@ class InterimFilterTestCase(FilterTestBase):
 
     model_id = 'for-very-short-contract'
 
-    def test_interim(self):
+    def test_interim(self) -> None:
         """Test that a user willing to do interim passes the filter."""
 
         self.persona.project.employment_types.append(job_pb2.INTERIM)
         self._assert_pass_filter()
 
-    def test_not_interim(self):
+    def test_not_interim(self) -> None:
         """Test that a user unwilling to do interim fails the filter."""
 
         try:
@@ -1176,20 +1444,20 @@ class GoodScorerTestCase(FilterTestBase):
 
     model_id = 'for-good-score(network-score)'
 
-    def test_with_good_score(self):
+    def test_with_good_score(self) -> None:
         """Test that a good enough score passes the filter."""
 
         # This makes a 60% score.
         self.persona.project.network_estimate = 2
         self._assert_pass_filter()
 
-    def test_with_bad_score(self):
+    def test_with_bad_score(self) -> None:
         """Test that a bad score fails the filter."""
 
         self.persona.project.network_estimate = 1
         self._assert_fail_filter()
 
-    def test_unscored(self):
+    def test_unscored(self) -> None:
         """Test that no score fails the filter."""
 
         self.persona.project.network_estimate = 0
@@ -1201,25 +1469,253 @@ class BadScorerTestCase(FilterTestBase):
 
     model_id = 'for-bad-score(network-score)'
 
-    def test_with_good_score(self):
+    def test_with_good_score(self) -> None:
         """Test that a good enough score fails the filter."""
 
         # This makes a 60% score.
         self.persona.project.network_estimate = 2
         self._assert_fail_filter()
 
-    def test_with_bad_score(self):
+    def test_with_bad_score(self) -> None:
         """Test that a bad score passes the filter."""
 
         self.persona.project.network_estimate = 1
         self._assert_pass_filter()
 
-    def test_unscored(self):
+    def test_unscored(self) -> None:
         """Test that no score fails the filter."""
 
         self.persona.project.network_estimate = 0
         self._assert_fail_filter()
 
 
+class LongTermMomFilterTestCase(FilterTestBase):
+    """Tests for the for-long-term-mom filter."""
+
+    model_id = 'for-long-term-mom'
+
+    def test_frustrated_woman(self) -> None:
+        """A woman frustrated by her stay-at-homeness passes the filter."""
+
+        self.persona.user_profile.gender = user_pb2.FEMININE
+        self.persona.user_profile.frustrations.append(user_pb2.STAY_AT_HOME_PARENT)
+        self._assert_pass_filter()
+
+    def test_not_frustrated(self) -> None:
+        """A person not frustrated by their stay-at-homeness fails the filter."""
+
+        del self.persona.user_profile.frustrations[:]
+        self._assert_fail_filter()
+
+    def test_not_woman(self) -> None:
+        """A man fails the filter."""
+
+        self.persona.user_profile.gender = user_pb2.MASCULINE
+        self._assert_fail_filter()
+
+
+class DriverFilterTestCase(FilterTestBase):
+    """Tests for users that have a driving license."""
+
+    model_id = 'for-driver'
+
+    def test_has_no_license(self) -> None:
+        """User does not have a driving license."""
+
+        self.persona.user_profile.has_car_driving_license = user_pb2.FALSE
+        del self.persona.user_profile.driving_licenses[:]
+        self._assert_fail_filter()
+
+    def test_has_motorcycle_driving_license(self) -> None:
+        """User has a driving license in the list of licenses."""
+
+        self.persona.user_profile.driving_licenses.append(job_pb2.MOTORCYCLE)
+        self._assert_pass_filter()
+
+    def test_has_car_driving_license(self) -> None:
+        """User has car driving license."""
+
+        self.persona.user_profile.has_car_driving_license = user_pb2.TRUE
+        self._assert_pass_filter()
+
+
+class LowMobilityTestCase(FilterTestBase):
+    """Unit tests for the _ProjectFilter class for users with low but existant mobility."""
+
+    model_id = 'for-low-mobility(departement)'
+
+    def test_medium_mobility(self) -> None:
+        """User is willing to move in the region."""
+
+        self.persona.project.area_type = geo_pb2.REGION
+        self._assert_pass_filter()
+
+    def test_no_mobility(self) -> None:
+        """User is not willing to move outside the city."""
+
+        self.persona.project.area_type = geo_pb2.CITY
+        self._assert_fail_filter()
+
+
+class MediumMobilityTestCase(FilterTestBase):
+    """Unit tests for the _ProjectFilter class for users with medium mobility."""
+
+    model_id = 'for-medium-mobility(region)'
+
+    def test_medium_mobility(self) -> None:
+        """User is willing to move in the region."""
+
+        self.persona.project.area_type = geo_pb2.REGION
+        self._assert_pass_filter()
+
+    def test_low_mobility(self) -> None:
+        """User is not willing to move outside the departement."""
+
+        self.persona.project.area_type = geo_pb2.DEPARTEMENT
+        self._assert_fail_filter()
+
+
+class HighMobilityTestCase(FilterTestBase):
+    """Unit tests for the _ProjectFilter class for users with high mobility."""
+
+    model_id = 'for-high-mobility(country)'
+
+    def test_high_mobility(self) -> None:
+        """User is willing to move in the region."""
+
+        self.persona.project.area_type = geo_pb2.WORLD
+        self._assert_pass_filter()
+
+    def test_medium_mobility(self) -> None:
+        """User is not willing to move outside the region."""
+
+        self.persona.project.area_type = geo_pb2.REGION
+        self._assert_fail_filter()
+
+
+class NoRequiredDiplomasTestCase(FilterTestBase):
+    """Unit tests for the filter for-no-required-diploma."""
+
+    model_id = 'for-no-required-diploma'
+
+    def test_bac_required(self) -> None:
+        """User looks for a job which needs a Baccalauréat"""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {
+                'diplomas': [{
+                    'name': 'Bac',
+                    'percentRequired': 10,
+                }]
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1234'
+        self._assert_fail_filter()
+
+    def test_cap_required(self) -> None:
+        """User looks for a job which needs a CAP"""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {
+                'diplomas': [{
+                    'name': 'CAP',
+                    'percentRequired': 20,
+                }]
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1234'
+        self._assert_fail_filter()
+
+    def test_bac_suggested(self) -> None:
+        """User looks for a job where a Baccalauréat could be useful."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {
+                'diplomas': [{
+                    'name': 'Bac',
+                    'percentSuggested': 10,
+                }]
+            }
+        })
+        self.persona.project.target_job.job_group.rome_id = 'A1234'
+        self._assert_pass_filter()
+
+
+class VeryFrustratedTestCase(FilterTestBase):
+    """Unit tests for the for-very-frustrated(5) filter."""
+
+    model_id = 'for-very-frustrated(5)'
+
+    def not_frustrated(self) -> None:
+        """User has no frustrations."""
+
+        del self.persona.user_profile.frustrations[:]
+        del self.persona.user_profile.custom_frustrations[:]
+        self._assert_fail_filter()
+
+    def not_much_frustrated(self) -> None:
+        """User has few frustrations."""
+
+        frustrations = self.persona.user_profile.frustrations[:]
+        del self.persona.user_profile.frustrations[:]
+        del self.persona.user_profile.custom_frustrations[:]
+        self.persona.user_profile.frustrations.extend(frustrations[:2])
+        self._assert_fail_filter()
+
+    def not_much_frustrated_custom(self) -> None:
+        """User has few frustrations, which are custom."""
+
+        del self.persona.user_profile.frustrations[:]
+        del self.persona.user_profile.custom_frustrations[:]
+        self.persona.user_profile.custom_frustrations.extend(
+            ['la politique du gouvernement', 'le coût de la vie'])
+        self._assert_fail_filter()
+
+    def much_frustrated(self) -> None:
+        """User has a lot of frustrations."""
+
+        self.persona.user_profile.frustrations.extend([
+            user_pb2.NO_OFFERS, user_pb2.MOTIVATION, user_pb2.ATYPIC_PROFILE,
+            user_pb2.AGE_DISCRIMINATION, user_pb2.SINGLE_PARENT])
+        self._assert_pass_filter()
+
+    def buggy_frustrated(self) -> None:
+        """User has a lot of the same frustration."""
+
+        del self.persona.user_profile.frustrations[:]
+        del self.persona.user_profile.custom_frustrations[:]
+        self.persona.user_profile.frustrations.extend([
+            user_pb2.NO_OFFERS, user_pb2.NO_OFFERS, user_pb2.NO_OFFERS, user_pb2.NO_OFFERS,
+            user_pb2.NO_OFFERS])
+        self._assert_fail_filter()
+
+    def much_customly_frustrated(self) -> None:
+        """User has a lot of custom frustrations."""
+
+        self.persona.user_profile.custom_frustrations.extend([
+            'la famille', 'les transports', 'la fatigue', 'la télé', 'le terrorisme'])
+        self._assert_pass_filter()
+
+    def buggy_customly_frustrated(self) -> None:
+        """User has the same custom frustration several times."""
+
+        del self.persona.user_profile.frustrations[:]
+        del self.persona.user_profile.custom_frustrations[:]
+        self.persona.user_profile.custom_frustrations.extend([
+            'la famille', 'la famille', 'la famille', 'la famille', 'la famille'])
+        self._assert_fail_filter()
+
+    def much_frustrated_custom_or_not(self) -> None:
+        """User has both custom and prepared frustrations."""
+
+        self.persona.user_profile.frustrations.extend([user_pb2.NO_OFFERS, user_pb2.MOTIVATION])
+        self.persona.user_profile.custom_frustrations.extend([
+            'la famille', 'les transports', 'la fatigue'])
+        self._assert_pass_filter()
+
+
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

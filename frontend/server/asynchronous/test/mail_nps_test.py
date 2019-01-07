@@ -1,11 +1,13 @@
 """Tests for the bob_emploi.frontend.asynchronous.mail_nps module."""
 
 import datetime
+import inspect
 import signal
+import typing
 import unittest
+from unittest import mock
 from urllib import parse
 
-import mock
 import mongomock
 
 from bob_emploi.frontend.api import user_pb2
@@ -34,13 +36,13 @@ _USER_PENDING_NPS_DICT = {
 class MailingTestCase(unittest.TestCase):
     """Unit tests."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super(MailingTestCase, self).setUp()
         mail_nps.DRY_RUN = False
         self._db = mongomock.MongoClient().database
         self._now = datetime.datetime(2018, 1, 24, 10, 0, 0)
 
-    def test_main(self, mock_post):
+    def test_main(self, mock_post: mock.MagicMock) -> None:
         """Overall test."""
 
         self._db.user.insert_one({
@@ -92,7 +94,7 @@ class MailingTestCase(unittest.TestCase):
             modified_user.emails_sent[0].mailjet_message_id)
         self.assertEqual('nps', modified_user.emails_sent[0].campaign_id)
 
-    def test_too_soon(self, mock_post):
+    def test_too_soon(self, mock_post: mock.MagicMock) -> None:
         """Test that we do not send the NPS email if the user registered recently."""
 
         self._db.user.insert_one(
@@ -111,7 +113,7 @@ class MailingTestCase(unittest.TestCase):
             },
         )
 
-    def test_no_incomplete(self, mock_post):
+    def test_no_incomplete(self, mock_post: mock.MagicMock) -> None:
         """Do not send if project is not complete."""
 
         self._db.user.insert_one({
@@ -137,7 +139,7 @@ class MailingTestCase(unittest.TestCase):
             },
         )
 
-    def test_no_missing_email(self, mock_post):
+    def test_no_missing_email(self, mock_post: mock.MagicMock) -> None:
         """Do not send if there's no email address."""
 
         self._db.user.insert_one({
@@ -162,7 +164,7 @@ class MailingTestCase(unittest.TestCase):
             },
         )
 
-    def test_no_dupes(self, mock_post):
+    def test_no_dupes(self, mock_post: mock.MagicMock) -> None:
         """Test that we do not send duplicate emails if we run the script twice."""
 
         self._db.user.insert_one(_USER_PENDING_NPS_DICT)
@@ -192,7 +194,7 @@ class MailingTestCase(unittest.TestCase):
             ]
         self.assertEqual(calls, mock_post.mock_calls)
 
-    def test_signal(self, mock_post):
+    def test_signal(self, mock_post: mock.MagicMock) -> None:
         """Test that the batch send fails gracefully on SIGTERM."""
 
         self._db.user.insert_many([
@@ -221,24 +223,28 @@ class MailingTestCase(unittest.TestCase):
         )
 
 
-class _SigtermAfterNItems(object):
+_T = typing.TypeVar('_T')
+
+
+class _SigtermAfterNItems(typing.Generic[_T]):
     """Wrapper to iterate on a list but raise a SIGTERM after n items have been iterated."""
 
-    def __init__(self, items, sigterm_after_n):
+    def __init__(self, items: typing.List[_T], sigterm_after_n: int):
         self._items = items
         self._sigterm_after_n = sigterm_after_n
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[_T]:
         return _SigtermAfterNItems(self._items, self._sigterm_after_n)
 
-    def __next__(self):
+    def __next__(self) -> _T:
         if not self._items:
             raise StopIteration
         if not self._sigterm_after_n:
-            signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+            typing.cast(typing.Callable[..., None], signal.getsignal(signal.SIGTERM))(
+                signal.SIGTERM, inspect.currentframe())
         self._sigterm_after_n -= 1
         return self._items.pop()
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

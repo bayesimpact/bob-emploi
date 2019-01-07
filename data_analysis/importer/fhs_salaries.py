@@ -171,4 +171,4 @@ def main(fhs_folder, csv_output):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])  # pragma: no-cover; pylint: disable=no-value-for-parameter
+    main(*sys.argv[1:])  # pylint: disable=no-value-for-parameter

@@ -1,9 +1,11 @@
 """Module to advise the user to do spontaneous applications."""
 
 import itertools
+import typing
 
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server import scoring_base
+from bob_emploi.frontend.api import company_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import job_pb2
 
@@ -11,7 +13,8 @@ from bob_emploi.frontend.api import job_pb2
 class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
     """A scoring model for the "Send spontaneous applications" advice module."""
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         # TODO(pascal): Boost score for alternance.
@@ -33,22 +36,25 @@ class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
 
         return scoring_base.NULL_EXPLAINED_SCORE
 
-    def compute_extra_data(self, project):
+    def _get_first_companies(
+            self,
+            project: project_pb2.Project,
+            contract: typing.Optional[str] = None,
+            max_count: int = 5) -> typing.Iterator[company_pb2.Company]:
+        for company in itertools.islice(
+                companies.get_lbb_companies(project, contract=contract), max_count):
+            yield companies.to_proto(company)
+
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> project_pb2.SpontaneousApplicationData:
         """Compute extra data for this module to render a card in the client."""
 
         extra_data = project_pb2.SpontaneousApplicationData()
         if set(project.details.employment_types) - {job_pb2.ALTERNANCE}:
-            extra_data.companies.extend(
-                companies.to_proto(c)
-                for c in itertools.islice(companies.get_lbb_companies(project.details), 5)
-            )
+            extra_data.companies.extend(self._get_first_companies(project.details))
         if job_pb2.ALTERNANCE in project.details.employment_types:
-            alternance_companies = companies.get_lbb_companies(
-                project.details, contract='alternance')
             extra_data.alternance_companies.extend(
-                companies.to_proto(c)
-                for c in itertools.islice(alternance_companies, 5)
-            )
+                self._get_first_companies(project.details, contract='alternance'))
         return extra_data
 
 
@@ -58,12 +64,13 @@ class _GreatApplicationModeFilter(scoring_base.BaseFilter):
     https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/imt/application_modes.ipynb
     """
 
-    def __init__(self, application_mode, delta_percentage):
+    def __init__(self, application_mode: job_pb2.ApplicationMode, delta_percentage: float) \
+            -> None:
         super(_GreatApplicationModeFilter, self).__init__(self._filter)
         self.application_mode = application_mode
         self.delta_percentage = delta_percentage
 
-    def _filter(self, project):
+    def _filter(self, project: scoring_base.ScoringProject) -> bool:
         """the filtering function for a given ScoringProject."""
 
         application_modes = project.job_group_info().application_modes.values()

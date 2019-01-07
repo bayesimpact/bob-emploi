@@ -10,11 +10,17 @@ message HiringCity {
 
   // Offers in this city, possibly for a given job group depending on context. Only the comparison
   // of this number to other cities will be meaningful.
+  // TODO(cyrille): Consider deprecating this, since we're actually only looking at the offers per
+  // inhabitant.
   float offers = 4;
+
+  // Offers in this city, divided by the population of the city, if known.
+  float offers_per_inhabitant = 2;
 }
 
 message HiringCities {
-  // List of cities that hire for a given job group and period.
+  // List of cities that hire for a given job group and period, sorted by descending offers per
+  // inhabitant.
   repeated HiringCity hiring_cities = 1;
 }
 
@@ -28,6 +34,10 @@ message CommutingCity {
 
   // Distance of the commute, from the project's target city.
   float distance_km = 3;
+
+  // ID of the département in which the city is. E.g. "69" for Rhône, "2A" for
+  // Corse du Sud, or "976" for Mayotte.
+  string departement_id = 4;
 }
 
 message CommutingCities {

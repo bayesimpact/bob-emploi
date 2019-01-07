@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-package bayes.bob;
-
 import "bob_emploi/frontend/api/association.proto";
+import "bob_emploi/frontend/api/options.proto";
+
+package bayes.bob;
 
 message DrivingSchool {
 
@@ -11,13 +12,13 @@ message DrivingSchool {
 
   // A set of filters ID: do not show the school if one these filters
   // returns false for the project.
-  repeated string filters = 2;
+  repeated string filters = 2 [(string_format) = SCORING_MODEL_ID];
 
   // Physical address for the school. If this is a list of schools, leave empty.
   string address = 3;
 
   // Web link to the school website.
-  string link = 4;
+  string link = 4 [(string_format) = URL_FORMAT];
 
   //TODO(cyrille): Add fields for geo loc, to get closest to user.
 }
@@ -30,7 +31,7 @@ message OneEuroProgramPartnerBank {
   string logo = 2;
 
   // The link to the bank's website page for their "1 euro" program.
-  string link = 3;
+  string link = 3 [(string_format) = URL_FORMAT];
 }
 
 message OneEuroProgram {
@@ -38,7 +39,7 @@ message OneEuroProgram {
   repeated DrivingSchool schools = 1;
 
   // Link to a list of partner schools for the program, that could interest the user.
-  string school_list_link = 2;
+  string school_list_link = 2 [(string_format) = URL_FORMAT];
 
   // Partner banks of the "1 euro" program.
   repeated OneEuroProgramPartnerBank partner_banks = 3;

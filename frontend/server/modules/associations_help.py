@@ -1,29 +1,31 @@
 """Module to advise the user to get helped by a local association."""
 
 import random
+import typing
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import association_pb2
-from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 
 
 class _AdviceAssociationHelp(scoring_base.ModelBase):
     """A scoring model to trigger the "Find an association to help you" advice."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(_AdviceAssociationHelp, self).__init__()
         self._db = scoring_base.ASSOCIATIONS
 
     @scoring_base.ScoringProject.cached('associations')
-    def list_associations(self, project):
+    def list_associations(self, project: scoring_base.ScoringProject) \
+            -> typing.List[association_pb2.Association]:
         """List all associations for a project."""
 
         all_associations = self._db.get_collection(project.database)
         return list(
             scoring_base.filter_using_score(all_associations, lambda j: j.filters, project))
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
         associations = self.list_associations(project)
@@ -43,16 +45,8 @@ class _AdviceAssociationHelp(scoring_base.ModelBase):
         return scoring_base.ExplainedScore(2, [project.translate_string(
             "l'accompagnement humain peut beaucoup apporter")])
 
-    def compute_extra_data(self, project):
-        """Compute extra data for this module to render a card in the client."""
-
-        associations = self.list_associations(project)
-        if not associations:
-            return None
-        sorted_associations = sorted(associations, key=lambda j: (-len(j.filters), random.random()))
-        return project_pb2.AssociationsData(association_name=sorted_associations[0].name)
-
-    def get_expanded_card_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> association_pb2.Associations:
         """Retrieve data for the expanded card."""
 
         associations = self.list_associations(project)

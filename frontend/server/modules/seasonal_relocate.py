@@ -1,6 +1,7 @@
 """Advice module to recommend seasonal jobs in other départements."""
 
 import logging
+import typing
 
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
@@ -10,21 +11,24 @@ from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import seasonal_jobbing_pb2
 from bob_emploi.frontend.api import user_pb2
 
+_SEASONAL_JOBBING: proto.MongoCachedCollection[seasonal_jobbing_pb2.MonthlySeasonalJobbingStats] = \
+    proto.MongoCachedCollection(
+        seasonal_jobbing_pb2.MonthlySeasonalJobbingStats, 'seasonal_jobbing')
+
 
 class _AdviceSeasonalRelocate(scoring_base.ModelBase):
     """A scoring model for the "seasonal relocate" advice module."""
 
-    def score_and_explain(self, project):
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
-        reasons = []
-
-        area_type = project.details.area_type or project.details.mobility.area_type
+        reasons: typing.List[str] = []
 
         # For now we just match for people willing to move to the whole country.
         # There might be cases where we should be able to recommend to people who want to move to
         # their own region, but it would add complexity to find them.
-        is_not_ready_to_move = area_type < geo_pb2.COUNTRY
+        is_not_ready_to_move = project.details.area_type < geo_pb2.COUNTRY
 
         is_not_single = project.user_profile.family_situation != user_pb2.SINGLE
         has_advanced_degree = project.user_profile.highest_degree >= job_pb2.LICENCE_MAITRISE
@@ -45,24 +49,25 @@ class _AdviceSeasonalRelocate(scoring_base.ModelBase):
             return scoring_base.ExplainedScore(2, reasons)
         return scoring_base.NULL_EXPLAINED_SCORE
 
-    def compute_extra_data(self, project):
+    def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
+            -> seasonal_jobbing_pb2.MonthlySeasonalJobbingStats:
         """Compute extra data for this module to render a card in the client."""
 
         return self._get_seasonal_departements(project)
 
     @scoring_base.ScoringProject.cached('seasonal-departements')
-    def _get_seasonal_departements(self, project):
+    def _get_seasonal_departements(self, project: scoring_base.ScoringProject) \
+            -> seasonal_jobbing_pb2.MonthlySeasonalJobbingStats:
         """Compute departements that propose seasonal jobs."""
 
-        # TODO(guillaume): Cache this to increase speed.
-        top_departements = proto.create_from_mongo(
-            project.database.seasonal_jobbing.find_one({'_id': project.now.month}),
-            seasonal_jobbing_pb2.MonthlySeasonalJobbingStats)
+        top_departements = seasonal_jobbing_pb2.MonthlySeasonalJobbingStats()
+        try:
+            top_departements.CopyFrom(
+                _SEASONAL_JOBBING.get_collection(project.database)[str(project.now.month)])
+        except KeyError:
+            pass
 
         for departement in top_departements.departement_stats:
-            # TODO(guillaume): If we don't use deeper jobgroups by october 1st 2017, trim the db.
-            del departement.job_groups[6:]
-
             try:
                 departement.departement_in_name = geo.get_in_a_departement_text(
                     project.database, departement.departement_id)
@@ -75,7 +80,7 @@ class _AdviceSeasonalRelocate(scoring_base.ModelBase):
             if not departement.departement_in_name:
                 del top_departements.departement_stats[i]
 
-        return top_departements or []
+        return top_departements
 
 
 scoring_base.register_model('advice-seasonal-relocate', _AdviceSeasonalRelocate())

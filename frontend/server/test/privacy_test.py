@@ -11,7 +11,7 @@ from bob_emploi.frontend.api import user_pb2
 class PrivacyTestCase(unittest.TestCase):
     """Unit tests for the privacy module."""
 
-    def test_anonymize_proto(self):
+    def test_anonymize_proto(self) -> None:
         """Basic usage of anonymize_proto."""
 
         user = user_pb2.User()
@@ -22,14 +22,16 @@ class PrivacyTestCase(unittest.TestCase):
 
         self.assertTrue(privacy.anonymize_proto(user))
 
-        self.assertEqual(datetime.datetime(2017, 7, 19, 15), user.registered_at.ToDatetime())
+        self.assertEqual(
+            datetime.datetime(2017, 7, 19, 15),
+            user.registered_at.ToDatetime())
         self.assertFalse(user.google_id)
         self.assertEqual(42, user.revision)
         self.assertFalse(user.projects[0].project_id)
         self.assertEqual('fine', user.projects[0].deletion_reason)
         self.assertEqual('app only', user.projects[0].title)
 
-    def test_anonymize_proto_also_field_usages_to_clear(self):
+    def test_anonymize_proto_also_field_usages_to_clear(self) -> None:
         """anonymize_proto clears both personal identifier and app-only fields."""
 
         user = user_pb2.User()
@@ -41,14 +43,15 @@ class PrivacyTestCase(unittest.TestCase):
         self.assertTrue(privacy.anonymize_proto(
             user, field_usages_to_clear={options_pb2.PERSONAL_IDENTIFIER, options_pb2.APP_ONLY}))
 
-        self.assertEqual(datetime.datetime(2017, 7, 19, 15), user.registered_at.ToDatetime())
+        self.assertEqual(
+            datetime.datetime(2017, 7, 19, 15), user.registered_at.ToDatetime())
         self.assertFalse(user.google_id)
         self.assertFalse(user.revision)
         self.assertFalse(user.projects[0].project_id)
         self.assertEqual('fine', user.projects[0].deletion_reason)
         self.assertFalse(user.projects[0].title)
 
-    def test_anonymize_proto_map(self):
+    def test_anonymize_proto_map(self) -> None:
         """anonymize_proto does not choke on a scalar map."""
 
         user = user_pb2.User()
@@ -60,4 +63,4 @@ class PrivacyTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()

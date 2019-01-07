@@ -14,7 +14,7 @@ import requests
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import privacy
 
-_DB, _USER_DB = mongo.get_connections_from_env()
+_, _USER_DB, _DB = mongo.get_connections_from_env()
 
 # A Slack WebHook URL to send final reports to. Defined in the Incoming
 # WebHooks of https://bayesimpact.slack.com/apps/A0F7XDUAZ-incoming-webhooks
@@ -33,13 +33,15 @@ _DEFAULT_USERS_FILTER = {
 }
 
 
-def main(pool_name=_YESTERDAY, users_json_filters=None, limit=20):
+def main(pool_name: str = _YESTERDAY, users_json_filters: str = '', limit: str = '20') -> None:
     """Create a pool of use cases and store them in MongoDB."""
 
     users_filters = json.loads(users_json_filters) if users_json_filters else _DEFAULT_USERS_FILTER
     user_iterator = _USER_DB.user.find(users_filters).limit(int(limit))
     for user_index, user_dict in enumerate(user_iterator):
         use_case_proto = privacy.user_to_use_case(user_dict, pool_name, user_index)
+        if not use_case_proto:
+            continue
         use_case = json_format.MessageToDict(use_case_proto)
         use_case['_id'] = use_case.pop('useCaseId')
         try:

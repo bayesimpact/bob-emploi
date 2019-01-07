@@ -16,9 +16,11 @@ import os
 import re
 import signal
 import sys
+import typing
 from urllib import parse
 
 from google.protobuf import json_format
+import pymongo
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import french
@@ -27,7 +29,7 @@ from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous import report
 
-_, _USER_DB = mongo.get_connections_from_env()
+_, _USER_DB, _ = mongo.get_connections_from_env()
 
 # The base URL to use as the prefix of all links to the website. E.g. in dev,
 # you should use http://localhost:3000.
@@ -53,7 +55,7 @@ _MAILJET_REPORT_TEMPLATE_ID = '74071'
 _DAY_CUT_UTC_HOUR = 1
 
 
-def send_email_to_user(user, user_id, base_url):
+def send_email_to_user(user: user_pb2.User, user_id: str, base_url: str) -> 'mail._Response':
     """Sends an email to the user to measure the Net Promoter Score."""
 
     # Renew actions for the day if needed.
@@ -74,7 +76,11 @@ def send_email_to_user(user, user_id, base_url):
     return mail_result
 
 
-def _break_on_signal(signums, iterator):
+_T = typing.TypeVar('_T')
+
+
+def _break_on_signal(
+        signums: typing.List[signal.Signals], iterator: typing.Iterator[_T]) -> typing.Iterator[_T]:
     """Wrapper for an iterator to stop iterating when kernal signal is received.
 
     Args:
@@ -86,7 +92,7 @@ def _break_on_signal(signums, iterator):
 
     signals = []
 
-    def _record_signal(signum, unused_frame):
+    def _record_signal(signum: signal.Signals, unused_frame: typing.Any) -> None:
         # TODO(pascal): Update the report email to write that the blast was
         # interrupted.
         signals.append(signum)
@@ -99,7 +105,7 @@ def _break_on_signal(signums, iterator):
             break
 
 
-def _send_reports(count, errors):
+def _send_reports(count: int, errors: typing.List[str]) -> None:
     logging.warning('%d emails sent.', count)
 
     report.notify_slack(
@@ -108,7 +114,9 @@ def _send_reports(count, errors):
 
 
 # TODO(pascal): Move to mail_blast module.
-def main(user_db, base_url, now, days_before_sending):
+def main(
+        user_db: pymongo.database.Database, base_url: str, now: datetime.datetime,
+        days_before_sending: str) -> None:
     """Send an email to users that signed up more than n days ago list of users."""
 
     query = {
@@ -129,7 +137,7 @@ def main(user_db, base_url, now, days_before_sending):
             'profile.lastName',
             'profile.name',
         ))
-    errors = []
+    errors: typing.List[str] = []
     registered_before = (now - datetime.timedelta(days=int(days_before_sending)))\
         .replace(hour=_DAY_CUT_UTC_HOUR, minute=0, second=0, microsecond=0)
     for user_in_db in _break_on_signal([signal.SIGTERM], user_iterator):
@@ -154,8 +162,8 @@ def main(user_db, base_url, now, days_before_sending):
         if not DRY_RUN:
             sent_response = result.json()
             message_id = 0
-            message_id = next(iter(
-                next(iter(sent_response.get('Messages', [])), {}).get('To', {})
+            message_id = next(iter(  # type: ignore
+                next(iter(sent_response.get('Messages', [])), {}).get('To', {})  # type: ignore
             ), {}).get('MessageID', 0)
             if not message_id:
                 logging.warning('Impossible to retrieve the sent email ID:\n%s', sent_response)

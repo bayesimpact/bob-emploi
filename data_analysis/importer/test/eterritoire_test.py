@@ -2,8 +2,8 @@
 
 import json
 import unittest
+from unittest import mock
 
-import mock
 import requests
 
 from bob_emploi.frontend.api import association_pb2
@@ -47,4 +47,4 @@ class ETerritoireImporterTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    unittest.main()
