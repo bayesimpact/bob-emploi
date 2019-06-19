@@ -49,7 +49,7 @@ _EMPLOI_STORE_CLIENT_SECRET = os.getenv('EMPLOI_STORE_CLIENT_SECRET')
 
 # https://www.linkedin.com/developer/apps/4800174/auth
 _LINKED_IN_CLIENT_ID = os.getenv('LINKED_IN_CLIENT_ID', '86r4xh5py0mw9k')
-_LINKED_IN_CLIENT_SECRET = os.getenv('LINKED_IN_CLIENT_SECRET')
+_LINKED_IN_CLIENT_SECRET = os.getenv('LINKED_IN_CLIENT_SECRET', 'Ydx7uSMVLQe6goTJ')
 
 # This is a fake salt, not used anywhere in staging nor prod. This default
 # value is used for tests and dev environment.
@@ -73,10 +73,6 @@ _AUTH_FIELDS = {
     'peConnectId': 'Pôle emploi',
     'linkedInId': 'LinkedIn',
 }
-
-# TODO(pascal): Drop once flask gets typed.
-_flask_abort = typing.cast(  # pylint: disable=invalid-name
-    typing.Callable[[int, str], typing.NoReturn], flask.abort)
 
 
 def require_admin(func: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]:
@@ -200,6 +196,18 @@ def hash_user_email(email: str) -> str:
     return hashed_email.hexdigest()
 
 
+def _replace_arrondissement_insee_to_city(code_insee: str) -> str:
+    """If needed replace arrondissement's insee code with the full city's one."""
+
+    if code_insee.startswith('132'):
+        return '13055'
+    if code_insee.startswith('751'):
+        return '75056'
+    if code_insee.startswith('6938'):
+        return '69123'
+    return code_insee
+
+
 class Authenticator(object):
     """An object to authenticate requests."""
 
@@ -212,10 +220,11 @@ class Authenticator(object):
         self._save_new_user = save_new_user
         self._update_returning_user = update_returning_user
 
-    def save_new_user(self, user: user_pb2.User, user_data: user_pb2.AuthUserData) -> user_pb2.User:
+    def save_new_user(
+            self, user: user_pb2.User, unused_user_data: user_pb2.AuthUserData) -> user_pb2.User:
         """Save a user with additional data."""
 
-        user.features_enabled.quick_diagnostic = user_data.quick_diagnostic
+        # NOTE: we do not have any additional data at the moment, but we might have in the future.
         return self._save_new_user(user)
 
     def authenticate(self, auth_request: user_pb2.AuthRequest) -> user_pb2.AuthResponse:
@@ -236,16 +245,14 @@ class Authenticator(object):
         if auth_request.user_id:
             return self._token_authenticate(auth_request)
         logging.warning('No mean of authentication found:\n%s', auth_request)
-        _flask_abort(422, "Aucun moyen d'authentification n'a été trouvé.")
+        flask.abort(422, "Aucun moyen d'authentification n'a été trouvé.")
 
     def _google_authenticate(self, token_id: str, user_data: user_pb2.AuthUserData) \
             -> user_pb2.AuthResponse:
         id_info = _decode_google_id_token(token_id)
         response = user_pb2.AuthResponse()
         user_dict = self._user_db.user.find_one({'googleId': id_info['sub']})
-        user_id = str(user_dict['_id']) if user_dict else ''
-        if proto.parse_from_mongo(user_dict, response.authenticated_user):
-            response.authenticated_user.user_id = user_id
+        if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
             self._assert_user_not_existing(id_info['email'])
@@ -283,17 +290,19 @@ class Authenticator(object):
 
         response = user_pb2.AuthResponse()
         user_dict = self._user_db.user.find_one({'facebookId': data['user_id']})
-        user_id = str(user_dict['_id']) if user_dict else ''
-        if proto.parse_from_mongo(user_dict, response.authenticated_user):
-            response.authenticated_user.user_id = user_id
+        if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
-            if email:
-                self._assert_user_not_existing(email)
-                response.authenticated_user.profile.email = email
             response.authenticated_user.facebook_id = data['user_id']
-            self.save_new_user(response.authenticated_user, user_data)
-            response.is_new_user = True
+            # TODO(cyrille): Generalize multi-auth to other methods than facebook.
+            if email and proto.parse_from_mongo(
+                    self._user_db.user.find_one({'hashedEmail': hash_user_email(email)}),
+                    response.authenticated_user, 'user_id'):
+                self._handle_returning_user(response)
+            else:
+                response.is_new_user = True
+                response.authenticated_user.profile.email = email
+                self.save_new_user(response.authenticated_user, user_data)
 
         response.auth_token = create_token(response.authenticated_user.user_id, 'auth')
 
@@ -338,7 +347,9 @@ class Authenticator(object):
                 })
             if coordinates_response.status_code >= 200 and coordinates_response.status_code < 400:
                 coordinates = coordinates_response.json()
-                city = geo.get_city_proto(coordinates.get('codeINSEE'))
+                code_insee = coordinates.get('codeINSEE')
+                clean_code_insee = _replace_arrondissement_insee_to_city(code_insee)
+                city = geo.get_city_proto(clean_code_insee)
 
         job = None
         if 'competences' in scopes:
@@ -357,9 +368,7 @@ class Authenticator(object):
 
         response = user_pb2.AuthResponse()
         user_dict = self._user_db.user.find_one({'peConnectId': user_info['sub']})
-        user_id = str(user_dict.pop('_id')) if user_dict else ''
-        if proto.parse_from_mongo(user_dict, response.authenticated_user):
-            response.authenticated_user.user_id = user_id
+        if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
             email = user_info.get('email')
@@ -397,8 +406,7 @@ class Authenticator(object):
             token_data.get('access_token', ''))
 
         user_info_response = requests.get(
-            'https://api.linkedin.com/v1/people/~:'
-            '(id,location,first-name,last-name,email-address)?format=json',
+            'https://api.linkedin.com/v2/me',
             headers={'Authorization': authorization_header})
         if user_info_response.status_code < 200 or user_info_response.status_code >= 400:
             logging.warning(
@@ -410,20 +418,26 @@ class Authenticator(object):
         response = user_pb2.AuthResponse()
         # TODO(cyrille): Factorize with other 3rd party auth.
         user_dict = self._user_db.user.find_one({'linkedInId': user_info['id']})
-        user_id = str(user_dict.pop('_id')) if user_dict else ''
-        if proto.parse_from_mongo(user_dict, response.authenticated_user):
-            response.authenticated_user.user_id = user_id
+        if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
-            email = user_info.get('emailAddress')
+            email_response = requests.get(
+                'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))',
+                headers={'Authorization': authorization_header})
+            if email_response.status_code < 200 or email_response.status_code >= 400:
+                logging.warning(
+                    'LinkedIn Auth fails (%d): "%s"', email_response.status_code,
+                    email_response.text)
+                flask.abort(403, email_response.text)
+            email = email_response.json().get('handle~', {}).get('emailAddress')
             if email:
                 self._assert_user_not_existing(email)
                 response.authenticated_user.profile.email = email
             user = response.authenticated_user
             user.linked_in_id = user_info['id']
             # TODO(pascal): Handle the case where one of the name is missing.
-            user.profile.name = user_info.get('firstName', '')
-            user.profile.last_name = user_info.get('lastName', '')
+            user.profile.name = user_info.get('localizedFirstName', '')
+            user.profile.last_name = user_info.get('localizedLastName', '')
             self.save_new_user(user, user_data)
             response.is_new_user = True
 
@@ -449,7 +463,7 @@ class Authenticator(object):
                 break
         else:
             user_auth_name = 'Email/Mot de passe'
-        _flask_abort(
+        flask.abort(
             403,
             "L'utilisateur existe mais utilise un autre moyen de connexion: {}."
             .format(user_auth_name))
@@ -479,8 +493,7 @@ class Authenticator(object):
 
         if auth_request.auth_token:
             self._reset_password(auth_request, user_id, user_auth_dict)
-            user_dict['userId'] = user_id
-            if not proto.parse_from_mongo(user_dict, response.authenticated_user):
+            if not proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
                 flask.abort(
                     500, 'Les données utilisateur sont corrompues dans la base de données.')
             return response
@@ -498,7 +511,7 @@ class Authenticator(object):
             flask.abort(
                 403, "Le sel n'a pas été généré par ce serveur : {}.".format(error))
 
-        stored_hashed_password = user_auth_dict.get('hashedPassword')
+        stored_hashed_password = user_auth_dict.get('hashedPassword', '')
 
         hashed_password = hashlib.sha1()
         hashed_password.update(salt.encode('ascii'))
@@ -507,11 +520,10 @@ class Authenticator(object):
         if request_hashed_password != hashed_password.digest():
             flask.abort(403, 'Mot de passe erroné.')
 
-        if not proto.parse_from_mongo(user_dict, response.authenticated_user):
+        if not proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             flask.abort(
                 500, 'Les données utilisateur sont corrompues dans la base de données.')
 
-        response.authenticated_user.user_id = user_id
         self._handle_returning_user(response)
 
         return response
@@ -582,11 +594,10 @@ class Authenticator(object):
         except ValueError as error:
             flask.abort(403, "Le sel n'a pas été généré par ce serveur : {}.".format(error))
 
-        if not proto.parse_from_mongo(user_dict, response.authenticated_user):
+        if not proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             flask.abort(500, 'Les données utilisateur sont corrompues dans la base de données.')
 
         response.auth_token = create_token(str(user_id), 'auth')
-        response.authenticated_user.user_id = str(user_id)
         self._handle_returning_user(response)
 
         return response
@@ -602,7 +613,7 @@ class Authenticator(object):
             flask.abort(
                 403, 'Utilisez Facebook ou Google pour vous connecter, comme la première fois.')
 
-        hashed_old_password = user_auth_dict.get('hashedPassword')
+        hashed_old_password = user_auth_dict.get('hashedPassword', '')
         auth_token = _timestamped_hash(
             int(time.time()), email + str(user_dict['_id']) + hashed_old_password)
 
@@ -623,6 +634,7 @@ class Authenticator(object):
             flask.abort(result.status_code)
 
     def _handle_returning_user(self, response: user_pb2.AuthResponse) -> None:
+        response.is_new_user = False
         response.last_access_at.CopyFrom(
             self._update_returning_user(response.authenticated_user))
 

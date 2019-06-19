@@ -20,7 +20,7 @@ class ReorientJobbingImporterTestCase(unittest.TestCase):
     referentiel_apellation = path.join(
         data_folder, 'testdata/unix_referentiel_appellation_v327_utf8.csv')
 
-    def test_csv2dicts(self):
+    def test_csv2dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
 
         offers = reorient_jobbing.csv2dicts(

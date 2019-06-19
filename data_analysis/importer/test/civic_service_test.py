@@ -2,6 +2,7 @@
 
 from os import path
 import unittest
+from unittest import mock
 
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.data_analysis.importer import civic_service
@@ -17,8 +18,12 @@ class CivicServiceImporterTestCase(unittest.TestCase):
         data_folder, 'testdata/civic_service_offers_2018-01-02.csv')
     today = '2018-01-02'
 
-    def test_csv2dicts(self):
+    @mock.patch(civic_service.__name__ + '.check_coverage')
+    def test_csv2dicts(self, mock_check_coverage: mock.MagicMock) -> None:
         """Test basic usage of the csv2dicts function."""
+
+        # Coverage check is skipped for this test.
+        mock_check_coverage.return_value = True
 
         missions = civic_service.csv2dicts(self.civic_service_missions_csv, self.today)
 
@@ -53,10 +58,19 @@ class CivicServiceImporterTestCase(unittest.TestCase):
             'Contribuer à la qualité des relations des services ' +
             'des finances publiques avec leurs usagers', loiret_missions.missions[0].title)
 
-    def test_csv2dicts_with_outdated_file(self):
+    @mock.patch(civic_service.__name__ + '.check_coverage')
+    def test_csv2dicts_with_outdated_file(self, mock_check_coverage: mock.MagicMock) -> None:
         """Test the csv2dicts function with outdated file."""
 
         self.today = '2018-01-03'
+        # Coverage check is skipped for this test.
+        mock_check_coverage.return_value = True
+
+        with self.assertRaises(ValueError):
+            civic_service.csv2dicts(self.civic_service_missions_csv, self.today)
+
+    def test_csv2dicts_with_low_coverage(self) -> None:
+        """Test the csv2dicts function with low coverage data."""
 
         with self.assertRaises(ValueError):
             civic_service.csv2dicts(self.civic_service_missions_csv, self.today)

@@ -17,7 +17,7 @@ class MainTestCase(unittest.TestCase):
     """Unit tests for the update_email_sent_status module."""
 
     def setUp(self) -> None:
-        super(MainTestCase, self).setUp()
+        super().setUp()
         self.database = mongomock.MongoClient().test
         db_patcher = mock.patch(update_email_sent_status.__name__ + '._DB', self.database)
         db_patcher.start()

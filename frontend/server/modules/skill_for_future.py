@@ -9,7 +9,7 @@ class _SkillForFuture(scoring_base.ModelBase):
     """A scoring model for the skills recommendation."""
 
     def __init__(self) -> None:
-        super(_SkillForFuture, self).__init__()
+        super().__init__()
         self._db: proto.MongoCachedCollection[skill_pb2.JobSkills] = \
             proto.MongoCachedCollection(skill_pb2.JobSkills, 'skills_for_future')
 

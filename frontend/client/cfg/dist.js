@@ -45,7 +45,7 @@ module.exports = {
           path.join(__dirname, '/../release'),
           path.join(__dirname, '/../src'),
         ],
-        test: /\.(js|jsx)$/,
+        test: /\.[jt]sx?$/,
         use: {
           loader: 'babel-loader',
           options: {
@@ -53,7 +53,7 @@ module.exports = {
               '@babel/plugin-syntax-dynamic-import',
               ['@babel/plugin-proposal-class-properties', {loose: false}],
             ],
-            presets: [['@babel/env', {modules: false}], '@babel/react'],
+            presets: [['@babel/env', {modules: false}], '@babel/react', '@babel/typescript'],
           },
         },
       },

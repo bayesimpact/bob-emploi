@@ -2,11 +2,12 @@
 
 import hashlib
 import sys
+import typing
 
 import unidecode
 
 
-def hash_line(line, keep=False):
+def hash_line(line: str, keep: bool = False) -> str:
     """Hash first field of a CSV line.
 
     Args:
@@ -27,7 +28,7 @@ def hash_line(line, keep=False):
     return '{}\n'.format(','.join(fields))
 
 
-def hash_files(inputfile, outputfile, keep=False):
+def hash_files(inputfile: str, outputfile: str, keep: typing.Union[bool, str] = False) -> int:
     """Hash first field of each line of the input file and populate the output.
 
     Args:
@@ -44,12 +45,12 @@ def hash_files(inputfile, outputfile, keep=False):
     with open(outputfile, 'wt') as output:
         with open(inputfile, 'r') as input_lines:
             for line in input_lines:
-                output.write(hash_line(line, keep))
+                output.write(hash_line(line, bool(keep)))
                 count += 1
     return count
 
 
-def hash_user(email, name):
+def hash_user(email: str, name: str) -> str:
     """Prepare the hash string for a given user."""
 
     return hash_line(unidecode.unidecode(email + name[:3].lower())).strip()

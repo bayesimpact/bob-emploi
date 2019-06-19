@@ -1,6 +1,8 @@
 # Bash functions that makes it easier to use the command line to interface with
 # Bob frontend.
 
+BOB_ROOT_FOLDER="$(realpath $(dirname "${BASH_SOURCE[0]}")/../..)"
+
 function _ecs_var_from_json {
   local container=$1
   local var=$2
@@ -42,3 +44,20 @@ function bob_prod_vars {
 function bob_importer_var {
   aws ecs describe-task-definition --task-definition=data-importer | _ecs_var_from_json master "$@"
 }
+
+function mailjet_template {
+  # TODO(cyrille): Deal with `grep -P` issue on MacOS.
+  "$BOB_ROOT_FOLDER/frontend/server/asynchronous/mail/templates/mailjet.sh" "$@"
+}
+
+function _mailjet_template {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  if [ $COMP_CWORD == 1 ]; then
+    COMPREPLY=( $(compgen -W "upload download" -- $cur) )
+    return
+  fi
+  templates=$(jq -rc .[].name "$BOB_ROOT_FOLDER/frontend/server/asynchronous/mail/templates/mailjet.json")
+  COMPREPLY=( $(compgen -W "$templates" -- $cur))
+}
+
+complete -F _mailjet_template mailjet_template

@@ -16,7 +16,7 @@ class OnlineSalonsScoringModelTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-online-salons'
 
     def setUp(self) -> None:
-        super(OnlineSalonsScoringModelTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self.now = datetime.datetime(2018, 6, 15)
         self.database.online_salons.insert_one({

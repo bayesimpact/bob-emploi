@@ -26,6 +26,10 @@ from bob_emploi.frontend.server import proto
 _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
 
 
+# TODO(cyrille): Move strategy scorer tests to its own module and re-enable rule below.
+# pylint: disable=too-many-lines
+
+
 def _load_json_to_mongo(database: pymongo.database.Database, collection: str) -> None:
     """Load a MongoDB collection from a JSON file."""
 
@@ -44,8 +48,8 @@ class ScoringProjectTestCase(unittest.TestCase):
         user.profile.gender = user_pb2.MASCULINE
         user.features_enabled.alpha = True
         project = project_pb2.Project(title='Developpeur web a Lyon')
-        project_str = str(
-            scoring.ScoringProject(project, user.profile, user.features_enabled, None))
+        project_str = str(scoring.ScoringProject(
+            project, user.profile, user.features_enabled, None))
         self.assertIn(str(user.profile), project_str)
         self.assertIn(str(project), project_str)
         self.assertIn(str(user.features_enabled), project_str)
@@ -57,8 +61,8 @@ class ScoringProjectTestCase(unittest.TestCase):
         user.profile.name = 'Cyrille'
         user.features_enabled.alpha = True
         project = project_pb2.Project(project_id='secret-project')
-        project_str = str(
-            scoring.ScoringProject(project, user.profile, user.features_enabled, None))
+        project_str = str(scoring.ScoringProject(
+            project, user.profile, user.features_enabled, None))
         self.assertNotIn('Cyrille', project_str)
         self.assertNotIn('secret-project', project_str)
         self.assertEqual('Cyrille', user.profile.name)
@@ -155,7 +159,7 @@ class ScoringModelTestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        super(ScoringModelTestBase, cls).setUpClass()
+        super().setUpClass()
         if cls.model_id is None:  # pragma: no-cover
             raise NotImplementedError('Add a model_id in "{}"'.format(cls.__name__))
         cls._patcher = mock.patch.dict(scoring.SCORING_MODELS, {})  # type: ignore
@@ -168,11 +172,11 @@ class ScoringModelTestBase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        super(ScoringModelTestBase, cls).tearDownClass()
+        super().tearDownClass()
         cls._patcher.stop()  # type: ignore
 
     def setUp(self) -> None:
-        super(ScoringModelTestBase, self).setUp()
+        super().setUp()
         proto.clear_mongo_fetcher_cache()
         self.database = mongomock.MongoClient().test
         self.now: typing.Optional[datetime.datetime] = None
@@ -223,7 +227,7 @@ class HundredScoringModelTestBase(ScoringModelTestBase):
     """Creates a base class for unit tests of scoring models using the ModelHundredBase."""
 
     def setUp(self) -> None:
-        super(HundredScoringModelTestBase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
 
     def assert_not_enough_data(self) -> None:
@@ -280,13 +284,22 @@ class TrainingAdviceScoringModelTestCase(AdviceScoringModelTestBase):
     def setUp(self) -> None:
         """Setting up the persona for a test."""
 
-        super(TrainingAdviceScoringModelTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self._many_trainings = [
             training_pb2.Training(),
             training_pb2.Training(),
             training_pb2.Training(),
         ]
+
+    def test_forced_for_missing_diploma(self, mock_carif_get_trainings: mock.MagicMock) -> None:
+        """The user's main diagnostic point is that they're missing a diploma."""
+
+        mock_carif_get_trainings.return_value = []
+        self.persona.project.diagnostic.category_id = 'missing-diploma'
+        self.assertEqual(3, self._score_persona(self.persona))
+        self.assertFalse(
+            mock_carif_get_trainings.called, msg=mock_carif_get_trainings.call_args_list)
 
     def test_low_advice_for_new_de(self, mock_carif_get_trainings: mock.MagicMock) -> None:
         """The user just started searching for a job."""
@@ -784,7 +797,7 @@ class AdviceSpecificToJobTestCase(ScoringModelTestBase):
     model_id = 'advice-specific-to-job'
 
     def setUp(self) -> None:
-        super(AdviceSpecificToJobTestCase, self).setUp()
+        super().setUp()
         self.database.specific_to_job_advice.insert_one({
             'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
             'shortTitle': 'Astuces de boulanger',
@@ -908,7 +921,7 @@ class FilterUsingScoreTestCase(unittest.TestCase):
     def setUpClass(cls) -> None:
         """Test setup."""
 
-        super(FilterUsingScoreTestCase, cls).setUpClass()
+        super().setUpClass()
         scoring.SCORING_MODELS['test-zero'] = scoring.ConstantScoreModel('0')
         scoring.SCORING_MODELS['test-two'] = scoring.ConstantScoreModel('2')
 
@@ -941,6 +954,185 @@ class FilterUsingScoreTestCase(unittest.TestCase):
         get_scoring_func.return_value = ['test-two', 'test-zero']
         filtered = scoring.filter_using_score([42], get_scoring_func, self.dummy_project)
         self.assertEqual([], list(filtered))
+
+
+class TryWithoutDiplomaTestCase(HundredScoringModelTestBase):
+    """Unit tests for the "Try without diploma" strategy."""
+
+    model_id = 'strategy-try-without-diploma'
+
+    def test_diploma_stricty_required(self) -> None:
+        """User is looking for a job that strictly requires a diploma."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'M1607',
+            'isDiplomaStrictlyRequired': True,
+        })
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'M1607'
+
+        score = self._score_persona(persona)
+        self.assert_worse_score(score, msg='Failed for "{}":'.format(persona.name))
+
+    def test_frustrated_by_no_answer(self) -> None:
+        """User is looking for a job that does not strictly require a diploma."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'M1607',
+        })
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'M1607'
+
+        score = self._score_persona(persona)
+        self.assert_good_score(score, limit=10, msg='Failed for "{}":'.format(persona.name))
+
+
+class GetAlternanceTestCase(HundredScoringModelTestBase):
+    """Unit tests for the "Get an alternance contract" strategy."""
+
+    model_id = 'strategy-get-alternance'
+
+    def test_young(self) -> None:
+        """User is young."""
+
+        persona = self._random_persona().clone()
+        persona.user_profile.year_of_birth = datetime.datetime.now().year - 29
+
+        score = self._score_persona(persona)
+        self.assert_good_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+
+    def test_old(self) -> None:
+        """User is not so young."""
+
+        persona = self._random_persona().clone()
+        persona.user_profile.year_of_birth = datetime.datetime.now().year - 31
+
+        score = self._score_persona(persona)
+        self.assert_bad_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+
+
+class StrategyLikeableJobTestCase(HundredScoringModelTestBase):
+    """Unit tests for the "Find a likeable job" strategy."""
+
+    model_id = 'strategy-likeable-job'
+
+    def test_passionate(self) -> None:
+        """User is passionate."""
+
+        persona = self._random_persona().clone()
+        persona.project.passionate_level = project_pb2.PASSIONATING_JOB
+
+        score = self._score_persona(persona)
+        self.assert_worse_score(score, msg='Failed for "{}":'.format(persona.name))
+
+    def test_not_passionate(self) -> None:
+        """User is not very passionate and should try to find a likeable job."""
+
+        persona = self._random_persona().clone()
+        persona.project.passionate_level = project_pb2.LIKEABLE_JOB
+
+        score = self._score_persona(persona)
+        self.assert_good_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+
+    def test_find_what_you_like_category(self) -> None:
+        """User is not very passionate and is in the FWYL category."""
+
+        persona = self._random_persona().clone()
+        persona.project.diagnostic.category_id = 'find-what-you-like'
+        persona.project.passionate_level = project_pb2.LIKEABLE_JOB
+
+        score = self._score_persona(persona)
+        self.assert_good_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+
+
+class StrategyInterviewSuccessTestCase(HundredScoringModelTestBase):
+    """Unit tests for the "Find a likeable job" strategy."""
+
+    model_id = 'strategy-interview-success'
+
+    def test_not_searched_for_long(self) -> None:
+        """User hasn't been searching for a long time."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=30))
+
+        score = self._score_persona(persona)
+        self.assert_bad_score(score, limit=20, msg='Failed for "{}":'.format(persona.name))
+
+    def test_not_many_interviews(self) -> None:
+        """User hasn't had many interviews yet."""
+
+        persona = self._random_persona().clone()
+        persona.project.total_interview_count = 2
+
+        score = self._score_persona(persona)
+        self.assert_bad_score(score, limit=20, msg='Failed for "{}":'.format(persona.name))
+
+    def test_interviews_and_long_search(self) -> None:
+        """User is not very passionate and is in the FWYL category."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=365))
+        persona.project.total_interview_count = 5
+
+        score = self._score_persona(persona)
+        self.assert_good_score(score, limit=20, msg='Failed for "{}":'.format(persona.name))
+
+
+class TryAlternanceTestCase(ScoringModelTestBase):
+    """Unit tests for the "Try alternance" method."""
+
+    model_id = 'advice-try-alternance'
+
+    def test_expert(self) -> None:
+        """User is an expert in their field."""
+
+        persona = self._random_persona().clone()
+        persona.project.seniority = project_pb2.EXPERT
+
+        score = self._score_persona(persona)
+        self.assertEqual(0, score, msg='Failed for "{}":'.format(persona.name))
+
+    def test_old(self) -> None:
+        """User is quite old."""
+
+        persona = self._random_persona().clone()
+        persona.user_profile.year_of_birth = datetime.date.today().year - 60
+
+        score = self._score_persona(persona)
+        self.assertEqual(0, score, msg='Failed for "{}":'.format(persona.name))
+
+    def test_already_trained(self) -> None:
+        """User is already trained for their job."""
+
+        persona = self._random_persona().clone()
+        persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
+
+        score = self._score_persona(persona)
+        self.assertEqual(0, score, msg='Failed for "{}":'.format(persona.name))
+
+    def test_unemployed_uncertain_about_training(self) -> None:
+        """User is unemployed and is uncertain about the necessity of at training."""
+
+        persona = self._random_persona().clone()
+        persona.project.training_fulfillment_estimate = project_pb2.TRAINING_FULFILLMENT_NOT_SURE
+        persona.project.seniority = project_pb2.JUNIOR
+        persona.user_profile.year_of_birth = datetime.date.today().year - 23
+
+        score = self._score_persona(persona)
+        self.assertLess(0, score, msg='Failed for "{}":'.format(persona.name))
+
+    def test_missing_diploma_category(self) -> None:
+        """Users are in the missing diploma category."""
+
+        for age in range(18, 70, 5):
+            persona = self._random_persona().clone()
+            persona.project.diagnostic.category_id = 'missing-diploma'
+            persona.user_profile.year_of_birth = datetime.date.today().year - age
+            score = self._score_persona(persona)
+            self.assertLess(0, score, msg='Failed for "{}" at age {}:'.format(persona.name, age))
 
 
 if __name__ == '__main__':

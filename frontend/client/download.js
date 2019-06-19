@@ -5,19 +5,20 @@ const forEach = require('lodash/forEach')
 const fromPairs = require('lodash/fromPairs')
 const keyBy = require('lodash/keyBy')
 const mapValues = require('lodash/mapValues')
-const pick = require('lodash/pick')
 
 const adviceBase = new Airtable().base('appXmyc7yYj0pOcae')
 const romeBase = new Airtable().base('appMRMtWV61Kibt37')
-const maydayBase = new Airtable().base('app6I08170BlnyxnI')
 
 /* eslint-disable no-console */
 
-// TODO(cyrille): Test this file.
 // TODO(cyrille): Make config more declarative.
 // This file downloads from airtable static data to be put in the JavaScript application. To use it
 // run :
 // docker-compose run --rm frontend-dev npm run download
+//
+// Or pick a specific table to download:
+//
+// docker-compose run --rm frontend-dev npm run download events
 //
 // For each data file, the gathering of information is in five steps:
 // - download the data from airtable as a list of records (easy step).
@@ -47,19 +48,49 @@ const maydayBase = new Airtable().base('app6I08170BlnyxnI')
 //      preparation might be needed in some cases, depending on the data (see `writeWithTranslation`
 //      doc for preparation handling).
 
+const shouldDownloadAll = process.argv.length === 2
+const isDryRun = !!process.env.DRY_RUN
+
+const shouldDownload = {
+  'advice_modules': shouldDownloadAll,
+  'email_templates': shouldDownloadAll,
+  'events': shouldDownloadAll,
+  'strategy_goals': shouldDownloadAll,
+  'strategy_testimonials': shouldDownloadAll,
+}
+
+if (!shouldDownloadAll) {
+  const tables = Object.keys(shouldDownload)
+  process.argv.slice(2).forEach(arg => {
+    if (!tables.includes(arg)) {
+      throw new Error(`"${arg}" is not valid table name, it should be one of: ${tables}`)
+    }
+    shouldDownload[arg] = true
+  })
+}
+
 const throwError = err => {
+  console.log(err)
+  if (!isDryRun) {
+    throw new Error(err)
+  }
+}
+
+
+const maybeThrowError = err => {
   if (err) {
-    throw JSON.stringify(err)
+    throwError(err.message || JSON.stringify(err))
   }
 }
 
 const translations = new Airtable().base('appkEc8N0Bw4Uok43').
   table('translations').select({view: 'viwLyQNlJtyD4l45k'}).all().
-  then(translations => keyBy(translations.map(record => record.fields), 'string'), throwError)
+  then(translations => keyBy(translations.map(record => record.fields), 'string'), maybeThrowError)
 
+// TODO(cyrille): Throw on trailing spaces.
 function checkNotRegexp(regexp, errorMessage, text) {
   if (regexp.test(text)) {
-    throw errorMessage
+    throwError(errorMessage)
   }
   return text
 }
@@ -73,14 +104,24 @@ const checkNoCurlyQuotes = (text, context) =>
 // STEP 1 //
 
 const adviceModulesFromAirtable =
+  shouldDownload['advice_modules'] &&
   adviceBase.table('advice_modules').select({view: 'Ready to Import'}).all()
 
 const emailTemplatesFromAirtable =
+  shouldDownload['email_templates'] &&
   adviceBase.table('email_templates').select({view: 'Ready to Import'}).all()
 
 const eventsFromAirtable =
+  shouldDownload['events'] &&
   romeBase.table('Event Types').select({view: 'viwUsUaBuIuYmz4ZK'}).all()
 
+const strategyGoalsFromAirtable =
+  shouldDownload['strategy_goals'] &&
+  adviceBase.table('strategy_goals').select({view: 'Ready to Import'}).all()
+
+const strategyTestimonialsFromAirtable =
+  shouldDownload['strategy_testimonials'] &&
+  adviceBase.table('strategy_testimonials').select({view: 'Ready to Import'}).all()
 
 // STEP 2 //
 
@@ -90,13 +131,14 @@ const getTranslationOrThrow = (object, lang, sentence) => {
     console.log('    docker-compose run --rm data-analysis-prepare i18n/collect_strings.py')
     console.log('To translate sentences:')
     console.log('    https://airtable.com/tblQL7A5EgRJWhQFo/viwBe1ySNM4IvXCsN')
-    throw `The sentence "${sentence}" was not found in the translation table.`
+    throwError(`The sentence "${sentence}" was not found in the translation table.`)
   }
   const translated = object[lang]
   if (translated) {
     return translated
   }
-  throw `The sentence "${sentence}" was not translated into "${lang}".`
+  throwError(`The sentence "${sentence}" was not translated into "${lang}".`)
+  return sentence
 }
 
 // Translates a list of records as output from airtable, using a list of locales to match the
@@ -126,7 +168,7 @@ const translateRecords = (langs, translatableFields) => airTableRecords =>
       forEach(recordFieldsByLang, (fields, lang) => recordsByLang[lang].push({fields, id}))
     })
     return {...recordsByLang, original: airTableRecords}
-  }, throwError)
+  }, maybeThrowError)
 
 // Please, keep in sync with
 // data_analysis/i18n/collect_strings.py StringCollector.collect_for_client
@@ -143,6 +185,10 @@ const adviceModulesTranslatableFields = [
 const emailTemplatesTranslatableFields = ['reason', 'title']
 
 const eventsTranslatableFields = ['event_location_prefix', 'event_location']
+
+const strategyGoalsTranslatableFields = ['content']
+
+const strategyTestimonialsTranslatableFields = ['content', 'job']
 
 // Step 3 //
 
@@ -166,9 +212,9 @@ const mapAdviceModules = record => {
     user_gain_details: userGainDetails,
   } = record.fields
   if (title1Star && title1Star === title2Stars && title1Star === title3Stars) {
-    throw `The advice module "${adviceId}" has a
+    throwError(`The advice module "${adviceId}" has a
     redundant title. Clear the title_x_star properties and only keep the
-    title.`
+    title.`)
   }
   const newModule = {
     callToAction,
@@ -184,7 +230,7 @@ const mapAdviceModules = record => {
     userGainDetails,
   }
   if (!goal) {
-    throw `Advice ${adviceId} does not have a goal set.`
+    throwError(`Advice ${adviceId} does not have a goal set.`)
   }
   if (explanations) {
     newModule.explanations = explanations.split('\n').
@@ -200,7 +246,7 @@ const mapAdviceModules = record => {
       ))
   }
   if (!diagnosticTopics || !diagnosticTopics.length) {
-    throw `Advice ${adviceId} is not in any topic and will not be shown in the explorer.`
+    throwError(`Advice ${adviceId} is not in any topic and will not be shown in the explorer.`)
   }
   return {adviceId, newModule, topics: diagnosticTopics}
 }
@@ -232,6 +278,45 @@ const mapEvents = record => {
   if (atNext && eventLocation && romePrefix) {
     return {[romePrefix]: {atNext, eventLocation}}
   }
+}
+
+const mapStrategyGoals = ({fields}) => {
+  forEach(fields, (text, key) => checkNoCurlyQuotes(text, `${key} field of strategy_goals`))
+  const {
+    content,
+    'goal_id': goalId,
+    'strategy_ids': strategyIds,
+  } = fields
+  return {content, goalId, strategyIds}
+}
+
+const mapStrategyTestimonials = ({id, fields}) => {
+  forEach(fields, (text, key) => checkNoCurlyQuotes(text, `${key} field of strategy_testimonials`))
+  const {
+    content,
+    'created_at': createdAt,
+    'is_male': isMale,
+    job,
+    name,
+    rating,
+    'strategy_ids': strategyIds,
+  } = fields
+  if (!content || !createdAt || !job || !name || !rating || !strategyIds || !strategyIds.length) {
+    throwError(new Error(`Testimonial with record ID "${id}" has an empty field.`))
+  }
+  checkNotRegexp(
+    / (\n|$)/,
+    `Content of ${id} should not have extra spaces at the end of the line:
+      "${content.replace(/ (\n|$)/g, '**$&**')}".`,
+    content,
+  )
+  checkNotRegexp(
+    / [?;:!]/,
+    `Content of ${id} should have unbreakable space before a French double punctuation mark:
+      "${content.replace(/ [?;:!]/g, '**$&**')}".`,
+    content,
+  )
+  return {content, createdAt, isMale, job, name, rating, strategyIds}
 }
 
 // Step 4 //
@@ -273,10 +358,45 @@ const reduceEmailTemplates = reduceRecords(
 
 const reduceEvents = reduceRecords(mapEvents, (accumulator, added) => ({...accumulator, ...added}))
 
+const reduceStrategyGoals = reduceRecords(mapStrategyGoals,
+  (strategies, {content, goalId, strategyIds}) => {
+    // TODO(cyrille): Restrict the number of goals per strategy.
+    const updatedStrategies = fromPairs(strategyIds.map(strategyId => {
+      if (strategies[strategyId] && strategies[strategyId].length > 5) {
+        throw new Error(`Strategy ${strategyId} has too many goals, please reduce to at most 6.`)
+      }
+      return [strategyId, [
+        ...strategies[strategyId] || [],
+        {content, goalId},
+      ]]
+    }))
+    return {
+      ...strategies,
+      ...updatedStrategies,
+    }
+  }
+)
+
+const reduceStrategyTestimonials = reduceRecords(mapStrategyTestimonials,
+  (strategies, {content, createdAt, isMale, job, name, rating, strategyIds}) => {
+    const updatedStrategies = fromPairs(strategyIds.map(strategyId => [strategyId, [
+      ...strategies[strategyId] || [],
+      {content, createdAt, isMale, job, name, rating},
+    ]]))
+    return {
+      ...strategies,
+      ...updatedStrategies,
+    }
+  }
+)
+
 // Step 5 //
 
 const writeToJson = jsonFile => jsonObject => {
-  fs.writeFile(jsonFile, stringify(jsonObject, {space: 2}) + '\n', throwError)
+  if (isDryRun) {
+    return
+  }
+  fs.writeFile(jsonFile, stringify(jsonObject, {space: 2}) + '\n', maybeThrowError)
 }
 
 // Writes all the different version of a JSON object into multiple files, depending on locale.
@@ -297,10 +417,12 @@ const langs = ['fr_FR@tu']
 
 const fromAirtableToObjects = (airtablePromise, translatableFields, mapReducer) =>
   airtablePromise.
-    then(translateRecords(langs, translatableFields), throwError).
-    then(objectsByLang => mapValues(objectsByLang, mapReducer), throwError)
+    then(translateRecords(langs, translatableFields), maybeThrowError).
+    then(objectsByLang => mapValues(objectsByLang, mapReducer), maybeThrowError)
 
-fromAirtableToObjects(
+const noOp = Promise.resolve()
+
+const importAdvices = shouldDownload['advice_modules'] ? fromAirtableToObjects(
   adviceModulesFromAirtable,
   adviceModulesTranslatableFields,
   reduceAdviceModules,
@@ -308,40 +430,37 @@ fromAirtableToObjects(
   writeWithTranslations(
     'src/components/advisor/data/advice_modules', ({modules}) => modules)(jsonObjectsByLang)
   writeToJson('src/components/advisor/data/categories.json')(jsonObjectsByLang.original.categories)
-}, throwError)
+}, maybeThrowError) : noOp
 
-fromAirtableToObjects(
+const importEmailTemplates = shouldDownload['email_templates'] ? fromAirtableToObjects(
   emailTemplatesFromAirtable,
   emailTemplatesTranslatableFields,
   reduceEmailTemplates,
-).then(writeWithTranslations('src/components/advisor/data/email_templates'), throwError)
+).then(writeWithTranslations('src/components/advisor/data/email_templates'), maybeThrowError) : noOp
 
-fromAirtableToObjects(
+const importEvents = shouldDownload['events'] ? fromAirtableToObjects(
   eventsFromAirtable,
   eventsTranslatableFields,
   reduceEvents,
-).then(writeWithTranslations('src/components/advisor/data/events'), throwError)
+).then(writeWithTranslations('src/components/advisor/data/events'), maybeThrowError) : noOp
 
+const importStrategyGoals = shouldDownload['strategy_goals'] ? fromAirtableToObjects(
+  strategyGoalsFromAirtable,
+  strategyGoalsTranslatableFields,
+  reduceStrategyGoals,
+).then(writeWithTranslations('src/components/strategist/data/goals'), maybeThrowError) : noOp
 
-const testFieldsWhitespaceAndQuotes = fieldNames => recordList => recordList.map(fields => {
-  fieldNames.map(fieldName => checkNotRegexp(
-    /(^\s+|\s+$)/,
-    `${fieldName} should not have extra spaces before or after: "${fields[fieldName]}".`,
-    checkNoCurlyQuotes(fields[fieldName], `field "${fieldName}"`),
-  ))
-  return fields
-})
+// TODO(cyrille): Merge this with the previous one (goals) in a single file.
+const importStrategyTestimonials = shouldDownload['strategy_testimonials'] ? fromAirtableToObjects(
+  strategyTestimonialsFromAirtable,
+  strategyTestimonialsTranslatableFields,
+  reduceStrategyTestimonials,
+).then(writeWithTranslations('src/components/strategist/data/testimonials'), maybeThrowError) : noOp
 
-maydayBase.table('BobAction').select({view: 'Ready to Import'}).all().
-  then(actions => actions.map(({fields}) =>
-    pick(fields, [
-      'id', 'title', 'titleMe', 'description', 'example', 'mean', 'shortDescription',
-      'duration', 'isDisabled',
-    ]))).
-  then(actions => actions.map(({duration, ...otherFields}) => ({
-    durationMinutes: duration / 60,
-    ...otherFields,
-  }))).
-  then(testFieldsWhitespaceAndQuotes(
-    ['id', 'title', 'titleMe', 'description', 'example', 'mean', 'shortDescription'])).
-  then(writeToJson('src/components/pages/mayday/actions.json'), throwError)
+module.exports = Promise.all([
+  importAdvices,
+  importEmailTemplates,
+  importEvents,
+  importStrategyGoals,
+  importStrategyTestimonials,
+])

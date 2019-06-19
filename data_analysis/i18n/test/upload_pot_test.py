@@ -12,7 +12,7 @@ from bob_emploi.data_analysis.i18n import upload_pot
 class UploadTestCase(airtablemock.TestCase):
     """Unit tests for the main function."""
 
-    def test_main(self):
+    def test_main(self) -> None:
         """Basic usage."""
 
         airtable.Airtable('appkEc8N0Bw4Uok43', '').create('translations', {
@@ -35,7 +35,7 @@ class UploadTestCase(airtablemock.TestCase):
         self.assertEqual(
             'bob_emploi/frontend/server/scoring.py#70', new_message['fields']['origin_id'])
 
-    def test_strings_from_test_files(self):
+    def test_strings_from_test_files(self) -> None:
         """Do not upload strings from test files."""
 
         airtable.Airtable('appkEc8N0Bw4Uok43', '').create('translations', {

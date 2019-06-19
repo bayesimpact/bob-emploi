@@ -14,14 +14,14 @@ from bob_emploi.frontend.api import skill_pb2
 class TestCase(airtablemock.TestCase):
     """Test the importer for skill for future."""
 
-    def test_get_skills_per_rome_prefix(self):
+    def test_get_skills_per_rome_prefix(self) -> None:
         """Test the importer for skill for future."""
 
         base = airtablemock.Airtable('the-base', 'apikey42')
         base.create('the-table', {
             'name': 'Orientation client',
             'description': 'Chercher activement des idées pour aider les gens',
-            'TIME_TO_MARKET':  55,
+            'TIME_TO_MARKET': 55,
             'BREADTH_OF_JOBS': 82,
             'JOB_SATISFACTION': 58,
             'BETTER_INCOME': 33,
@@ -32,7 +32,7 @@ class TestCase(airtablemock.TestCase):
         base.create('the-table', {
             'name': 'Enseignement',
             'description': "Partager ses compétence et les enseigner à d'autres",
-            'TIME_TO_MARKET':  70,
+            'TIME_TO_MARKET': 70,
             'BREADTH_OF_JOBS': 67,
             'JOB_SATISFACTION': 79,
             'BETTER_INCOME': 54,
@@ -58,7 +58,7 @@ class TestCase(airtablemock.TestCase):
             ],
             skills_per_rome_pefix['B11'].skills[0].assets)
 
-    def test_too_many_skills(self):
+    def test_too_many_skills(self) -> None:
         """Make sure we do not get too many skills per rome prefix."""
 
         base = airtablemock.Airtable('the-base', 'apikey42')
@@ -66,7 +66,7 @@ class TestCase(airtablemock.TestCase):
             base.create('the-table', {
                 'name': 'Skill {}'.format(i),
                 'description': 'Chercher activement des idées pour aider les gens',
-                'TIME_TO_MARKET':  55,
+                'TIME_TO_MARKET': 55,
                 'BREADTH_OF_JOBS': 82,
                 'JOB_SATISFACTION': 58,
                 'BETTER_INCOME': 33,

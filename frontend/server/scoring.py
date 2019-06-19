@@ -38,6 +38,7 @@ from bob_emploi.frontend.server.modules import seasonal_relocate
 from bob_emploi.frontend.server.modules import skill_for_future
 from bob_emploi.frontend.server.modules import volunteer
 # Re-export some base elements from here as well.
+from bob_emploi.frontend.server.scoring_base import APPLICATION_MODES
 from bob_emploi.frontend.server.scoring_base import ConstantScoreModel
 from bob_emploi.frontend.server.scoring_base import ExplainedScore
 from bob_emploi.frontend.server.scoring_base import filter_using_score
@@ -51,6 +52,9 @@ from bob_emploi.frontend.server.scoring_base import SCORING_MODEL_REGEXPS
 from bob_emploi.frontend.server.scoring_base import SCORING_MODELS
 # pylint: enable=unused-import
 
+# TODO(cyrille): Move strategy scorers to its own module and re-enable rule below.
+# pylint: disable=too-many-lines
+
 
 class _AdviceTrainingScoringModel(scoring_base.ModelBase):
     """A scoring model for the training advice."""
@@ -62,6 +66,9 @@ class _AdviceTrainingScoringModel(scoring_base.ModelBase):
 
     def score_and_explain(self, project: ScoringProject) -> ExplainedScore:
         """Compute the score of given project and why it's scored."""
+
+        if project.details.diagnostic.category_id == 'missing-diploma':
+            return ExplainedScore(3, ["vous avez besoin d'un diplôme"])
 
         # TODO(guillaume): Get the score for each project from lbf.
         all_trainings = project.get_trainings()
@@ -170,7 +177,7 @@ class _UserProfileFilter(scoring_base.BaseFilter):
     """
 
     def __init__(self, filter_func: typing.Callable[[user_pb2.UserProfile], bool]) -> None:
-        super(_UserProfileFilter, self).__init__(lambda project: filter_func(project.user_profile))
+        super().__init__(lambda project: filter_func(project.user_profile))
 
 
 class _ProjectFilter(scoring_base.BaseFilter):
@@ -189,7 +196,7 @@ class _ProjectFilter(scoring_base.BaseFilter):
             self,
             filter_func: typing.Callable[[project_pb2.Project], bool],
             reasons: typing.Optional[typing.List[str]] = None) -> None:
-        super(_ProjectFilter, self).__init__(
+        super().__init__(
             lambda project: filter_func(project.details), reasons=reasons)
 
 
@@ -197,7 +204,7 @@ class _JobGroupFilter(_ProjectFilter):
     """A scoring model to filter on a job group."""
 
     def __init__(self, job_group_start: str) -> None:
-        super(_JobGroupFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._job_group_starts = [prefix.strip() for prefix in job_group_start.split(',')]
 
     def _filter(self, project: project_pb2.Project) -> bool:
@@ -211,7 +218,7 @@ class _JobFilter(_ProjectFilter):
     """A scoring model to filter on specific jobs."""
 
     def __init__(self, jobs: str) -> None:
-        super(_JobFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._jobs = set(job.strip() for job in jobs.split(','))
 
     def _filter(self, project: project_pb2.Project) -> bool:
@@ -222,7 +229,7 @@ class _DepartementFilter(_ProjectFilter):
     """A scoring model to filter on the département."""
 
     def __init__(self, departements: str) -> None:
-        super(_DepartementFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._departements = set(d.strip() for d in departements.split(','))
 
     def _filter(self, project: project_pb2.Project) -> bool:
@@ -233,7 +240,7 @@ class _OldUserFilter(scoring_base.BaseFilter):
     """A scoring model to filter on the age."""
 
     def __init__(self, min_age: str) -> None:
-        super(_OldUserFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._min_age = int(min_age)
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -244,7 +251,7 @@ class _FrustratedOldUserFilter(_OldUserFilter):
     """A scoring model to filter on the age."""
 
     def _filter(self, project: ScoringProject) -> bool:
-        return super(_FrustratedOldUserFilter, self)._filter(project) and \
+        return super()._filter(project) and \
             user_pb2.AGE_DISCRIMINATION in project.user_profile.frustrations
 
 
@@ -252,7 +259,7 @@ class _FrustrationFilter(_UserProfileFilter):
     """A scoring model to filter on a frustration."""
 
     def __init__(self, frustration: str) -> None:
-        super(_FrustrationFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self.frustration = user_pb2.Frustration.Value(frustration)
 
     def _filter(self, user: user_pb2.UserProfile) -> bool:
@@ -263,7 +270,7 @@ class _PassionateFilter(_ProjectFilter):
     """A scoring model to filter on a frustration."""
 
     def __init__(self, passionate_level: str):
-        super(_PassionateFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._passionate_level = project_pb2.PassionateLevel.Value(passionate_level)
 
     def _filter(self, project: project_pb2.Project) -> bool:
@@ -274,27 +281,24 @@ class _YoungUserFilter(scoring_base.BaseFilter):
     """A scoring model to filter on the age."""
 
     def __init__(self, max_age: str) -> None:
-        super(_YoungUserFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._max_age = int(max_age)
 
     def _filter(self, project: ScoringProject) -> bool:
         return project.get_user_age() < self._max_age
 
 
-class _NegateFilter(scoring_base.ModelBase):
+class _NegateFilter(scoring_base.BaseFilter):
     """A scoring model to filter the opposite of another filter."""
 
     def __init__(self, negated_filter_name: str) -> None:
-        super(_NegateFilter, self).__init__()
+        super().__init__(self._filter)
         if get_scoring_model(negated_filter_name) is None:
             raise ValueError('Scorer to negate does not exist: {}'.format(negated_filter_name))
         self._negated_filter_name = negated_filter_name
 
-    # TODO(cyrille): Make it return 0 when negated_filter would return anything but 0.
-    def score(self, project: ScoringProject) -> float:
-        """Compute a score for the given ScoringProject."""
-
-        return 3 - project.score(self._negated_filter_name)
+    def _filter(self, project: ScoringProject) -> bool:
+        return not project.check_filters((self._negated_filter_name,))
 
 
 class _ActiveExperimentFilter(scoring_base.BaseFilter):
@@ -306,7 +310,7 @@ class _ActiveExperimentFilter(scoring_base.BaseFilter):
     }
 
     def __init__(self, feature: str, reasons: typing.Optional[typing.List[str]] = None) -> None:
-        super(_ActiveExperimentFilter, self).__init__(self._filter, reasons=reasons)
+        super().__init__(self._filter, reasons=reasons)
         if feature not in self._features:
             raise ValueError('"{}" is not a valid feature:\n{}'.format(feature, self._features))
         self._feature = feature
@@ -325,7 +329,7 @@ class _JobGroupWithoutJobFilter(_ProjectFilter):
             job_groups: typing.Iterable[str],
             exclude_jobs: typing.Optional[typing.Iterable[str]] = None,
             reasons: typing.Optional[typing.List[str]] = None) -> None:
-        super(_JobGroupWithoutJobFilter, self).__init__(self._filter, reasons=reasons)
+        super().__init__(self._filter, reasons=reasons)
         self._job_groups = set(job_groups)
         self._exclude_jobs = set(exclude_jobs) if exclude_jobs else set()
 
@@ -344,7 +348,7 @@ class _ApplicationComplexityFilter(scoring_base.BaseFilter):
             self,
             application_complexity: 'job_pb2.ApplicationProcessComplexity',
             reasons: typing.Optional[typing.List[str]] = None) -> None:
-        super(_ApplicationComplexityFilter, self).__init__(self._filter, reasons=reasons)
+        super().__init__(self._filter, reasons=reasons)
         self._application_complexity = application_complexity
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -356,7 +360,7 @@ class _ScorerFilter(scoring_base.BaseFilter):
     """A scoring model to filter on above/below average values on a given scorer."""
 
     def __init__(self, scorer: str, is_good: bool = False):
-        super(_ScorerFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         if not get_scoring_model(scorer):
             raise ValueError('Could not find scoring model {}'.format(scorer))
         self._scorer_name = scorer
@@ -376,18 +380,25 @@ class _ScorerFilter(scoring_base.BaseFilter):
 
 class _MarketTensionFilter(scoring_base.BaseFilter):
     """A scoring model to filter on market tension.
-        max_offers is an integer ans it's the number of offers for 10 seekers.
+    offers_limit is an integer and it's the number of offers for 10 seekers. If keep_stressed is
+    True, the filter passes for all markets with higher tension. Otherwise it passes for markets
+    with lower tension.
     """
 
-    def __init__(self, max_offers: str):
-        super(_MarketTensionFilter, self).__init__(self._filter)
-        self._max_offers = int(max_offers)
+    def __init__(self, offers_limit: str, keep_stressed: bool = False):
+        super().__init__(self._filter)
+        self._tension_limit = 10 / int(offers_limit) if int(offers_limit) else 1000
+        self._keep_stressed = keep_stressed
 
     def _filter(self, project: ScoringProject) -> bool:
         tension = project.market_stress()
         if not tension:
+            # TODO(cyrille): Consider raising a NotEnoughDataException here, and in all filters
+            # where it would be relevant.
             return False
-        return tension <= 10 / self._max_offers and tension != 1000
+        if self._keep_stressed:
+            return tension >= self._tension_limit
+        return tension <= self._tension_limit
 
 
 class _AdviceOtherWorkEnv(scoring_base.ModelBase):
@@ -480,8 +491,7 @@ class _AdviceSenior(scoring_base.ModelBase):
         reasons = []
         if (user_pb2.AGE_DISCRIMINATION in project.user_profile.frustrations and age > 40):
             reasons.append(project.translate_string(
-                'vous nous avez dit que votre age pouvait parfois être un ' +
-                'obstacle'))
+                'vous nous avez dit que votre age pouvait parfois être un obstacle'))
         # TODO(cyrille): Add a reason for age >= 45.
         if reasons or age >= 45:
             return ExplainedScore(2, reasons)
@@ -509,7 +519,7 @@ class _ApplicationMediumFilter(scoring_base.BaseFilter):
             self,
             medium: job_pb2.ApplicationMedium,
             reasons: typing.Optional[typing.List[str]] = None) -> None:
-        super(_ApplicationMediumFilter, self).__init__(self._filter, reasons=reasons)
+        super().__init__(self._filter, reasons=reasons)
         self._medium = medium
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -521,13 +531,13 @@ class _LBBProjectFilter(scoring_base.BaseFilter):
     """A scoring model that filters in users searching for jobs in a sector that recruits."""
 
     def __init__(self, reasons: typing.Optional[typing.List[str]] = None) -> None:
-        super(_LBBProjectFilter, self).__init__(self._filter, reasons)
+        super().__init__(self._filter, reasons)
 
     def _filter(self, project: ScoringProject) -> bool:
 
         total_nb_employees = 0
         for company in [companies.to_proto(c)
-                        for c in companies.get_lbb_companies(project.details, distance=30)]:
+                        for c in companies.get_lbb_companies(project.details, distance_km=30)]:
             headcount = company.headcount_text
             if not headcount:
                 continue
@@ -547,7 +557,7 @@ class _TrainingFullfilmentFilter(_ProjectFilter):
 
     def __init__(self, training_fulfillment_estimate: project_pb2.TrainingFulfillmentEstimate) \
             -> None:
-        super(_TrainingFullfilmentFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self.training_fulfillment_estimate = training_fulfillment_estimate
 
     def _filter(self, project: project_pb2.Project) -> bool:
@@ -560,7 +570,7 @@ class _ContractTypeFilter(scoring_base.BaseFilter):
             self,
             selected_contracts: typing.List['job_pb2.EmploymentType'],
             min_percentage: int) -> None:
-        super(_ContractTypeFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._selected_contracts = selected_contracts
         self._min_percentage = min_percentage
 
@@ -576,7 +586,7 @@ class _ContractTypeFilter(scoring_base.BaseFilter):
 class _NarrowContractTypesFilter(scoring_base.BaseFilter):
 
     def __init__(self, required_percentage: int) -> None:
-        super(_NarrowContractTypesFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._required_percentage = required_percentage
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -586,6 +596,19 @@ class _NarrowContractTypesFilter(scoring_base.BaseFilter):
         percentage = sum(contract_type.percent_suggested for contract_type in contract_types if
                          contract_type.contract_type in project.details.employment_types)
         return percentage < self._required_percentage
+
+
+class _StressedJobFilter(scoring_base.BaseFilter):
+
+    def __init__(self, min_stress: float) -> None:
+        super().__init__(self._filter)
+        self._min_stress = min_stress
+
+    def _filter(self, project: ScoringProject) -> bool:
+        national_market_score = project.job_group_info().national_market_score
+        if not national_market_score:
+            return False
+        return 1 / national_market_score >= self._min_stress
 
 
 class _AdviceFollowupEmail(scoring_base.ModelBase):
@@ -605,7 +628,7 @@ class _AdviceFollowupEmail(scoring_base.ModelBase):
 class _MonthlyInterviewFilter(scoring_base.BaseFilter):
 
     def __init__(self, interview_rate: str) -> None:
-        super(_MonthlyInterviewFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._interview_rate = float(interview_rate)
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -622,13 +645,155 @@ class _MonthlyInterviewFilter(scoring_base.BaseFilter):
 class _InterviewFilter(scoring_base.BaseFilter):
 
     def __init__(self, min_interviews: str) -> None:
-        super(_InterviewFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
         self._min_interviews = int(min_interviews)
 
     def _filter(self, project: ScoringProject) -> bool:
 
         interview_counts = project.details.total_interview_count
         return interview_counts > self._min_interviews
+
+
+class _CumulativeSearchFilter(scoring_base.BaseFilter):
+
+    def __init__(self, active_search_min_months: int, passive_search_min_months: int) -> None:
+        super().__init__(self._filter)
+        self._passive_search_min_months = passive_search_min_months
+        self._active_search_min_months = active_search_min_months
+
+    def _filter(self, project: ScoringProject) -> bool:
+        search_length = project.get_search_length_at_creation()
+        if project.score('for-employed') > 0:
+            return search_length >= self._passive_search_min_months
+        return search_length >= self._active_search_min_months
+
+
+class _FindWhatYouLikeFilter(scoring_base.BaseFilter):
+
+    def __init__(self) -> None:
+        super().__init__(self._filter)
+
+    def _filter(self, project: scoring_base.ScoringProject) -> bool:
+        if project.details.passionate_level >= project_pb2.PASSIONATING_JOB:
+            # User is already passionate about that job.
+            return False
+        market_stress = project.market_stress()
+        if market_stress and market_stress < 10 / 7:
+            # Easy market, they might as well do that.
+            return False
+        age = project.get_user_age()
+        if age <= 30:
+            # User is young, they should not be too experienced to change.
+            return project.details.seniority < project_pb2.SENIOR
+        if _CumulativeSearchFilter(2, 6).score(project):
+            # User has been searching for some time, don't tell them to switch project.
+            return False
+        # User should be asking for a new job.
+        return project.details.kind == project_pb2.REORIENTATION or \
+            project.details.previous_job_similarity == project_pb2.NEVER_DONE
+
+
+class _MissingDiplomaFilter(scoring_base.BaseFilter):
+
+    def __init__(self) -> None:
+        super().__init__(self._filter)
+
+    def _filter(self, project: scoring_base.ScoringProject) -> bool:
+        if all(diploma.percent_required == 0 for diploma in project.requirements().diplomas):
+            # No diploma is actually required for the job.
+            return False
+        if project.details.kind == project_pb2.CREATE_OR_TAKE_OVER_COMPANY:
+            # No need for a diploma if you want to create your company.
+            return False
+        if project.details.training_fulfillment_estimate in {
+                project_pb2.ENOUGH_DIPLOMAS, project_pb2.CURRENTLY_IN_TRAINING}:
+            # They already have the diploma, or are about to get it.
+            return False
+        if project.details.seniority > project_pb2.SENIOR and project.get_user_age() >= 50:
+            # They are too old and experienced for a diploma to be relevant.
+            return False
+        return True
+
+
+class _TryWithoutDiploma(scoring_base.ModelHundredBase):
+
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
+        if project.job_group_info().is_diploma_strictly_required:
+            return 0
+        return 10
+
+
+class _GetAlternanceScorer(scoring_base.ModelHundredBase):
+
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
+        age = project.get_user_age()
+        if age > 30:
+            # It's harder to get alternance after 30.
+            return 20
+        return 40
+
+
+class _InterviewSuccessScorer(scoring_base.ModelHundredBase):
+
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
+        if project.details.total_interview_count >= 3 and project.get_search_length_now() >= 7:
+            # This gets more relevant in this case.
+            return 30
+        return 10
+
+
+class _FindLikeableJobScorer(scoring_base.ModelHundredBase):
+
+    def score_to_hundred(self, project: scoring_base.ScoringProject) -> int:
+        if project.details.passionate_level > project_pb2.LIKEABLE_JOB:
+            return 0
+        if project.details.diagnostic.category_id == 'find-what-you-like':
+            return 30
+        return 40
+
+
+_UNEMPLOYED_KINDS = {
+    project_pb2.FIND_A_FIRST_JOB,
+    project_pb2.FIND_A_NEW_JOB,
+    project_pb2.REORIENTATION,
+}
+
+
+class _TryAlternanceScoringModel(scoring_base.ModelBase):
+
+    def score_and_explain(self, project: ScoringProject) -> ExplainedScore:
+        """Compute a score for the given ScoringProject."""
+
+        is_missing_diploma = project.details.diagnostic.category_id == 'missing-diploma'
+
+        if not is_missing_diploma and project.details.seniority >= project_pb2.SENIOR:
+            # Too senior to suggest alternance.
+            return NULL_EXPLAINED_SCORE
+
+        age = project.get_user_age()
+        if not is_missing_diploma and age > 55:
+            # Too old to suggest alternance.
+            return NULL_EXPLAINED_SCORE
+
+        training_fulfillment_estimate = project.details.training_fulfillment_estimate
+        may_require_training = \
+            is_missing_diploma or \
+            training_fulfillment_estimate == project_pb2.TRAINING_FULFILLMENT_NOT_SURE or \
+            not training_fulfillment_estimate
+        if not may_require_training:
+            # Doe not require a training.
+            return NULL_EXPLAINED_SCORE
+
+        if age < 26:
+            return ExplainedScore(3, [project.translate_string('vous êtes jeune')])
+        if age < 35 and project.details.kind in _UNEMPLOYED_KINDS:
+            return ExplainedScore(3, [project.translate_string('vous êtes encore jeune')])
+        if age > 45:
+            return ExplainedScore(
+                1, [project.translate_string("l'alternance n'est pas que pour les jeunes")])
+
+        return ExplainedScore(
+            2, [project.translate_string("l'alternance n'est pas que pour les jeunes")])
 
 
 def _is_long_term_mom(user: user_pb2.UserProfile) -> bool:
@@ -679,10 +844,14 @@ scoring_base.register_regexp(
     re.compile(r'^for-bad-score\((.+)\)$'),
     lambda scorer: _ScorerFilter(scorer, is_good=False),
     'for-bad-score(constant(2))')
-# Matches strings like "for-market-tension(10/7)".
+# Matches strings like "for-lower-market-tension(10/7)".
 scoring_base.register_regexp(
     re.compile(r'^for-lower-market-tension\(10\/([0-9]+)\)$'), _MarketTensionFilter,
     'for-lower-market-tension(10/7)')
+# Matches strings like "for-stressed-market(10/3)".
+scoring_base.register_regexp(
+    re.compile(r'^for-stressed-market\(10\/([0-9]+)\)$'),
+    lambda offers: _MarketTensionFilter(offers, keep_stressed=True), 'for-stressed-market(10/3)')
 # Matches strings like "for-many-interviews-per-month(0.5)".
 scoring_base.register_regexp(
     re.compile(r'^for-many-interviews-per-month\(([0-9]+(?:\.[0-9]+)?)\)$'),
@@ -716,6 +885,12 @@ scoring_base.register_model(
         job_groups={'D1102'}, exclude_jobs={'12006'}))
 scoring_base.register_model(
     'advice-training', _AdviceTrainingScoringModel())
+scoring_base.register_model(
+    'advice-try-alternance', _TryAlternanceScoringModel())
+scoring_base.register_model(
+    'category-find-what-you-like', _FindWhatYouLikeFilter())
+scoring_base.register_model(
+    'category-missing-diploma', _MissingDiplomaFilter())
 scoring_base.register_model(
     'for-active-search', _ProjectFilter(
         lambda project: project.HasField('created_at') and not project.job_search_has_not_started))
@@ -772,6 +947,12 @@ scoring_base.register_model(
         # Average growth is 6.9%, see
         # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/france_strategie_rapport_metiers_2022.ipynb
         lambda scoring_project: scoring_project.job_group_info().growth_2012_2022 < 0.069))
+scoring_base.register_model(
+    'for-more-job-offers-locally(5)', scoring_base.BaseFilter(
+        # 15.12 annual offers in PE is equivalent to 5 job offers currently
+        # opened in the département.
+        # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/datasets/job_offers/rare_job_offers.ipynb
+        lambda scoring_project: scoring_project.local_diagnosis().num_job_offers_last_year > 15.12))
 scoring_base.register_model(
     'for-first-job-search', _ProjectFilter(
         lambda project: project.kind == project_pb2.FIND_A_FIRST_JOB))
@@ -861,6 +1042,9 @@ scoring_base.register_model(
     'for-short-search(-3)', scoring_base.BaseFilter(
         lambda scoring_project: scoring_project.get_search_length_at_creation() <= 3))
 scoring_base.register_model(
+    'for-long-accumulated-search(2)', _CumulativeSearchFilter(
+        active_search_min_months=2, passive_search_min_months=6))
+scoring_base.register_model(
     'for-simple-application', _ApplicationComplexityFilter(job_pb2.SIMPLE_APPLICATION_PROCESS))
 scoring_base.register_model(
     'for-single-parent', _UserProfileFilter(
@@ -870,6 +1054,8 @@ scoring_base.register_model(
     'for-small-city-inhabitant(20000)', _ProjectFilter(
         lambda project: project.city.population > 0 and project.city.population <= 20000))
 scoring_base.register_model(
+    'for-stressed-job(10/3)', _StressedJobFilter(10 / 3))
+scoring_base.register_model(
     'for-training-fulfilled', _TrainingFullfilmentFilter(project_pb2.ENOUGH_DIPLOMAS))
 scoring_base.register_model(
     'for-unemployed', _UserProfileFilter(
@@ -877,6 +1063,7 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-unqualified(bac)', _UserProfileFilter(
         lambda user: user.highest_degree <= job_pb2.BAC_BACPRO))
+# TODO(cyrille): Replace with for-lower-market-tension(7) and remove.
 scoring_base.register_model(
     'for-unstressed-market(10/7)', _MarketTensionFilter('7'))
 scoring_base.register_model(
@@ -887,3 +1074,11 @@ scoring_base.register_model(
         lambda project: job_pb2.INTERIM in project.employment_types))
 scoring_base.register_model(
     'for-women', _UserProfileFilter(lambda user: user.gender == user_pb2.FEMININE))
+scoring_base.register_model(
+    'strategy-interview-success', _InterviewSuccessScorer())
+scoring_base.register_model(
+    'strategy-get-alternance', _GetAlternanceScorer())
+scoring_base.register_model(
+    'strategy-likeable-job', _FindLikeableJobScorer())
+scoring_base.register_model(
+    'strategy-try-without-diploma', _TryWithoutDiploma())

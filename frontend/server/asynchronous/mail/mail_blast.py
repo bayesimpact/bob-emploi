@@ -152,11 +152,9 @@ def blast_campaign(
     for user_dict in selected_users:
         users_processed_count += 1
 
-        user_id = user_dict.pop('_id')
         user = typing.cast(
             typing.Union[helper_pb2.Helper, review_pb2.DocumentToReview, user_pb2.User],
-            proto.create_from_mongo(user_dict, collection.proto))
-        user.user_id = str(user_id)
+            proto.create_from_mongo(user_dict, collection.proto, 'user_id'))
 
         if user_id_start and not user.user_id.startswith(user_id_start):
             users_wrong_id_count += 1

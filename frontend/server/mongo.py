@@ -41,8 +41,8 @@ def get_connections_from_env(default_mongo_url: str = 'mongodb://localhost/test'
     users_mongo_url = users_mongo_url or mongo_url
     eval_mongo_url = eval_mongo_url or mongo_url
 
-    database = pymongo.MongoClient(mongo_url).get_default_database()
-    user_database = pymongo.MongoClient(users_mongo_url).get_default_database()
-    eval_database = pymongo.MongoClient(eval_mongo_url).get_default_database()
+    database = pymongo.MongoClient(mongo_url).get_database()
+    user_database = pymongo.MongoClient(users_mongo_url).get_database()
+    eval_database = pymongo.MongoClient(eval_mongo_url).get_database()
 
     return database, user_database, eval_database

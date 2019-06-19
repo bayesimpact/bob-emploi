@@ -66,7 +66,7 @@ def _compute_nps_report(users: typing.Iterable[user_pb2.User], from_date: str, t
                 '$gt': from_date,
                 '$lt': to_date,
             },
-            }},
+        }},
     })
 
     comments = _report_comments(
@@ -238,10 +238,8 @@ _, _USER_DB, _ = mongo.get_connections_from_env()
 
 
 def _create_user_proto_with_user_id(user_dict: typing.Dict[str, typing.Any]) -> user_pb2.User:
-    user_id = user_dict.pop('_id')
-    user_proto = proto.create_from_mongo(user_dict, user_pb2.User)
+    user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id')
     assert user_proto
-    user_proto.user_id = str(user_id)
     return user_proto
 
 

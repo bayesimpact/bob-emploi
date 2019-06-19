@@ -1,10 +1,14 @@
 """Importer of French Département data in MongoDB."""
 
+import typing
+
 from bob_emploi.data_analysis.lib import cleaned_data
 from bob_emploi.data_analysis.lib import mongo
 
 
-def make_dicts(french_departements_tsv, french_oversea_departements_tsv, prefix_tsv):
+def make_dicts(
+        french_departements_tsv: str, french_oversea_departements_tsv: str, prefix_tsv: str) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import départements info in MongoDB.
 
     Args:
@@ -23,7 +27,9 @@ def make_dicts(french_departements_tsv, french_oversea_departements_tsv, prefix_
         oversea_filename=french_oversea_departements_tsv,
         prefix_filename=prefix_tsv)
     departements['_id'] = departements.index
-    return departements[['_id', 'name', 'prefix']].to_dict('records')
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]],
+        departements[['_id', 'name', 'prefix']].to_dict('records'))
 
 
 if __name__ == '__main__':

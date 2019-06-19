@@ -325,7 +325,7 @@ class MarketStressScoringModelTest(scoring_test.HundredScoringModelTestBase):
             '_id': '19:M1601',
             'imt': {
                 'yearlyAvgOffersDenominator': 10,
-                'yearlyAvgOffersPer10Candidates': 0,
+                'yearlyAvgOffersPer10Candidates': -1,
             }
         })
         score = self._score_persona(self.persona)
@@ -354,7 +354,8 @@ class MarketStressScoringModelTest(scoring_test.HundredScoringModelTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1601XX',
             'imt': {
-                'yearlyAvgOffersPer10Candidates': 3,
+                'yearlyAvgOffersDenominator': 0,
+                'yearlyAvgOffersPer10Candidates': 0,
             }
         })
         self.assert_not_enough_data()

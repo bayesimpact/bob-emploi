@@ -1,464 +1,540 @@
 {
   "attributes": {
-    "version": "3.3.5"
+    "owa": "desktop",
+    "version": "4.3.0"
   },
   "children": [
     {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#55575d",
+        "font-family": "Arial, sans-serif",
+        "passport": {
+          "id": "E9ZSo_Mxp"
+        }
+      },
       "children": [
         {
           "attributes": {
-            "background-color": "#ffffff",
-            "color": "#55575d",
-            "font-family": "Arial, sans-serif"
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "header": true,
+              "hidden": true,
+              "id": "m-z2UpvOp2vYNt"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
           },
           "children": [
             {
               "attributes": {
-                "background-repeat": "repeat",
-                "background-size": "auto",
-                "padding": "20px 0px 20px 0px",
                 "passport": {
-                  "header": true,
-                  "hidden": true
-                },
-                "text-align": "center",
-                "vertical-align": "top"
+                  "hidden": true,
+                  "id": "jW74i1d1hje8Il"
+                }
               },
               "children": [
                 {
                   "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "11px",
+                    "line-height": "22px",
+                    "padding": "0px 0px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
                     "passport": {
-                      "hidden": true
+                      "hidden": true,
+                      "id": "rTbyNoxRwKqvdB"
                     }
                   },
-                  "children": [
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "11px",
-                        "line-height": "22px",
-                        "padding": "0px 0px 0px 25px",
-                        "padding-bottom": "0px",
-                        "padding-top": "0px",
-                        "passport": {
-                          "hidden": true
-                        }
-                      },
-                      "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
-                      "id": "ByEfOF2XlQ",
-                      "tagName": "mj-text"
-                    }
-                  ],
-                  "id": "Sk7fuKnXxX",
-                  "tagName": "mj-column"
+                  "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
+                  "id": "XoKkgK4CgNCT",
+                  "tagName": "mj-text"
                 }
               ],
-              "id": "SkzM_t3Qem",
-              "tagName": "mj-section"
-            },
-            {
-              "attributes": {
-                "background-color": "transparent",
-                "background-repeat": "repeat",
-                "full-width": "full-width",
-                "padding": "20px 0px 20px 0px",
-                "padding-bottom": "12px",
-                "padding-top": "12px",
-                "text-align": "center",
-                "vertical-align": "top"
-              },
-              "children": [
-                {
-                  "attributes": {},
-                  "children": [
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "0px 25px 0px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\">&nbsp;<span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span>&nbsp;</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"> </p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">J'ai regardé des statistiques sur votre marché et je me suis rendue compte&nbsp;{{var:networkApplicationPercentage:\"qu'une grande partie\"}} des gens qui ont été embauchés en {{var:jobGroupInDepartement:\"boulangerie en Moselle\"}} ont trouvé grâce à leur réseau (personnel ou professionnel). Ça m'a fait réfléchir…</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"> </p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Lorsque vous vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %} sur Bob, vous nous avez dit que vous connaissiez du monde. Ces gens savent-ils comment ils peuvent vous aider ?</span></span>&nbsp;</p><p style=\"line-height: 1.38; margin: 10px 0;\"><span>&nbsp;</span><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Je vous propose qu'on teste ensemble une méthode pour que <b>vous</b> fassiez appel à eux.</span></span><span>&nbsp;</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">La méthode en elle-même n'est pas « miracle » : c'est un cadre pour révéler votre potentiel. C'est vous qui ferez la différence.</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Si vous avez un peu de temps devant vous, prenez une feuille et un stylo, c'est tout ce dont vous aurez besoin : </span></span><span>&nbsp;</span></p>",
-                      "id": "ryPfdthXlX",
-                      "tagName": "mj-text"
-                    }
-                  ],
-                  "id": "SJUMuKhmeQ",
-                  "tagName": "mj-column"
-                }
-              ],
-              "id": "ByrMuY2mxX",
-              "tagName": "mj-section"
-            },
-            {
-              "attributes": {
-                "background-color": "#ffffff",
-                "background-repeat": "repeat",
-                "background-size": "auto",
-                "full-width": "full-width",
-                "padding": "20px 0",
-                "text-align": "center",
-                "vertical-align": "top"
-              },
-              "children": [
-                {
-                  "attributes": {},
-                  "children": [
-                    {
-                      "attributes": {
-                        "border-color": "#000000",
-                        "border-style": "solid",
-                        "border-width": "4px",
-                        "padding": "10px 25px",
-                        "width": "100%"
-                      },
-                      "id": "rk9fdF3mlX",
-                      "tagName": "mj-divider"
-                    },
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<ol><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\"><b>Écrivez une phrase pour décrire votre projet (10 min)</b><br>Quel poste ? Dans quel secteur ? Pourquoi ? Soyez définitif. Évitez au maximum les « un peu » ou les « plutôt » : pour que les gens puissent vous aider ils doivent savoir ce que vous voulez.</span></span></p></li><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\">&nbsp;<span style=\"font-size:14px\"><span style=\"color:#000000\"><b>Faites une liste de 20 personnes qui pourraient vous aider de près ou de loin (5 min)</b><br>Vos connaissances {% if var:hasHighSchoolDegree:\"\" == \"True\" %}de lycée, {% endif %}{% if var:isYoung:\"\" == \"True\" %}votre tante, {% endif %}{% if var:isAbleBodied:\"\" == \"True\" %}votre ami du club de piscine, {% endif %}{% if var:hasChildren:\"\" == \"True\" %}un parent d'élève de l'école de votre enfant, {% endif %}vos voisins, vos amis qui habitent près {{var:inCity:\"de chez vous\"}}, vos amis qui travaillent {{var:inTargetDomain:\"dans votre secteur\"}}, {% if var:hasWorkedBefore:\"\" == \"True\" %}vos anciens collègues{% endif %}… Prenez 5 minutes et écrivez tous les noms qui vous viennent à l'esprit. (Si vous séchez, aidez-vous en regardant vos contacts Linkedin ou Facebook.)</span></span></p></li></ol>",
-                      "id": "S1oGuthmem",
-                      "tagName": "mj-text"
-                    },
-                    {
-                      "attributes": {
-                        "align": "center",
-                        "alt": "",
-                        "border": "none",
-                        "height": "auto",
-                        "href": "",
-                        "padding": "10px 25px",
-                        "passport": {
-                          "image-id": 5975205
-                        },
-                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/os86/2o3st.png",
-                        "target": "_blank",
-                        "title": "",
-                        "width": "1200px"
-                      },
-                      "id": "r1hMdth7gQ",
-                      "tagName": "mj-image"
-                    },
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<ol start=\"3\"><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>À côté de chaque nom écrivez comment ils peuvent vous aider (15 min)</b><br>Ça peut-être : un nom, un numéro de téléphone, une information sur un poste, un avis, une recommandation, le nom d'un recruteur ou même un regain de motivation. Tout le monde peut vous aider en quelque chose.&nbsp;</span></span></p></li></ol>",
-                      "id": "Hy6fdK2QeX",
-                      "tagName": "mj-text"
-                    },
-                    {
-                      "attributes": {
-                        "align": "center",
-                        "alt": "",
-                        "border": "none",
-                        "height": "auto",
-                        "href": "",
-                        "padding": "10px 25px",
-                        "passport": {
-                          "image-id": 5975210
-                        },
-                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/os86/2o3si.png",
-                        "target": "_blank",
-                        "title": "",
-                        "width": "1200px"
-                      },
-                      "id": "rkAzOY2XlX",
-                      "tagName": "mj-image"
-                    },
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<ol start=\"4\"><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>Contactez 5 personnes (45 min)</b><br>Entourez 5 personnes sur votre liste à contacter aujourd'hui. {% if var:frustration:\"\" == \"MOTIVATION\" %}Je sais que vous avez du mal à rester motivée dans votre recherche, alors commencez par ceux que vous connaissez le mieux. Ce sera plus facile et plus agréable de vous adresser à des personnes que vous aimez et qui comptent pour vous. {% elseif var:frustration:\"\" == \"SELF_CONFIDENCE\" %}Je sais que vous manquez parfois de confiance en vous, alors commencez par ceux que vous connaissez le mieux. Ce sera plus facile et plus agréable de vous adresser à des personnes que vous aimez et qui comptent pour vous. {% elseif var:hasLargeNetwork:\"\" == \"True\" %}Je sais que vous connaissez plein de monde, mais ne pariez pas tout de suite sur les personnes les plus importantes. Commencez par tester différentes approches.{% endif %}</span></span><b><span style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\">&nbsp;</span></b><br><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Peu importe comment vous les contactez : par mail, par message Facebook ou par téléphone, l'important est qu'ils comprennent ce que vous recherchez. N'ayez pas peur de demander un conseil ou un renseignement ! La plupart des gens aime rendre service. (Je vous ai préparé des exemples de messages ici </span><span style=\"color:#53585f; font-family:Arial; text-decoration:none\">😊</span><span style=\"color:#000000; font-family:Arial; text-decoration:none\">) </span></span></p></li></ol>",
-                      "id": "r1yeMdKnmeX",
-                      "tagName": "mj-text"
-                    },
-                    {
-                      "attributes": {
-                        "align": "center",
-                        "alt": "",
-                        "border": "none",
-                        "height": "auto",
-                        "href": "",
-                        "padding": "10px 25px",
-                        "passport": {
-                          "image-id": 5975212
-                        },
-                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/os86/2o3sk.png",
-                        "target": "_blank",
-                        "title": "",
-                        "width": "499px"
-                      },
-                      "id": "HygeGuK3XlQ",
-                      "tagName": "mj-image"
-                    },
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<ol start=\"5\"><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>Décidez de recommencer dans une semaine (3 min)</b></span></span><br><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Vous avez fait un grand pas dans votre recherche. Pour s'assurer que ça fonctionne : mettez-vous un rappel dans 1 semaine pour recommencer. Inscrire sa stratégie dans la durée, c'est le meilleur moyen d'être sûr qu'elle finisse par porter ses fruits.<br><br>Rome ne s'est pas faite en un jour ! Persévérez. Vous vous le devez bien.</span></span></p></li></ol>",
-                      "id": "Hy-efdY3me7",
-                      "tagName": "mj-text"
-                    },
-                    {
-                      "attributes": {
-                        "border-color": "#000000",
-                        "border-style": "solid",
-                        "border-width": "4px",
-                        "padding": "10px 25px",
-                        "width": "100%"
-                      },
-                      "id": "ByfxMdt3Qx7",
-                      "tagName": "mj-divider"
-                    }
-                  ],
-                  "id": "HJKfdFhQe7",
-                  "tagName": "mj-column"
-                }
-              ],
-              "id": "BydzuK37lX",
-              "tagName": "mj-section"
-            },
-            {
-              "attributes": {
-                "background-color": "#ffffff",
-                "background-repeat": "repeat",
-                "background-size": "auto",
-                "full-width": "full-width",
-                "padding": "20px 0",
-                "padding-bottom": "0px",
-                "text-align": "center",
-                "vertical-align": "top"
-              },
-              "children": [
-                {
-                  "attributes": {},
-                  "children": [
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Comme on dit : \"Seul on va plus vite, mais ensemble on va plus loin\".</span></span>&nbsp;</p>",
-                      "id": "BkBezdK3Xgm",
-                      "tagName": "mj-text"
-                    },
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Je suis sûre que ça va marcher, </span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">À très vite,</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
-                      "id": "BkLlz_Fh7l7",
-                      "tagName": "mj-text"
-                    }
-                  ],
-                  "id": "H1Eezdt3XeQ",
-                  "tagName": "mj-column"
-                }
-              ],
-              "id": "BJQezdF3Qg7",
-              "tagName": "mj-section"
-            },
-            {
-              "attributes": {
-                "background-repeat": "repeat",
-                "padding": "20px 0",
-                "padding-bottom": "0px",
-                "padding-top": "0px",
-                "passport": {
-                  "savedSectionID": 408382,
-                  "version": "3.3.5"
-                },
-                "text-align": "center",
-                "vertical-align": "top"
-              },
-              "children": [
-                {
-                  "attributes": {},
-                  "children": [
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "alt": "",
-                        "border": "none",
-                        "height": "auto",
-                        "href": "",
-                        "padding": "10px 25px",
-                        "padding-left": "0px",
-                        "padding-top": "0px",
-                        "passport": {
-                          "image-id": 6036334
-                        },
-                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
-                        "target": "_blank",
-                        "title": "",
-                        "width": "102px"
-                      },
-                      "id": "r1FlzOtnQxX",
-                      "tagName": "mj-image"
-                    }
-                  ],
-                  "id": "HyOgMOF2XxQ",
-                  "tagName": "mj-column"
-                }
-              ],
-              "id": "HJwlzdK2mlm",
-              "tagName": "mj-section"
-            },
-            {
-              "attributes": {
-                "background-repeat": "repeat",
-                "padding": "20px 0",
-                "padding-bottom": "0px",
-                "padding-top": "0px",
-                "text-align": "center",
-                "vertical-align": "top"
-              },
-              "children": [
-                {
-                  "attributes": {},
-                  "children": [
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">PS: Tenez-moi au courant 😊</span></span></p>",
-                      "id": "rkneMOt3XlX",
-                      "tagName": "mj-text"
-                    }
-                  ],
-                  "id": "HysxMdKnmlm",
-                  "tagName": "mj-column"
-                }
-              ],
-              "id": "SJqlfdtnXlX",
-              "tagName": "mj-section"
-            },
-            {
-              "attributes": {
-                "background-repeat": "repeat",
-                "padding": "20px 0",
-                "padding-bottom": "0px",
-                "padding-top": "0px",
-                "passport": {
-                  "savedSectionID": 408701,
-                  "version": "3.3.5"
-                },
-                "text-align": "center",
-                "vertical-align": "top"
-              },
-              "children": [
-                {
-                  "attributes": {},
-                  "children": [
-                    {
-                      "attributes": {
-                        "align": "left",
-                        "color": "#55575d",
-                        "font-family": "Arial, sans-serif",
-                        "font-size": "13px",
-                        "line-height": "22px",
-                        "padding": "10px 25px",
-                        "padding-bottom": "0px",
-                        "padding-left": "0px",
-                        "padding-right": "0px",
-                        "padding-top": "0px"
-                      },
-                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
-                      "id": "HkyWGdK27eQ",
-                      "tagName": "mj-text"
-                    }
-                  ],
-                  "id": "SyCgGdY37lX",
-                  "tagName": "mj-column"
-                }
-              ],
-              "id": "BkTxGdYhQem",
-              "tagName": "mj-section"
+              "id": "LbjwM4o23UIJ",
+              "tagName": "mj-column"
             }
           ],
-          "id": "B1ZfOYh7eQ",
-          "tagName": "mj-container"
+          "id": "Sgpasmqm_pJv",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "transparent",
+            "background-repeat": "repeat",
+            "full-width": "full-width",
+            "padding": "20px 0px 20px 0px",
+            "padding-bottom": "12px",
+            "padding-top": "12px",
+            "passport": {
+              "id": "tkJdftWEa9"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "Fg_Ts6JqNa"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "0px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "43JL_CTUQm"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\">&nbsp;<span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span>&nbsp;</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"> </p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">J'ai regardé des statistiques sur votre marché et je me suis rendue compte&nbsp;{{var:networkApplicationPercentage:\"qu'une grande partie\"}} des gens qui ont été embauchés en {{var:jobGroupInDepartement:\"boulangerie en Moselle\"}} ont trouvé grâce à leur réseau (personnel ou professionnel). Ça m'a fait réfléchir…</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"> </p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Lorsque vous vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %} sur Bob, vous nous avez dit que vous connaissiez du monde. Ces gens savent-ils comment ils peuvent vous aider ?</span></span>&nbsp;</p><p style=\"line-height: 1.38; margin: 10px 0;\"><span>&nbsp;</span><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Je vous propose qu'on teste ensemble une méthode pour que <b>vous</b> fassiez appel à eux.</span></span><span>&nbsp;</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">La méthode en elle-même n'est pas « miracle » : c'est un cadre pour révéler votre potentiel. C'est vous qui ferez la différence.</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Si vous avez un peu de temps devant vous, prenez une feuille et un stylo, c'est tout ce dont vous aurez besoin : </span></span><span>&nbsp;</span></p>",
+                  "id": "fTLYyAFa9B9s",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "xbwUd2A94rqh",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "PfHDAnmpGpf1",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "full-width": "full-width",
+            "padding": "20px 0",
+            "passport": {
+              "id": "U5k-gmCxek"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "GeZaf9e4KV"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "border-color": "#000000",
+                    "border-style": "solid",
+                    "border-width": "4px",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "aUi9iKOVgM"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "jKhGkm-56Ipf",
+                  "tagName": "mj-divider"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "GMtB2eW825"
+                    }
+                  },
+                  "content": "<ol><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000\"><b>Écrivez une phrase pour décrire votre projet (10 min)</b><br>Quel poste ? Dans quel secteur ? Pourquoi ? Soyez définitif. Évitez au maximum les « un peu » ou les « plutôt » : pour que les gens puissent vous aider ils doivent savoir ce que vous voulez.</span></span></p></li><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\">&nbsp;<span style=\"font-size:14px\"><span style=\"color:#000000\"><b>Faites une liste de 20 personnes qui pourraient vous aider de près ou de loin (5 min)</b><br>Vos connaissances {% if var:hasHighSchoolDegree:\"\" == \"True\" %}de lycée, {% endif %}{% if var:isYoung:\"\" == \"True\" %}votre tante, {% endif %}{% if var:isAbleBodied:\"\" == \"True\" %}votre ami du club de piscine, {% endif %}{% if var:hasChildren:\"\" == \"True\" %}un parent d'élève de l'école de votre enfant, {% endif %}vos voisins, vos amis qui habitent près {{var:inCity:\"de chez vous\"}}, vos amis qui travaillent {{var:inTargetDomain:\"dans votre secteur\"}}, {% if var:hasWorkedBefore:\"\" == \"True\" %}vos anciens collègues{% endif %}… Prenez 5 minutes et écrivez tous les noms qui vous viennent à l'esprit. (Si vous séchez, aidez-vous en regardant vos contacts Linkedin ou Facebook.)</span></span></p></li></ol>",
+                  "id": "yt3ic68jvKhC",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "ieDVEQAEb_xBNN",
+                      "image-id": 5975205
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/os86/2o3st.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "1200px"
+                  },
+                  "id": "2Fhm5uYK7GHO",
+                  "tagName": "mj-image"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "L7RgvhcvHV"
+                    }
+                  },
+                  "content": "<ol start=\"3\"><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>À côté de chaque nom écrivez comment ils peuvent vous aider (15 min)</b><br>Ça peut-être : un nom, un numéro de téléphone, une information sur un poste, un avis, une recommandation, le nom d'un recruteur ou même un regain de motivation. Tout le monde peut vous aider en quelque chose.&nbsp;</span></span></p></li></ol>",
+                  "id": "h4HseHxXMQXV",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "c2VQa9O5juZfpe",
+                      "image-id": 5975210
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/os86/2o3si.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "1200px"
+                  },
+                  "id": "fOof5GdK1z6C",
+                  "tagName": "mj-image"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "SLxH8L-IAN"
+                    }
+                  },
+                  "content": "<ol start=\"4\"><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>Contactez 5 personnes (45 min)</b><br>Entourez 5 personnes sur votre liste à contacter aujourd'hui. {% if var:frustration:\"\" == \"MOTIVATION\" %}Je sais que vous avez du mal à rester motivée dans votre recherche, alors commencez par ceux que vous connaissez le mieux. Ce sera plus facile et plus agréable de vous adresser à des personnes que vous aimez et qui comptent pour vous. {% elseif var:frustration:\"\" == \"SELF_CONFIDENCE\" %}Je sais que vous manquez parfois de confiance en vous, alors commencez par ceux que vous connaissez le mieux. Ce sera plus facile et plus agréable de vous adresser à des personnes que vous aimez et qui comptent pour vous. {% elseif var:hasLargeNetwork:\"\" == \"True\" %}Je sais que vous connaissez plein de monde, mais ne pariez pas tout de suite sur les personnes les plus importantes. Commencez par tester différentes approches.{% endif %}</span></span><b><span style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\">&nbsp;</span></b><br><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Peu importe comment vous les contactez : par mail, par message Facebook ou par téléphone, l'important est qu'ils comprennent ce que vous recherchez. N'ayez pas peur de demander un conseil ou un renseignement ! La plupart des gens aime rendre service. (Je vous ai préparé des exemples de messages ici </span><span style=\"color:#53585f; font-family:Arial; text-decoration:none\">😊</span><span style=\"color:#000000; font-family:Arial; text-decoration:none\">) </span></span></p></li></ol>",
+                  "id": "P71dOwNwXRqI",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "center",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "Jvx9ALd-yK8ZEt",
+                      "image-id": 5975212
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/os86/2o3sk.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "499px"
+                  },
+                  "id": "_G3RU8YLLSAk",
+                  "tagName": "mj-image"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "qW2_zmfT7la"
+                    }
+                  },
+                  "content": "<ol start=\"5\"><li style=\"color:#000000; font-family:Arial; font-size:10pt; text-decoration:none\"><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\"><b>Décidez de recommencer dans une semaine (3 min)</b></span></span><br><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Vous avez fait un grand pas dans votre recherche. Pour s'assurer que ça fonctionne : mettez-vous un rappel dans 1 semaine pour recommencer. Inscrire sa stratégie dans la durée, c'est le meilleur moyen d'être sûr qu'elle finisse par porter ses fruits.<br><br>Rome ne s'est pas faite en un jour ! Persévérez. Vous vous le devez bien.</span></span></p></li></ol>",
+                  "id": "RWFr6VOdeWkP",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "border-color": "#000000",
+                    "border-style": "solid",
+                    "border-width": "4px",
+                    "padding": "10px 25px",
+                    "passport": {
+                      "id": "-0vLIiMDByx"
+                    },
+                    "width": "100%"
+                  },
+                  "id": "Oa4z8biOVQyG",
+                  "tagName": "mj-divider"
+                }
+              ],
+              "id": "-nsMOM2br6z6",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "pAToGr3xqI-a",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "full-width": "full-width",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "passport": {
+              "id": "jK3s-C9hPWC"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "RhuuozhRrff"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "RlCEdB9RvGE"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Comme on dit : \"Seul on va plus vite, mais ensemble on va plus loin\".</span></span>&nbsp;</p>",
+                  "id": "2K2CNJvkR7Jv",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "MiKpV_b9bak"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Je suis sûre que ça va marcher, </span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">À très vite,</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Joanna et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
+                  "id": "_PCMdMUwRvdd",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "H7jO79yWH-Zv",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "14b7vHwjsyOg",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "oyxEOmQ8vsp9Rm",
+              "savedSectionID": 408382,
+              "version": "3.3.5"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "dDU3NLk--_v"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "padding-left": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "W8RTk8djOK5iT7",
+                      "image-id": 6036334
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "102px"
+                  },
+                  "id": "8EyPEI3cVL0y",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "MESTD3SIBPaD",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "DWfwLglBQSyw",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "xL7b5DIhLDL"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "h88hBq-y9Fw"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "FCOk46S7-Da"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">PS: Tenez-moi au courant 😊</span></span></p>",
+                  "id": "RZVw-Iocscl-",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "oweOwdLMDaVD",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "lvGFAEsgOhxE",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "rjQOUk1WZ82n5D",
+              "savedSectionID": 408701,
+              "version": "3.3.5"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "imFWgDyrygn"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "JHhHV0ir59J"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
+                  "id": "hfv_1aYfjfa9",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "IKRzp7P0OUG6",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "01uGVhRBXKJP",
+          "tagName": "mj-section"
         }
       ],
-      "id": "HJgfdtnmlm",
+      "id": "Fgdrviwon9a5",
       "tagName": "mj-body"
     }
   ],
-  "id": "B1GOtn7g7",
+  "id": "WtS1XTXsMgVN",
   "tagName": "mjml"
 }

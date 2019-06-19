@@ -13,7 +13,7 @@ class _AdviceEventScoringModel(scoring_base.ModelBase):
     """A scoring model for Advice that user needs to go to events."""
 
     def __init__(self) -> None:
-        super(_AdviceEventScoringModel, self).__init__()
+        super().__init__()
         self._db: proto.MongoCachedCollection[event_pb2.Event] = \
             proto.MongoCachedCollection(event_pb2.Event, 'events')
 

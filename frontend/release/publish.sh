@@ -13,7 +13,7 @@ function push() {
   if [[ -n "$OPTIONAL" ]] && [[ -z "$(docker images -a -q "$IMAGE:$LOCAL_TAG" 2> /dev/null)" ]]; then
     return
   fi
-  docker tag "$IMAGE:$LOCAL_TAG" "$IMAGE:$REMOTE_TAG"
+  docker tag "$IMAGE:$LOCAL_TAG" "$IMAGE:${REMOTE_TAG}"
   docker push "$IMAGE:$REMOTE_TAG"
 }
 

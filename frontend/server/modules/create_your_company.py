@@ -59,7 +59,7 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
     """A scoring model to trigger the "Create your company" advice."""
 
     def __init__(self) -> None:
-        super(_AdviceCreateYourCompany, self).__init__()
+        super().__init__()
         self.testimonial_db: proto.MongoCachedCollection[testimonial_pb2.Testimonial] = \
             proto.MongoCachedCollection(testimonial_pb2.Testimonial, 'adie_testimonials')
         self.event_db: proto.MongoCachedCollection[event_pb2.Event] = \

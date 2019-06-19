@@ -90,14 +90,16 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
         if not target_city:
             return []
 
-        commuting_cities = list(_get_commuting_cities(interesting_cities_for_rome, target_city))
+        commuting_cities = _get_commuting_cities(interesting_cities_for_rome, target_city)
+        sorted_commuting_cities = sorted(
+            commuting_cities, key=lambda city: city.relative_offers_per_inhabitant, reverse=True)
 
         obvious_cities = [
-            city for city in commuting_cities
+            city for city in sorted_commuting_cities
             if city.distance_km < _MIN_CITY_DISTANCE]
 
         interesting_cities = [
-            city for city in commuting_cities
+            city for city in sorted_commuting_cities
             if city.distance_km >= _MIN_CITY_DISTANCE]
 
         # If there is only one city nearby and no obvious city, the nearby city becomes obvious, so

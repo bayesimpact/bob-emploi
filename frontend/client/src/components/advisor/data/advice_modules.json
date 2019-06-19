@@ -1,4 +1,17 @@
 {
+  "alternance": {
+    "callToAction": "Voir une sélection d'entreprises où postuler et de sites pour trouver une formation",
+    "explanations": [
+      "vous connaîtrez bien l'entreprise"
+    ],
+    "goal": "découvrir l'alternance",
+    "shortTitle": "Alternance",
+    "title": "Découvrez les opportunités qu'offre l'alternance",
+    "titleXStars": {
+    },
+    "userGainCallout": "2x",
+    "userGainDetails": "plus de chance de trouver un emploi à la fin de votre formation"
+  },
   "association-help": {
     "callToAction": "Voir des exemples d'associations d'accompagnement",
     "explanations": [
@@ -62,11 +75,8 @@
     ],
     "goal": "chercher dans les villes alentour",
     "shortTitle": "Villes proches",
-    "title": "Explorez les offres dans des villes proches",
+    "title": "Trouver les villes proches qui ont le plus de chances de recruter",
     "titleXStars": {
-      "1": "Considérez les offres dans des villes proches",
-      "2": "Regardez les offres dans des villes proches",
-      "3": "Explorez les offres dans des villes proches"
     },
     "userGainCallout": "+15%",
     "userGainDetails": "d'opportunités d'embauche accessibles"
@@ -125,7 +135,7 @@
     ],
     "goal": "participer à des évènements",
     "shortTitle": "Évènements",
-    "title": "Allez à des évènements",
+    "title": "Assistez à des évènements en lien avec votre recherche",
     "titleXStars": {
       "1": "Explorez les évènements autour de vous pour trouver des contacts",
       "2": "Trouvez des contacts en allant à plus d'évènements",
@@ -134,12 +144,19 @@
     "userGainCallout": "2x",
     "userGainDetails": "plus de chances de décrocher un entretien en rencontrant les employeurs en personne"
   },
+  "explore-other-jobs": {
+    "goal": "découvrir d'autres métiers",
+    "shortTitle": "Exploration des métiers",
+    "title": "Explorez de nombreux métiers en vidéo",
+    "titleXStars": {
+    }
+  },
   "find-a-jobboard": {
     "callToAction": "Voir des exemples de portails d'offre en ligne",
     "explanations": [
       "vous pourrez cibler des offres qui vous correspondent"
     ],
-    "goal": "utiliser les meilleurs sites d'offres",
+    "goal": "utiliser les offres d'emploi en ligne",
     "shortTitle": "Sites d'emploi",
     "title": "Consultez ces sites d'offres d'emploi sélectionnés pour vous",
     "titleXStars": {
@@ -152,7 +169,7 @@
     "explanations": [
       "vous pourrez vous démarquer des autres"
     ],
-    "goal": "envoyer des mails de relance",
+    "goal": "envoyer de meilleures relances",
     "shortTitle": "Relances",
     "title": "Relancez toujours après avoir postulé",
     "titleXStars": {
@@ -165,7 +182,7 @@
     "explanations": [
       "70% des candidats adaptent leur CV avant de postuler à une offre"
     ],
-    "goal": "mettre en valeur votre profil",
+    "goal": "bien refaire votre CV",
     "shortTitle": "CV",
     "title": "Refaites bien votre CV pour attirer l'œil des recruteurs",
     "titleXStars": {
@@ -173,13 +190,25 @@
     "userGainCallout": "3x",
     "userGainDetails": "plus de chances de décrocher un entretien lorsque vous postulez"
   },
+  "immersion": {
+    "explanations": [
+      "vous connaitrez mieux la réalité de votre métier"
+    ],
+    "goal": "faire une immersion en entreprise",
+    "shortTitle": "Immersion en entreprise",
+    "title": "Découvrez la réalité d'un métier grâce à une immersion",
+    "titleXStars": {
+    },
+    "userGainCallout": "+15%",
+    "userGainDetails": "d'attractivité de votre profil"
+  },
   "immersion-milo": {
     "explanations": [
       "vous connaitrez mieux la réalité de votre métier"
     ],
-    "goal": "faire une immersion",
-    "shortTitle": "Immersion",
-    "title": "Découvrez la réalité du métier grâce une immersion",
+    "goal": "faire une immersion en entreprise",
+    "shortTitle": "Immersion en entreprise",
+    "title": "Découvrez la réalité du métier grâce à une immersion",
     "titleXStars": {
     },
     "userGainCallout": "+15%",
@@ -241,7 +270,7 @@
   },
   "long-term-mom": {
     "goal": "valoriser votre expérience de maman",
-    "shortTitle": "Expérience de maman",
+    "shortTitle": "Valoriser une pause de carrière",
     "title": "Faites de votre expérience de maman un atout",
     "titleXStars": {
     }
@@ -315,21 +344,28 @@
     "explanations": [
       "il y a moins de concurrences dans d'autres secteurs"
     ],
-    "goal": "postuler dans d'autres secteurs",
+    "goal": "Voir des secteurs où vous pouvez envisager de postuler.",
     "shortTitle": "Autres types d'entreprises",
-    "title": "Postulez à des métiers proches où vos compétences seront valorisées",
+    "title": "Voici des secteurs où vous pouvez envisager de postuler",
     "titleXStars": {
     },
     "userGainCallout": "2x",
     "userGainDetails": "plus d'opportunités d'embauches"
   },
+  "personality-test": {
+    "goal": "mieux comprendre et accepter votre personnalité",
+    "shortTitle": "Tests de personnalité",
+    "title": "Faire des tests de personnalité pour mieux connaître vos forces",
+    "titleXStars": {
+    }
+  },
   "relocate": {
     "explanations": [
       "trouver les opportunités qui vous correspondent le mieux"
     ],
-    "goal": "chercher dans les villes qui recrutent le plus",
+    "goal": "envisager de déménager dans un département qui recrute plus",
     "shortTitle": "Déménagement",
-    "title": "Envisagez de bouger dans un département qui recrute plus",
+    "title": "Trouver les départements en France qui ont le plus de chances de recruter",
     "titleXStars": {
     },
     "userGainCallout": "+32%",
@@ -340,7 +376,7 @@
     "explanations": [
       "retourner sur le marché du travail plus rapidement"
     ],
-    "goal": "parier sur les métiers en tension",
+    "goal": "voir les métiers qui recrutent le plus",
     "shortTitle": "Métiers qui recrutent",
     "title": "Misez sur les métiers qui recrutent le plus dans votre département",
     "titleXStars": {
@@ -386,9 +422,10 @@
   },
   "skill-for-future": {
     "goal": "acquérir des compétences d'avenir",
-    "shortTitle": "Compétences",
-    "title": "Acquérez des compétences d'avenir",
+    "shortTitle": "Compétences d'avenir",
+    "title": "Acquérez des compétences d'avenir pour anticiper les attentes des recruteurs",
     "titleXStars": {
+      "3": "Acquérez des compétences d'avenir pour anticiper les attentes des recruteurs"
     }
   },
   "specific-to-job": {
@@ -408,9 +445,9 @@
     "explanations": [
       "la majorité des offres d'emploi ne sont pas mises sur internet"
     ],
-    "goal": "faire des candidatures spontanées",
+    "goal": "postuler avant qu'une offre soit publiée",
     "shortTitle": "Candidatures spontanées",
-    "title": "Pensez aux candidatures spontanées",
+    "title": "Privilégiez les candidatures spontanées sur le reste",
     "titleXStars": {
       "1": "Pensez aussi aux candidatures spontanées",
       "2": "Faites davantage de candidatures spontanées",
@@ -434,24 +471,11 @@
     "userGainCallout": "2,3x",
     "userGainDetails": "plus de chances de retrouver un emploi en moins de 6 mois"
   },
-  "training-alternance": {
-    "callToAction": "Voir une sélection d'entreprises où postuler et de sites pour trouver une formation",
-    "explanations": [
-      "vous connaîtrez bien l'entreprise"
-    ],
-    "goal": "découvrir l'alternance",
-    "shortTitle": "Alternance",
-    "title": "Découvrez les opportunités qu'offre l'alternance",
-    "titleXStars": {
-    },
-    "userGainCallout": "2x",
-    "userGainDetails": "plus de chance de trouver un emploi à la fin de votre formation"
-  },
   "vae": {
     "explanations": [
       "91% des entreprises se disent prêtes à engager un candidat qui a le potentiel d'acquérir les compétences nécessaires."
     ],
-    "goal": "valoriser votre expérience",
+    "goal": "obtenir un diplôme grâce à votre expérience",
     "shortTitle": "VAE",
     "title": "Valorisez vos années d'expérience par un diplôme",
     "titleXStars": {
@@ -465,37 +489,11 @@
       "vous pourrez apprendre de nouvelles compétences"
     ],
     "goal": "faire du bénévolat",
-    "shortTitle": "Volontariat",
-    "title": "Donnez un coup de main à une association",
+    "shortTitle": "Bénévolat",
+    "title": "Faites du bénévolat pour rencontrer des gens et gagner en expérience",
     "titleXStars": {
     },
     "userGainCallout": "🤗🤗🤗",
     "userGainDetails": "de bien-être dans votre recherche et un CV qui sort du lot"
-  },
-  "wow-baker": {
-    "callToAction": "Voir d'autres astuces pour vous démarquer",
-    "explanations": [
-      "les boulangers cherchent des candidats qui pourront tenir le rythme"
-    ],
-    "goal": "adopter les bons réflexes",
-    "shortTitle": "Astuces de boulangers",
-    "title": "Présentez-vous au chef boulanger dès son arrivée tôt le matin",
-    "titleXStars": {
-    },
-    "userGainCallout": "2x",
-    "userGainDetails": "plus de chances de décrocher un entretien"
-  },
-  "wow-hairdresser": {
-    "callToAction": "Voir d'autres astuces pour vous démarquer",
-    "explanations": [
-      "les coiffeurs apprécient de rencontrer les candidats en personne"
-    ],
-    "goal": "adopter les bons réflexes",
-    "shortTitle": "Astuces de coiffeurs",
-    "title": "Assurez-vous de donner votre CV à la bonne personne quand vous postulez",
-    "titleXStars": {
-    },
-    "userGainCallout": "2x",
-    "userGainDetails": "plus de chances de décrocher un entretien"
   }
 }

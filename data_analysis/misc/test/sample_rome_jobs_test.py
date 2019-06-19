@@ -13,16 +13,16 @@ class SampleRomeJobsTestCase(unittest.TestCase):
 
     testdata_dir = path.join(path.dirname(__file__), 'testdata')
 
-    def setUp(self):
-        super(SampleRomeJobsTestCase, self).setUp()
+    def setUp(self) -> None:
+        super().setUp()
         tmpfile, self.tmpfile_name = tempfile.mkstemp()
         os.close(tmpfile)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         os.remove(self.tmpfile_name)
-        super(SampleRomeJobsTestCase, self).tearDown()
+        super().tearDown()
 
-    def test_main(self):
+    def test_main(self) -> None:
         """Unit test for the main function."""
 
         sample_rome_jobs.main(

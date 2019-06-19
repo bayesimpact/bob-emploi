@@ -14,11 +14,11 @@ You can try it out on a local instance:
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/data_analysis/importer/rome_mobility.py \
-        --rome_csv_pattern data/rome/csv/unix_{}_v331_utf8.csv \
-        --mongo_url mongodb://frontend-db/test
+        --rome_csv_pattern data/rome/csv/unix_{}_v331_utf8.csv
 """
 
 import locale
+import typing
 
 import pandas
 
@@ -33,7 +33,7 @@ locale.setlocale(locale.LC_TIME, 'fr_FR.utf8')
 MOBILITY_TYPES = {'1': discovery_pb2.CLOSE, '2': discovery_pb2.EVOLUTION}
 
 
-def csv2dicts(rome_csv_pattern):
+def csv2dicts(rome_csv_pattern: str) -> typing.List[typing.Dict[str, typing.Any]]:
     """Import the ROME mobility data in MongoDB.
 
     We group the mobility data as JobGroups (we find a set of similar jobs
@@ -73,7 +73,7 @@ def csv2dicts(rome_csv_pattern):
         'code_rome_cible': 'target_job_group',
         'code_appellation_cible': 'target_job',
         'code_type_mobilite': 'mobility_type',
-        }, inplace=True)
+    }, inplace=True)
 
     mobility['target_job_group_name'] = (
         mobility.target_job_group.map(job_groups.name))
@@ -92,7 +92,7 @@ def csv2dicts(rome_csv_pattern):
     return dataframe2dicts(mobility)
 
 
-def dataframe2dicts(mobility):
+def dataframe2dicts(mobility: pandas.DataFrame) -> typing.List[typing.Dict[str, typing.Any]]:
     """Convert a pandas DataFrame with the ROME mobility data to MongoDB dicts.
 
     We group the mobility data as JobGroups (we find a set of similar jobs
@@ -107,10 +107,12 @@ def dataframe2dicts(mobility):
     mobility['source'] = mobility.source_job.where(
         mobility.source_job.notnull(), other=mobility.source_job_group)
 
-    return mobility.groupby('source').apply(_mobility_to_groups).tolist()
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]],
+        mobility.groupby('source').apply(_mobility_to_groups).tolist())
 
 
-def _mobility_to_groups(mobility):
+def _mobility_to_groups(mobility: pandas.DataFrame) -> typing.Dict[str, typing.Any]:
     _id = mobility.source.iloc[0]
     groups = []
 
@@ -136,7 +138,7 @@ def _mobility_to_groups(mobility):
     return {'_id': _id, 'jobGroups': groups}
 
 
-def _group_jobs_as_samples(jobs):
+def _group_jobs_as_samples(jobs: pandas.DataFrame) -> typing.Dict[str, typing.Any]:
     samples = jobs[[
         'target_job', 'target_job_name', 'target_job_masculine_name',
         'target_job_feminine_name']]
@@ -154,12 +156,14 @@ def _group_jobs_as_samples(jobs):
     }}
 
 
-def _sample_jobs(num_samples):
-    def _sampling(jobs):
+def _sample_jobs(num_samples: int) \
+        -> typing.Callable[[pandas.DataFrame], typing.List[typing.Dict[str, typing.Any]]]:
+    def _sampling(jobs: pandas.DataFrame) -> typing.List[typing.Dict[str, typing.Any]]:
         if len(jobs.index) > num_samples:
             jobs = jobs.sample(n=num_samples)
         jobs = jobs[['codeOgr', 'name', 'masculineName', 'feminineName']]
-        return jobs.to_dict('records')
+        return typing.cast(
+            typing.List[typing.Dict[str, typing.Any]], jobs.to_dict('records'))
     return _sampling
 
 

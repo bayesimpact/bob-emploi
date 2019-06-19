@@ -12,7 +12,7 @@ from bob_emploi.data_analysis.misc import pcs_to_fap_mapping
 class PcsToFapMappingTestCase(unittest.TestCase):
     """Unit tests for the main function."""
 
-    def test_basic_usage(self):
+    def test_basic_usage(self) -> None:
         """Basic usage."""
 
         testfile = path.join(

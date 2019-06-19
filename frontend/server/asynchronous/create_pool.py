@@ -8,7 +8,7 @@ import sys
 from urllib import parse
 
 from google.protobuf import json_format
-import pymongo
+from pymongo import errors
 import requests
 
 from bob_emploi.frontend.server import mongo
@@ -46,7 +46,7 @@ def main(pool_name: str = _YESTERDAY, users_json_filters: str = '', limit: str =
         use_case['_id'] = use_case.pop('useCaseId')
         try:
             _DB.use_case.insert_one(use_case)
-        except pymongo.errors.DuplicateKeyError:
+        except errors.DuplicateKeyError:
             _DB.use_case.replace_one({'_id': use_case['_id']}, use_case)
 
     if _SLACK_CREATE_POOL_URL:

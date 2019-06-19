@@ -590,6 +590,9 @@ class DateIntervals(object):
         for period in self._periods:
             yield period
 
+    def __len__(self) -> int:
+        return len(self._periods)
+
     def __repr__(self) -> str:
         return repr(self._periods)
 

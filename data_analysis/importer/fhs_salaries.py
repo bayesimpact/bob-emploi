@@ -17,6 +17,7 @@ import collections
 import csv
 from os import path
 import sys
+import typing
 
 import tqdm
 
@@ -26,13 +27,14 @@ from bob_emploi.data_analysis.lib import migration_helpers
 # Field in the FHS "de" table for the end date of the job request.
 _END_DATE_FIELD = fhs.CANCELATION_DATE_FIELD
 
+
 # Range of salaries for which we have the same size of buckets.
-_BucketRange = collections.namedtuple(
-    'BucketRange', [
-        # The lower bound of the range for which the buckets are defined.
-        'lower_bound',
-        # The size of each bucket.
-        'bucket_size'])
+class _BucketRange(typing.NamedTuple):
+    # The lower bound of the range for which the buckets are defined.
+    lower_bound: float
+    # The size of each bucket.
+    bucket_size: float
+
 
 # Definition of ranges of salaries with increasing bucket sizes. When
 # bucketizing salaries we want to have fine grain bucket for lower salaries and
@@ -59,7 +61,7 @@ _SALARY_BUCKET_SIZES = [
 ]
 
 
-def compute_annual_salary(amt, unit):
+def compute_annual_salary(amt: typing.Union[float, str], unit: str) -> float:
     """Compute annual salary from a (possibly non-annual) amount and unit."""
 
     try:
@@ -74,7 +76,7 @@ def compute_annual_salary(amt, unit):
     return amt
 
 
-def bucketize_salary(de_dict):
+def bucketize_salary(de_dict: typing.Dict[str, typing.Any]) -> typing.Tuple[float, float]:
     """Bucketize the salary of a job seeker.
 
     Args:
@@ -93,7 +95,7 @@ def bucketize_salary(de_dict):
     if salary == 0:
         return 0, 0
 
-    bucket_size = 0
+    bucket_size: float = 0
     for salary_range in _SALARY_BUCKET_SIZES:
         if salary <= salary_range.lower_bound:
             break
@@ -105,7 +107,15 @@ def bucketize_salary(de_dict):
     return bucket_lower, bucket_higher
 
 
-def job_seeker_criteria(de_dict):
+class _JobSeekerBucket(typing.NamedTuple):
+    code_rome: str
+    departement_id: str
+    salary_unit: str
+    salary_low: float
+    salary_high: float
+
+
+def job_seeker_criteria(de_dict: typing.Dict[str, typing.Any]) -> _JobSeekerBucket:
     """Extract a limited set of criteria for a job seeker.
 
     Args:
@@ -116,7 +126,7 @@ def job_seeker_criteria(de_dict):
     """
 
     salary_low, salary_high = bucketize_salary(de_dict)
-    return (
+    return _JobSeekerBucket(
         de_dict[fhs.JOB_GROUP_ID_FIELD],
         fhs.extract_departement_id(de_dict[fhs.CITY_ID_FIELD]),
         de_dict[fhs.SALARY_UNIT_FIELD],
@@ -124,7 +134,7 @@ def job_seeker_criteria(de_dict):
         salary_high)
 
 
-def main(fhs_folder, csv_output):
+def main(fhs_folder: str, csv_output: str) -> None:
     """Extract the salaries information from FHS and bucketize them.
 
     In order to avoid issues about jobseekers being counted several times, we
@@ -149,7 +159,7 @@ def main(fhs_folder, csv_output):
     # Estimation of the total # of rows in the FHS "de" table.
     total = 7000001
 
-    job_seeker_counts = collections.defaultdict(int)
+    job_seeker_counts: typing.Dict[_JobSeekerBucket, int] = collections.defaultdict(int)
     for de_dict in tqdm.tqdm(de_rows, total=total, file=sys.stdout):
         # Discard historical job requests, only work on the ones that are still
         # open.
@@ -159,13 +169,7 @@ def main(fhs_folder, csv_output):
 
     with open(csv_output, 'w') as csv_file:
         writer = csv.writer(csv_file)
-        writer.writerow((
-            'code_rome',
-            'departement_id',
-            'salary_unit',
-            'salary_low',
-            'salary_high',
-            'count'))
+        writer.writerow(_JobSeekerBucket._fields + ('count',))
         for key, count in job_seeker_counts.items():
             writer.writerow(key + (count,))
 

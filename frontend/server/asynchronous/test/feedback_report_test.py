@@ -19,7 +19,7 @@ class FeedbackReportTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
-        super(FeedbackReportTestCase, self).setUp()
+        super().setUp()
         self._db = mongomock.MongoClient().test
         patcher = mock.patch(feedback_report.__name__ + '._USER_DB', new=self._db)
         patcher.start()
@@ -29,7 +29,7 @@ class FeedbackReportTestCase(unittest.TestCase):
 
     def tearDown(self) -> None:
         del feedback_report.os.environ['SENTRY_DSN']
-        super(FeedbackReportTestCase, self).tearDown()
+        super().tearDown()
 
     def test_send_report(
             self, mock_sentry_logging: mock.MagicMock, mock_post: mock.MagicMock) -> None:

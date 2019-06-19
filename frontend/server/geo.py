@@ -4,7 +4,8 @@ import logging
 import os
 import typing
 
-from algoliasearch import algoliasearch
+from algoliasearch import exceptions
+from algoliasearch import search_client
 from google.protobuf import json_format
 from pymongo import database as pymongo_database
 
@@ -14,7 +15,7 @@ from bob_emploi.frontend.api import geo_pb2
 _DEPARTEMENTS: proto.MongoCachedCollection[geo_pb2.Departement] = \
     proto.MongoCachedCollection(geo_pb2.Departement, 'departements')
 
-_ALGOLIA_INDEX: typing.List[algoliasearch.Client] = []
+_ALGOLIA_INDEX: typing.List[search_client.SearchClient] = []
 
 
 def list_all_departements(database: pymongo_database.Database) -> typing.KeysView[str]:
@@ -67,13 +68,13 @@ def get_city_proto(city_id: str) -> typing.Optional[geo_pb2.FrenchCity]:
     if not city_id:
         return None
     if not _ALGOLIA_INDEX:
-        _ALGOLIA_INDEX.append(algoliasearch.Client(
+        _ALGOLIA_INDEX.append(search_client.SearchClient.create(
             os.getenv('ALGOLIA_APP_ID', 'K6ACI9BKKT'),
             os.getenv('ALGOLIA_API_KEY', 'da4db0bf437e37d6d49cefcb8768c67a')).init_index('cities'))
 
     try:
         algolia_city = _ALGOLIA_INDEX[0].get_object(city_id)
-    except algoliasearch.AlgoliaException as err:
+    except exceptions.AlgoliaException as err:
         logging.warning('Error in algolia: %s for city ID %s', err, city_id)
         return None
     if not algolia_city:

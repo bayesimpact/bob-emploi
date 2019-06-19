@@ -2,6 +2,8 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
+import "bob_emploi/frontend/api/diagnostic.proto";
+import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/user.proto";
 
 package bayes.bob;
@@ -77,6 +79,7 @@ message UseCaseEvaluation {
 
 message AdviceEvaluation {
   // Whether the advice needs to be optimized with better data and content.
+  // TODO(pascal): Convert to snake case.
   bool shouldBeOptimized = 1;
 
   // Comment about the advice.
@@ -96,9 +99,69 @@ enum UseCaseScore {
 }
 
 message UseCaseCreateRequest {
-  // Email of the user to create the use case from.
-  string email = 1;
-
-  // Name of the pool in which to add the use case.
+  // Name of the pool in which to add the use case. If this is empty, the use case won't be saved
+  // in the database.
   string pool_name = 2;
+
+  oneof identifier {
+    // Email of the user to create the use case from.
+    string email = 1;
+
+    // ID of the user to create the use case from.
+    string user_id = 3;
+  }
+}
+
+message UseCaseFiltersRequest {
+  // A set of filter IDs we want use cases for. The IDs can be found in the scoring module.
+  repeated string filters = 1;
+
+  // Maximum number of expected use cases. Defaults to 20.
+  int32 max_count = 2;
+
+  // Maximum number of searched use cases. Defaults to 400.
+  int32 max_search_count = 3;
+}
+
+// A message giving a repartition of a number of use cases in different categories, with example
+// use cases in each category.
+message UseCaseDistribution {
+  // The total count of use cases in the distribution.
+  uint32 total_count = 1;
+
+  // The repartition in different categories of the use cases.
+  map<string,UseCaseExamples> distribution = 2;
+
+  // Use cases that have not been classified in any of the categories.
+  UseCaseExamples missing_use_cases = 3;
+
+  // The ordered list of categories that was used to determine the distribution. This field might be
+  // empty if we assume the recipient is already aware of it.
+  repeated DiagnosticCategory categories = 4;
+}
+
+message UseCaseExamples {
+  // The number of use cases classified in this category.
+  uint32 count = 1;
+
+  // A set of example use cases in this category.
+  repeated UseCase examples = 2;
+}
+
+message LaborStatsData {
+  // Information on the job group.
+  JobGroup job_group_info = 1;
+
+  // Market (departement x job group) statistics.
+  LocalJobStats local_stats = 2;
+}
+
+// A message for requesting computation of statistical distribution of use cases in different
+// diagnostic categories.
+message UseCasesDistributionRequest {
+  // A BobMind represented as an ordered list of categories with their filters.
+  repeated DiagnosticCategory categories = 1;
+
+  // Maximum number of use cases to consider. Defaults to 400.
+  uint32 max_use_cases = 2;
 }

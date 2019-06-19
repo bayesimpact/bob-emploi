@@ -19,23 +19,26 @@ To create this dataset, you can run:
 """
 
 import csv
-import collections
 import datetime
 import sys
+import typing
+
 import tqdm
 
 from bob_emploi.data_analysis.lib import fhs
 
+
 # Jobseeker criteria provided per unemployment period.
-_JobseekerCriteria = collections.namedtuple('JobseekerCriteria', [
-    'jobseeker_id',
-    'code_rome',
-    'city_id',
-    'gender'])
+class _JobseekerCriteria(typing.NamedTuple):
+    jobseeker_id: str
+    code_rome: str
+    city_id: str
+    gender: str
 
 
 # TODO(marielaure): Add tests.
-def job_seeker_rows(job_seeker, now):
+def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) \
+        -> typing.Iterator[_JobseekerCriteria]:
     """Yields multiple rows per job seeker with several fields.
 
     Args:
@@ -47,20 +50,20 @@ def job_seeker_rows(job_seeker, now):
 
     job_seeker_periods = job_seeker.get_rome_per_period(27, 'abc', now)
     previous_rome = ''
-    for job_seeker in job_seeker_periods:
+    for period in job_seeker_periods:
 
-        if previous_rome == job_seeker.code_rome or not job_seeker.code_rome:
+        if previous_rome == period.code_rome or not period.code_rome:
             continue
-        previous_rome = job_seeker.code_rome
+        previous_rome = period.code_rome
         yield _JobseekerCriteria(
-            jobseeker_id=job_seeker.jobseeker_unique_id,
+            jobseeker_id=period.jobseeker_unique_id,
             code_rome=previous_rome,
-            city_id=job_seeker.departement,
-            gender=job_seeker.gender,
+            city_id=period.departement,
+            gender=period.gender,
         )
 
 
-def main(fhs_folder, now, csv_output):
+def main(fhs_folder: str, now: str, csv_output: str) -> None:
     """Extract the job group history from FHS and deduplicate them.
 
     Args:
@@ -69,7 +72,7 @@ def main(fhs_folder, now, csv_output):
         csv_output: path to the file to write to.
     """
 
-    now = datetime.datetime.strptime(now, '%Y-%m-%d').date()
+    now_date = datetime.datetime.strptime(now, '%Y-%m-%d').date()
 
     job_seekers = fhs.job_seeker_iterator(
         fhs_folder,
@@ -82,7 +85,7 @@ def main(fhs_folder, now, csv_output):
         writer = csv.writer(csv_file)
         writer.writerow(_JobseekerCriteria._fields)
         for job_seeker in tqdm.tqdm(job_seekers, total=total):
-            for row in job_seeker_rows(job_seeker, now):
+            for row in job_seeker_rows(job_seeker, now_date):
                 writer.writerow(row)
 
 

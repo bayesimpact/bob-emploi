@@ -1,7 +1,6 @@
 """Tests for the authentication endpoints of the server module."""
 
 import datetime
-import json
 import time
 import typing
 import unittest
@@ -10,9 +9,7 @@ from urllib import parse
 
 from bson import objectid
 import mailjet_rest
-import requests
 import requests_mock
-import typing_extensions
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
@@ -22,33 +19,6 @@ from bob_emploi.frontend.server.test import base_test
 
 # TODO(pascal): Split in smaller test files and remove the pylint below.
 # pylint: disable=too-many-lines
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-class _MockRequest(typing_extensions.Protocol):
-    @property
-    def text(self) -> str:
-        """Body content as text."""
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-class _RequestsMock(typing_extensions.Protocol):
-
-    def get(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,  # pylint: disable=redefined-outer-name
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
-            -> requests.Response:
-        """Decide what to do when a get request is sent."""
-
-    def post(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,  # pylint: disable=redefined-outer-name
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
-            -> requests.Response:
-        """Decide what to do when a post request is sent."""
 
 
 class AuthenticateEndpointTestCase(base_test.ServerTestCase):
@@ -547,26 +517,6 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             'Failed to parse revision',
             mock_warning.call_args[0][0] % mock_warning.call_args[0][1:])
 
-    def test_new_user_additional_data(self) -> None:
-        """Authenticate user with additional information."""
-
-        response = self.app.post(
-            '/api/user/authenticate',
-            data=json.dumps({
-                'email': 'cyrille@me.fr',
-                'firstName': 'Cyrille',
-                'hashedPassword': 'psswd',
-                'lastName': 'Corpet',
-                'userData': {'quickDiagnostic': 'ACTIVE'}
-            }),
-            content_type='application/json')
-
-        auth_response = self.json_from_response(response)
-        self.assertEqual(
-            'ACTIVE',
-            auth_response.get(
-                'authenticatedUser', {}).get('featuresEnabled', {}).get('quickDiagnostic'))
-
     @mock.patch(mailjet_rest.__name__ + '.Client')
     def test_reset_password_bad_email(self, mock_mailjet_client: mock.MagicMock) -> None:
         """Try reseting a password with a bad token."""
@@ -631,7 +581,8 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint using PE Connect."""
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_bad_code(self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
+    def test_bad_code(
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with a PE Connect code that is not correct."""
 
         mock_requests.post(
@@ -651,7 +602,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
 
     @mock.patch(auth.logging.__name__ + '.warning')
     def test_redirect_uri_mismatch(
-            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with a redirect_uri that is not registered."""
 
         mock_requests.post(
@@ -673,7 +624,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
             mock_logging.call_args[0][2:],
         )
 
-    def test_bad_nonce(self, mock_requests: _RequestsMock) -> None:
+    def test_bad_nonce(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request with a PE Connect nonce that does not match."""
 
         mock_requests.post(
@@ -690,7 +641,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
 
     @mock.patch(auth.logging.__name__ + '.warning')
     def test_pe_server_fails(
-            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with PE Connect, but userinfo fails."""
 
         mock_requests.post(
@@ -715,11 +666,11 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
     @mock.patch(auth.geo.__name__ + '.get_city_proto')
     @mock.patch(auth.jobs.__name__ + '.get_job_proto')
     def test_new_user(
-            self, mock_requests: _RequestsMock, mock_get_job_proto: mock.MagicMock,
+            self, mock_requests: requests_mock.Mocker, mock_get_job_proto: mock.MagicMock,
             mock_get_city_proto: mock.MagicMock) -> None:
         """Auth request with PE Connect for a new user."""
 
-        def _match_correct_code(request: _MockRequest) -> bool:
+        def _match_correct_code(request: 'requests_mock._RequestObjectProxy') -> bool:
             return 'code=correct-code' in (request.text or '')
 
         mock_requests.post(
@@ -765,7 +716,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
                 'codeINSEE': '69386',
                 'address1': '55 rue du lac',
             })
-        mock_get_city_proto.return_value = geo_pb2.FrenchCity(name='Lyon', city_id='69386')
+        mock_get_city_proto.return_value = geo_pb2.FrenchCity(name='Lyon', city_id='69123')
         mock_get_job_proto.return_value = job_pb2.Job(name='Plombier')
 
         response = self.app.post(
@@ -782,16 +733,85 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         self.assertEqual('MASCULINE', user.get('profile', {}).get('gender'))
         self.assertEqual([True], [p.get('isIncomplete') for p in user.get('projects', [])])
         self.assertEqual('Lyon', user['projects'][0].get('city', {}).get('name'))
+        self.assertEqual('69123', user['projects'][0].get('city', {}).get('cityId'))
         self.assertEqual('Plombier', user['projects'][0].get('targetJob', {}).get('name'))
         user_id = user['userId']
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
 
-        mock_get_city_proto.assert_called_once_with('69386')
+        mock_get_city_proto.assert_called_once_with('69123')
         mock_get_job_proto.assert_called_once()
         self.assertEqual(('86420', 'A1234'), mock_get_job_proto.call_args[0][1:])
 
-    def test_new_user_with_existing_email(self, mock_requests: _RequestsMock) -> None:
-        """Auth request with a facebook token for a new user using an existing email."""
+    def _test_new_user_in_city(
+            self, mock_requests: requests_mock.Mocker, city_id: str) -> typing.Optional[str]:
+        """Auth request with PE Connect for a new user in a city.
+
+        Params:
+            city_id: the ID of the city returned by PE Connect.
+
+        Returns:
+            The ID of the city stored in MongoDB for this user.
+        """
+
+        mock_requests.post(
+            'https://authentification-candidat.pole-emploi.fr/connexion/oauth2/access_token?'
+            'realm=/individu',
+            json={
+                'access_token': '123456',
+                'nonce': 'correct-nonce',
+                'scope':
+                    'api_peconnect-individuv1 openid profile email api_peconnect-coordonneesv1 '
+                    'coordonnees',
+                'token_type': 'Bearer',
+            })
+        mock_requests.get(
+            'https://api.emploi-store.fr/partenaire/peconnect-individu/v1/userinfo',
+            headers={'Authorization': 'Bearer 123456'},
+            json={
+                'email': 'polemploi-pascal@example.com',
+                'family_name': 'CORPET',
+                'gender': 'male',
+                'given_name': 'PASCAL',
+                'sub': 'pe-connect-user-id-1',
+            })
+        mock_requests.get(
+            'https://api.emploi-store.fr/partenaire/peconnect-coordonnees/v1/coordonnees',
+            headers={'Authorization': 'Bearer 123456'},
+            json={'codeINSEE': city_id})
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{"peConnectCode": "correct-code", "peConnectNonce": "correct-nonce"}',
+            content_type='application/json')
+        user = self.json_from_response(response)['authenticatedUser']
+
+        # Clean up.
+        self._user_db.user.drop()
+
+        return typing.cast(typing.Optional[str], user['projects'][0].get('city', {}).get('cityId'))
+
+    @mock.patch(auth.geo.__name__ + '.get_city_proto')
+    def test_arrondissements(
+            self, mock_requests: requests_mock.Mocker, mock_get_city_proto: mock.MagicMock) -> None:
+        """Test that arrondissements IDs from PE are converted to city IDs."""
+
+        mock_get_city_proto.side_effect = lambda c: geo_pb2.FrenchCity(name='City', city_id=c)
+
+        # Sanity check.
+        self.assertEqual('31555', self._test_new_user_in_city(mock_requests, '31555'))
+
+        # Lyon.
+        self.assertEqual('69123', self._test_new_user_in_city(mock_requests, '69381'))
+        self.assertEqual('69123', self._test_new_user_in_city(mock_requests, '69386'))
+        # Marseille.
+        self.assertEqual('13055', self._test_new_user_in_city(mock_requests, '13201'))
+        self.assertEqual('13055', self._test_new_user_in_city(mock_requests, '13212'))
+        # Paris.
+        self.assertEqual('75056', self._test_new_user_in_city(mock_requests, '75101'))
+        self.assertEqual('75056', self._test_new_user_in_city(mock_requests, '75113'))
+
+    def test_new_user_with_existing_email(self, mock_requests: requests_mock.Mocker) -> None:
+        """Auth request with a pole-emploi token for a new user using an existing email."""
 
         self.authenticate_new_user(email='pascal@pole-emploi.fr', password='psswd')
 
@@ -816,7 +836,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
             content_type='application/json')
         self.assertEqual(403, response.status_code)
 
-    def test_load_user(self, mock_requests: _RequestsMock) -> None:
+    def test_load_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request retrieves user."""
 
         mock_requests.post(
@@ -860,7 +880,8 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
     """Unit tests for the authenticate endpoint using LinkedIn Auth."""
 
     @mock.patch(auth.logging.__name__ + '.warning')
-    def test_bad_code(self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
+    def test_bad_code(
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with a OAuth2 code that is not correct."""
 
         mock_requests.post(
@@ -878,7 +899,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 
     @mock.patch(auth.logging.__name__ + '.warning')
     def test_redirect_uri_mismatch(
-            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Auth request with a redirect_uri that is not registered."""
 
         mock_requests.post(
@@ -901,13 +922,13 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 
     @mock.patch(auth.logging.__name__ + '.warning')
     def test_linked_in_server_fails(
-            self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
-        """Auth request with LinkedIn, but people request fails."""
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
+        """Auth request with LinkedIn, but me request fails."""
 
         mock_requests.post(
             'https://www.linkedin.com/oauth/v2/accessToken', json={'access_token': '123456'})
         mock_requests.get(
-            'https://api.linkedin.com/v1/people/~:(id,location,first-name,last-name,email-address)',
+            'https://api.linkedin.com/v2/me',
             headers={'Authorization': 'Bearer 123456'},
             status_code=400,
             text='Token outdated')
@@ -921,24 +942,58 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 
         mock_logging.assert_called_once()
 
-    def test_new_user(self, mock_requests: _RequestsMock) -> None:
+    @mock.patch(auth.logging.__name__ + '.warning')
+    def test_linked_in_server_email_fails(
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
+        """Auth request with LinkedIn, but email request fails."""
+
+        mock_requests.post(
+            'https://www.linkedin.com/oauth/v2/accessToken', json={'access_token': '123456'})
+        mock_requests.get(
+            'https://api.linkedin.com/v2/me',
+            headers={'Authorization': 'Bearer 123456'},
+            status_code=200,
+            json={
+                'id': 'linked-in-user-id-1',
+                'localizedFirstName': 'Cyrille',
+                'localizedLastName': 'Corpet',
+            })
+        mock_requests.get(
+            'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))',
+            headers={'Authorization': 'Bearer 123456'},
+            status_code=400,
+            text='Token outdated')
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data='{"linkedInCode": "correct-code"}',
+            content_type='application/json')
+        self.assertEqual(403, response.status_code)
+        self.assertIn('Token outdated', response.get_data(as_text=True))
+
+        mock_logging.assert_called_once()
+
+    def test_new_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request with LinkedIn for a new user."""
 
-        def _match_correct_code(request: _MockRequest) -> bool:
+        def _match_correct_code(request: 'requests_mock._RequestObjectProxy') -> bool:
             return 'code=correct-code' in (request.text or '')
 
         mock_requests.post(
             'https://www.linkedin.com/oauth/v2/accessToken',
             json={'access_token': '123456'}, additional_matcher=_match_correct_code)
         mock_requests.get(
-            'https://api.linkedin.com/v1/people/~:(id,location,first-name,last-name,email-address)',
+            'https://api.linkedin.com/v2/me',
             headers={'Authorization': 'Bearer 123456'},
             json={
-                'emailAddress': 'pascal-linkedin@example.com',
-                'lastName': 'Corpet',
-                'firstName': 'Pascal',
                 'id': 'linked-in-user-id-1',
+                'localizedFirstName': 'Pascal',
+                'localizedLastName': 'Corpet',
             })
+        mock_requests.get(
+            'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))',
+            headers={'Authorization': 'Bearer 123456'},
+            json={'handle~': {'emailAddress': 'pascal-linkedin@example.com'}})
 
         response = self.app.post(
             '/api/user/authenticate',
@@ -952,9 +1007,10 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         self.assertEqual('linked-in-user-id-1', user.get('linkedInId'))
         self.assertEqual('Pascal', user.get('profile', {}).get('name'))
         self.assertEqual('Corpet', user.get('profile', {}).get('lastName'))
+        self.assertEqual('pascal-linkedin@example.com', user.get('profile', {}).get('email'))
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
 
-    def test_new_user_with_existing_email(self, mock_requests: _RequestsMock) -> None:
+    def test_new_user_with_existing_email(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request with a LinkedIn code for a new user using an existing email."""
 
         self.authenticate_new_user(email='pascal@linkedin.com', password='psswd')
@@ -962,14 +1018,17 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         mock_requests.post(
             'https://www.linkedin.com/oauth/v2/accessToken', json={'access_token': '123456'})
         mock_requests.get(
-            'https://api.linkedin.com/v1/people/~:(id,location,first-name,last-name,email-address)',
+            'https://api.linkedin.com/v2/me',
             headers={'Authorization': 'Bearer 123456'},
             json={
-                'emailAddress': 'pascal@linkedin.com',
-                'lastName': 'Corpet',
-                'firstName': 'Pascal',
                 'id': 'linked-in-user-id-1',
+                'localizedFirstName': 'Pascal',
+                'localizedLastName': 'Corpet',
             })
+        mock_requests.get(
+            'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))',
+            headers={'Authorization': 'Bearer 123456'},
+            json={'handle~': {'emailAddress': 'pascal@linkedin.com'}})
 
         response = self.app.post(
             '/api/user/authenticate',
@@ -979,20 +1038,23 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
             "L'utilisateur existe mais utilise un autre moyen de connexion: Email/Mot de passe.",
             response.get_data(as_text=True))
 
-    def test_load_user(self, mock_requests: _RequestsMock) -> None:
+    def test_load_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request retrieves user."""
 
         mock_requests.post(
             'https://www.linkedin.com/oauth/v2/accessToken', json={'access_token': '123456'})
         mock_requests.get(
-            'https://api.linkedin.com/v1/people/~:(id,location,first-name,last-name,email-address)',
+            'https://api.linkedin.com/v2/me',
             headers={'Authorization': 'Bearer 123456'},
             json={
-                'emailAddress': 'pascal-linkedin@example.com',
-                'lastName': 'Corpet',
-                'firstName': 'Pascal',
                 'id': 'linked-in-user-id-1',
+                'localizedFirstName': 'Pascal',
+                'localizedLastName': 'Corpet',
             })
+        mock_requests.get(
+            'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))',
+            headers={'Authorization': 'Bearer 123456'},
+            json={'handle~': {'emailAddress': 'pascal-linkedin@example.com'}})
 
         # Create a new user.
         response = self.app.post(

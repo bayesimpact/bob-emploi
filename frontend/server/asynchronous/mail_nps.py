@@ -115,7 +115,7 @@ def _send_reports(count: int, errors: typing.List[str]) -> None:
 
 # TODO(pascal): Move to mail_blast module.
 def main(
-        user_db: pymongo.database.Database, base_url: str, now: datetime.datetime,
+        user_db: pymongo.collection.Collection, base_url: str, now: datetime.datetime,
         days_before_sending: str) -> None:
     """Send an email to users that signed up more than n days ago list of users."""
 
@@ -127,7 +127,7 @@ def main(
         'registeredAt': {'$gt': '2018-01-01'},
     }
     count = 0
-    user_iterator = user_db.find(
+    user_iterator: typing.Iterator[typing.Dict[str, typing.Any]] = user_db.find(
         query,
         (
             '_id',

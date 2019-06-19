@@ -21,9 +21,9 @@ class OnlineSalonsImporterTestCase(airtablemock.TestCase):
 
     @mock.patch(online_salons.airtable_to_protos.__name__ + '._AIRTABLE_API_KEY', new='apikey')
     @mock.patch(online_salons.__name__ + '._REGIONS', new=[{'94': {'prefix': 'en '}}])
-    @mock.patch(online_salons.__name__ + '.algoliasearch')
+    @mock.patch(online_salons.__name__ + '.search_client')
     @mock.patch(online_salons.logging.__name__ + '.warning')
-    def test_json2dicts(self, mock_logging, mock_algolia):
+    def test_json2dicts(self, mock_logging: mock.MagicMock, mock_algolia: mock.MagicMock) -> None:
         """Test basic usage of the json2dicts function."""
 
         client = airtable.Airtable('appXmyc7yYj0pOcae', '')
@@ -43,7 +43,7 @@ class OnlineSalonsImporterTestCase(airtablemock.TestCase):
 
         online_salons.clear_algolia_index()
 
-        mock_algolia.Client().init_index().search.side_effect = [
+        mock_algolia.SearchClient.create().init_index().search.side_effect = [
             {'hits': [{
                 'departementId': '62',
                 'regionName': 'Hauts-de-France',
@@ -133,18 +133,18 @@ class OnlineSalonsImporterTestCase(airtablemock.TestCase):
 
 
 @mock.patch(online_salons.__name__ + '._REGIONS', new=[{'94': {'prefix': 'en '}}])
-@mock.patch(online_salons.__name__ + '.algoliasearch')
+@mock.patch(online_salons.__name__ + '.search_client')
 class FetchLocationTestCase(unittest.TestCase):
     """Test the fetch_location function."""
 
-    def setUp(self):
-        super(FetchLocationTestCase, self).setUp()
+    def setUp(self) -> None:
+        super().setUp()
         online_salons.clear_algolia_index()
 
-    def test_approx_name(self, mock_algolia):
+    def test_approx_name(self, mock_algolia: mock.MagicMock) -> None:
         """A location fetched from approximative name should find a match."""
 
-        mock_algolia.Client().init_index().search.return_value = {'hits': [{
+        mock_algolia.SearchClient.create().init_index().search.return_value = {'hits': [{
             'departementId': '62',
             'regionName': 'Hauts-de-France',
             'name': 'Liévin',
@@ -164,10 +164,10 @@ class FetchLocationTestCase(unittest.TestCase):
         self.assertEqual('CITY', fetched_location.get('areaType'))
         self.assertEqual('Liévin', fetched_location.get('city', {}).get('name'))
 
-    def test_exact_region_id(self, mock_algolia):
+    def test_exact_region_id(self, mock_algolia: mock.MagicMock) -> None:
         """A location fetched from region ID should find a match."""
 
-        mock_algolia.Client().init_index().search.return_value = {'hits': [{
+        mock_algolia.SearchClient.create().init_index().search.return_value = {'hits': [{
             'departementId': '2A',
             'regionName': 'Corse',
             'name': 'Ajaccio',

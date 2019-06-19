@@ -10,7 +10,7 @@ const constants = require('./const.json')
 
 module.exports = {
   devtool: 'eval',
-  entry: './test/loadtests.js',
+  entry: './test/webpack/loadtests.js',
   mode: 'development',
   module: {
     rules: [
@@ -21,9 +21,9 @@ module.exports = {
       {
         include: [
           path.join(__dirname, '../src'),
-          path.join(__dirname, '../test'),
+          path.join(__dirname, '../test/webpack'),
         ],
-        test: /\.(js|jsx)$/,
+        test: /\.[jt]sx?$/,
         use: 'babel-loader',
       },
     ],

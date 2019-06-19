@@ -15,7 +15,7 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'imt'
 
     def setUp(self) -> None:
-        super(ImtVarsTestCase, self).setUp()
+        super().setUp()
 
         imt.proto.clear_mongo_fetcher_cache()
 
@@ -43,7 +43,6 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
                     },
                 ],
                 'yearlyAvgOffersPer10Candidates': 3,
-                'yearlyAvgOffersDenominator': 10,
             },
         })
 

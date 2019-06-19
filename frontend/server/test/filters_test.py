@@ -22,7 +22,7 @@ class FilterTestBase(scoring_test.ScoringModelTestBase):
     """A base class for tests for filters."""
 
     def setUp(self) -> None:
-        super(FilterTestBase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
 
     def _assert_pass_filter(self) -> None:
@@ -597,6 +597,17 @@ class NegateFilterTestCase(FilterTestBase):
         self._assert_fail_filter()
 
 
+class NegateConstantFilterTestCase(FilterTestBase):
+    """Unit tests for the negate filter when the negated model has values other than 0 or 3."""
+
+    model_id = 'not-constant(0.5)'
+
+    def test_anyone(self) -> None:
+        """Negating a positive score."""
+
+        self._assert_fail_filter()
+
+
 class NotWorkingNegateFilterTestCase(unittest.TestCase):
     """Unit tests for a negate filter on a non-existing scorer."""
 
@@ -698,7 +709,7 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         self._assert_pass_filter()
 
     def test_high_market_stress(self) -> None:
-        """User looking for a job that had 6 offers per 10 candidates."""
+        """User looking for a job that had 5 offers per 10 candidates."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1602'
         self.persona.project.city.departement_id = '19'
@@ -711,9 +722,22 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         })
         self._assert_fail_filter()
 
-    # This should never happen but we test it anyway to be sure it doesn't crash.
     def test_zero_market_stress(self) -> None:
         """User looking for a job that had no offers."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1602',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': -1,
+            }
+        })
+        self._assert_fail_filter()
+
+    def test_missing_market_stress(self) -> None:
+        """User looking for a job where we don't know the number of offers."""
 
         self.persona.project.target_job.job_group.rome_id = 'M1602'
         self.persona.project.city.departement_id = '19'
@@ -727,8 +751,8 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         self._assert_fail_filter()
 
 
-class AllMarketStressFilterTestCase(FilterTestBase):
-    """Unit tests for the _BaseFilter class for projects with high market stress."""
+class UnstressedMarketFilterTestCase(FilterTestBase):
+    """Unit tests for the _BaseFilter class for projects with low market stress."""
 
     model_id = 'for-lower-market-tension(10/3)'
 
@@ -760,6 +784,68 @@ class AllMarketStressFilterTestCase(FilterTestBase):
         })
         self._assert_fail_filter()
 
+    def test_zero_market_stress(self) -> None:
+        """User looking for a job that had no offers."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1602',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': -1,
+            }
+        })
+        self._assert_fail_filter()
+
+    def test_missing_market_stress(self) -> None:
+        """User looking for a job where we don't know the number of offers."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1602',
+            'imt': {
+                'yearlyAvgOffersDenominator': 0,
+                'yearlyAvgOffersPer10Candidates': 0,
+            }
+        })
+        self._assert_fail_filter()
+
+
+class StressedMarketFilterTestCase(FilterTestBase):
+    """Unit tests for the _BaseFilter class for projects with high market stress."""
+
+    model_id = 'for-stressed-market(10/3)'
+
+    def test_lower_market_stress(self) -> None:
+        """User looking for a job that had 7 offers per 10 candidates."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1601',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 7,
+            }
+        })
+        self._assert_fail_filter()
+
+    def test_higher_market_stress(self) -> None:
+        """User looking for a job that had 2 offers per 10 candidates."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1602',
+            'imt': {
+                'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': 2,
+            }
+        })
+        self._assert_pass_filter()
+
     # This should never happen but we test it anyway to be sure it doesn't crash.
     def test_zero_market_stress(self) -> None:
         """User looking for a job that had no offers."""
@@ -770,8 +856,104 @@ class AllMarketStressFilterTestCase(FilterTestBase):
             '_id': '19:M1602',
             'imt': {
                 'yearlyAvgOffersDenominator': 10,
+                'yearlyAvgOffersPer10Candidates': -1,
+            }
+        })
+        self._assert_pass_filter()
+
+    def test_missing_market_stress(self) -> None:
+        """We're missing info on the user's market."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.persona.project.city.departement_id = '19'
+        self.database.local_diagnosis.insert_one({
+            '_id': '19:M1602',
+            'imt': {
+                'yearlyAvgOffersDenominator': 0,
                 'yearlyAvgOffersPer10Candidates': 0,
             }
+        })
+        self._assert_fail_filter()
+
+
+class StressedJobFilterTestCase(FilterTestBase):
+    """Unit tests for the _BaseFilter class for projects with high job stress."""
+
+    model_id = 'for-stressed-job(10/3)'
+
+    def test_lower_job_stress(self) -> None:
+        """User looking for a job that had 7 offers per 10 candidates."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.database.job_group_info.insert_one({
+            '_id': 'M1601',
+            'nationalMarketScore': .7,
+        })
+        self._assert_fail_filter()
+
+    def test_higher_job_stress(self) -> None:
+        """User looking for a job that had 2 offers per 10 candidates."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.database.job_group_info.insert_one({
+            '_id': 'M1602',
+            'nationalMarketScore': .2,
+        })
+        self._assert_pass_filter()
+
+    def test_missing_national_score(self) -> None:
+        """We're missing info on the user's job's stress."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1602'
+        self.database.job_group_info.delete_one({'_id': 'M1602'})
+        self._assert_fail_filter()
+
+
+class MoreJobOffersFilterTestCase(FilterTestBase):
+    """Unit tests for the _BaseFilter class for projects in market with more than 5 offers."""
+
+    model_id = 'for-more-job-offers-locally(5)'
+
+    def test_many_offers(self) -> None:
+        """User looking in a market where there are plenty of job offers."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.persona.project.city.departement_id = '69'
+        self.database.local_diagnosis.insert_one({
+            '_id': '69:M1601',
+            'numJobOffersLastYear': 1000,
+        })
+        self._assert_pass_filter()
+
+    def test_few_offers(self) -> None:
+        """User looking in a market where there are very few job offers."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.persona.project.city.departement_id = '69'
+        self.database.local_diagnosis.insert_one({
+            '_id': '69:M1601',
+            'numJobOffersLastYear': 6,
+        })
+        self._assert_fail_filter()
+
+    def test_just_enough_offers(self) -> None:
+        """User looking in a market where there are just enough job offers."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.persona.project.city.departement_id = '69'
+        self.database.local_diagnosis.insert_one({
+            '_id': '69:M1601',
+            'numJobOffersLastYear': 16,
+        })
+        self._assert_pass_filter()
+
+    def test_unknown_offers(self) -> None:
+        """User looking in a market but we do not know how many job offers there were."""
+
+        self.persona.project.target_job.job_group.rome_id = 'M1601'
+        self.persona.project.city.departement_id = '69'
+        self.database.local_diagnosis.insert_one({
+            '_id': '69:M1601',
         })
         self._assert_fail_filter()
 
@@ -1095,6 +1277,47 @@ class FilterShortSearchTestCase(FilterTestBase):
         self.persona.project.job_search_length_months = 24
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._assert_fail_filter()
+
+
+class LongAccumulatedSearcherFilterTestCase(FilterTestBase):
+    """Unit tests for the BaseFilter class for users that have searched a lot, considering their
+    availability to search (ie employment status)."""
+
+    model_id = 'for-long-accumulated-search(2)'
+
+    def test_not_started(self) -> None:
+        """User hasn't started on their project yet."""
+
+        self.persona.project.job_search_has_not_started = True
+        self.persona.project.job_search_length_months = -1
+        if not self.persona.project.HasField('created_at'):
+            self.persona.project.created_at.GetCurrentTime()
+        self._assert_fail_filter()
+
+    def test_just_started(self) -> None:
+        """User has just started this project."""
+
+        self.persona.project.job_search_length_months = 1
+        self.persona.project.job_search_started_at.FromDatetime(
+            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._assert_fail_filter()
+
+    def test_started_2_years_ago(self) -> None:
+        """User has been working on this project for 2 years."""
+
+        self.persona.project.job_search_length_months = 24
+        self.persona.project.job_search_started_at.FromDatetime(
+            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._assert_pass_filter()
+
+    def test_started_5_months_ago_employed(self) -> None:
+        """User is currently employed, but has been working on this project for 5 months."""
+
+        self.persona.project.kind = project_pb2.FIND_ANOTHER_JOB
+        self.persona.project.job_search_length_months = 5
+        self.persona.project.job_search_started_at.FromDatetime(
+            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=153))
         self._assert_fail_filter()
 
 

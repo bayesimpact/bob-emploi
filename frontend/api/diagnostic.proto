@@ -20,6 +20,13 @@ message Diagnostic {
   // For instance: "Projet pas assez clair"
   // This is in the user's locale and uses markup language.
   string overall_sentence = 4;
+
+  // The category in which we consider the user to be.
+  string category_id = 5;
+
+  // The text introducing the strategies proposed for this diagnostic.
+  // DEPRECATED (since 2019-03): Use strategies_introduction from DiagnosticTemplate instead.
+  string strategies_introduction = 6 [deprecated=true, (string_format) = NATURAL_LANGUAGE];
 }
 
 message SubDiagnostic {
@@ -103,6 +110,12 @@ message DiagnosticTemplate {
 
   // When used as an observation generator, say whether this needs attention from the user.
   bool is_attention_needed = 8;
+
+  // Restrict to a specific Diagnostic category.
+  string category_id = 9;
+
+  // The text introducing the strategies proposed for this diagnostic.
+  string strategies_introduction = 10 [(string_format) = NATURAL_LANGUAGE];
 }
 
 // TODO(cyrille): Clean this one and its uses, since we won't use it much more.
@@ -179,4 +192,33 @@ message LoggedDiagnosticRequest {
 
   // The ID of the region.
   string region_id = 7;
+}
+
+// TODO(cyrille): Add title.
+message DiagnosticCategory {
+  // An identifier for the category. It should be human readable, but not in natural language,
+  // for instance "stuck-market".
+  string category_id = 1;
+
+  // The filters defining whether a project could belong to the category.
+  repeated string filters = 2 [(string_format) = SCORING_MODEL_ID];
+
+  // The order of priority for the category. It allows to choose a category when several apply for a
+  // given project. The category with smallest order is always preferred.
+  int32 order = 3;
+
+  // The text introducing the strategies proposed.
+  string strategies_introduction = 4 [(string_format) = NATURAL_LANGUAGE];
+
+  // Whether this category is shown only because the user is using the Alpha version of the advisor.
+  // Note that non-alpha user will still get the category assigned but then will neither get the
+  // strategies, nor the related Bob talk.
+  bool are_strategies_for_alpha_only = 5;
+
+  // Whether this category is relevant to a given context.
+  bool is_relevant = 6 [(field_usage) = ALGORITHM_RESULT];
+}
+
+message DiagnosticCategories {
+  repeated DiagnosticCategory categories = 1;
 }

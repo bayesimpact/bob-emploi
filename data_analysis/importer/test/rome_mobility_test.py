@@ -16,7 +16,7 @@ class RomeMobilityImporterTestCase(unittest.TestCase):
     rome_csv_pattern = path.join(
         path.dirname(__file__), 'testdata/unix_{}_v327_utf8.csv')
 
-    def test_csv2dicts(self):
+    def test_csv2dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
 
         collection = rome_mobility.csv2dicts(self.rome_csv_pattern)
@@ -74,7 +74,7 @@ class RomeMobilityImporterTestCase(unittest.TestCase):
             'Animation de site multimédia',
             _10979_proto.job_groups[0].job_group.name)
 
-    def test_dataframe2dicts(self):
+    def test_dataframe2dicts(self) -> None:
         """Unit tests for dataframe2dicts."""
 
         res = rome_mobility.dataframe2dicts(pandas.DataFrame([

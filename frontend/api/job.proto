@@ -25,7 +25,7 @@ message Job {
 }
 
 // Description of a job group.
-// Next free ID: 22.
+// Next free ID: 29.
 message JobGroup {
   // Identifier of the group in the ROME index.
   string rome_id = 1;
@@ -119,6 +119,12 @@ message JobGroup {
 
   // The (at most 11) top departements in terms of offer/demand ratio, in descending order.
   repeated DepartementStats best_departements = 26;
+
+  // The national market score (offer/demand ratio).
+  float national_market_score = 27;
+
+  // Whether the required diplomas are strictly needed, or only a strong wish from recruitors.
+  bool is_diploma_strictly_required = 28;
 }
 
 message DepartementStats {
@@ -191,12 +197,16 @@ message LocalJobStats {
   // TODO(cyrille): Drop comment below.
   // Until this field is imported in database, value 0 can also mean we don't have the data yet.
   int32 num_less_stressful_departements = 13;
+
+  // Percentage of the jobseekers that are in a market as stressful or more stressful than this one.
+  // 0 means unkown.
+  float more_stressed_jobseekers_percentage = 14;
 }
 
 // Stats for a job group related to another one, e.g. a similar job group that
 // is less stressful locally.
 message RelatedLocalJobGroup {
-  // The job group that is related
+  // The job group that is related. Only the name and the ROME code are given.
   JobGroup job_group = 1;
 
   // Shallow stats containing merely the important stats that defines the
@@ -273,11 +283,11 @@ enum EmploymentType {
   // Temporary unlimited contract.
   CDI = 2;
 
-  // Contract limited in time.
-  CDD = 3 [deprecated = true];
-
   // Contract limited in time, but over 3 months.
   CDD_OVER_3_MONTHS = 3;
+
+  // Contract limited in time.
+  CDD = 3 [deprecated = true];
 
   // Contract limited in time to 3 months and less.
   CDD_LESS_EQUAL_3_MONTHS = 5;
@@ -417,12 +427,14 @@ message ImtLocalJobStats {
   uint32 last_week_demand = 4;
 
   // The average number of weekly open offers per 10 candidates. This value
-  // gives a ratio in combination with yearly_avg_offers_denominator.
-  uint32 yearly_avg_offers_per_10_candidates = 14;
+  // gives a ratio in combination with yearly_avg_offers_denominator. A 0 value means it is missing.
+  // A -1 value means 0 offers per 10 candidates.
+  int32 yearly_avg_offers_per_10_candidates = 14;
 
   // The denomiator to compute the average yearly ratio with yearly_avg_offers_per_10_openings.
   // It should always be 10.
-  uint32 yearly_avg_offers_denominator = 6;
+  // DEPRECATED since 2019-03-04. Only yearly_avg_offers_per_10_candidates is relevant.
+  uint32 yearly_avg_offers_denominator = 6 [deprecated = true];
 
   // Estimated gross monthly salary for young employees (under 35 years).
   SalaryEstimation junior_salary = 7;
@@ -445,6 +457,7 @@ message ImtLocalJobStats {
 
   // The top three modes of application (e.g. spontaneous, placement agency),
   // for this job, ranked by number of successful applications.
+  // TODO(cyrille): Clear, if unused.
   map<string, ApplicationModesOrdering> application_modes = 13;
 }
 
@@ -459,6 +472,7 @@ enum ApplicationMode {
   SPONTANEOUS_APPLICATION = 1;
   PLACEMENT_AGENCY = 2;
   PERSONAL_OR_PROFESSIONAL_CONTACTS = 3;
+  OTHER_CHANNELS = 4;
 }
 
 enum Month {

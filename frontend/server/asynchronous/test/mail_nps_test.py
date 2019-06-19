@@ -37,7 +37,7 @@ class MailingTestCase(unittest.TestCase):
     """Unit tests."""
 
     def setUp(self) -> None:
-        super(MailingTestCase, self).setUp()
+        super().setUp()
         mail_nps.DRY_RUN = False
         self._db = mongomock.MongoClient().database
         self._now = datetime.datetime(2018, 1, 24, 10, 0, 0)
@@ -191,7 +191,7 @@ class MailingTestCase(unittest.TestCase):
                     'text':
                         "Report for NPS blast: I've sent 0 emails (with 0 errors)."
                 },)
-            ]
+        ]
         self.assertEqual(calls, mock_post.mock_calls)
 
     def test_signal(self, mock_post: mock.MagicMock) -> None:

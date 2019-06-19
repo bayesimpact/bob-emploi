@@ -12,6 +12,7 @@ from bob_emploi.frontend.server import scoring_base
 class _AdviceReorientToClose(scoring_base.ModelBase):
     """A scoring model for the reorient to close job advice."""
 
+    # TODO(cyrille): Add codeOgr to link to IMT job page.
     def _convert_to_reorient_jobs(
             self,
             jobs: typing.Iterable[job_pb2.RelatedLocalJobGroup],
@@ -21,6 +22,8 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
             # (job that the user is searching for vs recommended job)
             # is overly simplified as offers gain.
             # TODO(marielaure): Find a way to explain the market score improvement to the user.
+            # TODO(cyrille): Replace offers_percent_gain by stress_percent_loss to simplify
+            #   client-side computations.
             offers_gain = 100 * (
                 job.local_stats.imt.yearly_avg_offers_per_10_candidates / market_score_source - 1)
             yield reorient_jobbing_pb2.ReorientJob(
@@ -55,8 +58,13 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
         reasons: typing.List[str] = []
         if len(close_jobs.close_jobs) + len(close_jobs.evolution_jobs) < 2:
             return scoring_base.NULL_EXPLAINED_SCORE
+        # TODO(cyrille): Make this more robust.
+        force_in_stuck_market = None
+        # TODO(cyrille): Rather use market_stress to avoid depending on diagnostic to be computed.
+        if project.details.diagnostic.category_id == 'stuck-market':
+            force_in_stuck_market = scoring_base.ExplainedScore(1, reasons)
         if project.get_user_age() >= 45:
-            return scoring_base.NULL_EXPLAINED_SCORE
+            return force_in_stuck_market or scoring_base.NULL_EXPLAINED_SCORE
         if project.details.passionate_level >= project_pb2.PASSIONATING_JOB:
             score_modifier = -1
         else:
@@ -73,7 +81,7 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
             return scoring_base.ExplainedScore(2, reasons)
         if search_since_nb_months >= 6:
             return scoring_base.ExplainedScore(1, reasons)
-        return scoring_base.NULL_EXPLAINED_SCORE
+        return force_in_stuck_market or scoring_base.NULL_EXPLAINED_SCORE
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
             -> reorient_to_close_pb2.ReorientCloseJobs:

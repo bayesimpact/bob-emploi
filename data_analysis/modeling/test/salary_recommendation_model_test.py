@@ -17,7 +17,7 @@ _SalariesExpectedReco = collections.namedtuple(
 class BucketsTestCase(unittest.TestCase):
     """Tests for function that computes a salary recommendation based on the CDF."""
 
-    def test_compute_recommendation_cdf(self):
+    def test_compute_recommendation_cdf(self) -> None:
         """Compute recommendations on salary using CDF"""
 
         # List of namedtuples of (test_name, salary, expected reco).
@@ -67,7 +67,7 @@ class BucketsTestCase(unittest.TestCase):
             # Assert that found reco are equal to expected reco.
             self.assertEqual(best_reco_as_list, expected_reco, msg=test_name)
 
-    def test_compute_reco_score(self):
+    def test_compute_reco_score(self) -> None:
         """Compute recommendations on salary using a score"""
 
         # List of namedtuples of (test_name, salary, expected reco).

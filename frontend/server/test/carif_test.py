@@ -84,6 +84,26 @@ class CarifTestCase(unittest.TestCase):
 
         self.assertEqual([], trainings)
 
+    @mock.patch('requests.get')
+    def test_one_training(self, mock_get: mock.MagicMock) -> None:
+        """Get Carif training when there's only one available."""
+
+        with open(
+                path.join(path.dirname(__file__), 'testdata/carif_single_offer.xml')) as carif_file:
+            mock_get().text = carif_file.read()
+        mock_get().status_code = 200
+        mock_get.reset_mock()
+
+        trainings = carif.get_trainings('G1201', '75')
+
+        mock_get.assert_called_once()
+
+        self.assertEqual(
+            ['CQP plongeur - officier de cuisine'], [t.name for t in trainings])
+        self.assertEqual('Boulogne-Billancourt', trainings[0].city_name)
+        self.assertEqual('http://www.intercariforef.org', trainings[0].url)
+        self.assertEqual(['42780'], trainings[0].formacodes)
+
 
 if __name__ == '__main__':
     unittest.main()

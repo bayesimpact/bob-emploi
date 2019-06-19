@@ -13,18 +13,18 @@ You can try it out on a local instance:
         data/job_offers/column_names.txt \
         data/job_offers/reorient_jobbing_offers_2015_2017.csv \
         2015-01-01 \
-        rome_profession_name,rome_profession_code,rome_profession_card_name,\
-        rome_profession_card_code,creation_date,departement_code
+        rome_profession_code,rome_profession_card_code,creation_date,departement_code
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/data_analysis/importer/reorient_jobbing.py \
         --market_score_csv data/imt/market_score.csv \
         --offers_csv reorient_jobbing_offers_2015_2017.csv \
-        --rome_item_arborescence data/rome/csv/unix_item_arborescence_v337_utf8.csv \
-        --referentiel_code_rome_csv data/rome/csv/unix_referentiel_code_rome_v337_utf8.csv \
-        --referentiel_apellation_rome_csv data/rome/csv/unix_referentiel_appellation_v337_utf8.csv \
-        --mongo_url mongodb://frontend-db/test
+        --rome_item_arborescence data/rome/csv/unix_item_arborescence_v338_utf8.csv \
+        --referentiel_code_rome_csv data/rome/csv/unix_referentiel_code_rome_v338_utf8.csv \
+        --referentiel_apellation_rome_csv data/rome/csv/unix_referentiel_appellation_v338_utf8.csv
 """
+
+import typing
 
 import pandas as pd
 
@@ -38,8 +38,9 @@ _MIN_JOB_OFFERS = 50
 
 
 def csv2dicts(
-        market_score_csv, offers_csv, referentiel_code_rome_csv, rome_item_arborescence,
-        referentiel_apellation_rome_csv):
+        market_score_csv: str, offers_csv: str, referentiel_code_rome_csv: str,
+        rome_item_arborescence: str, referentiel_apellation_rome_csv: str) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import reorient jobbing data per month per departement in MongoDB.
 
     Args:
@@ -98,14 +99,14 @@ def csv2dicts(
 
     # Compute jobs without qualification.
     job_groups = pd.read_csv(referentiel_code_rome_csv)
-    rome_item_arborescence = pd.read_csv(rome_item_arborescence)
+    rome_item_arborescence_data = pd.read_csv(rome_item_arborescence)
     # The strrategy for filtering jobs without qualification is described here:
     # https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/research/jobbing/seasonal_offers.ipynb
     unqualification_jobs_index = '017'
-    first_level = rome_item_arborescence[
-        rome_item_arborescence.code_pere == unqualification_jobs_index]
-    second_level = rome_item_arborescence[
-        rome_item_arborescence.code_pere.isin(first_level.code_noeud)]
+    first_level = rome_item_arborescence_data[
+        rome_item_arborescence_data.code_pere == unqualification_jobs_index]
+    second_level = rome_item_arborescence_data[
+        rome_item_arborescence_data.code_pere.isin(first_level.code_noeud)]
     job_groups_arborescence = pd.merge(
         second_level, job_groups, left_on=['code_item_arbo_associe'], right_on=['code_ogr'])
     job_groups_arborescence.rename(columns={'code_rome': 'rome_id'}, inplace=True)
@@ -126,7 +127,7 @@ def csv2dicts(
         rome_dep_with_best_job.offers > _MIN_JOB_OFFERS]\
         .rename(columns={'TENSION_RATIO': 'market_score'})
 
-    def _create_job_groups(jobs):
+    def _create_job_groups(jobs: pd.DataFrame) -> typing.Any:
         return jobs[['name', 'masculineName', 'feminineName', 'rome_id', 'offers', 'market_score']]\
             .to_dict(orient='records')[0]
 
@@ -137,7 +138,7 @@ def csv2dicts(
         .reset_index()\
         .rename(columns={'departement_id': '_id'})
 
-    def _create_jobbing_stats(jobs):
+    def _create_jobbing_stats(jobs: pd.DataFrame) -> typing.Any:
         return jobs.sort_values('offers', ascending=False)[['jobs']].head().to_dict(orient='list')
 
     jobbing_stats = rome_dep_job_groups\
@@ -146,7 +147,9 @@ def csv2dicts(
         .to_frame('departementJobStats')\
         .reset_index()
 
-    return jobbing_stats.to_dict(orient='records')
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]],
+        jobbing_stats.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

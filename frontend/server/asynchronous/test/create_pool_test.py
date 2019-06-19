@@ -12,7 +12,7 @@ class CreatePoolTestCase(unittest.TestCase):
     """Unit tests for the create pool script."""
 
     def setUp(self) -> None:
-        super(CreatePoolTestCase, self).setUp()
+        super().setUp()
         client = mongomock.MongoClient()
 
         self._db = client.test

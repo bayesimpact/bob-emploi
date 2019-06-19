@@ -20,6 +20,7 @@ import collections
 import json
 from os import path
 import sys
+import typing
 
 import numpy
 import pandas
@@ -35,7 +36,7 @@ _END_DATE_FIELD = fhs.CANCELATION_REASON_FIELD
 _JOB_CODE_FIELD = fhs.JOB_ID_FIELD
 
 
-def main(fhs_folder, json_output):
+def main(fhs_folder: str, json_output: str) -> None:
     """Extract the job OGR codes from FHS and count them.
 
     Args:
@@ -56,7 +57,7 @@ def main(fhs_folder, json_output):
 
     # If we need to do that often we could replace this code by a simple Map
     # Reduce to use multiple threads or multiple computers.
-    job_counts = collections.defaultdict(int)
+    job_counts: typing.Dict[str, int] = collections.defaultdict(int)
     for de_dict in tqdm.tqdm(de_rows, total=total, file=sys.stdout):
         if de_dict[_END_DATE_FIELD]:
             continue

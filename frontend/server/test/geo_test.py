@@ -12,7 +12,7 @@ class DepartementCase(unittest.TestCase):
     """Unit tests for departement functions."""
 
     def setUp(self) -> None:
-        super(DepartementCase, self).setUp()
+        super().setUp()
         self._db = mongomock.MongoClient().test
         self._db.departements.insert_many([
             {
@@ -97,9 +97,9 @@ class GetCityTest(unittest.TestCase):
     """Unit tests for the get_city_proto function."""
 
     def setUp(self) -> None:
-        super(GetCityTest, self).setUp()
-        patcher = mock.patch(geo.__name__ + '.algoliasearch')
-        self.cities_index = patcher.start().Client().init_index()
+        super().setUp()
+        patcher = mock.patch(geo.__name__ + '.search_client')
+        self.cities_index = patcher.start().SearchClient.create().init_index()
         self.addCleanup(patcher.stop)
 
         patcher = mock.patch(geo.__name__ + '._ALGOLIA_INDEX', new=[])

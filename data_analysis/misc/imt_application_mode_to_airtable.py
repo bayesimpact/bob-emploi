@@ -19,8 +19,8 @@ from bob_emploi.data_analysis.lib import cleaned_data
 
 
 def main(
-        api_key, base_id='appMRMtWV61Kibt37', table='Job Groups',
-        field='Networking as first application mode', data_folder='data'):
+        api_key: str, base_id: str = 'appMRMtWV61Kibt37', table: str = 'Job Groups',
+        field: str = 'Networking as first application mode', data_folder: str = 'data') -> None:
     """Update an AirTable field based on IMT data.
 
     Args:
@@ -55,4 +55,4 @@ def main(
 
 
 if __name__ == '__main__':
-    main(os.getenv('AIRTABLE_API_KEY'))
+    main(os.getenv('AIRTABLE_API_KEY', ''))

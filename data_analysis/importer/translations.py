@@ -1,13 +1,15 @@
 """Importer for string translations."""
 
 import os
+import typing
 
 from airtable import airtable
 
 from bob_emploi.data_analysis.lib import mongo
 
 
-def airtable2dicts(base_id, table, view=None):
+def airtable2dicts(base_id: str, table: str, view: typing.Optional[str] = None) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import the translations in MongoDB."""
 
     api_key = os.getenv('AIRTABLE_API_KEY')

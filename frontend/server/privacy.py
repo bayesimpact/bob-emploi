@@ -17,9 +17,7 @@ def _iter_sensitive_fields(msg: message.Message, field_usages_to_yield: typing.S
 
     for field_descriptor, value in msg.ListFields():
         extensions = field_descriptor.GetOptions().Extensions
-        # TODO(pascal): Remove the getattr once
-        # https://github.com/dropbox/mypy-protobuf/pull/54 is released.
-        field_usage = extensions[getattr(options_pb2, 'field_usage')]
+        field_usage = extensions[options_pb2.field_usage]
         if field_usage in field_usages_to_yield:
             yield msg, field_descriptor
             continue

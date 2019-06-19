@@ -171,10 +171,7 @@ message AuthRequest {
 }
 
 message AuthUserData {
-  // Whether the user comes from the unregistered experiment for quick diagnostic.
-  // Quick Diagnostic allows to get a diagnostic on local market without registering a user.
-  // This is added at user's creation, so we put it in the auth request.
-  BinaryExperiment quick_diagnostic = 13;
+  // We do not have any additional data at auth time currently, but this is where we would add it.
 }
 
 message AuthResponse {
@@ -331,7 +328,7 @@ message UnverifiedDataZone {
 //  - The comment describes precisely what is being developped.
 //  - The comment includes the date for when this feature started to be
 //    implemented.
-// Next ID: 28
+// Next ID: 30
 message Features {
   // Email notifications can be sent to any user that has checked some days
   // in profile.email_days. The feature here is for users that we opted-in
@@ -431,8 +428,21 @@ message Features {
   // Whether the user comes from the unregistered experiment for quick diagnostic.
   // Quick Diagnostic allows to get a diagnostic on local market without registering a user.
   // Registered users who participated to the experiment before registering are tracked here.
-  // TODO(cyrille): Add a starting date, at launch.
-  BinaryExperiment quick_diagnostic = 29;
+  // Tried for a little while but never fully launched.
+  // Stopped: 2018-03-12. Dropped the experiment entirely, and abort quick diagnostic.
+  BinaryExperiment quick_diagnostic = 29 [deprecated = false];
+
+  // Whether we show the UI with the first version of strategies. Note that the
+  // CONTROL users are actually past users to whom we would have shown the UI.
+  // Started: estimated 2019-01-30
+  // Stopped 2019-03-29: Now use only strat_two flag.
+  BinaryExperiment strat_one = 30 [deprecated = true];
+
+  // Whether we show the UI with the second version of strategies, including a
+  // clear Bob think. Note that the CONTROL users are actually past users to
+  // whom we would have shown the UI.
+  // TODO(pascal): Add a start date when ready.
+  BinaryExperiment strat_two = 31;
 }
 
 message Notifications {
@@ -678,12 +688,14 @@ message EmploymentStatus {
   repeated UsefulFeature bob_features_that_helped = 6;
 
   // A set of other coaches that they used during their job search.
+  // This field was active from mid oct 2018 to mid jan 2019 and is not used anymore.
   repeated OtherCoach other_coaches_used = 7;
 
   // Relative personalization of Bob compared to the other coaches, the
   // baseline being 10. 10 means "as personalized as the other coaches", 12
   // means Bob was more personalized, 15 Bob was way more personalized, 8 Bob
   // was less personalized, 5 Bob was way less personalized.
+  // This field was active from mid oct 2018 to mid jan 2019 and is not used anymore.
   int32 bob_relative_personalization = 8;
 }
 

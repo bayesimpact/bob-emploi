@@ -56,7 +56,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../immersion-milo endpoint."""
 
     def setUp(self) -> None:
-        super(EndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'immersion-milo',
             'triggerScoringModel': 'advice-immersion-milo',

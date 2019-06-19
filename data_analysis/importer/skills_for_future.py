@@ -2,6 +2,7 @@
 
 import collections
 import os
+import typing
 
 from airtable import airtable
 
@@ -22,7 +23,8 @@ _MAX_NUM_SKILLS = 5
 _MAX_NUM_ASSETS = 2
 
 
-def get_skills_per_rome_prefix(base_id, table, view=None):
+def get_skills_per_rome_prefix(base_id: str, table: str, view: typing.Optional[str] = None) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Download skills from Airtable and group the by ROME prefix.
 
     Returns:
@@ -44,27 +46,33 @@ def get_skills_per_rome_prefix(base_id, table, view=None):
     ]
 
 
-def _group_by(records, list_keys):
-    grouped = collections.defaultdict(list)
+_T = typing.TypeVar('_T')
+_U = typing.TypeVar('_U')
+
+
+def _group_by(records: typing.Iterable[_T], list_keys: typing.Callable[[_T], typing.Iterable[_U]]) \
+        -> typing.Dict[_U, typing.List[_T]]:
+    grouped: typing.Dict[_U, typing.List[_T]] = collections.defaultdict(list)
     for record in records:
         for key in list_keys(record):
             grouped[key].append(record)
     return grouped
 
 
-def _list_rome_prefixes(record):
+def _list_rome_prefixes(record: typing.Dict[str, typing.Any]) -> typing.Iterator[str]:
     for rome_prefix in record['fields']['rome_prefixes'].split(','):
         yield rome_prefix.strip()
 
 
-def _create_skills_protos(skills_list):
+def _create_skills_protos(skills_list: typing.Iterable[typing.Dict[str, typing.Any]]) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     return [
         _create_skill_proto(skill['fields'])
         for skill in sorted(skills_list, key=lambda skill: -skill['fields']['value_score'])
     ][:_MAX_NUM_SKILLS]
 
 
-def _create_skill_proto(skill):
+def _create_skill_proto(skill: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
     assets = {
         skill_pb2.SkillAsset.Value(asset_name): skill.get(asset_name, 0)
         for asset_name in skill_pb2.SkillAsset.keys()

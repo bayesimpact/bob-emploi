@@ -22,7 +22,7 @@ class _AdviceOnlineSalons(scoring_base.ModelBase):
     """A scoring model to trigger the "Create your company" advice."""
 
     def __init__(self) -> None:
-        super(_AdviceOnlineSalons, self).__init__()
+        super().__init__()
         self._salon_db: proto.MongoCachedCollection[online_salon_pb2.OnlineSalon] = \
             proto.MongoCachedCollection(online_salon_pb2.OnlineSalon, 'online_salons')
 

@@ -6,19 +6,59 @@ docker-compose run --rm -e AIRTABLE_API_KEY="$AIRTABLE_API_KEY" data-analysis-pr
 
 import argparse
 import collections
+import datetime
 import logging
 import os
 import typing
 
 from airtable import airtable
+import requests
 
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.data_analysis.importer import airtable_to_protos
 from bob_emploi.data_analysis.importer import import_status
+from bob_emploi.data_analysis.lib import checker
 
 _I18N_BASE_ID = 'appkEc8N0Bw4Uok43'
 _BOB_ADVICE_BASE_ID = 'appXmyc7yYj0pOcae'
 _ROME_BASE_ID = 'appMRMtWV61Kibt37'
+
+# A Slack WebHook URL to send final reports to. Defined in the Incoming
+# WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
+_SLACK_IMPORT_URL = os.getenv('SLACK_IMPORT_URL')
+
+
+class _Collectible(typing.NamedTuple):
+    base_id: str
+    table: str
+    fields: typing.Iterable[str]
+    id_field: typing.Optional[str] = None
+    view: typing.Optional[str] = None
+
+
+# List of Airtable fields to collect for translation that will be used client-side.
+# Please keep in sync with translatable fields in frontend/client/download.js
+CLIENT_COLLECTIBLES = [
+    _Collectible(_BOB_ADVICE_BASE_ID, 'advice_modules', (
+        'explanations (for client)',
+        'goal',
+        'title',
+        'title_3_stars',
+        'title_2_stars',
+        'title_1_star',
+        'user_gain_details',
+    ), view='Ready to Import', id_field='advice_id'),
+    _Collectible(_BOB_ADVICE_BASE_ID, 'email_templates', (
+        'reason',
+        'title',
+    ), view='Ready to Import'),
+    _Collectible(_ROME_BASE_ID, 'Event Types', (
+        'event_location_prefix',
+        'event_location')),
+    _Collectible(_BOB_ADVICE_BASE_ID, 'strategy_goals', ('content',), view='Ready to Import'),
+    _Collectible(_BOB_ADVICE_BASE_ID, 'strategy_testimonials', (
+        'job',
+        'content'), view='Ready to Import')]
 
 
 class StringCollector(object):
@@ -27,7 +67,7 @@ class StringCollector(object):
     def __init__(self, api_key: str) -> None:
         self._i18n_base = airtable.Airtable(_I18N_BASE_ID, api_key)
         self._existing_translations = {
-            record['fields'].get('string'): record
+            typing.cast(typing.Dict[str, typing.Any], record['fields']).get('string'): record
             for record in self._i18n_base.iterate('translations')
         }
         self._api_key = api_key
@@ -35,6 +75,7 @@ class StringCollector(object):
         self._collected: typing.Dict[str, typing.Dict[str, str]] = \
             collections.defaultdict(lambda: collections.defaultdict(str))
         self._used_translations: typing.Set[str] = set()
+        self._now = datetime.datetime.utcnow().isoformat() + 'Z'
 
     def _get_base(self, base_id: str) -> airtable.Airtable:
         if base_id not in self.bases:
@@ -45,14 +86,20 @@ class StringCollector(object):
         """Collect a string to translate."""
 
         self._collected[origin or ''][origin_id or ''] = text
+        is_already_used = text in self._used_translations
         self._used_translations.add(text)
         if text in self._existing_translations:
+            if not is_already_used:
+                self._i18n_base.update(
+                    'translations', self._existing_translations[text]['id'],
+                    {'last_used': self._now})
             # TODO(pascal): Keep track of all places where it is used.
             return
         fields = {
             'origin': origin,
             'origin_id': origin_id,
             'string': text,
+            'last_used': self._now,
         }
         logging.info('Uploading text: %s', text)
         record = self._i18n_base.create('translations', fields)
@@ -60,7 +107,7 @@ class StringCollector(object):
 
     def collect_from_table(
             self, base_id: str, table: str, fields: typing.Iterable[str],
-            id_field: typing.Optional[str] = None) -> None:
+            id_field: typing.Optional[str] = None, view: typing.Optional[str] = None) -> None:
         """Collect strings to translate from an Airtable.
 
         Args:
@@ -73,20 +120,26 @@ class StringCollector(object):
         """
 
         base = self._get_base(base_id)
-        for record in base.iterate(table):
+        for record in base.iterate(table, view=view):
+            record_fields = typing.cast(typing.Dict[str, typing.Any], record['fields'])
+            record_id = typing.cast(str, record['id'])
             for field in fields:
-                text = record['fields'].get(field)
+                text = record_fields.get(field)
                 if not text:
                     continue
-                origin_id = record['id']
+                origin_id = record_id
                 if id_field:
-                    origin_id = record['fields'].get(id_field) or origin_id
+                    origin_id = record_fields.get(id_field) or origin_id
                 self.collect_string(text, '{}:{}'.format(table, field), origin_id)
 
     def collect_for_airtable_importer(
             self, base_id: str, table: str, proto: str,
-            view: typing.Optional[str] = None) -> None:
-        """Collect all strings needed for a given import."""
+            view: typing.Optional[str] = None) -> int:
+        """Collect all strings needed for a given import.
+
+        Return:
+            The number of errors occured when converting the records.
+        """
 
         converter = airtable_to_protos.PROTO_CLASSES[proto]
 
@@ -98,51 +151,35 @@ class StringCollector(object):
             # TODO(cyrille): Detect fields needing translations even if they are nested.
         else:
             # No translatable field in the proto.
-            return
+            return 0
 
+        num_errors = 0
         for record in self._get_base(base_id).iterate(table, view=view):
             try:
                 message, _id = converter.convert_record_to_proto(record)
             except (KeyError, ValueError) as error:
                 logging.error('An error occurred while converting the record:\n\t%s', str(error))
+                num_errors += 1
                 continue
-            for value, path, string_format in airtable_to_protos.collect_formatted_strings(message):
+            for value, path, string_format in checker.collect_formatted_strings(message):
                 if string_format == options_pb2.NATURAL_LANGUAGE:
                     self.collect_string(value, '{}:{}'.format(table, path), _id)
+        return num_errors
 
-    def collect_for_client(self) -> None:
-        """Collect all strings needed client-side.
+    def collect_for_client(self, table: str = '') -> None:
+        """Collect all strings needed client-side."""
 
-        Developers, please keep in sync with translatable fields in frontend/client/download.js
-        """
+        tables_to_collect = [coll for coll in CLIENT_COLLECTIBLES if coll.table == table] or \
+            CLIENT_COLLECTIBLES
+        for collectible in tables_to_collect:
+            self.collect_from_table(*collectible)
 
-        self.collect_from_table(_BOB_ADVICE_BASE_ID, 'advice_modules', (
-            'explanations (for client)',
-            'goal',
-            'title',
-            'title_3_stars',
-            'title_2_stars',
-            'title_1_star',
-            'user_gain_details',
-        ), 'advice_id')
-        self.collect_from_table(_BOB_ADVICE_BASE_ID, 'email_templates', (
-            'reason',
-            'title',
-        ))
-        self.collect_from_table(_ROME_BASE_ID, 'Event Types', (
-            'event_location_prefix',
-            'event_location',
-        ))
-
-    def list_unused_translations(
-            self, is_restricted_to_same_origin: bool = True) \
+    def list_unused_translations(self) \
             -> typing.Iterator[typing.Tuple[typing.Dict[str, typing.Any], typing.Optional[str]]]:
         """List all the translations that are in the DB but have not been collected in this run.
 
-        Args:
-            is_restricted_to_same_origin: if True, we will only list
-            translations that have the same origin as one of the origins used
-            when collecting.
+        We will only list translations that have the same origin as one of the origins used
+        when collecting.
         Yield:
             for each unused translation, a tuple with the translation record
             field (whose keys are whithin string, origin and origin_id) and the
@@ -152,11 +189,11 @@ class StringCollector(object):
         unused_translations = self._existing_translations.keys() - self._used_translations
         for unused_translation in unused_translations:
             record = self._existing_translations[unused_translation]
-            fields = record['fields']
-            if is_restricted_to_same_origin and not fields.get('origin') in self._collected:
+            fields = typing.cast(typing.Dict[str, typing.Any], record['fields'])
+            if fields.get('origin') not in self._collected:
                 continue
-            new_value = self._collected.get(fields.get('origin', ''), {})\
-                .get(fields.get('origin_id'))
+            new_value = self._collected.get(typing.cast(str, fields.get('origin', '')), {})\
+                .get(fields.get('origin_id', ''))
             yield record, new_value
 
     def remove(self, record: typing.Dict[str, typing.Any]) -> None:
@@ -170,13 +207,11 @@ class StringCollector(object):
         self._i18n_base.delete('translations', record_id)
 
 
-def _handle_unused_translations(
-        collector: StringCollector, action: str = 'list', has_collected_all: bool = False) -> None:
+def _handle_unused_translations(collector: StringCollector, action: str = 'list') -> None:
     if action == 'ignore':
         return
 
-    unused_translations = collector.list_unused_translations(
-        is_restricted_to_same_origin=not has_collected_all)
+    unused_translations = collector.list_unused_translations()
     for record, new_value in unused_translations:
         if action == 'list':
             fields: typing.Dict[str, typing.Any] = collections.defaultdict(str)
@@ -199,11 +234,24 @@ def _handle_unused_translations(
             collector.remove(record)
 
 
-_ALL_COLLECTION_NAMES = ('client',) + tuple(
+_CLIENT_PREFIX = 'client-'
+
+_ALL_COLLECTIONS = ('client',) + tuple(
     collection
     for collection, importer in import_status.IMPORTERS.items()
-    if importer.script == 'airtable_to_protos'
-)
+    if importer.script == 'airtable_to_protos')
+
+_ALL_COLLECTION_NAMES = _ALL_COLLECTIONS + tuple(
+    '{}{}'.format(_CLIENT_PREFIX, coll.table) for coll in CLIENT_COLLECTIBLES)
+
+
+def _print_report(text: str) -> None:
+    if _SLACK_IMPORT_URL and text:
+        requests.post(_SLACK_IMPORT_URL, json={'attachments': [{
+            'mrkdwn_in': ['text'],
+            'title': 'Automatic String Collect',
+            'text': '{}\n'.format(text),
+        }]})
 
 
 def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
@@ -234,24 +282,44 @@ def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     if not args.collection:
         logging.info('Collecting all possible strings:')
 
-    for collection in args.collection or _ALL_COLLECTION_NAMES:
-        if collection == 'client':
-            logging.info('Collecting strings for client…')
-            collector.collect_for_client()
+    collection_errors = {}
+    collections_not_collected = []
+    for collection in args.collection or _ALL_COLLECTIONS:
+        if collection.startswith('client'):
+            table = collection[len(_CLIENT_PREFIX):]
+            logging.info(
+                'Collecting strings for client%s…', ' table "{}"'.format(table) if table else '')
+            collector.collect_for_client(table)
             continue
         try:
             importer = import_status.IMPORTERS[collection]
         except KeyError:
             logging.warning('The collection "%s" does not have an importer.', collection)
+            collections_not_collected.append(collection)
             continue
         if importer.script != 'airtable_to_protos':
             logging.warning(
                 'The collection "%s" does not import from Airtable', collection)
+            collections_not_collected.append(collection)
             continue
         logging.info('Collecting strings for importer "%s"…', collection)
-        collector.collect_for_airtable_importer(**(importer.args or {}))
+        num_failed_records = collector.collect_for_airtable_importer(**(importer.args or {}))
+        if num_failed_records:
+            collection_errors[collection] = num_failed_records
 
-    _handle_unused_translations(collector, args.unused, not args.collection)
+    _handle_unused_translations(collector, args.unused)
+    report_text = 'Here is the report:\n'
+    if collections_not_collected:
+        report_text += 'Strings not collected for {}.'.format(collections_not_collected)
+    else:
+        report_text += 'All the collections have been collected.'
+    if not collection_errors:
+        report_text += '\nAnd no errors have been found during collect.'
+    else:
+        report_text += '\nErrors in collection:\n{}'.format(
+            '\n'.join(['{}: {}'.format(
+                coll, collection_errors[coll]) for coll in collection_errors]))
+    _print_report(report_text)
 
 
 if __name__ == '__main__':
