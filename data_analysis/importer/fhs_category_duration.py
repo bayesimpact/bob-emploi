@@ -31,17 +31,23 @@ If you managed to get your hands on the FHS dataset, you can run:
         data/fhs_category_abc_duration_motann.csv
 """
 
-import collections
 import csv
 import datetime
 import sys
+import typing
+
 import tqdm
 
 from bob_emploi.data_analysis.lib import fhs
 
 # TODO: Add tests.
 
-_CollectionMode = collections.namedtuple('CollectionMode', ['categories', 'only_one'])
+
+class _CollectionMode(typing.NamedTuple):
+    categories: str
+    only_one: typing.Union[bool, str]
+
+
 _MODES = {
     # Extract the last contiguous period for which a job seeker was in category A unemployment.
     'A': _CollectionMode(categories='A', only_one='last'),
@@ -59,7 +65,22 @@ _MODES = {
 }
 
 
-def job_seeker_rows(job_seeker, now, categories, only_one):
+class _Criteria(typing.NamedTuple):
+    jobseeker_id: str
+    code_rome: typing.Optional[str]
+    city_id: typing.Optional[str]
+    sex: typing.Optional[str]
+    reason_begin: str
+    reason_end: str
+    begin_date: typing.Optional[datetime.date]
+    end_date: typing.Optional[datetime.date]
+    duration: typing.Optional[int]
+
+
+def job_seeker_rows(
+        job_seeker: fhs.JobSeeker, now: datetime.date, categories: str,
+        only_one: typing.Union[bool, str]) \
+        -> typing.Iterator[_Criteria]:
     """Extract a limited set of criteria for a job seeker.
 
     Args:
@@ -84,6 +105,8 @@ def job_seeker_rows(job_seeker, now, categories, only_one):
     category_periods.exclude_after(now, lambda m: dict(
         m, MOTANN=fhs.CancellationReason.NOW))
 
+    periods: typing.Iterable[fhs.Period]
+
     if only_one == 'last':
         last_period = category_periods.last_contiguous_period()
         if last_period is None:
@@ -102,7 +125,7 @@ def job_seeker_rows(job_seeker, now, categories, only_one):
         if state is None:
             return
 
-        yield (
+        yield _Criteria(
             job_seeker.get_unique_id(),
             state[fhs.JOB_GROUP_ID_FIELD],
             state[fhs.CITY_ID_FIELD],
@@ -115,20 +138,7 @@ def job_seeker_rows(job_seeker, now, categories, only_one):
         )
 
 
-_CRITERIA_HEADERS = (
-    'jobseeker_id',
-    'code_rome',
-    'city_id',
-    'sex',
-    'reason_begin',
-    'reason_end',
-    'begin_date',
-    'end_date',
-    'duration',
-)
-
-
-def main(fhs_folder, now, mode_name, csv_output):
+def main(fhs_folder: str, now: str, mode_name: str, csv_output: str) -> None:
     """Extract the unemployment duration information from FHS.
 
     Args:
@@ -142,7 +152,7 @@ def main(fhs_folder, now, mode_name, csv_output):
         raise ValueError(
             'Unsupported mode: [{}], want one of [{}]'.format(mode_name, _MODES.keys()))
     mode = _MODES[mode_name]
-    now = datetime.datetime.strptime(now, '%Y-%m-%d').date()
+    now_as_date = datetime.datetime.strptime(now, '%Y-%m-%d').date()
 
     job_seekers = fhs.job_seeker_iterator(
         fhs_folder,
@@ -153,10 +163,10 @@ def main(fhs_folder, now, mode_name, csv_output):
 
     with open(csv_output, 'w') as csv_file:
         writer = csv.writer(csv_file)
-        writer.writerow(_CRITERIA_HEADERS)
+        writer.writerow(_Criteria._fields)
         for job_seeker in tqdm.tqdm(job_seekers, total=total):
-            for row in job_seeker_rows(job_seeker, now, mode.categories, mode.only_one):
-                writer.writerow(list(row))
+            for row in job_seeker_rows(job_seeker, now_as_date, mode.categories, mode.only_one):
+                writer.writerow(row)
 
 
 if __name__ == '__main__':

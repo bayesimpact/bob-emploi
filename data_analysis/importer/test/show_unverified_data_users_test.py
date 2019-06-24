@@ -11,13 +11,13 @@ from bob_emploi.data_analysis.importer import show_unverified_data_users
 class ShowUnverifiedDataUsersImporterTestCase(unittest.TestCase):
     """Tests for the importer."""
 
-    def setUp(self):
-        super(ShowUnverifiedDataUsersImporterTestCase, self).setUp()
+    def setUp(self) -> None:
+        super().setUp()
         table = airtablemock.Airtable('app0', 'apikey1')
         table.create('table0', {'email': 'pascal@example.com'})
         table.create('table0', {'email': 'guillaume@example.com'})
 
-    def test_airtable2dicts(self):
+    def test_airtable2dicts(self) -> None:
         """Test the airtable2dicts method."""
 
         show_unverified_data_users.API_KEY = 'apikey1'
@@ -27,7 +27,7 @@ class ShowUnverifiedDataUsersImporterTestCase(unittest.TestCase):
             [{'_id': 'guillaume@example.com'}, {'_id': 'pascal@example.com'}],
             sorted(dicts, key=lambda a: a['_id']))
 
-    def test_missing_api_key(self):
+    def test_missing_api_key(self) -> None:
         """Test that it raises an error if the API key is missing."""
 
         show_unverified_data_users.API_KEY = ''

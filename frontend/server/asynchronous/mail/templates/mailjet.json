@@ -1,0 +1,74 @@
+[
+  {
+    "mailjetTemplate": "205970",
+    "name": "network"
+  },
+  {
+    "mailjetTemplate": "255279",
+    "name": "self-develop"
+  },
+  {
+    "mailjetTemplate": "225287",
+    "name": "employment-status"
+  },
+  {
+    "mailjetTemplate": "277304",
+    "name": "body-language"
+  },
+  {
+    "mailjetTemplate": "100819",
+    "name": "nps"
+  },
+  {
+    "mailjetTemplate": "74071",
+    "name": "nps-report"
+  },
+  {
+    "mailjetTemplate": "279688",
+    "name": "christmas"
+  },
+  {
+    "mailjetTemplate": "293296",
+    "name": "new-year"
+  },
+  {
+    "mailjetTemplate": "300528",
+    "name": "network-plus"
+  },
+  {
+    "mailjetTemplate": "310559",
+    "name": "new-diagnostic"
+  },
+  {
+    "mailjetTemplate": "315773",
+    "name": "galita-1"
+  },
+  {
+    "mailjetTemplate": "318212",
+    "name": "imt"
+  },
+  {
+    "mailjetTemplate": "324871",
+    "name": "salon-arles"
+  },
+  {
+    "mailjetTemplate": "334851",
+    "name": "viral-sharing-1"
+  },
+  {
+    "mailjetTemplate": "536272",
+    "name": "open-classrooms"
+  },
+  {
+    "mailjetTemplate": "572106",
+    "name": "galita-2"
+  },
+  {
+    "mailjetTemplate": "481320",
+    "name": "galita-3"
+  },
+  {
+    "mailjetTemplate": "212606",
+    "name": "spontaneous"
+  }
+]

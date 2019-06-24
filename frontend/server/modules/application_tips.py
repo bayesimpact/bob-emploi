@@ -138,9 +138,12 @@ class _AdviceImproveInterview(scoring_base.ModelBase):
         project_pb2.A_LOT: 10,
     }
 
-    def score(self, project: scoring_base.ScoringProject) -> int:
-        """Compute a score for the given ScoringProject."""
-
+    def score_and_explain(self, project: scoring_base.ScoringProject) \
+            -> scoring_base.ExplainedScore:
+        if project.details.diagnostic.category_id == 'enhance-methods-to-interview':
+            return scoring_base.ExplainedScore(3, [])
+        reasons = [project.translate_string(
+            "vous nous avez dit avoir passé beaucoup d'entretiens sans succès")]
         if project.details.total_interview_count < 0:
             num_interviews = 0
         elif project.details.total_interview_count > 0:
@@ -149,16 +152,11 @@ class _AdviceImproveInterview(scoring_base.ModelBase):
             num_interviews = self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
         num_monthly_interviews = num_interviews / (project.details.job_search_length_months or 1)
         if num_monthly_interviews > _max_monthly_interviews(project):
-            return 3
+            return scoring_base.ExplainedScore(3, reasons)
         # Whatever the number of month of search, trigger 3 if the user did more than 5 interviews:
-        if num_interviews >= self._NUM_INTERVIEWS[project_pb2.A_LOT] and \
-                project.details.job_search_length_months <= 6:
-            return 3
-        return 0
-
-    def _explain(self, project: scoring_base.ScoringProject) -> typing.List[str]:
-        return [project.translate_string(
-            "vous nous avez dit avoir passé beaucoup d'entretiens sans succès")]
+        if num_interviews >= self._NUM_INTERVIEWS[project_pb2.DECENT_AMOUNT]:
+            return scoring_base.ExplainedScore(3, reasons)
+        return scoring_base.NULL_EXPLAINED_SCORE
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
             -> application_pb2.InterviewTips:

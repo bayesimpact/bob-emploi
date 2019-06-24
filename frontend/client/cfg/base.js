@@ -19,7 +19,7 @@ module.exports = {
         map(({rewrite, htmlFilename}) => ({from: rewrite, to: `/${htmlFilename}`})),
     },
     hot: true,
-    https: fs.existsSync(sslPath) ? {
+    https: fs.existsSync(path.join(sslPath, 'key.pem')) ? {
       ca: fs.readFileSync(path.join(sslPath, 'chain.pem')),
       cert: fs.readFileSync(path.join(sslPath, 'cert.pem')),
       key: fs.readFileSync(path.join(sslPath, 'key.pem')),
@@ -27,7 +27,10 @@ module.exports = {
     noInfo: false,
     port: 80,
     proxy: {
-      '/api': 'http://frontend-flask',
+      '/api': {
+        secure: false,
+        target: 'https://frontend-flask',
+      },
     },
     public: 'localhost.bob-dev.bayes.org:3000',
     publicPath: '/',
@@ -105,6 +108,7 @@ module.exports = {
       'src/**/*.*',
       '!**/README.md',
       '!src/config/*.*',
+      '!**/*.d.ts',
     ]}),
   ],
   resolve: {
@@ -116,6 +120,6 @@ module.exports = {
       store: path.join(srcPath, 'store'),
       styles: path.join(srcPath, 'styles'),
     },
-    extensions: ['.js', '.jsx', '_pb.js'],
+    extensions: ['.js', '.jsx', '_pb.js', '.ts', '.tsx'],
   },
 }

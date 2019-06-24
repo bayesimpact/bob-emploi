@@ -18,16 +18,17 @@ The script will print a message for each file.
 import glob
 import os
 import sys
-import termcolor
+import typing
 
-from runipy import notebook_runner
 import nbformat
+from runipy import notebook_runner
+import termcolor
 
 
 IPYTHON_NOTEBOOK_VERSION = 3
 
 
-def main():
+def main() -> None:
     """Main function to run notebooks from the command line."""
 
     if len(sys.argv) == 1:
@@ -43,7 +44,7 @@ def main():
         run_notebook_list(sys.argv[1:])
 
 
-def run_notebook_list(filelist):
+def run_notebook_list(filelist: typing.Iterable[str]) -> None:
     """Execute all notebooks given as a list of files."""
 
     for notebook_path in filelist:
@@ -62,13 +63,13 @@ def run_notebook_list(filelist):
             print(termcolor.colored(message, 'red'))
 
 
-def _run_notebook(notebook, notebook_path):
+def _run_notebook(notebook: typing.Dict[str, typing.Any], notebook_path: str) -> None:
     working_dir = os.path.dirname(notebook_path)
     runner = notebook_runner.NotebookRunner(notebook, working_dir=working_dir)
     runner.run_notebook()
 
 
-def _test_should_be_skipped(notebook):
+def _test_should_be_skipped(notebook: typing.Dict[str, typing.Any]) -> bool:
     cells = notebook['worksheets'][0].get('cells', [])
     if not cells:
         return True
@@ -79,9 +80,10 @@ def _test_should_be_skipped(notebook):
     return False
 
 
-def _load_notebook(notebook_path):
+def _load_notebook(notebook_path: str) -> typing.Dict[str, typing.Any]:
     with open(notebook_path) as notebook_file:
-        return nbformat.read(notebook_file, IPYTHON_NOTEBOOK_VERSION)
+        return typing.cast(
+            typing.Dict[str, typing.Any], nbformat.read(notebook_file, IPYTHON_NOTEBOOK_VERSION))
 
 
 if __name__ == '__main__':

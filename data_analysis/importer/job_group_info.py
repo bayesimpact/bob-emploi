@@ -14,13 +14,13 @@ You can try it out on a local instance:
         --job_application_complexity_json data/job_application_complexity.json \
         --application_mode_csv data/imt/application_modes.csv \
         --handcrafted_assets_airtable appMRMtWV61Kibt37:advice:viwJ1OsSqK8YTSoIq \
-        --domains_airtable appMRMtWV61Kibt37:domains \
-        --mongo_url mongodb://frontend-db/test
+        --domains_airtable appMRMtWV61Kibt37:domains
 """
 
 import json
 import os
 import re
+import typing
 
 from airtable import airtable
 import pandas
@@ -33,7 +33,7 @@ _APPLICATION_MODE_PROTO_FIELDS = {
     'R1': 'PLACEMENT_AGENCY',
     'R2': 'PERSONAL_OR_PROFESSIONAL_CONTACTS',
     'R3': 'SPONTANEOUS_APPLICATION',
-    'R4': 'UNDEFINED_APPLICATION_MODE',
+    'R4': 'OTHER_CHANNELS',
 }
 _JOB_PROTO_JSON_FIELDS = [
     'name', 'masculineName', 'feminineName', 'codeOgr']
@@ -41,16 +41,17 @@ AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 
 
 def make_dicts(
-        rome_csv_pattern,
-        job_requirements_json,
-        job_application_complexity_json,
-        application_mode_csv,
-        rome_fap_crosswalk_txt,
-        handcrafted_assets_airtable,
-        domains_airtable,
-        info_by_prefix_airtable,
-        fap_growth_2012_2022_csv,
-        imt_market_score_csv):
+        rome_csv_pattern: str,
+        job_requirements_json: str,
+        job_application_complexity_json: str,
+        application_mode_csv: str,
+        rome_fap_crosswalk_txt: str,
+        handcrafted_assets_airtable: str,
+        domains_airtable: str,
+        strict_diplomas_airtable: str,
+        info_by_prefix_airtable: str,
+        fap_growth_2012_2022_csv: str,
+        imt_market_score_csv: str) -> typing.List[typing.Dict[str, typing.Any]]:
     """Import job info in MongoDB.
 
     Args:
@@ -71,6 +72,8 @@ def make_dicts(
             texts describing assets required).
         domains_airtable: the base ID and the table name joined by a ':' of the
             AirTable containing the domain name for each sector.
+        strict_diplomas_airtable: the base ID and the table name joined by a ':' of the
+            AirTable which tells if a diploma is strictly required.
         info_by_prefix_airtable: the base ID and the table name joined by a ':'
             of the AirTable containing some manually specified info for group of
             job group (by ROME ID prefix).
@@ -173,52 +176,69 @@ def make_dicts(
     job_groups.loc[job_groups.growth20122022 == 0, 'growth20122022'] = .000001
     job_groups['growth20122022'].fillna(0, inplace=True)
 
+    # Add best departements.
     job_groups['bestDepartements'] = _get_less_stressful_departements_count(imt_market_score_csv)
     # Fill NaN with empty [].
     job_groups['bestDepartements'] = job_groups.bestDepartements.apply(
         lambda s: s if isinstance(s, list) else [])
+
+    # Add national market score.
+    job_groups['nationalMarketScore'] = _get_national_market_scores(imt_market_score_csv)
+    job_groups['nationalMarketScore'].fillna(0, inplace=True)
+
+    # Add diploma requirements.
+    job_groups['is_diploma_strictly_required'] = _load_strict_diplomas_from_airtable(
+        *strict_diplomas_airtable.split(':'))
+    job_groups['is_diploma_strictly_required'].fillna(False, inplace=True)
 
     # Set index as field.
     job_groups.index.name = 'romeId'
     job_groups.reset_index(inplace=True)
     job_groups['_id'] = job_groups['romeId']
 
-    return job_groups.to_dict('records')
+    return typing.cast(typing.List[typing.Dict[str, typing.Any]], job_groups.to_dict('records'))
 
 
 # TODO(cyrille): Factorize with local_diagnosis.
-def _get_less_stressful_departements_count(market_score_csv):
-    yearly_avg_offers_denominator = 10
-    market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
-    market_stats['market_score'] = market_stats.TENSION_RATIO.div(yearly_avg_offers_denominator)
-    market_stats.dropna(subset=['market_score'], inplace=True)
-    market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D']
+def _get_less_stressful_departements_count(market_score_csv: str) -> pandas.DataFrame:
+    market_stats = cleaned_data.market_scores(filename=market_score_csv)
+    market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D'].reset_index()
 
     # We keep only the first ten because we'll never use more examples.
     return market_stats_dept\
         .sort_values('market_score', ascending=False)\
-        .groupby(['ROME_PROFESSION_CARD_CODE'])\
+        .groupby(['rome_id'])\
         .apply(lambda x: x[:11].to_dict(orient='records'))\
         .apply(lambda dpts: [{
-            'departementId': d['AREA_CODE'],
+            'departementId': d['departement_id'],
             'localStats': {
                 'imt': {
-                    'yearlyAvgOffersPer10Candidates': d['TENSION_RATIO'],
-                    'yearlyAvgOffersDenominator': yearly_avg_offers_denominator
+                    'yearlyAvgOffersPer10Candidates': d['yearly_avg_offers_per_10_candidates'],
+                    'yearlyAvgOffersDenominator': d['yearly_avg_offers_denominator']
                 },
             },
         } for d in dpts])
 
 
-def _create_jobs_sampler(num_samples):
-    def _sampling(jobs):
+def _get_national_market_scores(market_score_csv: str) -> pandas.Series:
+    market_stats = cleaned_data.market_scores(filename=market_score_csv).reset_index()
+    return market_stats[market_stats.AREA_TYPE_CODE == 'F'].set_index('rome_id')\
+        .market_score
+
+
+def _create_jobs_sampler(num_samples: typing.Optional[int]) \
+        -> typing.Callable[[pandas.DataFrame], typing.List[typing.Dict[str, typing.Any]]]:
+    def _sampling(jobs: pandas.DataFrame) -> typing.List[typing.Dict[str, typing.Any]]:
         if num_samples is not None and len(jobs) > num_samples:
             jobs = jobs.sample(n=num_samples)
-        return jobs[_JOB_PROTO_JSON_FIELDS].to_dict('records')
+        return typing.cast(
+            typing.List[typing.Dict[str, typing.Any]],
+            jobs[_JOB_PROTO_JSON_FIELDS].to_dict('records'))
     return _sampling
 
 
-def _group_work_environment_items(work_environments):
+def _group_work_environment_items(work_environments: pandas.DataFrame) \
+        -> typing.Dict[str, typing.List[str]]:
     """Combine work environment items as a dict.
 
     Returns:
@@ -249,7 +269,8 @@ def _group_work_environment_items(work_environments):
     return environment
 
 
-def _load_domains_from_airtable(base_id, table, view=None):
+def _load_domains_from_airtable(base_id: str, table: str, view: typing.Optional[str] = None) \
+        -> typing.Dict[str, str]:
     """Load domain data from AirTable.
 
     Args:
@@ -265,8 +286,8 @@ def _load_domains_from_airtable(base_id, table, view=None):
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
     client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    domains = {}
-    errors = []
+    domains: typing.Dict[str, str] = {}
+    errors: typing.List[ValueError] = []
     for record in client.iterate(table, view=view):
         fields = record['fields']
         sector = fields.get('name')
@@ -285,7 +306,33 @@ def _load_domains_from_airtable(base_id, table, view=None):
     return domains
 
 
-def _load_assets_from_airtable(base_id, table, view=None):
+def _load_strict_diplomas_from_airtable(
+        base_id: str, table: str, view: typing.Optional[str] = None) -> pandas.Series:
+    """Load strict requirement for diplomas data from AirTable.
+
+    Args:
+        base_id: the ID of your AirTable app.
+        table: the name of the table to import.
+    Returns:
+        A series indexed on ROME code with boolean values.
+    """
+
+    if not AIRTABLE_API_KEY:
+        raise ValueError(
+            'No API key found. Create an airtable API key at '
+            'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
+            'env var.')
+    client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
+    diploma_required = {
+        record['fields'].get('code_rome'): record['fields'].get(
+            'is_diploma_strictly_required', False)
+        for record in client.iterate(table, view=view)
+    }
+    return pandas.Series(diploma_required)
+
+
+def _load_assets_from_airtable(base_id: str, table: str, view: typing.Optional[str] = None) \
+        -> typing.Dict[str, typing.Dict[str, str]]:
     """Load assets data from AirTable.
 
     Args:
@@ -299,8 +346,8 @@ def _load_assets_from_airtable(base_id, table, view=None):
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
     client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    assets = []
-    errors = []
+    assets: typing.List[typing.Tuple[str, typing.Dict[str, str]]] = []
+    errors: typing.List[ValueError] = []
     for record in client.iterate(table, view=view):
         try:
             assets.append(_load_asset_from_airtable(record['fields']))
@@ -321,9 +368,10 @@ _AIRTABLE_ASSET_TO_PROTO_FIELD = {
 _MARKDOWN_LIST_LINE_REGEXP = re.compile(r'^\* [A-ZÀÉÇÊ]|^  \* ')
 
 
-def _load_asset_from_airtable(airtable_fields):
-    assets = {}
-    errors = []
+def _load_asset_from_airtable(airtable_fields: typing.Dict[str, typing.Any]) \
+        -> typing.Tuple[str, typing.Dict[str, str]]:
+    assets: typing.Dict[str, str] = {}
+    errors: typing.List[ValueError] = []
     for proto_name, airtable_name in _AIRTABLE_ASSET_TO_PROTO_FIELD.items():
         value = airtable_fields.get(airtable_name)
         if value:
@@ -339,7 +387,7 @@ def _load_asset_from_airtable(airtable_fields):
     return airtable_fields['code_rome'], assets
 
 
-def _assert_markdown_list(value):
+def _assert_markdown_list(value: str) -> str:
     lines = value.strip().split('\n')
     if not lines:
         return ''
@@ -350,7 +398,10 @@ def _assert_markdown_list(value):
     return '\n'.join(lines)
 
 
-def _load_prefix_info_from_airtable(job_groups, base_id, table, view=None):
+def _load_prefix_info_from_airtable(
+        job_groups: typing.Iterable[str], base_id: str, table: str,
+        view: typing.Optional[str] = None) \
+        -> pandas.DataFrame:
     """Load info by prefix from AirTable.
 
     Args:
@@ -405,7 +456,8 @@ def _load_prefix_info_from_airtable(job_groups, base_id, table, view=None):
     return info
 
 
-def _get_application_modes(application_mode_csv, rome_fap_crosswalk_txt):
+def _get_application_modes(application_mode_csv: str, rome_fap_crosswalk_txt: str) \
+        -> pandas.DataFrame:
     modes = pandas.read_csv(application_mode_csv)
     rome_fap_mapping = cleaned_data.rome_fap_mapping(
         filename=rome_fap_crosswalk_txt)
@@ -417,7 +469,7 @@ def _get_application_modes(application_mode_csv, rome_fap_crosswalk_txt):
     return application_modes
 
 
-def _get_app_modes_perc(fap_modes):
+def _get_app_modes_perc(fap_modes: pandas.DataFrame) -> typing.Dict[str, typing.Any]:
     return {
         'modes': [
             {'mode': _APPLICATION_MODE_PROTO_FIELDS[row.APPLICATION_TYPE_CODE],
@@ -425,7 +477,8 @@ def _get_app_modes_perc(fap_modes):
             for row in fap_modes.itertuples()]}
 
 
-def _get_growth_2012_2022(fap_growth, rome_fap_crosswalk_txt):
+def _get_growth_2012_2022(fap_growth: pandas.DataFrame, rome_fap_crosswalk_txt: str) \
+        -> pandas.DataFrame:
     fap_growth['num_jobs_2012'] = fap_growth.num_jobs_2022 - fap_growth.num_job_creations_2012_2022
     fap_growth['growth_2012_2022'] = \
         fap_growth.num_job_creations_2012_2022.div(fap_growth.num_jobs_2012)

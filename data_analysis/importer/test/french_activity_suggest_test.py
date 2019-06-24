@@ -12,7 +12,7 @@ class PrepareActivitiesTestCase(unittest.TestCase):
     stats_csv = path.join(path.dirname(__file__), 'testdata/dpae-count.csv')
     testdata_folder = path.join(path.dirname(__file__), 'testdata')
 
-    def test_basic_usage(self):
+    def test_basic_usage(self) -> None:
         """Basic Usage."""
 
         activities = french_activity_suggest.prepare_activities(self.testdata_folder)
@@ -36,7 +36,7 @@ class PrepareActivitiesTestCase(unittest.TestCase):
             ],
             activities[:2])
 
-    def test_with_stats(self):
+    def test_with_stats(self) -> None:
         """Give a file containing stats as well."""
 
         activities = french_activity_suggest.prepare_activities(

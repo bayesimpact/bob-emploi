@@ -17,7 +17,7 @@ class SpontaneousVarsTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'focus-spontaneous'
 
     def setUp(self) -> None:
-        super(SpontaneousVarsTestCase, self).setUp()
+        super().setUp()
 
         self.database.job_group_info.insert_one({
             '_id': 'A1234',
@@ -82,7 +82,8 @@ class SpontaneousVarsTestCase(mail_blast_test.CampaignTestBase):
             'likeYourWorkplace': 'comme le vôtre',
             'someCompanies': 'des cabinets juridiques',
             'toTheWorkplace': 'au cabinet',
-            'weeklyApplicationOptions': '15',
+            'weeklyApplicationsCount': '15',
+            'weeklyApplicationsOption': 'A_LOT',
             'whatILoveAbout': 'where I can belong',
             'whySpecificCompany': 'different business styles',
         })
@@ -183,14 +184,16 @@ class SpontaneousVarsTestCase(mail_blast_test.CampaignTestBase):
 
         self.project.weekly_applications_estimate = project_pb2.SOME
         self._assert_user_receives_campaign()
-        self.assertEqual('5', self._variables.pop('weeklyApplicationOptions'))
+        self.assertEqual('5', self._variables.pop('weeklyApplicationsCount'))
+        self.assertEqual('SOME', self._variables.pop('weeklyApplicationsOption'))
 
     def test_weekly_application_count_less_than_2(self) -> None:
         """Check phrasing of weekly application count for LESS_THAN_2."""
 
         self.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
         self._assert_user_receives_campaign()
-        self.assertEqual('', self._variables.pop('weeklyApplicationOptions'))
+        self.assertEqual('', self._variables.pop('weeklyApplicationsCount'))
+        self.assertEqual('LESS_THAN_2', self._variables.pop('weeklyApplicationsOption'))
 
 
 class SelfDevelopmentVarsTestCase(mail_blast_test.CampaignTestBase):
@@ -199,7 +202,7 @@ class SelfDevelopmentVarsTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'focus-self-develop'
 
     def setUp(self) -> None:
-        super(SelfDevelopmentVarsTestCase, self).setUp()
+        super().setUp()
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.user.profile.last_name = 'Benguigui'
@@ -410,6 +413,10 @@ class NewDiagnosticVarsTestCase(mail_blast_test.CampaignTestBase):
         self._assert_regex_field(
             'stopSeekingUrl', r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*$')
 
+        empty_vars = {key for key, value in self._variables.items() if not value}
+        for empty_var in empty_vars:
+            del self._variables[empty_var]
+
         self._assert_remaining_variables({
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
@@ -426,7 +433,7 @@ class Galita1VarsTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'galita-1'
 
     def setUp(self) -> None:
-        super(Galita1VarsTestCase, self).setUp()
+        super().setUp()
         self.user.registered_at.FromDatetime(datetime.datetime.now() - datetime.timedelta(days=150))
         # TODO(cyrille): Move tests on firstName and gender to a test on get_default_variables.
         self.user.profile.gender = user_pb2.MASCULINE
@@ -471,6 +478,9 @@ class Galita2VarsTestCase(mail_blast_test.CampaignTestBase):
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
         self.user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        self.project.target_job.masculine_name = 'Maçon'
+        self.project.previous_job_similarity = project_pb2.NEVER_DONE
+        self.project.kind = project_pb2.FIND_A_NEW_JOB
 
         self._assert_user_receives_campaign()
 
@@ -483,6 +493,8 @@ class Galita2VarsTestCase(mail_blast_test.CampaignTestBase):
         self._assert_remaining_variables({
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
+            'isReorienting': '',
+            'ofJobName': 'de maçon',
         })
 
 
@@ -583,12 +595,12 @@ class ViralSharingVarsTestCase(mail_blast_test.CampaignTestBase):
 
 
 class OpenClassroomsVarsTestCase(mail_blast_test.CampaignTestBase):
-    """Test of viral mail campaign variables."""
+    """Test of open classrooms mail campaign variables."""
 
     campaign_id = 'open-classrooms'
 
     def setUp(self) -> None:
-        super(OpenClassroomsVarsTestCase, self).setUp()
+        super().setUp()
         self.database.job_group_info.insert_one({
             '_id': 'A1234',
             'applicationComplexity': 'SIMPLE_APPLICATION_PROCESS',
@@ -639,8 +651,6 @@ class OpenClassroomsVarsTestCase(mail_blast_test.CampaignTestBase):
         self.user.profile.year_of_birth = datetime.datetime.now().year - 60
 
         self._assert_user_receives_campaign(should_be_sent=False)
-        self._user_database.user.drop()
-        self._assert_user_receives_focus(should_be_sent=False)
 
     def test_user_is_too_young(self) -> None:
         """User has less than 18 years old."""
@@ -648,8 +658,6 @@ class OpenClassroomsVarsTestCase(mail_blast_test.CampaignTestBase):
         self.user.profile.year_of_birth = datetime.datetime.now().year - 16
 
         self._assert_user_receives_campaign(should_be_sent=False)
-        self._user_database.user.drop()
-        self._assert_user_receives_focus(should_be_sent=False)
 
     def test_user_degree_is_too_high(self) -> None:
         """User has a degree higher than BAC or BAC PRO."""
@@ -657,8 +665,6 @@ class OpenClassroomsVarsTestCase(mail_blast_test.CampaignTestBase):
         self.user.profile.highest_degree = job_pb2.LICENCE_MAITRISE
 
         self._assert_user_receives_campaign(should_be_sent=False)
-        self._user_database.user.drop()
-        self._assert_user_receives_focus(should_be_sent=False)
 
     def test_user_is_a_passionate_worker(self) -> None:
         """User doesn't want to reorient and is happy with their job."""
@@ -701,8 +707,6 @@ class OpenClassroomsVarsTestCase(mail_blast_test.CampaignTestBase):
         employment_status.seeking = user_pb2.STOP_SEEKING
 
         self._assert_user_receives_campaign(should_be_sent=False)
-        self._user_database.user.drop()
-        self._assert_user_receives_focus(should_be_sent=False)
 
     def test_happy_user_is_still_seeking(self) -> None:
         """User has reponded to the RER that they are still seeking but is happy with their job."""
@@ -754,16 +758,12 @@ class OpenClassroomsVarsTestCase(mail_blast_test.CampaignTestBase):
         """No project, no email."""
 
         del self.user.projects[:]
-        self._assert_user_receives_focus(should_be_sent=False)
-        self._user_database.user.drop()
         self._assert_user_receives_campaign(should_be_sent=False)
 
     def test_incomplete_project(self) -> None:
         """Incomplete project, no email."""
 
         self.project.is_incomplete = True
-        self._assert_user_receives_focus(should_be_sent=False)
-        self._user_database.user.drop()
         self._assert_user_receives_campaign(should_be_sent=False)
 
 

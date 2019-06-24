@@ -12,7 +12,7 @@ from bob_emploi.data_analysis.misc import french_departements_bounds
 class FrenchDepartementsBoundsTestCase(unittest.TestCase):
     """Unit tests for the main function."""
 
-    def test_basic_usage(self):
+    def test_basic_usage(self) -> None:
         """Basic usage."""
 
         testfile = path.join(path.dirname(__file__), 'testdata/departements-avec-outre-mer.geojson')

@@ -13,7 +13,7 @@ _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
 class RegionsImporterTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
-    def test_make_dicts(self):
+    def test_make_dicts(self) -> None:
         """Basic usage."""
 
         dicts = regions.make_dicts(

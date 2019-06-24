@@ -35,6 +35,8 @@ function get_template {
   jq -S "$JSON_MAIL_SELECTOR"' | .["'"$FIELD_MJML"'"]' "$tempfile" > "$output_dir/template.mjml"
   jq -S "$JSON_MAIL_SELECTOR"' | .["'"$FIELD_HEADER"'"]' "$tempfile" > "$output_dir/headers.json"
 
+  grep -P "(?<=[{ ]var:)\\w+" -o "$output_dir/template.html" | sort -u > "$output_dir/vars.txt"
+
   rm "$tempfile"
 
   rm -f "$NO_ACTION_TAKEN"
@@ -91,23 +93,9 @@ if [[ "$1" != "download" ]] && [[ "$1" != "upload" ]]; then
   exit 1
 fi
 
-handle_template 205970 network
-handle_template 212606 spontaneous
-handle_template 255279 self-develop
-handle_template 225287 employment-status
-handle_template 277304 body-language
-handle_template 100819 nps
-handle_template 74071  nps-report
-handle_template 279688 christmas
-handle_template 293296 new-year
-handle_template 300528 network-plus
-handle_template 310559 new-diagnostic
-handle_template 315773 galita-1
-handle_template 318212 imt
-handle_template 324871 salon-arles
-handle_template 334851 viral-sharing-1
-handle_template 536272 open-classrooms
-handle_template 572106 galita-2
+for template in $(jq -c .[] "$TEMPLATES_FOLDER/mailjet.json"); do
+  handle_template $(jq -r .mailjetTemplate <<< $template) $(jq -r .name <<< $template)
+done
 
 if [[ -n "$ONLY_FOLDER" ]] && [[ -e "$NO_ACTION_TAKEN" ]]; then
   echo "Could not find the folder \"$ONLY_FOLDER\"."

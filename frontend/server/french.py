@@ -27,7 +27,12 @@ def maybe_contract_prefix(prefix: str, contracted_prefix: str, sentence: str) ->
 
 
 def lower_first_letter(sentence: str) -> str:
-    """Lower the first letter of a string."""
+    """Lower the first letter of a string except if it starts with several uppercase letters."""
+
+    if len(sentence) > 1:
+        first_letters = sentence[:2]
+        if first_letters == first_letters.upper():
+            return sentence
 
     return sentence[:1].lower() + sentence[1:]
 

@@ -9,11 +9,12 @@ import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/options.proto";
 import "bob_emploi/frontend/api/seasonal_jobbing.proto";
+import "bob_emploi/frontend/api/strategy.proto";
 import "bob_emploi/frontend/api/training.proto";
 
 package bayes.bob;
 
-// Next available tag: 42.
+// Next available tag: 46.
 message Project {
   // A unique identifier for this project.
   string project_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
@@ -78,6 +79,9 @@ message Project {
   // The date and time at which this project was created or if it was a
   // suggestion, when the suggestion was first created.
   google.protobuf.Timestamp created_at = 15;
+
+  // The date and time at which the main conclusions of this project were shown.
+  google.protobuf.Timestamp diagnostic_shown_at = 44 [(field_usage) = APP_ONLY];
 
   // The kind of project (e.g. to find a job).
   ProjectKind kind = 19;
@@ -153,6 +157,30 @@ message Project {
 
   // User level of involvement in this job.
   PassionateLevel passionate_level = 38;
+
+  // Strategies we consider the user could follow. They are sorted by importance, so the first one
+  // is the most relevant to the user.
+  repeated Strategy strategies = 42 [(field_usage) = ALGORITHM_RESULT];
+
+  // For each strategy, whether the user has decided to start working on them
+  // or not. The strategies are keyed by ID.
+  // DEPRECATED(2019-04-02): Use opened_strategies.started_at instead.
+  map<string, bool> started_strategies = 43 [deprecated = true, (field_usage) = APP_ONLY];
+
+  // For each strategy, whether the user has decided to start working on them
+  // or not.
+  repeated WorkingStrategy opened_strategies = 45 [(field_usage) = APP_ONLY];
+}
+
+message WorkingStrategy {
+  // Date of when the strategy has been started.
+  google.protobuf.Timestamp started_at = 1;
+
+  // Whether the strategy goals have been reached by the user. Keyed by goal ID.
+  map<string, bool> reached_goals = 2;
+
+  // The ID of the strategy.
+  string strategy_id = 3;
 }
 
 message ProjectFeedback {
@@ -337,8 +365,16 @@ message SpontaneousApplicationData {
   // Specific companies to which the user could apply to.
   repeated Company companies = 1;
 
+  // The maximum distance to companies returned in companies. By default it used to be 10 in the
+  // LBB API, but if it's not set we do not guarantee it.
+  float max_distance_to_companies_km = 3;
+
   // Specific companies to which the user could apply to, to get an alternance contract.
   repeated Company alternance_companies = 2;
+
+  // The maximum distance to companies returned in alternance_companies. By default it used to be 10
+  //  in the LBA API, but if it's not set we do not guarantee it.
+  float max_distance_to_alternance_companies_km = 4;
 }
 
 message BetterJobInGroupData {

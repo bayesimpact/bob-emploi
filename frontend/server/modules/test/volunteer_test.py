@@ -13,7 +13,7 @@ class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-volunteer'
 
     def setUp(self) -> None:
-        super(VolunteerAdviceTestCase, self).setUp()
+        super().setUp()
         self.database.volunteering_missions.insert_one({
             '_id': '75',
             'missions': [{'title': 'Mission n°1'}],
@@ -60,7 +60,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/volunteer endpoint."""
 
     def setUp(self) -> None:
-        super(EndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'volunteer',
             'triggerScoringModel': 'advice-volunteer',

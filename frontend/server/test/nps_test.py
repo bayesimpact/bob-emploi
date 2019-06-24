@@ -1,54 +1,13 @@
 """Unit tests for the module TODO: module name."""
 
-import typing
 import unittest
 from unittest import mock
 from urllib import parse
 
-import requests
 import requests_mock
-import typing_extensions
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server.test import base_test
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-_requests_mock_mock = typing.cast(  # pylint: disable=invalid-name
-    typing.Callable[[], typing.Callable[
-        [typing.Callable[..., typing.Any]], typing.Callable[..., typing.Any]]],
-    requests_mock.mock)
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-class _MockRequest(typing_extensions.Protocol):
-    @property
-    def text(self) -> str:
-        """Body content as text."""
-
-    def json(self) -> typing.Any:  # pylint: disable=invalid-name
-        """Body content encoded as JSON, decoded."""
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-class _RequestsMock(typing_extensions.Protocol):
-
-    def get(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
-            -> requests.Response:
-        """Decide what to do when a get request is sent."""
-
-    def post(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            request_headers: typing.Optional[typing.Dict[str, str]] = None,
-            additional_matcher: typing.Optional[typing.Callable[[_MockRequest], bool]] = None) \
-            -> requests.Response:
-        """Decide what to do when a post request is sent."""
 
 
 class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
@@ -162,7 +121,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
     def setUp(self) -> None:
         """Create a user and get its nps auth token."""
 
-        super(NPSUpdateTestCase, self).setUp()
+        super().setUp()
         self.user_id, self.auth_token = self.create_user_with_token()
         self.nps_auth_token = auth.create_token(self.user_id, role='nps')
 
@@ -177,6 +136,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         })
 
         self.assertEqual(302, response.status_code)
+        assert response.location
         self.assertTrue(
             response.location.startswith('https://typeform.com/abcde'),
             msg=response.location)
@@ -269,15 +229,17 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             user.get('netPromoterScoreSurveyResponse', {}).get('generalFeedbackComment'))
 
     # TODO(cyrille): Externalize in own module (or add PR to requests_mock).
-    def _match_request_data(self, request: _MockRequest) -> bool:
+    def _match_request_data(self, request: 'requests_mock._RequestObjectProxy') -> bool:
         self.assertEqual(
-            ':mega: [NPS Score: 0] ObjectId("{}")\n> This is a bad comment'.format(self.user_id),
+            ':mega: [NPS Score: 0] '
+            '<http://localhost/eval?userId={user_id}|{user_id}>\n> '
+            'This is a bad comment'.format(user_id=self.user_id),
             request.json().get('text', ''))
         return True
 
     @mock.patch(base_test.server.__name__ + '._SLACK_WEBHOOK_URL', new='slack://bob-bots')
-    @_requests_mock_mock()
-    def test_nps_zero_score_and_comment(self, mock_requests: _RequestsMock) -> None:
+    @requests_mock.mock()
+    def test_nps_zero_score_and_comment(self, mock_requests: requests_mock.Mocker) -> None:
         """Set the NPS score to 0 then comment"""
 
         mock_requests.post(

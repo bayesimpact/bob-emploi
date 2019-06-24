@@ -14,7 +14,7 @@ from bob_emploi.frontend.server.asynchronous.mail import campaign
 
 
 def christmas_vars(
-        user: user_pb2.User, database: pymongo.database.Database = None,
+        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
         **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
     """Compute all variables required for the Christmas campaign."""
 
@@ -42,6 +42,7 @@ def christmas_vars(
         (departement.name for a in project.advices
          for departement in a.relocate_data.departement_scores),
         '')
+    assert database
     if relocate_departement:
         try:
             departement_id = geo.get_departement_id(database, relocate_departement)

@@ -14,7 +14,7 @@ class JobOffersEvolutionImporterTestCase(unittest.TestCase):
     testdata_folder = path.join(
         path.dirname(__file__), 'testdata/job_offers')
 
-    def test_basic_usage(self):
+    def test_basic_usage(self) -> None:
         """Basic usage."""
 
         changes = job_offers_changes.csv2dicts(

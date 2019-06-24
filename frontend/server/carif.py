@@ -17,6 +17,22 @@ def _make_key(title: str, city: str) -> str:
     return title + city
 
 
+_XmlType = typing.TypeVar('_XmlType')
+
+
+def _get_list_from_xml(xml: typing.Union[_XmlType, typing.List[_XmlType]]) -> typing.List[_XmlType]:
+    """Wrap an xml node in a list, if it is not already a list of nodes.
+
+    When querying an xml dict, we get a list if there are sibling elements with the same tag, but
+    the element itself if it has no sibling (with the same tag). This wraps the latter in a list,
+    when it occurs.
+    """
+
+    if isinstance(xml, list):
+        return xml
+    return [xml]
+
+
 def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2.Training]:
     """Helper function to get trainings from the CARIF API.
 
@@ -51,7 +67,7 @@ def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2
 
     offers: typing.List[typing.Dict[str, typing.Any]] = []
     try:
-        offers = info['lheo-index']['resumes-offres']['resume-offre']
+        offers = _get_list_from_xml(info['lheo-index']['resumes-offres']['resume-offre'])
     except KeyError:
         return no_trainings
 
@@ -61,12 +77,13 @@ def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2
 
     for offer in offers:
         try:
-            formacodes = offer['domaine-formation']['code-FORMACODE']
-            if not isinstance(formacodes, list):
-                formacodes = [formacodes]
+            formacodes: typing.List[str] = _get_list_from_xml(
+                offer['domaine-formation']['code-FORMACODE'])
 
             name = offer['intitule-formation'].replace('\n', ' ')
             city_name = offer['ville']
+            # TODO(cyrille): consider allowing an offer even without a URL,
+            # by redirecting to CARIF website.
             url = offer['@href']
 
             key = _make_key(name, city_name)

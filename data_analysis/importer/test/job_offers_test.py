@@ -16,7 +16,7 @@ class JobOffersTestCase(unittest.TestCase):
     colnames_csv = path.join(
         path.dirname(__file__), 'testdata/job_offers/column_names.txt')
 
-    def test_csv2dicts(self):
+    def test_csv2dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
 
         collection = job_offers.csv2dicts(self.job_offers_csv, self.colnames_csv)

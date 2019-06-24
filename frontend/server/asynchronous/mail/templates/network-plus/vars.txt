@@ -1,0 +1,15 @@
+changeEmailSettingsUrl
+firstName
+frustration
+gender
+hasChildren
+hasHighSchoolDegree
+hasLargeNetwork
+hasWorkedBefore
+inCity
+inTargetDomain
+isAbleBodied
+isYoung
+jobGroupInDepartement
+networkApplicationPercentage
+statusUpdateUrl

@@ -5,7 +5,7 @@ import os
 from os import path
 import unittest
 
-from algoliasearch import helpers
+from algoliasearch import exceptions
 import mock
 
 from bob_emploi.data_analysis.importer import french_city_suggest
@@ -22,7 +22,7 @@ class PrepareCitiesTestCase(unittest.TestCase):
         path.dirname(__file__), 'testdata/geo/ville-ideale-transports.html')
     testdata_folder = path.join(path.dirname(__file__), 'testdata')
 
-    def test_basic_usage(self):
+    def test_basic_usage(self) -> None:
         """Basic Usage."""
 
         cities = french_city_suggest.prepare_cities(self.testdata_folder)
@@ -54,7 +54,7 @@ class PrepareCitiesTestCase(unittest.TestCase):
         self.assertEqual('Lyon', lyon.get('name'))
         self.assertEqual('69123', lyon.get('cityId'))
 
-    def test_with_stats(self):
+    def test_with_stats(self) -> None:
         """Give a file containing stats as well."""
 
         cities = french_city_suggest.prepare_cities(
@@ -88,7 +88,7 @@ class PrepareCitiesTestCase(unittest.TestCase):
             ],
             cities[:2])
 
-    def test_with_urban(self):
+    def test_with_urban(self) -> None:
         """Give a file containing urban entities as well."""
 
         cities = french_city_suggest.prepare_cities(
@@ -120,7 +120,7 @@ class PrepareCitiesTestCase(unittest.TestCase):
             ],
             cities[1:3])
 
-    def test_with_transport(self):
+    def test_with_transport(self) -> None:
         """Give a file containing transport scores as well."""
 
         cities = french_city_suggest.prepare_cities(
@@ -153,20 +153,20 @@ class PrepareCitiesTestCase(unittest.TestCase):
             cities[1:3])
 
 
-@mock.patch(french_city_suggest.__name__ + '.algoliasearch')
+@mock.patch(french_city_suggest.__name__ + '.search_client')
 @mock.patch.dict(os.environ, values={'ALGOLIA_API_KEY': 'my-api-key'})
 class UploadTestCase(unittest.TestCase):
     """Integration tests for the upload function."""
 
     testdata_folder = path.join(path.dirname(__file__), 'testdata')
 
-    def test_upload(self, mock_algoliasearch):
+    def test_upload(self, mock_algoliasearch: mock.MagicMock) -> None:
         """Test the full upload."""
 
         french_city_suggest.upload(data_folder=self.testdata_folder)
 
-        mock_algoliasearch.Client.assert_called_once_with('K6ACI9BKKT', 'my-api-key')
-        mock_client = mock_algoliasearch.Client()
+        mock_algoliasearch.SearchClient.create.assert_called_once_with('K6ACI9BKKT', 'my-api-key')
+        mock_client = mock_algoliasearch.SearchClient.create()
         indices = [c[0][0] for c in mock_client.init_index.call_args_list]
         self.assertEqual(2, len(indices), msg=indices)
         self.assertEqual(2, len(set(indices)), msg=indices)
@@ -183,15 +183,15 @@ class UploadTestCase(unittest.TestCase):
 
         mock_client.move_index.assert_called_once_with(tmp_name, 'cities')
 
-    def test_upload_with_failure(self, mock_algoliasearch):
+    def test_upload_with_failure(self, mock_algoliasearch: mock.MagicMock) -> None:
         """Test the full upload."""
 
-        mock_client = mock_algoliasearch.Client()
-        mock_client.init_index().add_objects.side_effect = helpers.AlgoliaException
+        mock_client = mock_algoliasearch.SearchClient.create()
+        mock_client.init_index().add_objects.side_effect = exceptions.AlgoliaException
 
         output = io.StringIO()
 
-        with self.assertRaises(helpers.AlgoliaException):
+        with self.assertRaises(exceptions.AlgoliaException):
             french_city_suggest.upload(data_folder=self.testdata_folder, out=output)
 
         mock_client.move_index.assert_not_called()

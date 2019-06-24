@@ -10,22 +10,26 @@ Run it regularly with the command:
 """
 
 # TODO(pascal): Run it automatically (weekly ?) and send the results to slack.
-import collections
 import logging
 import re
 import sys
+import typing
 
 import pymongo
 import requests
 import tqdm
 
-from bob_emploi.data_analysis.importer import airtable_to_protos
 from bob_emploi.data_analysis.importer import import_status
+from bob_emploi.data_analysis.lib import checker
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server import scoring_base
 
-_MongoField = collections.namedtuple('MongoField', ['collection', 'field_name'])
+
+class _MongoField(typing.NamedTuple):
+    collection: str
+    field_name: str
+
 
 _INDICES = {
     _MongoField('helper', 'email'),
@@ -44,7 +48,10 @@ _HTTP_HEADERS = {
 }
 
 
-def _iterate_all_records(mongo_db, mongo_fields, field_type):
+def _iterate_all_records(
+        mongo_db: pymongo.database.Database,
+        mongo_fields: typing.Iterable[_MongoField], field_type: str) \
+        -> typing.Iterator[typing.Tuple[str, typing.Dict[str, typing.Any], str]]:
     db_collections = set(mongo_db.list_collection_names())
     for collection, field_name in mongo_fields:
         if collection not in db_collections:
@@ -70,11 +77,11 @@ def _iterate_all_records(mongo_db, mongo_fields, field_type):
                 collection, field_type, field_name)
 
 
-def _is_application_internal_url(url):
+def _is_application_internal_url(url: str) -> bool:
     return url.startswith('/')
 
 
-def check_scoring_models(mongo_db):
+def check_scoring_models(mongo_db: pymongo.database.Database) -> None:
     """Check that all scoring models are valid and warn on unused ones."""
 
     scoring_model_fields = \
@@ -100,7 +107,9 @@ def check_scoring_models(mongo_db):
 
 
 # TODO(cyrille): Deal with fields from proto which are unused in some collections.
-def _list_formatted_fields(importers, field_format):
+def _list_formatted_fields(
+        importers: typing.ItemsView[str, import_status.Importer],
+        field_format: options_pb2.StringFormat) -> typing.Iterator[_MongoField]:
     for collection_name, importer in importers:
         if not importer.proto_type:
             continue
@@ -110,11 +119,11 @@ def _list_formatted_fields(importers, field_format):
                 yield _MongoField(collection_name, field.camelcase_name)
 
 
-def check_urls(mongo_db):
+def check_urls(mongo_db: pymongo.database.Database) -> None:
     """Check that all links are valid."""
 
     url_fields = _list_formatted_fields(import_status.IMPORTERS.items(), options_pb2.URL_FORMAT)
-    url_checker = airtable_to_protos.UrlChecker()
+    url_checker = checker.UrlChecker()
 
     records = list(_iterate_all_records(mongo_db, url_fields, 'link'))
     for url, record, collection in tqdm.tqdm(records):
@@ -144,7 +153,7 @@ def check_urls(mongo_db):
                 type(exception).__name__, record.get('_id'), collection, url)
 
 
-def _get_variables_from(template):
+def _get_variables_from(template: str) -> typing.Set[str]:
     if '%' not in template:
         return set()
     # pylint: disable=protected-access
@@ -152,10 +161,10 @@ def _get_variables_from(template):
     return set(pattern.findall(template))
 
 
-def check_template_variables(mongo_db):
+def check_template_variables(mongo_db: pymongo.database.Database) -> None:
     """Check that all template variables are defined and well used."""
 
-    template_checker = airtable_to_protos.MissingTemplateVarsChecker()
+    template_checker = checker.MissingTemplateVarsChecker()
     unused_vars = set(scoring_base._TEMPLATE_VARIABLES.keys())  # pylint: disable=protected-access
     template_fields = _list_formatted_fields(
         import_status.IMPORTERS.items(), options_pb2.SCORING_PROJECT_TEMPLATE)
@@ -171,7 +180,7 @@ def check_template_variables(mongo_db):
         logging.error('There were some unused variables:\n%s', ', '.join(unused_vars))
 
 
-def ensure_indices(mongo_db):
+def ensure_indices(mongo_db: pymongo.database.Database) -> None:
     """Ensure that indices exist on relevant collections."""
 
     db_collections = set(mongo_db.list_collection_names())
@@ -182,10 +191,10 @@ def ensure_indices(mongo_db):
         mongo_db.get_collection(collection).create_index({field: 1})
 
 
-def main(mongo_url):
+def main(mongo_url: str) -> None:
     """Handle all maintenance tasks."""
 
-    mongo_db = pymongo.MongoClient(mongo_url).get_default_database()
+    mongo_db = pymongo.MongoClient(mongo_url).get_database()
     ensure_indices(mongo_db)
     check_scoring_models(mongo_db)
     check_urls(mongo_db)

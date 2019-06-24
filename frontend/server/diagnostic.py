@@ -72,6 +72,9 @@ def diagnose_scoring_project(
         a tuple with the modified diagnostic protobuf and a list of the orders of missing sentences.
     """
 
+    category = find_category(scoring_project)
+    if category:
+        diagnostic.category_id = category.category_id
     _compute_sub_diagnostics_scores(scoring_project, diagnostic)
     # TODO(cyrille): Drop overall score computation once overall covers all possible cases.
     # Combine the sub metrics to create the overall score.
@@ -99,7 +102,7 @@ def diagnose_scoring_project(
     if sum_weight:
         diagnostic.overall_score = round(sum_score / sum_weight)
 
-    _compute_diagnostic_overall(scoring_project, diagnostic)
+    _compute_diagnostic_overall(scoring_project, diagnostic, category)
 
     if diagnostic.text:
         return diagnostic, None
@@ -193,10 +196,18 @@ _DIAGNOSTIC_OVERALL: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTempla
 
 def _compute_diagnostic_overall(
         project: scoring.ScoringProject,
-        diagnostic: diagnostic_pb2.Diagnostic) -> diagnostic_pb2.Diagnostic:
+        diagnostic: diagnostic_pb2.Diagnostic,
+        category: typing.Optional[diagnostic_pb2.DiagnosticCategory]) -> diagnostic_pb2.Diagnostic:
     all_overalls = _DIAGNOSTIC_OVERALL.get_collection(project.database)
+    restricted_overalls: typing.Iterable[diagnostic_pb2.DiagnosticTemplate] = []
+    if category and (
+            not category.are_strategies_for_alpha_only or project.features_enabled.alpha):
+        restricted_overalls = \
+            [o for o in all_overalls if o.category_id == category.category_id]
+    if not restricted_overalls:
+        restricted_overalls = [o for o in all_overalls if not o.category_id]
     overall_template = next((
-        scoring.filter_using_score(all_overalls, lambda t: t.filters, project)), None)
+        scoring.filter_using_score(restricted_overalls, lambda t: t.filters, project)), None)
     if not overall_template:
         # TODO(cyrille): Put a warning here once enough cases are covered with overall templates.
         return diagnostic
@@ -204,6 +215,8 @@ def _compute_diagnostic_overall(
         project.translate_string(overall_template.sentence_template))
     diagnostic.text = project.populate_template(
         project.translate_string(overall_template.text_template))
+    diagnostic.strategies_introduction = project.populate_template(
+        project.translate_string(overall_template.strategies_introduction))
     diagnostic.overall_score = overall_template.score
     return diagnostic
 
@@ -339,7 +352,7 @@ def _compute_diagnostic_topic_score(
 
 def _compute_sub_diagnostics_scores(
         scoring_project: scoring.ScoringProject, diagnostic: diagnostic_pb2.Diagnostic) -> None:
-    """populate the submetrics of the diagnostic for a given project."""
+    """Populate the submetrics of the diagnostic for a given project."""
 
     scorers_per_topic = itertools.groupby(
         _SUBTOPIC_SCORERS.get_collection(scoring_project.database),
@@ -357,3 +370,73 @@ def _get_users_counts(database: pymongo.database.Database) -> typing.Optional[st
     all_counts = next(
         database.user_count.find({}).sort('aggregatedAt', pymongo.DESCENDING).limit(1), None)
     return proto.create_from_mongo(all_counts, stats_pb2.UsersCount, always_create=False)
+
+
+_DIAGNOSTIC_CATEGORY: \
+    proto.MongoCachedCollection[diagnostic_pb2.DiagnosticCategory] = \
+    proto.MongoCachedCollection(diagnostic_pb2.DiagnosticCategory, 'diagnostic_category')
+
+
+def list_categories(database: pymongo.database.Database) \
+        -> typing.Iterator[diagnostic_pb2.DiagnosticCategory]:
+    """Give the list of categories as defined in database."""
+
+    return _DIAGNOSTIC_CATEGORY.get_collection(database)
+
+
+def set_categories_relevance(
+        project: typing.Union[scoring.ScoringProject, user_pb2.User],
+        categories: typing.Optional[typing.Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
+        database: typing.Optional[pymongo.database.Database] = None) \
+        -> typing.Iterator[diagnostic_pb2.DiagnosticCategory]:
+    """For all categories, tell whether it's relevant for a project.
+
+    Arg list:
+        - project, either a User proto message, or a ScoringProject for which we want to determine a
+            category.
+        - categories, a list of DiagnosticCategory to select from. If not specified, will try and
+            fetch them from `database`
+        - database, the database in which to find the categories, if not specified.
+            If `project` is a ScoringProject, defaults to `project.database`,
+            otherwise, it's mandatory (raises an AttributeError).
+    Returns the list of categories, with a `is_relevant` flag on those relevant for the project.
+    """
+
+    if isinstance(project, user_pb2.User):
+        if not database:
+            raise AttributeError(
+                'Cannot call score_categories without a database to call upon.')
+        if not project.projects:
+            return None
+        project = scoring.ScoringProject(
+            project.projects[0], project.profile, project.features_enabled, database)
+    else:
+        database = database or project.database
+    if not categories:
+        categories = list_categories(database)
+    for category in categories:
+        category.is_relevant = project.check_filters(category.filters)
+        yield category
+
+
+def find_category(
+        project: typing.Union[scoring.ScoringProject, user_pb2.User],
+        categories: typing.Optional[typing.Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
+        database: typing.Optional[pymongo.database.Database] = None) \
+        -> typing.Optional[diagnostic_pb2.DiagnosticCategory]:
+    """Select the available category for a project, if it exists.
+
+    Arg list:
+        - project, either a User proto message, or a ScoringProject for which we want to determine a
+            category.
+        - categories, a list of DiagnosticCategory to select from. If not specified, will try and
+            fetch them from `database`
+        - database, the database in which to find the categories, if not specified.
+            If `project` is a ScoringProject, defaults to `project.database`,
+            otherwise, it's mandatory (raises an AttributeError).
+    Returns either None if no category apply or the first relevant category.
+    """
+
+    return next((
+        c for c in set_categories_relevance(project, categories, database)
+        if c.is_relevant), None)

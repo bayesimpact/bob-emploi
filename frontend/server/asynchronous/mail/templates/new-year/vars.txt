@@ -1,0 +1,4 @@
+firstName
+gender
+goal
+unsubscribeLink

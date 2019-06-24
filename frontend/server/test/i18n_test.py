@@ -11,7 +11,7 @@ class TranslateStringTestCase(unittest.TestCase):
     """Unit tests for the translate_string function."""
 
     def setUp(self) -> None:
-        super(TranslateStringTestCase, self).setUp()
+        super().setUp()
         self._db = mongomock.MongoClient().test
 
     def test_translate_string(self) -> None:

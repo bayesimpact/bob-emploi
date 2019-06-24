@@ -25,7 +25,11 @@ import typing
 import pandas
 from scrapy import selector
 
-_ROME_VERSION = 'v337'
+_ROME_VERSION = 'v338'
+
+# Denominator to compute Market Score because the number of yearly average
+# offers are given for 10 candidates.
+_YEARLY_AVG_OFFERS_DENOMINATOR = 10
 
 
 # TODO: Use this function in city suggest importer to read the stats file.
@@ -633,3 +637,31 @@ def job_offers_skills(
     unwind_offers_skills['skill_activity_name'] = unwind_offers_skills.skill_name\
         .combine_first(unwind_offers_skills.activity_name)
     return unwind_offers_skills
+
+
+def market_scores(
+        data_folder: str = 'data', filename: typing.Optional[str] = None) -> pandas.DataFrame:
+    """Market score at the departement level gathered and provided by Pôle emploi.
+
+    Each row represents a market. Columns are:
+    the departement id, the job group rome code, the market tension and
+    the yearly average denominator and the area level of the market score (D is for
+    departement, R for Region, etc...)
+    """
+
+    if not filename:
+        filename = path.join(data_folder, 'imt/market_score.csv')
+
+    market_stats = pandas.read_csv(filename, dtype={'AREA_CODE': 'str'})
+    market_stats['departement_id'] = market_stats.AREA_CODE
+    market_stats['market_score'] = market_stats.TENSION_RATIO.div(_YEARLY_AVG_OFFERS_DENOMINATOR)
+    market_stats['yearly_avg_offers_per_10_candidates'] = market_stats.TENSION_RATIO
+    market_stats['rome_id'] = market_stats.ROME_PROFESSION_CARD_CODE
+    market_stats['yearly_avg_offers_denominator'] = _YEARLY_AVG_OFFERS_DENOMINATOR
+    market_stats = market_stats.set_index(['rome_id', 'departement_id'])
+    market_stats.dropna(subset=['market_score'], inplace=True)
+
+    return market_stats[[
+        'market_score', 'yearly_avg_offers_per_10_candidates',
+        'yearly_avg_offers_denominator', 'AREA_TYPE_CODE'
+    ]]

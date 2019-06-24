@@ -1,5 +1,7 @@
 """Module to upload the French city locations to MongoDB."""
 
+import typing
+
 import pandas
 
 from bob_emploi.frontend.api import geo_pb2
@@ -7,7 +9,8 @@ from bob_emploi.data_analysis.lib import cleaned_data
 from bob_emploi.data_analysis.lib import mongo
 
 
-def csv2dicts(stats_filename, urban_context_filename):
+def csv2dicts(stats_filename: str, urban_context_filename: str) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Prepare cities for upload to MongoDB.
 
     Args:
@@ -29,7 +32,8 @@ def csv2dicts(stats_filename, urban_context_filename):
     urban_contexts = cleaned_data.french_urban_areas(filename=urban_context_filename)
     city_stats['urbanContext'] = city_stats['_id'].map(urban_contexts.periurban)\
         .fillna(geo_pb2.UNKNOWN_URBAN_CONTEXT).astype(int)
-    return city_stats.to_dict(orient='records')
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]], city_stats.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

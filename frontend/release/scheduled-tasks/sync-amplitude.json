@@ -11,7 +11,7 @@
         "containerOverrides": [
           {
             "command": [
-              "python bob_emploi/frontend/server/asynchronous/sync_amplitude.py --registered-from 2016-12-01 --no-dry-run"
+              "python bob_emploi/frontend/server/asynchronous/sync_amplitude.py --registered-from 2017-06-01 --no-dry-run"
             ],
             "environment": [
               {

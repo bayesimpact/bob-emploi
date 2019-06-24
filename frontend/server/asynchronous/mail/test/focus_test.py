@@ -15,7 +15,7 @@ from bob_emploi.frontend.server.test import mailjetmock
 # updated as the tests here depend on it to be complete and accurate.
 _GOLDEN_FOCUS_CAMPAIGNS = (
     'focus-body-language', 'focus-network', 'focus-self-develop', 'focus-spontaneous',
-    'galita-1', 'galita-2', 'galita-3', 'imt', 'network-plus', 'open-classrooms',
+    'galita-1', 'galita-2', 'galita-3', 'imt', 'network-plus',
 )
 
 
@@ -25,7 +25,7 @@ class SendFocusEmailTest(unittest.TestCase):
     """Unit tests for the main function."""
 
     def setUp(self) -> None:
-        super(SendFocusEmailTest, self).setUp()
+        super().setUp()
         patcher = mock.patch(focus.mongo.__name__ + '.get_connections_from_env')
         mock_mongo = patcher.start()
         self.addCleanup(patcher.stop)
@@ -40,10 +40,11 @@ class SendFocusEmailTest(unittest.TestCase):
         self._db.user_test.user.insert_one({
             'profile': {
                 'coachingEmailFrequency': 'EMAIL_MAXIMUM',
-                'email': 'pascal@example.com',
+                'email': 'pascal@example.fr',
                 'frustrations': ['SELF_CONFIDENCE', 'INTERVIEW'],
             },
             'projects': [{
+                'kind': 'FIND_A_FIRST_JOB',
                 'network_estimate': 1,
                 'jobSearchStartedAt': '2017-10-01T09:34:00Z',
                 'targetJob': {'jobGroup': {'romeId': 'A1234'}},
@@ -89,7 +90,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.com'],
+            ['pascal@example.fr'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -140,7 +141,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.com'],
+            ['pascal@example.fr'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -174,7 +175,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.com'],
+            ['pascal@example.fr'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -192,7 +193,7 @@ class SendFocusEmailTest(unittest.TestCase):
         focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.com'],
+            ['pascal@example.fr'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
 
         user_data = self._db.user_test.user.find_one()
@@ -209,7 +210,7 @@ class SendFocusEmailTest(unittest.TestCase):
             self.mock_now.return_value += datetime.timedelta(days=1)
 
         emails_sent = mailjetmock.get_all_sent_messages()
-        self.assertEqual({'pascal@example.com'}, {m.recipient['Email'] for m in emails_sent})
+        self.assertEqual({'pascal@example.fr'}, {m.recipient['Email'] for m in emails_sent})
         self.assertLessEqual(len(emails_sent), len(_GOLDEN_FOCUS_CAMPAIGNS))
 
         user_data = self._db.user_test.user.find_one()
@@ -251,7 +252,7 @@ class SendFocusEmailTest(unittest.TestCase):
             focus.main(['send', '--disable-sentry'])
 
         self.assertEqual(
-            ['pascal@example.com'],
+            ['pascal@example.fr'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
         user_data = self._db.user_test.user.find_one()
         self.assertEqual(2, len(user_data.get('emailsSent')))

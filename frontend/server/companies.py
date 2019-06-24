@@ -16,7 +16,7 @@ _EMPLOI_STORE_DEV_SECRET = os.getenv('EMPLOI_STORE_CLIENT_SECRET')
 
 def get_lbb_companies(
         project: project_pb2.Project,
-        distance: float = 10,
+        distance_km: float = 10,
         contract: typing.Optional[str] = None,
 ) -> typing.Iterator[typing.Dict[str, str]]:
     """Retrieve a list of companies from LaBonneBoite API."""
@@ -32,7 +32,7 @@ def get_lbb_companies(
         companies = client.get_lbb_companies(
             city_id=project.city.city_id,
             rome_codes=[project.target_job.job_group.rome_id],
-            distance=distance, contract=contract)
+            distance=distance_km, contract=contract)
         yield from companies
     except (IOError, ValueError) as error:
         logging.error(

@@ -142,6 +142,42 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
 
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
 
+    def test_not_best_channel_but_alternance(self) -> None:
+        """User is missing a diploma and will need alternance company ideas."""
+
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.city.departement_id = '69'
+        persona.project.diagnostic.category_id = 'missing-diploma'
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        }
+                    ],
+                }
+            },
+        })
+        score = self._score_persona(persona)
+
+        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+
 
 @mock.patch(companies.__name__ + '.get_lbb_companies')
 class ExtraDataTestCase(scoring_test.AdviceScoringModelTestBase):
@@ -266,6 +302,80 @@ class ExtraDataTestCase(scoring_test.AdviceScoringModelTestBase):
         self.assertEqual(
             ['EX NIHILO', 'M.F.P MULTIMEDIA FRANCE PRODUCTIONS'],
             [c.name for c in extra_data.companies])
+        self.assertEqual(10, extra_data.max_distance_to_companies_km)
+
+    def test_all_data_for_missing_diploma(self, mock_get_lbb_companies: mock.MagicMock) -> None:
+        """Get companies for alternance and others when in missing diploma category."""
+
+        self.database.job_group_info.drop()
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {'R4Z92': {'modes': [
+                {
+                    'percentage': 36.38,
+                    'mode': 'SPONTANEOUS_APPLICATION'
+                },
+            ]}},
+        })
+        mock_get_lbb_companies.side_effect = [
+            [{'name': 'Carrefour'}, {'name': 'Leclerc'}],
+            [{'name': 'Company {}'.format(i)} for i in range(2)],
+        ]
+
+        persona = self._random_persona().clone()
+        persona.project.diagnostic.category_id = 'missing-diploma'
+        persona.project.target_job.job_group.rome_id = 'A1234'
+
+        extra_data = typing.cast(
+            project_pb2.SpontaneousApplicationData, self._compute_expanded_card_data(persona))
+        self.assertEqual(
+            ['Carrefour', 'Leclerc'], [c.name for c in extra_data.companies])
+        self.assertEqual(
+            ['Company 0', 'Company 1'], [c.name for c in extra_data.alternance_companies])
+
+        self.assertEqual(
+            [None, 'alternance'],
+            [kwarg.get('contract') for arg, kwarg in mock_get_lbb_companies.call_args_list])
+
+    def test_no_companies(self, mock_get_lbb_companies: mock.MagicMock) -> None:
+        """No companies found in the near area."""
+
+        self.database.job_group_info.drop()
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {'R4Z92': {'modes': [
+                {
+                    'percentage': 36.38,
+                    'mode': 'SPONTANEOUS_APPLICATION'
+                },
+            ]}},
+        })
+        mock_get_lbb_companies.side_effect = [
+            [],
+            [{'name': 'Carrefour'}, {'name': 'Leclerc'}],
+            [],
+            [],
+            [],
+        ]
+
+        persona = self._random_persona().clone()
+        del persona.project.employment_types[:]
+        persona.project.employment_types.extend([job_pb2.ALTERNANCE, job_pb2.CDI])
+        persona.project.target_job.job_group.rome_id = 'A1234'
+
+        extra_data = typing.cast(
+            project_pb2.SpontaneousApplicationData, self._compute_expanded_card_data(persona))
+
+        self.assertEqual(['Carrefour', 'Leclerc'], [c.name for c in extra_data.companies])
+        self.assertEqual(50, extra_data.max_distance_to_companies_km)
+        self.assertEqual([], [c.name for c in extra_data.alternance_companies])
+
+        self.assertEqual(
+            [(None, 10), (None, 50), ('alternance', 10), ('alternance', 50), ('alternance', 3000)],
+            [
+                (kwarg.get('contract'), kwarg.get('distance_km'))
+                for arg, kwarg in mock_get_lbb_companies.call_args_list
+            ])
 
 
 class MainlySpontaneousFilterTestCase(filters_test.FilterTestBase):

@@ -1,15 +1,8 @@
 #!/bin/bash
+# It needs the version number in the PROTOBUF_VERSION env var.
 readonly DEST_FOLDER="$1"
 
-# Get the latest release version from GitHub.
-# TODO(pascal): Use curl everywhere instead of wget.
-readonly PROTOBUF_VERSION="$(\
-  curl -i https://github.com/protocolbuffers/protobuf/releases/latest |\
-  grep ^Location: |\
-  sed -e "s/^.*\/v//;s/\s*$//")"
-
-# Get the latest release from GitHub.
-wget --quiet https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip
+curl --silent -L "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip" -o protoc.zip
 
 # Unzip then remove the zip and unneeded files.
 unzip -qq protoc.zip

@@ -61,6 +61,23 @@ class MailTest(unittest.TestCase):
 
         self.assertEqual(None, message)
 
+    def test_send_template_not_to_example(self) -> None:
+        """Do not send template to test addresses."""
+
+        mail.send_template(
+            '12345', _Recipient('REDACTED', 'Primary', 'Recipient'), {'custom': 'var'})
+
+        sent_emails = mailjetmock.get_all_sent_messages()
+
+        self.assertEqual([], sorted(m.recipient['Email'] for m in sent_emails))
+
+        mail.send_template(
+            '12345', _Recipient('pascal@example.com', 'Primary', 'Recipient'), {'custom': 'var'})
+
+        sent_emails = mailjetmock.get_all_sent_messages()
+
+        self.assertEqual([], sorted(m.recipient['Email'] for m in sent_emails))
+
     def test_send_template_multiple_recipients(self) -> None:
         """Send template to multiple recipients."""
 

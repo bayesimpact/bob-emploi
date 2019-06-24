@@ -13,7 +13,7 @@ class _ImproveYourNetworkScoringModel(scoring_base.ModelBase):
     """A scoring model for Advice that user needs to improve their network."""
 
     def __init__(self, network_level: int) -> None:
-        super(_ImproveYourNetworkScoringModel, self).__init__()
+        super().__init__()
         self._db: proto.MongoCachedCollection[network_pb2.ContactLeadTemplate] = \
             proto.MongoCachedCollection(network_pb2.ContactLeadTemplate, 'contact_lead')
         self._network_level = network_level

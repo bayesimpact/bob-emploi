@@ -36,7 +36,7 @@ def strip_district(city: str) -> str:
 
 
 def _get_network_vars(
-        user: user_pb2.User, database: pymongo.database.Database = None,
+        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
         **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the network email.
 
@@ -51,6 +51,7 @@ def _get_network_vars(
         logging.info('User has a good enough network')
         return None
 
+    assert database
     job_group_info = jobs.get_group_proto(database, project.target_job.job_group.rome_id)
     if not job_group_info:
         logging.warning(
@@ -86,7 +87,7 @@ def _get_network_vars(
 
 
 def network_plus_vars(
-        user: user_pb2.User, database: pymongo.database.Database = None,
+        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
         **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
     """Compute vars for a given user for the network email.
 
@@ -101,6 +102,7 @@ def network_plus_vars(
         logging.info('User does not have a strong network')
         return None
 
+    assert database
     job_group_info = jobs.get_group_proto(database, project.target_job.job_group.rome_id)
     if not job_group_info:
         logging.warning(
@@ -151,7 +153,6 @@ def network_plus_vars(
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'frustration': user_pb2.Frustration.Name(worst_frustration) if worst_frustration else '',
         'hasChildren': campaign.as_template_boolean(has_children),
-        'hasHandicap': campaign.as_template_boolean(user.profile.has_handicap),
         'hasHighSchoolDegree': campaign.as_template_boolean(
             user.profile.highest_degree >= job_pb2.BAC_BACPRO),
         'hasLargeNetwork': campaign.as_template_boolean(project.network_estimate >= 2),
@@ -159,6 +160,7 @@ def network_plus_vars(
             project.kind != project_pb2.FIND_A_FIRST_JOB),
         'inCity': french.in_city(project.city.name),
         'inTargetDomain': in_target_domain,
+        'isAbleBodied': campaign.as_template_boolean(not user.profile.has_handicap),
         'isYoung': campaign.as_template_boolean(age <= max_young),
         'jobGroupInDepartement': '{} {}'.format(
             french.lower_first_letter(project.target_job.job_group.name), in_departement),

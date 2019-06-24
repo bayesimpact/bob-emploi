@@ -1,6 +1,7 @@
 """Tests for the self._populate_template function."""
 
 import datetime
+import itertools
 import unittest
 from unittest import mock
 
@@ -16,7 +17,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
     """All unit tests for populate_template."""
 
     def setUp(self) -> None:
-        super(PopulateProjectTemplateTest, self).setUp()
+        super().setUp()
         # Pre-populate project's fields that are usualldy set. Individual tests
         # should not count on those values.
         self.project = project_pb2.Project()
@@ -40,6 +41,42 @@ class PopulateProjectTemplateTest(unittest.TestCase):
 
     def _populate_template(self, template: str) -> str:
         return self.scoring_project.populate_template(template)
+
+    def test_percent_template(self) -> None:
+        """All templates should follow the template pattern."""
+
+        # pylint: disable=protected-access
+        for variable in scoring.scoring_base._TEMPLATE_VARIABLES:
+            self.assertTrue(scoring.scoring_base._TEMPLATE_VAR.match(variable), msg=variable)
+
+    def test_case_different(self) -> None:
+        """Two different variables cannot be equal ignoring case."""
+
+        # pylint: disable=protected-access
+        for variable, other in itertools.combinations(scoring.scoring_base._TEMPLATE_VARIABLES, 2):
+            self.assertNotEqual(
+                variable.lower(), other.lower(),
+                msg='{} is almost the same as {}'.format(variable, other))
+
+    def test_capitalized(self) -> None:
+        """Forces capitalization if needed."""
+
+        self.project.city.name = 'Lyon'
+        self.assertEqual(
+            'À Lyon, il y a une tour appelée Incity.',
+            self._populate_template('%InCity, il y a une tour appelée Incity.'))
+
+    @mock.patch('logging.warning')
+    @mock.patch('logging.info')
+    def test_bad_capitalized(self, mock_info: mock.MagicMock, mock_warning: mock.MagicMock) -> None:
+        """Cannot guess the right capitalization for template variables."""
+
+        self.project.city.name = 'Lyon'
+        self.assertEqual(
+            '%incity, il y a une tour appelée Incity.',
+            self._populate_template('%incity, il y a une tour appelée Incity.'))
+        mock_info.assert_called_once()
+        mock_warning.assert_called_once()
 
     def test_pole_emploi(self) -> None:
         """Test Pôle emploi basic URL."""
@@ -249,7 +286,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.database.job_group_info.insert_one({
             '_id': 'Z9007',
             'whatILoveAbout': "j'adore vos patisseries"
-            })
+        })
         self.project.target_job.job_group.rome_id = 'Z9007'
 
         sentence = self._populate_template('Je voudrais rencontrer votre chef car %whatILoveAbout')
@@ -277,7 +314,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.database.job_group_info.insert_one({
             '_id': 'Z9007',
             'whatILoveAbout': "j'adore vos patisseries"
-            })
+        })
         self.scoring_project.user_profile.gender = user_pb2.FEMININE
         self.project.target_job.job_group.rome_id = 'Z9007'
 
@@ -332,7 +369,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.database.job_group_info.insert_one({
             '_id': 'Z9007',
             'whatILoveAbout': "j'adore %you<tes/vos> patisseries"
-            })
+        })
         self.scoring_project.features_enabled.alpha = True
         self.scoring_project.user_profile.year_of_birth = self.scoring_project.now.year - 40
         self.project.target_job.job_group.rome_id = 'Z9007'
@@ -352,6 +389,25 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.city.region_id = '06'
         sentence = self._populate_template('Bienvenue %inRegion !')
         self.assertEqual('Bienvenue à Mayotte !', sentence)
+
+    def test_in_departement_template(self) -> None:
+        """Use inDepartement template."""
+
+        self.database.departements.insert_one({
+            '_id': '31',
+            'name': 'Haute-Garonne',
+            'prefix': 'en ',
+        })
+        self.project.city.departement_id = '31'
+        sentence = self._populate_template('Bienvenue %inDepartement !')
+        self.assertEqual('Bienvenue en Haute-Garonne !', sentence)
+
+    def test_in_departement_template_missing_data(self) -> None:
+        """Use inDepartement template without data."""
+
+        self.project.city.departement_id = '31'
+        sentence = self._populate_template('Bienvenue %inDepartement !')
+        self.assertEqual('Bienvenue dans le département !', sentence)
 
     def test_job_search_length_months(self) -> None:
         """Give the length of the user's search in months."""
@@ -445,6 +501,86 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.project.city.name = 'Paris'
         sentence = self._populate_template('Je cherche un emploi %inAreaType.')
         self.assertEqual('Je cherche un emploi à Paris.', sentence)
+
+    def test_application_mode(self) -> None:
+        """Give the best application_mode for a given job."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {'FAP1': {'modes': [
+                {
+                    'percentage': 50,
+                    'mode': 'SPONTANEOUS_APPLICATION',
+                },
+                {
+                    'percentage': 25,
+                    'mode': 'PLACEMENT_AGENCY',
+                },
+            ]}},
+        })
+        self.project.target_job.job_group.rome_id = 'A1234'
+        sentence = self._populate_template(
+            'Les gens retrouvent un emploi grâce à %anApplicationMode.')
+        self.assertEqual(
+            sentence, 'Les gens retrouvent un emploi grâce à une candidature spontanée.')
+
+    def test_missing_application_mode(self) -> None:
+        """Give network as the best application_mode for a job without the information."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {'FAP1': {'modes': []}},
+        })
+        self.project.target_job.job_group.rome_id = 'A1234'
+        sentence = self._populate_template(
+            'Les gens retrouvent un emploi grâce à %anApplicationMode.')
+        self.assertEqual(
+            sentence,
+            'Les gens retrouvent un emploi grâce à leur réseau personnel ou professionnel.')
+
+    def test_required_diploma(self) -> None:
+        """Give the diploma required for a given job."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {
+                'diplomas': [{'name': 'Bac pro'}],
+            },
+        })
+        self.project.target_job.job_group.rome_id = 'A1234'
+        self.assertEqual(
+            'Mon travail nécessite un Bac pro ou équivalent',
+            self._populate_template('Mon travail nécessite %aRequiredDiploma'))
+
+    def test_required_diplomas(self) -> None:
+        """Give the diplomas required for a given job."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {
+                'diplomas': [
+                    {'name': 'DUT'},
+                    {'name': 'Bac pro'},
+                ],
+            },
+        })
+        self.project.target_job.job_group.rome_id = 'A1234'
+        self.assertEqual(
+            'Mon travail nécessite un Bac pro, DUT ou équivalent',
+            self._populate_template('Mon travail nécessite %aRequiredDiploma'))
+
+    @mock.patch('logging.warning')
+    def test_no_required_diplomas(self, mock_warning: mock.MagicMock) -> None:
+        """Handle as gracefully as possible when there are no required diplomas."""
+
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'requirements': {'diplomas': []},
+        })
+        self.assertEqual(
+            'Mon travail nécessite un diplôme',
+            self._populate_template('Mon travail nécessite %aRequiredDiploma'))
+        mock_warning.assert_called_once()
 
 
 if __name__ == '__main__':

@@ -7,9 +7,10 @@ You can try it out on a local instance:
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/data_analysis/importer/job_offers.py \
-        --job_offers_csv job_offers/sample_10perc.csv \
-        --mongo_url mongodb://frontend-db/test
+        --job_offers_csv job_offers/sample_10perc.csv
 """
+
+import typing
 
 import pandas as pd
 
@@ -17,7 +18,8 @@ from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.data_analysis.lib import cleaned_data
 
 
-def csv2dicts(job_offers_csv, colnames_csv=None):
+def csv2dicts(job_offers_csv: str, colnames_csv: typing.Optional[str] = None) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import the job offers data in MongoDB.
 
     We only count job offers of the last 30 days of the currently available

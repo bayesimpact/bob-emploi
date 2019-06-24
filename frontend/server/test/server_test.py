@@ -7,40 +7,13 @@ import unittest
 from unittest import mock
 from urllib import parse
 
-import requests
 import requests_mock
-import typing_extensions
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import mailjetmock
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-class _RequestsMock(typing_extensions.Protocol):
-
-    def get(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,  # pylint: disable=redefined-outer-name
-            headers: typing.Optional[typing.Dict[str, str]] = None) \
-            -> requests.Response:
-        """Decide what to do when a get request is sent."""
-
-    def post(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,  # pylint: disable=redefined-outer-name
-            headers: typing.Optional[typing.Dict[str, str]] = None) \
-            -> requests.Response:
-        """Decide what to do when a post request is sent."""
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-_requests_mock_mock = typing.cast(  # pylint: disable=invalid-name
-    typing.Callable[[], typing.Callable[
-        [typing.Callable[..., typing.Any]], typing.Callable[..., typing.Any]]],
-    requests_mock.mock)
 
 
 class OtherEndpointTestCase(base_test.ServerTestCase):
@@ -65,8 +38,8 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         return self.create_user_with_token(data=user_data, email='foo@bar.fr')
 
     @mock.patch(server.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
-    @_requests_mock_mock()
-    def test_feedback(self, mock_requests: _RequestsMock) -> None:
+    @requests_mock.mock()
+    def test_feedback(self, mock_requests: requests_mock.Mocker) -> None:
         """Basic call to "/api/feedback"."""
 
         mock_requests.post('slack://bob-bots', json={
@@ -257,45 +230,23 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         diagnostic = self.json_from_response(response)
         self.assertEqual({'overallScore', 'subDiagnostics', 'text'}, diagnostic.keys())
 
-    def test_log_diagnose(self) -> None:
-        """Check that calls to /api/project/diagnose with quick-diagnostic source are
-        logged to mongo."""
-
-        user = {'projects': [{
-            'targetJob': {
-                'codeOgr': '123456',
-                'jobGroup': {'romeId': 'A1234'},
-            },
-            'city': {
-                'cityId': '31555',
-                'departementId': '31',
-                'regionId': '76',
-            },
-        }]}
-        expected = {
-            'source': 'quick-diagnostic',
-            'codeOgr': '123456',
-            'romeId': 'A1234',
-            'cityId': '31555',
-            'departementId': '31',
-            'regionId': '76',
-        }
-
-        response = self.app.post(
-            '/api/project/diagnose?source=quick-diagnostic',
-            data=json.dumps(user), content_type='application/json')
-        self.assertEqual(200, response.status_code)
-        logged_diagnostic = self._user_db.diagnostic_call.find_one()
-        logged_diagnostic.pop('_id')
-        self.assertTrue(logged_diagnostic.pop('diagnosedAt'))
-        self.assertEqual(expected, logged_diagnostic)
-
 
 class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the requirements endpoints."""
 
+    def setUp(self) -> None:
+        super(ProjectRequirementsEndpointTestCase, self).setUp()
+        self._db.job_group_info.insert_one({
+            '_id': 'A1234',
+            'romeId': 'A1234',
+            'requirements': {
+                'extras': [{'name': 'foo'}],
+                'diplomas': [{'name': 'bar'}],
+            },
+        })
+
     def test_unknown_job_group(self) -> None:
-        """Test with an uknown job group."""
+        """Test with an unknown job group."""
 
         response = self.app.get('/api/job/requirements/UNKNOWN_JOB_GROUP')
         self.assertEqual(200, response.status_code)
@@ -311,11 +262,43 @@ class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual('bar', requirements['diplomas'][0]['name'])
 
 
+class JobApplicationModesEndpointTestCase(base_test.ServerTestCase):
+    """Unit tests for the application modes endpoint."""
+
+    def setUp(self) -> None:
+        super(JobApplicationModesEndpointTestCase, self).setUp()
+        self._db.job_group_info.insert_one({
+            '_id': 'A1234',
+            'romeId': 'A1234',
+            'applicationModes': {'FAP1': {'modes': [
+                {'mode': 'SPONTANEOUS_APPLICATION', 'percentage': 50},
+                {'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS', 'percentage': 30},
+                {'mode': 'PLACEMENT_AGENCY', 'percentage': 15},
+                {'mode': 'OTHER_CHANNELS', 'percentage': 5},
+            ]}},
+        })
+
+    def test_unknown_job_group(self) -> None:
+        """Test with an unknown job group."""
+
+        response = self.app.get('/api/job/application-modes/UNKNOWN_JOB_GROUP')
+        self.assertEqual(404, response.status_code)
+
+    def test_job_requirements(self) -> None:
+        """Test the endpoint using only the job group ID."""
+
+        response = self.app.get('/api/job/application-modes/A1234')
+        job_group_info = self.json_from_response(response)
+        # Point check.
+        all_modes = job_group_info.get('applicationModes', {}).get('FAP1', {}).get('modes', [])
+        self.assertEqual([50, 30, 15, 5], [mode.get('percentage') for mode in all_modes])
+
+
 class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
     """Unit tests for the /advice/tips endpoint."""
 
     def setUp(self) -> None:
-        super(ProjectAdviceTipsTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'other-work-env',
             'isReadyForProd': True,
@@ -471,7 +454,7 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the user/migrate-to-advisor endpoint."""
 
     def setUp(self) -> None:
-        super(MigrateAdvisorEndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_many([
             {
                 'adviceId': 'spontaneous-application',
@@ -585,6 +568,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         })
         self.assertEqual(302, response.status_code)
         user = self.get_user_info(user_id, auth_token)
+        assert response.location
         redirect_args = dict(parse.parse_qsl(parse.urlparse(response.location).query))
         self.assertIn('id', redirect_args)
         self.assertEqual(survey_token, redirect_args['token'])
@@ -768,6 +752,45 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
 
         self.assertEqual(['a', 'b', 'c'], user_with_advice.get('adviceIds'))
         self.assertEqual('Angèle', user_with_advice.get('user', {}).get('profile', {}).get('name'))
+
+
+class LaborStatsTestCase(base_test.ServerTestCase):
+    """Unit tests for compute-labor-stats endpoint."""
+
+    def test_compute_use_case_labor_stats(self) -> None:
+        """Test expected use case of compute-labor-stats endpoint."""
+
+        self._db.job_group_info.insert_one({
+            '_id': 'A1235',
+            'romeId': 'A1235',
+            'name': 'The job',
+            'jobs': [{
+                'codeOgr': 'the-job',
+                'name': 'This is the job we are looking for',
+                'feminineName': 'Feminine',
+                'masculineName': 'Masculine',
+            }],
+        })
+
+        self._db.local_diagnosis.insert_one({
+            '_id': '56:A1235',
+            'imt': {
+                'yearlyAvgOffersPer10Candidates': 5,
+            },
+        })
+
+        response = self.app.post(
+            '/api/compute-labor-stats',
+            data='{"projects": [{\
+                "city": {"departementId": "56"},\
+                "targetJob": {"jobGroup": {"romeId": "A1235"}}}\
+            ]}',
+            headers={'Authorization': 'Bearer blabla'})
+        labor_stats = self.json_from_response(response)
+        imt = labor_stats.get('localStats', {}).get('imt', {})
+
+        self.assertEqual('The job', labor_stats.get('jobGroupInfo', {}).get('name'))
+        self.assertEqual(5, imt.get('yearlyAvgOffersPer10Candidates'))
 
 
 if __name__ == '__main__':

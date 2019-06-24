@@ -8,9 +8,12 @@ import csv
 import json
 from os import path
 import sys
+import typing
 
 
-def main(output_csv, filename=None, data_folder='data'):
+def main(
+        output_csv: typing.Union[str, typing.TextIO], filename: typing.Optional[str] = None,
+        data_folder: str = 'data') -> None:
     """Compute the geographical bounding boxes of French départements.
 
     Args:
@@ -24,10 +27,11 @@ def main(output_csv, filename=None, data_folder='data'):
     with open(filename) as file_handle:
         geo_json = json.load(file_handle)
 
-    if hasattr(output_csv, 'write'):
-        output_file = output_csv
-    else:
+    output_file: typing.TextIO
+    if isinstance(output_csv, str):
         output_file = open(output_csv, 'w')
+    else:
+        output_file = output_csv
 
     writer = csv.DictWriter(
         output_file,
@@ -42,7 +46,7 @@ def main(output_csv, filename=None, data_folder='data'):
         output_file.close()
 
 
-def _compute_bounding_box(geometry):
+def _compute_bounding_box(geometry: typing.Dict[str, typing.Any]) -> typing.Dict[str, float]:
     points_iterator = iter(_list_all_points(geometry))
     min_longitude, min_latitude = next(points_iterator)
     max_longitude, max_latitude = min_longitude, min_latitude
@@ -64,7 +68,8 @@ def _compute_bounding_box(geometry):
     }
 
 
-def _list_all_points(geometry):
+def _list_all_points(geometry: typing.Dict[str, typing.Any]) \
+        -> typing.Iterator[typing.Tuple[float, float]]:
     if geometry['type'] == 'Polygon':
         for ring in geometry['coordinates']:
             for point in ring:

@@ -2,7 +2,6 @@
 
 import argparse
 import datetime
-import functools
 import json
 import logging
 import os
@@ -25,7 +24,7 @@ from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.asynchronous import report
 
-_DB, _USER_DB, _ = mongo.get_connections_from_env()
+_DB, _USER_DB, _UNUSED_EVAL_DB = mongo.get_connections_from_env()
 
 
 def age_group(year_of_birth: int) -> str:
@@ -36,18 +35,18 @@ def age_group(year_of_birth: int) -> str:
     precise_age = now.get() - datetime.datetime(year_of_birth, 7, 1)
     age = precise_age.days / 365
     if age < 18:
-        return '-18'
+        return 'A. -18'
     if age < 25:
-        return '18-24'
+        return 'B. 18-24'
     if age < 35:
-        return '25-34'
+        return 'C. 25-34'
     if age < 45:
-        return '35-44'
+        return 'D. 35-44'
     if age < 55:
-        return '45-54'
+        return 'E. 45-54'
     if age < 65:
-        return '55-64'
-    return '65+'
+        return 'F. 55-64'
+    return 'G. 65+'
 
 
 def nps_love_score(nps_score: int) -> typing.Optional[int]:
@@ -114,6 +113,10 @@ def _get_employment_status(user: user_pb2.User) -> typing.Optional[user_pb2.Empl
     return last_status
 
 
+def _get_degree_level(degree: job_pb2.DegreeLevel) -> str:
+    return '{:d} - {}'.format(degree, job_pb2.DegreeLevel.Name(degree))
+
+
 def _get_last_complete_project(user: user_pb2.User) -> typing.Optional[project_pb2.Project]:
     """Get last project which is not is_incomplete."""
 
@@ -121,6 +124,29 @@ def _get_last_complete_project(user: user_pb2.User) -> typing.Optional[project_p
         (project for project in reversed(user.projects)
          if not project.is_incomplete),
         None)
+
+
+_ROME_DOMAINS = {
+    'A': 'Agriculture et pêche, espaces naturels et espaces verts, soins aux animaux',
+    'B': "Arts et façonnage d'ouvrages d'art",
+    'C': 'Banque, assurance, immobilier',
+    'D': 'Commerce, vente et grande distribution',
+    'E': 'Communication, media et multimedia',
+    'F': 'Construction, bâtiment et travaux publics',
+    'G': 'Hôtellerie, restauration, tourisme, loisirs et animation',
+    'H': 'Industrie',
+    'I': 'Installation et maintenance',
+    'J': 'Santé',
+    'K': 'Services à la personne et à la collectivité',
+    'L': 'Spectacle',
+    'M': "Support à l'entreprise",
+    'N': 'Transport et logistique',
+}
+
+
+def _get_job_domain(job: job_pb2.Job) -> str:
+    rome_first_letter = job.job_group.rome_id[:1]
+    return _ROME_DOMAINS.get(rome_first_letter, 'Unkown')
 
 
 _T = typing.TypeVar('_T')
@@ -140,14 +166,11 @@ def _remove_null_fields(mydict: typing.Dict[_T, typing.Optional[_U]]) -> typing.
     return out
 
 
-# Cache (from MongoDB) of known cities.
-@functools.lru_cache(maxsize=256, typed=False)
 def _get_urban_context(city_id: str) -> typing.Optional[str]:
-    target_city = _DB.cities.find_one({'_id': city_id})
+    target_city = proto.fetch_from_mongo(_DB, geo_pb2.FrenchCity, 'cities', city_id)
     if target_city:
-        target_city_proto = typing.cast(
-            geo_pb2.FrenchCity, proto.create_from_mongo(target_city, geo_pb2.FrenchCity))
-        return geo_pb2.UrbanContext.Name(target_city_proto.urban_context)
+        return '{:d} - {}'.format(
+            target_city.urban_context, geo_pb2.UrbanContext.Name(target_city.urban_context))
     return None
 
 
@@ -165,7 +188,7 @@ def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]
             'frustrations': [user_pb2.Frustration.Name(f) for f in user.profile.frustrations],
             'gender': user_pb2.Gender.Name(user.profile.gender),
             'hasHandicap': user.profile.has_handicap,
-            'highestDegree': job_pb2.DegreeLevel.Name(user.profile.highest_degree),
+            'highestDegree': _get_degree_level(user.profile.highest_degree),
             'origin': user_pb2.UserOrigin.Name(user.profile.origin),
         },
         'featuresEnabled': json_format.MessageToDict(user.features_enabled),
@@ -190,6 +213,7 @@ def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]
                 'job_group': {
                     'name': last_project.target_job.job_group.name,
                 },
+                'domain': _get_job_domain(last_project.target_job),
             },
             'areaType': geo_pb2.AreaType.Name(last_project.area_type),
             'city': {
@@ -198,6 +222,8 @@ def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]
             },
             'job_search_length_months': round(scoring_project.get_search_length_at_creation()),
             'advices': [a.advice_id for a in last_project.advices if a.num_stars >= 2],
+            'readAdvices': [
+                a.advice_id for a in last_project.advices if a.status == project_pb2.ADVICE_READ],
             'numAdvicesRead': sum(
                 1 for a in last_project.advices if a.status == project_pb2.ADVICE_READ),
             'isComplete': not last_project.is_incomplete,
@@ -212,6 +238,8 @@ def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]
         urban_context = _get_urban_context(last_project.city.city_id)
         if urban_context:
             data['project']['city']['urbanContext'] = urban_context
+        if last_project.diagnostic.category_id:
+            data['project']['diagnostic'] = {'categoryId': last_project.diagnostic.category_id}
     last_status = _get_employment_status(user)
     if last_status:
         data['employmentStatus'] = json_format.MessageToDict(last_status)
@@ -268,14 +296,13 @@ def export_user_to_elasticsearch(
     for row in cursor:
 
         nb_users += 1
-        user_id = str(row.pop('_id'))
-        user = typing.cast(user_pb2.User, proto.create_from_mongo(row, user_pb2.User))
+        user = typing.cast(user_pb2.User, proto.create_from_mongo(row, user_pb2.User, 'user_id'))
         data = _user_to_analytics_data(user)
 
         logging.debug(data)
 
         if not dry_run:
-            es_client.create(index=index, doc_type='user', id=user_id, body=json.dumps(data))
+            es_client.create(index=index, doc_type='user', id=user.user_id, body=json.dumps(data))
             nb_docs += 1
             if nb_docs % 1000 == 0:
                 logging.info('%i users processed', nb_docs)

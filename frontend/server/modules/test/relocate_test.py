@@ -14,7 +14,7 @@ class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase):
     model_id = 'project-mobility-score'
 
     def setUp(self) -> None:
-        super(GoodMobilityTestCase, self).setUp()
+        super().setUp()
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.database.departements.insert_many([{
             '_id': '{:02d}'.format(dep),
@@ -119,7 +119,7 @@ class AdviceRelocateScoringModelTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-relocate'
 
     def setUp(self) -> None:
-        super(AdviceRelocateScoringModelTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.database.departements.insert_many([{

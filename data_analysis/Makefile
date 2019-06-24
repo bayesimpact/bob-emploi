@@ -6,6 +6,7 @@ public: geo imt dares rome crosswalks bmo stmt data/tous_benevoles.xml data/work
 geo: data/geo/french_cities.csv data/geo/insee_france_cities.tsv data/geo/insee_france_departements.tsv data/geo/insee_france_regions.tsv data/geo/france_departements_bounds.csv data/geo/french_urban_entities.xls
 
 imt: data/imt/market_score.csv data/imt/employment_type.csv data/imt/salaries.csv data/imt/application_modes.csv
+data/imt: imt
 
 # This is unofficial data, but contains a lot of rich fields like zipCode and
 # population.
@@ -62,17 +63,28 @@ data/geo/french_urban_areas.xls:
 	rm "$@.zip"
 	mv "$(@D)/AU2010 au 01-01-2018_V2.xls" "$@"
 
-rome: data/rome/ficheMetierXml/ficheMetierXml.zip data/rome/RefRomeCsv.zip
+rome: data/rome/ficheMetierXml/ficheMetierXml.zip data/rome/csv/unix_latest_utf8.csv
 
 data/rome/ficheMetierXml/ficheMetierXml.zip:
 	mkdir -p $(@D)
 	wget -P $(@D)/ https://api.emploi-store.fr/api/docs/romeopen/FICHES_METIERS_XML/1/ficheMetierXml.zip
 	unzip data/rome/ficheMetierXml/ficheMetierXml.zip -d data/rome/ficheMetierXml/
 
-data/rome/RefRomeCsv.zip:
-	mkdir -p data/rome/csv
-	wget -P data/rome/ 'https://api.emploi-store.fr/api/docs/romeopen/REF_ROME_CSV/1/RefRomeCsv.zip'
-	unzip data/rome/RefRomeCsv.zip -d data/rome/csv
+data/rome/RefRomeCsv.%.zip:
+	mkdir -p $(@D)
+	# Get the latest ROME from Emploi Store Dev or a versioned one from our own S3 bucket.
+	if [ "$(@F)" == "RefRomeCsv.latest.zip" ]; then \
+		wget 'https://api.emploi-store.fr/api/docs/romeopen/REF_ROME_CSV/1/RefRomeCsv.zip' -O $@; \
+	else \
+		wget 'http://rome-pole-emploi.s3-website.eu-west-3.amazonaws.com/RefRomeCsv.$(lastword $(subst RefRomeCsv.,,$(subst _, ,$(@F))))' -O $@; \
+	fi
+	ln -f -s $(@F) $(@D)/RefRomeCsv.zip
+
+# Special rule to download the ROME: if unix_latest_utf8.csv is used, it will get the latest version
+# of the ROME from Emploi Store Dev. If a specific version is specified unix_foo_bar_v336_utf8.csv,
+# this version will be downloaded from our ROME S3 bucket.
+data/rome/csv/unix_%_utf8.csv: data/rome/RefRomeCsv.%.zip
+	unzip -o data/rome/RefRomeCsv.zip -d data/rome/csv
 	# Check that the "2 D" bug is still there.
 	grep -q -r "2 D" data/rome/csv
 	# Check that the "3 D" bug is still there.

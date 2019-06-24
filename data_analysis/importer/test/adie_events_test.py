@@ -11,7 +11,7 @@ from bob_emploi.data_analysis.lib import mongo
 class AdieEventsTestCase(unittest.TestCase):
     """Unit tests for the importer."""
 
-    def test_adie_events2dicts(self):
+    def test_adie_events2dicts(self) -> None:
         """Basic usage."""
 
         collection = adie_events.adie_events2dicts(

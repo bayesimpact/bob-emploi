@@ -12,7 +12,7 @@ class _AdviceAssociationHelp(scoring_base.ModelBase):
     """A scoring model to trigger the "Find an association to help you" advice."""
 
     def __init__(self) -> None:
-        super(_AdviceAssociationHelp, self).__init__()
+        super().__init__()
         self._db = scoring_base.ASSOCIATIONS
 
     @scoring_base.ScoringProject.cached('associations')

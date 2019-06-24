@@ -28,7 +28,8 @@ import requests
 import sentry_sdk
 from sentry_sdk.integrations import flask as sentry_flask
 from sentry_sdk.integrations import logging as sentry_logging
-from werkzeug.contrib import fixers
+import werkzeug
+from werkzeug.middleware import proxy_fix
 
 from bob_emploi.frontend.server import action
 from bob_emploi.frontend.server import advisor
@@ -41,6 +42,7 @@ from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server import strategist
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
@@ -50,28 +52,23 @@ from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
+from bob_emploi.frontend.api import strategy_pb2
+from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
+
+if typing.TYPE_CHECKING:
+    from typing_extensions import Literal
 
 # TODO(pascal): Split in submodules and remove the exception below.
 # pylint: disable=too-many-lines
 
 app = flask.Flask(__name__)  # pylint: disable=invalid-name
 # Get original host and scheme used before proxies (load balancer, nginx, etc).
-app.wsgi_app = fixers.ProxyFix(app.wsgi_app)
+app.wsgi_app = proxy_fix.ProxyFix(app.wsgi_app)  # type: ignore
 
 RANDOMIZER = random.Random()
 
-# TODO(pascal): Drop once flask gets typed.
-_flask_abort = typing.cast(  # pylint: disable=invalid-name
-    typing.Callable[[int, str], typing.NoReturn], flask.abort)
-_flask_redirect = typing.cast(  # pylint: disable=invalid-name
-    typing.Callable[[str], flask.Response], flask.redirect)
-_FlaskResponse = typing.Union[str, flask.Response]
-# TODO(cyrille): Type more strongly to ensure the wrapped function has only str kwargs.
-_app_route = typing.cast(  # pylint: disable=invalid-name
-    typing.Callable[..., typing.Callable[
-        [typing.Callable[..., _FlaskResponse]], typing.Callable[..., _FlaskResponse]]],
-    app.route)
+_FlaskResponse = typing.Union[str, werkzeug.Response]
 
 
 # TODO(marielaure): Clean up the unverified_data_zones table in _DB.
@@ -105,12 +102,13 @@ _Tick = collections.namedtuple('Tick', ['name', 'time'])
 _LONG_REQUEST_DURATION_SECONDS = 5
 
 
-@_app_route('/api/user', methods=['DELETE'])
+@app.route('/api/user', methods=['DELETE'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.UserId)
 def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
     """Delete a user and their authentication information."""
 
     auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
+    filter_user: typing.Optional[typing.Dict[str, typing.Any]]
     if user_data.user_id:
         try:
             auth.check_token(user_data.user_id, auth_token, role='unsubscribe')
@@ -138,7 +136,7 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
     # Remove authentication informations.
     _USER_DB.user_auth.delete_one(filter_user)
 
-    user_proto = _get_user_data(filter_user['_id'])
+    user_proto = _get_user_data(str(filter_user['_id']))
     try:
         privacy.redact_proto(user_proto)
     except TypeError:
@@ -151,7 +149,7 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
     return user_pb2.UserId(user_id=str(filter_user['_id']))
 
 
-@_app_route('/api/user/<user_id>/settings', methods=['POST'])
+@app.route('/api/user/<user_id>/settings', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.UserProfile, out_type=user_pb2.UserId)
 @auth.require_user(lambda unused_profile, user_id: typing.cast(str, user_id), role='settings')
 def update_user_settings(profile: user_pb2.UserProfile, user_id: str) -> user_pb2.UserId:
@@ -171,7 +169,7 @@ def update_user_settings(profile: user_pb2.UserProfile, user_id: str) -> user_pb
     return user_pb2.UserId(user_id=user_id)
 
 
-@_app_route('/api/user/<user_id>', methods=['GET'])
+@app.route('/api/user/<user_id>', methods=['GET'])
 @proto.flask_api(out_type=user_pb2.User)
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
 def get_user(user_id: str) -> user_pb2.User:
@@ -185,7 +183,7 @@ def get_user(user_id: str) -> user_pb2.User:
     return user_proto
 
 
-@_app_route('/api/user', methods=['POST'])
+@app.route('/api/user', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
 @auth.require_user(lambda user_data: typing.cast(user_pb2.User, user_data).user_id)
 def user(user_data: user_pb2.User) -> user_pb2.User:
@@ -201,7 +199,7 @@ def user(user_data: user_pb2.User) -> user_pb2.User:
     return _save_user(user_data, is_new_user=False)
 
 
-@_app_route('/api/user/<user_id>/project/<project_id>', methods=['POST'])
+@app.route('/api/user/<user_id>/project/<project_id>', methods=['POST'])
 @proto.flask_api(in_type=project_pb2.Project, out_type=project_pb2.Project)
 @auth.require_user(lambda project, user_id, project_id: typing.cast(str, user_id))
 def save_project(
@@ -220,13 +218,13 @@ def save_project(
         index for index, p in enumerate(user_proto.projects)
         if p.project_id == project_id), None)
     if project_index is None:
-        _flask_abort(404, "Le projet n'existe pas.")
+        flask.abort(404, "Le projet n'existe pas.")
     # TODO(cyrille): Add a route for resetting
     user_proto.projects[project_index].MergeFrom(project_data)
     return _get_project_data(_save_user(user_proto, is_new_user=False), project_id)
 
 
-@_app_route('/api/user/<user_id>/project/<project_id>/advice/<advice_id>', methods=['POST'])
+@app.route('/api/user/<user_id>/project/<project_id>/advice/<advice_id>', methods=['POST'])
 @proto.flask_api(in_type=project_pb2.Advice, out_type=project_pb2.Advice)
 @auth.require_user(lambda project, user_id, project_id, advice_id: typing.cast(str, user_id))
 def update_advice(advice_data: project_pb2.Advice, user_id: str, project_id: str, advice_id: str) \
@@ -243,17 +241,46 @@ def update_advice(advice_data: project_pb2.Advice, user_id: str, project_id: str
         index for index, p in enumerate(user_proto.projects)
         if p.project_id == project_id), None)
     if project_index is None:
-        _flask_abort(404, "Le projet n'existe pas.")
+        flask.abort(404, "Le projet n'existe pas.")
     advice_index = next((
         index for index, a in enumerate(user_proto.projects[project_index].advices)
         if a.advice_id == advice_id), None)
     if advice_index is None:
-        _flask_abort(404, "Le conseil n'existe pas pour ce projet.")
+        flask.abort(404, "Le conseil n'existe pas pour ce projet.")
 
     user_proto.projects[project_index].advices[advice_index].MergeFrom(advice_data)
     updated_user = _save_user(user_proto, is_new_user=False)
     updated_project = _get_project_data(updated_user, project_id)
     return _get_advice_data(updated_project, advice_id)
+
+
+@app.route('/api/user/<user_id>/project/<project_id>/strategy/<strategy_id>', methods=['POST'])
+@proto.flask_api(in_type=project_pb2.WorkingStrategy, out_type=project_pb2.WorkingStrategy)
+@auth.require_user(lambda project, user_id, project_id, strategy_id: typing.cast(str, user_id))
+def update_strategy(
+        strategy_data: project_pb2.WorkingStrategy,
+        user_id: str, project_id: str, strategy_id: str) -> project_pb2.WorkingStrategy:
+    """Save the strategy information sent by the client."""
+
+    user_proto = _get_user_data(user_id)
+    project_index = next((
+        index for index, p in enumerate(user_proto.projects)
+        if p.project_id == project_id), None)
+    if project_index is None:
+        flask.abort(404, "Le projet n'existe pas.")
+    strategy = next((
+        a for a in user_proto.projects[project_index].opened_strategies
+        if a.strategy_id == strategy_id), None)
+    if not strategy:
+        strategy = user_proto.projects[project_index].opened_strategies.add()
+        strategy.started_at.FromDatetime(now.get())
+        strategy.started_at.nanos = 0
+
+    strategy_data.ClearField('started_at')
+    strategy.MergeFrom(strategy_data)
+    updated_user = _save_user(user_proto, is_new_user=False)
+    updated_project = _get_project_data(updated_user, project_id)
+    return _get_strategy_data(updated_project, strategy_id)
 
 
 def _clear_replaceable_fields(
@@ -275,9 +302,7 @@ def _clear_replaceable_fields(
         if not request_value:
             continue
         list_format_options = field_descriptor.GetOptions()
-        # TODO(marielaure): Clean this once https://github.com/dropbox/mypy-protobuf/pull/54
-        # is released.
-        list_format_field = list_format_options.Extensions[getattr(options_pb2, 'list_format')]
+        list_format_field = list_format_options.Extensions[options_pb2.list_format]
         if options_pb2.REPLACEABLE == list_format_field:
             user_proto.ClearField(field_descriptor.name)
             # Replaceable list with only one falsy value means that the field should be emptied.
@@ -289,10 +314,10 @@ def _clear_replaceable_fields(
             _clear_replaceable_fields(user_value, request_value)
 
 
-@_app_route(
+@app.route(
     '/api/user/<user_id>/update-and-quick-diagnostic', methods=['POST'],
     defaults={'project_id': None})
-@_app_route('/api/user/<user_id>/update-and-quick-diagnostic/<project_id>', methods=['POST'])
+@app.route('/api/user/<user_id>/update-and-quick-diagnostic/<project_id>', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.QuickDiagnosticRequest, out_type=diagnostic_pb2.QuickDiagnostic)
 @auth.require_user(lambda request, user_id, project_id: typing.cast(str, user_id))
 def update_and_quick_diagnose(
@@ -332,7 +357,7 @@ def update_and_quick_diagnose(
         user_proto, project_proto or project_pb2.Project(), request.user, _DB)
 
 
-@_app_route('/api/user/<user_id>/migrate-to-advisor', methods=['POST'])
+@app.route('/api/user/<user_id>/migrate-to-advisor', methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
 def migrate_to_advisor(user_id: str) -> user_pb2.User:
@@ -354,20 +379,7 @@ def migrate_to_advisor(user_id: str) -> user_pb2.User:
     return _save_user(user_proto, is_new_user=False)
 
 
-def _make_logged_diagnostic(source: str, project: project_pb2.Project) \
-        -> diagnostic_pb2.LoggedDiagnosticRequest:
-    logged_diagnostic = diagnostic_pb2.LoggedDiagnosticRequest(source=source)
-    logged_diagnostic.diagnosed_at.FromDatetime(now.get())
-    logged_diagnostic.diagnosed_at.nanos = 0
-    logged_diagnostic.code_ogr = project.target_job.code_ogr
-    logged_diagnostic.rome_id = project.target_job.job_group.rome_id
-    logged_diagnostic.city_id = project.city.city_id
-    logged_diagnostic.departement_id = project.city.departement_id
-    logged_diagnostic.region_id = project.city.region_id
-    return logged_diagnostic
-
-
-@_app_route('/api/project/diagnose', methods=['POST'])
+@app.route('/api/project/diagnose', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=diagnostic_pb2.Diagnostic)
 def diagnose_project(user_proto: user_pb2.User) -> diagnostic_pb2.Diagnostic:
     """Diagnose a user project."""
@@ -376,14 +388,24 @@ def diagnose_project(user_proto: user_pb2.User) -> diagnostic_pb2.Diagnostic:
         flask.abort(422, 'There is no input project to advise on.')
     project = user_proto.projects[0]
     user_diagnostic, unused_missing = diagnostic.diagnose(user_proto, project, _DB)
-    source = flask.request.args.get('source')
-    if source == 'quick-diagnostic':
-        _USER_DB.diagnostic_call.save(
-            json_format.MessageToDict(_make_logged_diagnostic(source, project)))
     return user_diagnostic
 
 
-@_app_route('/api/project/compute-advices', methods=['POST'])
+@app.route('/api/project/strategize', methods=['POST'])
+@proto.flask_api(in_type=user_pb2.User, out_type=strategy_pb2.Strategies)
+def strategize_project(user_proto: user_pb2.User) -> strategy_pb2.Strategies:
+    """Strategize a user project."""
+
+    if not user_proto.projects:
+        flask.abort(422, 'There is no input project to advise on.')
+    project = user_proto.projects[0]
+    strategist.strategize(user_proto, project, _DB)
+    response = strategy_pb2.Strategies()
+    response.strategies.extend(project.strategies)
+    return response
+
+
+@app.route('/api/project/compute-advices', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=project_pb2.Advices)
 def compute_advices_for_project(user_proto: user_pb2.User) -> project_pb2.Advices:
     """Advise on a user project."""
@@ -393,7 +415,7 @@ def compute_advices_for_project(user_proto: user_pb2.User) -> project_pb2.Advice
     return advisor.compute_advices_for_project(user_proto, user_proto.projects[0], _DB)
 
 
-@_app_route('/api/app/use/<user_id>', methods=['POST'])
+@app.route('/api/app/use/<user_id>', methods=['POST'])
 @proto.flask_api(out_type=user_pb2.User)
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
 def use_app(user_id: str) -> user_pb2.User:
@@ -449,10 +471,14 @@ def _save_project(
     advisor.maybe_advise(
         user_data, project, _DB, parse.urljoin(flask.request.base_url, '/')[:-1])
 
+    _tick('Strategies')
+    strategist.maybe_strategize(user_data, project, _DB)
+
     _tick('New feedback')
     if project.feedback.text and not previous_project.feedback.text:
-        slack_text = '[{}] ObjectId("{}")\n> {}'.format(
+        slack_text = '[{}] <{}|{}>\n> {}'.format(
             ':star:' * project.feedback.score,
+            parse.urljoin(flask.request.base_url, '/eval?userId={}'.format(user_data.user_id)),
             user_data.user_id,
             '\n> '.join(project.feedback.text.split('\n')))
         _give_feedback(
@@ -491,6 +517,7 @@ def _save_user(user_data: user_pb2.User, is_new_user: bool) -> user_pb2.User:
     elif not _is_test_user(previous_user_data):
         user_data.registered_at.CopyFrom(previous_user_data.registered_at)
         user_data.features_enabled.advisor = previous_user_data.features_enabled.advisor
+        user_data.features_enabled.strat_two = previous_user_data.features_enabled.strat_two
 
     _populate_feature_flags(user_data)
 
@@ -593,10 +620,11 @@ def _copy_unmodifiable_fields(previous_user_data: user_pb2.User, user_data: user
         # Test users can do whatever they want.
         return
     for field in ('features_enabled', 'last_email_sent_at'):
-        if previous_user_data.HasField(field):
-            getattr(user_data, field).CopyFrom(getattr(previous_user_data, field))
+        typed_field = typing.cast('Literal["features_enabled", "last_email_sent_at"]', field)
+        if previous_user_data.HasField(typed_field):
+            getattr(user_data, typed_field).CopyFrom(getattr(previous_user_data, typed_field))
         else:
-            user_data.ClearField(field)
+            user_data.ClearField(typed_field)
 
 
 def _assert_no_credentials_change(previous: user_pb2.User, new: user_pb2.User) -> None:
@@ -623,7 +651,7 @@ def _safe_object_id(_id: str) -> objectid.ObjectId:
         return objectid.ObjectId(_id)
     except objectid.InvalidId:
         # Switch to raising an error if you move this function in a lib.
-        _flask_abort(
+        flask.abort(
             400, 'L\'identifiant "{}" n\'est pas un identifiant MongoDB valide.'.format(_id))
 
 
@@ -631,11 +659,10 @@ def _get_user_data(user_id: str) -> user_pb2.User:
     """Load user data from DB."""
 
     user_dict = _USER_DB.user.find_one({'_id': _safe_object_id(user_id)})
-    user_proto = proto.create_from_mongo(user_dict, user_pb2.User, always_create=False)
+    user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id', always_create=False)
     if not user_proto:
         # Switch to raising an error if you move this function in a lib.
-        _flask_abort(404, 'Utilisateur "{}" inconnu.'.format(user_id))
-    user_proto.user_id = str(user_id)
+        flask.abort(404, 'Utilisateur "{}" inconnu.'.format(user_id))
 
     _populate_feature_flags(user_proto)
 
@@ -666,7 +693,7 @@ def _get_project_data(user_proto: user_pb2.User, project_id: str) -> project_pb2
             project for project in user_proto.projects
             if project.project_id == project_id)
     except StopIteration:
-        _flask_abort(404, 'Projet "{}" inconnu.'.format(project_id))
+        flask.abort(404, 'Projet "{}" inconnu.'.format(project_id))
 
 
 def _get_advice_data(project: project_pb2.Project, advice_id: str) -> project_pb2.Advice:
@@ -675,7 +702,17 @@ def _get_advice_data(project: project_pb2.Project, advice_id: str) -> project_pb
             advice for advice in project.advices
             if advice.advice_id == advice_id)
     except StopIteration:
-        _flask_abort(404, 'Conseil "{}" inconnu.'.format(advice_id))
+        flask.abort(404, 'Conseil "{}" inconnu.'.format(advice_id))
+
+
+def _get_strategy_data(project: project_pb2.Project, strategy_id: str) \
+        -> project_pb2.WorkingStrategy:
+    try:
+        return next(
+            strategy for strategy in project.opened_strategies
+            if strategy.strategy_id == strategy_id)
+    except StopIteration:
+        flask.abort(404, 'Stratégie "{}" inconnue.'.format(strategy_id))
 
 
 _ACTION_STOPPED_STATUSES = frozenset([
@@ -714,7 +751,7 @@ def _update_returning_user(user_data: user_pb2.User) -> timestamp_pb2.Timestamp:
 
 # TODO: Split this into separate endpoints for registration and login.
 # Having both in the same endpoint makes refactoring the frontend more difficult.
-@_app_route('/api/user/authenticate', methods=['POST'])
+@app.route('/api/user/authenticate', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.AuthRequest, out_type=user_pb2.AuthResponse)
 def authenticate(auth_request: user_pb2.AuthRequest) -> user_pb2.AuthResponse:
     """Authenticate a user."""
@@ -723,7 +760,7 @@ def authenticate(auth_request: user_pb2.AuthRequest) -> user_pb2.AuthResponse:
     return authenticator.authenticate(auth_request)
 
 
-@_app_route('/api/user/reset-password', methods=['POST'])
+@app.route('/api/user/reset-password', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.AuthRequest)
 def reset_password(auth_request: user_pb2.AuthRequest) -> str:
     """Sends an email to user with a reset token so that they can reset their password."""
@@ -733,7 +770,7 @@ def reset_password(auth_request: user_pb2.AuthRequest) -> str:
     return '{}'
 
 
-@_app_route('/api/user/proto', methods=['POST'])
+@app.route('/api/user/proto', methods=['POST'])
 @proto.flask_api(
     in_type=user_pb2.UserWithAdviceSelection, out_type=user_pb2.UserWithAdviceSelection)
 def convert_user_proto(user_with_advice: user_pb2.UserWithAdviceSelection) \
@@ -743,7 +780,7 @@ def convert_user_proto(user_with_advice: user_pb2.UserWithAdviceSelection) \
     return user_with_advice
 
 
-@_app_route('/api/user/<user_id>/generate-auth-tokens', methods=['GET'])
+@app.route('/api/user/<user_id>/generate-auth-tokens', methods=['GET'])
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
 def generate_auth_tokens(user_id: str) -> str:
     r"""Generates auth token for a given user.
@@ -773,7 +810,7 @@ def generate_auth_tokens(user_id: str) -> str:
     })
 
 
-@_app_route('/api/job/requirements/<rome_id>', methods=['GET'])
+@app.route('/api/job/requirements/<rome_id>', methods=['GET'])
 @proto.flask_api(out_type=job_pb2.JobRequirements)
 def job_requirements(rome_id: str) -> job_pb2.JobRequirements:
     """Get requirements for a job."""
@@ -791,17 +828,17 @@ def _get_expanded_card_data(
         user_proto: user_pb2.User, project: project_pb2.Project, advice_id: str) -> message.Message:
     module = advisor.get_advice_module(advice_id, _DB)
     if not module or not module.trigger_scoring_model:
-        _flask_abort(404, 'Le module "{}" n\'existe pas'.format(advice_id))
+        flask.abort(404, 'Le module "{}" n\'existe pas'.format(advice_id))
     model = scoring.get_scoring_model(module.trigger_scoring_model)
     if not model or not hasattr(model, 'get_expanded_card_data'):
-        _flask_abort(404, 'Le module "{}" n\'a pas de données supplémentaires'.format(advice_id))
+        flask.abort(404, 'Le module "{}" n\'a pas de données supplémentaires'.format(advice_id))
 
     scoring_project = scoring.ScoringProject(
         project, user_proto.profile, user_proto.features_enabled, _DB, now=now.get())
     return model.get_expanded_card_data(scoring_project)
 
 
-@_app_route('/api/advice/<advice_id>/<user_id>/<project_id>', methods=['GET'])
+@app.route('/api/advice/<advice_id>/<user_id>/<project_id>', methods=['GET'])
 @proto.flask_api(out_type=message.Message)
 @auth.require_user(lambda user_id, project_id, advice_id: typing.cast(str, user_id))
 def get_advice_expanded_card_data(user_id: str, project_id: str, advice_id: str) \
@@ -812,7 +849,7 @@ def get_advice_expanded_card_data(user_id: str, project_id: str, advice_id: str)
     return _get_expanded_card_data(user_proto, _get_project_data(user_proto, project_id), advice_id)
 
 
-@_app_route('/api/advice/<advice_id>', methods=['POST'])
+@app.route('/api/advice/<advice_id>', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=message.Message)
 def compute_expanded_card_data(user_proto: user_pb2.User, advice_id: str) -> message.Message:
     """Retrieve expanded card data for an advice module for a project."""
@@ -822,7 +859,7 @@ def compute_expanded_card_data(user_proto: user_pb2.User, advice_id: str) -> mes
     return _get_expanded_card_data(user_proto, user_proto.projects[0], advice_id)
 
 
-@_app_route('/api/advice/tips/<advice_id>/<user_id>/<project_id>', methods=['GET'])
+@app.route('/api/advice/tips/<advice_id>/<user_id>/<project_id>', methods=['GET'])
 @proto.flask_api(out_type=action_pb2.AdviceTips)
 @auth.require_user(lambda user_id, project_id, advice_id: typing.cast(str, user_id))
 def advice_tips(user_id: str, project_id: str, advice_id: str) -> action_pb2.AdviceTips:
@@ -840,7 +877,7 @@ def advice_tips(user_id: str, project_id: str, advice_id: str) -> action_pb2.Adv
     return response
 
 
-@_app_route('/api/cache/clear', methods=['GET'])
+@app.route('/api/cache/clear', methods=['GET'])
 def clear_cache() -> str:
     """Clear all server caches.
 
@@ -852,17 +889,18 @@ def clear_cache() -> str:
     _SHOW_UNVERIFIED_DATA_USERS.clear()
     proto.CachedCollection.update_cache_version()
     proto.clear_mongo_fetcher_cache()
+    strategist.clear_cache()
     return 'Server cache cleared.'
 
 
-@_app_route('/api/jobs/<rome_id>', methods=['GET'])
+@app.route('/api/jobs/<rome_id>', methods=['GET'])
 @proto.flask_api(out_type=job_pb2.JobGroup)
 def get_job_group_jobs(rome_id: str) -> job_pb2.JobGroup:
     """Retrieve information about jobs whithin a job group."""
 
     job_group = jobs.get_group_proto(_DB, rome_id)
     if not job_group:
-        _flask_abort(404, 'Groupe de métiers "{}" inconnu.'.format(rome_id))
+        flask.abort(404, 'Groupe de métiers "{}" inconnu.'.format(rome_id))
 
     result = job_pb2.JobGroup()
     result.jobs.extend(job_group.jobs)
@@ -870,7 +908,23 @@ def get_job_group_jobs(rome_id: str) -> job_pb2.JobGroup:
     return result
 
 
-@_app_route('/api/feedback', methods=['POST'])
+@app.route('/api/job/application-modes/<rome_id>', methods=['GET'])
+@proto.flask_api(out_type=job_pb2.JobGroup)
+def get_job_group_application_modes(rome_id: str) -> job_pb2.JobGroup:
+    """Retrieve information about application modes whithin a job group."""
+
+    job_group = jobs.get_group_proto(_DB, rome_id)
+    if not job_group:
+        flask.abort(404, 'Groupe de métiers "{}" inconnu.'.format(rome_id))
+
+    result = job_pb2.JobGroup()
+    # TODO(cyrille): Add MergeFrom as method on map fields in mypy-protobuf and remove the
+    # type ignore.
+    result.application_modes.MergeFrom(job_group.application_modes)  # type: ignore
+    return result
+
+
+@app.route('/api/feedback', methods=['POST'])
 @proto.flask_api(in_type=feedback_pb2.Feedback)
 def give_feedback(feedback: feedback_pb2.Feedback) -> str:
     # TODO(pascal): Change this doc.
@@ -896,7 +950,7 @@ def _give_feedback(feedback: feedback_pb2.Feedback, slack_text: str) -> None:
     _USER_DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
 
 
-@_app_route('/', methods=['GET'])
+@app.route('/', methods=['GET'])
 def health_check() -> str:
     """Health Check endpoint.
 
@@ -918,9 +972,16 @@ def _populate_feature_flags(user_proto: user_pb2.User) -> None:
         user_proto.features_enabled.pole_emploi = True
     if _EXCLUDE_FROM_ANALYTICS_REGEXP.search(user_proto.profile.email):
         user_proto.features_enabled.exclude_from_analytics = True
+    if user_proto.features_enabled.strat_two == user_pb2.CONTROL:
+        # Keep control users from strat_two.
+        return
+    if any(p.strategies for p in user_proto.projects):
+        user_proto.features_enabled.strat_two = user_pb2.ACTIVE
+    else:
+        user_proto.features_enabled.ClearField('strat_two')
 
 
-@_app_route('/api/user/nps-survey-response', methods=['POST'])
+@app.route('/api/user/nps-survey-response', methods=['POST'])
 @auth.require_admin
 @proto.flask_api(in_type=user_pb2.NPSSurveyResponse)
 def set_nps_survey_response(nps_survey_response: user_pb2.NPSSurveyResponse) -> str:
@@ -948,7 +1009,7 @@ def set_nps_survey_response(nps_survey_response: user_pb2.NPSSurveyResponse) -> 
     return ''
 
 
-@_app_route('/api/nps', methods=['GET'])
+@app.route('/api/nps', methods=['GET'])
 @auth.require_user_in_args(role='nps')
 def set_nps_response(user_id: str) -> _FlaskResponse:
     """Save user response to the Net Promoter Score's first question."""
@@ -957,7 +1018,7 @@ def set_nps_response(user_id: str) -> _FlaskResponse:
     user_to_update.net_promoter_score_survey_response\
         .responded_at.FromDatetime(now.get())
     try:
-        score = int(flask.request.args.get('score'))
+        score = int(flask.request.args.get('score', ''))
         if score < 0 or score > 10:
             raise ValueError()
     except (TypeError, ValueError):
@@ -972,7 +1033,7 @@ def set_nps_response(user_id: str) -> _FlaskResponse:
     return _maybe_redirect()
 
 
-@_app_route('/api/nps', methods=['POST'])
+@app.route('/api/nps', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.SetNPSCommentRequest)
 @auth.require_user(
     lambda set_nps_request: typing.cast(user_pb2.SetNPSCommentRequest, set_nps_request).user_id,
@@ -998,8 +1059,11 @@ def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> 
                 user_id=set_nps_request.user_id,
                 feedback=set_nps_request.comment,
                 source=feedback_pb2.PRODUCT_FEEDBACK),
-            slack_text='[NPS Score: {}] ObjectId("{}")\n> {}'.format(
-                score, set_nps_request.user_id,
+            slack_text='[NPS Score: {}] <{}|{}>\n> {}'.format(
+                score,
+                parse.urljoin(
+                    flask.request.base_url, '/eval?userId={}'.format(set_nps_request.user_id)),
+                set_nps_request.user_id,
                 '\n> '.join(set_nps_request.comment.split('\n'))))
 
     mongo_update = _flatten_mongo_fields(json_format.MessageToDict(user_to_update))
@@ -1021,7 +1085,7 @@ def _flatten_mongo_fields(
     return all_fields
 
 
-@_app_route('/api/employment-status/<user_id>', methods=['POST'])
+@app.route('/api/employment-status/<user_id>', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.EmploymentStatus)
 @auth.require_user(
     lambda unused_new_status, user_id: typing.cast(str, user_id), role='employment-status')
@@ -1052,7 +1116,7 @@ def update_employment_status(new_status: user_pb2.EmploymentStatus, user_id: str
     return ''
 
 
-@_app_route('/api/employment-status', methods=['GET'])
+@app.route('/api/employment-status', methods=['GET'])
 @auth.require_user_in_args(role='employment-status')
 def get_employment_status(user_id: str) -> _FlaskResponse:
     """Save user's first click and redirect them to the full survey."""
@@ -1082,7 +1146,7 @@ def get_employment_status(user_id: str) -> _FlaskResponse:
 def _maybe_redirect(**kwargs: typing.Any) -> _FlaskResponse:
     if 'redirect' not in flask.request.args:
         return ''
-    redirect_url = flask.request.args.get('redirect')
+    redirect_url = flask.request.args.get('redirect', '')
     separator = '&' if '?' in redirect_url else '?'
     return flask.redirect('{redirect_url}{separator}{query_string}'.format(
         redirect_url=redirect_url,
@@ -1093,7 +1157,7 @@ def _maybe_redirect(**kwargs: typing.Any) -> _FlaskResponse:
             **kwargs))))
 
 
-@_app_route('/api/usage/stats', methods=['GET'])
+@app.route('/api/usage/stats', methods=['GET'])
 @proto.flask_api(out_type=stats_pb2.UsersCount)
 def get_usage_stats() -> stats_pb2.UsersCount:
     """Get stats of the app usage."""
@@ -1117,7 +1181,7 @@ def get_usage_stats() -> stats_pb2.UsersCount:
     )
 
 
-@_app_route('/api/redirect/eterritoire/<city_id>', methods=['GET'])
+@app.route('/api/redirect/eterritoire/<city_id>', methods=['GET'])
 def redirect_eterritoire(city_id: str) -> _FlaskResponse:
     """Redirect to the e-Territoire page for a city."""
 
@@ -1125,6 +1189,24 @@ def redirect_eterritoire(city_id: str) -> _FlaskResponse:
         _DB, association_pb2.SimpleLink, 'eterritoire_links', city_id) or \
         association_pb2.SimpleLink()
     return flask.redirect('http://www.eterritoire.fr{}'.format(link.path))
+
+
+@app.route('/api/compute-labor-stats', methods=['POST'])
+@proto.flask_api(in_type=user_pb2.User, out_type=use_case_pb2.LaborStatsData)
+def compute_labor_stats(user_proto: user_pb2.User) -> use_case_pb2.LaborStatsData:
+    """Compute labor statistics relevant for the user's project."""
+
+    if not user_proto.projects:
+        flask.abort(422, 'There is no input project to compute stats on.')
+    project = user_proto.projects[0]
+    rome_id = project.target_job.job_group.rome_id
+    departement_id = project.city.departement_id
+    local_stats = jobs.get_local_stats(
+        flask.current_app.config['DATABASE'], departement_id, rome_id)
+    job_group_info = jobs.get_group_proto(
+        flask.current_app.config['DATABASE'], rome_id)
+    return use_case_pb2.LaborStatsData(
+        job_group_info=job_group_info, local_stats=local_stats)
 
 
 app.register_blueprint(evaluation.app, url_prefix='/api/eval')
@@ -1155,13 +1237,13 @@ def _teardown_request(unused_exception: typing.Optional[Exception] = None) -> No
     total_duration = time.time() - flask.g.start
     if total_duration <= _LONG_REQUEST_DURATION_SECONDS:
         return
-    logging.warning('Long request: %d seconds', total_duration)
     last_tick_time = flask.g.start
     for tick in sorted(flask.g.ticks, key=lambda t: t.time):
         logging.info(
             '%.4f: Tick %s (%.4f since last tick)',
             tick.time - flask.g.start, tick.name, tick.time - last_tick_time)
         last_tick_time = tick.time
+    logging.warning('Long request: %d seconds', total_duration)
 
 
 app.config['DATABASE'] = _DB
@@ -1183,4 +1265,5 @@ if __name__ == '__main__':
     app.run(
         debug=bool(os.getenv('DEBUG')),
         host=os.getenv('BIND_HOST', 'localhost'),
-        port=int(os.getenv('PORT', '80')))
+        port=int(os.getenv('PORT', '443')),
+        ssl_context='adhoc')

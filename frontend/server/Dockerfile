@@ -1,15 +1,15 @@
-# TODO(cyrille): Uncap once https://github.com/PyCQA/astroid/issues/539 is resolved in stable version.
-FROM python:3.6
+FROM python:3.7
 
 WORKDIR /work
 
+ARG PROTOBUF_VERSION=3.7.0
+
 # Install dependencies
-RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends wget unzip locales && \
+RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends unzip locales && \
   # Install needed Python dependencies.
-  pip install algoliasearch 'python-emploi-store>=0.7.0' certifi 'elasticsearch<6.0.0' flask mailjet_rest mongo mypy_extensions oauth2client protobuf pyfarmhash requests-aws4auth sentry-sdk[flask] typing_extensions unidecode uwsgi xmltodict && \
+  pip install 'algoliasearch>=2.0' 'python-emploi-store>=0.7.0' certifi 'elasticsearch<6.0.0' flask mailjet_rest mongo mypy_extensions oauth2client protobuf pyfarmhash pyopenssl requests-aws4auth sentry-sdk[flask] typing_extensions unidecode uwsgi xmltodict && \
   # Install Protobuf compiler.
-  PROTOBUF_VERSION=$(curl -i https://github.com/protocolbuffers/protobuf/releases/latest | grep ^Location: | sed -e "s/^.*\/v//;s/\s*$//") \
-  bash -c 'wget --quiet https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip -O protoc.zip' && \
+  curl --silent -L "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip" -o protoc.zip && \
   unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto && \
   # Prepare the frontend module.
   mkdir -p bob_emploi/frontend && \

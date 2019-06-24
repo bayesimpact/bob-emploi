@@ -112,9 +112,12 @@ def send_template(
 
     mail_client = _mailjet_client(version='v3.1')
     # TODO(cyrille): Batch messages when sending several.
-    recipients = [_make_mailjet_recipient(recipient)]
-    if other_recipients:
-        recipients.extend(_make_mailjet_recipient(r) for r in other_recipients)
+    all_recipients = [recipient] + (other_recipients or [])
+    recipients = [
+        _make_mailjet_recipient(r)
+        for r in all_recipients
+        if '@' in r.email and not r.email.endswith('@example.com')
+    ]
     data = {
         'Messages': [{
             # TODO(cyrille): use integer template_ids and remove cast.
@@ -128,7 +131,7 @@ def send_template(
     }
     if campaign_id:
         data['Messages'][0]['CustomCampaign'] = campaign_id
-    if dry_run:
+    if dry_run or not recipients:
         logging.info(data)
         return _FakeResponse()
     # TODO(cyrille): Drop the cast if mailjet_rest ever gets typed.

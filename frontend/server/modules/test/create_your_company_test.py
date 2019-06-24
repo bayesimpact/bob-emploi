@@ -39,7 +39,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../create-your-company endpoint."""
 
     def setUp(self) -> None:
-        super(EndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'create-your-company',
             'triggerScoringModel': 'advice-create-your-company',

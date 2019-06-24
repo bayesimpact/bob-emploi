@@ -15,7 +15,7 @@ class CountUsersTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
-        super(CountUsersTestCase, self).setUp()
+        super().setUp()
         self._db = mongomock.MongoClient().test
         self._user_db = mongomock.MongoClient().test
         patcher = mock.patch(count_users.__name__ + '._USER_DB', new=self._user_db)

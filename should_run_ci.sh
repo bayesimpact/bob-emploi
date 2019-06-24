@@ -4,8 +4,15 @@ readonly TAG=$2
 
 set -x
 
+
+# For Data release tags.
+if [ -n "$TAG" ] && [[ "$TAG" =~ .*_DATA_.* ]]; then
+  touch skip-frontend skip-analytics publish-on-aws
+  exit
+fi
+
 if [ "$BRANCH" == "master" ] || [ -n "$TAG" ]; then
-  # Run all tests on master.
+  # Run all tests on master and frontend tags.
   exit
 fi
 

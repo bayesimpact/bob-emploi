@@ -30,9 +30,14 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         persona.project.total_interview_count = 21
-        persona.project.job_search_length_months = 2
-        if persona.project.job_search_length_months > 6:
-            persona.project.job_search_length_months = 6
+        score = self._score_persona(persona)
+        self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+
+    def test_in_methods_to_diploma_category(self) -> None:
+        """Users has maximum interviews."""
+
+        persona = self._random_persona().clone()
+        persona.project.diagnostic.category_id = 'enhance-methods-to-interview'
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
 
@@ -68,7 +73,6 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '14:I1202',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 2,
             },
         })
@@ -86,7 +90,6 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '14:I1202',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 2,
             },
         })
@@ -121,7 +124,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/improve-resume endpoint."""
 
     def setUp(self) -> None:
-        super(ProjectResumeEndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_many([
             {
                 'adviceId': 'improve-resume',
@@ -255,7 +258,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/improve-interview endpoint."""
 
     def setUp(self) -> None:
-        super(ProjectInterviewEndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'improve-interview',
             'triggerScoringModel': 'advice-improve-interview',

@@ -86,7 +86,7 @@ class DecoratorTestCase(unittest.TestCase):
         test_app = app.test_client()
         calls = []
 
-        @app.route('/wrong_field', methods=['POST'])  # type: ignore
+        @app.route('/wrong_field', methods=['POST'])
         @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
         def _f(message: test_pb2.Simple) -> test_pb2.Simple:  # pylint: disable=unused-variable
             calls.append(message)
@@ -127,7 +127,7 @@ class DecoratorTestCase(unittest.TestCase):
         test_app = app.test_client()
         calls = []
 
-        @app.route('/wrong_encoding', methods=['POST'])  # type: ignore
+        @app.route('/wrong_encoding', methods=['POST'])
         @proto.flask_api(in_type=test_pb2.Simple, out_type=test_pb2.Simple)
         def _unused_pass_through(message: test_pb2.Simple) -> test_pb2.Simple:
             calls.append(message)
@@ -209,7 +209,7 @@ class CacheMongoTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up mock environment."""
 
-        super(CacheMongoTestCase, self).setUp()
+        super().setUp()
         self._db = mongomock.MongoClient().get_database('test')
         self._collection: proto.MongoCachedCollection[test_pb2.Simple] = \
             proto.MongoCachedCollection(test_pb2.Simple, 'basic')
@@ -402,13 +402,21 @@ class ParseFromMongoTestCase(unittest.TestCase):
         self.assertEqual('Simple', str(mock_warning.call_args[0][2]))
         self.assertEqual("{'name': 123}", str(mock_warning.call_args[0][3]))
 
+    def test_id_field(self) -> None:
+        """if an id_field is specified, its value is filled with _id from mongo."""
+
+        message = test_pb2.Simple()
+        self.assertTrue(
+            proto.parse_from_mongo({'_id': 'Hello', 'multipleWords': '123'}, message, 'name'))
+        self.assertEqual('Hello', message.name)
+
 
 @mock.patch(proto.__name__ + '._IS_TEST_ENV', new=False)
 class FetchFromMongoTestCase(unittest.TestCase):
     """Tests for the fetch_from_mongo function."""
 
     def setUp(self) -> None:
-        super(FetchFromMongoTestCase, self).setUp()
+        super().setUp()
         self._db = mongomock.MongoClient().test
         proto.clear_mongo_fetcher_cache()
 

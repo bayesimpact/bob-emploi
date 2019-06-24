@@ -31,8 +31,10 @@ _ProtoType1 = typing.TypeVar('_ProtoType1', bound=message.Message)
 _ProtoType2 = typing.TypeVar('_ProtoType2', bound=message.Message)
 
 
+# TODO(cyrille): Maybe get the id_field from proto option.
 def parse_from_mongo(
-        mongo_dict: typing.Optional[typing.Dict[str, typing.Any]], proto: message.Message) -> bool:
+        mongo_dict: typing.Optional[typing.Dict[str, typing.Any]],
+        proto: message.Message, id_field: typing.Optional[str] = None) -> bool:
     """Parse a Protobuf from a dict coming from MongoDB.
 
     Args:
@@ -40,11 +42,14 @@ def parse_from_mongo(
             modified by the function: it removes all the keys prefixed by "_"
             and convert datetime objects to iso strings.
         proto: a protobuffer to merge data into.
+        id_field (optional): a field in the proto where we wish to put the mongo ID. It must be a
+            string field.
     Returns: a boolean indicating whether the input had actual data.
     """
 
     if mongo_dict is None:
         return False
+    message_id = str(mongo_dict.pop('_id', ''))
     to_delete = [k for k in mongo_dict if k.startswith('_')]
     for key in to_delete:
         del mongo_dict[key]
@@ -58,6 +63,8 @@ def parse_from_mongo(
             'Error %s while parsing a JSON dict for proto type %s:\n%s',
             error, proto.__class__.__name__, mongo_dict)
         return False
+    if message_id and id_field:
+        setattr(proto, id_field, message_id)
     return True
 
 
@@ -65,6 +72,7 @@ def parse_from_mongo(
 def create_from_mongo(
         mongo_dict: typing.Optional[typing.Dict[str, typing.Any]],
         proto_type: typing.Type[_ProtoType1],
+        id_field: typing.Optional[str] = None,
         always_create: bool = True) -> typing.Optional[_ProtoType1]:
     """Create a Protobuf from a dict coming from MongoDB.
 
@@ -73,6 +81,8 @@ def create_from_mongo(
             modified by the function: it removes all the keys prefixed by "_"
             and convert datetime objects to iso strings.
         proto_type: a protobuffer type to create the data from.
+        id_field (optional): a field in the proto where we wish to put the mongo ID. It must be a
+            string field.
         always_create: when True, this function creates an empty proto if the
             entry is empty or if the parsing fails.
     Returns: a populated instance of the proto or None if there was an error.
@@ -80,7 +90,7 @@ def create_from_mongo(
 
     assert issubclass(proto_type, message.Message)
     proto = proto_type()
-    if not parse_from_mongo(mongo_dict, proto) and not always_create:
+    if not parse_from_mongo(mongo_dict, proto, id_field) and not always_create:
         return None
     return proto
 
@@ -154,15 +164,25 @@ def fetch_from_mongo(
         database: pymongo.database.Database,
         proto_type: typing.Type[_ProtoType1],
         collection: str,
-        document_id: str) -> typing.Optional[_ProtoType1]:
-    """Fetch a (possibly cached) document from MongoDB and parse it to a Protobuf message."""
+        document_id: str,
+        id_field: typing.Optional[str] = None) -> typing.Optional[_ProtoType1]:
+    """Fetch a (possibly cached) document from MongoDB and parse it to a Protobuf message.
+
+    Args:
+        database: A pymongo database in which to look for the given document.
+        proto_type: a protobuffer type to create the data from.
+        collection: the name of the collection where the document is in the database.
+        document_id: the ID of the desired document.
+        id_field (optional): a field in the proto where we wish to put the mongo ID. It must be a
+            string field.
+    """
 
     if _DATABASE:
         _DATABASE[0] = database
     else:
         _DATABASE.append(database)
     mongo_dict = _CACHED_FIND_ONE(collection, document_id)
-    return create_from_mongo(mongo_dict, proto_type, always_create=False)
+    return create_from_mongo(mongo_dict, proto_type, id_field, always_create=False)
 
 
 def clear_mongo_fetcher_cache() -> None:
@@ -240,9 +260,9 @@ def _get_flask_input_proto(in_type: typing.Type[_ProtoType1]) -> _ProtoType1:
 
     data = flask.request.get_data()
     if not data:
-        data = flask.request.args.get('data', '')
+        data = flask.request.args.get('data', '').encode('utf-8')
 
-    if flask.request.headers['Content-Type'] == 'application/x-protobuf-base64':
+    if flask.request.headers.get('Content-Type') == 'application/x-protobuf-base64':
         try:
             wire_format = base64.decodebytes(data)
         except ValueError as error:
@@ -262,7 +282,7 @@ def _get_flask_input_proto(in_type: typing.Type[_ProtoType1]) -> _ProtoType1:
 
 def _cache_mongo_collection(
         mongo_iterator: typing.Callable[[], typing.Iterator[typing.Dict[str, typing.Any]]],
-        cache: typing.Dict[str, _ProtoType1], proto_type: type,
+        cache: typing.Dict[str, _ProtoType1], proto_type: type, id_field: typing.Optional[str],
         update_func: typing.Optional[typing.Callable[[_ProtoType1, str], None]] = None) \
         -> typing.Dict[str, _ProtoType1]:
     """Cache in memory the content of a Mongo request returning protos.
@@ -272,6 +292,7 @@ def _cache_mongo_collection(
         cache: a list or a dict to populate with cached protos. If it is a dict
             then the key populated will be the "_id" values.
         proto_type: the python proto class for the expected proto type.
+        id_field (optional): the field in the proto where to put the id.
         update_func: an optional function to call on each proto once imported.
     Returns:
         returns the cache value populated.
@@ -281,7 +302,7 @@ def _cache_mongo_collection(
         return cache
     for document in mongo_iterator():
         _id = str(document['_id'])
-        proto = typing.cast(_ProtoType1, create_from_mongo(document, proto_type))
+        proto = typing.cast(_ProtoType1, create_from_mongo(document, proto_type, id_field))
         if update_func:
             update_func(proto, _id)
         cache[_id] = proto
@@ -362,7 +383,7 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
     """Handler for a collection of protobuffers in MongoDB."""
 
     def __init__(
-            self, proto_type: type, collection_name: str,
+            self, proto_type: type, collection_name: str, id_field: typing.Optional[str] = None,
             update_func: typing.Optional[typing.Callable[[_ProtoType1, str], None]] = None,
             query: typing.Optional[typing.Dict[str, typing.Any]] = None):
         """Creates a new collection.
@@ -370,16 +391,18 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
         Args:
             proto_type: the python proto class for the expected proto type.
             collection_name: a MongoDB collection_name that holds he original protobuffers.
+            id_field (optional): the field in the proto where to put the _id field from mongo.
             update_func: an optional function to call on each proto once imported.
         """
 
         self._collection_name = collection_name
         self._proto_type = proto_type
+        self._id_field = id_field
         self._update_func = update_func
         self._query = query
 
         self._cache: typing.Optional[CachedCollection[_ProtoType1]] = None
-        self._database: pymongo.database.Database = None
+        self._database: typing.Optional[pymongo.database.Database] = None
 
     def get_collection(self, database: pymongo.database.Database) -> CachedCollection[_ProtoType1]:
         """Gets access to the collection for a database."""
@@ -399,11 +422,13 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
 
     def _populate(self, cache: typing.Dict[str, _ProtoType1]) -> None:
         def _mongo_iterator() -> typing.Iterator[typing.Dict[str, typing.Any]]:
+            assert self._database
             # TODO(pascal): Type pymongo find method and remove the cast.
             return typing.cast(
                 typing.Iterator[typing.Dict[str, typing.Any]],
                 self._database.get_collection(self._collection_name).find(self._query))
-        _cache_mongo_collection(_mongo_iterator, cache, self._proto_type, self._update_func)
+        _cache_mongo_collection(
+            _mongo_iterator, cache, self._proto_type, self._id_field, self._update_func)
 
 
 def datetime_to_json_string(instant: datetime.datetime) -> str:

@@ -31,9 +31,9 @@ def main() -> None:
     dep_counts: typing.Dict[str, int] = collections.defaultdict(int)
     for local_info in aggregation:
         if 'dep_id' in local_info:
-            dep_counts[local_info.get('dep_id')] += 1
+            dep_counts[local_info.get('dep_id', '')] += 1
         if 'rome_id' in local_info:
-            job_group_counts[local_info.get('rome_id')] += 1
+            job_group_counts[local_info.get('rome_id', '')] += 1
 
     user_counts = stats_pb2.UsersCount(
         departement_counts=dep_counts, job_group_counts=job_group_counts)

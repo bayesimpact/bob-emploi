@@ -16,8 +16,6 @@
     "network-application-good",
     "network-application-medium",
     "spontaneous-application",
-    "wow-baker",
-    "wow-hairdresser",
     "online-salons"
   ],
   "MARKET_DIAGNOSTIC": [
@@ -31,10 +29,11 @@
     "driving-license-low-income",
     "driving-license-written",
     "life-balance",
+    "personality-test",
     "senior",
     "specific-to-job",
     "training",
-    "training-alternance",
+    "alternance",
     "vae",
     "volunteer",
     "long-term-mom"
@@ -46,6 +45,8 @@
     "create-your-company",
     "immersion-milo",
     "other-work-env",
-    "relocate"
+    "relocate",
+    "immersion",
+    "explore-other-jobs"
   ]
 }

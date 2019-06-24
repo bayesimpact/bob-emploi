@@ -14,7 +14,7 @@ class ChristmasVarsTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'christmas'
 
     def setUp(self) -> None:
-        super(ChristmasVarsTestCase, self).setUp()
+        super().setUp()
 
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
@@ -112,7 +112,7 @@ class NewYearTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'new-year'
 
     def setUp(self) -> None:
-        super(NewYearTestCase, self).setUp()
+        super().setUp()
 
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'

@@ -14,7 +14,7 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
     """A scoring model for the reorient jobbing advice."""
 
     def __init__(self) -> None:
-        super(_AdviceReorientJobbing, self).__init__()
+        super().__init__()
         self._db: proto.MongoCachedCollection[reorient_jobbing_pb2.LocalJobbingStats] = \
             proto.MongoCachedCollection(reorient_jobbing_pb2.LocalJobbingStats, 'reorient_jobbing')
 

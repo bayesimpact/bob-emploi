@@ -25,7 +25,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         path.dirname(__file__), 'testdata/unix_rubrique_mobilite_v327_utf8.csv')
     data_folder = path.join(path.dirname(__file__), 'testdata')
 
-    def test_csv2dicts(self):
+    def test_csv2dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
 
         collection = local_diagnosis.csv2dicts(
@@ -33,7 +33,7 @@ class BmoRomeImporterTestCase(unittest.TestCase):
             self.unemployment_duration_csv, self.job_offers_changes_json,
             self.imt_folder, self.mobility_csv, self.data_folder)
 
-        self.assertEqual(35, len(collection))
+        self.assertEqual(36, len(collection))
         protos = dict(mongo.collection_to_proto_mapping(
             collection, job_pb2.LocalJobStats))
 
@@ -74,11 +74,11 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         self.assertEqual('De 3\xa0500\xa0€ à 5\xa0550\xa0€', proto.imt.senior_salary.short_text)
 
         proto = protos['10:F1402']
-        self.assertEqual(5, len(proto.less_stressful_job_groups))
+        self.assertEqual(4, len(proto.less_stressful_job_groups))
         less_stressful = proto.less_stressful_job_groups[0]
         self.assertEqual('F1702', less_stressful.job_group.rome_id)
         self.assertEqual(18, less_stressful.local_stats.imt.yearly_avg_offers_per_10_candidates)
-        self.assertEqual(1, proto.num_less_stressful_departements)
+        self.assertEqual(0, proto.more_stressed_jobseekers_percentage)
 
         proto = protos['09:F1702']
         self.assertEqual(24, proto.imt.last_week_demand)
@@ -86,12 +86,22 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         self.assertEqual(True, proto.imt.seasonal)
         self.assertCountEqual([job_pb2.OCTOBER], proto.imt.active_months)
         self.assertEqual(1, proto.num_less_stressful_departements)
+        self.assertEqual(50, proto.more_stressed_jobseekers_percentage)
 
         proto = protos['12:F1402']
         self.assertFalse(proto.imt.active_months)
         self.assertEqual(2, proto.num_less_stressful_departements)
 
-    def test_finalize_salary_estimation(self):
+        proto = protos['10:F1401']
+        self.assertEqual(-1, proto.imt.yearly_avg_offers_per_10_candidates)
+
+        proto = protos['10:F1704']
+        self.assertEqual(0, proto.imt.yearly_avg_offers_per_10_candidates)
+
+        proto = protos['02:A1101']
+        self.assertEqual(19, proto.bmo.percent_difficult)
+
+    def test_finalize_salary_estimation(self) -> None:
         """Basic usage of finalize_salary_estimation."""
 
         estimation = local_diagnosis.finalize_salary_estimation({

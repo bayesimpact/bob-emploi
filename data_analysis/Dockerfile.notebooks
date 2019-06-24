@@ -20,6 +20,4 @@ RUN pip install --upgrade \
   locale-gen && \
   su -c "/opt/conda/bin/ipython profile create" jovyan && \
   printf "\nc.InlineBackend.figure_format = 'retina'\nc.IPKernelApp.matplotlib = 'inline'\nc.InteractiveShellApp.matplotlib = 'inline'\n" >> /home/jovyan/.ipython/profile_default/ipython_kernel_config.py && \
-  # TODO(pascal): Remove once Docker pulls Jupyter Notebook v5.6+ and then use custom_display_url
-  # See https://github.com/jupyter/notebook/issues/3605.
-  sed -i -e "s/url = self._url.ip./url = self._url('localhost')/" /opt/conda/lib/python3.6/site-packages/notebook/notebookapp.py
+  printf "\nimport os\nc.NotebookApp.custom_display_url = os.environ['CUSTOM_DISPLAY_URL']\n" >> /home/jovyan/.jupyter/jupyter_notebook_config.py

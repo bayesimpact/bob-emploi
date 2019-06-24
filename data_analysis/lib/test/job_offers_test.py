@@ -47,8 +47,8 @@ class IterateTestCase(unittest.TestCase):
             path.join(self.testdata_folder, 'column_names.txt')))
         # Golden values.
         self.assertEqual(9, len(offers))
-        self.assertEqual('000053Q', offers[1].id_offre)  # type: ignore
-        self.assertEqual('Contrat travail', offers[2].contract_nature_name)  # type: ignore
+        self.assertEqual('000053Q', offers[1].id_offre)
+        self.assertEqual('Contrat travail', offers[2].contract_nature_name)
 
     def test_missing_required_fields(self) -> None:
         """Test missing required field."""

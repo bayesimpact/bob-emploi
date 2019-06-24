@@ -12,7 +12,7 @@ class SkillForFutureTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-skill-for-future'
 
     def setUp(self) -> None:
-        super(SkillForFutureTestCase, self).setUp()
+        super().setUp()
         self.database.skills_for_future.insert_one({
             '_id': 'D11',
             'skills': [{'name': 'Empathie'}],
@@ -41,7 +41,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/skill-for-future endpoint."""
 
     def setUp(self) -> None:
-        super(EndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'skill-for-future',
             'triggerScoringModel': 'advice-skill-for-future',

@@ -15,7 +15,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
     # TODO(guillaume): Add more tests when the scoring model takes the city into account.
 
     def setUp(self) -> None:
-        super(CommuteScoringModelTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self.database.cities.insert_one({
             '_id': '69123',
@@ -100,7 +100,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../commute endpoint."""
 
     def setUp(self) -> None:
-        super(EndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'commute',
             'triggerScoringModel': 'advice-commute',
@@ -159,6 +159,17 @@ class EndpointTestCase(base_test.ServerTestCase):
                     },
                 },
                 {
+                    'offers': 100,
+                    'city': {
+                        'cityId': '69266',
+                        'departementId': '69',
+                        'name': 'Villeurbanne',
+                        'longitude': 4.6964532,
+                        'latitude': 45.7178675,
+                        'population': 10000,
+                    },
+                },
+                {
                     'offers': 40,
                     'city': {
                         'cityId': '69123',
@@ -178,7 +189,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
 
         hiring_cities = self.json_from_response(response).get('cities', [])
-        self.assertEqual(['Brindas'], [h.get('name') for h in hiring_cities])
+        self.assertEqual(['Villeurbanne', 'Brindas'], [h.get('name') for h in hiring_cities])
         self.assertEqual('69', hiring_cities[0].get('departementId'))
 
 
