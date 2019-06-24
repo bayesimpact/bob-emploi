@@ -14,17 +14,17 @@ from bob_emploi.data_analysis.lib import mongo
 class WorkupEventsTestCase(unittest.TestCase):
     """Unit tests for the importer."""
 
-    def setUp(self):
-        super(WorkupEventsTestCase, self).setUp()
+    def setUp(self) -> None:
+        super().setUp()
         file_handle, self.events_json_path = tempfile.mkstemp()
         self.events_file = os.fdopen(file_handle, 'wt')
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.events_file.close()
         os.remove(self.events_json_path)
-        super(WorkupEventsTestCase, self).tearDown()
+        super().tearDown()
 
-    def test_events2dicts(self):
+    def test_events2dicts(self) -> None:
         """Basic usage."""
 
         json.dump([
@@ -57,7 +57,7 @@ class WorkupEventsTestCase(unittest.TestCase):
         self.assertEqual('https://www.workuper.com/events/slug-event-a', event.link)
         self.assertEqual(['for-departement(38,69)'], event.filters)
 
-    def test_cosly_event(self):
+    def test_cosly_event(self) -> None:
         """Non-free event."""
 
         json.dump([
@@ -85,7 +85,7 @@ class WorkupEventsTestCase(unittest.TestCase):
 
         self.assertFalse(collection)
 
-    def test_create_company_event(self):
+    def test_create_company_event(self) -> None:
         """Event to learn how to create a company."""
 
         json.dump([
@@ -113,7 +113,7 @@ class WorkupEventsTestCase(unittest.TestCase):
 
         self.assertFalse(collection)
 
-    def test_webinar(self):
+    def test_webinar(self) -> None:
         """Webinar."""
 
         json.dump([

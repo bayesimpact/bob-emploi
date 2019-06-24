@@ -13,19 +13,21 @@ import os
 from os import path
 import sys
 import time
+import typing
 
-from algoliasearch import algoliasearch
-from algoliasearch import helpers
+from algoliasearch import exceptions
+from algoliasearch import search_client
 import pandas
 
 from bob_emploi.data_analysis.lib import cleaned_data
 
 
 def prepare_cities(
-        data_folder='data',
-        stats_filename=None,
-        urban_entities_filename=None,
-        transport_scores_filename=None):
+        data_folder: str = 'data',
+        stats_filename: typing.Optional[str] = None,
+        urban_entities_filename: typing.Optional[str] = None,
+        transport_scores_filename: typing.Optional[str] = None) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Prepare cities for upload to Algolia.
 
     Args:
@@ -95,10 +97,13 @@ def prepare_cities(
         cities.transport.fillna(0, inplace=True)
         useful_columns.append('transport')
 
-    return cities.sort_index()[useful_columns].to_dict(orient='records')
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]],
+        cities.sort_index()[useful_columns].to_dict(orient='records'))
 
 
-def upload(batch_size=5000, data_folder='data', out=sys.stdout):
+def upload(batch_size: int = 5000, data_folder: str = 'data', out: typing.TextIO = sys.stdout) \
+        -> None:
     """Upload French city suggestions to Algolia index."""
 
     suggestions = prepare_cities(
@@ -106,7 +111,7 @@ def upload(batch_size=5000, data_folder='data', out=sys.stdout):
         path.join(data_folder, 'geo/french_cities.csv'),
         path.join(data_folder, 'geo/french_urban_entities.xls'),
         path.join(data_folder, 'geo/ville-ideale-transports.html'))
-    client = algoliasearch.Client(
+    client = search_client.SearchClient.create(
         os.environ.get('ALGOLIA_APP_ID', 'K6ACI9BKKT'),
         os.environ.get('ALGOLIA_API_KEY'))
     index_name = os.environ.get('ALGOLIA_CITIES_INDEX', 'cities')
@@ -118,11 +123,11 @@ def upload(batch_size=5000, data_folder='data', out=sys.stdout):
         tmp_cities_index.set_settings(cities_index.get_settings())
         # TODO(pascal): Add synonyms if we start having some.
         for start in range(0, len(suggestions), batch_size):
-            tmp_cities_index.add_objects(suggestions[start:start+batch_size])
+            tmp_cities_index.add_objects(suggestions[start:start + batch_size])
 
         # OK we're ready finally replace the index.
         client.move_index(tmp_index_name, index_name)
-    except helpers.AlgoliaException:
+    except exceptions.AlgoliaException:
         tmp_cities_index.clear_index()
         out.write(json.dumps(suggestions[:10], indent=2))
         raise

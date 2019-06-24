@@ -158,7 +158,9 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
             data='{{"facebookSignedRequest": "{}.{}", "email": "pascal@facebook.com"}}'.format(
                 good_signature, _base64_encode(facebook_data)),
             content_type='application/json')
-        self.assertEqual(403, response.status_code)
+        auth_response = self.json_from_response(response)
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertEqual('12345', auth_response['authenticatedUser']['facebookId'])
 
     def test_load_user(self) -> None:
         """Auth request retrieves user."""

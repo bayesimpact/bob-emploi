@@ -9,11 +9,12 @@ You can try it out on a local instance:
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/data_analysis/importer/fhs_global_diagnosis.py \
-        --durations_csv data/fhs_category_abc_duration.csv \
-        --mongo_url mongodb://frontend-db/test
+        --durations_csv data/fhs_category_abc_duration.csv
 """
 
 import locale
+import typing
+
 import numpy
 import pandas
 
@@ -25,16 +26,16 @@ _BIN_WIDTH = importer_helpers.DAYS_PER_MONTH
 locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 
 
-def _get_histogram(duration):
+def _get_histogram(duration: pandas.Series) -> typing.List[float]:
     cutoff = duration.quantile(0.95)
     data = duration[duration <= cutoff]
     bins = numpy.arange(0, cutoff + _BIN_WIDTH, _BIN_WIDTH)
     histo = numpy.histogram(data, bins=bins)
     normalized_histo = histo[0] / numpy.sum(histo[0])
-    return normalized_histo.tolist()
+    return typing.cast(typing.List[float], normalized_histo.tolist())
 
 
-def fhs2dicts(durations_csv):
+def fhs2dicts(durations_csv: str) -> typing.List[typing.Dict[str, typing.Any]]:
     """Import stats from FHS as gobal diagnosis.
 
     Args:

@@ -39,7 +39,7 @@ def maybe_advise(
         return
     if _maybe_recommend_advice(user, project, database) and project.advices:
         try:
-            _send_activation_email(user, base_url)
+            _send_activation_email(user, project, database, base_url)
         except mailjet_rest.client.ApiError as error:
             logging.warning('Could not send the activation email: %s', error)
 
@@ -144,9 +144,7 @@ def _compute_score_and_reasons(
             scoring_model.score_and_explain(scoring_project)
     except Exception:  # pylint: disable=broad-except
         logging.exception(
-            'Scoring "%s" crashed for:\n%s\n%s',
-            module.trigger_scoring_model, scoring_project.user_profile,
-            scoring_project.details)
+            'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, scoring_project)
 
 
 def _maybe_override_advice_data(
@@ -165,6 +163,8 @@ def _maybe_override_advice_data(
 
 def _send_activation_email(
         user: user_pb2.User,
+        project: project_pb2.Project,
+        database: Database,
         base_url: str) -> None:
     """Send an email to the user just after we have defined their diagnosis."""
 
@@ -174,6 +174,8 @@ def _send_activation_email(
     # Set locale.
     locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 
+    scoring_project = scoring.ScoringProject(
+        project, user.profile, user.features_enabled, database, now=now.get())
     auth_token = parse.quote(auth.create_token(user.user_id, is_using_timestamp=True))
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))
     data = {
@@ -186,6 +188,7 @@ def _send_activation_email(
         'firstName': user.profile.name,
         'gender': user_pb2.Gender.Name(user.profile.gender),
         'loginUrl': '{}?userId={}&authToken={}'.format(base_url, user.user_id, auth_token),
+        'ofJob': scoring_project.populate_template('%ofJobName', raise_on_missing_var=True),
     }
     # https://app.mailjet.com/template/636862/build
     response = mail.send_template('636862', user.profile, data)

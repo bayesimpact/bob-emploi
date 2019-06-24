@@ -27,16 +27,25 @@ Then we got two approaches:
         recommendation will increase job offers of +33%.
 """
 
-import collections
+import typing
+
 import numpy as np
 import pandas as pd
 
 _MAX_SALARY_DECREASE_CDF = 10
-_RecoScore = collections.namedtuple('RecoScore', ['from_salary', 'gained_offers'])
-_RecoCDF = collections.namedtuple('RecoCDF', ['from_salary', 'salary_decrease'])
 
 
-def compute_recommendation_cdf(table_offers):
+class _RecoScore(typing.NamedTuple):
+    from_salary: float
+    gained_offers: float
+
+
+class _RecoCDF(typing.NamedTuple):
+    from_salary: float
+    salary_decrease: str
+
+
+def compute_recommendation_cdf(table_offers: pd.DataFrame) -> typing.List[_RecoCDF]:
     """Approach 1: compute the salary recommendation based on the CDF, it was designed to be
     called in a groupby.
 
@@ -45,7 +54,7 @@ def compute_recommendation_cdf(table_offers):
         a single job group.
 
     Returns:
-        a list of namedtuple containing each recommendations in a way that is easy
+        a list of _RecoCDF containing each recommendations in a way that is easy
         to look-up for value. e.g.:
         [(from_salary=18000, salary_decrease='1percent_salary_decrease'),
         (from_salary=19000, salary_decrease='5percent_salary_decrease'), ...]
@@ -67,10 +76,10 @@ def compute_recommendation_cdf(table_offers):
     reco_as_namedtuple = top1reco.loc[top1reco.shift(1) != top1reco].reset_index().apply(
         _RecoCDF._make, axis=1)
 
-    return reco_as_namedtuple.tolist()
+    return typing.cast(typing.List[_RecoCDF], reco_as_namedtuple.tolist())
 
 
-def compute_recommendation_score(table_offers):
+def compute_recommendation_score(table_offers: pd.DataFrame) -> typing.List[_RecoScore]:
     """Approach 2: compute the salary recommendation based on the score sqrt(delta(O))/delta(S),
      it was designed to be called in a groupby.
 
@@ -86,7 +95,7 @@ def compute_recommendation_score(table_offers):
     num_offers_with_higher_salary = _compute_job_offers_salary(table_offers)
     cumul_offers = num_offers_with_higher_salary.reset_index()
 
-    def _scoring(idx):
+    def _scoring(idx: int) -> float:
         return _apply_score(cumul_offers, idx)
 
     cumul_offers['gained_offers'] = pd.DataFrame(cumul_offers.reset_index()['index'].map(_scoring))
@@ -94,10 +103,10 @@ def compute_recommendation_score(table_offers):
     reco_as_namedtuple = cumul_offers[['annual_minimum_salary', 'gained_offers']].apply(
         _RecoScore._make, axis=1)
 
-    return reco_as_namedtuple.tolist()
+    return typing.cast(typing.List[_RecoScore], reco_as_namedtuple.tolist())
 
 
-def _compute_job_offers_salary(table_offers):
+def _compute_job_offers_salary(table_offers: pd.DataFrame) -> pd.Series:
     """Compute a pandas Series containing the amount of jof offers available
     for every salary (cumulative count). It relies on the hypothesis that you
     have access to every offers that propose a salary equal or above
@@ -126,7 +135,8 @@ def _compute_job_offers_salary(table_offers):
     return initial_salary.num_offers_with_higher_salary
 
 
-def _compute_percent_decrease(num_offers_per_salary, max_salary_decrease):
+def _compute_percent_decrease(num_offers_per_salary: pd.Series, max_salary_decrease: int) \
+        -> pd.DataFrame:
     """Compute dataframe with all percent decreases until max_salary_decrease.
     (Step 2)
 
@@ -166,7 +176,7 @@ def _compute_percent_decrease(num_offers_per_salary, max_salary_decrease):
     return all_percent_decreases
 
 
-def _compute_comparing_reco(all_percent_decreases):
+def _compute_comparing_reco(all_percent_decreases: pd.DataFrame) -> pd.DataFrame:
     """Calculate percentage of change in offers between salary variation.
     (Step 3a)
 
@@ -186,7 +196,7 @@ def _compute_comparing_reco(all_percent_decreases):
     return comparing_reco
 
 
-def _apply_score(num_offers_with_higher_salary, idx):
+def _apply_score(num_offers_with_higher_salary: pd.Series, idx: int) -> float:
     """ Calculate a score for each salary of table_offers, maximize it and return the amount of
     gained offers for the optimal decrease of salary.
 
@@ -210,16 +220,16 @@ def _apply_score(num_offers_with_higher_salary, idx):
     # Best score = max(score).
     idx_max_score = scores.idxmax()
     # Compute results.
-    gained_offers = delta_offers.iloc[idx_max_score]
+    gained_offers = typing.cast(float, delta_offers.iloc[idx_max_score])
 
     return gained_offers
 
 
-def _compute_score(delta_offers, delta_salaries):
+def _compute_score(delta_offers: pd.Series, delta_salaries: pd.Series) -> pd.Series:
     return np.sqrt(delta_offers) / delta_salaries
 
 
-def _compute_delta_from_index(serie, index):
+def _compute_delta_from_index(serie: pd.Series, index: int) -> pd.Series:
     """ Compute the variations on a specific serie and from a specific index"""
 
     return serie.iloc[:index] / serie.iloc[index] - 1

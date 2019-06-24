@@ -29,7 +29,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         path.dirname(__file__), 'testdata/imt/market_score.csv')
 
     @airtablemock.patch(job_group_info.__name__ + '.airtable')
-    def test_make_dicts(self):
+    def test_make_dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
 
         job_group_info.AIRTABLE_API_KEY = 'key01234567'
@@ -50,6 +50,10 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         rome_airtable.create('domains', {
             'name': 'Commerce/grande distribution',
             'domain_name': 'Commerce, négoce et distribution',
+        })
+        rome_airtable.create('Rigid Diplomas', {
+            'code_rome': 'D1501',
+            'is_diploma_strictly_required': True,
         })
         rome_airtable.create('info_by_prefix', {
             'rome_prefix': 'D',
@@ -78,6 +82,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             self.rome_fap_crosswalk_txt,
             'app01234567:advice:viw012345',
             'app4242:domains',
+            'app4242:Rigid Diplomas',
             'app4242:info_by_prefix',
             self.fap_growth_2012_2022_csv,
             self.imt_market_score_csv)
@@ -123,6 +128,9 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertAlmostEqual(
             30.27,
             d1501.application_modes['R2Z83'].modes[0].percentage, places=5)
+        self.assertEqual(
+            job_pb2.OTHER_CHANNELS,
+            d1501.application_modes['R2Z83'].modes[2].mode)
         self.assertEqual('dans la grande distribution', d1501.in_domain)
         self.assertEqual(job_pb2.APPLY_BY_EMAIL, d1501.preferred_application_medium)
         self.assertTrue(d1501.has_freelancers)
@@ -139,6 +147,8 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         best_departement_scores = [
             d.local_stats.imt.yearly_avg_offers_per_10_candidates for d in d1501.best_departements]
         self.assertEqual(sorted(best_departement_scores, reverse=True), best_departement_scores)
+        self.assertAlmostEqual(0.8, d1501.national_market_score)
+        self.assertTrue(d1501.is_diploma_strictly_required)
 
         # Test default values.
         g1204 = job_group_protos['G1204']
@@ -148,6 +158,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertAlmostEqual(0., g1204.growth_2012_2022, places=5)
         self.assertEqual("à l'entreprise", g1204.to_the_workplace)
         self.assertEqual('vous vous reconnaissez dans leurs valeurs', g1204.why_specific_company)
+        self.assertFalse(g1204.is_diploma_strictly_required)
 
         # Test null growth.
         a1101 = job_group_protos['A1101']

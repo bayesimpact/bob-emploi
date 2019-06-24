@@ -1,5 +1,184 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2019-06-21_00
+
+- Add links to offers and market information
+- Prepare for new category
+
+Deployed on Fri, 21 Jun 2019 11:59:50 +0000
+
+# 2019-06-17_00
+
+- Simpler use-case creation in eval tool
+- Finalize the next category
+
+Deployed on Mon, 17 Jun 2019 09:52:30 +0000
+
+# 2019-06-11_00
+
+- Prepare for a new BobThink
+- Clean Code, Bug Fixes, ...
+- Prepare a page for statistic (in eval tool)s
+
+Deployed on Tue, 11 Jun 2019 12:44:39 +0000
+
+# 2019-05-29_00
+
+- Fix LinkedIn authentication
+- Add a stats tab in the eval tool
+- Small bug fixes and phrasing improvements.
+
+Deployed on Wed, 29 May 2019 12:07:48 +0000
+
+# 2019-05-23_01
+
+- UI and Content Fixes
+
+Deployed on Fri, 24 May 2019 08:00:08 +0000
+
+# 2019-05-22_00
+
+- Prepare a new category
+- Better logging
+- Reinstate app ratings for strategy users
+- Clean Code, Typing, Bug fixes, ...
+
+Deployed on Wed, 22 May 2019 09:40:51 +0000
+
+# 2019-05-14_01
+
+- UI Fixes
+
+Deployed on Tue, 14 May 2019 11:47:41 +0000
+
+# 2019-05-13_00
+
+- Add a reason for each strategy
+- Make more methods with new UI
+- Clean Code, Typing, Bug Fixes, ...
+
+Deployed on Mon, 13 May 2019 13:43:30 +0000
+
+# 2019-05-07_00
+
+- New UI for most methods
+- More testimonials in strategies
+- Clean Code, Bug Fixes, ...
+
+Deployed on Tue, 07 May 2019 13:44:40 +0000
+
+# 2019-04-18_00
+
+- Big bug fix + clean code
+- Under the hood: TypeScript
+- Under the hood: Moving from advice to methods
+
+Deployed on Thu, 18 Apr 2019 09:00:30 +0000
+
+# 2019-04-12_00
+
+- Strategy page for everyone.
+- Pause Open Classrooms coaching email
+- Bug Fixes, Clean Code, Typing, ...
+
+Deployed on Fri, 12 Apr 2019 11:54:54 +0000
+
+# 2019-03-28_01
+
+- Prepare new advice modules for the upcoming category
+- Bug Fixes, Clean Code...
+
+Deployed on Thu, 28 Mar 2019 15:53:11 +0000
+
+# 2019-03-26_00
+
+- Prepare UX for next category
+- Bug Fixes, Clean Code, ...
+
+Deployed on Tue, 26 Mar 2019 15:11:52 +0000
+
+# 2019-03-21_00
+
+- Preparing a new category
+- Hide work-in-progress strategies
+- Clean Code, Bug Fixes, ...
+
+Deployed on Thu, 21 Mar 2019 10:42:06 +0000
+
+# 2019-03-14_00
+
+- Wording changes
+- Fix critical bugs
+
+Deployed on Thu, 14 Mar 2019 09:38:47 +0000
+
+# 2019-03-13_00
+
+- Suggesting reorientation to close jobs when relevant
+- New strategies UI
+- Clean Code, Bug Fixes, ...
+
+Deployed on Wed, 13 Mar 2019 09:34:27 +0000
+
+# 2019-03-06_00
+
+- Get ready for second version of strategies UX/UI
+- Possibility to connect with Facebook on an already existing account
+- Bug fixes, Clean Code
+
+Deployed on Wed, 06 Mar 2019 13:15:48 +0000
+
+# 2019-02-26_00
+
+- New UI for strategies
+- Bug fixes, clean code, ...
+
+Deployed on Tue, 26 Feb 2019 11:44:37 +0000
+
+# 2019-02-22_02
+
+- [Mini Onboarding] Add a textual version of the bilan.
+- Under the hood prepare a flow where the diagnostic page is an overview of the situation.
+- Various fixes (Bob blue for the udpate page, vars in emails).
+- Get strategies from Database instead of hard coded.
+
+Deployed on Fri, 22 Feb 2019 12:20:51 +0000
+
+# 2019-02-08_00
+
+- Release Strategies
+- Fix some email templates
+- Bug Fixes
+
+Deployed on Fri, 08 Feb 2019 10:44:43 +0000
+
+# 2019-02-05_00
+
+- Strategies in alpha
+- Improvements in eval tool
+- Clean code, bug fixes ...
+
+Deployed on Tue, 05 Feb 2019 10:18:03 +0000
+
+# 2019-01-19_00
+
+Add a link to the press article from L'Etudiant.
+
+Deployed on Sat, 19 Jan 2019 13:21:50 +0000
+
+# 2019-01-17_00
+
+- Minor phrasing improvements
+- Small Fixes, Clean Code, ...
+
+Deployed on Thu, 17 Jan 2019 15:41:28 +0000
+
+# 2019-01-07_00
+
+- Bug fixes, Clean code, ...
+
+Deployed on Tue, 08 Jan 2019 08:58:09 +0000
+
 # 2018-12-21_00
 
 - UI Fixes
@@ -30,34 +209,12 @@ Deployed on Fri, 14 Dec 2018 13:31:27 +0000
 
 Deployed on Fri, 07 Dec 2018 14:32:14 +0000
 
-# 2018-12-06_00
-
-- Clean PDF diagnostic
-- Small wording/UI/UX improvements
-- Optimize some server computations
-- App available everywhere now that data is complete
-
 # 2018-12-03_02
 
 - New submetrics
 - Clean Code, Bug Fixes, ...
 
 Deployed on Tue, 04 Dec 2018 09:43:38 +0000
-
-# 2018-12-03_01
-
-- New submetrics
-- Clean Code, Bug Fixes, ...
-
-# 2018-12-03_00
-
-- New submetrics (for alpha)
-- Clean Code, Bug Fixes, ...
-
-# 2018-11-28_00
-
-- Prepare submetrics in alpha
-- Clean Code, Bug Fixes, ...
 
 # 2018-11-22_01
 
@@ -67,22 +224,6 @@ Deployed on Tue, 04 Dec 2018 09:43:38 +0000
 
 Deployed on Thu, 22 Nov 2018 09:29:34 +0000
 
-# 2018-11-21_01
-
-- New diagnostic score generation mechanism
-- New UI on long term mom piece of advice
-- Clean Code, Bug Fixes, ...
-
-# 2018-11-21_00
-
-- New diagnostic score generation mechanism
-- New UI on long term mom piece of advice
-- Clean Code, Bug Fixes, ...
-
-# 2018-11-20_00
-
-- Clean Code, Bug Fixes, ...
-
 # 2018-11-14_01
 
 - Reduce A/B testing for Quick Diagnostic
@@ -90,27 +231,6 @@ Deployed on Thu, 22 Nov 2018 09:29:34 +0000
 - Client-Server requests optimization
 - Bug Fixes, Clean Code, ...
 Deployed on Wed, 14 Nov 2018 14:21:45 +0000
-
-# 2018-11-14_00
-
-- Reduce A/B testing for Quick Diagnostic
-- Small UI/UX changes
-- Client-Server requests optimization
-- Bug Fixes, Clean Code, ...
-
-# 2018-11-13_02
-
-- Reduce A/B testing for Quick Diagnostic
-- Small UI/UX changes
-- Client-Server requests optimization
-- Bug Fixes, Clean Code, ...
-
-# 2018-11-13_01
-
-- Reduce A/B testing for Quick Diagnostic
-- Small UI/UX changes
-- Client-Server requests optimization
-- Bug Fixes, Clean Code, ...
 
 # 2018-11-05_00
 

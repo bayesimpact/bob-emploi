@@ -17,7 +17,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-seasonal-relocate'
 
     def setUp(self) -> None:
-        super(AdviceSeasonalRelocateTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self.now = datetime.datetime(2016, 2, 27)
         self.database.departements.insert_many([

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lheo-index xmlns="http://www.lheo.org/2.2">
+    <resumes-offres>
+        <resume-offre href="http://www.intercariforef.org" numero="14_AF_0000066306_SE_0000262635" file="http://www.intercariforef.org/serviceweb/offre-info/?versionLHEO=2.2&amp;numeroAction=14_AF_0000066306_SE_0000262635">
+            <domaine-formation>
+                <code-FORMACODE>42780</code-FORMACODE>
+                <code-NSF>221</code-NSF>
+                <code-ROME>G1605</code-ROME>
+            </domaine-formation>
+        <intitule-formation>CQP plongeur - officier de cuisine</intitule-formation>
+        <nom-organisme numero="14_OF_0000005451">Infrep Boulogne</nom-organisme>
+        <SIRET>32441928201134</SIRET>
+        <codepostal>92100</codepostal>
+        <code-INSEE-commune>92012</code-INSEE-commune>
+        <ville>Boulogne-Billancourt</ville>
+        <departement>92</departement>
+        <region>11</region>
+        <certifiante>1</certifiante>
+        <code-niveau-entree>1</code-niveau-entree>
+        <prise-en-charge-frais-possible>0</prise-en-charge-frais-possible>
+        <modalites-enseignement>0</modalites-enseignement>
+        <code-public-vise>83056</code-public-vise>
+        <nombre-heures-total>300</nombre-heures-total>
+        <session>
+            <periode>
+                <debut>20181204</debut>
+                <fin>20191231</fin>
+            </periode>
+            <adresse-inscription>
+                <adresse>
+                    <ligne>-</ligne>
+                    <codepostal>92100</codepostal>
+                    <ville>Boulogne-Billancourt</ville>
+                </adresse>
+            </adresse-inscription>
+        </session>
+        <certification>
+            <code-RNCP>31333</code-RNCP>
+            <code-CERTIFINFO>90191</code-CERTIFINFO>
+        </certification>
+        <extras info="geolocalisation">
+            <extra info="latitude">48.831208</extra>
+            <extra info="longitude">2.235195</extra>
+            </extras>
+            <extras info="complements">
+            <extra info="code-niveau-sortie">1</extra>
+        </extras>
+    </resume-offre>
+    <extras info="FLUX-CARIF">
+        <extra info="date-export">20190603</extra>
+        <extra info="heure-export">095232</extra>
+        <extra info="statut">OK</extra>
+        <extra info="nb-resultat">1</extra>
+    </extras>
+    </resumes-offres>
+</lheo-index>

@@ -10,13 +10,6 @@ const pages = {
     description: `${productName} fait un bilan sur votre recherche d'emploi et vous donne ` +
       "les meilleurs conseils. 100% gratuit, rapide et fait par l'ONG Bayes Impact",
   },
-  // TODO(pascal): Clean up after 2018-07
-  'BobAction': {
-    description: '#BobAction, une grande campagne citoyenne pour que tout le ' +
-      "monde puisse s'engager pour l'emploi à travers 4 gestes simples !",
-    fullTitle: "Bob Action - Engagez-vous pour l'emploi",
-    image: 'https://www.bob-emploi.fr/assets/BobAction.png',
-  },
   'conseil/competences': {
     description: "3 points pour anticiper l'avenir de votre métier\u00A0:\n" +
       "Un diagnostic pour analyser des perspectives d'avenir offertes par votre métier.\n" +

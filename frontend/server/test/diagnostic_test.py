@@ -20,7 +20,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
     """Unit tests for the maybe_diagnose function."""
 
     def setUp(self) -> None:
-        super(MaybeDiagnoseTestCase, self).setUp()
+        super().setUp()
         self.database = mongomock.MongoClient().test
         self.database.action_templates.insert_one({
             '_id': 'rec1CWahSiEtlwEHW',
@@ -451,6 +451,90 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
         self.assertEqual(50, project.diagnostic.overall_score, msg=project.diagnostic)
 
+    def test_diagnostic_overall_restrict_to_category(self) -> None:
+        """Get the overall sentence for a specific category."""
+
+        project = project_pb2.Project()
+        self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.can_tutoie = True
+        self.database.translations.insert_one({
+            'string': 'Voici vos stratégies',
+            'fr_FR@tu': 'Voici tes stratégi%eFeminines',
+        })
+        self.database.diagnostic_category.insert_one({
+            'categoryId': 'women',
+            'strategiesIntroduction': 'Voici vos strats',
+            'filters': ['for-women'],
+            'order': 1,
+        })
+        self.database.diagnostic_overall.insert_many([
+            {
+                'filters': ['for-women'],
+                'sentenceTemplate': 'Overall text for women if no category',
+            },
+            {
+                'categoryId': 'women',
+                'filters': ['for-women'],
+                'strategiesIntroduction': 'Voici vos stratégies',
+                'sentenceTemplate': 'Overall text for women if category set',
+            },
+        ])
+        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
+        self.assertEqual(
+            'Overall text for women if category set', project.diagnostic.overall_sentence)
+        self.assertEqual('Voici tes stratégies', project.diagnostic.strategies_introduction)
+
+    def test_diagnostic_overall_restrict_to_missing_category(self) -> None:
+        """Get the overall sentence when a category has no value in the templates yet."""
+
+        project = project_pb2.Project()
+        self.user.profile.gender = user_pb2.FEMININE
+        self.database.diagnostic_category.insert_one({
+            'categoryId': 'not-men',
+            'filters': ['for-women'],
+            'order': 1,
+        })
+        self.database.diagnostic_overall.insert_many([
+            {
+                'categoryId': 'women',
+                'filters': ['for-women'],
+                'sentenceTemplate': 'Overall text for women if category set',
+            },
+            {
+                'filters': ['for-women'],
+                'sentenceTemplate': 'Overall text for women if no category',
+            },
+        ])
+        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
+        self.assertEqual(
+            'Overall text for women if no category', project.diagnostic.overall_sentence)
+
+    def test_diagnostic_overall_restrict_to_alpha_category(self) -> None:
+        """Get the overall sentence when a category is reserved for alpha users."""
+
+        project = project_pb2.Project()
+        self.user.profile.gender = user_pb2.FEMININE
+        self.database.diagnostic_category.insert_one({
+            'areStrategiesForAlphaOnly': True,
+            'categoryId': 'women',
+            'filters': ['for-women'],
+            'order': 1,
+        })
+        self.database.diagnostic_overall.insert_many([
+            {
+                'categoryId': 'women',
+                'filters': ['for-women'],
+                'sentenceTemplate': 'Overall text for women if category set',
+            },
+            {
+                'filters': ['for-women'],
+                'sentenceTemplate': 'Overall text for women if no category',
+            },
+        ])
+        self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
+        self.assertEqual(
+            'Overall text for women if no category', project.diagnostic.overall_sentence)
+
     def test_diagnostic_text(self) -> None:
         """Compute a nice diagnostic text."""
 
@@ -610,12 +694,36 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertEqual('Tu es jeune.\n\nNous allons vous aider.', project.diagnostic.text)
         mock_logging.assert_called_once()
 
+    def test_diagnostic_category(self) -> None:
+        """Compute the diagnostic category for a project."""
+
+        project = project_pb2.Project()
+        self.database.diagnostic_category.insert_one({
+            'categoryId': 'everyone',
+            'filters': ['constant(3)'],
+            'order': 1,
+        })
+        diagnostic.maybe_diagnose(self.user, project, self.database)
+        self.assertEqual('everyone', project.diagnostic.category_id)
+
+    def test_missing_diagnostic_category(self) -> None:
+        """Does not set a category ID if none is found."""
+
+        project = project_pb2.Project()
+        self.database.diagnostic_category.insert_one({
+            'categoryId': 'everyone',
+            'filters': ['constant(0)'],
+            'order': 1,
+        })
+        diagnostic.maybe_diagnose(self.user, project, self.database)
+        self.assertFalse(project.diagnostic.category_id)
+
 
 class QuickAdvisorTest(base_test.ServerTestCase):
     """Unit tests for the quick advisor."""
 
     def setUp(self) -> None:
-        super(QuickAdvisorTest, self).setUp()
+        super().setUp()
         user_info = {'profile': {'name': 'Albert', 'yearOfBirth': 1973}}
         self.user_id, self.auth_token = self.create_user_with_token(data=user_info)
 
@@ -775,6 +883,99 @@ class QuickAdvisorTest(base_test.ServerTestCase):
             }]},
             response,
         )
+
+
+class FindCategoryTestCase(base_test.ServerTestCase):
+    """Test the find_category function."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.user = user_pb2.User()
+        self.user.projects.add()
+
+    def test_need_category_or_database(self) -> None:
+        """Cannot be invoked with neither categories nor database."""
+
+        with self.assertRaises(AttributeError):
+            diagnostic.find_category(self.user)
+
+    def test_get_category(self) -> None:
+        """The first category relevant to the user is selected."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'no-profile',
+                'filters': ['constant(0)'],
+            },
+            {
+                'categoryId': 'every-one',
+                'filters': ['constant(3)'],
+                'order': 1,
+            },
+            {
+                'categoryId': 'every-one-but-less-important',
+                'filters': ['constant(2)'],
+                'order': 2,
+            }
+        ])
+        category = diagnostic.find_category(self.user, database=self._db)
+        assert category
+        self.assertEqual('every-one', category.category_id)
+
+    def test_no_category(self) -> None:
+        """Does not return a category if none match."""
+
+        self._db.diagnostic_category.insert_one({
+            'categoryId': 'no-profile',
+            'filters': ['constant(0)'],
+        })
+        category = diagnostic.find_category(self.user, database=self._db)
+        self.assertIsNone(category)
+
+    def test_project_category(self) -> None:
+        """The first category relevant for the project is selected."""
+
+        project = diagnostic.scoring.ScoringProject(
+            self.user.projects[0], self.user.profile, self.user.features_enabled, self._db)
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'no-profile',
+                'filters': ['constant(0)'],
+            },
+            {
+                'categoryId': 'every-one',
+                'filters': ['constant(3)'],
+                'order': 1,
+            },
+            {
+                'categoryId': 'every-one-but-less-important',
+                'filters': ['constant(2)'],
+                'order': 2,
+            }
+        ])
+        category = diagnostic.find_category(project)
+        assert category
+        self.assertEqual('every-one', category.category_id)
+
+    def test_param_overrides_project(self) -> None:
+        """Explicit database is more relevant than scoring project's."""
+
+        project = diagnostic.scoring.ScoringProject(
+            self.user.projects[0], self.user.profile, self.user.features_enabled, self._db)
+        self._db.diagnostic_category.insert_one({
+            'categoryId': 'every-one',
+            'filters': ['constant(3)'],
+            'order': 1,
+        })
+        _db = mongomock.MongoClient().test
+        _db.diagnostic_category.insert_one({
+            'categoryId': 'every-one-in-custom-db',
+            'filters': ['constant(2)'],
+            'order': 2,
+        })
+        category = diagnostic.find_category(project, database=_db)
+        assert category
+        self.assertEqual('every-one-in-custom-db', category.category_id)
 
 
 if __name__ == '__main__':

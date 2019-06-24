@@ -10,7 +10,7 @@ from bob_emploi.data_analysis.lib import cleaned_data
 from bob_emploi.data_analysis.lib import rome_genderization
 
 
-def main(rome_appellation_csv, output_txt):
+def main(rome_appellation_csv: str, output_txt: str) -> None:
     """Sample ROME jobs in job groups.
 
     Args:

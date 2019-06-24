@@ -53,7 +53,13 @@ class LowerFirstLetterTestCase(unittest.TestCase):
         """All upper case."""
 
         sentence = french.lower_first_letter('THIS IS ALL UPPERCASE')
-        self.assertEqual('tHIS IS ALL UPPERCASE', sentence)
+        self.assertEqual('THIS IS ALL UPPERCASE', sentence)
+
+    def test_with_uppercase(self) -> None:
+        """All upper case."""
+
+        sentence = french.lower_first_letter('This contains UPPERCASE')
+        self.assertEqual('this contains UPPERCASE', sentence)
 
     def test_one_letter(self) -> None:
         """Only one letter."""
@@ -66,6 +72,12 @@ class LowerFirstLetterTestCase(unittest.TestCase):
 
         sentence = french.lower_first_letter('')
         self.assertEqual('', sentence)
+
+    def test_acronym(self) -> None:
+        """Starts with an acronym."""
+
+        sentence = french.lower_first_letter('SPA manager')
+        self.assertEqual('SPA manager', sentence)
 
 
 class UpperFirstLetterTestCase(unittest.TestCase):

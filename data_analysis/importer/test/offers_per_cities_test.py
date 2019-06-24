@@ -16,7 +16,7 @@ class OffersPerCityTestCase(unittest.TestCase):
     offers_csv = path.join(path.dirname(__file__), 'testdata/job_offers/job_offers.csv')
     colnames_csv = path.join(path.dirname(__file__), 'testdata/job_offers/column_names.txt')
 
-    def test_extract_offers_per_cities(self):
+    def test_extract_offers_per_cities(self) -> None:
         """Basic usage of extract_offers_per_cities."""
 
         cities = offers_per_city.extract_offers_per_cities(

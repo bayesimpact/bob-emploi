@@ -19,6 +19,7 @@ You can try it out on a local instance if you have a job offers file:
 import collections
 import enum
 import itertools
+import typing
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.data_analysis.lib import job_offers
@@ -90,16 +91,16 @@ class _ProxyFields(object):
     not prefixed by foo_ won't be accessible through the proxy.
     """
 
-    def __init__(self, target, prefix='', suffix=''):
+    def __init__(self, target: typing.Any, prefix: str = '', suffix: str = '') -> None:
         self._target = target
         self._prefix = prefix
         self._suffix = suffix
 
-    def __getattr__(self, field):
+    def __getattr__(self, field: str) -> typing.Any:
         return getattr(self._target, self._prefix + field + self._suffix)
 
 
-def _diploma_name(job_offer_diploma):
+def _diploma_name(job_offer_diploma: _ProxyFields) -> typing.Optional[str]:
     """Compute the diploma name.
 
     Check http://go/pe:notebooks/datasets/job_postings.ipynb for the rationale.
@@ -111,7 +112,7 @@ def _diploma_name(job_offer_diploma):
     if (not job_offer_diploma.type_code or
             job_offer_diploma.type_code == 'NULL'):
         return None
-    diploma_name = job_offer_diploma.type_name
+    diploma_name = typing.cast(str, job_offer_diploma.type_name)
     if diploma_name.endswith(' ou équivalent'):
         diploma_name = diploma_name[:-len(' ou équivalent')]
     if (not int(job_offer_diploma.subject_area_code) or
@@ -120,13 +121,15 @@ def _diploma_name(job_offer_diploma):
     return '{} en {}'.format(diploma_name, job_offer_diploma.subject_area_name)
 
 
-def _employment_type(job_offer):
+def _employment_type(job_offer: 'job_offers._JobOffer') -> job_pb2.EmploymentType:
     """Compute the employment type of the job offer."""
 
     if job_offer.contract_type_code == 'CDI':
         return job_pb2.CDI
     if job_offer.contract_type_code == 'MIS':
         return job_pb2.INTERIM
+    if job_offer.contract_duration is None:
+        return job_pb2.CDD_LESS_EQUAL_3_MONTHS
     duration = int(job_offer.contract_duration)
     if job_offer.contract_dur_unit_code == 'MO':
         duration *= 30
@@ -145,14 +148,14 @@ class _RequirementKind(enum.Enum):
 
 class _RequirementsCollector(object):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.num_offers = 0
-        self.suggestions = collections.defaultdict(
-            lambda: collections.defaultdict(int))
-        self.requirements = collections.defaultdict(
-            lambda: collections.defaultdict(int))
+        self.suggestions: typing.Dict[_RequirementKind, typing.Dict[typing.Any, int]] = \
+            collections.defaultdict(lambda: collections.defaultdict(int))
+        self.requirements: typing.Dict[_RequirementKind, typing.Dict[typing.Any, int]] = \
+            collections.defaultdict(lambda: collections.defaultdict(int))
 
-    def collect(self, job_offer):
+    def collect(self, job_offer: 'job_offers._JobOffer') -> None:
         """Collect requirements from a job offer."""
 
         self.num_offers += 1
@@ -163,14 +166,16 @@ class _RequirementsCollector(object):
         self._collect_job(job_offer)
         # TODO(pascal): Also collect lang.
 
-    def _add_suggestion(self, kind, name, required=False):
+    def _add_suggestion(
+            self, kind: _RequirementKind, name: typing.Any, required: bool = False) -> None:
         """Collect a suggestion."""
 
         self.suggestions[kind][name] += 1
         if required:
             self.requirements[kind][name] += 1
 
-    def _get_sorted_requirements(self, kind, threshold):
+    def _get_sorted_requirements(self, kind: _RequirementKind, threshold: float) \
+            -> typing.Iterator[typing.Tuple[typing.Any, int, int]]:
         """Get requirements sorted by most frequent first.
 
         Args:
@@ -194,7 +199,7 @@ class _RequirementsCollector(object):
             required_count = self.requirements[kind][name]
             yield name, count, max(1, round(100 * required_count / count))
 
-    def _collect_diploma(self, job_offer):
+    def _collect_diploma(self, job_offer: 'job_offers._JobOffer') -> None:
         kind = _RequirementKind.diplomas
         diploma_1 = _ProxyFields(job_offer, 'degree_', '_1')
         diploma_name_1 = _diploma_name(diploma_1)
@@ -207,7 +212,7 @@ class _RequirementsCollector(object):
             self._add_suggestion(
                 kind, diploma_name_2, required=diploma_2.required_code == 'E')
 
-    def _collect_driving_license(self, job_offer):
+    def _collect_driving_license(self, job_offer: 'job_offers._JobOffer') -> None:
         kind = _RequirementKind.driving_licenses
         if not job_offer.driving_lic_code_1 or job_offer.driving_lic_code_1 == 'NULL':
             return
@@ -228,7 +233,7 @@ class _RequirementsCollector(object):
                 kind, job_pb2.DrivingLicense.Name(license_2),
                 required=job_offer.driving_lic_req_code_2 == 'E')
 
-    def _collect_desktop_tools(self, job_offer):
+    def _collect_desktop_tools(self, job_offer: 'job_offers._JobOffer') -> None:
         kind = _RequirementKind.desktop_tools
         tools_1 = job_offer.desktop_tools_name_1
         tools_2 = job_offer.desktop_tools_name_2
@@ -247,15 +252,17 @@ class _RequirementsCollector(object):
         if best_level == 'Utilisation experte':
             self._add_suggestion(kind, 3)
 
-    def _collect_employment_type(self, job_offer):
+    def _collect_employment_type(self, job_offer: 'job_offers._JobOffer') -> None:
         kind = _RequirementKind.contract_type
         self._add_suggestion(kind, _employment_type(job_offer))
 
-    def _collect_job(self, job_offer):
+    def _collect_job(self, job_offer: 'job_offers._JobOffer') -> None:
         kind = _RequirementKind.job
+        if job_offer.rome_profession_code is None:
+            return
         self._add_suggestion(kind, str(int(job_offer.rome_profession_code)))
 
-    def get_proto_dict(self):
+    def get_proto_dict(self) -> typing.Dict[str, typing.List[typing.Any]]:
         """Gets the requirements collected as a proto compatible dict.
 
         Returns:
@@ -278,7 +285,8 @@ class _RequirementsCollector(object):
             'specificJobs': list(self._get_jobs(_FILTER_JOB_RATIO * self.num_offers)),
         }
 
-    def _get_diplomas(self, count_threshold):
+    def _get_diplomas(self, count_threshold: float) \
+            -> typing.Iterator[typing.Dict[str, typing.Any]]:
         # Sort by descending count, then ascending diploma name.
         diplomas = self._get_sorted_requirements(
             _RequirementKind.diplomas, count_threshold)
@@ -290,7 +298,8 @@ class _RequirementsCollector(object):
                 'percentRequired': percent_required,
             }
 
-    def _get_driving_licenses(self, count_threshold):
+    def _get_driving_licenses(self, count_threshold: float) \
+            -> typing.Iterator[typing.Dict[str, typing.Any]]:
         # Sort by descending count, then ascending licence name.
         licenses = self._get_sorted_requirements(
             _RequirementKind.driving_licenses, count_threshold)
@@ -301,7 +310,8 @@ class _RequirementsCollector(object):
                 'drivingLicense': license_name,
             }
 
-    def _get_desktop_tools(self, count_threshold):
+    def _get_desktop_tools(self, count_threshold: float) \
+            -> typing.Iterator[typing.Dict[str, typing.Any]]:
         # Sort by descending count, then ascending license name.
         tools = self._get_sorted_requirements(
             _RequirementKind.desktop_tools, count_threshold)
@@ -311,7 +321,8 @@ class _RequirementsCollector(object):
                 'officeSkillsLevel': level,
             }
 
-    def _get_contract_types(self):
+    def _get_contract_types(self) \
+            -> typing.Iterator[typing.Dict[str, typing.Any]]:
         contract_types = self._get_sorted_requirements(
             _RequirementKind.contract_type, 0)
         for contract_type, count, unused_percent_required in contract_types:
@@ -321,7 +332,8 @@ class _RequirementsCollector(object):
                 'contractType': job_pb2.EmploymentType.Name(contract_type),
             }
 
-    def _get_jobs(self, count_threshold):
+    def _get_jobs(self, count_threshold: float) \
+            -> typing.Iterator[typing.Dict[str, typing.Any]]:
         jobs = self._get_sorted_requirements(_RequirementKind.job, count_threshold)
         for job_id, count, unused_percent_required in jobs:
             yield {
@@ -330,7 +342,7 @@ class _RequirementsCollector(object):
             }
 
 
-def csv2dicts(job_offers_csv, colnames_txt):
+def csv2dicts(job_offers_csv: str, colnames_txt: str) -> typing.List[typing.Dict[str, typing.Any]]:
     """Import the requirement from job offers grouped by Job Group in MongoDB.
 
     Args:
@@ -340,10 +352,12 @@ def csv2dicts(job_offers_csv, colnames_txt):
         Requirements as a JobRequirements JSON-proto compatible dict.
     """
 
-    job_groups = collections.defaultdict(_RequirementsCollector)
+    job_groups: typing.Dict[str, _RequirementsCollector] = \
+        collections.defaultdict(_RequirementsCollector)
     for job_offer in job_offers.iterate(
             job_offers_csv, colnames_txt, _REQUIRED_FIELDS):
-        job_groups[job_offer.rome_profession_card_code].collect(job_offer)
+        if job_offer.rome_profession_card_code:
+            job_groups[job_offer.rome_profession_card_code].collect(job_offer)
     return [
         dict(job_groups[job_group_id].get_proto_dict(), _id=job_group_id)
         for job_group_id in sorted(job_groups)]

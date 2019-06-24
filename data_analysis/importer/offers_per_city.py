@@ -17,6 +17,7 @@ If you managed to get your hands on the offers dataset, you can run:
 import collections
 import math
 import sys
+import typing
 
 import tqdm
 
@@ -33,13 +34,15 @@ _LONGITUDE_CODE_FIELD = 'longitude'
 _CITY_NAME_CODE_FIELD = 'city_name'
 _TOTAL_RECORDS = 11170764
 
-_CityData = collections.namedtuple(
-    '_CityData', 'job_group_to_city_ids, offers_per_job_group, city_info')
-_CityOffers = collections.namedtuple(
-    '_CityOffers', 'city offers')
+
+class _CityData(typing.NamedTuple):
+    job_group_to_city_ids: typing.Dict[str, typing.Dict[str, int]]
+    offers_per_job_group: typing.Dict[str, int]
+    city_info: typing.Dict[str, typing.Any]
 
 
-def _add_population_data(city_info, data_folder):
+def _add_population_data(
+        city_info: typing.Dict[str, typing.Dict[str, typing.Any]], data_folder: str) -> None:
     french_city_stats = cleaned_data.french_city_stats(data_folder)
     for city_code in city_info:
         try:
@@ -48,16 +51,19 @@ def _add_population_data(city_info, data_folder):
             city_info[city_code]['population'] = 0
 
 
-def _list_hiring_cities(offers_rows, min_creation_date, data_folder):
+def _list_hiring_cities(
+        offers_rows: typing.Iterable['job_offers._JobOffer'], min_creation_date: str,
+        data_folder: str) -> _CityData:
     """Segmenting the data into three dictionaries."""
 
     french_cities = cleaned_data.french_cities(data_folder, unique=True)
     french_cities.loc[french_cities.current_city_id.isnull(), 'current_city_id'] = \
         french_cities[french_cities.current_city_id.isnull()].index
 
-    job_group_to_city_ids = collections.defaultdict(lambda: collections.defaultdict(int))
-    offers_per_job_group = collections.defaultdict(int)
-    city_info = {}
+    job_group_to_city_ids: typing.Dict[str, typing.Dict[str, int]] = \
+        collections.defaultdict(lambda: collections.defaultdict(int))
+    offers_per_job_group: typing.Dict[str, int] = collections.defaultdict(int)
+    city_info: typing.Dict[str, typing.Any] = {}
     bad_format_records = 0
 
     for offer in tqdm.tqdm(offers_rows, total=_TOTAL_RECORDS, file=sys.stdout):
@@ -113,7 +119,9 @@ def _list_hiring_cities(offers_rows, min_creation_date, data_folder):
         city_info=city_info)
 
 
-def extract_offers_per_cities(offers_file, colnames, min_creation_date, data_folder='data'):
+def extract_offers_per_cities(
+        offers_file: str, colnames: str, min_creation_date: str, data_folder: str = 'data') \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Extract the interesting cities in terms of number of offers for each job group.
 
     Args:
@@ -131,11 +139,12 @@ def extract_offers_per_cities(offers_file, colnames, min_creation_date, data_fol
     city_data = _list_hiring_cities(offers_rows, min_creation_date, data_folder)
 
     # Computing the threshold per job group.
-    job_group_threshold = collections.defaultdict(float)
+    job_group_threshold: typing.Dict[str, float] = collections.defaultdict(float)
     for job_group, offers in city_data.offers_per_job_group.items():
         job_group_threshold[job_group] = math.pow(offers, 0.6) / 40
 
-    job_group_to_kept_cities = collections.defaultdict(list)
+    job_group_to_kept_cities: typing.Dict[str, typing.List[typing.Dict[str, typing.Any]]] = \
+        collections.defaultdict(list)
     for job_group, city_ids in city_data.job_group_to_city_ids.items():
         kept_cities = []
         for city_id, offer_count in city_ids.items():

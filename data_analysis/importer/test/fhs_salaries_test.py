@@ -69,7 +69,7 @@ SALARY_TESTS = [
 class FHSSalariesTestCase(unittest.TestCase):
     """Unit tests for the FHS salaries helper functions."""
 
-    def test_compute_annual_salary(self):
+    def test_compute_annual_salary(self) -> None:
         """Unit tests for compute_annual_salary function."""
 
         for test in SALARY_TESTS:
@@ -77,7 +77,7 @@ class FHSSalariesTestCase(unittest.TestCase):
                 test.SALMT, test.SALUNIT)
             self.assertAlmostEqual(salary, test.expect_annual, msg=test.name)
 
-    def test_bucketize_salary(self):
+    def test_bucketize_salary(self) -> None:
         """Unit tests for bucketize_salary function."""
 
         for test in SALARY_TESTS:
@@ -88,7 +88,7 @@ class FHSSalariesTestCase(unittest.TestCase):
             self.assertEqual(low, test.bucket_low, msg=test.name)
             self.assertEqual(high, test.bucket_high, msg=test.name)
 
-    def test_job_seeker_criteria(self):
+    def test_job_seeker_criteria(self) -> None:
         """Basic usage of the job_seeker_criteria function."""
 
         criteria = fhs_salaries.job_seeker_criteria({

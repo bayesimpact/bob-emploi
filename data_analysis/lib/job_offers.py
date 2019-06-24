@@ -54,10 +54,17 @@ def double_property_frequency(job_offers: pd.DataFrame, column: str, req_column:
     return frequencies.sort_values('frequency', ascending=False)
 
 
+class _JobOffer(typing.Tuple[typing.Optional[str], ...]):
+    """Typing stub for the result of iterate."""
+
+    def __getattr__(self, unused_name: str) -> typing.Optional[str]:
+        """Access a field of the job offer."""
+
+
 def iterate(
         job_offers_csv: str, colnames_txt: str,
-        required_fields: typing.Optional[typing.Set[str]] = None) \
-        -> typing.Iterator[typing.Tuple[typing.Optional[str], ...]]:
+        required_fields: typing.Optional[typing.AbstractSet[str]] = None) \
+        -> typing.Iterator[_JobOffer]:
     """Iterate on all job offers lazily.
 
     Args:

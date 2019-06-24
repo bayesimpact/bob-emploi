@@ -39,7 +39,7 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'focus-network'
 
     def setUp(self) -> None:
-        super(NetworkVarsTestCase, self).setUp()
+        super().setUp()
 
         self.database.job_group_info.insert_one({
             '_id': 'B1234',
@@ -121,8 +121,9 @@ class NetworkVarsTestCase(mail_blast_test.CampaignTestBase):
 
         self.project.city.departement_id = '13'
         self.project.target_job.job_group.rome_id = 'D1234'
-        self.database.job_group_info.insert_one(
-            dict(self.database.job_group_info.find_one({}), _id='D1234'))
+        initial_job_group = self.database.job_group_info.find_one({})
+        assert initial_job_group
+        self.database.job_group_info.insert_one(dict(initial_job_group, _id='D1234'))
 
         self._assert_user_receives_campaign()
 
@@ -135,7 +136,7 @@ class NetworkPlusTestCase(mail_blast_test.CampaignTestBase):
     campaign_id = 'network-plus'
 
     def setUp(self) -> None:
-        super(NetworkPlusTestCase, self).setUp()
+        super().setUp()
 
         self.database.job_group_info.insert_one({
             '_id': 'B1234',
@@ -223,11 +224,11 @@ class NetworkPlusTestCase(mail_blast_test.CampaignTestBase):
             'frustration': 'SELF_CONFIDENCE',
             'gender': 'MASCULINE',
             'hasChildren': 'True',
-            'hasHandicap': '',
             'hasHighSchoolDegree': '',
             'hasLargeNetwork': 'True',
             'hasWorkedBefore': 'True',
             'inTargetDomain': 'dans le juridique',
+            'isAbleBodied': 'True',
             'isYoung': 'True',
             'inCity': 'à Lyon',
             'jobGroupInDepartement': 'aide et médiation judiciaire dans le Rhône',

@@ -15,7 +15,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
-        super(AssessAssessmentTestCase, self).setUp()
+        super().setUp()
         self._db = mongomock.MongoClient().test
         patcher = mock.patch(assess_assessment.__name__ + '._DB', new=self._db)
         patcher.start()
@@ -64,6 +64,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
                 },
             },
             {
+                '_id': '2017-10-11_00',
                 'indexInPool': 0,
                 'poolName': '2017-10-11',
                 'title': 'Successful',
@@ -72,6 +73,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
                 },
             },
             {
+                '_id': '2017-11-11_01',
                 'indexInPool': 1,
                 'poolName': '2017-11-11',
                 'user_data': {
@@ -79,6 +81,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
                 },
             },
             {
+                '_id': '2017-11-11_02',
                 'indexInPool': 2,
                 'poolName': '2017-11-11',
                 'user_data': {
@@ -86,6 +89,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
                 },
             },
             {
+                '_id': '2017-11-11_03',
                 'indexInPool': 3,
                 'poolName': '2017-11-11',
                 'user_data': {
@@ -93,6 +97,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
                 },
             },
             {
+                '_id': '2017-11-11_04',
                 'indexInPool': 4,
                 'poolName': '2017-11-11',
                 'user_data': {
@@ -100,6 +105,7 @@ class AssessAssessmentTestCase(unittest.TestCase):
                 },
             },
             {
+                '_id': '2017-11-11_05',
                 'indexInPool': 5,
                 'poolName': '2017-11-11',
                 'user_data': {

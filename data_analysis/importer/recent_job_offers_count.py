@@ -14,12 +14,12 @@ You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
-        python bob_emploi/data_analysis/importer/recent_job_offers_count.py \
-        --mongo_url mongodb://frontend-db/test
+        python bob_emploi/data_analysis/importer/recent_job_offers_count.py
 """
 
 import collections
 import os
+import typing
 
 import emploi_store
 import tqdm
@@ -27,14 +27,15 @@ import tqdm
 from bob_emploi.data_analysis.lib import mongo
 
 
-def download_and_count(file=None):
+def download_and_count(file: typing.Optional[typing.TextIO] = None) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import the # of job offers available per job group and dept in MongoDB.
 
     Returns:
         Recent job offers count as a LocalJobStats JSON-proto compatible dict.
     """
 
-    counts = collections.defaultdict(int)
+    counts: typing.Dict[str, int] = collections.defaultdict(int)
     for job_offer in tqdm.tqdm(_iterate_job_offers(), file=file):
         local_id = '{}:{}'.format(
             job_offer['DEPARTEMENT_CODE'],
@@ -45,14 +46,15 @@ def download_and_count(file=None):
         for local_id, count in counts.items()]
 
 
-def _iterate_job_offers():
+def _iterate_job_offers() -> typing.Iterator[typing.Dict[str, str]]:
     client = emploi_store.Client(
         client_id=os.getenv('EMPLOI_STORE_CLIENT_ID'),
         client_secret=os.getenv('EMPLOI_STORE_CLIENT_SECRET'))
     package = client.get_package('offres')
     resource = package.get_resource(name="Offres d'emploi")
-    return resource.records(fields=[
-        'DEPARTEMENT_CODE', 'ROME_PROFESSION_CARD_CODE'])
+    return typing.cast(
+        typing.Iterator[typing.Dict[str, str]],
+        resource.records(fields=['DEPARTEMENT_CODE', 'ROME_PROFESSION_CARD_CODE']))
 
 
 if __name__ == '__main__':

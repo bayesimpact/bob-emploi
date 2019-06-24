@@ -15,7 +15,7 @@ class SeasonalJobbingImporterTestCase(unittest.TestCase):
     offers_csv = path.join(
         path.dirname(__file__), 'testdata/job_offers/seasonal_offers_2015_2017.csv')
 
-    def test_csv2dicts(self):
+    def test_csv2dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
 
         offers = seasonal_jobbing.csv2dicts(self.offers_csv)

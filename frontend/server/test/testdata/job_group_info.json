@@ -104,6 +104,7 @@
       "sectors": ["Armée"],
       "structures": ["Marché, foire exposition", "Boucherie", "Boucherie-charcuteri"]
     },
+    "nationalMarketScore": 0.7,
     "preferredApplicationMedium": "APPLY_IN_PERSON"
   },
   {
@@ -134,7 +135,9 @@
     "romeId": "K1903",
     "growth20122022": -0.1,
     "applicationComplexity": "COMPLEX_APPLICATION_PROCESS",
+    "isDiplomaStrictlyRequired": true,
     "preferredApplicationMedium": "APPLY_BY_EMAIL",
+    "nationalMarketScore": 0.2,
     "requirements": {
       "officeSkills": [
         {
@@ -149,6 +152,7 @@
     "name": "Achats",
     "romeId": "M1101",
     "preferredApplicationMedium": "APPLY_BY_EMAIL",
+    "nationalMarketScore": 0.7,
     "applicationModes" : {
         "whatever" : {
             "modes" : [
@@ -190,6 +194,14 @@
             }
         ]
     }
+  },
+  {
+    "_id": "K1302",
+    "name": "Garde d'enfants",
+    "romeId": "K1303",
+    "hasFreelancers": true,
+    "nationalMarketScore": 0.2,
+    "preferredApplicationMedium": "APPLY_IN_PERSON"
   },
   {
     "_id": "M1705",

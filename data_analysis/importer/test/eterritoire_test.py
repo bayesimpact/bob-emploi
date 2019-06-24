@@ -15,7 +15,7 @@ class ETerritoireImporterTestCase(unittest.TestCase):
     """Unit tests for the e-Territoire links importer."""
 
     @mock.patch(requests.__name__ + '.get')
-    def test_get_cities_dicts(self, mock_get):
+    def test_get_cities_dicts(self, mock_get: mock.MagicMock) -> None:
         """Basic usage."""
 
         mock_get().json.return_value = json.loads('''[

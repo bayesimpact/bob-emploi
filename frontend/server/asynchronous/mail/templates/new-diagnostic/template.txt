@@ -9,19 +9,18 @@ Est-ce que je devrais modifier mon CV ?{%endif%}
 Est-ce que mon profil est adapté ?
 Quelle stratégie mettre en place dans ma recherche ?
 
-Heureusement, notre mission est de vous apporter des réponses. C'est pour ça qu'on a créé un outil pour y voir plus clair : le diagnostic Bob. 
+Heureusement, notre mission c'est de vous apporter des réponses. C'est pour ça qu'on a créé un outil pour y voir plus clair : le diagnostic Bob. 
 
-Le diagnostic souligne vos points forts et vous donne des pistes d'amélioration.
-Le but : augmenter au maximum l'efficacité de votre recherche. Venez le découvrir ici [{{var:loginUrl:"https://www.bob-emploi.fr/"}}]
-
+Le diagnostic souligne vos points forts et vous donne des pistes d'amélioration. Le but : augmenter au maximum l'efficacité de votre recherche. Venez le découvrir ici [{{var:loginUrl:"https://www.bob-emploi.fr/"}}]
 
 
-D'ailleurs si votre meilleur ami{% if var:mayHaveSeekingChildren:""=="True" %}, votre enfants{%endif%}, votre voisine du dessous ou votre cousin a besoin d'un coup de pouce dans sa recherche, vous pouvez lui partager Bob directement par e-mail en cliquant ici [mailto:?subject=Essaie%20Bob&body=Bonjour%2C%0AJ'ai%20d%C3%A9couvert%20Bob%2C%20un%20site%20qui%20donne%20des%20conseils%20pour%20augmenter%20l'efficacit%C3%A9%20de%20sa%20recherche%20d'emploi%2C%20c'est%20top%20!%20Tu%20devrais%20tester%20https%3A%2F%2Fwww.bobemploi.fr%2Finvite%23a%0ABonne%20journ%C3%A9e].
+
+D'ailleurs si votre meilleur ami{% if var:mayHaveSeekingChildren:""=="True" %}, votre enfants{%endif%} ou votre cousin est un peu perdu dans sa recherche, vous pouvez lui partager Bob directement par e-mail en cliquant ici [mailto:?subject=Essaie%20Bob&body=Bonjour%2C%0AJ'ai%20d%C3%A9couvert%20Bob%2C%20un%20site%20qui%20donne%20des%20conseils%20pour%20augmenter%20l'efficacit%C3%A9%20de%20sa%20recherche%2C%20c'est%20top%20!%20Tu%20devrais%20tester%20www.bobemploi.fr%0ABonne%20journ%C3%A9e].
 
 À très vite,
 
 Margaux et l'équipe de Bob
 
-PS: Des remarques sur votre diagnostic ? Envoyez moi vos commentaires en répondant à ce mail.
+PS: Des remarques sur votre diagnostic ? envoyez moi vos commentaires en répondant à ce mail.
 Vous avez déjà retrouvé un emploi ? Cliquez ici [{{var:stopSeekingUrl}}].
-Vous recevez cet email car vous êtes inscrit{%if var:gender:"" == "FEMININE"%}e{%endif%} sur Bob [https://www.bob-emploi.fr]. Cliquez ici [{{var:unsubscribeLink}}]  si vous souhaitez vous désinscrire.
+Vous recevez cet email car vous êtes inscrit sur Bob [https://www.bob-emploi.fr]. Cliquez ici [{{var:unsubscribeLink}}]  si vous souhaitez vous désinscrire.

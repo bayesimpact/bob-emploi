@@ -1,21 +1,28 @@
 {
   "extends": [
     "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
     "plugin:import/recommended",
     "plugin:react/recommended",
+    "plugin:unicorn/recommended",
     "plugin:you-dont-need-lodash-underscore/compatible"
   ],
-  "parser": "babel-eslint",
+  "parser": "@typescript-eslint/parser",
   "plugins": [
+    "@mysticatea",
+    "@typescript-eslint",
     "import",
     "jsx-a11y",
     "react",
     "unicorn"
   ],
   "settings": {
-    "import/resolver": "webpack",
+    "import/resolver": {
+      "typescript": {},
+      "webpack": {}
+    },
     "react": {
-      "version": "16.4"
+      "version": "16.8"
     }
   },
   "parserOptions": {
@@ -31,6 +38,14 @@
     "node": true
   },
   "rules": {
+    "@mysticatea/no-this-in-static": "error",
+    "@typescript-eslint/indent": ["error", 2, {"SwitchCase": 1}],
+    "@typescript-eslint/member-delimiter-style": ["error", {"multiline": {"delimiter": "none"}}],
+    "@typescript-eslint/no-unused-vars": ["error", {
+        "argsIgnorePattern": "^unused[A-Z]",
+        "varsIgnorePattern": "^omitted[A-Z]"
+    }],
+    "@typescript-eslint/no-var-requires": 0,
     "array-bracket-spacing": "error",
     "arrow-spacing": "error",
     "brace-style": ["error", "1tbs", {"allowSingleLine": false}],
@@ -44,11 +59,16 @@
     "eqeqeq": "error",
     "func-call-spacing": "error",
     "global-strict": 0,
-    "import/extensions": ["error"],
+    "import/extensions": ["error", "ignorePackages", {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+    }],
     "import/first": ["error", "absolute-first"],
     "import/newline-after-import": "error",
     "import/unambiguous": 0,
-    "indent": ["error", 2, {"SwitchCase": 1}],
+    "indent": 0,
     "jsx-a11y/accessible-emoji": "error",
     "jsx-a11y/alt-text": "error",
     "jsx-quotes": ["error", "prefer-double"],
@@ -64,7 +84,7 @@
     "no-multi-spaces": "error",
     "no-trailing-spaces": "error",
     "no-unexpected-multiline": "error",
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^unused[A-Z]" }],
+    "no-unused-vars": 0,
     "no-use-before-define": "error",
     "no-whitespace-before-property": "error",
     "object-curly-spacing": "error",
@@ -75,6 +95,7 @@
     "react/jsx-curly-brace-presence": ["error", "never"],
     "react/jsx-curly-spacing": "error",
     "react/jsx-equals-spacing": "error",
+    "react/jsx-no-bind": "error",
     "react/jsx-tag-spacing": "error",
     "react/no-unescaped-entities": 0,
     "react/no-unused-prop-types": ["error", {"skipShapeProps": true}],
@@ -91,8 +112,14 @@
     "spaced-comment": "error",
     "switch-colon-spacing": "error",
     "template-curly-spacing": "error",
-    "unicorn/escape-case": "error",
+    "unicorn/catch-error-name": ["error", {"caughtErrorsIgnorePattern": "^unusedError$"}],
+    "unicorn/explicit-length-check": 0,
     "unicorn/filename-case": ["error", {"case": "snakeCase"}],
-    "unicorn/number-literal-case": "error"
+    "unicorn/no-abusive-eslint-disable": 0,
+    "unicorn/prefer-add-event-listener": 0,
+    "unicorn/prefer-node-append": 0,
+    "unicorn/prefer-node-remove": 0,
+    "unicorn/prefer-query-selector": 0,
+    "unicorn/prevent-abbreviations": 0
   }
 }

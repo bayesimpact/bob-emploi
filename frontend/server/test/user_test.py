@@ -344,6 +344,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         # Variable as a list to be used in closures below.
         time_delay = [0]
+        log_calls = []
 
         def _delayed_time(*unused_args: typing.Any, **unused_kwargs: typing.Any) -> float:
             return _TIME() + time_delay[0]
@@ -353,12 +354,23 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             time_delay[0] += 6
         mock_advise.side_effect = _wait_for_it
 
+        def _log_call(level: str) -> typing.Callable[..., None]:
+            def _log_me(*unused_args: typing.Any, **unused_kwargs: typing.Any) -> None:
+                log_calls.append(level)
+            return _log_me
+        mock_warning.side_effect = _log_call('warning')
+        mock_info.side_effect = _log_call('info')
+
         self.create_user([base_test.add_project], advisor=False)
         mock_warning.assert_called_once()
-        self.assertGreaterEqual(mock_info.call_count, 10)
+        # Checking the last log call is with `warning` level.
+        self.assertEqual('warning', log_calls.pop())
         warning_args = mock_warning.call_args[0]
         self.assertEqual('Long request: %d seconds', warning_args[0])
         self.assertGreaterEqual(warning_args[1], 2)
+        self.assertGreaterEqual(mock_info.call_count, 10)
+        # Checking all other log calls are with `info` level.
+        self.assertEqual({'info'}, set(log_calls), msg=log_calls)
         self.assertEqual(
             {'%.4f: Tick %s (%.4f since last tick)'},
             set(c[0][0] for c in mock_info.call_args_list))
@@ -876,7 +888,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '/api/user/{}/update-and-quick-diagnostic/0'.format(user_id),
             data=json.dumps({'user': {'projects': [{
                 'targetJob': {'name': 'Fou'},
-                'employmentTypes': ['CDD']}]}}),
+                'employmentTypes': ['CDD_OVER_3_MONTHS']}]}}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
@@ -884,7 +896,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         updated_user = self.get_user_info(user_id, auth_token)
         self.assertEqual('Albert', updated_user.get('profile', {}).get('name'))
         self.assertEqual('Fou', updated_user['projects'][0]['targetJob']['name'])
-        self.assertEqual(['CDD'], updated_user['projects'][0]['employmentTypes'])
+        self.assertEqual(['CDD_OVER_3_MONTHS'], updated_user['projects'][0]['employmentTypes'])
 
     def test_update_custom_frustrations_with_quick_diagnostic(self) -> None:
         """Update the custom frustrations with the quick diagnostic route."""
@@ -936,6 +948,40 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual('Albert', updated_user.get('profile', {}).get('name'))
         self.assertEqual('Fou', updated_user['projects'][0]['targetJob']['name'])
         self.assertFalse(updated_user['projects'][0].get('employmentTypes'))
+
+    @mock.patch(server.__name__ + '.now')
+    def test_update_strategy(self, mock_now: mock.MagicMock) -> None:
+        """Set parameters for an opened strategy in a project."""
+
+        mock_now.get.return_value = datetime.datetime(2019, 4, 15)
+        user_info = {'projects': [{'projectId': '0'}]}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        response = self.app.post(
+            '/api/user/{}/project/0/strategy/other-leads'.format(user_id),
+            data=json.dumps({
+                'reachedGoals': {'goal-1': True, 'goal-2': False},
+                'strategyId': 'other-leads',
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        updated_strategy = self.json_from_response(response)
+        self.assertEqual('other-leads', updated_strategy.get('strategyId'))
+        self.assertTrue(updated_strategy.get('reachedGoals', {}).get('goal-1'))
+        self.assertEqual('2019-04-15T00:00:00Z', updated_strategy.get('startedAt'))
+
+        updated_strategy['reachedGoals']['goal-1'] = False
+        updated_strategy['startedAt'] = '2019-05-15T00:00:00Z'
+        response = self.app.post(
+            '/api/user/{}/project/0/strategy/other-leads'.format(user_id),
+            data=json.dumps(updated_strategy),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        updated_strategy = self.json_from_response(response)
+        self.assertEqual('other-leads', updated_strategy.get('strategyId'))
+        self.assertFalse(updated_strategy.get('reachedGoals', {}).get('goal-1'))
+        self.assertFalse(updated_strategy.get('reachedGoals', {}).get('goal-2', True))
+        self.assertEqual('2019-04-15T00:00:00Z', updated_strategy.get('startedAt'))
 
 
 if __name__ == '__main__':

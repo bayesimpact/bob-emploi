@@ -13,7 +13,7 @@ class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-improve-network'
 
     def setUp(self) -> None:
-        super(ImproveYourNetworkScoringModelTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
 
     def test_strong_network(self) -> None:
@@ -152,7 +152,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../network-* endpoints."""
 
     def setUp(self) -> None:
-        super(EndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'network-advice-id',
             'triggerScoringModel': 'advice-better-network',

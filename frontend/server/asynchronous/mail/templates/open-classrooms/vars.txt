@@ -1,0 +1,11 @@
+changeEmailSettingsUrl
+firstName
+gender
+hasAtypicProfile
+hasFamilyAndManagementIssue
+hasSeniority
+hasSimpleApplication
+isFrustratedOld
+isReorienting
+ofFirstName
+statusUpdateUrl

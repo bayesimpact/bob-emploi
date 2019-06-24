@@ -17,7 +17,7 @@ class RecentJobOffersCountTestCase(unittest.TestCase):
         path.dirname(__file__), 'testdata/job_offers')
 
     @mock.patch(recent_job_offers_count.__name__ + '.emploi_store')
-    def test_basic_usage(self, mock_emploi_store):
+    def test_basic_usage(self, mock_emploi_store: mock.MagicMock) -> None:
         """Basic usage."""
 
         mock_resource = mock_emploi_store.Client().get_package().get_resource()

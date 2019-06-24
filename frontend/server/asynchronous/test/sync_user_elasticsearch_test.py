@@ -51,8 +51,8 @@ class SyncTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
     def setUp(self) -> None:
-        super(SyncTestCase, self).setUp()
-        sync_user_elasticsearch._get_urban_context.cache_clear()  # pylint: disable=protected-access
+        super().setUp()
+        sync_user_elasticsearch.proto.clear_mongo_fetcher_cache()
         self._db = mongomock.MongoClient().test
         self._user_db = mongomock.MongoClient().test
         patcher = mock.patch(sync_user_elasticsearch.__name__ + '._USER_DB', new=self._user_db)
@@ -83,7 +83,7 @@ class SyncTestCase(unittest.TestCase):
                 'kind': 'FIND_ANOTHER_JOB',
                 'targetJob': {
                     'name': 'Boulanger',
-                    'jobGroup': {'name': 'Boulangerie'},
+                    'jobGroup': {'name': 'Boulangerie', 'romeId': 'D0001'},
                 },
                 'areaType': 'REGION',
                 'city': {
@@ -114,6 +114,9 @@ class SyncTestCase(unittest.TestCase):
                 ],
                 'feedback': {
                     'score': 5,
+                },
+                'diagnostic': {
+                    'categoryId': 'stuck-market',
                 },
             }],
             'employmentStatus': [{
@@ -176,17 +179,18 @@ class SyncTestCase(unittest.TestCase):
             {
                 'randomGroup': .42,
                 'profile': {
-                    'ageGroup': '35-44',
+                    'ageGroup': 'D. 35-44',
                     'canTutoie': True,
                     'coachingEmailFrequency': 'EMAIL_MAXIMUM',
                     'frustrations': [],
                     'gender': 'MASCULINE',
                     'hasHandicap': False,
-                    'highestDegree': 'DEA_DESS_MASTER_PHD',
+                    'highestDegree': '6 - DEA_DESS_MASTER_PHD',
                     'origin': 'FROM_A_FRIEND',
                 },
                 'project': {
                     'advices': ['network'],
+                    'readAdvices': ['read-more', 'life-balance'],
                     'numAdvicesRead': 2,
                     'job_search_length_months': 4,
                     'isComplete': True,
@@ -195,9 +199,10 @@ class SyncTestCase(unittest.TestCase):
                     'city': {
                         'regionName': 'Auvergne-Rhône-Alpes',
                         'urbanScore': 7,
-                        'urbanContext': 'PERIURBAN',
+                        'urbanContext': '2 - PERIURBAN',
                     },
                     'targetJob': {
+                        'domain': 'Commerce, vente et grande distribution',
                         'name': 'Boulanger',
                         'job_group': {
                             'name': 'Boulangerie',
@@ -206,6 +211,9 @@ class SyncTestCase(unittest.TestCase):
                     'feedbackScore': 5,
                     'feedbackLoveScore': 1,
                     'minSalary': 45000,
+                    'diagnostic': {
+                        'categoryId': 'stuck-market',
+                    }
                 },
                 'registeredAt': '2017-07-15T18:06:08Z',
                 'employmentStatus': {
@@ -269,17 +277,17 @@ class SyncTestCase(unittest.TestCase):
     def test_snake_case_field_in_city(self) -> None:
         """Try with a city containing fields in snake case instead of camel case."""
 
-        self._check_city_corner_case({'urbanContext': 'URBAN'}, {'urban_context': 3})
+        self._check_city_corner_case({'urbanContext': '3 - URBAN'}, {'urban_context': 3})
 
     def test_float_for_enum_field_in_city(self) -> None:
         """Try with a city containing a float to define an enum."""
 
-        self._check_city_corner_case({'urbanContext': 'URBAN'}, {'urbanContext': 3.})
+        self._check_city_corner_case({'urbanContext': '3 - URBAN'}, {'urbanContext': 3.})
 
     def test_string_for_enum_field_in_city(self) -> None:
         """Try with a city containing a string to define an enum."""
 
-        self._check_city_corner_case({'urbanContext': 'URBAN'}, {'urbanContext': 'URBAN'})
+        self._check_city_corner_case({'urbanContext': '3 - URBAN'}, {'urbanContext': 'URBAN'})
 
     @_requests_mock_mock()
     @mock.patch.dict(os.environ, {
@@ -359,18 +367,23 @@ class SyncTestCase(unittest.TestCase):
     def test_age_group(self) -> None:
         """Test various age groups."""
 
-        age_groups: typing.Dict[str, int] = collections.defaultdict(int)
+        age_group_counts: typing.Dict[str, int] = collections.defaultdict(int)
+        age_groups: typing.List[str] = []
 
-        for year in range(1940, 2010):
+        for year in range(1940, 2020):
             user = user_pb2.User()
             user.profile.year_of_birth = year
             data = self._compute_user_data(user)
             age_group = data.get('profile', {}).get('ageGroup')
-            age_groups[age_group] += 1
+            age_group_counts[age_group] += 1
+            age_groups.append(age_group)
 
         self.assertEqual(
-            {'-18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'},
-            set(age_groups.keys()))
+            sorted(age_groups, reverse=True), age_groups, msg='Grouping ages should keep ordering')
+
+        self.assertEqual(
+            {'A. -18', 'B. 18-24', 'C. 25-34', 'D. 35-44', 'E. 45-54', 'F. 55-64', 'G. 65+'},
+            set(age_group_counts.keys()))
 
     def _compute_user_data_for_nps(self, responded_at: datetime.datetime, score: int) \
             -> typing.Dict[str, typing.Any]:

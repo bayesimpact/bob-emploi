@@ -14,7 +14,7 @@ class JobOffersRequirementsImporterTestCase(unittest.TestCase):
     testdata_folder = path.join(
         path.dirname(__file__), 'testdata/job_offers')
 
-    def test_basic_usage(self):
+    def test_basic_usage(self) -> None:
         """Basic usage."""
 
         requirements = job_offers_requirements.csv2dicts(

@@ -50,7 +50,7 @@ def add_bar_labels(
 
 
 def groups_of_at_least_n(data_frame: pandas.DataFrame, col: str, group_size: int) \
-        -> pandas.core.groupby.groupby.DataFrameGroupBy:
+        -> pandas.core.groupby.generic.DataFrameGroupBy:
     """Handy for limiting number of bars plotted."""
 
     by_columns = data_frame.groupby(col)

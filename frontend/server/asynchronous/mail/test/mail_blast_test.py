@@ -1,7 +1,9 @@
 """Unit tests for the bob_emploi.frontend.asynchronous.mail.mail_blast module."""
 
 import datetime
+import json
 import os
+from os import path
 import random
 import re
 import typing
@@ -22,6 +24,8 @@ from bob_emploi.frontend.server.asynchronous.mail import mail_blast
 from bob_emploi.frontend.server.test import mailjetmock
 
 
+_TEMPLATE_PATH = path.join(path.dirname(path.dirname(__file__)), 'templates')
+_TEMPLATE_INDEX_PATH = path.join(_TEMPLATE_PATH, 'mailjet.json')
 _FAKE_CAMPAIGNS = {'fake-user-campaign': campaign.Campaign(
     '000000', {},
     lambda user, **unused_kwargs: {'key': 'value'},
@@ -37,15 +41,22 @@ class CampaignTestBase(unittest.TestCase):
     # May be overriden in subclasses.
     mongo_collection = 'user'
 
+    # Populated during setUpClass.
+    all_templates: typing.Dict[str, str]
+
     @classmethod
     def setUpClass(cls) -> None:
-        super(CampaignTestBase, cls).setUpClass()
+        super().setUpClass()
         if not cls.campaign_id:
             raise NotImplementedError(
                 'The class "{}" is missing a campaing_id'.format(cls.__name__))
+        with open(_TEMPLATE_INDEX_PATH, 'r') as mailjet_json_file:
+            cls.all_templates = {
+                t['mailjetTemplate']: t['name'] for t in json.load(mailjet_json_file)
+            }
 
     def setUp(self) -> None:
-        super(CampaignTestBase, self).setUp()
+        super().setUp()
 
         patcher = mongomock.patch(['mydata.com', 'myprivatedata.com'])
         patcher.start()
@@ -120,6 +131,21 @@ class CampaignTestBase(unittest.TestCase):
         self.assertEqual(1, len(all_sent_messages), msg=all_sent_messages)
         self.assertEqual(self.campaign_id, all_sent_messages[0].properties['CustomCampaign'])
         self._variables = all_sent_messages[0].properties['Variables']
+
+        # Test that variables used in the template are populated.
+        template_id = str(all_sent_messages[0].properties['TemplateID'])
+        self.assertIn(
+            template_id, self.all_templates,
+            msg='No template ID for campaign "{}"'.format(self.campaign_id))
+        # TODO(pascal): Consider renaming templates so that they have the same name as campaigns.
+        template_name = self.all_templates[template_id]
+        with open(path.join(_TEMPLATE_PATH, template_name, 'vars.txt'), 'r') as vars_file:
+            template_vars = {v.strip() for v in vars_file}
+        for template_var in template_vars:
+            self.assertIn(
+                template_var, self._variables,
+                msg='Template error for campaign {}, see '
+                'https://app.mailjet.com/template/{}/build'.format(self.campaign_id, template_id))
 
     @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
     @mailjetmock.patch()
@@ -395,10 +421,12 @@ class BlastCampaignTest(unittest.TestCase):
             {m.properties['From']['Email'] for m in mails_sent})
         february_user = mock_user_db.user.find_one(
             {'_id': objectid.ObjectId('7b18313aa35d807e631ea3d2')})
+        assert february_user
         self.assertFalse(february_user.get('emailsSent'))
 
         april_user = mock_user_db.user.find_one(
             {'_id': objectid.ObjectId('7b18313aa35d807e631ea3d4')})
+        assert april_user
         self.assertEqual(
             [{'sentAt', 'mailjetTemplate', 'campaignId', 'mailjetMessageId'}],
             [e.keys() for e in april_user.get('emailsSent', [])])
@@ -563,6 +591,7 @@ class BlastCampaignTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
         user = mock_user_db.user.find_one({})
+        assert user
         self.assertEqual(['other-email'], [e.get('campaignId') for e in user.get('emailsSent', [])])
 
     def test_fake_secret_salt(self) -> None:
@@ -643,6 +672,7 @@ class BlastCampaignTest(unittest.TestCase):
             ['the-user@gmail.com'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
         user = mock_user_db.user.find_one({})
+        assert user
         self.assertEqual(
             ['focus-network'], [e.get('campaignId') for e in user.get('emailsSent', [])])
 
@@ -737,6 +767,7 @@ class BlastCampaignTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
         user = mock_user_db.user.find_one({})
+        assert user
         self.assertEqual([], [e.get('campaignId') for e in user.get('emailsSent', [])])
 
         mock_warning.assert_called_once()
@@ -776,6 +807,7 @@ class BlastCampaignTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
         user = mock_user_db.user.find_one({})
+        assert user
         self.assertEqual([], [e.get('campaignId') for e in user.get('emailsSent', [])])
 
 
@@ -791,7 +823,7 @@ class BobActionDocumentsCollectionTestCase(unittest.TestCase):
     """Testing blasts for the document collection."""
 
     def setUp(self) -> None:
-        super(BobActionDocumentsCollectionTestCase, self).setUp()
+        super().setUp()
 
         patcher = mongomock.patch(['mydata.com', 'myprivatedata.com'])
         patcher.start()

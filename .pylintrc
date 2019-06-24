@@ -1,3 +1,6 @@
+[MASTER]
+load-plugins=pylint_quotes,pylint_doc_spacing
+
 [REPORTS]
 output=colorized
 # TODO(pascal): Enable no-member when
@@ -5,6 +8,10 @@ output=colorized
 disable=I,R,no-member
 reports=no
 enable=useless-suppression
+
+[FORMAT]
+# Ignore any lines containing an URL longer than ~60 chars long.
+ignore-long-lines=https?://\S{50}
 
 [MISCELLANEOUS]
 notes=FIXME,XXX

@@ -43,7 +43,7 @@ class ServerTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up mock environment."""
 
-        super(ServerTestCase, self).setUp()
+        super().setUp()
         # Simulate a clean load of the modules.
 
         self.app = server.app.test_client()
@@ -78,21 +78,11 @@ class ServerTestCase(unittest.TestCase):
                 'minSalary': 17400.0
             }
         })
-        self._db.job_group_info.insert_many([
-            {
-                '_id': 'A1234',
-                'romeId': 'A1234',
-                'requirements': {
-                    'extras': [{'name': 'foo'}],
-                    'diplomas': [{'name': 'bar'}],
-                },
-            },
-        ])
         self._logging = mock.patch(server.__name__ + '.logging', spec=True)
         self._logging.start()
 
     def tearDown(self) -> None:
-        super(ServerTestCase, self).tearDown()
+        super().tearDown()
         self._logging.stop()
 
     def authenticate_new_user_token(
@@ -222,7 +212,7 @@ class ServerTestCase(unittest.TestCase):
             -> typing.Dict[str, typing.Any]:
         """Retrieve the user's data from the server."""
 
-        kwargs = {}
+        kwargs: typing.Dict[str, typing.Any] = {}
         if auth_token:
             kwargs['headers'] = {'Authorization': 'Bearer ' + auth_token}
         user_req = self.app.get('/api/user/' + user_id, **kwargs)

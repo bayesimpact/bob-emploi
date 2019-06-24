@@ -4,6 +4,7 @@ dist/
 *-bookmarlet.js
 vendor/
 *_pb.js
+*_pb.d.ts
 # Files that are part of the base Docker container.
 /server.js
 /webpack.config.js

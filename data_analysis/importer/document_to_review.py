@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import typing
 
 from airtable import airtable
 from bson import objectid
@@ -13,7 +14,9 @@ from bob_emploi.frontend.api import review_pb2
 _AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 
 
-def import_new_records(base_id, table, mongo_table, view=None):
+def import_new_records(
+        base_id: str, table: str, mongo_table: pymongo.collection.Collection,
+        view: typing.Optional[str] = None) -> None:
     """Import new records from Airtable to MongoDB."""
 
     if not _AIRTABLE_API_KEY:
@@ -66,7 +69,7 @@ def import_new_records(base_id, table, mongo_table, view=None):
     print('{:d} documents added.'.format(num_inserted))
 
 
-def main(string_args=None):
+def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     """Importer for document to review from Airtable to MongoDB."""
 
     parser = argparse.ArgumentParser(
@@ -83,7 +86,7 @@ def main(string_args=None):
     args = parser.parse_args(string_args)
 
     mongo_table = pymongo.MongoClient(args.mongo_url)\
-        .get_default_database()\
+        .get_database()\
         .get_collection(args.mongo_collection)
     import_new_records(args.base_id, args.table, mongo_table, view=args.view)
 

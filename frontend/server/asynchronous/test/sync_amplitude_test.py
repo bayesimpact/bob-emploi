@@ -1,37 +1,15 @@
 """Unit tests for the module sync_amplitude."""
 
 import datetime
-import typing
 import unittest
 from unittest import mock
 
 import mongomock
-import requests
 import requests_mock
-import typing_extensions
 
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import sync_amplitude
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-class _RequestsMock(typing_extensions.Protocol):
-
-    def get(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None, reason: str = '',
-            headers: typing.Optional[typing.Dict[str, str]] = None) \
-            -> requests.Response:
-        """Decide what to do when a get request is sent."""
-
-    def post(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None, reason: str = '',
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            request_headers: typing.Optional[typing.Dict[str, str]] = None) \
-            -> requests.Response:
-        """Decide what to do when a post request is sent."""
 
 
 @requests_mock.mock()
@@ -42,7 +20,7 @@ class _RequestsMock(typing_extensions.Protocol):
 class SyncAmplitudeTestCase(unittest.TestCase):
     """Unit tests for the module."""
 
-    def test_update_users_client_metrics(self, mock_requests: _RequestsMock) -> None:
+    def test_update_users_client_metrics(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics."""
 
         mock_db = mongomock.MongoClient().test
@@ -83,7 +61,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             user.client_metrics.first_session_duration_seconds)
         self.assertEqual(user_pb2.FALSE, user.client_metrics.is_first_session_mobile)
 
-    def test_unknown_user(self, mock_requests: _RequestsMock) -> None:
+    def test_unknown_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics with an unknown user."""
 
         mock_db = mongomock.MongoClient().test
@@ -109,7 +87,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
 
         self.assertEqual('Not Found', user.client_metrics.amplitude_id)
 
-    def test_long_continuous_session(self, mock_requests: _RequestsMock) -> None:
+    def test_long_continuous_session(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics with a user using Bob continuously for an hour."""
 
         mock_db = mongomock.MongoClient().test
@@ -150,7 +128,8 @@ class SyncAmplitudeTestCase(unittest.TestCase):
         self.assertEqual(user_pb2.FALSE, user.client_metrics.is_first_session_mobile)
 
     @mock.patch('logging.info')
-    def test_dry_run(self, mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
+    def test_dry_run(
+            self, mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Test update_users_client_metrics."""
 
         mock_db = mongomock.MongoClient().test
@@ -186,7 +165,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
 
         mock_logging.assert_called_once()
 
-    def test_too_many_requests(self, mock_requests: _RequestsMock) -> None:
+    def test_too_many_requests(self, mock_requests: requests_mock.Mocker) -> None:
         """Test too many requests."""
 
         mock_db = mongomock.MongoClient().test
@@ -210,7 +189,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
                 '--registered-to', '2017-11-18',
                 '--disable-sentry', '--no-dry-run'])
 
-    def test_too_many_requests_but_still_enough(self, mock_requests: _RequestsMock) -> None:
+    def test_too_many_requests_but_still_enough(self, mock_requests: requests_mock.Mocker) -> None:
         """Test too many requests but already done more than 200."""
 
         mock_db = mongomock.MongoClient().test
@@ -248,7 +227,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
         self.assertEqual(
             300, len(list(mock_db.user.find({'clientMetrics.amplitudeId': {'$exists': True}}))))
 
-    def test_registered_from_days_ago(self, mock_requests: _RequestsMock) -> None:
+    def test_registered_from_days_ago(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics."""
 
         mock_db = mongomock.MongoClient().test
@@ -297,7 +276,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             user.client_metrics.first_session_duration_seconds)
         self.assertEqual(user_pb2.TRUE, user.client_metrics.is_first_session_mobile)
 
-    def test_adding_mobile_afterwards(self, mock_requests: _RequestsMock) -> None:
+    def test_adding_mobile_afterwards(self, mock_requests: requests_mock.Mocker) -> None:
         """Adding the mobile information after already syncing."""
 
         mock_db = mongomock.MongoClient().test
@@ -364,7 +343,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
 
     @mock.patch('logging.error')
     def test_missing_sentry(
-            self, unused_mock_requests: _RequestsMock, mock_logging: mock.MagicMock) -> None:
+            self, unused_mock_requests: requests_mock.Mocker, mock_logging: mock.MagicMock) -> None:
         """Missing sentry env var."""
 
         mock_db = mongomock.MongoClient().test

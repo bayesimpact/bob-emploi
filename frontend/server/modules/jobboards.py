@@ -13,7 +13,7 @@ class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
     """A scoring model to trigger the "Find job boards" advice."""
 
     def __init__(self) -> None:
-        super(_AdviceJobBoards, self).__init__(user_pb2.NO_OFFERS)
+        super().__init__(user_pb2.NO_OFFERS)
         self._db: proto.MongoCachedCollection[jobboard_pb2.JobBoard] = \
             proto.MongoCachedCollection(jobboard_pb2.JobBoard, 'jobboards')
 

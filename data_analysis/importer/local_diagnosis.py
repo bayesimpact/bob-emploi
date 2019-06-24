@@ -17,14 +17,15 @@ You can try it out on a local instance:
         --salaries_csv data/fhs_salaries.csv \
         --unemployment_duration_csv data/fhs_category_a_duration.csv \
         --job_offers_changes_json data/job_offers/job_offers_changes.json \
-        --imt_folder data/imt \
-        --mongo_url mongodb://frontend-db/test
+        --imt_folder data/imt
 """
 
 import codecs
 import itertools
 import locale
+import logging
 from os import path
+import typing
 
 import numpy as np
 import pandas
@@ -42,9 +43,6 @@ locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 # Minimum number of jobseekers that is needed before we compute statistics.
 _MIN_SALARY_COUNT = 15
 
-# Denomiator to compute Market Score because the number of yearly average
-# offers are given for 10 candidates.
-_YEARLY_AVG_OFFERS_DENOMINATOR = 10
 
 # Dictionary of proto fields for employment type.
 _EMPLOYMENT_TYPE_PROTO_FIELDS = {
@@ -77,13 +75,15 @@ _ACTIVE_MONTHS_PROTO_FIELDS = {
 }
 
 
-def _isnan(value):
+def _isnan(value: typing.Any) -> bool:
     """Check whether a Python value is numpy's NaN."""
 
     return isinstance(value, float) and np.isnan(value)
 
 
-def _namedtuple_to_json_dict(item, fields, int_fields):
+def _namedtuple_to_json_dict(
+        item: typing.Any, fields: typing.Iterable[str], int_fields: typing.AbstractSet[str]) \
+        -> typing.Iterator[typing.Tuple[str, typing.Any]]:
     for field in fields:
         value = getattr(item, field)
         if _isnan(value):
@@ -98,8 +98,10 @@ def _namedtuple_to_json_dict(item, fields, int_fields):
 
 
 def csv2dicts(
-        bmo_csv, fap_rome_crosswalk, pcs_rome_crosswalk, salaries_csv, unemployment_duration_csv,
-        job_offers_changes_json, imt_folder, mobility_csv, data_folder='data'):
+        bmo_csv: str, fap_rome_crosswalk: str, pcs_rome_crosswalk: str, salaries_csv: str,
+        unemployment_duration_csv: str, job_offers_changes_json: str, imt_folder: str,
+        mobility_csv: str, data_folder: str = 'data') \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import departement level diagnosis data in MongoDB.
 
     Args:
@@ -119,6 +121,8 @@ def csv2dicts(
 
     bmo_rome_data = _get_bmo_rome_data(bmo_csv, fap_rome_crosswalk)
     fhs_salaries = _get_fhs_salaries(salaries_csv)
+
+    logging.info('Load Job Offers changes…')
     try:
         job_offers_changes = pandas.read_json(
             job_offers_changes_json, dtype={
@@ -129,8 +133,10 @@ def csv2dicts(
     except ValueError:
         raise ValueError('Could not open the file "{}"'.format(job_offers_changes_json))
     job_offers_changes.rename(columns={'_id': 'local_id'}, inplace=True)
-    unemployment_durations = _get_unemployment_durations(
-        unemployment_duration_csv)
+
+    unemployment_durations = _get_unemployment_durations(unemployment_duration_csv)
+
+    logging.info('Load IMT data…')
     market_score_csv = path.join(imt_folder, 'market_score.csv')
     market_score = _get_market_score(market_score_csv)
     employment_type_csv = path.join(imt_folder, 'employment_type.csv')
@@ -144,8 +150,12 @@ def csv2dicts(
     imt['local_id'] = imt_full.local_id
     imt_full = imt_full[imt_full.columns.difference(['local_id'])]
     imt['imt'] = imt_full.apply(lambda x: x.to_dict(), axis='columns')
+
     less_stressful = _get_less_stressful_job_groups(data_folder, mobility_csv, market_score_csv)
     num_less_stressful_departements = _get_less_stressful_departements_count(market_score_csv)
+    perc_more_stressed_jobseekers = _get_more_stressed_jobseekers(salaries_csv, market_score)
+
+    logging.info('Merge all the info we have collected…')
     local_diagnosis = pandas.merge(
         bmo_rome_data, fhs_salaries, on='local_id', how='outer')
     local_diagnosis = pandas.merge(
@@ -160,6 +170,9 @@ def csv2dicts(
         set(job_offers_changes.columns) | set(num_less_stressful_departements) - set(['local_id']))
     local_diagnosis = pandas.merge(
         local_diagnosis, num_less_stressful_departements, on='local_id', how='outer')
+    local_diagnosis['moreStressedJobseekersPercentage'] = \
+        local_diagnosis.local_id.map(perc_more_stressed_jobseekers)
+
     return [
         dict(_namedtuple_to_json_dict(item, [
             'local_id', 'bmo', 'salary', 'imt', 'lessStressfulJobGroups',
@@ -167,11 +180,12 @@ def csv2dicts(
             # precise one (per city).
             'unemploymentDuration',
             'jobOffersChange', 'numJobOffersLastYear',
-            'numJobOffersPreviousYear', 'numLessStressfulDepartements'], int_columns))
+            'numJobOffersPreviousYear', 'numLessStressfulDepartements',
+            'moreStressedJobseekersPercentage'], int_columns))
         for item in local_diagnosis.itertuples()]
 
 
-def _clean_empty_fields_imt(imt_dataframe):
+def _clean_empty_fields_imt(imt_dataframe: pandas.DataFrame) -> pandas.DataFrame:
     """Replace NAN with default values in IMT.
     Because IMT data comes from various sources there may be some fields missing
     while others are present. Thus we replace the missing values with default values.
@@ -200,7 +214,7 @@ def _clean_empty_fields_imt(imt_dataframe):
     return df_filled
 
 
-def _get_unemployment_durations(unemployment_duration_csv):
+def _get_unemployment_durations(unemployment_duration_csv: str) -> pandas.DataFrame:
     """Get a very simple unemployment duration estimate from FHS data.
 
     We tried to built a more complex model but did not come to a satisfying
@@ -213,6 +227,8 @@ def _get_unemployment_durations(unemployment_duration_csv):
     Returns: A dataframe with `local_id` and one column with
         unemployment_duration objects that fit the DurationEstimation proto.
     """
+
+    logging.info('Load unemployment durations from FHS…')
 
     last_periods = pandas.read_csv(
         unemployment_duration_csv, dtype={'city_id': str})
@@ -232,7 +248,7 @@ def _get_unemployment_durations(unemployment_duration_csv):
     })
 
 
-def _get_bmo_rome_data(bmo_csv, fap_rome_crosswalk):
+def _get_bmo_rome_data(bmo_csv: str, fap_rome_crosswalk: str) -> pandas.DataFrame:
     """Extract BMO information from a CSV.
 
     Currently this is pretty hacky: the BMO is defined for each
@@ -250,6 +266,8 @@ def _get_bmo_rome_data(bmo_csv, fap_rome_crosswalk):
       bmo_csv: path to a CSV file containing the BMO data.
       fap_rome_crosswalk: path to the passage file from FAP to ROME codes.
     """
+
+    logging.info('Load BMO data…')
 
     with codecs.open(fap_rome_crosswalk, 'r', 'latin-1') as fap_rome_file:
         fap_rome = read_data.parse_fap_rome_crosswalk(fap_rome_file.readlines())
@@ -275,6 +293,8 @@ def _get_bmo_rome_data(bmo_csv, fap_rome_crosswalk):
         bmo[column] = bmo[column].str.replace(' ', '').astype(float)
     bmo['rome_id'] = bmo.fap.map(fap_to_rome)
     bmo = bmo[bmo.hiring_planned > 0]
+    bmo['departement_id'] = bmo['departement_id'].map(
+        lambda dpt: '0' + dpt if len(dpt) == 1 else dpt)
 
     # Sum up data by département (because it's based on bassins d'emploi).
     # TODO: Get the user's bassin d'emploi and stop grouping it.
@@ -294,7 +314,7 @@ def _get_bmo_rome_data(bmo_csv, fap_rome_crosswalk):
     })
 
 
-def _get_fhs_salaries(salaries_csv):
+def _get_fhs_salaries(salaries_csv: str) -> pandas.DataFrame:
     """Get salary estimates from FHS dataset.
 
     Args:
@@ -303,6 +323,8 @@ def _get_fhs_salaries(salaries_csv):
     Returns:
         A dataframe with a `local_id` added for joining to other datasets.
     """
+
+    logging.info('Load salaries from FHS…')
 
     # See http://go/pe:notebooks/datasets/FHS_salaries.ipynb
     salaries = pandas.read_csv(salaries_csv, dtype={'departement_id': str})
@@ -320,12 +342,42 @@ def _get_fhs_salaries(salaries_csv):
     return fhs_salaries[['local_id', 'salary']]
 
 
-def _salaries_diagnosis(salaries):
+def _get_more_stressed_jobseekers(imt_salaries_csv: str, market_score: pandas.DataFrame) \
+        -> pandas.Series:
+    """Get the percentage of jobseekers that are in more stressed markets, or equally stressed.
+
+    Returns:
+        A series with the local ID (dept_id:rome_id) as key, and the number as value.
+    """
+
+    logging.info('Compute percentage of more stressed jobseekers…')
+
+    # Count number of jobseekers in each market using the FHS salaries data.
+    salaries = pandas.read_csv(imt_salaries_csv, dtype={'departement_id': str})
+    salaries['local_id'] = salaries.departement_id + ':' + salaries.code_rome
+    jobseeker_counts = salaries.groupby('local_id')['count'].sum().to_frame('counts')
+
+    # For each market give the score from the IMT.
+    jobseeker_counts = jobseeker_counts.join(
+        market_score.set_index('local_id').yearlyAvgOffersPer10Candidates.to_frame('score'))
+
+    # Compute for each stress level, the number of jobseekers.
+    counts_per_score = jobseeker_counts.groupby('score').counts.sum()
+    # Sort them (most stressed first) and use cumsum to see the proportion that is more stressed.
+    more_stressed = \
+        counts_per_score.sort_index().cumsum().div(counts_per_score.sum()).mul(100).round(1)
+
+    # Reapply by market.
+    return jobseeker_counts.score.map(more_stressed).fillna(0)
+
+
+def _salaries_diagnosis(salaries: pandas.DataFrame) \
+        -> typing.Optional[typing.Dict[str, typing.Any]]:
     total_count = salaries['count'].sum()
     if total_count < _MIN_SALARY_COUNT:
         return None
     cumulative_count = salaries['count'].cumsum()
-    estimation = {}
+    estimation: typing.Dict[str, typing.Any] = {}
     for name, quantile in _QUANTILES.items():
         quantile_salaries = salaries[cumulative_count <= quantile * total_count]
         if not quantile_salaries.empty:
@@ -341,23 +393,20 @@ def _salaries_diagnosis(salaries):
     return finalize_salary_estimation(estimation)
 
 
-def _get_less_stressful_job_groups(data_folder, mobility_csv, market_score_csv):
+def _get_less_stressful_job_groups(data_folder: str, mobility_csv: str, market_score_csv: str) \
+        -> pandas.DataFrame:
+
+    logging.info('Compute less stressful job groups in the ROME mobility…')
+
     mobility = cleaned_data.rome_job_groups_mobility(data_folder, filename=mobility_csv)
-    market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
-    market_stats['departement_id'] = market_stats.AREA_CODE
-    market_stats['market_score'] = market_stats.TENSION_RATIO.div(_YEARLY_AVG_OFFERS_DENOMINATOR)
-    market_stats['yearlyAvgOffersPer10Candidates'] = market_stats.TENSION_RATIO
-    market_stats['code_rome'] = market_stats.ROME_PROFESSION_CARD_CODE
-    market_stats['yearlyAvgOffersDenominator'] = _YEARLY_AVG_OFFERS_DENOMINATOR
-    market_stats = market_stats.set_index(['code_rome', 'departement_id'])
-    market_stats.dropna(subset=['market_score'], inplace=True)
+    market_stats = cleaned_data.market_scores(filename=market_score_csv)
     market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D']
 
     # Extend ROME mobility with IMT market scores.
     scored_mobility = mobility.merge(
         market_stats_dept.market_score.reset_index(),
         left_on='source_rome_id',
-        right_on='code_rome')
+        right_on='rome_id')
     scored_mobility = scored_mobility.join(
         market_stats_dept,
         on=['target_rome_id', 'departement_id'],
@@ -368,20 +417,20 @@ def _get_less_stressful_job_groups(data_folder, mobility_csv, market_score_csv):
     best_reorientations = scored_mobility[
         scored_mobility.market_score >= 1.5 * scored_mobility.market_score_source]\
         .sort_values('market_score', ascending=False)\
-        .groupby(['code_rome', 'departement_id'])\
+        .groupby(['rome_id', 'departement_id'])\
         .apply(lambda x: x[:5].to_dict(orient='records'))\
         .to_frame('orientations').reset_index()
 
     return pandas.DataFrame([
         {
-            'local_id': '{}:{}'.format(r.departement_id, r.code_rome),
+            'local_id': '{}:{}'.format(r.departement_id, r.rome_id),
             'lessStressfulJobGroups': [{
                 'jobGroup': {'romeId': o['target_rome_id'], 'name': o['target_rome_name']},
                 'mobilityType': o['mobility_type'],
                 'localStats': {
                     'imt': {
-                        'yearlyAvgOffersPer10Candidates': o['yearlyAvgOffersPer10Candidates'],
-                        'yearlyAvgOffersDenominator': o['yearlyAvgOffersDenominator']
+                        'yearlyAvgOffersPer10Candidates': o['yearly_avg_offers_per_10_candidates'],
+                        'yearlyAvgOffersDenominator': o['yearly_avg_offers_denominator']
                     },
                 },
             } for o in r.orientations],
@@ -389,21 +438,16 @@ def _get_less_stressful_job_groups(data_folder, mobility_csv, market_score_csv):
         for unused_index, r in best_reorientations.iterrows()])
 
 
-def _get_less_stressful_departements_count(market_score_csv):
-    market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
-    market_stats['departement_id'] = market_stats.AREA_CODE
-    market_stats['local_id'] = market_stats.AREA_CODE + ':' \
-        + market_stats.ROME_PROFESSION_CARD_CODE
-    market_stats['market_score'] = market_stats.TENSION_RATIO.div(_YEARLY_AVG_OFFERS_DENOMINATOR)
-    market_stats['yearlyAvgOffersPer10Candidates'] = market_stats.TENSION_RATIO
-    market_stats['code_rome'] = market_stats.ROME_PROFESSION_CARD_CODE
-    market_stats['yearlyAvgOffersDenominator'] = _YEARLY_AVG_OFFERS_DENOMINATOR
-    market_stats = market_stats.set_index(['code_rome', 'departement_id'])
-    market_stats.dropna(subset=['market_score'], inplace=True)
-    market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D']
+def _get_less_stressful_departements_count(market_score_csv: str) -> pandas.DataFrame:
+    logging.info('Compute less stressful departements…')
+
+    market_stats = cleaned_data.market_scores(filename=market_score_csv)
+    market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D'].reset_index()
+    market_stats_dept['local_id'] = market_stats_dept.departement_id + ':' \
+        + market_stats_dept.rome_id
 
     compare_in_job_group = market_stats_dept.merge(
-        market_stats_dept, how='outer', on='code_rome', suffixes=('', '_dest'))
+        market_stats_dept, how='outer', on='rome_id', suffixes=('', '_dest'))
     num_better_departements = compare_in_job_group[
         (compare_in_job_group.market_score < compare_in_job_group.market_score_dest)]\
         .groupby(['local_id'])\
@@ -412,7 +456,7 @@ def _get_less_stressful_departements_count(market_score_csv):
     return num_better_departements
 
 
-def _get_market_score(market_score_csv):
+def _get_market_score(market_score_csv: str) -> pandas.DataFrame:
     market_stats = pandas.read_csv(market_score_csv, dtype={'AREA_CODE': 'str'})
     seasonal_stats = market_stats[[
         column for column in market_stats.columns if column.startswith('SEASONAL_')]]
@@ -423,6 +467,8 @@ def _get_market_score(market_score_csv):
     # Converting to int from np.int32 so that json serialization does not choke.
     market_stats['yearlyAvgOffersPer10Candidates'] = pandas.to_numeric(
         market_stats.TENSION_RATIO)
+    market_stats.loc[
+        market_stats.yearlyAvgOffersPer10Candidates == 0, 'yearlyAvgOffersPer10Candidates'] = -1
     market_stats['lastWeekOffers'] = pandas.to_numeric(market_stats.NB_OFFER_LAST_WEEK)
     market_stats['lastWeekDemand'] = pandas.to_numeric(market_stats.NB_APPLICATION_LAST_WEEK)
     market_stats['seasonal'] = market_stats.SEASONAL == 'O'
@@ -437,7 +483,7 @@ def _get_market_score(market_score_csv):
         'lastWeekDemand', 'seasonal', 'activeMonths', 'yearlyAvgOffersDenominator']]
 
 
-def _get_active_months(seasonal_stats):
+def _get_active_months(seasonal_stats: pandas.Series) -> pandas.Series:
     """For a given market (job x area), get months in which hiring is stronger than in others.
 
         Args:
@@ -456,7 +502,7 @@ def _get_active_months(seasonal_stats):
     return seasonal_stats
 
 
-def _get_employment_type_imt(employment_type_csv):
+def _get_employment_type_imt(employment_type_csv: str) -> pandas.DataFrame:
     employment_types = pandas.read_csv(employment_type_csv, dtype={'AREA_CODE': 'str'})
     employment_types_dept = employment_types[
         employment_types.AREA_TYPE_CODE == 'D']
@@ -470,14 +516,15 @@ def _get_employment_type_imt(employment_type_csv):
     return employment_percentages[['local_id', 'employmentTypePercentages']]
 
 
-def _get_employment_type_perc(market):
+def _get_employment_type_perc(market: pandas.DataFrame) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     return [{
         'employmentType': job_pb2.EmploymentType.Name(
             _EMPLOYMENT_TYPE_PROTO_FIELDS[row.CONTRACT_TYPE_CODE]),
         'percentage': row.OFFERS_PERCENT} for row in market.itertuples()]
 
 
-def _get_salaries_imt(pcs_rome_crosswalk, imt_salaries_csv):
+def _get_salaries_imt(pcs_rome_crosswalk: str, imt_salaries_csv: str) -> pandas.DataFrame:
     """Get IMT data with salary info from imt_salaries_csv.
 
     Args:
@@ -525,7 +572,7 @@ def _get_salaries_imt(pcs_rome_crosswalk, imt_salaries_csv):
         'juniorSalary', 'seniorSalary', 'local_id']].drop_duplicates('local_id')
 
 
-def _get_single_salary_detail(min_salary, max_salary):
+def _get_single_salary_detail(min_salary: float, max_salary: float) -> typing.Dict[str, typing.Any]:
     if _isnan(min_salary) and _isnan(max_salary):
         return {}
     salary_unit = job_pb2.SalaryUnit.Name(_SALARY_UNIT_PROTO_FIELDS[1])
@@ -540,7 +587,8 @@ def _get_single_salary_detail(min_salary, max_salary):
     }
 
 
-def finalize_salary_estimation(estimation):
+def finalize_salary_estimation(estimation: typing.Dict[str, typing.Any]) \
+        -> typing.Dict[str, typing.Any]:
     """Finalize the data for a SalaryEstimation proto.
 
     Args:

@@ -15,7 +15,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-civic-service'
 
     def setUp(self) -> None:
-        super(AdviceCivicServiceTestCase, self).setUp()
+        super().setUp()
         self.now = datetime.datetime(2018, 2, 2)
 
     def test_is_young_with_handicap(self) -> None:
@@ -74,7 +74,7 @@ class CivicServiceEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/civic-service endpoint."""
 
     def setUp(self) -> None:
-        super(CivicServiceEndpointTestCase, self).setUp()
+        super().setUp()
         self.now = datetime.datetime(2018, 2, 2)
         self._db.advice_modules.insert_one({
             'adviceId': 'civic-service',

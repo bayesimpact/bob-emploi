@@ -9,7 +9,10 @@
           "attributes": {
             "background-color": "#ffffff",
             "color": "#55575d",
-            "font-family": "Arial, sans-serif"
+            "font-family": "Arial, sans-serif",
+            "passport": {
+              "id": "U2L5RQGUi"
+            }
           },
           "children": [
             {
@@ -20,7 +23,7 @@
                 "passport": {
                   "header": true,
                   "hidden": true,
-                  "locked": true
+                  "id": "XJanQ7B5DVz3l"
                 },
                 "text-align": "center",
                 "vertical-align": "top"
@@ -29,7 +32,8 @@
                 {
                   "attributes": {
                     "passport": {
-                      "hidden": true
+                      "hidden": true,
+                      "id": "GbpXTsxoBgXDz"
                     }
                   },
                   "children": [
@@ -44,21 +48,20 @@
                         "padding-bottom": "0px",
                         "padding-top": "0px",
                         "passport": {
-                          "editable": true,
                           "hidden": true,
-                          "locked": true
+                          "id": "RGqkzrdYQCK2c"
                         }
                       },
                       "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
-                      "id": "rJEBY1XXPf",
+                      "id": "6oERbnvzKE8KG",
                       "tagName": "mj-text"
                     }
                   ],
-                  "id": "B17SYym7Dz",
+                  "id": "24OwSZiU3F1py",
                   "tagName": "mj-column"
                 }
               ],
-              "id": "HkzStJQ7DG",
+              "id": "2kCMj_DHOK7dG",
               "tagName": "mj-section"
             },
             {
@@ -67,14 +70,21 @@
                 "background-repeat": "repeat",
                 "full-width": "full-width",
                 "padding": "20px 0px 20px 0px",
-                "padding-bottom": "12px",
+                "padding-bottom": "0px",
                 "padding-top": "12px",
+                "passport": {
+                  "id": "Xj_1eBgmAB"
+                },
                 "text-align": "center",
                 "vertical-align": "top"
               },
               "children": [
                 {
-                  "attributes": {},
+                  "attributes": {
+                    "passport": {
+                      "id": "aiJg9tNnSR"
+                    }
+                  },
                   "children": [
                     {
                       "attributes": {
@@ -87,10 +97,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "LSAhqWxrIu"
+                        }
                       },
                       "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span>&nbsp;</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"> </p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">J’ai eu un vrai déclic en lisant cet&nbsp;article de Nicolas Galita, du blog <i>Dessine-toi un emploi</i>,&nbsp;et je voulais vous le partager :<b>&nbsp;\"Les deux mots qui vous empêchent de trouver un emploi\"</b>.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Il me semble que vous nous aviez dit avoir du mal à rester motivé</span></span><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span></span><span style=\"color:#000000\"><span style=\"font-size:14px\">&nbsp;dans votre recherche. L’article donne de bonnes pistes pour s’écouter, creuser et trouver les raisons éventuelles qui nous bloquent.</span></span></p><p style=\"line-height: 19px; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Je vous préviens le ton est un peu poil à gratter, j’espère qu’il vous inspirera quand même :) </span></span></p>",
-                      "id": "ByDHKJXQvM",
+                      "id": "qCjr1aMbDBugM",
                       "tagName": "mj-text"
                     },
                     {
@@ -104,12 +117,44 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "ShHJptJf-p"
+                        }
                       },
-                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Vous méritez de déployer tout votre potentiel !</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">À très vite,</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
-                      "id": "HyOSKJQQwz",
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">Vous méritez de déployer tout votre potentiel !</span></span></p><p style=\"margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14px\">À très vite,</span></span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Joanna et l'équipe de Bob</span></span></p>",
+                      "id": "lyZPWA3PN-uHj",
                       "tagName": "mj-text"
-                    },
+                    }
+                  ],
+                  "id": "J-MmWt-gyK2pk",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "MhKzP0NWHyqyU",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-repeat": "repeat",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "id": "_DpVwMS_sTYOI",
+                  "savedSectionID": 408382
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "pOmm1pBAO2"
+                    }
+                  },
+                  "children": [
                     {
                       "attributes": {
                         "align": "left",
@@ -121,38 +166,45 @@
                         "padding-left": "0px",
                         "padding-top": "0px",
                         "passport": {
-                          "image-id": 4665666
+                          "id": "5ehzXHAzr6Eu-",
+                          "image-id": 6036334
                         },
-                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/4r7v/2oshq.png",
+                        "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
                         "target": "_blank",
                         "title": "",
-                        "width": "105px"
+                        "width": "102px"
                       },
-                      "id": "HkFrKJX7wf",
+                      "id": "eoxXlyduw5Qbi",
                       "tagName": "mj-image"
                     }
                   ],
-                  "id": "rJUBYk7XvG",
+                  "id": "3fYYkePNfB8qT",
                   "tagName": "mj-column"
                 }
               ],
-              "id": "ByHrKy7XDz",
+              "id": "BZSAJPxplXUfP",
               "tagName": "mj-section"
             },
             {
               "attributes": {
-                "background-color": "#ffffff",
                 "background-repeat": "repeat",
-                "background-size": "auto",
-                "full-width": "full-width",
                 "padding": "20px 0",
                 "padding-bottom": "0px",
+                "padding-top": "0px",
+                "passport": {
+                  "id": "4k_ItMXGp_4J6",
+                  "savedSectionID": 408701
+                },
                 "text-align": "center",
                 "vertical-align": "top"
               },
               "children": [
                 {
-                  "attributes": {},
+                  "attributes": {
+                    "passport": {
+                      "id": "sfwSmTMvfX"
+                    }
+                  },
                   "children": [
                     {
                       "attributes": {
@@ -165,21 +217,57 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "pIG5dL7Hes"
+                        }
                       },
-                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous souhaitez vous désinscrire.</span></p>",
-                      "id": "r13Htk7QPf",
+                      "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
+                      "id": "KBttL1U5fnJOMC",
                       "tagName": "mj-text"
-                    },
+                    }
+                  ],
+                  "id": "m-YK38PlM-Z7b3",
+                  "tagName": "mj-column"
+                }
+              ],
+              "id": "WupLABgIFNHiSo",
+              "tagName": "mj-section"
+            },
+            {
+              "attributes": {
+                "background-color": "#ffffff",
+                "background-repeat": "repeat",
+                "background-size": "auto",
+                "full-width": "full-width",
+                "padding": "20px 0",
+                "padding-bottom": "0px",
+                "passport": {
+                  "id": "3ldvA5OawJ"
+                },
+                "text-align": "center",
+                "vertical-align": "top"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "passport": {
+                      "id": "F5oS8G2tMn"
+                    }
+                  },
+                  "children": [
                     {
                       "attributes": {
                         "border-color": "#000000",
                         "border-style": "solid",
                         "border-width": "2px",
                         "padding": "10px 25px",
+                        "passport": {
+                          "id": "Cw0lzviPIkD"
+                        },
                         "width": "100%"
                       },
-                      "id": "ByTrKyQ7wM",
+                      "id": "_aMenuvtBdBMgg",
                       "tagName": "mj-divider"
                     },
                     {
@@ -191,29 +279,32 @@
                         "line-height": "22px",
                         "padding": "10px 25px",
                         "padding-bottom": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "BARhbKeZAG2"
+                        }
                       },
                       "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><a target=\"_blank\" href=\"http://dessinetoiunemploi.com/deux-mots-empechent-de-trouver-emploi/\"><b><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Les deux mots qui vous empêchent de trouver un emploi</span></b></a></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Une des choses que j’ai le plus de mal à transmettre c’est l’art de faire les choses. Car au final c’est quelque chose que je fais assez intuitivement. Du coup, à chaque fois que je vois quelqu’un qui est paralysé parce qu’il n’arrive pas à prendre des initiatives, j’ai l’impression de rentrer dans un dialogue entre deux langues étrangères.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">J’ai donc été voir si quelqu’un avait réfléchi à ce sujet et je suis tombé sur le livre : The Achievement Habit de Bernard Roth. Et j’y ai eu une révélation : le coupable était devant mes yeux depuis le début. Ce coupable est un couple. Un duo de mots qui, associés, est une bombe à paralysie…</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><b><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Le duo criminel</span></b></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Je ne vous fais pas languir plus longtemps, ce couple de mot c’est « Oui, mais… ». Je sais : dit comme ça on a pas l’impression d’avoir affaire aux duo le plus dangereux du vocabulaire. La première fois que je l’ai lu, ça ne m’a pas frappé. Pourtant, en y réfléchissant, je me suis rendu compte que toutes les fois où quelqu’un veut justifier sa paralysie il commence effectivement par « oui, mais… ». Exemple d’une conversation que j’ai eu avec quelqu’un qui me disait vouloir apprendre l’anglais.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– Je ne sais pas comment faire, je suis nul en anglais.</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– J’étais dans ton cas avant aussi et ce qui a créé le déclic chez moi c’est le fait d’avoir lu Harry Potter 5 en anglais. Le fait que ça soit une histoire permet d’être tenu en haleine et de supporter le fait qu’au début c’est très désagréable de ne rien comprendre.</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– Oui mais… je n’aime pas lire</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– D’accord. Et bien, une autre méthode que j’applique c’est de regarder des épisodes de série comique en anglais, sous-titré. Comme un épisode dure 20 minutes (contrairement à un film ou une série dramatique), il y a moins d’intrigue à comprendre et tu n’as pas besoin de beaucoup de temps : tu peux en regarder un tous les matins.</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– Oui mais…je n’aime pas regarder un truc avec les sous-titres, je n’arrive jamais à suivre. Et si je fais que lire le sous-titre en français ça ne sert à rien.</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– Si parce que tu commences à t’imprégner de la sonorité. Puis tu t’habitues à la voix des acteurs et tu comprends de mieux en mieux au fil des épisodes.</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– Mouais…</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– Ou sinon, tu passes une semaine à Londres mais en y allant tout seul. Car si tu y vas avec un français, tu parleras français.</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">– Oui mais…je ne vais quand même pas voyager tout seul !</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">C’est à ce moment que j’ai compris que cette personne ne voulait pas vraiment apprendre l’anglais, elle voulait juste savoir parler anglais, du jour au lendemain. Elle voulait le résultat sans l’effort. Ou peut-être simplement qu’on l’écoute se plaindre.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Or, nous nous retrouvons souvent inconsciemment dans cette situation. Quand nous désirons quelque chose mais que ne nous sommes pas encore prêts à faire les efforts qu’il faudrait. Au lieu d’être honnête avec soi-même, on dit « oui, mais… ». Je me suis surpris à faire ça pour le judo. Ça faisait maintenant quatre ans que je répète à tort et à travers qu’un de mes grands objectifs est de reprendre le judo.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Au début quand on me disait que je devrais reprendre immédiatement je répondais :</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">« Oui, mais là je n’ai pas de salaire… »</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">C’était à l’époque où je créais mon entreprise et où mon salaire n’était pas fixe. Entre temps, je suis devenu salarié :</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">« Oui, mais je n’ai pas encore eu le temps de me renseigner. En plus j’ai plein de gens à rembourser »</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Puis j’ai déménagé de la banlieue vers Paris intra-muros :</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">« Oui, mais à Paris c’est bien trop cher. »</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Et puis un jour je me suis regardé dans le miroir et j’ai accepté que je ne voulais pas vraiment reprendre le judo. En fait ce que je voulais c’était de pouvoir dire que j’allais reprendre. Ce qui est radicalement différent. Ce que j’aimais, inconsciemment, c’était qu’on m’écoute dire que j’allais refaire du judo.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><b><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Pourquoi faisons-nous ça ?</span></b></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Parce qu’il y a un décalage entre vouloir un état final et vouloir un changement tout entier (avec la phase d’efforts). Par exemple, je voudrais bien être président de la République mais je ne veux pas faire les sacrifices que cela demande.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Nous avons tous une zone de confort. Du coup, le changement est toujours un exercice douloureux. Une fois que les habitudes s’installent, l’inertie est redoutable. En fait ce qu’on voudrait c’est passer de sa zone de confort actuelle à une zone de confort futur, sans passer par la case chemin d’effort.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Ce que j’aimerais c’est d’être téléporté dans la situation où j’ai déjà repris le judo depuis un mois. Où j’ai déjà fait les démarches, déjà payé l’abonnement, me suis déjà intégré au nouveau club, etc.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Il m’est arrivé la même chose quand j’ai voulu devenir végétarien. J’ai été convaincu en 2011 (par un philosophe) que c’était ce qui était souhaitable pour moi. Mais quand on me demandait pourquoi je ne l’étais pas …</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">« Oui, mais je ne pourrais pas arrêter la viande »</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><i><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">« Oui, mais je ne sais pas comment faire »</span></i></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">La vérité c’est que j’étais au stade 1 de la volonté : la velléité. Or, « Il y a très loin de la velléité à la volonté, de la volonté à la résolution, de la résolution au choix des moyens, du choix des moyens à l’application. »</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">En fait quand on dit « Oui, mais … » c’est qu’on est pas encore arrivé au stade de la résolution. Une fois qu’on est résolu à faire quelque chose on dit plutôt « Oui, j’ai commencé à … actuellement je bloque sur ceci, … je dois rencontrer Untel demain pour qu’il m’aide à… ». En d’autres termes : se plaindre n’a jamais aidé personne à accomplir quoi que ce soit.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><b><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Comment s’en sortir ?</span></b></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Mettez vous à l’écoute pendant une semaine et comptez le nombre de fois que vous répondez « Oui, mais… » à quelqu’un qui essaye de vous aider. Ça doit immédiatement tirer une sonnette d’alarme chez vous. Il n’y a que deux réponses franches dans la vie : oui et non. Si vous commencez à entrer dans « Oui, mais… » demandez-vous à qui vous mentez : à l’autre ou à vous-même ?</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">C’est particulièrement important dans la recherche d’emploi car on a vite tendance à se décourager et à se protéger avec </span><a style=\"text-decoration:none\" href=\"http://dessinetoiunemploi.com/etes-vous-pret-a-faire-autre-chose-que-rester-assis-sur-une-chaise-a-repondre-a-des-annonces/\" target=\"_blank\"><u style=\"color:#1155cc; font-family:Arial; font-size:11pt; text-decoration:underline\">une zone de confort.</u></a><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\"> Rappelez-vous que « si vous voulez avoir ce que vous n’avez jamais eu, il faut faire ce que vous n’avez jamais fait ». Quand quelqu’un vous propose une solution : écoutez puis essayez. Au pire ça ne marchera pas.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">L’autre réflexe important c’est de comprendre la différence entre la peur et le risque. Ce n’est pas parce que vous avez peur de quelque chose que c’est vraiment risqué. Si quelqu’un vous propose d’essayer une autre méthode de recherche d’emploi (à tout hasard, de </span><a style=\"text-decoration:none\" href=\"http://dessinetoiunemploi.com/larme-ultime-du-chercheur-demploi-le-cafe-ou-le-dejeuner/\" target=\"_blank\"><u style=\"color:#1155cc; font-family:Arial; font-size:11pt; text-decoration:underline\">proposer des cafés aux gens par exemple</u></a><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">), ne confondez pas le sentiment de peur avec une évaluation de la qualité du conseil. Ce n’est pas parce qu’un conseil vous fait peur qu’il n’est pas bon.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">De la même manière, ce n’est pas parce que vous pensez que quelque chose ne fonctionnera pas que ça ne fonctionnera pas. La seule manière de le vérifier est de tester. Sinon on finit par se trouver des excuses. Or, une fois que l’on commence à rentrer dans la logique de l’excuse on n’en finit plus.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Inversement, ce n’est pas parce que quelque chose ne vous fait plus peur que ce n’est plus risqué. Par exemple, prendre la voiture avec ses parents est beaucoup plus risqué pour un enfant que de parler à des inconnus. Mais comme on a l’habitude de prendre la voiture, la peur disparaît.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><b><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Conclusion</span></b></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Ne confondez plus la peur de la nouveauté avec le risque. Les habitudes sont faites pour être bouleversées. Je vous invite à bannir définitivement « oui, mais… » de votre vocabulaire.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Et vous, c’était quand la dernière fois que vous avez répondu « oui, mais… » à quelqu’un qui vous donnait un conseil sur votre recherche d’emploi ?</span></p>",
-                      "id": "B1RrK1XmPG",
+                      "id": "vjFf3HwVZlC7T9",
                       "tagName": "mj-text"
                     }
                   ],
-                  "id": "B1iHtJ7Xwz",
+                  "id": "dM4l6AqJNKfVk9",
                   "tagName": "mj-column"
                 }
               ],
-              "id": "H19rKkXXPz",
+              "id": "bZ-dHellk-YlnR",
               "tagName": "mj-section"
             }
           ],
-          "id": "rkbBKyX7DG",
+          "id": "hcW-S7l4Aghih",
           "tagName": "mj-container"
         }
       ],
-      "id": "rkxSt1mQPM",
+      "id": "aNOUmSegIIn4Z",
       "tagName": "mj-body"
     }
   ],
-  "id": "SJHF1QXwf",
+  "id": "v0xbfA-qds2_I",
   "tagName": "mjml"
 }

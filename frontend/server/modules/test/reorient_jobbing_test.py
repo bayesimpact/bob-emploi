@@ -15,7 +15,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-reorient-jobbing'
 
     def setUp(self) -> None:
-        super(AdviceReorientJobbingTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self.persona.project.city.departement_id = '09'
         self.persona.project.target_job.job_group.rome_id = 'M1601'
@@ -183,7 +183,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/reorient-jobbing endpoint."""
 
     def setUp(self) -> None:
-        super(ReorientJobbingEndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'reorient-jobbing',
             'triggerScoringModel': 'advice-reorient-jobbing',

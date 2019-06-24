@@ -10,9 +10,10 @@ You can try it out on a local instance:
  - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/data_analysis/importer/seasonal_jobbing.py \
-        --offer_types_csv data/job_offers/offer_types_2015_2017.csv \
-        --mongo_url mongodb://frontend-db/test
+        --offer_types_csv data/job_offers/offer_types_2015_2017.csv
 """
+
+import typing
 
 import pandas as pd
 
@@ -22,7 +23,7 @@ from bob_emploi.data_analysis.lib import mongo
 _SEASONAL_CODE = 'SAI'
 
 
-def csv2dicts(offer_types_csv):
+def csv2dicts(offer_types_csv: str) -> typing.List[typing.Dict[str, typing.Any]]:
     """Import seasonal jobbing data per month per departement in MongoDB.
 
     Args:
@@ -70,7 +71,7 @@ def csv2dicts(offer_types_csv):
         top_departements_per_month[top_departements_per_month.offers > 10]
 
     # Adding the job groups inside.
-    def _create_jobgroups(jobs):
+    def _create_jobgroups(jobs: pd.DataFrame) -> typing.Any:
         return jobs[['name', 'romeId', 'offers']][:5].to_dict(orient='records')
 
     romes_per_dep_month = top_departements_per_month.groupby(
@@ -80,7 +81,7 @@ def csv2dicts(offer_types_csv):
         .reset_index()\
         .rename(columns={'creationMonth': '_id'})
 
-    def _create_month_stats(jobs):
+    def _create_month_stats(jobs: pd.DataFrame) -> typing.Any:
         return jobs[['departementId', 'jobGroups', 'departementSeasonalOffers']]\
             .to_dict(orient='records')
 
@@ -90,7 +91,9 @@ def csv2dicts(offer_types_csv):
         .to_frame('departementStats')\
         .reset_index()
 
-    return monthly_data.to_dict(orient='records')
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]],
+        monthly_data.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

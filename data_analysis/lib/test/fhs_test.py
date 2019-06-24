@@ -212,7 +212,7 @@ class JobSeekerTestCase(unittest.TestCase):
                 'DATINS': datetime.date(2015, 5, 1),
                 'DATANN': datetime.date(2015, 5, 22),
                 'CATREGR': '1',
-                }],
+            }],
             'e0': [],
         })
         periods = job_seeker.unemployment_a_periods()

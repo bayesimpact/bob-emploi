@@ -11,7 +11,7 @@ class JobsTest(unittest.TestCase):
     """Unit tests for the frontend.server.jobs module."""
 
     def setUp(self) -> None:
-        super(JobsTest, self).setUp()
+        super().setUp()
         self.database = mongomock.MongoClient().test
         self.database.job_group_info.insert_one({
             '_id': 'A1234',

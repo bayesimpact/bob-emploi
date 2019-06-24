@@ -13,7 +13,7 @@ class _AdviceCivicService(scoring_base.ModelBase):
     """
 
     def __init__(self) -> None:
-        super(_AdviceCivicService, self).__init__()
+        super().__init__()
         self._db: proto.MongoCachedCollection[association_pb2.VolunteeringMissions] = \
             proto.MongoCachedCollection(association_pb2.VolunteeringMissions, 'local_missions')
 

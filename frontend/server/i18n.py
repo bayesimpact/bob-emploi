@@ -25,7 +25,7 @@ class _MongoCachedTranslations(object):
 
             def _populate_cache(cache: typing.Dict[str, typing.Dict[str, str]]) -> None:
                 for document in database.translations.find():
-                    cache[document.get('string')] = document
+                    cache[document.get('string', '')] = document
 
             self._cache = proto.CachedCollection(_populate_cache)
 
@@ -46,3 +46,13 @@ def translate_string(string: str, locale: str, database: pymongo_database.Databa
     except KeyError:
         raise TranslationMissingException(
             'Could not find a translation in "{}" for "{}".'.format(locale, string))
+
+
+def make_translatable_string(string: str) -> str:
+    """Mark a literal string for translation.
+
+    If a string needs to be translated at runtime but is defined as a literal in our code
+    far from where we have enough context to translate it, use this function to wrap it.
+    """
+
+    return string

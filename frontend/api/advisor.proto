@@ -91,7 +91,7 @@ message EmailHistory {
 
 // Definition of an advice which content is fully dynamic and determined by the
 // server, e.g. the "Specific to Job" advice.
-// Next ID: 11.
+// Next ID: 12.
 message DynamicAdvice {
   // Title of this advice.
   string title = 1 [(string_format) = NATURAL_LANGUAGE];
@@ -126,4 +126,7 @@ message DynamicAdvice {
   // A set of filter IDs: do not show the advice card if one these filters
   // returns false for the project.
   repeated string filters = 5 [(string_format) = SCORING_MODEL_ID];
+
+  // A set of strategy IDs, to show this advice as part of the strategy, if it is given to the user.
+  repeated string strategy_ids = 11;
 }

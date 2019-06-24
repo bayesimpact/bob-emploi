@@ -15,7 +15,7 @@ class AdviceEventScoringModelTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-event'
 
     def setUp(self) -> None:
-        super(AdviceEventScoringModelTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self.database.events.insert_many([
             {
@@ -104,7 +104,7 @@ class EndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the project/.../events endpoint."""
 
     def setUp(self) -> None:
-        super(EndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'events',
             'triggerScoringModel': 'advice-event',

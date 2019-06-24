@@ -19,7 +19,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
     model_id = 'advice-reorient-to-close-job'
 
     def setUp(self) -> None:
-        super(AdviceReorientCloseTestCase, self).setUp()
+        super().setUp()
         self.persona = self._random_persona().clone()
         self.persona.project.city.departement_id = '09'
         self.persona.project.target_job.job_group.rome_id = 'M1601'
@@ -105,6 +105,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
     def test_search_reasonable_time(self) -> None:
         """User searching for 4 months should have a 0 score."""
 
+        self.persona.project.diagnostic.ClearField('category_id')
         if self.persona.user_profile.year_of_birth <= datetime.date.today().year - 45:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 40
         self.persona.project.job_search_has_not_started = False
@@ -138,9 +139,18 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
     def test_user_old(self) -> None:
         """Users older than 44 y.o should have a zero score."""
 
+        self.persona.project.diagnostic.ClearField('category_id')
         self.persona.user_profile.year_of_birth = datetime.date.today().year - 50
         score = self._score_persona(self.persona)
         self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+
+    def test_user_old_stuck_market(self) -> None:
+        """Users older than 44 y.o should have a one score if they're in stuck-market."""
+
+        self.persona.project.diagnostic.category_id = 'stuck-market'
+        self.persona.user_profile.year_of_birth = datetime.date.today().year - 50
+        score = self._score_persona(self.persona)
+        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
 
     def test_not_enough_offers(self) -> None:
         """Users with job with more offers than recommended jobs don't trigger the
@@ -211,7 +221,7 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the advice/reorient-to-close endpoint."""
 
     def setUp(self) -> None:
-        super(ReorientCloseEndpointTestCase, self).setUp()
+        super().setUp()
         self._db.advice_modules.insert_one({
             'adviceId': 'reorient-to-close-job',
             'triggerScoringModel': 'advice-reorient-to-close-job',

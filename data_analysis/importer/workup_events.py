@@ -6,6 +6,7 @@ WorkUp dataset.
 
 import json
 import math
+import typing
 
 import pandas as pd
 
@@ -25,7 +26,8 @@ _LNG_BUFFER = math.degrees(_BUFFER_KILOMETER / 6371 / math.cos(math.radians(45))
 _WORKUP_EVENT_URL = 'https://www.workuper.com/events/{}'
 
 
-def events2dicts(events_json, departement_bounds_csv):
+def events2dicts(events_json: str, departement_bounds_csv: typing.Union[str, typing.TextIO]) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Convert the events JSON to our own format before mongo import.
 
     Args:
@@ -44,7 +46,7 @@ def events2dicts(events_json, departement_bounds_csv):
         for e in events if _is_valid_event(e)]
 
 
-def _is_valid_event(event):
+def _is_valid_event(event: typing.Dict[str, typing.Any]) -> bool:
     # Display only Free events.
     if event['price']:
         return False
@@ -59,7 +61,9 @@ def _is_valid_event(event):
     return True
 
 
-def _workup_to_proto(event, departements):
+def _workup_to_proto(event: typing.Dict[str, typing.Any], departements: pd.DataFrame) \
+        -> typing.Dict[str, typing.Any]:
+    geo_filters: typing.List[str]
     if event.get('address', '').strip().lower() in ('en ligne', 'internet'):
         geo_filters = []
     else:

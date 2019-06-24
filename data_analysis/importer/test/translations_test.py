@@ -14,7 +14,7 @@ from bob_emploi.data_analysis.importer import translations
 class ImporterTestCase(unittest.TestCase):
     """Tests for the importer."""
 
-    def test_airtable2dicts(self):
+    def test_airtable2dicts(self) -> None:
         """Basic usage of the translations importer."""
 
         base = airtablemock.Airtable('base_t123', 'apikey42')

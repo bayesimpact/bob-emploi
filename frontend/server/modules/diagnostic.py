@@ -325,7 +325,7 @@ class _DiagnosticTopicFilter(scoring_base.BaseFilter):
     ) -> None:
         self._diagnostic_topic = diagnostic_pb2.DiagnosticTopic.Value(diagnostic_topic)
         self._predicate = predicate
-        super(_DiagnosticTopicFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
 
     def _filter(self, project: scoring_base.ScoringProject) -> bool:
         """The filter function for this scoring model."""
@@ -341,7 +341,7 @@ class _GoodDiagnosticCountFilter(scoring_base.BaseFilter):
 
     def __init__(self, count: int) -> None:
         self._count = count
-        super(_GoodDiagnosticCountFilter, self).__init__(self._filter)
+        super().__init__(self._filter)
 
     def _filter(self, project: scoring_base.ScoringProject) -> bool:
         """The filter function for this scoring model."""

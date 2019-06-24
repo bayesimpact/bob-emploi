@@ -1,0 +1,4 @@
+firstName
+gender
+isLocal
+unsubscribeLink

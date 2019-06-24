@@ -7,12 +7,12 @@ import pymongo
 
 from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import geo
-from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.asynchronous.mail import campaign
 
 
@@ -21,6 +21,7 @@ _FRENCH_MONTHS = {
     job_pb2.FEBRUARY: 'Février',
     job_pb2.MARCH: 'Mars',
     job_pb2.APRIL: 'Avril',
+    job_pb2.MAY: 'Mai',
     job_pb2.JUNE: 'Juin',
     job_pb2.JULY: 'Juillet',
     job_pb2.AUGUST: 'Août',
@@ -34,12 +35,6 @@ _APPLICATION_MODES_SHORT = {
     job_pb2.SPONTANEOUS_APPLICATION: 'Les Candidatures Spontanées',
     job_pb2.PLACEMENT_AGENCY: 'Les Intermédiaires',
     job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS: 'Le Réseau',
-}
-
-_APPLICATION_MODES = {
-    job_pb2.SPONTANEOUS_APPLICATION: 'une candidature spontanée',
-    job_pb2.PLACEMENT_AGENCY: 'un intermédiaire du placement',
-    job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS: 'leur réseau personnel ou professionnel',
 }
 
 _EMPLOYMENT_TYPES_TITLE = {
@@ -93,13 +88,9 @@ def _make_market_stress_section(market_score: float) -> typing.Optional[typing.D
 
 
 def _make_application_mode_section(
-        application_modes: typing.Optional[typing.List[job_pb2.ModePercentage]],
+        best_application_mode: typing.Optional[job_pb2.ModePercentage],
         advices: typing.Iterable[project_pb2.Advice], user_id: str) \
         -> typing.Optional[typing.Dict[str, str]]:
-    if not application_modes:
-        return None
-    best_application_mode = next((mode for mode in sorted(
-        application_modes, key=lambda mode: -mode.percentage) if mode.mode), None)
     if not best_application_mode:
         return None
     application_mode_advice = ''
@@ -116,7 +107,7 @@ def _make_application_mode_section(
     return {
         'link': application_mode_link,
         'title': _APPLICATION_MODES_SHORT[best_application_mode.mode],
-        'name': _APPLICATION_MODES[best_application_mode.mode],
+        'name': scoring.APPLICATION_MODES[best_application_mode.mode],
         'percent': str(round(best_application_mode.percentage)),
     }
 
@@ -184,13 +175,16 @@ def _get_imt_vars(
     """Compute vars for the "IMT" email."""
 
     project = user.projects[0]
+    assert database
+    scoring_project = scoring.ScoringProject(
+        project, user.profile, user.features_enabled, database)
 
     genderized_job_name = french.lower_first_letter(french.genderize_job(
         project.target_job, user.profile.gender))
 
     departement_id = project.city.departement_id
     rome_id = project.target_job.job_group.rome_id
-    local_diagnosis = jobs.get_local_stats(database, departement_id, rome_id)
+    local_diagnosis = scoring_project.local_diagnosis()
     if not local_diagnosis.HasField('imt'):
         logging.info('User market has no IMT data')
         return None
@@ -203,7 +197,7 @@ def _get_imt_vars(
         shown_sections.append('marketStress')
 
     application_modes_section = _make_application_mode_section(
-        campaign.get_application_modes(rome_id, database), project.advices, user.user_id)
+        scoring_project.get_best_application_mode(), project.advices, user.user_id)
     if application_modes_section:
         shown_sections.append('applicationModes')
 

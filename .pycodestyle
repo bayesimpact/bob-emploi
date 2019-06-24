@@ -1,2 +1,11 @@
 [pycodestyle]
+# Warnings that could be ignored because there are already ignored by default.
+# E121,E123,E126,E133,E226,E241,E242,E704,W503,W504,W505
+# Warnings ignored because we have decided the opposite rule (W503):
+# W504 = line break after binary operator
+# Warnings ignored because we are already checking those rules in pylint.
+# http://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
+# E501 = line too long
+# W505 = doc line too long
+ignore = E501,W504,W505
 max-line-length = 100

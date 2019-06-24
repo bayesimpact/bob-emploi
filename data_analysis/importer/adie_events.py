@@ -2,6 +2,7 @@
 """
 
 import re
+import typing
 
 import js2py
 from scrapy import selector
@@ -19,7 +20,7 @@ _FRENCH_MONTHS = {
 }
 
 
-def adie_events2dicts(events_html):
+def adie_events2dicts(events_html: str) -> typing.List[typing.Dict[str, typing.Any]]:
     """Convert the events page of ADIE into our own Event format before Mongo import.
 
     Args:
@@ -60,7 +61,7 @@ def adie_events2dicts(events_html):
     return [_adie_event_to_proto(dict(a, **b)) for a, b in zip(markers, events)]
 
 
-def _parse_date(date):
+def _parse_date(date: str) -> str:
     match = _DATE_REGEXP.match(date)
     if not match:
         raise ValueError('Date "{}" could not be parsed'.format(date))
@@ -69,7 +70,7 @@ def _parse_date(date):
     return '2018-{:02d}-{:02d}'.format(month, day)
 
 
-def _adie_event_to_proto(props):
+def _adie_event_to_proto(props: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
     timing_text = _drop_first_word(props['date_ev_festival'])
     return {
         '_id': '2018-06_{}'.format(props['index_ev_festival']),
@@ -91,7 +92,7 @@ def _adie_event_to_proto(props):
     }
 
 
-def _drop_first_word(text):
+def _drop_first_word(text: str) -> str:
     return ' '.join(text.split(' ')[1:])
 
 

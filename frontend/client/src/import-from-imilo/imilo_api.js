@@ -5,7 +5,7 @@ function cleanHtmlError(htmlErrorPage) {
   const page = document.createElement('html')
   page.innerHTML = htmlErrorPage
   const content = page.getElementsByTagName('U')
-  return content.length && content[content.length - 1].innerText || page.innerText
+  return content.length && content[content.length - 1].textContent || page.textContent
 }
 
 

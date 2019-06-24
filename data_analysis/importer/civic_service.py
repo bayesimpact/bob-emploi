@@ -13,11 +13,12 @@ You can try it out on a local instance:
 - Run this script:
     docker-compose run --rm data-analysis-prepare \
         python bob_emploi/data_analysis/importer/civic_service.py \
-        --civic_service_missions_csv data/civic_service_offers_$(date +%Y-%m-%d).csv \
-        --mongo_url mongodb://frontend-db/test
+        --civic_service_missions_csv data/civic_service_offers_$(date +%Y-%m-%d).csv
 """
 
 import datetime
+import typing
+
 import pandas as pd
 
 from bob_emploi.data_analysis.lib import mongo
@@ -30,7 +31,27 @@ MONTHS = {
 }
 
 
-def csv2dicts(civic_service_missions_csv, today=None):
+# TODO(marielaure): Test the checks individually.
+def check_coverage(missions: pd.DataFrame) -> bool:
+    """Report if the new data are not dropping too much the expected coverage.
+
+    Expected values are defined based on the following notebook:
+    https://github.com/bayesimpact/bob-emploi-internal/blob/master/data_analysis/notebooks/scraped_data/civic_service_offers.ipynb
+    """
+
+    # We expect at least 75% (77) of the 103 départements to be covered.
+    if missions['_id'].nunique() < 77:
+        return False
+
+    # We expect at least 75% of the départements to have more than 2 missions.
+    if missions.groupby('_id').count().quantile(q=0.25) < 2:
+        return False
+
+    return True
+
+
+def csv2dicts(civic_service_missions_csv: str, today: typing.Optional[str] = None) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import civic service missions data per departement in MongoDB.
 
     Args:
@@ -74,12 +95,14 @@ def csv2dicts(civic_service_missions_csv, today=None):
     missions_recent = missions[missions.date_formatted >= earlier_start]
 
     # Keeping only a maximum of 5 missions per departement.
-    def _create_missions(missions):
-        return missions[[
-            'organism', 'link', 'duration', 'start_date', 'domain', 'title', 'description']] \
-                .rename(columns={'organism': 'associationName'}) \
-                .head(5) \
-                .to_dict(orient='records')
+    def _create_missions(missions: pd.DataFrame) -> typing.List[typing.Dict[str, typing.Any]]:
+        return typing.cast(
+            typing.List[typing.Dict[str, typing.Any]],
+            missions[[
+                'organism', 'link', 'duration', 'start_date', 'domain', 'title', 'description']]
+            .rename(columns={'organism': 'associationName'})
+            .head(5)
+            .to_dict(orient='records'))
 
     missions_per_departement = missions_recent \
         .groupby('departement_id') \
@@ -88,7 +111,12 @@ def csv2dicts(civic_service_missions_csv, today=None):
         .reset_index() \
         .rename(columns={'departement_id': '_id'})
 
-    return missions_per_departement.to_dict(orient='records')
+    if not check_coverage(missions_per_departement):
+        raise ValueError('The putative new data lacks coverage.')
+
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]],
+        missions_per_departement.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

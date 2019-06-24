@@ -66,10 +66,11 @@ _EXPERIENCE_DURATION = {
     project_pb2.EXPERT: 'plus de 10 ans',
 }
 # Matches variables that need to be replaced by populate_template.
-_TEMPLATE_VAR = re.compile('.*%[a-z]+')
+_TEMPLATE_VAR = re.compile('%[a-z]+')
 # Matches tutoiement choices to be replaced by populate_template.
 _YOU_PATTERN = re.compile('%you<(.*?)/(.*?)>')
 
+# Keep in sync with frontend/client/src/store/project.ts
 _TO_GROSS_ANNUAL_FACTORS: typing.Dict[int, float] = {
     # net = gross x 80%
     job_pb2.ANNUAL_GROSS_SALARY: 1,
@@ -80,6 +81,14 @@ _TO_GROSS_ANNUAL_FACTORS: typing.Dict[int, float] = {
 
 ASSOCIATIONS: proto.MongoCachedCollection[association_pb2.Association] = \
     proto.MongoCachedCollection(association_pb2.Association, 'associations')
+
+# This is to be put in a sentence related to several people:
+# "Les gens trouvent surtout un emploi grâce à ..."
+APPLICATION_MODES = {
+    job_pb2.SPONTANEOUS_APPLICATION: 'une candidature spontanée',
+    job_pb2.PLACEMENT_AGENCY: 'un intermédiaire du placement',
+    job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS: 'leur réseau personnel ou professionnel',
+}
 
 _AType = typing.TypeVar('_AType')
 
@@ -180,19 +189,17 @@ class ScoringProject(object):
         return base_value * _TO_GROSS_ANNUAL_FACTORS[salary.unit] / _TO_GROSS_ANNUAL_FACTORS[unit] \
             if salary.unit else base_value
 
-    # TODO(cyrille): Check the zero behavior for denominator and offers in importer
-    # and imt raw data.
     def market_stress(self) -> typing.Optional[float]:
         """Get the ratio of # applicants / # job offers for the project."""
 
         imt = self.imt_proto()
-        if not imt.yearly_avg_offers_denominator:
-            return None
         offers = imt.yearly_avg_offers_per_10_candidates
-        if not offers:
+        if not offers or not imt.yearly_avg_offers_denominator:
+            return None
+        if offers == -1:
             # No job offers at all, ouch!
             return 1000
-        return imt.yearly_avg_offers_denominator / offers
+        return 10 / offers
 
     def _rome_id(self) -> str:
         return self.details.target_job.job_group.rome_id
@@ -329,11 +336,20 @@ class ScoringProject(object):
         self._mission_locale_data = self._fetch_mission_locale_data()
         return self._mission_locale_data
 
-    def _get_template_variable(
-            self, name: str, constructor: typing.Callable[['ScoringProject'], str]) -> str:
+    def _get_template_variable(self, name: str) -> str:
         if name in self._template_variables:
             return self._template_variables[name]
-        cache = constructor(self)
+        try:
+            cache = _TEMPLATE_VARIABLES[name](self)
+        except KeyError:
+            # name[0] should always be %.
+            lower_name = name[0] + french.lower_first_letter(name[1:])
+            if lower_name not in _TEMPLATE_VARIABLES:
+                logging.info('Wrong case in template variable "%s", cannot replace it.', name)
+                cache = name
+            else:
+                # Recursion cannot run in a loop thanks to the test just before.
+                cache = french.upper_first_letter(self._get_template_variable(lower_name))
         self._template_variables[name] = cache
         return cache
 
@@ -349,13 +365,16 @@ class ScoringProject(object):
 
         if '%' not in template:
             return template
-        pattern = re.compile('|'.join(_TEMPLATE_VARIABLES.keys()))
+        pattern = re.compile('|'.join(_TEMPLATE_VARIABLES.keys()), flags=re.I)
         vars_template = pattern.sub(
-            lambda v: self._get_template_variable(v.group(0), _TEMPLATE_VARIABLES[v.group(0)]),
+            lambda v: self._get_template_variable(v.group(0)),
             template)
+        # TODO(cyrille): Deprecate _YOU_PATTERN.
+        if _YOU_PATTERN.match(vars_template):
+            logging.warning('%%you is deprecated in templates, please fix: %s', template)
         new_template = _YOU_PATTERN.sub(
             lambda v: v.group(1) if self._can_tutoie() else v.group(2), vars_template)
-        if _TEMPLATE_VAR.match(new_template):
+        if _TEMPLATE_VAR.search(new_template):
             msg = 'One or more template variables have not been replaced in:\n' + new_template
             if raise_on_missing_var:
                 raise ValueError(msg)  # pragma: no cover
@@ -403,7 +422,19 @@ class ScoringProject(object):
 
         return self.now.year - self.user_profile.year_of_birth
 
-    def score(self, scoring_model_name: str) -> float:
+    def get_best_application_mode(self) -> typing.Optional[job_pb2.ModePercentage]:
+        """Returns the best available recruiting mode, if it is known."""
+
+        try:
+            return max(
+                (
+                    mode for fap_mode in self.job_group_info().application_modes.values()
+                    for mode in fap_mode.modes if mode.mode),
+                key=lambda mode: mode.percentage)
+        except ValueError:
+            return None
+
+    def score(self, scoring_model_name: str, force_exists: bool = False) -> float:
         """Returns the score for a given scoring model.
 
         This assumes the score can never change after it's been first computed.
@@ -416,6 +447,8 @@ class ScoringProject(object):
             return score
         model = get_scoring_model(scoring_model_name)
         if not model:
+            if force_exists:
+                raise KeyError('Scoring model "{}" is unknown'.format(scoring_model_name))
             logging.error(
                 'Scoring model "%s" unknown, falling back to default.', scoring_model_name)
             return self.score('')
@@ -427,11 +460,25 @@ class ScoringProject(object):
         self._scores[scoring_model_name] = score
         return score
 
+    def check_filters(self, filters: typing.Iterable[str], force_exists: bool = False) -> bool:
+        """Whether the project satisfies all the given filters."""
+
+        return all(self.score(f, force_exists=force_exists) > 0 for f in filters)
+
 
 def _a_job_name(scoring_project: ScoringProject) -> str:
     is_feminine = scoring_project.user_profile.gender == user_pb2.FEMININE
     genderized_determiner = 'une' if is_feminine else 'un'
     return '{} {}'.format(genderized_determiner, _job_name(scoring_project))
+
+
+def _an_application_mode(scoring_project: ScoringProject) -> str:
+    best_mode = scoring_project.get_best_application_mode()
+    best_mode_enum = best_mode.mode if best_mode else job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS
+    try:
+        return APPLICATION_MODES[best_mode_enum]
+    except KeyError:
+        return APPLICATION_MODES[job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS]
 
 
 def _in_city(scoring_project: ScoringProject) -> str:
@@ -441,6 +488,15 @@ def _in_city(scoring_project: ScoringProject) -> str:
 def _in_region(scoring_project: ScoringProject) -> str:
     region = scoring_project.get_region()
     return region.prefix + region.name if region else 'dans la région'
+
+
+def _in_departement(scoring_project: ScoringProject) -> str:
+    try:
+        return geo.get_in_a_departement_text(
+            scoring_project.database,
+            scoring_project.details.city.departement_id)
+    except KeyError:
+        return 'dans le département'
 
 
 def _in_area_type(scoring_project: ScoringProject) -> str:
@@ -474,6 +530,16 @@ def _job_search_length_months_at_creation(scoring_project: ScoringProject) -> st
         return 'quelques'
 
 
+def _a_required_diploma(scoring_project: ScoringProject) -> str:
+    diplomas = ', '.join(
+        sorted(diploma.name for diploma in scoring_project.requirements().diplomas))
+    if not diplomas:
+        logging.warning(
+            'Trying to show required diplomas when there are none.\n%s', scoring_project)
+        return 'un diplôme'
+    return 'un {} ou équivalent'.format(diplomas)
+
+
 def _total_interview_count(scoring_project: ScoringProject) -> str:
     number = scoring_project.details.total_interview_count
     try:
@@ -494,8 +560,13 @@ def _what_i_love_about(project: ScoringProject) -> str:
         project.job_group_info().what_i_love_about
 
 
-_TEMPLATE_VARIABLES = {
+_TEMPLATE_VARIABLES: typing.Dict[str, typing.Callable[[ScoringProject], str]] = {
     '%aJobName': _a_job_name,
+    # This is a comma separated list of diplomas. Make sure before-hand that there's at least one.
+    # Can be used as "nécessite %aRequiredDiploma".
+    # TODO(cyrille): Make it smarter, especially when it's a list of Bac+N levels.
+    '%aRequiredDiploma': _a_required_diploma,
+    '%anApplicationMode': _an_application_mode,
     '%cityId':
     lambda scoring_project: scoring_project.details.city.city_id,
     '%cityName': lambda scoring_project: parse.quote(scoring_project.details.city.name),
@@ -504,12 +575,13 @@ _TEMPLATE_VARIABLES = {
     '%eFeminine': lambda scoring_project: (
         'e' if scoring_project.user_profile.gender == user_pb2.FEMININE else ''),
     '%experienceDuration': lambda scoring_project: _EXPERIENCE_DURATION.get(
-        scoring_project.details.seniority),
+        scoring_project.details.seniority, ''),
     '%feminineJobName': lambda scoring_project: french.lower_first_letter(
         scoring_project.details.target_job.feminine_name),
     '%inAreaType': _in_area_type,
     '%inAWorkplace': lambda scoring_project: scoring_project.job_group_info().in_a_workplace,
     '%inCity': _in_city,
+    '%inDepartement': _in_departement,
     '%inDomain': lambda scoring_project: scoring_project.job_group_info().in_domain,
     '%inRegion': _in_region,
     '%jobGroupNameUrl': lambda scoring_project: parse.quote(unidecode.unidecode(
@@ -680,7 +752,7 @@ class LowPriorityAdvice(ModelBase):
     """
 
     def __init__(self, main_frustration: int):
-        super(LowPriorityAdvice, self).__init__()
+        super().__init__()
         self._main_frustration = main_frustration
 
     def score(self, project: ScoringProject) -> float:
@@ -697,8 +769,7 @@ class _ScoringModelRegexp(typing.NamedTuple):
 
 
 SCORING_MODEL_REGEXPS: typing.List[
-        typing.Tuple[typing.Pattern[str], typing.Callable[..., ModelBase]]] \
-    = []
+    typing.Tuple[typing.Pattern[str], typing.Callable[..., ModelBase]]] = []
 
 
 def get_scoring_model(
@@ -758,7 +829,7 @@ def filter_using_score(
     """
 
     for item in iterable:
-        if all(project.score(f) > 0 for f in get_scoring_func(item)):
+        if project.check_filters(get_scoring_func(item)):
             yield item
 
 

@@ -15,7 +15,7 @@ class CityLocationsImporterTestCase(unittest.TestCase):
     stats_filename = path.join(test_data_folder, 'french_cities.csv')
     urban_context_filename = path.join(test_data_folder, 'geo/french_urban_areas.xls')
 
-    def test_csv2dicts(self):
+    def test_csv2dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
 
         collection = city_locations.csv2dicts(self.stats_filename, self.urban_context_filename)

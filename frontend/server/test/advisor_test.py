@@ -24,7 +24,7 @@ from bob_emploi.frontend.server.test import scoring_test
 class _BaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
-        super(_BaseTestCase, self).setUp()
+        super().setUp()
         self.database = mongomock.MongoClient().test
         self.database.action_templates.insert_one({
             '_id': 'rec1CWahSiEtlwEHW',
@@ -34,7 +34,7 @@ class _BaseTestCase(unittest.TestCase):
         self.user = user_pb2.User(
             features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE, workbench=user_pb2.ACTIVE),
             profile=user_pb2.UserProfile(
-                name='Margaux', gender=user_pb2.FEMININE, email='margaux@example.com'))
+                name='Margaux', gender=user_pb2.FEMININE, email='margaux@example.fr'))
         proto.CachedCollection.update_cache_version()
 
 
@@ -105,12 +105,13 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertEqual(1, len(mails_sent), msg=mails_sent)
         data = mails_sent[0].properties['Variables']
         self.assertEqual(
-            ['changeEmailSettingsUrl', 'date', 'firstName', 'gender', 'loginUrl'],
+            ['changeEmailSettingsUrl', 'date', 'firstName', 'gender', 'loginUrl', 'ofJob'],
             sorted(data.keys()))
 
         self.assertEqual('10 juin 2018', data['date'])
         self.assertEqual('Margaux', data['firstName'])
         self.assertEqual('FEMININE', data['gender'])
+        self.assertEqual("d'hôtesse", data['ofJob'])
         login_url = data.pop('loginUrl')
         self.assertRegex(
             login_url,
@@ -406,6 +407,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertEqual(['network'], [a.advice_id for a in project.advices])
         self.assertEqual(1, len(mailjetmock.get_all_sent_messages()))
         mock_logger.assert_called_once()
+        self.assertIn('REDACTED', mock_logger.call_args[0][0] % mock_logger.call_args[0][1:])
 
     @mock.patch(advisor.logging.__name__ + '.warning')
     def test_timeout_on_scoring(self, mock_warning: mock.MagicMock) -> None:

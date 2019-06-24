@@ -16,6 +16,8 @@ It means that we'll still give a reco for a user of 3 months of experience,
 even if there is no offer under 12 months of experience. It's a choice.
 """
 
+import typing
+
 import pandas as pd
 
 # Boundaries of the experience buckets/bins we would want if we had enough
@@ -28,7 +30,8 @@ OPTIMAL_BUCKETS = [0, 1, 24, 72, 120, 999]
 _MIN_PER_BIN = 10
 
 
-def create_bucketizer(optimal_buckets, min_per_bin=_MIN_PER_BIN):
+def create_bucketizer(optimal_buckets: typing.Sequence[int], min_per_bin: int = _MIN_PER_BIN) \
+        -> typing.Callable[[pd.DataFrame], pd.DataFrame]:
     """Creates a bucketizer function from experience_min_duration in exp_bucket.
 
     Args:
@@ -41,11 +44,11 @@ def create_bucketizer(optimal_buckets, min_per_bin=_MIN_PER_BIN):
         it only takes a DataFrame and modifies it before returning it.
     """
 
-    def _apply(table_offers):
+    def _apply(table_offers: pd.DataFrame) -> pd.DataFrame:
         t_final_buckets = _apply_optimal_buckets(
             table_offers, optimal_buckets, min_per_bin)
 
-        def _bucketize(experience):
+        def _bucketize(experience: int) -> str:
             """Give optimal buckets considering the experience."""
 
             return _find_bucket_from_exp(t_final_buckets, exp=experience)
@@ -57,7 +60,9 @@ def create_bucketizer(optimal_buckets, min_per_bin=_MIN_PER_BIN):
     return _apply
 
 
-def _apply_optimal_buckets(table_offers, optimal_buckets, min_per_bin):
+def _apply_optimal_buckets(
+        table_offers: pd.DataFrame, optimal_buckets: typing.Sequence[int], min_per_bin: int) \
+        -> pd.DataFrame:
     """Find the optimal buckets and return only the bucket label corresponding
     to experience.
 
@@ -84,7 +89,8 @@ def _apply_optimal_buckets(table_offers, optimal_buckets, min_per_bin):
     return t_final_buckets
 
 
-def _count_num_offers_in_bin(table_offers, optimal_buckets):
+def _count_num_offers_in_bin(table_offers: pd.DataFrame, optimal_buckets: typing.Sequence[int]) \
+        -> typing.List[int]:
     """Get the number of offers available considering an experience
     interval.
 
@@ -104,13 +110,13 @@ def _count_num_offers_in_bin(table_offers, optimal_buckets):
     counts = out.value_counts()
     counts = counts.reindex(out.cat.categories)
 
-    return counts.values.tolist()
+    return typing.cast(typing.List[int], counts.values.tolist())
 
 
 def _merge_buckets_too_small(
-        table_offers,
-        optimal_buckets,
-        min_per_bin=_MIN_PER_BIN):
+        table_offers: pd.DataFrame,
+        optimal_buckets: typing.Sequence[int],
+        min_per_bin: int = _MIN_PER_BIN) -> typing.List[int]:
     """Decide which bucket we need to merge together.
 
     Args:
@@ -126,7 +132,7 @@ def _merge_buckets_too_small(
 
     n_bins = len(optimal_buckets)
     current_group = 0
-    group_indexes = []
+    group_indexes: typing.List[int] = []
     current_number_of_offers = 0
     num_offers_in_bins = _count_num_offers_in_bin(table_offers, optimal_buckets)
     for num_offer_in_bin in num_offers_in_bins:
@@ -147,7 +153,9 @@ def _merge_buckets_too_small(
     return group_indexes
 
 
-def _intermediary_buckets_table(optimal_buckets, group_indexes):
+def _intermediary_buckets_table(
+        optimal_buckets: typing.Sequence[int],
+        group_indexes: typing.Iterable[int]) -> pd.DataFrame:
     """Put bins & group_indexes into the same dataframe.
 
     Args:
@@ -172,7 +180,7 @@ def _intermediary_buckets_table(optimal_buckets, group_indexes):
     return t_buckets
 
 
-def _compute_final_buckets_table(t_buckets):
+def _compute_final_buckets_table(t_buckets: pd.DataFrame) -> pd.DataFrame:
     """Compute buckets from bins and construct labels.
     Args:
         t_buckets : pandas dataframe contaning bins, group_indexes
@@ -193,7 +201,7 @@ def _compute_final_buckets_table(t_buckets):
     return final_buckets[['LB', 'UP', 'bucket_label']]
 
 
-def _find_bucket_from_exp(final_buckets, exp):
+def _find_bucket_from_exp(final_buckets: pd.DataFrame, exp: int) -> str:
     """Compute buckets from bins and construct labels.
 
     Args:
@@ -205,5 +213,5 @@ def _find_bucket_from_exp(final_buckets, exp):
     """
 
     exp_mask = (exp >= final_buckets.LB) & (exp < final_buckets.UP)
-    bucket_label = final_buckets.loc[exp_mask].bucket_label.iloc[0]
+    bucket_label = typing.cast(str, final_buckets.loc[exp_mask].bucket_label.iloc[0])
     return bucket_label

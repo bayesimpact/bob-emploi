@@ -1,10 +1,13 @@
 """Importer of French Région data in MongoDB."""
 
+import typing
+
 from bob_emploi.data_analysis.lib import cleaned_data
 from bob_emploi.data_analysis.lib import mongo
 
 
-def make_dicts(french_regions_tsv, prefix_tsv):
+def make_dicts(french_regions_tsv: str, prefix_tsv: str) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import régions info in MongoDB.
 
     Args:
@@ -20,7 +23,9 @@ def make_dicts(french_regions_tsv, prefix_tsv):
         filename=french_regions_tsv,
         prefix_filename=prefix_tsv)
     regions['_id'] = regions.index
-    return regions[['_id', 'name', 'prefix']].to_dict('records')
+    return typing.cast(
+        typing.List[typing.Dict[str, typing.Any]],
+        regions[['_id', 'name', 'prefix']].to_dict('records'))
 
 
 if __name__ == '__main__':

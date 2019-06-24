@@ -13,7 +13,7 @@ _TestCase = collections.namedtuple('TestCase', ['name', 'offers', 'expected'])
 class BucketsTestCase(unittest.TestCase):
     """Tests for the function computing optimal buckets."""
 
-    def test_apply_bucketize(self):
+    def test_apply_bucketize(self) -> None:
         """Basic usage of apply_bucketize."""
 
         # List of tuple of (experience, expected_labels).

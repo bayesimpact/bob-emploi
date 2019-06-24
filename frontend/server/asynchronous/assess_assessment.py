@@ -62,8 +62,7 @@ def _list_missing_properties_for_assessed_use_case(user: user_pb2.User, title: s
 
 
 def _get_use_case_url(use_case: use_case_pb2.UseCase) -> str:
-    return '{}/eval/{}_{:02x}?poolName={}'.format(
-        _BASE_URL, use_case.pool_name, use_case.index_in_pool, use_case.pool_name)
+    return '{}/eval/{}?poolName={}'.format(_BASE_URL, use_case.use_case_id, use_case.pool_name)
 
 
 _T = typing.TypeVar('_T')
@@ -92,7 +91,8 @@ def _compute_assessment_report(example_count: int, since: str, until: str) -> st
     project_count = 0
     examples: typing.List[typing.Tuple[str, typing.List[str]]] = []
     for use_case_json in cursor:
-        use_case = proto.create_from_mongo(use_case_json, use_case_pb2.UseCase, always_create=False)
+        use_case = proto.create_from_mongo(
+            use_case_json, use_case_pb2.UseCase, 'use_case_id', always_create=False)
         if not use_case:
             logging.debug('Unable to parse use case from mongo\n%s', use_case_json)
             continue
