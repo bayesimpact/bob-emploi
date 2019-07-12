@@ -20,12 +20,11 @@ import {isLateSignupEnabled} from 'store/user'
 
 import categories from 'components/advisor/data/categories.json'
 import {FastForward} from 'components/fast_forward'
-import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
-import {ModalCloseButton} from 'components/modal'
 import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
   WaitingElement} from 'components/phylactery'
 import {RadiumExternalLink} from 'components/radium'
+import {SignUpBanner} from 'components/pages/signup'
 import {BobScoreCircle, Button, PercentBar, PieChart, Markdown,
   SmoothTransitions, UpDownIcon, colorToAlpha, colorToComponents} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
@@ -1121,7 +1120,6 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     areStrategiesShown: !this.props.isFirstTime,
     isDiagnosticTextShown: this.props.isFirstTime,
     isFullTextShown: false,
-    isSignUpBannerClosed: !isLateSignupEnabled || this.props.isFirstTime,
   }
 
   public componentDidMount(): void {
@@ -1178,10 +1176,6 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
   }
 
   private handleFullTextShown = (): void => this.setState({isFullTextShown: true})
-
-  private closeSignUpBanner = (): void => {
-    this.setState({isSignUpBannerClosed: true})
-  }
 
   private handleDispatch = _memoize((action): (() => void) => (): void =>
     this.props.dispatch(action))
@@ -1318,53 +1312,17 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     </React.Fragment>
   }
 
-  private renderSignupBanner(style: React.CSSProperties): React.ReactNode {
-    const {userYou} = this.props
-    const bannerStyle: React.CSSProperties = {
-      ...cardStyle,
-      alignItems: 'center',
-      display: 'flex',
-      position: 'relative',
-      ...style,
-    }
-    const textBannerStyle: React.CSSProperties = {
-      fontSize: 18,
-      fontStyle: 'italic',
-      padding: '33px 32px 35px',
-    }
-    const closeStyle: React.CSSProperties = {
-      backgroundColor: colors.SLATE,
-      boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.2)',
-      color: '#fff',
-      fontSize: 12,
-      height: 35,
-      width: 35,
-    }
-    return <div style={bannerStyle}>
-      <ModalCloseButton onClick={this.closeSignUpBanner} style={closeStyle} />
-      <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />
-      <span style={textBannerStyle} >
-        Pense{userYou('', 'z')} à créer {userYou('ton', 'votre')} compte pour
-        sauvegarder {userYou('ta', 'votre')} progression
-      </span>
-      <span style={{flex: 1}}></span>
-      <LoginButton
-        type="navigation" style={{marginRight: 40}} isRound={true} visualElement="diagnostic">
-        Créer mon compte
-      </LoginButton>
-    </div>
-  }
-
   public render(): React.ReactNode {
-    const {areStrategiesShown, isDiagnosticTextShown, isSignUpBannerClosed} = this.state
-    const {advices = [], areStrategiesEnabled, diagnosticData, hasAccount, onDownloadAsPdf,
-      makeAdviceLink, makeStrategyLink, project, project: {city, targetJob}, strategies = [], style,
-      userYou} = this.props
+    const {areStrategiesShown, isDiagnosticTextShown} = this.state
+    const {advices = [], areStrategiesEnabled, diagnosticData, hasAccount, isFirstTime,
+      onDownloadAsPdf, makeAdviceLink, makeStrategyLink, project, project: {city, targetJob},
+      strategies = [], style, userYou} = this.props
     const {categoryId, strategiesIntroduction} = diagnosticData
     const isBobTalksModalShown = areStrategiesEnabled && isDiagnosticTextShown && !isMobileVersion
     if (isDiagnosticTextShown && !isBobTalksModalShown) {
       return this.renderDiagnosticText()
     }
+    const isSignUpBannerShown = !hasAccount && isLateSignupEnabled && !isFirstTime
     const score = this.getScore()
     const adviceProps = _mapValues(
       _keyBy(advices, 'adviceId'),
@@ -1413,11 +1371,12 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       }
       // TODO(marielaure): Put a smooth transition when closing the sign up banner.
       return <div style={pageStyle}>
-        {isSignUpBannerClosed || hasAccount ? null :
-          this.renderSignupBanner({margin: '0 0 50px', width: 1000})}
+        {isSignUpBannerShown ?
+          <SignUpBanner style={{margin: '0 0 50px', width: 1000}} userYou={userYou} /> : null}
         <div style={contentStyle}>
           {isBobTalksModalShown ? this.renderDiagnosticText(true) : null}
-          <div style={{marginRight: 40, width: isMobileVersion ? '100%' : 600}}>
+          <div
+            style={{marginRight: isMobileVersion ? 0 : 40, width: isMobileVersion ? '100%' : 600}}>
             {isMobileVersion ? this.renderMobileTopSections(score, cardStyle) :
               <div style={titleCardStyle}>
                 <BalancedTitle><Markdown content={score.shortTitle} /></BalancedTitle>
@@ -1471,7 +1430,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       marginLeft: isMobileVersion ? 0 : 15,
       position: 'absolute',
       right: isMobileVersion ? 20 : 'initial',
-      top: (isMobileVersion ? 20 : 40) + (isSignUpBannerClosed ? 0 : 170),
+      top: (isMobileVersion ? 20 : 40) + (isSignUpBannerShown ? 170 : 0),
     }
     const headerStyle: React.CSSProperties = {
       alignSelf: 'stretch',
@@ -1484,12 +1443,12 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       {
         position: 'absolute',
         right: 0,
-        top: isSignUpBannerClosed ? 0 : 170,
+        top: isSignUpBannerShown ? 170 : 0,
         transition: SmoothTransitions.transition + ', top 0s',
       }
     return <div style={pageStyle}>
-      {isSignUpBannerClosed || hasAccount ? null :
-        this.renderSignupBanner({margin: '0 0 50px', width: 700})}
+      {isSignUpBannerShown ?
+        <SignUpBanner style={{margin: '0 0 50px', width: 1000}} userYou={userYou} /> : null}
       <HoverableBobHead
         style={bobHeadStyle}
         onClick={this.handleReopenDiagnosticText} />

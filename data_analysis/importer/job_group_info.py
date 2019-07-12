@@ -54,7 +54,8 @@ def make_dicts(
         fap_growth_2012_2022_csv: str,
         imt_market_score_csv: str,
         jobboards_airtable: typing.Optional[str] = None,
-        skills_for_future_airtable: typing.Optional[str] = None) \
+        skills_for_future_airtable: typing.Optional[str] = None,
+        specific_to_job_airtable: typing.Optional[str] = None) \
         -> typing.List[typing.Dict[str, typing.Any]]:
     """Import job info in MongoDB.
 
@@ -88,6 +89,8 @@ def make_dicts(
             job boards.
         skills_for_future_airtable: the base ID and the table name joined by a ':' of the Airtable
             of the skills for the future.
+        specific_to_job_airtable: the base ID and the table name joined by a ':' of the Airtable
+            of the specific to job pieces advice.
     Returns:
         A list of dict that maps the JSON representation of JobGroup protos.
     """
@@ -114,6 +117,8 @@ def make_dicts(
         'JobBoard', job_groups.index, jobboards_airtable, 'for-job-group')
     skills_for_future_by_rome = _load_items_from_airtable(
         'Skill', job_groups.index, skills_for_future_airtable, 'rome_prefixes')
+    specific_to_job_by_rome = _load_items_from_airtable(
+        'DynamicAdvice', job_groups.index, specific_to_job_airtable, 'for-job-group')
 
     # Genderize names.
     masculine, feminine = rome_genderization.genderize(jobs.name)
@@ -208,7 +213,12 @@ def make_dicts(
         job_groups['jobBoards'] = job_groups.index.map(jobboards_by_rome)
 
     # Add skills for the future.
+    if skills_for_future_by_rome:
         job_groups['skillsForFuture'] = job_groups.index.map(skills_for_future_by_rome)
+
+    # Add specific to job advice.
+    if specific_to_job_by_rome:
+        job_groups['specificAdvice'] = job_groups.index.map(specific_to_job_by_rome)
 
     # Set index as field.
     job_groups.index.name = 'romeId'

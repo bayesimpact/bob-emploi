@@ -34,6 +34,7 @@ import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalConfig} from 'components/modal'
 import {PageWithNavigationBar} from 'components/navigation'
+import {SignUpBanner} from 'components/pages/signup'
 import {CheckboxList} from 'components/pages/connected/form_utils'
 import {AppearingList, BobScoreCircle, Button, FastTransitions, GrowingNumber, LabeledToggle,
   Markdown, PercentBar, PieChart, SmoothTransitions, UpDownIcon,
@@ -1418,6 +1419,7 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
     if (isMobileVersion && !startedAt) {
       return this.renderMobileObservation(strategyMethods, goals, testimonials)
     }
+    const isSignUpBannerShown = startedAt && isGuest
     const {areAllMethodsShown, isGoalsSelectionModalShown} = this.state
     const titleStyle = {
       fontSize: 33,
@@ -1482,30 +1484,24 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
     const methodStyle = (index): React.CSSProperties => ({
       marginBottom: Math.floor(index / METHODS_PER_ROW) === lastAdviceRow ? 0 : 25,
     })
+    const coachingRegistrationModalContentStyle: React.CSSProperties = {
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '30px 50px 50px',
+    }
     return <PageWithNavigationBar
       page="strategie" navBarContent={this.renderNavBarContent()} isLogoShown={isMobileVersion}
       onBackClick={baseUrl} style={{backgroundColor: '#fff'}}>
       {startedAt || isGoalsSelectionModalShown ? null :
         <FastForward onForward={this.handleEngagement} />}
+      {isSignUpBannerShown ?
+        <SignUpBanner style={{margin: '50px auto 0', width: 1000}} userYou={userYou} /> : null}
       {isMobileVersion ? null : <React.Fragment>
         <GoalsSelectionModal
           goals={goals} isFirstTime={!startedAt} userYou={userYou} reachedGoals={reachedGoals}
           onSubmit={this.handleGoalsSelection} isShown={isGoalsSelectionModalShown}
           onClose={this.hideGoalsSelectionModal} dispatch={dispatch} />
-        {isGuest && !email ? <Modal
-          style={{margin: 20, maxWidth: 500}}
-          isShown={!!coachingEmailFrequency && coachingEmailFrequency !== 'EMAIL_NONE'}
-          onClose={this.handleCloseCoachingRegistrationModal} title="Un compte est nécessaire">
-          <div style={{padding: '30px 50px 50px'}}>
-            Pour {userYou('te', 'vous')} coacher, j'ai besoin de {userYou('ton', 'votre')} adresse
-            email. Crée{userYou(' ton', 'z votre')} compte pour activer le coaching 🙂
-            <LoginButton
-              type="navigation" visualElement="coaching"
-              style={{display: 'block', margin: '30px auto 0'}} isRound={true}>
-              Créer mon compte maintenant
-            </LoginButton>
-          </div>
-        </Modal> : null}
         <header
           style={{margin: '0 auto 35px', maxWidth: 1000, padding: '0 20px'}}>
           <h1 style={titleStyle}>{title}</h1>
@@ -1515,6 +1511,20 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
           </div>
         </header>
       </React.Fragment>}
+      {isGuest && !email ? <Modal
+        style={{margin: 20, maxWidth: 500}}
+        isShown={!!coachingEmailFrequency && coachingEmailFrequency !== 'EMAIL_NONE'}
+        onClose={this.handleCloseCoachingRegistrationModal} title="Un compte est nécessaire">
+        <div style={coachingRegistrationModalContentStyle}>
+          Pour {userYou('te', 'vous')} coacher, j'ai besoin de {userYou('ton', 'votre')} adresse
+          email. Crée{userYou(' ton', 'z votre')} compte pour activer le coaching 🙂
+          <LoginButton
+            type="navigation" visualElement="coaching"
+            style={{display: 'block', marginTop: 30}} isRound={true}>
+            Créer mon compte maintenant
+          </LoginButton>
+        </div>
+      </Modal> : null}
       <div style={contentStyle}>
         <div>
           {/* TODO(cyrille): Replace the goals panel on mobile by new mobile UI. */}

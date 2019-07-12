@@ -1095,11 +1095,16 @@ class ModifyProjectModal extends React.PureComponent<ModifyProjectModalProps> {
       maxWidth: 400,
     }
     const buttonsContainerStyle: React.CSSProperties = {
+      alignItems: 'center',
       display: 'flex',
       flexDirection: isMobileVersion ? 'column' : 'row',
       justifyContent: 'center',
     }
+    const buttonStyle: React.CSSProperties = {
+      width: 140,
+    }
     const topBottomStyle: React.CSSProperties = {
+      ...buttonStyle,
       marginBottom: isMobileVersion ? 10 : 0,
       marginRight: isMobileVersion ? 0 : 15,
     }
@@ -1113,7 +1118,7 @@ class ModifyProjectModal extends React.PureComponent<ModifyProjectModalProps> {
         <Button type="back" onClick={onClose} isRound={true} style={topBottomStyle}>
           Annuler
         </Button>
-        <Button onClick={onConfirm} isRound={true}>
+        <Button onClick={onConfirm} isRound={true} style={buttonStyle}>
           Continuer
         </Button>
       </div>

@@ -1,6 +1,7 @@
 """Tests for the bob_emploi.importer.job_group_info module."""
 
 from os import path
+import textwrap
 import unittest
 
 import airtablemock
@@ -192,6 +193,18 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             'description': 'long description',
             'rome_prefixes': 'D13, F12, H25, I11, N13, N42, C11, C12, C13, C14, C15, D11, D12, E11',
         })
+        advice_airtable.create('specific_to_job', {
+            'title': 'Présentez-vous au chef boulanger dès son arrivée tôt le matin',
+            'expanded_card_items': textwrap.dedent('''\
+                3 idées pour vous aider à réussir votre approche :
+                * Se présenter aux boulangers entre 4h et 7h du matin.
+                * Demander au vendeur / à la vendeuse à quelle heure arrive le chef le matin.
+                * Contacter les fournisseurs de farine locaux : ils connaissent tous'''),
+            'card_text': '**Allez à la boulangerie la veille** pour savoir.',
+            'short_title': 'Astuces de boulangers',
+            'diagnostic_topics': ['JOB_SEARCH_DIAGNOSTIC'],
+            'for-job-group': 'D1102',
+        })
 
         collection = job_group_info.make_dicts(
             self.rome_csv_pattern,
@@ -206,7 +219,8 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             self.fap_growth_2012_2022_csv,
             self.imt_market_score_csv,
             jobboards_airtable='app01234567:jobboards',
-            skills_for_future_airtable='app01234567:skills_for_future')
+            skills_for_future_airtable='app01234567:skills_for_future',
+            specific_to_job_airtable='app01234567:specific_to_job')
 
         job_group_protos = dict(mongo.collection_to_proto_mapping(collection, job_pb2.JobGroup))
 
@@ -222,6 +236,11 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             ['Jugement et prise de décision'],
             [s.name for s in job_group_protos['D1301'].skills_for_future])
         self.assertFalse(job_group_protos['K1802'].skills_for_future)
+
+        self.assertEqual(
+            ['Astuces de boulangers'],
+            [s.short_title for s in job_group_protos['D1102'].specific_advice])
+        self.assertFalse(job_group_protos['K1802'].specific_advice)
 
 
 if __name__ == '__main__':

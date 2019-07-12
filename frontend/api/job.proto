@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "bob_emploi/frontend/api/advisor.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/jobboard.proto";
 import "bob_emploi/frontend/api/skill.proto";
@@ -162,6 +163,10 @@ message JobGroup {
   // A list of soft skills related to this job group that will be useful for the future.
   // This data comes from 80,000 hours: https://80000hours.org/articles/skills-most-employable/.
   repeated Skill skills_for_future = 30;
+
+  // A list of pieces of advice specific to this job.
+  // This data was manually built by Bayes Impact's Content Team over the years.
+  repeated DynamicAdvice specific_advice = 31;
 }
 
 message DepartementStats {
