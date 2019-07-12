@@ -41,6 +41,12 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         self.persona.project.passionate_level = project_pb2.PASSIONATING_JOB
         self._assert_fail_filter()
 
+    def test_likeable_fail(self) -> None:
+        """User kind of happy with their job doesn't fall in this category."""
+
+        self.persona.project.passionate_level = project_pb2.LIKEABLE_JOB
+        self._assert_fail_filter()
+
     def test_unstressed_market(self) -> None:
         """User in a market with many opportunities doesn't fall in this category."""
 
@@ -90,7 +96,7 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
 
         self._set_persona_age(25)
         self._set_competitive_market()
-        self.persona.project.passionate_level = project_pb2.LIKEABLE_JOB
+        self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
         self.persona.project.seniority = project_pb2.JUNIOR
         self._assert_pass_filter()
 
@@ -100,7 +106,7 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         self._set_persona_age(35)
         self._set_competitive_market()
         self._set_job_search_length(months=1.5)
-        self.persona.project.passionate_level = project_pb2.LIKEABLE_JOB
+        self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
         self.persona.project.kind = project_pb2.REORIENTATION
         self._assert_pass_filter()
 
@@ -110,7 +116,7 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         self._set_persona_age(35)
         self._set_competitive_market()
         self._set_job_search_length(months=1.5)
-        self.persona.project.passionate_level = project_pb2.LIKEABLE_JOB
+        self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
         self.persona.project.previous_job_similarity = project_pb2.NEVER_DONE
         self._assert_pass_filter()
 

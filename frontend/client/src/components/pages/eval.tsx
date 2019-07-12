@@ -92,9 +92,9 @@ interface UseCaseEvalPageProps extends RouteComponentProps<{useCaseId: string}> 
 
 
 interface UseCaseEvalPageState {
-  advices?: bayes.bob.Advice[]
+  advices?: readonly bayes.bob.Advice[]
   diagnostic?: bayes.bob.Diagnostic
-  categories?: bayes.bob.DiagnosticCategory[]
+  categories?: readonly bayes.bob.DiagnosticCategory[]
   evaluation?: bayes.bob.UseCaseEvaluation
   initialUseCaseId?: string
   isCreatePoolModalShown?: boolean
@@ -103,12 +103,12 @@ interface UseCaseEvalPageState {
   isSaved?: boolean
   jobGroupInfo?: bayes.bob.JobGroup
   localStats?: bayes.bob.LocalJobStats
-  pools?: bayes.bob.UseCasePool[]
+  pools?: readonly bayes.bob.UseCasePool[]
   selectedPoolName?: string
   selectedUseCase?: bayes.bob.UseCase
   shownPanel?: EvalPanel
-  strategies?: bayes.bob.Strategy[]
-  useCases?: bayes.bob.UseCase[]
+  strategies?: readonly bayes.bob.Strategy[]
+  useCases?: readonly bayes.bob.UseCase[]
 }
 
 
@@ -580,7 +580,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       name: 'Sommaire',
       value: OVERVIEW_ID,
     }
-    const useCasesOptions = [overviewOption].concat(useCases.
+    const useCasesOptions = [overviewOption].concat([...useCases].
       sort((a: bayes.bob.UseCase, b: bayes.bob.UseCase): number =>
         (a.indexInPool || 0) - (b.indexInPool || 0)).
       map(({indexInPool, title, useCaseId, userData, evaluation}): SelectOption => {
@@ -773,13 +773,20 @@ const AuthenticateEvalPage = connect(({auth}: EvalRootState): AuthEvalPageConnec
 
 
 
+function fetchGoogleIdToken(googleUser): Promise<string> {
+  const {'expires_at': expiresAt, 'id_token': idToken} = googleUser.getAuthResponse()
+  if (expiresAt > new Date().getTime()) {
+    return Promise.resolve(idToken)
+  }
+  return googleUser.reloadAuthResponse().then(({id_token: googleIdToken}): string => googleIdToken)
+}
+
+
 function evalAuthReducer(state: AuthEvalState = {}, action: AllEvalActions): AuthEvalState {
   if (action.type === 'AUTH' && action.googleUser) {
     return {
       ...state,
-      // TODO(pascal): Make it a bit smarter not to reload the response each time.
-      fetchGoogleIdToken: (): Promise<string> => action.googleUser.reloadAuthResponse().then(
-        ({id_token: googleIdToken}): string => googleIdToken),
+      fetchGoogleIdToken: (): Promise<string> => fetchGoogleIdToken(action.googleUser),
     }
   }
   return state

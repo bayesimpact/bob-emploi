@@ -76,6 +76,14 @@ if [ "$1" == "upload" ]; then
     exit 1
   fi
 
+  readonly ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
+  readonly ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
+  readonly ALL_COMMON_RULES=$(sort <<< "$ALL_INDEX_RULES $ALL_TARGET_RULES" | uniq -d)
+  if [[ " ${ALL_RULES//$'\n'/ } " != *\ $RULE\ * ]]; then
+    echo "Invalid choice '$RULE'. choose the rule to upload from" $ALL_RULES
+    exit 2
+  fi
+
   aws events put-rule --name "$RULE" --cli-input-json "$(jq -c '.Rules[] | select(.Name=="'$RULE'") | del(.Arn)' "$FOLDER/index.json")"
   aws events put-targets --cli-input-json "$(
     jq '. + {Rule: "'$RULE'"}' "$FOLDER/$RULE.json" | \

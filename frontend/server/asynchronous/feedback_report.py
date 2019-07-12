@@ -27,21 +27,25 @@ _SLACK_FEEDBACK_URL = os.getenv('SLACK_FEEDBACK_URL')
 _T = typing.TypeVar('_T')
 
 
+def _plural_s(num: int) -> str:
+    if num == 1:
+        return ''
+    return 's'
+
+
 def _report_comments(comments: typing.List[_T], display_func: typing.Callable[[_T], str]) -> str:
     if not comments:
         return 'There are no individual comments.'
-    return 'And here {} the individual comment{}:\n{}'.format(
-        'is' if len(comments) == 1 else 'are',
-        '' if len(comments) == 1 else 's',
-        '\n'.join(display_func(comment) for comment in comments),
-    )
+    return f'And here {"is" if len(comments) == 1 else "are"} the individual ' \
+        f'comment{_plural_s(len(comments))}:\n' + \
+        '\n'.join(display_func(comment) for comment in comments)
 
 
 def _compute_nps_report(users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
     score_distribution: typing.Dict[int, int] = collections.defaultdict(int)
     nps_total = 0
     num_users = 0
-    responses_with_comment = []
+    responses_with_comment: typing.List[typing.Tuple[str, user_pb2.NPSSurveyResponse]] = []
     for user in users:
         num_users += 1
         response = user.net_promoter_score_survey_response
@@ -69,30 +73,22 @@ def _compute_nps_report(users: typing.Iterable[user_pb2.User], from_date: str, t
         }},
     })
 
-    comments = _report_comments(
-        sorted(responses_with_comment, key=lambda r: -r[1].score),
-        lambda id_and_response: '[Score: {}] ObjectId("{}")\n> {}'.format(
-            id_and_response[1].score, id_and_response[0],
-            '\n> '.join(id_and_response[1].general_feedback_comment.split('\n'))),
-    )
+    def _display_func(id_and_response: typing.Tuple[str, user_pb2.NPSSurveyResponse]) -> str:
+        return f'[Score: {id_and_response[1].score}] ObjectId("{id_and_response[0]}")\n> ' + \
+            ('\n> '.join(id_and_response[1].general_feedback_comment.split('\n')))
 
-    return (
-        '{num_users} user{users_plural} answered the NPS survey '
-        '(out of {total_num_users} - {answer_rate}% answer rate) '
-        'for a global NPS of *{nps}%*\n'
-        '{score_distribution}\n{comments}'.format(
-            num_users=num_users,
-            total_num_users=total_num_users,
-            answer_rate=round(num_users * 100 / total_num_users) if total_num_users else 0,
-            users_plural='' if num_users == 1 else 's',
-            nps=round(nps_total * 1000 / num_users) / 10 if num_users else 0,
-            score_distribution='\n'.join(
-                '*{}*: {} user{}'.format(
-                    score, score_distribution[score], '' if score_distribution[score] == 1 else 's')
-                for score in sorted(score_distribution.keys(), reverse=True)),
-            comments=comments,
-        )
-    )
+    comments = _report_comments(
+        sorted(responses_with_comment, key=lambda r: -r[1].score), _display_func)
+    answer_rate = round(num_users * 100 / total_num_users) if total_num_users else 0
+    nps = round(nps_total * 1000 / num_users) / 10 if num_users else 0
+    score_distributions = '\n'.join(
+        f'*{score}*: {score_distribution[score]} user{_plural_s(score_distribution[score])}'
+        for score in sorted(score_distribution.keys(), reverse=True))
+
+    return f'{num_users} user{_plural_s(num_users)} answered the NPS survey ' \
+        f'(out of {total_num_users} - {answer_rate}% answer rate) ' \
+        f'for a global NPS of *{nps}%*\n' \
+        f'{score_distributions}\n{comments}'
 
 
 def _compute_stars_report(
@@ -121,30 +117,23 @@ def _compute_stars_report(
         }
     })
 
-    return (
-        '{num_projects} project{projects_plural} {was_or_were} scored in the app '
-        '(out of {total_num_projects} - {answer_rate}% answer rate) '
-        'for a global average of *{average_stars} :star:*\n'
-        '{score_distribution}\n{comments}'.format(
-            num_projects=num_projects,
-            projects_plural='' if num_projects == 1 else 's',
-            was_or_were='was' if num_projects == 1 else 'were',
-            average_stars=round(stars_total * 10 / num_projects) / 10 if num_projects else 0,
-            total_num_projects=total_num_projects,
-            answer_rate=round(num_projects * 100 / total_num_projects) if total_num_projects else 0,
-            score_distribution='\n'.join(
-                '{}: {} project{}'.format(
-                    ':star:' * score, score_distribution[score],
-                    '' if score_distribution[score] == 1 else 's')
-                for score in sorted(score_distribution.keys(), reverse=True)),
-            comments=_report_comments(
-                sorted(responses_with_comment, key=lambda r: -r.score),
-                lambda response: '[{}]\n> {}'.format(
-                    ':star:' * response.score,
-                    '\n> '.join(response.text.split('\n')),
-                ),
-            ),
-        ))
+    answer_rate = round(num_projects * 100 / total_num_projects) if total_num_projects else 0
+    average_stars = round(stars_total * 10 / num_projects) / 10 if num_projects else 0
+    score_distributions = '\n'.join(
+        f'{":star:" * score}: {score_distribution[score]} '
+        f'project{_plural_s(score_distribution[score])}'
+        for score in sorted(score_distribution.keys(), reverse=True))
+    comments = _report_comments(
+        sorted(responses_with_comment, key=lambda r: -r.score),
+        lambda response: f'[{":star:" * response.score}]\n> ' +
+        '\n> '.join(response.text.split('\n')),
+    )
+
+    return f'{num_projects} project{_plural_s(num_projects)} ' \
+        f'{"was" if num_projects == 1 else "were"} scored in the app ' \
+        f'(out of {total_num_projects} - {answer_rate}% answer rate) ' \
+        f'for a global average of *{average_stars} :star:*\n' \
+        f'{score_distributions}\n{comments}'
 
 
 def _compute_rer_report(users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
@@ -172,30 +161,28 @@ def _compute_rer_report(users: typing.Iterable[user_pb2.User], from_date: str, t
             if 'YES' in user_status.bob_has_helped:
                 bob_has_helped[user_status.seeking] += 1
 
-    return (
-        '{num_users} user{users_plural} have answered the survey, '
-        '*{percent_stop_seeking:.1f}%* have stopped seeking:\n'
-        '{maybe_unknown_seeking}{seeking_distribution}'.format(
-            num_users=num_users,
-            users_plural='' if num_users == 1 else 's',
-            percent_stop_seeking=(
-                (seeking_distribution[user_pb2.STOP_SEEKING] / num_users * 100)
-                if num_users else 0),
-            maybe_unknown_seeking='{} with an unknown seeking status\n'.format(
-                seeking_distribution[user_pb2.SEEKING_STATUS_UNDEFINED]
-            ) if user_pb2.SEEKING_STATUS_UNDEFINED in seeking_distribution else '',
-            seeking_distribution='\n'.join(
-                '*{seeking}*: {num_users} user{plural_users} '
-                '({percent_helped:.1f}% said Bob helped{helped_note})'.format(
-                    seeking=user_pb2.SeekingStatus.Name(seeking),
-                    num_users=seeking_distribution[seeking],
-                    plural_users='' if seeking_distribution[seeking] == 1 else 's',
-                    percent_helped=(
-                        bob_has_helped[seeking] * 100 / (answered_bob_helped[seeking] or 1)),
-                    helped_note='' if answered_bob_helped[seeking] == seeking_distribution[seeking]
-                    else ' - excluding N/A')
-                for seeking in sorted(seeking_distribution.keys())),
-        ))
+    if num_users:
+        percent_stop_seeking = \
+            (seeking_distribution[user_pb2.STOP_SEEKING] / num_users * 100)
+    else:
+        percent_stop_seeking = 0
+    if user_pb2.SEEKING_STATUS_UNDEFINED in seeking_distribution:
+        maybe_unknown_seeking = \
+            f'{seeking_distribution[user_pb2.SEEKING_STATUS_UNDEFINED]} with an unknown ' \
+            'seeking status\n'
+    else:
+        maybe_unknown_seeking = ''
+    seeking_distributions = '\n'.join(
+        f'*{user_pb2.SeekingStatus.Name(seeking)}*: {seeking_distribution[seeking]} '
+        f'user{_plural_s(seeking_distribution[seeking])} '
+        f'({bob_has_helped[seeking] * 100 / (answered_bob_helped[seeking] or 1):.1f}% said Bob '
+        f'helped{"" if answered_bob_helped[seeking] == seeking_distribution[seeking] else " - excluding N/A"})'  # pylint: disable=line-too-long,useless-suppression
+        for seeking in sorted(seeking_distribution.keys())
+    )
+
+    return f'{num_users} user{_plural_s(num_users)} have answered the survey, ' \
+        f'*{percent_stop_seeking:.1f}%* have stopped seeking:\n' \
+        f'{maybe_unknown_seeking}{seeking_distributions}'
 
 
 _ReportDefinition = collections.namedtuple('Report', (
@@ -268,7 +255,7 @@ def _compute_and_send_report(
         requests.post(_SLACK_FEEDBACK_URL, json={'attachments': [{
             'color': report.color,
             'mrkdwn_in': ['text'],
-            'title': '{} from {} to {}'.format(report.title, from_date, to_date),
+            'title': f'{report.title} from {from_date} to {to_date}',
             'text': report_text,
         }]})
 

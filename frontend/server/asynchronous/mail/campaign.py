@@ -191,7 +191,7 @@ class Campaign(typing.Generic[_UserProto]):
             return True
 
         if action not in ('dry-run', 'send'):
-            raise ValueError('Unknown action "{}".'.format(action))
+            raise ValueError(f'Unknown action "{action}".')
 
         if action == 'dry-run':
             collection.get_profile(user).email = dry_run_email
@@ -215,8 +215,7 @@ class Campaign(typing.Generic[_UserProto]):
         email_sent.campaign_id = campaign_id
         if mongo_user_update and '$push' in mongo_user_update:  # pragma: no-cover
             raise ValueError(
-                '$push operations are not allowed in mongo_user_update:\n{}'
-                .format(mongo_user_update))
+                f'$push operations are not allowed in mongo_user_update:\n{mongo_user_update}')
         users_database.get_collection(collection.mongo_collection).update_one(
             {'_id': objectid.ObjectId(collection.get_id(user))},
             dict(mongo_user_update or {}, **{'$push': {
@@ -238,7 +237,7 @@ def register_campaign(campaign_id: str, campaign: Campaign[_UserProto]) -> None:
     """Registers an email campaign."""
 
     if campaign_id in _CAMPAIGNS:
-        raise ValueError('The campaign "{}" already exists.'.format(campaign_id))
+        raise ValueError(f'The campaign "{campaign_id}" already exists.')
     _CAMPAIGNS[campaign_id] = campaign
 
 
@@ -270,12 +269,9 @@ def get_status_update_link(user_id: str, profile: user_pb2.UserProfile) -> str:
     """Make link with token from user ID for RER status update."""
 
     survey_token = parse.quote(auth.create_token(user_id, role='employment-status'))
-    return '{}/statut/mise-a-jour?user={}&token={}&gender={}{}'.format(
-        BASE_URL,
-        user_id,
-        survey_token,
-        user_pb2.Gender.Name(profile.gender),
-        '&can_tutoie=true' if profile.can_tutoie else '')
+    return f'{BASE_URL}/statut/mise-a-jour?user={user_id}&token={survey_token}&' \
+        f'gender={user_pb2.Gender.Name(profile.gender)}' + \
+        ('&can_tutoie=true' if profile.can_tutoie else '')
 
 
 # TODO(cyrille): Fix this to account for same mode in different FAPs.
@@ -314,7 +310,7 @@ def create_logged_url(user_id: str, path: str = '') -> str:
     """Returns a route with given path and necessary query parameters for authentication."""
 
     auth_token = parse.quote(auth.create_token(user_id, role='auth', is_using_timestamp=True))
-    return '{}{}?user={}&authToken={}'.format(BASE_URL, path, user_id, auth_token)
+    return f'{BASE_URL}{path}?user={user_id}&authToken={auth_token}'
 
 
 def job_search_started_months_ago(project: project_pb2.Project) -> float:
@@ -337,9 +333,9 @@ def get_default_vars(user: user_pb2.User) -> typing.Dict[str, str]:
     return {
         'firstName': french.cleanup_firstname(user.profile.name),
         'gender': user_pb2.Gender.Name(user.profile.gender),
-        'unsubscribeLink': '{}/unsubscribe.html?user={}&auth={}'.format(
-            BASE_URL, parse.quote(user.user_id),
-            unsubscribe_token),
+        'unsubscribeLink':
+        f'{BASE_URL}/unsubscribe.html?user={parse.quote(user.user_id)}&'
+        f'auth={unsubscribe_token}',
     }
 
 
@@ -350,9 +346,9 @@ def get_default_coaching_email_vars(
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))
     return dict(get_default_vars(user), **{
         'changeEmailSettingsUrl':
-        '{}/unsubscribe.html?user={}&auth={}&coachingEmailFrequency={}'.format(
-            BASE_URL, parse.quote(user.user_id),
-            settings_token, user_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency)),
+        f'{BASE_URL}/unsubscribe.html?user={parse.quote(user.user_id)}&auth={settings_token}&'
+        'coachingEmailFrequency=' +
+        user_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency),
         'firstName': french.cleanup_firstname(user.profile.name),
         'gender': user_pb2.Gender.Name(user.profile.gender),
         # TODO(pascal): Harmonize use of URL suffix (instead of link).

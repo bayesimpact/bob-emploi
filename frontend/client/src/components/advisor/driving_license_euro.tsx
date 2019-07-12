@@ -19,14 +19,15 @@ interface CardConnectedProps {
 }
 
 
+type ExpandedCardProps = CardWithContentProps<bayes.bob.OneEuroProgram> & CardConnectedProps
+
+
 interface CardState {
-  schools?: bayes.bob.DrivingSchool[]
+  schools?: readonly bayes.bob.DrivingSchool[]
 }
 
 
-class ExpandedAdviceCardContentBase extends React.PureComponent<
-CardWithContentProps<bayes.bob.OneEuroProgram> & CardConnectedProps,
-CardState> {
+class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProps, CardState> {
   public static propTypes = {
     advice: PropTypes.shape({
       adviceId: PropTypes.string.isRequired,
@@ -61,7 +62,7 @@ CardState> {
   public state = {}
 
   public static getDerivedStateFromProps(
-    {adviceData: {schools = []} = {}}, {schools: prevSchools}): CardState {
+    {adviceData: {schools = []} = {}}: ExpandedCardProps, {schools: prevSchools}): CardState {
     if (prevSchools === schools) {
       return null
     }

@@ -12,8 +12,8 @@ import {Swipeable} from 'react-swipeable'
 import {TwitterTweetEmbed} from 'react-twitter-embed'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {DispatchAllActions, landingPageSectionIsShown, openLoginModal, openRegistrationModal,
-  loadLandingPage} from 'store/actions'
+import {DispatchAllActions, landingPageSectionIsShown, loadLandingPage} from 'store/actions'
+import {isLateSignupEnabled} from 'store/user'
 
 import bobBlueImage from 'images/bob-logo.svg?fill=#1888ff' // colors.BOB_BLUE
 import step1Image from 'images/step-1.svg'
@@ -34,13 +34,12 @@ import pressPositivrImage from 'images/press/positivr.png'
 import sncImage from 'images/snc-ico.png'
 
 import {CookieMessageOverlay} from 'components/cookie_message'
-import {FastForward} from 'components/fast_forward'
-import {LoginButton} from 'components/login'
+import {LoginButton, LoginLink} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {StaticPage, TitleSection} from 'components/static'
 import {fetchFirstSuggestedJob} from 'components/suggestions'
 import {TestimonialCard, Testimonials} from 'components/testimonials'
-import {CarouselArrow, ExternalLink, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
+import {Button, CarouselArrow, ExternalLink, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
   SmoothTransitions, colorToAlpha} from 'components/theme'
 import {Routes} from 'components/url'
 
@@ -150,13 +149,6 @@ const subtitleStyle: React.CSSProperties = {
 
 
 class DiagnosticSection extends React.PureComponent<{children?: never}> {
-  private renderStep(content: React.ReactNode, image: string): React.ReactNode {
-    return <div style={{maxWidth: 300, textAlign: 'center'}}>
-      <img src={image} alt="" /><br />
-      {content}
-    </div>
-  }
-
   public render(): React.ReactNode {
     const style: React.CSSProperties = {
       backgroundColor: '#fff',
@@ -326,10 +318,11 @@ class DiagnosticSection extends React.PureComponent<{children?: never}> {
           width: isMobileVersion ? 100 : 300,
         }} />
         <div>
-          <LoginButton
-            style={buttonStyle} isSignUpButton={true} visualElement="diagnostic" type="validation">
-            Inscrivez-vous maintenant&nbsp;!
-          </LoginButton>
+          <LoginLink isSignUp={true} visualElement="diagnostic">
+            <Button style={buttonStyle} type="validation">
+              {isLateSignupEnabled ? 'Commencez' : 'Inscrivez-vous'} maintenant&nbsp;!
+            </Button>
+          </LoginLink>
         </div>
       </div>
     </section>
@@ -459,8 +452,8 @@ class TestimonialsSection extends React.PureComponent<{children?: never}> {
         </TestimonialCard>
       </Testimonials>
       <div style={{padding: '35px 0 50px', textAlign: 'center'}}>
-        <LoginButton isSignUpButton={true} visualElement="testimonials" type="validation">
-          S'inscrire maintenant sur {config.productName}
+        <LoginButton isSignUp={true} visualElement="testimonials" type="validation">
+          {isLateSignupEnabled ? 'Commencez' : 'Inscrivez-vous'} maintenant&nbsp;!
         </LoginButton>
       </div>
     </section>
@@ -1023,42 +1016,15 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
   }
 
   public componentDidMount(): void {
-    const {dispatch, location} = this.props
-    const {hash, pathname, search} = location
-    const query = parse(search)
-    const {email, state} = query
-
     if (window.performance && window.performance.now) {
       // TODO (cyrille): Maybe sample this measurement if we don't want to slow down everyone.
+      // TODO(cyrille): Only do it at first render for a given session.
       const timeToInteractiveMillisecs = window.performance.now()
       const landingPageKind = this.state.landingPageContent.kind
       this.maybeFetchSpecificJob().then((specificJob): void => {
         this.props.dispatch(loadLandingPage(
           timeToInteractiveMillisecs, landingPageKind, specificJob))
       })
-    }
-    const {isForSpecificJob} = this.state
-
-    if (hash === '#inscription') {
-      dispatch(openRegistrationModal({email: email || ''}, 'urlHash'))
-      return
-    }
-    // In various auth flows (PE Connect, LinkedIn, Facebook on mobile), the
-    // button components need to be mounted in order to actually login after a
-    // redirect.
-    if (state) {
-      dispatch(openRegistrationModal({}, 'redirect-connect'))
-      return
-    }
-    // Some specific landing pages like /metier/D1102/boulanger have a path different than the root.
-    const pathIsLandingPage = pathname === Routes.ROOT || isForSpecificJob
-    // If the path the user is trying to access is authenticated (like /profile for example),
-    // they will be redirected to the landing page to authenticate. In this case we prompt
-    // the user directly to log in.
-    if (!pathIsLandingPage) {
-      dispatch(openLoginModal({
-        email: email || '',
-      }, 'returninguser'))
     }
   }
 
@@ -1070,10 +1036,6 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
     }
     // Return null for the fetched job if any error happens.
     return fetchFirstSuggestedJob(specificJobName).catch((): bayes.bob.Job => null)
-  }
-
-  private handleOpenLoginModal = (): void => {
-    this.props.dispatch(openRegistrationModal(undefined, 'fastforward'))
   }
 
   private handleVisibility = _memoize((sectionName): ((v) => void) => (isVisible): void => {
@@ -1114,8 +1076,8 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
         <img src={bobBlueImage} height={30} alt={config.productName} />
         <span style={{flex: 1}} />
 
-        <LoginButton isSignUpButton={true} visualElement="scrolling-nav-bar" type="validation">
-          S'inscrire
+        <LoginButton isSignUp={true} visualElement="scrolling-nav-bar" type="validation">
+          {isLateSignupEnabled ? 'Commencer' : "S'inscrire"}
         </LoginButton>
       </div>
     </div>
@@ -1127,7 +1089,6 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
       page="landing" isContentScrollable={false} isNavBarTransparent={true}
       style={{backgroundColor: '#fff', overflow: 'hidden'}} isChatButtonShown={true}
       isCookieDisclaimerShown={!!isMobileVersion}>
-      <FastForward onForward={this.handleOpenLoginModal} />
 
       {/* NOTE: The beginning of the DOM is what Google use in its snippet,
         make sure it's important. */}

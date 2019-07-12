@@ -66,7 +66,7 @@ class FhsTestCase(unittest.TestCase):
                         '__file__': filename.replace('*', 'Reg21'),
                     },
                 ])
-            raise ValueError('Called with "{}"'.format(filename))
+            raise ValueError(f'Called with "{filename}"')
         mock_flatten_iterator.side_effect = _flatten_iterator
 
         seekers = list(

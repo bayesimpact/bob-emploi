@@ -74,5 +74,5 @@ def hist_in_range(
     max_value = max_value or series.max()
     plot_range = (series >= min_value) & (series <= max_value)
     range_perc = plot_range.sum() / series.count() * 100
-    print('{:.2f}% of values in range'.format(range_perc))
+    print(f'{range_perc:.2f}% of values in range')
     return series[plot_range].hist(bins=bins)

@@ -102,8 +102,9 @@ def _make_application_mode_section(
             if advice.advice_id.startswith('network')), '')
     application_mode_link = ''
     if application_mode_advice:
+        # TODO(cyrille): Fix this link.
         application_mode_link = campaign.create_logged_url(
-            user_id, path='/projet/0/{}'.format(application_mode_advice))
+            user_id, path=f'/projet/0/{application_mode_advice}')
     return {
         'link': application_mode_link,
         'title': _APPLICATION_MODES_SHORT[best_application_mode.mode],
@@ -223,13 +224,12 @@ def _get_imt_vars(
             'Only %d section(s) to be shown for user (%s).', len(shown_sections), shown_sections)
         return None
 
-    imt_link = 'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?' + \
-        'codeMetier={}&codeZoneGeographique={}&typeZoneGeographique=DEPARTEMENT'.format(
-            project.target_job.code_ogr, departement_id)
+    imt_link = 'http://candidat.pole-emploi.fr/marche-du-travail/statistiques?' \
+        f'codeMetier={project.target_job.code_ogr}&codeZoneGeographique={departement_id}&' \
+        'typeZoneGeographique=DEPARTEMENT'
 
-    job_name_in_departement = '{} {}'.format(
-        genderized_job_name,
-        geo.get_in_a_departement_text(database, departement_id))
+    in_departement = geo.get_in_a_departement_text(database, departement_id)
+    job_name_in_departement = f'{genderized_job_name} {in_departement}'
 
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'applicationModes': _make_section(application_modes_section),

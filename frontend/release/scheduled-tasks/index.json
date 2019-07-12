@@ -8,6 +8,20 @@
       "State": "ENABLED"
     },
     {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/clean-guest-user",
+      "Description": "Delete all personal information from guest accounts older than a week.",
+      "Name": "clean-guest-user",
+      "ScheduleExpression": "rate(24 hours)",
+      "State": "DISABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/collect-strings-translation",
+      "Description": "Automate strings collect for translation.",
+      "Name": "collect-strings-translation",
+      "ScheduleExpression": "rate(24 hours)",
+      "State": "ENABLED"
+    },
+    {
       "Arn": "arn:aws:events:eu-west-3:951168128976:rule/count-users",
       "Description": "Count users by departement and ROME and populate the user_count table in mongo",
       "Name": "count-users",
@@ -22,9 +36,58 @@
       "State": "ENABLED"
     },
     {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-adie-events",
+      "Description": "Automate ADIE events import.",
+      "Name": "import-adie-events",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-job-group-info",
+      "Description": "Automate Job Group Info import.",
+      "Name": "import-job-group-info",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-local-diagnosis",
+      "Description": "Automate local diagnostic import.",
+      "Name": "import-local-diagnosis",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-local-missions",
+      "Description": "Automate local diagnostic import.",
+      "Name": "import-local-missions",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-online-salons",
+      "Description": "Automate local diagnostic import.",
+      "Name": "import-online-salons",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-reorient-jobbing",
+      "Description": "Automate Reorient Jobbing import.",
+      "Name": "import-reorient-jobbing",
+      "ScheduleExpression": "rate(30 days)",
+      "State": "ENABLED"
+    },
+    {
       "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-volunteering-missions",
       "Description": "Automate volunteering missions import.",
       "Name": "import-volunteering-missions",
+      "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-workup-events",
+      "Description": "Automate Workup events import.",
+      "Name": "import-workup-events",
       "ScheduleExpression": "rate(7 days)",
       "State": "ENABLED"
     },
@@ -82,62 +145,6 @@
       "Description": "Update the \"sent status\" of the emails that we sent with Mailjet.",
       "Name": "update-email-sent-status",
       "ScheduleExpression": "rate(24 hours)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-adie-events",
-      "Description": "Automate ADIE events import.",
-      "Name": "import-adie-events",
-      "ScheduleExpression": "rate(7 days)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-workup-events",
-      "Description": "Automate Workup events import.",
-      "Name": "import-workup-events",
-      "ScheduleExpression": "rate(7 days)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/collect-strings-translation",
-      "Description": "Automate strings collect for translation.",
-      "Name": "collect-strings-translation",
-      "ScheduleExpression": "rate(24 hours)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-local-missions",
-      "Description": "Automate civic service missions import.",
-      "Name": "import-local-missions",
-      "ScheduleExpression": "rate(7 days)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-online-salons",
-      "Description": "Automate online salons import.",
-      "Name": "import-online-salons",
-      "ScheduleExpression": "rate(7 days)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-local-diagnosis",
-      "Description": "Automate local diagnostic import.",
-      "Name": "import-local-diagnosis",
-      "ScheduleExpression": "rate(30 days)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-job-group-info",
-      "Description": "Automate Job Group Info import.",
-      "Name": "import-job-group-info",
-      "ScheduleExpression": "rate(30 days)",
-      "State": "ENABLED"
-    },
-    {
-      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/import-reorient-jobbing",
-      "Description": "Automate Reorient Jobbing import.",
-      "Name": "import-reorient-jobbing",
-      "ScheduleExpression": "rate(30 days)",
       "State": "ENABLED"
     }
   ]

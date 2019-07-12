@@ -118,7 +118,7 @@ def _diploma_name(job_offer_diploma: _ProxyFields) -> typing.Optional[str]:
     if (not int(job_offer_diploma.subject_area_code) or
             job_offer_diploma.subject_area_name == 'NULL'):
         return diploma_name
-    return '{} en {}'.format(diploma_name, job_offer_diploma.subject_area_name)
+    return f'{diploma_name} en {job_offer_diploma.subject_area_name}'
 
 
 def _employment_type(job_offer: 'job_offers._JobOffer') -> job_pb2.EmploymentType:

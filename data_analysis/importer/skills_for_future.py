@@ -1,4 +1,7 @@
-"""Importer for skills for the future."""
+"""Importer for skills for the future.
+
+Data was originally from https://80000hours.org/articles/skills-most-employable/
+"""
 
 import collections
 import os

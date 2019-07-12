@@ -158,8 +158,8 @@ def _compute_percent_decrease(num_offers_per_salary: pd.Series, max_salary_decre
         # to get the amount of offers if we would decrease the salary by
         # percent_decrease%.
         salary_offers.index /= (1 - percent_decrease)
-        salary_offers.index.name = '{:d}percent_decrease'.format(round(percent_decrease * 100))
-        salary_offers.name = '{:d}percent_salary_decrease'.format(round(percent_decrease * 100))
+        salary_offers.index.name = f'{round(percent_decrease * 100):d}percent_decrease'
+        salary_offers.name = f'{round(percent_decrease * 100):d}percent_salary_decrease'
         percent_decrease_df = pd.DataFrame(salary_offers)
         all_percent_decreases = pd.merge(
             all_percent_decreases,

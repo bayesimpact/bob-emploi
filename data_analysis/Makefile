@@ -244,3 +244,21 @@ data/usa/onet_v22_3/Occupation_Data.txt:
 data/usa/national_occupational_projections.xls:
 	mkdir -p "$(@D)"
 	wget -O "$@" "https://www.bls.gov/emp/ind-occ-matrix/occupation.xlsx"
+
+data/actiris/WAB%.csv:
+	mkdir -p $(@D)/$$(date +%Y-%m-%d)
+	wget -O "$(@D)/$$(date +%Y-%m-%d)/$(@F)" https://viewstat.actiris.brussels/data/WAB/$(@F)
+	ln -s $$(date +%Y-%m-%d)/$(@F) $@
+
+data/actiris/WZB%.csv:
+	mkdir -p $(@D)/$$(date +%Y-%m-%d)
+	wget -O "$(@D)/$$(date +%Y-%m-%d)/$(@F)" https://viewstat.actiris.brussels/data/WZB/$(@F)
+	ln -s $$(date +%Y-%m-%d)/$(@F) $@
+
+data/actiris/professional-domains.json:
+	mkdir -p $(@D)
+	wget -O "$@.html" https://viewstat.actiris.brussels/viewstat_werkloosheid_basisstatistieken.html
+	grep ",{code:'B_" "$@.html" | tr "'" '"' | sed -e 's/\(\w\+\):/"\1":/g;s/^ ,//' | jq -s 'map(select(.f == 3) + {id: .code | split("_")[1]} | del(.f) | del(.d) | del(.code))' > "$@"
+	rm "$@.html"
+
+actiris: data/actiris/WAB_A_ONTV.csv data/actiris/WAB_P_ONTV.csv data/actiris/WAB_A_OPEN.csv data/actiris/WZB_G21000.csv data/actiris/WZB_werkloosheidsgraad.csv data/actiris/professional-domains.json

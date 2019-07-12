@@ -1,10 +1,17 @@
 import {convertImiloPropsToBobProps} from './imilo'
-import {getCoords, getDegrees, getIdentity, getMobility, getSituations} from './imilo_api'
+import {ImiloProps, getCoords, getDegrees, getIdentity, getMobility,
+  getSituations} from './imilo_api'
 
 
-function getImiloPropsFromAllPages(userId, onPageComplete) {
+type ImiliPropsFetcher = {
+  [K in keyof ImiloProps]: (userId: string) => Promise<ImiloProps[K]>
+}
+
+
+function getImiloPropsFromAllPages(
+  userId: string, onPageComplete: (pageName: string) => void): Promise<ImiloProps> {
   // Get all the URLs that contains part of the i-milo user data (user 'Dossier').
-  const pageApis = {
+  const pageApis: ImiliPropsFetcher = {
     'Coordonnées': getCoords,
     'Cursus': getDegrees,
     'Identité': getIdentity,
@@ -13,32 +20,34 @@ function getImiloPropsFromAllPages(userId, onPageComplete) {
   }
 
   // On each page collect the i-milo user data.
-  const imiloPropsFromAllPages = {}
+  const imiloPropsFromAllPages: Partial<ImiloProps> = {}
   // Chain loading all pages one after the other.
   return Object.keys(pageApis).
     reduce(
-      (iterateOverPreviousPages, pageName) => iterateOverPreviousPages.
-        then(() => pageApis[pageName](userId)).
-        then(response => {
-          imiloPropsFromAllPages[pageName] = response
-          // Callback to get opportunity to show progress done.
-          onPageComplete(pageName)
-        }),
+      <K extends keyof ImiloProps>(iterateOverPreviousPages: Promise<void>, pageName: K):
+      Promise<void> =>
+        iterateOverPreviousPages.
+          then((): Promise<ImiloProps[K]> => pageApis[pageName](userId) as Promise<ImiloProps[K]>).
+          then((response: ImiloProps[K]): void => {
+            imiloPropsFromAllPages[pageName] = response
+            // Callback to get opportunity to show progress done.
+            onPageComplete(pageName)
+          }),
       Promise.resolve()
     ).
-    then(() => imiloPropsFromAllPages)
+    then((): ImiloProps => imiloPropsFromAllPages as ImiloProps)
 }
 
 
 const BOB_BOOTSTRAP_ADVICES_ENDPOINT =
   'https://www.bob-emploi.fr/conseiller/nouveau-profil-et-projet#'
-function openAdvicesPageForBobProps(bobProps) {
-  return window.open(
+function openAdvicesPageForBobProps(bobProps): void {
+  window.open(
     BOB_BOOTSTRAP_ADVICES_ENDPOINT + encodeURIComponent(JSON.stringify(bobProps)), '_blank')
 }
 
 
-function openImiloModal(title, bodyElement, okLabel) {
+function openImiloModal(title: string, bodyElement: HTMLElement, okLabel: string): HTMLElement {
   const modal = document.createElement('div')
   modal.innerHTML =
     `<div id="confirmDialog" class="modalContainer modal modal-confirm" tabindex="-1"
@@ -59,20 +68,20 @@ function openImiloModal(title, bodyElement, okLabel) {
   document.body.appendChild(modal)
   modal.querySelector('h2').textContent = title
   modal.querySelector('.modal-body').appendChild(bodyElement)
-  const okButton = modal.querySelector('button#btnOk')
+  const okButton = modal.querySelector('button#btnOk') as HTMLElement
   okButton.textContent = okLabel
-  const closeModal = () => {
+  const closeModal = (): void => {
     modal.parentNode.removeChild(modal)
   }
-  const closeButton = modal.querySelector('button.close')
-  const cancelButton = modal.querySelector('button#btnCancel')
+  const closeButton = modal.querySelector('button.close') as HTMLElement
+  const cancelButton = modal.querySelector('button#btnCancel') as HTMLElement
   closeButton.onclick = closeModal
   cancelButton.onclick = closeModal
   return okButton
 }
 
 
-function startImportProcess() {
+function startImportProcess(): void {
   const pathnameMatch = window.location.pathname.match(/^\/dossier\/([^/]+)\//)
   if (!pathnameMatch) {
     // eslint-disable-next-line no-console
@@ -95,25 +104,25 @@ function startImportProcess() {
 
   const loadingElement = bodyElement.querySelectorAll('div.bob-loading')[0]
 
-  const updateModalToShowCompletedPage = () => {
+  const updateModalToShowCompletedPage = (): void => {
     if (loadingElement) {
       loadingElement.textContent += '.'
     }
   }
 
-  const updateModalToShowDataReadyForBob = bobProps => {
+  const updateModalToShowDataReadyForBob = (bobProps): void => {
     if (loadingElement) {
       loadingElement.textContent += ' ✅'
     }
     const bobPropsJson = JSON.stringify(bobProps, null, 2).
       replace(/[{}",[\]]/g, '').
-      split('\n').filter(line => line.trim()).join('\n')
+      split('\n').filter((line: string): string => line.trim()).join('\n')
     bodyElement.innerHTML +=
       `<h5>Données que Bob va utiliser pour son diagnostic&nbsp:</h5>
         <textarea
           readonly style="width:100%;box-sizing:border-box;height:290px">${bobPropsJson}</textarea>`
     // Enable modal button to open Bob.
-    okButton.onclick = () => {
+    okButton.onclick = (): void => {
       openAdvicesPageForBobProps(bobProps)
     }
     okButton.style.display = ''

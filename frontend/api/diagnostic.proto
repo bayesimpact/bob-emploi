@@ -115,7 +115,7 @@ message DiagnosticTemplate {
   string category_id = 9;
 
   // The text introducing the strategies proposed for this diagnostic.
-  string strategies_introduction = 10 [(string_format) = NATURAL_LANGUAGE];
+  string strategies_introduction = 10 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 }
 
 // TODO(cyrille): Clean this one and its uses, since we won't use it much more.
@@ -216,7 +216,24 @@ message DiagnosticCategory {
   bool are_strategies_for_alpha_only = 5;
 
   // Whether this category is relevant to a given context.
-  bool is_relevant = 6 [(field_usage) = ALGORITHM_RESULT];
+  // DEPRECATED since 2019-07-02: Use relevance instead.
+  bool is_relevant = 6 [deprecated=true, (field_usage) = ALGORITHM_RESULT];
+
+  // How much this category is relevant to a given context.
+  CategoryRelevance relevance = 7 [(field_usage) = ALGORITHM_RESULT];
+}
+
+enum CategoryRelevance {
+  UNKNOWN_RELEVANCE = 0;
+  // No need to bother the user with this category.
+  NOT_RELEVANT = 1;
+  // User might be interested to know this category is relevant,
+  // but we don't have much to say about it for them.
+  NEUTRAL_RELEVANCE = 2;
+  // This is relevant, and might be a blocking point.
+  NEEDS_ATTENTION = 3;
+  // This is relevant, and everything is good on that front.
+  RELEVANT_AND_GOOD = 4;
 }
 
 message DiagnosticCategories {

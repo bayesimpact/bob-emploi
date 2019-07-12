@@ -36,9 +36,7 @@ def main(pot_filename: str, api_key: typing.Optional[str]) -> None:
         collector.collect_string(
             msg.msgid,
             origin=pot_basename,
-            origin_id='\n'.join(
-                '{}#{}'.format(filename, line)
-                for filename, line in msg.occurrences),
+            origin_id='\n'.join(f'{filename}#{line}' for filename, line in msg.occurrences),
         )
 
 

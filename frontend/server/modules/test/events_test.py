@@ -64,7 +64,7 @@ class AdviceEventScoringModelTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(self.persona)
-        self.assertGreaterEqual(score, 2, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertGreaterEqual(score, 2, msg=f'Fail for "{self.persona.name}"')
 
     def test_unimportant_application(self) -> None:
         """Network is important for the user."""
@@ -97,7 +97,7 @@ class AdviceEventScoringModelTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(self.persona)
-        self.assertLessEqual(score, 1, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertLessEqual(score, 1, msg=f'Fail for "{self.persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):
@@ -118,7 +118,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/events/{}/foo'.format(self.user_id),
+            f'/api/advice/events/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -128,7 +128,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Basic test with no events."""
 
         response = self.app.get(
-            '/api/advice/events/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/events/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         events = self.json_from_response(response)
@@ -156,7 +156,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         ])
 
         response = self.app.get(
-            '/api/advice/events/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/events/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         events = self.json_from_response(response)
@@ -189,7 +189,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         ])
 
         response = self.app.get(
-            '/api/advice/events/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/events/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         events = self.json_from_response(response)

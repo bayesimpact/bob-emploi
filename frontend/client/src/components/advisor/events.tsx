@@ -61,7 +61,7 @@ class ExpandedAdviceCardContentBase
     userYou: PropTypes.func.isRequired,
   }
 
-  private renderEvents(events: bayes.bob.Event[]): React.ReactNode {
+  private renderEvents(events: readonly bayes.bob.Event[]): React.ReactNode {
     const {handleExplore, userYou} = this.props
     const title = <React.Fragment>
       <GrowingNumber number={events.length} isSteady={true} />
@@ -146,6 +146,6 @@ const Event = Radium(EventBase)
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({events}: bayes.bob.Events): bayes.bob.Event[] => events, 'évènement')
+  ({events}: bayes.bob.Events): readonly bayes.bob.Event[] => events, 'évènement')
 
 export default {ExpandedAdviceCardContent, NewPicto, TakeAway}

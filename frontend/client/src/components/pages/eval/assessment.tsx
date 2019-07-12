@@ -3,13 +3,12 @@ import PlusIcon from 'mdi-react/PlusIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import {computeBobScore} from 'store/score'
-import {Markdown, Textarea} from 'components/theme'
+import {colorFromPercent, computeBobScore} from 'store/score'
+import {BobScoreCircle, Markdown, Textarea} from 'components/theme'
 
 import commentImage from 'images/comment-picto.svg'
 
 import {EvalElementButton} from './advices_recap'
-import {BobScoreCircle} from '../connected/project/diagnostic'
 
 
 interface AssessmentProps {
@@ -126,6 +125,7 @@ class Assessment extends React.PureComponent<AssessmentProps, AssessmentState> {
         <div style={bobScoreStyle}>
           <BobScoreCircle
             isAnimated={false}
+            color={colorFromPercent(percent)}
             percent={percent}
             radius={47.15}
             scoreSize={20}

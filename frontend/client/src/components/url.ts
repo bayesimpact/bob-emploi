@@ -31,10 +31,14 @@ Routes.INVITE_PATH = Routes.ROOT + 'invite'
 Routes.STATIC_ADVICE_PAGE = Routes.ROOT + 'conseil'
 Routes.STATIC_ADVICE_PATH = Routes.STATIC_ADVICE_PAGE + '/:adviceId?'
 Routes.IMILO_INTEGRATION_PAGE = Routes.ROOT + 'conseiller/integration-imilo'
+Routes.INTRO_PAGE = Routes.ROOT + 'intro'
+Routes.SIGNUP_PAGE = Routes.ROOT + 'connexion'
 
 export const NEW_PROJECT_ID = 'nouveau'
 
 export const FEEDBACK_TAB = 'evaluer'
+
+export const SIGNUP_HASH = '#inscription'
 
 
 // Builds an absolute URL from a relative URL, as given in the Routes object.

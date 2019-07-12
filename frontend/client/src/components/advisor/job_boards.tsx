@@ -83,7 +83,7 @@ const ExpandedAdviceCardContent =
 
 interface LinkProps {
   children: React.ReactNode
-  filters?: string[]
+  filters?: readonly string[]
   href: string
   onClick: () => void
   style?: React.CSSProperties
@@ -150,7 +150,7 @@ class JobBoardLink extends React.PureComponent<LinkProps> {
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({jobBoards}: bayes.bob.JobBoards): bayes.bob.JobBoard[] => jobBoards, 'site')
+  ({jobBoards}: bayes.bob.JobBoards): readonly bayes.bob.JobBoard[] => jobBoards, 'site')
 
 
 export default {ExpandedAdviceCardContent, NewPicto, TakeAway}

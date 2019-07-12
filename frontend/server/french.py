@@ -47,28 +47,28 @@ def of_city(city_name: str) -> str:
     """Compute the right prefix for a city name when writing "of City C"."""
 
     if city_name.startswith('Le '):
-        return 'du {}'.format(city_name[3:])
+        return f'du {city_name[3:]}'
     if city_name.startswith('Les '):
-        return 'des {}'.format(city_name[4:])
+        return f'des {city_name[4:]}'
     if city_name.startswith('La '):
-        return 'de la {}'.format(city_name[3:])
+        return f'de la {city_name[3:]}'
     if city_name.startswith("L'"):
-        return "de l'{}".format(city_name[2:])
-    return 'de {}'.format(city_name)
+        return f"de l'{city_name[2:]}"
+    return f'de {city_name}'
 
 
 def in_city(city_name: str) -> str:
     """Compute the right prefix for a city name when writing "in City C"."""
 
     if city_name.startswith('Le '):
-        return 'au {}'.format(city_name[3:])
+        return f'au {city_name[3:]}'
     if city_name.startswith('Les '):
-        return 'aux {}'.format(city_name[4:])
+        return f'aux {city_name[4:]}'
     if city_name.startswith('La '):
-        return 'à la {}'.format(city_name[3:])
+        return f'à la {city_name[3:]}'
     if city_name.startswith("L'"):
-        return "à l'{}".format(city_name[2:])
-    return 'à {}'.format(city_name)
+        return f"à l'{city_name[2:]}"
+    return f'à {city_name}'
 
 
 _NUMBER_WORDS: typing.Dict[int, str] = {
@@ -99,7 +99,7 @@ def try_stringify_number(value: int) -> str:
     try:
         return _NUMBER_WORDS[value]
     except KeyError:
-        raise NotImplementedError('No French words defined for {:d}'.format(value))
+        raise NotImplementedError(f'No French words defined for {value:d}')
 
 
 def cleanup_firstname(firstname: str) -> str:
@@ -144,9 +144,8 @@ def ungenderize(masculine: str, feminine: str, neutral: str) -> str:
     feminine_words = feminine.strip().split(' ')
     start = _common_prefix_length(masculine_words, feminine_words)
     if start == len(masculine_words):
-        return '{} / {}'.format(masculine, ' '.join(feminine_words[start:]))
+        return f'{masculine} / {" ".join(feminine_words[start:])}'
     if start == len(feminine_words):
-        return '{} / {}'.format(feminine, ' '.join(masculine_words[start:]))
+        return f'{feminine} / {" ".join(masculine_words[start:])}'
     end = _common_prefix_length(masculine_words[::-1], feminine_words[::-1])
-    return '{} / {}'.format(
-        ' '.join(masculine_words[:-end]), ' '.join(feminine_words[start:]))
+    return f'{" ".join(masculine_words[:-end])} / {" ".join(feminine_words[start:])}'

@@ -131,7 +131,7 @@ def csv2dicts(
                 'numJobOffersPreviousYear': int,
             })
     except ValueError:
-        raise ValueError('Could not open the file "{}"'.format(job_offers_changes_json))
+        raise ValueError(f'Could not open the file "{job_offers_changes_json}"')
     job_offers_changes.rename(columns={'_id': 'local_id'}, inplace=True)
 
     unemployment_durations = _get_unemployment_durations(unemployment_duration_csv)
@@ -389,7 +389,7 @@ def _salaries_diagnosis(salaries: pandas.DataFrame) \
             # precise info about what is the distribution. We just assume an
             # even distribution inside the whole range.
             salary = min_salary * (1 - quantile) + quantile * max_salary
-        estimation['{}Salary'.format(name)] = salary
+        estimation[f'{name}Salary'] = salary
     return finalize_salary_estimation(estimation)
 
 
@@ -423,7 +423,7 @@ def _get_less_stressful_job_groups(data_folder: str, mobility_csv: str, market_s
 
     return pandas.DataFrame([
         {
-            'local_id': '{}:{}'.format(r.departement_id, r.rome_id),
+            'local_id': f'{r.departement_id}:{r.rome_id}',
             'lessStressfulJobGroups': [{
                 'jobGroup': {'romeId': o['target_rome_id'], 'name': o['target_rome_name']},
                 'mobilityType': o['mobility_type'],
@@ -518,10 +518,12 @@ def _get_employment_type_imt(employment_type_csv: str) -> pandas.DataFrame:
 
 def _get_employment_type_perc(market: pandas.DataFrame) \
         -> typing.List[typing.Dict[str, typing.Any]]:
-    return [{
+    percentages = [{
         'employmentType': job_pb2.EmploymentType.Name(
             _EMPLOYMENT_TYPE_PROTO_FIELDS[row.CONTRACT_TYPE_CODE]),
-        'percentage': row.OFFERS_PERCENT} for row in market.itertuples()]
+        'percentage': row.OFFERS_PERCENT,
+    } for row in market.itertuples()]
+    return sorted(percentages, key=lambda p: p['percentage'], reverse=True)
 
 
 def _get_salaries_imt(pcs_rome_crosswalk: str, imt_salaries_csv: str) -> pandas.DataFrame:
@@ -576,9 +578,9 @@ def _get_single_salary_detail(min_salary: float, max_salary: float) -> typing.Di
     if _isnan(min_salary) and _isnan(max_salary):
         return {}
     salary_unit = job_pb2.SalaryUnit.Name(_SALARY_UNIT_PROTO_FIELDS[1])
-    short_text = 'De {}\xa0€ à {}\xa0€'.format(
-        locale.format('%d', min_salary, grouping=True).replace(' ', '\xa0'),
-        locale.format('%d', max_salary, grouping=True).replace(' ', '\xa0'))
+    from_salary = locale.format('%d', min_salary, grouping=True).replace(' ', '\xa0')
+    to_salary = locale.format('%d', max_salary, grouping=True).replace(' ', '\xa0')
+    short_text = f'De {from_salary}\xa0€ à {to_salary}\xa0€'
     return {
         'unit': salary_unit,
         'shortText': short_text,
@@ -599,9 +601,9 @@ def finalize_salary_estimation(estimation: typing.Dict[str, typing.Any]) \
         The input dict with additional fields to be displayed.
     """
 
-    estimation['shortText'] = '{} - {}'.format(
-        locale.format('%d', estimation['minSalary'], grouping=True),
-        locale.format('%d', estimation['maxSalary'], grouping=True))
+    from_salary = locale.format('%d', estimation['minSalary'], grouping=True)
+    to_salary = locale.format('%d', estimation['maxSalary'], grouping=True)
+    estimation['shortText'] = f'{from_salary} - {to_salary}'
     estimation['unit'] = 'ANNUAL_GROSS_SALARY'
     return estimation
 

@@ -8,12 +8,6 @@ import {FieldSet, Select} from 'components/pages/connected/form_utils'
 import {ProfileStepProps, Step, ProfileUpdater} from './step'
 
 
-const settingsUpdater = new ProfileUpdater({
-  coachingEmailFrequency: true,
-  origin: true,
-})
-
-
 interface StepState {
   isValidated?: boolean
 }
@@ -33,34 +27,23 @@ class SettingsStep extends React.PureComponent<ProfileStepProps, StepState> {
 
   public state: StepState = {}
 
-  private updater_ = settingsUpdater.attachToComponent(this)
-
-  private isFormValid = (): boolean => {
-    const {coachingEmailFrequency, email, origin} = this.props.profile
-    return !!origin && (!email || !!coachingEmailFrequency)
-  }
-
-  // TODO(cyrille): Maybe factorize checks in updater to avoid having this code duplicated here.
-  private handleSubmit = (): void => {
-    this.setState({isValidated: true})
-    if (this.isFormValid()) {
-      const {profile: {coachingEmailFrequency, origin}, onSubmit} = this.props
-      onSubmit({coachingEmailFrequency, origin})
-    }
-  }
+  private updater_ = new ProfileUpdater({
+    coachingEmailFrequency: !!this.props.profile.email,
+    origin: true,
+  }).attachToComponent(this)
 
   private fastForward = (): void => {
-    if (this.isFormValid()) {
+    if (this.updater_.isFormValid()) {
       this.updater_.handleSubmit()
       return
     }
     const profileDiff: {-readonly [K in keyof bayes.bob.UserProfile]?: bayes.bob.UserProfile[K]} =
       {}
-    const {onChange, profile: {coachingEmailFrequency, origin}} = this.props
+    const {onChange, profile: {coachingEmailFrequency, email, origin}} = this.props
     if (!origin) {
       profileDiff.origin = userExample.profile.origin
     }
-    if (!coachingEmailFrequency) {
+    if (email && !coachingEmailFrequency) {
       profileDiff.coachingEmailFrequency = userExample.profile.coachingEmailFrequency
     }
     onChange && onChange({profile: profileDiff})
@@ -79,7 +62,7 @@ class SettingsStep extends React.PureComponent<ProfileStepProps, StepState> {
       title={`${config.productName} et ${userYou('toi', 'vous')}`}
       fastForward={this.fastForward}
       progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : null}
+      onNextButtonClick={this.updater_.isFormValid() ? this.updater_.handleSubmit : null}
       onPreviousButtonClick={this.updater_.getBackHandler()}
       {...this.props}>
       <FieldSet

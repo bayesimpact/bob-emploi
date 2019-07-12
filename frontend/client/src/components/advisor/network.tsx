@@ -110,7 +110,7 @@ const NetworkAdvicePage =
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({leads}: bayes.bob.ContactLeads): bayes.bob.ContactLead[] => leads, 'modèle')
+  ({leads}: bayes.bob.ContactLeads): readonly bayes.bob.ContactLead[] => leads, 'modèle')
 
 
 export {NetworkAdvicePage, NewPicto, TakeAway}

@@ -8,6 +8,7 @@ import json
 import time
 import typing
 from unittest import mock
+import uuid
 
 import requests
 
@@ -30,11 +31,12 @@ def _check_not_null_variable(
 class _SentMessage(object):
 
     def __init__(
-            self, recipient: _JsonDict, properties: _JsonDict, message_id: int, uuid: str) -> None:
+            self, recipient: _JsonDict, properties: _JsonDict,
+            message_id: int, message_uuid: str) -> None:
         self.recipient = recipient
         self.properties = properties
         self.message_id = message_id
-        self.uuid = uuid
+        self.uuid = message_uuid
         self.arrived_at = time.time()
         self.status = 'sent'
 
@@ -51,12 +53,47 @@ class _SentMessage(object):
             self.status = 'clicked'
 
 
-def _create_json_response(json_content: _JsonDict) -> requests.Response:
+def _create_json_response(json_content: _JsonDict, status_code: int = 200) -> requests.Response:
     response = requests.Response()
-    response.status_code = 200
+    response.status_code = status_code
     response.encoding = 'utf-8'
     response.raw = io.BytesIO(json.dumps(json_content, ensure_ascii=False).encode('utf-8'))
     return response
+
+
+def _mailjet_error(error_code: str, additional_content: typing.Optional[_JsonDict] = None) \
+        -> requests.exceptions.HTTPError:
+    return requests.exceptions.HTTPError(response=_create_json_response(
+        dict(
+            additional_content or {},
+            ErrorIdentifier=str(uuid.uuid4()), ErrorCode=error_code, StatusCode=400),
+        status_code=400))
+
+
+def _check_valid_sender(sender: typing.Any) -> bool:
+    if isinstance(sender, dict):
+        email = sender.get('Email', '')
+        name = sender.get('Name')
+        if '@' not in email:
+            raise _mailjet_error('mj-0013', {
+                'ErrorMessage': f'\"{email}\" is an invalid email address.',
+                'ErrorRelatedTo': ['From.Email']
+            })
+        if name is not None:
+            return True
+    raise _mailjet_error('mj-004', {
+        'ErrorMessage': 'Type mismatch. Expected type \"emailIn\".',
+        'ErrorRelatedTo': ['Messages']
+    })
+
+
+def _check_valid_template_id(template_id: typing.Any) -> bool:
+    if isinstance(template_id, int):
+        return True
+    raise _mailjet_error('mj-004', {
+        'ErrorMessage': 'Type mismatch. Expected type \"int64\".',
+        'ErrorRelatedTo': ['Messages']
+    })
 
 
 class _InMemoryMailjetServer(object):
@@ -78,13 +115,13 @@ class _InMemoryMailjetServer(object):
 
         message_id = self.next_id + 1
         self.next_id += 1
-        uuid = 'aa{}'.format(message_id)
-        sent_message = _SentMessage(recipient, message, message_id, uuid)
+        message_uuid = f'aa{message_id}'
+        sent_message = _SentMessage(recipient, message, message_id, message_uuid)
 
         self._messages_by_id[message_id] = sent_message
         self.messages.append(sent_message)
 
-        return uuid, message_id
+        return message_uuid, message_id
 
     def __getitem__(self, message_id: int) -> _SentMessage:
         """Gets a message by its ID."""
@@ -113,7 +150,7 @@ class _Messager(object):
     def _create_message_info(self, message: _SentMessage) -> _JsonDict:
         arrived_at = datetime.datetime.fromtimestamp(round(message.arrived_at))
         return {
-            'ArrivedAt': '{}Z'.format(arrived_at.isoformat()),
+            'ArrivedAt': f'{arrived_at.isoformat()}Z',
             'ID': message.message_id,
             'Status': message.status,
         }
@@ -124,8 +161,7 @@ class _Messager(object):
         if _MOCK_SERVER.has_too_many_get_requests:
             response = requests.Response()
             response.reason = 'Too many requests'
-            response.url = \
-                'https://api.mailjet.com/{}/REST/message/{}'.format(self._version, message_id)
+            response.url = f'https://api.mailjet.com/{self._version}/REST/message/{message_id}'
             response.status_code = 429
             return response
 
@@ -134,8 +170,7 @@ class _Messager(object):
         except KeyError:
             response = requests.Response()
             response.reason = 'Client Error'
-            response.url = \
-                'https://api.mailjet.com/{}/REST/message/{}'.format(self._version, message_id)
+            response.url = f'https://api.mailjet.com/{self._version}/REST/message/{message_id}'
             response.status_code = 404
             return response
         return _create_json_response({
@@ -155,36 +190,46 @@ class _Sender(object):
         }
         if 'Variables' in message:
             _check_not_null_variable(message['Variables'])
+        # Template messages don't require a 'From' field.
+        if 'From' in message:
+            _check_valid_sender(message['From'])
+        if not {'HTMLPart', 'TextPart', 'TemplateID'} & set(message):
+            raise _mailjet_error('send-0003', {
+                'ErrorMessage': 'At least "HTMLPart", "TextPart" or "TemplateID" must be provided.',
+                'ErrorRelatedTo': ['HTMLPart', 'TextPart', 'TemplateID'],
+            })
+        if 'TemplateID' in message:
+            _check_valid_template_id(message['TemplateID'])
         for target_type in ('To', 'Cc', 'Cci'):
             if target_type in message:
                 messages: typing.List[typing.Dict[str, typing.Any]] = []
                 for recipient in message[target_type]:
-                    uuid, message_id = _MOCK_SERVER.create_message(recipient, message)
+                    message_uuid, message_id = _MOCK_SERVER.create_message(recipient, message)
                     messages.append({
                         'Email': recipient['Email'],
-                        'MessageUUID': uuid,
+                        'MessageUUID': message_uuid,
                         'MessageID': message_id,
-                        'MessageHref': 'https://api.mailjet.com/v3/message/{}'.format(message_id),
+                        'MessageHref': f'https://api.mailjet.com/v3/message/{message_id}',
                     })
                 out[target_type] = messages
         return out
 
     # TODO(pascal): Add a way to make it return a 5xx error so that tests can
     # check how code catches such errors.
+    # TODO(cyrille): Return the correct error when recipient email address is invalid.
     def create(self, data: _JsonDict) -> requests.Response:
         """Create a new email."""
 
         if self._version != 'v3.1':
-            raise NotImplementedError(
-                'mailjetmock not ready for version "{}"'.format(self._version))
+            raise NotImplementedError(f'mailjetmock not ready for version "{self._version}"')
 
         json_content: _JsonDict = {}
         try:
             json_content['Messages'] = [self._create_v31_message(m) for m in data['Messages']]
         except (KeyError, ValueError):
-            response = requests.Response()
-            response.status_code = 400
-            return response
+            return _create_json_response({}, 400)
+        except requests.exceptions.HTTPError as error:
+            return typing.cast(requests.Response, error.response)
 
         return _create_json_response(json_content)
 

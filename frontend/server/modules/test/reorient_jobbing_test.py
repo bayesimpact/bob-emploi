@@ -56,7 +56,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
 
         self.persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_bts(self) -> None:
         """Users with a degree equivalent to bac +2 should have reorientation
@@ -64,7 +64,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
 
         self.persona.user_profile.highest_degree = job_pb2.BTS_DUT_DEUG
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_bac(self) -> None:
         """Users with a degree equivalent to baccalaureat should have reorientation
@@ -74,7 +74,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
         if self.persona.project.passionate_level == project_pb2.LIFE_GOAL_JOB:
             self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{self.persona.name}"')
 
     def test_cap(self) -> None:
         """Users with CAP or BEP degree or equivalent should have reorientation
@@ -84,7 +84,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
         if self.persona.project.passionate_level == project_pb2.LIFE_GOAL_JOB:
             self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{self.persona.name}"')
 
     def test_not_enough_offers(self) -> None:
         """Users with job with more offers than recommended jobs don't trigger the
@@ -99,7 +99,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
                 },
         })
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_cap_passionate_job(self) -> None:
         """Users with CAP/BEP degree with who is passionate about its job should
@@ -112,7 +112,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         self.persona.user_profile.highest_degree = job_pb2.CAP_BEP
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_bac_passionate_job(self) -> None:
         """Users with BAC degree with who is passionate about its job should
@@ -125,7 +125,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         self.persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_cap_passionate_but_no_future_job(self) -> None:
         """Users with CAP/BEP degree who is passionate about its job but their job has no
@@ -138,7 +138,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         self.persona.user_profile.highest_degree = job_pb2.CAP_BEP
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{self.persona.name}"')
 
     def test_bac_passionate_but_no_future_job(self) -> None:
         """Users with BAC degree who is passionate about its job but their job has no
@@ -151,7 +151,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         self.persona.user_profile.highest_degree = job_pb2.BAC_BACPRO
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_not_enough_recommendations(self) -> None:
         """Users with job with more offers than recommended jobs don't trigger the
@@ -176,7 +176,7 @@ class AdviceReorientJobbingTestCase(scoring_test.ScoringModelTestBase):
             }
         )
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
 
 class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
@@ -214,7 +214,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/reorient-jobbing/{}/foo'.format(self.user_id),
+            f'/api/advice/reorient-jobbing/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -256,7 +256,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
             }
         )
         response = self.app.get(
-            '/api/advice/reorient-jobbing/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/reorient-jobbing/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         jobs = self.json_from_response(response)

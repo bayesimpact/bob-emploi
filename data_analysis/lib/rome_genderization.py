@@ -108,7 +108,7 @@ def _substitute_postfix(word: str, postfix: str) -> str:
             root = word[:len(word) - len(known_ending)]
             return root + postfix
 
-    error_string = '{}: Unmapped ending for postfix "{}"'.format(word, postfix)
+    error_string = f'{word}: Unmapped ending for postfix "{postfix}"'
     raise ValueError(error_string)
 
 
@@ -151,8 +151,8 @@ def _extract_bracket_notation(raw_job_name: str) -> typing.Optional[typing.Tuple
         if postfix == 's':  # ignore the plural postfix case
             continue
 
-        masculine_name = masculine_name.replace('({})'.format(postfix), '')
-        feminine_name = feminine_name.replace('({})'.format(postfix), '')
+        masculine_name = masculine_name.replace(f'({postfix})', '')
+        feminine_name = feminine_name.replace(f'({postfix})', '')
 
         new_word = _substitute_postfix(word, postfix)
         feminine_name = feminine_name.replace(word, new_word)
@@ -266,8 +266,8 @@ def _extract_slash_notation(raw_job_name: str) -> typing.Optional[typing.Tuple[s
         return None
 
     if _SLASH_PLACEHOLDER_CHARS in raw_job_name:
-        error_string = 'Reserved substring "{}" in job name: {}'.format(
-            _SLASH_PLACEHOLDER_CHARS, raw_job_name)
+        error_string = \
+            f'Reserved substring "{_SLASH_PLACEHOLDER_CHARS}" in job name: {raw_job_name}'
         raise ValueError(error_string)
 
     raw_job_name = raw_job_name.replace(' / ', '/')  # normalize spacing first

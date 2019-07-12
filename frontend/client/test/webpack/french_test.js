@@ -248,7 +248,12 @@ describe('getDateFromNowInString', () => {
       new Date('1/29/2019'), new Date('6/29/2019'))).to.eq('il y a 5 mois')
   })
 
-  it('should return the difference in days when the difference is less than 30 days', () => {
+  it('should return the difference in weeks when the difference is less than 30 days', () => {
+    expect(getDiffBetweenDatesInString(
+      new Date('1/29/2019'), new Date('1/21/2019'))).to.eq('il y a 1 semaine')
+  })
+
+  it('should return the difference in days when the difference is less than 7 days', () => {
     expect(getDiffBetweenDatesInString(
       new Date('1/29/2019'), new Date('1/28/2019'))).to.eq('il y a 1 jour')
   })

@@ -21,7 +21,7 @@ class AdviceCreateYourCompanyTestCase(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.user_profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
         score = self._score_persona(persona)
-        self.assertEqual(2, score, msg='Fail for "{}"'.format(persona.name))
+        self.assertEqual(2, score, msg=f'Fail for "{persona.name}"')
 
     def test_not_really_needed_yet(self) -> None:
         """Test the scoring function for someone that has just started their search."""
@@ -32,7 +32,7 @@ class AdviceCreateYourCompanyTestCase(scoring_test.ScoringModelTestBase):
         persona.project.job_search_has_not_started = False
         persona.project.job_search_started_at.FromDatetime(datetime.datetime(2018, 12, 14))
         score = self._score_persona(persona)
-        self.assertEqual(1, score, msg='Fail for "{}"'.format(persona.name))
+        self.assertEqual(1, score, msg=f'Fail for "{persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):

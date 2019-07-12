@@ -18,15 +18,6 @@ import {CardProps, CardWithImage} from './base'
 type CardWithImageProps = React.ComponentProps<typeof CardWithImage>
 
 
-interface JobVideoSite extends CardWithImageProps {
-  description: string
-  image: string
-  section: string
-  title: string
-  url: string
-}
-
-
 interface JobVideoSection {
   sites: CardWithImageProps[]
   title: string

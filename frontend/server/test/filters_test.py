@@ -27,11 +27,11 @@ class FilterTestBase(scoring_test.ScoringModelTestBase):
 
     def _assert_pass_filter(self) -> None:
         score = self._score_persona(self.persona)
-        self.assertGreater(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertGreater(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def _assert_fail_filter(self) -> None:
         score = self._score_persona(self.persona)
-        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertLessEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
 
 class ActiveSearcherFilterTestCase(FilterTestBase):

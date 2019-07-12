@@ -3,10 +3,11 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import {components} from 'react-select'
 
-import {DEGREE_OPTIONS, getFamilySituationOptions, userExample, youForUser} from 'store/user'
+import {DEGREE_OPTIONS, getFamilySituationOptions, userExample} from 'store/user'
 
 import {isMobileVersion} from 'components/mobile'
-import {FieldSet, RadioGroup, Select} from 'components/pages/connected/form_utils'
+import {FieldSet, Select} from 'components/pages/connected/form_utils'
+import {RadioGroup} from 'components/theme'
 
 import {ProfileStepProps, ProfileUpdater, Step} from './step'
 
@@ -58,9 +59,6 @@ class GeneralStep extends React.PureComponent<ProfileStepProps, StepState> {
   public state: StepState = {}
 
   private updater_ = generalProfileUpdater.attachToComponent(this)
-
-  // TODO(pascal): Drop this.
-  private userYou = youForUser({profile: this.props.profile})
 
   private fastForward = (): void => {
     if (this.updater_.isFormValid()) {

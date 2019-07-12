@@ -9,7 +9,8 @@ import {PROJECT_EXPERIENCE_OPTIONS, SENIORITY_OPTIONS,
   getTrainingFulfillmentEstimateOptions} from 'store/project'
 import {userExample} from 'store/user'
 
-import {FieldSet, RadioGroup, Select} from 'components/pages/connected/form_utils'
+import {RadioGroup} from 'components/theme'
+import {FieldSet, Select} from 'components/pages/connected/form_utils'
 
 import {OnboardingComment, ProjectStepProps, Step} from './step'
 

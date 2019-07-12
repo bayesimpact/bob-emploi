@@ -571,7 +571,8 @@ interface MethodProps extends MethodHeaderProps, WithAdvice {
 }
 
 
-class ObservationMethod extends React.PureComponent<MethodProps> {
+// TODO(cyrille): Drop, since unused
+class OldObservationMethod extends React.PureComponent<MethodProps> {
   public static propTypes = {
     advice: PropTypes.shape({
       adviceId: PropTypes.string.isRequired,
@@ -587,6 +588,7 @@ class ObservationMethod extends React.PureComponent<MethodProps> {
 }
 
 
+// TODO(cyrille): Move out of advisor, we don't need access to the Modules anymore
 class WorkingMethod extends React.PureComponent<MethodProps> {
   public static propTypes = {
     advice: PropTypes.shape({
@@ -659,4 +661,4 @@ class AdvicePicto extends React.PureComponent<AdvicePictoProps, AdvicePictoState
 
 
 export {AdviceCard, ExpandedAdviceCardContent, ExplorerAdviceCard, AdvicePicto,
-  WorkingMethod, ObservationMethod}
+  WorkingMethod, OldObservationMethod}

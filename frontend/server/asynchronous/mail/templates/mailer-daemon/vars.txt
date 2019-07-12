@@ -1,0 +1,4 @@
+additionalContent
+originalHtml
+originalSubject
+userId

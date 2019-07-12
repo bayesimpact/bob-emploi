@@ -59,12 +59,12 @@ class ExpandedAdviceCardContentBase
         content: `
 Bonjour,
 
-Je parlais à \\[prénom de ${userYou('ton', 'votre')} ami•e en commun\\] de mon projet de devenir
+Je parlais à \\[prénom de ${userYou('ton', 'votre')} ami·e en commun\\] de mon projet de devenir
 ${jobName}, et elle/il m'a parlé de vous.
 
 Je cherche des informations sur les formations nécessaires pour ce poste.
 Je souhaiterais savoir si faire une formation de \\[intitulé de la formation\\] serait
-essentiel pour être recruté${genderize('•e', 'e', '', gender)}.
+essentiel pour être recruté${genderize('·e', 'e', '', gender)}.
 
 Auriez-vous 15 minutes pour en discuter au téléphone, ou pour prendre un café ensemble\u00A0?
 
@@ -78,7 +78,7 @@ Bonne journée,
         content: `
 J'ai des questions à propos de votre offre de \\[titre de l'offre\\]. Est-ce qu'une expérience
 de \\[années d'experience\\] serait suffisante même si
-${genderize('le•a candidat•e', 'la candidate', 'le candidat', gender)} n'a pas de diplôme\u00A0?
+${genderize('le·a candidat·e', 'la candidate', 'le candidat', gender)} n'a pas de diplôme\u00A0?
 `,
         contentName: 'comment demander',
         title: 'Téléphoner aux recruteurs pour connaitre leurs critères',

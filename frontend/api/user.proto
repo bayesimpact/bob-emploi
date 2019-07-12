@@ -108,6 +108,10 @@ message User {
 
   // Next date after which we can try again sending a coaching email.
   google.protobuf.Timestamp send_coaching_email_after = 27;
+
+  // Whether the user has (or had) an account linked using an email/password or an SSO connection.
+  // Before July 2019, all users had account.
+  bool has_account = 28 [(field_usage) = APP_ONLY];
 }
 
 message UserAuth {
@@ -171,7 +175,7 @@ message AuthRequest {
 }
 
 message AuthUserData {
-  // We do not have any additional data at auth time currently, but this is where we would add it.
+  bool can_tutoie = 1;
 }
 
 message AuthResponse {

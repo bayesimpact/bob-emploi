@@ -3,6 +3,10 @@ import Storage from 'local-storage-fallback'
 import {AllActions} from './actions'
 import {increaseRevision, keepMostRecentRevision} from './user'
 
+// Name of the cookie containing the user ID.
+const USER_ID_COOKIE_NAME = 'userId'
+
+
 // All data for a user of the companion app, a job seeker.
 // Keep in sync with User protobuf.
 const initialData = {
@@ -11,11 +15,8 @@ const initialData = {
   manualExplorations: [],
   profile: {},
   projects: [],
-  userId: null,
+  userId: Storage.getItem(USER_ID_COOKIE_NAME),
 }
-
-// Name of the cookie containing the user ID.
-const USER_ID_COOKIE_NAME = 'userId'
 
 
 function updateOneofFields(stateProject: bayes.bob.Project, project: bayes.bob.Project):
@@ -174,10 +175,7 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
           email: state && state.profile && state.profile.email,
         },
       }
-    case 'CLOSE_LOGIN_MODAL':
-      if (!action.hasCanceledLogin) {
-        return state
-      }
+    case 'REMOVE_AUTH_DATA':
       Storage.removeItem(USER_ID_COOKIE_NAME)
       return {
         ...state,

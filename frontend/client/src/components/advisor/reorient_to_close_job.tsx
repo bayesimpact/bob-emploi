@@ -66,7 +66,7 @@ const ExpandedAdviceCardContent =
 interface SectionProps {
   city?: bayes.bob.FrenchCity
   gender?: bayes.bob.Gender
-  items?: bayes.bob.ReorientJob[]
+  items?: readonly bayes.bob.ReorientJob[]
   kind: 'close' | 'evolution'
   onExplore: () => void
   style?: React.CSSProperties

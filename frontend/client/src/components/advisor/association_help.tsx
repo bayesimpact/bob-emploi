@@ -71,7 +71,7 @@ const ExpandedAdviceCardContent =
 
 interface AssociationProps {
   children: React.ReactNode
-  filters?: string[]
+  filters?: readonly string[]
   href: string
   onClick?: () => void
   style?: RadiumCSSProperties
@@ -149,7 +149,7 @@ const AssociationLink: React.ComponentClass<AssociationProps> = Radium(Associati
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({associations}: bayes.bob.Associations): bayes.bob.Association[] => associations,
+  ({associations}: bayes.bob.Associations): readonly bayes.bob.Association[] => associations,
   'association', true)
 
 

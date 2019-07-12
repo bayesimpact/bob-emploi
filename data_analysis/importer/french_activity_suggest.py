@@ -63,7 +63,7 @@ def upload(batch_size: int = 5000) -> None:
         os.getenv('ALGOLIA_API_KEY'))
     index_name = os.getenv('ALGOLIA_ACTIVITIES_INDEX', 'activities')
     activities_index = client.init_index(index_name)
-    tmp_index_name = '{}_{}'.format(index_name, round(time.time()))
+    tmp_index_name = f'{index_name}_{round(time.time())}'
     tmp_activities_index = client.init_index(tmp_index_name)
 
     try:

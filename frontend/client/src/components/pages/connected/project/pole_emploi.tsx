@@ -11,8 +11,7 @@ import mobileImprovedImage from 'images/changelog/mobile-improved.png'
 import {FastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalConfig} from 'components/modal'
-import {Button, SmoothTransitions, Textarea} from 'components/theme'
-import {RadioGroup} from 'components/pages/connected/form_utils'
+import {Button, RadioGroup, SmoothTransitions, Textarea} from 'components/theme'
 
 
 interface AdviceProps {

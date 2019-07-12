@@ -299,7 +299,7 @@ class TestimonialStaticSection extends React.PureComponent<SectionProps> {
       <div style={containerStyle}>
         {children.slice(0, maxShown)}
       </div>
-      <LoginButton style={{display: 'block', margin: '88px auto 0'}} isSignUpButton={true}
+      <LoginButton style={{display: 'block', margin: '88px auto 0'}} isSignUp={true}
         type="validation"
         visualElement={`testimonials${visualElement ? `-${visualElement}` : ''}`}>
         Obtenir mes conseils personnalisés

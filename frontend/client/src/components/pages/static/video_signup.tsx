@@ -2,9 +2,12 @@ import PropTypes from 'prop-types'
 import {parse} from 'query-string'
 import React from 'react'
 
-import {LoginButton} from 'components/login'
+import {isLateSignupEnabled} from 'store/user'
+
+import {LoginLink} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar} from 'components/navigation'
+import {Button} from 'components/theme'
 
 
 interface PageProps {
@@ -41,7 +44,6 @@ export default class VideoSignUpPage extends React.PureComponent<PageProps, Page
     const buttonStyle: React.CSSProperties = {
       fontSize: 15,
       letterSpacing: 1,
-      marginTop: 30,
       padding: '18px 28px',
       textTransform: 'uppercase',
     }
@@ -50,11 +52,13 @@ export default class VideoSignUpPage extends React.PureComponent<PageProps, Page
         width={isMobileVersion ? 320 : 900} height={isMobileVersion ? 200 : 506}
         allowFullScreen={true}
         src="https://www.youtube.com/embed/KSsVpeFqcaU?autoplay=1" frameBorder="0" />
-      <LoginButton
-        style={buttonStyle} email={this.state.email}
-        isSignUpButton={true} visualElement="video-signup" type="navigation">
-        Inscrivez vous, c'est gratuit&nbsp;!
-      </LoginButton>
+      <LoginLink
+        style={{marginTop: 30}} email={this.state.email}
+        isSignUp={true} visualElement="video-signup">
+        <Button style={buttonStyle} type="navigation">
+          {isLateSignupEnabled ? 'Commencez' : 'Inscrivez-vous'}, c'est gratuit&nbsp;!
+        </Button>
+      </LoginLink>
     </PageWithNavigationBar>
   }
 }

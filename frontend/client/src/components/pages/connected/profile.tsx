@@ -7,17 +7,16 @@ import {RouteComponentProps, withRouter} from 'react-router'
 import {Redirect} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
-import {DispatchAllActions, RootState, deleteUser, diagnoseOnboarding, displayToasterMessage,
+import {DispatchAllActions, RootState, diagnoseOnboarding, displayToasterMessage,
   setUserProfile} from 'store/actions'
-import {YouChooser} from 'store/french'
 import {onboardingComplete} from 'store/main_selectors'
-import {USER_PROFILE_FIELDS, youForUser} from 'store/user'
+import {USER_PROFILE_FIELDS, isLateSignupEnabled, youForUser} from 'store/user'
 
 import {isMobileVersion} from 'components/mobile'
+import {AccountDeletionModal} from 'components/logout'
 import {PageWithNavigationBar} from 'components/navigation'
-import {Button, ExternalLink, SmoothTransitions, Styles} from 'components/theme'
+import {Button, SmoothTransitions, Styles} from 'components/theme'
 import {Routes} from 'components/url'
-import {Modal} from 'components/modal'
 
 import {ProfileStepProps} from './profile/step'
 import {getProfileOnboardingStep, gotoNextStep, gotoPreviousStep, hasPreviousStep,
@@ -41,6 +40,7 @@ const PAGE_VIEW_STEPS: {component: React.ComponentClass<ProfileStepProps>}[] = [
 interface OnboardingViewProps extends RouteComponentProps<{}> {
   dispatch: DispatchAllActions
   featuresEnabled: bayes.bob.Features
+  hasAccount?: boolean
   onProfileSave: (profile: bayes.bob.UserProfile, type: string, isLastProjectStep: boolean) => void
   stepName: string
   userProfile: bayes.bob.UserProfile
@@ -96,7 +96,7 @@ class OnboardingViewBase extends React.PureComponent<OnboardingViewProps> {
   }
 
   public render(): React.ReactNode {
-    const {featuresEnabled, stepName, userProfile} = this.props
+    const {featuresEnabled, hasAccount, stepName, userProfile} = this.props
     const {
       component: StepComponent,
       stepNumber,
@@ -118,7 +118,7 @@ class OnboardingViewBase extends React.PureComponent<OnboardingViewProps> {
         featuresEnabled={featuresEnabled}
         isShownAsStepsDuringOnboarding={true}
         stepNumber={stepNumber} totalStepCount={onboardingStepCount}
-        profile={userProfile}
+        profile={userProfile} hasAccount={hasAccount}
         userYou={youForUser({profile: userProfile})} />
     </PageWithNavigationBar>
   }
@@ -129,6 +129,7 @@ const OnboardingView = withRouter(OnboardingViewBase)
 interface PageViewProps {
   dispatch: DispatchAllActions
   featuresEnabled: bayes.bob.Features
+  hasAccount?: boolean
   onChange: (userProfile: bayes.bob.UserProfile) => void
   userProfile: bayes.bob.UserProfile
 }
@@ -151,6 +152,7 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
     featuresEnabled: PropTypes.object,
+    hasAccount: PropTypes.bool,
     onChange: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,
   }
@@ -204,7 +206,7 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
       (): void => this.setState({isAccountDeletionModalShown}))
 
   public render(): React.ReactNode {
-    const {featuresEnabled, onChange, userProfile} = this.props
+    const {featuresEnabled, hasAccount, onChange, userProfile} = this.props
     const {isAccountDeletionModalShown, saves} = this.state
     const deleteContainerStyle: React.CSSProperties = {
       alignSelf: isMobileVersion ? 'center' : 'stretch',
@@ -261,14 +263,14 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
           isShownAsStepsDuringOnboarding={false}
           buttonsOverride={<div />}
           profile={userProfile}
-          featuresEnabled={featuresEnabled}
+          featuresEnabled={featuresEnabled} hasAccount={hasAccount}
           userYou={youForUser({profile: userProfile})} />
       })}
       <div style={deleteContainerStyle}>
         <Button
           type="discreet"
           onClick={this.handleShowAccountDeletionModal(true)}>
-          Supprimer mon compte
+          Supprimer {hasAccount ? 'mon compte' : 'mes données'}
         </Button>
       </div>
     </div>
@@ -288,125 +290,58 @@ interface ProfilePageProps
 }
 
 
-class ProfilePageBase extends React.PureComponent<ProfilePageProps> {
+interface ProfilePageState {
+  isShownAsStepsDuringOnboarding: boolean
+}
+
+
+class ProfilePageBase extends React.PureComponent<ProfilePageProps, ProfilePageState> {
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
     match: ReactRouterPropTypes.match.isRequired,
     user: PropTypes.object.isRequired,
   }
 
-  private isShownAsStepsDuringOnboarding(): boolean {
-    return !onboardingComplete(this.props.user)
+  public state: ProfilePageState = {
+    isShownAsStepsDuringOnboarding: !onboardingComplete(this.props.user),
   }
 
   private handleProfileSave = (userProfileUpdates, actionType?, shouldNotSaveUser?): void => {
     const {dispatch} = this.props
     dispatch(setUserProfile(userProfileUpdates, !shouldNotSaveUser, actionType)).
       then((success): void => {
-        if (success && !this.isShownAsStepsDuringOnboarding()) {
+        if (success && !this.state.isShownAsStepsDuringOnboarding) {
           dispatch(displayToasterMessage('Modifications sauvegardées.'))
         }
       })
   }
 
   public render(): React.ReactNode {
-    const {dispatch, match: {params: {stepName}, url}, user} = this.props
-    if (!this.isShownAsStepsDuringOnboarding()) {
+    const {dispatch, match: {params: {stepName}, url},
+      user: {featuresEnabled, hasAccount, profile}} = this.props
+    if (!this.state.isShownAsStepsDuringOnboarding) {
       return <PageWithNavigationBar
         style={{backgroundColor: colors.BACKGROUND_GREY}}
         page="profile" isContentScrollable={true}
         isChatButtonShown={true}>
         <PageView
-          userProfile={user.profile} onChange={this.handleProfileSave}
-          featuresEnabled={user.featuresEnabled} />
+          userProfile={profile} onChange={this.handleProfileSave} hasAccount={hasAccount}
+          featuresEnabled={featuresEnabled} />
       </PageWithNavigationBar>
     }
     if (!stepName) {
-      return <Redirect to={`${url}/${user.profile.gender ? 'profil' : 'confidentialite'}`} />
+      const defaultStepName =
+        (profile.gender || isLateSignupEnabled && !hasAccount) ? 'profil' : 'confidentialite'
+      return <Redirect to={`${url}/${defaultStepName}`} />
     }
     return <OnboardingView
       dispatch={dispatch}
       onProfileSave={this.handleProfileSave}
       stepName={stepName}
-      userProfile={user.profile}
-      featuresEnabled={user.featuresEnabled}
+      userProfile={profile}
+      featuresEnabled={featuresEnabled}
+      hasAccount={hasAccount}
     />
   }
 }
 export default connect(({user}: RootState): ProfilePageConnectedProps => ({user}))(ProfilePageBase)
-
-
-interface AccountDeletionModalConnectedProps {
-  user: bayes.bob.User
-  userYou: YouChooser
-}
-
-
-interface AccountDeletionModalProps
-  extends AccountDeletionModalConnectedProps, RouteComponentProps<{}> {
-  dispatch: DispatchAllActions
-  isShown?: boolean
-  onClose: () => void
-}
-
-
-class AccountDeletionModalBase extends React.PureComponent<AccountDeletionModalProps> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    history: ReactRouterPropTypes.history.isRequired,
-    isShown: PropTypes.bool,
-    onClose: PropTypes.func.isRequired,
-    user: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  private handleDeletionClick = (): void => {
-    const {dispatch, history, user, userYou} = this.props
-    dispatch(deleteUser(user)).
-      then((response): void => {
-        if (response) {
-          dispatch(displayToasterMessage(
-            `${userYou('Ton', 'Votre')} compte a été définitivement supprimé.`))
-          history.push(Routes.ROOT)
-        }
-      })
-  }
-
-  public render(): React.ReactNode {
-    const {isShown, onClose} = this.props
-    const contentStyle = {
-      padding: '30px 50px 0',
-      width: 700,
-    }
-    const buttonsBarStyle = {
-      display: 'flex',
-      justifyContent: 'center',
-      padding: '35px 0 50px',
-    }
-    return <Modal isShown={isShown} onClose={onClose} title="Vous voulez nous quitter&nbsp;? 😢">
-      <div style={contentStyle}>
-        Si vous décidez de supprimer votre compte, toutes vos données personnelles
-        seront définitivement effacées, notamment votre profil, vos projets, et vos
-        actions effectuées. Il sera ensuite impossible de les récupérer.
-        <br /><br />
-        Nous sommes tristes de vous voir partir, n'hésitez pas à nous dire ce que nous
-        pouvons améliorer <ExternalLink
-          style={{color: colors.BOB_BLUE}} href="https://airtable.com/shr3pFteo6ERIHnpH">
-          en cliquant ici
-        </ExternalLink>&nbsp;!
-      </div>
-      <div style={buttonsBarStyle}>
-        <Button onClick={onClose} style={{marginRight: 13}} type="back" isRound={true}>
-          Annuler
-        </Button>
-        <Button onClick={this.handleDeletionClick} type="deletion" isRound={true}>
-          Supprimer définitivement mon compte
-        </Button>
-      </div>
-    </Modal>
-  }
-}
-const AccountDeletionModal = connect(({user}: RootState): AccountDeletionModalConnectedProps => ({
-  user,
-  userYou: youForUser(user),
-}))(withRouter(AccountDeletionModalBase))

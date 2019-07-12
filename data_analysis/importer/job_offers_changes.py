@@ -46,8 +46,7 @@ class _EvolutionCounter(object):
             return
 
         year = int(job_offer.creation_date[:4])
-        bucket_id = '{}:{}'.format(
-            job_offer.departement_code, job_offer.rome_profession_card_code)
+        bucket_id = f'{job_offer.departement_code}:{job_offer.rome_profession_card_code}'
         self.offers_per_year[bucket_id][year] += 1
 
     def get_proto_dicts(self) -> typing.Iterator[typing.Dict[str, typing.Any]]:

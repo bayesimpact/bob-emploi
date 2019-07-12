@@ -49,8 +49,7 @@ def adie_events2dicts(events_html: str) -> typing.List[typing.Dict[str, typing.A
         '//script[contains(., "var evenements = []")]/text()').extract_first()
     if not events_script:
         raise ValueError(
-            '"{}" does not contain the javascript to create events:\n{}'
-            .format(events_html, page_text))
+            f'"{events_html}" does not contain the javascript to create events:\n{page_text}')
 
     if 'evenement = []' not in events_script:
         raise ValueError('The [] bug is fixed, please drop the replace code')
@@ -64,16 +63,16 @@ def adie_events2dicts(events_html: str) -> typing.List[typing.Dict[str, typing.A
 def _parse_date(date: str) -> str:
     match = _DATE_REGEXP.match(date)
     if not match:
-        raise ValueError('Date "{}" could not be parsed'.format(date))
+        raise ValueError(f'Date "{date}" could not be parsed')
     day = int(match.group('day'))
     month = _FRENCH_MONTHS[match.group('month')]
-    return '2018-{:02d}-{:02d}'.format(month, day)
+    return f'2018-{month:02d}-{day:02d}'
 
 
 def _adie_event_to_proto(props: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
     timing_text = _drop_first_word(props['date_ev_festival'])
     return {
-        '_id': '2018-06_{}'.format(props['index_ev_festival']),
+        '_id': f"2018-06_{props['index_ev_festival']}",
         'cityName': props['ville_ev_festival'],
         'description':
             '***Ça parle de quoi ?***\n\n'
@@ -86,7 +85,7 @@ def _adie_event_to_proto(props: typing.Dict[str, typing.Any]) -> typing.Dict[str
             '{heure_ev_festival}'.format(**props),
         'latitude': props['data-lat'],
         'longitude': props['data-lng'],
-        'timingText': 'le {}'.format(timing_text),
+        'timingText': f'le {timing_text}',
         'startDate': _parse_date(_drop_first_word(props['date_ev_festival'])),
         'title': props['nom_ev_festival'],
     }

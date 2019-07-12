@@ -66,8 +66,8 @@ class BmoRomeImporterTestCase(unittest.TestCase):
         employment_type_codes = [
             employment_type.employment_type for employment_type in
             proto.imt.employment_type_percentages]
-        self.assertCountEqual([51., 49.0], employment_type_percentages)
-        self.assertCountEqual([3, 4], employment_type_codes)
+        self.assertEqual([51., 49.0], employment_type_percentages)
+        self.assertEqual([job_pb2.INTERIM, job_pb2.CDD_OVER_3_MONTHS], employment_type_codes)
 
         proto = protos['55:K2103']
         self.assertFalse(proto.imt.junior_salary.short_text)

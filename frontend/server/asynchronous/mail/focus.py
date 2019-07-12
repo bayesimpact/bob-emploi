@@ -99,10 +99,10 @@ def _send_focus_emails(action: str, dry_run_email: str) -> None:
             'sendCoachingEmailAfter': proto.datetime_to_json_string(send_coaching_email_after),
         }})
 
-    report_message = 'Focus emails sent:\n{}'.format('\n'.join([
-        ' • *{}*: {} email{}'.format(campaign_id, count, 's' if count > 1 else '')
+    report_message = 'Focus emails sent:\n' + '\n'.join([
+        f' • *{campaign_id}*: {count} email{"s" if count > 1 else ""}'
         for campaign_id, count in counts.items()
-    ]))
+    ])
     if action == 'send':
         report.notify_slack(report_message)
     logging.info(report_message)

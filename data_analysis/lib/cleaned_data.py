@@ -25,7 +25,7 @@ import typing
 import pandas
 from scrapy import selector
 
-_ROME_VERSION = 'v338'
+_ROME_VERSION = 'v339'
 
 # Denominator to compute Market Score because the number of yearly average
 # offers are given for 10 candidates.
@@ -120,12 +120,10 @@ def rome_to_skills(
 
     if not filename_items:
         filename_items = path.join(
-            data_folder,
-            'rome/csv/unix_coherence_item_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_coherence_item_{_ROME_VERSION}_utf8.csv')
     if not filename_skills:
         filename_skills = path.join(
-            data_folder,
-            'rome/csv/unix_referentiel_competence_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_referentiel_competence_{_ROME_VERSION}_utf8.csv')
     rome_to_item = pandas.read_csv(filename_items, dtype=str)
     skills = pandas.read_csv(filename_skills, dtype=str)
     merged = pandas.merge(rome_to_item, skills, on='code_ogr')
@@ -145,8 +143,7 @@ def rome_job_groups(data_folder: str = 'data', filename: typing.Optional[str] = 
 
     if not filename:
         filename = path.join(
-            data_folder,
-            'rome/csv/unix_referentiel_code_rome_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_referentiel_code_rome_{_ROME_VERSION}_utf8.csv')
 
     job_groups = pandas.read_csv(filename)
 
@@ -169,8 +166,8 @@ def rome_holland_codes(data_folder: str = 'data', filename: typing.Optional[str]
     """
 
     if not filename:
-        file_pattern = 'rome/csv/unix_referentiel_code_rome_riasec_{}_utf8.csv'
-        filename = path.join(data_folder, file_pattern.format(_ROME_VERSION))
+        filename = f'rome/csv/unix_referentiel_code_rome_riasec_{_ROME_VERSION}_utf8.csv'
+        filename = path.join(data_folder, filename)
 
     column_names = ['code_rome', 'major', 'minor']
     holland_codes = pandas.read_csv(filename, names=column_names)
@@ -188,8 +185,7 @@ def rome_texts(data_folder: str = 'data', filename: typing.Optional[str] = None)
     """
 
     if not filename:
-        filename = path.join(
-            data_folder, 'rome/csv/unix_texte_{}_utf8.csv'.format(_ROME_VERSION))
+        filename = path.join(data_folder, f'rome/csv/unix_texte_{_ROME_VERSION}_utf8.csv')
 
     texts = pandas.read_csv(filename).pivot_table(
         index='code_rome',
@@ -213,12 +209,10 @@ def rome_work_environments(
 
     if not links_filename:
         links_filename = path.join(
-            data_folder,
-            'rome/csv/unix_liens_rome_referentiels_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_liens_rome_referentiels_{_ROME_VERSION}_utf8.csv')
     if not ref_filename:
         ref_filename = path.join(
-            data_folder,
-            'rome/csv/unix_referentiel_env_travail_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_referentiel_env_travail_{_ROME_VERSION}_utf8.csv')
 
     links = pandas.read_csv(links_filename)
     ref = pandas.read_csv(ref_filename)
@@ -239,8 +233,7 @@ def rome_jobs(data_folder: str = 'data', filename: typing.Optional[str] = None) 
 
     if not filename:
         filename = path.join(
-            data_folder,
-            'rome/csv/unix_referentiel_appellation_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_referentiel_appellation_{_ROME_VERSION}_utf8.csv')
 
     jobs = pandas.read_csv(filename, dtype=str)
 
@@ -269,8 +262,7 @@ def rome_job_groups_mobility(
 
     if not filename:
         filename = path.join(
-            data_folder,
-            'rome/csv/unix_rubrique_mobilite_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_rubrique_mobilite_{_ROME_VERSION}_utf8.csv')
 
     mobility = pandas.read_csv(filename, dtype=str)
     mobility.rename(columns={
@@ -596,12 +588,12 @@ def job_offers_skills(
         dayfirst=True, infer_datetime_format=True, low_memory=False)
     if not skills_filename:
         skills_filename = path.join(
-            data_folder, 'rome/csv/unix_referentiel_competence_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_referentiel_competence_{_ROME_VERSION}_utf8.csv')
     skills = pandas.read_csv(skills_filename)
     skills.set_index('code_ogr', inplace=True)
     if not activities_filename:
         activities_filename = path.join(
-            data_folder, 'rome/csv/unix_referentiel_activite_{}_utf8.csv'.format(_ROME_VERSION))
+            data_folder, f'rome/csv/unix_referentiel_activite_{_ROME_VERSION}_utf8.csv')
     activities = pandas.read_csv(activities_filename)
     activities.set_index('code_ogr', inplace=True)
 

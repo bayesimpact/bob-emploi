@@ -70,5 +70,9 @@
   {
     "mailjetTemplate": "212606",
     "name": "spontaneous"
+  },
+  {
+    "mailjetTemplate": "896724",
+    "name": "mailer-daemon"
   }
 ]

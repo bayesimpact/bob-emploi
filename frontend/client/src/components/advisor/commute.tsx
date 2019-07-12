@@ -211,7 +211,8 @@ const CommuteCitySuggestion = Radium(CommuteCitySuggestionBase)
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({cities}: bayes.bob.CommutingCities): bayes.bob.CommutingCity[] => cities, 'ville', true)
+  ({cities}: bayes.bob.CommutingCities): readonly bayes.bob.CommutingCity[] => cities,
+  'ville', true)
 
 
 export default {ExpandedAdviceCardContent, NewPicto, TakeAway}

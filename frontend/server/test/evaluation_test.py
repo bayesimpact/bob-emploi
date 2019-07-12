@@ -12,6 +12,10 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
+from bob_emploi.frontend.server.test import mailjetmock
+
+if typing.TYPE_CHECKING:
+    from bob_emploi.frontend.server import mail
 
 
 @mock.patch(auth.__name__ + '.client.verify_id_token')
@@ -303,7 +307,7 @@ class EvalTestCase(base_test.ServerTestCase):
 
         self._eval_db.use_case.insert_many([
             {
-                '_id': '2019-18-01_{:02x}'.format(index),
+                '_id': f'2019-18-01_{index:02x}',
                 'userData': {'projects': [{
                     'networkEstimate': (index % 3) + 1
                 }]},
@@ -329,7 +333,7 @@ class EvalTestCase(base_test.ServerTestCase):
 
         self._eval_db.use_case.insert_many([
             {
-                '_id': '2019-18-01_{:02x}'.format(index),
+                '_id': f'2019-18-01_{index:02x}',
                 'userData': {'projects': [{
                     'networkEstimate': (index % 3) + 1
                 }]},
@@ -354,7 +358,7 @@ class EvalTestCase(base_test.ServerTestCase):
         }
 
         self._eval_db.use_case.insert_many([{
-            '_id': '2019-18-01_{}'.format(d),
+            '_id': f'2019-18-01_{d}',
             'userData': {
                 # One on three use cases has a different frustration.
                 'profile': {'frustrations': [user_pb2.Frustration.Name(d % 3 + 1)]},
@@ -372,11 +376,11 @@ class EvalTestCase(base_test.ServerTestCase):
         # - 2nd category needs frustration 2
         # - 3rd category needs frustration 3
         categories = [{
-            'categoryId': 'frustration-{}'.format(d + 1),
-            'filters': ['for-frustrated({})'.format(user_pb2.Frustration.Name(d + 1))]
+            'categoryId': f'frustration-{d + 1}',
+            'filters': [f'for-frustrated({user_pb2.Frustration.Name(d + 1)})']
         } for d in range(3)]
         typing.cast(typing.List[str], categories[0]['filters']).append(
-            'for-frustrated({})'.format(user_pb2.Frustration.Name(4)))
+            f'for-frustrated({user_pb2.Frustration.Name(4)})')
         self._db.diagnostic_category.insert_many(categories)
 
         response = self.app.post(
@@ -437,7 +441,7 @@ class EvalTestCase(base_test.ServerTestCase):
             }
         })
         self._eval_db.use_case.insert_many([{
-            '_id': '2019-01-20_{}'.format(d),
+            '_id': f'2019-01-20_{d}',
             'userData': {'projects': [{}]},
         } for d in range(3)])
         data = {'categories': [{
@@ -494,7 +498,7 @@ class EvalTestCase(base_test.ServerTestCase):
             }
         })
         self._eval_db.use_case.insert_many([{
-            '_id': '2019-01-20_{}'.format(d),
+            '_id': f'2019-01-20_{d}',
             'userData': {'projects': [{}]},
         } for d in range(3)])
         self._db.diagnostic_category.insert_one({
@@ -554,7 +558,8 @@ class EvalTestCase(base_test.ServerTestCase):
         self.assertEqual(
             ['relevant', 'not-relevant', 'less-relevant'], [c['categoryId'] for c in categories])
         self.assertEqual(
-            [True, False, True], [c.get('isRelevant', False) for c in categories])
+            ['NEEDS_ATTENTION', 'RELEVANT_AND_GOOD', 'NEEDS_ATTENTION'],
+            [c.get('relevance') for c in categories])
 
     def test_create_unsaved(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Create a use case from a user, without saving it."""
@@ -640,6 +645,129 @@ class EvalTestCase(base_test.ServerTestCase):
         self.json_from_response(response)
 
         self.assertTrue(self._eval_db.use_case.find_one({'poolName': 'test-pool'}))
+
+
+@mailjetmock.patch()
+class EmailForwardTestCase(base_test.ServerTestCase):
+    """Base class for tests on the email-forwarding route."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.parse_email: 'mail._MailjetParseJson' = {
+            'Sender': 'joanna@bob-emploi.fr',
+            'Recipient': 'user@bob-emploi.fr',
+            'Date': '20190701',
+            'From': 'Joanna de Bob <joanna@bob-emploi.fr>',
+            'Text-part': 'Merci de nous avoir dit que vous nous aimez\u00A0!',
+            'Html-part': '<div>Merci de nous avoir dit que vous nous aimez&nbsp;!</div>',
+            'SpamAssassinScore': '0',
+        }
+
+    def _assert_mailer_daemon(self) -> None:
+        self.assertEqual(
+            ['joanna@bob-emploi.fr'],
+            [msg.recipient['Email'] for msg in mailjetmock.get_all_sent_messages()])
+
+    def test_forward(self) -> None:
+        """Basic usage of email-forwarder."""
+
+        user_id = self.create_user(email='cyrille@example.com')
+
+        parse_email = dict(self.parse_email, Subject=f'{user_id} Merci pour votre retour')
+        response = self.app.post('/api/eval/mailjet', data=json.dumps(parse_email))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            ['cyrille@example.com'],
+            [msg.recipient['Email'] for msg in mailjetmock.get_all_sent_messages()])
+        self.assertEqual(
+            ['Merci pour votre retour'],
+            [msg.properties.get('Subject') for msg in mailjetmock.get_all_sent_messages()])
+
+    @mock.patch('logging.warning')
+    def test_wrong_subject(self, mock_warning: mock.MagicMock) -> None:
+        """Forwarding message without a user ID in the subject."""
+
+        parse_email = dict(self.parse_email, Subject='Merci!')
+        response = self.app.post('/api/eval/mailjet', data=json.dumps(parse_email))
+        self._assert_mailer_daemon()
+        self.assertEqual(202, response.status_code)
+        mock_warning.assert_called_once()
+
+    @mock.patch('logging.warning')
+    def test_missing_user_id(self, mock_warning: mock.MagicMock) -> None:
+        """Forwarding message without a user ID in the subject."""
+
+        parse_email = dict(self.parse_email, Subject='Merci pour votre retour')
+        response = self.app.post('/api/eval/mailjet', data=json.dumps(parse_email))
+        self._assert_mailer_daemon()
+        self.assertEqual(202, response.status_code)
+        mock_warning.assert_called_once()
+
+    @mock.patch('logging.error')
+    def test_missing_user(self, mock_error: mock.MagicMock) -> None:
+        """Forwarding message to a missing user."""
+
+        parse_email = dict(
+            self.parse_email, Subject='0123456789ab0123456789ab Merci pour votre retour')
+        response = self.app.post('/api/eval/mailjet', data=json.dumps(parse_email))
+        self._assert_mailer_daemon()
+        self.assertEqual(202, response.status_code)
+        mock_error.assert_called_once()
+
+    @mock.patch(auth.__name__ + '._ADMIN_AUTH_TOKEN', 'ze-admin-token')
+    @mock.patch('logging.error')
+    def test_missing_email(self, mock_error: mock.MagicMock) -> None:
+        """Forwarding email to a user with deleted account."""
+
+        user_id, auth_token = self.create_user_with_token(email='cyrille@example.com')
+        user_dict = self.get_user_info(user_id, auth_token)
+        response = self.app.delete(
+            '/api/user', data=json.dumps(user_dict),
+            headers={'Authorization': 'Bearer ze-admin-token'})
+        self.assertEqual(user_id, self.json_from_response(response).get('userId'))
+
+        parse_email = dict(self.parse_email, Subject=f'{user_id} Merci pour votre retour')
+        response = self.app.post('/api/eval/mailjet', data=json.dumps(parse_email))
+        self._assert_mailer_daemon()
+        self.assertEqual(202, response.status_code)
+        mock_error.assert_called_once()
+
+    def test_attachment(self) -> None:
+        """Forwarding an email with attachments."""
+
+        user_id = self.create_user(email='cyrille@example.com')
+
+        parse_email = typing.cast('mail._MailjetParseJson', dict(
+            self.parse_email, Subject='{} Merci pour votre retour'.format(user_id),
+            Attachement1='SGVsbG8gV29ybGQh',
+            Attachement2='SGVsbG8gV29ybGQhjklmjkljq',
+            Parts=[
+                {
+                    'ContentRef': 'Attachment1',
+                    'Headers': {
+                        'Content-Type': ['text/plain; charset=utf-8; name=helloworld.txt'],
+                        'Content-Transfer-Encoding': ['base64'],
+                        'Content-Disposition': ['attachment; filename=helloworld.txt'],
+                    },
+                },
+                {
+                    'ContentRef': 'Attachment2',
+                    'Headers': {
+                        'Content-Type': ['text/plain; charset=utf-8; name=helloworld.txt'],
+                        'Content-Transfer-Encoding': ['base64'],
+                        'Content-Disposition': ['attachment; filename="spaced name.pdf"'],
+                    },
+                },
+            ]))
+        response = self.app.post('/api/eval/mailjet', data=json.dumps(parse_email))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            ['helloworld.txt', '"spaced name.pdf"'],
+            [
+                att.get('Filename')
+                for msg in mailjetmock.get_all_sent_messages()
+                for att in msg.properties.get('Attachments', [])
+            ])
 
 
 if __name__ == '__main__':

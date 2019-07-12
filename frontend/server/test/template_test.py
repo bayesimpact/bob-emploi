@@ -56,7 +56,7 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         for variable, other in itertools.combinations(scoring.scoring_base._TEMPLATE_VARIABLES, 2):
             self.assertNotEqual(
                 variable.lower(), other.lower(),
-                msg='{} is almost the same as {}'.format(variable, other))
+                msg=f'{variable} is almost the same as {other}')
 
     def test_capitalized(self) -> None:
         """Forces capitalization if needed."""

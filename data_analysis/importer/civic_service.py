@@ -82,10 +82,10 @@ def csv2dicts(civic_service_missions_csv: str, today: typing.Optional[str] = Non
     # As date is given in French, add a formatted date column.
     try:
         missions['date_formatted'] = missions.start_date[missions.start_date.str.contains(' ')]\
-            .apply(lambda date: '{}-{}'.format(date.split(' ')[2], MONTHS[date.split(' ')[1]]))
+            .apply(lambda date: f'{date.split(" ")[2]}-{MONTHS[date.split(" ")[1]]}')
     except IndexError as error:
         raise ValueError(
-            'Dates do not have the right format: "{}"'.format(missions.start_date)) from error
+            f'Dates do not have the right format: "{missions.start_date}"') from error
 
     # Format the start date for first date of the month in proper French (e.g 1 -> 1ᵉʳ).
     missions.start_date = missions.start_date.str.replace('1 ', '1ᵉʳ ')

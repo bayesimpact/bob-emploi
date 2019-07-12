@@ -35,6 +35,7 @@
     "@babel/plugin-syntax-dynamic-import": "^7.x.x",
     "@hot-loader/react-dom": "^16.x.x",
     "@mysticatea/eslint-plugin": "^10.x.x",
+    "@types/amplitude-js": "4.4.2",
     "@types/lodash": "^4.x.x",
     "@types/node": "^12.x.x",
     "@types/radium": "^0.24.x",

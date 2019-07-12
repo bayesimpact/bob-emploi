@@ -97,7 +97,7 @@ def redact_proto(
         # for now. If we introduce new types of PERSONAL_IDENTIFIER fields, we
         # have to handle them here.
         raise TypeError(
-            'PERSONAL_IDENTIFIER field "{}" is not a string'.format(field_descriptor.name))
+            f'PERSONAL_IDENTIFIER field "{field_descriptor.name}" is not a string')
 
 
 _ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
@@ -132,5 +132,5 @@ def user_to_use_case(
     })
     use_case.pool_name = pool_name
     use_case.index_in_pool = index_in_pool
-    use_case.use_case_id = '{}_{:02x}'.format(pool_name, index_in_pool)
+    use_case.use_case_id = f'{pool_name}_{index_in_pool:02x}'
     return use_case

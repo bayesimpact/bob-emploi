@@ -1,5 +1,6 @@
 """Endpoints for the evaluation tool."""
 
+import logging
 import os
 import random
 import re
@@ -10,14 +11,17 @@ import flask
 from google.protobuf import json_format
 import pymongo
 from pymongo import errors
+from requests import exceptions
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import diagnostic
+from bob_emploi.frontend.server import mail
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import use_case_pb2
 
 app = flask.Blueprint('evaluation', __name__)  # pylint: disable=invalid-name
@@ -121,7 +125,7 @@ def create_use_case(request: use_case_pb2.UseCaseCreateRequest, requester_email:
     user_dict = user_database.user.find_one(query)
     if not user_dict:
         flask.abort(
-            404, 'Aucun utilisateur avec l\'email "{}" n\'a été trouvé.'.format(request.email))
+            404, f'Aucun utilisateur avec l\'email "{request.email}" n\'a été trouvé.')
 
     # Find next free index in use case pool.
     last_use_case_in_pool = database.use_case.find(
@@ -255,3 +259,73 @@ def get_relevant_categories(use_case: use_case_pb2.UseCase) -> diagnostic_pb2.Di
     result.categories.extend(diagnostic.set_categories_relevance(
         use_case.user_data, database=flask.current_app.config['DATABASE']))
     return result
+
+
+_SUBJECT_DOC = 'Wrong %s in email subject: "%s"\nSet subject as "<user_id> <subject_for_user>" ' + \
+    'to send email with subject <subject_for_user> to user with ID <user_id>.'
+
+
+# TODO(cyrille): Consider putting in its own application (not really related to the product).
+# TODO(cyrille): Try to make it work directly using a specific email address in the parseroute
+#   query.
+# TODO(cyrille): Consider allowing attachements.
+@app.route('/mailjet', methods=['POST'])
+def direct_email_to_user() -> typing.Tuple[str, int]:
+    """Send an email from incoming Mailjet API to a user, using its ID given in the subject.
+
+    # Setting the Mailjet API Parse route:
+    (details, may change, see https://dev.mailjet.com/reference/email/parse/ for more information)
+    curl -s -X POST --user "$MAILJET_APIKEY_PUBLIC:$MAILJET_SECRET" \
+        https://api.mailjet.com/v3/REST/parseroute \
+        -H 'Content-Type: application/json' \
+        -d '{
+                "Url": "https://www.bob-emploi.fr/api/eval/mailjet"
+            }'
+    The response carries an email address to which we can send emails.
+
+    # Sending an email to a specific user:
+    Using the previously acquired email address, you can send an email to a specific user using
+    their ID by setting the email subject as follows:
+    "<user_id> <subject_for_user>"
+    e.g.: "0123456789ab0123456789ab Votre avis nous intéresse"
+    The email will be sent as is (without attachements) to the user, only the user ID will be
+    stripped from subject (so in the previous example, this will set "Votre avis nous intéresse" as
+    subject).
+    """
+
+    mailjet_parse_email = flask.request.get_json(force=True)
+
+    subject = mailjet_parse_email['Subject']
+    try:
+        [user_id, subject] = subject.split(' ', 1)
+    except ValueError:
+        logging.warning(_SUBJECT_DOC, 'format', subject)
+        mail.mailer_daemon(_SUBJECT_DOC % ('format', subject), mailjet_parse_email)
+        return 'Invalid email subject', 202
+    try:
+        selector = {'_id': objectid.ObjectId(user_id)}
+    except errors.InvalidId:
+        logging.warning(_SUBJECT_DOC, 'user ID', user_id)
+        mail.mailer_daemon(_SUBJECT_DOC % ('user ID', user_id), mailjet_parse_email, user_id)
+        return 'Invalid user ID', 202
+
+    def return_error(error: str) -> typing.Tuple[str, int]:
+        logging.error('Couldn\'t send a direct email to user "%s"\n%s', user_id, error)
+        mail.mailer_daemon(error, mailjet_parse_email, user_id)
+        return error, 202
+
+    user = proto.create_from_mongo(
+        flask.current_app.config['USER_DATABASE'].user.find_one(selector),
+        user_pb2.User, always_create=False)
+    if not user:
+        return return_error('User not found')
+    if '@' not in user.profile.email:
+        return return_error('User has an invalid email address')
+    response = mail.send_direct_email(user.profile, mailjet_parse_email, subject=subject)
+    try:
+        response.raise_for_status()
+    except exceptions.HTTPError:
+        return return_error(
+            f'Mailjet response {response.status_code} with message:\n{response.text}')
+    # TODO(cyrille): Consider logging the email in user.emails_sent
+    return 'OK', 200

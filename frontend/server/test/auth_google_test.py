@@ -55,6 +55,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
 
         self.assertTrue(auth_response['isNewUser'])
         self.assertEqual('pascal@bayes.org', auth_response['authenticatedUser']['profile']['email'])
+        self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
         self.assertEqual('12345', auth_response['authenticatedUser']['googleId'])
         user_id = auth_response['authenticatedUser']['userId']
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
@@ -90,8 +91,8 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"email": "valid@email.fr"}}}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", "googleId": "12345", '
+            '"profile": {"email": "valid@email.fr"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
@@ -113,8 +114,8 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"email": "invalidemail"}}}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", "googleId": "12345", '
+            '"profile": {"email": "invalidemail"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response.status_code)
@@ -137,8 +138,8 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
         self.authenticate_new_user(email='used@email.fr', password='psswd')
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"email": "used@email.fr"}}}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", "googleId": "12345", '
+            '"profile": {"email": "used@email.fr"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response.status_code)
@@ -160,8 +161,8 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "googleId": "12345", '
-            '"profile": {{"name": "Pascal", "email": "pascal@bayes.org"}}}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", "googleId": "12345", '
+            '"profile": {"name": "Pascal", "email": "pascal@bayes.org"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
@@ -198,6 +199,31 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
         self.assertEqual('13579', returned_user.get('googleId'))
         self.assertEqual('pascal@bayes.org', returned_user.get('profile', {}).get('email'))
         self.assertEqual(user_id, returned_user.get('userId'))
+
+    def test_google_account_for_guest_user(self, mock_verify_id_token: mock.MagicMock) -> None:
+        """Auth request, add google account to a guest user."""
+
+        user_id, auth_token = self.create_guest_user(first_name='Pascal')
+
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'pascal@bayes.org',
+            'sub': '12345',
+        }
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"googleTokenId": "my-token", "userId": "{user_id}", '
+            f'"authToken": "{auth_token}"}}',
+            content_type='application/json')
+
+        auth_response = self.json_from_response(response)
+
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertEqual('Pascal', auth_response['authenticatedUser']['profile'].get('name'))
+        self.assertEqual('pascal@bayes.org', auth_response['authenticatedUser']['profile']['email'])
+        self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
+        self.assertEqual('12345', auth_response['authenticatedUser']['googleId'])
+        self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
 
 
 if __name__ == '__main__':
