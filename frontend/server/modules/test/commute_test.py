@@ -75,7 +75,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.city.city_id = '69123'
         self.persona.project.target_job.job_group.rome_id = 'M1604'
         score = self._score_persona(self.persona)
-        self.assertGreater(score, 1, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertGreater(score, 1, msg=f'Fail for "{self.persona.name}"')
 
     def test_non_valid(self) -> None:
         """Test that people with a non-valid INSEE code should not get any commute advice."""
@@ -83,7 +83,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.city.city_id = '691234'
         self.persona.project.target_job.job_group.rome_id = 'M1604'
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Fail for "{self.persona.name}"')
 
     def test_super_commute(self) -> None:
         """Test that people that wants to move and with super commute cities have score 3."""
@@ -93,7 +93,7 @@ class CommuteScoringModelTestCase(scoring_test.ScoringModelTestBase):
         if self.persona.project.area_type <= geo_pb2.CITY:
             self.persona.project.area_type = geo_pb2.DEPARTEMENT
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 3, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 3, msg=f'Fail for "{self.persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):
@@ -114,7 +114,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/commute/{}/foo'.format(self.user_id),
+            f'/api/advice/commute/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -124,7 +124,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Basic test with no cities."""
 
         response = self.app.get(
-            '/api/advice/commute/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/commute/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual({}, self.json_from_response(response))
@@ -185,7 +185,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(user_id, auth_token)
         project_id = user_info['projects'][0]['projectId']
         response = self.app.get(
-            '/api/advice/commute/{}/{}'.format(user_id, project_id),
+            f'/api/advice/commute/{user_id}/{project_id}',
             headers={'Authorization': 'Bearer ' + auth_token})
 
         hiring_cities = self.json_from_response(response).get('cities', [])

@@ -191,20 +191,20 @@ def blast_campaign(
 
         email_count += 1
         if email_count % 100 == 0:
-            print('{} emails sent ...'.format(email_count))
+            print(f'{email_count} emails sent ...')
 
-    logging.info('{:d} users processed.'.format(users_processed_count))
+    logging.info('%d users processed.', users_processed_count)
     if users_wrong_id_count:
-        logging.info('{:d} users ignored because of ID selection.'.format(users_wrong_id_count))
+        logging.info('%d users ignored because of ID selection.', users_wrong_id_count)
     if users_wrong_hash_count:
-        logging.info('{:d} users ignored because of hash selection.'.format(users_wrong_hash_count))
-    logging.info('{:d} users have stopped seeking.'.format(users_stopped_seeking))
-    logging.info('{:d} users ignored because of emailing policy.'.format(email_policy_rejections))
-    logging.info('{:d} users ignored because of no template vars.'.format(no_template_vars_count))
+        logging.info('%d users ignored because of hash selection.', users_wrong_hash_count)
+    logging.info('%d users have stopped seeking.', users_stopped_seeking)
+    logging.info('%d users ignored because of emailing policy.', email_policy_rejections)
+    logging.info('%d users ignored because of no template vars.', no_template_vars_count)
     if action == 'send':
         report.notify_slack(
-            "Report for {} blast: I've sent {:d} emails (and got {:d} "
-            'errors).'.format(campaign_id, email_count, email_errors))
+            f"Report for {campaign_id} blast: I've sent {email_count:d} emails (and got "
+            f'{email_errors:d} errors).')
     return email_count
 
 

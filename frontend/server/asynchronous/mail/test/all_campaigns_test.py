@@ -406,10 +406,9 @@ class NewDiagnosticVarsTestCase(mail_blast_test.CampaignTestBase):
         self._assert_user_receives_campaign()
 
         self._assert_has_unsubscribe_link()
+        base_url = f'https://www.bob-emploi.fr?userId={self.user.user_id}'
         self._assert_regex_field(
-            'loginUrl',
-            r'^{}&authToken=\d+\.[a-f0-9]+$'.format(
-                re.escape('https://www.bob-emploi.fr?userId={}'.format(self.user.user_id))))
+            'loginUrl', rf'^{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
         self._assert_regex_field(
             'stopSeekingUrl', r'^.*/api/employment-status?.*&token=\d+\.[a-f0-9]+.*$')
 

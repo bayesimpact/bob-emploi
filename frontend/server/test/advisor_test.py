@@ -113,17 +113,13 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertEqual('FEMININE', data['gender'])
         self.assertEqual("d'hôtesse", data['ofJob'])
         login_url = data.pop('loginUrl')
-        self.assertRegex(
-            login_url,
-            r'^{}&authToken=\d+\.[a-f0-9]+$'.format(
-                re.escape('http://base.example.com?userId={}'.format(self.user.user_id))))
+        base_url = re.escape(f'http://base.example.com?userId={self.user.user_id}')
+        self.assertRegex(login_url, rf'^{base_url}&authToken=\d+\.[a-f0-9]+$')
         email_settings_url = data.pop('changeEmailSettingsUrl')
+        base_url = re.escape(f'http://base.example.com/unsubscribe.html?user={self.user.user_id}')
         self.assertRegex(
             email_settings_url,
-            r'^{}&auth=\d+\.[a-f0-9]+&coachingEmailFrequency=UNKNOWN_EMAIL_FREQUENCY$'.format(
-                re.escape(
-                    'http://base.example.com/unsubscribe.html?user={}'.format(
-                        self.user.user_id))))
+            rf'^{base_url}&auth=\d+\.[a-f0-9]+&coachingEmailFrequency=UNKNOWN_EMAIL_FREQUENCY$')
 
     @mailjetmock.patch()
     def test_missing_email_address(self) -> None:
@@ -437,7 +433,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
                 self.assertEqual('very-long-to-respond', call_args[0][1])
                 break
         else:
-            self.fail('No call to warning with "Timeout"\n:{}'.format(mock_warning.call_args_list))
+            self.fail(f'No call to warning with "Timeout"\n:{mock_warning.call_args_list}')
 
 
 class OtherWorkEnvScoringModelTestCase(scoring_test.AdviceScoringModelTestBase):

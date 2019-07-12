@@ -19,6 +19,12 @@
               "--make_data",
               "--always_accept_diff"
             ],
+            "environment": [
+              {
+                "name": "SLACK_IMPORT_URL",
+                "value": "REDACTED"
+              }
+            ],
             "name": "master"
           }
         ]

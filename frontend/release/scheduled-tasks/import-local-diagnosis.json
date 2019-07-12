@@ -9,7 +9,6 @@
       },
       "Id": "import",
       "Input": {
-        "taskRoleArn": "arn:aws:iam::951168128976:role/ecsFHSTask",
         "containerOverrides": [
           {
             "command": [
@@ -32,7 +31,8 @@
             ],
             "name": "master"
           }
-        ]
+        ],
+        "taskRoleArn": "arn:aws:iam::951168128976:role/ecsFHSTask"
       },
       "RoleArn": "arn:aws:iam::951168128976:role/ecsEventsRole"
     }

@@ -47,7 +47,7 @@ const ExpandedAdviceCardContent =
     ExpandedAdviceCardContentBase)
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({skills}: bayes.bob.JobSkills): bayes.bob.Skill[] => skills, 'compétence', true)
+  ({skills}: bayes.bob.JobSkills): readonly bayes.bob.Skill[] => skills, 'compétence', true)
 
 
 export default {ExpandedAdviceCardContent, NewPicto, TakeAway}

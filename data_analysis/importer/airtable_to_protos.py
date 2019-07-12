@@ -40,6 +40,7 @@ from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import network_pb2
 from bob_emploi.frontend.api import online_salon_pb2
 from bob_emploi.frontend.api import options_pb2
+from bob_emploi.frontend.api import skill_pb2
 from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import testimonial_pb2
 
@@ -74,7 +75,7 @@ def _group_filter_fields(
         for filter_type in others:
             filter_value = record.get(filter_type)
             if filter_value:
-                filters.append('{}({})'.format(filter_type, filter_value))
+                filters.append(f'{filter_type}({filter_value})')
     return filters
 
 
@@ -89,7 +90,7 @@ class _FilterSetSorter(object):
         self._filters: typing.Set[str] = set(_group_filter_fields(record))
 
     def __repr__(self) -> str:
-        return "_FilterSetSorter({{'filters': {}}})".format(repr(list(self._filters)))
+        return f"_FilterSetSorter({{'filters': {list(self._filters)!r}}})"
 
     def __eq__(self, other: typing.Any) -> bool:
         """This does not check equality, but rather incomparability.
@@ -176,8 +177,7 @@ class ProtoAirtableConverter(object):
         try:
             json_format.ParseDict(fields, proto)
         except json_format.ParseError as error:
-            raise ValueError('Error while parsing:\n{}\n{}'.format(
-                json.dumps(fields, indent=2), error))
+            raise ValueError(f'Error while parsing:\n{json.dumps(fields, indent=2)}\n{error}')
         if _has_any_check_error(proto, _id, self.checkers, _BEFORE_TRANSLATION_CHECKERS):
             # Errors messages are already logged in the function.
             raise ValueError()
@@ -252,12 +252,11 @@ class ProtoAirtableConverter(object):
         airtable_fields = set(airtable_record['fields'].keys())
         if not airtable_fields & proto_fields:
             raise KeyError(
-                'None of the AirTable fields ({}) correspond to the proto '
-                'fields ({})'.format(airtable_fields, proto_fields))
+                f'None of the AirTable fields ({airtable_fields}) correspond to the proto '
+                f'fields ({proto_fields})')
         if not airtable_fields >= self.required_fields_set:
             raise KeyError(
-                'Some require fields are missing ({})'
-                .format(self.required_fields_set - airtable_fields))
+                f'Some require fields are missing ({self.required_fields_set - airtable_fields})')
 
         # Convert all existing fields in the AirTable record to their proto
         # equivalent if they have one. The key (k) is converted to camelCase
@@ -328,7 +327,7 @@ def generate_dynamic_advices_changes(markdown_list: str, prefix: str = '', suffi
         parts = markdown_list.split('\n*', 1)
 
     if parts[0]:
-        result['{}Header{}'.format(prefix, suffix)] = parts[0]
+        result[f'{prefix}Header{suffix}'] = parts[0]
 
     if len(parts) == 1:
         return result
@@ -337,9 +336,9 @@ def generate_dynamic_advices_changes(markdown_list: str, prefix: str = '', suffi
     lines = [l.strip() for l in items.split('\n')]
     if not all(l.startswith('* ') for l in lines):
         raise ValueError(
-            'Error in field {}, it should be a markdown list with one line per item\n{}'
-            .format(prefix + suffix, markdown_list))
-    result['{}Items{}'.format(prefix, suffix)] = [l[len('* '):] for l in lines]
+            f'Error in field {prefix + suffix}, it should be a markdown list with one line per '
+            f'item\n{markdown_list}')
+    result[f'{prefix}Items{suffix}'] = [l[len('* '):] for l in lines]
     return result
 
 
@@ -428,6 +427,9 @@ PROTO_CLASSES: typing.Dict[str, ProtoAirtableConverter] = {
     'SalonFilterRule': _ProtoAirtableFiltersConverter(
         online_salon_pb2.SalonFilterRule, None, required_fields=['regexp', 'fields']
     ).add_split_fields({f: ',' for f in ('fields', 'locationIds', 'jobGroupIds')}),
+    'Skill': ProtoAirtableConverter(
+        skill_pb2.Skill, None, required_fields=('name', 'description')
+    ),
     'StrategyModule': ProtoAirtableConverter(
         strategy_pb2.StrategyModule, None,
         required_fields=('trigger_scoring_model', 'title', 'category_ids')),
@@ -500,7 +502,7 @@ def _log_error(
     if record_id is None:
         record_ref = ''
     else:
-        record_ref = ' in record "{}{}"'.format(record_id, '.{}'.format(path) if path else '')
+        record_ref = f' in record "{record_id}{f".{path}" if path else ""}"'
     if isinstance(error, checker.FixableValueError):
         logging.error(
             'Check error "%s"%s: %s\nErrors in string: %r\nFixed string:\n%s',
@@ -598,7 +600,7 @@ def _has_validation_errors(
         for locale, translated_proto in _translate_proto(proto):
             has_error |= _has_any_check_error(
                 translated_proto,
-                '{}:{}'.format(_id, locale),
+                f'{_id}:{locale}',
                 proto_checkers,
                 _BEFORE_TRANSLATION_CHECKERS)
         value['_id'] = _id

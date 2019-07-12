@@ -165,9 +165,8 @@ def quick_diagnose(
                     field=diagnostic_pb2.SALARY_FIELD,
                     is_before_question=True,
                     comment=diagnostic_pb2.BoldedString(string_parts=[
-                        'En général les gens demandent un salaire {} par mois.'.format(
-                            french.lower_first_letter(salary_estimation.short_text)
-                        )
+                        'En général les gens demandent un salaire '
+                        f'{french.lower_first_letter(salary_estimation.short_text)} par mois.'
                     ]))
 
     if has_rome_id_diff:
@@ -178,7 +177,7 @@ def quick_diagnose(
                 field=diagnostic_pb2.REQUESTED_DIPLOMA_FIELD,
                 is_before_question=True,
                 comment=diagnostic_pb2.BoldedString(string_parts=[
-                    'Les offres demandent souvent un {} ou équivalent.'.format(diplomas)
+                    f'Les offres demandent souvent un {diplomas} ou équivalent.'
                 ]))
 
     # TODO(pascal): Diagnose more stuff here.
@@ -399,7 +398,7 @@ def set_categories_relevance(
         - database, the database in which to find the categories, if not specified.
             If `project` is a ScoringProject, defaults to `project.database`,
             otherwise, it's mandatory (raises an AttributeError).
-    Returns the list of categories, with a `is_relevant` flag on those relevant for the project.
+    Returns the list of categories, with a relevance qualifier.
     """
 
     if isinstance(project, user_pb2.User):
@@ -415,7 +414,11 @@ def set_categories_relevance(
     if not categories:
         categories = list_categories(database)
     for category in categories:
-        category.is_relevant = project.check_filters(category.filters)
+        # TODO(cyrille): Fine tune the relevance of a category.
+        if project.check_filters(category.filters):
+            category.relevance = diagnostic_pb2.NEEDS_ATTENTION
+        else:
+            category.relevance = diagnostic_pb2.RELEVANT_AND_GOOD
         yield category
 
 
@@ -439,4 +442,4 @@ def find_category(
 
     return next((
         c for c in set_categories_relevance(project, categories, database)
-        if c.is_relevant), None)
+        if c.relevance == diagnostic_pb2.NEEDS_ATTENTION), None)

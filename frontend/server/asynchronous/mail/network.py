@@ -74,14 +74,14 @@ def _get_network_vars(
     other_job_in_city = 'coiffeur à Marseille'
     if is_hairdresser_or_in_marseille:
         other_job_in_city = 'secrétaire à Lyon'
+    job = french.lower_first_letter(french.genderize_job(
+        project.target_job, user.profile.gender))
+    in_city = french.in_city(strip_district(project.city.name))
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'inTargetDomain': in_target_domain,
         'frustration': user_pb2.Frustration.Name(worst_frustration) if worst_frustration else '',
         'otherJobInCity': other_job_in_city,
-        'jobInCity': '{} {}'.format(
-            french.lower_first_letter(french.genderize_job(
-                project.target_job, user.profile.gender)),
-            french.in_city(strip_district(project.city.name))),
+        'jobInCity': f'{job} {in_city}',
         'emailInUrl': parse.quote(user.profile.email),
     })
 
@@ -150,6 +150,8 @@ def network_plus_vars(
         logging.warning('Could not find departement (%s)', project.city.departement_id)
         return None
 
+    job_group_name = french.lower_first_letter(project.target_job.job_group.name)
+
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'frustration': user_pb2.Frustration.Name(worst_frustration) if worst_frustration else '',
         'hasChildren': campaign.as_template_boolean(has_children),
@@ -162,8 +164,7 @@ def network_plus_vars(
         'inTargetDomain': in_target_domain,
         'isAbleBodied': campaign.as_template_boolean(not user.profile.has_handicap),
         'isYoung': campaign.as_template_boolean(age <= max_young),
-        'jobGroupInDepartement': '{} {}'.format(
-            french.lower_first_letter(project.target_job.job_group.name), in_departement),
+        'jobGroupInDepartement': f'{job_group_name} {in_departement}',
         'networkApplicationPercentage': network_application_importance,
     })
 

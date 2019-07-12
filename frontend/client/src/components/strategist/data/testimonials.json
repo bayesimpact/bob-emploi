@@ -22,13 +22,6 @@
       "rating": 5
     },
     {
-      "content": "J'ai apprécié l'état des lieux du marché de l'emploi quant à mon profil.\nJ'ai bien utilisé votre système d'entretiens en ligne avant d'aller passer mon premier.",
-      "createdAt": "2019-04-15",
-      "job": "Assistante de direction",
-      "name": "Marie-Louise",
-      "rating": 4
-    },
-    {
       "content": "Merci, j'ai bien utilisé votre méthode pour les entretiens avant d'aller passer mon premier.",
       "createdAt": "2019-04-15",
       "job": "Assistante de direction",
@@ -164,13 +157,6 @@
   ],
   "confidence-boost": [
     {
-      "content": "Le contact positif qui aide à rester motivé dans la recherche d'emploi, tout en informant des réalités du marché de l'emploi dans le secteur concerné.",
-      "createdAt": "2019-06-13",
-      "job": "Avocat d'affaires",
-      "name": "Louise",
-      "rating": 5
-    },
-    {
       "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob ma boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
       "createdAt": "2019-05-22",
       "isMale": true,
@@ -184,6 +170,13 @@
       "job": "Conseillère en insertion professionnelle ",
       "name": "Christine",
       "rating": 4
+    },
+    {
+      "content": "Le contact positif qui aide à rester motivé dans la recherche d'emploi, tout en informant des réalités du marché de l'emploi dans le secteur concerné.",
+      "createdAt": "2019-03-13",
+      "job": "Avocat d'affaires",
+      "name": "Louise",
+      "rating": 5
     },
     {
       "content": "Je travaille dans un grand groupe français et je reste impressionné par la qualité du coaching de Bob. Je n'arrive pas à faire aussi bien pour nos salariés et je dispose pourtant de moyens non négligeables.\nToutes mes félicitations pour votre travail.",
@@ -337,13 +330,6 @@
   ],
   "other-leads": [
     {
-      "content": "Le contact positif qui aide à rester motivé dans la recherche d'emploi, tout en informant des réalités du marché de l'emploi dans le secteur concerné.",
-      "createdAt": "2019-06-13",
-      "job": "Avocat d'affaires",
-      "name": "Louise",
-      "rating": 5
-    },
-    {
       "content": "Merci pour les pistes et conseils pratiques et terre à terre. ++++bravo",
       "createdAt": "2019-04-25",
       "job": "Chef de projet",
@@ -359,13 +345,6 @@
       "rating": 3
     },
     {
-      "content": "J'ai apprécié l'état des lieux du marché de l'emploi quant à mon profil.\nJ'ai bien utilisé votre système d'entretiens en ligne avant d'aller passer mon premier.",
-      "createdAt": "2019-04-15",
-      "job": "Assistante de direction",
-      "name": "Marie-Louise",
-      "rating": 4
-    },
-    {
       "content": "J'ai apprécié l'état des lieux du marché de l'emploi quant à mon profil.",
       "createdAt": "2019-04-15",
       "job": "Assistante de direction",
@@ -377,6 +356,13 @@
       "createdAt": "2019-04-11",
       "job": "Maître d'Hôtel",
       "name": "Kayla",
+      "rating": 5
+    },
+    {
+      "content": "Le contact positif qui aide à rester motivé dans la recherche d'emploi, tout en informant des réalités du marché de l'emploi dans le secteur concerné.",
+      "createdAt": "2019-03-13",
+      "job": "Avocat d'affaires",
+      "name": "Louise",
       "rating": 5
     },
     {

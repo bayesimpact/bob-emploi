@@ -309,7 +309,7 @@ const Salon = Radium(SalonBase)
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({salons}: bayes.bob.OnlineSalons): bayes.bob.OnlineSalon[] => salons, 'salon')
+  ({salons}: bayes.bob.OnlineSalons): readonly bayes.bob.OnlineSalon[] => salons, 'salon')
 
 
 export default {ExpandedAdviceCardContent, NewPicto, TakeAway}

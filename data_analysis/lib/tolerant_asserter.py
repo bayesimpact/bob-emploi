@@ -59,9 +59,9 @@ class TolerantAsserter(object):
 
         if os.getenv('NO_TOLERANCE'):
             if self._errors:
+                errors_message = '\n'.join(str(e) for e in self._errors)
                 raise AssertionError(
-                    'NO TOLERANCE!, we should raise all the following:\n{}'
-                    .format('\n'.join(str(e) for e in self._errors)))
+                    f'NO TOLERANCE!, we should raise all the following:\n{errors_message}')
             else:
                 raise AssertionError(
                     "NO TOLERANCE! you don't need this wrapper anymore")
@@ -69,4 +69,4 @@ class TolerantAsserter(object):
         if self._tolerance > len(self._errors):
             raise AssertionError(
                 'Thanks for cleaning up, reduce the tolerance of this object '
-                'to {:d}.'.format(len(self._errors)))
+                f'to {len(self._errors):d}.')

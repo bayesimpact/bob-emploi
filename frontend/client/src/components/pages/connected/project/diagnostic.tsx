@@ -9,7 +9,6 @@ import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
 import {connect} from 'react-redux'
-import VisibilitySensor from 'react-visibility-sensor'
 
 import {DispatchAllActions, RootState, changeSubmetricExpansion,
   fetchApplicationModes, followJobOffersLinkAction, openStatsPageAction} from 'store/actions'
@@ -17,14 +16,17 @@ import {clearEmoji, clearMarkup} from 'store/clean_text'
 import {YouChooser, inDepartement, lowerFirstLetter, vouvoyer} from 'store/french'
 import {getApplicationModeText, getApplicationModes, getIMTURL, getPEJobBoardURL} from 'store/job'
 import {Score, ScoreComponent, colorFromPercent, computeBobScore} from 'store/score'
+import {isLateSignupEnabled} from 'store/user'
 
 import categories from 'components/advisor/data/categories.json'
 import {FastForward} from 'components/fast_forward'
+import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
+import {ModalCloseButton} from 'components/modal'
 import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
   WaitingElement} from 'components/phylactery'
 import {RadiumExternalLink} from 'components/radium'
-import {Button, GrowingNumber, PercentBar, PieChart, Markdown,
+import {BobScoreCircle, Button, PercentBar, PieChart, Markdown,
   SmoothTransitions, UpDownIcon, colorToAlpha, colorToComponents} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
 import missingDiplomaImage from 'images/missing-diploma.png'
@@ -99,175 +101,6 @@ function svg2image(svgDom, mimeType, qualityOption): Promise<Gauge> {
     }
     image.src = imageDataURL
   })
-}
-
-
-interface CircleProps {
-  durationMillisec: number
-  gaugeRef?: React.RefObject<SVGSVGElement>
-  halfAngleDeg: number
-  isAnimated: boolean
-  percent: number
-  radius: number
-  scoreSize: number
-  strokeWidth: number
-  style?: React.CSSProperties & {
-    marginBottom?: number
-    marginLeft?: number
-    marginRight?: number
-    marginTop?: number
-  }
-}
-
-
-class BobScoreCircle extends React.PureComponent<CircleProps, {hasStartedGrowing: boolean}> {
-  public static propTypes = {
-    durationMillisec: PropTypes.number.isRequired,
-    gaugeRef: PropTypes.shape({
-      current: PropTypes.object,
-    }),
-    halfAngleDeg: PropTypes.number.isRequired,
-    // TODO(cyrille): Fix the non-animated version.
-    isAnimated: PropTypes.bool.isRequired,
-    percent: PropTypes.number.isRequired,
-    radius: PropTypes.number.isRequired,
-    scoreSize: PropTypes.number.isRequired,
-    strokeWidth: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
-
-  public static defaultProps = {
-    durationMillisec: 1000,
-    halfAngleDeg: 67.4,
-    isAnimated: true,
-    radius: 78.6,
-    scoreSize: 36.4,
-    strokeWidth: 5.2,
-  }
-
-  public state = {
-    hasStartedGrowing: !this.props.isAnimated,
-  }
-
-  private startGrowing = (isVisible: boolean): void => {
-    if (!isVisible) {
-      return
-    }
-    this.setState({hasStartedGrowing: true})
-  }
-
-  // Gives the point on the Bob score circle according to clockwise angle with origin at the bottom.
-  private getPointFromAngle = (rad: number): {x: number; y: number} => {
-    const {radius} = this.props
-    const x = -radius * Math.sin(rad)
-    const y = radius * Math.cos(rad)
-    return {x, y}
-  }
-
-  private describeSvgArc = (startAngle: number, endAngle: number): string => {
-    const {radius} = this.props
-    const largeArcFlag = endAngle - startAngle <= Math.PI ? '0' : '1'
-    const start = this.getPointFromAngle(startAngle)
-    const end = this.getPointFromAngle(endAngle)
-    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`
-  }
-
-  public render(): React.ReactNode {
-    const {
-      durationMillisec,
-      gaugeRef,
-      halfAngleDeg,
-      isAnimated,
-      percent,
-      radius,
-      scoreSize,
-      strokeWidth,
-      style,
-      ...extraProps
-    } = this.props
-    const {hasStartedGrowing} = this.state
-
-    const startAngle = halfAngleDeg * Math.PI / 180
-    const endAngle = 2 * Math.PI - startAngle
-    const percentAngle = 2 * (Math.PI - startAngle) * percent / 100 + startAngle
-
-    const largeRadius = radius + 3 * strokeWidth
-    const totalWidth = 2 * largeRadius
-    const totalHeight = largeRadius + strokeWidth + this.getPointFromAngle(startAngle).y
-
-    const arcLength = radius * (percentAngle - startAngle)
-    const percentPath = this.describeSvgArc(startAngle, percentAngle)
-    const fullPath = this.describeSvgArc(startAngle, endAngle)
-    const containerStyle: React.CSSProperties = {
-      height: totalHeight,
-      position: 'relative',
-      width: totalWidth,
-      ...style,
-      marginBottom: (style && style.marginBottom || 0) - strokeWidth,
-      marginLeft: (style && style.marginLeft || 0) + 20 - strokeWidth,
-      marginRight: (style && style.marginRight || 0) + 20 - strokeWidth,
-      marginTop: (style && style.marginTop || 0) - 3 * strokeWidth,
-    }
-    const percentStyle: React.CSSProperties = {
-      display: 'flex',
-      fontSize: scoreSize,
-      fontWeight: 'bold',
-      justifyContent: 'center',
-      left: 0,
-      lineHeight: '40px',
-      marginRight: 'auto',
-      position: 'absolute',
-      right: 0,
-      top: largeRadius, // center in circle, not in svg
-      transform: 'translate(0, -50%)',
-    }
-    const percentColor = !hasStartedGrowing ? colors.RED_PINK : colorFromPercent(percent)
-    const transitionStyle: React.CSSProperties = {
-      transition: `stroke ${durationMillisec}ms linear,
-        stroke-dashoffset ${durationMillisec}ms linear`,
-    }
-    return <div {...extraProps} style={containerStyle}>
-      <VisibilitySensor
-        active={!hasStartedGrowing} intervalDelay={250} partialVisibilty={true}
-        onChange={this.startGrowing}>
-        <div style={percentStyle}>
-          {isAnimated ?
-            <GrowingNumber durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
-            percent
-          }%
-        </div>
-      </VisibilitySensor>
-      <svg
-        fill="none" ref={gaugeRef}
-        viewBox={`${-largeRadius} ${-largeRadius} ${totalWidth} ${totalHeight}`}>
-        <g strokeLinecap="round">
-          <path d={fullPath} stroke={colors.MODAL_PROJECT_GREY} strokeWidth={strokeWidth} />
-          <path
-            style={transitionStyle}
-            d={percentPath}
-            stroke={percentColor}
-            strokeDasharray={`${arcLength}, ${2 * arcLength}`}
-            strokeDashoffset={hasStartedGrowing ? 0 : arcLength}
-            strokeWidth={2 * strokeWidth}
-          />
-          <path
-            d={percentPath}
-            style={transitionStyle}
-            stroke={percentColor}
-            strokeDasharray={`0, ${arcLength}`}
-            strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
-            strokeWidth={6 * strokeWidth} />
-          <path
-            d={percentPath}
-            stroke="#fff"
-            style={transitionStyle}
-            strokeDasharray={`0, ${arcLength}`}
-            strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
-            strokeWidth={2 * strokeWidth} />
-        </g>
-      </svg>
-    </div>
-  }
 }
 
 
@@ -447,7 +280,7 @@ const SubmetricDropDown = connect(
 interface SubmetricScoreProps {
   color?: string
   icon?: string
-  observations?: {
+  observations?: readonly {
     isAttentionNeeded?: boolean
     text?: string
   }[]
@@ -499,6 +332,7 @@ class SubmetricScore extends React.PureComponent<SubmetricScoreProps, SubmetricS
       fontSize: 13,
       left: '50%',
       opacity: areDetailsShown ? 1 : 0,
+      pointerEvents: areDetailsShown ? 'auto' : 'none',
       position: 'absolute',
       transform: 'translateX(-50%)',
       zIndex: 1,
@@ -553,7 +387,7 @@ class SubmetricScore extends React.PureComponent<SubmetricScoreProps, SubmetricS
         onMouseLeave={this.handleShowDetails(false)}>
         <PieChart
           backgroundColor={colors.MODAL_PROJECT_GREY}
-          percentage={percent} style={pieChartStyle} size={size} strokeWidth={size / 6}>
+          percentage={percent} style={pieChartStyle} radius={size} strokeWidth={size / 6}>
           <img src={icon} alt={shortTitle} />
         </PieChart>
       </div>
@@ -607,8 +441,8 @@ class DiagnosticSummary extends React.PureComponent<DiagnosticSummaryProps> {
 
 
 interface DiagnosticMetricsProps {
-  advices?: bayes.bob.Advice[]
-  components: ScoreComponent[]
+  advices?: readonly bayes.bob.Advice[]
+  components: readonly ScoreComponent[]
   makeAdviceLink: (adviceId: string, topicId: string) => string
   style?: React.CSSProperties
   submetricsExpansion?: {[topicId: string]: boolean}
@@ -1224,8 +1058,22 @@ class BalancedTitle extends React.PureComponent<{}, {lineWidth: number}> {
 }
 
 
-interface DiagnosticProps {
-  advices?: bayes.bob.Advice[]
+const cardStyle: React.CSSProperties = {
+  backgroundColor: '#fff',
+  border: isMobileVersion ? `solid 2px ${colors.SILVER}` : 'initial',
+  borderRadius: 10,
+  boxShadow: isMobileVersion ? 'initial' : '0 4px 14px 0 rgba(0, 0, 0, 0.05)',
+  margin: isMobileVersion ? 15 : '20px 0',
+}
+
+
+interface DiagnosticConnectedProps {
+  hasAccount: boolean
+}
+
+
+interface DiagnosticProps extends DiagnosticConnectedProps {
+  advices?: readonly bayes.bob.Advice[]
   areStrategiesEnabled?: boolean
   diagnosticData: bayes.bob.Diagnostic
   dispatch: DispatchAllActions
@@ -1236,7 +1084,7 @@ interface DiagnosticProps {
   onDownloadAsPdf?: () => void
   onFullDiagnosticShown?: () => void
   project?: bayes.bob.Project
-  strategies?: bayes.bob.Strategy[]
+  strategies?: readonly bayes.bob.Strategy[]
   style?: React.CSSProperties
   userName: string
   userYou: YouChooser
@@ -1249,6 +1097,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     // TODO(pascal): Convert other cases to the strategies and drop this.
     areStrategiesEnabled: PropTypes.bool,
     diagnosticData: PropTypes.object.isRequired,
+    hasAccount: PropTypes.bool,
     isFirstTime: PropTypes.bool,
     makeAdviceLink: PropTypes.func.isRequired,
     makeStrategyLink: PropTypes.func.isRequired,
@@ -1272,6 +1121,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     areStrategiesShown: !this.props.isFirstTime,
     isDiagnosticTextShown: this.props.isFirstTime,
     isFullTextShown: false,
+    isSignUpBannerClosed: !isLateSignupEnabled || this.props.isFirstTime,
   }
 
   public componentDidMount(): void {
@@ -1329,6 +1179,10 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
 
   private handleFullTextShown = (): void => this.setState({isFullTextShown: true})
 
+  private closeSignUpBanner = (): void => {
+    this.setState({isSignUpBannerClosed: true})
+  }
+
   private handleDispatch = _memoize((action): (() => void) => (): void =>
     this.props.dispatch(action))
 
@@ -1361,7 +1215,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
         onDone={this.handleFullTextShown}>
         <NoOpElement style={{margin: '0 auto 20px'}}>
           <BobScoreCircle
-            percent={percent} isAnimated={!isFullTextShown}
+            percent={percent} isAnimated={!isFullTextShown} color={colorFromPercent(percent)}
             durationMillisec={circleAnimationDuration} />
         </NoOpElement>
         <WaitingElement waitingMillisec={circleAnimationDuration * 1.5} />
@@ -1409,6 +1263,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     return <div style={bobScoreStyle}>
       <BobScoreCircle
         {...bobCircleProps}
+        color={colorFromPercent(percent)}
         style={{flexShrink: 0}}
         percent={percent}
         isAnimated={!this.state.isFullTextShown}
@@ -1463,9 +1318,46 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     </React.Fragment>
   }
 
+  private renderSignupBanner(style: React.CSSProperties): React.ReactNode {
+    const {userYou} = this.props
+    const bannerStyle: React.CSSProperties = {
+      ...cardStyle,
+      alignItems: 'center',
+      display: 'flex',
+      position: 'relative',
+      ...style,
+    }
+    const textBannerStyle: React.CSSProperties = {
+      fontSize: 18,
+      fontStyle: 'italic',
+      padding: '33px 32px 35px',
+    }
+    const closeStyle: React.CSSProperties = {
+      backgroundColor: colors.SLATE,
+      boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.2)',
+      color: '#fff',
+      fontSize: 12,
+      height: 35,
+      width: 35,
+    }
+    return <div style={bannerStyle}>
+      <ModalCloseButton onClick={this.closeSignUpBanner} style={closeStyle} />
+      <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />
+      <span style={textBannerStyle} >
+        Pense{userYou('', 'z')} à créer {userYou('ton', 'votre')} compte pour
+        sauvegarder {userYou('ta', 'votre')} progression
+      </span>
+      <span style={{flex: 1}}></span>
+      <LoginButton
+        type="navigation" style={{marginRight: 40}} isRound={true} visualElement="diagnostic">
+        Créer mon compte
+      </LoginButton>
+    </div>
+  }
+
   public render(): React.ReactNode {
-    const {areStrategiesShown, isDiagnosticTextShown} = this.state
-    const {advices = [], areStrategiesEnabled, diagnosticData, onDownloadAsPdf,
+    const {areStrategiesShown, isDiagnosticTextShown, isSignUpBannerClosed} = this.state
+    const {advices = [], areStrategiesEnabled, diagnosticData, hasAccount, onDownloadAsPdf,
       makeAdviceLink, makeStrategyLink, project, project: {city, targetJob}, strategies = [], style,
       userYou} = this.props
     const {categoryId, strategiesIntroduction} = diagnosticData
@@ -1478,21 +1370,20 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       _keyBy(advices, 'adviceId'),
       ({isForAlphaOnly, status}): bayes.bob.Advice => ({isForAlphaOnly, status}))
     if (areStrategiesEnabled) {
-      // TODO(pascal): Add mobile version as well.
       const pageStyle: React.CSSProperties = {
+        alignItems: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: 50,
+      }
+      // TODO(pascal): Add mobile version as well.
+      const contentStyle: React.CSSProperties = {
         backgroundColor: isMobileVersion ? '#fff' : 'initial',
         display: 'flex',
         flexDirection: isMobileVersion ? 'column-reverse' : 'row',
         justifyContent: 'center',
         paddingBottom: 50,
-        paddingTop: isMobileVersion ? 0 : 48,
-      }
-      const cardStyle: React.CSSProperties = {
-        backgroundColor: '#fff',
-        border: isMobileVersion ? `solid 2px ${colors.SILVER}` : 'initial',
-        borderRadius: 10,
-        boxShadow: isMobileVersion ? 'initial' : '0 4px 14px 0 rgba(0, 0, 0, 0.05)',
-        margin: isMobileVersion ? 15 : '20px 0',
+        paddingTop: 0,
       }
       const titleCardStyle: React.CSSProperties = {
         ...cardStyle,
@@ -1520,44 +1411,49 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
         marginBottom: 30,
         padding: 25,
       }
+      // TODO(marielaure): Put a smooth transition when closing the sign up banner.
       return <div style={pageStyle}>
-        {isBobTalksModalShown ? this.renderDiagnosticText(true) : null}
-        <div style={{marginRight: 40, width: isMobileVersion ? '100%' : 600}}>
-          {isMobileVersion ? this.renderMobileTopSections(score, cardStyle) :
-            <div style={titleCardStyle}>
-              <BalancedTitle><Markdown content={score.shortTitle} /></BalancedTitle>
-              {areStrategiesShown ? null :
-                <StrategiesIntroduction
-                  onClick={this.handleOpenStrategies} text={strategiesIntroduction} />}
-            </div>}
-          {areStrategiesShown ?
-            <React.Fragment>
-              <div style={strategiesTitleStyle}>Les stratégies de {config.productName}</div>
-              <Strategies
-                {...{adviceProps, makeAdviceLink, makeStrategyLink,
-                  project, strategies, userYou}}
-                strategyStyle={cardStyle} />
-            </React.Fragment> : null}
+        {isSignUpBannerClosed || hasAccount ? null :
+          this.renderSignupBanner({margin: '0 0 50px', width: 1000})}
+        <div style={contentStyle}>
+          {isBobTalksModalShown ? this.renderDiagnosticText(true) : null}
+          <div style={{marginRight: 40, width: isMobileVersion ? '100%' : 600}}>
+            {isMobileVersion ? this.renderMobileTopSections(score, cardStyle) :
+              <div style={titleCardStyle}>
+                <BalancedTitle><Markdown content={score.shortTitle} /></BalancedTitle>
+                {areStrategiesShown ? null :
+                  <StrategiesIntroduction
+                    onClick={this.handleOpenStrategies} text={strategiesIntroduction} />}
+              </div>}
+            {areStrategiesShown ?
+              <React.Fragment>
+                <div style={strategiesTitleStyle}>Les stratégies de {config.productName}</div>
+                <Strategies
+                  {...{adviceProps, makeAdviceLink, makeStrategyLink,
+                    project, strategies, userYou}}
+                  strategyStyle={cardStyle} />
+              </React.Fragment> : null}
+          </div>
+          {isMobileVersion ? null : <div style={{width: 360}}>
+            <div style={scoreCardStyle}>
+              <div style={{marginBottom: 25}}>Score global</div>
+              {this.renderBobScore(score, false)}
+              <DiagnosticSummary
+                components={score.components} style={{margin: '35px 0 0'}} isSmall={true} />
+            </div>
+            <div style={{...cardStyle, overflow: 'hidden'}}>
+              <BobThinksVisualCard category={categoryId} {...{project, userYou}} />
+              {/* TODO(pascal): Replace with a link to the stats page when it exists. */}
+              <SideLink
+                onClick={this.handleDispatch(openStatsPageAction)}
+                href={getIMTURL(targetJob, city)}>Découvrir le marché de l'emploi</SideLink>
+              <SideLink
+                onClick={this.handleDispatch(followJobOffersLinkAction)}
+                href={getPEJobBoardURL(targetJob, city)}>Voir les offres d'emploi</SideLink>
+            </div>
+            {/* TODO(pascal): Re-enable PDF */}
+          </div>}
         </div>
-        {isMobileVersion ? null : <div style={{width: 360}}>
-          <div style={scoreCardStyle}>
-            <div style={{marginBottom: 25}}>Score global</div>
-            {this.renderBobScore(score, false)}
-            <DiagnosticSummary
-              components={score.components} style={{margin: '35px 0 0'}} isSmall={true} />
-          </div>
-          <div style={{...cardStyle, overflow: 'hidden'}}>
-            <BobThinksVisualCard category={categoryId} {...{project, userYou}} />
-            {/* TODO(pascal): Replace with a link to the stats page when it exists. */}
-            <SideLink
-              onClick={this.handleDispatch(openStatsPageAction)}
-              href={getIMTURL(targetJob, city)}>Découvrir le marché de l'emploi</SideLink>
-            <SideLink
-              onClick={this.handleDispatch(followJobOffersLinkAction)}
-              href={getPEJobBoardURL(targetJob, city)}>Voir les offres d'emploi</SideLink>
-          </div>
-          {/* TODO(pascal): Re-enable PDF */}
-        </div>}
       </div>
     }
     const pageStyle: React.CSSProperties = {
@@ -1575,7 +1471,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       marginLeft: isMobileVersion ? 0 : 15,
       position: 'absolute',
       right: isMobileVersion ? 20 : 'initial',
-      top: isMobileVersion ? 20 : 40,
+      top: (isMobileVersion ? 20 : 40) + (isSignUpBannerClosed ? 0 : 170),
     }
     const headerStyle: React.CSSProperties = {
       alignSelf: 'stretch',
@@ -1585,8 +1481,15 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     }
     const downloadLinkStyle: React.CSSProperties = isMobileVersion ?
       {display: 'block', textAlign: 'center'} :
-      {position: 'absolute', right: 0, top: 0}
+      {
+        position: 'absolute',
+        right: 0,
+        top: isSignUpBannerClosed ? 0 : 170,
+        transition: SmoothTransitions.transition + ', top 0s',
+      }
     return <div style={pageStyle}>
+      {isSignUpBannerClosed || hasAccount ? null :
+        this.renderSignupBanner({margin: '0 0 50px', width: 700})}
       <HoverableBobHead
         style={bobHeadStyle}
         onClick={this.handleReopenDiagnosticText} />
@@ -1604,6 +1507,9 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     </div>
   }
 }
-const Diagnostic = connect()(DiagnosticBase)
+const Diagnostic = connect(({user: {hasAccount}}: RootState): DiagnosticConnectedProps => ({
+  hasAccount,
+}))(DiagnosticBase)
 
-export {BobScoreCircle, ComponentScore, DiagnosticText, DiagnosticMetrics, Diagnostic}
+
+export {ComponentScore, DiagnosticText, DiagnosticMetrics, Diagnostic}

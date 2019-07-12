@@ -181,6 +181,9 @@ message WorkingStrategy {
 
   // The ID of the strategy.
   string strategy_id = 3;
+
+  // When it was last modified (a new goal has been reached or one has been removed).
+  google.protobuf.Timestamp last_modified_at = 4;
 }
 
 message ProjectFeedback {

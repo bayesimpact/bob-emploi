@@ -1,11 +1,10 @@
 import React from 'react'
-import {LoadingComponentProps} from 'react-loadable'
 
 import loadingImage from 'images/logo-bob-loading.svg'
 
 
 // Keep this class in sync with index.html.
-class WaitingPage extends React.PureComponent<LoadingComponentProps> {
+class WaitingPage extends React.PureComponent<{}> {
   public render(): React.ReactNode {
     const style: React.CSSProperties = {
       alignItems: 'center',

@@ -65,8 +65,8 @@ def import_new_records(
         client.update(table, airtable_id, {'mongo_id': mongo_id, 'Bayes help needed': True})
         num_inserted += 1
 
-    print('{:d} documents updated.'.format(num_updated))
-    print('{:d} documents added.'.format(num_inserted))
+    print(f'{num_updated:d} documents updated.')
+    print(f'{num_inserted:d} documents added.')
 
 
 def main(string_args: typing.Optional[typing.List[str]] = None) -> None:

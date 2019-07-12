@@ -1,17 +1,25 @@
+import AlertIcon from 'mdi-react/AlertIcon'
 import Radium from 'radium'
 import React from 'react'
 import PropTypes from 'prop-types'
+import {connect} from 'react-redux'
+import {Redirect} from 'react-router-dom'
+
+import {DispatchAllActions, getLaborStats, startAsGuest} from 'store/actions'
+import {isLateSignupEnabled, userExample} from 'store/user'
 
 import facebookImage from 'images/facebook.svg'
 import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
 import twitterImage from 'images/twitter.svg'
 
-import {LoginButton} from 'components/login'
+import {FastForward} from 'components/fast_forward'
+import {LoginLink} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar, PageWithNavigationBarProps} from 'components/navigation'
 import {STATIC_ADVICE_MODULES} from 'components/pages/static/static_advice/base'
 import {RadiumLink} from 'components/radium'
-import {ExternalLink, MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH,
+import {CitySuggest, JobSuggest} from 'components/suggestions'
+import {Button, ExternalLink, MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH,
   SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 
@@ -323,19 +331,33 @@ class TitleSection extends React.PureComponent<TitleSectionProps> {
     style: PropTypes.object,
   }
 
+  private loginLinkRef: React.RefObject<HTMLAnchorElement | HTMLSpanElement> = React.createRef()
+
+  private handleClick = (): void => {
+    this.loginLinkRef.current && this.loginLinkRef.current.click()
+  }
+
   private renderLoginButtons(): React.ReactNode {
+    if (isLateSignupEnabled && !isMobileVersion) {
+      return <SearchBar
+        style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}} to={Routes.INTRO_PAGE} />
+    }
     const {pageContent} = this.props
     const {buttonCaption} = pageContent
     const buttonStyle = {
       fontSize: 15,
-      marginTop: isMobileVersion ? 10 : 0,
       padding: '15px 28px',
     }
+    const caption = isLateSignupEnabled ?
+      "Commencez, c'est gratuit\u00A0!" :
+      buttonCaption || 'Inscrivez-vous maintenant\u00A0!'
     return <div>
-      <LoginButton
-        style={buttonStyle} isSignUpButton={true} visualElement="title" type="validation">
-        {buttonCaption || 'Inscrivez-vous maintenant !'}
-      </LoginButton>
+      <FastForward onForward={this.handleClick} />
+      <LoginLink
+        innerRef={this.loginLinkRef}
+        style={{marginTop: isMobileVersion ? 10 : 0}} isSignUp={true} visualElement="title">
+        <Button style={buttonStyle} type="validation">{caption}</Button>
+      </LoginLink>
     </div>
   }
 
@@ -349,7 +371,8 @@ class TitleSection extends React.PureComponent<TitleSectionProps> {
       padding: isMobileVersion ? '0 10px 60px' : `60px ${MIN_CONTENT_PADDING}px`,
       position: 'relative',
       textAlign: isMobileVersion ? 'center' : 'left',
-      zIndex: 0,
+      // Make sure that the suggestions in the search bar goes over the next section.
+      zIndex: 1,
       ...this.props.style,
     }
     const titleStyle: React.CSSProperties = {
@@ -370,6 +393,215 @@ class TitleSection extends React.PureComponent<TitleSectionProps> {
     </section>
   }
 }
+
+
+interface SearchBarProps {
+  dispatch: DispatchAllActions
+  style?: React.CSSProperties
+  to: string
+}
+
+
+interface SearchBarState {
+  city?: bayes.bob.FrenchCity
+  error?: 'city' | 'job' | null
+  isRedirecting?: boolean
+  isSearching?: boolean
+  job?: bayes.bob.Job
+  stats?: bayes.bob.LaborStatsData|void
+}
+
+
+class SearchBarBase extends React.PureComponent<SearchBarProps, SearchBarState> {
+  public static propTypes = {
+    dispatch: PropTypes.func.isRequired,
+    style: PropTypes.object,
+    to: PropTypes.string.isRequired,
+  }
+
+  public state: SearchBarState = {
+    error: null,
+  }
+
+  public componentDidMount(): void {
+    this.focusOnNext()
+  }
+
+  private citySearch: React.RefObject<CitySuggest> = React.createRef()
+
+  private jobSearch: React.RefObject<JobSuggest> = React.createRef()
+
+  private searchButton: React.RefObject<Button> = React.createRef()
+
+  // Focus on the next input that needs an action and returns an error message if there's still a
+  // user action to do.
+  private focusOnNext(): 'city' | 'job' | null {
+    const {city, job} = this.state
+    if (!job) {
+      this.jobSearch.current && this.jobSearch.current.focus()
+      return 'job'
+    }
+    if (!city) {
+      this.citySearch.current && this.citySearch.current.focus()
+      return 'city'
+    }
+    this.searchButton.current && this.searchButton.current.focus()
+    return null
+  }
+
+  private handleJobChange = (job: bayes.bob.Job): void => {
+    this.setState({error: null, job})
+    if (job) {
+      this.focusOnNext()
+    }
+  }
+
+  private handleCityChange = (city: bayes.bob.FrenchCity): void => {
+    this.setState({city, error: null})
+    if (city) {
+      this.focusOnNext()
+    }
+  }
+
+  private handleSearch = (): void => {
+    const error = this.focusOnNext()
+    if (error) {
+      this.setState({error})
+      return
+    }
+    const {dispatch} = this.props
+    const {city, job} = this.state
+    this.setState({isSearching: true})
+    dispatch(getLaborStats({projects: [{city, targetJob: job}]})).
+      then((response: bayes.bob.LaborStatsData|void): void => {
+        if (response) {
+          dispatch(startAsGuest('searchBar', city, job))
+        }
+        this.setState({
+          isRedirecting: !!response,
+          isSearching: false,
+          stats: response,
+        })
+      })
+  }
+
+  private onFastForward = (): void => {
+    const {city, job} = this.state
+    if (!job) {
+      this.handleJobChange(userExample.projects[0].targetJob)
+    }
+    if (!city) {
+      this.handleCityChange(userExample.projects[0].city)
+    }
+    if (job && city) {
+      this.handleSearch()
+    }
+  }
+
+  private renderError(text: string): React.ReactNode {
+    const containerStyle: React.CSSProperties = {
+      alignItems: 'center',
+      color: colors.RED_PINK,
+      display: 'flex',
+      height: '100%',
+      left: 8,
+      position: 'absolute',
+      top: 0,
+      zIndex: 1,
+    }
+    const bubbleStyle: React.CSSProperties = {
+      backgroundColor: '#fff',
+      borderRadius: 5,
+      boxShadow: 'rgba(0, 0, 0, 0.13) 2px 1px 13px 6px',
+      fontSize: 13,
+      fontStyle: 'italic',
+      fontWeight: 'bold',
+      left: -20,
+      padding: '15px 20px',
+      position: 'absolute',
+      top: '90%',
+      whiteSpace: 'nowrap',
+    }
+    const tailStyle: React.CSSProperties = {
+      borderBottom: '10px solid #fff',
+      borderLeft: '10px solid transparent',
+      borderRight: '10px solid transparent',
+      bottom: '100%',
+      height: 0,
+      left: 28,
+      position: 'absolute',
+      transform: 'translateX(-50%)',
+      width: 0,
+    }
+    return <div style={containerStyle} key="error">
+      <AlertIcon size={16} />
+      <div style={bubbleStyle}>
+        {text}
+        <div style={tailStyle} />
+      </div>
+    </div>
+  }
+
+  public render(): React.ReactNode {
+    const {city, error, isRedirecting, isSearching, job, stats} = this.state
+    if (isRedirecting) {
+      return <Redirect to={{pathname: this.props.to, state: {city, job, stats}}} push={true} />
+    }
+    const searchBarStyle: React.CSSProperties = {
+      backgroundColor: '#fff',
+      borderRadius: 4,
+      boxShadow: '0 4px 4px 0 rgba(0, 0, 0, 0.2)',
+      display: 'flex',
+      ...this.props.style,
+    }
+    const containerStyle: React.CSSProperties = {
+      color: '#000',
+      display: 'flex',
+      flex: 1,
+      position: 'relative',
+    }
+    const legendStyle: React.CSSProperties = {
+      bottom: 'calc(100% + 10px)',
+      color: '#fff',
+      fontSize: 16,
+      position: 'absolute',
+    }
+    const suggestStyle = {
+      border: 'none',
+      margin: '0 10px',
+      padding: 20,
+    }
+    return <div style={searchBarStyle} className="no-hover no-focus">
+      <FastForward onForward={this.onFastForward} />
+      <div style={containerStyle}>
+        {error === 'job' ? this.renderError('Saisissez un nom de métier valide') : null}
+        <div style={legendStyle}>
+          Quel métier cherchez-vous&nbsp;?
+        </div>
+        <JobSuggest
+          value={job} onChange={this.handleJobChange} placeholder="Saisir un métier"
+          style={suggestStyle} ref={this.jobSearch} />
+      </div>
+      <div style={{...containerStyle, borderLeft: 'solid 1px rgba(0, 0, 0, .2)'}}>
+        {error === 'city' ? this.renderError('Saisissez un nom de ville valide') : null}
+        <div style={legendStyle}>
+          Dans quelle ville&nbsp;?
+        </div>
+        <CitySuggest
+          value={city} onChange={this.handleCityChange} placeholder="Saisir une ville"
+          style={suggestStyle} ref={this.citySearch} />
+      </div>
+      <div style={{display: 'flex', padding: 8}}>
+        <Button
+          type="validation" ref={this.searchButton} onClick={this.handleSearch}
+          disabled={isSearching} isProgressShown={isSearching}>
+          Commencer
+        </Button>
+      </div>
+    </div>
+  }
+}
+const SearchBar = connect()(SearchBarBase)
 
 
 export {StaticPage, StrongTitle, TitleSection}

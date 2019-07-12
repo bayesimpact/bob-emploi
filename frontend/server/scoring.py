@@ -294,7 +294,7 @@ class _NegateFilter(scoring_base.BaseFilter):
     def __init__(self, negated_filter_name: str) -> None:
         super().__init__(self._filter)
         if get_scoring_model(negated_filter_name) is None:
-            raise ValueError('Scorer to negate does not exist: {}'.format(negated_filter_name))
+            raise ValueError(f'Scorer to negate does not exist: {negated_filter_name}')
         self._negated_filter_name = negated_filter_name
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -312,7 +312,7 @@ class _ActiveExperimentFilter(scoring_base.BaseFilter):
     def __init__(self, feature: str, reasons: typing.Optional[typing.List[str]] = None) -> None:
         super().__init__(self._filter, reasons=reasons)
         if feature not in self._features:
-            raise ValueError('"{}" is not a valid feature:\n{}'.format(feature, self._features))
+            raise ValueError(f'"{feature}" is not a valid feature:\n{self._features}')
         self._feature = feature
 
     def _filter(self, project: ScoringProject) -> bool:
@@ -362,7 +362,7 @@ class _ScorerFilter(scoring_base.BaseFilter):
     def __init__(self, scorer: str, is_good: bool = False):
         super().__init__(self._filter)
         if not get_scoring_model(scorer):
-            raise ValueError('Could not find scoring model {}'.format(scorer))
+            raise ValueError(f'Could not find scoring model {scorer}')
         self._scorer_name = scorer
         self._is_good = is_good
 
@@ -674,8 +674,8 @@ class _FindWhatYouLikeFilter(scoring_base.BaseFilter):
         super().__init__(self._filter)
 
     def _filter(self, project: scoring_base.ScoringProject) -> bool:
-        if project.details.passionate_level >= project_pb2.PASSIONATING_JOB:
-            # User is already passionate about that job.
+        if project.details.passionate_level >= project_pb2.LIKEABLE_JOB:
+            # User is already passionate enough about that job.
             return False
         market_stress = project.market_stress()
         if market_stress and market_stress < 10 / 7:

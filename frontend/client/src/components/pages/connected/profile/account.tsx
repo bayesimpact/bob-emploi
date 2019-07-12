@@ -4,6 +4,7 @@ import {connect} from 'react-redux'
 
 import {DispatchAllActions, askPasswordReset} from 'store/actions'
 
+import {LoginButton} from 'components/login'
 import {Input} from 'components/theme'
 import {FieldSet} from 'components/pages/connected/form_utils'
 
@@ -23,13 +24,13 @@ interface StepState extends bayes.bob.UserProfile {
 }
 
 
-// TODO(cyrille): Add tutoiement opt-in/opt-out somewhere.
 // TODO(marielaure): Find a better spot for the reset password link.
 // TODO: Fix the padding when viewed mobile on 360x640 - http://screenshot.co/#!/bb84ec39a5
 class AccountStepBase
   extends React.PureComponent<ProfileStepProps & {dispatch: DispatchAllActions}, StepState> {
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    hasAccount: PropTypes.bool,
     userYou: PropTypes.func.isRequired,
   }
 
@@ -54,7 +55,7 @@ class AccountStepBase
   }
 
   public render(): React.ReactNode {
-    const {userYou} = this.props
+    const {hasAccount, userYou} = this.props
     const {email, isValidated, lastName, name, passwordResetRequestedEmail} = this.state
     const changePasswordLinkStyle = {
       color: colors.BOB_BLUE,
@@ -82,21 +83,25 @@ class AccountStepBase
           type="text" placeholder="Nom" autoComplete="family-name"
           onChange={this.updater_.handleChange('lastName')} value={lastName} />
       </FieldSet>
-      <FieldSet
+      {hasAccount ? <FieldSet
         label="Email (non éditable pour l'instant)"
         isValid={!!email} isValidated={isValidated}>
         <Input
           type="text" style={{color: colors.COOL_GREY}}
           value={email} readOnly={true} />
-      </FieldSet>
-      {passwordResetRequestedEmail ?
+      </FieldSet> : <LoginButton
+        type="navigation" visualElement="account"
+        style={{alignSelf: 'center', marginBottom: 25}}>
+        Créer mon compte
+      </LoginButton>}
+      {hasAccount ? passwordResetRequestedEmail ?
         <span style={changedPasswordMessageStyle}>
           Un email a été envoyé à {passwordResetRequestedEmail}
         </span> : <a
           style={{...changePasswordLinkStyle, cursor: 'pointer'}}
           onClick={this.handleChangePasswordClick}>
           Change{userYou(' ton', 'z votre')} mot de passe
-        </a>}
+        </a> : null}
     </Step>
   }
 }

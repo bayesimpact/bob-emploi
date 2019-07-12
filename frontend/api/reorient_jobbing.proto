@@ -35,6 +35,10 @@ message ReorientJob {
 
   // Offers raise compared to the current job in percent.
   float offers_percent_gain = 4;
+
+  // Whether the required diplomas are strictly needed for the job's job group,
+  // or only a strong wish from recruitors.
+  bool is_diploma_strictly_required = 5;
 }
 
 message JobStats {

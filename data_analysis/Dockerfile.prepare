@@ -4,7 +4,7 @@ RUN mkdir /work
 WORKDIR /work
 
 RUN apt-get update -qqy && \
-  apt-get install unzip python-pdfminer python-dev locales -qqy && \
+  apt-get install jq unzip python-pdfminer python-dev locales -qqy && \
   # Install locale fr_FR so that we can format dates for French users.
   sed -i -e "s/# fr_FR.UTF/fr_FR.UTF/" /etc/locale.gen && locale-gen && \
   rm /bin/sh && ln -s /bin/bash /bin/sh
@@ -21,7 +21,7 @@ RUN pip install --upgrade \
   httplib2 \
   js2py \
   'mongomock>=3.16' \
-  'mypy>=0.650' \
+  'mypy>=0.710' \
   # TODO(pascal): Uncap once https://github.com/python/typeshed/commit/07ea661 is live in mypy.
   'mypy-protobuf==1.9' \
   nbformat \

@@ -95,7 +95,7 @@ const SearchableElement = Radium(SearchableElementBase)
 
 
 interface SectionProps {
-  items: string[]
+  items: readonly string[]
   kind: 'secteurs' | 'types de structure'
   onExplore: () => void
   project: bayes.bob.Project

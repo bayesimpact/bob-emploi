@@ -67,7 +67,7 @@ const ExpandedAdviceCardContent =
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({reorientJobbingJobs}: bayes.bob.JobbingReorientJobs): bayes.bob.ReorientJob[] =>
+  ({reorientJobbingJobs}: bayes.bob.JobbingReorientJobs): readonly bayes.bob.ReorientJob[] =>
     reorientJobbingJobs,
   'métier')
 

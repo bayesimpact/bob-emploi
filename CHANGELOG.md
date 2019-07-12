@@ -1,5 +1,18 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2019-07-04_00
+
+- Fix a crash when goals are missing.
+
+Deployed on Thu, 04 Jul 2019 08:17:09 +0000
+
+# 2019-07-03_02
+
+- Revamping the strategy page
+- Clean Code, Small fixes, ...
+
+Deployed on Wed, 03 Jul 2019 15:10:08 +0000
+
 # 2019-06-21_00
 
 - Add links to offers and market information

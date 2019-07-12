@@ -114,7 +114,7 @@ def _get_employment_status(user: user_pb2.User) -> typing.Optional[user_pb2.Empl
 
 
 def _get_degree_level(degree: job_pb2.DegreeLevel) -> str:
-    return '{:d} - {}'.format(degree, job_pb2.DegreeLevel.Name(degree))
+    return f'{degree:d} - {job_pb2.DegreeLevel.Name(degree)}'
 
 
 def _get_last_complete_project(user: user_pb2.User) -> typing.Optional[project_pb2.Project]:
@@ -169,8 +169,8 @@ def _remove_null_fields(mydict: typing.Dict[_T, typing.Optional[_U]]) -> typing.
 def _get_urban_context(city_id: str) -> typing.Optional[str]:
     target_city = proto.fetch_from_mongo(_DB, geo_pb2.FrenchCity, 'cities', city_id)
     if target_city:
-        return '{:d} - {}'.format(
-            target_city.urban_context, geo_pb2.UrbanContext.Name(target_city.urban_context))
+        urban_context = target_city.urban_context
+        return f'{urban_context:d} - {geo_pb2.UrbanContext.Name(urban_context)}'
     return None
 
 
@@ -196,6 +196,7 @@ def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]
             'medium': user.origin.medium,
             'source': user.origin.source,
         },
+        'hasAccount': user.has_account,
     }
     if user.net_promoter_score_survey_response.HasField('responded_at'):
         data['nps_response'] = {
@@ -347,7 +348,7 @@ def _get_auth_from_env(
     aws_in_docker = env.get('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
     if aws_in_docker:
         # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
-        response = requests.get('http://169.254.170.2{}'.format(aws_in_docker))
+        response = requests.get(f'http://169.254.170.2{aws_in_docker}')
         response.raise_for_status()
         credentials = response.json()
         access_key_id = credentials.get('AccessKeyId')

@@ -18,7 +18,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertLessEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_motivated(self) -> None:
         """User is motivated."""
@@ -33,7 +33,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
             persona.project.job_search_started_at.FromDatetime(
                 persona.project.created_at.ToDatetime() - datetime.timedelta(days=336))
         score = self._score_persona(persona)
-        self.assertEqual(2, score, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(2, score, msg=f'Failed for "{persona.name}"')
 
     def test_need_motivation(self) -> None:
         """User needs motivation."""
@@ -42,7 +42,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         self.database.associations.insert_one({'name': 'SNC'})
         persona.user_profile.frustrations.append(user_pb2.MOTIVATION)
         score = self._score_persona(persona)
-        self.assertEqual(3, score, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(3, score, msg=f'Failed for "{persona.name}"')
 
     def test_many_assos_and_long_search(self) -> None:
         """User searches for a long time and there are a lot of associations."""
@@ -54,7 +54,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         persona.project.job_search_started_at.FromDatetime(
             persona.project.created_at.ToDatetime() - datetime.timedelta(days=183))
         score = self._score_persona(persona)
-        self.assertEqual(3, score, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(3, score, msg=f'Failed for "{persona.name}"')
 
     def test_very_long_search(self) -> None:
         """User searches for a very long time."""
@@ -65,7 +65,7 @@ class AdviceAssociationHelpTestCase(scoring_test.ScoringModelTestBase):
         persona.project.job_search_started_at.FromDatetime(
             persona.project.created_at.ToDatetime() - datetime.timedelta(days=366))
         score = self._score_persona(persona)
-        self.assertEqual(3, score, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(3, score, msg=f'Failed for "{persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):
@@ -86,7 +86,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/association-help/{}/foo'.format(self.user_id),
+            f'/api/advice/association-help/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -97,7 +97,7 @@ class EndpointTestCase(base_test.ServerTestCase):
 
         self._db.associations.insert_one({'name': 'SNC'})
         response = self.app.get(
-            '/api/advice/association-help/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/association-help/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         associations = self.json_from_response(response)
@@ -111,7 +111,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             {'name': 'Keep this one', 'filters': ['constant(1)']},
         ])
         response = self.app.get(
-            '/api/advice/association-help/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/association-help/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         associations = self.json_from_response(response)
@@ -128,7 +128,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             {'name': 'Very specialized', 'filters': ['constant(1)', 'constant(1)']},
         ])
         response = self.app.get(
-            '/api/advice/association-help/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/association-help/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         associations = self.json_from_response(response)

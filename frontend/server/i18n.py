@@ -45,7 +45,7 @@ def translate_string(string: str, locale: str, database: pymongo_database.Databa
         return _TRANSLATIONS.get_dict(database)[string][locale]
     except KeyError:
         raise TranslationMissingException(
-            'Could not find a translation in "{}" for "{}".'.format(locale, string))
+            f'Could not find a translation in "{locale}" for "{string}".')
 
 
 def make_translatable_string(string: str) -> str:

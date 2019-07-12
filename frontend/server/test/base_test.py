@@ -37,6 +37,16 @@ def add_project(user: typing.Dict[str, typing.Any]) -> None:
     }]
 
 
+def _deep_merge_dict(
+        source: typing.Mapping[str, typing.Any], destination: typing.Dict[str, typing.Any]) -> None:
+    for key, value in source.items():
+        if isinstance(value, dict):
+            node = destination.setdefault(key, {})
+            _deep_merge_dict(value, node)
+        else:
+            destination[key] = value
+
+
 class ServerTestCase(unittest.TestCase):
     """Base test case for class testing the server module."""
 
@@ -60,8 +70,8 @@ class ServerTestCase(unittest.TestCase):
         server.jobs._JOB_GROUPS_INFO.reset_cache()  # pylint: disable=protected-access
         self._db.action_templates.insert_many([
             {
-                '_id': 'a{:d}'.format(i),
-                'actionTemplateId': 'a{:d}'.format(i),
+                '_id': f'a{i:d}',
+                'actionTemplateId': f'a{i:d}',
             }
             for i in range(30)])
         self._db.local_diagnosis.insert_one({
@@ -99,8 +109,8 @@ class ServerTestCase(unittest.TestCase):
 
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"email": "{}", "firstName": "{}", "lastName": "{}", "hashedPassword": "{}"}}'
-            .format(email, first_name, last_name, sha1(email, password)),
+            data=f'{{"email": "{email}", "firstName": "{first_name}", "lastName": "{last_name}", '
+            f'"hashedPassword": "{sha1(email, password)}"}}',
             content_type='application/json')
         auth_response = json.loads(response.get_data(as_text=True))
         return auth_response['authenticatedUser']['userId'], auth_response['authToken']
@@ -109,6 +119,58 @@ class ServerTestCase(unittest.TestCase):
         """Authenticates new user, calls authenticate_new_user_token."""
 
         return self.authenticate_new_user_token(*args, **kwargs)[0]
+
+    def create_guest_user(
+            self, first_name: str = 'Henry',
+            modifiers: typing.Optional[typing.List[
+                typing.Callable[[typing.Dict[str, typing.Any]], None]]] = None,
+            data: typing.Optional[typing.Dict[str, typing.Any]] = None) -> typing.Tuple[str, str]:
+        """Creates a new guest user.
+
+        Args:
+            data: The user's data that will be sent to the server. Will default
+                to a basic user: the caller should not expect this user to have
+                any specific values, only that it's a valid user.
+        Returns:
+            the user's ID and an auth token.
+        """
+
+        if not data:
+            data = {
+                'profile': {
+                    'city': {
+                        'name': 'foobar',
+                        'departementName': 'Vienne',
+                    },
+                    'latestJob': {
+                        'jobGroup': {
+                            'romeId': 'M1403',
+                            'name': 'Études et prospectives socio-économiques',
+                        },
+                        'name': 'Data scientist',
+                        'codeOgr': '38972',
+                    },
+                    'name': first_name,
+                },
+            }
+        if modifiers:
+            for modifier in modifiers:
+                modifier(data)
+
+        # Create guest user without data.
+        response = self.app.post(
+            '/api/user/authenticate', data=f'{{"firstName": "{first_name}"}}',
+            content_type='application/json')
+        auth_response = json.loads(response.get_data(as_text=True))
+        user_id = auth_response['authenticatedUser']['userId']
+        auth_token = auth_response['authToken']
+
+        response = self.app.post(
+            '/api/user', data=json.dumps(dict(data, **{'userId': user_id})),
+            headers={'Authorization': 'Bearer ' + auth_token, 'Content-Type': 'application/json'})
+        self.assertEqual(200, response.status_code, response.get_data())
+
+        return user_id, auth_token
 
     def create_user_with_token(
             self,
@@ -129,38 +191,20 @@ class ServerTestCase(unittest.TestCase):
         """
 
         if email is None:
-            email = 'foo{:d}@bar.fr'.format(self._user_db.user.count())
-        if not data:
-            data = {
-                'profile': {
-                    'city': {
-                        'name': 'foobar',
-                        'departementName': 'Vienne',
-                    },
-                    'latestJob': {
-                        'jobGroup': {
-                            'romeId': 'M1403',
-                            'name': 'Études et prospectives socio-économiques',
-                        },
-                        'name': 'Data scientist',
-                        'codeOgr': '38972',
-                    },
-                },
-            }
-        if modifiers:
-            for modifier in modifiers:
-                modifier(data)
-
+            email = f'foo{self._user_db.user.count():d}@bar.fr'
         server.ADVISOR_DISABLED_FOR_TESTING = not advisor
 
         # Create password.
         user_id, auth_token = self.authenticate_new_user_token(email=email, password=password)
+        registered_data = self.get_user_info(user_id, auth_token)
+        if data:
+            _deep_merge_dict(data, registered_data)
+        if modifiers:
+            for modifier in modifiers:
+                modifier(registered_data)
 
         response = self.app.post(
-            '/api/user', data=json.dumps(dict(data, **{
-                'profile': dict(data.get('profile', {}), email=email),
-                'userId': user_id,
-            })),
+            '/api/user', data=json.dumps(registered_data),
             headers={'Authorization': 'Bearer ' + auth_token, 'Content-Type': 'application/json'})
         self.assertEqual(200, response.status_code, response.get_data())
 

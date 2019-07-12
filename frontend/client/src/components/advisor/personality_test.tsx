@@ -19,7 +19,7 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
   }
 
   private genderize = (her: string, his: string): string =>
-    genderize(`${his}•${her}`, her, his, this.props.profile.gender)
+    genderize(`${his}·${her}`, her, his, this.props.profile.gender)
 
   public render(): React.ReactNode {
     const {handleExplore, userYou} = this.props

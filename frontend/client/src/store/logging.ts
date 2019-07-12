@@ -1,5 +1,7 @@
 import {detect} from 'detect-browser'
 
+import {isLateSignupEnabled} from './user'
+
 import {AdviceAction, AllActions, AsyncAction, AuthenticateUserAction, DisplayToastMessageAction,
   GetUserDataAction, LoadLandingPageAction, ProjectAction, REGISTER_USER, RootState, StrategyAction,
   TipAction, VisualElementAction, WithFeedback, isActionRegister} from './actions'
@@ -49,6 +51,9 @@ const flattenFeatureFlags = (featuresEnabled: bayes.bob.Features): Properties =>
       features['Features.' + feature] = featuresEnabled[feature]
     }
   }
+  if (isLateSignupEnabled) {
+    boolFeatures.push('lateSignup')
+  }
   features['Features'] = boolFeatures.sort()
   return features
 }
@@ -95,6 +100,9 @@ export class Logger {
     const user = getUser(action, state)
     if (user.registeredAt) {
       properties['Days since Registration'] = daysSince(user.registeredAt)
+    }
+    if (user.userId && !user.hasAccount) {
+      properties['Is Guest'] = true
     }
     if (user.featuresEnabled) {
       Object.assign(properties, flattenFeatureFlags(user.featuresEnabled))

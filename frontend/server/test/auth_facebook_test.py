@@ -45,8 +45,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'
-            .format(self.fake_signature, _base64_encode('a4')),
+            data=f'{{"facebookSignedRequest": "{self.fake_signature}.{ _base64_encode("a4")}"}}',
             content_type='application/json')
         self.assertEqual(422, response.status_code)
 
@@ -55,19 +54,18 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'
-            .format(self.fake_signature, _base64_encode('{}')),
+            data=f'{{"facebookSignedRequest": "{self.fake_signature}.{_base64_encode("{}")}"}}',
             content_type='application/json')
         self.assertEqual(422, response.status_code)
-        self.assertIn('Le champs &quot;algorithm&quot; est requis', response.get_data(as_text=True))
+        self.assertIn('Le champ &quot;algorithm&quot; est requis', response.get_data(as_text=True))
 
     def test_wrong_algorithm(self) -> None:
         """Auth request with a facebook token with a bad algorithm field."""
 
+        token = _base64_encode('{"algorithm": "plain", "user_id": "1234"}')
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                self.fake_signature, _base64_encode('{"algorithm": "plain", "user_id": "1234"}')),
+            data=f'{{"facebookSignedRequest": "{self.fake_signature}.{token}"}}',
             content_type='application/json')
         self.assertEqual(422, response.status_code)
         self.assertIn(
@@ -76,11 +74,10 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
     def test_bad_signature(self) -> None:
         """Auth request with a facebook token but wrong signature."""
 
+        token = _base64_encode('{"algorithm": "HMAC-SHA256", "user_id": "1234"}')
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                self.fake_signature, _base64_encode(
-                    '{"algorithm": "HMAC-SHA256", "user_id": "1234"}')),
+            data=f'{{"facebookSignedRequest": "{self.fake_signature}.{token}"}}',
             content_type='application/json')
         self.assertEqual(403, response.status_code)
         self.assertIn('Mauvaise signature', response.get_data(as_text=True))
@@ -92,13 +89,13 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         good_signature = _facebook_sign(facebook_data)
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
+            data=f'{{"facebookSignedRequest": "{good_signature}.{_base64_encode(facebook_data)}"}}',
             content_type='application/json')
         auth_response = self.json_from_response(response)
 
         self.assertTrue(auth_response['isNewUser'])
         self.assertEqual('12345', auth_response['authenticatedUser']['facebookId'])
+        self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
         user_id = auth_response['authenticatedUser']['userId']
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
         auth_token = auth_response['authToken']
@@ -106,8 +103,8 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         # Try with an invalid email.
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "facebookId": "12345", '
-            '"profile": {{"email": "invalidemail"}}}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", "facebookId": "12345", '
+            '"profile": {"email": "invalidemail"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response.status_code)
@@ -116,8 +113,8 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         self.authenticate_new_user(email='used@email.fr', password='psswd')
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "facebookId": "12345", '
-            '"profile": {{"email": "used@email.fr"}}}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", "facebookId": "12345", '
+            '"profile": {"email": "used@email.fr"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response.status_code)
@@ -125,8 +122,8 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         # Set email from client.
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "facebookId": "12345", '
-            '"profile": {{"email": "me@facebook.com"}}}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", "facebookId": "12345", '
+            '"profile": {"email": "me@facebook.com"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info = self.json_from_response(response)
@@ -139,8 +136,8 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         good_signature = _facebook_sign(facebook_data)
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}", "email": "pascal@facebook.com"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
+            data=f'{{"facebookSignedRequest": "{good_signature}.{_base64_encode(facebook_data)}", '
+            '"email": "pascal@facebook.com"}',
             content_type='application/json')
         auth_info = self.json_from_response(response)
         self.assertEqual(
@@ -155,8 +152,8 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         good_signature = _facebook_sign(facebook_data)
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}", "email": "pascal@facebook.com"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
+            data=f'{{"facebookSignedRequest": "{good_signature}.{_base64_encode(facebook_data)}", '
+                 '"email": "pascal@facebook.com"}',
             content_type='application/json')
         auth_response = self.json_from_response(response)
         self.assertFalse(auth_response.get('isNewUser'))
@@ -170,8 +167,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         good_signature = _facebook_sign(facebook_data)
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
+            data=f'{{"facebookSignedRequest": "{good_signature}.{_base64_encode(facebook_data)}"}}',
             content_type='application/json')
         auth_response = self.json_from_response(response)
         user_id = auth_response['authenticatedUser']['userId']
@@ -181,8 +177,7 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         good_signature = _facebook_sign(facebook_data)
         response = self.app.post(
             '/api/user/authenticate',
-            data='{{"facebookSignedRequest": "{}.{}"}}'.format(
-                good_signature, _base64_encode(facebook_data)),
+            data=f'{{"facebookSignedRequest": "{good_signature}.{_base64_encode(facebook_data)}"}}',
             content_type='application/json')
         auth_response = self.json_from_response(response)
 
@@ -190,6 +185,27 @@ class AuthenticateEndpointFacebookTestCase(base_test.ServerTestCase):
         returned_user = auth_response['authenticatedUser']
         self.assertEqual('13579', returned_user.get('facebookId'))
         self.assertEqual(user_id, returned_user.get('userId'))
+
+    def test_facebook_account_for_guest_user(self) -> None:
+        """Auth request add a facebook account for a guest user."""
+
+        user_id, auth_token = self.create_guest_user(first_name='Pascal')
+
+        facebook_data = '{"algorithm": "HMAC-SHA256", "user_id": "12345"}'
+        good_signature = _facebook_sign(facebook_data)
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"facebookSignedRequest": "{good_signature}.{_base64_encode(facebook_data)}",'
+            f'"userId": "{user_id}", "authToken": "{auth_token}"}}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertEqual('Pascal', auth_response['authenticatedUser']['profile'].get('name'))
+        self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
+        self.assertEqual('12345', auth_response['authenticatedUser']['facebookId'])
+        self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
+        self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
 
 
 if __name__ == '__main__':

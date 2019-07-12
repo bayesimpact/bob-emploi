@@ -8,6 +8,7 @@
     "module": "esNext",
     "moduleResolution": "node",
     "noEmit": true,
+    "noUnusedLocals": true,
     "paths": {
       "components/*": [
         "src/components/*"

@@ -27,9 +27,10 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         # Simulate when the user fills the survey.
         response = self.app.post(
             '/api/user/nps-survey-response',
-            data='{{"email": "{}", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            data=f'{{"email": "{user_email}", "score": 10, '
+            '"wereAdvicesUsefulComment": "So\\ncool!",'
             '"whichAdvicesWereUsefulComment": "The CV tip",'
-            '"generalFeedbackComment": "RAS"}}'.format(user_email),
+            '"generalFeedbackComment": "RAS"}',
             content_type='application/json')
         self.assertEqual(200, response.status_code, response.get_data(as_text=True))
 
@@ -37,8 +38,7 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         # in 'curated_useful_advice_ids'.
         response = self.app.post(
             '/api/user/nps-survey-response',
-            data='{{"email": "{}", "curatedUsefulAdviceIds":["improve-resume"]}}'
-            .format(user_email),
+            data=f'{{"email": "{user_email}", "curatedUsefulAdviceIds":["improve-resume"]}}',
             content_type='application/json')
         self.assertEqual(200, response.status_code, response.get_data(as_text=True))
 
@@ -78,9 +78,10 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.create_user(email=user_email)
         response = self.app.post(
             '/api/user/nps-survey-response',
-            data='{{"email": "{}", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            data=f'{{"email": "{user_email}", "score": 10, '
+            '"wereAdvicesUsefulComment": "So\\ncool!",'
             '"whichAdvicesWereUsefulComment": "The CV tip",'
-            '"generalFeedbackComment": "RAS"}}'.format(user_email),
+            '"generalFeedbackComment": "RAS"}}',
             content_type='application/json')
         self.assertEqual(401, response.status_code)
 
@@ -92,9 +93,10 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.create_user(email=user_email)
         response = self.app.post(
             '/api/user/nps-survey-response',
-            data='{{"email": "{}", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            data=f'{{"email": "{user_email}", "score": 10, '
+            '"wereAdvicesUsefulComment": "So\\ncool!",'
             '"whichAdvicesWereUsefulComment": "The CV tip",'
-            '"generalFeedbackComment": "RAS"}}'.format(user_email),
+            '"generalFeedbackComment": "RAS"}}',
             content_type='application/json',
             headers={'Authorization': 'wrong-token'})
         self.assertEqual(403, response.status_code)
@@ -107,9 +109,9 @@ class NPSSurveyEndpointTestCase(base_test.ServerTestCase):
         self.create_user(email=user_email)
         response = self.app.post(
             '/api/user/nps-survey-response',
-            data='{{"email": "{}", "score": 10, "wereAdvicesUsefulComment": "So\\ncool!",'
+            data=f'{{"email": "{user_email}", "score": 10,"wereAdvicesUsefulComment": "So\\ncool!",'
             '"whichAdvicesWereUsefulComment": "The CV tip",'
-            '"generalFeedbackComment": "RAS"}}'.format(user_email),
+            '"generalFeedbackComment": "RAS"}',
             content_type='application/json',
             headers={'Authorization': 'cryptic-admin-auth-token-123'})
         self.assertEqual(200, response.status_code)
@@ -202,7 +204,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/nps',
-            data='{{"userId": "{}", "comment": "My own comment"}}'.format(self.user_id),
+            data=f'{{"userId": "{self.user_id}", "comment": "My own comment"}}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
         self.assertEqual(403, response.status_code)
 
@@ -217,7 +219,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/nps',
-            data='{{"userId": "{}", "comment": "My own comment"}}'.format(self.user_id),
+            data=f'{{"userId": "{self.user_id}", "comment": "My own comment"}}',
             headers={'Authorization': 'Bearer ' + self.nps_auth_token})
         self.assertEqual(200, response.status_code)
         self.assertFalse(response.get_data(as_text=True))
@@ -232,8 +234,8 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
     def _match_request_data(self, request: 'requests_mock._RequestObjectProxy') -> bool:
         self.assertEqual(
             ':mega: [NPS Score: 0] '
-            '<http://localhost/eval?userId={user_id}|{user_id}>\n> '
-            'This is a bad comment'.format(user_id=self.user_id),
+            f'<http://localhost/eval?userId={self.user_id}|{self.user_id}>\n> '
+            'This is a bad comment',
             request.json().get('text', ''))
         return True
 
@@ -254,7 +256,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/nps',
-            data='{{"userId": "{}", "comment": "This is a bad comment"}}'.format(self.user_id),
+            data=f'{{"userId": "{self.user_id}", "comment": "This is a bad comment"}}',
             headers={'Authorization': 'Bearer ' + self.nps_auth_token})
         self.assertEqual(200, response.status_code)
         self.assertFalse(response.get_data(as_text=True))

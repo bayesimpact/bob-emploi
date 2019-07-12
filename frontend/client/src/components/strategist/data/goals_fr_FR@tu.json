@@ -79,6 +79,20 @@
       "goalId": "self-care"
     }
   ],
+  "diploma-free-job": [
+    {
+      "content": "J'ai adapté mon **CV** pour **cibler** un métier qui **recrute** beaucoup dans mon département",
+      "goalId": "diploma-free-application"
+    },
+    {
+      "content": "J'ai considéré la possibilité de trouver un **job alimentaire** pendant ma recherche d'emploi",
+      "goalId": "alimentary-job-for-search"
+    },
+    {
+      "content": "J'ai comparé les différences de **salaire** entre les métiers **avec** et **sans** diplôme",
+      "goalId": "diploma-salary-impact"
+    }
+  ],
   "get-alternance": [
     {
       "content": "J'ai obtenu un **entretien d'embauche** avant de me fixer sur une formation",

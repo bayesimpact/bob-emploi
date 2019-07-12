@@ -64,7 +64,7 @@ class TestCase(airtablemock.TestCase):
         base = airtablemock.Airtable('the-base', 'apikey42')
         for i in range(25):
             base.create('the-table', {
-                'name': 'Skill {}'.format(i),
+                'name': f'Skill {i}',
                 'description': 'Chercher activement des idées pour aider les gens',
                 'TIME_TO_MARKET': 55,
                 'BREADTH_OF_JOBS': 82,

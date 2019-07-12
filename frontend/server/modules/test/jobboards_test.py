@@ -21,7 +21,7 @@ class AdviceJobBoardsTestCase(scoring_test.ScoringModelTestBase):
 
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_lot_of_offers(self) -> None:
         """User has many offers already."""
@@ -33,7 +33,7 @@ class AdviceJobBoardsTestCase(scoring_test.ScoringModelTestBase):
         score = self._score_persona(persona)
 
         # We do want to show the chantier but not pre-select it.
-        self.assertEqual(1, score, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(1, score, msg=f'Failed for "{persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):
@@ -54,7 +54,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/find-a-jobboard/{}/foo'.format(self.user_id),
+            f'/api/advice/find-a-jobboard/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -65,7 +65,7 @@ class EndpointTestCase(base_test.ServerTestCase):
 
         self._db.jobboards.insert_one({'title': 'Indeed'})
         response = self.app.get(
-            '/api/advice/find-a-jobboard/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/find-a-jobboard/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         jobboards = self.json_from_response(response)
@@ -79,7 +79,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             {'title': 'Keep this one', 'filters': ['constant(1)']},
         ])
         response = self.app.get(
-            '/api/advice/find-a-jobboard/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/find-a-jobboard/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         jobboards = self.json_from_response(response)
@@ -96,7 +96,7 @@ class EndpointTestCase(base_test.ServerTestCase):
             {'title': 'Very specialized', 'filters': ['constant(1)', 'constant(1)']},
         ])
         response = self.app.get(
-            '/api/advice/find-a-jobboard/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/find-a-jobboard/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         jobboards = self.json_from_response(response)

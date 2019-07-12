@@ -214,8 +214,8 @@ class ScoringProject(object):
                 # TODO(cyrille): Find a way to make this work inside class definition also.
                 if not isinstance(project, cls):
                     raise TypeError(
-                        'The project parameter must be of type {}, found {}.'
-                        .format(cls.__name__, type(project)))
+                        f'The project parameter must be of type {cls.__name__}, '
+                        f'found {type(project)}.')
                 module_cache = project._module_cache  # pylint: disable=protected-access
                 if cache_key in module_cache:
                     return module_cache[cache_key]
@@ -448,7 +448,7 @@ class ScoringProject(object):
         model = get_scoring_model(scoring_model_name)
         if not model:
             if force_exists:
-                raise KeyError('Scoring model "{}" is unknown'.format(scoring_model_name))
+                raise KeyError(f'Scoring model "{scoring_model_name}" is unknown')
             logging.error(
                 'Scoring model "%s" unknown, falling back to default.', scoring_model_name)
             return self.score('')
@@ -469,7 +469,7 @@ class ScoringProject(object):
 def _a_job_name(scoring_project: ScoringProject) -> str:
     is_feminine = scoring_project.user_profile.gender == user_pb2.FEMININE
     genderized_determiner = 'une' if is_feminine else 'un'
-    return '{} {}'.format(genderized_determiner, _job_name(scoring_project))
+    return f'{genderized_determiner} {_job_name(scoring_project)}'
 
 
 def _an_application_mode(scoring_project: ScoringProject) -> str:
@@ -537,7 +537,7 @@ def _a_required_diploma(scoring_project: ScoringProject) -> str:
         logging.warning(
             'Trying to show required diplomas when there are none.\n%s', scoring_project)
         return 'un diplôme'
-    return 'un {} ou équivalent'.format(diplomas)
+    return f'un {diplomas} ou équivalent'
 
 
 def _total_interview_count(scoring_project: ScoringProject) -> str:
@@ -676,8 +676,7 @@ class ModelBase(object):
     def get_expanded_card_data(self, unused_project: ScoringProject) -> message.Message:
         """Retrieve data for the expanded card."""
 
-        raise AttributeError(
-            '{} does not have a get_expanded_card_data method'.format(self.__class__))
+        raise AttributeError(f'{self.__class__} does not have a get_expanded_card_data method')
 
 
 class ModelHundredBase(ModelBase):
@@ -837,7 +836,7 @@ def register_model(model_name: str, model: ModelBase) -> None:
     """Register a scoring model."""
 
     if model_name in SCORING_MODELS:
-        raise ValueError('The model "{}" already exists.'.format(model_name))
+        raise ValueError(f'The model "{model_name}" already exists.')
     SCORING_MODELS[model_name] = model
 
 
@@ -848,7 +847,7 @@ def register_regexp(
 
     if not regexp.match(example):
         raise ValueError(
-            'The example "{}" does not match the pattern "{}".'.format(example, regexp))
+            f'The example "{example}" does not match the pattern "{regexp}".')
     if get_scoring_model(example, cache_generated_model=False):
-        raise ValueError('The pattern "{}" is probably already used'.format(regexp))
+        raise ValueError(f'The pattern "{regexp}" is probably already used')
     SCORING_MODEL_REGEXPS.append(_ScoringModelRegexp(regexp, constructor))

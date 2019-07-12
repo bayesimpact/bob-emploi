@@ -28,13 +28,13 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
     imt_market_score_csv = path.join(
         path.dirname(__file__), 'testdata/imt/market_score.csv')
 
-    @airtablemock.patch(job_group_info.__name__ + '.airtable')
-    def test_make_dicts(self) -> None:
-        """Test basic usage of the csv2dicts function."""
+    def setUp(self) -> None:
+        patcher = airtablemock.patch(job_group_info.__name__ + '.airtable')
+        patcher.start()
 
         job_group_info.AIRTABLE_API_KEY = 'key01234567'
-        advice_airtable = airtablemock.Airtable('app01234567', 'key01234567')
 
+        advice_airtable = airtablemock.Airtable('app01234567', 'key01234567')
         advice_airtable.create('advice', {
             'code_rome': 'D1501',
             'SKILLS': '* Être créatif',
@@ -42,6 +42,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             'TRAINING': '* Maîtriser des logiciels',
             'other': 'foo',
         })
+
         rome_airtable = airtablemock.Airtable('app4242', 'key01234567')
         rome_airtable.create('domains', {
             'name': 'Commerce de gros',
@@ -73,6 +74,10 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             'atVariousCompanies': 'à la MAIF, à la MATMUT',
             'whatILoveAboutFeminine': "j'adore vos allées",
         })
+        self.addCleanup(patcher.stop)
+
+    def test_make_dicts(self) -> None:
+        """Test basic usage of the csv2dicts function."""
 
         collection = job_group_info.make_dicts(
             self.rome_csv_pattern,
@@ -163,7 +168,60 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         # Test null growth.
         a1101 = job_group_protos['A1101']
         self.assertTrue(a1101.growth_2012_2022)
-        self.assertAlmostEqual(0., a1101.growth_2012_2022, places=5)
+
+    def test_make_dicts_full(self) -> None:
+        """Test basic usage of the csv2dicts function with all options."""
+
+        advice_airtable = airtablemock.Airtable('app01234567', 'key01234567')
+        advice_airtable.create('jobboards', {
+            'title': 'CNT',
+            'link': 'http://www.cnt.asso.fr/metiers_formations/offres_emplois_appels_projets.cfm',
+            'for-job-group': 'L13',
+        })
+        advice_airtable.create('jobboards', {
+            'title': 'Job Culture',
+            'link': 'http://www.jobculture.fr/',
+            'for-job-group': 'L',
+        })
+        advice_airtable.create('jobboards', {
+            'title': 'Indeed',
+            'link': 'https://www.indeed.com/',
+        })
+        advice_airtable.create('skills_for_future', {
+            'name': 'Jugement et prise de décision',
+            'description': 'long description',
+            'rome_prefixes': 'D13, F12, H25, I11, N13, N42, C11, C12, C13, C14, C15, D11, D12, E11',
+        })
+
+        collection = job_group_info.make_dicts(
+            self.rome_csv_pattern,
+            self.job_requirements_json,
+            self.job_application_complexity_json,
+            self.application_mode_csv,
+            self.rome_fap_crosswalk_txt,
+            'app01234567:advice:viw012345',
+            'app4242:domains',
+            'app4242:Rigid Diplomas',
+            'app4242:info_by_prefix',
+            self.fap_growth_2012_2022_csv,
+            self.imt_market_score_csv,
+            jobboards_airtable='app01234567:jobboards',
+            skills_for_future_airtable='app01234567:skills_for_future')
+
+        job_group_protos = dict(mongo.collection_to_proto_mapping(collection, job_pb2.JobGroup))
+
+        self.assertEqual(
+            {'CNT', 'Job Culture'},
+            {j.title for j in job_group_protos['L1301'].job_boards})
+        self.assertEqual(
+            {'Job Culture'},
+            {j.title for j in job_group_protos['L1101'].job_boards})
+        self.assertFalse(job_group_protos['K1802'].job_boards)
+
+        self.assertEqual(
+            ['Jugement et prise de décision'],
+            [s.name for s in job_group_protos['D1301'].skills_for_future])
+        self.assertFalse(job_group_protos['K1802'].skills_for_future)
 
 
 if __name__ == '__main__':

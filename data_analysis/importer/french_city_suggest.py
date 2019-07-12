@@ -116,7 +116,7 @@ def upload(batch_size: int = 5000, data_folder: str = 'data', out: typing.TextIO
         os.environ.get('ALGOLIA_API_KEY'))
     index_name = os.environ.get('ALGOLIA_CITIES_INDEX', 'cities')
     cities_index = client.init_index(index_name)
-    tmp_index_name = '{}_{}'.format(index_name, round(time.time()))
+    tmp_index_name = f'{index_name}_{round(time.time())}'
     tmp_cities_index = client.init_index(tmp_index_name)
 
     try:

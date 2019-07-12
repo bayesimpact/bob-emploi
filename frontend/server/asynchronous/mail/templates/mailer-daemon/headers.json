@@ -1,0 +1,8 @@
+{
+  "From": "Bob Emploi <bob@bob-emploi.fr>",
+  "Reply-To": "",
+  "ReplyEmail": "",
+  "SenderEmail": "bob@bob-emploi.fr",
+  "SenderName": "Bob Emploi",
+  "Subject": "Re: {{var:originalSubject}}"
+}

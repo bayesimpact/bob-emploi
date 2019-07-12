@@ -73,7 +73,7 @@ class DecoratorTestCase(unittest.TestCase):
             calls.append(message)
             return message
 
-        query_string = 'data={}'.format(parse.quote('{"multipleWords": "A1234"}'))
+        query_string = 'data=' + parse.quote('{"multipleWords": "A1234"}')
         with app.test_request_context(method='GET', query_string=query_string,
                                       content_type='application/json'):
             _func()  # pylint: disable=no-value-for-parameter
@@ -271,7 +271,7 @@ class CacheMongoTestCase(unittest.TestCase):
         ])
 
         def _update_func(message: test_pb2.Simple, message_id: str) -> None:
-            message.multiple_words = '{} = {}'.format(message_id, message.name)
+            message.multiple_words = f'{message_id} = {message.name}'
 
         collection: proto.MongoCachedCollection[test_pb2.Simple] = \
             proto.MongoCachedCollection(test_pb2.Simple, 'basic', update_func=_update_func)
@@ -487,7 +487,7 @@ class FetchFromMongoTestCase(unittest.TestCase):
 
         self._db.collection.insert_many([{
             '_id': str(i),
-            'name': '{}th document'.format(i),
+            'name': f'{i}th document',
         } for i in range(1000)])
         for i in range(1000):
             proto.fetch_from_mongo(self._db, test_pb2.Simple, 'collection', str(i))

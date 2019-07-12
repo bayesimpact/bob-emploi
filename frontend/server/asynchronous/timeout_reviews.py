@@ -55,7 +55,7 @@ def _timeout_old_reviews(
         {
             '$inc': {'numPendingReviews': -len(timeout_review_indices)},
             '$set': {
-                'reviews.{}.status'.format(review_index): 'REVIEW_TIME_OUT'
+                f'reviews.{review_index}.status': 'REVIEW_TIME_OUT'
                 for review_index in timeout_review_indices
             },
         },

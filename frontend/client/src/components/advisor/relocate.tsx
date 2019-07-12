@@ -162,7 +162,8 @@ const RelocateDepartmentSuggestion = Radium(RelocateDepartmentSuggestionBase)
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({departementScores}: bayes.bob.RelocateData): bayes.bob.DepartementScore[] => departementScores,
+  ({departementScores}: bayes.bob.RelocateData):
+  readonly bayes.bob.DepartementScore[] => departementScores,
   'département')
 
 

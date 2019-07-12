@@ -18,6 +18,22 @@ const employmentTypes = _mapValues(
 const getEmploymentType = (name: bayes.bob.EmploymentType): string =>
   employmentTypes[name] || name
 
+const metricForCategory = {
+  'confidence-for-search': 'Motivation pour la recherche / Confiance en soi',
+  'enhance-methods-to-interview': 'Méthode de recherche',
+  'find-what-you-like': 'Motivation pour le métier',
+  'missing-diploma': 'Diplômes',
+  'restrictive-contract': 'Flexibilité de contrat',
+  'stuck-in-village': 'Mobilité',
+  'stuck-market': 'Marché',
+}
+
+const relevanceColors: {[R in bayes.bob.CategoryRelevance]?: string} = {
+  'NEEDS_ATTENTION': colors.RED_PINK,
+  'NEUTRAL_RELEVANCE': colors.WARM_GREY,
+  'NOT_RELEVANT': 'rgba(0, 0, 0, 0)',
+  'RELEVANT_AND_GOOD': colors.GREENISH_TEAL,
+}
 
 interface SalaryProps extends bayes.bob.SalaryEstimation {
   title?: string
@@ -186,7 +202,7 @@ class JobGroupStressBar extends React.PureComponent<StressBarProps, {hasStarted:
 
 
 interface StressBarsProps {
-  jobGroups: bayes.bob.RelatedLocalJobGroup[]
+  jobGroups: readonly bayes.bob.RelatedLocalJobGroup[]
   localStats: bayes.bob.LocalJobStats
   scorePointWidth: number
   targetJobGroup: bayes.bob.JobGroup
@@ -244,7 +260,7 @@ class JobGroupStressBars extends React.PureComponent<StressBarsProps> {
 }
 
 interface StatsProps {
-  categories: bayes.bob.DiagnosticCategory[]
+  categories: readonly bayes.bob.DiagnosticCategory[]
   jobGroupInfo: bayes.bob.JobGroup
   project: bayes.bob.Project
 }
@@ -304,6 +320,17 @@ class Stats extends React.PureComponent<StatsProps, {bestInDepartements: string[
       percentage: contractPercentage = 0,
     } = employmentTypePercentages[0] || {}
     return <div>
+      <section>
+        <h2>Catégories de Bob</h2>
+        <ul>{categories.filter(({categoryId}): boolean => categoryId !== 'bravo').
+          map(({relevance, categoryId}: bayes.bob.DiagnosticCategory): React.ReactNode =>
+            <li
+              style={{color: relevanceColors[relevance] || 'inherit'}}
+              title={categoryId} key={categoryId}>
+              {metricForCategory[categoryId] || categoryId}
+            </li>)}
+        </ul>
+      </section>
       {activeMonths.length ? <section>
         <h2>Mois les plus actifs</h2>
         Ce métier recrute principalement en <StringJoiner>
@@ -322,7 +349,7 @@ class Stats extends React.PureComponent<StatsProps, {bestInDepartements: string[
       {applicationModes.length ? <section>
         <h2>Canaux de candidature</h2>
         {applicationModes.map(({mode, percentage}): React.ReactNode =>
-          <div key={mode}>
+          <div key={mode || 'OTHER_CHANNELS'}>
             <strong>{getApplicationModeText(mode)}</strong>&nbsp;: {Math.round(percentage)}%
           </div>)}
       </section> : <h2>Pas de canal de candidature clairement déterminé</h2>}
@@ -348,15 +375,6 @@ class Stats extends React.PureComponent<StatsProps, {bestInDepartements: string[
         <h2>Durée médiane sans emploi</h2>
         50% des gens mettent plus de {unemploymentDurationDays} jours à trouver un emploi
       </section> : <h2>Pas de données sur la durée médiane sans emploi</h2>}
-      <section>
-        <h2>Catégories de Bob</h2>
-        <ul>{categories.
-          map(({isRelevant, categoryId}: bayes.bob.DiagnosticCategory): React.ReactNode =>
-            <li
-              style={{color: isRelevant ? colors.GREENISH_TEAL : colors.RED_PINK}}
-              key={categoryId}>{categoryId}</li>)}
-        </ul>
-      </section>
       {fhsSalary.minSalary || juniorSalary.minSalary || seniorSalary.minSalary ? <section>
         <h2>Salaires</h2>
         <SalaryBars>{[

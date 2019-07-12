@@ -7,6 +7,7 @@ import cyrilleImage from 'images/people/cyrille.png'
 import joannaImage from 'images/people/joanna.jpg'
 import johnImage from 'images/people/john.png'
 import marielaureImage from 'images/people/marie-laure.png'
+import louImage from 'images/people/lou.jpg'
 import nicolasImage from 'images/people/nicolas.jpg'
 import pascalImage from 'images/people/pascal.png'
 import paulImage from 'images/people/paul.png'
@@ -102,6 +103,16 @@ const joannaBio = {
   linkedin: 'https://www.linkedin.com/in/joannabeaufoy/',
 }
 
+const louBio = {
+  description: "Engagée dans la vie associative de son école depuis plusieurs années, Lou-Salomé \
+    s'intéresse à la dynamique de l'entrepreunariat social et plus particulièrement aux projets de \
+    lutte contre l'exclusion fondés sur un discours d'empowerment. Curieuse, elle aime rencontrer \
+    et s'inspirer des personnes autour d'elle et sera toujours partante pour une activité de \
+    groupe, autour d'un bon jeu de société ou armée d'un ballon.",
+  education: 'Sciences Po Lille',
+  experience: 'Wintegreat, Enactus à Sciences Po Lille',
+  linkedin: 'https://www.linkedin.com/in/lou-salomé-anasthase-8a0410156/',
+}
 
 interface Person {
   bio: {
@@ -130,6 +141,8 @@ const allPersons: Person[] = [
     position: 'Chargé de communication'},
   {bio: joannaBio, name: 'Joanna Beaufoy', picture: joannaImage,
     position: 'Responsable contenu et soutien des utilisateurs'},
+  {bio: louBio, name: 'Lou-Salomé Anasthase', picture: louImage,
+    position: 'Stagiaire, assistante responsable contenu et communication'},
 ]
 
 

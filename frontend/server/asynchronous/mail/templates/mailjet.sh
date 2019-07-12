@@ -35,7 +35,7 @@ function get_template {
   jq -S "$JSON_MAIL_SELECTOR"' | .["'"$FIELD_MJML"'"]' "$tempfile" > "$output_dir/template.mjml"
   jq -S "$JSON_MAIL_SELECTOR"' | .["'"$FIELD_HEADER"'"]' "$tempfile" > "$output_dir/headers.json"
 
-  grep -P "(?<=[{ ]var:)\\w+" -o "$output_dir/template.html" | sort -u > "$output_dir/vars.txt"
+  grep -P "(?<=[{ (]var:)\\w+" -o "$output_dir/template.html" | sort -u > "$output_dir/vars.txt"
 
   rm "$tempfile"
 

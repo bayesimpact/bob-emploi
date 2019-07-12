@@ -238,10 +238,8 @@ def flask_api(
                 return typing.cast(typing.Union[str, flask.Response], ret)
             if not isinstance(ret, out_type):
                 raise TypeError(
-                    '{} expects a {} output but got: {}'.format(
-                        func.__name__,
-                        out_type.__name__,
-                        type(ret).__name__))
+                    f'{func.__name__} expects a {out_type.__name__} output but got: '
+                    f'{type(ret).__name__}')
             proto_ret = typing.cast(_ProtoType2, ret)
             best_format = flask.request.accept_mimetypes.best_match(
                 ['application/json', 'application/x-protobuf-base64']

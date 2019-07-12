@@ -130,7 +130,7 @@ class StringCollector(object):
                 origin_id = record_id
                 if id_field:
                     origin_id = record_fields.get(id_field) or origin_id
-                self.collect_string(text, '{}:{}'.format(table, field), origin_id)
+                self.collect_string(text, f'{table}:{field}', origin_id)
 
     def collect_for_airtable_importer(
             self, base_id: str, table: str, proto: str,
@@ -163,7 +163,7 @@ class StringCollector(object):
                 continue
             for value, path, string_format in checker.collect_formatted_strings(message):
                 if string_format == options_pb2.NATURAL_LANGUAGE:
-                    self.collect_string(value, '{}:{}'.format(table, path), _id)
+                    self.collect_string(value, f'{table}:{path}', _id)
         return num_errors
 
     def collect_for_client(self, table: str = '') -> None:
@@ -242,7 +242,7 @@ _ALL_COLLECTIONS = ('client',) + tuple(
     if importer.script == 'airtable_to_protos')
 
 _ALL_COLLECTION_NAMES = _ALL_COLLECTIONS + tuple(
-    '{}{}'.format(_CLIENT_PREFIX, coll.table) for coll in CLIENT_COLLECTIBLES)
+    f'{_CLIENT_PREFIX}{coll.table}' for coll in CLIENT_COLLECTIBLES)
 
 
 def _print_report(text: str) -> None:
@@ -250,7 +250,7 @@ def _print_report(text: str) -> None:
         requests.post(_SLACK_IMPORT_URL, json={'attachments': [{
             'mrkdwn_in': ['text'],
             'title': 'Automatic String Collect',
-            'text': '{}\n'.format(text),
+            'text': f'{text}\n',
         }]})
 
 
@@ -288,7 +288,7 @@ def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
         if collection.startswith('client'):
             table = collection[len(_CLIENT_PREFIX):]
             logging.info(
-                'Collecting strings for client%s…', ' table "{}"'.format(table) if table else '')
+                'Collecting strings for client%s…', f' table "{table}"' if table else '')
             collector.collect_for_client(table)
             continue
         try:
@@ -310,15 +310,14 @@ def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
     _handle_unused_translations(collector, args.unused)
     report_text = 'Here is the report:\n'
     if collections_not_collected:
-        report_text += 'Strings not collected for {}.'.format(collections_not_collected)
+        report_text += f'Strings not collected for {collections_not_collected}.'
     else:
         report_text += 'All the collections have been collected.'
     if not collection_errors:
         report_text += '\nAnd no errors have been found during collect.'
     else:
-        report_text += '\nErrors in collection:\n{}'.format(
-            '\n'.join(['{}: {}'.format(
-                coll, collection_errors[coll]) for coll in collection_errors]))
+        errors = '\n'.join([f'{coll}: {collection_errors[coll]}' for coll in collection_errors])
+        report_text += f'\nErrors in collection:\n{errors}'
     _print_report(report_text)
 
 

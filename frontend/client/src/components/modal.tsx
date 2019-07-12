@@ -85,7 +85,7 @@ class Modal extends React.PureComponent<ModalProps, ModalState> {
   // children.
   public static getDerivedStateFromProps(
     {children, isShown, style}: ModalProps, {isShown: wasShown}: ModalState): ModalState {
-    const hasTransition = style && style.transition !== 'none'
+    const hasTransition = !style || style.transition !== 'none'
     if (!wasShown !== !isShown) {
       return {
         // Keep the current children while appearing/disappearing.

@@ -20,7 +20,7 @@ class ImmersionMissionLocaleTest(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.user_profile.year_of_birth = 1982
         score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertLessEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_already_worked_as_such(self) -> None:
         """User has worked in a similar position."""
@@ -29,7 +29,7 @@ class ImmersionMissionLocaleTest(scoring_test.ScoringModelTestBase):
         if persona.project.previous_job_similarity == project_pb2.NEVER_DONE:
             persona.project.previous_job_similarity = project_pb2.DONE_SIMILAR
         score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertLessEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_young_and_new(self) -> None:
         """User is a good target."""
@@ -38,7 +38,7 @@ class ImmersionMissionLocaleTest(scoring_test.ScoringModelTestBase):
         persona.project.previous_job_similarity = project_pb2.NEVER_DONE
         persona.user_profile.year_of_birth = datetime.date.today().year - 22
         score = self._score_persona(persona)
-        self.assertGreaterEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_perfect(self) -> None:
         """User is the perfect target."""
@@ -49,7 +49,7 @@ class ImmersionMissionLocaleTest(scoring_test.ScoringModelTestBase):
         persona.project.previous_job_similarity = project_pb2.NEVER_DONE
         persona.user_profile.year_of_birth = datetime.date.today().year - 22
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):

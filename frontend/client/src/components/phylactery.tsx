@@ -16,6 +16,7 @@ interface ElementProps {
   isOpeningConversation?: boolean
   isShown?: boolean
   onDone?: () => void
+  onShown?: () => void
   onUpdate?: () => void
   setDiscussing?: (isDiscussing: boolean) => void
   style?: React.CSSProperties
@@ -23,7 +24,7 @@ interface ElementProps {
 
 
 interface PhylacteryProps extends Omit<ElementProps, 'style'> {
-  children: React.ReactElement<ElementProps>[]
+  children: readonly (React.ReactElement<ElementProps> | null)[]
 }
 
 
@@ -38,10 +39,11 @@ interface PhylacteryState {
 // of another one, so it also has 'isShown' and 'onDone' as props.
 class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryState> {
   public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.element.isRequired).isRequired,
+    children: PropTypes.arrayOf(PropTypes.element).isRequired,
     isFastForwarded: PropTypes.bool,
     isShown: PropTypes.bool,
     onDone: PropTypes.func,
+    onShown: PropTypes.func,
     onUpdate: PropTypes.func,
     setDiscussing: PropTypes.func,
   }
@@ -58,7 +60,7 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
     {children, isFastForwarded, isShown}: PhylacteryProps,
     {lastShownStep}: PhylacteryState): PhylacteryState {
     if (isFastForwarded) {
-      return {lastShownStep: children.length}
+      return {lastShownStep: children.filter((child): boolean => !!child).length}
     }
     if (isShown && lastShownStep < 0) {
       return {lastShownStep: 0}
@@ -66,8 +68,12 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
     return null
   }
 
-  public componentDidUpdate({isFastForwarded: alreadyDone}: PhylacteryProps): void {
-    const {isFastForwarded, onDone, onUpdate} = this.props
+  public componentDidUpdate(
+    {isFastForwarded: alreadyDone, isShown: wasShown}: PhylacteryProps): void {
+    const {isFastForwarded, isShown, onDone, onShown, onUpdate} = this.props
+    if (isShown && !wasShown) {
+      onShown && onShown()
+    }
     if (!alreadyDone && isFastForwarded) {
       onUpdate && onUpdate()
       onDone && onDone()
@@ -77,7 +83,7 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
   private getOnChildDoneHandler = _memoize((index: number): (() => void) => {
     // TODO(pascal): Fix not to memoize those props.
     const {children, onDone, onUpdate} = this.props
-    if (index === children.length - 1) {
+    if (index === (children.filter((child): boolean => !!child).length - 1)) {
       return (): void => {
         onUpdate && onUpdate()
         onDone && onDone()
@@ -96,7 +102,7 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
     // WARNING: Children of global bubble div are in reverse order, to allow the presence of a
     // scrollbar.
     return <React.Fragment>
-      {children.map(
+      {children.filter((child): boolean => !!child).map(
         (child: React.ReactElement<ElementProps>, index: number):
         {child: React.ReactElement<ElementProps>; index: number} => ({child, index})
       ).reverse().map(({child, index}): React.ReactElement<ElementProps> =>
@@ -123,12 +129,14 @@ class DiscussionBubble extends React.PureComponent<PhylacteryProps> {
 
   public render(): React.ReactNode {
     const {children, ...otherProps} = this.props
+    const nonNullChildren = children.filter((child): boolean => !!child)
     return <GrowingPhylactery {...otherProps}>
-      {children.map((child, index): React.ReactElement<ElementProps> => React.cloneElement(child, {
-        isClosingConversation: index === children.length - 1,
-        isOpeningConversation: !index,
-        key: index,
-      }))}
+      {nonNullChildren.
+        map((child, index): React.ReactElement<ElementProps> => React.cloneElement(child, {
+          isClosingConversation: index === nonNullChildren.length - 1,
+          isOpeningConversation: !index,
+          key: index,
+        }))}
     </GrowingPhylactery>
   }
 }
@@ -395,6 +403,7 @@ class NoOpElement extends React.PureComponent<ElementProps> {
     children: PropTypes.node,
     isShown: PropTypes.bool,
     onDone: PropTypes.func,
+    onShown: PropTypes.func,
     style: PropTypes.object,
   }
 
@@ -403,8 +412,9 @@ class NoOpElement extends React.PureComponent<ElementProps> {
   }
 
   public componentDidUpdate({isShown: wasShown}: ElementProps): void {
-    const {isShown, onDone} = this.props
+    const {isShown, onDone, onShown} = this.props
     if (isShown && !wasShown) {
+      onShown && onShown()
       onDone && onDone()
     }
   }
@@ -604,12 +614,13 @@ class QuestionBubble extends React.PureComponent<ElementProps & {isDone?: boolea
     isFastForwarded: PropTypes.bool,
     isShown: PropTypes.bool,
     onDone: PropTypes.func,
+    onShown: PropTypes.func,
     onUpdate: PropTypes.func,
   }
 
   public render(): React.ReactNode {
-    const {children, isDone, isFastForwarded, isShown, onDone, onUpdate} = this.props
-    return <GrowingPhylactery {...{isFastForwarded, isShown, onDone, onUpdate}}>
+    const {children, isDone, isFastForwarded, isShown, onDone, onShown, onUpdate} = this.props
+    return <GrowingPhylactery {...{isFastForwarded, isShown, onDone, onShown, onUpdate}}>
       <NoOpElement>{children}</NoOpElement>
       <WaitingOnDone isDone={isDone} />
     </GrowingPhylactery>

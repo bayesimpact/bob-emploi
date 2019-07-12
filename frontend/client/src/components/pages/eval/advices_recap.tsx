@@ -35,7 +35,7 @@ interface AdvicesRecapProps {
   adviceEvaluations: {
     [adviceId: string]: bayes.bob.AdviceEvaluation
   }
-  advices: bayes.bob.Advice[]
+  advices: readonly bayes.bob.Advice[]
   moduleNewScores: {
     [adviceId: string]: number
   }

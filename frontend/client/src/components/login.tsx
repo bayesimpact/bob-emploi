@@ -10,26 +10,27 @@ import React from 'react'
 import FacebookLogin from 'react-facebook-login'
 import GoogleLogin from 'react-google-login'
 import {connect} from 'react-redux'
-import {RouteComponentProps, withRouter} from 'react-router'
-import {Link, Redirect} from 'react-router-dom'
-import ReactRouterPropTypes from 'react-router-prop-types'
+import {Link} from 'react-router-dom'
 
 import {AUTHENTICATE_USER, DispatchAllActions, EMAIL_CHECK, RESET_USER_PASSWORD, RootState,
   askPasswordReset, closeLoginModal, displayToasterMessage, emailCheck, facebookAuthenticateUser,
   googleAuthenticateUser, linkedInAuthenticateUser, loginUser, openLoginModal,
   openRegistrationModal, peConnectAuthenticateUser, registerNewUser,
-  resetPassword} from 'store/actions'
+  resetPassword, startAsGuest} from 'store/actions'
+import {isLateSignupEnabled} from 'store/user'
 import {validateEmail} from 'store/validations'
 
 import {FastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalCloseButton} from 'components/modal'
-import {Button, CircularProgress, IconInput, LabeledToggle, Styles, chooseImageVersion,
+import {ButtonProps, Button, CircularProgress, IconInput, LabeledToggle, Styles, chooseImageVersion,
   colorToAlpha} from 'components/theme'
 import {Routes} from 'components/url'
 import linkedInIcon from 'images/linked-in.png'
+import logoProductImage from 'images/logo-bob-beta.svg'
 import peConnectIcon from 'images/pole-emploi-connect.svg'
-import signupCoverImage from 'images/signup-cover.jpg?multi&sizes[]=1440&sizes[]=600'
+import oldSignupCoverImage from 'images/signup-cover.jpg?multi&sizes[]=1440&sizes[]=600'
+import portraitCoverImage from 'images/catherine_portrait.jpg?multi&sizes[]=1440&sizes[]=600'
 
 
 const toLocaleLowerCase = (email: string): string => email.toLocaleLowerCase()
@@ -333,10 +334,12 @@ const ResetPasswordForm = connect(({asyncState}: RootState): ResetPasswordConnec
 
 interface RegistrationConnectedProps {
   defaultEmail: string
+  hasUser?: boolean
   isAuthenticating: boolean
+  shouldRequestNames?: boolean
 }
 
-interface RegistrationProps extends RegistrationConnectedProps{
+interface RegistrationProps extends RegistrationConnectedProps {
   dispatch: DispatchAllActions
   onLogin: (user: bayes.bob.User) => void
   onShowLoginFormClick: () => void
@@ -354,14 +357,16 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
   public static propTypes = {
     defaultEmail: PropTypes.string.isRequired,
     dispatch: PropTypes.func.isRequired,
+    hasUser: PropTypes.bool,
     isAuthenticating: PropTypes.bool,
     onLogin: PropTypes.func.isRequired,
     onShowLoginFormClick: PropTypes.func.isRequired,
+    shouldRequestNames: PropTypes.bool,
   }
 
   public state: RegistrationState = {
     email: this.props.defaultEmail,
-    hasAcceptedTerms: false,
+    hasAcceptedTerms: this.props.hasUser,
     lastName: '',
     name: '',
     password: '',
@@ -404,14 +409,25 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
     Pick<RegistrationState, 'hasAcceptedTerms'> => ({hasAcceptedTerms: !hasAcceptedTerms}))
 
   private isFormValid = (): boolean => {
+    const {shouldRequestNames} = this.props
     const {email, hasAcceptedTerms, password, lastName, name} = this.state
-    return !!(hasAcceptedTerms && password && lastName && name && validateEmail(email))
+    return !!(hasAcceptedTerms && password && validateEmail(email) &&
+      (!shouldRequestNames || (lastName && name)))
   }
 
   private fastForward = (): void => {
-    const {email, password, lastName, name} = this.state
+    const {email, hasAcceptedTerms, password, lastName, name} = this.state
     if (this.isFormValid()) {
       this.handleRegister()
+      return
+    }
+    const {shouldRequestNames} = this.props
+    // TODO(marielaure) Clean when launching Late Sign Up.
+    if (!shouldRequestNames && hasAcceptedTerms) {
+      this.setState({
+        email: email || 'test-' + (new Date().getTime()) + '@example.com',
+        password: password || 'password',
+      })
       return
     }
     this.setState({
@@ -425,13 +441,14 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
 
   public render(): React.ReactNode {
     const {email, hasAcceptedTerms, password, name, lastName} = this.state
-    const {isAuthenticating, onLogin} = this.props
+    const {isAuthenticating, hasUser, onLogin, shouldRequestNames} = this.props
     const registrationBoxStyle: React.CSSProperties = {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       marginTop: 15,
     }
+    // TODO(marielaure) Clean when launching Late Sign Up.
     return <form style={registrationBoxStyle} onSubmit={this.handleRegister}>
       <FastForward onForward={this.fastForward} />
       <FormHeader
@@ -443,16 +460,18 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
       <SocialLoginButtons onLogin={onLogin} isNewUser={true} />
 
       <FormSection title="Inscription par mot de passe">
-        <IconInput
-          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          shouldFocusOnMount={true} autoComplete="given-name"
-          type="text" placeholder="Prénom" value={name} iconComponent={AccountOutlineIcon}
-          onChange={this.handleNameChange} />
-        <IconInput
-          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          type="text" placeholder="Nom" value={lastName} iconComponent={AccountOutlineIcon}
-          onChange={this.handleLastNameChange} autoComplete="family-name"
-          style={{marginTop: 10}} />
+        {shouldRequestNames ? <React.Fragment>
+          <IconInput
+            iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+            shouldFocusOnMount={true} autoComplete="given-name"
+            type="text" placeholder="Prénom" value={name} iconComponent={AccountOutlineIcon}
+            onChange={this.handleNameChange} />
+          <IconInput
+            iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+            type="text" placeholder="Nom" value={lastName} iconComponent={AccountOutlineIcon}
+            onChange={this.handleLastNameChange} autoComplete="family-name"
+            style={{marginTop: 10}} />
+        </React.Fragment> : null}
         <IconInput
           iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
           type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
@@ -472,7 +491,7 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
         {' '}{config.productName} est <strong>gratuit</strong> et le restera
         toujours.
       </div>
-      <LabeledToggle
+      {hasUser ? null : <LabeledToggle
         type="checkbox" label={<span>
             J'ai lu et j'accepte les <Link
             to={Routes.TERMS_AND_CONDITIONS_PAGE} target="_blank" rel="noopener noreferrer"
@@ -482,7 +501,7 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
         </span>}
         style={{fontSize: 12, marginTop: 10}}
         isSelected={hasAcceptedTerms}
-        onClick={this.handleToggleAcceptTerms} />
+        onClick={this.handleToggleAcceptTerms} />}
       <Button
         disabled={!this.isFormValid()}
         onClick={this.handleRegister}
@@ -495,11 +514,18 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
     </form>
   }
 }
-const RegistrationForm = connect(({app, asyncState}: RootState): RegistrationConnectedProps => {
+const RegistrationForm = connect(({app, asyncState, user}: RootState):
+RegistrationConnectedProps => {
+  const {
+    profile: {name = undefined} = {},
+    userId = undefined,
+  } = user
   const {email = ''} = app.loginModal && app.loginModal.defaultValues || {}
   return {
     defaultEmail: email,
+    hasUser: !!userId,
     isAuthenticating: asyncState.isFetching[AUTHENTICATE_USER],
+    shouldRequestNames: !name,
   }
 })(RegistrationFormBase)
 
@@ -578,6 +604,30 @@ class FormHeader extends React.PureComponent<HeaderProps> {
 }
 
 
+function getLocalStorageKey(state: string): string {
+  return `oauth2.${state}`
+}
+
+
+function getRandomHash(): string {
+  return (Math.random() * 36).toString(36)
+}
+
+
+function getStoredState(state: string, clientId: string): {nonce?: string} {
+  const stateKey = getLocalStorageKey(state)
+  const stateContent = Storage.getItem(stateKey)
+  Storage.removeItem(stateKey)
+  if (!stateContent) {
+    return null
+  }
+  const {clientId: stateClientId, nonce} = JSON.parse(stateContent)
+  if (clientId !== stateClientId) {
+    return null
+  }
+  return {nonce}
+}
+
 interface OAuth2Props extends React.HTMLProps<HTMLButtonElement> {
   authorizeEndpoint: string
   authorizeParams?: {[param: string]: string}
@@ -603,25 +653,17 @@ class OAuth2ConnectLogin extends React.PureComponent<OAuth2Props> {
   }
 
   public componentDidMount(): void {
-    const {onFailure, onSuccess} = this.props
+    const {clientId, onFailure, onSuccess} = this.props
     const {search} = window.location
     if (!search) {
       return
     }
     const {code, error, error_description: errorDescription, state} = parse(search.substr(1))
-    if (!state) {
+    const storedState = getStoredState(state, clientId)
+    if (!storedState) {
       return
     }
-    // TODO(pascal): Cleanup the URL and localStorage so that a refresh does
-    // not attempt logging in again.
-    const stateContent = Storage.getItem(this.getLocalStorageKey(state))
-    if (!stateContent) {
-      return
-    }
-    const {clientId, nonce} = JSON.parse(stateContent)
-    if (clientId !== this.props.clientId) {
-      return
-    }
+    const {nonce} = storedState
     if (!nonce) {
       onFailure(new Error(`Invalid state: "${state}".`))
       return
@@ -639,20 +681,10 @@ class OAuth2ConnectLogin extends React.PureComponent<OAuth2Props> {
     onSuccess({code, nonce})
   }
 
-  // TODO(cyrille): Make static.
-  private getLocalStorageKey(state: string): string {
-    return `oauth2.${state}`
-  }
-
-  // TODO(cyrille): Make static.
-  private getRandomHash(): string {
-    return (Math.random() * 36).toString(36)
-  }
-
   private startSigninFlow = (): void => {
     const {authorizeEndpoint, authorizeParams, clientId, scopes} = this.props
-    const state = this.getRandomHash()
-    const nonce = this.getRandomHash()
+    const state = getRandomHash()
+    const nonce = getRandomHash()
     const {host, protocol} = window.location
     const redirectUri = `${protocol}//${host}${Routes.ROOT}`
     const url = `${authorizeEndpoint}?${stringify({
@@ -664,7 +696,7 @@ class OAuth2ConnectLogin extends React.PureComponent<OAuth2Props> {
       ...(scopes ? {scope: scopes.join(' ')} : {}),
       ...authorizeParams,
     })}`
-    Storage.setItem(this.getLocalStorageKey(state), JSON.stringify({clientId, nonce}))
+    Storage.setItem(getLocalStorageKey(state), JSON.stringify({clientId, nonce}))
     window.location.href = url
   }
 
@@ -697,7 +729,7 @@ interface ModalConnectedProps {
   resetToken: string
 }
 
-interface ModalProps extends RouteComponentProps, ModalConnectedProps {
+interface ModalProps extends ModalConnectedProps {
   dispatch: DispatchAllActions
 }
 
@@ -709,10 +741,8 @@ interface ModalState {
 class LoginModalBase extends React.PureComponent<ModalProps, ModalState> {
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
-    history: ReactRouterPropTypes.history.isRequired,
     isLoginFormShownByDefault: PropTypes.bool,
     isShown: PropTypes.bool,
-    location: ReactRouterPropTypes.location.isRequired,
     resetToken: PropTypes.string,
   }
 
@@ -737,17 +767,13 @@ class LoginModalBase extends React.PureComponent<ModalProps, ModalState> {
     return newState
   }
 
-  private handleClose = _memoize((hasCanceledLogin): (() => void) => (): void => {
-    const {dispatch, history, location} = this.props
-    dispatch(closeLoginModal(hasCanceledLogin))
-    if (!hasCanceledLogin) {
-      if (location.pathname !== Routes.ROOT) {
-        history.push(Routes.ROOT)
-      }
-    }
-  })
+  private handleClose = (): void => {
+    this.props.dispatch(closeLoginModal())
+  }
 
+  // TODO(marielaure): Put a carousel for cover image.
   private renderIntro(style: React.CSSProperties): React.ReactNode {
+    const signupCoverImage = isLateSignupEnabled ? portraitCoverImage : oldSignupCoverImage
     const containerStyle: React.CSSProperties = {
       minHeight: '100vh',
       position: 'relative',
@@ -791,11 +817,40 @@ class LoginModalBase extends React.PureComponent<ModalProps, ModalState> {
       position: 'absolute',
       right: '100%',
     }
+    const portraitQuoteStyle: React.CSSProperties = {
+      bottom: 0,
+      fontSize: 18,
+      lineHeight: 1.44,
+      margin: '60px 50px',
+      position: 'absolute',
+    }
+    const coverShadeStyle: React.CSSProperties = {
+      ...coverAll,
+      backgroundColor: colors.BOB_BLUE,
+      opacity: isLateSignupEnabled ? .8 : .9,
+      zIndex: -1,
+    }
 
     return <div style={containerStyle}>
-      <div style={{...coverAll, backgroundColor: colors.BOB_BLUE, opacity: .9, zIndex: -1}} />
+      {isLateSignupEnabled ? <div
+        style={{
+          ...coverShadeStyle,
+          background: 'linear-gradient(to bottom, transparent, #000)'}}></div> :
+        <div style={{...coverShadeStyle, backgroundColor: colors.BOB_BLUE}} />}
       <div style={coverImageStyle} />
-      <div style={contentStyle}>
+      {isLateSignupEnabled ? <div>
+        <img
+          style={{height: 30, marginLeft: 60, marginTop: 30}}
+          src={logoProductImage} alt={config.productName} />
+        <div style={portraitQuoteStyle}>
+          <div style={{color: '#fff', fontStyle: 'italic', maxWidth: 360}}>
+            «&nbsp;{config.productName} a provoqué l'étincelle chez moi. J'ai
+            compris qu'il fallait que je me tourne prioritairement vers des entreprises
+            qui me plaisent et que je mobilise plus activement mon réseau.&nbsp;»
+          </div>
+          <div style={{color: colors.WARM_GREY, marginTop: 25}}>Catherine, 37 ans</div>
+        </div>
+      </div> : <div style={contentStyle}>
         <div style={titleStyle}>
           Commençons à travailler ensemble&nbsp;!
         </div>
@@ -816,7 +871,7 @@ class LoginModalBase extends React.PureComponent<ModalProps, ModalState> {
         <div style={{fontSize: 20, marginTop: 40}}>
           - L'équipe de {config.productName}
         </div>
-      </div>
+      </div>}
     </div>
   }
 
@@ -846,11 +901,11 @@ class LoginModalBase extends React.PureComponent<ModalProps, ModalState> {
 
     return <Modal
       isShown={this.state.isShown || !!resetToken} style={containerStyle}
-      onClose={(resetToken || isShownAsFullPage) ? null : this.handleClose(true)}>
-      {isShownAsFullPage ? this.renderIntro({flex: 1}) : null}
+      onClose={(resetToken || isShownAsFullPage) ? null : this.handleClose}>
+      {isShownAsFullPage ? this.renderIntro({flex: isLateSignupEnabled ? .5 : 1}) : null}
       {isShownAsFullPage ?
-        <ModalCloseButton onClick={this.handleClose(true)} style={closeButtonStyle} /> : null}
-      <LoginMethods onFinish={this.handleClose(false)} />
+        <ModalCloseButton onClick={this.handleClose} style={closeButtonStyle} /> : null}
+      <LoginMethods onFinish={this.handleClose} />
     </Modal>
   }
 }
@@ -862,7 +917,7 @@ const LoginModal = connect(({app: {loginModal}}: RootState): ModalConnectedProps
     isShown: !!loginModal,
     resetToken,
   }
-})(withRouter(LoginModalBase))
+})(LoginModalBase)
 
 
 interface MethodsConnectedProps {
@@ -872,7 +927,6 @@ interface MethodsConnectedProps {
 }
 
 interface MethodsProps extends MethodsConnectedProps {
-  dispatch: DispatchAllActions
   onFinish?: () => void
   onLogin?: (user: bayes.bob.User) => void
 }
@@ -880,7 +934,6 @@ interface MethodsProps extends MethodsConnectedProps {
 class LoginMethodsBase extends React.PureComponent<MethodsProps, MethodsState> {
   public static propTypes = {
     defaultEmail: PropTypes.string,
-    dispatch: PropTypes.func.isRequired,
     isLoginFormShownByDefault: PropTypes.bool,
     onFinish: PropTypes.func,
     onLogin: PropTypes.func,
@@ -897,18 +950,6 @@ class LoginMethodsBase extends React.PureComponent<MethodsProps, MethodsState> {
     onFinish && onFinish()
   }
 
-
-  // TODO(cyrille): Drop if unused.
-  private handleLogin = (email, password, hashSalt): void => {
-    const {dispatch} = this.props
-    dispatch(loginUser(email, password, hashSalt)).then((response): void => {
-      if (response && response.authenticatedUser) {
-        this.handleActualLogin(response.authenticatedUser)
-        // TODO: Take care of the else case when the authentication was
-        // not successful but we got back some new salt. (response.hashSalt)
-      }
-    })
-  }
 
   private handleShowLoginForm = _memoize((isLoginFormShown): (() => void) =>
     (): void => this.setState({isLoginFormShown}))
@@ -989,6 +1030,65 @@ class GoogleButton extends React.PureComponent<GoogleButtonProps> {
     </button>
   }
 }
+
+class StatefulFacebookLoginBase extends
+  React.PureComponent<FacebookLogin['props'], {stateKey: string}> {
+  public state = {
+    stateKey: getRandomHash(),
+  }
+
+  // TODO(cyrille): DRY this up with OAuth2
+  public componentDidMount(): void {
+    if (!isMobileVersion) {
+      return
+    }
+    const {search} = window.location
+    const {state} = parse(search.substr(1))
+    if (!search || !state) {
+      return
+    }
+    // TODO(cyrille): Add location, and use it
+    // TODO(cyrille): Keep isSignUp to avoid showing toaster with "Connexion au compte existant"
+    //   when logging in.
+    const storedState = getStoredState(state, this.props.appId)
+    if (!storedState) {
+      return
+    }
+    const {nonce} = storedState
+    if (!nonce) {
+      this.props.dispatch(displayToasterMessage(`Invalid state: "${state}".`))
+      return
+    }
+  }
+
+  public componentWillUnmount(): void {
+    clearTimeout(this.timeout)
+  }
+
+  private timeout: ReturnType<typeof setTimeout>
+
+  private handleClick = (): void => {
+    const {appId, onClick} = this.props
+    if (isMobileVersion) {
+      Storage.setItem(
+        getLocalStorageKey(this.state.stateKey),
+        JSON.stringify({clientId: appId, nonce: getRandomHash()}))
+      // Prepare a new stateKey for the next time the button is clicked.
+      this.timeout = setTimeout((): void => this.setState({stateKey: getRandomHash()}), 100)
+    }
+    onClick && onClick()
+  }
+
+  public render(): React.ReactNode {
+    const {...otherProps} = this.props
+    const {stateKey} = this.state
+    const {protocol, host} = window.location
+    const redirectUri = `${protocol}//${host}${Routes.ROOT}`
+    return <FacebookLogin
+      {...otherProps} redirectUri={redirectUri} state={stateKey} onClick={this.handleClick} />
+  }
+}
+const StatefulFacebookLogin = connect()(StatefulFacebookLoginBase)
 
 interface SocialButtonConnectedProps {
   authMethod: string
@@ -1086,7 +1186,7 @@ class SocialLoginButtonsBase extends React.PureComponent<SocialButtonProps> {
     }
     // TODO(cyrille): Try to fix https://github.com/keppelen/react-facebook-login/issues/262.
     return <div style={socialLoginBox}>
-      <FacebookLogin
+      <StatefulFacebookLogin
         appId={config.facebookSSOAppId} language="fr" disabled={isAuthenticating}
         callback={this.handleFacebookLogin}
         fields="email,name,picture,gender,birthday"
@@ -1143,68 +1243,94 @@ interface MethodsState {
   isLoginFormShown: boolean
 }
 
-
-interface ButtonConnectedProps {
-  isLoggedIn?: boolean
-}
-
-interface ButtonProps extends ButtonConnectedProps {
-  dispatch: DispatchAllActions
+interface LinkConfig {
   email?: string
-  isSignUpButton?: boolean
+  isSignUp?: boolean
   style?: React.CSSProperties
-  type: string
-  visualElement?: string
+  visualElement: string
 }
 
-interface ButtonState {
-  isClicked: boolean
+interface LinkConnectedProps {
+  isGuest?: boolean
+  isRegisteredUser?: boolean
 }
 
-class LoginButtonBase extends React.PureComponent<ButtonProps, ButtonState> {
+interface LoginLinkProps extends LinkConfig, LinkConnectedProps {
+  dispatch: DispatchAllActions
+  innerRef?: React.RefObject<HTMLAnchorElement | HTMLSpanElement>
+}
+
+class LoginLinkBase extends React.PureComponent<LoginLinkProps> {
   public static propTypes = {
-    children: PropTypes.node.isRequired,
+    children: PropTypes.node,
     dispatch: PropTypes.func.isRequired,
     email: PropTypes.string,
-    isLoggedIn: PropTypes.bool,
-    isSignUpButton: PropTypes.bool,
+    isGuest: PropTypes.bool,
+    isRegisteredUser: PropTypes.bool,
+    isSignUp: PropTypes.bool,
     style: PropTypes.object,
-    visualElement: PropTypes.string,
-  }
-
-  public state: ButtonState = {
-    isClicked: false,
+    visualElement: PropTypes.string.isRequired,
   }
 
   private handleClick = (): void => {
-    const {email, isLoggedIn, isSignUpButton, dispatch, visualElement} = this.props
-    if (isLoggedIn) {
-      this.setState({isClicked: true})
+    const {email, isGuest, isRegisteredUser, isSignUp, dispatch, visualElement} = this.props
+    if (isRegisteredUser) {
       return
     }
-    if (isSignUpButton) {
+    if (isLateSignupEnabled && !isGuest && isSignUp) {
+      dispatch(startAsGuest(visualElement))
+      return
+    }
+    if (isSignUp || isGuest) {
       dispatch(openRegistrationModal({email}, visualElement))
     } else {
       dispatch(openLoginModal({email}, visualElement))
     }
   }
 
-  public render(): React.ReactNode {
-    if (this.state.isClicked) {
-      return <Redirect to={Routes.PROJECT_PAGE} push={true} />
+  private getNewLocation(): string {
+    const {isGuest, isRegisteredUser, isSignUp} = this.props
+    if (isRegisteredUser) {
+      return Routes.PROJECT_PAGE
     }
-    const {children,
-      dispatch: omittedDispatch, email: omittedEmail, isLoggedIn: omittedIsLoggedIn,
-      isSignUpButton: omittedIsSignedUpButton, visualElement: omittedVisualElement,
-      ...extraProps} = this.props
-    return <Button type="deletion" onClick={this.handleClick} {...extraProps}>
-      {children}
-    </Button>
+    if (isLateSignupEnabled && !isGuest && isSignUp) {
+      return Routes.INTRO_PAGE
+    }
+    if (isMobileVersion) {
+      return Routes.SIGNUP_PAGE
+    }
+    return null
+  }
+
+  public render(): React.ReactNode {
+    const {children, innerRef, style} = this.props
+    const to = this.getNewLocation()
+    const commonProps = {
+      children,
+      onClick: this.handleClick,
+      style,
+    }
+    if (to) {
+      return <Link
+        {...commonProps} innerRef={innerRef as React.RefObject<HTMLAnchorElement>} to={to} />
+    }
+    return <span {...commonProps} ref={innerRef as React.RefObject<HTMLSpanElement>} />
   }
 }
-const LoginButton = connect(({user}: RootState): ButtonConnectedProps => ({
-  isLoggedIn: !!user.userId,
-}))(LoginButtonBase)
+const LoginLink = connect(({user: {hasAccount, userId}}: RootState): LinkConnectedProps => ({
+  isGuest: isLateSignupEnabled && !!userId && !hasAccount,
+  isRegisteredUser: !!userId && !!hasAccount,
+}))(LoginLinkBase)
 
 
-export {LoginModal, LoginMethods, LoginButton}
+class LoginButton extends React.PureComponent<LinkConfig & ButtonProps> {
+  public render(): React.ReactNode {
+    const {children, email, isSignUp, style, visualElement, ...otherProps} = this.props
+    return <LoginLink {...{email, isSignUp, style, visualElement}}>
+      <Button type="deletion" {...otherProps}>{children}</Button>
+    </LoginLink>
+  }
+}
+
+
+export {LoginModal, LoginMethods, LoginLink, LoginButton}

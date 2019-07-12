@@ -32,7 +32,7 @@ class _AnyColorText(object):
         return isinstance(other_text, str) and self.text == _strip_colors(other_text)
 
     def __repr__(self) -> str:
-        return 'AnyColorText({})'.format(self.text)
+        return f'AnyColorText({self.text})'
 
 
 @mock.patch(import_status.__name__ + '._MONGO_URL', _FAKE_MONGO_URL)
@@ -56,15 +56,13 @@ class ImportStatusBasicTests(unittest.TestCase):
             run_every=None,
             proto_type=None, key=None, has_pii=False),
     })
-    @mock.patch(logging.__name__ + '.info')
     @mongomock.patch(('test_url',))
-    def test_details_importer_missing(self, mock_log_info: mock.MagicMock) -> None:
+    def test_details_importer_missing(self) -> None:
         """Test missing importer."""
 
-        import_status.main(['unknown_collection'])
-        mock_log_info.assert_any_call(
-            'Collection details - unknown collection (%s)',
-            termcolor.colored('unknown_collection', 'red'))
+        # This is the SystemExit from argparse getting a bad argument.
+        with self.assertRaises(SystemExit):
+            import_status.main(['unknown_collection'])
 
     @mock.patch(logging.__name__ + '.info')
     def test_details_no_import_needed(self, mock_log_info: mock.MagicMock) -> None:
@@ -184,7 +182,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             '\t%s - %s - %s',
             _AnyColorText('in-both-with-meta'),
             _AnyColorText('in both with meta (JobGroup)'),
-            _AnyColorText('last import: {}'.format(two_days_ago)))
+            _AnyColorText(f'last import: {two_days_ago}'))
 
     @mock.patch(logging.__name__ + '.info')
     @mock.patch(import_status.__name__ + '.IMPORTERS', new={
@@ -275,7 +273,7 @@ class ImportStatusBasicTests(unittest.TestCase):
         for name, importer in import_status.IMPORTERS.items():
             self.assertTrue(
                 bool(importer.script) == importer.is_imported,
-                msg='Conflicts in script and is_imported field for {}'.format(name))
+                msg=f'Conflicts in script and is_imported field for {name}')
             if not importer.script:
                 continue
 
@@ -283,7 +281,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             if importer.args:
                 for key, value in importer.args.items():
                     self.assertNotIn(key, '\n', msg=name)
-                    self.assertNotIn(value, '\n', msg='Importer "{}", arg "{}"'.format(name, key))
+                    self.assertNotIn(value, '\n', msg=f'Importer "{name}", arg "{key}"')
 
     @mock.patch(logging.__name__ + '.info', new=mock.MagicMock())
     @mock.patch(import_status.subprocess.__name__ + '.run')
@@ -518,7 +516,7 @@ class ImportStatusSyncTests(unittest.TestCase):
             rule_file = rule.get('Name')
             if not rule_file:
                 continue
-            with open('{}{}.json'.format(directory, rule_file)) as rule_json:
+            with open(f'{directory}{rule_file}.json') as rule_json:
                 rule_content = json.load(rule_json)
             rule_type = rule_content['Targets'][0]['Id']
             if rule_type != 'import':
@@ -533,12 +531,12 @@ class ImportStatusSyncTests(unittest.TestCase):
 
         importers = import_status.IMPORTERS
         scheduled_tasks_dir = 'bob_emploi/frontend/release/scheduled-tasks/'
-        with open('{}index.json'.format(scheduled_tasks_dir)) as index_json:
+        with open(f'{scheduled_tasks_dir}index.json') as index_json:
             rules = json.load(index_json)
         scheduled_tasks = self._get_task_scheduling(rules.get('Rules', []), scheduled_tasks_dir)
 
         importers_schedule = {
-            importer_name: 'rate({})'.format(importer.run_every)
+            importer_name: f'rate({importer.run_every})'
             for importer_name, importer in importers.items()
             if importer.run_every
         }
@@ -548,7 +546,7 @@ class ImportStatusSyncTests(unittest.TestCase):
         """Check sync between ARN and rule names in scheduled tasks."""
 
         scheduled_tasks_dir = 'bob_emploi/frontend/release/scheduled-tasks/'
-        with open('{}index.json'.format(scheduled_tasks_dir)) as index_json:
+        with open(f'{scheduled_tasks_dir}index.json') as index_json:
             rules = json.load(index_json)
         for rule in rules.get('Rules', []):
             schedule_expression = rule.get('ScheduleExpression')
@@ -557,7 +555,7 @@ class ImportStatusSyncTests(unittest.TestCase):
             rule_name = rule.get('Name')
             self.assertTrue(rule_name, 'The rule has no name.')
             self.assertTrue(
-                rule.get('Arn').endswith('/{}'.format(rule_name)),
+                rule.get('Arn').endswith(f'/{rule_name}'),
                 'The Amazon Ressource Name and the rule name are different.')
 
 

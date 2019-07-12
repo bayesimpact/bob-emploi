@@ -48,7 +48,7 @@ class OnlineSalonsScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.city.region_id = '32'
         self.persona.project.target_job.job_group.rome_id = 'K1304'
         score = self._score_persona(self.persona)
-        self.assertGreater(score, 0, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertGreater(score, 0, msg=f'Fail for "{self.persona.name}"')
 
     def test_not_in_job_group(self) -> None:
         """Test that people in another job group don't match."""
@@ -58,7 +58,7 @@ class OnlineSalonsScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.city.region_id = '32'
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Fail for "{self.persona.name}"')
 
     def test_in_departement(self) -> None:
         """Test that people willing to move in departement match."""
@@ -69,7 +69,7 @@ class OnlineSalonsScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.city.region_id = '32'
         self.persona.project.target_job.job_group.rome_id = 'K1304'
         score = self._score_persona(self.persona)
-        self.assertGreater(score, 0, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertGreater(score, 0, msg=f'Fail for "{self.persona.name}"')
 
     def test_in_region(self) -> None:
         """Test that people willing to move in region match."""
@@ -80,7 +80,7 @@ class OnlineSalonsScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.city.region_id = '32'
         self.persona.project.target_job.job_group.rome_id = 'K1304'
         score = self._score_persona(self.persona)
-        self.assertGreater(score, 0, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertGreater(score, 0, msg=f'Fail for "{self.persona.name}"')
 
     def test_in_other_region(self) -> None:
         """Test that people unwilling to move to Liévin don't match."""
@@ -91,7 +91,7 @@ class OnlineSalonsScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.city.region_id = '76'
         self.persona.project.target_job.job_group.rome_id = 'K1304'
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Fail for "{self.persona.name}"')
 
     def test_extra_data(self) -> None:
         """Compute extra data."""
@@ -104,7 +104,7 @@ class OnlineSalonsScoringModelTestCase(scoring_test.ScoringModelTestBase):
         project = self.persona.scoring_project(self.database, now=self.now)
         result = typing.cast(
             online_salon_pb2.OnlineSalons, self.model.get_expanded_card_data(project))
-        self.assertGreater(len(result.salons), 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertGreater(len(result.salons), 0, msg=f'Failed for "{self.persona.name}"')
 
 
 if __name__ == '__main__':

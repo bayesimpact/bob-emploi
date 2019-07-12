@@ -310,6 +310,10 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
     }
   }
 
+  public componentWillUnmount(): void {
+    clearTimeout(this.timeout)
+  }
+
   private timeout: ReturnType<typeof setTimeout>
 
   private getLink(): string {

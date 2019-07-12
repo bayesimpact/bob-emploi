@@ -124,7 +124,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         )
         self.now = datetime.datetime(2016, 3, 27)
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_older(self) -> None:
         """Do not trigger for older people."""
@@ -132,7 +132,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         if self.persona.user_profile.year_of_birth > datetime.date.today().year - 36:
             self.persona.user_profile.year_of_birth = datetime.date.today().year - 36
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_region(self) -> None:
         """Do not trigger for people who's mobility is below "COUNTRY"."""
@@ -141,14 +141,14 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         if self.persona.project.area_type >= geo_pb2.COUNTRY:
             self.persona.project.area_type = geo_pb2.REGION
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_children(self) -> None:
         """Do not trigger for people who have children."""
 
         self.persona.user_profile.family_situation = user_pb2.FAMILY_WITH_KIDS
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_diplomas(self) -> None:
         """Do not trigger for people who have diplomas."""
@@ -156,7 +156,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
         if self.persona.user_profile.highest_degree <= job_pb2.BTS_DUT_DEUG:
             self.persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_no_diploma(self) -> None:
         """Young mobile single people without advanced diplomas should trigger."""
@@ -171,7 +171,7 @@ class AdviceSeasonalRelocateTestCase(scoring_test.ScoringModelTestBase):
             self.persona.project.employment_types.append(job_pb2.CDD_LESS_EQUAL_3_MONTHS)
 
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Failed for "{}":'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{self.persona.name}"')
 
     def test_seasonal_expanded_card_data(self) -> None:
         """Test that the advisor computes extra data for the seasonal-relocate advice."""

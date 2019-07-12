@@ -65,10 +65,9 @@ def send_email_to_user(user: user_pb2.User, user_id: str, base_url: str) -> 'mai
         {
             'baseUrl': base_url,
             'firstName': french.cleanup_firstname(user.profile.name),
-            'npsFormUrl': '{}/api/nps?user={}&token={}&redirect={}'.format(
-                base_url, user_id, auth.create_token(user_id, 'nps'),
-                parse.quote('{}/retours'.format(base_url)),
-            ),
+            'npsFormUrl':
+            f'{base_url}/api/nps?user={user_id}&token={auth.create_token(user_id, "nps")}&'
+            f'redirect={parse.quote(f"{base_url}/retours")}',
         },
         dry_run=DRY_RUN,
     )
@@ -109,8 +108,7 @@ def _send_reports(count: int, errors: typing.List[str]) -> None:
     logging.warning('%d emails sent.', count)
 
     report.notify_slack(
-        "Report for NPS blast: I've sent {:d} emails (with {:d} errors).".format(
-            count, len(errors)))
+        f"Report for NPS blast: I've sent {count:d} emails (with {len(errors):d} errors).")
 
 
 # TODO(pascal): Move to mail_blast module.
@@ -152,7 +150,7 @@ def main(
         try:
             result = send_email_to_user(user, str(user_id), base_url)
         except (IOError, json_format.ParseError) as err:
-            errors.append('{} - {}'.format(err, user_id))
+            errors.append(f'{err} - {user_id}')
             logging.error(err)
             continue
 

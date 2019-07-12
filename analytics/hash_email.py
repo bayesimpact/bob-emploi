@@ -25,7 +25,7 @@ def hash_line(line: str, keep: bool = False) -> str:
         fields = fields + [hashed_field]
     else:
         fields = [hashed_field] + fields[1:]
-    return '{}\n'.format(','.join(fields))
+    return ','.join(fields) + '\n'
 
 
 def hash_files(inputfile: str, outputfile: str, keep: typing.Union[bool, str] = False) -> int:
@@ -57,6 +57,4 @@ def hash_user(email: str, name: str) -> str:
 
 
 if __name__ == '__main__':
-    print(
-        '{:d} lines hashed.'
-        .format(hash_files(*sys.argv[1:])))  # pylint: disable=no-value-for-parameter
+    print(f'{hash_files(*sys.argv[1:])} lines hashed.')  # pylint: disable=no-value-for-parameter

@@ -1,9 +1,9 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import {History, createBrowserHistory} from 'history'
-import Storage from 'local-storage-fallback'
 import {parse} from 'query-string'
 import Radium from 'radium'
 import React from 'react'
+import {LoadingComponentProps} from 'react-loadable'
 import {connect, Provider} from 'react-redux'
 import {RouteComponentProps} from 'react-router'
 import {Redirect, Route, Switch} from 'react-router-dom'
@@ -13,22 +13,24 @@ import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
 import {polyfill} from 'smoothscroll-polyfill'
 
-import {actionTypesToLog, fetchUser, openLoginModal, switchToMobileVersionAction,
+import {actionTypesToLog, fetchUser, switchToMobileVersionAction,
   migrateUserToAdvisor, trackInitialUtm, activateDemoInFuture,
-  activateDemo, loginUserFromToken, pageIsLoaded, PAGE_IS_LOADED, isActionRegister,
+  activateDemo, pageIsLoaded, PAGE_IS_LOADED, isActionRegister,
   AUTHENTICATE_USER, RootState, DispatchAllActions, AllActions} from 'store/actions'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
 import {createFacebookAnalyticsMiddleWare} from 'store/facebook_analytics'
 import {createGoogleAnalyticsMiddleWare} from 'store/google_analytics'
 import {onboardingComplete} from 'store/main_selectors'
+import {isLateSignupEnabled} from 'store/user'
 import {userReducer} from 'store/user_reducer'
 
 import {LoginModal} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {Snackbar} from 'components/snackbar'
-import {Routes} from 'components/url'
+import {Routes, SIGNUP_HASH} from 'components/url'
 import {LoadableComponentType, WebpackChunksLoader} from 'components/webpack_chunks_loader'
+import {IntroPage} from './intro'
 import {SignUpPage} from './signup'
 import {WaitingPage} from './waiting'
 
@@ -40,7 +42,8 @@ polyfill()
 // Timing between background loading of webpack chunks.
 const WEBPACK_CHUNKS_LOADING_DELAY_MILLISECS = 3000
 // Loads chunks one after the other, in the background.
-const chunkLoader = new WebpackChunksLoader(WEBPACK_CHUNKS_LOADING_DELAY_MILLISECS, WaitingPage)
+const chunkLoader = new WebpackChunksLoader(
+  WEBPACK_CHUNKS_LOADING_DELAY_MILLISECS, WaitingPage as React.ComponentType<LoadingComponentProps>)
 
 const LandingPage = chunkLoader.createLoadableComponent(
   (): Promise<typeof import('./landing')> =>
@@ -151,6 +154,7 @@ interface UserCheckedPagesConnectedProps {
   demo?: string
   hasLoginModal: boolean
   hasUserSeenExplorer: boolean
+  isFetchingUser: boolean
   user: bayes.bob.User
 }
 
@@ -167,46 +171,14 @@ interface UserCheckedPagesProps extends UserCheckedPagesConnectedProps {
 // will try to login the user if there's a clue (in the cookies or in the URL),
 // but not enforce it.
 class UserCheckedPagesBase extends
-  React.Component<UserCheckedPagesProps, {isFetchingUser: boolean}> {
-
-  public state = {
-    isFetchingUser: false,
-  }
+  React.Component<UserCheckedPagesProps> {
 
   public componentDidMount(): void {
-    const {user, dispatch, location} = this.props
-    const {authToken, email, resetToken, userId: userIdFromUrl} = parse(location.search)
-    const userIdFromCookie = Storage.getItem('userId')
+    const {user: {userId}, dispatch} = this.props
 
-    // Reset password flow: disregard any page and just let the user reset
-    // their password.
-    if (resetToken) {
-      dispatch(openLoginModal({
-        email: email || '',
-        resetToken,
-      }, 'resetpassword'))
-      return
+    if (userId) {
+      dispatch(fetchUser(userId, true))
     }
-
-    if (!userIdFromUrl && (user.userId || !userIdFromCookie)) {
-      return
-    }
-
-    this.setState({isFetchingUser: true})
-    const userPromise: Promise<bayes.bob.User|bayes.bob.AuthResponse|void> =
-      (authToken && userIdFromUrl) ?
-        dispatch(loginUserFromToken(userIdFromUrl, authToken)) :
-        dispatch(fetchUser(userIdFromUrl || userIdFromCookie, !userIdFromUrl))
-
-    userPromise.
-      then((response): void => {
-        if (!response) {
-          dispatch(openLoginModal({
-            email: email || '',
-          }, 'returninguser'))
-        }
-        this.setState({isFetchingUser: false})
-      })
   }
 
   public componentDidUpdate(prevProps: UserCheckedPagesProps): void {
@@ -231,26 +203,38 @@ class UserCheckedPagesBase extends
   }
 
   public render(): React.ReactNode {
-    const {hasLoginModal, hasUserSeenExplorer, location, user} = this.props
-    const {isFetchingUser} = this.state
+    const {hasLoginModal, hasUserSeenExplorer, isFetchingUser, location, user} = this.props
     const {hash, search} = location
-    const hasUser = !!user.userId
+    const {authToken, resetToken, state, userId} = parse(search)
+    const hasUser = !!user.registeredAt
+    const hasRegisteredUser = hasUser && user.hasAccount
+    const hasUrlLoginIncentive =
+      resetToken ||
+      !hasRegisteredUser && state ||
+      !hasUser && (hash === SIGNUP_HASH || (authToken && userId))
     return <React.Fragment>
       <Switch>
-        {/* Show signup page on mobile if no user is logged in and login modal should be opened.
-            See http://go/bob:login-workflow for more information on the design. */}
-        {isMobileVersion && hasLoginModal && !hasUser ? <Route path="*" component={SignUpPage} /> :
-          null}
+        {hasUrlLoginIncentive ? <Route path="*" component={SignUpPage} /> : null}
         {/* Pages that can be access both for logged-in and anonymous users. */}
         {staticPages.map(({Component, route}): React.ReactNode => <Route
           path={route} key={`route-${route}`} component={Component} />)}
 
-        {/* Special states. */}
+        {/* User is being fetched. */}
         {isFetchingUser ? <Route path="*" component={WaitingPage} /> : null}
 
         {/* Landing page for anonymous users. */}
         {hasUser ? null : <Route path={Routes.JOB_SIGNUP_PAGE} component={LandingPage} />}
-        {hasUser ? null : <Route path="*" component={LandingPage} />}
+        {hasUser ? null : <Route path={Routes.ROOT} exact={true} component={LandingPage} />}
+
+        {/* Intro page for anonymous users.*/}
+        {hasUser || !isLateSignupEnabled ? null :
+          <Route path={Routes.INTRO_PAGE} component={IntroPage} />}
+
+        {/* Signup and login routes. */}
+        {/* We're on a connected page, without a user, so we show the login modal. */}
+        {hasUser ? null : <Route path="*" component={SignUpPage} />}
+        {isMobileVersion && !hasRegisteredUser ?
+          <Route path={Routes.SIGNUP_PAGE} component={SignUpPage} /> : null}
 
         {/* Pages for logged-in users that might not have completed their onboarding. */}
         <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={LoadableProfilePage} />
@@ -267,15 +251,21 @@ class UserCheckedPagesBase extends
         <Redirect to={Routes.PROJECT_PAGE + search + hash} />
 
       </Switch>
-      {isMobileVersion || hasUser || !hasLoginModal ? null : <LoginModal />}
+      {hasLoginModal && !isMobileVersion && (hasUrlLoginIncentive || !hasRegisteredUser) ?
+        <LoginModal /> : null}
     </React.Fragment>
   }
 }
 const UserCheckedPages = connect(
-  ({app: {demo, lastAccessAt, loginModal}, user}: RootState): UserCheckedPagesConnectedProps => ({
+  ({
+    app: {demo, lastAccessAt, loginModal},
+    asyncState: {isFetching},
+    user,
+  }: RootState): UserCheckedPagesConnectedProps => ({
     demo,
     hasLoginModal: !!loginModal,
     hasUserSeenExplorer: !lastAccessAt || lastAccessAt > '2018-01-17',
+    isFetchingUser: !!isFetching['GET_USER_DATA'],
     user,
   }))(UserCheckedPagesBase)
 

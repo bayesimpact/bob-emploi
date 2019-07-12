@@ -24,7 +24,7 @@ class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
             ],
         })
         score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertLessEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_should_try_other_job(self) -> None:
         """There's a job with way more offers, and the user wants to reorient."""
@@ -47,7 +47,7 @@ class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_already_best_job(self) -> None:
         """User is targetting the best job in their group."""
@@ -69,7 +69,7 @@ class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_already_good_job(self) -> None:
         """User is targetting a correct job in their group, but not the best."""
@@ -99,7 +99,7 @@ class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_bad_job_group(self) -> None:
         """Never recommend a reconversion inside this job group, it's too diverse."""
@@ -122,7 +122,7 @@ class AdviceBetterJobInGroupTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
 if __name__ == '__main__':

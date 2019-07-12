@@ -54,7 +54,7 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
         })
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_second_best_channel(self) -> None:
         """User is in a market where spontaneous application is the second best channel."""
@@ -101,7 +101,7 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
         })
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_not_best_channel(self) -> None:
         """User is in a market where spontaneous application is not the best channel."""
@@ -140,7 +140,7 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
         })
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_not_best_channel_but_alternance(self) -> None:
         """User is missing a diploma and will need alternance company ideas."""
@@ -176,7 +176,7 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
         })
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
 
 @mock.patch(companies.__name__ + '.get_lbb_companies')
@@ -200,7 +200,7 @@ class ExtraDataTestCase(scoring_test.AdviceScoringModelTestBase):
         })
         mock_get_lbb_companies.side_effect = [
             [{'name': 'Carrefour'}, {'name': 'Leclerc'}],
-            [{'name': 'Company {}'.format(i)} for i in range(10)],
+            [{'name': f'Company {i}'} for i in range(10)],
         ]
 
         persona = self._random_persona().clone()
@@ -235,7 +235,7 @@ class ExtraDataTestCase(scoring_test.AdviceScoringModelTestBase):
         })
         mock_get_lbb_companies.side_effect = [
             [{'name': 'Carrefour'}, {'name': 'Leclerc'}],
-            [{'name': 'Company {}'.format(i)} for i in range(10)],
+            [{'name': f'Company {i}'} for i in range(10)],
         ]
 
         persona = self._random_persona().clone()
@@ -319,7 +319,7 @@ class ExtraDataTestCase(scoring_test.AdviceScoringModelTestBase):
         })
         mock_get_lbb_companies.side_effect = [
             [{'name': 'Carrefour'}, {'name': 'Leclerc'}],
-            [{'name': 'Company {}'.format(i)} for i in range(2)],
+            [{'name': f'Company {i}'} for i in range(2)],
         ]
 
         persona = self._random_persona().clone()

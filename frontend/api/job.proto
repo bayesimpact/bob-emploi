@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 import "bob_emploi/frontend/api/geo.proto";
+import "bob_emploi/frontend/api/jobboard.proto";
+import "bob_emploi/frontend/api/skill.proto";
 import "google/protobuf/timestamp.proto";
 
 package bayes.bob;
@@ -25,106 +27,141 @@ message Job {
 }
 
 // Description of a job group.
-// Next free ID: 29.
+// Next free ID: 31.
 message JobGroup {
   // Identifier of the group in the ROME index.
   string rome_id = 1;
 
   // Complete name of this group in user's language.
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   string name = 2;
 
   // How one would describe their area of work when talking to someone else:
   // "I'm working ..." (in French "Je travaille ..."). E.g. "dans la banque",
   // "dans l'immobilier".
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string in_domain = 4;
 
   // Example of jobs in this group.
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   repeated Job samples = 3;
 
   // All jobs in this group.
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   repeated Job jobs = 5;
 
   // Major and minor Holland Codes (e.g A (artistic) or R (realistic)).
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   string holland_code_major = 8;
   string holland_code_minor = 9;
 
   // A description of the work environment as a short text (from ROME).
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   string working_environment = 10;
 
   // A description of the job group (from ROME).
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   string description = 11;
 
   // Requirements for this job group.
+  // This data comes from parsing job offers.
   JobRequirements requirements = 12;
 
   // A short text (but multiple lines) describing the requirements for this job
   // group (from ROME).
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   string requirements_text = 13;
 
   // Work environment for this job group.
+  // This data comes from Pôle emploi Référentiel Opérationnel des Métiers (ROME).
   WorkEnvironment work_environment_keywords = 14;
 
   // How difficult it is for job seekers to apply to this kind of jobs.
+  // This data was manually built by Bayes Impact's Content Team over the years.
   ApplicationProcessComplexity application_complexity = 15;
 
   // What application modes have been used for a job type.
   // The dataset is based on an annual survey on recently re-employed people.
+  // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
   map<string, RecruitingModesDistribution> application_modes = 16;
 
   // The best way to apply for this kind of jobs (especially spontaneously).
+  // This data was manually built by Bayes Impact's Content Team over the years.
   ApplicationMedium preferred_application_medium = 6;
 
   // Whether there are people practicing one of these jobs as freelancers.
+  // This data was manually built by Bayes Impact's Content Team over the years.
   bool has_freelancers = 7;
 
   // How one would describe their workplace to someone else:
   // "Come to see me in my… shop" (in French "Venez me voir…").
   // "E.g. dans mon magasin".
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string in_a_workplace = 17;
 
   // The possessive someone would use to speak about someone else's workplace:
   // "I would like to work in a shop… like yours"
   // (J'aimerais travailler dans un magasin… comme le vôtre").
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string like_your_workplace = 18;
 
   // The plural form of how one would describe a workplace:
   // "You need to visit… shops" (in French "Vous devez visiter…").
   // "E.g. des magasins".
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string place_plural = 19;
 
   // How one would talk about what they love about someone else's job topic:
   // "I am found of your pastries!"
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string what_i_love_about = 20;
 
   // Relative growth of this job group for the period 2012-2022. Just an
   // estimate. Values are between -0.16 and +0.29. If the value is exactly 0,
   // it means that the growth is unknown. For a null growth, use a very small
   // but non-null value.
+  // This data comes from France Stratégie:
+  // http://www.strategie.gouv.fr/sites/strategie.gouv.fr/files/atoms/files/fs_rapport_metiers_en_2022_27042015_final.pdf
   float growth_2012_2022 = 21;
 
   // How one would saying bringing something to the workplace:
   // "The skills you brings to the workplace"
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string to_the_workplace = 22;
 
   // How one would justify why they candidate to a given company.
   // In French: "vous vous reconnaissez dans leurs valeurs, leur équipe, ..."
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string why_specific_company = 23;
 
   // How one would talk about various companies in this job group:
   // In French: "chez Axa, Groupama ou ...", "à la BNP, au Crédit agricole".
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string at_various_companies = 24;
 
   // Feminine version of what_i_love_about field.
+  // This data was manually built by Bayes Impact's Content Team over the years.
   string what_i_love_about_feminine = 25;
 
   // The (at most 11) top departements in terms of offer/demand ratio, in descending order.
+  // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
   repeated DepartementStats best_departements = 26;
 
   // The national market score (offer/demand ratio).
+  // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
   float national_market_score = 27;
 
   // Whether the required diplomas are strictly needed, or only a strong wish from recruitors.
+  // This data was manually built by Bayes Impact's Content Team over the years.
   bool is_diploma_strictly_required = 28;
+
+  // A list of job boards that have specific offers for this job group.
+  // This data was manually built by Bayes Impact's Content Team over the years.
+  repeated JobBoard job_boards = 29;
+
+  // A list of soft skills related to this job group that will be useful for the future.
+  // This data comes from 80,000 hours: https://80000hours.org/articles/skills-most-employable/.
+  repeated Skill skills_for_future = 30;
 }
 
 message DepartementStats {
@@ -448,7 +485,8 @@ message ImtLocalJobStats {
   // A list of months in which hiring in this job is stronger than in others.
   repeated Month active_months = 10;
 
-  // This list gives the percentages of each employment type.
+  // This list gives the percentages of each employment type. It is sorted with the most frequent
+  // first.
   // We wish we could create a map, but enums cannot be keys of a map in proto3.
   repeated EmploymentTypePercentage employment_type_percentages = 11;
 

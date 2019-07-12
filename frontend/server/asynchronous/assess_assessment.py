@@ -62,7 +62,7 @@ def _list_missing_properties_for_assessed_use_case(user: user_pb2.User, title: s
 
 
 def _get_use_case_url(use_case: use_case_pb2.UseCase) -> str:
-    return '{}/eval/{}?poolName={}'.format(_BASE_URL, use_case.use_case_id, use_case.pool_name)
+    return f'{_BASE_URL}/eval/{use_case.use_case_id}?poolName={use_case.pool_name}'
 
 
 _T = typing.TypeVar('_T')
@@ -112,30 +112,30 @@ def _compute_assessment_report(example_count: int, since: str, until: str) -> st
         unassessed_count += 1
         example = (_get_use_case_url(use_case), missing)
         _reservoir_sample(examples, example_count, example, unassessed_count)
-    report_text = '{} use case{} tested\n{} use case{} successfully assessed\n'.format(
-        project_count, '' if project_count == 1 else 's',
-        project_count - unassessed_count, '' if project_count - unassessed_count == 1 else 's')
+    report_text = f'{project_count} use case{"" if project_count == 1 else "s"} tested\n' \
+        f'{project_count - unassessed_count} use ' \
+        f'case{"" if project_count - unassessed_count == 1 else "s"} successfully assessed\n'
     if project_count:
         rate = (project_count - unassessed_count) / project_count * 100
-        report_text += 'Success rate: {:4.1f}%\n'.format(rate)
+        report_text += f'Success rate: {rate:4.1f}%\n'
     total_failure_count = unassessed_count
     if total_failure_count:
         for field, count in num_cases_missing_a_field.items():
-            report_text += '{} use case{} missed {} ({:3.1f}%)\n'.format(
-                count, '' if count == 1 else 's', field, 100 * count / total_failure_count)
+            percent = 100 * count / total_failure_count
+            report_text += \
+                f'{count} use case{"" if count == 1 else "s"} missed {field} ({percent:3.1f}%)\n'
 
     example_count = min(len(examples), example_count)
     if not example_count:
         return report_text
-    report_text += 'Example{maybe_s} of {count} failed use case{maybe_s}:\n'.format(
-        maybe_s='' if example_count == 1 else 's', count=example_count)
+    maybe_s = '' if example_count == 1 else 's'
+    report_text += f'Example{maybe_s} of {example_count} failed use case{maybe_s}:\n'
     grouped_examples = itertools.groupby(
         sorted(examples, key=lambda s: s[1]), lambda s: s[1])
     for key, values in grouped_examples:
-        report_text += 'Missing field{} "{}":\n\t{}\n'.format(
-            '' if len(key) == 1 else 's',
-            '", "'.join(key),
-            '\n\t'.join(map(lambda e: e[0], list(values))))
+        keys = '", "'.join(key)
+        values_string = '\n\t'.join(map(lambda e: e[0], list(values)))
+        report_text += f'Missing field{"" if len(key) == 1 else "s"} "{keys}":\n\t{values_string}\n'
     return report_text
 
 
@@ -185,7 +185,7 @@ def main(string_args: typing.Optional[typing.List[str]] = None, out: typing.Text
     if _SLACK_ASSESSER_URL:
         requests.post(_SLACK_ASSESSER_URL, json={'attachments': [{
             'mrkdwn_in': ['text'],
-            'title': 'Assessment coverage from {} to {}'.format(from_date, to_date),
+            'title': f'Assessment coverage from {from_date} to {to_date}',
             'text': report_text,
         }]})
 

@@ -84,8 +84,7 @@ def iterate(
     with open(colnames_txt) as colnames_lines:
         column_names = [line.strip() for line in colnames_lines]
     if required_fields and not required_fields < set(column_names):
-        raise ValueError(
-            'Required fields are missing: {}'.format(required_fields - set(column_names)))
+        raise ValueError(f'Required fields are missing: {required_fields - set(column_names)}')
     min_num_required_fields = -1
     if required_fields:
         for field in required_fields:

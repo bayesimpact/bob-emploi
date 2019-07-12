@@ -68,6 +68,7 @@
     "import/first": ["error", "absolute-first"],
     "import/newline-after-import": "error",
     "import/unambiguous": 0,
+    // Already defined in @typescript-eslint.
     "indent": 0,
     "jsx-a11y/accessible-emoji": "error",
     "jsx-a11y/alt-text": "error",
@@ -84,8 +85,10 @@
     "no-multi-spaces": "error",
     "no-trailing-spaces": "error",
     "no-unexpected-multiline": "error",
+    // Already defined in @typescript-eslint.
     "no-unused-vars": 0,
-    "no-use-before-define": "error",
+    // Already defined in @typescript-eslint.
+    "no-use-before-define": 0,
     "no-whitespace-before-property": "error",
     "object-curly-spacing": "error",
     "operator-assignment": "error",
@@ -97,7 +100,11 @@
     "react/jsx-equals-spacing": "error",
     "react/jsx-no-bind": "error",
     "react/jsx-tag-spacing": "error",
-    "react/no-unescaped-entities": 0,
+    "react/no-unescaped-entities": ["error", {"forbid": [
+        {"char": ">", "alternatives": ["&gt;"]},
+        {"char": "}", "alternatives": ["&#125;"]},
+        {"char": "•", "alternatives": ["&bull;", "·"]}
+    ]}],
     "react/no-unused-prop-types": ["error", {"skipShapeProps": true}],
     "react/no-unused-state": "error",
     "react/sort-comp": "error",

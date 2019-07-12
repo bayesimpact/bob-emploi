@@ -125,7 +125,7 @@ def job_seeker_iterator(
 
     def _table_iterator(table: str) -> PeekIterator[typing.Dict[str, str]]:
         return PeekIterator(migration_helpers.flatten_iterator(
-            path.join(fhs_folder, '*/{}.csv'.format(table))))
+            path.join(fhs_folder, f'*/{table}.csv')))
     iterators = {table: _table_iterator(table) for table in set(tables)}
 
     while any(not i.done for i in iterators.values()):
@@ -441,7 +441,7 @@ class JobSeeker(object):
     def get_unique_id(self) -> str:
         """Returns an unique ID for this jobseeker."""
 
-        return '{}_{}'.format(self._job_seeker_id, self._region_id)
+        return f'{self._job_seeker_id}_{self._region_id}'
 
 
 class RegistrationReason(object):

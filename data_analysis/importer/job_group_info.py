@@ -25,6 +25,7 @@ import typing
 from airtable import airtable
 import pandas
 
+from bob_emploi.data_analysis.importer import airtable_to_protos
 from bob_emploi.data_analysis.lib import cleaned_data
 from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.data_analysis.lib import rome_genderization
@@ -51,7 +52,10 @@ def make_dicts(
         strict_diplomas_airtable: str,
         info_by_prefix_airtable: str,
         fap_growth_2012_2022_csv: str,
-        imt_market_score_csv: str) -> typing.List[typing.Dict[str, typing.Any]]:
+        imt_market_score_csv: str,
+        jobboards_airtable: typing.Optional[str] = None,
+        skills_for_future_airtable: typing.Optional[str] = None) \
+        -> typing.List[typing.Dict[str, typing.Any]]:
     """Import job info in MongoDB.
 
     Args:
@@ -80,6 +84,10 @@ def make_dicts(
         fap_growth_2012_2022_csv: path to a CSV file containing the growth of
             FAP job groups for the period 2012-2022.
         imt_market_score_csv: path to a CSV containing market score info from IMT.
+        jobboards_airtable: the base ID and the table name joined by a ':' of the Airtable of the
+            job boards.
+        skills_for_future_airtable: the base ID and the table name joined by a ':' of the Airtable
+            of the skills for the future.
     Returns:
         A list of dict that maps the JSON representation of JobGroup protos.
     """
@@ -102,6 +110,10 @@ def make_dicts(
     application_modes = _get_application_modes(
         application_mode_csv, rome_fap_crosswalk_txt)
     fap_growth_2012_2022 = pandas.read_csv(fap_growth_2012_2022_csv)
+    jobboards_by_rome = _load_items_from_airtable(
+        'JobBoard', job_groups.index, jobboards_airtable, 'for-job-group')
+    skills_for_future_by_rome = _load_items_from_airtable(
+        'Skill', job_groups.index, skills_for_future_airtable, 'rome_prefixes')
 
     # Genderize names.
     masculine, feminine = rome_genderization.genderize(jobs.name)
@@ -191,6 +203,13 @@ def make_dicts(
         *strict_diplomas_airtable.split(':'))
     job_groups['is_diploma_strictly_required'].fillna(False, inplace=True)
 
+    # Add job_boards.
+    if jobboards_by_rome:
+        job_groups['jobBoards'] = job_groups.index.map(jobboards_by_rome)
+
+    # Add skills for the future.
+        job_groups['skillsForFuture'] = job_groups.index.map(skills_for_future_by_rome)
+
     # Set index as field.
     job_groups.index.name = 'romeId'
     job_groups.reset_index(inplace=True)
@@ -255,9 +274,8 @@ def _group_work_environment_items(work_environments: pandas.DataFrame) \
     if 'sectors' in environment:
         sectors = work_environments[work_environments.section.str.lower() == 'secteurs']
         if sectors.domain.isnull().sum():
-            raise ValueError(
-                'Some sectors are not in any domain:\n"{}"'
-                .format('"\n"'.join(sectors[sectors.domain.isnull()].name.tolist())))
+            all_sectors = '"\n"'.join(sectors[sectors.domain.isnull()].name.tolist())
+            raise ValueError(f'Some sectors are not in any domain:\n"{all_sectors}"')
         environment['domains'] = [
             {
                 'name': domain_name,
@@ -296,13 +314,13 @@ def _load_domains_from_airtable(base_id: str, table: str, view: typing.Optional[
         domain = fields.get('domain_name')
         if not domain:
             errors.append(ValueError(
-                'Sector "{}" on record "{}" has no domain_name set.'
-                .format(sector, record['id'])))
+                f'Sector "{sector}" on record "{record["id"]}" has no domain_name set.'))
             continue
         domains[sector] = domain
     if errors:
-        raise ValueError('{:d} errors while importing from Airtable:\n{}'.format(
-            len(errors), '\n'.join(str(error) for error in errors)))
+        raise ValueError(
+            f'{len(errors):d} errors while importing from Airtable:\n' +
+            '\n'.join(str(error) for error in errors))
     return domains
 
 
@@ -354,8 +372,9 @@ def _load_assets_from_airtable(base_id: str, table: str, view: typing.Optional[s
         except ValueError as error:
             errors.append(error)
     if errors:
-        raise ValueError('{:d} errors while importing from Airtable:\n{}'.format(
-            len(errors), '\n'.join(str(error) for error in errors)))
+        raise ValueError(
+            f'{len(errors):d} errors while importing from Airtable:\n' +
+            '\n'.join(str(error) for error in errors))
     return dict(assets)
 
 
@@ -379,11 +398,11 @@ def _load_asset_from_airtable(airtable_fields: typing.Dict[str, typing.Any]) \
                 assets[proto_name] = _assert_markdown_list(value)
             except ValueError as error:
                 errors.append(ValueError(
-                    'The field {} is not formatted correctly: {}'.format(airtable_name, error)))
+                    f'The field {airtable_name} is not formatted correctly: {error}'))
     if errors:
-        raise ValueError('The job {} has {:d}, errors:\n{}'.format(
-            airtable_fields.get('code_rome'), len(errors),
-            '\n'.join(str(error) for error in errors)))
+        raise ValueError(
+            f'The job {airtable_fields.get("code_rome")} has {len(errors):d} errors:\n' +
+            '\n'.join(str(error) for error in errors))
     return airtable_fields['code_rome'], assets
 
 
@@ -393,8 +412,7 @@ def _assert_markdown_list(value: str) -> str:
         return ''
     for line in lines:
         if not _MARKDOWN_LIST_LINE_REGEXP.match(line):
-            raise ValueError(
-                'Each line should start with a * and an upper case, found: {}'.format(line))
+            raise ValueError(f'Each line should start with a * and an upper case, found: {line}')
     return '\n'.join(lines)
 
 
@@ -454,6 +472,36 @@ def _load_prefix_info_from_airtable(
         info[column].fillna(default_value, inplace=True)
 
     return info
+
+
+def _load_items_from_airtable(
+        proto_name: str, job_groups: typing.Iterable[str],
+        airtable_connection: typing.Optional[str], rome_prefix_field: str) \
+        -> typing.Optional[typing.Mapping[str, typing.List[typing.Dict[str, typing.Any]]]]:
+    if not airtable_connection:
+        return None
+    parts = airtable_connection.split(':')
+    if len(parts) <= 2:
+        base_id, table = parts
+        view = None
+    else:
+        base_id, table, view = parts
+    items: typing.Dict[str, typing.List[typing.Dict[str, typing.Any]]] = \
+        {job_group: [] for job_group in job_groups}
+    converter = airtable_to_protos.PROTO_CLASSES[proto_name]
+    client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
+    for record in client.iterate(table, view=view):
+        item = converter.convert_record(record)
+        del item['_id']
+        job_group_prefixes = record['fields'].get(rome_prefix_field, '')
+        for job_group_prefix in job_group_prefixes.split(','):
+            job_group_prefix = job_group_prefix.strip()
+            if not job_group_prefix:
+                continue
+            for job_group, items_for_group in items.items():
+                if job_group.startswith(job_group_prefix):
+                    items_for_group.append(item)
+    return items
 
 
 def _get_application_modes(application_mode_csv: str, rome_fap_crosswalk_txt: str) \

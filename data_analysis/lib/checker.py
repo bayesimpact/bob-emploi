@@ -69,7 +69,7 @@ class Checker(object):
         """
 
         raise NotImplementedError(
-            'The checker "{}" has no implementation for its check method.'.format(self.name))
+            f'The checker "{self.name}" has no implementation for its check method.')
 
 
 class ValueChecker(object):
@@ -86,7 +86,7 @@ class ValueChecker(object):
         """Whether this specific value passes the check or not."""
 
         raise NotImplementedError(
-            'The checker "{}" has no implementation for its check_value method.'.format(self.name))
+            f'The checker "{self.name}" has no implementation for its check_value method.')
 
 
 class _AllStringFieldsChecker(Checker, ValueChecker):  # pylint: disable=abstract-method
@@ -97,7 +97,7 @@ class _AllStringFieldsChecker(Checker, ValueChecker):  # pylint: disable=abstrac
         try:
             return self.check_value(field_value)
         except ValueError as err:
-            raise ValueError(str(err) + ' in the field "{}"'.format(field))
+            raise ValueError(f'{err!s} in the field "{field}"')
 
     def check(self, proto: message.Message) -> bool:
         return all(
@@ -183,8 +183,8 @@ class MissingTemplateVarsChecker(ValueChecker):
         missing_templates = _TEMPLATE_VAR.findall(new_sentence)
         if missing_templates:
             raise ValueError(
-                'One or more template variables have not been replaced: {}\n'
-                .format(', '.join(missing_templates)))
+                'One or more template variables have not been replaced: '
+                f'{", ".join(missing_templates)}\n')
         return True
 
 
@@ -207,9 +207,9 @@ class TemplateVarsChecker(Checker):
                 filters = getattr(proto, self._filters_field)
                 if 'for-active-search' not in filters:
                     raise ValueError(
-                        'String at path "{}" uses the template variable '
+                        f'String at path "{path}" uses the template variable '
                         '"%jobSearchLengthMonthsAtCreation" '
-                        'without the necessary filter "for-active-search"'.format(path))
+                        'without the necessary filter "for-active-search"')
         return True
 
 
@@ -247,13 +247,9 @@ class TranslationChecker(ValueChecker):
             'docker-compose run --rm -e AIRTABLE_API_KEY="$AIRTABLE_API_KEY" '
             'data-analysis-prepare \\\n'
             '    python bob_emploi/data_analysis/i18n/collect_strings.py\n'
-            'Then fill the table at {}.\n'
-            '{} translation{} missing for the string\n"{}": {}\n'.format(
-                'https://airtable.com/tblQL7A5EgRJWhQFo/viwBe1ySNM4IvXCsN',
-                'Some' if is_plural else 'One',
-                's are' if is_plural else ' is',
-                field_value, ', '.join(missing_translations),
-            )
+            'Then fill the table at https://airtable.com/tblQL7A5EgRJWhQFo/viwBe1ySNM4IvXCsN.\n'
+            f'{"Some" if is_plural else "One"} translation{"s are" if is_plural else " is"} '
+            f'missing for the string\n"{field_value}": {", ".join(missing_translations)}\n'
         )
 
 
@@ -266,7 +262,7 @@ class UrlChecker(ValueChecker):
         """Whether this specific value passes the check or not."""
 
         if not _LINK_REGEXP.match(field_value):
-            raise ValueError('Found an irregular link: "{}"\n'.format(field_value))
+            raise ValueError(f'Found an irregular link: "{field_value}"\n')
         return True
 
 
@@ -280,7 +276,7 @@ class ScorerChecker(ValueChecker):
 
         if not scoring.get_scoring_model(field_value):
             raise ValueError(
-                'The scoring model "{}" is not implemented yet'.format(field_value))
+                f'The scoring model "{field_value}" is not implemented yet')
         return True
 
 
@@ -296,12 +292,12 @@ class PartialSentenceChecker(ValueChecker):
         if field_value[0].lower() != field_value[0]:
             raise FixableValueError(
                 'The sentence must not be capitalized',
-                '**{}**{}'.format(field_value[0], field_value[1:]),
-                '{}{}'.format(field_value[0].lower(), field_value[1:]))
+                f'**{field_value[0]}**{field_value[1:]}',
+                f'{field_value[0].lower()}{field_value[1:]}')
         if field_value[-1] in {'.', '!'}:
             raise FixableValueError(
                 'The sentence must not end with a punctuation mark',
-                '{}**{}**'.format(field_value[:-1], field_value[-1]),
+                f'{field_value[:-1]}**{field_value[-1]}**',
                 field_value[:-1].strip())
         return True
 

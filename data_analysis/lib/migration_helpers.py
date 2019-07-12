@@ -29,11 +29,11 @@ def flatten_iterator(files_pattern: str) -> typing.Iterator[typing.Dict[str, str
 
     files = glob.glob(files_pattern)
     if not files:
-        raise ValueError('No files found matching {}'.format(files_pattern))
+        raise ValueError(f'No files found matching {files_pattern}')
 
     headers = None
 
-    print('Flattening {:d} files'.format(len(files)))
+    print(f'Flattening {len(files):d} files')
 
     for current_file in sorted(files):
         reader = None
@@ -43,19 +43,15 @@ def flatten_iterator(files_pattern: str) -> typing.Iterator[typing.Dict[str, str
             reader = csv.reader(open(current_file))
         else:
             raise ValueError(
-                'Can only process .csv and .sas7bdat files. Got pattern {}'
-                .format(files_pattern))
+                f'Can only process .csv and .sas7bdat files. Got pattern {files_pattern}')
         header_line = next(reader)
         if headers is None:
             headers = header_line + ['__file__']
         elif headers[:-1] != header_line:
             raise ValueError(
-                "Headers from file {} don't match those of previous "
-                'files. Was expecting:\n{}\n  got:\n{}'
-                .format(
-                    current_file,
-                    headers[:-1],  # pylint: disable=unsubscriptable-object
-                    header_line))
+                f"Headers from file {current_file} don't match those of previous "  # pylint: disable=unsubscriptable-object
+                f'files. Was expecting:\n{headers[:-1]}\n'
+                f'  got:\n{header_line}')
         for line in reader:
             yield dict(zip(headers, line + [current_file]))
 

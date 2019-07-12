@@ -27,7 +27,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
         persona.project.seniority = project_pb2.INTERN
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_is_young_without_handicap(self) -> None:
         """User is young and has no handicap."""
@@ -38,7 +38,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
         persona.project.seniority = project_pb2.INTERN
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_is_too_old(self) -> None:
         """User is older than required age for civic service."""
@@ -49,7 +49,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
         persona.project.seniority = project_pb2.INTERN
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_is_too_young(self) -> None:
         """User is younger than required age for civic service."""
@@ -58,7 +58,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
         persona.user_profile.year_of_birth = 2007
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_has_experience(self) -> None:
         """User has too much experience."""
@@ -67,7 +67,7 @@ class AdviceCivicServiceTestCase(scoring_test.ScoringModelTestBase):
         persona.project.seniority = project_pb2.JUNIOR
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
 class CivicServiceEndpointTestCase(base_test.ServerTestCase):

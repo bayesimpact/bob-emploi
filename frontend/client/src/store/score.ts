@@ -65,6 +65,16 @@ const BOB_SUB_METRICS: StaticSubmetric[] = [
 const colorFromPercent = (percent: number): string =>
   percent >= 60 ? colors.GREENISH_TEAL : percent >= 40 ? colors.SQUASH : colors.RED_PINK
 
+const impactFromPercentDelta = (percent: number): {color: string; impact: string} => {
+// TODO(marielaure): Find a better golden number to switch from improvement score
+// to scores for color.
+  const color = colorFromPercent(4 * percent)
+  return {
+    color,
+    impact: color === colors.GREENISH_TEAL ? 'fort' : color === colors.SQUASH ? 'moyen' : 'faible',
+  }
+}
+
 
 interface DiagnosticTitle {
   shortTitle: string
@@ -138,4 +148,4 @@ function computeBobScore(
 }
 
 
-export {colorFromPercent, computeBobScore}
+export {colorFromPercent, computeBobScore, impactFromPercentDelta}
