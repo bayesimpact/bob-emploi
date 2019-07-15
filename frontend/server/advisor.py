@@ -180,14 +180,13 @@ def _send_activation_email(
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))
     data = {
         'changeEmailSettingsUrl':
-            '{}/unsubscribe.html?user={}&auth={}&coachingEmailFrequency={}'.format(
-                base_url, user.user_id,
-                settings_token, user_pb2.EmailFrequency.Name(
-                    user.profile.coaching_email_frequency)),
+            f'{base_url}/unsubscribe.html?user={user.user_id}&auth={settings_token}&'
+            'coachingEmailFrequency=' +
+            user_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency),
         'date': now.get().strftime('%d %B %Y'),
         'firstName': user.profile.name,
         'gender': user_pb2.Gender.Name(user.profile.gender),
-        'loginUrl': '{}?userId={}&authToken={}'.format(base_url, user.user_id, auth_token),
+        'loginUrl': f'{base_url}?userId={user.user_id}&authToken={auth_token}',
         'ofJob': scoring_project.populate_template('%ofJobName', raise_on_missing_var=True),
     }
     # https://app.mailjet.com/template/636862/build

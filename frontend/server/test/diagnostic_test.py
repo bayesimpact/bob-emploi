@@ -738,7 +738,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         """Test a quick save when no project is set yet."""
 
         response = self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(self.user_id),
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'profile': {'yearOfBirth': 1987}}}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + self.auth_token})
@@ -758,7 +758,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         })
 
         response = self.json_from_response(self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(self.user_id),
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'projects': [{'city': {'departementId': '69'}}]}}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + self.auth_token}))
@@ -784,7 +784,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         })
 
         response = self.json_from_response(self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(self.user_id),
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'projects': [
                 {'targetJob': {'jobGroup': {'romeId': 'L1510'}}},
             ]}}),
@@ -815,7 +815,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         self._update_user(user_info)
 
         response = self.json_from_response(self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(self.user_id),
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'projects': [
                 {'targetJob': {'jobGroup': {'romeId': 'L1510'}}},
             ]}}),
@@ -850,7 +850,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         self._update_user(user_info)
 
         response = self.json_from_response(self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(self.user_id),
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'projects': [
                 {'targetJob': {'jobGroup': {'name': 'New name'}}},
             ]}}),
@@ -867,7 +867,7 @@ class QuickAdvisorTest(base_test.ServerTestCase):
         })
 
         response = self.json_from_response(self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(self.user_id),
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'projects': [
                 {'targetJob': {'jobGroup': {'romeId': 'B9876'}}},
             ]}}),

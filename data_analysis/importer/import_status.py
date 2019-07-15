@@ -58,7 +58,7 @@ from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
-_ROME_VERSION = 'v338'
+_ROME_VERSION = 'v339'
 
 _ARCHIVE_NAME_MATCH = re.compile(r'\.\d{4}-\d\d-\d\d_[0-9a-f]{4,16}$')
 
@@ -86,7 +86,7 @@ class Importer(typing.NamedTuple):
     def __str__(self) -> str:
         if not self.proto_type:
             return self.name
-        return '{} ({})'.format(self.name, self.proto_type.__name__)
+        return f'{self.name} ({self.proto_type.__name__})'
 
 
 CollectionsDiff = collections.namedtuple(
@@ -98,7 +98,7 @@ IMPORTERS = {
     'similar_jobs': Importer(
         name='ROME Mobility',
         script='rome_mobility',
-        args={'rome_csv_pattern': 'data/rome/csv/unix_{{}}_{}_utf8.csv'''.format(_ROME_VERSION)},
+        args={'rome_csv_pattern': f'data/rome/csv/unix_{{}}_{_ROME_VERSION}_utf8.csv'},
         is_imported=True,
         # TODO(marielaure): Change this when we start using it.
         run_every=None,
@@ -122,7 +122,7 @@ IMPORTERS = {
         name='Job Group Info',
         script='job_group_info',
         args={
-            'rome_csv_pattern': 'data/rome/csv/unix_{{}}_{}_utf8.csv'''.format(_ROME_VERSION),
+            'rome_csv_pattern': f'data/rome/csv/unix_{{}}_{_ROME_VERSION}_utf8.csv',
             'job_requirements_json': 'data/fhs/s3/job_offers_requirements.json',
             'job_application_complexity_json': 'data/job_application_complexity.json',
             'application_mode_csv': 'data/imt/application_modes.csv',
@@ -150,8 +150,7 @@ IMPORTERS = {
             'unemployment_duration_csv': 'data/fhs/s3/category_a_duration.csv',
             'job_offers_changes_json': 'data/fhs/s3/job_offers_changes.json',
             'imt_folder': 'data/imt',
-            'mobility_csv':
-                'data/rome/csv/unix_rubrique_mobilite_{}_utf8.csv'.format(_ROME_VERSION),
+            'mobility_csv': f'data/rome/csv/unix_rubrique_mobilite_{_ROME_VERSION}_utf8.csv',
         },
         is_imported=True,
         run_every='30 days',
@@ -473,11 +472,11 @@ IMPORTERS = {
             'market_score_csv': 'data/imt/market_score.csv',
             'offers_csv': 'data/fhs/s3/reorient_jobbing_offers_2015_2017.csv',
             'rome_item_arborescence':
-                'data/rome/csv/unix_item_arborescence_{}_utf8.csv'.format(_ROME_VERSION),
+                f'data/rome/csv/unix_item_arborescence_{_ROME_VERSION}_utf8.csv',
             'referentiel_code_rome_csv':
-                'data/rome/csv/unix_referentiel_code_rome_{}_utf8.csv'.format(_ROME_VERSION),
+                f'data/rome/csv/unix_referentiel_code_rome_{_ROME_VERSION}_utf8.csv',
             'referentiel_apellation_rome_csv':
-                'data/rome/csv/unix_referentiel_appellation_{}_utf8.csv'.format(_ROME_VERSION),
+                f'data/rome/csv/unix_referentiel_appellation_{_ROME_VERSION}_utf8.csv',
         },
         is_imported=True,
         run_every='30 days',
@@ -501,7 +500,7 @@ IMPORTERS = {
         name='Civic service missions',
         script='civic_service',
         args={
-            'civic_service_missions_csv': 'data/civic_service_missions_{}.csv'.format(NOW),
+            'civic_service_missions_csv': f'data/civic_service_missions_{NOW}.csv',
         },
         is_imported=True,
         run_every='7 days',
@@ -566,7 +565,7 @@ IMPORTERS = {
     'online_salons': Importer(
         name='Online salons',
         script='online_salons',
-        args={'events_file_name': 'data/pole_emploi/online-salons-{}.json'.format(NOW)},
+        args={'events_file_name': f'data/pole_emploi/online-salons-{NOW}.json'},
         is_imported=True,
         run_every='7 days',
         proto_type=online_salon_pb2.OnlineSalon,
@@ -696,9 +695,9 @@ def print_single_importer(
     args['mongo_collection'] = collection_name
     command = ' \\\n    '.join(
         [
-            'docker-compose run --rm -e MONGO_URL={} data-analysis-prepare'.format(mongo_url),
-            'python bob_emploi/data_analysis/importer/{}.py'.format(importer.script),
-        ] + ['--{} "{}"'.format(key, value) for key, value in args.items()]
+            f'docker-compose run --rm -e MONGO_URL={mongo_url} data-analysis-prepare',
+            f'python bob_emploi/data_analysis/importer/{importer.script}.py',
+        ] + [f'--{key} "{value}"' for key, value in args.items()]
     ) + '\n'
 
     logging.info(
@@ -745,7 +744,7 @@ def _make_data_targets(importer: Importer) -> bool:
             'Could not make "%s":\nCommand run: %s\nError: %s',
             ', '.join(data_targets),
             _show_command(err.cmd),
-            err.stderr.decode('utf-8'))
+            (err.stderr or err.stdout).decode('utf-8'))
         return False
     logging.info('Data targets made.')
     return True
@@ -775,8 +774,8 @@ def _run_importer(
     logging.info('Running importer…')
     try:
         subprocess.run(
-            ['python', os.path.join(os.path.dirname(__file__), '{}.py'.format(importer.script))] +
-            [arg for key, value in args.items() for arg in ('--{}'.format(key), value)] +
+            ['python', os.path.join(os.path.dirname(__file__), f'{importer.script}.py')] +
+            [arg for key, value in args.items() for arg in (f'--{key}', value)] +
             extra_args, stderr=subprocess.PIPE, check=True)
     except subprocess.CalledProcessError as err:
         logging.error(
@@ -788,8 +787,8 @@ def _run_importer(
 
 def _warn_unknown_collection(collection_name: str) -> None:
     logging.info(
-        'Collection details - unknown collection (%s)',
-        termcolor.colored(collection_name, 'red'))
+        'Collection details - unknown collection (%s). Should be one of:\n  %s',
+        termcolor.colored(collection_name, 'red'), '\n  '.join(sorted(IMPORTERS.keys())))
 
 
 def _print_report(db_client: pymongo.database.Database) -> None:
@@ -829,7 +828,7 @@ def _print_report(db_client: pymongo.database.Database) -> None:
             status = termcolor.colored('No import needed', 'green')
         elif collection_name in meta_info:
             status = termcolor.colored(
-                'last import: {}'.format(meta_info[collection_name]['updated_at']),
+                f'last import: {meta_info[collection_name]["updated_at"]}',
                 'green')
         else:
             status = termcolor.colored('Metainformation missing', 'red')
@@ -850,18 +849,22 @@ def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
         description='Print a report on which collections have been imported')
 
     main_action = parser.add_mutually_exclusive_group()
+    collection_names = sorted(IMPORTERS.keys())
     main_action.add_argument(
-        'collection_name', help='Name of the collection to specifically display', nargs='?')
+        'collection_name', help='Name of the collection to specifically display', nargs='?',
+        choices=collection_names)
     main_action.add_argument(
-        '--run', action='append', help='Run the command to import the collection specified')
+        '--run', action='append', help='Run the command to import the collection specified',
+        choices=collection_names)
     main_action.add_argument(
-        '--revert', action='append', help='Return the specified collection to its previous state.')
+        '--revert', action='append', help='Return the specified collection to its previous state.',
+        choices=collection_names)
 
     parser.add_argument(
         '--make_data', action='store_true', help='Run the make rule to retrieve the needed data.')
     args, unknown_args = parser.parse_known_args(string_args)
     if unknown_args and not args.run:
-        raise SystemExit(2, 'Unknown args: {}'.format(unknown_args))
+        raise SystemExit(2, f'Unknown args: {unknown_args}')
 
     db_client = pymongo.MongoClient(_MONGO_URL).get_database()
 

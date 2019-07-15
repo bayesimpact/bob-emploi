@@ -100,7 +100,7 @@ def job_seeker_rows(
     elif categories == 'all':
         category_periods = job_seeker.all_registration_periods()
     else:
-        raise ValueError('Unknown categories type: "{}"'.format(categories))
+        raise ValueError(f'Unknown categories type: "{categories}"')
 
     category_periods.exclude_after(now, lambda m: dict(
         m, MOTANN=fhs.CancellationReason.NOW))
@@ -149,8 +149,7 @@ def main(fhs_folder: str, now: str, mode_name: str, csv_output: str) -> None:
     """
 
     if mode_name not in _MODES:
-        raise ValueError(
-            'Unsupported mode: [{}], want one of [{}]'.format(mode_name, _MODES.keys()))
+        raise ValueError(f'Unsupported mode: [{mode_name}], want one of [{_MODES.keys()}]')
     mode = _MODES[mode_name]
     now_as_date = datetime.datetime.strptime(now, '%Y-%m-%d').date()
 

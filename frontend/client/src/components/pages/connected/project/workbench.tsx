@@ -16,7 +16,7 @@ import {AdviceCard} from 'components/advisor'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar} from 'components/navigation'
 import {RocketChain} from 'components/rocket_chain'
-import {Button, SmoothTransitions} from 'components/theme'
+import {Button} from 'components/theme'
 import {Routes} from 'components/url'
 
 import {StrategyPage} from './strategy'
@@ -199,31 +199,6 @@ class WorkbenchWithAdviceBase extends React.PureComponent<WorkbenchWithAdvicePro
   }
 
   private pageDom: React.RefObject<PageWithNavigationBar> = React.createRef()
-
-  private renderUnreadBullet(style, isSelected: boolean, isRead: boolean): React.ReactNode {
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      borderRadius: 20,
-      display: 'flex',
-      height: 17,
-      justifyContent: 'center',
-      opacity: isRead ? 0 : 1,
-      width: 17,
-      ...SmoothTransitions,
-      ...style,
-    }
-    const bulletStyle: React.CSSProperties = {
-      backgroundColor: colors.GREENISH_TEAL,
-      borderRadius: 10,
-      boxShadow: '1px 5px 4px 0 rgba(0, 0, 0, 0.2)',
-      height: 9,
-      width: 9,
-    }
-    return <div style={containerStyle}>
-      <span style={bulletStyle} />
-    </div>
-  }
 
   private renderAdvice(): React.ReactNode {
     const {advice, profile, project, userYou} = this.props

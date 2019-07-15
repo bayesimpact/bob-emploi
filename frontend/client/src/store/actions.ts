@@ -99,6 +99,7 @@ export const CHANGE_SUBMETRIC_EXPANSION = 'CHANGE_SUBMETRIC_EXPANSION'
 export const START_STRATEGY = 'START_STRATEGY'
 export const STRATEGY_EXPLORATION_PAGE_IS_SHOWN = 'STRATEGY_EXPLORATION_PAGE_IS_SHOWN'
 export const STRATEGY_WORK_PAGE_IS_SHOWN = 'STRATEGY_WORK_PAGE_IS_SHOWN'
+export const START_AS_GUEST = 'START_AS_GUEST'
 
 // Eval actions.
 // TODO(cyrille): Migrate here the eval actions from above.
@@ -157,6 +158,7 @@ export const actionTypesToLog = {
   [SHARE_PRODUCT_MODAL_IS_SHOWN]: 'Share product modal is shown',
   [SHARE_PRODUCT_TO_NETWORK]: 'Share product to network',
   [SHOW_ALL_TIPS]: 'Show all tips',
+  [START_AS_GUEST]: 'Start as guest',
   [START_STRATEGY]: 'Start a job search strategy',
   [STATIC_ADVICE_PAGE_IS_SHOWN]: 'A static advice page is shown',
   [STRATEGY_EXPLORATION_PAGE_IS_SHOWN]: 'A strategy page is shown in exploration mode',
@@ -199,6 +201,9 @@ const logoutAction: LogoutAction = {type: LOGOUT}
 
 export type OpenStatsPageAction = Readonly<Action<typeof OPEN_STATS_PAGE>>
 const openStatsPageAction: OpenStatsPageAction = {type: OPEN_STATS_PAGE}
+
+export type RemoveAuthDataAction = Readonly<Action<'REMOVE_AUTH_DATA'>>
+const removeAuthData: RemoveAuthDataAction = {type: 'REMOVE_AUTH_DATA'}
 
 export type FollowJobOffersLinkAction = Readonly<Action<typeof FOLLOW_JOB_OFFERS_LINK>>
 const followJobOffersLinkAction: FollowJobOffersLinkAction = {type: FOLLOW_JOB_OFFERS_LINK}
@@ -268,8 +273,12 @@ interface CloseLoginModalAction extends Readonly<Action<typeof CLOSE_LOGIN_MODAL
   readonly hasCanceledLogin?: boolean
 }
 
-function closeLoginModal(hasCanceledLogin?: boolean): CloseLoginModalAction {
-  return {hasCanceledLogin, type: CLOSE_LOGIN_MODAL}
+// TODO(pascal): Check if we need hasCanceledLogin somehow.
+function closeLoginModal(unusedHasCanceledLogin?: boolean):
+ThunkAction<CloseLoginModalAction, RootState, {}, AllActions> {
+  return (dispatch): CloseLoginModalAction => {
+    return dispatch({type: CLOSE_LOGIN_MODAL})
+  }
 }
 
 type DiagnosticTalkIsShownAction = ProjectAction<typeof DIAGNOSTIC_TALK_IS_SHOWN>
@@ -368,6 +377,20 @@ type ShowAllTipsAction = AdviceAction<typeof SHOW_ALL_TIPS>
 
 function showAllTips(project: bayes.bob.Project, advice: bayes.bob.Advice): ShowAllTipsAction {
   return {advice, project, type: SHOW_ALL_TIPS}
+}
+
+type StartAsGuestAction = VisualElementAction<typeof START_AS_GUEST> & {
+  readonly defaultProjectProps?: bayes.bob.Project
+}
+
+function startAsGuest(
+  visualElement: string, city?: bayes.bob.FrenchCity, targetJob?: bayes.bob.Job):
+  StartAsGuestAction {
+  return {
+    defaultProjectProps: (city || targetJob) ? {city, targetJob} : undefined,
+    type: START_AS_GUEST,
+    visualElement,
+  }
 }
 
 type StartStrategyAction = StrategyAction<typeof START_STRATEGY>
@@ -517,19 +540,20 @@ ThunkAction<Promise<bayes.bob.Strategies|void>, {}, {}, StrategizeProjectAction>
     STRATEGIZE_PROJECT, (): Promise<bayes.bob.Strategies> => projectStrategizePost(user))
 }
 
-type GetAdviceTipsAction = AsyncAction<typeof GET_ADVICE_TIPS, bayes.bob.Action[]> & {
+type GetAdviceTipsAction = AsyncAction<typeof GET_ADVICE_TIPS, readonly bayes.bob.Action[]> & {
   advice: bayes.bob.Advice
   project: bayes.bob.Project
 }
 
 function getAdviceTips(project: bayes.bob.Project, advice: bayes.bob.Advice):
-ThunkAction<Promise<bayes.bob.Action[]|void>, RootState, {}, GetAdviceTipsAction> {
+ThunkAction<Promise<readonly bayes.bob.Action[]|void>, RootState, {}, GetAdviceTipsAction> {
   return (dispatch: DispatchAllActions, getState: () => RootState):
-  Promise<bayes.bob.Action[]|void> => {
+  Promise<readonly bayes.bob.Action[]|void> => {
     const {user, app} = getState()
     return dispatch(wrapAsyncAction(
       GET_ADVICE_TIPS,
-      (): Promise<bayes.bob.Action[]> => adviceTipsGet(user, project, advice, app.authToken),
+      (): Promise<readonly bayes.bob.Action[]> =>
+        adviceTipsGet(user, project, advice, app.authToken),
       {advice, project}))
   }
 }
@@ -854,18 +878,26 @@ function asyncAuthenticate(
   authenticate: (request: bayes.bob.AuthRequest) => Promise<bayes.bob.AuthResponse>,
   authRequest: bayes.bob.AuthRequest,
   method: string, callback?: (response: bayes.bob.AuthResponse) => bayes.bob.AuthResponse):
-  ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, {}, AuthenticateUserAction> {
+  ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, {}, AllActions> {
   return (dispatch, getState): Promise<bayes.bob.AuthResponse|void> => {
-    const {initialFeatures} = getState().app
-    const finalAuthRequest = initialFeatures ? {
+    const {app: {authToken, initialFeatures}, user: {hasAccount, userId}} = getState()
+    const finalAuthRequest = {
       ...authRequest,
-      userData: initialFeatures,
-    } : authRequest
+      ...initialFeatures ? {userData: initialFeatures} : {},
+      ...userId && !hasAccount && !authRequest.authToken ? {authToken, userId} : {},
+    }
     return dispatch(wrapAsyncAction(
       AUTHENTICATE_USER,
       (): Promise<bayes.bob.AuthResponse> => authenticate(finalAuthRequest).then(callback),
       {method}
-    ))
+    )).then((authResponse): bayes.bob.AuthResponse|void => {
+      if (!authResponse) {
+        // There was an error while connecting, return to a clean authentication state.
+        // TODO(cyrille): Handle the case where there's a response with an invalid body.
+        dispatch(removeAuthData)
+      }
+      return authResponse
+    })
   }
 }
 
@@ -1006,6 +1038,14 @@ ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, {}, AuthenticateUse
   }, 'password')
 }
 
+function registerNewGuestUser(firstName: string, userData?: bayes.bob.AuthUserData):
+ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, {}, AuthenticateUserAction> {
+  return asyncAuthenticate(userAuthenticate, {
+    firstName: upperFirstLetter(firstName.trim()),
+    userData,
+  }, 'guest')
+}
+
 function loginUser(email: string, password: string, hashSalt: string):
 ThunkAction<Promise<bayes.bob.AuthResponse|void>, RootState, {}, AuthenticateUserAction> {
   const cleanEmail = email.trim()
@@ -1047,7 +1087,7 @@ ThunkAction<Promise<bayes.bob.User|void>, RootState, {}, MigrateUserToAdviceActi
   }
 }
 
-type PageIsLoadedAction = Readonly<Action<typeof PAGE_IS_LOADED>> & {
+export type PageIsLoadedAction = Readonly<Action<typeof PAGE_IS_LOADED>> & {
   readonly location: {
     readonly pathname: string
   }
@@ -1150,42 +1190,46 @@ export interface EvalRootState {
   auth: AuthEvalState
 }
 
-type EvalFiltersUseCasesAction = AsyncAction<typeof GET_EVAL_FILTERS_USE_CASES, bayes.bob.UseCase[]>
+type EvalFiltersUseCasesAction =
+  AsyncAction<typeof GET_EVAL_FILTERS_USE_CASES, readonly bayes.bob.UseCase[]>
 
-function getEvalFiltersUseCases(filters: string[]):
-ThunkAction<Promise<bayes.bob.UseCase[]|void>, EvalRootState, {}, EvalFiltersUseCasesAction> {
-  return (dispatch, getState): Promise<bayes.bob.UseCase[]|void> => {
+function getEvalFiltersUseCases(filters: readonly string[]):
+ThunkAction<Promise<readonly bayes.bob.UseCase[]|void>, EvalRootState, {},
+EvalFiltersUseCasesAction> {
+  return (dispatch, getState): Promise<readonly bayes.bob.UseCase[]|void> => {
     const {fetchGoogleIdToken} = getState().auth
     return dispatch(wrapAsyncAction(
-      GET_EVAL_FILTERS_USE_CASES, (): Promise<bayes.bob.UseCase[]> => fetchGoogleIdToken().
-        then((googleIdToken: string): Promise<bayes.bob.UseCase[]> =>
+      GET_EVAL_FILTERS_USE_CASES, (): Promise<readonly bayes.bob.UseCase[]> => fetchGoogleIdToken().
+        then((googleIdToken: string): Promise<readonly bayes.bob.UseCase[]> =>
           evalFiltersUseCasesPost(filters, googleIdToken))))
   }
 }
 
 type GetEvalUseCasePoolsAction =
-  AsyncAction<typeof GET_EVAL_USE_CASE_POOLS, bayes.bob.UseCasePool[]>
+  AsyncAction<typeof GET_EVAL_USE_CASE_POOLS, readonly bayes.bob.UseCasePool[]>
 
 function getEvalUseCasePools():
-ThunkAction<Promise<bayes.bob.UseCasePool[]|void>, EvalRootState, {}, GetEvalUseCasePoolsAction> {
-  return (dispatch, getState): Promise<bayes.bob.UseCasePool[]|void> => {
+ThunkAction<Promise<readonly bayes.bob.UseCasePool[]|void>, EvalRootState, {},
+GetEvalUseCasePoolsAction> {
+  return (dispatch, getState): Promise<readonly bayes.bob.UseCasePool[]|void> => {
     const {fetchGoogleIdToken} = getState().auth
     return dispatch(wrapAsyncAction(
-      GET_EVAL_USE_CASE_POOLS, (): Promise<bayes.bob.UseCasePool[]> => fetchGoogleIdToken().
-        then((googleIdToken: string): Promise<bayes.bob.UseCasePool[] > =>
-          evalUseCasePoolsGet(googleIdToken))))
+      GET_EVAL_USE_CASE_POOLS, (): Promise<readonly bayes.bob.UseCasePool[]> =>
+        fetchGoogleIdToken().
+          then((googleIdToken: string): Promise<readonly bayes.bob.UseCasePool[] > =>
+            evalUseCasePoolsGet(googleIdToken))))
   }
 }
 
-type GetEvalUseCasesAction = AsyncAction<typeof GET_EVAL_USE_CASES, bayes.bob.UseCase[]>
+type GetEvalUseCasesAction = AsyncAction<typeof GET_EVAL_USE_CASES, readonly bayes.bob.UseCase[]>
 
 function getEvalUseCases(poolName: string):
-ThunkAction<Promise<bayes.bob.UseCase[]|void>, EvalRootState, {}, GetEvalUseCasesAction> {
-  return (dispatch, getState): Promise<bayes.bob.UseCase[]|void> => {
+ThunkAction<Promise<readonly bayes.bob.UseCase[]|void>, EvalRootState, {}, GetEvalUseCasesAction> {
+  return (dispatch, getState): Promise<readonly bayes.bob.UseCase[]|void> => {
     const {fetchGoogleIdToken} = getState().auth
     return dispatch(wrapAsyncAction(
-      GET_EVAL_USE_CASES, (): Promise<bayes.bob.UseCase[]> => fetchGoogleIdToken().
-        then((googleIdToken: string): Promise<bayes.bob.UseCase[]> =>
+      GET_EVAL_USE_CASES, (): Promise<readonly bayes.bob.UseCase[]> => fetchGoogleIdToken().
+        then((googleIdToken: string): Promise<readonly bayes.bob.UseCase[]> =>
           evalUseCasesGet(poolName, googleIdToken))))
   }
 }
@@ -1299,11 +1343,13 @@ export type AllActions =
   | ModifyProjectAction
   | OpenLoginModalAction
   | OpenRegistrationModalAction
+  | OpenStatsPageAction
   | OpenTipExternalLinkAction
   | PageIsLoadedAction
   | PostUserDataAction
   | ProductUpdatedPageIsShownAction
   | ReadTipAction
+  | RemoveAuthDataAction
   | ReplaceStrategyAction
   | SeeAdviceAction
   | SendProjectFeedbackAction
@@ -1311,9 +1357,9 @@ export type AllActions =
   | ShareProductModalIsShownAction
   | ShareProductToNetworkAction
   | ShowAllTipsAction
+  | StartAsGuestAction
   | StartStrategyAction
   | StaticAdvicePageIsShownAction
-  | OpenStatsPageAction
   | StrategyExplorationPageIsShown
   | StrategyWorkPageIsShown
   | SwitchToMobileVersionAction
@@ -1382,7 +1428,7 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   editFirstProject, sendProfessionalFeedback, diagnoseProject, strategizeProject,
   displayToasterMessage, closeLoginModal, followJobOffersLinkAction,
   openLoginModal, acceptCookiesUsageAction, switchToMobileVersionAction,
-  loadLandingPage, deleteUser, askPasswordReset,
+  loadLandingPage, deleteUser, askPasswordReset, registerNewGuestUser,
   openTipExternalLink, advicePageIsShown, seeAdvice, markChangelogAsSeen,
   adviceCardIsShown, getAdviceTips, showAllTips, migrateUserToAdvisor, getJobs,
   shareProductToNetwork, trackInitialUtm, trackInitialFeatures,
@@ -1398,4 +1444,5 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser,
   convertUserWithAdviceSelectionToProto, replaceStrategy, fetchApplicationModes,
   changeSubmetricExpansion, getUseCaseDistribution, startStrategy,
   strategyExplorationPageIsShown, strategyWorkPageIsShown, getLaborStats,
+  startAsGuest,
 }

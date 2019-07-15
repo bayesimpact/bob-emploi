@@ -35,11 +35,8 @@ def instantiate(
         the populated action for chaining.
     """
 
-    action.action_id = '{}-{}-{:x}-{:x}'.format(
-        project.project_id,
-        template.action_template_id,
-        round(time.time()),
-        random.randrange(0x10000))
+    action.action_id = f'{project.project_id}-{template.action_template_id}-' \
+        f'{round(time.time()):x}-{random.randrange(0x10000):x}'
     action.action_template_id = template.action_template_id
     action.title = template.title
     action.title_feminine = template.title_feminine

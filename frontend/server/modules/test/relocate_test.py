@@ -17,12 +17,12 @@ class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase):
         super().setUp()
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.database.departements.insert_many([{
-            '_id': '{:02d}'.format(dep),
-            'name': 'Departement {:02d}'.format(dep),
+            '_id': f'{dep:02d}',
+            'name': f'Departement {dep:02d}',
         } for dep in range(1, 96)])
         self.database.local_diagnosis.insert_many([
             {
-                '_id': '{:02d}:A1234'.format(dep),
+                '_id': f'{dep:02d}:A1234',
                 'imt': {
                     'yearlyAvgOffersPer10Candidates': dep,
                 },
@@ -59,7 +59,7 @@ class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase):
         self.persona.project.city.departement_id = '01'
         self.persona.project.area_type = geo_pb2.COUNTRY
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_mobility_required(self) -> None:
         """User is not mobile and it's a very bad thing."""
@@ -67,7 +67,7 @@ class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase):
         self.persona.project.city.departement_id = '01'
         self.persona.project.area_type = geo_pb2.CITY
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_mobility_good_thing(self) -> None:
         """User is somehow mobile and it's a good thing to have."""
@@ -75,7 +75,7 @@ class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase):
         self.persona.project.city.departement_id = '01'
         self.persona.project.area_type = geo_pb2.REGION
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, limit=40, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_good_score(score, limit=40, msg=f'Fail for "{self.persona.name}"')
 
     def test_mobility_not_awful(self) -> None:
         """User is not that mobile but is in a somehow good département already."""
@@ -83,8 +83,8 @@ class GoodMobilityTestCase(scoring_test.HundredScoringModelTestBase):
         self.persona.project.city.departement_id = '80'
         self.persona.project.area_type = geo_pb2.DEPARTEMENT
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, limit=50, msg='Fail for "{}"'.format(self.persona.name))
-        self.assert_good_score(score, limit=35, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, limit=50, msg=f'Fail for "{self.persona.name}"')
+        self.assert_good_score(score, limit=35, msg=f'Fail for "{self.persona.name}"')
 
 
 class ProfileMobilityTestCase(scoring_test.HundredScoringModelTestBase):
@@ -103,14 +103,14 @@ class ProfileMobilityTestCase(scoring_test.HundredScoringModelTestBase):
 
         self.persona.project.area_type = geo_pb2.COUNTRY
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_mobility_worse(self) -> None:
         """User is not mobile."""
 
         self.persona.project.area_type = geo_pb2.CITY
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
 
 class AdviceRelocateScoringModelTestCase(scoring_test.ScoringModelTestBase):
@@ -123,8 +123,8 @@ class AdviceRelocateScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.persona = self._random_persona().clone()
         self.persona.project.target_job.job_group.rome_id = 'A1234'
         self.database.departements.insert_many([{
-            '_id': '{:02d}'.format(dep),
-            'name': 'Département {:02d}'.format(dep)
+            '_id': f'{dep:02d}',
+            'name': f'Département {dep:02d}',
         } for dep in range(1, 96)])
 
     def test_num_better_departements(self) -> None:
@@ -145,7 +145,7 @@ class AdviceRelocateScoringModelTestCase(scoring_test.ScoringModelTestBase):
         self.database.job_group_info.insert_one({
             '_id': 'A1234',
             'bestDepartements': [{
-                'departementId': '{:02d}'.format(d),
+                'departementId': f'{d:02d}',
                 'localStats': {'imt': {'yearlyAvgOffersPer10Candidates': 11 - d}},
             } for d in range(2, 10)],
         })

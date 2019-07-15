@@ -48,8 +48,7 @@ class CampaignTestBase(unittest.TestCase):
     def setUpClass(cls) -> None:
         super().setUpClass()
         if not cls.campaign_id:
-            raise NotImplementedError(
-                'The class "{}" is missing a campaing_id'.format(cls.__name__))
+            raise NotImplementedError(f'The class "{cls.__name__}" is missing a campaing_id')
         with open(_TEMPLATE_INDEX_PATH, 'r') as mailjet_json_file:
             cls.all_templates = {
                 t['mailjetTemplate']: t['name'] for t in json.load(mailjet_json_file)
@@ -136,7 +135,7 @@ class CampaignTestBase(unittest.TestCase):
         template_id = str(all_sent_messages[0].properties['TemplateID'])
         self.assertIn(
             template_id, self.all_templates,
-            msg='No template ID for campaign "{}"'.format(self.campaign_id))
+            msg=f'No template ID for campaign "{self.campaign_id}"')
         # TODO(pascal): Consider renaming templates so that they have the same name as campaigns.
         template_name = self.all_templates[template_id]
         with open(path.join(_TEMPLATE_PATH, template_name, 'vars.txt'), 'r') as vars_file:
@@ -144,8 +143,8 @@ class CampaignTestBase(unittest.TestCase):
         for template_var in template_vars:
             self.assertIn(
                 template_var, self._variables,
-                msg='Template error for campaign {}, see '
-                'https://app.mailjet.com/template/{}/build'.format(self.campaign_id, template_id))
+                msg=f'Template error for campaign {self.campaign_id}, see '
+                f'https://app.mailjet.com/template/{template_id}/build')
 
     @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
     @mailjetmock.patch()
@@ -171,7 +170,7 @@ class CampaignTestBase(unittest.TestCase):
         try:
             field_value = self._variables.pop(field)
         except KeyError:
-            self.fail('Variables do not contain field "{}":\n{}'.format(field, self._variables))
+            self.fail(f'Variables do not contain field "{field}":\n{self._variables}')
         self.assertRegex(field_value, regex)
 
     def _assert_url_field(
@@ -180,13 +179,13 @@ class CampaignTestBase(unittest.TestCase):
         try:
             field_value = self._variables.pop(field)
         except KeyError:
-            self.fail('Variables do not contain field "{}"\n{}'.format(field, self._variables))
+            self.fail(f'Variables do not contain field "{field}"\n{self._variables}')
         self.assertEqual(url, field_value[:len(url)], msg=field_value)
         self.assertEqual('?', field_value[len(url):len(url) + 1], msg=field_value)
         args = parse.parse_qs(field_value[len(url) + 1:])
         for key, matcher in args_matcher.items():
             self.assertIn(key, args, msg=field_value)
-            msg = 'For key {} of {}'.format(key, field_value)
+            msg = f'For key {key} of {field_value}'
             if isinstance(matcher, str):
                 self.assertEqual(matcher, args[key][0], msg=msg)
             else:
@@ -200,10 +199,9 @@ class CampaignTestBase(unittest.TestCase):
         elif self.mongo_collection == 'helper':
             self.assertEqual(
                 self._variables.pop(field),
-                'https://www.bob-emploi.fr/api/mayday/unsubscribe?userId={}'.format(
-                    self.user.user_id))
+                f'https://www.bob-emploi.fr/api/mayday/unsubscribe?userId={self.user.user_id}')
         else:
-            self.fail('"{}" mongo collection is not known.'.format(self.mongo_collection))
+            self.fail(f'"{self.mongo_collection}" mongo collection is not known.')
 
     def _assert_has_unsubscribe_url(
             self, field: str = 'unsubscribeLink',
@@ -217,11 +215,10 @@ class CampaignTestBase(unittest.TestCase):
 
     def _assert_has_status_update_link(self, field: str = 'statusUpdateLink') -> None:
         # TODO(pascal): Use _assert_url_field.
-        self._assert_regex_field(
-            field,
-            r'^{}&token=\d+\.[a-f0-9]+&gender={}$'.format(re.escape(
-                'https://www.bob-emploi.fr/statut/mise-a-jour?user={}'
-                .format(self.user.user_id)), user_pb2.Gender.Name(self.user.profile.gender)))
+        base_url = re.escape(
+            f'https://www.bob-emploi.fr/statut/mise-a-jour?user={self.user.user_id}')
+        gender = user_pb2.Gender.Name(self.user.profile.gender)
+        self._assert_regex_field(field, fr'^{base_url}&token=\d+\.[a-f0-9]+&gender={gender}$')
 
     def _assert_remaining_variables(self, variables: typing.Dict[str, typing.Any]) -> None:
         self.assertEqual(variables, self._variables)
@@ -362,8 +359,8 @@ class BlastCampaignTest(unittest.TestCase):
                 '_id': objectid.ObjectId('7b18313aa35d807e631ea3d%d' % month),
                 'registeredAt': '2017-%02d-15T00:00:00Z' % month,
                 'profile': {
-                    'name': '{} user'.format(month),
-                    'email': 'email{}@corpet.net'.format(month),
+                    'name': f'{month} user',
+                    'email': f'email{month}@corpet.net',
                 },
                 'projects': [
                     {'networkEstimate': 1, 'targetJob': {'jobGroup': {'romeId': 'A1234'}}},
@@ -414,8 +411,7 @@ class BlastCampaignTest(unittest.TestCase):
         self.assertEqual(
             ['email4@corpet.net', 'email5@corpet.net', 'email6@corpet.net'],
             sorted(m.recipient['Email'] for m in mails_sent),
-            msg='3 emails expected: one per month from April to June\n{}'.format(
-                mails_sent))
+            msg=f'3 emails expected: one per month from April to June\n{mails_sent}')
         self.assertEqual(
             {'joanna@bob-emploi.fr'},
             {m.properties['From']['Email'] for m in mails_sent})
@@ -499,8 +495,8 @@ class BlastCampaignTest(unittest.TestCase):
             {
                 'registeredAt': '2017-04-15T00:00:00Z',
                 'profile': {
-                    'name': '{} user'.format(seeking),
-                    'email': 'email{}@corpet.net'.format(seeking),
+                    'name': f'{seeking} user',
+                    'email': f'email{seeking}@corpet.net',
                 },
                 'projects': [
                     {'networkEstimate': 1, 'targetJob': {'jobGroup': {'romeId': 'A1234'}}},
@@ -540,8 +536,8 @@ class BlastCampaignTest(unittest.TestCase):
             {
                 'registeredAt': '2017-04-15T00:00:00Z',
                 'profile': {
-                    'name': 'user {}'.format(hash_value),
-                    'email': 'email{}@corpet.net'.format(hash_value),
+                    'name': f'user {hash_value}',
+                    'email': f'email{hash_value}@corpet.net',
                 },
             }
             for hash_value in hash_values
@@ -556,8 +552,7 @@ class BlastCampaignTest(unittest.TestCase):
         sent_messages = mailjetmock.get_all_sent_messages()
         self.assertEqual(
             1, len(sent_messages),
-            msg='1 email expected: only for the user whith hash starting with 1\n{}'.format(
-                sent_messages))
+            msg=f'1 email expected: only for the user whith hash starting with 1\n{sent_messages}')
         mock_logging.assert_any_call('Email sent to %s', 'email12345@corpet.net')
 
     @mock.patch('logging.info', mock.MagicMock)

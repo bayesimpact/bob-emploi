@@ -13,14 +13,14 @@ def convert_files(files: typing.List[str]) -> None:
     matching = [f for f in files if f.endswith('.sas7bdat')]
     num_files = len(matching)
     if num_files != len(files):
-        print('Ignoring {:d}/{:d} files that were not .sas7bdat files.'.format(
-            len(files) - num_files, len(files)))
-    print('Attempting to convert {:d} files'.format(num_files))
+        print(
+            f'Ignoring {len(files) - num_files:d}/{len(files):d} files that were not '
+            '.sas7bdat files.')
+    print(f'Attempting to convert {num_files:d} files')
 
     for i, filename in enumerate(sorted(matching)):
         csv_filename = filename.rsplit('.sas7bdat', 1)[0] + '.csv'
-        print('{:d}/{:d}: Converting {} to {}'.format(
-            i + 1, num_files, filename, csv_filename))
+        print(f'{i + 1:d}/{num_files:d}: Converting {filename} to {csv_filename}')
         if os.path.exists(csv_filename):
             print('Skipping, resulting csv already exists')
             continue

@@ -63,6 +63,7 @@ type ReactStylableElement = React.ReactElement<{style?: RadiumCSSProperties}>
 
 declare const colors: {[name: string]: string}
 declare const config: {
+  readonly amplitudeToken: string
   readonly clientVersion: string
   readonly donationUrl: string
   readonly facebookPixelID: string

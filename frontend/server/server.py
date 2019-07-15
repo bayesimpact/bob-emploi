@@ -39,7 +39,6 @@ from bob_emploi.frontend.server import evaluation
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
-from bob_emploi.frontend.server import privacy
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server import strategist
@@ -133,18 +132,9 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
     if not filter_user:
         return user_pb2.UserId()
 
-    # Remove authentication informations.
-    _USER_DB.user_auth.delete_one(filter_user)
-
     user_proto = _get_user_data(str(filter_user['_id']))
-    try:
-        privacy.redact_proto(user_proto)
-    except TypeError:
-        logging.exception('Cannot delete account %s', str(filter_user['_id']))
+    if not auth.delete_user(user_proto, _USER_DB):
         flask.abort(500, 'Erreur serveur, impossible de supprimer le compte.')
-    user_proto.deleted_at.FromDatetime(now.get())
-    user_proto.ClearField('user_id')
-    _USER_DB.user.replace_one(filter_user, json_format.MessageToDict(user_proto))
 
     return user_pb2.UserId(user_id=str(filter_user['_id']))
 
@@ -156,7 +146,7 @@ def update_user_settings(profile: user_pb2.UserProfile, user_id: str) -> user_pb
     """Update user's settings."""
 
     updater = {'$set': {
-        'profile.{}'.format(key): value
+        f'profile.{key}': value
         for key, value in json_format.MessageToDict(profile).items()
     }}
     if profile.coaching_email_frequency:
@@ -278,6 +268,8 @@ def update_strategy(
 
     strategy_data.ClearField('started_at')
     strategy.MergeFrom(strategy_data)
+    strategy.last_modified_at.GetCurrentTime()
+    strategy.last_modified_at.nanos = 0
     updated_user = _save_user(user_proto, is_new_user=False)
     updated_project = _get_project_data(updated_user, project_id)
     return _get_strategy_data(updated_project, strategy_id)
@@ -476,11 +468,11 @@ def _save_project(
 
     _tick('New feedback')
     if project.feedback.text and not previous_project.feedback.text:
-        slack_text = '[{}] <{}|{}>\n> {}'.format(
-            ':star:' * project.feedback.score,
-            parse.urljoin(flask.request.base_url, '/eval?userId={}'.format(user_data.user_id)),
-            user_data.user_id,
-            '\n> '.join(project.feedback.text.split('\n')))
+        stars = ':star:' * project.feedback.score
+        user_url = parse.urljoin(
+            flask.request.base_url, f'/eval?userId={user_data.user_id}')
+        feedback = '\n> '.join(project.feedback.text.split('\n'))
+        slack_text = f'[{stars}] <{user_url}|{user_data.user_id}>\n> {feedback}'
         _give_feedback(
             feedback_pb2.Feedback(
                 user_id=str(user_data.user_id),
@@ -574,7 +566,7 @@ def _create_new_project_id(user_data: user_pb2.User) -> str:
     existing_ids = set(p.project_id for p in user_data.projects) |\
         set(p.project_id for p in user_data.deleted_projects)
     for id_candidate in itertools.count():
-        id_string = '{:x}'.format(id_candidate)
+        id_string = f'{id_candidate:x}'
         if id_string not in existing_ids:
             return id_string
     raise ValueError('Should never happen as itertools.count() does not finish')  # pragma: no-cover
@@ -652,7 +644,7 @@ def _safe_object_id(_id: str) -> objectid.ObjectId:
     except objectid.InvalidId:
         # Switch to raising an error if you move this function in a lib.
         flask.abort(
-            400, 'L\'identifiant "{}" n\'est pas un identifiant MongoDB valide.'.format(_id))
+            400, f'L\'identifiant "{_id}" n\'est pas un identifiant MongoDB valide.')
 
 
 def _get_user_data(user_id: str) -> user_pb2.User:
@@ -662,7 +654,7 @@ def _get_user_data(user_id: str) -> user_pb2.User:
     user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id', always_create=False)
     if not user_proto:
         # Switch to raising an error if you move this function in a lib.
-        flask.abort(404, 'Utilisateur "{}" inconnu.'.format(user_id))
+        flask.abort(404, f'Utilisateur "{user_id}" inconnu.')
 
     _populate_feature_flags(user_proto)
 
@@ -693,7 +685,7 @@ def _get_project_data(user_proto: user_pb2.User, project_id: str) -> project_pb2
             project for project in user_proto.projects
             if project.project_id == project_id)
     except StopIteration:
-        flask.abort(404, 'Projet "{}" inconnu.'.format(project_id))
+        flask.abort(404, f'Projet "{project_id}" inconnu.')
 
 
 def _get_advice_data(project: project_pb2.Project, advice_id: str) -> project_pb2.Advice:
@@ -702,7 +694,7 @@ def _get_advice_data(project: project_pb2.Project, advice_id: str) -> project_pb
             advice for advice in project.advices
             if advice.advice_id == advice_id)
     except StopIteration:
-        flask.abort(404, 'Conseil "{}" inconnu.'.format(advice_id))
+        flask.abort(404, f'Conseil "{advice_id}" inconnu.')
 
 
 def _get_strategy_data(project: project_pb2.Project, strategy_id: str) \
@@ -712,7 +704,7 @@ def _get_strategy_data(project: project_pb2.Project, strategy_id: str) \
             strategy for strategy in project.opened_strategies
             if strategy.strategy_id == strategy_id)
     except StopIteration:
-        flask.abort(404, 'Stratégie "{}" inconnue.'.format(strategy_id))
+        flask.abort(404, f'Stratégie "{strategy_id}" inconnue.')
 
 
 _ACTION_STOPPED_STATUSES = frozenset([
@@ -740,6 +732,9 @@ def _update_returning_user(user_data: user_pb2.User) -> timestamp_pb2.Timestamp:
         last_connection.CopyFrom(user_data.requested_by_user_at_date)
     else:
         last_connection = user_data.registered_at
+
+    if user_data.profile.email:
+        user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
 
     user_data.requested_by_user_at_date.FromDatetime(now.get())
     # No need to pollute our DB with super precise timestamps.
@@ -804,6 +799,7 @@ def generate_auth_tokens(user_id: str) -> str:
         'auth': auth.create_token(user_id, is_using_timestamp=True),
         'employment-status': auth.create_token(user_id, 'employment-status'),
         'nps': auth.create_token(user_id, 'nps'),
+        'reset': _get_authenticator().create_reset_token(user_id),
         'settings': auth.create_token(user_id, 'settings'),
         'unsubscribe': auth.create_token(user_id, 'unsubscribe'),
         'user': user_id,
@@ -828,10 +824,10 @@ def _get_expanded_card_data(
         user_proto: user_pb2.User, project: project_pb2.Project, advice_id: str) -> message.Message:
     module = advisor.get_advice_module(advice_id, _DB)
     if not module or not module.trigger_scoring_model:
-        flask.abort(404, 'Le module "{}" n\'existe pas'.format(advice_id))
+        flask.abort(404, f'Le module "{advice_id}" n\'existe pas')
     model = scoring.get_scoring_model(module.trigger_scoring_model)
     if not model or not hasattr(model, 'get_expanded_card_data'):
-        flask.abort(404, 'Le module "{}" n\'a pas de données supplémentaires'.format(advice_id))
+        flask.abort(404, f'Le module "{advice_id}" n\'a pas de données supplémentaires')
 
     scoring_project = scoring.ScoringProject(
         project, user_proto.profile, user_proto.features_enabled, _DB, now=now.get())
@@ -900,7 +896,7 @@ def get_job_group_jobs(rome_id: str) -> job_pb2.JobGroup:
 
     job_group = jobs.get_group_proto(_DB, rome_id)
     if not job_group:
-        flask.abort(404, 'Groupe de métiers "{}" inconnu.'.format(rome_id))
+        flask.abort(404, f'Groupe de métiers "{rome_id}" inconnu.')
 
     result = job_pb2.JobGroup()
     result.jobs.extend(job_group.jobs)
@@ -915,7 +911,7 @@ def get_job_group_application_modes(rome_id: str) -> job_pb2.JobGroup:
 
     job_group = jobs.get_group_proto(_DB, rome_id)
     if not job_group:
-        flask.abort(404, 'Groupe de métiers "{}" inconnu.'.format(rome_id))
+        flask.abort(404, f'Groupe de métiers "{rome_id}" inconnu.')
 
     result = job_pb2.JobGroup()
     # TODO(cyrille): Add MergeFrom as method on map fields in mypy-protobuf and remove the
@@ -944,9 +940,7 @@ def give_feedback(feedback: feedback_pb2.Feedback) -> str:
 
 def _give_feedback(feedback: feedback_pb2.Feedback, slack_text: str) -> None:
     if slack_text and _SLACK_WEBHOOK_URL:
-        requests.post(_SLACK_WEBHOOK_URL, json={
-            'text': ':mega: {}'.format(slack_text),
-        })
+        requests.post(_SLACK_WEBHOOK_URL, json={'text': f':mega: {slack_text}'})
     _USER_DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
 
 
@@ -992,7 +986,7 @@ def set_nps_survey_response(nps_survey_response: user_pb2.NPSSurveyResponse) -> 
     user_dict = _USER_DB.user.find_one({
         'hashedEmail': auth.hash_user_email(nps_survey_response.email)}, {'_id': 1})
     if not user_dict:
-        flask.abort(404, 'Utilisateur "{}" inconnu.'.format(nps_survey_response.email))
+        flask.abort(404, f'Utilisateur "{nps_survey_response.email}" inconnu.')
     user_id = user_dict['_id']
     user_proto = _get_user_data(user_id)
     # We use MergeFrom, as 'curated_useful_advice_ids' will likely be set in a second call.
@@ -1054,17 +1048,15 @@ def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> 
             score = previous_user['netPromoterScoreSurveyResponse'].get('score', 0)
         else:
             score = 'unknown'
+        user_url = parse.urljoin(
+            flask.request.base_url, f'/eval?userId={set_nps_request.user_id}')
+        comment = '\n> '.join(set_nps_request.comment.split('\n'))
         _give_feedback(
             feedback_pb2.Feedback(
                 user_id=set_nps_request.user_id,
                 feedback=set_nps_request.comment,
                 source=feedback_pb2.PRODUCT_FEEDBACK),
-            slack_text='[NPS Score: {}] <{}|{}>\n> {}'.format(
-                score,
-                parse.urljoin(
-                    flask.request.base_url, '/eval?userId={}'.format(set_nps_request.user_id)),
-                set_nps_request.user_id,
-                '\n> '.join(set_nps_request.comment.split('\n'))))
+            slack_text=f'[NPS Score: {score}] <{user_url}|{set_nps_request.user_id}>\n> {comment}')
 
     mongo_update = _flatten_mongo_fields(json_format.MessageToDict(user_to_update))
     _USER_DB.user.update_one({'_id': user_id}, {'$set': mongo_update}, upsert=False)
@@ -1148,13 +1140,11 @@ def _maybe_redirect(**kwargs: typing.Any) -> _FlaskResponse:
         return ''
     redirect_url = flask.request.args.get('redirect', '')
     separator = '&' if '?' in redirect_url else '?'
-    return flask.redirect('{redirect_url}{separator}{query_string}'.format(
-        redirect_url=redirect_url,
-        separator=separator,
-        query_string=parse.urlencode(dict(
-            {key: flask.request.args.get(key)
-             for key in flask.request.args if key != 'redirect'},
-            **kwargs))))
+    query_string = parse.urlencode(dict(
+        {key: flask.request.args.get(key)
+         for key in flask.request.args if key != 'redirect'},
+        **kwargs))
+    return flask.redirect(f'{redirect_url}{separator}{query_string}')
 
 
 @app.route('/api/usage/stats', methods=['GET'])
@@ -1182,13 +1172,13 @@ def get_usage_stats() -> stats_pb2.UsersCount:
 
 
 @app.route('/api/redirect/eterritoire/<city_id>', methods=['GET'])
-def redirect_eterritoire(city_id: str) -> _FlaskResponse:
+def redirect_eterritoire(city_id: str) -> werkzeug.Response:
     """Redirect to the e-Territoire page for a city."""
 
     link = proto.fetch_from_mongo(
         _DB, association_pb2.SimpleLink, 'eterritoire_links', city_id) or \
         association_pb2.SimpleLink()
-    return flask.redirect('http://www.eterritoire.fr{}'.format(link.path))
+    return flask.redirect(f'http://www.eterritoire.fr{link.path}')
 
 
 @app.route('/api/compute-labor-stats', methods=['POST'])

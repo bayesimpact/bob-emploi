@@ -22,7 +22,7 @@ class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
         if self.persona.project.network_estimate < 2:
             self.persona.project.network_estimate = 2
         score = self._score_persona(self.persona)
-        self.assertLessEqual(score, 0, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertLessEqual(score, 0, msg=f'Fail for "{self.persona.name}"')
 
     def test_network_is_best_application_mode(self) -> None:
         """User is in a job that hires a lot through network."""
@@ -57,7 +57,7 @@ class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(self.persona)
-        self.assertGreaterEqual(score, 3, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertGreaterEqual(score, 3, msg=f'Fail for "{self.persona.name}"')
 
     def test_network_is_not_the_best_application_mode(self) -> None:
         """User is in a job that does not use network a lot to hire."""
@@ -91,7 +91,7 @@ class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Fail for "{self.persona.name}"')
 
     def test_network_is_not_always_the_best_application_mode(self) -> None:
         """User is in a job that does not use only network to hire."""
@@ -145,7 +145,7 @@ class ImproveYourNetworkScoringModelTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Fail for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Fail for "{self.persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):
@@ -179,11 +179,11 @@ class EndpointTestCase(base_test.ServerTestCase):
             '/api/user',
             data=json.dumps(user_info),
             content_type='application/json',
-            headers={'Authorization': 'Bearer {}'.format(self.auth_token)})
+            headers={'Authorization': f'Bearer {self.auth_token}'})
 
         response = self.app.get(
-            '/api/advice/network-advice-id/{}/{}'.format(self.user_id, self.project_id),
-            headers={'Authorization': 'Bearer {}'.format(self.auth_token)})
+            f'/api/advice/network-advice-id/{self.user_id}/{self.project_id}',
+            headers={'Authorization': f'Bearer {self.auth_token}'})
 
         leads = self.json_from_response(response)
         self.assertEqual(

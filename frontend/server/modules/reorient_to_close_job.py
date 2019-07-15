@@ -2,10 +2,13 @@
 
 import typing
 
+from pymongo import database as pymongo_database
+
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import reorient_jobbing_pb2
 from bob_emploi.frontend.api import reorient_to_close_pb2
+from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import scoring_base
 
 
@@ -15,9 +18,10 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
     # TODO(cyrille): Add codeOgr to link to IMT job page.
     def _convert_to_reorient_jobs(
             self,
-            jobs: typing.Iterable[job_pb2.RelatedLocalJobGroup],
+            database: pymongo_database.Database,
+            reorient_jobs: typing.Iterable[job_pb2.RelatedLocalJobGroup],
             market_score_source: float) -> typing.Iterator[reorient_jobbing_pb2.ReorientJob]:
-        for job in jobs:
+        for job in reorient_jobs:
             # Here the market score improvement
             # (job that the user is searching for vs recommended job)
             # is overly simplified as offers gain.
@@ -26,8 +30,13 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
             #   client-side computations.
             offers_gain = 100 * (
                 job.local_stats.imt.yearly_avg_offers_per_10_candidates / market_score_source - 1)
+            job_group_info = jobs.get_group_proto(database, job.job_group.rome_id)
+            is_diploma_required = False
+            if job_group_info:
+                is_diploma_required = job_group_info.is_diploma_strictly_required
             yield reorient_jobbing_pb2.ReorientJob(
-                name=job.job_group.name, offers_percent_gain=offers_gain)
+                name=job.job_group.name, offers_percent_gain=offers_gain,
+                is_diploma_strictly_required=is_diploma_required)
 
     @scoring_base.ScoringProject.cached('reorient_to_close')
     def get_close_jobs(self, project: scoring_base.ScoringProject) \
@@ -43,9 +52,11 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
         close_jobs = [job for job in reorientation_jobs if job.mobility_type == job_pb2.CLOSE]
         evolution_jobs = [
             job for job in reorientation_jobs if job.mobility_type == job_pb2.EVOLUTION]
-        recommended_jobs.close_jobs.extend(self._convert_to_reorient_jobs(close_jobs, market_score))
+        database = project.database
+        recommended_jobs.close_jobs.extend(self._convert_to_reorient_jobs(
+            database, close_jobs, market_score))
         recommended_jobs.evolution_jobs.extend(
-            self._convert_to_reorient_jobs(evolution_jobs, market_score))
+            self._convert_to_reorient_jobs(database, evolution_jobs, market_score))
         return recommended_jobs
 
     def score_and_explain(self, project: scoring_base.ScoringProject) \

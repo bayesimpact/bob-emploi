@@ -1,3 +1,5 @@
+import Raven from 'raven-js'
+
 // TODO(pascal): Move these files to the store.
 import adviceModulesTu from 'components/advisor/data/advice_modules_fr_FR@tu.json'
 import adviceModulesVous from 'components/advisor/data/advice_modules.json'
@@ -92,6 +94,14 @@ export const toTitleCase = (text: string): string => {
 
 
 const oneDayInMillisecs = 1000 * 60 * 60 * 24
+const deltaDays: Readonly<{days: number; plural?: string; singular?: string}[]> = [
+  {days: 365, plural: 'ans', singular: 'an'},
+  {days: 30, plural: 'mois', singular: 'mois'},
+  {days: 7, plural: 'semaines', singular: 'semaine'},
+  {days: 1, plural: 'jours', singular: 'jour'},
+  {days: 0},
+] as const
+
 // Get difference between two dates or months expressed as a sentence
 // e.g. "il y a 3 jours" or "il y a 2 mois".
 export const getDiffBetweenDatesInString = (firstDate: Date, secondDate: Date): string => {
@@ -100,10 +110,12 @@ export const getDiffBetweenDatesInString = (firstDate: Date, secondDate: Date): 
   if (diffInDays === 0) {
     return "aujourd'hui"
   }
-  if (diffInDays > 30) {
-    return `il y a ${Math.floor(diffInDays / 30)} mois`
+  const {days, plural, singular} = deltaDays.find(({days}): boolean => diffInDays >= days)
+  if (!days) {
+    return "aujourd'hui"
   }
-  return `il y a ${diffInDays} jour${diffInDays > 1 ? 's' : ''}`
+  const dateDeltaInUnits = Math.floor(diffInDays / days)
+  return `il y a ${dateDeltaInUnits} ${dateDeltaInUnits > 1 ? plural : singular}`
 }
 
 
@@ -256,15 +268,17 @@ export interface StrategyGoal {
   goalId: string
 }
 
-interface StrategyGoals {
-  [strategy: string]: StrategyGoal[]
-}
+export const getStrategyGoals =
+  (userYou: YouChooser, strategyId: string): readonly StrategyGoal[] => {
+    const goals = canTutoieFrom(userYou) ? goalsTu : goalsVous
+    const strategyGoals = goals[strategyId] || []
+    if (!strategyGoals.length) {
+      Raven.captureMessage(`No goals defined for the strategy "${strategyId}"`)
+    }
+    return strategyGoals
+  }
 
-
-export const getStrategiesGoals = (userYou: YouChooser): StrategyGoals =>
-  canTutoieFrom(userYou) ? goalsTu : goalsVous
-
-interface StrategyTestimonial {
+export interface StrategyTestimonial {
   readonly content: string
   readonly createdAt: string
   readonly isMale?: boolean

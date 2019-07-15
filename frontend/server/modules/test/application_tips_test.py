@@ -23,7 +23,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
             persona.project.job_search_length_months = 6
         persona.project.total_interview_count = 1
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_many_interviews(self) -> None:
         """Users has maximum interviews."""
@@ -31,7 +31,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.project.total_interview_count = 21
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_in_methods_to_diploma_category(self) -> None:
         """Users has maximum interviews."""
@@ -39,7 +39,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.project.diagnostic.category_id = 'enhance-methods-to-interview'
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_many_interviews_long_time(self) -> None:
         """Users has maximum interviews."""
@@ -49,7 +49,7 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
         if persona.project.job_search_length_months > 6:
             persona.project.job_search_length_months = 6
         score = self._score_persona(persona)
-        self.assertGreaterEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+        self.assertGreaterEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
@@ -77,7 +77,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_many_interviews(self) -> None:
         """Users has maximum interviews."""
@@ -94,7 +94,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
             },
         })
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_no_applications(self) -> None:
         """Users has never sent an application."""
@@ -103,7 +103,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         persona.project.total_interview_count = -1
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_imt_data_missing(self) -> None:
         """Users does not get enough interview although IMT is missing."""
@@ -117,7 +117,7 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
 
 class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
@@ -144,7 +144,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/improve-interview/{}/foo'.format(self.user_id),
+            f'/api/advice/improve-interview/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -158,7 +158,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             {'content': 'Re-read your CV', 'type': 'CV_IMPROVEMENT'},
         ])
         response = self.app.get(
-            '/api/advice/improve-resume/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/improve-resume/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         tips = self.json_from_response(response)
@@ -177,7 +177,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             {'content': 'Keep this one', 'filters': ['constant(1)'], 'type': 'QUALITY'},
         ])
         response = self.app.get(
-            '/api/advice/improve-resume/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/improve-resume/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         tips = self.json_from_response(response)
@@ -198,7 +198,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             },
         ])
         response = self.app.get(
-            '/api/advice/improve-resume/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/improve-resume/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         tips = self.json_from_response(response)
@@ -230,7 +230,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         response = self.app.get(
-            '/api/advice/improve-resume/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/improve-resume/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         tips = self.json_from_response(response).get('qualities')
@@ -246,7 +246,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
             'content': 'Re-read your CV', 'type': 'CV_IMPROVEMENT',
         })
         response = self.app.get(
-            '/api/advice/fresh-resume/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/fresh-resume/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
         tips = self.json_from_response(response)
         self.assertEqual(
@@ -272,7 +272,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/improve-interview/{}/foo'.format(self.user_id),
+            f'/api/advice/improve-interview/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -286,7 +286,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
             {'content': 'Google your interviewer', 'type': 'INTERVIEW_PREPARATION'},
         ])
         response = self.app.get(
-            '/api/advice/improve-interview/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/improve-interview/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         tips = self.json_from_response(response)
@@ -305,7 +305,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
             {'content': 'Keep this one', 'filters': ['constant(1)'], 'type': 'QUALITY'},
         ])
         response = self.app.get(
-            '/api/advice/improve-interview/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/improve-interview/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         tips = self.json_from_response(response)
@@ -326,7 +326,7 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
             },
         ])
         response = self.app.get(
-            '/api/advice/improve-interview/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/improve-interview/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         tips = self.json_from_response(response)

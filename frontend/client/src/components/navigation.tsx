@@ -12,11 +12,10 @@ import {RouteComponentProps, withRouter} from 'react-router'
 import {Link} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
-import {DispatchAllActions, RootState, logoutAction, modifyProject,
-  openLoginModal} from 'store/actions'
+import {DispatchAllActions, RootState, logoutAction, modifyProject} from 'store/actions'
 import {YouChooser} from 'store/french'
 import {onboardingComplete} from 'store/main_selectors'
-import {youForUser} from 'store/user'
+import {isLateSignupEnabled, youForUser} from 'store/user'
 
 import bellImage from 'images/bell.svg'
 import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
@@ -24,10 +23,12 @@ import logoProductBetaImage from 'images/logo-bob-beta.svg'
 
 import {DebugModal} from 'components/debug'
 import {FastForward} from 'components/fast_forward'
+import {LoginLink} from 'components/login'
+import {AccountDeletionModal} from 'components/logout'
 import {isMobileVersion} from 'components/mobile'
+import {Modal, ModalConfig} from 'components/modal'
 import {RadiumLink} from 'components/radium'
 import {ShortKey} from 'components/shortkey'
-import {Modal, ModalConfig} from 'components/modal'
 import {ZendeskChatButton} from 'components/zendesk'
 
 import {getPageDescription} from '../../release/opengraph_redirect'
@@ -337,6 +338,7 @@ class MenuLink extends React.PureComponent<MenuLinkProps> {
 
 interface NavBarConnectedProps {
   featuresEnabled: bayes.bob.Features
+  isGuest: boolean
   isLoggedIn: boolean
   isOnboardingComplete: boolean
   project: bayes.bob.Project
@@ -346,6 +348,7 @@ interface NavBarConnectedProps {
 
 
 interface NavBarProps extends NavBarConnectedProps {
+  areNavLinksShown: boolean
   children?: string | React.ReactElement<{style?: React.CSSProperties}>
   dispatch: DispatchAllActions
   isLogoShown?: boolean
@@ -357,6 +360,7 @@ interface NavBarProps extends NavBarConnectedProps {
 
 
 interface NavBarState {
+  isAccountDeletionModalShown?: boolean
   isMenuShown?: boolean
   isModifyProjectModalShown?: boolean
 }
@@ -364,6 +368,7 @@ interface NavBarState {
 
 class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
   public static propTypes = {
+    areNavLinksShown: PropTypes.bool.isRequired,
     // Allow only one child: it will be part of a flex flow so it can use
     // alignSelf to change its own layout.
     children: PropTypes.oneOfType([
@@ -374,6 +379,7 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
     featuresEnabled: PropTypes.shape({
       poleEmploi: PropTypes.bool,
     }).isRequired,
+    isGuest: PropTypes.bool.isRequired,
     isLoggedIn: PropTypes.bool.isRequired,
     isLogoShown: PropTypes.bool,
     isOnboardingComplete: PropTypes.bool,
@@ -390,6 +396,7 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
   }
 
   public state = {
+    isAccountDeletionModalShown: false,
     isMenuShown: false,
     isModifyProjectModalShown: false,
   }
@@ -425,15 +432,15 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
     this.props.dispatch(logoutAction)
   }
 
+  private handleDeleteGuest = (): void => {
+    this.closeMenu()
+    this.setState({isAccountDeletionModalShown: true})
+  }
+
   private handleModifyProject = (): void => {
     this.closeMenu()
     this.setState({isModifyProjectModalShown: true})
   }
-
-  private handleConnect = _memoize((visualElement: string): (() => void) =>
-    (): void => {
-      this.props.dispatch(openLoginModal({}, visualElement))
-    })
 
   private handleConfirmModifyProject = (): void => {
     this.props.dispatch(modifyProject(this.props.project))
@@ -442,6 +449,8 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
   private handleShowModifyProjectModal =
   _memoize((isModifyProjectModalShown: boolean): (() => void) =>
     (): void => this.setState({isModifyProjectModalShown}))
+
+  private hideAccountDeletionModal = (): void => this.setState({isAccountDeletionModalShown: false})
 
   private handleToggleMenu = (): void => this.setState({isMenuShown: !this.state.isMenuShown})
 
@@ -474,8 +483,8 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
   // even in onboarding when launching Strat2.
   private renderOnMobile(): React.ReactNode {
     const {children, featuresEnabled: {stratTwo},
-      isLoggedIn, isLogoShown, onBackClick, project} = this.props
-    const {isMenuShown, isModifyProjectModalShown} = this.state
+      isGuest, isLoggedIn, isLogoShown, onBackClick, project} = this.props
+    const {isAccountDeletionModalShown, isMenuShown, isModifyProjectModalShown} = this.state
     const hasStratTwo = stratTwo === 'ACTIVE'
     const style: React.CSSProperties = {
       alignItems: 'center',
@@ -535,6 +544,9 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
     const isProjectModifiable = project && project.projectId && !project.isIncomplete
     return <React.Fragment>
       <nav style={style}>
+        <AccountDeletionModal
+          isShown={isAccountDeletionModalShown}
+          onClose={this.hideAccountDeletionModal} />
         {isProjectModifiable ? <ModifyProjectModal
           isShown={isModifyProjectModalShown}
           onClose={this.handleShowModifyProjectModal(false)}
@@ -550,6 +562,9 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
                   style={{...menuIconStyle, fill: colors.DARK_TWO}}
                 />
                 {isLoggedIn ? <React.Fragment>
+                  {isGuest ? <LoginLink visualElement="menu" style={linkStyle()} isSignUp={true}>
+                    Créer mon compte
+                  </LoginLink> : null}
                   {isProjectModifiable ? <a
                     style={linkStyle()}
                     onClick={this.handleModifyProject}>
@@ -563,9 +578,13 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
                     onClick={openHelpDeskUrl}>
                     Nous contacter
                   </a>
-                  <Link to={Routes.ROOT} style={linkStyle('logout')} onClick={this.logOut}>
+                  {isGuest ? <a
+                    style={linkStyle()}
+                    onClick={this.handleDeleteGuest}>
+                    Supprimer mes informations
+                  </a> : <Link to={Routes.ROOT} style={linkStyle('logout')} onClick={this.logOut}>
                     Déconnexion
-                  </Link>
+                  </Link>}
                 </React.Fragment> : <React.Fragment>
                   <Link to={Routes.ROOT} style={linkStyle('landing')}>
                     Accueil
@@ -579,10 +598,9 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
                   <Link to={Routes.TRANSPARENCY_PAGE} style={linkStyle('transparency')}>
                     Où en sommes-nous&nbsp;?
                   </Link>
-                  <a
-                    style={linkStyle('login')} onClick={this.handleConnect('menu')}>
+                  <LoginLink style={linkStyle('login')} visualElement="menu">
                     Se connecter
-                  </a>
+                  </LoginLink>
                 </React.Fragment>}
               </div>
             </OutsideClickHandler>
@@ -615,9 +633,9 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
   }
 
   public render(): React.ReactNode {
-    const {children, featuresEnabled, isLoggedIn, isLogoShown, isOnboardingComplete,
-      isTransparent, page, project, style, userName, userYou} = this.props
-    const {isMenuShown, isModifyProjectModalShown} = this.state
+    const {areNavLinksShown, children, featuresEnabled, isGuest, isLoggedIn, isLogoShown,
+      isOnboardingComplete, isTransparent, page, project, style, userName, userYou} = this.props
+    const {isAccountDeletionModalShown, isMenuShown, isModifyProjectModalShown} = this.state
     if (isMobileVersion) {
       return this.renderOnMobile()
     }
@@ -672,29 +690,32 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
             <Link to={Routes.ROOT}>{logo}</Link>
           </div>
 
-          <NavigationLink
-            to={Routes.VISION_PAGE} isSelected={page === 'vision'} selectionStyle="top"
-            isOnTransparentBar={isTransparent}>
-            Notre mission
-          </NavigationLink>
-          <NavigationLink
-            to={Routes.TEAM_PAGE} isSelected={page === 'equipe'} selectionStyle="top"
-            isOnTransparentBar={isTransparent}>
-            Qui est {config.productName}&nbsp;?
-          </NavigationLink>
-          <NavigationLink
-            to={Routes.TRANSPARENCY_PAGE} isSelected={page === 'transparency'} selectionStyle="top"
-            isOnTransparentBar={isTransparent}>
-            Où en sommes-nous&nbsp;?
-          </NavigationLink>
+          {areNavLinksShown ? <React.Fragment>
+            <NavigationLink
+              to={Routes.VISION_PAGE} isSelected={page === 'vision'} selectionStyle="top"
+              isOnTransparentBar={isTransparent}>
+              Notre mission
+            </NavigationLink>
+            <NavigationLink
+              to={Routes.TEAM_PAGE} isSelected={page === 'equipe'} selectionStyle="top"
+              isOnTransparentBar={isTransparent}>
+              Qui est {config.productName}&nbsp;?
+            </NavigationLink>
+            <NavigationLink
+              to={Routes.TRANSPARENCY_PAGE} isSelected={page === 'transparency'}
+              selectionStyle="top" isOnTransparentBar={isTransparent}>
+              Où en sommes-nous&nbsp;?
+            </NavigationLink>
+          </React.Fragment> : null}
 
           <div style={connectContainerStyle}>
-            <NavigationLink
-              isOnTransparentBar={isTransparent}
-              style={{padding: '20px 0 21px 25px'}}
-              onClick={this.handleConnect('navbar')}>
-              Se connecter
-            </NavigationLink>
+            <LoginLink visualElement="navbar">
+              <NavigationLink
+                isOnTransparentBar={isTransparent}
+                style={{padding: '20px 0 21px 25px'}}>
+                Se connecter
+              </NavigationLink>
+            </LoginLink>
           </div>
 
         </div>
@@ -771,6 +792,9 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
     }
     // TODO(cyrille): Unify behavior for menu between Mobile and Desktop.
     return <nav style={containerStyle}>
+      <AccountDeletionModal
+        isShown={isAccountDeletionModalShown}
+        onClose={this.hideAccountDeletionModal} />
       {isProjectModifiable ? <ModifyProjectModal
         isShown={isModifyProjectModalShown}
         onClose={this.handleShowModifyProjectModal(false)}
@@ -806,6 +830,11 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
               style={menuIconStyle} />
           </RadiumDiv>
           <div style={dropDownStyle}>
+            {isGuest ? <LoginLink visualElement="menu" isSignUp={true}>
+              <MenuLink style={{fontWeight: 'bold'}}>
+                Créer mon compte
+              </MenuLink>
+            </LoginLink> : null}
             <MenuLink to={Routes.PROFILE_PAGE}>Mes informations</MenuLink>
             {isProjectModifiable ?
               <MenuLink onClick={this.handleShowModifyProjectModal(true)}>
@@ -814,11 +843,15 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
             <MenuLink to={Routes.CONTRIBUTION_PAGE}>Contribuer</MenuLink>
             <MenuLink href="https://aide.bob-emploi.fr/hc/fr">Aide</MenuLink>
             <MenuLink href={config.helpRequestUrl}>Nous contacter</MenuLink>
-            <MenuLink
+            {isGuest ? <MenuLink
+              onClick={this.handleDeleteGuest}
+              style={{':hover': {color: '#fff'}, color: colors.COOL_GREY}}>
+              Supprimer mes informations
+            </MenuLink> : <MenuLink
               onClick={this.logOut} to={Routes.ROOT}
               style={{':hover': {color: '#fff'}, color: colors.COOL_GREY}}>
               Déconnexion
-            </MenuLink>
+            </MenuLink>}
           </div>
         </div>
       </OutsideClickHandler>
@@ -827,6 +860,7 @@ class NavigationBarBase extends React.PureComponent<NavBarProps, NavBarState> {
 }
 const NavigationBar = connect(({user}: RootState): NavBarConnectedProps => ({
   featuresEnabled: user.featuresEnabled || {},
+  isGuest: !user.hasAccount && isLateSignupEnabled,
   isLoggedIn: !!(user.profile && user.profile.name),
   isOnboardingComplete: onboardingComplete(user),
   project: user.projects && user.projects[0],
@@ -881,6 +915,7 @@ const ConnectedZendeskChatButton =
 
 
 export interface PageWithNavigationBarProps {
+  areNavLinksShown?: boolean
   isChatButtonShown?: boolean
   isContentScrollable?: boolean
   isCookieDisclaimerShown?: boolean
@@ -919,6 +954,7 @@ class PageWithNavigationBar extends React.PureComponent<PageWithNavigationBarPro
   }
 
   public static defaultProps = {
+    areNavLinksShown: true,
     isCookieDisclaimerShown: true,
     isLogoShown: true,
   }
@@ -975,9 +1011,9 @@ class PageWithNavigationBar extends React.PureComponent<PageWithNavigationBarPro
   }
 
   public render(): React.ReactNode {
-    const {children, isChatButtonShown, isContentScrollable, isCookieDisclaimerShown, isLogoShown,
-      isNavBarTransparent, navBarContent, onBackClick, onScroll, page, style,
-      ...extraProps} = this.props
+    const {areNavLinksShown, children, isChatButtonShown, isContentScrollable,
+      isCookieDisclaimerShown, isLogoShown, isNavBarTransparent, navBarContent, onBackClick,
+      onScroll, page, style, ...extraProps} = this.props
     let content
     const containerStyle: React.CSSProperties = {
       display: 'flex',
@@ -1014,7 +1050,7 @@ class PageWithNavigationBar extends React.PureComponent<PageWithNavigationBarPro
       <div style={{display: 'flex', flex: 1, flexDirection: 'column'}}>
         <NavigationBar
           page={page} onBackClick={onBackClick} isTransparent={isNavBarTransparent}
-          isLogoShown={isLogoShown} style={{flexShrink: 0}}>
+          isLogoShown={isLogoShown} style={{flexShrink: 0}} areNavLinksShown={areNavLinksShown}>
           {navBarContent}
         </NavigationBar>
         <ConnectedZendeskChatButton
@@ -1059,11 +1095,16 @@ class ModifyProjectModal extends React.PureComponent<ModifyProjectModalProps> {
       maxWidth: 400,
     }
     const buttonsContainerStyle: React.CSSProperties = {
+      alignItems: 'center',
       display: 'flex',
       flexDirection: isMobileVersion ? 'column' : 'row',
       justifyContent: 'center',
     }
+    const buttonStyle: React.CSSProperties = {
+      width: 140,
+    }
     const topBottomStyle: React.CSSProperties = {
+      ...buttonStyle,
       marginBottom: isMobileVersion ? 10 : 0,
       marginRight: isMobileVersion ? 0 : 15,
     }
@@ -1077,7 +1118,7 @@ class ModifyProjectModal extends React.PureComponent<ModifyProjectModalProps> {
         <Button type="back" onClick={onClose} isRound={true} style={topBottomStyle}>
           Annuler
         </Button>
-        <Button onClick={onConfirm} isRound={true}>
+        <Button onClick={onConfirm} isRound={true} style={buttonStyle}>
           Continuer
         </Button>
       </div>

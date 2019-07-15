@@ -17,72 +17,20 @@ const getName = ({name}): string => name
 const getIsDisabled = ({disabled}: {disabled?: boolean}): boolean => !!disabled
 
 
-interface RadioGroupProps<T> {
-  onChange: (value: T) => void
-  options: readonly {
-    name: string
-    value: T
-  }[]
-  style?: React.CSSProperties
-  value?: T
-}
-
-
-class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>> {
-  public static propTypes = {
-    onChange: PropTypes.func.isRequired,
-    options: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      value: PropTypes.oneOfType([
-        PropTypes.bool,
-        PropTypes.number,
-        PropTypes.string,
-      ]).isRequired,
-    })).isRequired,
-    style: PropTypes.object,
-    value: PropTypes.oneOfType([
-      PropTypes.bool,
-      PropTypes.number,
-      PropTypes.string,
-    ]),
-  }
-
-  private handleChange = _memoize((value: T): (() => void) =>
-    (): void => this.props.onChange(value))
-
-  public render(): React.ReactNode {
-    const {options, style, value} = this.props
-    const containerStyle: React.CSSProperties = {
-      display: 'flex',
-      flexWrap: 'wrap',
-      ...style,
-    }
-    return <div style={containerStyle}>
-      {options.map((option): React.ReactNode => {
-        return <LabeledToggle
-          key={option.value + ''} label={option.name} type="radio"
-          isSelected={option.value === value}
-          onClick={this.handleChange(option.value)} />
-      })}
-    </div>
-  }
-}
-
-
 interface CheckboxListProps<T> {
   checkboxStyle?: React.CSSProperties
-  onChange: (value: T[]) => void
+  onChange: (value: readonly T[]) => void
   options: readonly {
     name: React.ReactNode
     value: T
   }[]
   style?: React.CSSProperties
-  values: T[]
+  values: readonly T[]
 }
 
 
 interface CheckboxListState<T> {
-  values?: T[]
+  values?: readonly T[]
   valuesSelected?: Set<T>
 }
 
@@ -406,4 +354,4 @@ class Select<T = string> extends React.PureComponent<SelectProps<T>> {
 }
 
 
-export {CheckboxList, FieldSet, RadioGroup, Select}
+export {CheckboxList, FieldSet, Select}

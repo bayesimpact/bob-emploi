@@ -55,6 +55,7 @@ const appInitialData = {
   defaultProjectProps: {},
   // Default for props storing if user has seen Bob Sharing modal.
   hasSeenShareModal: false,
+  // TODO(cyrille): Set as null if empty.
   initialFeatures,
   initialUtm: getJsonFromStorage(UTM_LOCAL_STORAGE_NAME),
   isMobileVersion: false,
@@ -80,6 +81,7 @@ const appInitialData = {
 function app(state: AppState = appInitialData, action: AllActions): AppState {
   switch (action.type) {
     case 'LOAD_LANDING_PAGE':
+    case 'START_AS_GUEST':
       return {
         ...state,
         defaultProjectProps: {
@@ -109,13 +111,15 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
     case 'OPEN_REGISTER_MODAL':
       return {...state, loginModal: {defaultValues: action.defaultValues || {}}}
     case 'CLOSE_LOGIN_MODAL':
-      if (action.hasCanceledLogin) {
-        Storage.removeItem(AUTH_TOKEN_COOKIE_NAME)
-      }
       return {
         ...state,
-        authToken: action.hasCanceledLogin ? null : state.authToken,
         loginModal: null,
+      }
+    case 'REMOVE_AUTH_DATA':
+      Storage.removeItem(AUTH_TOKEN_COOKIE_NAME)
+      return {
+        ...state,
+        authToken: null,
       }
     case 'GET_JOBS':
       if (action.status === 'success' && action.romeId) {

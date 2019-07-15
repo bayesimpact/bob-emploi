@@ -90,10 +90,10 @@ function getJson<T>(path: string, authToken?: string): Promise<T> {
 
 function adviceTipsGet(
   {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, {adviceId}: bayes.bob.Advice,
-  authToken: string): Promise<bayes.bob.Action[]> {
+  authToken: string): Promise<readonly bayes.bob.Action[]> {
   return getJson<bayes.bob.AdviceTips>(
     `/api/advice/tips/${adviceId}/${userId}/${projectId}`, authToken).
-    then((response): bayes.bob.Action[] => response.tips)
+    then((response): readonly bayes.bob.Action[] => response.tips)
 }
 
 function convertUserWithAdviceSelectionFromProtoPost<T>(proto: string): Promise<T> {
@@ -124,20 +124,21 @@ Promise<bayes.bob.UseCase> {
   return postJson('/api/eval/use-case/create', request, true, googleIdToken)
 }
 
-function evalUseCasePoolsGet(authToken: string): Promise<bayes.bob.UseCasePool[]> {
+function evalUseCasePoolsGet(authToken: string): Promise<readonly bayes.bob.UseCasePool[]> {
   return getJson<bayes.bob.UseCasePools>('/api/eval/use-case-pools', authToken).
-    then((response): bayes.bob.UseCasePool[] => response.useCasePools || [])
+    then((response): readonly bayes.bob.UseCasePool[] => response.useCasePools || [])
 }
 
 function evalFiltersUseCasesPost(
-  filters: string[], googleIdToken: string): Promise<bayes.bob.UseCase[]> {
+  filters: readonly string[], googleIdToken: string): Promise<readonly bayes.bob.UseCase[]> {
   return postJson<bayes.bob.UseCases>('/api/eval/use-case/filters', {filters}, true, googleIdToken).
-    then((response): bayes.bob.UseCase[] => response.useCases || [])
+    then((response): readonly bayes.bob.UseCase[] => response.useCases || [])
 }
 
-function evalUseCasesGet(poolName: string, authToken: string): Promise<bayes.bob.UseCase[]> {
+function evalUseCasesGet(poolName: string, authToken: string):
+Promise<readonly bayes.bob.UseCase[]> {
   return getJson<bayes.bob.UseCases>(`/api/eval/use-cases/${poolName}`, authToken).
-    then((response): bayes.bob.UseCase[] => response.useCases || [])
+    then((response): readonly bayes.bob.UseCase[] => response.useCases || [])
 }
 
 function useCaseDistributionPost(

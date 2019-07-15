@@ -27,6 +27,7 @@ class MailTest(unittest.TestCase):
             'To': [{
                 'Email': 'hello@example.com',
             }],
+            'TemplateID': 123456,
         }]}).json()['Messages'][0]['To'][0]['MessageID']
 
         message = mail.get_message(message_id)
@@ -47,6 +48,7 @@ class MailTest(unittest.TestCase):
             'To': [{
                 'Email': 'hello@example.com',
             }],
+            'TemplateID': 123456,
         }]}).json()['Messages'][0]['To'][0]['MessageID']
 
         mailjetmock.set_too_many_get_api_requests()

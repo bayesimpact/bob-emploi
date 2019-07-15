@@ -8,7 +8,7 @@ import {Link, Redirect} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {DispatchAllActions, staticAdvicePageIsShown} from 'store/actions'
+import {DispatchAllActions, RootState, staticAdvicePageIsShown} from 'store/actions'
 
 import {CardCarousel} from 'components/card_carousel'
 import {CookieMessageOverlay} from 'components/cookie_message'
@@ -142,9 +142,12 @@ class StaticAdviceNavigation extends React.PureComponent<{currentAdviceId?: stri
 }
 
 
-export interface AdvicePageProps extends RouteComponentProps<{}> {
+interface AdviceCardConnectedProps {
   hasSeenShareModal?: boolean
 }
+
+
+export type AdvicePageProps = RouteComponentProps<{}> & AdviceCardConnectedProps
 
 
 interface StaticAdvicePageProps extends AdvicePageProps {
@@ -237,7 +240,8 @@ class StaticAdvicePageBase extends React.PureComponent<StaticAdvicePageProps, Ad
     </StaticPage>
   }
 }
-const StaticAdvicePage = connect()(StaticAdvicePageBase)
+const StaticAdvicePage = connect(({app: {hasSeenShareModal}}: RootState):
+AdviceCardConnectedProps => ({hasSeenShareModal}))(StaticAdvicePageBase)
 
 
 class AdviceDetail extends React.PureComponent<{children?: React.ReactNode}> {
@@ -326,7 +330,7 @@ class AdviceSection extends React.PureComponent<AdviceSectionProps> {
               left: 0, position: 'absolute', right: 0, top: 0, zIndex: 1}}>
               <LoginButton
                 style={{fontSize: 16, zIndex: 1}}
-                isSignUpButton={true} visualElement={`${adviceId}-screenshot`} type="validation">
+                isSignUp={true} visualElement={`${adviceId}-screenshot`} type="validation">
                 Obtenir mes conseils personnalisés
               </LoginButton>
             </div>

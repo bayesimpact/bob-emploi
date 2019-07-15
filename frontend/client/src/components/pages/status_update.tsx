@@ -9,8 +9,8 @@ import logoProductImage from 'images/logo-bob-beta.svg'
 
 import {isMobileVersion} from 'components/mobile'
 import {ShareModal} from 'components/share'
-import {Button, MIN_CONTENT_PADDING} from 'components/theme'
-import {CheckboxList, FieldSet, RadioGroup} from 'components/pages/connected/form_utils'
+import {Button, MIN_CONTENT_PADDING, RadioGroup} from 'components/theme'
+import {CheckboxList, FieldSet} from 'components/pages/connected/form_utils'
 
 require('styles/App.css')
 

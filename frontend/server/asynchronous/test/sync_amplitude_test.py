@@ -194,7 +194,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
 
         mock_db = mongomock.MongoClient().test
         mock_db.user.insert_many([{
-            '_id': mongomock.ObjectId('7ed900dbfbebdee97f9e2{:03d}'.format(i)),
+            '_id': mongomock.ObjectId(f'7ed900dbfbebdee97f9e2{i:03d}'),
             'registeredAt': '2017-11-17T10:57:12Z',
         } for i in range(400)])
         patcher = mock.patch(sync_amplitude.__name__ + '._DB', new=mock_db)
@@ -204,17 +204,16 @@ class SyncAmplitudeTestCase(unittest.TestCase):
         # Reply politely to the 300 first.
         for i in range(300):
             mock_requests.get(
-                'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2{:03d}'.format(i),
+                f'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2{i:03d}',
                 json={'matches': [{'amplitude_id': i}]},
             )
             mock_requests.get(
-                'https://amplitude.com/api/2/useractivity?user={}'.format(i),
+                f'https://amplitude.com/api/2/useractivity?user={i}',
                 json={'events': []})
         # Then reply with an error 429.
         for i in range(100):
             mock_requests.get(
-                'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2{:03d}'
-                .format(i + 300),
+                f'https://amplitude.com/api/2/usersearch?user=7ed900dbfbebdee97f9e2{i + 300:03d}',
                 status_code=429,
                 reason='429 Client Error: Too many requests for url',
             )

@@ -69,7 +69,7 @@ class ImporterMainTestCase(unittest.TestCase):
         def richer_importer_func() -> typing.List[typing.Dict[str, typing.Any]]:
             """An importer with many outputs."""
 
-            return list({'_id': 'foo-{:02d}'.format(i), 'value': i} for i in range(20))
+            return list({'_id': f'foo-{i:02d}', 'value': i} for i in range(20))
 
         mongo.importer_main(
             richer_importer_func, 'my-collection',

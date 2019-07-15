@@ -24,9 +24,9 @@ interface SelectorProps {
 
 
 interface SelectorState {
-  filters?: string[]
+  filters?: readonly string[]
   inputValue?: string
-  useCases?: bayes.bob.UseCase[]
+  useCases?: readonly bayes.bob.UseCase[]
 }
 
 
@@ -103,9 +103,9 @@ const UseCaseSelector = connect(
 
 
 interface FiltersProps {
-  children: string[]
-  initial: string[]
-  onChange: (filters: string[]) => void
+  children: readonly string[]
+  initial: readonly string[]
+  onChange: (filters: readonly string[]) => void
 }
 
 
@@ -116,10 +116,10 @@ interface FilterDiff {
 
 
 interface FiltersState {
-  filters?: FilterDiff[]
+  filters?: readonly FilterDiff[]
   hasInput?: boolean
   inputValue?: string
-  validFilters?: string[]
+  validFilters?: readonly string[]
 }
 
 
@@ -130,7 +130,8 @@ class Filters extends React.PureComponent<FiltersProps> {
     onChange: PropTypes.func,
   }
 
-  private static makeFiltersState(children = [], initial = []): FilterDiff[] {
+  private static makeFiltersState(
+    children: readonly string[] = [], initial: readonly string[] = []): readonly FilterDiff[] {
     const childrenSet = new Set(children)
     const initialSet = new Set(initial)
     const filters = initial.map(
@@ -150,7 +151,7 @@ class Filters extends React.PureComponent<FiltersProps> {
     validFilters: [],
   }
 
-  private static getDerivedStateFromProps(
+  public static getDerivedStateFromProps(
     unusedProps, {filters, validFilters: previous}: FiltersState): FiltersState {
     const validFilters = filters.
       filter(({change}): boolean => !change || change === 'added').
@@ -242,8 +243,8 @@ class Filters extends React.PureComponent<FiltersProps> {
 interface BobThinkStatsProps {
   categoryId?: string
   count?: number
-  examples?: bayes.bob.UseCase[]
-  filters?: string[]
+  examples?: readonly bayes.bob.UseCase[]
+  filters?: readonly string[]
   initial?: Category
   isEmptyThink?: boolean
   onChange?: (field: string, value: string) => void
@@ -463,8 +464,8 @@ class CategoriesDistributionBase
         if (!response) {
           return
         }
-        const {categories, distribution, missingUseCases, totalCount} = response
-        categories.sort(({order}): number => order)
+        const {categories, distribution, missingUseCases, totalCount} = response;
+        [...categories].sort(({order}): number => order)
         const initialCategories = categories.map(
           ({categoryId, ...category}, index): Category => ({
             categoryId,
@@ -484,11 +485,6 @@ class CategoriesDistributionBase
         })
       }
     )
-  }
-
-  private canRecompute = (): boolean => {
-    const {lastCategories, sendableCategories} = this.state
-    return !_isEqual(lastCategories, sendableCategories)
   }
 
   private recompute = (event): void => {

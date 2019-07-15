@@ -311,7 +311,17 @@ if (isRandomFastForward) {
 const userExample = getUserExample(isRandomFastForward)
 
 
+// TODO(pascal): Drop this feature flag once the feature has launched.
+const isLateSignupEnabled = !!Storage.getItem('lateSignup')
+if (isLateSignupEnabled) {
+  // eslint-disable-next-line no-console
+  console.log(
+    'Late Signup is activated. ' +
+    'To disable run: localStorage.removeItem("lateSignup") and refresh.')
+}
+
+
 export {getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision, youForUser,
   userAge, getHighestDegreeDescription, keepMostRecentRevision,
   getFamilySituationOptions, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
-  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, userExample}
+  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, userExample, isLateSignupEnabled}

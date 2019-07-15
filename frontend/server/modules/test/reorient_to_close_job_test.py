@@ -52,7 +52,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
             now.get() - datetime.timedelta(days=397))
         project = self.persona.scoring_project(self.database, now=self.now)
         score, explanations = self.model.score_and_explain(project)
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{self.persona.name}"')
         self.assertEqual(['vous cherchez depuis 13 mois'], explanations)
 
     def test_search_for_long_time(self) -> None:
@@ -64,7 +64,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.job_search_started_at.FromDatetime(
             now.get() - datetime.timedelta(days=335))
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{self.persona.name}"')
 
     def test_search_for_quite_long_time(self) -> None:
         """User searching for 7 months should have a low score."""
@@ -75,7 +75,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.job_search_started_at.FromDatetime(
             now.get() - datetime.timedelta(days=214))
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_search_just_started(self) -> None:
         """User searching for 15 days should have a medium score."""
@@ -88,7 +88,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.job_search_started_at.FromDatetime(
             now.get() - datetime.timedelta(days=15))
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{self.persona.name}"')
 
     def test_passionate_search_just_started(self) -> None:
         """User passionate about their job and searching for 15 days should have a low score."""
@@ -100,7 +100,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.job_search_started_at.FromDatetime(
             now.get() - datetime.timedelta(days=15))
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_search_reasonable_time(self) -> None:
         """User searching for 4 months should have a 0 score."""
@@ -112,7 +112,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.job_search_started_at.FromDatetime(
             now.get() - datetime.timedelta(days=124))
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_search_not_started(self) -> None:
         """User has not started their research should have a medium score."""
@@ -123,7 +123,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
             self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
         self.persona.project.job_search_has_not_started = True
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{self.persona.name}"')
 
     def test_passionate_search_not_started(self) -> None:
         """User passionate about their job that has not started their research
@@ -134,7 +134,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         self.persona.project.job_search_has_not_started = True
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_user_old(self) -> None:
         """Users older than 44 y.o should have a zero score."""
@@ -142,7 +142,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.diagnostic.ClearField('category_id')
         self.persona.user_profile.year_of_birth = datetime.date.today().year - 50
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_user_old_stuck_market(self) -> None:
         """Users older than 44 y.o should have a one score if they're in stuck-market."""
@@ -150,7 +150,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.diagnostic.category_id = 'stuck-market'
         self.persona.user_profile.year_of_birth = datetime.date.today().year - 50
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{self.persona.name}"')
 
     def test_not_enough_offers(self) -> None:
         """Users with job with more offers than recommended jobs don't trigger the
@@ -165,7 +165,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
                 }
         })
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_not_enough_recommendations(self) -> None:
         """Users without enough recommended jobs don't trigger the advice."""
@@ -185,7 +185,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
                 }],
         })
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{self.persona.name}"')
 
     def test_recommendations_in_both_categories(self) -> None:
         """Users with a total of two recommended jobs should have a high score."""
@@ -214,7 +214,7 @@ class AdviceReorientCloseTestCase(scoring_test.ScoringModelTestBase):
         self.persona.project.job_search_started_at.FromDatetime(
             now.get() - datetime.timedelta(days=397))
         score = self._score_persona(self.persona)
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(self.persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{self.persona.name}"')
 
 
 class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
@@ -275,7 +275,7 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/reorient-to-close-job/{}/foo'.format(self.user_id),
+            f'/api/advice/reorient-to-close-job/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -313,18 +313,23 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
                     'mobilityType': job_pb2.EVOLUTION,
                 }],
         })
+        self._db.job_group_info.insert_one({
+            '_id': 'A1413',
+            'is_diploma_strictly_required': True
+        })
         self._reset_project(rome_id='A1234', departement_id='45')
 
         response = self.app.get(
-            '/api/advice/reorient-to-close-job/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/reorient-to-close-job/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         jobs = self.json_from_response(response)
         self.assertEqual(
             [
                 {
+                    'isDiplomaStrictlyRequired': True,
                     'name': 'Superhero',
-                    'offersPercentGain': 200,
+                    'offersPercentGain': 200.0,
                 },
                 {
                     'name': 'Aide arboricole',
@@ -336,7 +341,7 @@ class ReorientCloseEndpointTestCase(base_test.ServerTestCase):
             [
                 {
                     'name': 'Hero',
-                    'offersPercentGain': 200,
+                    'offersPercentGain': 200.0,
                 },
                 {
                     'name': 'Aide caviste',

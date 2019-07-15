@@ -55,6 +55,7 @@ interface DebugModalProps extends DebugModalConnectedProps, ModalOwnProps {
 
 interface DebugModalState {
   initialUserJson: string
+  isShown?: boolean
   userJson: string
 }
 
@@ -73,19 +74,26 @@ class DebugModalBase extends React.PureComponent<DebugModalProps, DebugModalStat
     user: PropTypes.object.isRequired,
   }
 
-  public state = {
+  public state: DebugModalState = {
     initialUserJson: '',
     userJson: '',
   }
 
-  public static getDerivedStateFromProps({user}, {initialUserJson}): Partial<DebugModalState> {
-    // TODO(cyrille): Avoid doing this if the modal is not shown.
-    // TODO(cyrille): Reset userJson when user prop changes.
-    const userJson = JSON.stringify(user, undefined, 2)
-    if (initialUserJson === userJson) {
+  public static getDerivedStateFromProps(
+    {isShown, user}: DebugModalProps, {isShown: wasShown}: DebugModalState):
+    Partial<DebugModalState> {
+    if (!isShown === !wasShown) {
       return null
     }
-    return {initialUserJson: userJson}
+    if (!isShown) {
+      return {isShown}
+    }
+    const userJson = JSON.stringify(user, undefined, 2)
+    return {
+      initialUserJson: userJson,
+      isShown,
+      userJson,
+    }
   }
 
   public componentDidMount(): void {

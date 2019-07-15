@@ -1,0 +1,16 @@
+[https://www.bob-emploi.fr]
+--------------------------------------------------------------------------------
+
+
+
+<<warning>> []
+
+Message not delivered
+
+There was a problem delivering your message to {{var:userId}}. See the technical details below.
+
+
+
+{{var:additionalContent}}
+
+{{var:quotedOriginalText}}

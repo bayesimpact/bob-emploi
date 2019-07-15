@@ -38,13 +38,13 @@ def parse_rome_formacode_line(line: str) -> typing.Iterator[typing.Tuple[str, st
         return
     if not rome_ids:
         raise ValueError(
-            'A line contained Formacodes, but no ROME ID:\n{}'.format(line))
+            f'A line contained Formacodes, but no ROME ID:\n{line}')
     if len(rome_ids) > 1:
         raise ValueError(
-            'A line contained more than one ROME ID:\n{}'.format(line))
+            f'A line contained more than one ROME ID:\n{line}')
     if not formacodes:
         raise ValueError(
-            'A line contained a ROME ID, but no Formacodes:\n{}'.format(line))
+            f'A line contained a ROME ID, but no Formacodes:\n{line}')
     rome_id = rome_ids[0]
     for formacode in formacodes:
         yield (rome_id, formacode)
@@ -62,8 +62,8 @@ def main(args: typing.Sequence[str], out: typing.TextIO = sys.stdout) -> None:
             'Usage: formacode_parser.py Correspondance_Rome_Formacode.txt')
     input_file = args[1]
     out.write('rome,formacode\n')
-    for mapping in _parse_rome_formacode_file(input_file):
-        out.write('{},{}\n'.format(*mapping))
+    for rome_id, formacode in _parse_rome_formacode_file(input_file):
+        out.write(f'{rome_id},{formacode}\n')
 
 
 if __name__ == '__main__':

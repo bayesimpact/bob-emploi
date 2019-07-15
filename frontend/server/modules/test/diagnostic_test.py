@@ -21,7 +21,7 @@ class SearchLengthScoringModelTestCase(scoring_test.HundredScoringModelTestBase)
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=600))
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_searching_for_long_time(self) -> None:
         """User has been searching for 11 months."""
@@ -29,7 +29,7 @@ class SearchLengthScoringModelTestCase(scoring_test.HundredScoringModelTestBase)
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=335))
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_searching_just_started(self) -> None:
         """User has been searching for 15 days."""
@@ -37,7 +37,7 @@ class SearchLengthScoringModelTestCase(scoring_test.HundredScoringModelTestBase)
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=15))
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_good_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_search_not_started(self) -> None:
         """User has not started their research thus the metric should be disabled."""
@@ -67,7 +67,7 @@ class InterviewRateScoringModelTestCase(scoring_test.HundredScoringModelTestBase
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=244))
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_low_interviews(self) -> None:
         """User has been searching for 8 months and has done few interviews."""
@@ -77,7 +77,7 @@ class InterviewRateScoringModelTestCase(scoring_test.HundredScoringModelTestBase
         self.persona.project.job_search_started_at.FromDatetime(
             self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=244))
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_missing_interviews(self) -> None:
         """User has missing info for interviews."""
@@ -124,7 +124,7 @@ class TooManyApplicationsScoringModelTestCase(scoring_test.HundredScoringModelTe
         self.persona.project.job_search_has_not_started = False
         self.persona.project.weekly_applications_estimate = project_pb2.A_LOT
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_low_applications(self) -> None:
         """User has done few applications."""
@@ -168,7 +168,7 @@ class TooFewApplicationsScoringModelTestCase(scoring_test.HundredScoringModelTes
         self.persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
         score = self._score_persona(self.persona)
         # For this scorer the lowest valid score is 0.9.
-        self.assert_bad_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_search_not_started(self) -> None:
         """User has not started their research thus the metric should be disabled."""
@@ -204,14 +204,14 @@ class TrainingFullfillmentScoringModelTest(scoring_test.HundredScoringModelTestB
         self.persona.project.training_fulfillment_estimate = \
             project_pb2.TRAINING_FULFILLMENT_NOT_SURE
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_with_diplomas(self) -> None:
         """Test that people with enough diplomas have greatest score."""
 
         self.persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail for "{self.persona.name}"')
 
 
 class RequiredDiplomasScoringModelTest(scoring_test.HundredScoringModelTestBase):
@@ -246,7 +246,7 @@ class RequiredDiplomasScoringModelTest(scoring_test.HundredScoringModelTestBase)
             project_pb2.TRAINING_FULFILLMENT_NOT_SURE
 
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_with_diplomas(self) -> None:
         """Test that people with enough diplomas aren't scored."""
@@ -286,7 +286,7 @@ class RequiredDiplomasScoringModelTest(scoring_test.HundredScoringModelTestBase)
         self.persona.project.training_fulfillment_estimate = \
             project_pb2.TRAINING_FULFILLMENT_NOT_SURE
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_good_score(score, msg=f'Fail for "{self.persona.name}"')
 
 
 class MarketStressScoringModelTest(scoring_test.HundredScoringModelTestBase):
@@ -314,7 +314,7 @@ class MarketStressScoringModelTest(scoring_test.HundredScoringModelTestBase):
             }
         })
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_no_offers(self) -> None:
         """Test that users looking for jobs with low offers have a bad score."""
@@ -329,7 +329,7 @@ class MarketStressScoringModelTest(scoring_test.HundredScoringModelTestBase):
             }
         })
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_low_offers(self) -> None:
         """Test that users looking for jobs with low offers have a bad score."""
@@ -344,7 +344,7 @@ class MarketStressScoringModelTest(scoring_test.HundredScoringModelTestBase):
             }
         })
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_with_incomplete_market_info(self) -> None:
         """Test that users looking for jobs with incomplete market info aren't scored."""
@@ -382,7 +382,7 @@ class ReturnToEmploymentScoringModelTest(scoring_test.HundredScoringModelTestBas
             'unemployment_duration': {'days': 412},
         })
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail of "{self.persona.name}"')
 
     def test_bad_return_to_employment(self) -> None:
         """Test that persona with long return to employment has a bad score."""
@@ -394,7 +394,7 @@ class ReturnToEmploymentScoringModelTest(scoring_test.HundredScoringModelTestBas
             'unemployment_duration': {'days': 230},
         })
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail of "{self.persona.name}"')
 
     def test_good_return_to_employment(self) -> None:
         """Test that persona with short return to employment has a good score."""
@@ -406,7 +406,7 @@ class ReturnToEmploymentScoringModelTest(scoring_test.HundredScoringModelTestBas
             'unemployment_duration': {'days': 34},
         })
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_good_score(score, msg=f'Fail of "{self.persona.name}"')
 
 
 class JobOfTheFutureScoringModelTest(scoring_test.HundredScoringModelTestBase):
@@ -428,7 +428,7 @@ class JobOfTheFutureScoringModelTest(scoring_test.HundredScoringModelTestBase):
             'growth20122022': -.16,
         })
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail of "{self.persona.name}"')
 
     def test_job_of_the_future(self) -> None:
         """User is targeting a job of the future."""
@@ -439,7 +439,7 @@ class JobOfTheFutureScoringModelTest(scoring_test.HundredScoringModelTestBase):
             'growth20122022': .30,
         })
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail of "{self.persona.name}"')
 
     def test_job_of_the_present(self) -> None:
         """User is targeting a job of the present."""
@@ -450,7 +450,7 @@ class JobOfTheFutureScoringModelTest(scoring_test.HundredScoringModelTestBase):
             'growth20122022': .2,
         })
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_good_score(score, msg=f'Fail of "{self.persona.name}"')
 
 
 class NetworkScoringModelTest(scoring_test.HundredScoringModelTestBase):
@@ -469,14 +469,14 @@ class NetworkScoringModelTest(scoring_test.HundredScoringModelTestBase):
 
         self.persona.project.network_estimate = 1
         score = self._score_persona(self.persona)
-        self.assert_bad_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_bad_score(score, msg=f'Fail of "{self.persona.name}"')
 
     def test_good_score(self) -> None:
         """Users estimate they have strong network."""
 
         self.persona.project.network_estimate = 3
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, msg='Fail of "{}"'.format(self.persona.name))
+        self.assert_good_score(score, msg=f'Fail of "{self.persona.name}"')
 
 
 class OffersChangeScoringModelTest(scoring_test.HundredScoringModelTestBase):
@@ -496,7 +496,7 @@ class OffersChangeScoringModelTest(scoring_test.HundredScoringModelTestBase):
             'numJobOffersLastYear': 112,
         })
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_offers_decreasing(self) -> None:
         """Test that users looking for jobs with decreasing offers have the worse score."""
@@ -510,7 +510,7 @@ class OffersChangeScoringModelTest(scoring_test.HundredScoringModelTestBase):
             'numJobOffersLastYear': 90,
         })
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_with_low_offers(self) -> None:
         """Test that users looking for jobs low offers across a year aren't scored."""
@@ -536,7 +536,7 @@ class PassionateLevelScoringModelTest(scoring_test.HundredScoringModelTestBase):
 
         self.persona.project.passionate_level = project_pb2.LIFE_GOAL_JOB
         score = self._score_persona(self.persona)
-        self.assert_great_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_great_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_unknown(self) -> None:
         """Test that users without passionate level aren't scored."""
@@ -549,7 +549,7 @@ class PassionateLevelScoringModelTest(scoring_test.HundredScoringModelTestBase):
 
         self.persona.project.passionate_level = project_pb2.ALIMENTARY_JOB
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
 
 class FrustrationTimeManagementScoringModelTest(scoring_test.HundredScoringModelTestBase):
@@ -562,7 +562,7 @@ class FrustrationTimeManagementScoringModelTest(scoring_test.HundredScoringModel
 
         self.persona.user_profile.frustrations.append(user_pb2.TIME_MANAGEMENT)
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_not_frustrated_is_neutral(self) -> None:
         """Test that not frustrated users aren't scored."""
@@ -581,7 +581,7 @@ class JobSimilarityScoringModelTest(scoring_test.HundredScoringModelTestBase):
 
         self.persona.project.previous_job_similarity = project_pb2.DONE_THIS
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_good_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_frustrated_similar_is_good(self) -> None:
         """Users with similar experience and frustrated by atypic profile."""
@@ -589,14 +589,14 @@ class JobSimilarityScoringModelTest(scoring_test.HundredScoringModelTestBase):
         self.persona.project.previous_job_similarity = project_pb2.DONE_SIMILAR
         self.persona.user_profile.frustrations.append(user_pb2.ATYPIC_PROFILE)
         score = self._score_persona(self.persona)
-        self.assert_good_score(score, limit=.6, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_good_score(score, limit=.6, msg=f'Fail for "{self.persona.name}"')
 
     def test_no_similar_is_bad(self) -> None:
         """Users without any similar experience aren't well scored."""
 
         self.persona.project.previous_job_similarity = project_pb2.NEVER_DONE
         score = self._score_persona(self.persona)
-        self.assert_worse_score(score, msg='Fail for "{}"'.format(self.persona.name))
+        self.assert_worse_score(score, msg=f'Fail for "{self.persona.name}"')
 
     def test_unknown_not_scored(self) -> None:
         """Users without job similarity aren't scored."""

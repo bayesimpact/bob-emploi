@@ -68,7 +68,8 @@ const ExpandedAdviceCardContent =
 
 
 const TakeAway = makeTakeAwayFromAdviceData(
-  ({missions}: bayes.bob.VolunteeringMissions): bayes.bob.VolunteeringMission[] => missions,
+  ({missions}: bayes.bob.VolunteeringMissions):
+  readonly bayes.bob.VolunteeringMission[] => missions,
   'mission', true)
 
 

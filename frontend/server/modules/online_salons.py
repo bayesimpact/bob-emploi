@@ -74,8 +74,8 @@ class _AdviceOnlineSalons(scoring_base.ModelBase):
                 'certains salons concernent votre zone géographique'))
 
         if any(salon.job_group_ids for salon in relevant_salons):
-            reasons.append('des entreprises {} recherchent du monde'.format(
-                project.job_group_info().in_domain))
+            reasons.append(
+                f'des entreprises {project.job_group_info().in_domain} recherchent du monde')
 
         return scoring_base.ExplainedScore(1, reasons)
 

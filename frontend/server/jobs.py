@@ -45,7 +45,7 @@ def get_local_stats(database: pymongo.database.Database, departement_id: str, ro
 
     if not departement_id or not rome_id:
         return job_pb2.LocalJobStats()
-    local_id = '{}:{}'.format(departement_id, rome_id)
+    local_id = f'{departement_id}:{rome_id}'
     local_stats = proto.fetch_from_mongo(
         database, job_pb2.LocalJobStats, 'local_diagnosis', local_id) or job_pb2.LocalJobStats()
     recent_job_offers = proto.fetch_from_mongo(

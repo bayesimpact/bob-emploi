@@ -10,7 +10,7 @@ import {EVAL_SCORES} from './score_levels'
 
 interface PoolOverviewProps {
   onSelectUseCase: (useCase: bayes.bob.UseCase) => void
-  useCases: bayes.bob.UseCase[]
+  useCases: readonly bayes.bob.UseCase[]
 }
 
 

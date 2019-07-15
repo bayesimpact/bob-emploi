@@ -68,7 +68,7 @@ interface PageProps extends PageConnectedProps, RouteComponentProps {
 
 
 interface PageState {
-  advices: bayes.bob.Advice[]
+  advices: readonly bayes.bob.Advice[]
   advicesById: {readonly [adviceId: string]: bayes.bob.Advice}
   badAdvices: ReadonlySet<string>
   cachedSharedUrl: string | null
@@ -545,7 +545,7 @@ interface ResourcesPageProps extends ResourcesPageConnectedProps {
 
 
 interface ResourcesPageState {
-  advices: bayes.bob.Advice[]
+  advices: readonly bayes.bob.Advice[]
 }
 
 

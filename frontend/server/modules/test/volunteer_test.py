@@ -27,7 +27,7 @@ class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase):
 
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_very_long_search(self) -> None:
         """Job seeker has been searching for a looong time."""
@@ -40,7 +40,7 @@ class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase):
 
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_just_started_searching(self) -> None:
         """Job seeker has just started searching."""
@@ -53,7 +53,7 @@ class VolunteerAdviceTestCase(scoring_test.ScoringModelTestBase):
 
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
 
 class EndpointTestCase(base_test.ServerTestCase):
@@ -74,7 +74,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/volunteer/{}/foo'.format(self.user_id),
+            f'/api/advice/volunteer/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -84,7 +84,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         """Basic test with no missions."""
 
         response = self.app.get(
-            '/api/advice/volunteer/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/volunteer/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual({}, self.json_from_response(response))
@@ -104,7 +104,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(user_id, auth_token)
         project_id = user_info['projects'][0]['projectId']
         response = self.app.get(
-            '/api/advice/volunteer/{}/{}'.format(user_id, project_id),
+            f'/api/advice/volunteer/{user_id}/{project_id}',
             headers={'Authorization': 'Bearer ' + auth_token})
 
         self.assertEqual(
@@ -134,7 +134,7 @@ class EndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(user_id, auth_token)
         project_id = user_info['projects'][0]['projectId']
         response = self.app.get(
-            '/api/advice/volunteer/{}/{}'.format(user_id, project_id),
+            f'/api/advice/volunteer/{user_id}/{project_id}',
             headers={'Authorization': 'Bearer ' + auth_token})
 
         missions = self.json_from_response(response).get('missions', [])

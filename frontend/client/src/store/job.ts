@@ -68,7 +68,7 @@ interface JobPlaces {
 //   {'inDepartement': 'en Haute Savoie', 'jobGroup': 'Animation sportive'},
 // ]
 function getJobPlacesFromDepartementStats(
-  departementStats: bayes.bob.MonthlySeasonalDepartementStats[]): JobPlaces[] {
+  departementStats: readonly bayes.bob.MonthlySeasonalDepartementStats[]): readonly JobPlaces[] {
   if (!departementStats || !departementStats.length) {
     return []
   }
@@ -110,7 +110,7 @@ const _APPLICATION_MODES = {
 
 
 // TODO(cyrille): Try and find the most relevant FAP for a given job in the job group.
-function getApplicationModes(jobGroup: bayes.bob.JobGroup): bayes.bob.ModePercentage[] {
+function getApplicationModes(jobGroup: bayes.bob.JobGroup): readonly bayes.bob.ModePercentage[] {
   return (Object.values(jobGroup.applicationModes || {})[0] || {}).modes || []
 }
 

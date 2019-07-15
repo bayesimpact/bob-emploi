@@ -26,6 +26,7 @@ class MainTestCase(unittest.TestCase):
     def _send_email(self, email_address: str = 'hello@example.com') -> int:
         return typing.cast(int, mailjet_rest.Client(version='v3.1').send.create({'Messages': [{
             'To': [{'Email': email_address}],
+            'TemplateID': 123456,
         }]}).json()['Messages'][0]['To'][0]['MessageID'])
 
     def test_with_message_id(self) -> None:

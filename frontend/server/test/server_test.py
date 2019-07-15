@@ -50,9 +50,8 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/feedback',
-            data='{{"userId": "{}", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
-            '"adviceId": "one-advice", "projectId": "pid", "source": "ADVICE_FEEDBACK"}}'
-            .format(user_id),
+            data=f'{{"userId": "{user_id}", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "projectId": "pid", "source": "ADVICE_FEEDBACK"}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
@@ -92,9 +91,8 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/feedback',
-            data='{{"userId": "{}", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
-            '"adviceId": "one-advice", "projectId": "", "source": "ADVICE_FEEDBACK"}}'
-            .format(user_id),
+            data=f'{{"userId": "{user_id}", "feedback": "Aaaaaaaaaaaaawesome!\\nsecond line",'
+            '"adviceId": "one-advice", "projectId": "", "source": "ADVICE_FEEDBACK"}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
@@ -181,23 +179,30 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
 
         user_id, auth_token = self.create_user_with_token(email='pascal@example.com')
         response = self.app.get(
-            '/api/user/{}/generate-auth-tokens'.format(user_id),
+            f'/api/user/{user_id}/generate-auth-tokens',
             headers={'Authorization': 'Bearer ' + auth_token})
         tokens = self.json_from_response(response)
         self.assertEqual(
-            {'auth', 'employment-status', 'nps', 'settings', 'unsubscribe', 'user'}, tokens.keys())
+            {'auth', 'employment-status', 'nps', 'reset', 'settings', 'unsubscribe', 'user'},
+            tokens.keys())
         auth.check_token(user_id, tokens['unsubscribe'], role='unsubscribe')
         auth.check_token(user_id, tokens['employment-status'], role='employment-status')
         auth.check_token(user_id, tokens['nps'], role='nps')
         auth.check_token(user_id, tokens['settings'], role='settings')
         auth.check_token(user_id, tokens['auth'], role='')
+        # Try reset token as auth token.
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"email":"pascal@example.com","userId":"{user_id}",'
+            f'"authToken":"{tokens["reset"]}","hashedPassword":"dummy"}}')
+        self.assertEqual(200, response.status_code)
         self.assertEqual(user_id, tokens['user'])
 
     def test_generate_tokens_missing_auth(self) -> None:
         """Check that the /api/user/.../generate-auth-tokens is protected."""
 
         user_id, unused_auth_token = self.create_user_with_token(email='pascal@example.com')
-        response = self.app.get('/api/user/{}/generate-auth-tokens'.format(user_id))
+        response = self.app.get(f'/api/user/{user_id}/generate-auth-tokens')
         self.assertEqual(401, response.status_code)
 
     def test_diagnose_missing_project(self) -> None:
@@ -335,7 +340,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/tips/other-work-env/{}/foo'.format(self.user_id),
+            f'/api/advice/tips/other-work-env/{self.user_id}/foo',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -345,7 +350,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
         """Test with a non existing project ID."""
 
         response = self.app.get(
-            '/api/advice/tips/unknown-advice/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/tips/unknown-advice/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
 
         self.assertEqual(404, response.status_code)
@@ -357,7 +362,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
         """Test getting tips."""
 
         response = self.app.get(
-            '/api/advice/tips/other-work-env/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/tips/other-work-env/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
         advice_tips = self.json_from_response(response)
 
@@ -379,7 +384,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + self.auth_token}))
 
         response = self.app.get(
-            '/api/advice/tips/other-work-env/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/tips/other-work-env/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
         advice_tips = self.json_from_response(response)
 
@@ -397,7 +402,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + self.auth_token}))
 
         response = self.app.get(
-            '/api/advice/tips/other-work-env/{}/{}'.format(self.user_id, self.project_id),
+            f'/api/advice/tips/other-work-env/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
         advice_tips = self.json_from_response(response)
 
@@ -411,7 +416,7 @@ class CacheClearEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the cache/clear endpoint."""
 
     def _get_requirements(self, job_group_id: str) -> typing.List[str]:
-        response = self.app.get('/api/job/requirements/{}'.format(job_group_id))
+        response = self.app.get(f'/api/job/requirements/{job_group_id}')
         requirements = json.loads(response.get_data(as_text=True))
         return [d['name'] for d in requirements['diplomas']]
 
@@ -469,7 +474,7 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
 
         user_id, auth_token = self.create_user_with_token([base_test.add_project], advisor=False)
         response = self.app.post(
-            '/api/user/{}/migrate-to-advisor'.format(user_id),
+            f'/api/user/{user_id}/migrate-to-advisor',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
 
@@ -484,7 +489,7 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
 
         user_id, auth_token = self.create_user_with_token(advisor=True)
         response = self.app.post(
-            '/api/user/{}/migrate-to-advisor'.format(user_id),
+            f'/api/user/{user_id}/migrate-to-advisor',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
 
@@ -499,7 +504,7 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(
             [base_test.add_project, base_test.add_project], advisor=True)
         response = self.app.post(
-            '/api/user/{}/migrate-to-advisor'.format(user_id),
+            f'/api/user/{user_id}/migrate-to-advisor',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(200, response.status_code)
 
@@ -580,7 +585,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
             'bobHasHelped': 'bidulechose'
         }
         response2 = self.app.post(
-            '/api/employment-status/{}'.format(user_id),
+            f'/api/employment-status/{user_id}',
             data=json.dumps(survey_response),
             headers={'Authorization': 'Bearer ' + survey_token},
             content_type='application/json')
@@ -670,7 +675,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(email='foo@bar.com')
         survey_token = auth.create_token(user_id, role='employment-status')
         response = self.app.post(
-            '/api/employment-status/{}'.format(user_id),
+            f'/api/employment-status/{user_id}',
             data='{"seeking": "STILL_SEEKING", "bobHasHelped": "YES_A_LOT"}',
             headers={'Authorization': 'Bearer ' + survey_token},
             content_type='application/json')
@@ -691,7 +696,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
             'redirect': 'http://www.tutut.org',
         })
         response = self.app.post(
-            '/api/employment-status/{}'.format(user_id),
+            f'/api/employment-status/{user_id}',
             data='{"seeking": "STILL_SEEKING", "bobHasHelped": "YES_A_LOT"}',
             headers={'Authorization': 'Bearer ' + survey_token},
             content_type='application/json')
@@ -718,7 +723,7 @@ class EmploymentStatusTestCase(base_test.ServerTestCase):
         # Waiting 36 hours before updating the status: we then create a new one.
         mock_now.return_value = datetime.datetime.now() + datetime.timedelta(hours=36)
         response = self.app.post(
-            '/api/employment-status/{}'.format(user_id),
+            f'/api/employment-status/{user_id}',
             data='{"seeking": "STILL_SEEKING", "bobHasHelped": "YES_A_LOT"}',
             headers={'Authorization': 'Bearer ' + survey_token},
             content_type='application/json')

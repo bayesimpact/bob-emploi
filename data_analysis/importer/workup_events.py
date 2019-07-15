@@ -54,7 +54,7 @@ def _is_valid_event(event: typing.Dict[str, typing.Any]) -> bool:
     # Do not display events that are only to create a new company as we do not
     # cover that case yet.
     if not isinstance(event['category'], list):
-        raise ValueError('category field should be a list:\n{}'.format(event))
+        raise ValueError(f'category field should be a list:\n{event}')
     if event['category'] == ['Créer sa boite']:
         return False
 
@@ -73,9 +73,9 @@ def _workup_to_proto(event: typing.Dict[str, typing.Any], departements: pd.DataF
             (departements.max_longitude + _LNG_BUFFER >= event['longitude']) &
             (departements.min_longitude - _LNG_BUFFER <= event['longitude'])]
         if close_departements.empty:
-            raise ValueError('Event is next to no French départements:\n{}'.format(event))
-        geo_filters = [
-            'for-departement({})'.format(','.join(sorted(close_departements.departement_id)))]
+            raise ValueError(f'Event is next to no French départements:\n{event}')
+        departements = ','.join(sorted(close_departements.departement_id))
+        geo_filters = [f'for-departement({departements})']
 
     # TODO(pascal): Add better filters for reorientation.
     return {

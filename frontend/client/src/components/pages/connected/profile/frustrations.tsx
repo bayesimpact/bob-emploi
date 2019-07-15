@@ -117,9 +117,10 @@ interface GenderizableSelectOption {
 
 
 const genderizedOptions = (options, profile): SelectOption[] => options.map(
-  ({name, value}): SelectOption => ({name: name(profile.gender), value})).filter(
-  ({value}): boolean => (profile.gender === 'FEMININE' || value !== 'SEX_DISCRIMINATION') && (
-    isPotentialLongTermMom(profile) || value !== 'STAY_AT_HOME_PARENT'))
+  ({name, value}: GenderizableSelectOption): SelectOption => ({name: name(profile.gender), value})).
+  filter(({value}): boolean =>
+    (profile.gender === 'FEMININE' || value !== 'SEX_DISCRIMINATION') &&
+      (isPotentialLongTermMom(profile) || value !== 'STAY_AT_HOME_PARENT'))
 
 
 const frustrationsUpdater = new ProfileUpdater({
@@ -271,7 +272,7 @@ class FrustrationsStep extends React.PureComponent<ProfileStepProps, StepState> 
       {isShownAsStepsDuringOnboarding ?
         <React.Fragment>Y a-t-il des choses qui {userYou('te', 'vous')} bloquent
           dans {userYou('ta', 'votre')} recherche d'emploi&nbsp;?<br /></React.Fragment> : null}
-      Nous sommes là pour {userYou("t'", 'vous ')}écouter et pour {userYou("t'", 'vous ')}aider en
+      Je suis là pour {userYou("t'", 'vous ')}écouter et pour {userYou("t'", 'vous ')}aider en
       fonction de {userYou('tes', 'vos')} besoins.
     </div>
     const maybeShownCustomFrustrationsPlusOne = maybeShownCustomFrustrations.

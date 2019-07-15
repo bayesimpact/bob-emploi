@@ -61,8 +61,7 @@ def _update_email_sent_status(
         email_sent.mailjet_message_id = message.get('ID', email_sent.mailjet_message_id)
         status = message.get('Status')
         if status:
-            email_sent.status = user_pb2.EmailSentStatus.Value(
-                'EMAIL_SENT_{}'.format(status.upper()))
+            email_sent.status = user_pb2.EmailSentStatus.Value(f'EMAIL_SENT_{status.upper()}')
         else:
             logging.warning('No status for message "%s"', email_sent.mailjet_message_id)
     else:

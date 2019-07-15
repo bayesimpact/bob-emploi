@@ -153,6 +153,7 @@ class SyncTestCase(unittest.TestCase):
                 'medium': 'ad',
             },
             'registeredAt': '2017-07-15T18:06:08Z',
+            'hasAccount': True,
         })
         self._db.cities.insert_one({
             '_id': '69123',
@@ -236,6 +237,7 @@ class SyncTestCase(unittest.TestCase):
                     'medium': 'ad',
                     'source': 'facebook',
                 },
+                'hasAccount': True,
             },
             json.loads(body))
 

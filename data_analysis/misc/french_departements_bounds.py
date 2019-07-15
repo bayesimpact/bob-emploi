@@ -83,7 +83,7 @@ def _list_all_points(geometry: typing.Dict[str, typing.Any]) \
                     yield point
         return
 
-    raise NotImplementedError('Does not know how to handle type {}'.format(geometry['type']))
+    raise NotImplementedError(f'Does not know how to handle type {geometry["type"]}')
 
 
 if __name__ == '__main__':

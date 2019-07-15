@@ -60,7 +60,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         mock_now.return_value = later
 
         response = self.app.post(
-            '/api/app/use/{}'.format(user_id),
+            f'/api/app/use/{user_id}',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info = self.json_from_response(response)
 
@@ -77,12 +77,12 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         }
         user_id, auth_token = self.create_user_with_token(data=user_info, email='foo@bar.fr')
         tokens = self.json_from_response(self.app.get(
-            '/api/user/{}/generate-auth-tokens'.format(user_id),
+            f'/api/user/{user_id}/generate-auth-tokens',
             headers={'Authorization': 'Bearer ' + auth_token}))
         unsubscribe_token = tokens['unsubscribe']
         response = self.app.delete(
             '/api/user',
-            data='{{"userId": "{}"}}'.format(user_id),
+            data=f'{{"userId": "{user_id}"}}',
             headers={'Authorization': 'Bearer ' + unsubscribe_token})
         self.assertEqual(200, response.status_code)
         auth_object = self._user_db.user_auth.find_one({'_id': mongomock.ObjectId(user_id)})
@@ -114,7 +114,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         response = self.app.delete(
             '/api/user',
             data='{"profile": {"email": "foo@bar.fr"}}',
-            headers={'Authorization': 'Bearer {}'.format(token)})
+            headers={'Authorization': f'Bearer {token}'})
         self.assertEqual(200, response.status_code)
         auth_object = self._user_db.user_auth.find_one({'_id': mongomock.ObjectId(user_id)})
         self.assertFalse(auth_object)
@@ -156,6 +156,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertIn('profile', user_info2)
         self.assertIn('email', user_info2['profile'])
         user_info2['profile'].pop('email')
+        user_info2['profile'].pop('name')
+        user_info2['profile'].pop('lastName')
         self.assertIn('registeredAt', user_info2)
         user_info2.pop('registeredAt')
         self.assertIn('projects', user_info2)
@@ -164,6 +166,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info2.pop('featuresEnabled')
         user_info2.pop('revision')
         user_info2.pop('hashedEmail')
+        user_info2.pop('hasAccount')
         self.assertEqual(user_info, user_info2)
 
         self.assertEqual(1, len(projects), projects)
@@ -232,9 +235,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", '
-            '"profile": {{"city": {{"name": "fobar"}}, "email": "foo@bar.fr"}}, '
-            '"projects": [{{"title": "Yay title"}}]}}'.format(user_id),
+            data=f'{{"userId": "{user_id}", '
+            '"profile": {"city": {"name": "fobar"}, "email": "foo@bar.fr"}, '
+            '"projects": [{"title": "Yay title"}]}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info = self.json_from_response(response)
@@ -410,7 +413,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         response = self.app.post(
-            '/api/user/{}/project/0'.format(user_id),
+            f'/api/user/{user_id}/project/0',
             data=json.dumps({
                 'projectId': '0',
                 'totalInterviewCount': 5,
@@ -449,7 +452,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         response = self.app.post(
-            '/api/user/{}/project/0/advice/commute'.format(user_id),
+            f'/api/user/{user_id}/project/0/advice/commute',
             data=json.dumps({'status': 'ADVICE_READ'}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
@@ -485,7 +488,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         response = self.app.post(
-            '/api/user/{}/project/0/advice/unknown'.format(user_id),
+            f'/api/user/{user_id}/project/0/advice/unknown',
             data=json.dumps({'status': 'ADVICE_READ'}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
@@ -502,8 +505,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"email":"foo@bar.fr"}}, '
-            '"projects": [{}]}}'.format(user_id, json.dumps(project)),
+            data=f'{{"userId": "{user_id}", "profile": {{"email":"foo@bar.fr"}}, '
+            f'"projects": [{json.dumps(project)}]}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info = self.json_from_response(response)
@@ -550,9 +553,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         server.clear_cache()
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"email":"foo@bayes.org"}}, '
-            '"featuresEnabled": {{"advisor": "ACTIVE"}}, '
-            '"projects": [{}]}}'.format(user_id, json.dumps(project)),
+            data=f'{{"userId": "{user_id}", "profile": {{"email":"foo@bayes.org"}}, '
+            '"featuresEnabled": {"advisor": "ACTIVE"}, '
+            f'"projects": [{json.dumps(project)}]}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info = self.json_from_response(response)
@@ -599,8 +602,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         response2 = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"city": {{"name": "very different"}}}}}}'
-            .format(fake_user_id),
+            data=f'{{"userId": "{fake_user_id}", "profile": '
+            '{"city": {"name": "very different"}}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response2.status_code)
@@ -612,8 +615,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id = self.create_user()
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"city": {{"name": "very different"}}}}}}'
-            .format(user_id),
+            data=f'{{"userId": "{user_id}", "profile": {{"city": {{"name": "very different"}}}}}}',
             headers={'Authorization': 'Bearer 513134513451345', 'Content-Type': 'application/json'})
         self.assertEqual(403, response.status_code)
 
@@ -624,8 +626,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         unauthorized_token = 'Bearer 1509481.11027aabc4833f0177a06a7948ec78f220a00c78'
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"city": {{"name": "very different"}}}}}}'
-            .format(user_id),
+            data=f'{{"userId": "{user_id}", "profile": {{"city": {{"name": "very different"}}}}}}',
             headers={'Authorization': unauthorized_token, 'Content-Type': 'application/json'})
         self.assertEqual(403, response.status_code)
 
@@ -636,8 +637,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         response2 = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"email": "very-different@bar.fr"}}}}'
-            .format(user_id),
+            data=f'{{"userId": "{user_id}", "profile": {{"email": "very-different@bar.fr"}}}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         self.assertEqual(403, response2.status_code)
@@ -655,8 +655,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.authenticate_new_user_token(email='foo@bar.fr')
         response = self.app.post(
             '/api/user',
-            data='{{"userId": "{}", "profile": {{"email":"foo@bar.fr"}}, '
-            '"projects": [{}]}}'.format(user_id, json.dumps(project)),
+            data=f'{{"userId": "{user_id}", "profile": {{"email":"foo@bar.fr"}}, '
+            f'"projects": [{json.dumps(project)}]}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         # This is mostly a regression test: we used to trigger a 500 with this
@@ -670,8 +670,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         response2 = self.app.post(
             '/api/user',
-            data='{{"profile": {{"name": "very different", '
-            '"email": "foo@bar.fr"}}, "revision": 2, "userId": "{}"}}'.format(user_id),
+            data='{"profile": {"name": "very different", '
+            f'"email": "foo@bar.fr"}}, "revision": 2, "userId": "{user_id}"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info2 = self.json_from_response(response2)
@@ -690,15 +690,15 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         self.app.post(
             '/api/user',
-            data='{{"profile": {{"name": "new name", '
-            '"email": "foo@bar.fr"}}, "revision": 15, "userId": "{}"}}'.format(user_id),
+            data='{"profile": {"name": "new name", '
+            f'"email": "foo@bar.fr"}}, "revision": 15, "userId": "{user_id}"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
 
         response = self.app.post(
             '/api/user',
-            data='{{"profile": {{"name": "old name", '
-            '"email": "foo@bar.fr"}}, "revision": 10, "userId": "{}"}}'.format(user_id),
+            data='{"profile": {"name": "old name", '
+            f'"email": "foo@bar.fr"}}, "revision": 10, "userId": "{user_id}"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
 
@@ -727,9 +727,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         })
 
         response = self.app.post(
-            '/api/user', data='{{"projects": [{{"targetJob": {{"jobGroup": '
-            '{{"romeId": "A1234"}}}}, "city":{{"departementId": "69"}}}}],'
-            '"profile":{{"email":"foo@bar.fr"}},"userId": "{}"}}'.format(user_id),
+            '/api/user', data='{"projects": [{"targetJob": {"jobGroup": '
+            '{"romeId": "A1234"}}, "city":{"departementId": "69"}}],'
+            f'"profile":{{"email":"foo@bar.fr"}},"userId": "{user_id}"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info2 = self.json_from_response(response)
@@ -750,9 +750,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data={}, email='foo@bar.fr')
 
         response = self.app.post(
-            '/api/user', data='{{"projects": [{{"targetJob": {{"jobGroup": '
-            '{{"romeId": "no-data"}}}}}}], "profile":{{"email":"foo@bar.fr"}},"userId": "{}"}}'
-            .format(user_id),
+            '/api/user', data='{"projects": [{"targetJob": {"jobGroup": '
+            '{"romeId": "no-data"}}}], "profile":{"email":"foo@bar.fr"},'
+            f'"userId": "{user_id}"}}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
         user_info2 = self.json_from_response(response)
@@ -770,12 +770,12 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         }
         user_id, auth_token = self.create_user_with_token(data=user_info)
         tokens = self.json_from_response(self.app.get(
-            '/api/user/{}/generate-auth-tokens'.format(user_id),
+            f'/api/user/{user_id}/generate-auth-tokens',
             headers={'Authorization': 'Bearer ' + auth_token}))
         settings_token = tokens['settings']
 
         response = self.app.post(
-            '/api/user/{}/settings'.format(user_id),
+            f'/api/user/{user_id}/settings',
             data='{"coachingEmailFrequency": "EMAIL_ONCE_A_MONTH"}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + settings_token})
@@ -794,7 +794,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         }
         user_id, auth_token = self.create_user_with_token(data=user_info)
         tokens = self.json_from_response(self.app.get(
-            '/api/user/{}/generate-auth-tokens'.format(user_id),
+            f'/api/user/{user_id}/generate-auth-tokens',
             headers={'Authorization': 'Bearer ' + auth_token}))
         settings_token = tokens['settings']
 
@@ -807,7 +807,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(updated_user.get('sendCoachingEmailAfter'))
 
         self.app.post(
-            '/api/user/{}/settings'.format(user_id),
+            f'/api/user/{user_id}/settings',
             data='{"coachingEmailFrequency": "EMAIL_MAXIMUM"}',
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + settings_token})
@@ -849,7 +849,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(user_id),
+            f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'profile': {'name': 'Alfred'}}}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
@@ -867,7 +867,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(user_id),
+            f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'projects': [{'targetJob': {'name': 'Fou'}}]}}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
@@ -885,7 +885,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic/0'.format(user_id),
+            f'/api/user/{user_id}/update-and-quick-diagnostic/0',
             data=json.dumps({'user': {'projects': [{
                 'targetJob': {'name': 'Fou'},
                 'employmentTypes': ['CDD_OVER_3_MONTHS']}]}}),
@@ -905,7 +905,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(user_id),
+            f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'profile': {'customFrustrations': ['Bad jokes']}}}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
@@ -920,7 +920,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic'.format(user_id),
+            f'/api/user/{user_id}/update-and-quick-diagnostic',
             data=json.dumps({'user': {'profile': {'frustrations': [0]}}}),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})
@@ -936,7 +936,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
-            '/api/user/{}/update-and-quick-diagnostic/0'.format(user_id),
+            f'/api/user/{user_id}/update-and-quick-diagnostic/0',
             data=json.dumps({'user': {'projects': [{
                 'targetJob': {'name': 'Fou'},
                 'employmentTypes': [0]}]}}),
@@ -958,7 +958,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
-            '/api/user/{}/project/0/strategy/other-leads'.format(user_id),
+            f'/api/user/{user_id}/project/0/strategy/other-leads',
             data=json.dumps({
                 'reachedGoals': {'goal-1': True, 'goal-2': False},
                 'strategyId': 'other-leads',
@@ -973,7 +973,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         updated_strategy['reachedGoals']['goal-1'] = False
         updated_strategy['startedAt'] = '2019-05-15T00:00:00Z'
         response = self.app.post(
-            '/api/user/{}/project/0/strategy/other-leads'.format(user_id),
+            f'/api/user/{user_id}/project/0/strategy/other-leads',
             data=json.dumps(updated_strategy),
             content_type='application/json',
             headers={'Authorization': 'Bearer ' + auth_token})

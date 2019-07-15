@@ -1,10 +1,12 @@
+import GoogleIcon from 'mdi-react/GoogleIcon'
+import OpenNewIcon from 'mdi-react/OpenInNewIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
 
 
 import {weeklyApplicationOptions, weeklyOfferOptions}
   from 'components/pages/connected/profile/jobsearch'
-import {getIMTURL, getJobSearchURL} from 'store/job'
+import {getIMTURL, genderizeJob, getJobSearchURL} from 'store/job'
 import {getSeniorityText, getTrainingFulfillmentEstimateOptions,
   PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_EXPERIENCE_OPTIONS, PROJECT_KIND_OPTIONS,
   PROJECT_PASSIONATE_OPTIONS, PROJECT_LOCATION_AREA_TYPE_OPTIONS} from 'store/project'
@@ -83,21 +85,6 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
     }).isRequired,
   }
 
-  // TODO(marielaure): Use components instead of renders.
-  private renderLinks(
-    project: bayes.bob.Project, gender: bayes.bob.Gender): React.ReactNode {
-    const {targetJob, city = {}} = project
-    return <div style={{marginBottom: 10}}>
-      <ExternalLink href={getJobSearchURL(targetJob, gender)}>
-        Chercher le métier sur Google
-      </ExternalLink>
-      {' '}&ndash;{' '}
-      <ExternalLink href={getIMTURL(targetJob, city)}>
-        Voir l'IMT
-      </ExternalLink>
-    </div>
-  }
-
   private renderSection(title, elements, sectionKey): React.ReactNode {
     const titleStyle: React.CSSProperties = {
       fontWeight: 'bold',
@@ -167,10 +154,34 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
     const trainingFulfillmentStatus = getOptionName(
       totalTrainingOptions, project.trainingFulfillmentEstimate
     )
+    const {targetJob, city = {}} = project
+    const genderedJob = genderizeJob(targetJob, profile.gender)
+    const iconStyle = {
+      color: colors.WARM_GREY,
+      height: 15,
+      width: 15,
+    }
+    const linkStyle = {
+      color: colors.WARM_GREY,
+      marginLeft: 5,
+      textDecoration: 'none',
+    }
 
+    // TODO(marielaure): Refactor links if needed.
+    // TODO(marielaure): Fix links alignment.
     return this.renderSection(
       'Projet',
       [
+        <React.Fragment key="targetJob-link">
+          <span style={{fontWeight: 'bold'}}>{genderedJob}</span>
+          <ExternalLink style={linkStyle} href={getJobSearchURL(targetJob, profile.gender)}>
+            <GoogleIcon style={iconStyle} />
+            <OpenNewIcon style={iconStyle} />
+          </ExternalLink>
+          <ExternalLink style={linkStyle} href={getIMTURL(targetJob, city)}>
+            <span style={{color: colors.WARM_GREY}}>IMT</span>
+            <OpenNewIcon style={iconStyle} />
+          </ExternalLink></React.Fragment>,
         getOptionName(PROJECT_KIND_OPTIONS, project.kind),
         'en ' + employmentStatusText,
         getOptionName(PROJECT_PASSIONATE_OPTIONS, project.passionateLevel),
@@ -218,7 +229,6 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
     const json = JSON.stringify(remainingData, null, 2).replace(/[{}",[\]]/g, '')
 
     return <div style={boxStyle}>
-      {this.renderLinks(project, profile.gender) || null}
       {this.renderProfile(profile, city)}
       {this.renderProject(profile, project || {})}
       {this.renderResearch(project)}

@@ -132,8 +132,8 @@ class _OnlineSalonRule(object):
         self._has_job_group = bool(rule.job_group_ids)
         self._has_location = bool(rule.location_kind and rule.location_ids)
         if rule.location_kind and rule.location_kind not in _AREA_TYPE_TO_LOCATION_ID_FIELD:
-            raise ValueError('Cannot make a rule on {} level'.format(geo_pb2.AreaType.Name(
-                rule.location_kind)))
+            raise ValueError(
+                f'Cannot make a rule on {geo_pb2.AreaType.Name(rule.location_kind)} level')
 
     def generate_info(self, salon: typing.Dict[str, str]) \
             -> typing.Dict[str, typing.List[typing.Any]]:

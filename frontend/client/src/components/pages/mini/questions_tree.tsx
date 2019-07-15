@@ -80,11 +80,6 @@ const QUESTIONS_TREE: Topic[] = [
         url: 'diplome',
       },
       {
-        question: "J'ai déjà réalisé une formation professionnalisante",
-        type: 'yes/no',
-        url: 'formation',
-      },
-      {
         question: "Je pense que j'ai un niveau de formation suffisant pour trouver un emploi " +
           'dans un domaine qui me plait',
         type: 'confidence',
@@ -275,7 +270,7 @@ const QUESTIONS_TREE: Topic[] = [
       },
     ],
     talkAboutIt: "aborder cette question des loisirs, du sport, de l'engagement",
-    title: 'Mes loisirs et mes engagements',
+    title: 'Mes loisirs et mes activités extra-professionnelles',
     url: 'loisirs',
   },
 ]

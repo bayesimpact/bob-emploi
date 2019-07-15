@@ -22,7 +22,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
 
         self.now = datetime.datetime(2018, 2, 2)
         self.database.local_diagnosis.insert_one({
-            '_id': '{}:{}'.format(departement, rome_id),
+            '_id': f'{departement}:{rome_id}',
             'salary': {
                 'medianSalary': 18000,
             },
@@ -43,7 +43,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.user_profile.has_car_driving_license = user_pb2.TRUE
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_license_status_unknown(self) -> None:
         """We don't know whether user has driving license."""
@@ -52,7 +52,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.user_profile.ClearField('has_car_driving_license')
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_is_too_young(self) -> None:
         """User is younger than required age for driving license."""
@@ -62,7 +62,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.user_profile.year_of_birth = 1995
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_not_searched_enough(self) -> None:
         """User hasn't been searching for long."""
@@ -72,7 +72,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.job_search_started_at.FromDatetime(datetime.datetime(2017, 11, 1))
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_too_rich(self) -> None:
         """User has probably too much in indemnities."""
@@ -88,7 +88,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.city.departement_id = '69'
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_big_city_not_required(self) -> None:
         """User lives in a large enough city with good public transportation,
@@ -106,7 +106,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'A1234'
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_required_by_job(self) -> None:
         """Job group expects people to have a car."""
@@ -124,7 +124,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.city.urban_score = 7
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_small_city(self) -> None:
         """Small town people need cars more often."""
@@ -134,7 +134,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.city.public_transportation_score = 7
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
     def test_bad_transport_city(self) -> None:
         """City with bad public transportations forces people to use cars."""
@@ -144,7 +144,7 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.city.public_transportation_score = 3.2
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
     def test_expanded_card_data(self) -> None:
         """city coordinates are given as expanded card data."""
@@ -161,8 +161,8 @@ class DrivingLicenseHelpScoringModelTestCase(scoring_test.ScoringModelTestBase):
         project = persona.scoring_project(self.database)
         result = typing.cast(geo_pb2.FrenchCity, self.model.get_expanded_card_data(project))
 
-        self.assertEqual(result.latitude, 45.5, msg='Failed for "{}"'.format(persona.name))
-        self.assertEqual(result.longitude, 4.5, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(result.latitude, 45.5, msg=f'Failed for "{persona.name}"')
+        self.assertEqual(result.longitude, 4.5, msg=f'Failed for "{persona.name}"')
 
 
 class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBase):
@@ -188,7 +188,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.user_profile.has_car_driving_license = user_pb2.TRUE
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_license_status_unknown(self) -> None:
         """We don't know whether user has driving license."""
@@ -197,7 +197,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.user_profile.ClearField('has_car_driving_license')
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_is_too_young(self) -> None:
         """User is younger than required age for 1 euro driving license program."""
@@ -207,7 +207,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.user_profile.year_of_birth = 2004
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_is_too_old(self) -> None:
         """User is older than required age for 1 euro driving license program."""
@@ -217,7 +217,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.user_profile.year_of_birth = 1987
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_big_city_not_required(self) -> None:
         """User lives in a large enough city, and job doesn't need a car."""
@@ -234,7 +234,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.target_job.job_group.rome_id = 'A1234'
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_required_by_job(self) -> None:
         """Job group expects people to have a car."""
@@ -253,7 +253,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.city.urban_score = 7
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_small_city(self) -> None:
         """Small town people need cars more often."""
@@ -263,7 +263,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.city.public_transportation_score = 7
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
     def test_bad_transport_city(self) -> None:
         """City with bad public transportations forces people to use cars."""
@@ -273,7 +273,7 @@ class DrivingLicenseOneEuroScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.city.public_transportation_score = 3.2
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
 
 class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBase):
@@ -299,7 +299,7 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.user_profile.has_car_driving_license = user_pb2.TRUE
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_license_status_unknown(self) -> None:
         """We don't know whether user has driving license."""
@@ -308,7 +308,7 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.user_profile.ClearField('has_car_driving_license')
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_is_too_young(self) -> None:
         """User is younger than required age for 1 euro driving license program."""
@@ -318,7 +318,7 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.user_profile.year_of_birth = 2004
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_big_city_not_required(self) -> None:
         """User lives in a large enough city, and job doesn't need a car."""
@@ -335,7 +335,7 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.target_job.job_group.rome_id = 'A1234'
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_required_by_job(self) -> None:
         """Job group expects people to have a car."""
@@ -354,7 +354,7 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.city.urban_score = 7
         score = self._score_persona(persona)
 
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_small_city(self) -> None:
         """Small town people need cars more often."""
@@ -364,7 +364,7 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.city.public_transportation_score = 7
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
     def test_bad_transport_city(self) -> None:
         """City with bad public transportations forces people to use cars."""
@@ -374,7 +374,7 @@ class DrivingLicenseWrittenScoringModelTestCase(scoring_test.ScoringModelTestBas
         persona.project.city.public_transportation_score = 3.2
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
 
 if __name__ == '__main__':

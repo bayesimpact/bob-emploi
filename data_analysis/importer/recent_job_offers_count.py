@@ -37,9 +37,7 @@ def download_and_count(file: typing.Optional[typing.TextIO] = None) \
 
     counts: typing.Dict[str, int] = collections.defaultdict(int)
     for job_offer in tqdm.tqdm(_iterate_job_offers(), file=file):
-        local_id = '{}:{}'.format(
-            job_offer['DEPARTEMENT_CODE'],
-            job_offer['ROME_PROFESSION_CARD_CODE'])
+        local_id = f'{job_offer["DEPARTEMENT_CODE"]}:{job_offer["ROME_PROFESSION_CARD_CODE"]}'
         counts[local_id] += 1
     return [
         {'_id': local_id, 'numAvailableJobOffers': count}

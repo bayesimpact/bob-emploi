@@ -52,14 +52,14 @@ class Importer(object):
         self.out = out
 
     def _print(self, arg: typing.Any) -> None:
-        self.out.write('{}\n'.format(arg))
+        self.out.write(f'{arg}\n')
 
     def _print_in_report(self, arg: typing.Any) -> None:
         if _SLACK_IMPORT_URL:
             requests.post(_SLACK_IMPORT_URL, json={'attachments': [{
                 'mrkdwn_in': ['text'],
-                'title': 'Automatic import of {}'.format(self.flag_values.mongo_collection),
-                'text': '{}\n'.format(arg),
+                'title': f'Automatic import of {self.flag_values.mongo_collection}',
+                'text': f'{arg}\n',
             }]})
         self._print(arg)
 
@@ -79,7 +79,7 @@ class Importer(object):
         if check_error:
             raise check_error
 
-        unique_suffix = '_{:x}'.format(round(time.time() * 1e6))
+        unique_suffix = f'_{round(time.time() * 1e6):x}'
         collection = self._collection_from_flags(collection_name, suffix=unique_suffix)
         collection.drop()
         collection = collection.database.get_collection(collection.name)
@@ -90,11 +90,10 @@ class Importer(object):
             # already cut it in small pieces:
             # https://api.mongodb.com/python/current/examples/bulk.html
             if not chunk_size or chunk_size >= total:
-                self._print_in_report('Inserting all {:d} objects at once.'.format(total))
+                self._print_in_report(f'Inserting all {total:d} objects at once.')
                 collection.insert_many(items)
             else:
-                self._print_in_report(
-                    'Inserting {:d} objects in chunks of {}'.format(total, chunk_size))
+                self._print_in_report(f'Inserting {total:d} objects in chunks of {chunk_size}')
                 for pos in tqdm.tqdm(range(0, total, chunk_size), file=sys.stdout):
                     try:
                         collection.insert_many(items[pos:pos + chunk_size])
@@ -109,13 +108,13 @@ class Importer(object):
         if has_old_data:
             today = _GET_NOW().date().isoformat()
             archive_collection = self._collection_from_flags(
-                collection_name, suffix='.{}{}'.format(today, unique_suffix))
+                collection_name, suffix=f'.{today}{unique_suffix}')
             real_collection.aggregate([{'$out': archive_collection.name}])
             # Drop old archives (exclude the ones archived today and keep only one additional).
             old_versions = sorted(
                 name for name in real_collection.database.list_collection_names()
                 if name.startswith(real_collection.name + '.') and
-                not name.startswith(real_collection.name + '.{}'.format(today))
+                not name.startswith(real_collection.name + f'.{today}')
             )
             for old_version in old_versions[:-1]:
                 real_collection.database.drop_collection(old_version)
@@ -260,7 +259,7 @@ def _define_flags_args(func: _FlagableCallable, parser: argparse.ArgumentParser)
     for func_arg, param_obj in _arg_names(func).items():
         has_default_val = param_obj.default != inspect.Parameter.empty
         parser.add_argument(
-            '--{}'.format(func_arg),
+            f'--{func_arg}',
             default=param_obj.default if has_default_val else None,
             help=args_doc.get(func_arg),
             required=not has_default_val)
@@ -388,7 +387,7 @@ def collection_to_proto_mapping(
         del document['_id']
 
         if document_id in ids:
-            raise KeyError('{} is a duplicate'.format(document_id))
+            raise KeyError(f'{document_id} is a duplicate')
         ids.add(document_id)
         yield document_id, parse_doc_to_proto(document, proto_type)
 
@@ -401,8 +400,7 @@ def parse_doc_to_proto(document: JsonType, proto_type: typing.Type[_ProtoType]) 
         json_format.Parse(json.dumps(document), proto)
     except json_format.ParseError as error:
         raise json_format.ParseError(
-            'Error while parsing item {}: {}\n{}'.format(
-                id, error, json.dumps(document, indent=2)))
+            f'Error while parsing item {id}: {error}\n{json.dumps(document, indent=2)}')
     return proto
 
 

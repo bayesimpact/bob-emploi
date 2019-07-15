@@ -792,6 +792,7 @@ interface JobSuggestionProps {
   job?: bayes.bob.ReorientJob
   onClick?: () => void
   style?: React.CSSProperties
+  tag?: TagProps
 }
 
 
@@ -840,6 +841,11 @@ class JobSuggestionBase extends React.PureComponent<JobSuggestionProps> {
     const chevronStyle: React.CSSProperties = {
       fill: colors.CHARCOAL_GREY,
     }
+    const tagStyle = {
+      backgroundColor: colors.SQUASH,
+      marginLeft: 10,
+      marginRight: 20,
+    }
 
     if (!job) {
       return null
@@ -851,12 +857,14 @@ class JobSuggestionBase extends React.PureComponent<JobSuggestionProps> {
       <div style={jobNameStyle}>
         {job.name}
       </div>
+      <div>
+        {job.isDiplomaStrictlyRequired ? <Tag style={tagStyle}>Diplôme obligatoire</Tag> : null}
+      </div>
       <div style={{flex: 1}}>
         <span style={{alignItems: 'center', display: 'flex'}}>
           {stressPercentLoss > 10 ? <div style={multiplierStyle}>
             -{stressPercentLoss.toLocaleString('fr-FR')}% de concurrence
           </div> : null}
-          {isMobileVersion ? null : <div>Découvrir ce métier</div>}
           <ChevronRightIcon style={chevronStyle} />
         </span>
       </div>
@@ -1084,7 +1092,7 @@ class DataSource extends React.PureComponent<DataSoureProps> {
 
 interface StaticAdviceCardContentProps {
   expandedCardHeader?: string
-  expandedCardItems?: string[]
+  expandedCardItems?: readonly string[]
 }
 
 
@@ -1278,15 +1286,6 @@ class Skill extends React.PureComponent<SkillProps> {
     name: PropTypes.string.isRequired,
     style: PropTypes.object,
     userYou: PropTypes.func.isRequired,
-  }
-
-  private renderTag(): React.ReactNode {
-    if (!this.props.isRecommended) {
-      return null
-    }
-    return <Tag style={{backgroundColor: colors.GREENISH_TEAL, marginLeft: 10}}>
-      Recommandée
-    </Tag>
   }
 
   public render(): React.ReactNode {

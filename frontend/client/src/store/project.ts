@@ -204,15 +204,10 @@ const flattenProject = (projectFields: bayes.bob.Project): bayes.bob.Project => 
 })
 
 
-const getStrategy = (project: bayes.bob.Project, sId: string): bayes.bob.WorkingStrategy =>
-  project.openedStrategies && project.openedStrategies.
-    find(({strategyId}: bayes.bob.WorkingStrategy): boolean => strategyId === sId) || {}
-
-
 export {
   PROJECT_EXPERIENCE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
   PROJECT_WORKLOAD_OPTIONS, PROJECT_KIND_OPTIONS, createProjectTitle, newProject,
-  createProjectTitleComponents, getSeniorityText, getStrategy, SALARY_TO_GROSS_ANNUAL_FACTORS,
+  createProjectTitleComponents, getSeniorityText, SALARY_TO_GROSS_ANNUAL_FACTORS,
   getTrainingFulfillmentEstimateOptions, isOldProject, flattenProject, SENIORITY_OPTIONS,
 }

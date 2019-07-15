@@ -4,7 +4,7 @@ import _keyBy from 'lodash/keyBy'
 import _memoize from 'lodash/memoize'
 import ArrowLeftIcon from 'mdi-react/ArrowLeftIcon'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
-import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
+import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import StarIcon from 'mdi-react/StarIcon'
 import PropTypes from 'prop-types'
@@ -14,55 +14,108 @@ import {connect} from 'react-redux'
 import {RouteComponentProps} from 'react-router'
 import {Link, Redirect} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
-import VisibilitySensor from 'react-visibility-sensor'
+import {Swipeable} from 'react-swipeable'
 
 import {DispatchAllActions, RootState, displayToasterMessage, FINISH_PROFILE_SETTINGS,
   setUserProfile, startStrategy, replaceStrategy, strategyWorkPageIsShown,
   strategyExplorationPageIsShown} from 'store/actions'
-import {StrategyGoal, YouChooser, getDiffBetweenDatesInString, getDateString, getStrategiesGoals,
-  getStrategiesTestimonials, tutoyer} from 'store/french'
-import {getStrategy} from 'store/project'
-import {colorFromPercent} from 'store/score'
-import {youForUser} from 'store/user'
+import {getAdviceGoal} from 'store/advice'
+import {StrategyGoal, StrategyTestimonial, YouChooser, genderize, getDateString,
+  getDiffBetweenDatesInString, getStrategyGoals, getStrategiesTestimonials,
+  upperFirstLetter} from 'store/french'
+import {impactFromPercentDelta} from 'store/score'
+import {StrategyCompletion, getStartedStrategy, getStrategyCompletion,
+  getStrategyProgress} from 'store/strategy'
+import {isLateSignupEnabled, youForUser} from 'store/user'
 
-import {ObservationMethod, WorkingMethod} from 'components/advisor'
+import {AdvicePicto, WorkingMethod} from 'components/advisor'
 import {FastForward} from 'components/fast_forward'
+import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalConfig} from 'components/modal'
 import {PageWithNavigationBar} from 'components/navigation'
-import {FieldSet, CheckboxList, Select} from 'components/pages/connected/form_utils'
-import {Button, Markdown, PercentBar, SmoothTransitions, colorToAlpha} from 'components/theme'
+import {SignUpBanner} from 'components/pages/signup'
+import {CheckboxList} from 'components/pages/connected/form_utils'
+import {AppearingList, BobScoreCircle, Button, FastTransitions, GrowingNumber, LabeledToggle,
+  Markdown, PercentBar, PieChart, SmoothTransitions, UpDownIcon,
+  colorToAlpha} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
 import manImage from 'images/man-icon.svg'
 import womanImage from 'images/woman-icon.svg'
 
 import {BobModal} from './speech'
 
-const FOLLOWUP_EMAILS_OPTIONS = [
-  {name: 'De temps en temps', value: 'EMAIL_ONCE_A_MONTH'},
-  {name: 'Autant que possible', value: 'EMAIL_MAXIMUM'},
-  {name: 'Jamais', value: 'EMAIL_NONE'},
-]
-
-const getStrategyProgress = (goals, reachedGoals): number => {
-  const numReachedGoals = Object.keys(reachedGoals).
-    filter((goalId): boolean => reachedGoals[goalId]).length
-  return numReachedGoals * 100 / goals.length
+interface FollowupOption {
+  description: (userYou: YouChooser, genderE?: string) => string
+  name: string
+  value: bayes.bob.EmailFrequency
 }
 
+const FOLLOWUP_EMAILS_OPTIONS: Readonly<FollowupOption[]> = [
+  {
+    description: (userYou): string =>
+      `Un email pour ${userYou('te', 'vous')} booster une fois par mois`,
+    name: 'Occasionel',
+    value: 'EMAIL_ONCE_A_MONTH',
+  },
+  {
+    description: (userYou): string =>
+      // TODO(cyrille): Make description more explicit about being the maximum frequency.
+      `Un email par semaine pour que rien ne ${userYou("t'", 'vous ')}échappe`,
+    name: 'Régulier',
+    value: 'EMAIL_MAXIMUM',
+  },
+]
+
+const METHODS_PER_ROW = 2
+
+const makeStartStrategyOptions = (eFeminine: string = ''):
+Readonly<{name: string; value: string}[]> => [
+  {
+    name: `Je suis d'accord pour m'investir dans cette stratégie avec l'aide de
+      ${config.productName}`,
+    value: 'commit',
+  },
+  {
+    name: `Je suis prêt${eFeminine} à m'engager sur cette stratégie pendant au moins quelques
+      jours`,
+    value: 'commit-time',
+  },
+] as const
+const startStrategyOptionsCount = makeStartStrategyOptions().length
+
 interface WhyButtonProps {
-  onClick: (event: React.MouseEvent) => void
+  onClick?: (event: React.MouseEvent) => void
+  strategy: bayes.bob.Strategy
   style?: React.CSSProperties
 }
 
-class WhyButtonBase extends React.PureComponent<WhyButtonProps> {
+class WhyButtonBase extends React.PureComponent<WhyButtonProps, {isModalShown?: boolean}> {
   public static propTypes = {
-    onClick: PropTypes.func.isRequired,
+    onClick: PropTypes.func,
+    strategy: PropTypes.shape({
+      header: PropTypes.string,
+    }).isRequired,
     style: PropTypes.object,
   }
 
+  public state = {
+    isModalShown: false,
+  }
+
+  private handleCloseModal = (): void => this.setState({isModalShown: false})
+
+  private onClick = (event): void => {
+    const {onClick} = this.props
+    onClick && onClick(event)
+    this.setState({isModalShown: true})
+  }
+
   public render(): React.ReactNode {
-    const {onClick, style} = this.props
+    const {strategy: {header: why}, style} = this.props
+    if (!why) {
+      return null
+    }
     const buttonStyle: RadiumCSSProperties = {
       ':hover': {
         boxShadow: 'rgba(0, 0, 0, 0.2) 0px 4px 10px 0px',
@@ -85,101 +138,35 @@ class WhyButtonBase extends React.PureComponent<WhyButtonProps> {
       marginRight: 9,
       width: 15,
     }
-    return <div style={buttonStyle} onClick={onClick}>
-      <img src={bobHeadImage} alt={config.productName} style={bobStyle} />
-      L'explication de {config.productName}
-    </div>
+    return <React.Fragment>
+      <BobModal
+        onConfirm={this.handleCloseModal} isShown={this.state.isModalShown} buttonText="OK">
+        {why}
+      </BobModal>
+      <div style={buttonStyle} onClick={this.onClick}>
+        <img src={bobHeadImage} alt={config.productName} style={bobStyle} />
+        L'explication de {config.productName}
+      </div>
+    </React.Fragment>
   }
 }
 const WhyButton = Radium(WhyButtonBase)
 
 
-interface StrategyConfig {
-  chevronSize?: number
-  pageUrl: string
-  project: bayes.bob.Project
-  score?: number
-  strategyId?: string
-  style?: React.CSSProperties
-  title?: string
-}
-
-interface StrategyProps extends StrategyConfig {
-  chevronSize: number
-}
-
-
-interface StrategyCompletion {
-  isComplete: boolean
-  isStarted: boolean
-  progress: number
-}
-
-
-interface StrategyState {
-  isHovered: boolean
-  isWhyModalShown: boolean
-}
-
-
-class Strategy extends React.PureComponent<StrategyProps, StrategyState> {
-  public static propTypes = {
-    chevronSize: PropTypes.number.isRequired,
-    pageUrl: PropTypes.string.isRequired,
-    project: PropTypes.object.isRequired,
-    score: PropTypes.number,
-    strategyId: PropTypes.string,
-    style: PropTypes.object,
-    title: PropTypes.string.isRequired,
-  }
-
-  public static defaultProps = {
-    chevronSize: 24,
-  }
-
-  public state: StrategyState = {
-    isHovered: false,
-    isWhyModalShown: false,
-  }
-
-  private handleSetHovered = _memoize((isHovered): (() => void) =>
-    (): void => this.setState({isHovered}))
-
-  private handleClickWhy = (event): void => {
-    event.preventDefault()
-    event.stopPropagation()
-    this.setState({isWhyModalShown: true})
-  }
-
-  private handleCloseModal = (): void => this.setState({isWhyModalShown: false})
-
-  private getStrategyCompletion(): StrategyCompletion {
-    const {project = {}, strategyId} = this.props
-    const {startedAt, reachedGoals = {}} = getStrategy(project, strategyId)
-    const isStarted = !!startedAt
-    const goals = getStrategiesGoals(tutoyer)[strategyId] || []
-    const progress = getStrategyProgress(goals, reachedGoals)
-    const isComplete = progress === 100
-    return {isComplete, isStarted, progress}
-  }
-
-  private renderCompleted(style?: React.CSSProperties): React.ReactNode {
-    const {isComplete} = this.getStrategyCompletion()
-    if (!isComplete) {
-      return null
-    }
-    const completedStrategyStyle = {
-      fill: colors.GREENISH_TEAL,
-      ...style,
-    }
-    return <CheckCircleIcon size={30} style={completedStrategyStyle} />
-  }
-
-  private renderProgressBar(style: React.CSSProperties): React.ReactNode {
-    const {isComplete, isStarted, progress} = this.getStrategyCompletion()
+class StrategyProgress extends
+  React.PureComponent<Partial<StrategyCompletion> & {style?: React.CSSProperties}> {
+  public render(): React.ReactNode {
+    const {isComplete, isStarted, progress, style} = this.props
     const percentWidth = isMobileVersion ? {} : {width: 100}
-    if (isComplete || !isStarted) {
+    if (!isStarted) {
       return null
+    }
+    if (isComplete) {
+      const completedStrategyStyle = {
+        fill: colors.GREENISH_TEAL,
+        ...style,
+      }
+      return <CheckCircleIcon size={30} style={completedStrategyStyle} />
     }
     const percentStyle = {
       marginRight: 10,
@@ -188,18 +175,52 @@ class Strategy extends React.PureComponent<StrategyProps, StrategyState> {
     }
     return <PercentBar percent={progress} color={colors.DARK_TWO} height={6} style={percentStyle} />
   }
+}
+
+
+interface ListItemProps {
+  chevronSize: number
+  pageUrl: string
+  score?: number
+  strategy: bayes.bob.Strategy
+  strategyCompletion?: StrategyCompletion
+  style?: React.CSSProperties
+}
+
+class StrategyListItem extends React.PureComponent<ListItemProps, {isHovered: boolean}> {
+  public static propTypes = {
+    chevronSize: PropTypes.number.isRequired,
+    pageUrl: PropTypes.string.isRequired,
+    strategy: PropTypes.shape({
+      score: PropTypes.number,
+      title: PropTypes.string.isRequired,
+    }).isRequired,
+    strategyCompletion: PropTypes.object.isRequired,
+    style: PropTypes.object,
+  }
+
+  public static defaultProps = {
+    chevronSize: 24,
+  }
+
+  public state = {
+    isHovered: false,
+  }
+
+  private handleSetHovered = _memoize((isHovered): (() => void) =>
+    (): void => this.setState({isHovered}))
+
+  private handleClickWhy = (event): void => {
+    event.preventDefault()
+    event.stopPropagation()
+  }
 
   public render(): React.ReactNode {
-    const {chevronSize, pageUrl, project: {strategies}, score, strategyId, style,
-      title} = this.props
-    const {isHovered, isWhyModalShown} = this.state
-    const {header: why} = strategies.
-      find(({strategyId: sId}): boolean => sId === strategyId)
-    const {isStarted} = this.getStrategyCompletion()
+    const {chevronSize, pageUrl, strategy, strategy: {score, title},
+      strategyCompletion, strategyCompletion: {isComplete}, style} = this.props
+    const {isHovered} = this.state
     const scoreStyle: React.CSSProperties = {
-      // TODO(marielaure): Find a better golden number to switch from
-      // improvement scores to scores for color.
-      color: colorFromPercent(score * 4),
+      color: impactFromPercentDelta(score).color,
       fontSize: 20,
       fontStyle: isMobileVersion ? 'normal' : 'italic',
       fontWeight: 'bold',
@@ -233,42 +254,36 @@ class Strategy extends React.PureComponent<StrategyProps, StrategyState> {
       marginRight: -.3 * chevronSize,
     }
     const whyStyle = {
-      marginLeft: 10,
       opacity: isHovered ? 1 : 0,
       ...SmoothTransitions,
     }
-    return <React.Fragment>
-      {why ? <BobModal onConfirm={this.handleCloseModal} isShown={isWhyModalShown} buttonText="OK">
-        {why}
-      </BobModal> : null}
-      <Link
-        onMouseOver={this.handleSetHovered(true)} onMouseLeave={this.handleSetHovered(false)}
-        to={pageUrl} style={containerStyle}>
-        <div style={{alignItems: 'center', display: 'flex'}}>
-          <div style={titleContainerStyle}>
-            <h2 style={titleStyle}>{title}</h2>
-            <div style={{display: 'flex', marginTop: 5}}>
-              {isMobileVersion && isStarted ? this.renderCompleted() :
-                <h2 style={{...scoreStyle, flexShrink: 0}}>+{score}%</h2>}
-              {why && !isMobileVersion ?
-                <WhyButton style={whyStyle} onClick={this.handleClickWhy} /> : null}
-            </div>
-          </div>
-          {isMobileVersion ? null : this.renderProgressBar({marginRight: 10})}
-          {isMobileVersion ? null : this.renderCompleted({marginRight: 10})}
-          <ChevronRightIcon color={colors.SLATE} size={chevronSize} style={chevronStyle} />
+    return <Link
+      onMouseOver={this.handleSetHovered(true)} onMouseLeave={this.handleSetHovered(false)}
+      style={containerStyle} to={pageUrl}>
+      <div style={{alignItems: 'center', display: 'flex'}}>
+        <div style={titleContainerStyle}>
+          <h2 style={titleStyle}>{title}</h2>
+          {isMobileVersion ? isComplete ? <StrategyProgress {...strategyCompletion} /> : null :
+            <div style={{alignItems: 'center', display: 'flex', marginTop: 5}}>
+              <h2 style={{...scoreStyle, flexShrink: 0, marginRight: 10}}>+{score}%</h2>
+              <WhyButton strategy={strategy} style={whyStyle} onClick={this.handleClickWhy} />
+            </div>}
         </div>
-        {isMobileVersion ? this.renderProgressBar({marginTop: 10}) : null}
-      </Link>
-    </React.Fragment>
+        {isMobileVersion ? null :
+          <StrategyProgress style={{marginRight: 10}} {...strategyCompletion} />}
+        <ChevronRightIcon color={colors.SLATE} size={chevronSize} style={chevronStyle} />
+      </div>
+      {isMobileVersion && !isComplete ?
+        <StrategyProgress style={{marginRight: 10}} {...strategyCompletion} /> : null}
+    </Link>
   }
 }
 
 
-interface StrategiesProps extends
-  Omit<StrategyConfig, 'style' | 'pageUrl' | keyof bayes.bob.Strategy> {
+interface StrategiesProps {
   makeStrategyLink: (strategyId: string) => string
-  strategies: bayes.bob.Strategy[]
+  project: bayes.bob.Project
+  strategies: readonly bayes.bob.Strategy[]
   strategyStyle?: React.CSSProperties
 }
 
@@ -276,6 +291,7 @@ interface StrategiesProps extends
 class Strategies extends React.PureComponent<StrategiesProps> {
   public static propTypes = {
     makeStrategyLink: PropTypes.func.isRequired,
+    project: PropTypes.object.isRequired,
     strategies: PropTypes.arrayOf(PropTypes.shape({
       score: PropTypes.number,
       strategyId: PropTypes.string,
@@ -285,153 +301,169 @@ class Strategies extends React.PureComponent<StrategiesProps> {
   }
 
   public render(): React.ReactNode {
-    const {makeStrategyLink, strategies, strategyStyle, ...otherProps} = this.props
+    const {makeStrategyLink, project, strategies, strategyStyle} = this.props
     const combinedStrategyStyle = {
       alignSelf: 'stretch',
       marginBottom: 20,
       ...strategyStyle,
     }
     return <React.Fragment>
-      {strategies.map((strategy, index): React.ReactNode => <Strategy
-        key={index} style={combinedStrategyStyle} {...strategy}
-        pageUrl={makeStrategyLink(strategy.strategyId)}
-        {...otherProps} />)}
+      {strategies.map((strategy, index): React.ReactNode => <StrategyListItem
+        key={index} style={combinedStrategyStyle} strategy={strategy}
+        strategyCompletion={getStrategyCompletion(project, strategy.strategyId)}
+        pageUrl={makeStrategyLink(strategy.strategyId)} />)}
     </React.Fragment>
   }
 }
 
 
-interface BannerProps {
-  baseUrl: string
-  maxInnerWidth: number
-  onStart: () => void
-  userYou: YouChooser
+interface BulletsProps extends React.HTMLProps<HTMLDivElement> {
+  selectedIndex: number
+  total: number
 }
 
-
-class StartBanner extends React.PureComponent<BannerProps, {isFixed: boolean}> {
-  public static propTypes = {
-    baseUrl: PropTypes.string.isRequired,
-    maxInnerWidth: PropTypes.number.isRequired,
-    onStart: PropTypes.func.isRequired,
-    userYou: PropTypes.func.isRequired,
+class Bullets extends React.PureComponent<BulletsProps> {
+  public render(): React.ReactNode {
+    const {selectedIndex, style, total, ...otherProps} = this.props
+    const bulletStyle = (distance: number): React.CSSProperties => ({
+      backgroundColor: distance ? colors.MODAL_PROJECT_GREY : colors.BOB_BLUE,
+      borderRadius: '50%',
+      ...distance > 3 && {display: 'none'},
+      height: distance <= 1 ? 8 : distance <= 2 ? 6 : 4,
+      margin: '0 2px',
+      width: distance <= 1 ? 8 : distance <= 2 ? 6 : 4,
+      ...SmoothTransitions,
+    })
+    return <div style={{alignItems: 'center', display: 'flex', ...style}} {...otherProps}>
+      {new Array(total).fill(undefined).map((unused, index): React.ReactNode =>
+        <div key={index} style={bulletStyle(Math.abs(index - selectedIndex))} />)}
+    </div>
   }
+}
+interface SwipeableListProps {
+  children: ReactStylableElement[] | ReactStylableElement
+  childrenByPage: number
+}
 
+// Currently assumes the carousel takes most of the window's width
+class SwipeableList extends React.PureComponent<SwipeableListProps, {pageIndex: number}> {
   public static defaultProps = {
-    maxInnerWidth: 600,
+    childrenByPage: 1,
   }
 
   public state = {
-    isFixed: true,
+    pageIndex: 0,
   }
 
-  private handleVisibilityChange = (isVisible): void => this.setState({isFixed: !isVisible})
+  private pageCount = (): number =>
+    Math.ceil(React.Children.count(this.props.children) / this.props.childrenByPage)
 
-  private renderContent(): React.ReactNode {
-    const {baseUrl, maxInnerWidth, onStart, userYou} = this.props
-    const sidePadding = 30
-    const contentStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      margin: '0 auto',
-      maxWidth: maxInnerWidth + 2 * sidePadding,
-      padding: `15px ${sidePadding}px`,
+  private handlePageChange = _memoize((delta: number): (() => void) => (): void =>
+    this.setState(({pageIndex}): {pageIndex: number} => {
+      const pageCount = this.pageCount()
+      return {pageIndex: (pageCount + pageIndex + delta) % pageCount}
+    })
+  )
+
+  private renderInvisibleChildren(): React.ReactNode[] {
+    const {children, childrenByPage} = this.props
+    const childrenCount = React.Children.count(children)
+    if (!(childrenCount % childrenByPage)) {
+      return null
     }
-    const buttonStyle: React.CSSProperties = isMobileVersion ? {padding: '9px 25px'} : {}
-    return <div style={contentStyle}>
-      <span style={{flex: 1, maxWidth: isMobileVersion ? 200 : 'initial', textAlign: 'center'}}>
-        {userYou('Veux-tu te', 'Voulez-vous vous')} lancer dans cette stratégie&nbsp;?
-      </span>
-      <div style={{display: 'flex', marginTop: isMobileVersion ? 10 : 0}}>
-        <Button style={buttonStyle} onClick={onStart} isRound={true} type="navigation">Oui</Button>
-        <Link to={baseUrl}>
-          <Button style={{...buttonStyle, marginLeft: 15}} isRound={true} type="navigation">
-            Plus tard
-          </Button>
-        </Link>
-      </div>
-    </div>
+    const anyChild = React.Children.toArray(children)[0] as ReactStylableElement
+    const invisibleCount = childrenByPage - (childrenCount % childrenByPage)
+    return new Array(invisibleCount).fill(undefined).map((unused, index): React.ReactNode =>
+      React.cloneElement(anyChild, {
+        key: `invisible-${index}`,
+        style: {...anyChild.props.style, visibility: 'hidden'},
+      }))
+  }
+
+  private renderPage(pageIndex, {style, ...otherProps}: Swipeable['props'] = {}): React.ReactNode {
+    const pageCount = this.pageCount()
+    if (pageIndex < 0 || pageIndex >= pageCount) {
+      return null
+    }
+    const {children, childrenByPage} = this.props
+    const childStyle = {
+      display: 'flex',
+      ...SmoothTransitions,
+      ...style,
+    }
+    return <Swipeable key={pageIndex} style={childStyle} {...otherProps}>
+      {React.Children.map(children, (child, index): React.ReactNode =>
+        Math.floor(index / childrenByPage) === pageIndex ? child : null)}
+      {pageIndex === pageCount - 1 ? this.renderInvisibleChildren() : null}
+    </Swipeable>
   }
 
   public render(): React.ReactNode {
-    const {isFixed} = this.state
-    const border = `solid 1px ${colorToAlpha(colors.BOB_BLUE, .2)}`
-    const maxWidth = 660
-    const containerStyle: React.CSSProperties = {
-      backgroundColor: colors.PALE_BLUE,
-      ...SmoothTransitions,
+    const {pageIndex} = this.state
+    const pageCount = this.pageCount()
+    if (pageCount <= 1) {
+      return this.renderPage(0)
     }
-    const inFlowStyle: React.CSSProperties = {
-      ...containerStyle,
-      border,
-      borderRadius: 10,
-      margin: `0 auto ${isMobileVersion ? '' : '80px'}`,
-      maxWidth,
-      visibility: isMobileVersion ? 'hidden' : 'initial',
+    const sideStyle: React.CSSProperties = {left: 0, opacity: 0, position: 'absolute', top: 0}
+    const summaryStyle: React.CSSProperties = {
+      alignItems: 'center',
+      display: 'flex',
+      justifyContent: 'center',
+      marginTop: 15,
+      minHeight: '1em',
+      position: 'relative',
     }
-    const fixedStyle: React.CSSProperties = {
-      ...containerStyle,
-      borderTop: border,
-      bottom: 0,
-      left: 0,
-      position: 'fixed',
-      right: 0,
-      transform: `translateY(${isFixed ? 0 : 100}%)`,
-      zIndex: 1,
-    }
-    return <React.Fragment>
-      <div style={fixedStyle}>{this.renderContent()}</div>
-      <VisibilitySensor
-        active={!isMobileVersion} intervalDelay={250} onChange={this.handleVisibilityChange}>
-        <div style={inFlowStyle}>{this.renderContent()}</div>
-      </VisibilitySensor>
-    </React.Fragment>
+    return <div style={{overflow: 'hidden', position: 'relative'}}>
+      { // TODO(cyrille): Find a way to translate only of parent width.
+        this.renderPage(pageIndex - 1, {style: {...sideStyle, transform: 'translateX(-100vw)'}})}
+      {this.renderPage(pageIndex, {
+        ...pageIndex > 0 && {onSwipedRight: this.handlePageChange(-1)},
+        ...pageIndex < pageCount - 1 && {onSwipedLeft: this.handlePageChange(1)},
+      })}
+      {this.renderPage(pageIndex + 1, {style: {...sideStyle, transform: 'translateX(100vw)'}})}
+      <div style={summaryStyle}>
+        <Bullets selectedIndex={pageIndex} total={pageCount} />
+        <div style={{fontSize: 13, position: 'absolute', right: 0, top: 0}}>
+          <span style={{fontWeight: 'bold'}}>{pageIndex + 1}</span>/{pageCount}
+        </div>
+      </div>
+    </div>
   }
 }
 
+const LEFT_PANEL_WIDTH = 600
 
-interface SectionProps extends React.HTMLProps<HTMLDivElement> {
-  picto?: React.ReactNode
-  title: string
+const RIGHT_PANEL_WIDTH = 295
+
+const strategyCardStyle: React.CSSProperties = {
+  border: `2px solid ${colors.MODAL_PROJECT_GREY}`,
+  borderRadius: 20,
+  padding: '15px 20px',
 }
 
-
-class StrategySection extends React.PureComponent<SectionProps> {
+class StrategySection extends React.PureComponent<Omit<StratPanelProps, 'ref'>> {
   public static propTypes = {
     children: PropTypes.node.isRequired,
-    picto: PropTypes.node,
     style: PropTypes.object,
     title: PropTypes.string.isRequired,
   }
 
   public render(): React.ReactNode {
-    const {children, picto, style, title, ...otherProps} = this.props
+    const {children, style, title, ...otherProps} = this.props
     const sectionStyle = {
       margin: '0 auto 60px',
-      maxWidth: 600,
+      maxWidth: LEFT_PANEL_WIDTH,
       ...style,
     }
-    const headerStyle = {
-      alignItems: 'center',
-      borderBottom: `1px solid ${colors.MODAL_PROJECT_GREY}`,
-      display: 'flex',
-      fontSize: 26,
-      justifyContent: 'space-between',
-      paddingBottom: 25,
-    }
-    return <section style={sectionStyle} {...otherProps}>
-      <header style={headerStyle}>
-        <span>{title}</span><span>{picto}</span>
-      </header>
+    return <StratPanel style={sectionStyle} {...otherProps} title={title}>
       {children}
-    </section>
+    </StratPanel>
   }
 }
 
 
 interface GoalsProps {
-  goals: StrategyGoal[]
+  goals: readonly StrategyGoal[]
   reachedGoals: {[goalId: string]: boolean}
   style?: React.CSSProperties
 }
@@ -472,7 +504,7 @@ class StrategyGoalsList extends React.PureComponent<GoalsProps> {
     return <div key={goalId} style={containerStyle}>
       {isReached ?
         <CheckCircleIcon size={checkCircleWidth} style={iconStyle} /> :
-        <div style={discStyle}>•</div>}
+        <div style={discStyle}>&bull;</div>}
       <span style={{marginLeft: 15}}>
         <Markdown content={content} isSingleLine={true} />
       </span>
@@ -505,39 +537,23 @@ class GoalsSelectionTitle
 }
 
 
-interface GoalsSelectionEditorConfig {
-  goals: StrategyGoal[]
+interface GoalsSelectionEditorProps {
+  goals: readonly StrategyGoal[]
   isFirstTime?: boolean
   onSubmit: (reachedGoals: {[goalId: string]: boolean}) => void
   reachedGoals: {[goalId: string]: boolean}
 }
 
 
-interface GoalsSelectionEditorConnectedProps {
-  coachingEmailFrequency: bayes.bob.EmailFrequency
-}
-
-
-interface GoalsSelectionEditorProps
-  extends GoalsSelectionEditorConnectedProps, GoalsSelectionEditorConfig {
-  dispatch: DispatchAllActions
-}
-
-
 interface GoalsSelectionEditorState {
-  coachingEmailFrequency?: bayes.bob.EmailFrequency
   reachedGoals?: {[goalId: string]: boolean}
   selectedGoals?: string[]
 }
 
 
-class GoalsSelectionEditorBase
+class GoalsSelectionEditor
   extends React.PureComponent<GoalsSelectionEditorProps, GoalsSelectionEditorState> {
   public static propTypes = {
-    coachingEmailFrequency: PropTypes.oneOf([
-      'EMAIL_NONE', 'EMAIL_ONCE_A_MONTH', 'EMAIL_MAXIMUM',
-    ] as const).isRequired,
-    dispatch: PropTypes.func.isRequired,
     goals: PropTypes.array.isRequired,
     isFirstTime: PropTypes.bool,
     onSubmit: PropTypes.func.isRequired,
@@ -545,7 +561,6 @@ class GoalsSelectionEditorBase
   }
 
   public state: GoalsSelectionEditorState = {
-    coachingEmailFrequency: this.props.coachingEmailFrequency,
     reachedGoals: {},
     selectedGoals: [],
   }
@@ -570,26 +585,12 @@ class GoalsSelectionEditorBase
 
   private handleGoalsChange = (selectedGoals): void => this.setState({selectedGoals})
 
-  private handleEmailChange = (coachingEmailFrequency): void =>
-    this.setState({coachingEmailFrequency})
-
   private handleClick = (): void => {
-    const {dispatch, goals, onSubmit, coachingEmailFrequency: oldEmailFrequency} = this.props
-    const {coachingEmailFrequency} = this.state
+    const {goals, onSubmit} = this.props
     const selectedGoalsSet = new Set(this.state.selectedGoals)
     const reachedGoals =
       _fromPairs(goals.map(({goalId}): [string, boolean] => [goalId, selectedGoalsSet.has(goalId)]))
     onSubmit(reachedGoals)
-    const profileUpdate = {coachingEmailFrequency}
-    if (oldEmailFrequency === coachingEmailFrequency) {
-      return
-    }
-    dispatch(setUserProfile(profileUpdate, true, FINISH_PROFILE_SETTINGS)).
-      then((success): void => {
-        if (success) {
-          dispatch(displayToasterMessage('Modifications sauvegardées.'))
-        }
-      })
   }
 
   private onForward = (): void => {
@@ -606,7 +607,6 @@ class GoalsSelectionEditorBase
 
   public render(): React.ReactNode {
     const {goals, isFirstTime} = this.props
-    const {coachingEmailFrequency} = this.state
     const options = goals.map(({content, goalId}): {name: React.ReactNode; value: string} => ({
       name: <Markdown content={content} isSingleLine={true} />,
       value: goalId,
@@ -619,42 +619,23 @@ class GoalsSelectionEditorBase
       display: 'block',
       margin: '55px auto 0',
     }
-    const settingStyle: React.CSSProperties = {
-      borderTop: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-      marginTop: 35,
-      paddingTop: 20,
-    }
     return <div style={containerStyle}>
       <FastForward onForward={this.onForward} />
       <CheckboxList
         onChange={this.handleGoalsChange} options={options} values={this.state.selectedGoals}
         checkboxStyle={{marginBottom: 10}} />
-      {isFirstTime ? null : <div style={settingStyle}>
-        {/* TODO(marielaure): Put this on one line. */}
-        {/* TODO(marielaure): Add a flag to keep the strategy for which the user needs coaching. */}
-        <FieldSet
-          label="Me rappeler d'avancer sur ce point :"
-          isValid={!!coachingEmailFrequency}>
-          <Select
-            onChange={this.handleEmailChange}
-            value={coachingEmailFrequency}
-            options={FOLLOWUP_EMAILS_OPTIONS} />
-        </FieldSet>
-      </div>}
       <Button onClick={this.handleClick} style={buttonStyle} isRound={true} type="validation">
         {isFirstTime ? 'Valider' : 'Enregistrer'}
       </Button>
     </div>
   }
 }
-const GoalsSelectionEditor = connect(({user}: RootState): GoalsSelectionEditorConnectedProps => ({
-  coachingEmailFrequency: user.profile.coachingEmailFrequency || 'EMAIL_NONE',
-}))(GoalsSelectionEditorBase)
 
 
 interface GoalsSelectionModalProps extends Omit<ModalConfig, 'children'> {
+  children?: never
   dispatch: DispatchAllActions
-  goals: StrategyGoal[]
+  goals: readonly StrategyGoal[]
   isFirstTime?: boolean
   onSubmit: (reachedGoals: {[goalId: string]: boolean}) => void
   reachedGoals: {[goalId: string]: boolean}
@@ -690,7 +671,7 @@ class GoalsSelectionModal extends React.PureComponent<GoalsSelectionModalProps> 
 }
 
 
-interface GoalsSelectionPageProps extends GoalsSelectionEditorConfig {
+interface GoalsSelectionPageProps extends GoalsSelectionEditorProps {
   backUrl: string
   userYou: YouChooser
 }
@@ -722,7 +703,7 @@ class GoalsSelectionPage
     const headerStyle: React.CSSProperties = {
       fontSize: 13,
       fontWeight: 'bold',
-      marginBottom: 35,
+      marginTop: 35,
       textAlign: 'center',
       textTransform: 'uppercase',
     }
@@ -738,8 +719,447 @@ class GoalsSelectionPage
 }
 
 
-interface StrategyPageConnectedProps {
+interface MethodProps {
+  advice: bayes.bob.Advice
+  style?: React.CSSProperties
+  userYou: YouChooser
+}
+class ObservationMethod extends React.PureComponent<MethodProps> {
+  public render(): React.ReactNode {
+    const {advice, advice: {adviceId}, style, userYou} = this.props
+    const containerStyle: React.CSSProperties = {
+      ...strategyCardStyle,
+      fontSize: 13,
+      fontWeight: 'bold',
+      height: 190,
+      padding: '20px 15px',
+      textAlign: 'center',
+      width: 140,
+      ...style,
+    }
+    return <div style={containerStyle}>
+      <AdvicePicto adviceId={adviceId} style={{marginBottom: 20, width: 64}} />
+      <div>{upperFirstLetter(getAdviceGoal(advice, userYou))}</div>
+    </div>
+  }
+}
+
+interface StratPanelProps extends React.HTMLProps<HTMLDivElement> {
+  title: string
+}
+
+class StratPanel extends React.PureComponent<StratPanelProps> {
+  public render(): React.ReactNode {
+    const {children, title, ...otherProps} = this.props
+    const titleStyle: React.CSSProperties = isMobileVersion ? {
+      fontSize: 22,
+      margin: '0 0 15px',
+    } : {
+      borderBottom: strategyCardStyle.border,
+      fontSize: 22,
+      margin: '0 0 25px',
+      paddingBottom: 20,
+    }
+    return <section {...otherProps}>
+      <h2 style={titleStyle}>{title}</h2>
+      {children}
+    </section>
+  }
+}
+
+
+class ScorePanel extends React.PureComponent<{score: number; style: React.CSSProperties}> {
+  public render(): React.ReactNode {
+    const {score, style} = this.props
+    const scoreCardStyle = {
+      alignItems: 'center',
+      backgroundColor: colors.DARK_TWO,
+      borderRadius: 20,
+      boxShadow: '0 5px 20px 0 rgba(0, 0, 0, 0.15)',
+      display: 'flex',
+      padding: '45px 20px',
+    }
+    const scoreDeltaStyle = {
+      color: '#fff',
+      fontSize: 24,
+      marginBottom: 6,
+    }
+    const {color: scoreColor, impact: scoreImpact} = impactFromPercentDelta(score)
+    return <StratPanel title="Impact sur mon score" style={style}>
+      <div style={scoreCardStyle}>
+        <BobScoreCircle
+          isPercentShown={false} radius={41} strokeWidth={3} percent={score}
+          startColor={colors.BOB_BLUE} color={colors.BOB_BLUE} />
+        <div style={{color: scoreColor, fontSize: 13, fontWeight: 'bold'}}>
+          <div style={scoreDeltaStyle}>
+            +<GrowingNumber isSteady={true} number={score} />%
+          </div>
+          Impact {scoreImpact}
+        </div>
+      </div>
+    </StratPanel>
+  }
+}
+
+interface SelectedCoachingConnectedProps {
+  frequency?: bayes.bob.EmailFrequency
+}
+
+interface SelectCoachingProps extends SelectedCoachingConnectedProps {
+  onClick?: () => void
+  style?: RadiumCSSProperties
+}
+
+class SelectCoachingBase extends React.PureComponent<SelectCoachingProps> {
+  public render(): React.ReactNode {
+    const {frequency, style, onClick} = this.props
+    if (!frequency || frequency === 'EMAIL_NONE' || frequency === 'UNKNOWN_EMAIL_FREQUENCY') {
+      return <Button
+        onClick={onClick}
+        isRound={true} style={{display: 'block', ...style}}>
+        Activer le coaching de {config.productName}
+      </Button>
+    }
+    const containerStyle = {
+      ...strategyCardStyle,
+      ':hover': {
+        border: `2px solid ${colors.COOL_GREY}`,
+      },
+      alignItems: 'center',
+      ...!!onClick && {cursor: 'pointer'},
+      display: 'flex',
+      padding: '20px 25px',
+      ...style,
+    }
+    const headerStyle = {
+      color: colors.COOL_GREY,
+      fontSize: 14,
+      fontStyle: 'italic',
+      lineHeight: '19px',
+    }
+    const nameStyle: React.CSSProperties = {
+      fontSize: 18,
+      fontWeight: 'bold',
+    }
+    const {name} = FOLLOWUP_EMAILS_OPTIONS.find(({value}): boolean => value === frequency)
+    return <div onClick={onClick} style={containerStyle}>
+      <div style={{flex: 1}}>
+        <div style={headerStyle}>Type de coaching&nbsp;:</div>
+        <div style={nameStyle}>{name}</div>
+      </div>
+      <ChevronDownIcon size={24} />
+    </div>
+  }
+}
+const SelectCoaching = connect(({user: {profile: {coachingEmailFrequency: frequency}}}: RootState):
+SelectedCoachingConnectedProps => ({frequency}))(Radium(SelectCoachingBase))
+
+interface CoachingOptionProps {
+  description: string
+  isDisabled: boolean
+  isSelected: boolean
+  name: string
+  onClick: () => void
+  style: RadiumCSSProperties
+}
+
+class CoachingOptionBase extends React.PureComponent<CoachingOptionProps> {
+  public render(): React.ReactNode {
+    const {description, isDisabled, isSelected, name, onClick, style} = this.props
+    const selectedStyle = {
+      backgroundColor: colorToAlpha(colors.BOB_BLUE, .09),
+      border: `2px solid ${colors.BOB_BLUE}`,
+    }
+    const optionStyle = {
+      ...isDisabled ? {
+        border: `2px solid ${colors.MODAL_PROJECT_GREY}`,
+        color: colors.COOL_GREY,
+      } : {
+        ':hover': selectedStyle,
+        border: `2px solid ${colorToAlpha(colors.BOB_BLUE, 0)}`,
+        boxShadow: '0 5px 20px 0 rgba(0, 0, 0, 0.15)',
+        cursor: 'pointer',
+      },
+      alignItems: 'center',
+      borderRadius: 10,
+      display: 'flex',
+      padding: '20px 25px',
+      ...isSelected && selectedStyle,
+      ...FastTransitions,
+      ...style,
+    }
+    const descriptionStyle = {
+      color: colors.COOL_GREY,
+      fontSize: 14,
+      fontStyle: 'italic',
+      lineHeight: '19px',
+    }
+    return <div onClick={isDisabled ? null : onClick} style={optionStyle}>
+      <LabeledToggle
+        style={{marginBottom: 0}} isDisabled={isDisabled}
+        label={<div style={{marginLeft: 10}}>
+          <h3 style={{fontSize: 18, margin: 0}}>{name}</h3>
+          <div style={descriptionStyle}>{description}</div>
+        </div>}
+        isSelected={isSelected} type="radio" />
+    </div>
+  }
+}
+const CoachingOption = Radium(CoachingOptionBase)
+
+
+interface CoachingModalConnectedProps {
+  coachingEmailFrequency?: bayes.bob.EmailFrequency
+  gender?: bayes.bob.Gender
+}
+
+interface CoachingModalProps extends Omit<ModalConfig, 'children'>, CoachingModalConnectedProps {
+  dispatch: DispatchAllActions
+  userYou: YouChooser
+}
+
+interface CoachingModalState {
+  coachingEmailFrequency?: bayes.bob.EmailFrequency
+  isActive?: boolean
+  isShown?: boolean
+}
+
+// TODO(cyrille): Make it a full-page on mobile.
+class CoachingModalBase
+  extends React.PureComponent<CoachingModalProps, CoachingModalState> {
+  public state: CoachingModalState = {}
+
+  public static getDerivedStateFromProps(
+    {coachingEmailFrequency, isShown}: CoachingModalProps,
+    {isShown: wasShown}: CoachingModalState): CoachingModalState {
+    if (!isShown === !wasShown) {
+      return null
+    }
+    return {
+      ...isShown && {
+        coachingEmailFrequency,
+        isActive: true,
+      },
+      isShown,
+    }
+  }
+
+  private handleToggleActive = (): void => this.setState(({isActive}): CoachingModalState => ({
+    coachingEmailFrequency: isActive ? 'EMAIL_NONE' : undefined,
+    isActive: !isActive,
+  }))
+
+  private handleClickOption = _memoize((coachingEmailFrequency): (() => void) => (): void =>
+    this.setState({coachingEmailFrequency}))
+
+  private handleConfirm = (): void => {
+    const {dispatch, onClose} = this.props
+    const {coachingEmailFrequency} = this.state
+    // TODO(cyrille): Change action to something specific remembering the strategy.
+    dispatch(setUserProfile({coachingEmailFrequency}, true, FINISH_PROFILE_SETTINGS)).
+      then((success): void => {
+        if (success) {
+          onClose && onClose()
+          dispatch(displayToasterMessage('Modifications sauvegardées.'))
+        }
+      })
+  }
+
+  public render(): React.ReactNode {
+    const {gender, isShown, onClose, userYou} = this.props
+    const {coachingEmailFrequency, isActive} = this.state
+    const contentStyle = {
+      padding: isMobileVersion ? 30 : '30px 50px 50px',
+    }
+    const buttonsStyle = {
+      display: 'flex',
+      justifyContent: 'center',
+      marginTop: 40,
+    }
+    return <Modal
+      isShown={isShown} onClose={onClose} style={{margin: 20}}
+      title={`Choisis${userYou('', 'sez')} le coaching qui ${userYou('te', 'vous')} convient`}>
+      <div style={contentStyle}>
+        <LabeledToggle
+          onClick={this.handleToggleActive} type="swipe" style={{marginBottom: 20}}
+          label={`Coaching ${isActive ? '' : 'des'}activé`} isSelected={isActive} />
+        {FOLLOWUP_EMAILS_OPTIONS.map(({description, value, ...option}): React.ReactNode =>
+          <CoachingOption
+            {...option} isSelected={coachingEmailFrequency === value} isDisabled={!isActive}
+            description={description(userYou, genderize('·e', 'e', '', gender))}
+            onClick={this.handleClickOption(value)}
+            key={value} style={{marginBottom: 20}} />)}
+        <div style={buttonsStyle}>
+          <Button isRound={true} type="back" style={{marginRight: 15}} onClick={onClose}>
+            Annuler
+          </Button>
+          <Button isRound={true} disabled={!coachingEmailFrequency} onClick={this.handleConfirm}>
+            Continuer
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  }
+}
+const CoachingModal = connect(({user: {profile: {coachingEmailFrequency, gender} = {}}}: RootState):
+CoachingModalConnectedProps => ({
+  coachingEmailFrequency,
+  gender,
+}))(CoachingModalBase)
+
+
+interface GoalsPanelProps {
+  coachingEmailFrequency?: bayes.bob.EmailFrequency
+  handleEngagement: () => void
   openedStrategy: bayes.bob.WorkingStrategy
+  style?: React.CSSProperties
+  userYou: YouChooser
+}
+
+interface GoalsPanelState {
+  isCoachingModalShown: boolean
+  isExpanded: boolean
+}
+
+class GoalsPanel extends React.PureComponent<GoalsPanelProps, GoalsPanelState> {
+
+  public state = {
+    isCoachingModalShown: false,
+    isExpanded: false,
+  }
+
+  private toggleExpand = (): void =>
+    this.setState(({isExpanded}): {isExpanded: boolean} => ({isExpanded: !isExpanded}))
+
+  private handleShowCoachingModal = _memoize((isCoachingModalShown): (() => void) => (): void =>
+    this.setState({isCoachingModalShown}))
+
+  public render(): React.ReactNode {
+    const {handleEngagement,
+      openedStrategy: {lastModifiedAt, reachedGoals = {}, strategyId}, style, userYou} = this.props
+    const {isCoachingModalShown, isExpanded} = this.state
+    const goalsStyle = {
+      borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`,
+      fontSize: 13,
+      padding: '15px 0',
+    }
+    const modifyGoalsStyle: React.CSSProperties = {
+      backgroundColor: colors.BOB_BLUE,
+      borderRadius: 10,
+      color: '#fff',
+      cursor: 'pointer',
+      fontSize: 13,
+      fontStyle: 'italic',
+      margin: '0 auto',
+      maxWidth: 75,
+      padding: '2px 10px',
+      textAlign: 'center',
+    }
+    const lastModifiedStyle: React.CSSProperties = {
+      fontSize: 11,
+      fontStyle: 'italic',
+      margin: '10px auto 0',
+      textAlign: 'center',
+    }
+    const goals = getStrategyGoals(userYou, strategyId)
+    const progress = Math.round(getStrategyProgress(goals, reachedGoals))
+    const expandableSectionStyle = {
+      ...isExpanded ? {} : {maxHeight: 0, overflow: 'hidden'},
+      ...SmoothTransitions,
+    }
+    const expandButtonStyle: React.CSSProperties = {
+      alignItems: 'center',
+      borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`,
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      fontWeight: 'bold',
+      justifyContent: 'center',
+      paddingTop: 15,
+    }
+    return <StratPanel style={style} title={`${userYou('Tes', 'Vos')} objectifs`}>
+      <CoachingModal
+        userYou={userYou} isShown={isCoachingModalShown}
+        onClose={this.handleShowCoachingModal(false)} />
+      <div style={strategyCardStyle}>
+        <PieChart
+          radius={40} strokeWidth={6} backgroundColor={colors.MODAL_PROJECT_GREY}
+          percentage={progress} style={{color: colors.GREENISH_TEAL, margin: '10px auto 20px'}}>
+          <span style={{color: colors.DARK_TWO, fontSize: 20}}>
+            <GrowingNumber isSteady={true} number={progress} />%
+          </span>
+        </PieChart>
+        <div style={expandableSectionStyle}>
+          <div style={goalsStyle}>
+            <StrategyGoalsList
+              goals={goals} reachedGoals={reachedGoals} style={{marginLeft: -10}} />
+          </div>
+          <div style={{borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`, padding: '15px 0'}}>
+            <div style={modifyGoalsStyle} onClick={handleEngagement}>Modifier</div>
+            {lastModifiedAt ? <div style={lastModifiedStyle}>
+              Dernière
+              modification {getDiffBetweenDatesInString(new Date(lastModifiedAt), new Date())}
+            </div> : null}
+          </div>
+        </div>
+        <div onClick={this.toggleExpand} style={expandButtonStyle}>
+          Voir {isExpanded ? 'moins' : 'plus'}
+          <UpDownIcon style={{flex: 'none'}} size={16} icon="chevron" isUp={isExpanded} />
+        </div>
+      </div>
+      <SelectCoaching
+        style={{margin: '30px auto 0'}} onClick={this.handleShowCoachingModal(true)} />
+    </StratPanel>
+  }
+}
+
+
+interface EngagementProps {
+  gender?: bayes.bob.Gender
+  handleEngagement: () => void
+  style?: React.CSSProperties
+}
+
+class EngagementContent extends
+  React.PureComponent<EngagementProps, {selectedReadyOptions: string[]}> {
+
+  public state = {
+    selectedReadyOptions: [],
+  }
+
+  private handleReadyChange = (selectedReadyOptions): void => {
+    this.setState({selectedReadyOptions})
+  }
+
+  public render(): React.ReactNode {
+    const {gender, handleEngagement, style} = this.props
+    const {selectedReadyOptions} = this.state
+    const checkboxStyle = isMobileVersion ? {
+      borderBottom: `1px solid ${colors.MODAL_PROJECT_GREY}`,
+      padding: '20px 0',
+    } : {
+      marginBottom: 10,
+    }
+    return <div style={style}>
+      <CheckboxList
+        onChange={this.handleReadyChange}
+        options={makeStartStrategyOptions(genderize('·e', 'e', '', gender))}
+        values={selectedReadyOptions}
+        checkboxStyle={checkboxStyle} style={isMobileVersion ? {} : {marginTop: 15}} />
+      <Button
+        onClick={handleEngagement} isRound={true} style={{marginTop: 25}}
+        disabled={selectedReadyOptions.length < startStrategyOptionsCount}>
+        Commencer ma stratégie
+      </Button>
+    </div>
+  }
+}
+
+
+interface StrategyPageConnectedProps {
+  isGuest: boolean
+  openedStrategy: bayes.bob.WorkingStrategy
+  profile: bayes.bob.UserProfile
   userYou: YouChooser
 }
 
@@ -765,7 +1185,8 @@ interface StrategyPageProps
 
 
 interface StrategyPageState {
-  isGoalsSectionHovered: boolean
+  areAllMethodsShown: boolean
+  isEngagementModalShown: boolean
   isGoalsSelectionModalShown: boolean
 }
 
@@ -780,6 +1201,11 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
       reachedGoals: PropTypes.objectOf(PropTypes.bool),
       startedAt: PropTypes.string,
     }).isRequired,
+    profile: PropTypes.shape({
+      coachingEmailFrequency: PropTypes.string,
+      email: PropTypes.string,
+      gender: PropTypes.string,
+    }),
     project: PropTypes.shape({
       advices: PropTypes.array.isRequired,
     }).isRequired,
@@ -794,8 +1220,9 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
     userYou: PropTypes.func.isRequired,
   }
 
-  public state = {
-    isGoalsSectionHovered: false,
+  public state: StrategyPageState = {
+    areAllMethodsShown: false,
+    isEngagementModalShown: false,
     isGoalsSelectionModalShown: false,
   }
 
@@ -814,7 +1241,10 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
     }
   }
 
-  private handleEngagement = (): void => this.setState({isGoalsSelectionModalShown: true})
+  private handleEngagement = (): void => this.setState({
+    isEngagementModalShown: false,
+    isGoalsSelectionModalShown: true,
+  })
 
   private handleGoalsSelection = (reachedGoals): void => {
     const {dispatch, project, openedStrategy, strategy: {strategyId}, strategyRank} = this.props
@@ -838,41 +1268,18 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
     this.setState({isGoalsSelectionModalShown: false})
   }
 
-  private handleGoalsSectionHover = _memoize(
-    (isGoalsSectionHovered): (() => void) => (): void => this.setState({isGoalsSectionHovered}))
+  private handleShowAllMethods = (): void => this.setState({areAllMethodsShown: true})
 
-  // TODO(cyrille): Drop, since unused.
-  private renderBreadCrumbs(style: React.CSSProperties): React.ReactNode {
-    const {baseUrl} = this.props
-    const containerStyle: React.CSSProperties = {
-      padding: 8,
-      position: 'relative',
-      ...style,
-    }
-    const backButtonStyle: React.CSSProperties = {
-      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-      boxShadow: 'initial',
-      color: colors.DARK_TWO,
-      fontSize: 14,
-      fontWeight: 'bold',
-      left: 8,
-      padding: '8px 15px',
-      position: 'absolute',
-      top: 8,
-    }
-    const chevronStyle: React.CSSProperties = {
-      fill: colors.DARK_TWO,
-      margin: '-6px 5px -6px -8px',
-      verticalAlign: 'middle',
-    }
-    return <div style={containerStyle}>
-      <Link to={baseUrl}>
-        <Button type="discreet" style={backButtonStyle}>
-          <ChevronLeftIcon style={chevronStyle} />
-          Retour au diagnostic
-        </Button>
-      </Link>
-    </div>
+  private handleShowEngagementModal = _memoize((isEngagementModalShown): (() => void) => (): void =>
+    this.setState({isEngagementModalShown}))
+
+  private handleCloseCoachingRegistrationModal = (): void => {
+    const {dispatch} = this.props
+    dispatch(setUserProfile(
+      {coachingEmailFrequency: undefined}, true, FINISH_PROFILE_SETTINGS)).
+      then((): void => {
+        dispatch(displayToasterMessage('Le coaching a été annulé'))
+      })
   }
 
   private renderNavBarContent(): JSX.Element {
@@ -902,54 +1309,130 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
     </div>
   }
 
-  private renderProgress(progress: number, startedAt: string): React.ReactNode {
-    // TODO(cyrille): Find a way to put it back on mobile.
-    if (isMobileVersion) {
-      return null
-    }
-    const scoreStyle: React.CSSProperties = {
-      fontSize: 13,
-      fontWeight: 'bold',
-      marginBottom: 7,
-    }
-    const percentStyle: React.CSSProperties = {
-      display: 'inline-block',
-      marginRight: 13,
-      verticalAlign: 'middle',
-      width: 150,
-    }
-    const dateStyle: React.CSSProperties = {
-      color: colors.COOL_GREY,
-      fontSize: 10,
+  private renderMobileObservation = (
+    methods: [bayes.bob.Advice, string][],
+    goals: readonly StrategyGoal[],
+    testimonials: StrategyTestimonial[]): React.ReactNode => {
+    const {baseUrl, profile: {gender}, strategy: {score}, userYou} = this.props
+    // TODO(cyrille): Move this logic inside SwipeableList.
+    const methodsByPage = Math.floor(window.innerWidth / 155)
+    const goalStyle: React.CSSProperties = {
+      ...strategyCardStyle,
+      alignItems: 'center',
+      display: 'flex',
+      flex: 1,
       fontStyle: 'italic',
+      justifyContent: 'center',
+      minHeight: 100,
+      padding: '20px 37px 20px 33px',
+      textAlign: 'center',
     }
-    return <div style={{textAlign: 'center'}}>
-      <div style={scoreStyle}>
-        <PercentBar
-          isPercentShown={false} percent={progress} height={5} color={colorFromPercent(progress)}
-          style={percentStyle} />
-        {Math.round(progress)}%
+    const engageButtonStyle: React.CSSProperties = {
+      alignItems: 'center',
+      backgroundColor: colors.BOB_BLUE,
+      bottom: 0,
+      color: '#fff',
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 15,
+      height: 50,
+      justifyContent: 'center',
+      left: 0,
+      position: 'fixed',
+      right: 0,
+    }
+    const engageChevronStyle: React.CSSProperties = {
+      position: 'absolute',
+      right: 20,
+    }
+    const testimonialsStyle: React.CSSProperties = {
+      backgroundColor: colors.PALE_BLUE,
+      fontSize: 13,
+      margin: '0 -15px',
+      padding: '25px 15px',
+    }
+    const modalContentStyle: React.CSSProperties = {
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '0 20px 30px',
+    }
+    const methodStyle = (index: number): React.CSSProperties => ({
+      flex: 1,
+      marginLeft: index % methodsByPage ? 10 : 0,
+    })
+    return <PageWithNavigationBar
+      page="strategie" onBackClick={baseUrl} isLogoShown={true}
+      style={{backgroundColor: '#fff', padding: '25px 15px 50px'}}
+      navBarContent={this.renderNavBarContent()}>
+      <Modal
+        title="Avant de me lancer" isShown={this.state.isEngagementModalShown}
+        style={{margin: '0 20px'}} onClose={this.handleShowEngagementModal(false)}>
+        <EngagementContent
+          style={modalContentStyle} gender={gender} handleEngagement={this.handleEngagement} />
+      </Modal>
+      <ScorePanel score={score} style={{marginBottom: 35}} />
+      <StratPanel title="Objectifs de la stratégie" style={{marginBottom: 30}}>
+        <SwipeableList>
+          {goals.map(({content, goalId}): ReactStylableElement =>
+            <div key={goalId} style={goalStyle}>
+              <Markdown content={content} isSingleLine={true} />
+            </div>)}
+        </SwipeableList>
+      </StratPanel>
+      <StratPanel title="Sujets à travailler" style={{marginBottom: 35}}>
+        <SwipeableList childrenByPage={methodsByPage}>
+          {methods.map(([advice], index): ReactStylableElement => <ObservationMethod
+            style={methodStyle(index)} key={advice.adviceId} {...{advice, userYou}} />)}
+        </SwipeableList>
+      </StratPanel>
+      {testimonials.length ? <StratPanel
+        style={testimonialsStyle} title={`Témoignage${testimonials.length > 1 ? 's' : ''}`}>
+        {testimonials.map((testimonial, index): React.ReactNode => <Testimonial
+          key={index} {...testimonial}
+          style={index ? {borderTop: `solid 1px ${colors.MODAL_PROJECT_GREY}`} : {}} />)}
+      </StratPanel> : null}
+      <div onClick={this.handleShowEngagementModal(true)} style={engageButtonStyle}>
+        Je suis prêt{genderize('·e', 'e', '', gender)} à me lancer
+        <ChevronRightIcon style={engageChevronStyle} size={20} />
       </div>
-      <div style={dateStyle}>commencé le {getDateString(startedAt)}</div>
-    </div>
+    </PageWithNavigationBar>
   }
 
+  // TODO(cyrille): Split in two (observation + working).
   private renderContent = (): React.ReactNode => {
     const {
       baseUrl,
       dispatch,
-      openedStrategy: {reachedGoals = {}, startedAt},
-      project,
-      strategy: {piecesOfAdvice = [], strategyId, title},
+      isGuest,
+      openedStrategy, openedStrategy: {reachedGoals = {}, startedAt},
+      profile: {coachingEmailFrequency, email, gender},
+      project, project: {advices = []},
+      strategy, strategy: {piecesOfAdvice = [], score, strategyId, title},
       userYou,
     } = this.props
-    const {isGoalsSelectionModalShown} = this.state
-    const {advices = []} = project
-    const titleStyle = {
-      margin: '30px auto 50px',
-      maxWidth: 600,
-    }
     const advicesById = _keyBy(advices, 'adviceId')
+    const strategyMethods = piecesOfAdvice.filter(({adviceId}): boolean => !!advicesById[adviceId]).
+      map(({adviceId, teaser}): [bayes.bob.Advice, string] => [advicesById[adviceId], teaser])
+    const goals = getStrategyGoals(userYou, strategyId)
+    const testimonials = getStrategiesTestimonials(userYou)[strategyId] || []
+    if (isMobileVersion && !startedAt) {
+      return this.renderMobileObservation(strategyMethods, goals, testimonials)
+    }
+    const isSignUpBannerShown = startedAt && isGuest
+    const {areAllMethodsShown, isGoalsSelectionModalShown} = this.state
+    const titleStyle = {
+      fontSize: 33,
+      marginBottom: 10,
+      marginTop: 50,
+    }
+    const contentStyle: React.CSSProperties = {
+      ...!isMobileVersion && {display: 'flex'},
+      justifyContent: 'space-between',
+      margin: '0 auto',
+      maxWidth: 1000,
+      padding: isMobileVersion ? 15 : 20,
+    }
     const adviceStyle = startedAt ?
       (index): React.CSSProperties => ({
         borderTop: index && isMobileVersion ? `1px solid ${colors.MODAL_PROJECT_GREY}` : 'none',
@@ -960,76 +1443,143 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
         borderBottom: `1px solid ${colors.MODAL_PROJECT_GREY}`,
         padding: '35px 0',
       })
-    const modifyPositionStyle: React.CSSProperties = isMobileVersion ? {
-      display: 'inline-block',
-      marginTop: 15,
-    } : {
-      position: 'absolute',
-      right: 0,
-      top: 80,
-    }
-    const modifyGoalsStyle: React.CSSProperties = {
-      backgroundColor: isMobileVersion ? colors.MODAL_PROJECT_GREY : colors.BOB_BLUE,
-      border: 'solid 3px #fff',
-      borderRadius: 10,
-      color: isMobileVersion ? 'inherit' : '#fff',
-      cursor: 'pointer',
-      fontSize: 13,
-      fontStyle: isMobileVersion ? 'normal' : 'italic',
-      opacity: isMobileVersion || this.state.isGoalsSectionHovered ? 1 : 0,
-      padding: isMobileVersion ? '5px 15px' : '2px 10px',
-      ...modifyPositionStyle,
-      ...SmoothTransitions,
-    }
     const goalsSectionStyle: React.CSSProperties = isMobileVersion ? {
       paddingBottom: 45,
     } : {
       position: 'relative',
     }
-    const Method = startedAt ? WorkingMethod : ObservationMethod
-    const goals = getStrategiesGoals(userYou)[strategyId] || []
-    const objectivesPicto =
-      startedAt ? this.renderProgress(getStrategyProgress(goals, reachedGoals), startedAt) : '🎯'
-    const testimonials = getStrategiesTestimonials(userYou)[strategyId] || []
+    const dateStyle: React.CSSProperties = {
+      fontSize: 11,
+      fontStyle: 'italic',
+      marginLeft: 10,
+    }
     const testimonialStyle = {
       borderTop: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+    }
+    const lastAdviceRow = areAllMethodsShown ?
+      Math.ceil(strategyMethods.length / METHODS_PER_ROW) - 1 : 0
+    const methodsListStyle: React.CSSProperties = {
+      display: 'flex',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    }
+    const moreMethodsStyle: React.CSSProperties = {
+      alignItems: 'center',
+      cursor: 'pointer',
+      display: 'flex',
+      fontSize: 13,
+      fontWeight: 'bold',
+      justifyContent: 'center',
+      margin: '10px 0',
+    }
+    const bottomPanelStyle = {
+      backgroundColor: colors.PALE_BLUE,
+      padding: '60px 0',
+    }
+    const testimonialsStyle = {
+      margin: '0 auto',
+      maxWidth: 1000,
+      padding: '0 20px',
+    }
+    const methodStyle = (index): React.CSSProperties => ({
+      marginBottom: Math.floor(index / METHODS_PER_ROW) === lastAdviceRow ? 0 : 25,
+    })
+    const coachingRegistrationModalContentStyle: React.CSSProperties = {
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '30px 50px 50px',
     }
     return <PageWithNavigationBar
       page="strategie" navBarContent={this.renderNavBarContent()} isLogoShown={isMobileVersion}
       onBackClick={baseUrl} style={{backgroundColor: '#fff'}}>
-      <div style={{margin: '0 auto', maxWidth: 960, padding: 20}}>
-        {startedAt || isGoalsSelectionModalShown ? null :
-          <FastForward onForward={this.handleEngagement} />}
+      {startedAt || isGoalsSelectionModalShown ? null :
+        <FastForward onForward={this.handleEngagement} />}
+      {isSignUpBannerShown ?
+        <SignUpBanner style={{margin: '50px auto 0', width: 1000}} userYou={userYou} /> : null}
+      {isMobileVersion ? null : <React.Fragment>
         <GoalsSelectionModal
           goals={goals} isFirstTime={!startedAt} userYou={userYou} reachedGoals={reachedGoals}
           onSubmit={this.handleGoalsSelection} isShown={isGoalsSelectionModalShown}
           onClose={this.hideGoalsSelectionModal} dispatch={dispatch} />
-        {isMobileVersion ? null : <h1 style={titleStyle}>{title}</h1>}
-        <StrategySection
-          onMouseOver={this.handleGoalsSectionHover(true)}
-          onMouseLeave={this.handleGoalsSectionHover(false)}
-          title="Objectifs" picto={objectivesPicto} style={goalsSectionStyle}>
-          <StrategyGoalsList goals={goals} reachedGoals={reachedGoals} style={{marginTop: 25}} />
+        <header
+          style={{margin: '0 auto 35px', maxWidth: 1000, padding: '0 20px'}}>
+          <h1 style={titleStyle}>{title}</h1>
+          <div style={{alignItems: 'center', display: 'flex'}}>
+            <WhyButton strategy={strategy} />
+            {startedAt ? <div style={dateStyle}>Commencé le {getDateString(startedAt)}</div> : null}
+          </div>
+        </header>
+      </React.Fragment>}
+      {isGuest && !email ? <Modal
+        style={{margin: 20, maxWidth: 500}}
+        isShown={!!coachingEmailFrequency && coachingEmailFrequency !== 'EMAIL_NONE'}
+        onClose={this.handleCloseCoachingRegistrationModal} title="Un compte est nécessaire">
+        <div style={coachingRegistrationModalContentStyle}>
+          Pour {userYou('te', 'vous')} coacher, j'ai besoin de {userYou('ton', 'votre')} adresse
+          email. Crée{userYou(' ton', 'z votre')} compte pour activer le coaching 🙂
+          <LoginButton
+            type="navigation" visualElement="coaching"
+            style={{display: 'block', marginTop: 30}} isRound={true}>
+            Créer mon compte maintenant
+          </LoginButton>
+        </div>
+      </Modal> : null}
+      <div style={contentStyle}>
+        <div>
+          {/* TODO(cyrille): Replace the goals panel on mobile by new mobile UI. */}
+          {startedAt ? isMobileVersion ? <GoalsPanel
+            userYou={userYou} handleEngagement={this.handleEngagement} style={{marginBottom: 20}}
+            openedStrategy={openedStrategy} /> : null : <StrategySection
+            title="Objectifs de cette stratégie" style={goalsSectionStyle}>
+            <StrategyGoalsList
+              goals={goals} reachedGoals={reachedGoals} style={{marginTop: 25}} />
+            {startedAt || isMobileVersion ? null : <div style={{marginTop: 55}}>
+              <span style={{color: colors.BOB_BLUE, fontStyle: 'italic', fontWeight: 'bold'}}>
+                Avant de me lancer&nbsp;:
+              </span>
+              <EngagementContent gender={gender} handleEngagement={this.handleEngagement} />
+            </div>}
+          </StrategySection>}
           {startedAt ?
-            <div style={{textAlign: 'center'}}>
-              <div style={modifyGoalsStyle} onClick={this.handleEngagement}>Modifier</div>
-            </div> : null}
-        </StrategySection>
-        <StrategySection title="Méthodes" picto={startedAt ? null : '📚'}>
-          {piecesOfAdvice.filter(({adviceId}): boolean => !!advicesById[adviceId]).
-            map(({adviceId, teaser}, index): React.ReactNode => <Method
-              key={adviceId} style={adviceStyle(index)} title={teaser} strategyId={strategyId}
-              project={project} advice={advicesById[adviceId]} userYou={userYou} />)}
-        </StrategySection>
-        {testimonials.length && !startedAt ?
-          <StrategySection title="Retours d'expérience" picto="💬">
-            {testimonials.map((testimonial, index): React.ReactNode => <StrategyTestimonial
-              key={`testimonial-${index}`} {...testimonial}
-              style={index ? testimonialStyle : {}} />)}
-          </StrategySection> : null}
+            <StrategySection title="Méthodes">
+              {strategyMethods.map(([advice, teaser], index): React.ReactNode => <WorkingMethod
+                key={advice.adviceId} style={adviceStyle(index)} title={teaser}
+                {...{advice, project, strategyId, userYou}} />)}
+            </StrategySection> : null}
+        </div>
+        {isMobileVersion ? null : startedAt ?
+          <GoalsPanel
+            userYou={userYou} style={{flex: 'none', width: RIGHT_PANEL_WIDTH}}
+            handleEngagement={this.handleEngagement} openedStrategy={openedStrategy} /> :
+          <div style={{width: RIGHT_PANEL_WIDTH}}>
+            <ScorePanel score={score} style={{marginBottom: 40}} />
+            <StratPanel title="Sujets à travailler">
+              <AppearingList
+                maxNumChildren={areAllMethodsShown ? 0 : METHODS_PER_ROW} style={methodsListStyle}>
+                {strategyMethods.map(([advice], index): ReactStylableElement =>
+                  <ObservationMethod
+                    key={advice.adviceId} {...{advice, userYou}} style={methodStyle(index)} />)}
+              </AppearingList>
+              {areAllMethodsShown || strategyMethods.length <= METHODS_PER_ROW ? null :
+                <div style={moreMethodsStyle} onClick={this.handleShowAllMethods}>
+                  Voir plus <ChevronDownIcon size={20} />
+                </div>}
+            </StratPanel>
+          </div>}
       </div>
-      {startedAt ? null :
-        <StartBanner baseUrl={baseUrl} userYou={userYou} onStart={this.handleEngagement} />}
+      {testimonials.length && !startedAt ?
+        <div style={bottomPanelStyle}>
+          <div style={testimonialsStyle}>
+            <StratPanel
+              style={{maxWidth: LEFT_PANEL_WIDTH}}
+              title={`Témoignage${testimonials.length > 1 ? 's' : ''}`}>
+              {testimonials.map((testimonial, index): React.ReactNode => <Testimonial
+                key={`testimonial-${index}`} {...testimonial}
+                style={index ? testimonialStyle : {}} />)}
+            </StratPanel>
+          </div>
+        </div> : null}
     </PageWithNavigationBar>
   }
 
@@ -1039,7 +1589,7 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
       strategy: {strategyId},
       userYou,
     } = this.props
-    const goals = getStrategiesGoals(userYou)[strategyId] || []
+    const goals = getStrategyGoals(userYou, strategyId)
     return <GoalsSelectionPage
       goals={goals} isFirstTime={!startedAt} userYou={userYou} reachedGoals={reachedGoals}
       backUrl={pageUrl} onSubmit={this.handleGoalsSelection} />
@@ -1059,26 +1609,22 @@ class StrategyPageBase extends React.PureComponent<StrategyPageProps, StrategyPa
 }
 const StrategyPage = connect(
   (
-    {user}: RootState,
-    {project = {}, strategy = {}}: StrategyPageConfig,
+    {user, user: {hasAccount, profile}}: RootState,
+    {project = {}, strategy: {strategyId} = {}}: StrategyPageConfig,
   ): StrategyPageConnectedProps => ({
-    openedStrategy: getStrategy(project, strategy.strategyId),
+    isGuest: isLateSignupEnabled && !hasAccount,
+    openedStrategy: getStartedStrategy(project, strategyId),
+    profile,
     userYou: youForUser(user),
   }))(StrategyPageBase)
 
 
-interface TestimonialProps {
-  content: string
-  createdAt: string
-  isMale?: boolean
-  job: string
-  name: string
-  rating: number
+interface TestimonialProps extends StrategyTestimonial {
   style?: React.CSSProperties
 }
 
 
-class StrategyTestimonial extends React.PureComponent<TestimonialProps> {
+class Testimonial extends React.PureComponent<TestimonialProps> {
   public static propTypes = {
     content: PropTypes.string.isRequired,
     createdAt: PropTypes.string.isRequired,
@@ -1100,6 +1646,7 @@ class StrategyTestimonial extends React.PureComponent<TestimonialProps> {
       flexDirection: 'column',
       fontSize: 16,
       justifyContent: 'flex-start',
+      maxWidth: 600,
       padding: '25px 0 30px',
       ...style,
     }
@@ -1125,7 +1672,7 @@ class StrategyTestimonial extends React.PureComponent<TestimonialProps> {
         <div style={{flex: 1, margin: `0 ${pictureMargin}px ${pictureMargin}px`}}>
           <div>
             <span style={{fontWeight: 'bold', paddingRight: 2}}>{name}</span>
-            <span style={{color: colors.COOL_GREY, width: 4}}>•</span>
+            <span style={{color: colors.COOL_GREY, width: 4}}>&bull;</span>
             <span style={{fontStyle: 'italic', paddingLeft: 5}}>{job}</span>
           </div>
           <div style={{alignItems: 'center', display: 'flex'}}>

@@ -141,9 +141,9 @@ def _get_spontaneous_vars(
         'atVariousCompanies': at_various_companies,
         'contactMode': job_pb2.ApplicationMedium.Name(contact_mode).replace('APPLY_', ''),
         'deepLinkLBB':
-            'https://labonneboite.pole-emploi.fr/entreprises/commune/{}/rome/'
-            '{}?utm_medium=web&utm_source=bob&utm_campaign=bob-email'
-            .format(project.city.city_id, project.target_job.job_group.rome_id),
+            f'https://labonneboite.pole-emploi.fr/entreprises/commune/{project.city.city_id}/rome/'
+            f'{project.target_job.job_group.rome_id}?utm_medium=web&utm_source=bob&'
+            'utm_campaign=bob-email',
         'emailInUrl': parse.quote(user.profile.email),
         'experienceAsText': _EXPERIENCE_AS_TEXT.get(project.seniority, 'peu'),
         'inWorkPlace': in_a_workplace,
@@ -245,16 +245,15 @@ def _employment_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
         if status.created_at.ToDatetime() > _ONE_MONTH_AGO:
             return None
     survey_token = parse.quote(auth.create_token(user.user_id, role='employment-status'))
+    redirect_url = parse.quote(f'{campaign.BASE_URL}/statut/en-recherche')
     return dict(campaign.get_default_vars(user), **{
         'registeredMonthsAgo': registered_months_ago,
-        'seekingUrl': '{}/api/employment-status?user={}&token={}&seeking={}&redirect={}'.format(
-            campaign.BASE_URL, user.user_id, survey_token, 'STILL_SEEKING',
-            parse.quote('{}/statut/en-recherche'.format(campaign.BASE_URL)),
-        ),
-        'stopSeekingUrl': '{}/api/employment-status?user={}&token={}&seeking={}&redirect={}'.format(
-            campaign.BASE_URL, user.user_id, survey_token, 'STOP_SEEKING',
-            parse.quote('{}/statut/ne-recherche-plus'.format(campaign.BASE_URL)),
-        ),
+        'seekingUrl':
+        f'{campaign.BASE_URL}/api/employment-status?user={user.user_id}&token={survey_token}&'
+        f'seeking=STILL_SEEKING&redirect={redirect_url}',
+        'stopSeekingUrl':
+        f'{campaign.BASE_URL}/api/employment-status?user={user.user_id}&token={survey_token}&'
+        f'seeking=STOP_SEEKING&redirect={redirect_url}',
     })
 
 
@@ -264,7 +263,7 @@ def new_diagnostic_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
 
     frustrations_set = set(user.profile.frustrations)
     frustrations_vars = {
-        'frustration_{}'.format(name): campaign.as_template_boolean(key in frustrations_set)
+        f'frustration_{name}': campaign.as_template_boolean(key in frustrations_set)
         for name, key in user_pb2.Frustration.items()
     }
     age = datetime.date.today().year - user.profile.year_of_birth
@@ -274,13 +273,13 @@ def new_diagnostic_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
     }
     survey_token = parse.quote(auth.create_token(user.user_id, role='employment-status'))
     auth_token = parse.quote(auth.create_token(user.user_id, is_using_timestamp=True))
+    redirect_url = f'{campaign.BASE_URL}/statut/ne-recherche-plus'
     return dict(dict(frustrations_vars, **campaign.get_default_vars(user)), **{
         'mayHaveSeekingChildren': campaign.as_template_boolean(has_children and age >= 45),
-        'loginUrl': '{}?userId={}&authToken={}'.format(campaign.BASE_URL, user.user_id, auth_token),
-        'stopSeekingUrl': '{}/api/employment-status?user={}&token={}&seeking={}&redirect={}'.format(
-            campaign.BASE_URL, user.user_id, survey_token, 'STOP_SEEKING',
-            parse.quote('{}/statut/ne-recherche-plus'.format(campaign.BASE_URL)),
-        ),
+        'loginUrl': f'{campaign.BASE_URL}?userId={user.user_id}&authToken={auth_token}',
+        'stopSeekingUrl':
+        f'{campaign.BASE_URL}/api/employment-status?user={user.user_id}&token={survey_token}&'
+        f'seeking=STOP_SEEKING&redirect={parse.quote(redirect_url)}',
     })
 
 
@@ -323,8 +322,8 @@ def _get_galita3_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
         for project in user.projects:
             if any(a.advice_id == 'follow-up' for a in project.advices):
                 # TODO(pascal): Add an auth token.
-                deep_link_to_follow_up_advice = '{}/projet/{}/follow-up'.format(
-                    campaign.BASE_URL, project.project_id)
+                deep_link_to_follow_up_advice = \
+                    f'{campaign.BASE_URL}/projet/{project.project_id}/follow-up'
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'deepLinkToAdvice': deep_link_to_follow_up_advice,
     })

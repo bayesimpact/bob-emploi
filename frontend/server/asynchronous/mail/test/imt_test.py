@@ -95,8 +95,9 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
 
         self._assert_has_status_update_link(field='statusUpdateUrl')
 
-        self._assert_regex_field('loginUrl', r'{}&authToken=\d+\.[a-f0-9]+$'.format(re.escape(
-            'https://www.bob-emploi.fr?user={}'.format(self.user.user_id))))
+        base_url = f'https://www.bob-emploi.fr?user={self.user.user_id}'
+        self._assert_regex_field(
+            'loginUrl', rf'{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
 
         self._assert_remaining_variables({
             'firstName': 'Patrick',

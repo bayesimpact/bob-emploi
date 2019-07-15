@@ -27,8 +27,8 @@ def christmas_vars(
         started_searching_since = 'depuis peu'
     else:
         try:
-            started_searching_since = 'depuis {} mois'.format(
-                french.try_stringify_number(round(job_search_started_months_ago)))
+            num_months = french.try_stringify_number(round(job_search_started_months_ago))
+            started_searching_since = f'depuis {num_months} mois'
         except NotImplementedError:
             started_searching_since = 'depuis un moment'
 

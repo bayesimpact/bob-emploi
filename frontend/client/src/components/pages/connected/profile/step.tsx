@@ -116,6 +116,7 @@ export interface StepProps {
 
 export interface ProfileStepProps extends StepProps {
   featuresEnabled: bayes.bob.Features
+  hasAccount?: boolean
   isShownAsStepsDuringOnboarding: boolean
   onBack?: (value: bayes.bob.UserProfile) => void
   onChange?: (value: {profile: bayes.bob.UserProfile}) => void

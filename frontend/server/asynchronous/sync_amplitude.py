@@ -44,15 +44,13 @@ def _account_for_api_requests_limit(response: requests.Response) -> None:
 
 def _get_amplitude_id(user_id: str) -> str:
     response = requests.get(
-        '{}/usersearch'.format(_AMPLITUDE_API_URL),
-        auth=_AMPLITUDE_AUTH,
-        params={'user': user_id})
+        f'{_AMPLITUDE_API_URL}/usersearch', auth=_AMPLITUDE_AUTH, params={'user': user_id})
     _account_for_api_requests_limit(response)
     response.raise_for_status()
     try:
         return str(next(match['amplitude_id'] for match in response.json()['matches']))
     except StopIteration:
-        raise KeyError('No user "{}" found in Amplitude.'.format(user_id))
+        raise KeyError(f'No user "{user_id}" found in Amplitude.')
 
 
 def _get_amplitude_events(amplitude_id: str, limit: typing.Optional[int] = None) \
@@ -61,7 +59,7 @@ def _get_amplitude_events(amplitude_id: str, limit: typing.Optional[int] = None)
     if limit:
         params['limit'] = limit
     response = requests.get(
-        '{}/useractivity'.format(_AMPLITUDE_API_URL), auth=_AMPLITUDE_AUTH, params=params)
+        f'{_AMPLITUDE_API_URL}/useractivity', auth=_AMPLITUDE_AUTH, params=params)
     _account_for_api_requests_limit(response)
     response.raise_for_status()
     return typing.cast(typing.List[typing.Dict[str, typing.Any]], response.json()['events'])

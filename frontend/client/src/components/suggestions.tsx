@@ -148,6 +148,10 @@ class AlgoliaSuggest extends React.Component<AlgoliaSuggestProps> {
 
   private node: HTMLInputElement
 
+  public focus(): void {
+    this.node && this.node.focus()
+  }
+
   public render(): React.ReactNode {
     const {
       inputRef,
@@ -209,6 +213,7 @@ interface JobSuggestion {
   readonly libelleAppellationCourt: string
   readonly libelleAppellationCourtFeminin?: string
   readonly libelleAppellationCourtMasculin?: string
+  readonly libelleAppellationLong: string
 }
 
 
@@ -332,6 +337,12 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
     return updatedState
   }
 
+  public focus(): void {
+    this.inputRef.current && this.inputRef.current.focus()
+  }
+
+  private inputRef: React.RefObject<AlgoliaSuggest> = React.createRef()
+
   private timeout: ReturnType<typeof setTimeout>
 
   private maybeLowerFirstLetter = (word): string =>
@@ -396,8 +407,7 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
       algoliaApp={JobSuggest.algoliaApp} algoliaApiKey={JobSuggest.algoliaApiKey}
       displayValue={jobName} hint={true} autoselect={true}
       autoselectOnBlur={true} style={fieldStyle} display={handleDisplay(isLowercased, gender)}
-      onBlur={this.handleBlur}
-      onChange={this.handleChange}
+      onBlur={this.handleBlur} onChange={this.handleChange} ref={this.inputRef}
       suggestionTemplate={this.renderSuggestion} />
   }
 }
@@ -528,6 +538,12 @@ class CitySuggest extends React.Component<SuggestProps<bayes.bob.FrenchCity>, Ci
     }
   }
 
+  public focus(): void {
+    this.inputRef.current && this.inputRef.current.focus()
+  }
+
+  private inputRef: React.RefObject<AlgoliaSuggest> = React.createRef()
+
   private renderSuggestion = (suggestion): React.ReactNode => {
     var name = suggestion._highlightResult.name.value
     return '<div>' + name + '<span class="aa-group">' +
@@ -559,7 +575,7 @@ class CitySuggest extends React.Component<SuggestProps<bayes.bob.FrenchCity>, Ci
       {...otherProps} algoliaIndex={CitySuggest.algoliaIndex}
       algoliaApp={CitySuggest.algoliaApp} algoliaApiKey={CitySuggest.algoliaApiKey}
       displayValue={cityName} hint={true} autoselect={true} autoselectOnBlur={true}
-      hitsPerPage={5} displayKey="name"
+      hitsPerPage={5} displayKey="name" ref={this.inputRef}
       style={fieldStyle}
       onChange={this.handleChange}
       suggestionTemplate={this.renderSuggestion} />

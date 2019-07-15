@@ -1,7 +1,7 @@
 Babel
 coverage
 mongomock>=3.12
-mypy
+mypy>=0.710
 mypy-protobuf
 nose
 nose-watch

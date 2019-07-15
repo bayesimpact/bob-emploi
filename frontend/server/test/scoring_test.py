@@ -136,7 +136,7 @@ class _Persona(object):
         original one.
         """
 
-        name = '{} cloned'.format(self.name)
+        name = f'{self.name} cloned'
         user_profile = user_pb2.UserProfile()
         user_profile.CopyFrom(self.user_profile)
         project = project_pb2.Project()
@@ -161,13 +161,13 @@ class ScoringModelTestBase(unittest.TestCase):
     def setUpClass(cls) -> None:
         super().setUpClass()
         if cls.model_id is None:  # pragma: no-cover
-            raise NotImplementedError('Add a model_id in "{}"'.format(cls.__name__))
+            raise NotImplementedError(f'Add a model_id in "{cls.__name__}"')
         cls._patcher = mock.patch.dict(scoring.SCORING_MODELS, {})  # type: ignore
         cls._patcher.start()  # type: ignore
         model = scoring.get_scoring_model(cls.model_id)
         if model is None:  # pragma: no-cover
             raise NotImplementedError(
-                'The model_id {} is not the ID of any known model'.format(cls.model_id))
+                f'The model_id {cls.model_id} is not the ID of any known model')
         cls.model = model
 
     @classmethod
@@ -203,7 +203,7 @@ class ScoringModelTestBase(unittest.TestCase):
         if not persona:
             persona = _PERSONAS[name] if name is not None else self._random_persona()
         project = persona.scoring_project(self.database, now=self.now)
-        with self.assertRaises(exception_type, msg='Fail for "{}"'.format(persona.name)):
+        with self.assertRaises(exception_type, msg=f'Fail for "{persona.name}"'):
             self.model.score(project)
 
     def _random_persona(self) -> _Persona:
@@ -374,7 +374,7 @@ class ConstantScoreModelTestCase(ScoringModelTestBase):
 
         persona = self._random_persona()
         self.assertEqual(
-            2, self._score_persona(persona), msg='Failed for "{}"'.format(persona.name))
+            2, self._score_persona(persona), msg=f'Failed for "{persona.name}"')
 
 
 def persona_lbb_call_mock(project: project_pb2.Project, **unused_kwargs: typing.Any) \
@@ -423,7 +423,7 @@ class PersonasTestCase(unittest.TestCase):
         for model_name in list(scoring.SCORING_MODELS.keys()):
             model = scoring.get_scoring_model(model_name)
             if not model:  # pragma: no-cover
-                raise KeyError('No scoring model with name "{}".'.format(model_name))
+                raise KeyError(f'No scoring model with name "{model_name}".')
             self.assertTrue(model, msg=model_name)
             scores[model_name] = {}
             for name, persona in _PERSONAS.items():
@@ -437,12 +437,10 @@ class PersonasTestCase(unittest.TestCase):
                 self.assertIsInstance(
                     scores[model_name][name],
                     numbers.Number,
-                    msg='while using the model "{}" to score "{}"'
-                    .format(model_name, name))
+                    msg=f'while using the model "{model_name}" to score "{name}"')
                 self._assert_proper_explanations(
                     explanations, scoring_project,
-                    msg='while using the model "{}" to explain the score of "{}"'
-                    .format(model_name, name))
+                    msg=f'while using the model "{model_name}" to explain the score of "{name}"')
 
         for name in _PERSONAS:
             persona_scores = [
@@ -450,7 +448,7 @@ class PersonasTestCase(unittest.TestCase):
                 for model_scores in scores.values()]
             self.assertLess(
                 1, len(set(persona_scores)),
-                msg='Persona "{}" has the same score across all models.'.format(name))
+                msg=f'Persona "{name}" has the same score across all models.')
 
         model_scores_hashes: typing.Dict[str, typing.Set[str]] = collections.defaultdict(set)
         # A mapping of renamings in progress.
@@ -463,7 +461,7 @@ class PersonasTestCase(unittest.TestCase):
                 continue
             self.assertLess(
                 1, len(set(model_scores.values())),
-                msg='Model "{}" has the same score for all personas.'.format(model_name))
+                msg=f'Model "{model_name}" has the same score for all personas.')
             scores_hash = json.dumps(model_scores, sort_keys=True)
             model_scores_hashes[scores_hash].add(renamings.get(model_name, model_name))
         models_with_same_score = \
@@ -491,8 +489,8 @@ class PersonasTestCase(unittest.TestCase):
         for model_name in list(scoring.SCORING_MODELS.keys()):
             self.assertNotRegex(
                 model_name, r'^[^\(]*_[^\(]*(\(.*)?$',
-                msg='Use hyphens in scoring model names instead of underscores, "{}"'.format(
-                    model_name.replace('_', '-')))
+                msg='Use hyphens in scoring model names instead of underscores, '
+                f'"{model_name.replace("_", "-")}"')
 
     def test_conflicts_with_regexp(self) -> None:
         """Model regexps should not conflict with named scoring models."""
@@ -507,8 +505,7 @@ class PersonasTestCase(unittest.TestCase):
                     # cache from the regexp.
                     continue
                 self.fail(
-                    'The model "{}" is implemented both by its name and by a regexp.'
-                    .format(model_name))
+                    f'The model "{model_name}" is implemented both by its name and by a regexp.')
 
             for other_regexp, unused_constructor in scoring.SCORING_MODEL_REGEXPS:
                 if other_regexp == regexp:
@@ -516,8 +513,8 @@ class PersonasTestCase(unittest.TestCase):
                 example = rstr.xeger(regexp)
                 self.assertFalse(
                     other_regexp.match(example),
-                    msg='There is a conflict between two regexps: "{}" and "{}" over "{}"'
-                    .format(regexp, other_regexp, example))
+                    msg=f'There is a conflict between two regexps: "{regexp}" and "{other_regexp}" '
+                    f'over "{example}"')
 
 
 class LifeBalanceTestCase(ScoringModelTestBase):
@@ -538,7 +535,7 @@ class LifeBalanceTestCase(ScoringModelTestBase):
                 datetime.timedelta(days=61))
         persona.user_profile.has_handicap = False
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_handicaped(self) -> None:
         """The user has a handicap."""
@@ -546,7 +543,7 @@ class LifeBalanceTestCase(ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.user_profile.has_handicap = True
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_long_searching(self) -> None:
         """The user does not have a diploma problem."""
@@ -561,7 +558,7 @@ class LifeBalanceTestCase(ScoringModelTestBase):
                 datetime.timedelta(days=122))
         persona.user_profile.has_handicap = False
         score = self._score_persona(persona)
-        self.assertEqual(score, 1, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceVaeTestCase(ScoringModelTestBase):
@@ -576,7 +573,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
         persona.project.seniority = project_pb2.EXPERT
         persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_EXPERIENCE
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_frustrated_by_trainings_and_is_senior(self) -> None:
         """The user is frustrated by training and is senior."""
@@ -590,7 +587,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
             persona.project.training_fulfillment_estimate = \
                 project_pb2.TRAINING_FULFILLMENT_NOT_SURE
         score = self._score_persona(persona)
-        self.assertGreaterEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_not_matching(self) -> None:
         """The user does not have a diploma problem."""
@@ -598,7 +595,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
         persona = self._random_persona().clone()
         persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_frustrated_no_experience(self) -> None:
         """The user is frustrated by trainings, has no experience and his diploma is unsure."""
@@ -608,7 +605,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
         persona.project.seniority = project_pb2.JUNIOR
         persona.project.training_fulfillment_estimate = project_pb2.TRAINING_FULFILLMENT_NOT_SURE
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_has_enough_diplomas(self) -> None:
         """The user is frustrated by trainings but is expert and has enough diplomas."""
@@ -618,7 +615,7 @@ class AdviceVaeTestCase(ScoringModelTestBase):
         persona.project.seniority = project_pb2.EXPERT
         persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceSeniorTestCase(ScoringModelTestBase):
@@ -634,7 +631,7 @@ class AdviceSeniorTestCase(ScoringModelTestBase):
             persona.user_profile.year_of_birth = datetime.date.today().year - 41
         persona.user_profile.frustrations.append(user_pb2.AGE_DISCRIMINATION)
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_match_old(self) -> None:
         """The user is over 50 years old so the advice should match."""
@@ -643,7 +640,7 @@ class AdviceSeniorTestCase(ScoringModelTestBase):
         if persona.user_profile.year_of_birth > datetime.date.today().year - 50:
             persona.user_profile.year_of_birth = datetime.date.today().year - 50
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_no_match(self) -> None:
         """The user is young so the advice should not match."""
@@ -652,7 +649,7 @@ class AdviceSeniorTestCase(ScoringModelTestBase):
         if persona.user_profile.year_of_birth < datetime.date.today().year - 35:
             persona.user_profile.year_of_birth = datetime.date.today().year - 35
         score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertLessEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceLessApplicationsTestCase(ScoringModelTestBase):
@@ -668,7 +665,7 @@ class AdviceLessApplicationsTestCase(ScoringModelTestBase):
                 persona.project.weekly_applications_estimate != project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
     def test_no_match(self) -> None:
         """The user does not apply a lot so the advice should not match."""
@@ -678,7 +675,7 @@ class AdviceLessApplicationsTestCase(ScoringModelTestBase):
                 persona.project.weekly_applications_estimate == project_pb2.A_LOT:
             persona.project.weekly_applications_estimate = project_pb2.SOME
         score = self._score_persona(persona)
-        self.assertLessEqual(score, 0, msg='Failed for "{}"'.format(persona.name))
+        self.assertLessEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceJobBoardsTestCase(ScoringModelTestBase):
@@ -694,7 +691,7 @@ class AdviceJobBoardsTestCase(ScoringModelTestBase):
 
         score = self._score_persona(persona)
 
-        self.assertGreaterEqual(score, 2, msg='Failed for "{}"'.format(persona.name))
+        self.assertGreaterEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_lot_of_offers(self) -> None:
         """User has many offers already."""
@@ -706,7 +703,7 @@ class AdviceJobBoardsTestCase(ScoringModelTestBase):
         score = self._score_persona(persona)
 
         # We do want to show the advice but not pre-select it.
-        self.assertEqual(1, score, msg='Failed for "{}"'.format(persona.name))
+        self.assertEqual(1, score, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceOtherWorkEnvTestCase(ScoringModelTestBase):
@@ -722,7 +719,7 @@ class AdviceOtherWorkEnvTestCase(ScoringModelTestBase):
         self.database.job_group_info.insert_one({'_id': 'M1607'})
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_with_other_structures(self) -> None:
         """Triggers if multiple structures."""
@@ -735,7 +732,7 @@ class AdviceOtherWorkEnvTestCase(ScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'M1607'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_with_only_one_structure_and_one_sector(self) -> None:
         """Only one structure and one sector."""
@@ -751,7 +748,7 @@ class AdviceOtherWorkEnvTestCase(ScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'M1607'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceWowBakerTestCase(ScoringModelTestBase):
@@ -767,7 +764,7 @@ class AdviceWowBakerTestCase(ScoringModelTestBase):
             persona.project.target_job.job_group.rome_id = 'M1607'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_chief_baker(self) -> None:
         """Does not trigger for a chief baker."""
@@ -777,7 +774,7 @@ class AdviceWowBakerTestCase(ScoringModelTestBase):
         persona.project.target_job.code_ogr = '12006'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_baker_not_chief(self) -> None:
         """Does not trigger for a chief baker."""
@@ -788,7 +785,7 @@ class AdviceWowBakerTestCase(ScoringModelTestBase):
             persona.project.target_job.code_ogr = '10868'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceSpecificToJobTestCase(ScoringModelTestBase):
@@ -823,7 +820,7 @@ class AdviceSpecificToJobTestCase(ScoringModelTestBase):
             persona.project.target_job.job_group.rome_id = 'M1607'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_chief_baker(self) -> None:
         """Does not trigger for a chief baker."""
@@ -833,7 +830,7 @@ class AdviceSpecificToJobTestCase(ScoringModelTestBase):
         persona.project.target_job.code_ogr = '12006'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_baker_not_chief(self) -> None:
         """Trigger for a baker that is not a chief baker."""
@@ -844,7 +841,7 @@ class AdviceSpecificToJobTestCase(ScoringModelTestBase):
             persona.project.target_job.code_ogr = '10868'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceBodyLanguageTestCase(ScoringModelTestBase):
@@ -859,7 +856,7 @@ class AdviceBodyLanguageTestCase(ScoringModelTestBase):
         persona.user_profile.frustrations.append(user_pb2.INTERVIEW)
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
     def test_not_frustrated(self) -> None:
         """User is not frustrated."""
@@ -868,7 +865,7 @@ class AdviceBodyLanguageTestCase(ScoringModelTestBase):
         del persona.user_profile.frustrations[:]
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 1, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceFollowUpEmailTestCase(ScoringModelTestBase):
@@ -887,7 +884,7 @@ class AdviceFollowUpEmailTestCase(ScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'M1607'
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_not_frustrated(self) -> None:
         """User is not frustrated."""
@@ -896,7 +893,7 @@ class AdviceFollowUpEmailTestCase(ScoringModelTestBase):
         del persona.user_profile.frustrations[:]
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 1, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
     def test_frustrated_by_no_answer(self) -> None:
         """User is frustrated by the lack of answers."""
@@ -905,7 +902,7 @@ class AdviceFollowUpEmailTestCase(ScoringModelTestBase):
         persona.user_profile.frustrations.append(user_pb2.NO_OFFER_ANSWERS)
 
         score = self._score_persona(persona)
-        self.assertEqual(score, 2, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
 
 class FilterUsingScoreTestCase(unittest.TestCase):
@@ -972,7 +969,7 @@ class TryWithoutDiplomaTestCase(HundredScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'M1607'
 
         score = self._score_persona(persona)
-        self.assert_worse_score(score, msg='Failed for "{}":'.format(persona.name))
+        self.assert_worse_score(score, msg=f'Failed for "{persona.name}"')
 
     def test_frustrated_by_no_answer(self) -> None:
         """User is looking for a job that does not strictly require a diploma."""
@@ -984,7 +981,7 @@ class TryWithoutDiplomaTestCase(HundredScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'M1607'
 
         score = self._score_persona(persona)
-        self.assert_good_score(score, limit=10, msg='Failed for "{}":'.format(persona.name))
+        self.assert_good_score(score, limit=10, msg=f'Failed for "{persona.name}"')
 
 
 class GetAlternanceTestCase(HundredScoringModelTestBase):
@@ -999,7 +996,7 @@ class GetAlternanceTestCase(HundredScoringModelTestBase):
         persona.user_profile.year_of_birth = datetime.datetime.now().year - 29
 
         score = self._score_persona(persona)
-        self.assert_good_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+        self.assert_good_score(score, limit=30, msg=f'Failed for "{persona.name}"')
 
     def test_old(self) -> None:
         """User is not so young."""
@@ -1008,7 +1005,7 @@ class GetAlternanceTestCase(HundredScoringModelTestBase):
         persona.user_profile.year_of_birth = datetime.datetime.now().year - 31
 
         score = self._score_persona(persona)
-        self.assert_bad_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+        self.assert_bad_score(score, limit=30, msg=f'Failed for "{persona.name}"')
 
 
 class StrategyLikeableJobTestCase(HundredScoringModelTestBase):
@@ -1023,7 +1020,7 @@ class StrategyLikeableJobTestCase(HundredScoringModelTestBase):
         persona.project.passionate_level = project_pb2.PASSIONATING_JOB
 
         score = self._score_persona(persona)
-        self.assert_worse_score(score, msg='Failed for "{}":'.format(persona.name))
+        self.assert_worse_score(score, msg=f'Failed for "{persona.name}"')
 
     def test_not_passionate(self) -> None:
         """User is not very passionate and should try to find a likeable job."""
@@ -1032,7 +1029,7 @@ class StrategyLikeableJobTestCase(HundredScoringModelTestBase):
         persona.project.passionate_level = project_pb2.LIKEABLE_JOB
 
         score = self._score_persona(persona)
-        self.assert_good_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+        self.assert_good_score(score, limit=30, msg=f'Failed for "{persona.name}"')
 
     def test_find_what_you_like_category(self) -> None:
         """User is not very passionate and is in the FWYL category."""
@@ -1042,7 +1039,7 @@ class StrategyLikeableJobTestCase(HundredScoringModelTestBase):
         persona.project.passionate_level = project_pb2.LIKEABLE_JOB
 
         score = self._score_persona(persona)
-        self.assert_good_score(score, limit=30, msg='Failed for "{}":'.format(persona.name))
+        self.assert_good_score(score, limit=30, msg=f'Failed for "{persona.name}"')
 
 
 class StrategyInterviewSuccessTestCase(HundredScoringModelTestBase):
@@ -1058,7 +1055,7 @@ class StrategyInterviewSuccessTestCase(HundredScoringModelTestBase):
             datetime.datetime.now() - datetime.timedelta(days=30))
 
         score = self._score_persona(persona)
-        self.assert_bad_score(score, limit=20, msg='Failed for "{}":'.format(persona.name))
+        self.assert_bad_score(score, limit=20, msg=f'Failed for "{persona.name}"')
 
     def test_not_many_interviews(self) -> None:
         """User hasn't had many interviews yet."""
@@ -1067,7 +1064,7 @@ class StrategyInterviewSuccessTestCase(HundredScoringModelTestBase):
         persona.project.total_interview_count = 2
 
         score = self._score_persona(persona)
-        self.assert_bad_score(score, limit=20, msg='Failed for "{}":'.format(persona.name))
+        self.assert_bad_score(score, limit=20, msg=f'Failed for "{persona.name}"')
 
     def test_interviews_and_long_search(self) -> None:
         """User is not very passionate and is in the FWYL category."""
@@ -1078,7 +1075,7 @@ class StrategyInterviewSuccessTestCase(HundredScoringModelTestBase):
         persona.project.total_interview_count = 5
 
         score = self._score_persona(persona)
-        self.assert_good_score(score, limit=20, msg='Failed for "{}":'.format(persona.name))
+        self.assert_good_score(score, limit=20, msg=f'Failed for "{persona.name}"')
 
 
 class TryAlternanceTestCase(ScoringModelTestBase):
@@ -1093,7 +1090,7 @@ class TryAlternanceTestCase(ScoringModelTestBase):
         persona.project.seniority = project_pb2.EXPERT
 
         score = self._score_persona(persona)
-        self.assertEqual(0, score, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(0, score, msg=f'Failed for "{persona.name}"')
 
     def test_old(self) -> None:
         """User is quite old."""
@@ -1102,7 +1099,7 @@ class TryAlternanceTestCase(ScoringModelTestBase):
         persona.user_profile.year_of_birth = datetime.date.today().year - 60
 
         score = self._score_persona(persona)
-        self.assertEqual(0, score, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(0, score, msg=f'Failed for "{persona.name}"')
 
     def test_already_trained(self) -> None:
         """User is already trained for their job."""
@@ -1111,7 +1108,7 @@ class TryAlternanceTestCase(ScoringModelTestBase):
         persona.project.training_fulfillment_estimate = project_pb2.ENOUGH_DIPLOMAS
 
         score = self._score_persona(persona)
-        self.assertEqual(0, score, msg='Failed for "{}":'.format(persona.name))
+        self.assertEqual(0, score, msg=f'Failed for "{persona.name}"')
 
     def test_unemployed_uncertain_about_training(self) -> None:
         """User is unemployed and is uncertain about the necessity of at training."""
@@ -1122,7 +1119,7 @@ class TryAlternanceTestCase(ScoringModelTestBase):
         persona.user_profile.year_of_birth = datetime.date.today().year - 23
 
         score = self._score_persona(persona)
-        self.assertLess(0, score, msg='Failed for "{}":'.format(persona.name))
+        self.assertLess(0, score, msg=f'Failed for "{persona.name}"')
 
     def test_missing_diploma_category(self) -> None:
         """Users are in the missing diploma category."""
@@ -1132,7 +1129,7 @@ class TryAlternanceTestCase(ScoringModelTestBase):
             persona.project.diagnostic.category_id = 'missing-diploma'
             persona.user_profile.year_of_birth = datetime.date.today().year - age
             score = self._score_persona(persona)
-            self.assertLess(0, score, msg='Failed for "{}" at age {}:'.format(persona.name, age))
+            self.assertLess(0, score, msg=f'Failed for "{persona.name}" at age {age}:')
 
 
 if __name__ == '__main__':
