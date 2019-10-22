@@ -6,67 +6,63 @@ import React from 'react'
 import {YouChooser} from 'store/french'
 
 import {CircularProgress, ExternalLink, GrowingNumber, Tag} from 'components/theme'
-import NewPicto from 'images/advices/picto-association-help.svg'
+import Picto from 'images/advices/picto-association-help.svg'
 
-import {MethodSuggestionList, CardWithContentProps, CardProps, connectExpandedCardWithContent,
-  makeTakeAwayFromAdviceData} from './base'
+import {MethodSuggestionList, CardProps, useAdviceData} from './base'
 
 
-class ExpandedAdviceCardContentBase extends
-  React.Component<CardWithContentProps<bayes.bob.Associations>> {
-  public static propTypes = {
-    adviceData: PropTypes.shape({
-      associations: PropTypes.arrayOf(PropTypes.object.isRequired),
-    }).isRequired,
-    handleExplore: PropTypes.func.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {associations = []} = this.props.adviceData
-    const {userYou} = this.props
-    if (!associations.length) {
-      return <CircularProgress style={{margin: 'auto'}} />
-    }
-    const numSpecializedAssociations =
-      associations.filter(({filters}): boolean => filters && filters.length > 1).length
-    const maybeS = (count: number): string => count > 1 ? 's' : ''
-    const hasOnlySpecialized = numSpecializedAssociations === associations.length
-    const specialized = ` spécialisée${maybeS(numSpecializedAssociations)}`
-    const title = <React.Fragment>
-      <GrowingNumber
-        style={{fontWeight: 'bold'}} number={associations.length} isSteady={true} />
-      {' '}association{maybeS(associations.length)}
-      {hasOnlySpecialized ? specialized : null} pour {userYou('toi', 'vous')}
-      {(numSpecializedAssociations > 0 && !hasOnlySpecialized) ? <span>
-        {' '}dont <GrowingNumber
-          style={{fontWeight: 'bold'}} number={numSpecializedAssociations} isSteady={true} />
-        {specialized}
-      </span> : null}
-    </React.Fragment>
-    const linkStyle = {
-      color: colors.BOB_BLUE,
-      textDecoration: 'none',
-    }
-    const footer = <React.Fragment>
-      Trouve{userYou('', 'z')} un accompagnement qui répond à {userYou('tes', 'vos')} attentes
-      précises sur <ExternalLink href="http://www.aidesalemploi.fr" style={linkStyle}>
-        aidesalemploi.fr
-      </ExternalLink>
-    </React.Fragment>
-    return <MethodSuggestionList title={title} footer={footer}>
-      {associations.map(({filters, link, name}, index): React.ReactElement<AssociationProps> =>
-        <AssociationLink
-          key={`association-${index}`} href={link} onClick={this.props.handleExplore('association')}
-          {...{filters, userYou}}>
-          {name}
-        </AssociationLink>)}
-    </MethodSuggestionList>
-  }
+function isValidAssociation(a: bayes.bob.Association): a is bayes.bob.Association & {link: string} {
+  return !!(a && a.link)
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.Associations, CardProps>()(
-    ExpandedAdviceCardContentBase)
+
+
+const ExpandedAdviceCardContentBase: React.FC<CardProps> = (props: CardProps) => {
+  const {handleExplore, userYou} = props
+  const {associations = []} = useAdviceData<bayes.bob.Associations>(props)
+  const validAssociations = associations.filter(isValidAssociation)
+  if (!validAssociations.length) {
+    return <CircularProgress style={{margin: 'auto'}} />
+  }
+  const numSpecializedAssociations =
+    validAssociations.filter(({filters}): boolean => !!filters && filters.length > 1).length
+  const maybeS = (count: number): string => count > 1 ? 's' : ''
+  const hasOnlySpecialized = numSpecializedAssociations === validAssociations.length
+  const specialized = ` spécialisée${maybeS(numSpecializedAssociations)}`
+  const title = <React.Fragment>
+    <GrowingNumber
+      style={{fontWeight: 'bold'}} number={validAssociations.length} isSteady={true} />
+    {' '}association{maybeS(validAssociations.length)}
+    {hasOnlySpecialized ? specialized : null} pour {userYou('toi', 'vous')}
+    {(numSpecializedAssociations > 0 && !hasOnlySpecialized) ? <span>
+      {' '}dont <GrowingNumber
+        style={{fontWeight: 'bold'}} number={numSpecializedAssociations} isSteady={true} />
+      {specialized}
+    </span> : null}
+  </React.Fragment>
+  const linkStyle = {
+    color: colors.BOB_BLUE,
+    textDecoration: 'none',
+  }
+  const footer = <React.Fragment>
+    Trouve{userYou('', 'z')} un accompagnement qui répond à {userYou('tes', 'vos')} attentes
+    précises sur <ExternalLink href="http://www.aidesalemploi.fr" style={linkStyle}>
+      aidesalemploi.fr
+    </ExternalLink>
+  </React.Fragment>
+  return <MethodSuggestionList title={title} footer={footer}>
+    {validAssociations.map(({filters, link, name}, index): React.ReactElement<AssociationProps> =>
+      <AssociationLink
+        key={`association-${index}`} href={link} onClick={handleExplore('association')}
+        {...{filters, userYou}}>
+        {name}
+      </AssociationLink>)}
+  </MethodSuggestionList>
+}
+ExpandedAdviceCardContentBase.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+  userYou: PropTypes.func.isRequired,
+}
+const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
 
 
 interface AssociationProps {
@@ -94,13 +90,13 @@ class AssociationLinkBase extends React.Component<AssociationProps> {
     onClick && onClick()
   }
 
-  private getTags(): {color: string; value: string}[] {
+  private getTags(): readonly {color: string; value: string}[] {
     const {filters, href, userYou} = this.props
-    const tags = []
+    const tags: {color: string; value: string}[] = []
     if (/\.pole-emploi\.fr/.test(href)) {
       tags.push({
         color: colors.SQUASH,
-        value: (): string => 'officielle',
+        value: 'officielle',
       })
     }
     if ((filters || []).some((f): boolean => f.startsWith('for-job-group'))) {
@@ -148,9 +144,4 @@ class AssociationLinkBase extends React.Component<AssociationProps> {
 const AssociationLink: React.ComponentClass<AssociationProps> = Radium(AssociationLinkBase)
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({associations}: bayes.bob.Associations): readonly bayes.bob.Association[] => associations,
-  'association', true)
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

@@ -14,6 +14,7 @@ You can try it out on a local instance:
 """
 
 import typing
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -23,7 +24,7 @@ from bob_emploi.data_analysis.lib import mongo
 _SEASONAL_CODE = 'SAI'
 
 
-def csv2dicts(offer_types_csv: str) -> typing.List[typing.Dict[str, typing.Any]]:
+def csv2dicts(offer_types_csv: str) -> List[Dict[str, Any]]:
     """Import seasonal jobbing data per month per departement in MongoDB.
 
     Args:
@@ -71,7 +72,7 @@ def csv2dicts(offer_types_csv: str) -> typing.List[typing.Dict[str, typing.Any]]
         top_departements_per_month[top_departements_per_month.offers > 10]
 
     # Adding the job groups inside.
-    def _create_jobgroups(jobs: pd.DataFrame) -> typing.Any:
+    def _create_jobgroups(jobs: pd.DataFrame) -> Any:
         return jobs[['name', 'romeId', 'offers']][:5].to_dict(orient='records')
 
     romes_per_dep_month = top_departements_per_month.groupby(
@@ -81,7 +82,7 @@ def csv2dicts(offer_types_csv: str) -> typing.List[typing.Dict[str, typing.Any]]
         .reset_index()\
         .rename(columns={'creationMonth': '_id'})
 
-    def _create_month_stats(jobs: pd.DataFrame) -> typing.Any:
+    def _create_month_stats(jobs: pd.DataFrame) -> Any:
         return jobs[['departementId', 'jobGroups', 'departementSeasonalOffers']]\
             .to_dict(orient='records')
 
@@ -91,9 +92,7 @@ def csv2dicts(offer_types_csv: str) -> typing.List[typing.Dict[str, typing.Any]]
         .to_frame('departementStats')\
         .reset_index()
 
-    return typing.cast(
-        typing.List[typing.Dict[str, typing.Any]],
-        monthly_data.to_dict(orient='records'))
+    return typing.cast(List[Dict[str, Any]], monthly_data.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

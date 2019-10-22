@@ -1,6 +1,7 @@
 """Modules to ensure privacy in the Bob app."""
 
 import typing
+from typing import Any, Dict, Iterator, Optional, Set, Tuple
 
 from google.protobuf import descriptor
 from google.protobuf import message
@@ -11,8 +12,8 @@ from bob_emploi.frontend.api import options_pb2
 from bob_emploi.frontend.api import use_case_pb2
 
 
-def _iter_sensitive_fields(msg: message.Message, field_usages_to_yield: typing.Set[int]) \
-        -> typing.Iterator[typing.Tuple[message.Message, descriptor.FieldDescriptor]]:
+def _iter_sensitive_fields(msg: message.Message, field_usages_to_yield: Set[int]) \
+        -> Iterator[Tuple[message.Message, descriptor.FieldDescriptor]]:
     """Iterate recursively through all fields of a proto message to find sensitive fields."""
 
     for field_descriptor, value in msg.ListFields():
@@ -42,7 +43,7 @@ def _iter_sensitive_fields(msg: message.Message, field_usages_to_yield: typing.S
 
 def anonymize_proto(
         root_message: message.Message,
-        field_usages_to_clear: typing.Optional[typing.Set[int]] = None) -> bool:
+        field_usages_to_clear: Optional[Set[int]] = None) -> bool:
     """Anonymize a proto message by modifying sensitive fields."""
 
     if not field_usages_to_clear:
@@ -119,17 +120,20 @@ def get_redacted_copy(
 
 
 def user_to_use_case(
-        user: typing.Dict[str, typing.Any], pool_name: str, index_in_pool: int) \
-        -> typing.Optional[use_case_pb2.UseCase]:
+        user: Dict[str, Any], pool_name: str, index_in_pool: int) \
+        -> Optional[use_case_pb2.UseCase]:
     """Extracts a use case from a real user."""
 
     use_case = use_case_pb2.UseCase()
     if not proto.parse_from_mongo(user, use_case.user_data):
         return None
+    # TODO(cyrille): Consider dropping the APP_ONLY flag from the field if we want to keep it here.
+    has_account = use_case.user_data.has_account
     use_case.title = next((p.title for p in use_case.user_data.projects), '')
     anonymize_proto(use_case.user_data, field_usages_to_clear={
         options_pb2.PERSONAL_IDENTIFIER, options_pb2.APP_ONLY, options_pb2.ALGORITHM_RESULT,
     })
+    use_case.user_data.has_account = has_account
     use_case.pool_name = pool_name
     use_case.index_in_pool = index_in_pool
     use_case.use_case_id = f'{pool_name}_{index_in_pool:02x}'

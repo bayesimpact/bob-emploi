@@ -25,7 +25,7 @@ declare global {
 
 interface ButtonProps {
   beforeOnClick?: () => void | Promise<void>
-  url?: string
+  url: string
 }
 
 
@@ -33,7 +33,7 @@ class SmsShareButton extends React.PureComponent<ButtonProps> {
   public static propTypes = {
     beforeOnClick: PropTypes.func,
     children: PropTypes.node,
-    url: PropTypes.string,
+    url: PropTypes.string.isRequired,
   }
 
   // TODO(cyrille): Make better (or more generic) text.
@@ -69,7 +69,7 @@ class FbMessengerShareButton extends React.PureComponent<ButtonProps> {
   public static propTypes = {
     beforeOnClick: PropTypes.func,
     children: PropTypes.node,
-    url: PropTypes.string,
+    url: PropTypes.string.isRequired,
   }
 
   private getFbMessengerLink(): string {
@@ -100,7 +100,7 @@ class FbMessengerShareButton extends React.PureComponent<ButtonProps> {
 
 
 interface BannerProps {
-  dispatch?: DispatchAllActions
+  dispatch: DispatchAllActions
   onClose?: () => void
   style?: React.CSSProperties
   userYou: YouChooser
@@ -111,7 +111,7 @@ interface BannerProps {
 // months thanks to this one.
 class ShareBanner extends React.PureComponent<BannerProps, {isShareBobShown: boolean}> {
   public static propTypes = {
-    dispatch: PropTypes.func,
+    dispatch: PropTypes.func.isRequired,
     onClose: PropTypes.func,
     style: PropTypes.object,
     userYou: PropTypes.func.isRequired,
@@ -169,7 +169,7 @@ class ShareBanner extends React.PureComponent<BannerProps, {isShareBobShown: boo
     // TODO(marielaure): Add a close button and make this position fixed and enable it when user
     // has read most of the assessment.
     return <div style={containerStyle}>
-      <ModalCloseButton onClick={onClose} style={closeStyle} />
+      {onClose ? <ModalCloseButton onClick={onClose} style={closeStyle} /> : null}
       <div style={messageStyle}>
         <div style={textStyle}>
           <p>
@@ -217,12 +217,8 @@ class ShareBanner extends React.PureComponent<BannerProps, {isShareBobShown: boo
 }
 
 
-interface ModalProps extends Omit<ModalConfig, 'children'> {
-  campaign?: string
-  dispatch?: DispatchAllActions
+type ModalProps = Omit<ModalConfig, 'children'> & ButtonsProps & {
   intro: React.ReactNode
-  url?: string
-  visualElement?: string
 }
 
 
@@ -291,7 +287,7 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
     url: PropTypes.string,
     // The visual element reference that explains the context in which this
     // modal is shown. This is only to differentiate in logs.
-    visualElement: PropTypes.string,
+    visualElement: PropTypes.string.isRequired,
   }
 
   public state = {
@@ -302,7 +298,7 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
 
   public componentDidMount(): void {
     const {dispatch, visualElement} = this.props
-    if (dispatch) {
+    if (dispatch && visualElement) {
       dispatch(shareProductModalIsShown(visualElement))
     }
     if (this.buttonRef && this.buttonRef.current) {
@@ -314,7 +310,7 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
     clearTimeout(this.timeout)
   }
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private getLink(): string {
     const {campaign, url} = this.props
@@ -322,9 +318,9 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
   }
 
   private dispatchShared = (): void => {
-    const {dispatch} = this.props
-    if (dispatch) {
-      dispatch(shareProductToNetwork(this.props.visualElement))
+    const {dispatch, visualElement} = this.props
+    if (dispatch && visualElement) {
+      dispatch(shareProductToNetwork(visualElement))
     }
   }
 
@@ -337,11 +333,12 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
     this.dispatchShared()
     this.shareLinkRef.current.select()
     if (canBrowserShare) {
-      navigator.share({title: config.productName, url: this.getLink()})
+      navigator.share && navigator.share({title: config.productName, url: this.getLink()})
     }
     document.execCommand('Copy')
     this.setState({isShareLinkJustCopied: true})
-    this.timeout = setTimeout((): void => this.setState({isShareLinkJustCopied: false}), 4000)
+    this.timeout =
+      window.setTimeout((): void => this.setState({isShareLinkJustCopied: false}), 4000)
   }
 
   private buttonRef: React.RefObject<HTMLDivElement> = React.createRef()

@@ -1,6 +1,6 @@
 """Unit tests for the reorient-jobbing module."""
 
-import typing
+from typing import Any, Dict
 import unittest
 
 from bob_emploi.frontend.server.test import base_test
@@ -200,7 +200,7 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
         user_info = self.get_user_info(self.user_id, self.auth_token)
         self.project_id = user_info['projects'][0]['projectId']
 
-    def _add_project_modifier(self, user: typing.Dict[str, typing.Any]) -> None:
+    def _add_project_modifier(self, user: Dict[str, Any]) -> None:
         """Modifier to add a custom project."""
 
         user['projects'] = user.get('projects', []) + [{

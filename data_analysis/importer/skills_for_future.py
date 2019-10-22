@@ -6,6 +6,7 @@ Data was originally from https://80000hours.org/articles/skills-most-employable/
 import collections
 import os
 import typing
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional
 
 from airtable import airtable
 
@@ -26,8 +27,8 @@ _MAX_NUM_SKILLS = 5
 _MAX_NUM_ASSETS = 2
 
 
-def get_skills_per_rome_prefix(base_id: str, table: str, view: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def get_skills_per_rome_prefix(base_id: str, table: str, view: Optional[str] = None) \
+        -> List[Dict[str, Any]]:
     """Download skills from Airtable and group the by ROME prefix.
 
     Returns:
@@ -53,29 +54,27 @@ _T = typing.TypeVar('_T')
 _U = typing.TypeVar('_U')
 
 
-def _group_by(records: typing.Iterable[_T], list_keys: typing.Callable[[_T], typing.Iterable[_U]]) \
-        -> typing.Dict[_U, typing.List[_T]]:
-    grouped: typing.Dict[_U, typing.List[_T]] = collections.defaultdict(list)
+def _group_by(records: Iterable[_T], list_keys: Callable[[_T], Iterable[_U]]) -> Dict[_U, List[_T]]:
+    grouped: Dict[_U, List[_T]] = collections.defaultdict(list)
     for record in records:
         for key in list_keys(record):
             grouped[key].append(record)
     return grouped
 
 
-def _list_rome_prefixes(record: typing.Dict[str, typing.Any]) -> typing.Iterator[str]:
+def _list_rome_prefixes(record: Dict[str, Any]) -> Iterator[str]:
     for rome_prefix in record['fields']['rome_prefixes'].split(','):
         yield rome_prefix.strip()
 
 
-def _create_skills_protos(skills_list: typing.Iterable[typing.Dict[str, typing.Any]]) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def _create_skills_protos(skills_list: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [
         _create_skill_proto(skill['fields'])
         for skill in sorted(skills_list, key=lambda skill: -skill['fields']['value_score'])
     ][:_MAX_NUM_SKILLS]
 
 
-def _create_skill_proto(skill: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+def _create_skill_proto(skill: Dict[str, Any]) -> Dict[str, Any]:
     assets = {
         skill_pb2.SkillAsset.Value(asset_name): skill.get(asset_name, 0)
         for asset_name in skill_pb2.SkillAsset.keys()

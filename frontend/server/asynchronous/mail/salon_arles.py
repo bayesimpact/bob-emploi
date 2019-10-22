@@ -1,6 +1,6 @@
 """A mail to users that could be interested in working in Maison d'Arles."""
 
-import typing
+from typing import Any, Dict, Optional
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -16,8 +16,7 @@ _JOB_GROUP_ROME_IDS = {
 }
 
 
-def _get_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _get_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute vars for one user's email."""
 
     project = next((p for p in user.projects), project_pb2.Project())

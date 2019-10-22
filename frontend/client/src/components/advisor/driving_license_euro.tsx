@@ -7,19 +7,14 @@ import {getEmailTemplates, inDepartement} from 'store/french'
 import {missionLocaleUrl} from 'store/job'
 
 import {ExternalLink, GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-driving-license.svg'
+import Picto from 'images/advices/picto-driving-license.svg'
 import missionLocaleImage from 'images/missions-locales-logo.png'
 
 import {AdviceSuggestionList, CardProps, CardWithContentProps, connectExpandedCardWithContent,
   EmailTemplate, ExpandableAction, ToolCard} from './base'
 
 
-interface CardConnectedProps {
-  isMinor: boolean
-}
-
-
-type ExpandedCardProps = CardWithContentProps<bayes.bob.OneEuroProgram> & CardConnectedProps
+type ExpandedCardProps = CardWithContentProps<bayes.bob.OneEuroProgram>
 
 
 interface CardState {
@@ -49,7 +44,9 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
       }).isRequired),
     }),
     handleExplore: PropTypes.func.isRequired,
-    isMinor: PropTypes.bool,
+    profile: PropTypes.shape({
+      yearOfBirth: PropTypes.number,
+    }).isRequired,
     project: PropTypes.shape({
       city: PropTypes.shape({
         departementName: PropTypes.string,
@@ -62,7 +59,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
   public state = {}
 
   public static getDerivedStateFromProps(
-    {adviceData: {schools = []} = {}}: ExpandedCardProps, {schools: prevSchools}): CardState {
+    {adviceData: {schools = []} = {}}: ExpandedCardProps, {schools: prevSchools}): CardState|null {
     if (prevSchools === schools) {
       return null
     }
@@ -80,8 +77,8 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     window.open(schoolListLink, 'blank')
   }
 
-  private renderAgeSpecificParagraph = (): React.ReactNode => {
-    const {isMinor, userYou} = this.props
+  private renderAgeSpecificParagraph = (isMinor: boolean): React.ReactNode => {
+    const {userYou} = this.props
     if (isMinor) {
       return <span>
         Comme {userYou('tu es', 'vous êtes')} mineur,
@@ -105,7 +102,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     </span>
   }
 
-  private renderExplanation(style: React.CSSProperties): React.ReactNode {
+  private renderExplanation(style: React.CSSProperties, isMinor: boolean): React.ReactNode {
     const {userYou} = this.props
     return <div style={style}>
       Grâce au dispositif "permis à 1€ par jour" mis en place par
@@ -117,7 +114,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
       De {userYou('ton côté, tu dois', 'votre côté, vous devez')} rembourser 30&nbsp;€
       par mois.
       <br /><br />
-      {this.renderAgeSpecificParagraph()}
+      {this.renderAgeSpecificParagraph(isMinor)}
     </div>
   }
 
@@ -139,7 +136,8 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     }
     const maybeMore = schools.length ? "Plus d'auto-écoles" :
       'Accédez à la liste des auto-écoles'
-    const inDepartment = inDepartement(city) || `dans ${userYou('ton', 'votre')} département`
+    const inDepartment =
+      city && inDepartement(city) || `dans ${userYou('ton', 'votre')} département`
     return <ExpandableAction key={key}
       contentName="la liste des auto-écoles"
       title="Trouver une auto-école agréée pour le permis à 1&nbsp;€"
@@ -155,7 +153,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
           {[
             ...schools.map(({address, link, name}, index): ReactStylableElement =>
               <div
-                onClick={this.handleExploreSchool(link)}
+                onClick={link && this.handleExploreSchool(link) || undefined}
                 style={itemStyle} key={`school-${index}`}>
                 <div style={{marginRight: 10, width: 200}}>
                   {name}
@@ -177,11 +175,10 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     </ExpandableAction>
   }
 
-  private renderDocumentation(key): React.ReactNode {
+  private renderDocumentation(key, isMinor): React.ReactNode {
     const {
       adviceData: {missionLocale},
       handleExplore,
-      isMinor,
       project: {city: {departementName = ''} = {}},
       userYou,
     } = this.props
@@ -298,7 +295,9 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
   }
 
   public render(): React.ReactNode {
-    const {advice: {adviceId}, handleExplore, userYou} = this.props
+    const {advice: {adviceId}, handleExplore, profile: {yearOfBirth}, userYou} = this.props
+
+    const isMinor = (yearOfBirth && (new Date().getFullYear() - yearOfBirth) < 18) || false
 
     const emails = (getEmailTemplates(userYou)[adviceId] || []).
       map((template, index): React.ReactNode =>
@@ -309,7 +308,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     const actions = [
       this.renderFindingSchool('finding-school'),
       ...emails,
-      this.renderDocumentation('documents'),
+      this.renderDocumentation('documents', isMinor),
       this.renderFindABank('find-a-bank'),
     ]
 
@@ -320,7 +319,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     }
 
     return <div style={{fontSize: 16}}>
-      {this.renderExplanation({marginBottom: 35})}
+      {this.renderExplanation({marginBottom: 35}, isMinor)}
       {actions}
       <div style={{marginTop: 35}}>
         <ExternalLink
@@ -333,15 +332,8 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<CardConnectedProps, bayes.bob.OneEuroProgram, CardProps>(
-    ({user}): CardConnectedProps => ({
-      isMinor: (user.profile &&
-        user.profile.yearOfBirth &&
-        (new Date().getFullYear() - user.profile.yearOfBirth) < 18) || null,
-    }))(ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.OneEuroProgram, CardProps>(
+    ExpandedAdviceCardContentBase)
 
 
-const TakeAway = '4 étapes à suivre'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

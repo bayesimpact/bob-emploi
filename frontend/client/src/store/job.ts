@@ -1,7 +1,7 @@
 import {stringify} from 'query-string'
 
 // Genderize a job name.
-function genderizeJob(job: bayes.bob.Job, gender: string): string {
+function genderizeJob(job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {
   if (!job) {
     return ''
   }
@@ -15,7 +15,7 @@ function genderizeJob(job: bayes.bob.Job, gender: string): string {
 }
 
 // Return url for job name search.
-function getJobSearchURL(job: bayes.bob.Job, gender: string): string {
+function getJobSearchURL(job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {
   if (!job || Object.keys(job).length === 0) {
     return ''
   }
@@ -25,7 +25,7 @@ function getJobSearchURL(job: bayes.bob.Job, gender: string): string {
 
 
 // Return URL to access the IMT.
-function getIMTURL(job: bayes.bob.Job, city: bayes.bob.FrenchCity): string {
+function getIMTURL(job?: {codeOgr?: string}, city?: {departementId?: string}): string {
   if (!job || !job.codeOgr || !city || !city.departementId) {
     return ''
   }
@@ -73,13 +73,16 @@ function getJobPlacesFromDepartementStats(
     return []
   }
   const seenRomes = new Set()
-  const jobPlaces = []
+  const jobPlaces: JobPlaces[] = []
   const nbDep = departementStats.length
   const currentJobGroupForDep = departementStats.map((unusedDep): number => 0)
   for (let i = 0; i < 8; ++i) {
     const depIndex = i % nbDep
     const dep = departementStats[i % nbDep]
     const {jobGroups} = departementStats[depIndex]
+    if (!jobGroups) {
+      continue
+    }
     while (currentJobGroupForDep[depIndex] < jobGroups.length - 1 &&
       seenRomes.has(jobGroups[currentJobGroupForDep[depIndex]].romeId)) {
       currentJobGroupForDep[depIndex]++
@@ -89,15 +92,16 @@ function getJobPlacesFromDepartementStats(
     }
     const jobGroup = jobGroups[currentJobGroupForDep[depIndex]]
     seenRomes.add(jobGroup.romeId)
-    jobPlaces.push({'inDepartement': dep.departementInName, 'jobGroup': jobGroup.name})
+    jobPlaces.push({'inDepartement': dep.departementInName || '', 'jobGroup': jobGroup.name || ''})
   }
   return jobPlaces
 }
 
 
-function missionLocaleUrl(missionLocaleData, departementName: string): string {
+function missionLocaleUrl(missionLocaleData, departementName?: string): string {
   return missionLocaleData && missionLocaleData.agenciesListLink ||
-      `https://www.google.fr/search?q=${encodeURIComponent(`mission locale ${departementName}`)}`
+      `https://www.google.fr/search?q=${
+        encodeURIComponent(`mission locale ${departementName || ''}`)}`
 }
 
 const _APPLICATION_MODES = {
@@ -115,10 +119,21 @@ function getApplicationModes(jobGroup: bayes.bob.JobGroup): readonly bayes.bob.M
 }
 
 
-function getApplicationModeText(mode: bayes.bob.ApplicationMode): string {
+function getApplicationModeText(mode?: bayes.bob.ApplicationMode): string {
   return _APPLICATION_MODES[mode || 'UNDEFINED_APPLICATION_MODE']
 }
 
 
+// Keep in increasing order, for the ApplicationWaffleChart in stats_charts.
+const weeklyApplicationOptions = [
+  {name: '0 ou 1 candidature par semaine', value: 'LESS_THAN_2'},
+  {name: '2 à 5 candidatures par semaine', value: 'SOME'},
+  {name: '6 à 15 candidatures par semaine', value: 'DECENT_AMOUNT'},
+  {name: 'Plus de 15 candidatures par semaine', value: 'A_LOT'},
+]
+
+
 export {genderizeJob, getIMTURL, getJobSearchURL, missionLocaleUrl, getApplicationModes,
-  getJobPlacesFromDepartementStats, getApplicationModeText, getPEJobBoardURL}
+  getJobPlacesFromDepartementStats, getApplicationModeText, getPEJobBoardURL,
+  weeklyApplicationOptions}
+

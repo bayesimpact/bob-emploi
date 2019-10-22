@@ -3,8 +3,7 @@
 import math
 import random
 import typing
-
-import typing_extensions
+from typing import Iterable, Optional, Set, Tuple
 
 from bob_emploi.frontend.api import create_company_expanded_data_pb2
 from bob_emploi.frontend.api import event_pb2
@@ -15,21 +14,23 @@ from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 
+if typing.TYPE_CHECKING:
+    import typing_extensions
+
+    # TODO(cyrille): Move to a lib if we need it somewhere else.
+    class GeoLocalizationProtocol(typing_extensions.Protocol):
+        """Typing protocol for protos localized on a sphere."""
+
+        latitude: float
+        longitude: float
+
 
 _SQUARE_DEGREES_TO_SQUARE_KMS = 111.7 * 111.7
 
 
-# TODO(cyrille): Move to a lib if we need it somewhere else.
-class GeoLocalizationProtocol(typing_extensions.Protocol):
-    """Typing protocol for protos localized on a sphere."""
-
-    latitude: float
-    longitude: float
-
-
 def _compute_square_degree_distance(
-        location_a: GeoLocalizationProtocol,
-        location_b: GeoLocalizationProtocol) -> float:
+        location_a: 'GeoLocalizationProtocol',
+        location_b: 'GeoLocalizationProtocol') -> float:
     delta_lat = abs(location_a.latitude - location_b.latitude)
     delta_lng = abs(location_a.longitude - location_b.longitude)
     lng_stretch = math.cos(math.radians(location_a.longitude))
@@ -38,8 +39,8 @@ def _compute_square_degree_distance(
 
 
 def _find_closest_city_with_events(
-        events: typing.Iterable[event_pb2.Event],
-        target: geo_pb2.FrenchCity) -> typing.Tuple[str, float]:
+        events: Iterable[event_pb2.Event],
+        target: geo_pb2.FrenchCity) -> Tuple[str, float]:
     """Find the closest city from target location with at least one event.
 
     Args:
@@ -66,7 +67,7 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
             proto.MongoCachedCollection(event_pb2.Event, 'adie_events')
 
     def _get_frustrations_reasons(self, project: scoring_base.ScoringProject) \
-            -> typing.Set[str]:
+            -> Set[str]:
         discrimination_reason = project.translate_string(
             'vous nous avez dit que les employeurs ne '
             'vous donnent pas votre chance')
@@ -138,7 +139,7 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
         )
 
     def _find_relevant_testimonials(self, project: scoring_base.ScoringProject) \
-            -> typing.Optional[testimonial_pb2.Testimonials]:
+            -> Optional[testimonial_pb2.Testimonials]:
         """Find the testimonials relevant for the user's project."""
 
         max_testimonial_num = 8
@@ -173,7 +174,7 @@ class _AdviceCreateYourCompany(scoring_base.ModelBase):
             close_by_events=events, related_testimonials=testimonials)
 
 
-def _is_in_job_group(target_job_group_id: str, job_group_ids: typing.Iterable[str]) -> bool:
+def _is_in_job_group(target_job_group_id: str, job_group_ids: Iterable[str]) -> bool:
     for job_group_id in job_group_ids:
         if target_job_group_id.startswith(job_group_id):
             return True

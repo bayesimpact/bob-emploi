@@ -2,7 +2,7 @@
 
 import logging
 import os
-import typing
+from typing import KeysView, List, Optional
 
 from algoliasearch import exceptions
 from algoliasearch import search_client
@@ -15,10 +15,10 @@ from bob_emploi.frontend.api import geo_pb2
 _DEPARTEMENTS: proto.MongoCachedCollection[geo_pb2.Departement] = \
     proto.MongoCachedCollection(geo_pb2.Departement, 'departements')
 
-_ALGOLIA_INDEX: typing.List[search_client.SearchClient] = []
+_ALGOLIA_INDEX: List[search_client.SearchClient] = []
 
 
-def list_all_departements(database: pymongo_database.Database) -> typing.KeysView[str]:
+def list_all_departements(database: pymongo_database.Database) -> KeysView[str]:
     """List all French département IDs."""
 
     return _DEPARTEMENTS.get_collection(database).keys()
@@ -53,7 +53,7 @@ def get_in_a_departement_text(database: pymongo_database.Database, departement_i
 
 
 def get_city_location(database: pymongo_database.Database, city_id: str) \
-        -> typing.Optional[geo_pb2.FrenchCity]:
+        -> Optional[geo_pb2.FrenchCity]:
     """Get lat/long coordinates for a city from its ID."""
 
     fetched = proto.fetch_from_mongo(database, geo_pb2.FrenchCity, 'cities', city_id)
@@ -62,7 +62,7 @@ def get_city_location(database: pymongo_database.Database, city_id: str) \
     return fetched
 
 
-def get_city_proto(city_id: str) -> typing.Optional[geo_pb2.FrenchCity]:
+def get_city_proto(city_id: str) -> Optional[geo_pb2.FrenchCity]:
     """Compute a full FrenchCity proto from a simple city_id."""
 
     if not city_id:

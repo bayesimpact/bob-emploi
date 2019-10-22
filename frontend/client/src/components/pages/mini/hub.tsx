@@ -15,7 +15,8 @@ import {RootState} from './store'
 
 
 const isTopicComplete = (answers, topic, questions): boolean =>
-  !!answers[topic] && questions.every(({url}): boolean => answers[topic].hasOwnProperty(url))
+  !!answers[topic] &&
+  questions.every(({url}): boolean => Object.prototype.hasOwnProperty.call(answers[topic], url))
 
 
 interface HubCardConnectedProps {

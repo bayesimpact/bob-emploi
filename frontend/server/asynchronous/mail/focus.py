@@ -7,6 +7,7 @@ import os
 import random
 import re
 import typing
+from typing import Any, Dict, Iterator, List, Optional
 
 import pymongo
 import requests
@@ -111,7 +112,7 @@ def _send_focus_emails(action: str, dry_run_email: str) -> None:
 def _send_focus_email_to_user(
         action: str, dry_run_email: str, user: user_pb2.User,
         database: pymongo.database.Database, users_database: pymongo.database.Database,
-        mongo_user_update: typing.Dict[str, typing.Any]) -> typing.Optional[str]:
+        mongo_user_update: Dict[str, Any]) -> Optional[str]:
     focus_emails_sent = set()
     last_focus_email_sent = None
     for email_sent in user.emails_sent:
@@ -142,11 +143,10 @@ def _send_focus_email_to_user(
 
 # TODO(pascal): If/When pylint accepts typing overload, drop the Optional part in the response.
 def _compute_last_coaching_email_date(
-        user: user_pb2.User, default: typing.Optional[datetime.datetime]) \
-        -> typing.Optional[datetime.datetime]:
+        user: user_pb2.User, default: Optional[datetime.datetime]) -> Optional[datetime.datetime]:
     return max(
         typing.cast(
-            typing.Iterator[typing.Optional[datetime.datetime]],
+            Iterator[Optional[datetime.datetime]],
             (e.sent_at.ToDatetime()
              for e in user.emails_sent
              if e.campaign_id in _FOCUS_CAMPAIGNS)),
@@ -168,7 +168,7 @@ def _compute_duration_to_next_coaching_email(user: user_pb2.User) -> datetime.ti
     return datetime.timedelta(days=period_days) * (1 + .2 * (2 * random.random() - 1))
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Parse command line arguments and send mails."""
 
     parser = argparse.ArgumentParser(

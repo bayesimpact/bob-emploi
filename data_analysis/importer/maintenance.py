@@ -14,6 +14,7 @@ import logging
 import re
 import sys
 import typing
+from typing import Any, Dict, ItemsView, Iterable, Iterator, Set, Tuple
 
 import pymongo
 import requests
@@ -38,6 +39,7 @@ _INDICES = {
     _MongoField('user', 'googleId'),
     _MongoField('user', 'peConnectId'),
     _MongoField('user', 'linkedInId'),
+    _MongoField('user', 'supportTickets.ticketId'),
 }
 
 # Some websites return error codes when no header is set.
@@ -50,8 +52,8 @@ _HTTP_HEADERS = {
 
 def _iterate_all_records(
         mongo_db: pymongo.database.Database,
-        mongo_fields: typing.Iterable[_MongoField], field_type: str) \
-        -> typing.Iterator[typing.Tuple[str, typing.Dict[str, typing.Any], str]]:
+        mongo_fields: Iterable[_MongoField], field_type: str) \
+        -> Iterator[Tuple[str, Dict[str, Any], str]]:
     db_collections = set(mongo_db.list_collection_names())
     for collection, field_name in mongo_fields:
         if collection not in db_collections:
@@ -108,8 +110,8 @@ def check_scoring_models(mongo_db: pymongo.database.Database) -> None:
 
 # TODO(cyrille): Deal with fields from proto which are unused in some collections.
 def _list_formatted_fields(
-        importers: typing.ItemsView[str, import_status.Importer],
-        field_format: options_pb2.StringFormat) -> typing.Iterator[_MongoField]:
+        importers: ItemsView[str, import_status.Importer],
+        field_format: options_pb2.StringFormat) -> Iterator[_MongoField]:
     for collection_name, importer in importers:
         if not importer.proto_type:
             continue
@@ -153,7 +155,7 @@ def check_urls(mongo_db: pymongo.database.Database) -> None:
                 type(exception).__name__, record.get('_id'), collection, url)
 
 
-def _get_variables_from(template: str) -> typing.Set[str]:
+def _get_variables_from(template: str) -> Set[str]:
     if '%' not in template:
         return set()
     # pylint: disable=protected-access

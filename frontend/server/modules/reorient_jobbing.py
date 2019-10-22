@@ -1,6 +1,6 @@
 """Module to advise the user to consider to reorient to a job with low qualification."""
 
-import typing
+from typing import List
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -52,7 +52,7 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
         if len(local_jobbing.reorient_jobbing_jobs) < 2:
             return scoring_base.NULL_EXPLAINED_SCORE
         score_modifier = 0
-        reasons: typing.List[str] = []
+        reasons: List[str] = []
 
         if project.details.passionate_level == project_pb2.LIFE_GOAL_JOB:
             score_modifier = -2

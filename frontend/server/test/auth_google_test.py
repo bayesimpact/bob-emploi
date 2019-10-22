@@ -57,13 +57,17 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
         self.assertEqual('pascal@bayes.org', auth_response['authenticatedUser']['profile']['email'])
         self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
         self.assertEqual('12345', auth_response['authenticatedUser']['googleId'])
+        self.assertFalse(auth_response['authenticatedUser'].get('hasPassword'))
         user_id = auth_response['authenticatedUser']['userId']
         self.assertEqual([user_id], [str(u['_id']) for u in self._user_db.user.find()])
 
     def test_when_user_already_exists(self, mock_verify_id_token: mock.MagicMock) -> None:
         """The user had previously signed up via email registration."""
 
-        self.authenticate_new_user(email='used@email.fr', password='psswd')
+        # Sign up via email registration.
+        user_id = self.authenticate_new_user(email='used@email.fr', password='psswd')
+
+        # Log in with Google SSO with the same email.
         mock_verify_id_token.return_value = {
             'iss': 'accounts.google.com',
             'email': 'used@email.fr',
@@ -72,7 +76,38 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
         response = self.app.post(
             '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
             content_type='application/json')
-        self.assertEqual(403, response.status_code)
+        auth_response = self.json_from_response(response)
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
+        self.assertEqual('12345', auth_response['authenticatedUser']['googleId'])
+        self.assertTrue(auth_response['authenticatedUser'].get('hasPassword'))
+        user_info = self.user_info_from_db(user_id)
+        self.assertEqual('12345', user_info['googleId'])
+
+    def test_when_user_already_exists_with_facebook(
+            self, mock_verify_id_token: mock.MagicMock) -> None:
+        """The user had previously signed up via Facebook registration."""
+
+        # Sign up via email registration.
+        user_id, unused_ = self.create_facebook_user_with_token(email='used@email.fr')
+
+        # Log in with Google SSO with the same email.
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'used@email.fr',
+            'sub': '12345',
+        }
+        response = self.app.post(
+            '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
+        self.assertEqual('12345', auth_response['authenticatedUser']['googleId'])
+        self.assertTrue(auth_response['authenticatedUser']['facebookId'])
+        user_info = self.user_info_from_db(user_id)
+        self.assertEqual('12345', user_info['googleId'])
+        self.assertTrue(user_info['facebookId'])
 
     def test_email_address_change(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Change the email address of a Google SSO user."""
@@ -218,7 +253,7 @@ class AuthenticateEndpointGoogleTestCase(base_test.ServerTestCase):
 
         auth_response = self.json_from_response(response)
 
-        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertTrue(auth_response.get('isNewUser'))
         self.assertEqual('Pascal', auth_response['authenticatedUser']['profile'].get('name'))
         self.assertEqual('pascal@bayes.org', auth_response['authenticatedUser']['profile']['email'])
         self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))

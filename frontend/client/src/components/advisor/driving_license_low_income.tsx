@@ -7,7 +7,7 @@ import {genderize, getEmailTemplates} from 'store/french'
 import vroomVroomImage from 'images/vroom-vroom-picto.jpg'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-driving-license.svg'
+import Picto from 'images/advices/picto-driving-license.svg'
 
 import {CardProps, CardWithContentProps, connectExpandedCardWithContent, EmailTemplate,
   ExpandableAction, ToolCard} from './base'
@@ -139,11 +139,8 @@ CardWithContentProps<bayes.bob.FrenchCity>> {
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.FrenchCity, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.FrenchCity, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
-const TakeAway = '3 étapes à suivre'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

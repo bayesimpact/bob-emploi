@@ -9,7 +9,10 @@
           "attributes": {
             "background-color": "#ffffff",
             "color": "#000000",
-            "font-family": "Arial, sans-serif"
+            "font-family": "Arial, sans-serif",
+            "passport": {
+              "id": "R2gwNYnJuap"
+            }
           },
           "children": [
             {
@@ -20,12 +23,19 @@
                 "padding": "20px 0px 20px 0px",
                 "padding-bottom": "12px",
                 "padding-top": "12px",
+                "passport": {
+                  "id": "XEO1N4anTv-"
+                },
                 "text-align": "center",
                 "vertical-align": "top"
               },
               "children": [
                 {
-                  "attributes": {},
+                  "attributes": {
+                    "passport": {
+                      "id": "yYS7sN-is9_"
+                    }
+                  },
                   "children": [
                     {
                       "attributes": {
@@ -38,10 +48,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "eETvqsvGgEC"
+                        }
                       },
                       "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"Marie\"}},</span></span></p>",
-                      "id": "H1EcZEA19f",
+                      "id": "zU444Kd7774A8",
                       "tagName": "mj-text"
                     },
                     {
@@ -55,10 +68,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "CRPX1GrE8MO"
+                        }
                       },
                       "content": "<p style=\"font-size: 18px; line-height: 1.38; margin: 10px 0; color: #1888ff;\"><b>De toute l’équipe, un grand merci&nbsp;!</b></p>",
-                      "id": "rkH5WN0k9G",
+                      "id": "MGf6vwhCZal2l",
                       "tagName": "mj-text"
                     },
                     {
@@ -72,10 +88,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "3oos1uwRkoW"
+                        }
                       },
                       "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\">Il y a un an vous aviez été parmi les premi{%if var:gender == \"FEMININE\" %}ère{%else%}er{%endif%}s à vous inscrire sur Bob&nbsp;!</p>",
-                      "id": "ByUqb4AJ9z",
+                      "id": "IJS9vO_Mcn-NH",
                       "tagName": "mj-text"
                     },
                     {
@@ -89,10 +108,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "IiIbW5kgudb"
+                        }
                       },
                       "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial,sans-serif; font-size:14px\">Avec le nouveau Bob, nous avons déjà aidé plus 130 000 personnes. Mais nous, c’est des<span>&nbsp;</span></span><span style=\"color:#000000\"><span style=\"font-family:Arial,sans-serif; font-size:14px\"><b>millions de personnes</b></span></span><span style=\"color:#000000; font-family:Arial,sans-serif; font-size:14px\"><span>&nbsp;</span>en recherche d’emploi qu’on veut aider et pour y arriver<span>&nbsp;</span></span><span style=\"color:#000000\"><span style=\"font-family:Arial,sans-serif; font-size:14px\"><b>on a besoin de vous&nbsp;!</b></span></span></p>",
-                      "id": "H1D9b401cf",
+                      "id": "QGb4THGMSa9M9",
                       "tagName": "mj-text"
                     },
                     {
@@ -106,10 +128,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "AYqLL9rmLda"
+                        }
                       },
                       "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><b>Pour nous donner un coup de main, c'est hyper simple :</b></p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial,sans-serif; font-size:14px\">Il vous suffit de <b>partager Bob</b>, et on prend le relais pour <b>aider vos proches</b> en recherche d’emploi.</span></p>",
-                      "id": "HyO9WNRk9G",
+                      "id": "zBKnOQhcd-ZED",
                       "tagName": "mj-text"
                     },
                     {
@@ -123,10 +148,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "-eCUj6YiyWI"
+                        }
                       },
                       "content": "<p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><a target=\"_blank\" href=\"mailto:?subject=%C3%87a%20m%27a%20fait%20penser%20%C3%A0%20toi&amp;body=Salut%2C%0D%0A%0D%0AEst-ce%20que%20tu%20connais%20Bob%20%3F%20C%27est%20un%20site%20qui%20propose%20de%20t%27aider%20dans%20ta%20recherche%20d%27emploi%20en%20te%20proposant%20un%20diagnostic%20et%20des%20conseils%20personnalis%C3%A9s.%20Tu%20verras%2C%20%C3%A7a%20vaut%20le%20coup%20%3A%20en%2015%20minutes%2C%20tu%20en%20sauras%20plus%20sur%20o%C3%B9%20tu%20en%20es%2C%20et%20ce%20que%20tu%20peux%20faire%20pour%20avancer%20plus%20efficacement.%20Et%20en%20plus%2C%20c%27est%20gratuit%20%21%0D%0A%0D%0Ahttps%3A%2F%2Fwww.bob-emploi.fr%2Finvite%23vm2m%0D%0A%0D%0AEn%20tous%20cas%2C%20bon%20courage%20pour%20la%20suite%2C%0D%0A%0D%0A{{var:firstName}}\"><span style=\"color:#1888ff\"><b>Partager Bob</b>, c’est&nbsp;<b>simple</b>&nbsp;comme un email</span></a> et<span>&nbsp;</span><b>ça aide vos proches à trouver du boulot</b>, on compte sur vous&nbsp;:</p>",
-                      "id": "SyFq-ER19M",
+                      "id": "ybSZUiAL7n0A7",
                       "tagName": "mj-text"
                     },
                     {
@@ -138,6 +166,7 @@
                         "href": "",
                         "padding": "10px 25px",
                         "passport": {
+                          "id": "QmQUOyGABKW5fG",
                           "image-id": 6001193
                         },
                         "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/2529n.jpeg",
@@ -145,32 +174,42 @@
                         "title": "",
                         "width": "600px"
                       },
-                      "id": "H15q-4AJ9G",
+                      "id": "IuUiBWIizkkCv",
                       "tagName": "mj-image"
                     }
                   ],
-                  "id": "SJm5ZN0J9G",
+                  "id": "Av5BXiu693mma",
                   "tagName": "mj-column"
                 }
               ],
-              "id": "SkG9ZN0Jqz",
+              "id": "7SaKAIEBQKDcB",
               "tagName": "mj-section"
             },
             {
               "attributes": {
                 "background-repeat": "repeat",
                 "padding": "20px 0",
+                "passport": {
+                  "id": "4E0gGca3z2Q"
+                },
                 "text-align": "center",
                 "vertical-align": "top"
               },
               "children": [
                 {
                   "attributes": {
+                    "passport": {
+                      "id": "1ZNVLXVz-n7"
+                    },
                     "vertical-align": "top"
                   },
                   "children": [
                     {
-                      "attributes": {},
+                      "attributes": {
+                        "passport": {
+                          "id": "XePE77TnqHT"
+                        }
+                      },
                       "children": [
                         {
                           "attributes": {
@@ -185,21 +224,27 @@
                             "padding-left": "0px",
                             "padding-right": "0px",
                             "padding-top": "0px",
-                            "passport": {},
+                            "passport": {
+                              "id": "8AsFsKusuNnVZb"
+                            },
                             "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/252yv.jpeg",
                             "target": "_blank",
                             "title": "",
                             "width": "266px"
                           },
-                          "id": "HkCq-VRk5G",
+                          "id": "GKB02L0XqiEuWh",
                           "tagName": "mj-image"
                         }
                       ],
-                      "id": "rJpqZE0yqM",
+                      "id": "04SNzwPM65Mx50",
                       "tagName": "mj-column"
                     },
                     {
-                      "attributes": {},
+                      "attributes": {
+                        "passport": {
+                          "id": "KnQEx6hXUMr"
+                        }
+                      },
                       "children": [
                         {
                           "attributes": {
@@ -214,21 +259,27 @@
                             "padding-left": "0px",
                             "padding-right": "0px",
                             "padding-top": "0px",
-                            "passport": {},
+                            "passport": {
+                              "id": "_AAdl_OK4Mw2lF"
+                            },
                             "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/252yg.jpeg",
                             "target": "_blank",
                             "title": "",
                             "width": "266px"
                           },
-                          "id": "HJxgcZNCyqG",
+                          "id": "noDuhDB1i3-IJZ",
                           "tagName": "mj-image"
                         }
                       ],
-                      "id": "r1yl9-NRJ9G",
+                      "id": "yRi0Hct9f-tLPO",
                       "tagName": "mj-column"
                     },
                     {
-                      "attributes": {},
+                      "attributes": {
+                        "passport": {
+                          "id": "mh9QoR2ZFKn"
+                        }
+                      },
                       "children": [
                         {
                           "attributes": {
@@ -243,25 +294,27 @@
                             "padding-left": "0px",
                             "padding-right": "0px",
                             "padding-top": "0px",
-                            "passport": {},
+                            "passport": {
+                              "id": "NAj_Ur71EdNaux"
+                            },
                             "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/55xj/252y6.jpeg",
                             "target": "_blank",
                             "title": "",
                             "width": "266px"
                           },
-                          "id": "ryzxqZV019G",
+                          "id": "PwAKuk_BZ1DvcC",
                           "tagName": "mj-image"
                         }
                       ],
-                      "id": "B1ZecW40Jqf",
+                      "id": "DEoQZnd0CWZf1E",
                       "tagName": "mj-column"
                     }
                   ],
-                  "id": "HJ3qZNAJqG",
+                  "id": "i0xKKOfXMl_Wl",
                   "tagName": "mj-group"
                 }
               ],
-              "id": "Hyj9W4RJcz",
+              "id": "3yS-xsClTzYql",
               "tagName": "mj-section"
             },
             {
@@ -272,12 +325,19 @@
                 "full-width": "full-width",
                 "padding": "20px 0",
                 "padding-bottom": "0px",
+                "passport": {
+                  "id": "t0RZIkoQzD0"
+                },
                 "text-align": "center",
                 "vertical-align": "top"
               },
               "children": [
                 {
-                  "attributes": {},
+                  "attributes": {
+                    "passport": {
+                      "id": "itYZzmIWNiJ"
+                    }
+                  },
                   "children": [
                     {
                       "attributes": {
@@ -290,10 +350,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "epjPdpPoVWJ"
+                        }
                       },
-                      "content": "<p style=\"font-size: 14px; margin: 10px 0;\">À très vite,</p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\">&nbsp;</p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Margaux et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
-                      "id": "BySe9WN019z",
+                      "content": "<p style=\"font-size: 14px; margin: 10px 0;\">À très vite,</p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"> </p><p style=\"font-size: 14px; line-height: 1.38; margin: 10px 0;\"><span style=\"color:#6b6b68\"><span style=\"font-size:14.6667px\">Joanna et l'équipe de&nbsp;Bob&nbsp;</span></span></p>",
+                      "id": "YC3JxgXyjtnzHR",
                       "tagName": "mj-text"
                     },
                     {
@@ -308,13 +371,15 @@
                         "padding-left": "0px",
                         "padding-right": "0px",
                         "padding-top": "0px",
-                        "passport": {},
+                        "passport": {
+                          "id": "_TLGFqYwn252yy"
+                        },
                         "src": "https://www.bob-emploi.fr/assets/mail/bob-logo.png",
                         "target": "_blank",
                         "title": "",
                         "width": "124px"
                       },
-                      "id": "SJUl9W4A15f",
+                      "id": "QQGXgLWbVxxWUv",
                       "tagName": "mj-image"
                     },
                     {
@@ -328,10 +393,13 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "0px"
+                        "padding-top": "0px",
+                        "passport": {
+                          "id": "p7QFohQw0an"
+                        }
                       },
                       "content": "<p style=\"font-size: 14px; margin: 10px 0;\">PS :&nbsp;<span>&nbsp;</span><span style=\"font-size:14px\"><span style=\"color:#222222; font-family:Arial; text-decoration:none\">Oscar Wilde disait : “Il faut toujours <b>viser la lune</b>, car même en cas d'échec, on atterrit dans les étoiles”</span></span><span>&nbsp;</span></p>",
-                      "id": "HyPxqZERkqz",
+                      "id": "92JeIfHE3R5FIL",
                       "tagName": "mj-text"
                     },
                     {
@@ -345,29 +413,32 @@
                         "padding-bottom": "0px",
                         "padding-left": "0px",
                         "padding-right": "0px",
-                        "padding-top": "15px"
+                        "padding-top": "15px",
+                        "passport": {
+                          "id": "RU2_xZhRnX1"
+                        }
                       },
                       "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr\">Bob</a>. <a target=\"_blank\" href=\"{{var:unsubscribeLink}}\"><u>Cliquez ici</u></a> si vous souhaitez vous désinscrire.</span></p>",
-                      "id": "BJOl5Z4Cycf",
+                      "id": "z0zssmHZEXjs2_",
                       "tagName": "mj-text"
                     }
                   ],
-                  "id": "HyExcZNR15z",
+                  "id": "ztGiadMw2rJBvp",
                   "tagName": "mj-column"
                 }
               ],
-              "id": "rJ7x9-4Ay5M",
+              "id": "-o4Lr9ICv0VTrj",
               "tagName": "mj-section"
             }
           ],
-          "id": "H1WcZVC1qz",
+          "id": "I9QHAKUCSKq6k",
           "tagName": "mj-container"
         }
       ],
-      "id": "Syg5b4Akcf",
+      "id": "f5Pn74WVrfpXs",
       "tagName": "mj-body"
     }
   ],
-  "id": "SJqW40yqz",
+  "id": "hyJJAlYCoCkvh",
   "tagName": "mjml"
 }

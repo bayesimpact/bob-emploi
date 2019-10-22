@@ -17,6 +17,7 @@ import re
 import signal
 import sys
 import typing
+from typing import Any, Dict, Iterator, List
 from urllib import parse
 
 from google.protobuf import json_format
@@ -79,7 +80,7 @@ _T = typing.TypeVar('_T')
 
 
 def _break_on_signal(
-        signums: typing.List[signal.Signals], iterator: typing.Iterator[_T]) -> typing.Iterator[_T]:
+        signums: List[signal.Signals], iterator: Iterator[_T]) -> Iterator[_T]:
     """Wrapper for an iterator to stop iterating when kernal signal is received.
 
     Args:
@@ -91,7 +92,7 @@ def _break_on_signal(
 
     signals = []
 
-    def _record_signal(signum: signal.Signals, unused_frame: typing.Any) -> None:
+    def _record_signal(signum: signal.Signals, unused_frame: Any) -> None:
         # TODO(pascal): Update the report email to write that the blast was
         # interrupted.
         signals.append(signum)
@@ -104,7 +105,7 @@ def _break_on_signal(
             break
 
 
-def _send_reports(count: int, errors: typing.List[str]) -> None:
+def _send_reports(count: int, errors: List[str]) -> None:
     logging.warning('%d emails sent.', count)
 
     report.notify_slack(
@@ -125,7 +126,7 @@ def main(
         'registeredAt': {'$gt': '2018-01-01'},
     }
     count = 0
-    user_iterator: typing.Iterator[typing.Dict[str, typing.Any]] = user_db.find(
+    user_iterator: Iterator[Dict[str, Any]] = user_db.find(
         query,
         (
             '_id',
@@ -135,7 +136,7 @@ def main(
             'profile.lastName',
             'profile.name',
         ))
-    errors: typing.List[str] = []
+    errors: List[str] = []
     registered_before = (now - datetime.timedelta(days=int(days_before_sending)))\
         .replace(hour=_DAY_CUT_UTC_HOUR, minute=0, second=0, microsecond=0)
     for user_in_db in _break_on_signal([signal.SIGTERM], user_iterator):

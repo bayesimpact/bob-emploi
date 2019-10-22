@@ -13,6 +13,18 @@ interface LoadableChunk {
 const isDefaultExport = <T>(someExport: T | {default: T}): someExport is {default: T} =>
   (someExport as {default: T}).default !== undefined
 
+function retryLoader<T>(loader: () => Promise<T>, delayMillisecs: number): Promise<T> {
+  return new Promise((resolve, reject): void => {
+    loader().then(resolve).catch((error): void => {
+      if (error.name === 'ChunkLoadError') {
+        setTimeout(() => retryLoader(loader, delayMillisecs).then(resolve, reject))
+        return
+      }
+      reject(error)
+    })
+  })
+}
+
 // A class to load webpack chunks one after the other. Once the first one is loaded, all of them
 // will follow asynchronously, waiting for some delay between two loads.
 // Parameters:
@@ -36,7 +48,7 @@ class WebpackChunksLoader {
 
   private WaitingComponent: React.ComponentType<LoadingComponentProps>
 
-  private chunkLoadingTimeout: ReturnType<typeof setTimeout>
+  private chunkLoadingTimeout?: number
 
   // Adds a chunk to be loaded. A chunk is represented by a name (which must be used as
   //  webpackChunkName in the dynamic import) and a LoadableComponent inside that chunk.
@@ -68,7 +80,7 @@ class WebpackChunksLoader {
       this.loadedChunks.add(chunkName)
       clearTimeout(this.chunkLoadingTimeout)
       if (this.chunksToLoad.length) {
-        this.chunkLoadingTimeout = setTimeout(
+        this.chunkLoadingTimeout = window.setTimeout(
           (): void => this.chunksToLoad[0] && this.chunksToLoad[0].Component.preload(), this.delay)
       }
       return imported
@@ -88,7 +100,7 @@ class WebpackChunksLoader {
     loader: () => Promise<React.ComponentType<PropsType>|{default: React.ComponentType<PropsType>}>,
     chunkName: string, priority: number): LoadableComponentType<PropsType> => {
     const Component = Loadable({
-      loader: (): Promise<React.ComponentType<PropsType>> => loader().
+      loader: (): Promise<React.ComponentType<PropsType>> => retryLoader(loader, this.delay).
         then((module): React.ComponentType<PropsType> => {
           if (isDefaultExport(module)) {
             return module.default

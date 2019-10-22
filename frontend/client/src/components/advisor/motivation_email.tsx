@@ -4,9 +4,9 @@ import PropTypes from 'prop-types'
 import {getEmailTemplates} from 'store/french'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-motivation-email.svg'
+import Picto from 'images/advices/picto-motivation-email.svg'
 
-import {CardProps, EmailTemplate, MethodSuggestionList, TakeAwayTemplate, WithAdvice} from './base'
+import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
 
 
 class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
@@ -35,18 +35,4 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 }
 
 
-class TakeAway extends React.PureComponent<WithAdvice> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {advice: {adviceId}} = this.props
-    return <TakeAwayTemplate found="modèle" list={getEmailTemplates()[adviceId]} />
-  }
-}
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

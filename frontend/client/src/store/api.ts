@@ -2,7 +2,7 @@ function cleanHtmlError(htmlErrorPage: string): string {
   const page = document.createElement('html')
   page.innerHTML = htmlErrorPage
   const content = page.getElementsByTagName('P') as HTMLCollectionOf<HTMLElement>
-  return content.length && content[0].textContent || page.textContent
+  return content.length && content[0].textContent || page.textContent || ''
 }
 
 interface HTTPRequest {
@@ -93,7 +93,7 @@ function adviceTipsGet(
   authToken: string): Promise<readonly bayes.bob.Action[]> {
   return getJson<bayes.bob.AdviceTips>(
     `/api/advice/tips/${adviceId}/${userId}/${projectId}`, authToken).
-    then((response): readonly bayes.bob.Action[] => response.tips)
+    then((response): readonly bayes.bob.Action[] => response.tips || [])
 }
 
 function convertUserWithAdviceSelectionFromProtoPost<T>(proto: string): Promise<T> {
@@ -185,7 +185,7 @@ Promise<bayes.bob.User> {
 
 function onboardingDiagnosePost(data: bayes.bob.QuickDiagnosticRequest, authToken: string):
 Promise<bayes.bob.QuickDiagnostic> {
-  const {userId, projects: [{projectId = ''} = {}] = []} = data.user
+  const {userId, projects: [{projectId = ''} = {}] = []} = data.user || {}
   const path = projectId ? `/api/user/${userId}/update-and-quick-diagnostic/project/${projectId}` :
     `/api/user/${userId}/update-and-quick-diagnostic`
   return postJson(path, data, true, authToken)
@@ -233,12 +233,37 @@ function strategyPost(
     `/api/user/${userId}/project/${projectId}/strategy/${strategyId}`, strategy, true, authToken)
 }
 
+function supportTicketPost(userId: string, authToken: string, ticketId: string): Promise<{}> {
+  return postJson(`/api/support/${userId}/${ticketId}`, undefined, false, authToken)
+}
+
 function userDelete(user: bayes.bob.User, authToken: string): Promise<bayes.bob.User> {
   return deleteJson('/api/user', user, authToken)
 }
 
+// Authenticate a user.
+// As opposed to other function in this module, this one differentiates client errors (bad auth
+// token) and server errors (HTTP 500 and such). In the latter case, it actually returns a
+// hand made custom response so that the callers can handle it differently.
 function userAuthenticate(authRequest: bayes.bob.AuthRequest): Promise<bayes.bob.AuthResponse> {
-  return postJson('/api/user/authenticate', authRequest, true)
+  return postJson('/api/user/authenticate', authRequest, false).
+    then((response: HTTPResponse): Promise<bayes.bob.AuthResponse> => {
+      if (response.status >= 500) {
+        return response.text().then((errorMessage: string): bayes.bob.AuthResponse => {
+          return {
+            errorMessage: cleanHtmlError(errorMessage),
+            isServerError: true,
+          }
+        })
+      }
+      if (response.status === 498) {
+        return response.text().then((errorMessage: string): bayes.bob.AuthResponse => ({
+          errorMessage: cleanHtmlError(errorMessage),
+          hasTokenExpired: true,
+        }))
+      }
+      return handleJsonResponse<bayes.bob.AuthResponse>(response)
+    })
 }
 
 function feedbackPost(feedback: bayes.bob.Feedback, authToken: string): Promise<{}> {
@@ -279,6 +304,7 @@ export {
   projectPost,
   resetPasswordPost,
   strategyPost,
+  supportTicketPost,
   useCaseDistributionPost,
   userAuthenticate,
   userDelete,

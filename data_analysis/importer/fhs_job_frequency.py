@@ -20,7 +20,7 @@ import collections
 import json
 from os import path
 import sys
-import typing
+from typing import Dict
 
 import numpy
 import pandas
@@ -57,7 +57,7 @@ def main(fhs_folder: str, json_output: str) -> None:
 
     # If we need to do that often we could replace this code by a simple Map
     # Reduce to use multiple threads or multiple computers.
-    job_counts: typing.Dict[str, int] = collections.defaultdict(int)
+    job_counts: Dict[str, int] = collections.defaultdict(int)
     for de_dict in tqdm.tqdm(de_rows, total=total, file=sys.stdout):
         if de_dict[_END_DATE_FIELD]:
             continue

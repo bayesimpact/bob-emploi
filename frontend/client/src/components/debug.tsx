@@ -25,7 +25,7 @@ const dropComputedFields = (project: bayes.bob.Project): bayes.bob.Project => {
 
 const dropUserProjectsComputedFields = (user: bayes.bob.User): bayes.bob.User => ({
   ...user,
-  projects: user.projects.map(dropComputedFields),
+  projects: (user.projects || []).map(dropComputedFields),
 })
 
 
@@ -34,6 +34,7 @@ interface DebugModalConnectedProps {
   keepProps?: {
     facebookId?: string
     googleId?: string
+    linkedInId?: string
     peConnectId?: string
     userId?: string
   }
@@ -67,6 +68,7 @@ class DebugModalBase extends React.PureComponent<DebugModalProps, DebugModalStat
     keepProps: PropTypes.shape({
       facebookId: PropTypes.string,
       googleId: PropTypes.string,
+      linkedInId: PropTypes.string,
       peConnectId: PropTypes.string,
       userId: PropTypes.string,
     }),
@@ -81,7 +83,7 @@ class DebugModalBase extends React.PureComponent<DebugModalProps, DebugModalStat
 
   public static getDerivedStateFromProps(
     {isShown, user}: DebugModalProps, {isShown: wasShown}: DebugModalState):
-    Partial<DebugModalState> {
+    Partial<DebugModalState>|null {
     if (!isShown === !wasShown) {
       return null
     }
@@ -117,7 +119,7 @@ class DebugModalBase extends React.PureComponent<DebugModalProps, DebugModalStat
     }
 
     // Delete fields starting with "_".
-    const fieldsToDelete = []
+    const fieldsToDelete: string[] = []
     for (const key in user) {
       if (key && key[0] === '_') {
         fieldsToDelete.push(key)
@@ -171,10 +173,10 @@ class DebugModalBase extends React.PureComponent<DebugModalProps, DebugModalStat
   }
 }
 export const DebugModal = connect(({user}: RootState): DebugModalConnectedProps => {
-  const {facebookId, googleId, peConnectId, userId, ...userProps} = user
+  const {facebookId, googleId, linkedInId, peConnectId, userId, ...userProps} = user
   return {
-    email: user.profile.email,
-    keepProps: {facebookId, googleId, peConnectId, userId},
+    email: user.profile && user.profile.email,
+    keepProps: {facebookId, googleId, linkedInId, peConnectId, userId},
     user: userProps,
   }
 })(DebugModalBase)

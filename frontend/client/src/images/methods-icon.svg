@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="22px" viewBox="0 0 18 22" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <title>met-inactive</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Mobile" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Stategy-page-(started)---objectives---mobile" transform="translate(-191.000000, -756.000000)" fill="#9596A0">
+            <g id="met-inactive" transform="translate(191.000000, 756.000000)">
+                <path d="M2,7 L2,6 C2,5.448 2.449,5 3,5 C3.551,5 4,5.448 4,6 L4,7 L2,7 Z M4,16.697 L3,18.197 L2,16.697 L2,9 L4,9 L4,16.697 Z M3,3 C1.346,3 0,4.345 0,6 L0,17.302 L3,21.802 L6,17.302 L6,6 C6,4.345 4.654,3 3,3 L3,3 Z" id="Fill-1333"></path>
+                <path d="M10,20 L10,17 L13,17 L13,15 L10,15 L10,12 L13,12 L13,10 L10,10 L10,7 L13,7 L13,5 L10,5 L10,2 L16,2 L16.001,20 L10,20 Z M16,0 L10,0 C8.897,0 8,0.898 8,2 L8,20 C8,21.102 8.897,22 10,22 L16,22 C17.103,22 18,21.102 18,20 L18,2 C18,0.898 17.103,0 16,0 L16,0 Z" id="Fill-1334"></path>
+            </g>
+        </g>
+    </g>
+</svg>

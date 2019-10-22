@@ -1,0 +1,29 @@
+{
+  "bravo": {
+  },
+  "enhance-methods-to-interview": {
+    "metricDetails": "Préparer votre CV, trouver des offres d'emploi ou proposer une candidature, décrocher un entretien et enfin une proposition d'embauche.",
+    "metricTitle": "Méthode de recherche"
+  },
+  "find-what-you-like": {
+    "metricDetails": "Travailler dans un domaine qui vous motive est plus agréable mais également plus efficace. Les recruteurs le savent et la motivation est donc importante pour être recruté.",
+    "metricDetailsFeminine": "Travailler dans un domaine qui vous motive est plus agréable mais également plus efficace. Les recruteurs le savent et la motivation est donc importante pour être recrutée.",
+    "metricTitle": "Motivation pour le métier"
+  },
+  "missing-diploma": {
+    "metricDetails": "Une formation validée par une certification ou diplôme peut faire une grosse différence pour les recruteurs. C'est même obligatoire pour certains métiers.",
+    "metricTitle": "Diplômes"
+  },
+  "start-your-search": {
+    "metricDetails": "Commencer sa recherche d'emploi implique de regarder des informations sur le marché du travail et le métier cible. On peut commencer sa recherche par prendre contact avec quelqu'un, ou par définir son projet. Cela ne veut pas forcément dire envoyer des candidatures.",
+    "metricTitle": "Recherche commencée"
+  },
+  "stuck-in-village": {
+    "metricDetails": "Être mobile c'est pouvoir accéder à plus d'opportunités d'emploi.",
+    "metricTitle": "Mobilité"
+  },
+  "stuck-market": {
+    "metricDetails": "Le marché du travail considère les offres d'emploi et les recrutements dans le département mais également les autres candidats qui peuvent être vos concurrents. Un \"bon marché\" pour vous est un marché où il y a plus d'opportunités d'emploi que de concurrents.",
+    "metricTitle": "Marché"
+  }
+}

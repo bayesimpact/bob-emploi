@@ -9,24 +9,29 @@ import PropTypes from 'prop-types'
 import Radium from 'radium'
 import React from 'react'
 import {connect} from 'react-redux'
+import {Link} from 'react-router-dom'
+import VisibilitySensor from 'react-visibility-sensor'
 
-import {DispatchAllActions, RootState, changeSubmetricExpansion,
-  fetchApplicationModes, followJobOffersLinkAction, openStatsPageAction} from 'store/actions'
+import {DispatchAllActions, RomeJobGroup, RootState, changeSubmetricExpansion,
+  fetchApplicationModes, followJobOffersLinkAction} from 'store/actions'
 import {clearEmoji, clearMarkup} from 'store/clean_text'
 import {YouChooser, inDepartement, lowerFirstLetter, vouvoyer} from 'store/french'
-import {getApplicationModeText, getApplicationModes, getIMTURL, getPEJobBoardURL} from 'store/job'
+import {genderizeJob, getApplicationModeText, getApplicationModes,
+  getPEJobBoardURL} from 'store/job'
 import {Score, ScoreComponent, colorFromPercent, computeBobScore} from 'store/score'
-import {isLateSignupEnabled} from 'store/user'
 
 import categories from 'components/advisor/data/categories.json'
 import {FastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
+import {ModifyProjectModal} from 'components/navigation'
 import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
   WaitingElement} from 'components/phylactery'
-import {RadiumExternalLink} from 'components/radium'
+import {RadiumExternalLink, SmartLink} from 'components/radium'
 import {SignUpBanner} from 'components/pages/signup'
-import {BobScoreCircle, Button, PercentBar, PieChart, Markdown,
+import {CategoriesTrain} from 'components/stats_charts'
+import {BobScoreCircle, Button, GrowingNumber, JobGroupCoverImage, PercentBar, PieChart, Markdown,
   SmoothTransitions, UpDownIcon, colorToAlpha, colorToComponents} from 'components/theme'
+import {STATS_PAGE} from 'components/url'
 import bobHeadImage from 'images/bob-head.svg'
 import missingDiplomaImage from 'images/missing-diploma.png'
 import strongCompetitionImage from 'images/strong-competition.svg'
@@ -38,10 +43,20 @@ import {Strategies} from './strategy'
 import {BobModal, BobTalk} from './speech'
 
 
+const emptyArray = [] as const
+
+
 const categorySets = _mapValues(categories, (list: string[]): Set<string> => new Set(list))
+
+const APPLICATION_MODES_VC_CATEGORIES = new Set([
+  'bravo',
+  'enhance-methods-to-interview',
+  'start-your-search',
+])
 
 const SECTION_COLOR = colorToAlpha(colors.DARK, .5)
 
+// TODO(cyrille): Use HelpDeskLink component here.
 const defaultDiagnosticSentences = (userYou: YouChooser): string => `Nous ne sommes pas encore
 capable de ${userYou('te', 'vous')} proposer une analyse globale de ${userYou('ta', 'votre')}
 situation. Certaines informations sur ${userYou('ton', 'votre')} marché ne sont pas encore
@@ -85,6 +100,9 @@ function svg2image(svgDom, mimeType, qualityOption): Promise<Gauge> {
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    return Promise.resolve({})
+  }
   ctx.fillStyle = '#fff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
@@ -208,7 +226,7 @@ class SubmetricDropDownBase extends React.PureComponent<SubmetricDropDownProps> 
     const {advices, children, isAlwaysExpanded, isDefined, isFirstSubmetric,
       makeAdviceLink, percent, submetricsExpansion, style, text, title, topic,
       userYou} = this.props
-    const isExpanded = isAlwaysExpanded || submetricsExpansion && submetricsExpansion[topic]
+    const isExpanded = !!(isAlwaysExpanded || submetricsExpansion && submetricsExpansion[topic])
     const border = `1px solid ${colors.NEW_GREY}`
     const containerStyle: React.CSSProperties = {
       borderBottom: isMobileVersion ? border : 'initial',
@@ -248,7 +266,7 @@ class SubmetricDropDownBase extends React.PureComponent<SubmetricDropDownProps> 
     return <div style={containerStyle}>
       <div
         style={headerStyle}
-        onClick={isAlwaysExpanded ? null : this.handleExpansionChange(isExpanded)}>
+        onClick={isAlwaysExpanded ? undefined : this.handleExpansionChange(isExpanded)}>
         <span>{title}</span>
         <div style={{flex: 1}} />
         <PercentBar
@@ -386,7 +404,7 @@ class SubmetricScore extends React.PureComponent<SubmetricScoreProps, SubmetricS
         onMouseLeave={this.handleShowDetails(false)}>
         <PieChart
           backgroundColor={colors.MODAL_PROJECT_GREY}
-          percentage={percent} style={pieChartStyle} radius={size} strokeWidth={size / 6}>
+          percentage={percent || 0} style={pieChartStyle} radius={size} strokeWidth={size / 6}>
           <img src={icon} alt={shortTitle} />
         </PieChart>
       </div>
@@ -470,9 +488,8 @@ class DiagnosticMetrics extends React.PureComponent<DiagnosticMetricsProps> {
     userYou: PropTypes.func,
   }
 
-  // TODO(cyrille): Drop the topic id, and replace with something more user-friendly.
-  private makeAdviceLink = _memoize((topic: string): ((a: string) => string) =>
-    (adviceId: string): string => this.props.makeAdviceLink(adviceId, topic))
+  private makeAdviceLink = (adviceId: string): string =>
+    this.props.makeAdviceLink(adviceId, 'conseil')
 
   public render(): React.ReactNode {
     const {advices = [], components, style, topicChildren, userYou = vouvoyer} = this.props
@@ -486,7 +503,7 @@ class DiagnosticMetrics extends React.PureComponent<DiagnosticMetricsProps> {
         map((component, index): React.ReactNode => {
           const {isAlwaysExpanded, isDefined, isEnticing, percent, text, title, topic} = component
           return <SubmetricDropDown
-            key={topic} makeAdviceLink={this.makeAdviceLink(topic)}
+            key={topic} makeAdviceLink={this.makeAdviceLink}
             style={{marginTop: index && !isMobileVersion ? 40 : 0}}
             isFirstSubmetric={!index} title={title(userYou)}
             isAlwaysExpanded={isAlwaysExpanded || (!isMobileVersion && !isEnticing)}
@@ -604,6 +621,13 @@ class SideLink extends React.PureComponent<SideLinkProps> {
     </RadiumExternalLink>
   }
 }
+
+
+function hasRomeId(jobGroup?: bayes.bob.JobGroup): jobGroup is RomeJobGroup {
+  return !!(jobGroup && jobGroup.romeId)
+}
+
+
 interface VisualCardConnectedProps {
   jobGroupInfo: bayes.bob.JobGroup
 }
@@ -643,8 +667,9 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
 
   public componentDidMount(): void {
     const {category, dispatch, jobGroupInfo: {applicationModes},
-      project: {targetJob: {jobGroup}}} = this.props
-    if (category === 'enhance-methods-to-interview' && !applicationModes) {
+      project: {targetJob: {jobGroup = undefined} = {}}} = this.props
+    if (!applicationModes && category && APPLICATION_MODES_VC_CATEGORIES.has(category)
+      && hasRomeId(jobGroup)) {
       dispatch(fetchApplicationModes(jobGroup))
     }
   }
@@ -696,8 +721,9 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
     </div>
   }
 
-  private renderEnhanceMethodsToInterview(): React.ReactNode {
-    const {jobGroupInfo, project: {city, targetJob: {jobGroup: {name}}}, style} = this.props
+  private renderApplicationModes(): React.ReactNode {
+    const {jobGroupInfo, project: {city, targetJob: {jobGroup: {name = ''} = {}} = {}}, style} =
+      this.props
     if (!jobGroupInfo.applicationModes) {
       return null
     }
@@ -735,7 +761,7 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
     }
     return <div style={containerStyle}>
       <h2 style={titleStyle}>
-        Recrutement en {lowerFirstLetter(name)} {inDepartement(city) || null}
+        Recrutement en {lowerFirstLetter(name)} {city && inDepartement(city) || null}
       </h2>
       <div style={{alignItems: 'center', display: 'flex', marginBottom: 10}}>
         {new Array(4).fill(undefined).map((unused, index): React.ReactNode =>
@@ -780,8 +806,8 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
     if (category === 'missing-diploma') {
       return this.renderMissingDiploma()
     }
-    if (category === 'enhance-methods-to-interview') {
-      return this.renderEnhanceMethodsToInterview()
+    if (category && APPLICATION_MODES_VC_CATEGORIES.has(category)) {
+      return this.renderApplicationModes()
     }
     return null
   }
@@ -789,9 +815,9 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
 const BobThinksVisualCard = connect(
   (
     {app: {applicationModes = {}}}: RootState,
-    {project: {targetJob: {jobGroup: {romeId}}}}: VisualCardConfig):
+    {project: {targetJob: {jobGroup: {romeId = undefined} = {}} = {}}}: VisualCardConfig):
   VisualCardConnectedProps => ({
-    jobGroupInfo: {applicationModes: applicationModes[romeId]},
+    jobGroupInfo: {applicationModes: romeId ? applicationModes[romeId] : undefined},
   }))(BobThinksVisualCardBase)
 
 
@@ -840,7 +866,6 @@ interface ScoreSectionProps {
 }
 
 
-// TODO(marielaure): Animate the score.
 class FlatScoreSection extends React.PureComponent<ScoreSectionProps> {
   public static propTypes = {
     maxBarLength: PropTypes.number.isRequired,
@@ -857,8 +882,22 @@ class FlatScoreSection extends React.PureComponent<ScoreSectionProps> {
     strokeWidth: 4,
   }
 
+  public state = {
+    hasStartedGrowing: false,
+  }
+
+  private startGrowing = (isVisible: boolean): void => {
+    if (!isVisible) {
+      return
+    }
+    this.setState({hasStartedGrowing: true})
+  }
+
   public render(): React.ReactNode {
     const {maxBarLength, score: {color, percent}, strokeWidth, style} = this.props
+    const {hasStartedGrowing} = this.state
+    const durationMillisec = 1000
+    const percentColor = !hasStartedGrowing ? colors.RED_PINK : color
     const containerStyle: React.CSSProperties = {
       alignItems: 'center',
       display: 'flex',
@@ -867,34 +906,48 @@ class FlatScoreSection extends React.PureComponent<ScoreSectionProps> {
       textAlign: 'left',
       ...style,
     }
-    return <div style={containerStyle}>
-      <div style={{display: 'flex', flexDirection: 'column', paddingTop: 10}}>
-        <div style={{fontSize: 16, fontWeight: 900}}>Score global</div>
-        <div style={{width: maxBarLength}}>
-          <svg fill="none" viewBox={`0 0 ${maxBarLength} 30`}>
-            <g strokeLinecap="round">
-              <path
-                stroke={colors.SILVER}
-                d={`M ${strokeWidth} 10 H ${maxBarLength - strokeWidth}`} opacity={0.8}
-                strokeWidth={strokeWidth} />
-              <path
-                stroke={color}
-                d={`M ${strokeWidth} 10 H ${percent * maxBarLength / 100}`}
-                strokeWidth={2 * strokeWidth}
-              />
-            </g>
-          </svg>
+    const transitionStyle: React.CSSProperties = {
+      transition: `stroke ${durationMillisec}ms linear,
+        stroke-dashoffset ${durationMillisec}ms linear`,
+    }
+    const barLength = percent * maxBarLength / 100
+    return <VisibilitySensor
+      active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
+      onChange={this.startGrowing}>
+      <div style={containerStyle}>
+        <div style={{display: 'flex', flexDirection: 'column', paddingTop: 10}}>
+          <div style={{fontSize: 16, fontWeight: 900}}>Score global</div>
+          <div style={{width: maxBarLength}}>
+            <svg fill="none" viewBox={`0 0 ${maxBarLength} 30`}>
+              <g strokeLinecap="round">
+                <path
+                  stroke={colors.SILVER}
+                  d={`M ${strokeWidth} 10 H ${maxBarLength - strokeWidth}`} opacity={0.8}
+                  strokeWidth={strokeWidth} />
+                <path
+                  stroke={percentColor}
+                  style={transitionStyle}
+                  d={`M ${strokeWidth} 10 H ${percent * maxBarLength / 100}`}
+                  strokeDashoffset={hasStartedGrowing ? 0 : barLength}
+                  strokeDasharray={barLength}
+                  strokeWidth={2 * strokeWidth}
+                />
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div style={{fontSize: 22, fontWeight: 900}}>
+          <GrowingNumber durationMillisec={durationMillisec} number={percent} isSteady={true} />%
         </div>
       </div>
-      <div style={{fontSize: 22, fontWeight: 900}}>{`${percent}%`}</div>
-    </div>
+    </VisibilitySensor>
   }
 }
 
 
 interface PdfDownloadLinkProps {
   diagnosticData: bayes.bob.Diagnostic
-  gaugeRef?: React.RefObject<SVGSVGElement>
+  gaugeRef: React.RefObject<SVGSVGElement>
   onDownloadAsPdf?: () => void
   style?: React.CSSProperties
   userYou: YouChooser
@@ -904,7 +957,7 @@ interface PdfDownloadLinkProps {
 class PdfDownloadLinkBase extends React.PureComponent<PdfDownloadLinkProps> {
   public static propTypes = {
     diagnosticData: PropTypes.object,
-    gaugeRef: PropTypes.object,
+    gaugeRef: PropTypes.object.isRequired,
     onDownloadAsPdf: PropTypes.func,
     style: PropTypes.object,
     userYou: PropTypes.func.isRequired,
@@ -916,6 +969,9 @@ class PdfDownloadLinkBase extends React.PureComponent<PdfDownloadLinkProps> {
 
   private createPdf = ({gaugeDataURL, gaugeWidth, gaugeHeight}): void => {
     const {diagnosticData, onDownloadAsPdf, userYou} = this.props
+    if (!onDownloadAsPdf) {
+      return
+    }
     const {components, percent, shortTitle, title} = computeBobScore(diagnosticData)
     const doc = new jsPDF({format: 'a4', orientation: 'landscape', unit: 'cm'})
 
@@ -932,8 +988,9 @@ class PdfDownloadLinkBase extends React.PureComponent<PdfDownloadLinkProps> {
     doc.setFontType('bold')
     doc.text(`${percent}%`, centerWidth, 4.2, 'center')
     doc.setFontSize(22)
-    if (shortTitle || title) {
-      doc.text(clearEmoji(clearMarkup(shortTitle || title)), centerWidth, 5.5, 'center')
+    const bestTitle = shortTitle || title
+    if (bestTitle) {
+      doc.text(clearEmoji(clearMarkup(bestTitle)), centerWidth, 5.5, 'center')
     }
     doc.setFontType('normal')
 
@@ -1031,12 +1088,16 @@ class BalancedTitle extends React.PureComponent<{}, {lineWidth: number}> {
     lineWidth: 0,
   }
 
-  private handleHiddenTitle = (dom: HTMLDivElement): void =>
-    dom && this.setState({
-      lineWidth:
-        // Target width is that of in-flow div, which is dom's grand-parent.
-        dom.clientWidth / Math.ceil(dom.clientWidth / dom.parentElement.parentElement.clientWidth),
+  private handleHiddenTitle = (dom: HTMLDivElement|null): void => {
+    if (!dom) {
+      return
+    }
+    // Target width is that of in-flow div, which is dom's grand-parent.
+    const {clientWidth} = dom && dom.parentElement && dom.parentElement.parentElement || {}
+    clientWidth && this.setState({
+      lineWidth: dom.clientWidth / Math.ceil(dom.clientWidth / clientWidth),
     })
+  }
 
   public render(): React.ReactNode {
     const {children} = this.props
@@ -1057,6 +1118,78 @@ class BalancedTitle extends React.PureComponent<{}, {lineWidth: number}> {
 }
 
 
+interface BobScoreProps {
+  gaugeRef?: React.RefObject<SVGSVGElement>
+  isAnimated?: boolean
+  isTitleShown?: boolean
+  score: Score
+}
+
+const scoreTitleStyle: React.CSSProperties = {
+  fontSize: isMobileVersion ? 18 : 25,
+  fontWeight: 'bold',
+  lineHeight: 1,
+  margin: isMobileVersion ? '20px 0 20px 10px' : '0 0 0 40px',
+  textAlign: 'center',
+}
+
+const ScoreTitleParagraph = (props): React.ReactElement =>
+  <div {...props} style={scoreTitleStyle} />
+
+const getScoreTitleStrong = _memoize((color: string) =>
+  function ScoreTitleStrong(props): React.ReactElement {
+    return <span style={{color}} {...props} />
+  })
+
+const BobScoreBase: React.FC<BobScoreProps> =
+({gaugeRef, isAnimated, isTitleShown, score: {color, percent, shortTitle}}): React.ReactElement => {
+  const bobCircleProps = isMobileVersion ? {
+    halfAngleDeg: 66.7,
+    radius: 60,
+    scoreSize: 35,
+    strokeWidth: 4,
+  } : {}
+  const bobScoreStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: isMobileVersion ? 'column' : 'row',
+    justifyContent: 'center',
+    margin: '0 auto',
+    maxWidth: isMobileVersion ? 320 : 470,
+  }
+  // TODO(cyrille): Handle isMobileVersion.
+  return <div style={bobScoreStyle}>
+    <BobScoreCircle
+      {...bobCircleProps}
+      color={colorFromPercent(percent)}
+      style={{flexShrink: 0}}
+      percent={percent}
+      isAnimated={isAnimated}
+      gaugeRef={gaugeRef} />
+    {isTitleShown ? <Markdown
+      content={shortTitle}
+      renderers={{
+        paragraph: ScoreTitleParagraph,
+        strong: getScoreTitleStrong(color),
+      }} /> : null}
+  </div>
+}
+BobScoreBase.propTypes = {
+  gaugeRef: PropTypes.object,
+  isAnimated: PropTypes.bool,
+  isTitleShown: PropTypes.bool,
+  score: PropTypes.shape({
+    color: PropTypes.string,
+    percent: PropTypes.number.isRequired,
+    shortTitle: PropTypes.string.isRequired,
+  }).isRequired,
+}
+BobScoreBase.defaultProps = {
+  isTitleShown: true,
+}
+const BobScore = React.memo(BobScoreBase)
+
+
 const cardStyle: React.CSSProperties = {
   backgroundColor: '#fff',
   border: isMobileVersion ? `solid 2px ${colors.SILVER}` : 'initial',
@@ -1066,7 +1199,151 @@ const cardStyle: React.CSSProperties = {
 }
 
 
+interface ScoreWithHeaderProps {
+  baseUrl: string
+  gender?: bayes.bob.Gender
+  openModifyModal: () => void
+  project: bayes.bob.Project
+  score: Score
+  userYou: YouChooser
+}
+
+const scoreHeaderStyle: React.CSSProperties = {
+  ...cardStyle,
+  alignItems: 'center',
+  color: '#fff',
+  display: 'flex',
+  flexDirection: 'column',
+  fontWeight: 'bold',
+  marginBottom: -100,
+  padding: '35px 20px 125px',
+  position: 'relative',
+  textShadow: '0 3px 4px rgba(0, 0, 0, 0.5)',
+  zIndex: -1,
+}
+
+const headerJobCoverStyle = {
+  borderRadius: scoreHeaderStyle.borderRadius,
+  overflow: 'hidden',
+  zIndex: -1,
+}
+
+const jobStyle: React.CSSProperties = {
+  fontSize: 18,
+  margin: '0 0 4px',
+  textAlign: 'center',
+  textTransform: 'uppercase',
+}
+
+const cityStyle: React.CSSProperties = {
+  fontSize: 15,
+  margin: 0,
+  textAlign: 'center',
+}
+
+const modifyProjectStyle: RadiumCSSProperties = {
+  ':hover': {
+    opacity: 1,
+  },
+  fontSize: 13,
+  opacity: .7,
+  position: 'absolute',
+  right: 20,
+  textDecoration: 'underline',
+  top: 10,
+}
+
+const scoreCardStyle: React.CSSProperties = {
+  ...cardStyle,
+  alignItems: 'center',
+  fontSize: 18,
+  fontWeight: 'bold',
+  margin: '0 0 30px',
+  padding: '45px 25px 20px',
+}
+
+const mainSentenceStyle: React.CSSProperties = {
+  color: colors.DARK_TWO,
+  fontSize: 26,
+  fontStyle: 'italic',
+  lineHeight: '31px',
+  margin: '30px 0',
+  textAlign: 'center',
+}
+
+const statsLinkStyle: React.CSSProperties = {
+  alignItems: 'center',
+  color: colors.COOL_GREY,
+  display: 'flex',
+  fontSize: 13,
+  fontWeight: 'bold',
+  justifyContent: 'center',
+  padding: '15px 0',
+  textDecoration: 'none',
+}
+
+const separatorStyle: React.CSSProperties = {
+  borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`,
+  marginTop: 15,
+}
+
+const ScoreWithHeaderBase: React.FC<ScoreWithHeaderProps> =
+  (props: ScoreWithHeaderProps): React.ReactElement => {
+    const {baseUrl, openModifyModal, gender, project, score, userYou} = props
+    const {
+      city: {name: cityName = undefined} = {}, diagnostic: {categories = emptyArray} = {},
+      targetJob, targetJob: {jobGroup: {romeId = undefined} = {}} = {},
+    } = project
+    const jobName = genderizeJob(targetJob, gender)
+    return <React.Fragment>
+      <div style={scoreHeaderStyle}>
+        {romeId ? <JobGroupCoverImage romeId={romeId} style={headerJobCoverStyle} /> : null}
+        <p style={jobStyle}>{jobName}</p>
+        <p style={cityStyle}>{cityName}</p>
+        <SmartLink onClick={openModifyModal} style={modifyProjectStyle}>Modifier</SmartLink>
+      </div>
+      <div style={scoreCardStyle}>
+        <BobScore score={score} isTitleShown={false} isAnimated={true} />
+        {/* TODO(marielaure): Make sure the title is well balanced. */}
+        <div style={mainSentenceStyle}>{score.shortTitle}</div>
+        <div style={{margin: '0 20px'}}>
+          <CategoriesTrain
+            areDetailsShownAsHover={true}
+            categories={categories} userYou={userYou} gender={gender} />
+          <div style={separatorStyle} />
+        </div>
+        <Link to={`${baseUrl}/${STATS_PAGE}`} style={statsLinkStyle}>
+          En savoir plus
+          <ChevronRightIcon size={18} style={{marginLeft: '.2em'}} />
+        </Link>
+      </div>
+    </React.Fragment>
+  }
+ScoreWithHeaderBase.propTypes = {
+  baseUrl: PropTypes.string.isRequired,
+  gender: PropTypes.oneOf(['FEMININE', 'MASCULINE', 'UNKNOWN_GENDER']),
+  project: PropTypes.shape({
+    city: PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }).isRequired,
+    targetJob: PropTypes.shape({
+      jobGroup: PropTypes.shape({
+        romeId: PropTypes.string.isRequired,
+      }).isRequired,
+    }).isRequired,
+  }).isRequired,
+  score: PropTypes.shape({
+    color: PropTypes.string,
+    percent: PropTypes.number.isRequired,
+    shortTitle: PropTypes.string.isRequired,
+  }).isRequired,
+  userYou: PropTypes.func.isRequired,
+}
+const ScoreWithHeader = React.memo(ScoreWithHeaderBase)
+
+
 interface DiagnosticConnectedProps {
+  gender?: bayes.bob.Gender
   hasAccount: boolean
 }
 
@@ -1074,6 +1351,7 @@ interface DiagnosticConnectedProps {
 interface DiagnosticProps extends DiagnosticConnectedProps {
   advices?: readonly bayes.bob.Advice[]
   areStrategiesEnabled?: boolean
+  baseUrl: string
   diagnosticData: bayes.bob.Diagnostic
   dispatch: DispatchAllActions
   isFirstTime?: boolean
@@ -1082,19 +1360,37 @@ interface DiagnosticProps extends DiagnosticConnectedProps {
   onDiagnosticTextShown?: () => void
   onDownloadAsPdf?: () => void
   onFullDiagnosticShown?: () => void
-  project?: bayes.bob.Project
+  project: bayes.bob.Project
   strategies?: readonly bayes.bob.Strategy[]
   style?: React.CSSProperties
-  userName: string
+  userName?: string
   userYou: YouChooser
 }
 
+
+const panelTitleStyle: React.CSSProperties = {
+  fontSize: 20,
+  fontWeight: 'bold',
+  margin: '0 0 15px',
+  paddingLeft: isMobileVersion ? 0 : 10,
+  textAlign: isMobileVersion ? 'center' : 'initial',
+}
+
+const titleCardStyle: React.CSSProperties = {
+  ...cardStyle,
+  fontSize: 30,
+  fontWeight: 900,
+  marginBottom: 35,
+  padding: '15px 35px',
+  textAlign: 'center',
+}
 
 class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
   public static propTypes = {
     advices: PropTypes.array,
     // TODO(pascal): Convert other cases to the strategies and drop this.
     areStrategiesEnabled: PropTypes.bool,
+    baseUrl: PropTypes.string.isRequired,
     diagnosticData: PropTypes.object.isRequired,
     hasAccount: PropTypes.bool,
     isFirstTime: PropTypes.bool,
@@ -1112,7 +1408,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     }),
     strategies: PropTypes.array,
     style: PropTypes.object,
-    userName: PropTypes.string.isRequired,
+    userName: PropTypes.string,
     userYou: PropTypes.func.isRequired,
   }
 
@@ -1120,6 +1416,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     areStrategiesShown: !this.props.isFirstTime,
     isDiagnosticTextShown: this.props.isFirstTime,
     isFullTextShown: false,
+    isModifyModalShown: false,
   }
 
   public componentDidMount(): void {
@@ -1139,7 +1436,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
 
   private gaugeRef: React.RefObject<SVGSVGElement> = React.createRef()
 
-  private _score: Score
+  private _score: Score|undefined
 
   private getScore = (): Score => {
     if (this._score) {
@@ -1179,6 +1476,9 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
 
   private handleDispatch = _memoize((action): (() => void) => (): void =>
     this.props.dispatch(action))
+
+  private setModifyModalShown = _memoize((isModifyModalShown): (() => void) => (): void =>
+    this.setState({isModifyModalShown}))
 
   private renderDiagnosticText(isModal?: boolean): React.ReactNode {
     const {diagnosticData: {text}, isFirstTime, style, userYou} = this.props
@@ -1232,45 +1532,6 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     </div>
   }
 
-  private renderBobScore({shortTitle, color, percent}, isTitleShown = true): React.ReactNode {
-    const bobCircleProps = isMobileVersion ? {
-      halfAngleDeg: 66.7,
-      radius: 60,
-      scoreSize: 35,
-      strokeWidth: 4,
-    } : {}
-    const bobScoreStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      margin: '0 auto',
-      maxWidth: isMobileVersion ? 320 : 470,
-    }
-    const titleStyle: React.CSSProperties = {
-      fontSize: isMobileVersion ? 18 : 25,
-      fontWeight: 'bold',
-      lineHeight: 1,
-      margin: isMobileVersion ? '20px 0 20px 10px' : '0 0 0 40px',
-      textAlign: 'center',
-    }
-    // TODO(cyrille): Handle isMobileVersion.
-    return <div style={bobScoreStyle}>
-      <BobScoreCircle
-        {...bobCircleProps}
-        color={colorFromPercent(percent)}
-        style={{flexShrink: 0}}
-        percent={percent}
-        isAnimated={!this.state.isFullTextShown}
-        gaugeRef={this.gaugeRef} />
-      {isTitleShown ? <Markdown
-        content={shortTitle}
-        renderers={{
-          paragraph: (props): React.ReactElement => <div {...props} style={titleStyle} />,
-          strong: (props): React.ReactElement => <span style={{color}} {...props} />,
-        }} /> : null}
-    </div>
-  }
-
   private renderScoreSeparator(): React.ReactNode {
     const containerStyle = {
       alignItems: 'center',
@@ -1313,16 +1574,17 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
   }
 
   public render(): React.ReactNode {
-    const {areStrategiesShown, isDiagnosticTextShown} = this.state
-    const {advices = [], areStrategiesEnabled, diagnosticData, hasAccount, isFirstTime,
-      onDownloadAsPdf, makeAdviceLink, makeStrategyLink, project, project: {city, targetJob},
-      strategies = [], style, userYou} = this.props
+    const {areStrategiesShown, isDiagnosticTextShown, isFullTextShown,
+      isModifyModalShown} = this.state
+    const {advices = [], areStrategiesEnabled, baseUrl, diagnosticData, gender, hasAccount,
+      isFirstTime, onDownloadAsPdf, makeAdviceLink, makeStrategyLink, project,
+      project: {city, targetJob}, strategies = [], style, userYou} = this.props
     const {categoryId, strategiesIntroduction} = diagnosticData
     const isBobTalksModalShown = areStrategiesEnabled && isDiagnosticTextShown && !isMobileVersion
     if (isDiagnosticTextShown && !isBobTalksModalShown) {
       return this.renderDiagnosticText()
     }
-    const isSignUpBannerShown = !hasAccount && isLateSignupEnabled && !isFirstTime
+    const isSignUpBannerShown = !hasAccount && !isFirstTime
     const score = this.getScore()
     const adviceProps = _mapValues(
       _keyBy(advices, 'adviceId'),
@@ -1338,80 +1600,52 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       const contentStyle: React.CSSProperties = {
         backgroundColor: isMobileVersion ? '#fff' : 'initial',
         display: 'flex',
-        flexDirection: isMobileVersion ? 'column-reverse' : 'row',
+        flexDirection: isMobileVersion ? 'column' : 'row',
         justifyContent: 'center',
         paddingBottom: 50,
         paddingTop: 0,
       }
-      const titleCardStyle: React.CSSProperties = {
-        ...cardStyle,
-        fontSize: 30,
-        fontWeight: 900,
-        marginBottom: 35,
-        padding: '15px 35px',
-        textAlign: 'center',
-      }
-      const strategiesTitleStyle: React.CSSProperties = {
-        fontSize: 12,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        marginLeft: isMobileVersion ? 0 : 20,
-        textAlign: isMobileVersion ? 'center' : 'initial',
-        textTransform: 'uppercase',
-      }
-      const scoreCardStyle: React.CSSProperties = {
-        ...cardStyle,
-        alignItems: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 30,
-        padding: 25,
-      }
       // TODO(marielaure): Put a smooth transition when closing the sign up banner.
       return <div style={pageStyle}>
+        {isMobileVersion ? null : <ModifyProjectModal
+          project={project} isShown={isModifyModalShown}
+          onClose={this.setModifyModalShown(false)} />}
         {isSignUpBannerShown ?
           <SignUpBanner style={{margin: '0 0 50px', width: 1000}} userYou={userYou} /> : null}
         <div style={contentStyle}>
           {isBobTalksModalShown ? this.renderDiagnosticText(true) : null}
-          <div
-            style={{marginRight: isMobileVersion ? 0 : 40, width: isMobileVersion ? '100%' : 600}}>
-            {isMobileVersion ? this.renderMobileTopSections(score, cardStyle) :
-              <div style={titleCardStyle}>
-                <BalancedTitle><Markdown content={score.shortTitle} /></BalancedTitle>
-                {areStrategiesShown ? null :
-                  <StrategiesIntroduction
-                    onClick={this.handleOpenStrategies} text={strategiesIntroduction} />}
-              </div>}
-            {areStrategiesShown ?
-              <React.Fragment>
-                <div style={strategiesTitleStyle}>Les stratégies de {config.productName}</div>
-                <Strategies
-                  {...{adviceProps, makeAdviceLink, makeStrategyLink,
-                    project, strategies, userYou}}
-                  strategyStyle={cardStyle} />
-              </React.Fragment> : null}
-          </div>
-          {isMobileVersion ? null : <div style={{width: 360}}>
-            <div style={scoreCardStyle}>
-              <div style={{marginBottom: 25}}>Score global</div>
-              {this.renderBobScore(score, false)}
-              <DiagnosticSummary
-                components={score.components} style={{margin: '35px 0 0'}} isSmall={true} />
-            </div>
+          {isMobileVersion ? null : <div style={{position: 'relative', width: 360, zIndex: 0}}>
+            <h2 style={panelTitleStyle}>{userYou('Ton', 'Votre')} projet</h2>
+            <ScoreWithHeader
+              openModifyModal={this.setModifyModalShown(true)}
+              {...{baseUrl, gender, project, score, userYou}} />
             <div style={{...cardStyle, overflow: 'hidden'}}>
               <BobThinksVisualCard category={categoryId} {...{project, userYou}} />
-              {/* TODO(pascal): Replace with a link to the stats page when it exists. */}
-              <SideLink
-                onClick={this.handleDispatch(openStatsPageAction)}
-                href={getIMTURL(targetJob, city)}>Découvrir le marché de l'emploi</SideLink>
-              <SideLink
-                onClick={this.handleDispatch(followJobOffersLinkAction)}
-                href={getPEJobBoardURL(targetJob, city)}>Voir les offres d'emploi</SideLink>
+              {/* TODO(cyrille): Only hide the link when the footnote is
+                actually present in the visual card. */}
+              {categoryId && APPLICATION_MODES_VC_CATEGORIES.has(categoryId) ?
+                null : <SideLink
+                  onClick={this.handleDispatch(followJobOffersLinkAction)}
+                  href={getPEJobBoardURL(targetJob, city)}>Voir les offres d'emploi</SideLink>}
             </div>
             {/* TODO(pascal): Re-enable PDF */}
           </div>}
+          <div
+            style={{marginLeft: isMobileVersion ? 0 : 40, width: isMobileVersion ? '100%' : 600}}>
+            {isMobileVersion ? this.renderMobileTopSections(score, cardStyle) :
+              areStrategiesShown ? null : <React.Fragment>
+                <h2 style={{...panelTitleStyle, visibility: 'hidden'}}>Stratégies possibles</h2>
+                <div style={titleCardStyle}>
+                  <StrategiesIntroduction
+                    onClick={this.handleOpenStrategies} text={strategiesIntroduction} />
+                </div>
+              </React.Fragment>}
+            {areStrategiesShown ? <Strategies
+              {...{adviceProps, makeAdviceLink, makeStrategyLink,
+                project, userYou}}
+              strategies={strategies}
+              strategyStyle={cardStyle} titleStyle={panelTitleStyle} /> : null}
+          </div>
         </div>
       </div>
     }
@@ -1452,9 +1686,9 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       <HoverableBobHead
         style={bobHeadStyle}
         onClick={this.handleReopenDiagnosticText} />
-      {isMobileVersion ? this.renderBobScore(score) : <React.Fragment>
+      {isMobileVersion ? <BobScore score={score} isAnimated={!isFullTextShown} /> : <React.Fragment>
         <div style={headerStyle}>
-          {this.renderBobScore(score)}
+          <BobScore score={score} isAnimated={!isFullTextShown} gaugeRef={this.gaugeRef} />
           {this.renderScoreSeparator()}
           <DiagnosticSummary components={score.components} style={{flex: 1}} />
         </div>
@@ -1466,9 +1700,11 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     </div>
   }
 }
-const Diagnostic = connect(({user: {hasAccount}}: RootState): DiagnosticConnectedProps => ({
-  hasAccount,
+const Diagnostic = connect(({user: {hasAccount, profile: {gender} = {}}}: RootState):
+DiagnosticConnectedProps => ({
+  gender,
+  hasAccount: !!hasAccount,
 }))(DiagnosticBase)
 
 
-export {ComponentScore, DiagnosticText, DiagnosticMetrics, Diagnostic}
+export {BobThinksVisualCard, ComponentScore, DiagnosticText, DiagnosticMetrics, Diagnostic}

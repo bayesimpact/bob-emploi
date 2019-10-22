@@ -1,20 +1,20 @@
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import Radium from 'radium'
 import React from 'react'
 
+import {RadiumExternalLink} from 'components/radium'
 import {GrowingNumber} from 'components/theme'
-import {getDateString} from 'store/french'
+import {getDateString, YouChooser} from 'store/french'
 
 import jobteaserImage from 'images/jobteaser-picto.png'
 import meetupImage from 'images/meetup-picto.png'
 import poleEmploiEventsImage from 'images/pole-emploi-evenements-picto.png'
 import poleEmploiImage from 'images/pee-picto.png'
 import recrutImage from 'images/recrut-picto.png'
-import NewPicto from 'images/advices/picto-events.svg'
+import Picto from 'images/advices/picto-events.svg'
 
 import {MethodSuggestionList, CardProps, CardWithContentProps, ToolCard,
-  connectExpandedCardWithContent, makeTakeAwayFromAdviceData} from './base'
+  connectExpandedCardWithContent} from './base'
 
 
 const EVENT_TOOLS = [
@@ -45,24 +45,14 @@ const EVENT_TOOLS = [
   },
 ]
 
-
-class ExpandedAdviceCardContentBase
-  extends React.PureComponent<CardWithContentProps<bayes.bob.Events>> {
-  public static propTypes = {
-    adviceData: PropTypes.shape({
-      events: PropTypes.arrayOf(PropTypes.shape({
-        link: PropTypes.string.isRequired,
-        organiser: PropTypes.string.isRequired,
-        startDate: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
-      }).isRequired),
-    }).isRequired,
-    handleExplore: PropTypes.func.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  private renderEvents(events: readonly bayes.bob.Event[]): React.ReactNode {
-    const {handleExplore, userYou} = this.props
+interface EventsListProps {
+  events: readonly bayes.bob.Event[]
+  handleExplore: (visualElement: string) => () => void
+  userYou: YouChooser
+}
+const EventsListBase: React.FC<EventsListProps> =
+  (props: EventsListProps): React.ReactElement => {
+    const {events, handleExplore, userYou} = props
     const title = <React.Fragment>
       <GrowingNumber number={events.length} isSteady={true} />
       {' '}évènement{events.length > 1 ? 's ' : ' '}
@@ -74,17 +64,25 @@ class ExpandedAdviceCardContentBase
         {...event} key={event.link} onClick={handleExplore('event')} />)}
     </MethodSuggestionList>
   }
+EventsListBase.propTypes = {
+  events: PropTypes.arrayOf(PropTypes.object.isRequired).isRequired,
+  handleExplore: PropTypes.func.isRequired,
+  userYou: PropTypes.func.isRequired,
+}
+const EventsList = React.memo(EventsListBase)
 
-  public render(): React.ReactNode {
-    const {adviceData: {events}, handleExplore} = this.props
-    const methodTitle = <React.Fragment>
-      <GrowingNumber number={EVENT_TOOLS.length} isSteady={true} />
-      {' '} outils pour trouver des évènements
-    </React.Fragment>
-    const hasEvents = events && events.length
-    const eventBoxStyle = hasEvents && {marginTop: 20}
+const methodTitle = <React.Fragment>
+  <GrowingNumber number={EVENT_TOOLS.length} isSteady={true} />
+  {' '}outils pour trouver des évènements
+</React.Fragment>
+
+const ExpandedAdviceCardContentBase: React.FC<CardWithContentProps<bayes.bob.Events>> =
+  (props: CardWithContentProps<bayes.bob.Events>): React.ReactElement => {
+    const {adviceData: {events}, handleExplore, userYou} = props
+    const hasEvents = !!(events && events.length)
+    const eventBoxStyle = hasEvents && {marginTop: 20} || undefined
     return <div>
-      {hasEvents ? this.renderEvents(events) : null}
+      {(hasEvents && events) ? <EventsList {...{events, handleExplore, userYou}} /> : null}
       <MethodSuggestionList title={methodTitle} style={eventBoxStyle}>
         {EVENT_TOOLS.map(({title, ...props}, index: number): ReactStylableElement =>
           <ToolCard {...props} key={index} onClick={handleExplore('tool')}>
@@ -94,58 +92,59 @@ class ExpandedAdviceCardContentBase
       </MethodSuggestionList>
     </div>
   }
+ExpandedAdviceCardContentBase.propTypes = {
+  adviceData: PropTypes.shape({
+    events: PropTypes.arrayOf(PropTypes.shape({
+      link: PropTypes.string.isRequired,
+      organiser: PropTypes.string.isRequired,
+      startDate: PropTypes.string.isRequired,
+      title: PropTypes.string.isRequired,
+    }).isRequired),
+  }).isRequired,
+  handleExplore: PropTypes.func.isRequired,
+  userYou: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.Events, CardProps>()(ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.Events, CardProps>(
+    React.memo(ExpandedAdviceCardContentBase))
 
 
 interface EventProps extends bayes.bob.Event {
   onClick?: () => void
 }
 
-
-class EventBase extends React.PureComponent<EventProps> {
-  public static propTypes = {
-    // TODO(cyrille): Drop `filters` if unused.
-    filters: PropTypes.arrayOf(PropTypes.string.isRequired),
-    link: PropTypes.string.isRequired,
-    organiser: PropTypes.string.isRequired,
-    startDate: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }
-
-  private handleOpenLink(): void {
-    window.open(this.props.link, '_blank')
-  }
-
-  public render(): React.ReactNode {
-    const {filters: omittedFilters, link: omittedLink, organiser, startDate, title,
-      ...extraProps} = this.props
-    const chevronStyle = {
-      fill: colors.CHARCOAL_GREY,
-      flexShrink: 0,
-      fontSize: 20,
-      height: 20,
-      marginLeft: '1em',
-      width: 20,
-    }
-    return <div onClick={this.handleOpenLink} {...extraProps}>
-      <strong>
-        {title}
-      </strong>
-      <span style={{fontWeight: 'normal', marginLeft: '1em'}}>
-        par {organiser}
-      </span>
-      <span style={{flex: 1}} />
-      <span>{getDateString(startDate)}</span>
-      <ChevronRightIcon style={chevronStyle} />
-    </div>
-  }
+const chevronStyle = {
+  fill: colors.CHARCOAL_GREY,
+  flexShrink: 0,
+  fontSize: 20,
+  height: 20,
+  marginLeft: '1em',
+  width: 20,
 }
-const Event = Radium(EventBase)
+const EventBase: React.FC<EventProps> = (props: EventProps): React.ReactElement => {
+  const {filters: omittedFilters, link, organiser, startDate, title,
+    ...extraProps} = props
+  return <RadiumExternalLink href={link} {...extraProps}>
+    <strong>
+      {title}
+    </strong>
+    <span style={{fontWeight: 'normal', marginLeft: '1em'}}>
+      par {organiser}
+    </span>
+    <span style={{flex: 1}} />
+    <span>{startDate && getDateString(startDate)}</span>
+    <ChevronRightIcon style={chevronStyle} />
+  </RadiumExternalLink>
+}
+EventBase.propTypes = {
+  // TODO(cyrille): Drop `filters` if unused.
+  filters: PropTypes.arrayOf(PropTypes.string.isRequired),
+  link: PropTypes.string.isRequired,
+  organiser: PropTypes.string.isRequired,
+  startDate: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+}
+const Event = React.memo(EventBase)
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({events}: bayes.bob.Events): readonly bayes.bob.Event[] => events, 'évènement')
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

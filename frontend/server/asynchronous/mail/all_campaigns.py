@@ -3,7 +3,7 @@
 import datetime
 import hashlib
 import logging
-import typing
+from typing import Any, Dict, Optional
 from urllib import parse
 
 import pymongo
@@ -20,6 +20,7 @@ from bob_emploi.frontend.server.asynchronous.mail import campaign
 # Import all plugins: they register themselves when imported.
 from bob_emploi.frontend.server.asynchronous.mail import holiday
 from bob_emploi.frontend.server.asynchronous.mail import imt
+from bob_emploi.frontend.server.asynchronous.mail import improve_cv
 from bob_emploi.frontend.server.asynchronous.mail import network
 from bob_emploi.frontend.server.asynchronous.mail import salon_arles
 # pylint: enable=unused-import
@@ -42,8 +43,8 @@ _EXPERIENCE_AS_TEXT = {
 
 
 def _get_spontaneous_vars(
-        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
-        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
+        user: user_pb2.User, database: Optional[pymongo.database.Database] = None,
+        **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the spontaneous email.
 
     Returns:
@@ -161,8 +162,8 @@ def _get_spontaneous_vars(
     })
 
 
-def _get_self_development_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _get_self_development_vars(user: user_pb2.User, **unused_kwargs: Any) \
+        -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the self-development email.
 
     Returns:
@@ -204,8 +205,7 @@ def _get_self_development_vars(user: user_pb2.User, **unused_kwargs: typing.Any)
     })
 
 
-def _body_language_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _body_language_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the body language email.
 
     Returns:
@@ -226,8 +226,7 @@ def _body_language_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
     })
 
 
-def _employment_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _employment_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the employment survey.
 
     Returns:
@@ -257,8 +256,7 @@ def _employment_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
     })
 
 
-def new_diagnostic_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Dict[str, str]:
+def new_diagnostic_vars(user: user_pb2.User, **unused_kwargs: Any) -> Dict[str, str]:
     """Compute vars for the "New Diagnostic"."""
 
     frustrations_set = set(user.profile.frustrations)
@@ -283,8 +281,7 @@ def new_diagnostic_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
     })
 
 
-def _get_galita1_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _get_galita1_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     if user_pb2.MOTIVATION not in user.profile.frustrations:
         logging.info('User is motivated enough')
         return None
@@ -294,8 +291,7 @@ def _get_galita1_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
     return campaign.get_default_coaching_email_vars(user)
 
 
-def _get_galita2_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _get_galita2_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     if not user.projects:
         return None
     project = user.projects[0]
@@ -309,8 +305,7 @@ def _get_galita2_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
         'ofJobName': french.maybe_contract_prefix('de ', "d'", genderized_job_name)})
 
 
-def _get_galita3_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _get_galita3_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     if user_pb2.NO_OFFER_ANSWERS not in user.profile.frustrations:
         logging.info('User is having enough answers.')
         return None
@@ -329,8 +324,7 @@ def _get_galita3_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
     })
 
 
-def _viral_sharing_vars(user: user_pb2.User, hash_start: str = '') \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _viral_sharing_vars(user: user_pb2.User, hash_start: str = '') -> Optional[Dict[str, str]]:
     """Template variables for viral sharing emails."""
 
     if user.registered_at.ToDatetime() > _ONE_YEAR_AGO:
@@ -345,8 +339,8 @@ def _viral_sharing_vars(user: user_pb2.User, hash_start: str = '') \
 
 
 def _open_classrooms_vars(
-        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
-        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
+        user: user_pb2.User, database: Optional[pymongo.database.Database] = None,
+        **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Template variables for viral sharing emails."""
 
     if user.registered_at.ToDatetime() < _SIX_MONTHS_AGO:

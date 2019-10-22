@@ -81,13 +81,15 @@ class GeneralStep extends React.PureComponent<ProfileStepProps, StepState> {
     if (!yearOfBirth) {
       profileDiff.yearOfBirth = userExample.profile.yearOfBirth
     }
-    this.props.onChange({profile: profileDiff})
+    const {onChange} = this.props
+    onChange && onChange({profile: profileDiff})
   }
 
   public render(): React.ReactNode {
     const {isShownAsStepsDuringOnboarding, profile: {canTutoie, familySituation, gender,
       hasHandicap, highestDegree, yearOfBirth}, userYou} = this.props
     const {isValidated} = this.state
+    // TODO(marielaure): Use store/french/genderize for consistency.
     const isFeminine = gender === 'FEMININE'
     // Keep in sync with 'isValid' fields from fieldset below.
     const checks = [
@@ -96,11 +98,19 @@ class GeneralStep extends React.PureComponent<ProfileStepProps, StepState> {
       !!yearOfBirth,
       !!highestDegree,
     ]
+    const radioGroupStyle = isShownAsStepsDuringOnboarding ? {
+      display: 'flex',
+      justifyContent: 'space-around',
+    } : {
+      display: 'grid',
+      gridTemplate: '1fr / 1fr 1fr',
+      maxWidth: 260,
+    }
     return <Step
       title={`${userYou('Ton', 'Votre')} profil`}
       fastForward={this.fastForward}
       progressInStep={checks.filter((c): boolean => c).length / (checks.length + 1)}
-      onNextButtonClick={this.updater_.isFormValid() ? this.updater_.handleSubmit : null}
+      onNextButtonClick={this.updater_.isFormValid() ? this.updater_.handleSubmit : undefined}
       // Hide Previous button.
       onPreviousButtonClick={null}
       {...this.props}>
@@ -108,16 +118,17 @@ class GeneralStep extends React.PureComponent<ProfileStepProps, StepState> {
         label={`${userYou('Tu es', 'Vous êtes')} :`}
         isValid={!!gender} isValidated={isValidated}>
         <RadioGroup
-          style={{justifyContent: 'space-around'}}
+          style={radioGroupStyle}
           onChange={this.updater_.handleChange('gender')}
           options={genders} value={gender} />
       </FieldSet>
       {isShownAsStepsDuringOnboarding ? null :
         <FieldSet
-          label={`Désire${userYou('s-tu toujours', 'z-vous')} être tutoyé\u00A0?`}
+          label={`Désire${userYou('s-tu toujours', 'z-vous')} être
+            tutoyé${isFeminine ? 'e' : ''}\u00A0?`}
           isValid={true} isValidated={isValidated}>
           <RadioGroup
-            style={{justifyContent: 'space-around'}}
+            style={radioGroupStyle}
             onChange={this.updater_.handleChange('canTutoie')}
             options={addresses} value={!!canTutoie} />
         </FieldSet>}
@@ -167,7 +178,7 @@ class GeneralStep extends React.PureComponent<ProfileStepProps, StepState> {
             travailleu${isFeminine ? 'se' : 'r'} handicapé${isFeminine ? 'e' : ''}\u00A0?`}
         isValid={true} isValidated={isValidated} style={{minWidth: isMobileVersion ? 280 : 350}}>
         <RadioGroup
-          style={{justifyContent: 'space-around'}}
+          style={radioGroupStyle}
           onChange={this.updater_.handleChange('hasHandicap')}
           options={hasHandicapOptions} value={!!hasHandicap} />
       </FieldSet> : null}
@@ -189,7 +200,7 @@ interface SelectProps {
   placeholder?: string
 }
 
-class BirthYearSelector extends React.PureComponent<{value: number} & SelectProps> {
+class BirthYearSelector extends React.PureComponent<{value?: number} & SelectProps> {
   public static propTypes = {
     value: PropTypes.number,
   }

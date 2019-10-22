@@ -12,21 +12,13 @@ Raven.config(config.sentryDSN, {
 // Safely get prop value by path in a nested object.
 // Example:
 // const props = {a: {b: {c: 1}}}
-// getNestedValue(props, 'a', 'b', 'c') returns 1
-// getNestedValue(props, 'a', 'd') returns undefined
 // getNestedValue(props, ['a', 'b', 'c']) returns 1
+// getNestedValue(props, ['a', 'd']) returns undefined
 // getNestedValue(props, ['a', 'd'], 2) returns 2
-function getNestedValue<T>(props: ImiloProps, nestedKeys: string | string[], defaultValue?: T): T {
-  let keys: readonly string[]
-  if (typeof nestedKeys === 'string') {
-    // Converts getNestedValue(props, 'a', 'b', 'c') as getNestedValue(props, ['a', 'b', 'c']).
-    keys = Array.prototype.slice.call(arguments, 1)
-    defaultValue = undefined
-  } else {
-    keys = nestedKeys
-  }
+// TODO(cyrille): Strong-type to make sure props has a field of type T at position nestedKeys.
+function getNestedValue<T>(props: object, nestedKeys: string[], defaultValue?: T): T|undefined {
   const notFound = {}
-  const value = keys.reduce((propsInPath, key): T|ImiloProps =>
+  const value = nestedKeys.reduce((propsInPath, key): T|object =>
     propsInPath !== notFound && key in propsInPath ? propsInPath[key] : notFound, props) as T
   return value === notFound ? defaultValue : value
 }
@@ -96,7 +88,7 @@ function mapToBob<V>(name: string, mapping: {[key: number]: V}, value: number, f
 }
 
 
-function getBobHighestDegree(imiloDegrees: CursusPage): bayes.bob.DegreeLevel {
+function getBobHighestDegree(imiloDegrees: CursusPage): bayes.bob.DegreeLevel|undefined {
   const bobDegrees = imiloDegrees.reduce(
     (degrees, {fullAcademicLevel, grade}): {[grade: string]: bayes.bob.DegreeLevel} => ({
       ...degrees,
@@ -107,51 +99,51 @@ function getBobHighestDegree(imiloDegrees: CursusPage): bayes.bob.DegreeLevel {
 }
 
 
-function getBobTargetJob(imiloSituations: SituationsPage): bayes.bob.Job {
-  const jobs = imiloSituations.map((situation): bayes.bob.Job|null => {
+function getBobTargetJob(imiloSituations: SituationsPage): bayes.bob.Job|undefined {
+  const jobs = imiloSituations.map((situation): bayes.bob.Job|undefined => {
     const job = situation.fullPracticedJob || situation.fullPreparedJob
     if (!job) {
-      return null
+      return undefined
     }
     const {code, description} = job
     return {jobGroup: {name: description, romeId: code}}
-  }).filter((job): boolean => !!job)
+  }).filter((job): job is bayes.bob.Job => !!job)
   // Returns the most recent prepared or exerced job.
   // This relies on the assumption that the situations are ordered with the most recent first.
   return jobs[0]
 }
 
 function convertImiloPropsToBobProps(imiloProps: ImiloProps): bayes.bob.User {
-  const imilo = getNestedValue.bind(this, imiloProps)
+  const imilo = getNestedValue.bind(undefined, imiloProps)
   // 4 is the ID of the situation "Célibataire".
-  const isSingle = imilo('Identité', 'identity', 'situation') === 4
-  const hasKids = imilo('Identité', 'childrenNumber') > 0
+  const isSingle = imilo(['Identité', 'identity', 'situation']) === 4
+  const hasKids = imilo(['Identité', 'childrenNumber']) > 0
   const cityId = imilo(['Coordonnées', 'currentAddress', 'fullCity', 'codeCommune'], '')
   const city = {
     cityId,
     // TODO(florian): Cope for oversea départements (e.g. 976)
-    departementId: cityId.substring(0, 2),
-    name: imilo('Coordonnées', 'currentAddress', 'fullCity', 'description'),
-    postcodes: imilo('Coordonnées', 'currentAddress', 'zipCode'),
+    departementId: cityId.slice(0, 2),
+    name: imilo(['Coordonnées', 'currentAddress', 'fullCity', 'description']),
+    postcodes: imilo(['Coordonnées', 'currentAddress', 'zipCode']),
   }
   const areaType = mapToBob(
-    'Radius Mobility', imiloToBobMobility, imilo('Mobilité', 'radiusMobility'),
-    imilo('Mobilité', 'fullRadiusMobility'),
+    'Radius Mobility', imiloToBobMobility, imilo(['Mobilité', 'radiusMobility']),
+    imilo(['Mobilité', 'fullRadiusMobility']),
   )
   let bobProps: bayes.bob.User = {
     profile: {
-      email: imilo('Identité', 'identity', 'email'),
+      email: imilo(['Identité', 'identity', 'email']),
       familySituation: isSingle ?
         (hasKids ? 'SINGLE_PARENT_SITUATION' : 'SINGLE') :
         (hasKids ? 'FAMILY_WITH_KIDS' : 'IN_A_RELATIONSHIP'),
       // 2 is the ID of the civility "Monsieur".
       gender: mapToBob(
-        'Civility', imiloToBobGender, imilo('Identité', 'identity', 'civility'),
-        imilo('Identité', 'identity', 'fullCivility'),
+        'Civility', imiloToBobGender, imilo(['Identité', 'identity', 'civility']),
+        imilo(['Identité', 'identity', 'fullCivility']),
       ),
-      highestDegree: getBobHighestDegree(imilo('Cursus')),
-      lastName: imilo('Identité', 'identity', 'lastname'),
-      name: imilo('Identité', 'identity', 'firstname'),
+      highestDegree: getBobHighestDegree(imilo(['Cursus'])),
+      lastName: imilo(['Identité', 'identity', 'lastname']),
+      name: imilo(['Identité', 'identity', 'firstname']),
       // TODO(florian): Add FROM_ML_COUNSELOR.
       origin: 'FROM_PE_COUNSELOR',
       // Convert from '10/01/1990' to 1990.
@@ -162,7 +154,7 @@ function convertImiloPropsToBobProps(imiloProps: ImiloProps): bayes.bob.User {
       areaType,
       city,
       createdAt: new Date().toISOString(),
-      targetJob: getBobTargetJob(imilo('Situations')),
+      targetJob: getBobTargetJob(imilo(['Situations'])),
     }],
   }
   imilo(['Mobilité', 'drivingLicenses'], []).forEach(({type}): void => {

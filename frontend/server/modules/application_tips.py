@@ -2,16 +2,17 @@
 
 import itertools
 import random
-import typing
+from typing import Optional
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import user_pb2
 
 
 def _get_handcrafted_job_requirements(project: scoring_base.ScoringProject) \
-        -> typing.Optional[job_pb2.JobRequirements]:
+        -> Optional[job_pb2.JobRequirements]:
     """Handcrafted job requirements for the target job."""
 
     handcrafted_requirements = job_pb2.JobRequirements()
@@ -62,6 +63,11 @@ class _AdviceFreshResume(scoring_base.ModelBase):
             return scoring_base.ExplainedScore(3, [project.translate_string(
                 'vous nous avez dit que vous en êtes au début de '
                 'vos candidatures')])
+        if project.details.diagnostic.category_id == 'bravo' and \
+                user_pb2.RESUME in project.user_profile.frustrations:
+            return scoring_base.ExplainedScore(1, [project.translate_string(
+                'vous nous avez dit avoir du mal à rédiger votre CV')])
+
         return scoring_base.NULL_EXPLAINED_SCORE
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
@@ -119,6 +125,10 @@ class _AdviceImproveResume(scoring_base.ModelBase):
             return scoring_base.ExplainedScore(3, [project.translate_string(
                 "nous pensons qu'avec votre profil vous pourriez "
                 "décrocher plus d'entretiens")])
+        if project.details.diagnostic.category_id == 'bravo' and \
+                user_pb2.RESUME in project.user_profile.frustrations:
+            return scoring_base.ExplainedScore(1, [project.translate_string(
+                'vous nous avez dit avoir du mal à rédiger votre CV')])
         return scoring_base.NULL_EXPLAINED_SCORE
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
@@ -156,6 +166,8 @@ class _AdviceImproveInterview(scoring_base.ModelBase):
         # Whatever the number of month of search, trigger 3 if the user did more than 5 interviews:
         if num_interviews >= self._NUM_INTERVIEWS[project_pb2.DECENT_AMOUNT]:
             return scoring_base.ExplainedScore(3, reasons)
+        if project.details.diagnostic.category_id == 'bravo':
+            return scoring_base.ExplainedScore(1, [])
         return scoring_base.NULL_EXPLAINED_SCORE
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \

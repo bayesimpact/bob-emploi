@@ -14,7 +14,7 @@ require('styles/App.css')
 
 
 interface UnsubscribePageState {
-  errorMessage: string
+  errorMessage?: string
   isDeleted: boolean
   isDeleting: boolean
   isUpdated: boolean
@@ -26,8 +26,7 @@ interface UnsubscribePageState {
 
 
 class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
-  public state = {
-    errorMessage: null,
+  public state: UnsubscribePageState = {
     isDeleted: false,
     isDeleting: false,
     isUpdated: false,
@@ -39,7 +38,7 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
     const {isUpdated} = this.state
     if (isUpdated && !wasUpdated) {
       clearTimeout(this.timer)
-      this.timer = setTimeout((): void => this.setState({isUpdated: false}), 5000)
+      this.timer = window.setTimeout((): void => this.setState({isUpdated: false}), 5000)
     }
   }
 
@@ -47,7 +46,7 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
     clearTimeout(this.timer)
   }
 
-  private timer: ReturnType<typeof setTimeout>
+  private timer?: number
 
   private handleCancel(): void {
     window.location.href = '/'
@@ -57,7 +56,7 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
     // TODO(pascal): Drop the use of email after 2018-09-01, until then we need
     // to keep it as the link is used in old emails.
     const {auth = '', email = '', user = ''} = this.state.params || {}
-    this.setState({errorMessage: null, isDeleting: true})
+    this.setState({errorMessage: undefined, isDeleting: true})
     fetch('/api/user', {
       body: JSON.stringify({profile: {email}, userId: user}),
       headers: {
@@ -76,7 +75,7 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
         const content = page.getElementsByTagName('P')
         this.setState({
           errorMessage: content.length && (content[0] as HTMLElement).textContent ||
-            page.textContent,
+            page.textContent || undefined,
           isDeleting: false,
         })
       })
@@ -92,7 +91,7 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
       return
     }
     this.setState({
-      errorMessage: '',
+      errorMessage: undefined,
       isUpdating: true,
       params: {...this.state.params, coachingEmailFrequency},
     })
@@ -106,13 +105,13 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
       method: 'post',
     }).then((response): void => {
       if (response.status >= 400 || response.status < 200) {
-        response.text().then((errorMessage): void => {
+        response.text().then((errorMessage: string): void => {
           const page = document.createElement('html')
           page.innerHTML = errorMessage
           const content = page.getElementsByTagName('P')
           this.setState({
             errorMessage: content.length && (content[0] as HTMLElement).textContent ||
-              page.textContent,
+              page.textContent || undefined,
             isUpdating: false,
             params: {...this.state.params, coachingEmailFrequency: prevCoachingEmailFrequency},
           })
@@ -178,11 +177,11 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
       position: 'absolute',
     })
     return <div style={{position: 'relative'}}>
-      Activer le coaching mail de {config.productName}&nbsp;?
+      Quel coaching mail de {config.productName} souhaitez-vous&nbsp;?
       <div style={containerStyle}>
         <Select<bayes.bob.EmailFrequency>
           onChange={this.handleCoachingEmailFrequencyChange}
-          value={coachingEmailFrequency}
+          value={coachingEmailFrequency as bayes.bob.EmailFrequency}
           options={COACHING_EMAILS_OPTIONS} />
       </div>
       <div style={messageStyle(isUpdating)}>Application du changement en cours…</div>

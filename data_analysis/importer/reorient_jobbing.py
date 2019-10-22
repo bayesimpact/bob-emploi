@@ -25,6 +25,7 @@ You can try it out on a local instance:
 """
 
 import typing
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -39,8 +40,7 @@ _MIN_JOB_OFFERS = 50
 
 def csv2dicts(
         market_score_csv: str, offers_csv: str, referentiel_code_rome_csv: str,
-        rome_item_arborescence: str, referentiel_apellation_rome_csv: str) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+        rome_item_arborescence: str, referentiel_apellation_rome_csv: str) -> List[Dict[str, Any]]:
     """Import reorient jobbing data per month per departement in MongoDB.
 
     Args:
@@ -127,7 +127,7 @@ def csv2dicts(
         rome_dep_with_best_job.offers > _MIN_JOB_OFFERS]\
         .rename(columns={'TENSION_RATIO': 'market_score'})
 
-    def _create_job_groups(jobs: pd.DataFrame) -> typing.Any:
+    def _create_job_groups(jobs: pd.DataFrame) -> Any:
         return jobs[['name', 'masculineName', 'feminineName', 'rome_id', 'offers', 'market_score']]\
             .to_dict(orient='records')[0]
 
@@ -138,7 +138,7 @@ def csv2dicts(
         .reset_index()\
         .rename(columns={'departement_id': '_id'})
 
-    def _create_jobbing_stats(jobs: pd.DataFrame) -> typing.Any:
+    def _create_jobbing_stats(jobs: pd.DataFrame) -> Any:
         return jobs.sort_values('offers', ascending=False)[['jobs']].head().to_dict(orient='list')
 
     jobbing_stats = rome_dep_job_groups\
@@ -147,9 +147,7 @@ def csv2dicts(
         .to_frame('departementJobStats')\
         .reset_index()
 
-    return typing.cast(
-        typing.List[typing.Dict[str, typing.Any]],
-        jobbing_stats.to_dict(orient='records'))
+    return typing.cast(List[Dict[str, Any]], jobbing_stats.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

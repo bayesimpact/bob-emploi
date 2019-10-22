@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="22px" viewBox="0 0 16 22" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <title>obj-active</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Mobile" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Stategy-page-(started)---objectives---mobile" transform="translate(-112.000000, -756.000000)" fill="#1888FF">
+            <path d="M119,766.42 L115.293,762.71 L116.707,761.3 L119,763.59 L123.293,759.3 L124.707,760.71 L119,766.42 Z M119,774.42 L115.293,770.71 L116.707,769.3 L119,771.59 L123.293,767.3 L124.707,768.71 L119,774.42 Z M126,756 L114,756 C112.896,756 112,756.99 112,758.2 L112,775.8 C112,777.021 112.896,778 114,778 L126,778 C127.104,778 128,777.021 128,775.8 L128,758.2 C128,756.99 127.104,756 126,756 L126,756 Z" id="obj-active"></path>
+        </g>
+    </g>
+</svg>

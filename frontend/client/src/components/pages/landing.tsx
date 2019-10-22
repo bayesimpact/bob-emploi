@@ -12,8 +12,8 @@ import {Swipeable} from 'react-swipeable'
 import {TwitterTweetEmbed} from 'react-twitter-embed'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {DispatchAllActions, landingPageSectionIsShown, loadLandingPage} from 'store/actions'
-import {isLateSignupEnabled} from 'store/user'
+import {DispatchAllActions, RootState, landingPageSectionIsShown,
+  loadLandingPage} from 'store/actions'
 
 import bobBlueImage from 'images/bob-logo.svg?fill=#1888ff' // colors.BOB_BLUE
 import step1Image from 'images/step-1.svg'
@@ -50,7 +50,6 @@ const emStyle: React.CSSProperties = {
 
 
 interface LandingPageContent {
-  buttonCaption?: string
   fontSize?: number
   match?: RegExp
   subtitle?: string
@@ -60,6 +59,13 @@ interface LandingPageContent {
 
 // Kinds of different landing page excluding the default kind.
 const landingPageContentsRaw = {
+  '': {
+    fontSize: 42,
+    match: /evaluation/,
+    title: <span style={emStyle}>
+      Évaluez votre recherche d'emploi en 10 minutes
+    </span>,
+  },
   coach: {
     match: /coach/,
     title: <span>
@@ -111,7 +117,6 @@ const landingPageContentsRaw = {
     </span>,
   },
   'specific-job': {
-    buttonCaption: "Inscrivez-vous, c'est gratuit !",
     fontSize: 42,
     // 'title' is created and populated dynamically using the job name.
   },
@@ -122,14 +127,6 @@ const landingPageContentsRaw = {
     title: <span>
       Quelle est <span style={emStyle}>la clé</span> pour <span
         style={emStyle}>trouver rapidement un emploi</span>&nbsp;?
-    </span>,
-  },
-  '': {
-    buttonCaption: "Inscrivez-vous, c'est gratuit !",
-    fontSize: 42,
-    match: /evaluation/,
-    title: <span style={emStyle}>
-      Évaluez votre recherche d'emploi en 10 minutes
     </span>,
   },
 } as const
@@ -320,7 +317,7 @@ class DiagnosticSection extends React.PureComponent<{children?: never}> {
         <div>
           <LoginLink isSignUp={true} visualElement="diagnostic">
             <Button style={buttonStyle} type="validation">
-              {isLateSignupEnabled ? 'Commencez' : 'Inscrivez-vous'} maintenant&nbsp;!
+              Commencez maintenant&nbsp;!
             </Button>
           </LoginLink>
         </div>
@@ -453,7 +450,7 @@ class TestimonialsSection extends React.PureComponent<{children?: never}> {
       </Testimonials>
       <div style={{padding: '35px 0 50px', textAlign: 'center'}}>
         <LoginButton isSignUp={true} visualElement="testimonials" type="validation">
-          {isLateSignupEnabled ? 'Commencez' : 'Inscrivez-vous'} maintenant&nbsp;!
+          Commencez maintenant&nbsp;!
         </LoginButton>
       </div>
     </section>
@@ -564,8 +561,8 @@ interface SpeakingAboutBobProps {
 
 
 interface SpeakingAboutBobState {
-  skipPress?: number
-  skipTweet?: number
+  skipPress: number
+  skipTweet: number
 }
 
 
@@ -675,7 +672,7 @@ class SpeakingAboutBobSection
     clearInterval(this.interval)
   }
 
-  private interval: ReturnType<typeof setInterval>
+  private interval: number|undefined
 
   private moveCarousel(): void {
     const {skipTweet} = this.state
@@ -687,16 +684,18 @@ class SpeakingAboutBobSection
   private resetTweetRotationTimer(): void {
     const {carouselAutoRotationDurationMs} = this.props
     clearInterval(this.interval)
-    this.interval = setInterval(
+    this.interval = window.setInterval(
       (): void => this.moveCarousel(),
       carouselAutoRotationDurationMs)
   }
 
   private createPressSwipeHandler = (delta: number): (() => void) => (): void => {
-    this.setState(({skipPress: value}): SpeakingAboutBobState => ({skipPress: Math.max(
-      Math.min(value + delta, SpeakingAboutBobSection.numPressArticlesBullets - 1),
-      0,
-    )}))
+    this.setState(({skipPress: value}): Pick<SpeakingAboutBobState, 'skipPress'> => ({
+      skipPress: Math.max(
+        Math.min(value + delta, SpeakingAboutBobSection.numPressArticlesBullets - 1),
+        0,
+      ),
+    }))
   }
 
   private handleSkipPress = _memoize((skipPress): (() => void) =>
@@ -930,6 +929,7 @@ interface LandingRouteParams {
 interface LandingPageProps extends RouteComponentProps<LandingRouteParams>{
   children?: never
   dispatch: DispatchAllActions
+  hasLoadedApp?: boolean
 }
 
 
@@ -941,8 +941,8 @@ interface FullLandingPageState extends LandingPageContent {
 
 interface LandingPageState {
   isForSpecificJob?: boolean
-  isScrollNavBarShown?: boolean
-  landingPageContent?: FullLandingPageState
+  isScrollNavBarShown: boolean
+  landingPageContent: FullLandingPageState
 }
 
 
@@ -952,7 +952,7 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
   private static getLandingPageContentState({
     location: {search},
     match: {params: {romeId, specificJobName}},
-  }): LandingPageState {
+  }: LandingPageProps): Pick<LandingPageState, 'isForSpecificJob'|'landingPageContent'> {
     if (specificJobName) {
       return {
         isForSpecificJob: true,
@@ -984,8 +984,10 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
   private static getLandingPageContentForUtmContent(utmContent): FullLandingPageState {
     // Special wording for the landing page depending on the utm_content value.
     const landingPageKind: LandingPageKind = kinds.find(
-      (landingPageKind): boolean => landingPageContents[landingPageKind].match &&
-        landingPageContents[landingPageKind].match.test(utmContent)
+      (landingPageKind: LandingPageKind): boolean => {
+        const {match} = landingPageContents[landingPageKind]
+        return !!match && match.test(utmContent)
+      }
     ) || ''
     const landingPageContent = {
       ...landingPageContents[landingPageKind],
@@ -996,19 +998,20 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
 
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    // eslint-disable-next-line react/no-unused-prop-types
     location: ReactRouterPropTypes.location.isRequired,
     match: ReactRouterPropTypes.match.isRequired,
   }
 
   public state: LandingPageState = {
+    ...LandingPageBase.getLandingPageContentState(this.props),
     isScrollNavBarShown: false,
   }
 
-  public static getDerivedStateFromProps({
-    location,
-    match,
-  }, {landingPageContent: {kind = undefined} = {}}): LandingPageState {
-    const newContent = LandingPageBase.getLandingPageContentState({location, match})
+  public static getDerivedStateFromProps(
+    props: LandingPageProps, {landingPageContent: {kind = undefined} = {}}):
+    Pick<LandingPageState, 'isForSpecificJob'|'landingPageContent'>|null {
+    const newContent = LandingPageBase.getLandingPageContentState(props)
     if (newContent.landingPageContent && newContent.landingPageContent.kind !== kind) {
       return newContent
     }
@@ -1016,26 +1019,20 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
   }
 
   public componentDidMount(): void {
-    if (window.performance && window.performance.now) {
-      // TODO (cyrille): Maybe sample this measurement if we don't want to slow down everyone.
-      // TODO(cyrille): Only do it at first render for a given session.
-      const timeToInteractiveMillisecs = window.performance.now()
-      const landingPageKind = this.state.landingPageContent.kind
-      this.maybeFetchSpecificJob().then((specificJob): void => {
-        this.props.dispatch(loadLandingPage(
-          timeToInteractiveMillisecs, landingPageKind, specificJob))
-      })
-    }
+    const landingPageKind = this.state.landingPageContent.kind
+    this.maybeFetchSpecificJob().then((specificJob): void => {
+      this.props.dispatch(loadLandingPage(landingPageKind, specificJob))
+    })
   }
 
   // Fetch job info if this is a landing page about a specific job.
-  private maybeFetchSpecificJob(): Promise<bayes.bob.Job> {
+  private maybeFetchSpecificJob(): Promise<bayes.bob.Job|null> {
     const {specificJobName} = this.props.match.params
     if (!specificJobName) {
       return Promise.resolve(null)
     }
     // Return null for the fetched job if any error happens.
-    return fetchFirstSuggestedJob(specificJobName).catch((): bayes.bob.Job => null)
+    return fetchFirstSuggestedJob(specificJobName).catch((): bayes.bob.Job|null => null)
   }
 
   private handleVisibility = _memoize((sectionName): ((v) => void) => (isVisible): void => {
@@ -1077,7 +1074,7 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
         <span style={{flex: 1}} />
 
         <LoginButton isSignUp={true} visualElement="scrolling-nav-bar" type="validation">
-          {isLateSignupEnabled ? 'Commencer' : "S'inscrire"}
+          Commencer
         </LoginButton>
       </div>
     </div>
@@ -1131,7 +1128,10 @@ class LandingPageBase extends React.PureComponent<LandingPageProps, LandingPageS
     </StaticPage>
   }
 }
-const LandingPage = connect()(withRouter(LandingPageBase))
+const LandingPage = connect(({app: {hasLoadedApp = false}}: RootState): {hasLoadedApp: boolean} =>
+  ({
+    hasLoadedApp,
+  }))(withRouter(LandingPageBase))
 
 
 export default LandingPage

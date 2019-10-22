@@ -5,6 +5,7 @@ import datetime
 import json
 import os
 import typing
+from typing import Any, Callable, Dict, List, Optional
 import unittest
 from unittest import mock
 
@@ -12,37 +13,35 @@ from google.protobuf import json_format
 import mongomock
 import requests
 import requests_mock
-import typing_extensions
 
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server.asynchronous import sync_user_elasticsearch
 
+if typing.TYPE_CHECKING:
+    import typing_extensions
+
+    # TODO(pascal): Drop once requests_mock gets typed.
+    class _RequestsMock(typing_extensions.Protocol):
+
+        def get(  # pylint: disable=invalid-name
+                self, path: str, status_code: int = 200, text: str = '',
+                json: Any = None,  # pylint: disable=redefined-outer-name
+                headers: Optional[Dict[str, str]] = None) -> requests.Response:
+            """Decide what to do when a get request is sent."""
+
+        def post(  # pylint: disable=invalid-name
+                self, path: str, status_code: int = 200, text: str = '',
+                json: Any = None,  # pylint: disable=redefined-outer-name
+                headers: Optional[Dict[str, str]] = None,
+                request_headers: Optional[Dict[str, str]] = None) -> requests.Response:
+            """Decide what to do when a post request is sent."""
+
 
 # TODO(pascal): Drop once requests_mock gets typed.
 _requests_mock_mock = typing.cast(  # pylint: disable=invalid-name
-    typing.Callable[[], typing.Callable[
-        [typing.Callable[..., typing.Any]], typing.Callable[..., typing.Any]]],
+    Callable[[], Callable[[Callable[..., Any]], Callable[..., Any]]],
     requests_mock.mock)
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-class _RequestsMock(typing_extensions.Protocol):
-
-    def get(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,  # pylint: disable=redefined-outer-name
-            headers: typing.Optional[typing.Dict[str, str]] = None) \
-            -> requests.Response:
-        """Decide what to do when a get request is sent."""
-
-    def post(  # pylint: disable=invalid-name
-            self, path: str, status_code: int = 200, text: str = '',
-            json: typing.Any = None,  # pylint: disable=redefined-outer-name
-            headers: typing.Optional[typing.Dict[str, str]] = None,
-            request_headers: typing.Optional[typing.Dict[str, str]] = None) \
-            -> requests.Response:
-        """Decide what to do when a post request is sent."""
 
 
 @mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2017, 11, 16))
@@ -238,6 +237,7 @@ class SyncTestCase(unittest.TestCase):
                     'source': 'facebook',
                 },
                 'hasAccount': True,
+                'isHooked': True,
             },
             json.loads(body))
 
@@ -256,8 +256,7 @@ class SyncTestCase(unittest.TestCase):
             'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
 
     def _check_city_corner_case(
-            self, expected_city: typing.Dict[str, typing.Any],
-            city_json: typing.Dict[str, typing.Any]) -> None:
+            self, expected_city: Dict[str, Any], city_json: Dict[str, Any]) -> None:
 
         self._user_db.user.insert_one({
             'projects': [{'city': {'cityId': '69123'}}],
@@ -296,7 +295,7 @@ class SyncTestCase(unittest.TestCase):
         'ELASTICSEARCH_URL': 'http://elastic-dev:9200',
         'AWS_CONTAINER_CREDENTIALS_RELATIVE_URI': '/get-my-credentials',
     })
-    def test_es_client_from_env_aws_in_docker(self, mock_requests: _RequestsMock) -> None:
+    def test_es_client_from_env_aws_in_docker(self, mock_requests: '_RequestsMock') -> None:
         """Get an Elasticsearch client for a task running in AWS ECS Docker."""
 
         mock_requests.get(
@@ -333,7 +332,7 @@ class SyncTestCase(unittest.TestCase):
         http_auth = client.transport.kwargs['http_auth']
         self.assertFalse(http_auth)
 
-    def _compute_user_data(self, user: user_pb2.User) -> typing.Dict[str, typing.Any]:
+    def _compute_user_data(self, user: user_pb2.User) -> Dict[str, Any]:
         if not user.HasField('registered_at'):
             user.registered_at.GetCurrentTime()
         self._user_db.user.drop()
@@ -342,7 +341,7 @@ class SyncTestCase(unittest.TestCase):
             '--registered-from', '2017-07',
             '--no-dry-run', '--disable-sentry'])
         kwargs = self.mock_elasticsearch.create.call_args[1]
-        return typing.cast(typing.Dict[str, typing.Any], json.loads(kwargs.pop('body')))
+        return typing.cast(Dict[str, Any], json.loads(kwargs.pop('body')))
 
     def test_infinite_salary(self) -> None:
         """Test that infinite salaries are not kept."""
@@ -369,8 +368,8 @@ class SyncTestCase(unittest.TestCase):
     def test_age_group(self) -> None:
         """Test various age groups."""
 
-        age_group_counts: typing.Dict[str, int] = collections.defaultdict(int)
-        age_groups: typing.List[str] = []
+        age_group_counts: Dict[str, int] = collections.defaultdict(int)
+        age_groups: List[str] = []
 
         for year in range(1940, 2020):
             user = user_pb2.User()
@@ -388,7 +387,7 @@ class SyncTestCase(unittest.TestCase):
             set(age_group_counts.keys()))
 
     def _compute_user_data_for_nps(self, responded_at: datetime.datetime, score: int) \
-            -> typing.Dict[str, typing.Any]:
+            -> Dict[str, Any]:
         user = user_pb2.User()
         response = user.net_promoter_score_survey_response
         response.responded_at.FromDatetime(responded_at)
@@ -431,8 +430,7 @@ class SyncTestCase(unittest.TestCase):
         mock_warning.assert_called_once_with('Cannot convert nps_score %s', 200)
 
     def _compute_data_bob_has_helped(
-            self, created_at: datetime.datetime, bob_has_helped: str) \
-            -> typing.Dict[str, typing.Any]:
+            self, created_at: datetime.datetime, bob_has_helped: str) -> Dict[str, Any]:
         user = user_pb2.User()
         user.registered_at.FromDatetime(now.get())
         status = user.employment_status.add()
@@ -496,7 +494,7 @@ class SyncTestCase(unittest.TestCase):
 
         mock_warning.assert_called_once_with('bobHasHelped field has unknown answer "%s"', 'WEIRD')
 
-    def _compute_data_feedback_score(self, feedback_score: int) -> typing.Dict[str, typing.Any]:
+    def _compute_data_feedback_score(self, feedback_score: int) -> Dict[str, Any]:
         user = user_pb2.User()
         project = user.projects.add()
         project.feedback.score = feedback_score

@@ -18,6 +18,7 @@ You can try it out on a local instance:
 
 import datetime
 import typing
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -44,14 +45,13 @@ def check_coverage(missions: pd.DataFrame) -> bool:
         return False
 
     # We expect at least 75% of the départements to have more than 2 missions.
-    if missions.groupby('_id').count().quantile(q=0.25) < 2:
+    if missions.groupby('_id').count().quantile(q=0.25).missions < 2:
         return False
 
     return True
 
 
-def csv2dicts(civic_service_missions_csv: str, today: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def csv2dicts(civic_service_missions_csv: str, today: Optional[str] = None) -> List[Dict[str, Any]]:
     """Import civic service missions data per departement in MongoDB.
 
     Args:
@@ -95,9 +95,9 @@ def csv2dicts(civic_service_missions_csv: str, today: typing.Optional[str] = Non
     missions_recent = missions[missions.date_formatted >= earlier_start]
 
     # Keeping only a maximum of 5 missions per departement.
-    def _create_missions(missions: pd.DataFrame) -> typing.List[typing.Dict[str, typing.Any]]:
+    def _create_missions(missions: pd.DataFrame) -> List[Dict[str, Any]]:
         return typing.cast(
-            typing.List[typing.Dict[str, typing.Any]],
+            List[Dict[str, Any]],
             missions[[
                 'organism', 'link', 'duration', 'start_date', 'domain', 'title', 'description']]
             .rename(columns={'organism': 'associationName'})
@@ -115,8 +115,7 @@ def csv2dicts(civic_service_missions_csv: str, today: typing.Optional[str] = Non
         raise ValueError('The putative new data lacks coverage.')
 
     return typing.cast(
-        typing.List[typing.Dict[str, typing.Any]],
-        missions_per_departement.to_dict(orient='records'))
+        List[Dict[str, Any]], missions_per_departement.to_dict(orient='records'))
 
 
 if __name__ == '__main__':

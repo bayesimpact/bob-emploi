@@ -8,10 +8,10 @@ import {genderizeJob} from 'store/job'
 
 import {ExternalLink, GrowingNumber} from 'components/theme'
 import laBonneFormationImage from 'images/labonneformation-picto.png'
-import NewPicto from 'images/advices/picto-training.svg'
+import Picto from 'images/advices/picto-training.svg'
 
-import {MethodSuggestionList, CardProps, CardWithContentProps, EmailTemplate, TakeAwayTemplate,
-  WithAdvice, WithAdviceData, connectExpandedCardWithContent} from './base'
+import {MethodSuggestionList, CardProps, CardWithContentProps, EmailTemplate, EmailTemplateProps,
+  connectExpandedCardWithContent} from './base'
 
 const valueToColor = {
   // 0 is unknown
@@ -49,7 +49,7 @@ class ExpandedAdviceCardContentBase
   }
 
   public static getTipsTemplates = (props):
-  Pick<EmailTemplate['props'], 'content' | 'contentName' | 'title'>[] => {
+  Pick<EmailTemplateProps, 'content' | 'contentName' | 'title'>[] => {
     const {profile: {gender = undefined} = {}, project: {targetJob = undefined} = {},
       userYou = tutoyer} = props
     const jobName = lowerFirstLetter(genderizeJob(targetJob, gender))
@@ -103,8 +103,12 @@ Bien cordialement,
   }
 
   private createLBFLink(): string {
+    const {targetJob: {jobGroup: {name = undefined} = {}} = {}} = this.props.project
     // TODO(cyrille): Make a working link.
-    const domain = slugify(this.props.project.targetJob.jobGroup.name)
+    const domain = name && slugify(name)
+    if (!domain) {
+      return 'https://labonneformation.pole-emploi.fr/formations/'
+    }
     return `https://labonneformation.pole-emploi.fr/formations/${domain}/france`
   }
 
@@ -169,7 +173,7 @@ Bien cordialement,
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.Trainings, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.Trainings, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
@@ -228,7 +232,12 @@ class TrainingSuggestionBase extends React.PureComponent<SuggestionProps> {
   }
 
   public render(): React.ReactNode {
-    const {onClick, training: {cityName, name, hiringPotential, url}, style} = this.props
+    const {onClick, training: {
+      cityName = '',
+      name = '',
+      hiringPotential = undefined,
+      url = undefined,
+    } = {}, style} = this.props
     const containerStyle: React.CSSProperties = {
       color: 'inherit',
       textDecoration: 'none',
@@ -260,16 +269,4 @@ class TrainingSuggestionBase extends React.PureComponent<SuggestionProps> {
 const TrainingSuggestion = Radium(TrainingSuggestionBase)
 
 
-class TakeAwayBase extends React.PureComponent<WithAdviceData<bayes.bob.Trainings> & WithAdvice> {
-  public render(): React.ReactNode {
-    const {trainings = []} = this.props.adviceData
-    if (trainings.length) {
-      return <TakeAwayTemplate found="formation" isFeminine={true} list={trainings} />
-    }
-    const tips = ExpandedAdviceCardContentBase.getTipsTemplates({})
-    return <TakeAwayTemplate found="astuce" isFeminine={true} list={tips} />
-  }
-}
-const TakeAway = connectExpandedCardWithContent<{}, bayes.bob.Trainings, WithAdvice>()(TakeAwayBase)
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

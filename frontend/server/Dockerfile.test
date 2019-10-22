@@ -1,4 +1,4 @@
-FROM python:3.7
+FROM python:3.8
 
 # TEST ONLY.
 #
@@ -16,7 +16,7 @@ ARG PROTOBUF_VERSION=3.7.0
 # Install dependencies
 RUN apt-get update -qqy && apt-get install -qqy --no-install-recommends unzip locales && \
   # Install needed Python dependencies.
-  pip install 'algoliasearch>=2.0' 'python-emploi-store>=0.7.0' certifi 'elasticsearch<6.0.0' flask mailjet_rest mongo mypy_extensions oauth2client protobuf pyfarmhash pyopenssl requests-aws4auth sentry-sdk[flask] typing_extensions unidecode uwsgi xmltodict && \
+  pip install 'algoliasearch>=2.0' 'python-emploi-store>=0.7.0' certifi 'elasticsearch<6.0.0' flask mailjet_rest mongo oauth2client protobuf pyfarmhash pyopenssl requests-aws4auth sentry-sdk[flask] unidecode uwsgi xmltodict && \
   # Install Protobuf compiler.
   curl --silent -L "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip" -o protoc.zip && \
   unzip -qq protoc.zip && rm protoc.zip && rm readme.txt && mv bin/protoc /usr/local/bin && mkdir /usr/local/share/proto && mv include/google /usr/local/share/proto && \
@@ -47,12 +47,12 @@ COPY frontend/server/asynchronous/mail/test /work/bob_emploi/frontend/server/asy
 COPY frontend/server/asynchronous/mail/templates /work/bob_emploi/frontend/server/asynchronous/mail/templates/
 COPY frontend/server/Dockerfile* /work/bob_emploi/frontend/server/
 # TODO(pascal): Clean up our typing stubs for requests_mock package once it gets typed.
-RUN [ ! -f /usr/local/lib/python3.7/site-packages/requests_mock/__init__.pyi ]
-RUN ! ls /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/*/requests_mock/__init__.pyi 2> /dev/null
-COPY frontend/server/test/vendor/requests_mock/* /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/requests_mock/
+RUN [ ! -f /usr/local/lib/python3.8/site-packages/requests_mock/__init__.pyi ]
+RUN ! ls /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/*/requests_mock/__init__.pyi 2> /dev/null
+COPY frontend/server/test/vendor/requests_mock/* /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/2and3/requests_mock/
 # TODO(pascal): Remove once https://github.com/python/typeshed/pull/2904 is live in mypy.
-COPY frontend/server/test/vendor/flask/* /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/flask/
-COPY frontend/server/test/vendor/werkzeug/* /usr/local/lib/python3.7/site-packages/mypy/typeshed/third_party/2and3/werkzeug/
+COPY frontend/server/test/vendor/flask/* /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/2and3/flask/
+COPY frontend/server/test/vendor/werkzeug/* /usr/local/lib/python3.8/site-packages/mypy/typeshed/third_party/2and3/werkzeug/
 
 # TEST ONLY.
 RUN pybabel extract bob_emploi/frontend/server/ -k translate_string -k make_translatable_string -o strings.pot

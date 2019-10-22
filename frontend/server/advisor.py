@@ -6,10 +6,10 @@ See http://go/bob:advisor-design.
 import locale
 import logging
 import threading
-import typing
+from typing import Dict, List, Optional, Set
 from urllib import parse
 
-from pymongo.database import Database
+from pymongo import database as pymongo_database
 import mailjet_rest
 
 from bob_emploi.frontend.server import auth
@@ -26,7 +26,7 @@ from bob_emploi.frontend.api import user_pb2
 def maybe_advise(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: Database,
+        database: pymongo_database.Database,
         base_url: str = 'http://localhost:3000') -> None:
     """Check if a project needs advice and populate all advice fields if not.
 
@@ -44,10 +44,24 @@ def maybe_advise(
             logging.warning('Could not send the activation email: %s', error)
 
 
+def maybe_send_late_activation_emails(
+        user: user_pb2.User,
+        database: pymongo_database.Database,
+        base_url: str) -> None:
+    """Send activation emails for projects already advised but that had no email at the time."""
+
+    for project in user.projects:
+        if project.advices:
+            try:
+                _send_activation_email(user, project, database, base_url)
+            except mailjet_rest.client.ApiError as error:
+                logging.warning('Could not send the activation email: %s', error)
+
+
 def _maybe_recommend_advice(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: Database) -> bool:
+        database: pymongo_database.Database) -> bool:
     if user.features_enabled.advisor == user_pb2.CONTROL or project.advices:
         return False
     advices = compute_advices_for_project(user, project, database)
@@ -60,7 +74,7 @@ def _maybe_recommend_advice(
 def compute_advices_for_project(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: Database,
+        database: pymongo_database.Database,
         scoring_timeout_seconds: float = 3) -> project_pb2.Advices:
     """Advise on a user project.
 
@@ -74,8 +88,8 @@ def compute_advices_for_project(
 
     scoring_project = scoring.ScoringProject(
         project, user.profile, user.features_enabled, database, now=now.get())
-    scores: typing.Dict[str, float] = {}
-    reasons: typing.Dict[str, typing.List[str]] = {}
+    scores: Dict[str, float] = {}
+    reasons: Dict[str, List[str]] = {}
     advice_modules = _advice_modules(database)
     advice = project_pb2.Advices()
     for module in advice_modules:
@@ -105,7 +119,7 @@ def compute_advices_for_project(
         advice_modules,
         key=lambda m: (scores.get(m.advice_id, 0), m.advice_id),
         reverse=True)
-    incompatible_modules: typing.Set[str] = set()
+    incompatible_modules: Set[str] = set()
     for module in modules:
         score = scores.get(module.advice_id)
         if not score:
@@ -126,7 +140,7 @@ def compute_advices_for_project(
 
         _maybe_override_advice_data(piece_of_advice, module, scoring_project)
 
-    if not advice.advices:
+    if not advice.advices and advice_modules:
         logging.warning(
             'We could not find *any* advice for a project:\n%s', scoring_project)
 
@@ -134,8 +148,8 @@ def compute_advices_for_project(
 
 
 def _compute_score_and_reasons(
-        scores: typing.Dict[str, float],
-        reasons: typing.Dict[str, typing.List[str]],
+        scores: Dict[str, float],
+        reasons: Dict[str, List[str]],
         module: advisor_pb2.AdviceModule,
         scoring_model: scoring.ModelBase,
         scoring_project: scoring.ScoringProject) -> None:
@@ -164,7 +178,7 @@ def _maybe_override_advice_data(
 def _send_activation_email(
         user: user_pb2.User,
         project: project_pb2.Project,
-        database: Database,
+        database: pymongo_database.Database,
         base_url: str) -> None:
     """Send an email to the user just after we have defined their diagnosis."""
 
@@ -178,14 +192,20 @@ def _send_activation_email(
         project, user.profile, user.features_enabled, database, now=now.get())
     auth_token = parse.quote(auth.create_token(user.user_id, is_using_timestamp=True))
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))
+    coaching_email_frequency_name = \
+        user_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency)
     data = {
         'changeEmailSettingsUrl':
             f'{base_url}/unsubscribe.html?user={user.user_id}&auth={settings_token}&'
-            'coachingEmailFrequency=' +
-            user_pb2.EmailFrequency.Name(user.profile.coaching_email_frequency),
+            f'coachingEmailFrequency={coaching_email_frequency_name}',
         'date': now.get().strftime('%d %B %Y'),
         'firstName': user.profile.name,
         'gender': user_pb2.Gender.Name(user.profile.gender),
+        'isCoachingEnabled':
+            'True' if
+            user.profile.coaching_email_frequency and
+            user.profile.coaching_email_frequency != user_pb2.EMAIL_NONE
+            else '',
         'loginUrl': f'{base_url}?userId={user.user_id}&authToken={auth_token}',
         'ofJob': scoring_project.populate_template('%ofJobName', raise_on_missing_var=True),
     }
@@ -218,7 +238,7 @@ def list_all_tips(
         user: user_pb2.User,
         project: project_pb2.Project,
         piece_of_advice: project_pb2.Advice,
-        database: Database) -> typing.List[action_pb2.ActionTemplate]:
+        database: pymongo_database.Database) -> List[action_pb2.ActionTemplate]:
     """List all available tips for a piece of advice.
 
     Args:
@@ -256,12 +276,13 @@ _ADVICE_MODULES: proto.MongoCachedCollection[advisor_pb2.AdviceModule] = \
     proto.MongoCachedCollection(advisor_pb2.AdviceModule, 'advice_modules')
 
 
-def _advice_modules(database: Database) -> proto.CachedCollection[advisor_pb2.AdviceModule]:
+def _advice_modules(database: pymongo_database.Database) \
+        -> proto.CachedCollection[advisor_pb2.AdviceModule]:
     return _ADVICE_MODULES.get_collection(database)
 
 
-def get_advice_module(advice_id: str, database: Database) \
-        -> typing.Optional[advisor_pb2.AdviceModule]:
+def get_advice_module(advice_id: str, database: pymongo_database.Database) \
+        -> Optional[advisor_pb2.AdviceModule]:
     """Get a module by its ID."""
 
     return next((a for a in _advice_modules(database) if a.advice_id == advice_id), None)
@@ -272,7 +293,8 @@ _TIP_TEMPLATES: proto.MongoCachedCollection[action_pb2.ActionTemplate] = \
     proto.MongoCachedCollection(action_pb2.ActionTemplate, 'tip_templates')
 
 
-def _tip_templates(database: Database) -> proto.CachedCollection[action_pb2.ActionTemplate]:
+def _tip_templates(database: pymongo_database.Database) \
+        -> proto.CachedCollection[action_pb2.ActionTemplate]:
     """Returns a list of known tip templates as protos."""
 
     return _TIP_TEMPLATES.get_collection(database)

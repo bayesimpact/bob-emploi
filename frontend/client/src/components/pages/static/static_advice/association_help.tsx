@@ -12,39 +12,41 @@ const adviceId = 'soutien-association'
 
 const name = 'Plus de soutien'
 
+const TESTIMONIALS = [
+  <TestimonialCard
+    author={{age: 40, jobName: 'Assistante qualité', name: 'Camille'}}
+    isLong={true}
+    key="testimonial-1">
+    Bonjour, les messages que vous m'envoyez déjà représentent un <strong>soutien </strong>
+    pour moi, qui me booste à <strong>élargir mes recherches</strong>, je sens que je suis
+    sur la bonne voie…
+  </TestimonialCard>,
+  <TestimonialCard
+    author={{age: 23, isMan: true, jobName: "Ingénieur d'études en industrie", name: 'Abdel'}}
+    isLong={true}
+    key="testimonial-2">
+    La plateforme <strong>Bob Emploi</strong> donne des <strong>conseils</strong> pertinents
+    auxquels je n'aurais pas forcément pensé, comme se mettre dans une association pour
+    chercher avec d'autres personnes.
+  </TestimonialCard>,
+  <TestimonialCard
+    author={{age: 32, isMan: true, jobName: 'Développeur informatique', name: 'Marc-Antoine'}}
+    isLong={true}
+    key="testimonial-3">
+    C'est amusant, je suis exactement dans cette démarche depuis 2 jours tout juste. Merci
+    pour le mail, les conseils et témoignages qu'il contient. Merci pour le mail
+    "clé en main" et les suggestions d'utilisation. Trop bien.<br />
+    Je me sens regonflé d'envie et de <strong>motivation</strong>.<br />
+    Merci Bob, Je suis fan de vous.
+  </TestimonialCard>,
+]
+
 
 class Page extends React.PureComponent<AdvicePageProps> {
   public render(): React.ReactNode {
     return <StaticAdvicePage
       adviceId={adviceId} {...this.props}
-      testimonials={[
-        <TestimonialCard
-          author={{age: 40, jobName: 'Assistante qualité', name: 'Camille'}}
-          isLong={true}
-          key="testimonial-1">
-          Bonjour, les messages que vous m'envoyez déjà représentent un <strong>soutien </strong>
-          pour moi, qui me booste à <strong>élargir mes recherches</strong>, je sens que je suis
-          sur la bonne voie…
-        </TestimonialCard>,
-        <TestimonialCard
-          author={{age: 23, isMan: true, jobName: "Ingénieur d'études en industrie", name: 'Abdel'}}
-          isLong={true}
-          key="testimonial-2">
-          La plateforme <strong>Bob Emploi</strong> donne des <strong>conseils</strong> pertinents
-          auxquels je n'aurais pas forcément pensé, comme se mettre dans une association pour
-          chercher avec d'autres personnes.
-        </TestimonialCard>,
-        <TestimonialCard
-          author={{age: 32, isMan: true, jobName: 'Développeur informatique', name: 'Marc-Antoine'}}
-          isLong={true}
-          key="testimonial-3">
-          C'est amusant, je suis exactement dans cette démarche depuis 2 jours tout juste. Merci
-          pour le mail, les conseils et témoignages qu'il contient. Merci pour le mail
-          "clé en main" et les suggestions d'utilisation. Trop bien.<br />
-          Je me sens regonflé d'envie et de <strong>motivation</strong>.<br />
-          Merci Bob, Je suis fan de vous.
-        </TestimonialCard>,
-      ]}
+      testimonials={TESTIMONIALS}
       title={`Restez bien entouré pendant votre recherche avec ${config.productName}`}>
       <AdviceSection
         adviceId={adviceId} title="bien s'entourer pendant sa recherche">

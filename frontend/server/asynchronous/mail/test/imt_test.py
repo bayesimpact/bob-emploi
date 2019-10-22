@@ -30,16 +30,16 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
             'imt': {
                 'employmentTypePercentages': [
                     {
-                        'employmentType': 'CDD_LESS_EQUAL_3_MONTHS',
-                        'percentage': 23.53,
+                        'employmentType': 'CDI',
+                        'percentage': 47.06,
                     },
                     {
                         'employmentType': 'CDD',
                         'percentage': 29.41,
                     },
                     {
-                        'employmentType': 'CDI',
-                        'percentage': 47.06,
+                        'employmentType': 'CDD_LESS_EQUAL_3_MONTHS',
+                        'percentage': 23.53,
                     },
                 ],
                 'yearlyAvgOffersPer10Candidates': 3,
@@ -271,15 +271,15 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
         self.database.local_diagnosis.update_one({'_id': '69:B1234'}, {'$set': {
             'imt.employmentTypePercentages': [
                 {
-                    'employmentType': 'CDI',
-                    'percentage': 23.53,
+                    'percentage': 47.06,
                 },
                 {
                     'employmentType': 'CDD',
                     'percentage': 29.41,
                 },
                 {
-                    'percentage': 47.06,
+                    'employmentType': 'CDI',
+                    'percentage': 23.53,
                 },
             ],
         }})
@@ -358,7 +358,7 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
         }})
         self._assert_user_receives_campaign(should_be_sent=True)
         self.assertIn(
-            'https://www.bob-emploi.fr/projet/0/spontaneous-application?',
+            'https://www.bob-emploi.fr/projet/0/methode/spontaneous-application?',
             self._variables.pop('applicationModes')['link'])
 
     def test_best_application_mode_is_network(self) -> None:
@@ -382,8 +382,28 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
         }})
         self._assert_user_receives_campaign(should_be_sent=True)
         self.assertIn(
-            'https://www.bob-emploi.fr/projet/0/network-test?',
+            'https://www.bob-emploi.fr/projet/0/methode/network-test?',
             self._variables.pop('applicationModes')['link'])
+
+    def test_best_application_mode_is_other(self) -> None:
+        """Best application mode is other channels."""
+
+        self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
+            'applicationModes': {
+                'A0Z42': {
+                    'modes': [
+                        {
+                            'mode': 'OTHER_CHANNELS',
+                            'percentage': 95,
+                        },
+                        {
+                            'percentage': 5,
+                        },
+                    ],
+                },
+            },
+        }})
+        self._assert_user_receives_campaign(should_be_sent=False)
 
     def test_no_market_stress(self) -> None:
         """Not enough sections (no market stress), no email."""

@@ -1,8 +1,9 @@
 """Module defining the checker API for airtable_to_protos, and its implementations."""
 
+import datetime
 import logging
 import re
-import typing
+from typing import Any, Callable, List, Iterator, Tuple
 
 from google.protobuf import message
 import mongomock
@@ -37,14 +38,17 @@ class FixableValueError(ValueError):
         self.fixed_value = fixed_value
 
 
-def _get_all_values(field_value: typing.Any) -> typing.Iterator[typing.Any]:
+def _get_all_values(field_value: Any, field_name: str) -> Iterator[Tuple[Any, str]]:
     if isinstance(field_value, str):
-        yield field_value
+        yield field_value, field_name
         return
     try:
-        yield from field_value[:]
+        indexed_values = enumerate(field_value[:])
     except TypeError:
-        yield field_value
+        yield field_value, field_name
+        return
+    for index, value in indexed_values:
+        yield value, f'{field_name}.{index:d}'
 
 
 class Checker(object):
@@ -82,7 +86,7 @@ class ValueChecker(object):
     # The name of the checker, for logging purposes.
     name: str = 'basic value checker'
 
-    def check_value(self, unused_value: typing.Any) -> bool:
+    def check_value(self, unused_value: Any) -> bool:
         """Whether this specific value passes the check or not."""
 
         raise NotImplementedError(
@@ -93,19 +97,26 @@ class _AllStringFieldsChecker(Checker, ValueChecker):  # pylint: disable=abstrac
     """Abstract class to inherit when all string fields should be checked by the check_value method.
     """
 
-    def _check_value_augmented(self, field_value: typing.Any, field: str) -> bool:
+    def _check_value_augmented(self, field_value: Any, field: str) -> bool:
         try:
             return self.check_value(field_value)
         except ValueError as err:
             raise ValueError(f'{err!s} in the field "{field}"')
 
     def check(self, proto: message.Message) -> bool:
-        return all(
-            self._check_value_augmented(value, field)
-            for field in proto.DESCRIPTOR.fields_by_name
-            for value in _get_all_values(getattr(proto, field))
-            if isinstance(value, str)
-        )
+        errors: List[ValueError] = []
+        res = True
+        for field in proto.DESCRIPTOR.fields_by_name:
+            for value, field_with_index in _get_all_values(getattr(proto, field), field):
+                if not isinstance(value, str):
+                    continue
+                try:
+                    res &= self._check_value_augmented(value, field_with_index)
+                except ValueError as err:
+                    errors.append(err)
+        if errors:
+            raise ValueError('\n'.join(str(err) for err in errors))
+        return res
 
 
 class QuotesChecker(_AllStringFieldsChecker):
@@ -158,8 +169,18 @@ def _create_mock_scoring_project() -> scoring.ScoringProject:
     """Create a mock scoring_project."""
 
     _db = mongomock.MongoClient().test
+    _db.job_group_info.insert_one({
+        '_id': 'A1234',
+        'requirements': {
+            'diplomas': [{'name': 'Bac+2'}],
+        },
+    })
     user_profile = user_pb2.UserProfile()
     project = project_pb2.Project()
+    project.target_job.job_group.rome_id = 'A1234'
+    project.created_at.FromDatetime(datetime.datetime.now())
+    project.job_search_started_at.FromDatetime(
+        datetime.datetime.now() - datetime.timedelta(days=30))
     features = user_pb2.Features()
     return scoring.ScoringProject(project, user_profile, features, _db)
 
@@ -305,10 +326,9 @@ class PartialSentenceChecker(ValueChecker):
 # TODO(cyrille): Test this function for nested protos, or drop the TYPE_MESSAGE branch entirely.
 def collect_formatted_strings(
         proto: message.Message,
-        field_modifier: typing.Callable[
-            [str, str, 'options_pb2.StringFormat'], str] = lambda s, p, f: s,
-        path: typing.Tuple[str, ...] = ()) \
-        -> typing.Iterator[typing.Tuple[str, str, 'options_pb2.StringFormat']]:
+        field_modifier: Callable[[str, str, 'options_pb2.StringFormat'], str] = lambda s, p, f: s,
+        path: Tuple[str, ...] = ()) \
+        -> Iterator[Tuple[str, str, 'options_pb2.StringFormat']]:
     """Iterate recursively through all fields of a proto message to find fields with
     specific string formats.
 

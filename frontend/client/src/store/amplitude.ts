@@ -22,17 +22,18 @@ export const createAmplitudeMiddleware =
     const defer: AmplitudeDefer = {callbacks: []}
     import(/* webpackChunkName: "amplitude" */ 'amplitude-js').then(
       ({default: amplitudeJs}): void => {
-        defer.amplitude = amplitudeJs.getInstance()
-        defer.amplitude.setVersionName(config.clientVersion)
+        const instance = amplitudeJs.getInstance()
+        defer.amplitude = instance
+        instance.setVersionName(config.clientVersion)
         // More info about Amplitude client options:
         // https://amplitude.zendesk.com/hc/en-us/articles/115001361248#settings-configuration-options
-        defer.amplitude.init(config.amplitudeToken, null, {
+        instance.init(config.amplitudeToken, undefined, {
           includeGclid: true,
           includeReferrer: true,
           includeUtm: true,
           saveParamsReferrerOncePerSession: false,
         })
-        defer.callbacks.forEach((callback): void => callback(defer.amplitude))
+        defer.callbacks.forEach((callback): void => callback(instance))
       })
 
     const logger = new Logger(actionTypesToLog)

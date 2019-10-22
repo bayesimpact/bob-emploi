@@ -1,13 +1,11 @@
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
-import React from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
 import cyrilleImage from 'images/people/cyrille.png'
 import joannaImage from 'images/people/joanna.jpg'
 import johnImage from 'images/people/john.png'
 import marielaureImage from 'images/people/marie-laure.png'
-import louImage from 'images/people/lou.jpg'
 import nicolasImage from 'images/people/nicolas.jpg'
 import pascalImage from 'images/people/pascal.png'
 import paulImage from 'images/people/paul.png'
@@ -103,17 +101,6 @@ const joannaBio = {
   linkedin: 'https://www.linkedin.com/in/joannabeaufoy/',
 }
 
-const louBio = {
-  description: "Engagée dans la vie associative de son école depuis plusieurs années, Lou-Salomé \
-    s'intéresse à la dynamique de l'entrepreunariat social et plus particulièrement aux projets de \
-    lutte contre l'exclusion fondés sur un discours d'empowerment. Curieuse, elle aime rencontrer \
-    et s'inspirer des personnes autour d'elle et sera toujours partante pour une activité de \
-    groupe, autour d'un bon jeu de société ou armée d'un ballon.",
-  education: 'Sciences Po Lille',
-  experience: 'Wintegreat, Enactus à Sciences Po Lille',
-  linkedin: 'https://www.linkedin.com/in/lou-salomé-anasthase-8a0410156/',
-}
-
 interface Person {
   bio: {
     description: string
@@ -141,8 +128,6 @@ const allPersons: Person[] = [
     position: 'Chargé de communication'},
   {bio: joannaBio, name: 'Joanna Beaufoy', picture: joannaImage,
     position: 'Responsable contenu et soutien des utilisateurs'},
-  {bio: louBio, name: 'Lou-Salomé Anasthase', picture: louImage,
-    position: 'Stagiaire, assistante responsable contenu et communication'},
 ]
 
 
@@ -152,12 +137,8 @@ const tileSize = {
 }
 
 
-class EmptyPersonTile extends React.PureComponent<{}> {
-  public render(): React.ReactNode {
-    return <div style={tileSize} />
-  }
-}
-
+const EmptyPersonTileBase: React.FC = () => <div style={tileSize} />
+const EmptyPersonTile = React.memo(EmptyPersonTileBase)
 
 
 interface PersonTileProps {
@@ -169,157 +150,168 @@ interface PersonTileProps {
 }
 
 
-class PersonTileBase extends React.PureComponent<PersonTileProps> {
-  public static propTypes = {
-    isSelected: PropTypes.bool.isRequired,
-    name: PropTypes.string.isRequired,
-    onClick: PropTypes.func.isRequired,
-    picture: PropTypes.string.isRequired,
-    position: PropTypes.string.isRequired,
+const PersonTileBase: React.FC<PersonTileProps> = (props) => {
+  const {isSelected, name, onClick, position, picture} = props
+  const boxShadow = '0 12px 25px 0 rgba(0, 0, 0, 0.15)'
+  const personStyle: React.CSSProperties & {':hover': React.CSSProperties} = {
+    ':hover': {
+      boxShadow,
+    },
+    backgroundColor: '#fff',
+    boxShadow: isSelected ? boxShadow : 'initial',
+    color: colors.DARK,
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    textAlign: 'center',
+    ...tileSize,
+  }
+  const descriptionStyle: React.CSSProperties = {
+    display: 'flex',
+    flex: 1,
+    flexDirection: 'column',
+    height: 120,
+    justifyContent: 'center',
+  }
+  const nameStyle: React.CSSProperties = {
+    fontSize: 21,
+    fontWeight: 'bold',
+  }
+  const positionStyle: React.CSSProperties = {
+    fontSize: 14,
+    fontWeight: 500,
+    marginTop: 6,
   }
 
-  public render(): React.ReactNode {
-    const {isSelected, name, onClick, position, picture} = this.props
-    const boxShadow = '0 12px 25px 0 rgba(0, 0, 0, 0.15)'
-    const personStyle: React.CSSProperties & {':hover': React.CSSProperties} = {
-      ':hover': {
-        boxShadow,
-      },
-      backgroundColor: '#fff',
-      boxShadow: isSelected ? boxShadow : 'initial',
-      color: colors.DARK,
-      cursor: 'pointer',
-      display: 'flex',
-      flexDirection: 'column',
-      textAlign: 'center',
-      ...tileSize,
-    }
-    const descriptionStyle: React.CSSProperties = {
-      display: 'flex',
-      flex: 1,
-      flexDirection: 'column',
-      height: 120,
-      justifyContent: 'center',
-    }
-    const nameStyle: React.CSSProperties = {
-      fontSize: 21,
-      fontWeight: 'bold',
-    }
-    const positionStyle: React.CSSProperties = {
-      fontSize: 14,
-      fontWeight: 500,
-      marginTop: 6,
-    }
-
-    return <div style={personStyle} onClick={onClick}>
-      <img style={{display: 'block', width: '100%'}} src={picture} alt="" />
-      <div style={descriptionStyle}>
-        <div style={nameStyle}>{name}</div>
-        <div style={positionStyle}>{position}</div>
-      </div>
+  return <div style={personStyle} onClick={onClick}>
+    <img style={{display: 'block', width: '100%'}} src={picture} alt="" />
+    <div style={descriptionStyle}>
+      <div style={nameStyle}>{name}</div>
+      <div style={positionStyle}>{position}</div>
     </div>
-  }
+  </div>
 }
-const PersonTile = Radium(PersonTileBase)
+PersonTileBase.propTypes = {
+  isSelected: PropTypes.bool.isRequired,
+  name: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+  picture: PropTypes.string.isRequired,
+  position: PropTypes.string.isRequired,
+}
+const PersonTile = React.memo(Radium(PersonTileBase))
 
 
-interface TeamPageState {
+interface TeamPageRowProps {
+  getPersonClickHandler: (name: string) => () => void
   nbPersonInARow: number
+  personRow: readonly Person[]
+  rowIndex: number
   showPersonBio: string
 }
 
 
-export default class TeamPage extends React.PureComponent<{}, TeamPageState> {
-  public state = {
-    nbPersonInARow: isMobileVersion ? 1 : 3,
-    showPersonBio: '',
+const PersonRowBase: React.FC<TeamPageRowProps> = (props) => {
+  const {getPersonClickHandler, nbPersonInARow, personRow, rowIndex, showPersonBio} = props
+  const rowStyle = {
+    display: 'flex',
+    justifyContent: nbPersonInARow > 1 ? 'space-between' : 'space-around',
+    marginBottom: 70,
   }
-
-  private handleSetPersonBio = _memoize((personName: string): (() => void) => (): void =>
-    this.setState({showPersonBio: this.state.showPersonBio !== personName ? personName : ''}))
-
-  private renderPersonRow = (personRow: Person[], rowIndex: number): React.ReactNode => {
-    const {nbPersonInARow, showPersonBio} = this.state
-    const rowStyle = {
-      display: 'flex',
-      justifyContent: nbPersonInARow > 1 ? 'space-between' : 'space-around',
-      marginBottom: 70,
-    }
-    const fullPersonRow = personRow.concat(
-      new Array(nbPersonInARow - personRow.length).fill(false))
-    return <div key={`row-${rowIndex}`} style={rowStyle} >
-      {fullPersonRow.map((person, index): React.ReactNode => {
-        const personIndex = rowIndex * nbPersonInARow + index
-        const personKey = `person-${personIndex}`
-        if (person) {
-          return <PersonTile
-            key={personKey}
-            isSelected={showPersonBio === person.name}
-            onClick={this.handleSetPersonBio(person.name)} {...person} />
-        }
-        return <EmptyPersonTile key={personKey} />
-      })}
-    </div>
-  }
-
-  private handleBioOpen = (bioDiv): void => {
-    if (bioDiv) {
-      const clientHeight = document.documentElement.clientHeight
-      const divRect = bioDiv.getBoundingClientRect()
-      if (divRect.top < 0 || divRect.bottom > clientHeight) {
-        window.scroll({behavior: 'smooth', top: window.scrollY + divRect.top - (clientHeight / 2)})
+  const fullPersonRow = personRow.concat(
+    new Array(nbPersonInARow - personRow.length).fill(false))
+  return <div key={`row-${rowIndex}`} style={rowStyle} >
+    {fullPersonRow.map((person, index): React.ReactNode => {
+      const personIndex = rowIndex * nbPersonInARow + index
+      const personKey = `person-${personIndex}`
+      if (person) {
+        return <PersonTile
+          key={personKey}
+          isSelected={showPersonBio === person.name}
+          onClick={getPersonClickHandler(person.name)} {...person} />
       }
-    }
-  }
+      return <EmptyPersonTile key={personKey} />
+    })}
+  </div>
+}
+PersonRowBase.propTypes = {
+  getPersonClickHandler: PropTypes.func.isRequired,
+  nbPersonInARow: PropTypes.number.isRequired,
+  // @ts-ignore because the InferProps have a hard time here.
+  personRow: PropTypes.arrayOf(PropTypes.shape({
+    bio: PropTypes.object.isRequired,
+    name: PropTypes.string.isRequired,
+    picture: PropTypes.string.isRequired,
+    position: PropTypes.string.isRequired,
+  }).isRequired).isRequired,
+  rowIndex: PropTypes.number.isRequired,
+  showPersonBio: PropTypes.string.isRequired,
+}
+const PersonRow = React.memo(PersonRowBase)
 
-  private renderPersonList(personList): React.ReactNode {
-    const {nbPersonInARow, showPersonBio} = this.state
-    return new Array(Math.ceil(personList.length / nbPersonInARow)).fill(0).
-      map((unused, rowIndex): Person[] => personList.slice(
-        rowIndex * nbPersonInARow, (rowIndex + 1) * nbPersonInARow)).
-      map((personRow: Person[], rowIndex: number): React.ReactNode => {
-        return [
-          this.renderPersonRow(personRow, rowIndex),
-          <PersonBio
-            key={`bio-${rowIndex}`}
-            personRow={personRow}
-            onClose={this.handleSetPersonBio('')}
-            onOpen={this.handleBioOpen}
-            showPersonBio={showPersonBio} />,
-        ]
-      })
-  }
 
-  public render(): React.ReactNode {
-    const quoteStyle = {
-      fontSize: 18,
-      lineHeight: 1.7,
-      margin: isMobileVersion ? '30px auto 40px' : '60px auto 70px',
-      maxWidth: 650,
-      padding: '0 25px',
+const handleBioOpen = (bioDiv): void => {
+  if (bioDiv) {
+    const clientHeight = document.documentElement.clientHeight
+    const divRect = bioDiv.getBoundingClientRect()
+    if (divRect.top < 0 || divRect.bottom > clientHeight) {
+      window.scroll({behavior: 'smooth', top: window.scrollY + divRect.top - (clientHeight / 2)})
     }
-    return <StaticPage style={{backgroundColor: '#fff'}} page="equipe">
-      <TitleSection pageContent={{title: 'Notre équipe est déterminée à changer le monde'}} />
-      <div style={{padding: `0 ${MIN_CONTENT_PADDING}px`}}>
-        <div style={{margin: '0px auto', maxWidth: MAX_CONTENT_WIDTH}}>
-          <div style={quoteStyle}>
-            Nous sommes une petite équipe convaincue que la technologie peut être utilisée pour des
-            choses qui ont du sens, pas juste pour faire du profit.<br />
-            <br />
-            C'est pourquoi nous avons construit <strong>{config.productName}</strong> et créé{' '}
-            <ExternalLink
-              style={{color: 'inherit', fontWeight: 'bold', textDecoration: 'none'}}
-              href="http://www.bayesimpact.org">
-              Bayes&nbsp;Impact
-            </ExternalLink>, une association à but non lucratif, afin de la mettre au service
-            de chacun.
-          </div>
-          {this.renderPersonList(allPersons)}
-        </div>
-      </div>
-    </StaticPage>
   }
 }
+
+
+const TeamPage: React.FC = (): React.ReactElement => {
+  const nbPersonInARow = isMobileVersion ? 1 : 3
+  const [showPersonBio, setShowPersonBio] = useState('')
+  const getPersonClickHandler = useMemo(
+    (): ((bio: string) => () => void) => (bio: string): () => void =>
+      (): void => setShowPersonBio(bio === showPersonBio ? '' : bio),
+    [showPersonBio, setShowPersonBio])
+  const quoteStyle = {
+    fontSize: 18,
+    lineHeight: 1.7,
+    margin: isMobileVersion ? '30px auto 40px' : '60px auto 70px',
+    maxWidth: 650,
+    padding: '0 25px',
+  }
+  return <StaticPage style={{backgroundColor: '#fff'}} page="equipe">
+    <TitleSection pageContent={{title: 'Notre équipe est déterminée à changer le monde'}} />
+    <div style={{padding: `0 ${MIN_CONTENT_PADDING}px`}}>
+      <div style={{margin: '0px auto', maxWidth: MAX_CONTENT_WIDTH}}>
+        <div style={quoteStyle}>
+          Nous sommes une petite équipe convaincue que la technologie peut être utilisée pour des
+          choses qui ont du sens, pas juste pour faire du profit.<br />
+          <br />
+          C'est pourquoi nous avons construit <strong>{config.productName}</strong> et créé{' '}
+          <ExternalLink
+            style={{color: 'inherit', fontWeight: 'bold', textDecoration: 'none'}}
+            href="http://www.bayesimpact.org">
+            Bayes&nbsp;Impact
+          </ExternalLink>, une association à but non lucratif, afin de la mettre au service
+          de chacun.
+        </div>
+        {new Array(Math.ceil(allPersons.length / nbPersonInARow)).fill(0).
+          map((unused, rowIndex): Person[] => allPersons.slice(
+            rowIndex * nbPersonInARow, (rowIndex + 1) * nbPersonInARow)).
+          map((personRow: Person[], rowIndex: number): React.ReactNode => {
+            return [
+              <PersonRow
+                key={rowIndex}
+                {...{getPersonClickHandler, nbPersonInARow, personRow, rowIndex, showPersonBio}} />,
+              <PersonBio
+                key={`bio-${rowIndex}`}
+                personRow={personRow}
+                onClose={getPersonClickHandler('')}
+                onOpen={handleBioOpen}
+                showPersonBio={showPersonBio} />,
+            ]
+          })}
+      </div>
+    </div>
+  </StaticPage>
+}
+
+export default React.memo(TeamPage)
 
 
 interface SocialLinkProps {
@@ -330,169 +322,142 @@ interface SocialLinkProps {
 }
 
 
-class SocialLinkBase extends React.PureComponent<SocialLinkProps> {
-  public static propTypes = {
-    grayIcon: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
-    shareId: PropTypes.string.isRequired,
-    url: PropTypes.string.isRequired,
+const SocialLinkBase: React.FC<SocialLinkProps> = (props) => {
+  const {icon, grayIcon, shareId, url} = props
+  const colorIconStyle: RadiumCSSProperties = {
+    ':hover': {
+      opacity: 1,
+    },
+    opacity: 0,
+    position: 'absolute',
+    ...SmoothTransitions,
   }
-
-  public render(): React.ReactNode {
-    const {icon, grayIcon, shareId, url} = this.props
-    const colorIconStyle: RadiumCSSProperties = {
-      ':hover': {
-        opacity: 1,
-      },
-      opacity: 0,
-      position: 'absolute',
-      ...SmoothTransitions,
-    }
-    return <ExternalLink
-      style={{cursor: 'pointer', margin: '0 5px', position: 'relative', textDecoration: 'none'}}
-      href={url}>
-      <img src={icon} style={colorIconStyle} alt="" />
-      <img src={grayIcon} alt={shareId} />
-    </ExternalLink>
-  }
+  return <ExternalLink
+    style={{cursor: 'pointer', margin: '0 5px', position: 'relative', textDecoration: 'none'}}
+    href={url}>
+    <img src={icon} style={colorIconStyle} alt="" />
+    <img src={grayIcon} alt={shareId} />
+  </ExternalLink>
 }
-const SocialLink = Radium(SocialLinkBase)
+SocialLinkBase.propTypes = {
+  grayIcon: PropTypes.string.isRequired,
+  icon: PropTypes.string.isRequired,
+  shareId: PropTypes.string.isRequired,
+  url: PropTypes.string.isRequired,
+}
+const SocialLink = React.memo(Radium(SocialLinkBase))
 
 
 interface PersonBioProps {
   onClose: () => void
   onOpen: (div: HTMLDivElement) => void
-  personRow: Person[]
+  personRow: readonly Person[]
   showPersonBio: string
 }
 
 
-interface PersonBioState {
-  isOpen?: boolean
-  person?: Person
+const PersonSocialLinksBase: React.FC<Person> = (person: Person) => {
+  const style: React.CSSProperties = {
+    margin: 35,
+    textAlign: 'center',
+  }
+  return <div style={style}>
+    {person.bio.linkedin ? <SocialLink
+      shareId="linkedin" icon={linkedinIcon}
+      grayIcon={linkedinGrayIcon} url={person.bio.linkedin} /> : null}
+    {person.bio.twitter ? <SocialLink
+      shareId="twitter" icon={twitterIcon}
+      grayIcon={twitterGrayIcon} url={person.bio.twitter} /> : null}
+    {person.bio.facebook ? <SocialLink
+      shareId="facebook" icon={facebookIcon}
+      grayIcon={facebookGrayIcon} url={person.bio.facebook} /> : null}
+  </div>
 }
+const PersonSocialLinks = React.memo(PersonSocialLinksBase)
 
 
-class PersonBio extends React.Component<PersonBioProps, PersonBioState> {
-  public static propTypes = {
-    onClose: PropTypes.func.isRequired,
-    onOpen: PropTypes.func.isRequired,
-    personRow: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }).isRequired).isRequired,
-    showPersonBio: PropTypes.string,
-  }
+const PersonBioBase: React.FC<PersonBioProps> = (props: PersonBioProps) => {
+  const {onClose, onOpen, personRow, showPersonBio} = props
+  const [isOpen, setIsOpen] = useState(false)
+  const [shownPerson, showPerson] = useState<Person|undefined>(undefined)
+  const handleUnsetPerson = useCallback((): void => showPerson(undefined), [showPerson])
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  public state: PersonBioState = {
-    isOpen: false,
-    person: null,
-  }
-
-  public static getDerivedStateFromProps(nextProps, prevState): PersonBioState {
-    const {personRow, showPersonBio} = nextProps
-    const person = personRow.find((person): boolean => person.name === showPersonBio)
-    const {person: prevPerson} = prevState
-    if (person === prevPerson) {
-      return null
-    }
-    if (person) {
-      return {
-        isOpen: true,
-        person,
+  const newPerson = personRow.find((person): boolean => person.name === showPersonBio)
+  useEffect(() => {
+    if (isOpen && newPerson) {
+      if (containerRef.current) {
+        onOpen(containerRef.current)
       }
+      showPerson(newPerson)
+    } else if (!isOpen && newPerson) {
+      setIsOpen(true)
+      showPerson(newPerson)
+    } else if (isOpen && !newPerson) {
+      setIsOpen(false)
     }
-    return {isOpen: false}
+  }, [isOpen, newPerson, onOpen])
+
+  const person = newPerson || shownPerson
+
+  const rowStyle: React.CSSProperties = {
+    marginBottom: isOpen ? 70 : 0,
+    maxHeight: isOpen ? 600 : 0,
+    opacity: isOpen ? 1 : 0,
+    overflow: 'hidden',
+    position: 'relative',
+    textAlign: 'center',
+    ...SmoothTransitions,
   }
-
-  public componentDidMount(): void {
-    const {onOpen} = this.props
-    const {isOpen} = this.state
-    if (isOpen) {
-      onOpen(this.containerRef.current)
-    }
+  const hrStyle: React.CSSProperties = {
+    backgroundColor: colors.SILVER,
+    border: 0,
+    height: 2,
+    marginBottom: 35,
+    marginTop: 35,
+    width: 63,
   }
-
-  public componentDidUpdate(prevProps, prevState): void {
-    const {isOpen, person} = this.state
-    if (prevState.isOpen === isOpen && prevState.person === person) {
-      return
-    }
-    if (isOpen) {
-      this.props.onOpen(this.containerRef.current)
-    }
+  const descriptionStyle: React.CSSProperties = {
+    fontSize: 16,
+    lineHeight: 1.31,
+    margin: 'auto',
+    maxWidth: 500,
   }
-
-  private containerRef: React.RefObject<HTMLDivElement> = React.createRef()
-
-  private handleUnsetPerson = (): void => this.setState({person: null})
-
-  private renderSocialLinks(person: Person): React.ReactNode {
-    const style: React.CSSProperties = {
-      margin: 35,
-      textAlign: 'center',
-    }
-    return <div style={style}>
-      {person.bio.linkedin ? <SocialLink
-        shareId="linkedin" icon={linkedinIcon}
-        grayIcon={linkedinGrayIcon} url={person.bio.linkedin} /> : null}
-      {person.bio.twitter ? <SocialLink
-        shareId="twitter" icon={twitterIcon}
-        grayIcon={twitterGrayIcon} url={person.bio.twitter} /> : null}
-      {person.bio.facebook ? <SocialLink
-        shareId="facebook" icon={facebookIcon}
-        grayIcon={facebookGrayIcon} url={person.bio.facebook} /> : null}
-    </div>
+  const closeStyle: React.CSSProperties = {
+    bottom: 'initial',
+    boxShadow: '',
+    fontSize: 10,
+    height: 20,
+    opacity: .6,
+    transform: 'initial',
+    width: 20,
   }
-
-  public render(): React.ReactNode {
-    const {onClose} = this.props
-    const {isOpen, person} = this.state
-    const rowStyle: React.CSSProperties = {
-      marginBottom: isOpen ? 70 : 0,
-      maxHeight: isOpen ? 600 : 0,
-      opacity: isOpen ? 1 : 0,
-      overflow: 'hidden',
-      position: 'relative',
-      textAlign: 'center',
-      ...SmoothTransitions,
-    }
-    const hrStyle: React.CSSProperties = {
-      backgroundColor: colors.SILVER,
-      border: 0,
-      height: 2,
-      marginBottom: 35,
-      marginTop: 35,
-      width: 63,
-    }
-    const descriptionStyle: React.CSSProperties = {
-      fontSize: 16,
-      lineHeight: 1.31,
-      margin: 'auto',
-      maxWidth: 500,
-    }
-    const closeStyle: React.CSSProperties = {
-      bottom: 'initial',
-      boxShadow: '',
-      fontSize: 10,
-      height: 20,
-      opacity: .6,
-      transform: 'initial',
-      width: 20,
-    }
-    return <div
-      style={rowStyle} ref={this.containerRef}
-      onTransitionEnd={isOpen ? null : this.handleUnsetPerson}>
-      <ModalCloseButton onClick={onClose} style={closeStyle} />
-      <div style={{color: colors.DARK, fontSize: 26}}>
-        <strong>{person && person.name}</strong><br />
-        <div style={{color: colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', marginTop: 13}}>
-        Études : {person && person.bio.education}<br />
-        Expérience : {person && person.bio.experience}
-        </div>
+  return <div
+    style={rowStyle} ref={containerRef}
+    onTransitionEnd={isOpen ? undefined : handleUnsetPerson}>
+    <ModalCloseButton onClick={onClose} style={closeStyle} />
+    <div style={{color: colors.DARK, fontSize: 26}}>
+      <strong>{person && person.name}</strong><br />
+      <div style={{color: colors.WARM_GREY, fontSize: 14, fontStyle: 'italic', marginTop: 13}}>
+      Études : {person && person.bio.education}<br />
+      Expérience : {person && person.bio.experience}
       </div>
-      <hr style={hrStyle} />
-      <div style={descriptionStyle}>{person && person.bio.description}</div>
-      {person && this.renderSocialLinks(person)}
     </div>
-  }
+    <hr style={hrStyle} />
+    <div style={descriptionStyle}>{person && person.bio.description}</div>
+    {person ? <PersonSocialLinks {...person} /> : null}
+  </div>
 }
+PersonBioBase.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  onOpen: PropTypes.func.isRequired,
+  // @ts-ignore because the InferProps have a hard time here.
+  personRow: PropTypes.arrayOf(PropTypes.shape({
+    bio: PropTypes.object.isRequired,
+    name: PropTypes.string.isRequired,
+    picture: PropTypes.string.isRequired,
+    position: PropTypes.string.isRequired,
+  }).isRequired).isRequired,
+  showPersonBio: PropTypes.string,
+}
+const PersonBio = React.memo(PersonBioBase)

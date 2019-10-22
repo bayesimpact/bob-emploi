@@ -31,7 +31,7 @@ class PoolOverview extends React.PureComponent<PoolOverviewProps> {
 
   private handleSelectUseCase = _memoize(
     (useCase: bayes.bob.UseCase): (() => void) => (): void => this.props.onSelectUseCase(useCase),
-    ({useCaseId}: bayes.bob.UseCase): string => useCaseId)
+    ({useCaseId}: bayes.bob.UseCase): string => useCaseId || '')
 
   private renderCommentCell(title: React.ReactNode): React.ReactNode {
     const scoreLevelCellStyle = {
@@ -97,16 +97,16 @@ class PoolOverview extends React.PureComponent<PoolOverviewProps> {
       <td style={cellStyle}>
         {/* TODO(pascal): Consider truncating very long comments. */}
         {evaluation && evaluation.comments || ''}
-        {Object.keys(evaluation && evaluation.advices || {}).
-          filter((adviceId: string): boolean =>
-            !!evaluation.advices[adviceId].comment || evaluation.advices[adviceId].shouldBeOptimized
-          ).
-          map((adviceId: string): React.ReactNode => <div key={`comment-${useCaseId}-${adviceId}`}>
-            {adviceId}: {evaluation.advices[adviceId].shouldBeOptimized && <span>
-              <img src={optimizeImage} style={imageInTextStyle} alt="" /> à optimiser, </span>
-            }
-            {evaluation.advices[adviceId].comment}
-          </div>)}
+        {Object.entries(evaluation && evaluation.advices || {}).
+          filter(([unusedAdviceId, {comment, shouldBeOptimized}]): boolean =>
+            !!(comment || shouldBeOptimized)).
+          map(([adviceId, {comment, shouldBeOptimized}]): React.ReactNode =>
+            <div key={`comment-${useCaseId}-${adviceId}`}>
+              {adviceId}: {shouldBeOptimized && <span>
+                <img src={optimizeImage} style={imageInTextStyle} alt="" /> à optimiser, </span>
+              }
+              {comment}
+            </div>)}
       </td>
     </tr>
   }

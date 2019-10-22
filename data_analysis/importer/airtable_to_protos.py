@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import typing
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, Union
 
 from airtable import airtable
 from google.protobuf import json_format
@@ -52,8 +53,8 @@ _ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
 
 
 def _group_filter_fields(
-        record: typing.Dict[str, typing.Any], field: str = 'filters',
-        others: typing.Iterable[str] = ('for-departement', 'for-job-group')) -> typing.List[str]:
+        record: Dict[str, Any], field: str = 'filters',
+        others: Iterable[str] = ('for-departement', 'for-job-group')) -> List[str]:
     """Group multiple fields to specify filters.
 
     Args:
@@ -70,7 +71,7 @@ def _group_filter_fields(
         ValueError: if one the filter is not implemented.
     """
 
-    filters = typing.cast(typing.List[str], record.get(field, []))
+    filters = typing.cast(List[str], record.get(field, []))
     if others:
         for filter_type in others:
             filter_value = record.get(filter_type)
@@ -86,13 +87,13 @@ class _FilterSetSorter(object):
     It gets completly useless if sorting in airtable2dicts is implemented otherwise.
     """
 
-    def __init__(self, record: typing.Dict[str, typing.Any]) -> None:
-        self._filters: typing.Set[str] = set(_group_filter_fields(record))
+    def __init__(self, record: Dict[str, Any]) -> None:
+        self._filters: Set[str] = set(_group_filter_fields(record))
 
     def __repr__(self) -> str:
         return f"_FilterSetSorter({{'filters': {list(self._filters)!r}}})"
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """This does not check equality, but rather incomparability.
 
         `self == other` means, we have neither `self < other` nor `other < self`.
@@ -101,15 +102,13 @@ class _FilterSetSorter(object):
         if the filters sets sorters are incomparable, we want to compare the other field.
         """
 
-        # pylint: disable=protected-access
         return bool(self._filters - other._filters and other._filters - self._filters)
 
-    def __lt__(self, other: typing.Any) -> bool:
-        # pylint: disable=protected-access
+    def __lt__(self, other: Any) -> bool:
         return not other._filters - self._filters
 
 
-_BEFORE_TRANSLATION_CHECKERS: typing.Dict['options_pb2.StringFormat', checker.ValueChecker] = {
+_BEFORE_TRANSLATION_CHECKERS: Dict['options_pb2.StringFormat', checker.ValueChecker] = {
     options_pb2.SCORING_MODEL_ID: checker.ScorerChecker(),
     options_pb2.URL_FORMAT: checker.UrlChecker(),
     options_pb2.SCORING_PROJECT_TEMPLATE: checker.MissingTemplateVarsChecker(),
@@ -124,9 +123,9 @@ class ProtoAirtableConverter(object):
     """A converter for Airtable records to proto-JSON formatted dict."""
 
     def __init__(
-            self, proto_type: typing.Type[message.Message],
-            id_field: typing.Optional[str] = None,
-            required_fields: typing.Iterable[str] = ()) -> None:
+            self, proto_type: Type[message.Message],
+            id_field: Optional[str] = None,
+            required_fields: Iterable[str] = ()) -> None:
         self._proto_type = proto_type
         self._id_field = id_field
         self._required_fields_set = set(required_fields)
@@ -135,23 +134,22 @@ class ProtoAirtableConverter(object):
             self.proto_type.DESCRIPTOR.fields_by_name.items()}
         if id_field:
             assert self.snake_to_camelcase[id_field]
-        self.checkers: typing.List[checker.Checker] = []
+        self.checkers: List[checker.Checker] = []
         self.add_checkers(
             checker.QuotesChecker(),
             checker.SpacesChecker())
-        self._split_fields_separators: typing.Dict[str, str] = {}
+        self._split_fields_separators: Dict[str, str] = {}
         # Sort key shouldn't be used anywhere else than airtable2dicts, since some implementations
         # depend on how it's used there.
         self.sort_key = self._sort_key
-        self._unarray_fields: typing.Iterable[str] = ()
+        self._unarray_fields: Iterable[str] = ()
 
     proto_type = property(lambda self: self._proto_type)
     id_field = property(lambda self: self._id_field)
     required_fields_set = property(lambda self: self._required_fields_set)
     snake_to_camelcase = property(lambda self: self._snake_to_camelcase)
 
-    def convert_record(self, airtable_record: typing.Dict[str, typing.Any]) \
-            -> typing.Dict[str, typing.Any]:
+    def convert_record(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready.
 
         Returns:
@@ -164,8 +162,8 @@ class ProtoAirtableConverter(object):
         split = self._split_fields(fields)
         return self._get_array_heads(split)
 
-    def convert_record_to_proto(self, airtable_record: typing.Dict[str, typing.Any]) \
-            -> typing.Tuple[message.Message, str]:
+    def convert_record_to_proto(self, airtable_record: Dict[str, Any]) \
+            -> Tuple[message.Message, str]:
         """Convert an airtable record to an actual proto message.
 
         Also runs all the necessary checks on it.
@@ -193,7 +191,7 @@ class ProtoAirtableConverter(object):
             self.checkers.append(new_checker)
         return self
 
-    def add_split_fields(self: ConverterType, fields: typing.Dict[str, str]) -> ConverterType:
+    def add_split_fields(self: ConverterType, fields: Dict[str, str]) -> ConverterType:
         """Add fields to split after import.
 
         Split fields are string fields in Airtable, which return an array in the respective proto.
@@ -207,22 +205,21 @@ class ProtoAirtableConverter(object):
         self._split_fields_separators = dict(self._split_fields_separators, **fields)
         return self
 
-    def _split_fields(self, fields: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+    def _split_fields(self, fields: Dict[str, Any]) -> Dict[str, Any]:
         return dict(fields, **{
             field: [s.strip() for s in fields[field].split(separator)]
             for field, separator in self._split_fields_separators.items()
             if field in fields
         })
 
-    def _get_array_heads(self, fields: typing.Dict[str, typing.Any]) \
-            -> typing.Dict[str, typing.Any]:
+    def _get_array_heads(self, fields: Dict[str, Any]) -> Dict[str, Any]:
         return dict(fields, **{
             field: fields[field][0]
             for field in self._unarray_fields
             if field in fields and fields[field]
         })
 
-    def _sort_key(self, unused_record: typing.Dict[str, typing.Any]) -> typing.Any:
+    def _sort_key(self, unused_record: Dict[str, Any]) -> Any:
         """Function to compute the sort key of a record before it's been converted.
 
         It is only used to check that the sorting is properly done on Airtable.
@@ -231,16 +228,14 @@ class ProtoAirtableConverter(object):
         return 0
 
     def set_fields_sorter(
-            self: ConverterType,
-            sort_lambda: typing.Callable[[typing.Dict[str, typing.Any]], typing.Any]) \
+            self: ConverterType, sort_lambda: Callable[[Dict[str, Any]], Any]) \
             -> ConverterType:
         """Set the sorter for this converter."""
 
         self.sort_key = lambda airtable_record: sort_lambda(airtable_record['fields'])
         return self
 
-    def _record2dict(self, airtable_record: typing.Dict[str, typing.Any]) \
-            -> typing.Dict[str, typing.Any]:
+    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready.
 
         When overriding this method, if some exceptions are triggered because of bad input,
@@ -281,14 +276,13 @@ class ProtoAirtableConverter(object):
 class _ProtoAirtableFiltersConverter(ProtoAirtableConverter):
 
     def __init__(
-            self, proto_type: typing.Type[message.Message],
-            id_field: typing.Optional[str] = None,
-            required_fields: typing.Iterable[str] = ()) -> None:
+            self, proto_type: Type[message.Message],
+            id_field: Optional[str] = None,
+            required_fields: Iterable[str] = ()) -> None:
         super().__init__(proto_type, id_field, required_fields)
         self.add_checkers(checker.TemplateVarsChecker())
 
-    def _record2dict(self, airtable_record: typing.Dict[str, typing.Any]) \
-            -> typing.Dict[str, typing.Any]:
+    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         fields = super()._record2dict(airtable_record)
@@ -303,8 +297,7 @@ class _ProtoAirtableFiltersConverter(ProtoAirtableConverter):
 
 class _ActionTemplateConverter(_ProtoAirtableFiltersConverter):
 
-    def _record2dict(self, airtable_record: typing.Dict[str, typing.Any]) \
-            -> typing.Dict[str, typing.Any]:
+    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         if 'image' in airtable_record['fields'] and airtable_record['fields']['image']:
@@ -315,14 +308,14 @@ class _ActionTemplateConverter(_ProtoAirtableFiltersConverter):
 
 
 def generate_dynamic_advices_changes(markdown_list: str, prefix: str = '', suffix: str = '') \
-        -> typing.Dict[str, typing.Union[str, typing.List[str]]]:
+        -> Dict[str, Union[str, List[str]]]:
     """Generate a list of changes to apply to a dynamic advice record before saving it."""
 
     if not markdown_list:
         return {}
-    result: typing.Dict[str, typing.Union[str, typing.List[str]]] = {}
+    result: Dict[str, Union[str, List[str]]] = {}
     if markdown_list.startswith('*'):
-        parts: typing.List[str] = ['', markdown_list[1:]]
+        parts: List[str] = ['', markdown_list[1:]]
     else:
         parts = markdown_list.split('\n*', 1)
 
@@ -344,8 +337,7 @@ def generate_dynamic_advices_changes(markdown_list: str, prefix: str = '', suffi
 
 class _DynamicAdviceConverter(_ProtoAirtableFiltersConverter):
 
-    def _record2dict(self, airtable_record: typing.Dict[str, typing.Any]) \
-            -> typing.Dict[str, typing.Any]:
+    def _record2dict(self, airtable_record: Dict[str, Any]) -> Dict[str, Any]:
         """Convert an AirTable record to a dict proto-Json ready."""
 
         fields = super()._record2dict(airtable_record)
@@ -362,7 +354,7 @@ class _DynamicAdviceConverter(_ProtoAirtableFiltersConverter):
         return fields
 
 
-PROTO_CLASSES: typing.Dict[str, ProtoAirtableConverter] = {
+PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
     'ActionTemplate': _ActionTemplateConverter(
         action_pb2.ActionTemplate, 'action_template_id', required_fields=[]),
     'AdviceModule': ProtoAirtableConverter(
@@ -440,8 +432,8 @@ PROTO_CLASSES: typing.Dict[str, ProtoAirtableConverter] = {
 }
 
 
-def airtable2dicts(base_id: str, table: str, proto: str, view: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def airtable2dicts(base_id: str, table: str, proto: str, view: Optional[str] = None) \
+        -> List[Dict[str, Any]]:
     """Import the suggestions in MongoDB.
 
     Args:
@@ -464,7 +456,7 @@ def airtable2dicts(base_id: str, table: str, proto: str, view: typing.Optional[s
 
     has_error = False
     # If sorting implementation changes, please also change implementation for _FilterSetSorter.
-    previous_keys: typing.Dict[str, typing.Any] = {}
+    previous_keys: Dict[str, Any] = {}
     for record in records:
         sort_key = converter.sort_key(record)
         record_id = record['id']
@@ -495,10 +487,7 @@ def airtable2dicts(base_id: str, table: str, proto: str, view: typing.Optional[s
 
 
 def _log_error(
-        error: Exception,
-        checker_name: str,
-        record_id: str,
-        path: typing.Optional[str] = None) -> None:
+        error: Exception, checker_name: str, record_id: str, path: Optional[str] = None) -> None:
     if record_id is None:
         record_ref = ''
     else:
@@ -511,8 +500,8 @@ def _log_error(
 
 
 def _has_any_check_error(
-        proto: message.Message, _id: str, proto_checkers: typing.List[checker.Checker],
-        string_format_checkers: typing.Dict['options_pb2.StringFormat', checker.ValueChecker]) \
+        proto: message.Message, _id: str, proto_checkers: List[checker.Checker],
+        string_format_checkers: Dict['options_pb2.StringFormat', checker.ValueChecker]) \
         -> bool:
     has_error = False
     # Enforce specific checkers for this proto.
@@ -535,8 +524,7 @@ def _has_any_check_error(
     return has_error
 
 
-def _get_field_translator(locale: str) \
-        -> typing.Callable[[str, str, 'options_pb2.StringFormat'], str]:
+def _get_field_translator(locale: str) -> Callable[[str, str, 'options_pb2.StringFormat'], str]:
     def field_translator(
             sentence: str, unused_path: str, string_format: 'options_pb2.StringFormat') -> str:
         if string_format == options_pb2.NATURAL_LANGUAGE:
@@ -548,7 +536,7 @@ def _get_field_translator(locale: str) \
     return field_translator
 
 
-def _translate_proto(proto: _ProtoType) -> typing.Iterator[typing.Tuple[str, _ProtoType]]:
+def _translate_proto(proto: _ProtoType) -> Iterator[Tuple[str, _ProtoType]]:
     serialized_proto = proto.SerializeToString()
     for locale in translation.LOCALES_TO_CHECK:
         translated = type(proto)()
@@ -569,9 +557,9 @@ def _translate_proto(proto: _ProtoType) -> typing.Iterator[typing.Tuple[str, _Pr
 
 
 def _has_validation_errors(
-        values: typing.List[typing.Dict[str, typing.Any]],
-        proto_class: typing.Type[message.Message],
-        proto_checkers: typing.List[checker.Checker]) -> bool:
+        values: List[Dict[str, Any]],
+        proto_class: Type[message.Message],
+        proto_checkers: List[checker.Checker]) -> bool:
     """validates that the values have the right format.
 
     Args:

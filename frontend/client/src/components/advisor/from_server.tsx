@@ -1,6 +1,6 @@
 import React from 'react'
 
-import Picto from 'images/advices/picto-specific-to-job.png'
+import Picto from 'images/advices/picto-specific-to-job.svg'
 
 import {CardProps, StaticAdviceCardContent} from './base'
 

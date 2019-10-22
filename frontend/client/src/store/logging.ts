@@ -1,10 +1,8 @@
 import {detect} from 'detect-browser'
 
-import {isLateSignupEnabled} from './user'
-
 import {AdviceAction, AllActions, AsyncAction, AuthenticateUserAction, DisplayToastMessageAction,
-  GetUserDataAction, LoadLandingPageAction, ProjectAction, REGISTER_USER, RootState, StrategyAction,
-  TipAction, VisualElementAction, WithFeedback, isActionRegister} from './actions'
+  GetUserDataAction, LoadLandingPageAction, PageIsLoadedAction, ProjectAction, RootState,
+  StrategyAction, TipAction, VisualElementAction, WithFeedback, isActionRegister} from './actions'
 
 
 export const daysSince = (timestamp: number | string): number => {
@@ -43,16 +41,13 @@ interface Properties {
 
 const flattenFeatureFlags = (featuresEnabled: bayes.bob.Features): Properties => {
   const features = {}
-  const boolFeatures = []
+  const boolFeatures: string[] = []
   for (const feature in featuresEnabled) {
     if (featuresEnabled[feature] === true) {
       boolFeatures.push(feature)
     } else {
       features['Features.' + feature] = featuresEnabled[feature]
     }
-  }
-  if (isLateSignupEnabled) {
-    boolFeatures.push('lateSignup')
   }
   features['Features'] = boolFeatures.sort()
   return features
@@ -62,11 +57,10 @@ const flattenFeatureFlags = (featuresEnabled: bayes.bob.Features): Properties =>
 export class Logger {
   private actionTypesToLog: {[actionType: string]: string}
 
-  private browser?: {name: string}
+  private browser: {name?: string} = detect() || {}
 
   public constructor(actionTypesToLog: {[actionType: string]: string}) {
     this.actionTypesToLog = actionTypesToLog
-    this.browser = detect()
   }
 
   public shouldLogAction(action: AllActions): boolean {
@@ -83,14 +77,14 @@ export class Logger {
 
   public getEventName(action: {response?: {isNewUser?: boolean}; type: string}): string {
     if (isActionRegister(action)) {
-      return this.actionTypesToLog[REGISTER_USER]
+      return this.actionTypesToLog['REGISTER_USER']
     }
     return this.actionTypesToLog[action.type]
   }
 
   public getEventProperties(action: AllActions, state: RootState): Properties {
     const properties = {}
-    if (this.browser && this.browser.name) {
+    if (this.browser.name) {
       properties['$browser'] = this.browser.name
     }
     properties['$hostname'] = window.location.hostname
@@ -173,8 +167,9 @@ export class Logger {
     if (visualElementAction.visualElement) {
       properties['Visual Element Source'] = visualElementAction.visualElement
     }
-    if (loadLandingPageAction.timeToFirstInteractiveMillisecs) {
-      properties['Page loading time (ms)'] = loadLandingPageAction.timeToFirstInteractiveMillisecs
+    const pageIsLoadedAction = action as PageIsLoadedAction
+    if (pageIsLoadedAction.timeToFirstInteractiveMillisecs) {
+      properties['Page loading time (ms)'] = pageIsLoadedAction.timeToFirstInteractiveMillisecs
     }
     const strategyAction = action as StrategyAction<string>
     if (strategyAction.strategy && strategyAction.strategy.strategyId) {
@@ -186,11 +181,11 @@ export class Logger {
     return properties
   }
 
-  public getUserId(action: AllActions, state: RootState): string {
+  public getUserId(action: AllActions, state: RootState): string|undefined {
     return getUser(action, state).userId
   }
 
-  public getUserProperties(action: AllActions, state: RootState): Properties {
+  public getUserProperties(action: AllActions, state: RootState): Properties|null {
     const {featuresEnabled, profile} = getUser(action, state)
 
     const {

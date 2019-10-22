@@ -12,7 +12,7 @@ import {isMobileVersion} from 'components/mobile'
 
 
 interface DiagnosticAdviceProps {
-  advice: bayes.bob.Advice
+  advice: bayes.bob.Advice & {adviceId: string}
   makeAdviceLink: (adviceId: string) => string
   style?: React.CSSProperties
   teaser?: string
@@ -109,6 +109,11 @@ class DiagnosticAdviceBase extends React.PureComponent<DiagnosticAdviceProps> {
 const DiagnosticAdvice = Radium(DiagnosticAdviceBase)
 
 
+function isAdviceWithId(a: bayes.bob.Advice): a is (bayes.bob.Advice & {adviceId: string}) {
+  return !!a.adviceId
+}
+
+
 interface DiagnosticAdviceListProps {
   adviceStyle?: React.CSSProperties
   advices: bayes.bob.Advice[]
@@ -156,10 +161,11 @@ class DiagnosticAdviceList extends React.PureComponent<DiagnosticAdviceListProps
     return <div style={style}>
       <div style={headerStyle}>{children}</div>
       <div style={listStyle}>
-        {advices.map((advice: bayes.bob.Advice): React.ReactNode =>
-          <DiagnosticAdvice
-            style={adviceUpdatedStyle} key={advice.adviceId}
-            {...{advice, makeAdviceLink, userYou}} />)}
+        {advices.filter(isAdviceWithId).
+          map((advice: bayes.bob.Advice & {adviceId: string}): React.ReactNode =>
+            <DiagnosticAdvice
+              style={adviceUpdatedStyle} key={advice.adviceId}
+              {...{advice, makeAdviceLink, userYou}} />)}
       </div>
     </div>
   }

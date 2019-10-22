@@ -11,7 +11,7 @@ import {ShortKey} from 'components/shortkey'
 import {SmoothTransitions} from './theme'
 
 
-var numModalsShown = 0
+let numModalsShown = 0
 
 
 export interface ModalConfig {
@@ -84,7 +84,7 @@ class Modal extends React.PureComponent<ModalProps, ModalState> {
   // TODO(cyrille): Handle the case where modal is shown from the start, and never updates its
   // children.
   public static getDerivedStateFromProps(
-    {children, isShown, style}: ModalProps, {isShown: wasShown}: ModalState): ModalState {
+    {children, isShown, style}: ModalProps, {isShown: wasShown}: ModalState): ModalState|null {
     const hasTransition = !style || style.transition !== 'none'
     if (!wasShown !== !isShown) {
       return {
@@ -147,7 +147,7 @@ class Modal extends React.PureComponent<ModalProps, ModalState> {
     const maxHeight = window.innerHeight - closeButtonHeight
     this.setState({
       closeButtonHeight,
-      isTooBigToBeCentered: newHeight && newHeight > maxHeight,
+      isTooBigToBeCentered: !!newHeight && newHeight > maxHeight,
       modalHeight: newHeight,
     })
   }
@@ -180,8 +180,8 @@ class Modal extends React.PureComponent<ModalProps, ModalState> {
 
   public render(): React.ReactNode {
     const {backgroundCoverOpacity, externalChildren, isShown, onClose, style, title} = this.props
-    const {children, closeButtonHeight, isContentShown, isTooBigToBeCentered,
-      isFullyShown, modalHeight} = this.state
+    const {children, closeButtonHeight = 0, isContentShown, isTooBigToBeCentered,
+      isFullyShown, modalHeight = 0} = this.state
     const pageStyle: React.CSSProperties = {
       alignItems: 'center',
       display: isTooBigToBeCentered ? 'block' : 'flex',
@@ -204,6 +204,7 @@ class Modal extends React.PureComponent<ModalProps, ModalState> {
       color: colors.DARK_TWO,
       display: isTooBigToBeCentered ? 'inline-block' : 'block',
       fontSize: 15,
+      // TODO(cyrille): Ensure margins on mobile.
       margin: isTooBigToBeCentered ? `${closeButtonHeight}px auto` : 'initial',
       opacity: isShown ? 1 : 0,
       position: 'relative',
@@ -298,7 +299,7 @@ class ModalCloseButtonBase extends React.PureComponent<ButtonProps> {
       width: 19,
     }
     return <div {...otherProps} style={closeButtonStyle} onClick={onClick}>
-      <ShortKey keyCode="Escape" onKeyDown={shouldCloseOnEscape ? onClick : null} />
+      <ShortKey keyCode="Escape" onKeyDown={shouldCloseOnEscape ? onClick : undefined} />
       <CloseIcon style={closeIconStyle} />
     </div>
   }

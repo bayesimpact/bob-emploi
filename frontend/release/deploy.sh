@@ -17,6 +17,10 @@
 # - OS_PASSWORD, OS_USERNAME, etc: OpenStack credentials to push client app to OVH server.
 # - SLACK_INTEGRATION_URL: Webhook to report deploy status to Slack.
 #
+# AWS CLI must be installed, and configured for a user with the bob-emploi-deploy policy:
+# https://console.aws.amazon.com/iam/home?region=us-east-1#/policies/arn:aws:iam::951168128976:policy/bob-emploi-deploy$serviceLevelSummary
+# That policy must be kept in sync with the actual actions used in this file.
+#
 # Optional:
 # - CIRCLE_STAGE: if "deploy", the script will know it's run as part of Circle
 #   CI deployment.
@@ -58,6 +62,7 @@ fi
 if ! command -v aws >/dev/null 2>&1; then
   echo_error 'Install and configure the aws CLI that is necessary for deployment.'
   echo "* Ask your favorite admin for the access to the AWS project if you do not have it yet"
+  echo "* Make sure you have the action rights to the bob-emploi-deploy policy (or equivalent)"
   echo "* Log into your AWS console and go to IAM (https://console.aws.amazon.com/iam/home)"
   echo "* Create a new 'Access key ID' and the corresponding 'Secret' if you do not already have one"
   echo "* Run 'aws configure' and add your credentials (make sure to set the region to 'eu-west-3')"

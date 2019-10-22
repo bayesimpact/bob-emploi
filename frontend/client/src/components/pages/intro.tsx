@@ -6,7 +6,6 @@ import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {inDepartement, lowerFirstLetter} from 'store/french'
 import {DispatchAllActions, registerNewGuestUser} from 'store/actions'
-import {isLateSignupEnabled} from 'store/user'
 
 import {FastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
@@ -41,7 +40,7 @@ class ValidateInput extends React.PureComponent<ValidateInputProps, ValidateInpu
   }
 
   public static getDerivedStateFromProps(
-    props: ValidateInputProps, state: ValidateInputState): ValidateInputState {
+    props: ValidateInputProps, state: ValidateInputState): ValidateInputState|null {
     const defaultValue = props.defaultValue || ''
     if (defaultValue === state.defaultValue) {
       return null
@@ -63,7 +62,9 @@ class ValidateInput extends React.PureComponent<ValidateInputProps, ValidateInpu
 
   private input: React.RefObject<Input> = React.createRef()
 
-  private handleFocus = (): void => this.input.current && this.input.current.focus()
+  private handleFocus = (): void => {
+    this.input.current && this.input.current.focus()
+  }
 
   private handleClick = (): void => {
     if (!this.state.value) {
@@ -152,8 +153,8 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
   }
 
   public state: IntroState = {
-    areCGUAccepted: !isLateSignupEnabled || !!this.props.name,
-    isGuest: isLateSignupEnabled && !this.props.name,
+    areCGUAccepted: !!this.props.name,
+    isGuest: !this.props.name,
     isSubmitClicked: false,
   }
 
@@ -174,7 +175,7 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
   private canSubmit = (): boolean => {
     const {areCGUAccepted, canTutoie, isGuest, newName} = this.state
     const finalName = isGuest ? newName : this.props.name
-    return areCGUAccepted && finalName && typeof canTutoie === 'boolean'
+    return !!(areCGUAccepted && finalName && typeof canTutoie === 'boolean')
   }
 
   private handleChangeTutoiement = (canTutoie): void => this.setState({canTutoie})
@@ -183,9 +184,9 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
     const {canTutoie, isGuest, newName} = this.state
     const {name, onSubmit} = this.props
     const finalName = isGuest ? newName : name
-    if (this.canSubmit()) {
+    if (this.canSubmit() && finalName) {
       this.setState({isSubmitClicked: true})
-      onSubmit(canTutoie, finalName).then((): void => {
+      onSubmit(!!canTutoie, finalName).then((): void => {
         if (!this.isUnmounted) {
           this.setState({isSubmitClicked: false})
         }
@@ -258,7 +259,7 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
       <Discussion
         style={discussionStyle} isFastForwarded={this.state.isFastForwarded}>
         <DiscussionBubble>
-          {isCompetitionShown ? <BubbleToRead>
+          {isCompetitionShown && city ? <BubbleToRead>
             Le saviez-vous&nbsp;?! La concurrence
             en {lowerFirstLetter(jobGroupName)} {inDepartement(city)} est {isToughCompetition ?
               'rude' : 'faible'},{' '}

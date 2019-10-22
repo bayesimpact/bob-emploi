@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding, fetchProjectRequirements,
-  GET_PROJECT_REQUIREMENTS, setUserProfile} from 'store/actions'
+  setUserProfile} from 'store/actions'
 import {PROJECT_EXPERIENCE_OPTIONS, SENIORITY_OPTIONS,
   getTrainingFulfillmentEstimateOptions} from 'store/project'
 import {userExample} from 'store/user'
@@ -63,6 +63,14 @@ const isTrainingRequired = (props): boolean =>
   getRequirements(props, 'diplomas').length || props.isFetchingRequirements
 
 
+function hasGroupWithRomeId(job?: bayes.bob.Job): job is {jobGroup: {romeId: string}} {
+  return !!(job && job.jobGroup && job.jobGroup.romeId)
+}
+
+
+const emptyObject = {} as const
+
+
 class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepState> {
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
@@ -93,7 +101,7 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
 
   public static getDerivedStateFromProps(
     nextProps: StepProps,
-    {trainingFulfillmentEstimate: oldValue}: StepState): StepState {
+    {trainingFulfillmentEstimate: oldValue}: StepState): StepState|null {
     const {trainingFulfillmentEstimate = undefined} = nextProps.newProject || {}
     const newValue = trainingFulfillmentEstimate ||
       (!isTrainingRequired(nextProps) && 'NO_TRAINING_REQUIRED') || undefined
@@ -105,7 +113,8 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
 
   public componentDidMount(): void {
     const {jobRequirements, newProject: {targetJob}} = this.props
-    if (targetJob && jobRequirements && !jobRequirements[targetJob.codeOgr]) {
+    if (targetJob && targetJob.codeOgr && jobRequirements && !jobRequirements[targetJob.codeOgr]
+      && hasGroupWithRomeId(targetJob)) {
       this.props.dispatch(fetchProjectRequirements({targetJob}))
     }
   }
@@ -183,12 +192,15 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
 
   private handleChange = _memoize((field): ((value) => void) => (value): void => {
     const {dispatch, newProject: {seniority}} = this.props
-    const userUpdate = field === 'hasCarDrivingLicense' ?
-      {profile: {[field]: value}} : {projects: [{[field]: value}]}
-    if (field === 'previousJobSimilarity' && value === 'NEVER_DONE' && seniority) {
-      userUpdate['projects'][0]['seniority'] = 'UNKNOWN_PROJECT_SENIORITY'
+    if (field === 'hasCarDrivingLicense') {
+      dispatch(diagnoseOnboarding({profile: {[field]: value}}))
+    } else {
+      const userUpdate = {projects: [{[field]: value}]}
+      if (field === 'previousJobSimilarity' && value === 'NEVER_DONE' && seniority) {
+        userUpdate['projects'][0]['seniority'] = 'UNKNOWN_PROJECT_SENIORITY'
+      }
+      dispatch(diagnoseOnboarding(userUpdate))
     }
-    dispatch(diagnoseOnboarding(userUpdate))
 
     const stateUpdate: StepState = {[field]: value}
     if (field === 'trainingFulfillmentEstimate') {
@@ -205,7 +217,8 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
     return isFetchingRequirements ||
       !!getRequirements(this.props, 'drivingLicenses').length ||
       // Keep this in sync with frontend/server/modules/driving_license.py _license_helps_mobility.
-      !!(city && (city.urbanScore <= 5 || city.publicTransportationScore <= 5))
+      !!(city && (city.urbanScore && city.urbanScore <= 5 ||
+        city.publicTransportationScore && city.publicTransportationScore <= 5))
   }
 
   private handleCommentRead = _memoize((field: string): (() => void) =>
@@ -238,7 +251,7 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
       {...this.props} fastForward={this.fastForward}
       title={`${userYou('Ton', 'Votre')} expérience`}
       progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : null}>
+      onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}>
       <div>
         <FieldSet label={`A${userYou('s-tu', 'vez-vous')} déjà fait ce métier\u00A0?`}
           isValid={!!previousJobSimilarity} isValidated={isValidated} hasCheck={true}>
@@ -308,8 +321,8 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
 }
 const NewProjectExperienceStep = connect(
   ({app: {jobRequirements}, asyncState: {isFetching}}: RootState): StepConnectedProps => ({
-    isFetchingRequirements: isFetching[GET_PROJECT_REQUIREMENTS],
-    jobRequirements,
+    isFetchingRequirements: !!isFetching['GET_PROJECT_REQUIREMENTS'],
+    jobRequirements: jobRequirements || emptyObject,
   }))(NewProjectExperienceStepBase)
 
 

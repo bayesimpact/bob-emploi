@@ -1,6 +1,7 @@
 """Tests for the bob_emploi.importer.airtable_to_protos module."""
 
 import typing
+from typing import Any, Dict, List
 import unittest
 from unittest import mock
 
@@ -17,8 +18,7 @@ from bob_emploi.frontend.api import network_pb2
 class BrokenConverter(airtable_to_protos.ProtoAirtableConverter):
     """A converter with broken function, for testing purposes."""
 
-    def _record2dict(self, unused_airtable_record: typing.Dict[str, typing.Any]) \
-            -> typing.Dict[str, typing.Any]:
+    def _record2dict(self, unused_airtable_record: Dict[str, Any]) -> Dict[str, Any]:
         return {'_id': '', 'missing_field': ''}
 
 
@@ -48,7 +48,7 @@ class _ConverterTestCase(airtablemock.TestCase):
             mock_translate.return_value = {}
             self.addCleanup(patcher.stop)
 
-    def add_record(self, record: typing.Dict[str, typing.Any]) -> str:
+    def add_record(self, record: Dict[str, Any]) -> str:
         """Adds a record in the table to be imported.
 
         Returns its created ID.
@@ -56,7 +56,7 @@ class _ConverterTestCase(airtablemock.TestCase):
 
         return typing.cast(str, self._base.create(self._table, record)['id'])
 
-    def add_translation(self, string: str, translations: typing.Dict[str, str]) -> None:
+    def add_translation(self, string: str, translations: Dict[str, str]) -> None:
         """Adds a translation to the translations table. """
 
         self.assertTrue(
@@ -67,8 +67,7 @@ class _ConverterTestCase(airtablemock.TestCase):
         self._translation_base.create('tblQL7A5EgRJWhQFo', dict(translations, string=string))
 
     @mock.patch(airtable_to_protos.__name__ + '._AIRTABLE_API_KEY', new='apikey42')
-    def airtable2dicts(self, should_drop_id: bool = True) \
-            -> typing.List[typing.Dict[str, typing.Any]]:
+    def airtable2dicts(self, should_drop_id: bool = True) -> List[Dict[str, Any]]:
         """Converts records from the table to dicts."""
 
         raw = airtable_to_protos.airtable2dicts(self._base_name, self._table, self.converter_id)
@@ -536,6 +535,28 @@ class DynamicAdviceConverterTestCase(_ConverterTestCase):
         })
         with self.assertRaises(ValueError):
             self.airtable2dicts()
+
+    @mock.patch('logging.error')
+    def test_dynamic_advice_several_errors(self, mock_logging: mock.MagicMock) -> None:
+        """Convert a dynamic advice config with errors on several card items."""
+
+        self.add_record({
+            'title': 'Présentez-vous au chef boulanger',
+            'short_title': 'Astuces de boulangers',
+            'goal': 'manger du pain',
+            'diagnostic_topics': ['MARKET_DIAGNOSTIC'],
+            'for-job-group': 'D1102',
+            'filters': ['not-for-job(12006)'],
+            'card_text': 'Allez à la boulangerie la veille',
+            'expanded_card_items': 'Il *faut*\n* Se présenter :\n* Très tôt !',
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+        mock_logging.assert_called_once()
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn('expanded_card_items.0', error_message)
+        self.assertIn('expanded_card_items.1', error_message)
 
 
 class DiagnosticSentenceTemplateConverterTestCase(_ConverterTestCase):

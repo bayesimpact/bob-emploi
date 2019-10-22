@@ -13,18 +13,20 @@ import {Button, PaddedOnMobile} from 'components/theme'
 
 const DEFAULT_TIPS_SHOWN = 5
 
+const emptyArray = [] as const
+
 // Delay between showing two tips in ms.
 const DELAY_BETWEEN_TIPS = 150
 
 
 interface TipsListConnectedProps {
-  tips: bayes.bob.Action[]
+  tips: readonly bayes.bob.Action[]
 }
 
 
 interface TipsListOwnProps {
-  advice?: bayes.bob.Advice
-  project?: bayes.bob.Project
+  advice: bayes.bob.Advice
+  project: bayes.bob.Project
   style?: React.CSSProperties
   userYou: YouChooser
 }
@@ -37,15 +39,15 @@ interface TipsListProps extends TipsListConnectedProps, TipsListOwnProps {
 
 interface TipsListState {
   numTipsShown: number
-  openTip: bayes.bob.Action & {actionId: string}
+  openTip?: bayes.bob.Action & {actionId: string}
 }
 
 
 class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
   public static propTypes = {
-    advice: PropTypes.object,
+    advice: PropTypes.object.isRequired,
     dispatch: PropTypes.func.isRequired,
-    project: PropTypes.object,
+    project: PropTypes.object.isRequired,
     style: PropTypes.object,
     tips: PropTypes.arrayOf(PropTypes.object.isRequired).isRequired,
     userYou: PropTypes.func.isRequired,
@@ -53,18 +55,17 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
 
   public state: TipsListState = {
     numTipsShown: 0,
-    openTip: null,
+    openTip: undefined,
   }
 
   public componentDidMount(): void {
     const {advice, dispatch, project, tips} = this.props
-    if (advice && project && !tips.length) {
+    if (!tips.length) {
       dispatch(getAdviceTips(project, advice))
-      return
     }
   }
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private handleOpenTip = _memoize((tip): (() => void) => (): void =>
     this.setState({openTip: tip}), ({actionId}): string => actionId)
@@ -82,7 +83,7 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
     }
     this.setState({numTipsShown: numTipsShown + 1})
     clearTimeout(this.timeout)
-    this.timeout = setTimeout((): void => {
+    this.timeout = window.setTimeout((): void => {
       this.showNTips(totalNumberOfTips)
     }, DELAY_BETWEEN_TIPS)
   }
@@ -91,14 +92,11 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
     this.showNTips(DEFAULT_TIPS_SHOWN)
   }
 
-  private handleCloseTip = (): void => this.setState({openTip: null})
+  private handleCloseTip = (): void => this.setState({openTip: undefined})
 
   public render(): React.ReactNode {
-    const {advice, style, userYou, tips} = this.props
+    const {advice, project, style, userYou, tips} = this.props
     const {numTipsShown, openTip} = this.state
-    if (!advice) {
-      return null
-    }
     if (!tips.length) {
       return <div style={style} />
     }
@@ -129,7 +127,7 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
         onChange={this.showDefaultTips}>
         <div>
           {tipsShown.map((tip): React.ReactNode => <AppearingComponent key={tip.actionId}><Action
-            action={tip}
+            action={tip} project={project}
             onOpen={this.handleOpenTip(tip)} /></AppearingComponent>)}
           {(numTipsShown === DEFAULT_TIPS_SHOWN && tips.length > DEFAULT_TIPS_SHOWN) ?
             <div style={showMoreTipsStyle}>
@@ -145,9 +143,9 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
 const TipsList = connect(
   (
     {app: {adviceTips}}: RootState,
-    {advice: {adviceId = ''} = {}, project: {projectId = ''} = {}}: TipsListOwnProps,
+    {advice: {adviceId = ''}, project: {projectId = ''}}: TipsListOwnProps,
   ): TipsListConnectedProps => ({
-    tips: (adviceTips[projectId] || {})[adviceId] || [],
+    tips: (adviceTips && adviceTips[projectId] || {})[adviceId] || emptyArray,
   }))(TipsListBase)
 
 
@@ -162,14 +160,14 @@ class AppearingComponent
   }
 
   public componentDidMount(): void {
-    this.timeout = setTimeout((): void => this.setState({opacity: 1}), 100)
+    this.timeout = window.setTimeout((): void => this.setState({opacity: 1}), 100)
   }
 
   public componentWillUnmount(): void {
     clearTimeout(this.timeout)
   }
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   public render(): React.ReactNode {
     const style = {

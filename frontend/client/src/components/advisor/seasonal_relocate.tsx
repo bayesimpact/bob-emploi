@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 import {getJobPlacesFromDepartementStats} from 'store/job'
 
-import NewPicto from 'images/advices/picto-seasonal-relocate.svg'
+import Picto from 'images/advices/picto-seasonal-relocate.svg'
 import {GrowingNumber} from 'components/theme'
 
 import {CardProps, CardWithContentProps, MethodSuggestionList,
@@ -53,8 +53,8 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.MonthlySeasonalJobbingStats, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.MonthlySeasonalJobbingStats, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
-export default {ExpandedAdviceCardContent, NewPicto}
+export default {ExpandedAdviceCardContent, Picto}

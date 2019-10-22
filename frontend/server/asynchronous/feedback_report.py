@@ -13,6 +13,7 @@ import re
 import os
 import sys
 import typing
+from typing import Any, Callable, Dict, Iterable, List, Optional, TextIO, Tuple
 
 import requests
 
@@ -33,7 +34,7 @@ def _plural_s(num: int) -> str:
     return 's'
 
 
-def _report_comments(comments: typing.List[_T], display_func: typing.Callable[[_T], str]) -> str:
+def _report_comments(comments: List[_T], display_func: Callable[[_T], str]) -> str:
     if not comments:
         return 'There are no individual comments.'
     return f'And here {"is" if len(comments) == 1 else "are"} the individual ' \
@@ -41,11 +42,11 @@ def _report_comments(comments: typing.List[_T], display_func: typing.Callable[[_
         '\n'.join(display_func(comment) for comment in comments)
 
 
-def _compute_nps_report(users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    score_distribution: typing.Dict[int, int] = collections.defaultdict(int)
+def _compute_nps_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+    score_distribution: Dict[int, int] = collections.defaultdict(int)
     nps_total = 0
     num_users = 0
-    responses_with_comment: typing.List[typing.Tuple[str, user_pb2.NPSSurveyResponse]] = []
+    responses_with_comment: List[Tuple[str, user_pb2.NPSSurveyResponse]] = []
     for user in users:
         num_users += 1
         response = user.net_promoter_score_survey_response
@@ -73,7 +74,7 @@ def _compute_nps_report(users: typing.Iterable[user_pb2.User], from_date: str, t
         }},
     })
 
-    def _display_func(id_and_response: typing.Tuple[str, user_pb2.NPSSurveyResponse]) -> str:
+    def _display_func(id_and_response: Tuple[str, user_pb2.NPSSurveyResponse]) -> str:
         return f'[Score: {id_and_response[1].score}] ObjectId("{id_and_response[0]}")\n> ' + \
             ('\n> '.join(id_and_response[1].general_feedback_comment.split('\n')))
 
@@ -91,9 +92,8 @@ def _compute_nps_report(users: typing.Iterable[user_pb2.User], from_date: str, t
         f'{score_distributions}\n{comments}'
 
 
-def _compute_stars_report(
-        users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    score_distribution: typing.Dict[int, int] = collections.defaultdict(int)
+def _compute_stars_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+    score_distribution: Dict[int, int] = collections.defaultdict(int)
     stars_total = 0
     num_projects = 0
     responses_with_comment = []
@@ -136,10 +136,10 @@ def _compute_stars_report(
         f'{score_distributions}\n{comments}'
 
 
-def _compute_rer_report(users: typing.Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
-    seeking_distribution: typing.Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
-    bob_has_helped: typing.Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
-    answered_bob_helped: typing.Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
+def _compute_rer_report(users: Iterable[user_pb2.User], from_date: str, to_date: str) -> str:
+    seeking_distribution: Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
+    bob_has_helped: Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
+    answered_bob_helped: Dict['user_pb2.SeekingStatus', int] = collections.defaultdict(int)
     num_users = 0
     for user in users:
         # Find the first status that is in the date range.
@@ -224,15 +224,14 @@ _REPORTS = {
 _, _USER_DB, _ = mongo.get_connections_from_env()
 
 
-def _create_user_proto_with_user_id(user_dict: typing.Dict[str, typing.Any]) -> user_pb2.User:
+def _create_user_proto_with_user_id(user_dict: Dict[str, Any]) -> user_pb2.User:
     user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id')
     assert user_proto
     return user_proto
 
 
 def _compute_and_send_report(
-        report_id: str, from_date: str, to_date: str, out: typing.TextIO, dry_run: bool = True) \
-        -> None:
+        report_id: str, from_date: str, to_date: str, out: TextIO, dry_run: bool = True) -> None:
     if not to_date:
         to_date = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M')
     report = _REPORTS[report_id]
@@ -260,8 +259,7 @@ def _compute_and_send_report(
         }]})
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None, out: typing.TextIO = sys.stdout) \
-        -> None:
+def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) -> None:
     """Parse command line arguments, computes a report and send it."""
 
     parser = argparse.ArgumentParser(

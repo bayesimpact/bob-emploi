@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="22px" viewBox="0 0 16 22" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <title>obj-inactive</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Mobile" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Strategy-page-(started)---methods---mobile" transform="translate(-112.000000, -521.000000)" fill="#9596A0">
+            <path d="M118.707,528.29 L122,525 L123.414,526.41 L118.707,531.12 L116,528.41 L117.414,527 L118.707,528.29 Z M118.707,535.29 L122,532 L123.414,533.41 L118.707,538.12 L116,535.41 L117.414,534 L118.707,535.29 Z M114,540.8 L126.001,540.8 L126,523.2 L114,523.2 L114,540.8 Z M126,521 C127.103,521 128,521.99 128,523.2 L128,540.8 C128,542.021 127.103,543 126,543 L114,543 C112.897,543 112,542.021 112,540.8 L112,523.2 C112,521.99 112.897,521 114,521 L126,521 Z" id="obj-inactive"></path>
+        </g>
+    </g>
+</svg>

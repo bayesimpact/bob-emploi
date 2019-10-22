@@ -1,6 +1,28 @@
 {
   "application-methods": [
     {
+      "content": "Merci beaucoup pour ces conseils. Je vais essayer de les suivre et de maintenant me concentrer sur des entreprises qui me plaisent réellement. Je vais garder cette trame de mail à envoyer à ces entreprises.",
+      "createdAt": "2019-09-16",
+      "job": "Graphiste",
+      "name": "Manon",
+      "rating": 5
+    },
+    {
+      "content": "J'ai été retenu pour un poste pour lequel je pensais ne pas être qualifié. Mon enthousiasme pour les valeurs de l'entreprise a fait la différence. Encore merci à Bob de m'avoir appris à oser.",
+      "createdAt": "2019-08-29",
+      "isMale": true,
+      "job": "Administrateur réseau",
+      "name": "Jean-Seb",
+      "rating": 5
+    },
+    {
+      "content": "Utiles : les choses à modifier éventuellement sur mon CV et les entreprises à contacter pour le poste que je recherche.",
+      "createdAt": "2019-08-24",
+      "job": "Assistante administrative",
+      "name": "Aude",
+      "rating": 3
+    },
+    {
       "content": "Vous êtes top vous m'avez éclairé de comment et à quelle fréquence envoyer les cv aux employeurs que j'ai choisi ainsi que comment relancer les employeurs si nous n'avons pas de réponse.\nMerci encore.",
       "createdAt": "2019-04-30",
       "job": "Comptable",
@@ -22,18 +44,72 @@
       "rating": 5
     },
     {
-      "content": "Merci, j'ai bien utilisé votre méthode pour les entretiens avant d'aller passer mon premier.",
-      "createdAt": "2019-04-15",
-      "job": "Assistante de direction",
-      "name": "Marie-Claude",
-      "rating": 5
-    },
-    {
       "content": "Merci pour la vidéo elle est super ! En effet le manque de confiance est une faiblesse terrible qu'il faut travailler et je suis là pour ça. J'ai passé un entretien d'embauche mercredi avec cette technique et vraiment j'ai senti que j'étais beaucoup moins stressée ! Donc à travailler régulièrement.",
       "createdAt": "2019-02-11",
       "job": "Naturopathe",
       "name": "Sandra",
       "rating": 5
+    },
+    {
+      "content": "Depuis mon inscription sur Bob j'ai réussi mon entretien ... puis un deuxième.\nJe commence un nouveau travail prochainement.\nVos méthodes sont très bien et je vous remercie de me les avoir préparées.\nMerci.",
+      "createdAt": "2018-12-02",
+      "job": "Formatrice technique",
+      "name": "Michèle",
+      "rating": 5
+    }
+  ],
+  "application-methods-bravo": [
+    {
+      "content": "Les différents liens d'aide à la recherche d'emploi.\nLes astuces pour rédiger un email et rédiger un CV.\nLes bons conseils pour rebondir vers l'emploi.",
+      "createdAt": "2019-09-26",
+      "job": "Assistante de gestion administrative",
+      "name": "Inès",
+      "rating": 5
+    },
+    {
+      "content": "Utiles : les choses à modifier éventuellement sur mon CV et les entreprises à contacter pour le poste que je recherche.",
+      "createdAt": "2019-08-24",
+      "job": "Assistante administrative",
+      "name": "Aude",
+      "rating": 3
+    }
+  ],
+  "application-methods-to-interview": [
+    {
+      "content": "Merci beaucoup pour ces conseils. Je vais essayer de les suivre et de maintenant me concentrer sur des entreprises qui me plaisent réellement. Je vais garder cette trame de mail à envoyer à ces entreprises.",
+      "createdAt": "2019-09-16",
+      "job": "Graphiste",
+      "name": "Manon",
+      "rating": 5
+    },
+    {
+      "content": "Des réponses à ce que, au fond de nous, on pense en tant que chercheur d'emploi sans savoir mettre un nom ou une définition dessus. Des réponses et des conseils pertinents.\nMerci.",
+      "createdAt": "2019-08-26",
+      "job": "Assistante commerciale",
+      "name": "Carine",
+      "rating": 5
+    },
+    {
+      "content": "Utiles : les choses à modifier éventuellement sur mon CV et les entreprises à contacter pour le poste que je recherche.",
+      "createdAt": "2019-08-24",
+      "job": "Assistante administrative",
+      "name": "Aude",
+      "rating": 3
+    },
+    {
+      "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob m'a boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
+      "createdAt": "2019-05-22",
+      "isMale": true,
+      "job": "Responsable micro-informatique",
+      "name": "François-Xavier",
+      "rating": 5
+    },
+    {
+      "content": "Très utiles les conseils pour la lettre de motivation",
+      "createdAt": "2019-04-25",
+      "job": "Contrôleuse de gestion",
+      "name": "Julie",
+      "rating": 4
     },
     {
       "content": "Bonjour l'équipe de Bob et merci beaucoup pour les informations c'est utile pour moi de savoir que ça recrute pas mal pour moi à Bordeaux en ce moment, je vais me lancer dans mes candidatures.",
@@ -49,18 +125,32 @@
       "job": "Couvreur zingueur",
       "name": "Georges Alfred",
       "rating": 4
-    },
-    {
-      "content": "Depuis mon inscription sur Bob j'ai réussi mon entretien ... puis un deuxième.\nJe commence un nouveau travail prochainement.\nVos méthodes sont très bien et je vous remercie de me les avoir préparées.\nMerci.",
-      "createdAt": "2018-12-02",
-      "job": "Formatrice technique",
-      "name": "Michèle",
-      "rating": 5
     }
   ],
-  "application-methods-to-interview": [
+  "application-methods-to-interview-start": [
     {
-      "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob ma boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
+      "content": "Merci beaucoup pour ces conseils. Je vais essayer de les suivre et de maintenant me concentrer sur des entreprises qui me plaisent réellement. Je vais garder cette trame de mail à envoyer à ces entreprises.",
+      "createdAt": "2019-09-16",
+      "job": "Graphiste",
+      "name": "Manon",
+      "rating": 5
+    },
+    {
+      "content": "Des réponses à ce que, au fond de nous, on pense en tant que chercheur d'emploi sans savoir mettre un nom ou une définition dessus. Des réponses et des conseils pertinents.\nMerci.",
+      "createdAt": "2019-08-26",
+      "job": "Assistante commerciale",
+      "name": "Carine",
+      "rating": 5
+    },
+    {
+      "content": "Utiles : les choses à modifier éventuellement sur mon CV et les entreprises à contacter pour le poste que je recherche.",
+      "createdAt": "2019-08-24",
+      "job": "Assistante administrative",
+      "name": "Aude",
+      "rating": 3
+    },
+    {
+      "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob m'a boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
       "createdAt": "2019-05-22",
       "isMale": true,
       "job": "Responsable micro-informatique",
@@ -72,6 +162,21 @@
       "createdAt": "2019-04-25",
       "job": "Contrôleuse de gestion",
       "name": "Julie",
+      "rating": 4
+    },
+    {
+      "content": "Bonjour l'équipe de Bob et merci beaucoup pour les informations c'est utile pour moi de savoir que ça recrute pas mal pour moi à Bordeaux en ce moment, je vais me lancer dans mes candidatures.",
+      "createdAt": "2019-01-25",
+      "job": "Magasinière vendeuse",
+      "name": "Masana",
+      "rating": 3
+    },
+    {
+      "content": "Merci vos informations me sont vraiment très très utiles.\nJe vois que je suis sur un créneau qui recrute, ça me rassure.",
+      "createdAt": "2018-12-07",
+      "isMale": true,
+      "job": "Couvreur zingueur",
+      "name": "Georges Alfred",
       "rating": 4
     }
   ],
@@ -157,7 +262,15 @@
   ],
   "confidence-boost": [
     {
-      "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob ma boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
+      "content": "J'ai été retenu pour un poste pour lequel je pensais ne pas être qualifié. Mon enthousiasme pour les valeurs de l'entreprise a fait la différence. Encore merci à Bob de m'avoir appris à oser.",
+      "createdAt": "2019-08-29",
+      "isMale": true,
+      "job": "Administrateur réseau",
+      "name": "Jean-Seb",
+      "rating": 5
+    },
+    {
+      "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob m'a boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
       "createdAt": "2019-05-22",
       "isMale": true,
       "job": "Responsable micro-informatique",
@@ -242,14 +355,116 @@
       "rating": 5
     },
     {
-      "content": "Mission accomplie ... j'ai signé mon CDD qui débouche sur un CDI hier.\nJ'ai transmis Bob a des amis qui recherche du boulot également, car vos conseils m'ont été bien utiles pour mon entretien.",
+      "content": "Mission accomplie ... j'ai signé mon CDD qui débouche sur un CDI hier.\nJ'ai transmis Bob a des amis qui recherchent du boulot également, car vos conseils m'ont été bien utiles pour mon entretien.",
       "createdAt": "2019-04-02",
       "job": "Chargée de communication",
       "name": "Cécile",
       "rating": 4
     }
   ],
+  "interview-success-bravo": [
+    {
+      "content": "J'aime beaucoup les conseils. Même si je suis moi-même professionnelle de l'accompagnement et de la formation, ils sont les bienvenus !",
+      "createdAt": "2019-04-16",
+      "job": "Conseillère en insertion professionnelle",
+      "name": "Hélène",
+      "rating": 5
+    },
+    {
+      "content": "Mission accomplie ... j'ai signé mon CDD qui débouche sur un CDI hier.\nJ'ai transmis Bob a des amis qui recherchent du boulot également, car vos conseils m'ont été bien utiles pour mon entretien.",
+      "createdAt": "2019-04-02",
+      "job": "Chargée de communication",
+      "name": "Cécile",
+      "rating": 4
+    }
+  ],
+  "interview-success-start": [
+    {
+      "content": "Merci, j'ai bien utilisé votre méthode pour les entretiens avant d'aller passer mon premier.",
+      "createdAt": "2019-04-15",
+      "job": "Assistante de direction",
+      "name": "Marie-Claude",
+      "rating": 5
+    },
+    {
+      "content": "Mission accomplie ... j'ai signé mon CDD qui débouche sur un CDI hier.\nJ'ai transmis Bob a des amis qui recherchent du boulot également, car vos conseils m'ont été bien utiles pour mon entretien.",
+      "createdAt": "2019-04-02",
+      "job": "Chargée de communication",
+      "name": "Cécile",
+      "rating": 4
+    }
+  ],
+  "keep-going": [
+    {
+      "content": "Oui, ça m'a donné quelques idées.\nDepuis quelques mois, je pratique la pensée positive dès le matin en me levant. Et cela me fait beaucoup de bien.",
+      "createdAt": "2019-09-16",
+      "isMale": true,
+      "job": "Directeur financier",
+      "name": "François",
+      "rating": 4
+    },
+    {
+      "content": "Le coaching personnalisé, le suivi super poussé, l'interface, tout est original et bien pensé ! J'aime beaucoup, ça m'aide énormément. La possibilité du tutoiement met tout de suite à l'aise. Bob est très efficace.",
+      "createdAt": "2019-09-09",
+      "job": "Agente d'accueil",
+      "name": "Lila",
+      "rating": 5
+    },
+    {
+      "content": "J'ai été retenu pour un poste pour lequel je pensais ne pas être qualifié. Mon enthousiasme pour les valeurs de l'entreprise a fait la différence. Encore merci à Bob de m'avoir appris à oser.",
+      "createdAt": "2019-08-29",
+      "isMale": true,
+      "job": "Administrateur réseau",
+      "name": "Jean-Seb",
+      "rating": 5
+    },
+    {
+      "content": "Pleins de conseils plutôt avisés. Permet de s'organiser, de garder le cap dans sa recherche. Liens intéressants pour étendre sa recherche d'emploi.",
+      "createdAt": "2019-05-15",
+      "job": "Conseillère en insertion professionnelle ",
+      "name": "Christine",
+      "rating": 4
+    }
+  ],
+  "life-balance": [
+    {
+      "content": "Oui, ça m'a donné quelques idées.\nDepuis quelques mois, je pratique la pensée positive dès le matin en me levant. Et cela me fait beaucoup de bien.",
+      "createdAt": "2019-09-16",
+      "isMale": true,
+      "job": "Directeur financier",
+      "name": "François",
+      "rating": 4
+    },
+    {
+      "content": "Le coaching personnalisé, le suivi super poussé, l'interface, tout est original et bien pensé ! J'aime beaucoup, ça m'aide énormément. La possibilité du tutoiement met tout de suite à l'aise. Bob est très efficace.",
+      "createdAt": "2019-09-09",
+      "job": "Agente d'accueil",
+      "name": "Lila",
+      "rating": 5
+    },
+    {
+      "content": "Les méthodes et les idées organisées.",
+      "createdAt": "2019-09-08",
+      "job": "Responsable technique maintenance",
+      "name": "Christophe",
+      "rating": 5
+    },
+    {
+      "content": "La façon de chercher un travail en gardant le moral pour avoir de l'espoir.",
+      "createdAt": "2019-08-21",
+      "job": "Assistante comptable",
+      "name": "Sarah",
+      "rating": 5
+    }
+  ],
   "likeable-job": [
+    {
+      "content": "Des réponses à ce que, au fond de nous, on pense en tant que chercheur d'emploi sans savoir mettre un nom ou une définition dessus. Des réponses et des conseils pertinents.\nMerci.",
+      "createdAt": "2019-08-26",
+      "job": "Assistante commerciale",
+      "name": "Carine",
+      "rating": 5
+    },
     {
       "content": "J'ai effectué la démarche de la feuille blanche, me poser la bonne question. J'ai envie de Quoi ? J'aime QUOI ?? J'ai trouvé, je change de domaine, fini l'industrie.\nJ'aime le contact, j'aime créer, j'aime apporter un service. Je me dirige vers une formation de chargé d'affaires dans le domaine des énergies vertes.\nCela me correspond, il y a les grandes lignes de mes compétences : de la technique ; du développement ; du relationnel ; du qualitatif ; et aussi un métier qui s'inscrit dans l'air du temps, il faut parfois avoir cette vision d'avenir.",
       "createdAt": "2019-03-29",
@@ -304,6 +519,14 @@
     }
   ],
   "motivate-in-job": [
+    {
+      "content": "J'ai été retenu pour un poste pour lequel je pensais ne pas être qualifié. Mon enthousiasme pour les valeurs de l'entreprise a fait la différence. Encore merci à Bob de m'avoir appris à oser.",
+      "createdAt": "2019-08-29",
+      "isMale": true,
+      "job": "Administrateur réseau",
+      "name": "Jean-Seb",
+      "rating": 5
+    },
     {
       "content": "Je vous remercie pour le partage de cette analyse qui explique pourquoi prendre contact avec mon réseau, ainsi que pour vos conseils qui m'aident à le faire. Très pertinent et intéressant.",
       "createdAt": "2019-01-30",
@@ -389,7 +612,7 @@
   ],
   "presearch-methods": [
     {
-      "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob ma boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
+      "content": "Bonjour, en fait je perdais espoir de réaliser mon projet et ma consultation avec Bob m'a boosté.\nToutes les méthodes sont intéressantes. Je n'avais pas pensé à tout. Je vais faire de Bob un outil précieux.",
       "createdAt": "2019-05-22",
       "isMale": true,
       "job": "Responsable micro-informatique",
@@ -450,6 +673,20 @@
   ],
   "targeted-search": [
     {
+      "content": "Des réponses à ce que, au fond de nous, on pense en tant que chercheur d'emploi sans savoir mettre un nom ou une définition dessus. Des réponses et des conseils pertinents.\nMerci.",
+      "createdAt": "2019-08-26",
+      "job": "Assistante commerciale",
+      "name": "Carine",
+      "rating": 5
+    },
+    {
+      "content": "Utiles : les choses à modifier éventuellement sur mon CV et les entreprises à contacter pour le poste que je recherche.",
+      "createdAt": "2019-08-24",
+      "job": "Assistante administrative",
+      "name": "Aude",
+      "rating": 3
+    },
+    {
       "content": "L'aide détaillée et personnalisée pour améliorer la recherche d'emploi.\nL'analyse précise des difficultés rencontrées dans la recherche d'emploi et l'apport de solutions pertinentes et concrètes.",
       "createdAt": "2019-06-03",
       "job": "Juriste",
@@ -469,6 +706,80 @@
       "job": "Responsable communication / financement",
       "name": "Catherine",
       "rating": 3
+    }
+  ],
+  "targeted-search-bravo": [
+    {
+      "content": "Merci beaucoup pour ces conseils. Je vais essayer de les suivre et de maintenant me concentrer sur des entreprises qui me plaisent réellement. Je vais garder cette trame de mail à envoyer à ces entreprises.",
+      "createdAt": "2019-09-16",
+      "job": "Graphiste",
+      "name": "Manon",
+      "rating": 5
+    },
+    {
+      "content": "Vous m'avez fait prendre conscience de la force de mon réseau et de l'importance de le mobiliser dans ma recherche.",
+      "createdAt": "2019-05-06",
+      "job": "Responsable communication / financement",
+      "name": "Catherine",
+      "rating": 3
+    },
+    {
+      "content": "Je suis en poste depuis 2 semaines. Merci Bob pour la stratégie. Je vous confirme effectivement que c'est grâce au réseau que j'ai retrouvé un poste.",
+      "createdAt": "2018-12-19",
+      "job": "Commerciale",
+      "name": "Laurène",
+      "rating": 5
+    },
+    {
+      "content": "Vous avez surtout provoqué l'étincelle chez moi. J'ai compris qu'il fallait que je me tourne prioritairement vers des entreprises qui me plaisent et non juste celles qui recrutent !",
+      "createdAt": "2017-06-15",
+      "job": "Responsable communication / financement",
+      "name": "Carole",
+      "rating": 5
+    }
+  ],
+  "targeted-search-start": [
+    {
+      "content": "Des réponses à ce que, au fond de nous, on pense en tant que chercheur d'emploi sans savoir mettre un nom ou une définition dessus. Des réponses et des conseils pertinents.\nMerci.",
+      "createdAt": "2019-08-26",
+      "job": "Assistante commerciale",
+      "name": "Carine",
+      "rating": 5
+    },
+    {
+      "content": "Utiles : les choses à modifier éventuellement sur mon CV et les entreprises à contacter pour le poste que je recherche.",
+      "createdAt": "2019-08-24",
+      "job": "Assistante administrative",
+      "name": "Aude",
+      "rating": 3
+    },
+    {
+      "content": "L'aide détaillée et personnalisée pour améliorer la recherche d'emploi.\nL'analyse précise des difficultés rencontrées dans la recherche d'emploi et l'apport de solutions pertinentes et concrètes.",
+      "createdAt": "2019-06-03",
+      "job": "Juriste",
+      "name": "Ghislaine",
+      "rating": 5
+    },
+    {
+      "content": "Pleins de conseils plutôt avisés. Permet de s'organiser, de garder le cap dans sa recherche. Liens intéressants pour étendre sa recherche d'emploi.",
+      "createdAt": "2019-05-15",
+      "job": "Conseillère en insertion professionnelle ",
+      "name": "Christine",
+      "rating": 4
+    },
+    {
+      "content": "Vous m'avez fait prendre conscience de la force de mon réseau et de l'importance de le mobiliser dans ma recherche.",
+      "createdAt": "2019-05-06",
+      "job": "Responsable communication / financement",
+      "name": "Catherine",
+      "rating": 3
+    },
+    {
+      "content": "Vous avez surtout provoqué l'étincelle chez moi. J'ai compris qu'il fallait que je me tourne prioritairement vers des entreprises qui me plaisent et non juste celles qui recrutent !",
+      "createdAt": "2017-06-15",
+      "job": "Responsable communication / financement",
+      "name": "Carole",
+      "rating": 5
     }
   ],
   "try-without-diploma": [

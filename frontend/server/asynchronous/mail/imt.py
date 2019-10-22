@@ -1,7 +1,7 @@
 """The imt email campaign"""
 
 import logging
-import typing
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 import pymongo
 
@@ -59,7 +59,7 @@ _EMPLOYMENT_TYPES = {
 
 # TODO(cyrille): Use offer count instead of market stress.
 def _get_best_departements_for_job_group(
-        rome_id: str, database: pymongo.database.Database) -> typing.List[str]:
+        rome_id: str, database: pymongo.database.Database) -> List[str]:
     """Get departements with best market stress for a job group."""
 
     best_departements = (
@@ -68,11 +68,11 @@ def _get_best_departements_for_job_group(
     return [dep.departement_id for dep in best_departements]
 
 
-def _make_section(values: typing.Optional[typing.Dict[str, str]]) -> typing.Dict[str, str]:
+def _make_section(values: Optional[Dict[str, str]]) -> Dict[str, str]:
     return dict({'showSection': campaign.as_template_boolean(bool(values))}, **(values or {}))
 
 
-def _make_market_stress_section(market_score: float) -> typing.Optional[typing.Dict[str, str]]:
+def _make_market_stress_section(market_score: float) -> Optional[Dict[str, str]]:
     if not market_score:
         return None
     if market_score <= 10:
@@ -88,10 +88,9 @@ def _make_market_stress_section(market_score: float) -> typing.Optional[typing.D
 
 
 def _make_application_mode_section(
-        best_application_mode: typing.Optional[job_pb2.ModePercentage],
-        advices: typing.Iterable[project_pb2.Advice], user_id: str) \
-        -> typing.Optional[typing.Dict[str, str]]:
-    if not best_application_mode:
+        best_application_mode: Optional[job_pb2.ModePercentage],
+        advices: Iterable[project_pb2.Advice], user_id: str) -> Optional[Dict[str, str]]:
+    if not best_application_mode or best_application_mode.mode == job_pb2.OTHER_CHANNELS:
         return None
     application_mode_advice = ''
     if best_application_mode.mode == job_pb2.SPONTANEOUS_APPLICATION:
@@ -102,9 +101,8 @@ def _make_application_mode_section(
             if advice.advice_id.startswith('network')), '')
     application_mode_link = ''
     if application_mode_advice:
-        # TODO(cyrille): Fix this link.
         application_mode_link = campaign.create_logged_url(
-            user_id, path=f'/projet/0/{application_mode_advice}')
+            user_id, path=f'/projet/0/methode/{application_mode_advice}')
     return {
         'link': application_mode_link,
         'title': _APPLICATION_MODES_SHORT[best_application_mode.mode],
@@ -114,9 +112,9 @@ def _make_application_mode_section(
 
 
 def _make_departements_section(
-        user_departement_id: str, best_departements: typing.List[str],
+        user_departement_id: str, best_departements: List[str],
         area_type: 'geo_pb2.AreaType', database: pymongo.database.Database) \
-        -> typing.Optional[typing.Dict[str, str]]:
+        -> Optional[Dict[str, str]]:
     if area_type < geo_pb2.COUNTRY or not best_departements:
         return None
     best_departements_title = '<br />'.join(
@@ -136,11 +134,12 @@ def _make_departements_section(
     }
 
 
-def _make_employment_type_section(employment_types: typing.List[job_pb2.EmploymentTypePercentage]) \
-        -> typing.Optional[typing.Dict[str, typing.Any]]:
+def _make_employment_type_section(employment_types: Sequence[job_pb2.EmploymentTypePercentage]) \
+        -> Optional[Dict[str, Any]]:
     if not employment_types:
         return None
-    best_employment_type = employment_types.pop()
+    best_employment_type = employment_types[0]
+    employment_types = employment_types[1:]
     if not best_employment_type.employment_type:
         return None
     if not employment_types:
@@ -158,8 +157,7 @@ def _make_employment_type_section(employment_types: typing.List[job_pb2.Employme
     }
 
 
-def _make_months_section(months: typing.Iterable['job_pb2.Month']) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def _make_months_section(months: Iterable['job_pb2.Month']) -> Optional[Dict[str, str]]:
     active_months = [
         _FRENCH_MONTHS[month] for month in months if month in _FRENCH_MONTHS]
     if not active_months:
@@ -171,8 +169,8 @@ def _make_months_section(months: typing.Iterable['job_pb2.Month']) \
 
 
 def _get_imt_vars(
-        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
-        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, typing.Any]]:
+        user: user_pb2.User, database: Optional[pymongo.database.Database] = None,
+        **unused_kwargs: Any) -> Optional[Dict[str, Any]]:
     """Compute vars for the "IMT" email."""
 
     project = user.projects[0]
@@ -210,8 +208,7 @@ def _get_imt_vars(
     if departements_section:
         shown_sections.append('departements')
 
-    employment_types_section = _make_employment_type_section(
-        sorted(imt.employment_type_percentages, key=lambda e: e.percentage))
+    employment_types_section = _make_employment_type_section(imt.employment_type_percentages)
     if employment_types_section:
         shown_sections.append('employmentTypes')
 

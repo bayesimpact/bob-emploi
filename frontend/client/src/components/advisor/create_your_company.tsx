@@ -8,7 +8,7 @@ import adieLogo from 'images/adie-logo.svg'
 
 import {TestimonialCard} from 'components/testimonials'
 import {ExternalLink, GrowingNumber, Markdown, UpDownIcon} from 'components/theme'
-import NewPicto from 'images/advices/picto-create-your-company.svg'
+import Picto from 'images/advices/picto-create-your-company.svg'
 
 import {CardProps, CardWithContentProps, MethodSection, MethodSuggestionList,
   connectExpandedCardWithContent} from './base'
@@ -34,7 +34,7 @@ class ExpandedAdviceCardContentBase
     userYou: PropTypes.func.isRequired,
   }
 
-  private renderLocation(city: string): string {
+  private renderLocation(city: string): React.ReactNode {
     if (!city) {
       return null
     }
@@ -108,7 +108,7 @@ class ExpandedAdviceCardContentBase
         {testimonials.map(
           ({authorJobName, authorName, description, imageLink, link}, index):
           ReactStylableElement => <TestimonialCard
-            author={{imageLink: imageLink, jobName: authorJobName, name: authorName}}
+            author={{imageLink: imageLink, jobName: authorJobName, name: authorName || ''}}
             isLong={true} style={{margin: '0 0 20px'}}
             key={index}><Markdown content={description} />
             <ExternalLink href={link}>
@@ -127,7 +127,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.CreateCompanyExpandedData, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.CreateCompanyExpandedData, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
@@ -198,7 +198,4 @@ class EventBase extends React.PureComponent<EventProps, EventState> {
 const Event = Radium(EventBase)
 
 
-const TakeAway = '1 accompagnateur trouvé'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

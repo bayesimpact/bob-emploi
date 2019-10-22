@@ -4,16 +4,17 @@ Created by Stephan on Nov 3, 2015
 """
 
 import codecs
-from copy import copy, deepcopy
+import copy
 import glob
 import os
 import re
 import typing
+from typing import Any, Dict, Iterable, List
 
 import pandas as pd
 import xmltodict
 
-from .migration_helpers import transform_categorial_vars
+from bob_emploi.data_analysis.lib import migration_helpers
 
 # Regular expression to match FAP description. It matches lines such as:
 # '"D2Z41"="D2Z41 : Tuyauteurs"'
@@ -21,7 +22,7 @@ _FAP_NAME_REGEXP = re.compile(
     r'^"(?P<fap_code>[A-Z0-9]{1,5})"="(?P=fap_code) : (?P<fap_name>.*)"$')
 
 
-def parse_fap_rome_crosswalk(lines: typing.Iterable[str]) -> pd.DataFrame:
+def parse_fap_rome_crosswalk(lines: Iterable[str]) -> pd.DataFrame:
     """docstring for parse_FAP_ROME_crosswalk"""
 
     collect = []
@@ -60,7 +61,7 @@ def parse_intitule_fap(filename: str = 'data/intitule_fap2009.txt') -> pd.DataFr
     return faps_df
 
 
-def load_fiches_from_xml(xml_folder: str) -> typing.List[typing.Dict[typing.Any, typing.Any]]:
+def load_fiches_from_xml(xml_folder: str) -> List[Dict[Any, Any]]:
     """Load ROME files ("fiches" in French) from XML."""
 
     fiche_dicts = []
@@ -71,17 +72,16 @@ def load_fiches_from_xml(xml_folder: str) -> typing.List[typing.Dict[typing.Any,
     return fiche_dicts
 
 
-def _extract_path(tree: typing.Dict[str, typing.Any], path: typing.Iterable[str]) \
-        -> typing.List[typing.Any]:
-    res = copy(tree)
+def _extract_path(tree: Dict[str, Any], path: Iterable[str]) -> List[Any]:
+    res = copy.copy(tree)
     for elem in path:
-        res = typing.cast(typing.Dict[str, typing.Any], res.get(elem))
+        res = typing.cast(Dict[str, Any], res.get(elem))
     if isinstance(res, list):
         return res
     return [res]
 
 
-def _extract_activities(tree: typing.Dict[str, typing.Any]) -> typing.List[typing.Dict[str, str]]:
+def _extract_activities(tree: Dict[str, Any]) -> List[Dict[str, str]]:
     acts = _extract_path(
         tree, ['bloc_activites_de_base', 'activites_de_base', 'item_ab'])
     for act in acts:
@@ -91,8 +91,8 @@ def _extract_activities(tree: typing.Dict[str, typing.Any]) -> typing.List[typin
     return acts
 
 
-def _compute_riasec_profile(activities: typing.Iterable[typing.Dict[str, str]]) \
-        -> typing.Dict[str, int]:
+def _compute_riasec_profile(activities: Iterable[Dict[str, str]]) \
+        -> Dict[str, int]:
     riasec_profile = {c: 0 for c in 'RIASEC'}
     for act in activities:
         if 'riasec_majeur' in act:
@@ -100,9 +100,8 @@ def _compute_riasec_profile(activities: typing.Iterable[typing.Dict[str, str]]) 
     return riasec_profile
 
 
-def _extract_skills(tree: typing.Dict[str, typing.Dict[str, str]]) \
-        -> typing.List[typing.Dict[str, str]]:
-    action_skills: typing.List[typing.Dict[str, str]] = []
+def _extract_skills(tree: Dict[str, Dict[str, str]]) -> List[Dict[str, str]]:
+    action_skills: List[Dict[str, str]] = []
     acts_block = tree['bloc_activites_de_base']
     theory_skills = _extract_path(
         acts_block, ['savoir_theorique_et_proceduraux', 'item_ab_stp'])
@@ -116,7 +115,7 @@ def _extract_skills(tree: typing.Dict[str, typing.Dict[str, str]]) \
     return res
 
 
-def fiche_extractor(fiche: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+def fiche_extractor(fiche: Dict[str, Any]) -> Dict[str, Any]:
     """Extract info from a ROME file ("fiche" in French).
 
     Args:
@@ -125,8 +124,8 @@ def fiche_extractor(fiche: typing.Dict[str, typing.Any]) -> typing.Dict[str, typ
         a flattened Python dict.
     """
 
-    fiche = deepcopy(fiche)
-    rome = typing.cast(typing.Dict[str, typing.Any], copy(fiche['bloc_code_rome']))
+    fiche = copy.deepcopy(fiche)
+    rome = typing.cast(Dict[str, Any], copy.copy(fiche['bloc_code_rome']))
     rome['description'] = _extract_path(fiche, ['definition', '#text'])
     rome['work_cond'] = _extract_path(
         fiche, ['condition_exercice_activite', '#text'])
@@ -140,7 +139,7 @@ def fiche_extractor(fiche: typing.Dict[str, typing.Any]) -> typing.Dict[str, typ
     return rome
 
 
-def load_applications_sample_df(database: typing.Any) -> pd.DataFrame:
+def load_applications_sample_df(database: Any) -> pd.DataFrame:
     """
     Given a DB object, loads a deterministic sample of 100,000 user
     applications, postprocesses it into a more human-readable format, and
@@ -162,8 +161,8 @@ def load_applications_sample_df(database: typing.Any) -> pd.DataFrame:
     column_names_df = column_names_df[
         column_names_df['english_column_name'].map(str) != 'nan']
     column_names = dict(zip(
-        typing.cast(typing.Iterable[str], column_names_df.orig_column_name),
-        typing.cast(typing.Iterable[str], column_names_df.english_column_name)))
+        typing.cast(Iterable[str], column_names_df.orig_column_name),
+        typing.cast(Iterable[str], column_names_df.english_column_name)))
 
     def _rename_column(col: str) -> str:
         if '_french' in col:
@@ -185,4 +184,4 @@ def load_applications_sample_df(database: typing.Any) -> pd.DataFrame:
     data_frame = database.query(query)
     print(f'Loaded {data_frame.application_id.nunique():d} unique application records.')
     data_frame.set_index('application_id', inplace=True)
-    return transform_categorial_vars(data_frame, codebook)
+    return migration_helpers.transform_categorial_vars(data_frame, codebook)

@@ -74,5 +74,13 @@
   {
     "mailjetTemplate": "896724",
     "name": "mailer-daemon"
+  },
+  {
+    "mailjetTemplate": "636862",
+    "name": "activation-email"
+  },
+  {
+    "mailjetTemplate": "980269",
+    "name": "improve-cv"
   }
 ]

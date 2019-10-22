@@ -23,6 +23,7 @@ import csv
 import datetime
 import sys
 import typing
+from typing import Iterator, Optional
 
 import tqdm
 
@@ -33,12 +34,12 @@ from bob_emploi.data_analysis.lib import fhs
 class _JobseekerCriteria(typing.NamedTuple):
     jobseeker_id: str
     code_rome: str
-    city_id: typing.Optional[str]
-    gender: typing.Optional[str]
+    city_id: Optional[str]
+    gender: Optional[str]
     degree: str
-    unemployment_duration: typing.Optional[int]
-    unemployment_begin_date: typing.Optional[datetime.date]
-    unemployment_end_date: typing.Optional[datetime.date]
+    unemployment_duration: Optional[int]
+    unemployment_begin_date: Optional[datetime.date]
+    unemployment_end_date: Optional[datetime.date]
     num_training: int
     training_info: str
     training_objective: str
@@ -48,8 +49,7 @@ class _JobseekerCriteria(typing.NamedTuple):
 
 
 # TODO(marielaure): Add tests.
-def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) \
-        -> typing.Iterator[_JobseekerCriteria]:
+def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) -> Iterator[_JobseekerCriteria]:
     """Yields multiple rows per job seeker with several fields.
 
     Args:

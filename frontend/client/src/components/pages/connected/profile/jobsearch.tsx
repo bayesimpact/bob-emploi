@@ -6,7 +6,8 @@ import React from 'react'
 import {connect} from 'react-redux'
 
 import {DispatchAllActions, diagnoseOnboarding} from 'store/actions'
-import {userExample} from 'store/user'
+import {weeklyApplicationOptions} from 'store/job'
+import {getJobSearchLengthMonths, userExample} from 'store/user'
 
 import {FieldSet, Select} from 'components/pages/connected/form_utils'
 import {OnboardingComment, ProjectStepProps, Step} from './step'
@@ -32,22 +33,6 @@ const weeklyOfferOptions = [
   {name: 'Plus de 15 offres intéressantes par semaine', value: 'A_LOT'},
 ]
 
-// TODO(cyrille): Move to store.
-const weeklyApplicationOptions = [
-  {name: '0 ou 1 candidature par semaine', value: 'LESS_THAN_2'},
-  {name: '2 à 5 candidatures par semaine', value: 'SOME'},
-  {name: '6 à 15 candidatures par semaine', value: 'DECENT_AMOUNT'},
-  {name: 'Plus de 15 candidatures par semaine', value: 'A_LOT'},
-]
-
-
-const getJobSearchLengthMonths = ({
-  jobSearchHasNotStarted,
-  jobSearchLengthMonths,
-  jobSearchStartedAt,
-}): number => jobSearchHasNotStarted ? -1 : jobSearchStartedAt ?
-  Math.round((new Date().getTime() - new Date(jobSearchStartedAt).getTime()) / MILLIS_IN_MONTH) :
-  jobSearchLengthMonths
 
 // TODO(cyrille): Drop this function and use the above once we're sure both date and bool fields are
 // correct.
@@ -170,7 +155,8 @@ class NewProjectJobsearchStepBase extends React.PureComponent<StepProps, StepSta
       weeklyOffersEstimate = undefined,
     } = this.props.newProject || {}
     return !!(totalInterviewCount && weeklyApplicationsEstimate &&
-              weeklyOffersEstimate && (jobSearchStartedAt || jobSearchLengthMonths >= 0) ||
+              weeklyOffersEstimate &&
+              (jobSearchStartedAt || jobSearchLengthMonths && jobSearchLengthMonths >= 0) ||
               (jobSearchHasNotStarted || jobSearchLengthMonths === -1))
   }
 
@@ -211,7 +197,7 @@ class NewProjectJobsearchStepBase extends React.PureComponent<StepProps, StepSta
     ]
     return <Step
       {...this.props} fastForward={this.fastForward}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : null}
+      onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}
       progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
       title={`${userYou('Ta', 'Votre')} recherche`}>
       <FieldSet

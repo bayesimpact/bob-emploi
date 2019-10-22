@@ -6,10 +6,11 @@ import React from 'react'
 import {connect} from 'react-redux'
 
 import {YouChooser} from 'store/french'
-import {DIAGNOSE_ONBOARDING, RootState} from 'store/actions'
+import {RootState} from 'store/actions'
 
 import {FastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
+import {Ellipsis} from 'components/phylactery'
 import {Button, PaddedOnMobile, PercentBar} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
 
@@ -34,7 +35,7 @@ class ComponentProfileUpdater {
     component: UpdateProfileComponent) {
     this.fieldNames_ = fieldNames
     this.requiredFields_ = (Object.keys(fieldNames) as (keyof bayes.bob.UserProfile)[]).
-      filter((fieldName: (keyof bayes.bob.UserProfile)): boolean => fieldNames[fieldName])
+      filter((fieldName: (keyof bayes.bob.UserProfile)): boolean => !!fieldNames[fieldName])
     this.component_ = component
   }
 
@@ -47,14 +48,15 @@ class ComponentProfileUpdater {
     this.component_.setState({isValidated: true})
     if (this.isFormValid()) {
       const fields = this.makeProfileDiff()
-      this.component_.props.onSubmit(fields)
+      const {onSubmit} = this.component_.props
+      onSubmit && onSubmit(fields)
     }
   }
 
-  public getBackHandler = (): (() => void) => {
+  public getBackHandler = (): (() => void)|undefined => {
     const {onBack} = this.component_.props
     if (!onBack) {
-      return null
+      return undefined
     }
     return (): void => {
       const fields = this.makeProfileDiff()
@@ -66,13 +68,10 @@ class ComponentProfileUpdater {
     return _pick(this.component_.props.profile, Object.keys(this.fieldNames_))
   }
 
-  // TODO(cyrille): Remove state from notification and account steps before removing the setState
-  // here.
   public handleChange = _memoize((field: keyof bayes.bob.UserProfile): (<T>(value: T) => void) =>
     (value): void => {
       const {onChange, profile: {[field]: previousValue}} = this.component_.props
       if (!_isEqual(previousValue, value)) {
-        this.component_.setState({[field]: value})
         onChange && onChange({profile: {[field]: value}})
       }
     })
@@ -84,12 +83,6 @@ class ProfileUpdater {
 
   public constructor(fieldNames) {
     this.fieldNames_ = fieldNames
-  }
-
-  // TODO(cyrille): Remove once its use has been removed from all steps.
-  public getDerivedStateFromProps({profile}: {profile: bayes.bob.UserProfile}):
-  bayes.bob.UserProfile {
-    return _pick(profile, Object.keys(this.fieldNames_))
   }
 
   public attachToComponent(component: UpdateProfileComponent):
@@ -104,8 +97,9 @@ export interface StepProps {
   contentStyle?: React.CSSProperties
   explanation?: React.ReactNode
   isNextButtonDisabled?: boolean
+  isShownAsStepsDuringOnboarding: boolean
   nextButtonContent?: React.ReactNode
-  onPreviousButtonClick?: () => void
+  onPreviousButtonClick?: (() => void) | null
   profile: bayes.bob.UserProfile
   stepNumber?: number
   style?: React.CSSProperties
@@ -117,16 +111,16 @@ export interface StepProps {
 export interface ProfileStepProps extends StepProps {
   featuresEnabled: bayes.bob.Features
   hasAccount?: boolean
-  isShownAsStepsDuringOnboarding: boolean
   onBack?: (value: bayes.bob.UserProfile) => void
   onChange?: (value: {profile: bayes.bob.UserProfile}) => void
   onSubmit?: (value: bayes.bob.UserProfile) => void
+  title?: string
 }
 
 
 export interface ProjectStepProps extends StepProps {
   featuresEnabled?: bayes.bob.Features
-  isShownAsStepsDuringOnboarding?: true
+  isShownAsStepsDuringOnboarding: true
   onSubmit: (newValue: bayes.bob.Project) => void
   newProject: bayes.bob.Project
 }
@@ -149,6 +143,7 @@ class Step extends React.PureComponent<BaseStepProps> {
     explanation: PropTypes.node,
     fastForward: PropTypes.func.isRequired,
     isNextButtonDisabled: PropTypes.bool,
+    isShownAsStepsDuringOnboarding: PropTypes.bool,
     nextButtonContent: PropTypes.node,
     onNextButtonClick: PropTypes.func,
     onPreviousButtonClick: PropTypes.func,
@@ -164,9 +159,9 @@ class Step extends React.PureComponent<BaseStepProps> {
   }
 
   public render(): React.ReactNode {
-    const {buttonsOverride, children, explanation, fastForward, nextButtonContent,
-      onPreviousButtonClick, onNextButtonClick, contentStyle, progressInStep, style, stepNumber,
-      totalStepCount, isNextButtonDisabled, title} = this.props
+    const {buttonsOverride, children, explanation, fastForward, isShownAsStepsDuringOnboarding,
+      nextButtonContent, onPreviousButtonClick, onNextButtonClick, contentStyle, progressInStep,
+      style, stepNumber, totalStepCount, isNextButtonDisabled, title} = this.props
     const stepStyle: React.CSSProperties = {
       alignItems: isMobileVersion ? 'stretch' : 'center',
       display: 'flex',
@@ -178,7 +173,8 @@ class Step extends React.PureComponent<BaseStepProps> {
       fontSize: 23,
       fontWeight: 500,
       lineHeight: 1.3,
-      marginTop: 40,
+      marginBottom: isMobileVersion && !isShownAsStepsDuringOnboarding ? 20 : 0,
+      marginTop: isMobileVersion && !isShownAsStepsDuringOnboarding ? 0 : 40,
       textAlign: 'center',
     }
     const explanationStyle: React.CSSProperties = {
@@ -209,13 +205,13 @@ class Step extends React.PureComponent<BaseStepProps> {
     }
     const buttonStyle = isMobileVersion ? mobileButtonStyle : {}
     const isLastOnboardingStep = totalStepCount && totalStepCount === stepNumber
-    return <div style={stepStyle}>
+    return <div style={stepStyle} className={isShownAsStepsDuringOnboarding ? '' : 'profile'}>
       <FastForward onForward={fastForward} />
       {title ? <PaddedOnMobile><div style={titleStyle}>{title}</div></PaddedOnMobile> : null}
       {stepNumber && totalStepCount ? <PercentBar
         color={colors.BOB_BLUE}
         height={15}
-        percent={Math.round(100 * (stepNumber - .5 + progressInStep) / totalStepCount)}
+        percent={Math.round(100 * (stepNumber - 1 + progressInStep) / totalStepCount)}
         isPercentShown={false}
         style={{margin: '10px auto 0', maxWidth: 425, width: '90%'}}
       /> : null
@@ -245,7 +241,7 @@ class Step extends React.PureComponent<BaseStepProps> {
 
 
 interface OnboardingCommentContentProps {
-  comment: bayes.bob.BoldedString
+  comment?: bayes.bob.BoldedString
   style?: React.CSSProperties
 }
 
@@ -258,8 +254,24 @@ class OnboardingCommentContent extends React.PureComponent<OnboardingCommentCont
     style: PropTypes.object,
   }
 
+  public state = {
+    isWaiting: true,
+  }
+
+  public componentDidMount(): void {
+    clearTimeout(this.timeout)
+    this.timeout = window.setTimeout((): void => this.setState({isWaiting: false}), 2000)
+  }
+
+  public componentWillUnmount(): void {
+    clearTimeout(this.timeout)
+  }
+
+  private timeout: number|undefined
+
   public render(): React.ReactNode {
     const {comment: {stringParts = []} = {}, style} = this.props
+    const {isWaiting} = this.state
     if (!stringParts.length) {
       return <div style={{marginBottom: 25, ...style}} />
     }
@@ -279,12 +291,16 @@ class OnboardingCommentContent extends React.PureComponent<OnboardingCommentCont
       marginTop: 10,
       padding: '10px 15px 5px 10px',
     }
+    const ellipsisStyle: React.CSSProperties = {
+      margin: '10px 0',
+    }
     return <div style={containerStyle}>
       <img style={{width: 30}} src={bobHeadImage} alt={config.productName} />
-      <div style={textStyle}>
-        {stringParts.map((str, index): React.ReactNode =>
-          <span style={{fontWeight: index % 2 ? 'bold' : 'initial'}} key={index}>{str}</span>)}
-      </div>
+      {isWaiting ? <Ellipsis style={ellipsisStyle} /> :
+        <div style={textStyle}>
+          {stringParts.map((str, index): React.ReactNode =>
+            <span style={{fontWeight: index % 2 ? 'bold' : 'initial'}} key={index}>{str}</span>)}
+        </div>}
     </div>
   }
 }
@@ -341,7 +357,7 @@ class OnboardingCommentBase
   }
 
   public static defaultProps = {
-    computingDelayMillisecs: 500,
+    computingDelayMillisecs: 0,
     onDone: (): void => {},
     readingDelayMillisec: 0,
   }
@@ -350,7 +366,7 @@ class OnboardingCommentBase
     isComputing: this.props.shouldShowAfter,
   }
 
-  public static getDerivedStateFromProps(props, prevState): OnboardingCommentState {
+  public static getDerivedStateFromProps(props, prevState): OnboardingCommentState|null {
     const {isComputing, shownComment} = prevState
     if (isComputing) {
       if (props.commentBefore && props.commentBefore !== shownComment) {
@@ -374,7 +390,7 @@ class OnboardingCommentBase
       onDone()
     }
 
-    this.computingTimeout = setTimeout((): void => this.setState({
+    this.computingTimeout = window.setTimeout((): void => this.setState({
       isComputing: false,
       shownComment: OnboardingCommentBase.bestComment(this.props),
     }), computingDelayMillisecs)
@@ -387,7 +403,7 @@ class OnboardingCommentBase
     const {commentAfter, isFetching, onDone, readingDelayMillisec, shouldShowAfter} = this.props
     if (shouldShowAfter && didShowAfter && prevShownComment !== shownComment) {
       clearTimeout(this.readingTimeout)
-      this.readingTimeout = setTimeout(onDone, shownComment ? readingDelayMillisec : 0)
+      this.readingTimeout = window.setTimeout(onDone, shownComment ? readingDelayMillisec : 0)
     }
     if (shouldShowAfter && wasFetching && !isFetching && !commentAfter) {
       onDone()
@@ -399,9 +415,9 @@ class OnboardingCommentBase
     clearTimeout(this.readingTimeout)
   }
 
-  private computingTimeout: ReturnType<typeof setTimeout>
+  private computingTimeout?: number
 
-  private readingTimeout: ReturnType<typeof setTimeout>
+  private readingTimeout?: number
 
   public render(): React.ReactNode {
     const {shownComment} = this.state
@@ -426,14 +442,17 @@ class OnboardingCommentBase
 // use key={targetJob && targetJob.codeOgr || ''}.
 const OnboardingComment = connect(
   (
-    {app: {quickDiagnostic: {after = {}, before = {}}}, asyncState: {isFetching}}: RootState,
+    {
+      app: {quickDiagnostic: {after, before} = {after: {}, before: {}}},
+      asyncState: {isFetching},
+    }: RootState,
     {field}: {field: string},
   ): OnboardingCommentConnectedProps => ({
     commentAfter: after[field] && after[field].comment,
     commentBefore: before[field] && before[field].comment,
-    isFetching: isFetching[DIAGNOSE_ONBOARDING],
+    isFetching: !!isFetching['DIAGNOSE_ONBOARDING'],
   })
 )(OnboardingCommentBase)
 
 
-export {Step, ProfileUpdater, OnboardingComment}
+export {Step, ProfileUpdater, OnboardingComment, OnboardingCommentContent}

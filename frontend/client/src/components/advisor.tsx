@@ -1,6 +1,6 @@
 import _memoize from 'lodash/memoize'
-import React from 'react'
 import PropTypes from 'prop-types'
+import React, {useEffect, useMemo, useState} from 'react'
 import Raven from 'raven-js'
 import {connect} from 'react-redux'
 import VisibilitySensor from 'react-visibility-sensor'
@@ -62,10 +62,8 @@ import Vae from './advisor/vae'
 
 
 interface Module {
-  ExpandedAdviceCardContent?: React.ComponentType<CardProps>
-  NewPicto?: string
-  Picto?: string
-  TakeAway?: string | React.ComponentType<WithAdvice>
+  ExpandedAdviceCardContent: React.ComponentType<CardProps>
+  Picto: string
 }
 
 
@@ -118,14 +116,13 @@ export const ADVICE_MODULES: {[moduleId: string]: Module} = {
 const missingPicto = new Set()
 
 
-function getAdvicePicto(adviceId, shouldBeNew): string {
+function getAdvicePicto(adviceId): string {
   const module = ADVICE_MODULES[adviceId] || null
-  // TODO(cyrille): Replace NewPicto with Picto once all old pictos have been removed.
-  if (module && !module.NewPicto && Raven.captureMessage && !missingPicto.has(adviceId)) {
+  if (module && !module.Picto && Raven.captureMessage && !missingPicto.has(adviceId)) {
     Raven.captureMessage(`Picto is missing for "${adviceId}".`)
     missingPicto.add(adviceId)
   }
-  return module && module.NewPicto || (!shouldBeNew && module.Picto) || defaultPicto
+  return module && module.Picto || defaultPicto
 }
 
 
@@ -138,59 +135,52 @@ interface AdviceCardProps extends WithAdvice {
 }
 
 
-class AdviceCardBase extends React.PureComponent<AdviceCardProps, {hasBeenSeen: boolean}> {
-  public static propTypes = {
-    advice: PropTypes.object.isRequired,
-    areTipsShown: PropTypes.bool,
-    dispatch: PropTypes.func.isRequired,
-    onShow: PropTypes.func,
-    project: PropTypes.object.isRequired,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public state = {
-    hasBeenSeen: false,
-  }
-
-  public componentDidMount(): void {
-    const {advice, dispatch, project} = this.props
+const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): React.ReactElement => {
+  const {advice, areTipsShown, dispatch, onShow, project, style, userYou} = props
+  const [hasBeenSeen, setHasBeenSeen] = useState(false)
+  useEffect((): void => {
     dispatch(adviceCardIsShown(project, advice))
-  }
-
-  private handleVisibilityChange = (isVisible: boolean): void => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [advice.adviceId, dispatch, project.projectId])
+  const handleVisibilityChange = useMemo(() => (isVisible: boolean): void => {
     if (!isVisible) {
       return
     }
-    const {advice, dispatch, onShow, project} = this.props
-    this.setState({hasBeenSeen: true})
+    setHasBeenSeen(true)
     dispatch(seeAdvice(project, advice))
     onShow && onShow()
-  }
-
-  public render(): React.ReactNode {
-    const {advice, areTipsShown, project, style, userYou} = this.props
-    return <div style={style} id={advice.adviceId}>
-      <VisibilitySensor
-        active={!this.state.hasBeenSeen} intervalDelay={250} minTopValue={10}
-        partialVisibility={true} onChange={this.handleVisibilityChange}>
-        <section>
-          {/* TODO(cyrille): Enforce the fontSize somehow, since the Component does not
-            expect a style prop. */}
-          <ExpandedAdviceCardContent style={{fontSize: 16}} {...this.props} />
-          {areTipsShown ? <TipsList {...{advice, project, userYou}} /> : null}
-        </section>
-      </VisibilitySensor>
-    </div>
-  }
+  }, [advice, dispatch, project, setHasBeenSeen, onShow])
+  return <div style={style} id={advice.adviceId}>
+    <VisibilitySensor
+      active={!hasBeenSeen} intervalDelay={250} minTopValue={10}
+      partialVisibility={true} onChange={handleVisibilityChange}>
+      <section>
+        {/* TODO(cyrille): Enforce the fontSize somehow, since the Component does not
+          expect a style prop. */}
+        <ExpandedAdviceCardContent style={{fontSize: 16}} {...props} />
+        {areTipsShown ? <TipsList {...{advice, project, userYou}} /> : null}
+      </section>
+    </VisibilitySensor>
+  </div>
 }
 const AdviceCard = connect(({user}: RootState): {userYou: YouChooser} =>
-  ({userYou: youForUser(user)}))(AdviceCardBase)
+  ({userYou: youForUser(user)}))(React.memo(AdviceCardBase))
+AdviceCardBase.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+  }).isRequired,
+  areTipsShown: PropTypes.bool,
+  dispatch: PropTypes.func.isRequired,
+  onShow: PropTypes.func,
+  project: PropTypes.object.isRequired,
+  style: PropTypes.object,
+  userYou: PropTypes.func.isRequired,
+}
 
 
 export interface ExplorerAdviceCardConfig extends ExpandedAdviceCardConfig {
   howToSeeMore?: React.ReactNode
-  onClick: () => void
+  onClick?: () => void
   style?: React.CSSProperties
 }
 
@@ -200,211 +190,212 @@ interface ExplorerAdviceCardProps extends ExplorerAdviceCardConfig {
 }
 
 
-class ExplorerAdviceCardBase extends React.PureComponent<ExplorerAdviceCardProps> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-      explanations: PropTypes.arrayOf(PropTypes.string.isRequired),
-      numStars: PropTypes.number,
-      score: PropTypes.number,
-    }).isRequired,
-    howToSeeMore: PropTypes.node,
-    onClick: PropTypes.func,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
+const ExplorerLeftPanelBase: React.FC<ExplorerAdviceCardProps> = (props: ExplorerAdviceCardProps):
+React.ReactElement => {
+  const {advice, howToSeeMore, userYou} = props
+  const {howToSeeMore: omittedHowToSeeMore, style, ...otherProps} = props
+  const title = getAdviceTitle(advice, userYou)
+  const {explanations: staticExplanations = []} = getAdviceModules(userYou)[advice.adviceId] || {}
+  const allExplanations = (staticExplanations || []).concat(advice.explanations || [])
+  const containerStyle: React.CSSProperties = {
+    background: '#fff',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: isMobileVersion ? '15px 30px' : '25px 30px',
+    ...style,
   }
-
-  private renderLeftPanel(style: React.CSSProperties): React.ReactNode {
-    const {advice, howToSeeMore, userYou} = this.props
-    const {howToSeeMore: omittedHowToSeeMore, style: omittedStyle, ...otherProps} = this.props
-    const title = getAdviceTitle(advice, userYou)
-    const {explanations: staticExplanations = []} = getAdviceModules(userYou)[advice.adviceId] || {}
-    const allExplanations = (staticExplanations || []).concat(advice.explanations || [])
-    const containerStyle: React.CSSProperties = {
-      background: '#fff',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: isMobileVersion ? '15px 30px' : '25px 30px',
-      ...style,
-    }
-    const titleStyle: React.CSSProperties = {
-      alignItems: 'center',
-      borderBottom: isMobileVersion ? 'initial' : `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-      color: colors.DARK,
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      flexShrink: 0,
-      fontSize: isMobileVersion ? 20 : 25,
-      fontWeight: 'bold',
-      lineHeight: 1.2,
-      marginBottom: 20,
-      paddingBottom: isMobileVersion ? 'initial' : 25,
-    }
-    const explanationsContainerStyle: React.CSSProperties = {
-      marginBottom: 20,
-      overflow: isMobileVersion ? 'hidden' : 'initial',
-    }
-    const explanationsTitleStyle: React.CSSProperties = {
-      color: colors.BOB_BLUE,
-      fontSize: 11,
-      fontStyle: 'italic',
-      fontWeight: 'bold',
-      textTransform: 'uppercase',
-    }
-    const explanationStyle: React.CSSProperties = {
-      backgroundColor: colors.MODAL_PROJECT_GREY,
-      borderRadius: 4,
-      display: 'inline-block',
-      fontSize: 13,
-      fontWeight: 500,
-      margin: 2,
-      padding: '8px 10px',
-    }
-    const explanationSeparator = <span style={{...explanationsTitleStyle, margin: '0 5px'}}>
-      +
-    </span>
-    const selectForMoreStyle: React.CSSProperties = {
-      color: colors.BOB_BLUE,
-      fontSize: 15,
-      fontStyle: 'italic',
-      fontWeight: 500,
-      textAlign: 'center',
-    }
-    const pictoStyle: React.CSSProperties = {
-      borderRadius: isMobileVersion ? 48 : 'initial',
-      boxShadow: isMobileVersion ? '0 11px 13px 0 rgba(0, 0, 0, 0.2)' : 'initial',
-      height: 48,
-      [isMobileVersion ? 'marginBottom' : 'marginRight']: 14,
-      maxWidth: 48,
-    }
-    const pointerEvents = howToSeeMore ? 'none' : 'initial'
-    return <div style={containerStyle}>
-      <div style={titleStyle}>
-        <AdvicePicto style={pictoStyle} adviceId={advice.adviceId} />
-        <span style={{flex: 1}}>{title}</span>
-      </div>
-      {allExplanations.length ? <div style={explanationsContainerStyle}>
-        <span style={{...explanationsTitleStyle, marginRight: 10}}>
-          Parce que&nbsp;:
-        </span>
-        <StringJoiner separator={explanationSeparator} lastSeparator={explanationSeparator}>
-          {allExplanations.map((explanation, index): React.ReactNode => <span
-            style={explanationStyle} key={`explanation-${index}`}>
-            {explanation}
-          </span>)}
-        </StringJoiner>
-      </div> : null}
-      <div
-        style={{flex: 1, fontSize: 16, overflow: 'hidden', pointerEvents, position: 'relative'}}>
-        <ExpandedAdviceCardContent backgroundColor={containerStyle.background} {...otherProps} />
-        {howToSeeMore ? <div style={{
-          backgroundImage: 'linear-gradient(to bottom, transparent, #fff)',
-          bottom: 0,
-          height: 90,
-          left: 0,
-          position: 'absolute',
-          right: 0,
-        }} /> : null}
-      </div>
-      <div style={selectForMoreStyle}>
-        {howToSeeMore}
-      </div>
+  const titleStyle: React.CSSProperties = {
+    alignItems: 'center',
+    borderBottom: isMobileVersion ? 'initial' : `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+    color: colors.DARK,
+    display: 'flex',
+    flexDirection: isMobileVersion ? 'column' : 'row',
+    flexShrink: 0,
+    fontSize: isMobileVersion ? 20 : 25,
+    fontWeight: 'bold',
+    lineHeight: 1.2,
+    marginBottom: 20,
+    paddingBottom: isMobileVersion ? 'initial' : 25,
+  }
+  const explanationsContainerStyle: React.CSSProperties = {
+    marginBottom: 20,
+    overflow: isMobileVersion ? 'hidden' : 'initial',
+  }
+  const explanationsTitleStyle: React.CSSProperties = {
+    color: colors.BOB_BLUE,
+    fontSize: 11,
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  }
+  const explanationStyle: React.CSSProperties = {
+    backgroundColor: colors.MODAL_PROJECT_GREY,
+    borderRadius: 4,
+    display: 'inline-block',
+    fontSize: 13,
+    fontWeight: 500,
+    margin: 2,
+    padding: '8px 10px',
+  }
+  const explanationSeparator = <span style={{...explanationsTitleStyle, margin: '0 5px'}}>
+    +
+  </span>
+  const selectForMoreStyle: React.CSSProperties = {
+    color: colors.BOB_BLUE,
+    fontSize: 15,
+    fontStyle: 'italic',
+    fontWeight: 500,
+    textAlign: 'center',
+  }
+  const pictoStyle: React.CSSProperties = {
+    borderRadius: isMobileVersion ? 48 : 'initial',
+    boxShadow: isMobileVersion ? '0 11px 13px 0 rgba(0, 0, 0, 0.2)' : 'initial',
+    height: 48,
+    [isMobileVersion ? 'marginBottom' : 'marginRight']: 14,
+    maxWidth: 48,
+  }
+  const pointerEvents = howToSeeMore ? 'none' : 'initial'
+  return <div style={containerStyle}>
+    <div style={titleStyle}>
+      <AdvicePicto style={pictoStyle} adviceId={advice.adviceId} />
+      <span style={{flex: 1}}>{title}</span>
     </div>
-  }
+    {allExplanations.length ? <div style={explanationsContainerStyle}>
+      <span style={{...explanationsTitleStyle, marginRight: 10}}>
+        Parce que&nbsp;:
+      </span>
+      <StringJoiner separator={explanationSeparator} lastSeparator={explanationSeparator}>
+        {allExplanations.map((explanation, index): React.ReactNode => <span
+          style={explanationStyle} key={`explanation-${index}`}>
+          {explanation}
+        </span>)}
+      </StringJoiner>
+    </div> : null}
+    <div
+      style={{flex: 1, fontSize: 16, overflow: 'hidden', pointerEvents, position: 'relative'}}>
+      <ExpandedAdviceCardContent backgroundColor={containerStyle.background} {...otherProps} />
+      {howToSeeMore ? <div style={{
+        backgroundImage: 'linear-gradient(to bottom, transparent, #fff)',
+        bottom: 0,
+        height: 90,
+        left: 0,
+        position: 'absolute',
+        right: 0,
+      }} /> : null}
+    </div>
+    <div style={selectForMoreStyle}>
+      {howToSeeMore}
+    </div>
+  </div>
+}
+const ExplorerLeftPanel = React.memo(ExplorerLeftPanelBase)
 
-  private renderRightPanel(style: React.CSSProperties): React.ReactNode {
-    const {advice: {adviceId, numStars}, userYou} = this.props
-    const {userGainCallout = undefined, userGainDetails = undefined} =
-      getAdviceModules(userYou)[adviceId] || {}
-    if (!userGainCallout && !userGainDetails && isMobileVersion) {
-      return null
-    }
-    const containerStyle: React.CSSProperties = {
-      alignItems: isMobileVersion ? 'stretch' : 'center',
-      backgroundImage: isMobileVersion ?
-        `linear-gradient(101deg, ${colors.BOB_BLUE}, ${colors.ROBINS_EGG})` :
-        `linear-gradient(to bottom, ${colors.BOB_BLUE}, ${colors.ROBINS_EGG})`,
-      color: '#fff',
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: 16,
-      fontStyle: 'italic',
-      fontWeight: 500,
-      justifyContent: 'center',
-      position: 'relative',
-      textAlign: 'center',
-      ...style,
-    }
-    const titleStyle: React.CSSProperties = {
-      fontSize: 11,
-      fontWeight: 'bold',
-      textTransform: 'uppercase',
-    }
-    const rocketsStyle: React.CSSProperties = {
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      top: 30,
-      ...titleStyle,
-    }
-    const userGainStyle: React.CSSProperties = isMobileVersion ? {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: 'row',
-    } : undefined
-    const calloutStyle: React.CSSProperties = {
-      alignItems: 'center',
-      border: `solid ${isMobileVersion ? 3 : 5}px rgba(255, 255, 255, .4)`,
-      borderRadius: 60,
-      display: 'flex',
-      flexShrink: 0,
-      fontSize: isMobileVersion ? 22.5 : 50,
-      fontStyle: 'normal',
-      height: isMobileVersion ? 51 : 114,
-      justifyContent: 'center',
-      lineHeight: .8,
-      margin: isMobileVersion ? '8px 0 8px 20px' : '20px auto',
-      width: isMobileVersion ? 51 : 114,
-    }
-    return <div style={containerStyle}>
-      {isMobileVersion ? null : <div style={rocketsStyle}>
-        <div style={{marginBottom: 10}}>Notre avis</div>
-        <RocketChain numStars={numStars} rocketHeight={20} />
+const ExplorerRightPanelBase: React.FC<ExplorerAdviceCardProps> = (props: ExplorerAdviceCardProps):
+React.ReactElement|null => {
+  const {advice: {adviceId, numStars}, style, userYou} = props
+  const {userGainCallout = undefined, userGainDetails = undefined} =
+    getAdviceModules(userYou)[adviceId] || {}
+  if (!userGainCallout && !userGainDetails && isMobileVersion) {
+    return null
+  }
+  const containerStyle: React.CSSProperties = {
+    alignItems: isMobileVersion ? 'stretch' : 'center',
+    backgroundImage: isMobileVersion ?
+      `linear-gradient(101deg, ${colors.BOB_BLUE}, ${colors.ROBINS_EGG})` :
+      `linear-gradient(to bottom, ${colors.BOB_BLUE}, ${colors.ROBINS_EGG})`,
+    color: '#fff',
+    display: 'flex',
+    flexDirection: 'column',
+    fontSize: 16,
+    fontStyle: 'italic',
+    fontWeight: 500,
+    justifyContent: 'center',
+    position: 'relative',
+    textAlign: 'center',
+    ...style,
+  }
+  const titleStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  }
+  const rocketsStyle: React.CSSProperties = {
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 30,
+    ...titleStyle,
+  }
+  const userGainStyle: React.CSSProperties|undefined = isMobileVersion ? {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'row',
+  } : undefined
+  const calloutStyle: React.CSSProperties = {
+    alignItems: 'center',
+    border: `solid ${isMobileVersion ? 3 : 5}px rgba(255, 255, 255, .4)`,
+    borderRadius: 60,
+    display: 'flex',
+    flexShrink: 0,
+    fontSize: isMobileVersion ? 22.5 : 50,
+    fontStyle: 'normal',
+    height: isMobileVersion ? 51 : 114,
+    justifyContent: 'center',
+    lineHeight: .8,
+    margin: isMobileVersion ? '8px 0 8px 20px' : '20px auto',
+    width: isMobileVersion ? 51 : 114,
+  }
+  return <div style={containerStyle}>
+    {isMobileVersion ? null : <div style={rocketsStyle}>
+      <div style={{marginBottom: 10}}>Notre avis</div>
+      <RocketChain numStars={numStars || 0} rocketHeight={20} />
+    </div>}
+    {userGainCallout || userGainDetails ? <div style={userGainStyle}>
+      {isMobileVersion ? null : <div style={titleStyle}>
+        Votre bénéfice
       </div>}
-      {userGainCallout || userGainDetails ? <div style={userGainStyle}>
-        {isMobileVersion ? null : <div style={titleStyle}>
-          Votre bénéfice
-        </div>}
-        <div style={calloutStyle}>
-          {userGainCallout}
-        </div>
-        <div style={{fontSize: 16, padding: isMobileVersion ? '0 15px' : '0 20px'}}>
-          {userGainDetails}
-        </div>
-      </div> : null}
-    </div>
-  }
+      <div style={calloutStyle}>
+        {userGainCallout}
+      </div>
+      <div style={{fontSize: 16, padding: isMobileVersion ? '0 15px' : '0 20px'}}>
+        {userGainDetails}
+      </div>
+    </div> : null}
+  </div>
+}
+const ExplorerRightPanel = React.memo(ExplorerRightPanelBase)
 
-  public render(): React.ReactNode {
-    const {onClick, style} = this.props
-    const containerStyle: React.CSSProperties = {
-      boxShadow: '0 10px 30px rgba(0, 0, 0, .2)',
-      cursor: onClick ? 'pointer' : 'initial',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      position: 'relative',
-      ...style,
-    }
-    return <div style={containerStyle} onClick={onClick}>
-      {this.renderLeftPanel({flex: 3})}
-      {this.renderRightPanel({flex: 1})}
-    </div>
+const ExplorerAdviceCardBase: React.FC<ExplorerAdviceCardProps> =
+(props: ExplorerAdviceCardProps): React.ReactElement => {
+  const {onClick, style} = props
+  const containerStyle: React.CSSProperties = {
+    boxShadow: '0 10px 30px rgba(0, 0, 0, .2)',
+    cursor: onClick ? 'pointer' : 'initial',
+    display: 'flex',
+    flexDirection: isMobileVersion ? 'column' : 'row',
+    position: 'relative',
+    ...style,
   }
+  return <div style={containerStyle} onClick={onClick}>
+    <ExplorerLeftPanel {...props} style={{flex: 3}} />
+    <ExplorerRightPanel {...props} style={{flex: 1}} />
+  </div>
 }
 const ExplorerAdviceCard = connect(({user}: RootState): {userYou: YouChooser} => ({
   userYou: youForUser(user),
-}))(ExplorerAdviceCardBase)
-
+}))(React.memo(ExplorerAdviceCardBase))
+ExplorerAdviceCardBase.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+    explanations: PropTypes.arrayOf(PropTypes.string.isRequired),
+    numStars: PropTypes.number,
+    score: PropTypes.number,
+  }).isRequired,
+  howToSeeMore: PropTypes.node,
+  onClick: PropTypes.func,
+  style: PropTypes.object,
+  userYou: PropTypes.func.isRequired,
+}
 
 export interface ExpandedAdviceCardConfig extends WithAdvice {
   backgroundColor?: string | number
@@ -417,6 +408,9 @@ interface ExpandedAdviceCardConnectedProps {
   userYou: YouChooser
 }
 
+interface GenericExpandedAdviceProps extends ExpandedAdviceCardConnectedProps {
+  style?: React.CSSProperties
+}
 
 interface ExpandedAdviceCardProps
   extends ExpandedAdviceCardConfig, ExpandedAdviceCardConnectedProps {
@@ -424,70 +418,66 @@ interface ExpandedAdviceCardProps
 }
 
 
-// TODO(pascal): Add a visual marker if this advice is only shown to alpha users.
-class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedAdviceCardProps> {
-  public static propTypes = {
-    advice: PropTypes.object.isRequired,
-    dispatch: PropTypes.func.isRequired,
-    profile: PropTypes.object.isRequired,
-    project: PropTypes.shape({
-      projectId: PropTypes.string,
-    }).isRequired,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
+const GenericExpandedAdviceBase: React.FC<GenericExpandedAdviceProps> =
+({profile: {gender}, style, userYou}: GenericExpandedAdviceProps): React.ReactElement => {
+  const containerStyle = {
+    alignItems: 'center',
+    display: 'flex',
+    ...style,
   }
-
-  private handleExplore = _memoize((visualElement: string): (() => void) => (): void => {
-    const {advice, dispatch, project} = this.props
-    dispatch(exploreAdvice(project, advice, visualElement))
-  })
-
-  private renderGeneric(style: React.CSSProperties): React.ReactNode {
-    const containerStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      ...style,
-    }
-    const {profile, userYou} = this.props
-    const gender = profile.gender
-    return <div style={containerStyle}>
-      <div style={{flex: 1, textAlign: 'center'}}>
-        <img src={constructionImage} alt="" />
-        <div style={{fontStyle: 'italic', fontWeight: 500}}>
-          Module en construction
-        </div>
-      </div>
-
-      <div style={{flex: 2}}>
-        <p>
-          {userYou('Tu seras ', 'Vous serez ')}
-          {genderize('notifié', 'notifiée', 'notifié', gender)} lorsque le module
-          sera prêt pour {userYou("t'aider ", 'vous aider ')}à avancer sur ce sujet.
-        </p>
+  return <div style={containerStyle}>
+    <div style={{flex: 1, textAlign: 'center'}}>
+      <img src={constructionImage} alt="" />
+      <div style={{fontStyle: 'italic', fontWeight: 500}}>
+        Module en construction
       </div>
     </div>
-  }
 
-  public render(): React.ReactNode {
-    const {advice, style} = this.props
-    const module = ADVICE_MODULES[advice.adviceId] || null
-    const PageComponent = module && module.ExpandedAdviceCardContent || null
-    if (PageComponent) {
-      return <PageComponent {...this.props} handleExplore={this.handleExplore} />
-    }
-    return this.renderGeneric(style)
+    <div style={{flex: 2}}>
+      <p>
+        {userYou('Tu seras ', 'Vous serez ')}
+        {genderize('notifié', 'notifiée', 'notifié', gender)} lorsque le module
+        sera prêt pour {userYou("t'aider ", 'vous aider ')}à avancer sur ce sujet.
+      </p>
+    </div>
+  </div>
+}
+const GenericExpandedAdvice = React.memo(GenericExpandedAdviceBase)
+
+// TODO(pascal): Add a visual marker if this advice is only shown to alpha users.
+const ExpandedAdviceCardContentBase: React.FC<ExpandedAdviceCardProps> =
+(props: ExpandedAdviceCardProps): React.ReactElement => {
+  const {advice, dispatch, profile, project, style, userYou} = props
+  const handleExplore = useMemo(() => _memoize((visualElement: string): (() => void) =>
+    (): void => {
+      dispatch(exploreAdvice(project, advice, visualElement))
+    }), [advice, dispatch, project])
+  const module = ADVICE_MODULES[advice.adviceId] || null
+  const PageComponent = module && module.ExpandedAdviceCardContent || null
+  if (PageComponent) {
+    return <PageComponent {...props} handleExplore={handleExplore} />
   }
+  return <GenericExpandedAdvice {...{profile, style, userYou}} />
 }
 const ExpandedAdviceCardContent =
   connect(({user}: RootState): ExpandedAdviceCardConnectedProps => ({
-    profile: user.profile,
+    profile: user.profile || {},
     userYou: youForUser(user),
-  }))(ExpandedAdviceCardContentBase)
+  }))(React.memo(ExpandedAdviceCardContentBase))
+ExpandedAdviceCardContentBase.propTypes = {
+  advice: PropTypes.object.isRequired,
+  dispatch: PropTypes.func.isRequired,
+  profile: PropTypes.object.isRequired,
+  project: PropTypes.shape({
+    projectId: PropTypes.string,
+  }).isRequired,
+  style: PropTypes.object,
+  userYou: PropTypes.func.isRequired,
+}
 
 
 interface MethodHeaderProps {
-  advice: bayes.bob.Advice
-  isTakeAwayShown?: boolean
+  advice: bayes.bob.Advice & {adviceId: string}
   project: bayes.bob.Project
   style?: React.CSSProperties
   title?: string
@@ -495,73 +485,53 @@ interface MethodHeaderProps {
 }
 
 
-class MethodHeader extends React.PureComponent<MethodHeaderProps> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-    isTakeAwayShown: PropTypes.bool,
-    project: PropTypes.shape({
-      projectId: PropTypes.string.isRequired,
-    }),
-    style: PropTypes.object,
-    title: PropTypes.string,
-    userYou: PropTypes.func.isRequired,
+const MethodHeaderBase: React.FC<MethodHeaderProps> =
+(props: MethodHeaderProps): React.ReactElement => {
+  const {advice, advice: {adviceId, isForAlphaOnly}, style, title, userYou} = props
+  const containerStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: isMobileVersion ? 'row-reverse' : 'row',
+    ...style,
   }
-
-  private renderTakeaway(): React.ReactNode {
-    const {advice, project} = this.props
-    const module = ADVICE_MODULES[advice.adviceId] || null
-    // TakeAway is either a string or a component.
-    const TakeAway = module && module.TakeAway || ''
-    const takeAwayStyle: React.CSSProperties = {
-      color: colors.BOB_BLUE,
-      margin: '0 10px',
-      textAlign: 'center',
-      width: 100,
-    }
-    return <div style={takeAwayStyle}>
-      {typeof TakeAway === 'string' ? TakeAway : <TakeAway advice={advice} project={project} />}
-    </div>
+  const methodStyle: React.CSSProperties = {
+    color: colors.WARM_GREY,
+    fontSize: 12,
+    textTransform: 'uppercase',
   }
-
-  public render(): React.ReactNode {
-    const {advice, isTakeAwayShown, style, title, userYou} = this.props
-    const {adviceId, isForAlphaOnly} = advice
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'row-reverse' : 'row',
-      ...style,
-    }
-    const methodStyle: React.CSSProperties = {
-      color: colors.WARM_GREY,
-      fontSize: 12,
-      textTransform: 'uppercase',
-    }
-    const titleStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      fontSize: isMobileVersion ? 16 : 18,
-      ...!isMobileVersion && {fontWeight: 'bold'},
-    }
-    const pictoStyle: React.CSSProperties = {
-      marginRight: 15,
-      width: isMobileVersion ? 35 : 40,
-    }
-    const shownTitle = upperFirstLetter(title || getAdviceTitle(advice, userYou))
-    return <header style={containerStyle}>
-      <AdvicePicto adviceId={adviceId} style={pictoStyle} shouldBeNew={true} />
-      <div style={{flex: 1, margin: '0 15'}}>
-        {isMobileVersion ? null : <div style={methodStyle}>Méthode</div>}
-        <div style={titleStyle}>
-          {shownTitle}
-          {isForAlphaOnly ? <AlphaTag style={{marginLeft: 10}} /> : null}
-        </div>
+  const titleStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    fontSize: isMobileVersion ? 16 : 18,
+    ...!isMobileVersion && {fontWeight: 'bold'},
+  }
+  const pictoStyle: React.CSSProperties = {
+    marginRight: 15,
+    width: isMobileVersion ? 35 : 40,
+  }
+  const shownTitle = upperFirstLetter(title || getAdviceTitle(advice, userYou))
+  return <header style={containerStyle}>
+    <AdvicePicto adviceId={adviceId} style={pictoStyle} />
+    <div style={{flex: 1, margin: '0 15'}}>
+      {isMobileVersion ? null : <div style={methodStyle}>Méthode</div>}
+      <div style={titleStyle}>
+        {shownTitle}
+        {isForAlphaOnly ? <AlphaTag style={{marginLeft: 10}} /> : null}
       </div>
-      {isTakeAwayShown && !isMobileVersion ? this.renderTakeaway() : null}
-    </header>
-  }
+    </div>
+  </header>
+}
+const MethodHeader = React.memo(MethodHeaderBase)
+MethodHeaderBase.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+  }).isRequired,
+  project: PropTypes.shape({
+    projectId: PropTypes.string.isRequired,
+  }),
+  style: PropTypes.object,
+  title: PropTypes.string,
+  userYou: PropTypes.func.isRequired,
 }
 
 
@@ -571,94 +541,49 @@ interface MethodProps extends MethodHeaderProps, WithAdvice {
 }
 
 
-// TODO(cyrille): Drop, since unused
-class OldObservationMethod extends React.PureComponent<MethodProps> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-    project: PropTypes.shape({
-      projectId: PropTypes.string.isRequired,
-    }).isRequired,
-  }
-
-  public render(): React.ReactNode {
-    return <MethodHeader isTakeAwayShown={true} {...this.props} />
-  }
-}
-
-
 // TODO(cyrille): Move out of advisor, we don't need access to the Modules anymore
-class WorkingMethod extends React.PureComponent<MethodProps> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-    project: PropTypes.shape({
-      projectId: PropTypes.string.isRequired,
-    }).isRequired,
-    style: PropTypes.object,
+const WorkingMethodBase: React.FC<MethodProps> = (props: MethodProps): React.ReactElement => {
+  const {style, ...otherProps} = props
+  const displayCardStyle = isMobileVersion ? {
+    marginTop: 10,
+  } : {
+    borderLeft: `3px solid ${colors.MODAL_PROJECT_GREY}`,
+    margin: '10px 0 0 20px',
+    padding: '10px 0 10px 30px',
   }
-
-  public render(): React.ReactNode {
-    const {style, ...otherProps} = this.props
-    const displayCardStyle = isMobileVersion ? {
-      marginTop: 10,
-    } : {
-      borderLeft: `3px solid ${colors.MODAL_PROJECT_GREY}`,
-      margin: '10px 0 0 20px',
-      padding: '10px 0 10px 30px',
-    }
-    const cardStyle = {
-      ...displayCardStyle,
-      fontSize: 13,
-    }
-    return <div style={style}>
-      <MethodHeader {...otherProps} />
-      <div style={cardStyle}><AdviceCard {...otherProps} /></div>
-    </div>
+  const cardStyle = {
+    ...displayCardStyle,
+    fontSize: 13,
   }
+  return <div style={style}>
+    <MethodHeader {...otherProps} />
+    <div style={cardStyle}><AdviceCard {...otherProps} /></div>
+  </div>
+}
+const WorkingMethod = React.memo(WorkingMethodBase)
+WorkingMethodBase.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+  }).isRequired,
+  project: PropTypes.shape({
+    projectId: PropTypes.string.isRequired,
+  }).isRequired,
+  style: PropTypes.object,
 }
 
 
 interface AdvicePictoProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   adviceId: string
-  shouldBeNew?: boolean
 }
 
 
-interface AdvicePictoState {
-  adviceId?: string
-  pictoSrc?: string
+const AdvicePictoBase: React.FC<AdvicePictoProps> =
+(props: AdvicePictoProps): React.ReactElement => {
+  const {adviceId, ...imgProps} = props
+  const pictoSrc = useMemo(() => getAdvicePicto(adviceId), [adviceId])
+  return <img src={pictoSrc} alt="" {...imgProps} />
 }
+const AdvicePicto = React.memo(AdvicePictoBase)
 
 
-class AdvicePicto extends React.PureComponent<AdvicePictoProps, AdvicePictoState> {
-  public static propTypes = {
-    adviceId: PropTypes.string.isRequired,
-    shouldBeNew: PropTypes.bool,
-    style: PropTypes.object,
-  }
-
-  public state: AdvicePictoState = {}
-
-  public static getDerivedStateFromProps({adviceId, shouldBeNew}, prevState): AdvicePictoState {
-    if (adviceId === prevState.adviceId) {
-      return null
-    }
-    return {
-      adviceId,
-      pictoSrc: getAdvicePicto(adviceId, shouldBeNew),
-    }
-  }
-
-  public render(): React.ReactNode {
-    const {pictoSrc} = this.state
-    const {adviceId: omittedAdviceId, shouldBeNew: omittedShouldBeNew, ...imgProps} = this.props
-    return <img src={pictoSrc} alt="" {...imgProps} />
-  }
-}
-
-
-export {AdviceCard, ExpandedAdviceCardContent, ExplorerAdviceCard, AdvicePicto,
-  WorkingMethod, OldObservationMethod}
+export {AdviceCard, ExpandedAdviceCardContent, ExplorerAdviceCard, AdvicePicto, WorkingMethod}

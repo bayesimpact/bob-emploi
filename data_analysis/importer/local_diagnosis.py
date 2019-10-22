@@ -25,7 +25,7 @@ import itertools
 import locale
 import logging
 from os import path
-import typing
+from typing import AbstractSet, Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
 import numpy as np
 import pandas
@@ -75,15 +75,15 @@ _ACTIVE_MONTHS_PROTO_FIELDS = {
 }
 
 
-def _isnan(value: typing.Any) -> bool:
+def _isnan(value: Any) -> bool:
     """Check whether a Python value is numpy's NaN."""
 
     return isinstance(value, float) and np.isnan(value)
 
 
 def _namedtuple_to_json_dict(
-        item: typing.Any, fields: typing.Iterable[str], int_fields: typing.AbstractSet[str]) \
-        -> typing.Iterator[typing.Tuple[str, typing.Any]]:
+        item: Any, fields: Iterable[str], int_fields: AbstractSet[str]) \
+        -> Iterator[Tuple[str, Any]]:
     for field in fields:
         value = getattr(item, field)
         if _isnan(value):
@@ -101,7 +101,7 @@ def csv2dicts(
         bmo_csv: str, fap_rome_crosswalk: str, pcs_rome_crosswalk: str, salaries_csv: str,
         unemployment_duration_csv: str, job_offers_changes_json: str, imt_folder: str,
         mobility_csv: str, data_folder: str = 'data') \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+        -> List[Dict[str, Any]]:
     """Import departement level diagnosis data in MongoDB.
 
     Args:
@@ -342,7 +342,7 @@ def _get_fhs_salaries(salaries_csv: str) -> pandas.DataFrame:
     return fhs_salaries[['local_id', 'salary']]
 
 
-def _get_more_stressed_jobseekers(imt_salaries_csv: str, market_score: pandas.DataFrame) \
+def _get_more_stressed_jobseekers(fhs_salaries_csv: str, market_score: pandas.DataFrame) \
         -> pandas.Series:
     """Get the percentage of jobseekers that are in more stressed markets, or equally stressed.
 
@@ -353,7 +353,7 @@ def _get_more_stressed_jobseekers(imt_salaries_csv: str, market_score: pandas.Da
     logging.info('Compute percentage of more stressed jobseekers…')
 
     # Count number of jobseekers in each market using the FHS salaries data.
-    salaries = pandas.read_csv(imt_salaries_csv, dtype={'departement_id': str})
+    salaries = pandas.read_csv(fhs_salaries_csv, dtype={'departement_id': str})
     salaries['local_id'] = salaries.departement_id + ':' + salaries.code_rome
     jobseeker_counts = salaries.groupby('local_id')['count'].sum().to_frame('counts')
 
@@ -372,12 +372,12 @@ def _get_more_stressed_jobseekers(imt_salaries_csv: str, market_score: pandas.Da
 
 
 def _salaries_diagnosis(salaries: pandas.DataFrame) \
-        -> typing.Optional[typing.Dict[str, typing.Any]]:
+        -> Optional[Dict[str, Any]]:
     total_count = salaries['count'].sum()
     if total_count < _MIN_SALARY_COUNT:
         return None
     cumulative_count = salaries['count'].cumsum()
-    estimation: typing.Dict[str, typing.Any] = {}
+    estimation: Dict[str, Any] = {}
     for name, quantile in _QUANTILES.items():
         quantile_salaries = salaries[cumulative_count <= quantile * total_count]
         if not quantile_salaries.empty:
@@ -414,6 +414,8 @@ def _get_less_stressful_job_groups(data_folder: str, mobility_csv: str, market_s
         lsuffix='_source')
 
     # Keep only the 5 best reorientations per market.
+    # TODO(cyrille): Keep worse reorientation market, to give a whole panel in stats page
+    # but verify first that this won't affect the methods and filters using this.
     best_reorientations = scored_mobility[
         scored_mobility.market_score >= 1.5 * scored_mobility.market_score_source]\
         .sort_values('market_score', ascending=False)\
@@ -517,7 +519,7 @@ def _get_employment_type_imt(employment_type_csv: str) -> pandas.DataFrame:
 
 
 def _get_employment_type_perc(market: pandas.DataFrame) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+        -> List[Dict[str, Any]]:
     percentages = [{
         'employmentType': job_pb2.EmploymentType.Name(
             _EMPLOYMENT_TYPE_PROTO_FIELDS[row.CONTRACT_TYPE_CODE]),
@@ -574,7 +576,7 @@ def _get_salaries_imt(pcs_rome_crosswalk: str, imt_salaries_csv: str) -> pandas.
         'juniorSalary', 'seniorSalary', 'local_id']].drop_duplicates('local_id')
 
 
-def _get_single_salary_detail(min_salary: float, max_salary: float) -> typing.Dict[str, typing.Any]:
+def _get_single_salary_detail(min_salary: float, max_salary: float) -> Dict[str, Any]:
     if _isnan(min_salary) and _isnan(max_salary):
         return {}
     salary_unit = job_pb2.SalaryUnit.Name(_SALARY_UNIT_PROTO_FIELDS[1])
@@ -589,8 +591,8 @@ def _get_single_salary_detail(min_salary: float, max_salary: float) -> typing.Di
     }
 
 
-def finalize_salary_estimation(estimation: typing.Dict[str, typing.Any]) \
-        -> typing.Dict[str, typing.Any]:
+def finalize_salary_estimation(estimation: Dict[str, Any]) \
+        -> Dict[str, Any]:
     """Finalize the data for a SalaryEstimation proto.
 
     Args:

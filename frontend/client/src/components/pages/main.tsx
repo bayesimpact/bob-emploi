@@ -13,23 +13,21 @@ import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
 import {polyfill} from 'smoothscroll-polyfill'
 
-import {actionTypesToLog, fetchUser, switchToMobileVersionAction,
-  migrateUserToAdvisor, trackInitialUtm, activateDemoInFuture,
-  activateDemo, pageIsLoaded, PAGE_IS_LOADED, isActionRegister,
-  AUTHENTICATE_USER, RootState, DispatchAllActions, AllActions} from 'store/actions'
+import {actionTypesToLog, fetchUser, switchToMobileVersionAction, migrateUserToAdvisor,
+  trackInitialUtm, activateDemoInFuture, activateDemo, pageIsLoaded, isActionRegister, RootState,
+  DispatchAllActions, AllActions} from 'store/actions'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
 import {createFacebookAnalyticsMiddleWare} from 'store/facebook_analytics'
 import {createGoogleAnalyticsMiddleWare} from 'store/google_analytics'
 import {onboardingComplete} from 'store/main_selectors'
-import {isLateSignupEnabled} from 'store/user'
 import {userReducer} from 'store/user_reducer'
 
 import {LoginModal} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {Snackbar} from 'components/snackbar'
 import {Routes, SIGNUP_HASH} from 'components/url'
-import {LoadableComponentType, WebpackChunksLoader} from 'components/webpack_chunks_loader'
+import {WebpackChunksLoader} from 'components/webpack_chunks_loader'
 import {IntroPage} from './intro'
 import {SignUpPage} from './signup'
 import {WaitingPage} from './waiting'
@@ -50,17 +48,19 @@ const LandingPage = chunkLoader.createLoadableComponent(
   import(/* webpackChunkName: 'landing' */'./landing'), 'landing', 3)
 
 
-interface StaticPage<Params> {
-  Component: React.ComponentType<RouteComponentProps<Params>>
+interface StaticPage<PropsType = {}> {
+  Component: React.ComponentType<PropsType>
   route: string
 }
 
-interface LoadableStaticPage<Params> extends StaticPage<Params> {
-  Component: LoadableComponentType<RouteComponentProps<Params>>
+
+interface StaticPageLoader<PropsType> {
+  loader: () => Promise<React.ComponentType<PropsType>|{default: React.ComponentType<PropsType>}>
+  route: string
 }
 
 
-function preparePage<Params>({loader, route}): LoadableStaticPage<Params> {
+function preparePage<P>({loader, route}: StaticPageLoader<P>): StaticPage<P> {
   return {
     Component: chunkLoader.createLoadableComponent(loader, 'static', 0),
     route,
@@ -68,7 +68,8 @@ function preparePage<Params>({loader, route}): LoadableStaticPage<Params> {
 }
 
 
-const staticPages: (StaticPage<{}> | StaticPage<{adviceId?: string}>)[] = [
+const staticPages:
+readonly (StaticPage | StaticPage<RouteComponentProps<{adviceId?: string}>>)[] = [
   {
     loader: (): Promise<typeof import('./static/contribution')> =>
       import(/* webpackChunkName: 'static' */'./static/contribution'),
@@ -153,7 +154,6 @@ const PAGES_WITH_STORED_SCROLL = [Routes.PROJECT_PAGE]
 interface UserCheckedPagesConnectedProps {
   demo?: string
   hasLoginModal: boolean
-  hasUserSeenExplorer: boolean
   isFetchingUser: boolean
   user: bayes.bob.User
 }
@@ -203,7 +203,7 @@ class UserCheckedPagesBase extends
   }
 
   public render(): React.ReactNode {
-    const {hasLoginModal, hasUserSeenExplorer, isFetchingUser, location, user} = this.props
+    const {hasLoginModal, isFetchingUser, location, user} = this.props
     const {hash, search} = location
     const {authToken, resetToken, state, userId} = parse(search)
     const hasUser = !!user.registeredAt
@@ -227,8 +227,7 @@ class UserCheckedPagesBase extends
         {hasUser ? null : <Route path={Routes.ROOT} exact={true} component={LandingPage} />}
 
         {/* Intro page for anonymous users.*/}
-        {hasUser || !isLateSignupEnabled ? null :
-          <Route path={Routes.INTRO_PAGE} component={IntroPage} />}
+        {hasUser ? null : <Route path={Routes.INTRO_PAGE} component={IntroPage} />}
 
         {/* Signup and login routes. */}
         {/* We're on a connected page, without a user, so we show the login modal. */}
@@ -239,15 +238,14 @@ class UserCheckedPagesBase extends
         {/* Pages for logged-in users that might not have completed their onboarding. */}
         <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={LoadableProfilePage} />
         <Route path={Routes.NEW_PROJECT_ONBOARDING_PAGES} component={LoadableNewProjectPage} />
+        {/* TODO(cyrille): Drop this page. */}
         <Route path={Routes.APP_UPDATED_PAGE} component={LoadableUpdatePage} />
 
-        {/* Redirect if user is not fully ready. */}
-        {this.isAdvisorUser(user) && hasUserSeenExplorer ? null :
-          <Redirect to={Routes.APP_UPDATED_PAGE} />}
         {onboardingComplete(user) ? null : <Redirect to={Routes.PROFILE_PAGE} />}
 
         {/* Pages for logged-in user that have completed their onboarding. */}
         <Route path={Routes.PROJECT_PATH} component={LoadableProjectPage} />
+        <Route path={Routes.PROJECT_PAGE} component={LoadableProjectPage} />
         <Redirect to={Routes.PROJECT_PAGE + search + hash} />
 
       </Switch>
@@ -258,13 +256,12 @@ class UserCheckedPagesBase extends
 }
 const UserCheckedPages = connect(
   ({
-    app: {demo, lastAccessAt, loginModal},
+    app: {demo, loginModal},
     asyncState: {isFetching},
     user,
   }: RootState): UserCheckedPagesConnectedProps => ({
     demo,
     hasLoginModal: !!loginModal,
-    hasUserSeenExplorer: !lastAccessAt || lastAccessAt > '2018-01-17',
     isFetchingUser: !!isFetching['GET_USER_DATA'],
     user,
   }))(UserCheckedPagesBase)
@@ -296,11 +293,12 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
     dispatch(pageIsLoaded(location))
     if (isMobileVersion) {
       dispatch(switchToMobileVersionAction)
-      document.getElementById('viewport').setAttribute('content', 'initial-scale=1')
+      const viewport = document.getElementById('viewport')
+      viewport && viewport.setAttribute('content', 'initial-scale=1')
     }
   }
 
-  public getSnapshotBeforeUpdate({location: {pathname: prevPath}}): PageHolderState {
+  public getSnapshotBeforeUpdate({location: {pathname: prevPath}}): PageHolderState|null {
     const {location: {pathname = {}}} = this.props
     const isScrollStorable = PAGES_WITH_STORED_SCROLL.
       some((path: string): boolean => prevPath.startsWith(path))
@@ -363,7 +361,7 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
       return ''
     }
     const params = 'utm_source=bob-emploi&utm_medium=link' +
-      (hash ? `&utm_campaign=${hash.substr(1)}` : '')
+      (hash ? `&utm_campaign=${hash.slice(1)}` : '')
     return Routes.ROOT + (search ? `${search}&${params}` : `?${params}`)
   }
 
@@ -395,21 +393,24 @@ class App extends React.Component<{}, AppState> {
   private static createHistoryAndStore(): AppState {
     const history = createBrowserHistory()
 
-    const ravenMiddleware = RavenMiddleware(config.sentryDSN, {release: config.clientVersion}, {
-      stateTransformer: function(state: AppState): {} {
-        return {
-          ...state,
-          // Don't send user info to Sentry.
-          user: 'Removed with ravenMiddleware stateTransformer',
-        }
-      },
-    })
+    const ravenMiddleware = RavenMiddleware(
+      config.sentryDSN, {
+        release: config.clientVersion,
+      }, {
+        stateTransformer: function(state: AppState): {} {
+          return {
+            ...state,
+            // Don't send user info to Sentry.
+            user: 'Removed with ravenMiddleware stateTransformer',
+          }
+        },
+      })
     const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
     const googleAnalyticsMiddleware = createGoogleAnalyticsMiddleWare(config.googleUAID, {
-      [PAGE_IS_LOADED]: 'pageview',
+      PAGE_IS_LOADED: 'pageview',
     })
     const facebookAnalyticsMiddleware = createFacebookAnalyticsMiddleWare(config.facebookPixelID, {
-      [AUTHENTICATE_USER]: {
+      AUTHENTICATE_USER: {
         params: {'content_name': config.productName},
         predicate: isActionRegister,
         type: 'CompleteRegistration',
@@ -438,11 +439,12 @@ class App extends React.Component<{}, AppState> {
     if (module.hot) {
       module.hot.accept(['store/user_reducer', 'store/app_reducer'], (): void => {
         const nextAppReducerModule = require('store/app_reducer')
+        const nextUserReducerModule = require('store/user_reducer')
         store.replaceReducer(combineReducers({
           app: nextAppReducerModule.app as typeof app,
           asyncState: nextAppReducerModule.asyncState as typeof asyncState,
           router: connectRouter(history),
-          user: require('store/user_reducer').userReducer,
+          user: nextUserReducerModule.userReducer as typeof userReducer,
         }))
       })
     }

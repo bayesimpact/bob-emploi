@@ -25,7 +25,7 @@ Nomenclature in this module:
 """
 
 import re
-import typing
+from typing import Optional, Tuple
 
 import pandas as pd
 
@@ -112,7 +112,7 @@ def _substitute_postfix(word: str, postfix: str) -> str:
     raise ValueError(error_string)
 
 
-def _extract_bracket_notation(raw_job_name: str) -> typing.Optional[typing.Tuple[str, str]]:
+def _extract_bracket_notation(raw_job_name: str) -> Optional[Tuple[str, str]]:
     """Parse a genderized string in the bracket notation.
 
     Extract the genderized strings from a job title with the bracket notation,
@@ -160,7 +160,7 @@ def _extract_bracket_notation(raw_job_name: str) -> typing.Optional[typing.Tuple
     return masculine_name, feminine_name
 
 
-def _expand_qualifiers(left_string: str, right_string: str) -> typing.Tuple[str, str]:
+def _expand_qualifiers(left_string: str, right_string: str) -> Tuple[str, str]:
     """Distribute qualifiers from the left side to the right and vice-versa.
 
     When a proposition is gendered in the slash format (e.g. "Senior
@@ -230,7 +230,7 @@ def _expand_qualifiers(left_string: str, right_string: str) -> typing.Tuple[str,
     return expanded_left_string, expanded_right_string
 
 
-def _extract_slash_notation(raw_job_name: str) -> typing.Optional[typing.Tuple[str, str]]:
+def _extract_slash_notation(raw_job_name: str) -> Optional[Tuple[str, str]]:
     """Parse a genderized string in the slash notation.
 
     Extract the genderized strings from a job title with the slash notation,
@@ -295,7 +295,7 @@ def _extract_slash_notation(raw_job_name: str) -> typing.Optional[typing.Tuple[s
     return masculine_name, feminine_name
 
 
-def genderize(raw_job_names: pd.Series) -> typing.Tuple[pd.Series, pd.Series]:
+def genderize(raw_job_names: pd.Series) -> Tuple[pd.Series, pd.Series]:
     """Normalize the genderization of a dataframe of ROME job titles.
 
     Take a pandas Series of the raw job titles as present in the ROME and

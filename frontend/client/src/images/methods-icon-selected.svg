@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="22px" viewBox="0 0 18 22" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <title>met-active</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Mobile" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Strategy-page-(started)---methods---mobile" transform="translate(-191.000000, -521.000000)" fill="#1888FF">
+            <path d="M199,538 L203,538 L203,536 L199,536 L199,533 L203,533 L203,531 L199,531 L199,528 L203,528 L203,526 L199,526 L199,523 C199,521.895431 199.895431,521 201,521 L207,521 C208.104569,521 209,521.895431 209,523 L209,541 C209,542.104569 208.104569,543 207,543 L201,543 C199.895431,543 199,542.104569 199,541 L199,538 Z M197,527 L197,528 L191,528 L191,527 C191,525.343146 192.343146,524 194,524 C195.656854,524 197,525.343146 197,527 Z M191,530 L197,530 C197,531.819824 197,534.587157 197,538.302 L194,542.802 L191,538.302 C191,534.608099 191,531.840766 191,530 Z" id="met-active"></path>
+        </g>
+    </g>
+</svg>

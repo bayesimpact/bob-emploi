@@ -1,5 +1,113 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2019-10-16_00
+
+- New strategy UI on diagnostic page
+- Clean Code, Bug Fixes, ...
+
+Deployed on Wed, 16 Oct 2019 13:56:40 +0000
+
+# 2019-10-04_00
+
+Small UI changes for previous release
+
+Deployed on Fri, 04 Oct 2019 12:25:57 +0000
+
+# 2019-10-03_00
+
+- Change UI of diagnostic page
+- Add possibility for link between support email and user
+- Clean Code, Bug Fixes, ...
+
+Deployed on Thu, 03 Oct 2019 09:23:59 +0000
+
+# 2019-09-30_01
+
+- Prepare the last diagnostic category
+- Bug Fixes, Clean Code, ...
+
+Deployed on Mon, 30 Sep 2019 14:18:33 +0000
+
+# 2019-09-26_00
+
+- Change UI of profile pages
+- Add waiting bullets on onboarding comments
+- Clean Code, Bug Fixes, ...
+
+Deployed on Thu, 26 Sep 2019 11:58:13 +0000
+
+# 2019-09-20_00
+
+- New category for people starting their search
+- Enable creating an account without password 
+- Clean Code, Bug Fixes, Update Content, ...
+
+Deployed on Fri, 20 Sep 2019 09:59:13 +0000
+
+# 2019-09-13_00
+
+- New graphs for stats page.
+- Clean Code, Bug Fixes, ...
+
+Deployed on Mon, 16 Sep 2019 08:43:37 +0000
+
+# 2019-09-03_00
+
+- New focus email about improving a CV
+- Eval page: add the user interview count on histogram
+- Allow multi-auth using multiple SSOs
+- Small bugs and UI fixes
+
+Deployed on Tue, 03 Sep 2019 12:07:52 +0000
+
+# 2019-08-30_01
+
+- Suggest coaching in onboarding
+- Authentication fixes
+- Add graphs to stat page
+- Clean Code, Bug Fixes, ...
+
+Deployed on Fri, 30 Aug 2019 10:01:37 +0000
+
+# 2019-08-27_02
+
+- Update Transparency numbers.
+- Encourage coaching for guests.
+- New graph in eval statistics.
+- Small bugs fix.
+
+Deployed on Tue, 27 Aug 2019 12:30:40 +0000
+
+# 2019-08-09_02
+
+- Add new graph in stats page and prepare for more
+- Redirect to previous page on registration/login
+- Clean Code, Bug Fixes, ...
+
+Deployed on Fri, 09 Aug 2019 12:58:31 +0000
+
+# 2019-08-02_00
+
+- Introduce the Stats Page
+- Small accessibility fix
+
+Deployed on Fri, 02 Aug 2019 11:27:33 +0000
+
+# 2019-07-30_00
+
+- New UI for strategies on mobile
+- Employment types hint in onboarding
+- Bug Fixes, Clean Code, ...
+
+Deployed on Tue, 30 Jul 2019 08:19:22 +0000
+
+# 2019-07-15_01
+
+- Launch "Late Sign Up" feature.
+- Fix LinkedIn Connect.
+
+Deployed on Mon, 15 Jul 2019 15:00:32 +0000
+
 # 2019-07-12_01
 
 - Prepare for late sign-up

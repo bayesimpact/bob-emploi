@@ -1,6 +1,6 @@
 """Mail modules for holiday (christmas, new year, ...) mailings."""
 
-import typing
+from typing import Any, Dict, Optional
 from urllib import parse
 
 import pymongo
@@ -14,8 +14,8 @@ from bob_emploi.frontend.server.asynchronous.mail import campaign
 
 
 def christmas_vars(
-        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
-        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
+        user: user_pb2.User, database: Optional[pymongo.database.Database] = None,
+        **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute all variables required for the Christmas campaign."""
 
     project = next((p for p in user.projects), project_pb2.Project())
@@ -63,8 +63,7 @@ def christmas_vars(
     })
 
 
-def new_year_vars(user: user_pb2.User, **unused_kwargs: typing.Any) \
-        -> typing.Optional[typing.Dict[str, str]]:
+def new_year_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute all variables required for the New Year campaign."""
 
     project = next((p for p in user.projects), project_pb2.Project())

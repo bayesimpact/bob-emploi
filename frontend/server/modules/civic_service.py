@@ -1,6 +1,7 @@
 """Module to advise the user to do a civic service mission."""
 
-import typing
+from typing import List
+
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server import proto
@@ -47,7 +48,7 @@ class _AdviceCivicService(scoring_base.ModelBase):
 
         age = project.get_user_age()
         seniority = project.details.seniority
-        reasons: typing.List[str] = []
+        reasons: List[str] = []
         if age < 16 or seniority > project_pb2.INTERN:
             return scoring_base.NULL_EXPLAINED_SCORE
         if project.user_profile.has_handicap and age <= 30:

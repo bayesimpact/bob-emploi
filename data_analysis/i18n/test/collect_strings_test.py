@@ -2,7 +2,7 @@
 
 import datetime
 import re
-import typing
+from typing import List, Set, Tuple
 import unittest
 from unittest import mock
 
@@ -15,7 +15,7 @@ from bob_emploi.data_analysis.importer.test import airtable_to_protos_test
 from bob_emploi.frontend.api import network_pb2
 
 
-_TABLES_TO_MOCK: typing.Set[typing.Tuple[str, str, str]] = {
+_TABLES_TO_MOCK: Set[Tuple[str, str, str]] = {
     (i.args.get('base_id', ''), i.args.get('table', ''), i.args.get('view', ''))
     for i in import_status.IMPORTERS.values()
     if i.script == 'airtable_to_protos' and i.args
@@ -36,7 +36,7 @@ class CollectStringsTest(airtablemock.TestCase):
             if view:
                 airtablemock.Airtable(base_id, '').create_view(table, view, 'unused != 3')
 
-    def _assert_all_translations(self, expected: typing.List[str]) -> typing.List[str]:
+    def _assert_all_translations(self, expected: List[str]) -> List[str]:
         translations = \
             list(airtable.Airtable('appkEc8N0Bw4Uok43', '').iterate('translations'))
         actual = [t.get('fields', {}).get('string') for t in translations]
@@ -67,18 +67,7 @@ class CollectStringsTest(airtablemock.TestCase):
 
         self._assert_all_translations(
             ['A sentence template', 'First Advice', 'Second Advice', 'my explanation'])
-        mock_post.assert_called_once_with(
-            'https://slack.example.com/webhook',
-            json={
-                'attachments': [{
-                    'mrkdwn_in': ['text'],
-                    'title': 'Automatic String Collect',
-                    'text':
-                        'Here is the report:\nAll the collections have been collected.' +
-                        '\nAnd no errors have been found during collect.\n'
-                }],
-            },
-        )
+        mock_post.assert_not_called()
 
     def test_duplicates(self) -> None:
         """Avoid creating duplicate rows for the same translation."""

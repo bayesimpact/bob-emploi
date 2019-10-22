@@ -24,17 +24,17 @@ interface PageParams {
 interface PageState {
   comment?: string
   errorMessage?: string
-  isFormSent?: boolean
-  isSendingUpdate?: boolean
-  isShareModalShown?: boolean
-  isValidated?: boolean
-  params?: PageParams
-  score?: number
+  isFormSent: boolean
+  isSendingUpdate: boolean
+  isShareModalShown: boolean
+  isValidated: boolean
+  params: PageParams
+  score: number
 }
 
 
 class NPSFeedbackPage extends React.PureComponent<{}, PageState> {
-  private static getStateFromLocation({search}): {params: PageParams; score: number} {
+  private static getStateFromLocation({search}): Pick<PageState, 'params'|'score'> {
     const params = parse(search) || {}
     return {
       params,
@@ -43,7 +43,6 @@ class NPSFeedbackPage extends React.PureComponent<{}, PageState> {
   }
 
   public state: PageState = {
-    errorMessage: null,
     isFormSent: false,
     isSendingUpdate: false,
     isShareModalShown: false,
@@ -64,7 +63,7 @@ class NPSFeedbackPage extends React.PureComponent<{}, PageState> {
       return
     }
     const {token, user} = params
-    this.setState({errorMessage: null, isSendingUpdate: true})
+    this.setState({errorMessage: undefined, isSendingUpdate: true})
     fetch('/api/nps', {
       body: JSON.stringify({comment, userId: user}),
       headers: {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'},
@@ -74,21 +73,23 @@ class NPSFeedbackPage extends React.PureComponent<{}, PageState> {
 
   private handleUpdateResponse = (response): void => {
     if (response.status >= 400 || response.status < 200) {
-      response.text().then((errorMessage): void => {
+      response.text().then((errorMessage: string): void => {
         const page = document.createElement('html')
         page.innerHTML = errorMessage
         const content = page.getElementsByTagName('P') as HTMLCollectionOf<HTMLParagraphElement>
         this.setState({
-          errorMessage: content.length && content[0].textContent || page.textContent,
+          errorMessage: content.length && content[0].textContent || page.textContent ||
+            errorMessage,
           isSendingUpdate: false,
         })
       })
       return
     }
-    this.setState(({comment, score}): PageState => ({
+    this.setState(({comment, score}):
+    Pick<PageState, 'isFormSent'|'isSendingUpdate'|'isShareModalShown'> => ({
       isFormSent: true,
       isSendingUpdate: false,
-      isShareModalShown: comment && score > 8,
+      isShareModalShown: !!comment && score > 8,
     }))
   }
 

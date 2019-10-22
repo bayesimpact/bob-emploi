@@ -83,7 +83,7 @@ interface DiagnosticTitle {
 
 
 function makeDiagnosticTitle(
-  overallSentence: string, percent: number, userName: string,
+  overallSentence: string|undefined, percent: number, userName: string,
   userYou: YouChooser): DiagnosticTitle {
   if (overallSentence) {
     return {shortTitle: overallSentence}
@@ -108,7 +108,9 @@ export interface ScoreComponent extends bayes.bob.SubDiagnostic {
   color: string
   icon: string
   shortTitle: string
+  text: string
   title: (userYou: YouChooser) => string
+  topic: bayes.bob.DiagnosticTopic
 }
 
 export interface Score extends DiagnosticTitle {

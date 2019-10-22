@@ -15,7 +15,7 @@ docker-compose run --rm data-analysis-prepare \
 
 import argparse
 import csv
-import typing
+from typing import List, Optional, Set, TextIO
 
 import tqdm
 
@@ -24,8 +24,7 @@ from bob_emploi.data_analysis.lib import job_offers
 _DEFAULT_FIELDS = 'rome_profession_card_code,experience_min_duration,creation_date'
 
 
-def _trim_job_offers_csv(
-        args: argparse.Namespace, out: typing.Optional[typing.TextIO]) -> None:
+def _trim_job_offers_csv(args: argparse.Namespace, out: Optional[TextIO]) -> None:
 
     fieldnames = args.fields.split(',')
     all_job_offers = job_offers.iterate(
@@ -37,7 +36,7 @@ def _trim_job_offers_csv(
         writer = csv.DictWriter(out_file, fieldnames=fieldnames)
         writer.writeheader()
 
-        trim_date_fields: typing.Set[str] = set()
+        trim_date_fields: Set[str] = set()
         if args.trim_dates:
             trim_date_fields = {
                 field for field in fieldnames
@@ -53,9 +52,7 @@ def _trim_job_offers_csv(
             writer.writerow(row)
 
 
-def main(
-        string_args: typing.Optional[typing.List[str]] = None,
-        out: typing.Optional[typing.TextIO] = None) -> None:
+def main(string_args: Optional[List[str]] = None, out: Optional[TextIO] = None) -> None:
     """Trim job offers CSV."""
 
     parser = argparse.ArgumentParser()

@@ -12,7 +12,7 @@ import MenuUpIcon from 'mdi-react/MenuUpIcon'
 import PropTypes from 'prop-types'
 import Radium from 'radium'
 import Raven from 'raven-js'
-import React from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import ReactMarkdown from 'react-markdown'
 import VisibilitySensor from 'react-visibility-sensor'
 
@@ -21,16 +21,37 @@ import {isMobileVersion} from 'components/mobile'
 import 'styles/fonts/Lato/font.css'
 
 // Extract color components.
-export const colorToComponents = (color: string): [number, number, number] => ([
-  parseInt(color.substring(1, 3), 16),
-  parseInt(color.substring(3, 5), 16),
-  parseInt(color.substring(5, 7), 16),
-])
+export const colorToComponents = (color: string): [number, number, number] => {
+  if (color.length === 7) {
+    return [
+      parseInt(color.slice(1, 3), 16),
+      parseInt(color.slice(3, 5), 16),
+      parseInt(color.slice(5, 7), 16),
+    ]
+  }
+  return [
+    parseInt(color.slice(1, 2), 16) * 0x11,
+    parseInt(color.slice(2, 3), 16) * 0x11,
+    parseInt(color.slice(3, 4), 16) * 0x11,
+  ]
+}
 
-// Change #rrbbgg color to rgba(r, b, g, alpha)
+// Inverse of colorToComponents.
+const componentsToColor = (components: [number, number, number]): string =>
+  '#' + components.map((n: number): string => n.toString(16)).join('')
+
+// Change #rrggbb color to rgba(r, g, b, alpha)
 export const colorToAlpha = (color: string, alpha: number): string => {
   const [red, green, blue] = colorToComponents(color)
   return `rgba(${red}, ${green}, ${blue}, ${alpha === 0 ? 0 : alpha || 1})`
+}
+
+// Give a color between the two base colors, with linear interpolation.
+export const colorGradient = (color0: string, color1: string, rate: number): string => {
+  const [components0, components1] = [color0, color1].map(colorToComponents)
+  const [red, green, blue] = new Array(3).fill(undefined).map((unused, index): number =>
+    Math.round(components0[index] * (1 - rate) + components1[index] * rate))
+  return componentsToColor([red, green, blue])
 }
 
 export const SmoothTransitions: React.CSSProperties = {
@@ -40,6 +61,10 @@ export const SmoothTransitions: React.CSSProperties = {
 export const FastTransitions: React.CSSProperties = {
   transition: 'all 100ms cubic-bezier(0.18, 0.71, 0.4, 0.82) 0ms',
 }
+
+export const nthFastTransition = (n: number, stepMs = 100): React.CSSProperties => ({
+  transition: `all ${stepMs}ms cubic-bezier(0.18, 0.71, 0.4, 0.82) ${n * stepMs}ms`,
+})
 
 // Maximum width of content on super wide screen.
 export const MAX_CONTENT_WIDTH = 1000
@@ -83,7 +108,7 @@ export const Styles = {
   },
   VENDOR_PREFIXED: (property: string, value): React.CSSProperties => {
     const style = {}
-    const propertySuffix = property.substr(0, 1).toUpperCase() + property.substr(1);
+    const propertySuffix = property.slice(0, 1).toUpperCase() + property.slice(1);
     ['Moz', 'Ms', 'O', 'Webkit'].forEach((prefix): void => {
       style[prefix + propertySuffix] = value
     })
@@ -195,7 +220,7 @@ class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
 
   private dom: React.RefObject<HTMLButtonElement> = React.createRef()
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout: number|undefined
 
   public blur(): void {
     this.dom.current && this.dom.current.blur()
@@ -217,7 +242,7 @@ class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
       event.preventDefault()
     }
     this.setState({isClicking: true})
-    this.timeout = setTimeout((): void => {
+    this.timeout = window.setTimeout((): void => {
       this.setState({isClicking: false})
       onClick && onClick(event)
     }, bounceDurationMs)
@@ -227,7 +252,7 @@ class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
     const {bounceDurationMs, children, disabled, isNarrow, isProgressShown, type, style,
       isHighlighted, isRound, ...otherProps} = this.props
     const {isClicking} = this.state
-    const typeStyle = BUTTON_TYPE_STYLES[type] || BUTTON_TYPE_STYLES.navigation
+    const typeStyle = type && BUTTON_TYPE_STYLES[type] || BUTTON_TYPE_STYLES.navigation
 
     const buttonStyle: RadiumCSSProperties = {
       border: 'none',
@@ -396,16 +421,16 @@ class CircularProgress extends React.PureComponent<CircularProgressProps, Circul
     clearTimeout(this.rotateWrapperTimer2)
   }
 
-  private rotateWrapperTimer1: ReturnType<typeof setTimeout>
+  private rotateWrapperTimer1: number|undefined
 
-  private rotateWrapperTimer2: ReturnType<typeof setTimeout>
+  private rotateWrapperTimer2: number|undefined
 
-  private scalePathTimer: ReturnType<typeof setTimeout>
+  private scalePathTimer: number|undefined
 
   private scalePath(step): void {
     const {periodMilliseconds} = this.props
     this.setState({scalePathStep: step})
-    this.scalePathTimer = setTimeout(
+    this.scalePathTimer = window.setTimeout(
       (): void => this.scalePath((step + 1) % 3),
       step ? .4 * periodMilliseconds : .2 * periodMilliseconds)
   }
@@ -414,11 +439,11 @@ class CircularProgress extends React.PureComponent<CircularProgressProps, Circul
     const {periodMilliseconds} = this.props
     this.setState({isWrapperRotated: false})
 
-    this.rotateWrapperTimer1 = setTimeout((): void => {
+    this.rotateWrapperTimer1 = window.setTimeout((): void => {
       this.setState({isWrapperRotated: true})
     }, 50)
 
-    this.rotateWrapperTimer2 = setTimeout(
+    this.rotateWrapperTimer2 = window.setTimeout(
       (): void => this.rotateWrapper(),
       50 + periodMilliseconds * 5.7143)
   }
@@ -607,7 +632,7 @@ class JobGroupCoverImage extends React.PureComponent<JobGroupCoverImageProps> {
       ...coverAll,
       ...style,
     }
-    const filters = []
+    const filters: string[] = []
     if (blur) {
       filters.push(`blur(${blur}px)`)
       containerStyle.overflow = 'hidden'
@@ -644,7 +669,9 @@ interface RadioButtonProps {
   isDisabled?: boolean
   isHovered?: boolean
   isSelected?: boolean
+  onBlur?: () => void
   onClick?: () => void
+  onFocus?: () => void
   style?: React.CSSProperties
 }
 
@@ -654,7 +681,9 @@ class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: bool
     isDisabled: PropTypes.bool,
     isHovered: PropTypes.bool,
     isSelected: PropTypes.bool,
+    onBlur: PropTypes.func,
     onClick: PropTypes.func,
+    onFocus: PropTypes.func,
     style: PropTypes.object,
   }
 
@@ -664,8 +693,21 @@ class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: bool
 
   private dom: React.RefObject<HTMLDivElement> = React.createRef()
 
-  private handleFocused = _memoize((isFocused): (() => void) =>
-    (): void => this.setState({isFocused}))
+  private handleFocused = _memoize((isFocused): (() => void) => (): void => {
+    const {onBlur, onFocus} = this.props
+    this.setState({isFocused})
+    if (isFocused) {
+      onFocus && onFocus()
+    } else {
+      onBlur && onBlur()
+    }
+  })
+
+  private handleClick = (): void => {
+    this.focus()
+    const {isDisabled, onClick} = this.props
+    !isDisabled && onClick && onClick()
+  }
 
   public focus(): void {
     this.dom.current && this.dom.current.focus()
@@ -673,7 +715,7 @@ class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: bool
 
   public render(): React.ReactNode {
     const {isDisabled, isHovered, isSelected, onClick: unsafeOnClick, style} = this.props
-    const onClick = isDisabled ? null : unsafeOnClick
+    const onClick = isDisabled ? undefined : unsafeOnClick
     const {isFocused} = this.state
     const isHighlighted = !isDisabled && (isHovered || isFocused)
     const outerCircleStyle: React.CSSProperties = {
@@ -707,8 +749,8 @@ class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: bool
       style={containerStyle} tabIndex={0} ref={this.dom}
       onFocus={this.handleFocused(true)}
       onBlur={this.handleFocused(false)}
-      onClick={onClick}
-      onKeyPress={isFocused ? onClick : null}>
+      onClick={this.handleClick}
+      onKeyPress={isFocused ? onClick : undefined}>
       <div style={outerCircleStyle}>
         {isSelected ? <div style={innerCircleStyle} /> : null}
       </div>
@@ -756,7 +798,7 @@ class Checkbox extends React.PureComponent<CheckboxProps, {isFocused: boolean}> 
 
   public render(): React.ReactNode {
     const {isDisabled, isHovered, isSelected, onClick: unsafeOnClick, size, style} = this.props
-    const onClick = isDisabled ? null : unsafeOnClick
+    const onClick = isDisabled ? undefined : unsafeOnClick
     const {isFocused} = this.state
     const isHighlighted = !isDisabled && (isHovered || isFocused)
     const outerBoxStyle: React.CSSProperties = {
@@ -789,7 +831,7 @@ class Checkbox extends React.PureComponent<CheckboxProps, {isFocused: boolean}> 
       onFocus={this.handleFocused(true)}
       onBlur={this.handleFocused(false)}
       onClick={onClick}
-      onKeyPress={isFocused ? onClick : null}>
+      onKeyPress={isFocused ? onClick : undefined}>
       <div style={outerBoxStyle}>
         {isSelected ? <CheckIcon style={{fill: '#fff', width: 16}} /> : null}
       </div>
@@ -802,7 +844,7 @@ interface SwipeProps {
   isDisabled?: boolean
   isSelected?: boolean
   onClick?: () => void
-  size?: number
+  size: number
   style?: React.CSSProperties
 }
 
@@ -821,7 +863,7 @@ class SwipeToggle extends React.PureComponent<SwipeProps> {
 
   public render(): React.ReactNode {
     const {isDisabled, isSelected, onClick: unsafeOnClick, size, style} = this.props
-    const onClick = isDisabled ? null : unsafeOnClick
+    const onClick = isDisabled ? undefined : unsafeOnClick
     const containerStyle = {
       backgroundColor: isSelected ? colors.BOB_BLUE : '#fff',
       border: `1px solid ${isSelected ? colors.BOB_BLUE : colors.MODAL_PROJECT_GREY}`,
@@ -860,7 +902,9 @@ interface LabeledToggleProps {
   isDisabled?: boolean
   isSelected?: boolean
   label: React.ReactNode
+  onBlur?: () => void
   onClick?: () => void
+  onFocus?: () => void
   style?: React.CSSProperties
   type: keyof typeof TOGGLE_INPUTS
 }
@@ -870,7 +914,9 @@ interface ToggleInputProps {
   isDisabled?: boolean
   isHovered?: boolean
   isSelected?: boolean
+  onBlur?: () => void
   onClick?: () => void
+  onFocus?: () => void
   size?: number
   style?: React.CSSProperties
 }
@@ -894,12 +940,23 @@ class LabeledToggle extends React.PureComponent<LabeledToggleProps, {isHovered: 
   private handleHover = _memoize((isHovered): (() => void) =>
     (): void => this.setState({isHovered}))
 
+  private handleClick = (event?): void => {
+    const {onClick} = this.props
+    if (event && onClick) {
+      // Prevent the click to be consumed twice.
+      event.stopPropagation()
+    }
+    this.focus()
+    onClick && onClick()
+  }
+
   public focus(): void {
     this.inputRef.current && this.inputRef.current.focus()
   }
 
   public render(): React.ReactNode {
-    const {isDisabled, isSelected, label, onClick, style, type, ...otherProps} = this.props
+    const {isDisabled, isSelected, label, onBlur, onClick: omittedOnClick, onFocus, style, type,
+      ...otherProps} = this.props
     const {isHovered} = this.state
     const containerStyle: React.CSSProperties = {
       alignItems: 'center',
@@ -912,11 +969,12 @@ class LabeledToggle extends React.PureComponent<LabeledToggleProps, {isHovered: 
     const ToggleInput: React.ComponentType<ToggleInputProps> = TOGGLE_INPUTS[type]
     return <div
       {...otherProps} style={containerStyle}
-      onMouseOver={this.handleHover(true)} onMouseOut={this.handleHover(false)} >
+      onMouseOver={this.handleHover(true)} onMouseOut={this.handleHover(false)}
+      onClick={isDisabled ? undefined : this.handleClick}>
       <ToggleInput
-        style={{flex: 'none'}} onClick={isDisabled ? null : onClick} ref={this.inputRef}
-        isDisabled={isDisabled} isSelected={isSelected} isHovered={isHovered} />
-      <span onClick={onClick} style={{marginLeft: 10}}>
+        style={{flex: 'none'}} ref={this.inputRef}
+        onClick={this.handleClick} {...{isDisabled, isHovered, isSelected, onBlur, onFocus}} />
+      <span style={{marginLeft: 10}}>
         {label}
       </span>
     </div>
@@ -974,13 +1032,15 @@ class IconInput extends React.PureComponent<IconInputProps> {
   public componentDidMount(): void {
     const {shouldFocusOnMount} = this.props
     if (shouldFocusOnMount && !isMobileVersion) {
-      this.handleFocus()
+      this.focus()
     }
   }
 
   private input: React.RefObject<Input> = React.createRef()
 
-  private handleFocus = (): void => this.input.current && this.input.current.focus()
+  public focus = (): void => {
+    this.input.current && this.input.current.focus()
+  }
 
   public render(): React.ReactNode {
     const {iconComponent, iconStyle, inputStyle, style,
@@ -1007,7 +1067,7 @@ class IconInput extends React.PureComponent<IconInputProps> {
         {...otherProps}
         ref={this.input}
         style={inputStyle} />
-      <div style={iconContainer} onClick={this.handleFocus}>
+      <div style={iconContainer} onClick={this.focus}>
         <Icon style={iconStyle} />
       </div>
     </div>
@@ -1086,7 +1146,7 @@ class Input extends React.PureComponent<InputProps, InputState> {
     lastChangedValue: this.props.value,
   }
 
-  public static getDerivedStateFromProps({value}, {propValue}): InputState {
+  public static getDerivedStateFromProps({value}, {propValue}): InputState|null {
     if (propValue !== value) {
       return {propValue: value, value}
     }
@@ -1107,18 +1167,19 @@ class Input extends React.PureComponent<InputProps, InputState> {
     }
     clearTimeout(this.timeout)
     if (value !== lastChangedValue) {
-      this.timeout = setTimeout((): void => this.onChange(value), onChangeDelayMillisecs)
+      this.timeout = window.setTimeout(
+        (): void => this.onChange(value || ''), onChangeDelayMillisecs)
     }
   }
 
   public componentWillUnmount(): void {
     clearTimeout(this.timeout)
-    this.onChange(this.state.value, true)
+    this.onChange(this.state.value || '', true)
   }
 
   private dom: React.RefObject<HTMLInputElement> = React.createRef()
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout: number|undefined
 
   private onChange = (value: string, isLastSave?: boolean): void => {
     const {onChange} = this.props
@@ -1141,7 +1202,7 @@ class Input extends React.PureComponent<InputProps, InputState> {
     const {onBlur, onChange, onChangeDelayMillisecs} = this.props
     if (onChangeDelayMillisecs && onChange) {
       clearTimeout(this.timeout)
-      this.onChange(this.state.value)
+      this.onChange(this.state.value || '')
     }
     onBlur && onBlur(event)
   }
@@ -1247,7 +1308,8 @@ class PieChart extends React.PureComponent<PieChartProps, {hasStartedGrowing: bo
           <circle
             r={innerRadius} fill="none" stroke={backgroundColor} strokeWidth={strokeWidth} />
           <circle
-            r={innerRadius} fill="none" stroke={style.color} strokeDashoffset={perimeter / 4}
+            r={innerRadius} fill="none" stroke={style && style.color}
+            strokeDashoffset={perimeter / 4}
             strokeDasharray={`${strokeLength},${perimeter - strokeLength}`} strokeLinecap="round"
             strokeWidth={strokeWidth} style={{transition: `${durationMillisec}ms`}} />
         </svg>
@@ -1258,87 +1320,66 @@ class PieChart extends React.PureComponent<PieChartProps, {hasStartedGrowing: bo
 }
 
 
-interface GrowingNumberProps {
-  durationMillisec: number
+interface GrowingNumberConfig {
+  durationMillisec?: number
   isSteady?: boolean
   number: number
   style?: React.CSSProperties
 }
 
 
-interface GrowingNumberState {
-  growingForMillisec?: number
-  hasGrown?: boolean
-  hasStartedGrowing?: boolean
-}
-
-
-class GrowingNumber extends React.PureComponent<GrowingNumberProps, GrowingNumberState> {
-  public static propTypes = {
-    durationMillisec: PropTypes.number.isRequired,
-    isSteady: PropTypes.bool,
-    number: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
-
-  public static defaultProps = {
-    durationMillisec: 1000,
-  }
-
-  public state = {
-    growingForMillisec: 0,
-    hasGrown: false,
-    hasStartedGrowing: false,
-  }
-
-  public componentWillUnmount(): void {
-    clearTimeout(this.timeout)
-  }
-
-  private timeout: ReturnType<typeof setTimeout>
-
-  private startGrowing = (isVisible): void => {
+const GrowingNumberBase: React.FC<GrowingNumberConfig> =
+(props: GrowingNumberConfig & {durationMillisec: number}): React.ReactElement => {
+  const {durationMillisec, isSteady, number, style} = props
+  const [growingForMillisec, setGrowingForMillisecs] = useState(0)
+  const [hasGrown, setHasGrown] = useState(false)
+  const [hasStartedGrowing, setHasStartedGrowing] = useState(false)
+  const timeout = useRef<number|undefined>(undefined)
+  useEffect((): void|(() => void) => {
+    if (!hasStartedGrowing || hasGrown) {
+      return
+    }
+    if (growingForMillisec >= durationMillisec) {
+      setHasGrown(true)
+      return
+    }
+    timeout.current = window.setTimeout(
+      (): void => setGrowingForMillisecs(growingForMillisec + 50), 50)
+    return (): void => clearTimeout(timeout.current)
+  }, [durationMillisec, hasGrown, hasStartedGrowing, growingForMillisec])
+  const startGrowing = useCallback((isVisible: boolean): void => {
     if (!isVisible) {
       return
     }
-    this.grow(0)
-  }
-
-  private grow(growingForMillisec: number): void {
-    clearTimeout(this.timeout)
-    if (growingForMillisec >= this.props.durationMillisec) {
-      this.setState({hasGrown: true})
-      return
-    }
-    this.setState(({hasStartedGrowing}): GrowingNumberState => ({
-      growingForMillisec,
-      ...hasStartedGrowing ? {} : {hasStartedGrowing: true},
-    }))
-    this.timeout = setTimeout((): void => this.grow(growingForMillisec + 50), 50)
-  }
-
-  public render(): React.ReactNode {
-    const {durationMillisec, isSteady, number, style} = this.props
-    const {growingForMillisec, hasGrown, hasStartedGrowing} = this.state
-    const maxNumDigits = number ? Math.floor(Math.log10(number)) + 1 : 1
-    const containerStyle: React.CSSProperties = isSteady ? {
-      display: 'inline-block',
-      textAlign: 'right',
-      // 0.625 was found empirically.
-      width: `${maxNumDigits * 0.625}em`,
-      ...style,
-    } : style
-    return <span style={containerStyle}>
-      <VisibilitySensor
-        active={!hasStartedGrowing} intervalDelay={250}
-        onChange={this.startGrowing}>
-        <span>
-          {hasGrown ? number : Math.round(growingForMillisec / durationMillisec * number)}
-        </span>
-      </VisibilitySensor>
-    </span>
-  }
+    setHasStartedGrowing(true)
+  }, [])
+  const maxNumDigits = number ? Math.floor(Math.log10(number)) + 1 : 1
+  const containerStyle = useMemo((): React.CSSProperties|undefined => isSteady ? {
+    display: 'inline-block',
+    textAlign: 'right',
+    // 0.625 was found empirically.
+    width: `${maxNumDigits * 0.625}em`,
+    ...style,
+  } : style, [isSteady, maxNumDigits, style])
+  return <span style={containerStyle}>
+    <VisibilitySensor
+      active={!hasStartedGrowing} intervalDelay={250} onChange={startGrowing}>
+      <span>
+        {hasGrown ? number : Math.round(growingForMillisec / durationMillisec * number)}
+      </span>
+    </VisibilitySensor>
+  </span>
 }
+GrowingNumberBase.propTypes = {
+  durationMillisec: PropTypes.number.isRequired,
+  isSteady: PropTypes.bool,
+  number: PropTypes.number.isRequired,
+  style: PropTypes.object,
+}
+GrowingNumberBase.defaultProps = {
+  durationMillisec: 1000,
+}
+const GrowingNumber = React.memo(GrowingNumberBase)
 
 
 // This component avoids that the element touches the border when on mobile.
@@ -1361,8 +1402,8 @@ class PaddedOnMobile extends React.PureComponent<{style?: React.CSSProperties}> 
 }
 
 
-interface AppearingListProps extends React.HTMLProps<HTMLDivElement> {
-  children: ReactStylableElement[]
+export interface AppearingListProps extends Omit<React.HTMLProps<HTMLDivElement>, 'ref'> {
+  children: ReactStylableElement | null | (ReactStylableElement|null)[]
   maxNumChildren?: number
 }
 
@@ -1381,13 +1422,16 @@ class AppearingList extends React.PureComponent<AppearingListProps, {isShown: bo
 
   public render(): React.ReactNode {
     const {children, maxNumChildren, ...extraProps} = this.props
+    const validChildren = React.Children.toArray(children).filter(
+      (c: ReactStylableElement|null): c is ReactStylableElement => !!c
+    )
     const {isShown} = this.state
     const itemStyle = (index, style): React.CSSProperties => ({
       opacity: isShown ? 1 : 0,
-      transition: `opacity 300ms ease-in ${index * 700 / children.length}ms`,
+      transition: `opacity 300ms ease-in ${index * 700 / validChildren.length}ms`,
       ...style,
     })
-    const shownChildren = maxNumChildren ? children.slice(0, maxNumChildren) : children
+    const shownChildren = maxNumChildren ? validChildren.slice(0, maxNumChildren) : validChildren
     return <VisibilitySensor
       active={!isShown} intervalDelay={250} partialVisibility={true}
       onChange={this.handleShow}>
@@ -1403,32 +1447,40 @@ class AppearingList extends React.PureComponent<AppearingListProps, {isShown: bo
 }
 
 
-class Tag extends React.PureComponent<{style?: React.CSSProperties}> {
-  public static propTypes = {
-    children: PropTypes.node.isRequired,
-    style: PropTypes.object,
-  }
+interface TagProps {
+  children: React.ReactNode
+  style?: React.CSSProperties
+}
 
-  public render(): React.ReactNode {
-    const {children, style} = this.props
-    const containerStyle: React.CSSProperties = {
-      backgroundColor: colors.GREENISH_TEAL,
-      borderRadius: 2,
-      color: '#fff',
-      display: 'inline-block',
-      flexShrink: 0,
-      fontSize: 9,
-      fontWeight: 'bold',
-      letterSpacing: .3,
-      padding: 6,
-      textTransform: 'uppercase',
-      ...style,
-    }
-    return <span style={containerStyle}>
-      {children}
-    </span>
+const getTagStyle = (style?: React.CSSProperties): React.CSSProperties => {
+  const padding = style && style.fontStyle === 'italic' ? '6px 7px 6px 5px' : 6
+  return {
+    backgroundColor: colors.GREENISH_TEAL,
+    borderRadius: 2,
+    color: '#fff',
+    display: 'inline-block',
+    flexShrink: 0,
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: .3,
+    padding,
+    textTransform: 'uppercase',
+    ...style,
   }
 }
+
+const TagBase: React.FC<TagProps> =
+({children, style}): React.ReactElement => {
+  const containerStyle = useMemo((): React.CSSProperties => getTagStyle(style), [style])
+  return <span style={containerStyle}>
+    {children}
+  </span>
+}
+TagBase.propTypes = {
+  children: PropTypes.node.isRequired,
+  style: PropTypes.object,
+}
+const Tag = React.memo(TagBase)
 
 
 interface StringJoinerProps {
@@ -1458,7 +1510,7 @@ class StringJoiner extends React.PureComponent<StringJoinerProps> {
     if (children.length === 1) {
       return children[0]
     }
-    const parts = []
+    const parts: React.ReactNode[] = []
     children.forEach((child, index): void => {
       if (index) {
         const nextSeparator = (index === children.length - 1) ? lastSeparator : separator
@@ -1555,6 +1607,7 @@ class PercentBar extends React.PureComponent<PercentBarProps> {
       paddingLeft: isPercentShown ? 18 : 0,
       paddingTop: 7,
       width: `${percent}%`,
+      ...SmoothTransitions,
     }
     return <div style={containerStyle}>
       {percent ? <div style={percentStyle}>
@@ -1626,7 +1679,8 @@ class Textarea extends React.PureComponent<TextareaProps> {
 
   private handleChange = (event): void => {
     event.stopPropagation()
-    this.props.onChange(event.target.value)
+    const {onChange} = this.props
+    onChange && onChange(event.target.value || '')
   }
 
   public focus(): void {
@@ -1736,7 +1790,10 @@ class Img extends React.PureComponent<ImgProps, {hasErred?: boolean}> {
         Raven.captureMessage(`Image source is no longer available: ${src}.`)
         missingImages.add(src)
       }
-      this.imgRef.current.src = this.props.fallbackSrc
+      const {fallbackSrc} = this.props
+      if (fallbackSrc) {
+        this.imgRef.current.src = fallbackSrc
+      }
       this.setState({hasErred: true})
     }
   }
@@ -1754,6 +1811,7 @@ interface CircleProps {
   gaugeRef?: React.RefObject<SVGSVGElement>
   halfAngleDeg: number
   isAnimated: boolean
+  isCaptionShown: boolean
   isPercentShown: boolean
   percent: number
   radius: number
@@ -1779,6 +1837,8 @@ class BobScoreCircle extends React.PureComponent<CircleProps, {hasStartedGrowing
     halfAngleDeg: PropTypes.number.isRequired,
     // TODO(cyrille): Fix the non-animated version.
     isAnimated: PropTypes.bool.isRequired,
+    isCaptionShown: PropTypes.bool.isRequired,
+    isPercentShown: PropTypes.bool.isRequired,
     percent: PropTypes.number.isRequired,
     radius: PropTypes.number.isRequired,
     scoreSize: PropTypes.number.isRequired,
@@ -1789,13 +1849,14 @@ class BobScoreCircle extends React.PureComponent<CircleProps, {hasStartedGrowing
 
   public static defaultProps = {
     durationMillisec: 1000,
-    halfAngleDeg: 67.4,
+    halfAngleDeg: 60,
     isAnimated: true,
+    isCaptionShown: true,
     isPercentShown: true,
     radius: 78.6,
-    scoreSize: 36.4,
+    scoreSize: 31,
     startColor: colors.RED_PINK,
-    strokeWidth: 5.2,
+    strokeWidth: 4.3,
   }
 
   public state = {
@@ -1832,6 +1893,7 @@ class BobScoreCircle extends React.PureComponent<CircleProps, {hasStartedGrowing
       gaugeRef,
       halfAngleDeg,
       isAnimated,
+      isCaptionShown,
       isPercentShown,
       percent,
       radius,
@@ -1864,34 +1926,49 @@ class BobScoreCircle extends React.PureComponent<CircleProps, {hasStartedGrowing
       marginRight: (style && style.marginRight || 0) + 20 - strokeWidth,
       marginTop: (style && style.marginTop || 0) - 3 * strokeWidth,
     }
-    const percentStyle: React.CSSProperties = {
-      display: 'flex',
-      fontSize: scoreSize,
+    const innerTextStyle: React.CSSProperties = {
       fontWeight: 'bold',
-      justifyContent: 'center',
       left: 0,
-      lineHeight: '40px',
-      marginRight: 'auto',
       position: 'absolute',
       right: 0,
+    }
+    const percentStyle: React.CSSProperties = {
+      ...innerTextStyle,
+      display: 'flex',
+      fontSize: scoreSize,
+      justifyContent: 'center',
+      lineHeight: '37px',
+      marginRight: 'auto',
       top: largeRadius, // center in circle, not in svg
-      transform: 'translate(0, -50%)',
+      transform: 'translate(0, -80%)',
     }
     const percentColor = !hasStartedGrowing ? startColor : color
     const transitionStyle: React.CSSProperties = {
       transition: `stroke ${durationMillisec}ms linear,
         stroke-dashoffset ${durationMillisec}ms linear`,
     }
+    const captionStyle: React.CSSProperties = {
+      ...innerTextStyle,
+      bottom: 0,
+      color: colors.COOL_GREY,
+      fontSize: 10,
+      fontStyle: 'italic',
+      margin: 'auto',
+      maxWidth: 100,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+    }
     return <VisibilitySensor
-      active={!hasStartedGrowing} intervalDelay={250} partialVisibilty={true}
+      active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
       onChange={this.startGrowing}>
       <div {...extraProps} style={containerStyle}>
         {isPercentShown ? <div style={percentStyle}>
           {isAnimated ?
-            <GrowingNumber durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
+            <GrowingNumber
+              durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
             percent
-          }%
-        </div> : null}
+          }%</div> : null}
+        {isCaptionShown ? <div style={captionStyle}>score d'employabilité</div> : null}
         <svg
           fill="none" ref={gaugeRef}
           viewBox={`${-largeRadius} ${-largeRadius} ${totalWidth} ${totalHeight}`}>
@@ -1939,7 +2016,12 @@ interface RadioGroupProps<T> {
 }
 
 
-class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>> {
+interface RadioGroupState {
+  focusIndex: number
+}
+
+
+class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>, RadioGroupState> {
   public static propTypes = {
     onChange: PropTypes.func.isRequired,
     options: PropTypes.arrayOf(PropTypes.shape({
@@ -1958,13 +2040,58 @@ class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>> {
     ]),
   }
 
-  private firstOptionRef: React.RefObject<LabeledToggle> = React.createRef()
+  public state: RadioGroupState = {
+    focusIndex: -1,
+  }
+
+  private optionsRef?: readonly React.RefObject<LabeledToggle>[]
 
   private handleChange = _memoize((value: T): (() => void) =>
     (): void => this.props.onChange(value))
 
+  private handleKeyDown = (event): void => {
+    const {keyCode} = event
+    // Left or Up.
+    if (keyCode === 37 || keyCode === 38) {
+      this.focusOnOther(-1)
+    }
+    // Right or Down.
+    if (keyCode === 39 || keyCode === 40) {
+      this.focusOnOther(1)
+    }
+  }
+
+  private getBlurHandler = _memoize((focusIndex: number): (() => void) => (): void => {
+    if (this.state.focusIndex === focusIndex) {
+      this.setState({focusIndex: -1})
+    }
+  })
+
+  private getFocusHandler = _memoize((focusIndex: number): (() => void) =>
+    (): void => this.setState({focusIndex}))
+
+  private focusOnOther(delta: number): void {
+    const {focusIndex} = this.state
+    if (focusIndex === -1) {
+      return
+    }
+    this.focusOn(focusIndex + delta)
+  }
+
+  private focusOn(focusIndex: number): void {
+    if (!this.optionsRef) {
+      return
+    }
+    const optionRef = this.optionsRef[focusIndex] && this.optionsRef[focusIndex].current
+    if (optionRef) {
+      optionRef.focus()
+    }
+  }
+
   public focus(): void {
-    this.firstOptionRef.current && this.firstOptionRef.current.focus()
+    if (this.state.focusIndex === -1) {
+      this.focusOn(0)
+    }
   }
 
   public render(): React.ReactNode {
@@ -1974,13 +2101,19 @@ class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>> {
       flexWrap: 'wrap',
       ...style,
     }
-    return <div style={containerStyle}>
+    if (!this.optionsRef || this.optionsRef.length !== options.length) {
+      this.optionsRef = new Array(options.length).fill(undefined).
+        map((): React.RefObject<LabeledToggle> => React.createRef())
+    }
+    return <div style={containerStyle} onKeyDown={this.handleKeyDown}>
       {options.map((option, index): React.ReactNode => {
         return <LabeledToggle
           key={option.value + ''} label={option.name} type="radio"
-          ref={index ? undefined : this.firstOptionRef}
+          ref={this.optionsRef && this.optionsRef[index]}
           isSelected={option.value === value}
-          onClick={this.handleChange(option.value)} />
+          onClick={this.handleChange(option.value)}
+          onFocus={this.getFocusHandler(index)}
+          onBlur={this.getBlurHandler(index)} />
       })}
     </div>
   }

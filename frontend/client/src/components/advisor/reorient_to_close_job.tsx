@@ -4,10 +4,13 @@ import PropTypes from 'prop-types'
 import {YouChooser} from 'store/french'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-reorient-to-close-job.svg'
+import Picto from 'images/advices/picto-reorient-to-close-job.svg'
 
 import {CardProps, CardWithContentProps, DataSource, JobSuggestion, MethodSuggestionList,
-  connectExpandedCardWithContent, makeTakeAwayFromAdviceData} from './base'
+  connectExpandedCardWithContent} from './base'
+
+
+const emptyArray = [] as const
 
 
 // TODO(marielaure): Refactor this with reorientation-jobbing advice.
@@ -36,8 +39,8 @@ class ExpandedAdviceCardContentBase
 
   public render(): React.ReactNode {
     const {adviceData, handleExplore, profile: {gender}, project: {city}, userYou} = this.props
-    const {closeJobs = [], evolutionJobs = []} = adviceData.closeJobs || adviceData.evolutionJobs ?
-      adviceData : {}
+    const {closeJobs = emptyArray, evolutionJobs = emptyArray} =
+      adviceData.closeJobs || adviceData.evolutionJobs ? adviceData : {}
     const areCloseJobShown = closeJobs.length > 1
     const style = {
       marginTop: areCloseJobShown ? 20 : 0,
@@ -59,7 +62,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.ReorientCloseJobs, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.ReorientCloseJobs, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
@@ -109,10 +112,4 @@ class Section extends React.PureComponent<SectionProps> {
 }
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({closeJobs = [], evolutionJobs = []}: bayes.bob.ReorientCloseJobs): bayes.bob.ReorientJob[] =>
-    [...closeJobs, ...evolutionJobs],
-  'métier')
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

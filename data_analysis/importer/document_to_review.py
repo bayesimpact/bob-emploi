@@ -2,7 +2,7 @@
 
 import argparse
 import os
-import typing
+from typing import List, Optional
 
 from airtable import airtable
 from bson import objectid
@@ -16,7 +16,7 @@ _AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 
 def import_new_records(
         base_id: str, table: str, mongo_table: pymongo.collection.Collection,
-        view: typing.Optional[str] = None) -> None:
+        view: Optional[str] = None) -> None:
     """Import new records from Airtable to MongoDB."""
 
     if not _AIRTABLE_API_KEY:
@@ -69,7 +69,7 @@ def import_new_records(
     print(f'{num_inserted:d} documents added.')
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Importer for document to review from Airtable to MongoDB."""
 
     parser = argparse.ArgumentParser(

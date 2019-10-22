@@ -5,10 +5,10 @@ import {getEmailTemplates} from 'store/french'
 import {isEmailTemplatePersonalized, projectMatchAllFilters} from 'store/user'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-network-application.svg'
+import Picto from 'images/advices/picto-network-application.svg'
 
 import {CardProps, CardWithContentProps, MethodSuggestionList, EmailTemplate,
-  connectExpandedCardWithContent, makeTakeAwayFromAdviceData} from './base'
+  connectExpandedCardWithContent} from './base'
 
 
 const CONTACT_EXCUSES = [
@@ -37,6 +37,9 @@ interface WithIntro {
 
 
 type NetworkCardProps = CardWithContentProps<bayes.bob.ContactLeads> & WithIntro
+
+
+const emptyArray = [] as const
 
 
 class NetworkAdvicePageBase extends React.PureComponent<NetworkCardProps> {
@@ -74,20 +77,21 @@ class NetworkAdvicePageBase extends React.PureComponent<NetworkCardProps> {
       {intro ? <div style={{marginBottom: 20}}>{intro}</div> : null}
       <MethodSuggestionList title={leadsTitle}>
         {(leads.length) ?
-          leads.map((lead, idx): ReactStylableElement => <EmailTemplate
+          leads.map((lead, idx): ReactStylableElement|null => lead.emailExample ? <EmailTemplate
             isMethodSuggestion={true}
             content={lead.emailExample}
             tip={lead.contactTip}
             title={lead.name}
             key={`lead-${idx}`}
             onContentShown={handleExplore('contact lead')}
-            userYou={userYou} />)
+            userYou={userYou} /> : null)
           : selectedEmails.map((email, idx): ReactStylableElement => <EmailTemplate
             isMethodSuggestion={true}
             content={email.content}
             title={email.title}
-            whyForYou={isEmailTemplatePersonalized(email.personalizations, profile, project) ?
-              email.reason : null}
+            whyForYou={
+              isEmailTemplatePersonalized(email.personalizations || emptyArray, profile, project) ?
+                email.reason : undefined}
             key={`advice-${idx}`}
             onContentShown={handleExplore('email template')}
             userYou={userYou} />)}
@@ -105,12 +109,8 @@ class NetworkAdvicePageBase extends React.PureComponent<NetworkCardProps> {
   }
 }
 const NetworkAdvicePage =
-  connectExpandedCardWithContent<{}, bayes.bob.ContactLeads, CardProps & WithIntro>()(
+  connectExpandedCardWithContent<bayes.bob.ContactLeads, CardProps & WithIntro>(
     NetworkAdvicePageBase)
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({leads}: bayes.bob.ContactLeads): readonly bayes.bob.ContactLead[] => leads, 'modèle')
-
-
-export {NetworkAdvicePage, NewPicto, TakeAway}
+export {NetworkAdvicePage, Picto}

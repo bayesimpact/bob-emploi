@@ -8,7 +8,7 @@ import {Redirect, Route, Switch} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, sendProjectFeedback} from 'store/actions'
-import {getAdviceShortTitle} from 'store/advice'
+import {getAdviceShortTitle, isValidAdvice} from 'store/advice'
 import {YouChooser} from 'store/french'
 import {youForUser} from 'store/user'
 
@@ -45,7 +45,7 @@ const addDuration = (time: string, delayMillisec: number): Date | undefined => {
 
 // Get the date and time at which to show the request feedback.
 const getRequestFeedbackShowDate = (
-  {app: {submetricsExpansion = {}}, user: {featuresEnabled: {stratTwo}}}: RootState,
+  {app: {submetricsExpansion = {}}, user: {featuresEnabled: {stratTwo} = {}}}: RootState,
   {advices, diagnosticShownAt, feedback, openedStrategies = [], strategies}: bayes.bob.Project
 ): Date | undefined => {
   // Feedback already given.
@@ -54,25 +54,25 @@ const getRequestFeedbackShowDate = (
   }
 
   // User is in pre-strat UX.
-  if (stratTwo !== 'ACTIVE' || !strategies.length) {
+  if (stratTwo !== 'ACTIVE' || !strategies || !strategies.length) {
     // The user started interacting with the pre-strat content.
-    if (advices.some(({status}): boolean => status === 'ADVICE_READ') ||
+    if (advices && advices.some(({status}): boolean => status === 'ADVICE_READ') ||
       !!Object.keys(submetricsExpansion).length) {
       return new Date()
     }
 
     // Wait for 13s in diagnostic even if they do not open an advice page.
-    return addDuration(diagnosticShownAt, 13000)
+    return diagnosticShownAt ? addDuration(diagnosticShownAt, 13000) : undefined
   }
 
   // User has started a strategy: wait for 20s.
-  const lastStratStarted = _max(openedStrategies.map(({startedAt}): string => startedAt))
+  const lastStratStarted = _max(openedStrategies.map(({startedAt}): string|undefined => startedAt))
   if (lastStratStarted) {
     return addDuration(lastStratStarted, 20000)
   }
 
   // User has seen the diagnostic but has not started a strategy: wait 60s.
-  return addDuration(diagnosticShownAt, 60000)
+  return diagnosticShownAt ? addDuration(diagnosticShownAt, 60000) : undefined
 }
 
 
@@ -198,7 +198,7 @@ class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
   }
 }
 const FeedbackBar = connect(({user}: RootState): BarConnectedProps => ({
-  isFeminine: user.profile.gender === 'FEMININE',
+  isFeminine: !!(user.profile && user.profile.gender === 'FEMININE'),
   userYou: youForUser(user),
 }))(FeedbackBarBase)
 
@@ -269,11 +269,11 @@ class PageWithFeedbackBase
     clearTimeout(this.timeout)
   }
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private handleReturnFromFeedback = (): void => {
     const {feedback} = this.props.project
-    if (feedback && feedback.score >= 4) {
+    if (feedback && (feedback.score || 0) >= 4) {
       this.setState({isShareBobShown: true})
     }
   }
@@ -286,7 +286,7 @@ class PageWithFeedbackBase
     clearTimeout(this.timeout)
     if (showAfter) {
       const showInMillisec = showAfter.getTime() - new Date().getTime()
-      this.timeout = setTimeout((): void => this.setState({isShown: true}), showInMillisec)
+      this.timeout = window.setTimeout((): void => this.setState({isShown: true}), showInMillisec)
     }
   }
 
@@ -352,7 +352,7 @@ class FeedbackPageBase extends React.PureComponent<PageProps, {isFeedbackSubmitt
   }
 }
 const FeedbackPage = connect(({user}: RootState): BarConnectedProps => ({
-  isFeminine: user.profile.gender === 'FEMININE',
+  isFeminine: !!(user.profile && user.profile.gender === 'FEMININE'),
   userYou: youForUser(user),
 }))(FeedbackPageBase)
 
@@ -408,7 +408,7 @@ class FeedbackForm extends React.PureComponent<FormProps, FormState> {
     const {isFeminine, project: {advices}, userYou} = this.props
     const {score, selectedAdvices, text} = this.state
     const isGoodFeedback = score > 2
-    const shownAdvices = advices.filter(({status}): boolean => status === 'ADVICE_READ') || []
+    const shownAdvices = (advices || []).filter(({status}): boolean => status === 'ADVICE_READ')
     const containerStyle: React.CSSProperties = {
       padding: isMobileVersion ? 20 : 50,
     }
@@ -446,7 +446,8 @@ class FeedbackForm extends React.PureComponent<FormProps, FormState> {
           <CheckboxList
             onChange={this.handleUpdateSelectedAdvices} values={selectedAdvices}
             options={(shownAdvices).
-              filter((a): boolean => a.numStars > 1).
+              filter(isValidAdvice).
+              filter((a): boolean => !!(a.numStars && a.numStars > 1)).
               map((advice): SelectOption => ({
                 name: getAdviceShortTitle(advice, userYou),
                 value: advice.adviceId,
@@ -507,7 +508,8 @@ class FeedbackStars extends React.PureComponent<StarsProps, {hoveredStars: numbe
       height: size + 10,
       padding: 5,
     }
-    const notOnMobile = (callback: () => void): (() => void) => isMobileVersion ? null : callback
+    const notOnMobile = (callback: () => void): ((() => void) | undefined) =>
+      isMobileVersion ? undefined : callback
     const fullStar = isWhite ? whiteStarIcon : starIcon
     const emptyStar = isWhite ? starOutlineIcon : greyStarOutlineIcon
     return <div style={{textAlign: 'center'}}>

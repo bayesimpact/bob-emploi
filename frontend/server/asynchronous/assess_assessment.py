@@ -13,6 +13,7 @@ import os
 import random
 import sys
 import typing
+from typing import Dict, Iterator, List, Optional, TextIO, Tuple
 
 import requests
 
@@ -39,7 +40,7 @@ _SUBDIAGNOSTIC_PREFIX = 'subdiagnostic: '
 
 
 def _list_missing_properties_for_assessed_use_case(user: user_pb2.User, title: str) \
-        -> typing.Iterator[str]:
+        -> Iterator[str]:
     user_diagnostic, missing_sentences = diagnostic.diagnose(user, user.projects[0], _DATA_DB)
     if missing_sentences is None:
         return
@@ -70,7 +71,7 @@ _T = typing.TypeVar('_T')
 
 # Implementation of reservoir sampling https://en.wikipedia.org/wiki/Reservoir_sampling
 def _reservoir_sample(
-        reservoir: typing.List[_T], max_size: int, new_element: _T, new_index: int) -> None:
+        reservoir: List[_T], max_size: int, new_element: _T, new_index: int) -> None:
     if len(reservoir) < max_size:
         reservoir.append(new_element)
         return
@@ -87,9 +88,9 @@ def _compute_assessment_report(example_count: int, since: str, until: str) -> st
         {'poolName': {'$gte': str(since), '$lt': str(until), '$regex': r'\d{4}-\d{2}-\d{2}'}})
 
     unassessed_count = 0
-    num_cases_missing_a_field: typing.Dict[str, int] = collections.defaultdict(int)
+    num_cases_missing_a_field: Dict[str, int] = collections.defaultdict(int)
     project_count = 0
-    examples: typing.List[typing.Tuple[str, typing.List[str]]] = []
+    examples: List[Tuple[str, List[str]]] = []
     for use_case_json in cursor:
         use_case = proto.create_from_mongo(
             use_case_json, use_case_pb2.UseCase, 'use_case_id', always_create=False)
@@ -139,7 +140,7 @@ def _compute_assessment_report(example_count: int, since: str, until: str) -> st
     return report_text
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None, out: typing.TextIO = sys.stdout) \
+def main(string_args: Optional[List[str]] = None, out: TextIO = sys.stdout) \
         -> None:
     """Parse command line arguments and trigger _compute_assessment_report function.
     docker-compose run --rm -e MONGO_URL="$PROD_MONGO" frontend-flask \

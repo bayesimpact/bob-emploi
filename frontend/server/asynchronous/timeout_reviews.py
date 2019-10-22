@@ -4,6 +4,7 @@ import argparse
 import datetime
 import logging
 import typing
+from typing import Any, Dict, List, Optional
 
 from bob_emploi.frontend.api import review_pb2
 from bob_emploi.frontend.server import mongo
@@ -13,7 +14,7 @@ from bob_emploi.frontend.server import now
 _, _USER_DB, _ = mongo.get_connections_from_env()
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Time out CVS and motivation letters reviews."""
 
     parser = argparse.ArgumentParser(
@@ -37,7 +38,7 @@ def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
 
 
 def _timeout_old_reviews(
-        document_dict: typing.Dict[str, typing.Any], timeout_date: datetime.datetime) -> None:
+        document_dict: Dict[str, Any], timeout_date: datetime.datetime) -> None:
     document_id = document_dict.pop('_id')
     document = typing.cast(
         review_pb2.DocumentToReview,

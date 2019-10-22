@@ -10,7 +10,7 @@ import {OutsideClickHandler} from './theme'
 
 interface SnackbarProps {
   dispatch: DispatchAllActions
-  snack: React.ReactNode
+  snack?: React.ReactNode
   style?: React.CSSProperties
   timeoutMillisecs: number
 }
@@ -18,8 +18,8 @@ interface SnackbarProps {
 
 interface SnackbarState {
   isVisible: boolean
-  nextSnacks: React.ReactNode[]
-  snack: React.ReactNode
+  nextSnacks: readonly React.ReactNode[]
+  snack?: React.ReactNode
 }
 
 
@@ -31,24 +31,24 @@ class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
     timeoutMillisecs: PropTypes.number.isRequired,
   }
 
-  public state = {
+  public state: SnackbarState = {
     isVisible: false,
     nextSnacks: [],
-    snack: null,
   }
 
   public componentDidMount(): void {
-    this.componentDidUpdate({snack: null}, {isVisible: false})
+    this.componentDidUpdate({}, {isVisible: false})
   }
 
-  public componentDidUpdate({snack: previousSnack}, {isVisible: wasVisible}): void {
+  public componentDidUpdate(
+    {snack: previousSnack}: Pick<SnackbarProps, 'snack'>, {isVisible: wasVisible}): void {
     const {snack, timeoutMillisecs} = this.props
     const {isVisible, nextSnacks, snack: visibleSnack} = this.state
 
     // Start timer just after isVisible becomes true.
     if (isVisible && !wasVisible) {
       clearTimeout(this.timer)
-      this.timer = setTimeout(this.hide, timeoutMillisecs)
+      this.timer = window.setTimeout(this.hide, timeoutMillisecs)
     }
 
     // Handle new snack content.
@@ -65,7 +65,7 @@ class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
     clearTimeout(this.timer)
   }
 
-  private timer: ReturnType<typeof setTimeout>
+  private timer?: number
 
   private hide = (): void => {
     if (!this.state.isVisible) {
@@ -134,7 +134,7 @@ class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
   }
 
 }
-const Snackbar = connect(({asyncState}: RootState): {snack: string} => ({
+const Snackbar = connect(({asyncState}: RootState): {snack?: string} => ({
   snack: asyncState.errorMessage,
 }))(SnackbarBase)
 

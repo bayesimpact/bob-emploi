@@ -1,6 +1,7 @@
 """Importer for Tous Bénévoles' volunteering missions into MongoDB."""
 
 import typing
+from typing import Any, Callable, Dict, List
 
 import pandas as pd
 import requests
@@ -13,8 +14,7 @@ from bob_emploi.data_analysis.lib import mongo
 _EVERYWHERE_POSTCODES = '06000,13001,31000,33000,34000,35000,44000,59000,67000,69001,75001'
 
 
-# TODO(marielaure): Test the checks individually.
-def check_coverage(missions: typing.List[typing.Dict[str, typing.Any]]) -> bool:
+def check_coverage(missions: List[Dict[str, Any]]) -> bool:
     """Report if the new data are not dropping too much the expected coverage.
 
     Expected values are defined based on the following notebook:
@@ -27,13 +27,13 @@ def check_coverage(missions: typing.List[typing.Dict[str, typing.Any]]) -> bool:
         return False
 
     # We expect at least 25% of the départements to have at least 2 missions.
-    if missions_data.groupby('_id').count().quantile(q=0.75) < 2:
+    if missions_data.groupby('_id').count().quantile(q=0.75).missions < 2:
         return False
 
     return True
 
 
-def get_missions_dicts() -> typing.List[typing.Dict[str, typing.Any]]:
+def get_missions_dicts() -> List[Dict[str, Any]]:
     """Download volunteering missions from Tous Bénévoles website and prepare them.
 
     Returns:
@@ -90,14 +90,14 @@ def get_missions_dicts() -> typing.List[typing.Dict[str, typing.Any]]:
 
 
 def _get_random_missions_picker(num_missions: int) \
-        -> typing.Callable[[pd.DataFrame], typing.List[typing.Dict[str, typing.Any]]]:
-    def _pick_random_missions(missions: pd.DataFrame) -> typing.List[typing.Dict[str, typing.Any]]:
+        -> Callable[[pd.DataFrame], List[Dict[str, Any]]]:
+    def _pick_random_missions(missions: pd.DataFrame) -> List[Dict[str, Any]]:
         if len(missions) > num_missions:
             samples = missions.sample(num_missions)
         else:
             samples = missions
         return typing.cast(
-            typing.List[typing.Dict[str, typing.Any]],
+            List[Dict[str, Any]],
             samples[['associationName', 'title', 'link', 'description']].to_dict('records'))
     return _pick_random_missions
 

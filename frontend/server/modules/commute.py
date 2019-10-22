@@ -1,7 +1,7 @@
 """Module to advise the user to extend their commute to get more offers."""
 
 import math
-import typing
+from typing import Iterable, Iterator, List
 
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
@@ -17,8 +17,8 @@ _MAX_CITY_DISTANCE = 35
 
 
 def _get_commuting_cities(
-        interesting_cities_for_rome: typing.Iterable[commute_pb2.HiringCity],
-        target_city: geo_pb2.FrenchCity) -> typing.Iterator[commute_pb2.CommutingCity]:
+        interesting_cities_for_rome: Iterable[commute_pb2.HiringCity],
+        target_city: geo_pb2.FrenchCity) -> Iterator[commute_pb2.CommutingCity]:
     # Get the reference offers per inhabitant.
     ref = next(
         # TODO(cyrille): Replace with h.offers_per_inhabitant once it's been imported.
@@ -70,7 +70,7 @@ class _AdviceCommuteScoringModel(scoring_base.ModelBase):
 
     @scoring_base.ScoringProject.cached('commute')
     def list_nearby_cities(self, project: scoring_base.ScoringProject) \
-            -> typing.List[commute_pb2.CommutingCity]:
+            -> List[commute_pb2.CommutingCity]:
         """Compute and store all interesting cities that are not too close and not too far.
 
         Those cities will be used by the Commute advice.

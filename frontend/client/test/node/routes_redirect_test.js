@@ -1,4 +1,6 @@
 const {expect} = require('chai')
+const {NginxConfFile} = require('nginx-conf')
+const path = require('path')
 const RandExp = require('randexp')
 
 const entrypoints = require('../../cfg/entrypoints.js')
@@ -12,6 +14,15 @@ function computeUriRedirect(uri) {
   })
   return calledUri
 }
+
+const nginxConf = new Promise((resolve, reject) =>
+  NginxConfFile.create(path.join(__dirname, '../../release/nginx.conf'), (err, conf) => {
+    if (err) {
+      reject(err)
+      return
+    }
+    resolve(conf)
+  }))
 
 
 describe('aux-pages-redirect lambda function', () => {
@@ -41,6 +52,20 @@ describe('aux-pages-redirect lambda function', () => {
         }
       })
       expect(matchingEndpoints).to.have.lengthOf(1)
+    })
+  })
+
+  AUX_PAGES.forEach(({redirect, urlTest}) => {
+    const urlExample = new RandExp(urlTest).gen()
+    it(`redirects "${urlExample}" to "${redirect}" and nginx knows about it`, () => {
+      nginxConf.then(conf => {
+        const matchingEndpoints = conf.nginx.server.location.
+          filter(({_value: pathStart, try_files: {_value = ''} = {}}) => {
+            const nginxRedirect = _value && _value.split(' ')[1]
+            return redirect === nginxRedirect && urlExample.startsWith(pathStart)
+          })
+        expect(matchingEndpoints).to.have.lengthOf(1)
+      })
     })
   })
 })

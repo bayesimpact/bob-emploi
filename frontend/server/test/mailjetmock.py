@@ -7,17 +7,18 @@ import io
 import json
 import time
 import typing
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 from unittest import mock
 import uuid
 
 import requests
 
 
-_JsonDict = typing.Dict[str, typing.Any]
+_JsonDict = Dict[str, Any]
 
 
 def _check_not_null_variable(
-        json_variable: typing.Union[None, typing.List[typing.Any], _JsonDict]) -> None:
+        json_variable: Union[None, List[Any], _JsonDict]) -> None:
     if json_variable is None:
         raise ValueError('null is not an acceptable value.')
     if isinstance(json_variable, list):
@@ -61,7 +62,7 @@ def _create_json_response(json_content: _JsonDict, status_code: int = 200) -> re
     return response
 
 
-def _mailjet_error(error_code: str, additional_content: typing.Optional[_JsonDict] = None) \
+def _mailjet_error(error_code: str, additional_content: Optional[_JsonDict] = None) \
         -> requests.exceptions.HTTPError:
     return requests.exceptions.HTTPError(response=_create_json_response(
         dict(
@@ -70,7 +71,7 @@ def _mailjet_error(error_code: str, additional_content: typing.Optional[_JsonDic
         status_code=400))
 
 
-def _check_valid_sender(sender: typing.Any) -> bool:
+def _check_valid_sender(sender: Any) -> bool:
     if isinstance(sender, dict):
         email = sender.get('Email', '')
         name = sender.get('Name')
@@ -87,7 +88,7 @@ def _check_valid_sender(sender: typing.Any) -> bool:
     })
 
 
-def _check_valid_template_id(template_id: typing.Any) -> bool:
+def _check_valid_template_id(template_id: Any) -> bool:
     if isinstance(template_id, int):
         return True
     raise _mailjet_error('mj-004', {
@@ -99,9 +100,9 @@ def _check_valid_template_id(template_id: typing.Any) -> bool:
 class _InMemoryMailjetServer(object):
 
     def __init__(self) -> None:
-        self.messages: typing.List[_SentMessage] = []
+        self.messages: List[_SentMessage] = []
         self.next_id = 101
-        self._messages_by_id: typing.Dict[int, _SentMessage] = {}
+        self._messages_by_id: Dict[int, _SentMessage] = {}
         self.has_too_many_get_requests = False
 
     def clear(self) -> None:
@@ -110,7 +111,7 @@ class _InMemoryMailjetServer(object):
         self.has_too_many_get_requests = False
         self.messages.clear()
 
-    def create_message(self, recipient: _JsonDict, message: _JsonDict) -> typing.Tuple[str, int]:
+    def create_message(self, recipient: _JsonDict, message: _JsonDict) -> Tuple[str, int]:
         """Create a message as if it was sent."""
 
         message_id = self.next_id + 1
@@ -135,7 +136,7 @@ _MOCK_SERVER = _InMemoryMailjetServer()
 class _Client(object):
     """A MailJet mock client."""
 
-    def __init__(self, auth: typing.Optional[typing.Any] = None, version: str = 'v3'):
+    def __init__(self, auth: Optional[Any] = None, version: str = 'v3'):
         self._auth = auth
         self.version = version
         self.message = _Messager(version)
@@ -202,7 +203,7 @@ class _Sender(object):
             _check_valid_template_id(message['TemplateID'])
         for target_type in ('To', 'Cc', 'Cci'):
             if target_type in message:
-                messages: typing.List[typing.Dict[str, typing.Any]] = []
+                messages: List[Dict[str, Any]] = []
                 for recipient in message[target_type]:
                     message_uuid, message_id = _MOCK_SERVER.create_message(recipient, message)
                     messages.append({
@@ -245,8 +246,8 @@ def patch() -> 'mock._patch':
     # code when the patch is applied, so we need the little hack below to clear
     # sent messages before entering the patch context.
 
-    def _clear_and_call(func: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]:
-        def _wrapped(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+    def _clear_and_call(func: Callable[..., Any]) -> Callable[..., Any]:
+        def _wrapped(*args: Any, **kwargs: Any) -> Any:
             _MOCK_SERVER.clear()
             return func(*args, **kwargs)
         return _wrapped
@@ -255,8 +256,8 @@ def patch() -> 'mock._patch':
     # itself: we need to propagate the hack above to the copies as well.
 
     def _copy_and_patch_enter(
-            func: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]:
-        def _wrapped(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+            func: Callable[..., Any]) -> Callable[..., Any]:
+        def _wrapped(*args: Any, **kwargs: Any) -> Any:
             result = func(*args, **kwargs)
             result.__enter__ = _clear_and_call(result.__enter__)
             result.copy = _copy_and_patch_enter(result.copy)
@@ -269,13 +270,13 @@ def patch() -> 'mock._patch':
     return patcher
 
 
-def get_all_sent_messages() -> typing.List[_SentMessage]:
+def get_all_sent_messages() -> List[_SentMessage]:
     """Return a list of all sent messages."""
 
     return _MOCK_SERVER.messages
 
 
-def get_messages_sent_to(recipient_email: str) -> typing.Iterator[_SentMessage]:
+def get_messages_sent_to(recipient_email: str) -> Iterator[_SentMessage]:
     """Yields messages sent to a given email."""
 
     for message in get_all_sent_messages():

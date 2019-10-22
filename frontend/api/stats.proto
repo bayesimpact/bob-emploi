@@ -17,6 +17,23 @@ message UsersCount {
   // Number of users for each job group.
   map<string, int32> job_group_counts = 5;
 
+    // Number of users that make a specific number of applications per week.
+  map<string, int32> weekly_application_counts = 7;
+
+  // Number of users that have had a specific number of interviews.
+  // Deprecated, use medium_search_interview_counts and
+  // long_search_interview_counts instead.
+  // TODO(marielaure): Clean this after importing the new ones.
+  map<string, int32> interview_counts = 8 [deprecated = true];
+
+  // Number of users searching for 6-8 months that have had a specific
+  // number of interviews.
+  map<string, int32> medium_search_interview_counts = 9;
+
+  // Number of users searching for more than 12 months that have had a specific
+  // number of interviews.
+  map<string, int32> long_search_interview_counts = 10;
+
   // Time when aggregation of data happened.
   google.protobuf.Timestamp aggregated_at = 6;
 }

@@ -19,7 +19,7 @@ You can try it out on a local instance if you have a job offers file:
 """
 
 import collections
-import typing
+from typing import Any, Dict, Iterator, List
 
 from bob_emploi.data_analysis.lib import job_offers
 from bob_emploi.data_analysis.lib import mongo
@@ -36,7 +36,7 @@ class _EvolutionCounter(object):
 
     def __init__(self, last_year: int):
         self._last_year = last_year
-        self.offers_per_year: typing.Dict[str, typing.Dict[int, int]] = \
+        self.offers_per_year: Dict[str, Dict[int, int]] = \
             collections.defaultdict(lambda: collections.defaultdict(int))
 
     def collect(self, job_offer: 'job_offers._JobOffer') -> None:
@@ -49,7 +49,7 @@ class _EvolutionCounter(object):
         bucket_id = f'{job_offer.departement_code}:{job_offer.rome_profession_card_code}'
         self.offers_per_year[bucket_id][year] += 1
 
-    def get_proto_dicts(self) -> typing.Iterator[typing.Dict[str, typing.Any]]:
+    def get_proto_dicts(self) -> Iterator[Dict[str, Any]]:
         """Gets the changes per bucket (département x job group).
 
         Yields:
@@ -74,7 +74,7 @@ class _EvolutionCounter(object):
 
 
 def csv2dicts(job_offers_csv: str, colnames_txt: str, last_year: str = '2015') \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+        -> List[Dict[str, Any]]:
     """Import the changes of # of job offers per job group and dept in MongoDB.
 
     Args:

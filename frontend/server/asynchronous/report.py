@@ -2,7 +2,7 @@
 
 import logging
 import os
-import typing
+from typing import Optional
 
 import requests
 import sentry_sdk
@@ -25,7 +25,7 @@ def notify_slack(message: str) -> None:
         requests.post(_SLACK_WEBHOOK_URL, json={'text': message})
 
 
-def setup_sentry_logging(sentry_dsn: typing.Optional[str]) -> None:
+def setup_sentry_logging(sentry_dsn: Optional[str]) -> None:
     """Set up logging with sentry."""
 
     logging.basicConfig()

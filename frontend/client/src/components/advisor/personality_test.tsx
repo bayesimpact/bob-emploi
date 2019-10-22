@@ -4,7 +4,7 @@ import React from 'react'
 import {genderize} from 'store/french'
 
 import {Button, GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-personality-test.svg'
+import Picto from 'images/advices/picto-personality-test.svg'
 
 import {CardProps} from './base'
 
@@ -140,7 +140,4 @@ class TestCard extends React.PureComponent<TestCardProps> {
 }
 
 
-const TakeAway = '2 tests trouvés'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

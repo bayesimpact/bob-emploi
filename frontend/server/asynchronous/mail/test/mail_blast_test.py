@@ -6,7 +6,7 @@ import os
 from os import path
 import random
 import re
-import typing
+from typing import Any, Dict, Optional, Pattern, Union
 import unittest
 from unittest import mock
 from urllib import parse
@@ -42,7 +42,7 @@ class CampaignTestBase(unittest.TestCase):
     mongo_collection = 'user'
 
     # Populated during setUpClass.
-    all_templates: typing.Dict[str, str]
+    all_templates: Dict[str, str]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -101,7 +101,7 @@ class CampaignTestBase(unittest.TestCase):
             self.project.city.region_id = '84'
             self.project.city.region_name = 'Auvergne-Rhône-Alpes'
 
-        self._variables: typing.Dict[str, typing.Any] = {}
+        self._variables: Dict[str, Any] = {}
 
     @mock.patch(mail_blast.auth.__name__ + '.SECRET_SALT', new=b'prod-secret')
     @mailjetmock.patch()
@@ -165,7 +165,7 @@ class CampaignTestBase(unittest.TestCase):
         self.assertEqual(self.campaign_id, all_sent_messages[0].properties['CustomCampaign'])
         self._variables = all_sent_messages[0].properties['Variables']
 
-    def _assert_regex_field(self, field: str, regex: typing.Union[str, typing.Pattern[str]]) \
+    def _assert_regex_field(self, field: str, regex: Union[str, Pattern[str]]) \
             -> None:
         try:
             field_value = self._variables.pop(field)
@@ -174,7 +174,7 @@ class CampaignTestBase(unittest.TestCase):
         self.assertRegex(field_value, regex)
 
     def _assert_url_field(
-            self, field: str, url: str, **args_matcher: typing.Union[str, typing.Pattern[str]]) \
+            self, field: str, url: str, **args_matcher: Union[str, Pattern[str]]) \
             -> None:
         try:
             field_value = self._variables.pop(field)
@@ -205,7 +205,7 @@ class CampaignTestBase(unittest.TestCase):
 
     def _assert_has_unsubscribe_url(
             self, field: str = 'unsubscribeLink',
-            **kwargs: typing.Union[str, typing.Pattern[str]]) \
+            **kwargs: Union[str, Pattern[str]]) \
             -> None:
         self._assert_url_field(
             field, 'https://www.bob-emploi.fr/unsubscribe.html',
@@ -220,7 +220,7 @@ class CampaignTestBase(unittest.TestCase):
         gender = user_pb2.Gender.Name(self.user.profile.gender)
         self._assert_regex_field(field, fr'^{base_url}&token=\d+\.[a-f0-9]+&gender={gender}$')
 
-    def _assert_remaining_variables(self, variables: typing.Dict[str, typing.Any]) -> None:
+    def _assert_remaining_variables(self, variables: Dict[str, Any]) -> None:
         self.assertEqual(variables, self._variables)
 
 
@@ -230,7 +230,7 @@ class EmailPolicyTestCase(unittest.TestCase):
     def _make_email(
             self, campaign_id: str, days_ago: int = 0, hours_ago: int = 0,
             status: 'user_pb2.EmailSentStatus' = user_pb2.EMAIL_SENT_SENT,
-            status_updated_days_after: typing.Optional[int] = 8) -> user_pb2.EmailSent:
+            status_updated_days_after: Optional[int] = 8) -> user_pb2.EmailSent:
         email = user_pb2.EmailSent(campaign_id=campaign_id, status=status)
         email.sent_at.FromDatetime(
             datetime.datetime.now() - datetime.timedelta(days_ago, hours_ago))

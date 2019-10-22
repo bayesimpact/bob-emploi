@@ -1,7 +1,7 @@
 """Module to advise the user to get helped by a local association."""
 
 import random
-import typing
+from typing import List
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import association_pb2
@@ -17,7 +17,7 @@ class _AdviceAssociationHelp(scoring_base.ModelBase):
 
     @scoring_base.ScoringProject.cached('associations')
     def list_associations(self, project: scoring_base.ScoringProject) \
-            -> typing.List[association_pb2.Association]:
+            -> List[association_pb2.Association]:
         """List all associations for a project."""
 
         all_associations = self._db.get_collection(project.database)

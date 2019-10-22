@@ -4,15 +4,15 @@ import csv
 import glob
 import itertools
 import logging
-import typing
+from typing import Dict, Iterator, Optional, Union
 
 import pandas as pd
-from sas7bdat import SAS7BDAT
+import sas7bdat
 
 _LOGGER = logging.getLogger('alembic')
 
 
-def flatten_iterator(files_pattern: str) -> typing.Iterator[typing.Dict[str, str]]:
+def flatten_iterator(files_pattern: str) -> Iterator[Dict[str, str]]:
     """Iterate over all FHS files as if they were one big file.
 
     It iterates through the file and yields each result separately. It adds an
@@ -38,7 +38,7 @@ def flatten_iterator(files_pattern: str) -> typing.Iterator[typing.Dict[str, str
     for current_file in sorted(files):
         reader = None
         if files_pattern.endswith('sas7bdat'):
-            reader = SAS7BDAT(current_file).readlines()
+            reader = sas7bdat.SAS7BDAT(current_file).readlines()
         elif files_pattern.endswith('csv'):
             reader = csv.reader(open(current_file))
         else:
@@ -57,8 +57,8 @@ def flatten_iterator(files_pattern: str) -> typing.Iterator[typing.Dict[str, str
 
 
 def sample_data_frame(
-        files_pattern: str, sampling: int = 100, seed: int = 97,
-        limit: typing.Optional[int] = None) -> pd.DataFrame:
+        files_pattern: str, sampling: int = 100, seed: int = 97, limit: Optional[int] = None) \
+        -> pd.DataFrame:
     """Create a pandas.DataFrame from a sample of a full FHS table.
 
     Args:
@@ -85,7 +85,7 @@ def sample_data_frame(
 
 
 def transform_categorial_vars(
-        data_frame: pd.DataFrame, codebook_or_path: typing.Union[pd.DataFrame, str]) \
+        data_frame: pd.DataFrame, codebook_or_path: Union[pd.DataFrame, str]) \
         -> pd.DataFrame:
     """Transform coded categorial variables to human readable values.
 

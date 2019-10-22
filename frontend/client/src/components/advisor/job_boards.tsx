@@ -6,9 +6,9 @@ import React from 'react'
 import {YouChooser} from 'store/french'
 
 import {CircularProgress, ExternalLink, GrowingNumber, Tag} from 'components/theme'
-import NewPicto from 'images/advices/picto-find-a-jobboard.svg'
+import Picto from 'images/advices/picto-find-a-jobboard.svg'
 
-import {CardProps, CardWithContentProps, makeTakeAwayFromAdviceData, MethodSuggestionList,
+import {CardProps, CardWithContentProps, MethodSuggestionList,
   connectExpandedCardWithContent} from './base'
 
 
@@ -44,7 +44,7 @@ class ExpandedAdviceCardContentBase
       return <CircularProgress style={{margin: 'auto'}} />
     }
     const numSpecializedJobBoards =
-      jobBoards.filter(({filters}): boolean => filters && !!filters.length).length
+      jobBoards.filter(({filters}): boolean => !!(filters && filters.length)).length
     const hasOnlySpecialized = numSpecializedJobBoards === jobBoards.length
     const maybeS = (count): string => count > 1 ? 's' : ''
     const specialized = ` spécialisé${maybeS(numSpecializedJobBoards)}`
@@ -67,18 +67,17 @@ class ExpandedAdviceCardContentBase
       </ExternalLink>
     </React.Fragment>
     return <MethodSuggestionList title={title} footer={footer}>
-      {jobBoards.map(({filters, link: href, title}, index): ReactStylableElement =>
-        <JobBoardLink
+      {jobBoards.map(({filters, link: href, title}, index): ReactStylableElement|null =>
+        href ? <JobBoardLink
           key={`job-board-${index}`} {...{filters, href, userYou}}
           onClick={handleExplore('jobboard')}>
           {title}
-        </JobBoardLink>)}
+        </JobBoardLink> : null)}
     </MethodSuggestionList>
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.JobBoards, CardProps>()(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.JobBoards, CardProps>(ExpandedAdviceCardContentBase)
 
 
 interface LinkProps {
@@ -149,8 +148,4 @@ class JobBoardLink extends React.PureComponent<LinkProps> {
 }
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({jobBoards}: bayes.bob.JobBoards): readonly bayes.bob.JobBoard[] => jobBoards, 'site')
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

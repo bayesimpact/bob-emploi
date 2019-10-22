@@ -2,6 +2,7 @@
 
 import logging
 import typing
+from typing import Any, Dict, List, Set, Union
 
 import requests
 import xmltodict
@@ -20,7 +21,7 @@ def _make_key(title: str, city: str) -> str:
 _XmlType = typing.TypeVar('_XmlType')
 
 
-def _get_list_from_xml(xml: typing.Union[_XmlType, typing.List[_XmlType]]) -> typing.List[_XmlType]:
+def _get_list_from_xml(xml: Union[_XmlType, List[_XmlType]]) -> List[_XmlType]:
     """Wrap an xml node in a list, if it is not already a list of nodes.
 
     When querying an xml dict, we get a list if there are sibling elements with the same tag, but
@@ -33,14 +34,14 @@ def _get_list_from_xml(xml: typing.Union[_XmlType, typing.List[_XmlType]]) -> ty
     return [xml]
 
 
-def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2.Training]:
+def get_trainings(rome_id: str, departement_id: str) -> List[training_pb2.Training]:
     """Helper function to get trainings from the CARIF API.
 
     Carif sends us multiple trainings that have the same city and title, this function only return
     one training per city/title.
     """
 
-    no_trainings: typing.List[training_pb2.Training] = []
+    no_trainings: List[training_pb2.Training] = []
 
     try:
         xml = requests.get(
@@ -49,7 +50,7 @@ def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2
         logging.warning('XML request for intercarif failed:\n%s', error)
         return no_trainings
 
-    trainings: typing.List[training_pb2.Training] = []
+    trainings: List[training_pb2.Training] = []
 
     if xml.status_code != 200:
         logging.warning('XML request for intercarif failed with error code %d', xml.status_code)
@@ -65,7 +66,7 @@ def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2
 
     info = xmltodict.parse(xml.text)
 
-    offers: typing.List[typing.Dict[str, typing.Any]] = []
+    offers: List[Dict[str, Any]] = []
     try:
         offers = _get_list_from_xml(info['lheo-index']['resumes-offres']['resume-offre'])
     except KeyError:
@@ -73,11 +74,11 @@ def get_trainings(rome_id: str, departement_id: str) -> typing.List[training_pb2
 
     # Since our goal is not to give a super tool to find all the precise training and their
     # differences, we just show one, and dedup them on a key composed of city and name.
-    trainings_keys: typing.Set[str] = set()
+    trainings_keys: Set[str] = set()
 
     for offer in offers:
         try:
-            formacodes: typing.List[str] = _get_list_from_xml(
+            formacodes: List[str] = _get_list_from_xml(
                 offer['domaine-formation']['code-FORMACODE'])
 
             name = offer['intitule-formation'].replace('\n', ' ')

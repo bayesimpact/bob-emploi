@@ -1,15 +1,18 @@
 """Base classes for tests of the server module."""
 
+import base64
 import binascii
 import hashlib
 import json
 import random
 import typing
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
 import unittest
 from unittest import mock
 
 import flask
 import mongomock
+import requests_mock
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import server
@@ -24,7 +27,7 @@ def sha1(*args: str) -> str:
     return binascii.hexlify(hasher.digest()).decode('ascii')
 
 
-def add_project(user: typing.Dict[str, typing.Any]) -> None:
+def add_project(user: Dict[str, Any]) -> None:
     """Modifier for a user proto that adds a new project.
 
     Callers should not rely on the actual values of the project, just that it's
@@ -37,8 +40,19 @@ def add_project(user: typing.Dict[str, typing.Any]) -> None:
     }]
 
 
-def _deep_merge_dict(
-        source: typing.Mapping[str, typing.Any], destination: typing.Dict[str, typing.Any]) -> None:
+def base64_encode(content: Union[str, bytes]) -> str:
+    """Encode using base64."""
+
+    if isinstance(content, bytes):
+        content_as_bytes = content
+    else:
+        content_as_bytes = content.encode('utf-8')
+    base64_encoded_as_bytes = base64.urlsafe_b64encode(content_as_bytes)
+    base64_encoded = base64_encoded_as_bytes.decode('ascii', 'ignore')
+    return base64_encoded.rstrip('=')
+
+
+def _deep_merge_dict(source: Mapping[str, Any], destination: Dict[str, Any]) -> None:
     for key, value in source.items():
         if isinstance(value, dict):
             node = destination.setdefault(key, {})
@@ -97,8 +111,7 @@ class ServerTestCase(unittest.TestCase):
 
     def authenticate_new_user_token(
             self, email: str = 'foo@bar.fr', first_name: str = 'Henry',
-            last_name: str = 'Dupont', password: str = 'psswd') \
-            -> typing.Tuple[str, str]:
+            last_name: str = 'Dupont', password: str = 'psswd') -> Tuple[str, str]:
         """Authenticates a new user.
 
         Args:
@@ -122,9 +135,8 @@ class ServerTestCase(unittest.TestCase):
 
     def create_guest_user(
             self, first_name: str = 'Henry',
-            modifiers: typing.Optional[typing.List[
-                typing.Callable[[typing.Dict[str, typing.Any]], None]]] = None,
-            data: typing.Optional[typing.Dict[str, typing.Any]] = None) -> typing.Tuple[str, str]:
+            modifiers: Optional[List[Callable[[Dict[str, Any]], None]]] = None,
+            data: Optional[Dict[str, Any]] = None) -> Tuple[str, str]:
         """Creates a new guest user.
 
         Args:
@@ -174,12 +186,11 @@ class ServerTestCase(unittest.TestCase):
 
     def create_user_with_token(
             self,
-            modifiers: typing.Optional[typing.List[
-                typing.Callable[[typing.Dict[str, typing.Any]], None]]] = None,
-            data: typing.Optional[typing.Dict[str, typing.Any]] = None,
-            email: typing.Optional[str] = None, advisor: bool = True,
+            modifiers: Optional[List[Callable[[Dict[str, Any]], None]]] = None,
+            data: Optional[Dict[str, Any]] = None,
+            email: Optional[str] = None, advisor: bool = True,
             password: str = 'psswd') \
-            -> typing.Tuple[str, str]:
+            -> Tuple[str, str]:
         """Creates a new user.
 
         Args:
@@ -191,7 +202,7 @@ class ServerTestCase(unittest.TestCase):
         """
 
         if email is None:
-            email = f'foo{self._user_db.user.count():d}@bar.fr'
+            email = f'foo{self._user_db.user.count_documents({}):d}@bar.fr'
         server.ADVISOR_DISABLED_FOR_TESTING = not advisor
 
         # Create password.
@@ -212,15 +223,35 @@ class ServerTestCase(unittest.TestCase):
 
         return user_id, auth_token
 
-    def create_user(self, *args: typing.Any, **kwargs: typing.Any) -> str:
+    def create_user(self, *args: Any, **kwargs: Any) -> str:
         """Creates a new user, calling create_user_with_token"""
 
         return self.create_user_with_token(*args, **kwargs)[0]
 
+    def create_facebook_user_with_token(self, email: str) -> Tuple[str, str]:
+        """Create a facebook user."""
+
+        with requests_mock.mock() as mock_requests:
+            mock_requests.get(
+                'https://graph.facebook.com/v4.0/me?'
+                'access_token=my-custom-token&fields=id%2Cfirst_name%2Cemail',
+                json={
+                    'id': '12345',
+                    'email': email,
+                })
+            response = self.app.post(
+                '/api/user/authenticate',
+                data=json.dumps({'facebookAccessToken': 'my-custom-token'}),
+                content_type='application/json')
+        auth_response = self.json_from_response(response)
+        return (
+            auth_response.get('authenticatedUser', {}).get('userId', ''),
+            auth_response.get('authToken', ''))
+
     def create_user_that(
-            self, predicate: typing.Callable[[typing.Dict[str, typing.Any]], bool],
-            *args: typing.Any, num_tries: int = 50, **kwargs: typing.Any) \
-            -> typing.Tuple[str, str]:
+            self, predicate: Callable[[Dict[str, Any]], bool],
+            *args: Any, num_tries: int = 50, **kwargs: Any) \
+            -> Tuple[str, str]:
         """Creates a user that passes a predicate.
 
         Args:
@@ -245,24 +276,24 @@ class ServerTestCase(unittest.TestCase):
                 pass
         self.fail('Could not create a user that matches the predicate')
 
-    def json_from_response(self, response: flask.Response) -> typing.Dict[str, typing.Any]:
+    def json_from_response(self, response: flask.Response) -> Dict[str, Any]:
         """Parses the json returned in a response."""
 
         data_text = response.get_data(as_text=True)
         self.assertEqual(200, response.status_code, msg=data_text)
-        return typing.cast(typing.Dict[str, typing.Any], json.loads(data_text))
+        return typing.cast(Dict[str, Any], json.loads(data_text))
 
-    def get_user_info(self, user_id: str, auth_token: typing.Optional[str] = None) \
-            -> typing.Dict[str, typing.Any]:
+    def get_user_info(self, user_id: str, auth_token: Optional[str] = None) \
+            -> Dict[str, Any]:
         """Retrieve the user's data from the server."""
 
-        kwargs: typing.Dict[str, typing.Any] = {}
+        kwargs: Dict[str, Any] = {}
         if auth_token:
             kwargs['headers'] = {'Authorization': 'Bearer ' + auth_token}
         user_req = self.app.get('/api/user/' + user_id, **kwargs)
         return self.json_from_response(user_req)
 
-    def user_info_from_db(self, user_id: str) -> typing.Dict[str, typing.Any]:
+    def user_info_from_db(self, user_id: str) -> Dict[str, Any]:
         """Get user's info directly from DB without calling any endpoint."""
 
         user_info = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
@@ -270,7 +301,7 @@ class ServerTestCase(unittest.TestCase):
         return {k: v for k, v in user_info.items() if not k.startswith('_')}
 
 
-def add_project_modifier(user: typing.Dict[str, typing.Any]) -> None:
+def add_project_modifier(user: Dict[str, Any]) -> None:
     """Modifier to use in create_user_with_token to add a project."""
 
     user['projects'] = user.get('projects', []) + [{

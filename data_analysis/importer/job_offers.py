@@ -10,7 +10,7 @@ You can try it out on a local instance:
         --job_offers_csv job_offers/sample_10perc.csv
 """
 
-import typing
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -18,8 +18,7 @@ from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.data_analysis.lib import cleaned_data
 
 
-def csv2dicts(job_offers_csv: str, colnames_csv: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def csv2dicts(job_offers_csv: str, colnames_csv: Optional[str] = None) -> List[Dict[str, Any]]:
     """Import the job offers data in MongoDB.
 
     We only count job offers of the last 30 days of the currently available

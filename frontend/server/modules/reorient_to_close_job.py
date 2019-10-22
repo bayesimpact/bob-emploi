@@ -1,6 +1,6 @@
 """Module to advise the user to consider to reorient to a job close to theirs."""
 
-import typing
+from typing import Iterable, Iterator, List
 
 from pymongo import database as pymongo_database
 
@@ -19,8 +19,8 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
     def _convert_to_reorient_jobs(
             self,
             database: pymongo_database.Database,
-            reorient_jobs: typing.Iterable[job_pb2.RelatedLocalJobGroup],
-            market_score_source: float) -> typing.Iterator[reorient_jobbing_pb2.ReorientJob]:
+            reorient_jobs: Iterable[job_pb2.RelatedLocalJobGroup],
+            market_score_source: float) -> Iterator[reorient_jobbing_pb2.ReorientJob]:
         for job in reorient_jobs:
             # Here the market score improvement
             # (job that the user is searching for vs recommended job)
@@ -66,7 +66,7 @@ class _AdviceReorientToClose(scoring_base.ModelBase):
         close_jobs = self.get_close_jobs(project)
         search_since_nb_months = round(project.get_search_length_now())
         score_modifier = 0
-        reasons: typing.List[str] = []
+        reasons: List[str] = []
         if len(close_jobs.close_jobs) + len(close_jobs.evolution_jobs) < 2:
             return scoring_base.NULL_EXPLAINED_SCORE
         # TODO(cyrille): Make this more robust.

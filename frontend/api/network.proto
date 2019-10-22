@@ -5,9 +5,8 @@ import "bob_emploi/frontend/api/options.proto";
 package bayes.bob;
 
 message ContactLeadTemplate {
-  // Short name of the type of contact lead. May contain template vars (see
-  // populate_template on server code).
-  string name = 1 [(string_format) = NATURAL_LANGUAGE];
+  // Short name of the type of contact lead.
+  string name = 1 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 
   // A list of filter IDs: do not present this lead if one these filters
   // returns false for the project.

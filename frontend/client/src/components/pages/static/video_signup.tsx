@@ -2,8 +2,6 @@ import PropTypes from 'prop-types'
 import {parse} from 'query-string'
 import React from 'react'
 
-import {isLateSignupEnabled} from 'store/user'
-
 import {LoginLink} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar} from 'components/navigation'
@@ -56,7 +54,7 @@ export default class VideoSignUpPage extends React.PureComponent<PageProps, Page
         style={{marginTop: 30}} email={this.state.email}
         isSignUp={true} visualElement="video-signup">
         <Button style={buttonStyle} type="navigation">
-          {isLateSignupEnabled ? 'Commencez' : 'Inscrivez-vous'}, c'est gratuit&nbsp;!
+          Commencez, c'est gratuit&nbsp;!
         </Button>
       </LoginLink>
     </PageWithNavigationBar>

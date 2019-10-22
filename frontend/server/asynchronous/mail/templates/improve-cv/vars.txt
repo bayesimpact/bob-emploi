@@ -1,0 +1,7 @@
+firstName
+gender
+hasExperience
+isSeptember
+loginUrl
+statusUpdateUrl
+unsubscribeLink

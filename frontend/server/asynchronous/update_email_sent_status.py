@@ -12,6 +12,7 @@ import datetime
 import logging
 import os
 import typing
+from typing import Any, Dict, List, Optional
 
 from google.protobuf import json_format
 import requests
@@ -27,7 +28,7 @@ from bob_emploi.frontend.api import user_pb2
 _, _DB, _ = mongo.get_connections_from_env()
 
 
-def _find_message(email_sent: user_pb2.EmailSent) -> typing.Optional[typing.Dict[str, typing.Any]]:
+def _find_message(email_sent: user_pb2.EmailSent) -> Optional[Dict[str, Any]]:
     if email_sent.mailjet_message_id:
         try:
             return mail.get_message(email_sent.mailjet_message_id)
@@ -40,9 +41,8 @@ def _find_message(email_sent: user_pb2.EmailSent) -> typing.Optional[typing.Dict
 
 
 def _update_email_sent_status(
-        email_sent_dict: typing.Dict[str, typing.Any], yesterday: str,
-        campaign_ids: typing.Optional[typing.List[str]] = None) \
-        -> typing.Dict[str, typing.Any]:
+        email_sent_dict: Dict[str, Any], yesterday: str,
+        campaign_ids: Optional[List[str]] = None) -> Dict[str, Any]:
     email_sent = typing.cast(
         user_pb2.EmailSent, proto.create_from_mongo(email_sent_dict, user_pb2.EmailSent))
     if campaign_ids and email_sent.campaign_id not in campaign_ids:
@@ -73,7 +73,7 @@ def _update_email_sent_status(
     return json_format.MessageToDict(email_sent)
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Check the status of sent emails on MailJet and update our Database.
     """
 

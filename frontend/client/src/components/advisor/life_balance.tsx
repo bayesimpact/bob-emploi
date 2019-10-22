@@ -9,9 +9,9 @@ import fitnessIcon from 'images/hobbies/fitness.svg'
 import runIcon from 'images/hobbies/run.svg'
 import searchIcon from 'images/hobbies/search.svg'
 import swimIcon from 'images/hobbies/swim.svg'
-import NewPicto from 'images/advices/picto-life-balance.svg'
+import Picto from 'images/advices/picto-life-balance.svg'
 
-import {CardProps, MethodSuggestionList, TakeAwayTemplate, WithAdvice} from './base'
+import {CardProps, MethodSuggestionList} from './base'
 
 
 const hobbies = [
@@ -68,7 +68,7 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 
 
 interface HobbyProps {
-  city: bayes.bob.FrenchCity
+  city?: bayes.bob.FrenchCity
   icon: string
   keywords?: string
   onClick: () => void
@@ -120,11 +120,4 @@ class HobbyBase extends React.PureComponent<HobbyProps> {
 const Hobby = Radium(HobbyBase)
 
 
-class TakeAway extends React.PureComponent<WithAdvice> {
-  public render(): React.ReactNode {
-    return <TakeAwayTemplate found="idée" isFeminine={true} list={hobbies} />
-  }
-}
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

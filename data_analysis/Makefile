@@ -215,10 +215,6 @@ data/france-strategie/rapport_metiers_en_2022.pdf:
 data/france-strategie/rapport_metiers_en_2022.pdf.txt: data/france-strategie/rapport_metiers_en_2022.pdf
 	pdf2txt "$<" > "$@"
 
-data/adie-evenements.html:
-	mkdir -p "$(@D)"
-	wget -O "$@" 'http://www.rdv-adie.org/evenements/'
-
 data/geo/ville-ideale-transports.html:
 	mkdir -p "$(@D)"
 	curl -XPOST https://www.ville-ideale.fr/scripts/ajaxclsst.php -d "chsens=ASC&nbh_tab2=> 0&crit=tra" > "$@"

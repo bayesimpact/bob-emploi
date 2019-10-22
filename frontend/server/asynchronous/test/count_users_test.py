@@ -33,7 +33,11 @@ class CountUsersTestCase(unittest.TestCase):
                         'jobGroup': {
                             'romeId': 'A1234'
                         }
-                    }
+                    },
+                    'weeklyApplicationsEstimate': 'LESS_THAN_2',
+                    'totalInterviewCount': 3,
+                    'jobSearchStartedAt': '2019-02-01T12:20:11Z',
+                    'createdAt': '2019-09-01T12:20:11Z',
                 }],
             },
             {
@@ -45,7 +49,11 @@ class CountUsersTestCase(unittest.TestCase):
                         'jobGroup': {
                             'romeId': 'A1235'
                         }
-                    }
+                    },
+                    'weeklyApplicationsEstimate': 'LESS_THAN_2',
+                    'totalInterviewCount': 1,
+                    'jobSearchStartedAt': '2019-02-01T12:20:11Z',
+                    'createdAt': '2019-10-01T12:20:11Z',
                 }],
             },
             {
@@ -57,7 +65,11 @@ class CountUsersTestCase(unittest.TestCase):
                         'jobGroup': {
                             'romeId': 'A1235'
                         }
-                    }
+                    },
+                    'weeklyApplicationsEstimate': 'SOME',
+                    'totalInterviewCount': 3,
+                    'jobSearchStartedAt': '2019-02-01T12:20:11Z',
+                    'createdAt': '2019-10-01T12:20:11Z',
                 }],
             },
             {
@@ -69,7 +81,10 @@ class CountUsersTestCase(unittest.TestCase):
                         'jobGroup': {
                             'romeId': 'B4567'
                         }
-                    }
+                    },
+                    'weeklyApplicationsEstimate': 'SOME',
+                    'totalInterviewCount': 1,
+                    'jobSearchLengthMonths': 14,
                 }],
             },
             {
@@ -84,7 +99,11 @@ class CountUsersTestCase(unittest.TestCase):
                         'jobGroup': {
                             'romeId': 'B4567'
                         }
-                    }
+                    },
+                    'weeklyApplicationsEstimate': 'LESS_THAN_2',
+                    'totalInterviewCount': 1,
+                    'jobSearchStartedAt': '2019-02-01T12:20:11Z',
+                    'createdAt': '2019-09-01T12:20:11Z',
                 }],
             },
             {
@@ -104,6 +123,10 @@ class CountUsersTestCase(unittest.TestCase):
         self.assertEqual(1, result_proto.departement_counts['64'])
         self.assertEqual(2, result_proto.job_group_counts['A1235'])
         self.assertEqual(1, result_proto.job_group_counts['B4567'])
+        self.assertEqual(2, result_proto.weekly_application_counts['LESS_THAN_2'])
+        self.assertEqual(2, result_proto.weekly_application_counts['SOME'])
+        self.assertEqual(2, result_proto.medium_search_interview_counts['3'])
+        self.assertEqual(1, result_proto.long_search_interview_counts['1'])
 
     def test_update(self) -> None:
         """Ensure updating overrides previous values."""

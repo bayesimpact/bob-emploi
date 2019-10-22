@@ -1,52 +1,37 @@
-import React from 'react'
+import React, {useMemo} from 'react'
 import PropTypes from 'prop-types'
 
 import {getEmailTemplates} from 'store/french'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-follow-up.svg'
+import Picto from 'images/advices/picto-follow-up.svg'
 
-import {CardProps, EmailTemplate, MethodSuggestionList, TakeAwayTemplate, WithAdvice} from './base'
+import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
 
 
-class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-    handleExplore: PropTypes.func.isRequired,
-    profile: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
+const makeTitle = (numTemplates): React.ReactNode =>
+  <React.Fragment>
+    <GrowingNumber number={numTemplates} /> exemple{numTemplates > 1 ? 's ' : ' '}
+    d'email de relance
+  </React.Fragment>
 
-  public render(): React.ReactNode {
-    const {advice: {adviceId}, handleExplore, userYou} = this.props
-    const templates = getEmailTemplates(userYou)[adviceId] || []
-    const title = <React.Fragment>
-      <GrowingNumber number={templates.length} /> exemple{templates.length > 1 ? 's ' : ' '}
-      d'email de relance
-    </React.Fragment>
-    return <MethodSuggestionList title={title}>
-      {templates.map((template, index: number): ReactStylableElement => <EmailTemplate
-        userYou={userYou} onContentShown={handleExplore('email')} isMethodSuggestion={true}
-        {...template} key={`template-${index}`} />)}
-    </MethodSuggestionList>
-  }
+const FollowUpCard: React.FC<CardProps> = (props): React.ReactElement => {
+  const {advice: {adviceId}, handleExplore, userYou} = props
+  const templates = useMemo(() => getEmailTemplates(userYou)[adviceId], [adviceId, userYou]) || []
+  const title = useMemo(() => makeTitle(templates.length), [templates])
+  return <MethodSuggestionList title={title}>
+    {templates.map((template, index: number): ReactStylableElement => <EmailTemplate
+      userYou={userYou} onContentShown={handleExplore('email')} isMethodSuggestion={true}
+      {...template} key={`template-${index}`} />)}
+  </MethodSuggestionList>
 }
-
-
-class TakeAway extends React.PureComponent<WithAdvice> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {advice: {adviceId}} = this.props
-    return <TakeAwayTemplate found="modèle" list={getEmailTemplates()[adviceId]} />
-  }
+FollowUpCard.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+  }).isRequired,
+  handleExplore: PropTypes.func.isRequired,
+  userYou: PropTypes.func.isRequired,
 }
+const ExpandedAdviceCardContent = React.memo(FollowUpCard)
 
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

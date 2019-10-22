@@ -125,6 +125,7 @@ class Assessment extends React.PureComponent<AssessmentProps, AssessmentState> {
         <div style={bobScoreStyle}>
           <BobScoreCircle
             isAnimated={false}
+            isCaptionShown={false}
             color={colorFromPercent(percent)}
             percent={percent}
             radius={47.15}

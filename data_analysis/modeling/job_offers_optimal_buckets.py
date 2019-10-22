@@ -17,6 +17,7 @@ even if there is no offer under 12 months of experience. It's a choice.
 """
 
 import typing
+from typing import Callable, Iterable, List, Sequence
 
 import pandas as pd
 
@@ -30,8 +31,8 @@ OPTIMAL_BUCKETS = [0, 1, 24, 72, 120, 999]
 _MIN_PER_BIN = 10
 
 
-def create_bucketizer(optimal_buckets: typing.Sequence[int], min_per_bin: int = _MIN_PER_BIN) \
-        -> typing.Callable[[pd.DataFrame], pd.DataFrame]:
+def create_bucketizer(optimal_buckets: Sequence[int], min_per_bin: int = _MIN_PER_BIN) \
+        -> Callable[[pd.DataFrame], pd.DataFrame]:
     """Creates a bucketizer function from experience_min_duration in exp_bucket.
 
     Args:
@@ -61,7 +62,7 @@ def create_bucketizer(optimal_buckets: typing.Sequence[int], min_per_bin: int = 
 
 
 def _apply_optimal_buckets(
-        table_offers: pd.DataFrame, optimal_buckets: typing.Sequence[int], min_per_bin: int) \
+        table_offers: pd.DataFrame, optimal_buckets: Sequence[int], min_per_bin: int) \
         -> pd.DataFrame:
     """Find the optimal buckets and return only the bucket label corresponding
     to experience.
@@ -89,8 +90,8 @@ def _apply_optimal_buckets(
     return t_final_buckets
 
 
-def _count_num_offers_in_bin(table_offers: pd.DataFrame, optimal_buckets: typing.Sequence[int]) \
-        -> typing.List[int]:
+def _count_num_offers_in_bin(table_offers: pd.DataFrame, optimal_buckets: Sequence[int]) \
+        -> List[int]:
     """Get the number of offers available considering an experience
     interval.
 
@@ -110,13 +111,13 @@ def _count_num_offers_in_bin(table_offers: pd.DataFrame, optimal_buckets: typing
     counts = out.value_counts()
     counts = counts.reindex(out.cat.categories)
 
-    return typing.cast(typing.List[int], counts.values.tolist())
+    return typing.cast(List[int], counts.values.tolist())
 
 
 def _merge_buckets_too_small(
         table_offers: pd.DataFrame,
-        optimal_buckets: typing.Sequence[int],
-        min_per_bin: int = _MIN_PER_BIN) -> typing.List[int]:
+        optimal_buckets: Sequence[int],
+        min_per_bin: int = _MIN_PER_BIN) -> List[int]:
     """Decide which bucket we need to merge together.
 
     Args:
@@ -132,7 +133,7 @@ def _merge_buckets_too_small(
 
     n_bins = len(optimal_buckets)
     current_group = 0
-    group_indexes: typing.List[int] = []
+    group_indexes: List[int] = []
     current_number_of_offers = 0
     num_offers_in_bins = _count_num_offers_in_bin(table_offers, optimal_buckets)
     for num_offer_in_bin in num_offers_in_bins:
@@ -154,8 +155,7 @@ def _merge_buckets_too_small(
 
 
 def _intermediary_buckets_table(
-        optimal_buckets: typing.Sequence[int],
-        group_indexes: typing.Iterable[int]) -> pd.DataFrame:
+        optimal_buckets: Sequence[int], group_indexes: Iterable[int]) -> pd.DataFrame:
     """Put bins & group_indexes into the same dataframe.
 
     Args:

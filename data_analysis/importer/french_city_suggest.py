@@ -14,6 +14,7 @@ from os import path
 import sys
 import time
 import typing
+from typing import Any, Dict, List, Optional, TextIO
 
 from algoliasearch import exceptions
 from algoliasearch import search_client
@@ -24,10 +25,10 @@ from bob_emploi.data_analysis.lib import cleaned_data
 
 def prepare_cities(
         data_folder: str = 'data',
-        stats_filename: typing.Optional[str] = None,
-        urban_entities_filename: typing.Optional[str] = None,
-        transport_scores_filename: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+        stats_filename: Optional[str] = None,
+        urban_entities_filename: Optional[str] = None,
+        transport_scores_filename: Optional[str] = None) \
+        -> List[Dict[str, Any]]:
     """Prepare cities for upload to Algolia.
 
     Args:
@@ -98,12 +99,10 @@ def prepare_cities(
         useful_columns.append('transport')
 
     return typing.cast(
-        typing.List[typing.Dict[str, typing.Any]],
-        cities.sort_index()[useful_columns].to_dict(orient='records'))
+        List[Dict[str, Any]], cities.sort_index()[useful_columns].to_dict(orient='records'))
 
 
-def upload(batch_size: int = 5000, data_folder: str = 'data', out: typing.TextIO = sys.stdout) \
-        -> None:
+def upload(batch_size: int = 5000, data_folder: str = 'data', out: TextIO = sys.stdout) -> None:
     """Upload French city suggestions to Algolia index."""
 
     suggestions = prepare_cities(

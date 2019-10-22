@@ -5,8 +5,8 @@ const emailRegexp = new RegExp(
 
 
 // Returns true for a string containing a valid email. false otherwise.
-function validateEmail(value: string): boolean {
-  return emailRegexp.test(value)
+function validateEmail(value?: string): value is string {
+  return !!value && emailRegexp.test(value)
 }
 
 

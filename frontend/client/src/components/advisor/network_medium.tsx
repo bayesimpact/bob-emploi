@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import React from 'react'
 
 import {CardProps} from './base'
-import {NetworkAdvicePage, NewPicto, TakeAway} from './network'
+import {NetworkAdvicePage, Picto} from './network'
 
 class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
   public static propTypes = {
@@ -20,4 +20,4 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 }
 
 
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

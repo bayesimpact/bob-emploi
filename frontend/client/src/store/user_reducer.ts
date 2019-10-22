@@ -10,12 +10,12 @@ const USER_ID_COOKIE_NAME = 'userId'
 // All data for a user of the companion app, a job seeker.
 // Keep in sync with User protobuf.
 const initialData = {
-  facebookId: null,
-  googleId: null,
+  facebookId: undefined,
+  googleId: undefined,
   manualExplorations: [],
   profile: {},
   projects: [],
-  userId: Storage.getItem(USER_ID_COOKIE_NAME),
+  userId: Storage.getItem(USER_ID_COOKIE_NAME) || undefined,
 }
 
 
@@ -40,7 +40,7 @@ bayes.bob.Project {
 
 // Updates the given properties of a project.
 function updateProject(
-  state: bayes.bob.User, project: bayes.bob.Project, isFromServer?: boolean): bayes.bob.User {
+  state: bayes.bob.User, project?: bayes.bob.Project, isFromServer?: boolean): bayes.bob.User {
   const updatedState = project ? {
     ...state,
     projects: (state.projects || [{}]).map((stateProject): bayes.bob.Project => {
@@ -157,7 +157,9 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
       }
       const user = action.response && action.response.authenticatedUser
       if (user) {
-        Storage.setItem(USER_ID_COOKIE_NAME, user.userId)
+        if (user.userId) {
+          Storage.setItem(USER_ID_COOKIE_NAME, user.userId)
+        }
         return user
       }
       return state
@@ -179,7 +181,7 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
       Storage.removeItem(USER_ID_COOKIE_NAME)
       return {
         ...state,
-        userId: null,
+        userId: undefined,
       }
     case 'CREATE_PROJECT': {
       if (state.projects && state.projects.length && !state.projects[0].isIncomplete) {
@@ -216,10 +218,10 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
     case 'MODIFY_PROJECT':
       return updateProject(state, {
         advices: [],
-        diagnostic: null,
+        diagnostic: undefined,
         feedback: {},
         isIncomplete: true,
-        localStats: null,
+        localStats: undefined,
         openedStrategies: [],
         projectId: action.project.projectId,
         strategies: [],
@@ -274,17 +276,19 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
           [action.demo]: 'ACTIVE',
         },
       }
-    case 'DIAGNOSE_ONBOARDING':
+    case 'DIAGNOSE_ONBOARDING': {
       if (action.status || !action.user) {
         return state
       }
+      const project = action.user.projects && action.user.projects[0]
       return updateProject({
         ...state,
         profile: {
           ...state.profile,
           ...action.user.profile,
         },
-      }, action.user.projects && action.user.projects[0])
+      }, project)
+    }
     case 'REPLACE_STRATEGY':
       if (!action.status) {
         // Before sending the update to the server, let's modify the client

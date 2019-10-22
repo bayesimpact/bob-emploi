@@ -60,14 +60,41 @@ const FORM_OPTIONS = {
 } as const
 
 
+const NEW_JOB_CONTRACT_TYPE_OPTIONS = [
+  {name: 'Un contrat de moins de 30 jours', value: 'ANY_CONTRACT_LESS_THAN_A_MONTH'},
+  {name: 'Un CDD de 1 à 3 mois', value: 'CDD_LESS_EQUAL_3_MONTHS'},
+  {name: 'Un CDD de plus de 3 mois', value: 'CDD_OVER_3_MONTHS'},
+  {name: 'Un CDI', value: 'CDI'},
+]
+
+
+const bobHasHelpedOptions = _memoize((feminineE: string) => [
+  {name: 'Oui, vraiment décisif', value: 'YES_A_LOT'},
+  {name: `Oui, ça m'a aidé${feminineE}`, value: 'YES'},
+  {name: 'Non, pas du tout', value: 'NOT_AT_ALL'},
+])
+
+
+const bobFeaturesThatHelpedOptions = _memoize((feminineE: string) => [
+  {name: "Le diagnostic m'a été utile", value: 'DIAGNOSTIC'},
+  {name: 'Utiliser plus le bouche à oreille', value: 'NETWORK'},
+  {name: 'Utiliser plus les candidatures spontanées', value: 'SPONTANEOUS'},
+  {name: 'Des astuces pour mon CV et lettre de motivation', value: 'RESUME_TIPS'},
+  {name: 'Des astuces pour les entretiens', value: 'INTERVIEW_TIPS'},
+  {
+    name: `${config.productName} m'a poussé${feminineE} à changer de stratégie`,
+    value: 'STRATEGY_CHANGE',
+  },
+])
+
+
 interface PageState extends bayes.bob.EmploymentStatus {
   errorMessage?: string
-  isFormSent?: boolean
-  isSendingUpdate?: boolean
-  isValidated?: boolean
+  isFormSent: boolean
+  isSendingUpdate: boolean
+  isValidated: boolean
   page?: keyof (typeof FORM_OPTIONS)
-  params?: {
-    // eslint-disable-next-line camelcase
+  params: {
     can_tutoie?: string
     gender?: string
     token?: string
@@ -76,14 +103,12 @@ interface PageState extends bayes.bob.EmploymentStatus {
 }
 
 
-type StringStateField = 'seeking' | 'situation' | 'newJobContractType' | 'bobHasHelped'
-
-
 type Location = typeof window.location
 
 
 class StatusUpdatePage extends React.PureComponent<{}, PageState> {
-  private static getStateFromLocation({pathname, search}: Location): PageState {
+  private static getStateFromLocation({pathname, search}: Location):
+  Pick<PageState, 'page'|'params'|'seeking'>|Pick<PageState, 'page'|'params'> {
     const page = pathname.replace('/statut/', '')
     const {seeking = undefined} = FORM_OPTIONS[page] || {}
     return {
@@ -94,7 +119,6 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
   }
 
   public state: PageState = {
-    errorMessage: null,
     isFormSent: false,
     isSendingUpdate: false,
     isValidated: false,
@@ -114,7 +138,7 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
       return
     }
     const {token = '', user = ''} = params || {}
-    this.setState({errorMessage: null, isSendingUpdate: true})
+    this.setState({errorMessage: undefined, isSendingUpdate: true})
     const newStatus: bayes.bob.EmploymentStatus = {
       bobFeaturesThatHelped,
       bobHasHelped,
@@ -137,7 +161,7 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
         page.innerHTML = errorMessage
         const content = page.getElementsByTagName('P') as HTMLCollectionOf<HTMLElement>
         this.setState({
-          errorMessage: content.length && content[0].textContent || page.textContent,
+          errorMessage: content.length && content[0].textContent || page.textContent || undefined,
           isSendingUpdate: false,
         })
       })
@@ -146,8 +170,14 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
     this.setState({isFormSent: true, isSendingUpdate: false})
   }
 
-  private handleUpdateField = _memoize((fieldName: StringStateField): ((v: string) => void) =>
-    (value: string): void => this.setState({[fieldName]: value}))
+  private handleUpdateSeeking = (seeking: bayes.bob.SeekingStatus): void => this.setState({seeking})
+
+  private handleUpdateSituation = (situation: string): void => this.setState({situation})
+
+  private handleUpdateNewJobContractType = (newJobContractType: bayes.bob.EmploymentType): void =>
+    this.setState({newJobContractType})
+
+  private handleUpdateBobHasHepled = (bobHasHelped: string): void => this.setState({bobHasHelped})
 
   private handleUpdateFeatures = (bobFeaturesThatHelped: bayes.bob.UsefulFeature[]): void =>
     this.setState({bobFeaturesThatHelped})
@@ -224,7 +254,7 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
               label={`${userYou('Es-tu', 'Êtes-vous')} toujours à la recherche d'un emploi ?`}
               isValidated={isValidated} isValid={!!seeking}>
               <RadioGroup
-                onChange={this.handleUpdateField('seeking')}
+                onChange={this.handleUpdateSeeking}
                 style={{flexDirection: 'column'}}
                 options={seekingOptions}
                 value={seeking} />
@@ -233,7 +263,7 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
             label={`Quelle est ${userYou('ta', 'votre')} situation aujourd'hui ?`}
             isValidated={isValidated} isValid={!!situation}>
             <RadioGroup
-              onChange={this.handleUpdateField('situation')}
+              onChange={this.handleUpdateSituation}
               style={{flexDirection: 'column'}}
               options={situationOptions}
               value={situation} />
@@ -242,14 +272,9 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
             label={`Quel type de contrat a${userYou('s-tu', 'vez-vous')} décroché ?`}
             isValidated={isValidated} isValid={!!newJobContractType}>
             <RadioGroup
-              onChange={this.handleUpdateField('newJobContractType')}
+              onChange={this.handleUpdateNewJobContractType}
               style={{flexDirection: 'column'}}
-              options={[
-                {name: 'Un contrat de moins de 30 jours', value: 'ANY_CONTRACT_LESS_THAN_A_MONTH'},
-                {name: 'Un CDD de 1 à 3 mois', value: 'CDD_LESS_EQUAL_3_MONTHS'},
-                {name: 'Un CDD de plus de 3 mois', value: 'CDD_OVER_3_MONTHS'},
-                {name: 'Un CDI', value: 'CDI'},
-              ]}
+              options={NEW_JOB_CONTRACT_TYPE_OPTIONS}
               value={newJobContractType} />
           </FieldSet> : null}
           <FieldSet
@@ -257,30 +282,16 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
               dans ${userYou('ta', 'votre')} recherche ?`}
             isValidated={isValidated} isValid={!!bobHasHelped}>
             <RadioGroup
-              onChange={this.handleUpdateField('bobHasHelped')}
+              onChange={this.handleUpdateBobHasHepled}
               style={{flexDirection: 'column'}}
-              options={[
-                {name: 'Oui, vraiment décisif', value: 'YES_A_LOT'},
-                {name: `Oui, ça m'a aidé${feminineE}`, value: 'YES'},
-                {name: 'Non, pas du tout', value: 'NOT_AT_ALL'},
-              ]}
+              options={bobHasHelpedOptions(feminineE)}
               value={bobHasHelped} />
           </FieldSet>
           {isHowProductHelpedQuestionShown ? <FieldSet
             label={`Comment ${config.productName} ${userYou("t'", 'vous ')}a-t-il
               aidé${feminineE} ?`}>
             <CheckboxList
-              options={[
-                {name: "Le diagnostic m'a été utile", value: 'DIAGNOSTIC'},
-                {name: 'Utiliser plus le bouche à oreille', value: 'NETWORK'},
-                {name: 'Utiliser plus les candidatures spontanées', value: 'SPONTANEOUS'},
-                {name: 'Des astuces pour mon CV et lettre de motivation', value: 'RESUME_TIPS'},
-                {name: 'Des astuces pour les entretiens', value: 'INTERVIEW_TIPS'},
-                {
-                  name: `${config.productName} m'a poussé${feminineE} à changer de stratégie`,
-                  value: 'STRATEGY_CHANGE',
-                },
-              ]}
+              options={bobFeaturesThatHelpedOptions(feminineE)}
               values={bobFeaturesThatHelped}
               onChange={this.handleUpdateFeatures}
             />

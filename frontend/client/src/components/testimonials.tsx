@@ -18,10 +18,26 @@ interface TestimonialsProps {
 
 interface TestimonialsState {
   isTransitionBlocked: boolean
-  previousTestimonial: ReactStylableElement
+  previousTestimonial?: ReactStylableElement
   previousTestimonialIndex: number
   shownTestimonial: ReactStylableElement
   shownTestimonialIndex: number
+}
+
+
+const bulletStyle: React.CSSProperties = {
+  backgroundColor: 'rgba(255, 255, 255, .6)',
+  borderRadius: 6,
+  cursor: 'pointer',
+  display: 'inline-block',
+  height: 6,
+  margin: 4,
+  width: 6,
+}
+
+const selectedBulletStyle: React.CSSProperties = {
+  ...bulletStyle,
+  backgroundColor: '#fff',
 }
 
 
@@ -38,7 +54,7 @@ class Testimonials extends React.PureComponent<TestimonialsProps, TestimonialsSt
 
   public state: TestimonialsState = {
     isTransitionBlocked: false,
-    previousTestimonial: null,
+    previousTestimonial: undefined,
     previousTestimonialIndex: 0,
     shownTestimonial: this.getStyledTestimonial(0),
     shownTestimonialIndex: 0,
@@ -53,9 +69,9 @@ class Testimonials extends React.PureComponent<TestimonialsProps, TestimonialsSt
     clearTimeout(this.timeout)
   }
 
-  private interval: ReturnType<typeof setInterval>
+  private interval?: number
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private getStyledTestimonial(index: number): ReactStylableElement {
     const {cardStyle, children} = this.props
@@ -69,7 +85,7 @@ class Testimonials extends React.PureComponent<TestimonialsProps, TestimonialsSt
   private resetRotationTimer(): void {
     const {carouselAutoRotationDurationMs} = this.props
     clearInterval(this.interval)
-    this.interval = setInterval(
+    this.interval = window.setInterval(
       this.handlePickTestimonial(this.state.shownTestimonialIndex + 1),
       carouselAutoRotationDurationMs)
   }
@@ -91,7 +107,7 @@ class Testimonials extends React.PureComponent<TestimonialsProps, TestimonialsSt
       shownTestimonialIndex,
     }, (): void => {
       clearTimeout(this.timeout)
-      this.timeout = setTimeout((): void => this.setState({isTransitionBlocked: false}), 0)
+      this.timeout = window.setTimeout((): void => this.setState({isTransitionBlocked: false}), 0)
     })
   }, (index, isManuallyPicked): string => (isManuallyPicked ? '!' : '') + index)
 
@@ -102,19 +118,10 @@ class Testimonials extends React.PureComponent<TestimonialsProps, TestimonialsSt
       padding: 0,
       textAlign: 'center',
     }
-    const style = (isSelected: boolean): React.CSSProperties => ({
-      backgroundColor: isSelected ? '#fff' : 'rgba(255, 255, 255, .6)',
-      borderRadius: 6,
-      cursor: 'pointer',
-      display: 'inline-block',
-      height: 6,
-      margin: 4,
-      width: 6,
-    })
     return <ol style={containerStyle}>
       {children.map((card, i): React.ReactNode => <li
-        key={'bullet-' + i} style={style(i === this.state.shownTestimonialIndex)}
-        onClick={this.handlePickTestimonial(i, true)} />)}
+        key={'bullet-' + i} onClick={this.handlePickTestimonial(i, true)}
+        style={i === this.state.shownTestimonialIndex ? selectedBulletStyle : bulletStyle} />)}
     </ol>
   }
 

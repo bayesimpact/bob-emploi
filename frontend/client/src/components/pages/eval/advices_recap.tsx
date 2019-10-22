@@ -6,6 +6,8 @@ import Radium from 'radium'
 import React from 'react'
 import PropTypes from 'prop-types'
 
+import {ValidAdvice, isValidAdvice} from 'store/advice'
+
 import {Textarea} from 'components/theme'
 import optimizeImage from 'images/optimize-picto.svg'
 import commentImage from 'images/comment-picto.svg'
@@ -30,6 +32,7 @@ const ADVICE_GROUP_PROPS = {
   },
 }
 
+const emptyArray = [] as const
 
 interface AdvicesRecapProps {
   adviceEvaluations: {
@@ -67,13 +70,14 @@ class AdvicesRecap extends React.PureComponent<AdvicesRecapProps> {
       padding: 10,
       ...style,
     }
-    const adviceGroups = _groupBy(advices, 'numStars')
+    const adviceGroups: {[numStars: number]: readonly bayes.bob.Advice[]} =
+      _groupBy(advices, 'numStars')
     const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse()
     return <div style={containerStyle}>
       <div>
         {groupKeys.map((numStars: string): React.ReactNode => (
           <AdvicesRecapSection
-            key={`section-${numStars}-stars`} advices={adviceGroups[numStars] || []}
+            key={`section-${numStars}-stars`} advices={adviceGroups[numStars] || emptyArray}
             {...{adviceEvaluations, moduleNewScores, numStars,
               onEvaluateAdvice, onRescoreAdvice, profile, project}} />
         ))}
@@ -151,10 +155,11 @@ class AdvicesRecapSection
   private handleCommentAdvice = _memoize((adviceId: string): ((string) => void) =>
     (comment: string): void => this.props.onEvaluateAdvice(adviceId, {comment}))
 
-  private handleExtraInputKeyPress = ({key, target}): void =>
+  private handleExtraInputKeyPress = ({key, target}): void => {
     (key === 'Enter') && this.handleAddAdvice((target as HTMLInputElement).value)
+  }
 
-  private renderRescoreButtons = ({adviceId}: bayes.bob.Advice): React.ReactNode => {
+  private renderRescoreButtons = ({adviceId}: ValidAdvice): React.ReactNode => {
     const {moduleNewScores, numStars} = this.props
     const newScore = moduleNewScores[adviceId] + ''
     return ADVICE_SCORES.map(({image, value}): React.ReactNode => {
@@ -168,7 +173,7 @@ class AdvicesRecapSection
     })
   }
 
-  private renderOptimizeButton = ({adviceId}: bayes.bob.Advice): React.ReactNode => {
+  private renderOptimizeButton = ({adviceId}: ValidAdvice): React.ReactNode => {
     const {adviceEvaluations} = this.props
     const adviceEvaluation = adviceEvaluations[adviceId] || {}
     const shouldBeOptimized = adviceEvaluation.shouldBeOptimized
@@ -180,7 +185,7 @@ class AdvicesRecapSection
     </EvalElementButton>
   }
 
-  private renderCommentButton = ({adviceId}: bayes.bob.Advice): React.ReactNode => {
+  private renderCommentButton = ({adviceId}: ValidAdvice): React.ReactNode => {
     const {adviceEvaluations} = this.props
     const adviceEvaluation = adviceEvaluations[adviceId] || {}
     const {comment} = adviceEvaluation
@@ -193,7 +198,7 @@ class AdvicesRecapSection
     </EvalElementButton>
   }
 
-  private renderComment = ({adviceId}: bayes.bob.Advice): React.ReactNode => {
+  private renderComment = ({adviceId}: ValidAdvice): React.ReactNode => {
     const {[`isCommentShown-${adviceId}`]: isCommentShown} = this.state
     if (!isCommentShown) {
       return null
@@ -213,6 +218,9 @@ class AdvicesRecapSection
   }
 
   private renderAdvice = (advice: bayes.bob.Advice): React.ReactNode => {
+    if (!isValidAdvice(advice)) {
+      return
+    }
     return <div key={advice.adviceId}>
       <div style={{display: 'flex', fontSize: 15, padding: 5}}>
         <span style={{flex: 1}}>
@@ -228,7 +236,8 @@ class AdvicesRecapSection
 
   private renderExtraAdvices(): React.ReactNode {
     const {advices, moduleNewScores, numStars} = this.props
-    const advicesShown = new Set(advices.map(({adviceId}): string => adviceId))
+    const advicesShown =
+      new Set(advices.filter(isValidAdvice).map(({adviceId}): string => adviceId))
     const rescoredAdvices = Object.keys(moduleNewScores)
     const extraAdvices = rescoredAdvices.filter(
       (adviceId: string): boolean => !advicesShown.has(adviceId) &&

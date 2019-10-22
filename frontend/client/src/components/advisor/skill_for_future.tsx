@@ -2,10 +2,10 @@ import PropTypes from 'prop-types'
 import React from 'react'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-skill-for-future.svg'
+import Picto from 'images/advices/picto-skill-for-future.svg'
 
 import {CardProps, CardWithContentProps, DataSource, MethodSuggestionList, Skill,
-  connectExpandedCardWithContent, makeTakeAwayFromAdviceData} from './base'
+  connectExpandedCardWithContent} from './base'
 
 
 class ExpandedAdviceCardContentBase
@@ -43,11 +43,8 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.JobSkills, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.JobSkills, CardProps>(
     ExpandedAdviceCardContentBase)
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({skills}: bayes.bob.JobSkills): readonly bayes.bob.Skill[] => skills, 'compétence', true)
 
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

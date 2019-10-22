@@ -3,6 +3,7 @@
 import datetime
 import time
 import typing
+from typing import Dict, List, Optional
 import unittest
 from unittest import mock
 from urllib import parse
@@ -13,6 +14,7 @@ import mailjet_rest
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
+from bob_emploi.frontend.server.test import mailjetmock
 
 
 class AuthenticateEndpointTestCase(base_test.ServerTestCase):
@@ -48,6 +50,21 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         auth_response = self.json_from_response(response)
         self.assertTrue(auth_response['authenticatedUser']['profile'].get('canTutoie'))
 
+    def test_register_guest_user_broken(self) -> None:
+        """Sign-in a user after they created a guest account, but with a broken password."""
+
+        user_id, auth_token = self.create_guest_user()
+
+        # This should never happen, but maybe the DB got broken somehow.
+        self._user_db.user_auth.insert_one({'_id': objectid.ObjectId(user_id)})
+
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=(f'{{"email": "foo@bar.fr", "userId": "{user_id}", "authToken": "{auth_token}",'
+                  f'"hashedPassword": "{base_test.sha1("foo@bar.fr", "psswd")}"}}'),
+            content_type='application/json')
+        self.json_from_response(response)
+
     def test_fields_missing(self) -> None:
         """Auth request with missing name."""
 
@@ -78,6 +95,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         auth_response2 = self.json_from_response(response2)
         self.assertTrue(auth_response2['isNewUser'])
         self.assertTrue(auth_response2['authToken'])
+        self.assertTrue(auth_response2['authenticatedUser'].get('hasPassword'))
         self.assertEqual(
             'foo@bar.fr', auth_response2['authenticatedUser']['profile']['email'])
         self.assertEqual(
@@ -87,6 +105,8 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(auth_response2['authenticatedUser'].get('hasAccount'))
         user_id = auth_response2['authenticatedUser']['userId']
         self.assertTrue(user_id)
+        saved_user = self.user_info_from_db(user_id)
+        self.assertTrue(saved_user.get('hasPassword'))
 
         # Check again if user exists.
         response3 = self.app.post(
@@ -97,7 +117,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertNotIn('authenticatedUser', auth_response3)
         salt = auth_response3['hashSalt']
         self.assertTrue(salt)
-        self.assertTrue(auth_response3['authToken'])
+        self.assertFalse(auth_response3.get('authToken'))
 
         # Log-in with salt.
         request4 = \
@@ -180,6 +200,91 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             f'"hashedPassword": "{_sha1("foo@bar.fr", "newer password")}"}}'
         response5 = self.app.post('/api/user/authenticate', data=request5)
         self.assertEqual(401, response5.status_code)
+
+    def test_change_password(self) -> None:
+        """Full flow to change a user's password."""
+
+        # Create password.
+        self.authenticate_new_user(
+            email='foo@bar.fr', password='psswd', first_name='Pascal', last_name='Corpet')
+
+        # Try login with new password.
+        salt = self._get_salt('foo@bar.fr')
+        request1 = f'{{"email": "foo@bar.fr", "hashSalt": "{salt}", ' \
+            f'"hashedPassword": "{_sha1(salt, _sha1("foo@bar.fr", "new password"))}"}}'
+        response1 = self.app.post('/api/user/authenticate', data=request1)
+        self.assertEqual(403, response1.status_code)
+
+        # Update the password.
+        request2 = f'{{"email": "foo@bar.fr", "hashSalt": "{salt}", ' \
+            f'"hashedPassword": "{_sha1(salt, _sha1("foo@bar.fr", "psswd"))}", ' \
+            f'"newHashedPassword": "{_sha1("foo@bar.fr", "new password")}"}}'
+        response2 = self.app.post('/api/user/authenticate', data=request2)
+        auth_response2 = self.json_from_response(response2)
+        self.assertFalse(auth_response2.get('isNewUser', False))
+        self.assertTrue(auth_response2.get('isPasswordUpdated', False))
+        self.assertEqual(
+            'foo@bar.fr', auth_response2['authenticatedUser']['profile']['email'])
+        user_id = auth_response2['authenticatedUser']['userId']
+        self.assertTrue(user_id)
+        self.assertTrue(auth_response2['authToken'])
+
+        # Try logging in with the old password.
+        salt = self._get_salt('foo@bar.fr')
+        request3 = f'{{"email": "foo@bar.fr", "hashSalt": "{salt}", ' \
+            f'"hashedPassword": "{_sha1(salt, _sha1("foo@bar.fr", "psswd"))}"}}'
+        response3 = self.app.post('/api/user/authenticate', data=request3)
+        self.assertEqual(403, response3.status_code)
+
+        # Try logging in with the new password.
+        salt = self._get_salt('foo@bar.fr')
+        request4 = f'{{"email": "foo@bar.fr", "hashSalt": "{salt}", ' \
+            f'"hashedPassword": "{_sha1(salt, _sha1("foo@bar.fr", "new password"))}"}}'
+        response4 = self.app.post('/api/user/authenticate', data=request4)
+        auth_response4 = self.json_from_response(response4)
+        self.assertEqual(user_id, auth_response4['authenticatedUser']['userId'])
+        self.assertTrue(auth_response4['authToken'])
+
+    def test_link_guest_to_password_account(self) -> None:
+        """Guest user connects to a pre-existing email account with valid password."""
+
+        previous_user_id = self.create_user(email='foo@bar.fr', password='aa')
+        guest_user_id, auth_token = self.create_guest_user(first_name='Cyrille')
+
+        request = f'''{{
+            "authToken": "{auth_token}",
+            "email": "foo@bar.fr",
+            "hashedPassword": "{_sha1('foo@bar.fr', 'aa')}",
+            "userId": "{guest_user_id}"
+        }}'''
+        response = self.app.post('/api/user/authenticate', data=request)
+        auth_response = self.json_from_response(response)
+        self.assertEqual(previous_user_id, auth_response['authenticatedUser']['userId'])
+
+        # Try logging in with the password.
+        salt = self._get_salt('foo@bar.fr')
+        request2 = f'{{"email": "foo@bar.fr", "hashSalt": "{salt}", ' \
+            f'"hashedPassword": "{_sha1(salt, _sha1("foo@bar.fr", "aa"))}"}}'
+        response2 = self.app.post('/api/user/authenticate', data=request2)
+        auth_response2 = self.json_from_response(response2)
+        self.assertEqual(previous_user_id, auth_response2['authenticatedUser']['userId'])
+        self.assertTrue(auth_response2['authToken'])
+
+    def test_guest_with_wrong_password(self) -> None:
+        """Guest user connects to a pre-existing email account with invalid password."""
+
+        self.create_user(email='foo@bar.fr', password='right password')
+        guest_user_id, auth_token = self.create_guest_user(first_name='Cyrille')
+
+        request = f'''{{
+            "authToken": "{auth_token}",
+            "email": "foo@bar.fr",
+            "hashedPassword": "{_sha1('foo@bar.fr', 'wrong password')}",
+            "userId": "{guest_user_id}"
+        }}'''
+        response = self.app.post('/api/user/authenticate', data=request)
+        auth_response = self.json_from_response(response)
+        self.assertFalse(auth_response.get('authenticatedUser'))
 
     @mock.patch(auth.proto.__name__ + '._IS_TEST_ENV', False)
     @mock.patch(mailjet_rest.__name__ + '.Client')
@@ -327,7 +432,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         request = f'{{"email": "foo@bar.fr", "authToken": "{auth_token}", '\
             f'"hashedPassword": "{_sha1("foo@bar.fr", "new password")}"}}'
         response = self.app.post('/api/user/authenticate', data=request)
-        self.assertEqual(403, response.status_code)
+        self.assertEqual(498, response.status_code)
         self.assertIn(
             "Le jeton d'authentification est périmé.",
             response.get_data(as_text=True))
@@ -341,7 +446,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
 
     def _get_reset_token(
             self, email: str, mock_mailjet_client: mock.MagicMock,
-            recipients: typing.Optional[typing.List[typing.Dict[str, str]]] = None) -> str:
+            recipients: Optional[List[Dict[str, str]]] = None) -> str:
         self.assertFalse(mock_mailjet_client().send.create.called)
         mock_mailjet_client().send.create().status_code = 200
         response = self.app.post(
@@ -370,7 +475,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         url_args = parse.parse_qs(parse.urlparse(reset_link).query)
         self.assertIn('resetToken', url_args)
         self.assertEqual(1, len(url_args['resetToken']), msg=url_args)
-        return typing.cast(str, url_args['resetToken'][0])
+        return url_args['resetToken'][0]
 
     @mock.patch(server.__name__ + '.auth.client.verify_id_token')
     def test_user_after_google_signup(self, mock_verify_id_token: mock.MagicMock) -> None:
@@ -383,18 +488,39 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             'email': 'pascal@bayes.org',
             'sub': '12345',
         }
-        self.app.post(
+        auth_response = self.json_from_response(self.app.post(
             '/api/user/authenticate', data='{"googleTokenId": "my-token"}',
-            content_type='application/json')
+            content_type='application/json'))
+        auth_token = auth_response.get('authToken', '')
+        user_id = auth_response.get('authenticatedUser', {}).get('userId', '')
 
-        # Check if user exists.
+        # Try creating a password with a token from another user.
+        unused_guest_user_id, fake_auth_token = self.create_guest_user()
         response = self.app.post(
-            '/api/user/authenticate', data='{"email": "pascal@bayes.org"}',
+            '/api/user/authenticate',
+            data=f'{{"userId": "{user_id}", "authToken": "{fake_auth_token}", '
+            f'"hashedPassword": "{base_test.sha1("pascal@bayes.org", "new_password")}", '
+            f'"email": "pascal@bayes.org"}}',
             content_type='application/json')
         self.assertEqual(403, response.status_code)
-        self.assertIn(
-            "L'utilisateur existe mais utilise un autre moyen de connexion: Google.",
-            response.get_data(as_text=True))
+
+        # Create a password.
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"userId": "{user_id}", "authToken": "{auth_token}", '
+            f'"hashedPassword": "{base_test.sha1("pascal@bayes.org", "new_password")}", '
+            f'"email": "pascal@bayes.org"}}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        self.assertTrue(auth_response.get('isPasswordUpdated'))
+        self.assertEqual(user_id, auth_response.get('authenticatedUser', {}).get('userId'))
+
+        # Login again with user / password.
+        salt = self._get_salt('pascal@bayes.org')
+        request = f'{{"email": "pascal@bayes.org", "hashSalt": "{salt}", ' \
+            f'"hashedPassword": "{_sha1(salt, _sha1("pascal@bayes.org", "new_password"))}"}}'
+        response = self.app.post('/api/user/authenticate', data=request)
+        self.assertEqual(200, response.status_code)
 
     @mock.patch(auth.__name__ + '.time')
     def test_auth_user_id_token(self, mock_time: mock.MagicMock) -> None:
@@ -488,7 +614,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
             '/api/user/authenticate',
             data=f'{{"userId": "{user_id}", "authToken": "{timed_token}"}}',
             content_type='application/json')
-        self.assertEqual(403, response.status_code)
+        self.assertEqual(498, response.status_code)
         self.assertIn("Token d'authentification périmé", response.get_data(as_text=True))
 
     @mock.patch(auth.proto.__name__ + '._IS_TEST_ENV', False)
@@ -592,6 +718,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         auth_response2 = self.json_from_response(response2)
         self.assertFalse(auth_response2.get('isNewUser'))
         self.assertTrue(auth_response2['authToken'])
+        self.assertTrue(auth_response2['authenticatedUser'].get('hasPassword'))
         self.assertEqual(
             'foo@bar.fr', auth_response2['authenticatedUser']['profile']['email'])
         self.assertEqual(
@@ -601,6 +728,135 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertTrue(auth_response2['authenticatedUser'].get('hasAccount'))
         self.assertEqual(user_id, auth_response2['authenticatedUser'].get('userId'))
         self.assertEqual('Lascap', auth_response2['authenticatedUser']['profile'].get('name'))
+        saved_user = self.user_info_from_db(user_id)
+        self.assertTrue(saved_user.get('hasAccount'))
+        self.assertTrue(saved_user.get('hasPassword'))
+
+    def test_add_account_to_recent_guest_visitor(self) -> None:
+        """Create an account with email + password from a guest user with a recent visit."""
+
+        user_id, auth_token = self.create_guest_user(first_name='Lascap')
+
+        # User visits the site (maybe by reloading the page).
+        response = self.app.post(
+            f'/api/app/use/{user_id}',
+            headers={'Authorization': f'Bearer {auth_token}'})
+        user_dict = self.json_from_response(response)
+        self.assertEqual(user_id, user_dict['userId'])
+
+        # First request: check if user exists.
+        response = self.app.post(
+            '/api/user/authenticate', data='{"email": "foo@bar.fr"}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        self.assertTrue(auth_response['isNewUser'])
+        self.assertNotIn('authenticatedUser', auth_response)
+        self.assertTrue(auth_response['authToken'])
+
+        # Create password.
+        response2 = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"email": "foo@bar.fr", "userId": "{user_id}", "authToken": "{auth_token}", '
+            f'"hashedPassword": "{base_test.sha1("foo@bar.fr", "psswd")}"}}',
+            content_type='application/json')
+        auth_response2 = self.json_from_response(response2)
+        self.assertFalse(auth_response2.get('isNewUser'))
+        self.assertTrue(auth_response2['authToken'])
+        self.assertEqual(
+            'foo@bar.fr', auth_response2['authenticatedUser']['profile']['email'])
+        self.assertEqual(
+            # This is sha1('bob-emploifoo@bar.fr').
+            'bb96b62f3ded5182d555e2452cc4125a1ea4201d',
+            auth_response2['authenticatedUser']['hashedEmail'])
+        self.assertTrue(auth_response2['authenticatedUser'].get('hasAccount'))
+        self.assertEqual(user_id, auth_response2['authenticatedUser'].get('userId'))
+        self.assertEqual('Lascap', auth_response2['authenticatedUser']['profile'].get('name'))
+        saved_user = self.user_info_from_db(user_id)
+        self.assertTrue(saved_user.get('hasAccount'))
+
+    def test_check_email(self) -> None:
+        """Check that there is a user with a given email."""
+
+        self.create_user_with_token(email='foo@bar.fr')
+
+        # Check if user exists.
+        response = self.app.post(
+            '/api/user/authenticate', data='{"email": "foo@bar.fr"}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertNotIn('authenticatedUser', auth_response)
+        self.assertFalse(auth_response.get('authToken'))
+
+    @mock.patch(server.now.__name__ + '.get')
+    @mailjetmock.patch()
+    def test_activation_email_for_guest_user(self, mock_now: mock.MagicMock) -> None:
+        """Create an account with email + password from a guest user that has a diagnostic."""
+
+        mock_now.return_value = datetime.datetime(2018, 6, 10)
+
+        self._db.advice_modules.insert_many([
+            {
+                'adviceId': 'spontaneous-application',
+                'categories': ['first'],
+                'triggerScoringModel': 'constant(2)',
+                'isReadyForProd': True,
+            },
+        ])
+
+        user_id, auth_token = self.create_guest_user(
+            first_name='Pascal', modifiers=[base_test.add_project])
+
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+
+        # Create password.
+        self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"email": "foo@bar.fr", "userId": "{user_id}", "authToken": "{auth_token}", '
+            f'"hashedPassword": "{base_test.sha1("foo@bar.fr", "psswd")}"}}',
+            content_type='application/json')
+
+        mails_sent = mailjetmock.get_all_sent_messages()
+        self.assertEqual(1, len(mails_sent), msg=mails_sent)
+        self.assertEqual('foo@bar.fr', mails_sent[0].recipient['Email'])
+        data = mails_sent[0].properties['Variables']
+        self.assertEqual('10 juin 2018', data['date'])
+        self.assertEqual('Pascal', data['firstName'])
+
+    def test_add_email_to_guest_user(self) -> None:
+        """Create an account with email from a guest user."""
+
+        user_id, auth_token = self.create_guest_user(first_name='Lascap')
+
+        # First request: check if user exists.
+        response = self.app.post(
+            '/api/user/authenticate', data='{"email": "foo@bar.fr"}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        self.assertTrue(auth_response['isNewUser'])
+        self.assertNotIn('authenticatedUser', auth_response)
+        self.assertTrue(auth_response['authToken'])
+
+        # Create account with email.
+        response2 = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"email": "foo@bar.fr", "userId": "{user_id}", "authToken": "{auth_token}"}}',
+            content_type='application/json')
+        auth_response2 = self.json_from_response(response2)
+        self.assertFalse(auth_response2.get('isNewUser'))
+        self.assertTrue(auth_response2['authToken'])
+        self.assertFalse(auth_response2['authenticatedUser'].get('hasPassword'))
+        self.assertEqual(
+            'foo@bar.fr', auth_response2['authenticatedUser']['profile']['email'])
+        self.assertEqual(
+            # This is sha1('bob-emploifoo@bar.fr').
+            'bb96b62f3ded5182d555e2452cc4125a1ea4201d',
+            auth_response2['authenticatedUser']['hashedEmail'])
+        self.assertTrue(auth_response2['authenticatedUser'].get('hasAccount'))
+        self.assertEqual(user_id, auth_response2['authenticatedUser'].get('userId'))
+        self.assertEqual('Lascap', auth_response2['authenticatedUser']['profile'].get('name'))
+        saved_user = self.user_info_from_db(user_id)
+        self.assertTrue(saved_user.get('hasAccount'))
 
 
 def _sha1(*args: str) -> str:

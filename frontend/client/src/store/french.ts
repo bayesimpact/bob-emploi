@@ -7,6 +7,8 @@ import emailTemplatesTu from 'components/advisor/data/email_templates_fr_FR@tu.j
 import emailTemplatesVous from 'components/advisor/data/email_templates.json'
 import eventsTu from 'components/advisor/data/events_fr_FR@tu.json'
 import eventsVous from 'components/advisor/data/events.json'
+import categoriesTu from 'components/strategist/data/categories_fr_FR@tu.json'
+import categoriesVous from 'components/strategist/data/categories.json'
 import goalsTu from 'components/strategist/data/goals_fr_FR@tu.json'
 import goalsVous from 'components/strategist/data/goals.json'
 import testimonialsTu from 'components/strategist/data/testimonials_fr_FR@tu.json'
@@ -40,7 +42,7 @@ const unaccentedList = [
 ]
 export const slugify = (term: string): string => {
   const lower = term.toLowerCase()
-  const noAccents = lower.normalize ? lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '') :
+  const noAccents = lower.normalize ? lower.normalize('NFD').replace(/[\u0300-\u036F]/g, '') :
     accentedList.reduce((replacing: string, accented: string, index: number): string =>
       replacing.replace(accented, unaccentedList[index]), lower)
   return noAccents.replace(/ /g, '-')
@@ -57,18 +59,18 @@ export const maybeContractPrefix = (full: string, contracted: string, nextWord: 
 // Lower the first letter of a string.
 export const lowerFirstLetter = (word: string): string => {
   if (word.length > 1) {
-    const firstLetters = word.substr(0, 2)
+    const firstLetters = word.slice(0, 2)
     if (firstLetters.toUpperCase() === firstLetters) {
       return word
     }
   }
-  return word.substr(0, 1).toLowerCase() + word.substr(1)
+  return word.slice(0, 1).toLowerCase() + word.slice(1)
 }
 
 
 // Upper the first letter of a string.
 export const upperFirstLetter = (word: string): string => {
-  return word.substr(0, 1).toUpperCase() + word.substr(1)
+  return word.slice(0, 1).toUpperCase() + word.slice(1)
 }
 
 
@@ -81,25 +83,36 @@ const alwaysUpperKeywords = new Set([
 
 // Upper the first letter of each word of a string.
 export const toTitleCase = (text: string): string => {
-  return text.match(/([\w]+(\W+|$))/g).
-    map((word: string): string => {
-      const trimmedWord = word.trim()
-      if (alwaysUpperKeywords.has(trimmedWord)) {
-        return word
-      }
-      return word.substr(0, 1).toLocaleUpperCase() + word.substr(1).toLocaleLowerCase()
-    }).
-    join('')
+  const words = text.match(/([\w]+(\W+|$))/g)
+  if (!words) {
+    return text
+  }
+  return words.map((word: string): string => {
+    const trimmedWord = word.trim()
+    if (alwaysUpperKeywords.has(trimmedWord)) {
+      return word
+    }
+    return word.slice(0, 1).toLocaleUpperCase() + word.slice(1).toLocaleLowerCase()
+  }).join('')
 }
 
 
 const oneDayInMillisecs = 1000 * 60 * 60 * 24
-const deltaDays: Readonly<{days: number; plural?: string; singular?: string}[]> = [
+
+
+type TimeUnit = {
+  days: number
+  plural: string
+  singular: string
+}
+
+
+const deltaDays: readonly TimeUnit[] = [
   {days: 365, plural: 'ans', singular: 'an'},
   {days: 30, plural: 'mois', singular: 'mois'},
   {days: 7, plural: 'semaines', singular: 'semaine'},
   {days: 1, plural: 'jours', singular: 'jour'},
-  {days: 0},
+  {days: 0, plural: '', singular: ''},
 ] as const
 
 // Get difference between two dates or months expressed as a sentence
@@ -107,13 +120,14 @@ const deltaDays: Readonly<{days: number; plural?: string; singular?: string}[]> 
 export const getDiffBetweenDatesInString = (firstDate: Date, secondDate: Date): string => {
   const diffDate = Math.abs(firstDate.getTime() - secondDate.getTime())
   const diffInDays = Math.floor(diffDate / oneDayInMillisecs)
-  if (diffInDays === 0) {
+  const timeUnit = deltaDays.find(({days}: TimeUnit): boolean => diffInDays >= days)
+  if (!timeUnit) {
+    return ''
+  }
+  if (!timeUnit.days) {
     return "aujourd'hui"
   }
-  const {days, plural, singular} = deltaDays.find(({days}): boolean => diffInDays >= days)
-  if (!days) {
-    return "aujourd'hui"
-  }
+  const {days, plural, singular} = timeUnit
   const dateDeltaInUnits = Math.floor(diffInDays / days)
   return `il y a ${dateDeltaInUnits} ${dateDeltaInUnits > 1 ? plural : singular}`
 }
@@ -137,13 +151,13 @@ export const inCityPrefix = (fullName: string): CityNameAndPrefix => {
   }
   if (fullName.startsWith('Le ')) {
     return {
-      cityName: fullName.substr(3),
+      cityName: fullName.slice(3),
       prefix: 'au ',
     }
   }
   if (fullName.startsWith('Les ')) {
     return {
-      cityName: fullName.substr(4),
+      cityName: fullName.slice(4),
       prefix: 'aux ',
     }
   }
@@ -179,13 +193,13 @@ export const ofPrefix = (fullName: string): ModifiedNameAndPrefix => {
   }
   if (fullName.startsWith('Le ')) {
     return {
-      modifiedName: fullName.substr(3),
+      modifiedName: fullName.slice(3),
       prefix: 'du ',
     }
   }
   if (fullName.startsWith('Les ')) {
     return {
-      modifiedName: fullName.substr(4),
+      modifiedName: fullName.slice(4),
       prefix: 'des ',
     }
   }
@@ -203,7 +217,7 @@ export const ofPrefix = (fullName: string): ModifiedNameAndPrefix => {
 }
 
 // TODO(cyrille): Use wherever applicable.
-export const inDepartement = (city: bayes.bob.FrenchCity): string => {
+export const inDepartement = (city: bayes.bob.FrenchCity): string|null => {
   const {departementName = '', departementPrefix = ''} = city || {}
   if (departementName && departementPrefix) {
     return departementPrefix + departementName
@@ -278,6 +292,16 @@ export const getStrategyGoals =
     return strategyGoals
   }
 
+
+interface DiagnosticCategoryMap {
+  readonly [categoryId: string]: bayes.bob.DiagnosticCategory
+}
+
+
+export const getCategories = (userYou: YouChooser): DiagnosticCategoryMap =>
+  canTutoieFrom(userYou) ? categoriesTu : categoriesVous
+
+
 export interface StrategyTestimonial {
   readonly content: string
   readonly createdAt: string
@@ -296,7 +320,8 @@ export const getStrategiesTestimonials = (userYou: YouChooser): StrategyTestimon
   userYou(testimonialsTu, testimonialsVous)
 
 export const genderize =
-  (neutralSentence: string, herSentence: string, hisSentence: string, gender: string): string => {
+  (neutralSentence: string, herSentence: string, hisSentence: string,
+    gender: bayes.bob.Gender|undefined): string => {
     switch (gender) {
       case 'FEMININE':
         return herSentence
@@ -309,7 +334,7 @@ export const genderize =
 
 const monthsShort = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
   'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
-export const getDateString = (timestamp: string | Date): string => {
+export const getDateString = (timestamp: string | Date | number): string => {
   const date = new Date(timestamp)
   const day = date.getDate()
   const month = date.getMonth()

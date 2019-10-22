@@ -2,7 +2,7 @@
 
 import logging
 import re
-import typing
+from typing import Callable, Iterable, Optional, Tuple
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import diagnostic_pb2
@@ -18,7 +18,7 @@ _ESTIMATE_OPTION_TO_NUMBER = {
 }
 
 
-def _interpolate_points(var: float, point_list: typing.Iterable[typing.Tuple[float, float]]) \
+def _interpolate_points(var: float, point_list: Iterable[Tuple[float, float]]) \
         -> float:
     total = 0.
     for abscissa, ordinate in point_list:
@@ -321,7 +321,7 @@ class _DiagnosticTopicFilter(scoring_base.BaseFilter):
     def __init__(
             self,
             diagnostic_topic: str,
-            predicate: typing.Callable[[typing.Optional[diagnostic_pb2.SubDiagnostic]], bool]
+            predicate: Callable[[Optional[diagnostic_pb2.SubDiagnostic]], bool]
     ) -> None:
         self._diagnostic_topic = diagnostic_pb2.DiagnosticTopic.Value(diagnostic_topic)
         self._predicate = predicate

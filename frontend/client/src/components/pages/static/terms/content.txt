@@ -1,10 +1,10 @@
-### PREAMBULE
+### Préambule
 
 **BOB EMPLOI est une plate-forme indépendante développée par l'association BAYES IMPACT. L'objectif du projet et le fonctionnement de l'association sont dédiés à l'intérêt général. Les contenus du site et de la plate-forme sont mis à disposition en licence Creative Commons. Le Code Source du logiciel est mis à disposition en logiciel libre.**
 
 **L'algorithme développé par l'association analyse des données du marché du travail ainsi que des millions de parcours de recherche d'emploi afin de permettre à chacun de bénéficier des bons conseils au bon moment de façon personnalisée. Les données utilisées par l'algorithme ne seront jamais utilisées pour un autre usage que d'améliorer les recommandations du site et de l'application. Elles resteront sous le contrôle de leurs usagers. Elles ne seront ni utilisées commercialement, ni cédées à des tiers.**
 
-## 1. DÉFINITIONS
+## 1. Définitions
 
 « BOB EMPLOI » ou « LE SERVICE » correspond à une plate-forme qui propose des conseils et actions  à des usagers en recherche d'emploi en fonction de leur profil.
 
@@ -16,7 +16,7 @@ Les « usagers » sont les personnes qui utilisent la plate-forme.
 
 Le service est accessible sur « LE SITE » à l'adresse : http://bob-emploi.fr
 
-## 2. VALIDITÉ ET ACCEPTATION
+## 2. Validité et acceptation
 
 Ces conditions générales sont communiquées à chaque usager qui en prend connaissance et qui l'accepte en utilisant la plate-forme, ainsi qu'en cochant une case manifestant son acceptation lors de la création de son compte.
 
@@ -28,7 +28,7 @@ Les usagers reconnaissent avoir le droit d'exploiter le service.
 
 L'utilisation du service et l'exploitation des informations implique leur acceptation entière et sans réserve. Leur non-acceptation entraîne la renonciation à l'utilisation du service ainsi qu'à l'exploitation des informations.
 
-## 3. CHAMP D'APPLICATION
+## 3. Champ d'application
 
 Le présent contrat régit exclusivement l'usage de BOB EMPLOI par les usagers.
 
@@ -42,7 +42,7 @@ FORMATIONS. Les usagers font leur affaire des circonstances relatives au déroul
 
 ANNONCES D'EMPLOI. Les usagers font leur affaire des circonstances relatives au déroulement des annonces d'emploi auxquelles ils choisissent de répondre. BAYES IMPACT FRANCE n'est pas responsable de leur exécution. BAYES IMPACT FRANCE n'est pas un organisme de travail temporaire, ni de portage salarial. BAYES IMPACT FRANCE exclut toute responsabilité sur ces points dans les limites autorisées par la loi.
 
-## 4. DESCRIPTION DU SERVICE
+## 4. Description du service
 
 BOB EMPLOI est une plate-forme indépendante développée par l'association BAYES IMPACT. L'algorithme de BOB EMPLOI analyse des données du marché du travail ainsi que des millions de parcours de recherche d'emploi afin de permettre à chacun de bénéficier des bons conseils au bon moment de façon personnalisée.
 
@@ -57,9 +57,9 @@ Tous les jours, des actions concrètes sont proposées aux usagers pour avancer 
 L'algorithme de BOB EMPLOI apprend au contact des usagers. En utilisant l'application ils améliorent la pertinence des recommandations qui seront faites pour eux.
 
 
-## 5. USAGE DE BOB EMPLOI
+## 5. Usage de Bob Emploi
 
-### 5.1. UTILISATION DE BOB EMPLOI
+### 5.1. Utilisation de Bob Emploi
 Dans le cadre de leur utilisation de la plate-forme, les usagers s'engagent à respecter les lois et règlements en vigueur et à ne pas porter atteinte aux droits de tiers ou à l'ordre public.
 
 Les usagers sont seuls responsables du bon accomplissement de toutes les formalités notamment administratives, fiscales, sociales et de tous les paiements de cotisations, taxes ou impôts de toutes natures qui leur incombent pour pouvoir effectuer les actions proposées sur BOB EMPLOI. Concernant les formations présentées, il est de leur seule responsabilité d'obtenir les diplômes, brevets, licences, accréditations, équipements et autorisations qui seraient nécessaires à ces formations. La responsabilité de BAYES IMPACT FRANCE ne pourra en aucun cas être engagée à ce titre.
@@ -80,7 +80,7 @@ Plus généralement, les usagers s'engagent à coopérer activement avec BOB EMP
 
 La consultation des formations est un service gratuit pour les usagers, sous réserve de la création d'un compte.
 
-### 5.2. LES COMPTES USAGERS
+### 5.2. Les comptes usagers
 Les usagers ne peuvent avoir qu'un unique compte BOB EMPLOI. Ils sont entièrement et pleinement responsables de l'activité de leur compte BOB EMPLOI, de sa confidentialité, ainsi que de la licéité des actions pour lesquelles il est utilisé.
 
 Les comptes BOB EMPLOI sont protégés par un mot de passe choisi par l'usager. BOB EMPLOI s'engage à ne pas révéler ce mot de passe à des tiers. Les usagers sont entièrement et pleinement responsable de la sécurité de leur compte à cet égard. Ils s'engagent notamment à communiquer le plus rapidement possible à BAYES IMPACT FRANCE toute utilisation non autorisée qui en serait faite.
@@ -91,12 +91,12 @@ BAYES IMPACT FRANCE se réserve le droit de suspendre ou de supprimer ad nutum t
 
 Les usagers peuvent également créer un compte en se connectant à leurs « comptes tiers » ouverts auprès de certains sites tiers de réseaux sociaux, notamment Facebook et Google, via la plate-forme BOB EMPLOI. Les fonctionnalités de BOB EMPLOI permettent de lier leur compte BOB EMPLOI à des comptes tiers, soit en fournissant les informations de connexion, ou en autorisant BOB EMPLOI à accéder au compte tiers, conformément aux conditions qui régissent leur utilisation. En procédant de la sorte, l'usager doit être autorisé à divulguer les informations de connexion de son compte tiers et ne peut engager BOB EMPLOI à payer des frais ni à se soumettre aux restrictions d'utilisation imposées par le fournisseur de ce compte tiers. En autorisant BOB EMPLOI à accéder à un compte tiers, l'usager reconnaît que BOB EMPLOI aura accès, rendra disponible et conservera les contenus et les données personnelles de ce compte pour que ceux-ci soient exploitables par BOB EMPLOI. Tous ces contenus de ce compte exploités par la plate-forme seront considérés comme des contenus au sens des présentes conditions. Toutes les données personnelles de compte exploitées par BOB EMPLOI seront considérées comme des données personnelles au sens des présentes conditions. La résiliation ou l'inaccessibilité du compte tiers peut entraîner l'indisponibilité des contenus et des données qui en sont issus pour BOB EMPLOI. La connexion entre le compte BOB EMPLOI et le compte tiers peut être désactivée à tout moment. La relation des usagers avec les comptes tiers est exclusivement régie par les accords qui les unissent, et BOB EMPLOI décline toute responsabilité à cet égard.
 
-### 5.3. GRATUITÉ DE L'USAGE DE BOB EMPLOI
+### 5.3. Gratuité de l'usage de Bob Emploi
 L'usage de la plate-forme BOB EMPLOI est gratuit.
 
-## 6. RESPONSABILITÉS ET GARANTIES
+## 6. Responsabilités et garanties
 
-### 6.1. ABSENCE DE RESPONSABILITÉ AU REGARD DES FORMATIONS
+### 6.1. Absence de responsabilité au regard des formations
 
 BAYES IMPACT FRANCE exclut toute responsabilité concernant le respect par les usagers des accords ou obligations passés avec des tiers, ainsi que de la législation ou de la réglementation en vigueur.
 
@@ -105,7 +105,7 @@ BAYES IMPACT FRANCE n'assure ni ne garantit la mise à disposition des formation
 
 BAYES IMPACT FRANCE n'assure ni ne garantit le résultat des réponses aux offres d'emplois qui seront proposées aux usagers. BAYES IMPACT FRANCE ne s'engage qu'à les diffuser dans les meilleures conditions rendues possibles par le service. BAYES IMPACT FRANCE n'est et ne sera engagé par aucun accord ultérieurement passé avec les employeurs.
 
-### 6.2. ABSENCE DE RESPONSABILITÉ AU REGARD DU FONCTIONNEMENT DE BOB EMPLOI
+### 6.2. Absence de responsabilité au regard du fonctionnement de Bob Emploi
 
 BOB EMPLOI ne peut garantir que son service ne subira aucune interruption. BOB EMPLOI s'engage à fournir son service avec diligence et selon les règles de l'art, étant précisé qu'il ne s'agit que d'une obligation de moyens, à l'exclusion de toute obligation de résultat, ce que les usagers reconnaissent et acceptent expressément. BOB EMPLOI ne saurait être tenu responsable des difficultés ou impossibilités momentanées d'accès à la plate-forme qui auraient pour origine des circonstances qui lui sont extérieures, la force majeure, ou encore qui seraient dues à des perturbations des réseaux de télécommunication.
 
@@ -117,7 +117,7 @@ En tout état de cause, la responsabilité susceptible d'être encourue par BOB 
 
 BOB EMPLOI se réserve expressément la faculté d'interrompre momentanément l'accès à son service pour des raisons de maintenance.
 
-### 6.3. COMPORTEMENTS INTERDITS
+### 6.3. Comportements interdits
 
 Au-delà des autres interdictions prévues dans les présentes conditions, les usagers s'engagent à utiliser la plate-forme de façon vertueuse. Ils s'interdisent notamment d'utiliser la plate-forme aux fins suivantes :
 l'exercice d'activités illégales, frauduleuses ou portant atteinte aux droits ou à la sécurité des tiers ;
@@ -138,7 +138,7 @@ tous actes de nature à porter atteinte aux droits et intérêts financiers, com
 
 Les usagers s'engagent à respecter la valeur de la plate-forme. Ils s'interdisent de monnayer, vendre ou concéder tout ou partie de l'accès à la plate-forme.
 
-### 6.4. GARANTIE DES USAGERS ENVERS BAYES IMPACT FRANCE
+### 6.4. Garantie des usagers envers Bayes Impact France
 
 Les usagers garantissent BAYES IMPACT FRANCE contre toutes plaintes, réclamations, actions, revendications quelconque que BAYES IMPACT FRANCE pourrait subir du fait de la violation par eux de l'une quelconque de leurs obligations ou garanties aux termes des présentes conditions générales.
 
@@ -146,17 +146,17 @@ Les usagers s'engagent à indemniser BAYES IMPACT FRANCE de tout préjudice subi
 
 Les usagers renoncent à tous recours envers BAYES IMPACT FRANCE pour tout dommage (matériels, corporels, immatériels consécutifs ou non) subis à l'occasion de l'exécution ou de la non-exécution d'une formation.
 
-## 7. LIENS VERS D'AUTRES SITES
+## 7. Liens vers d'autres sites
 
 BOB EMPLOI peut proposer des liens vers des sites internet de tiers. Les sites liés ne sont pas sous le contrôle de BAYES IMPACT FRANCE qui n'est pas responsable de leur contenu et n'offre aucune garantie à leur égard. Il appartient aux usagers de faire toutes les vérifications nécessaires ou opportunes avant de procéder à une quelconque transaction avec l'un de ces tiers.
 
-## 8. NOTIFICATION ET RETRAIT DE CONTENUS ILLICITES
+## 8. Notification et retrait de contenus illicites
 
 BOB EMPLOI permet aux usagers de notifier les contenus ou les comportements illicites en envoyant un email à attention@bob-emploi.fr.
 
 BAYES IMPACT FRANCE s'efforcera raisonnablement de retirer le contenu illicite, ou de supprimer les comptes délictueux, dans les meilleurs délais et dans le cadre de la loi existante.
 
-## 9. LICENCE ET PROPRIÉTÉ INTELLECTUELLE
+## 9. Licence et propriété intellectuelle
 
 Les usagers reconnaissent expressément la propriété de BAYES IMPACT FRANCE sur l'ensemble de la plate-forme, et notamment sur les systèmes, logiciels, structures, infrastructures, bases de données et contenus de toute nature (textes, images, visuels, musiques, logos, marques, base de données, etc.) qui sont exploités par BAYES IMPACT FRANCE pour le service et sont protégés par les droits d'auteur, les droits de propriété intellectuelle, les droits de propriété industrielle ou les droits des producteurs de bases de données en vigueur.
 
@@ -166,7 +166,7 @@ Les usagers s'interdisent de copier et de détourner à leurs fins ou à celles 
 
 BAYES IMPACT FRANCE ne revendique aucune propriété sur les éventuels contenus mis en ligne par les usagers sur la plate-forme, ni sur leurs données personnelles. En revanche, mais pour les seuls besoins du fonctionnement de BOB EMPLOI et de sa promotion, les usagers concèdent expressément à BAYES IMPACT FRANCE et à ses affiliés le droit irrévocable de les rendre disponibles, et de librement les utiliser, copier, publier, traduire et diffuser sans autre forme d'accord supplémentaire, sur quelque support et sous quelque forme que ce soit. Ils autorisent également BAYES IMPACT FRANCE à concéder ce droit à des partenaires dans les mêmes conditions et pour les mêmes finalités.
 
-## 10. DONNÉES PERSONNELLES
+## 10. Données personnelles
 
 L'association BAYES IMPACT FRANCE est soucieuse de la protection des données personnelles. Elle s'engage à respecter le meilleur niveau de protection en conformité avec la réglementation Informatique et Libertés.
 
@@ -184,7 +184,7 @@ La désinscription est effective immédiatement, et sera effective dès que le p
 
 Afin de garantir au mieux la protection des données personnelles de ses usagers, l'association BAYES IMPACT FRANCE est dotée d'un Correspondant Informatique et Libertés.
 
-## 11. DISPOSITIONS GÉNÉRALES
+## 11. Dispositions générales
 
 Au cas où des dispositions des présentes conditions seraient déclarées invalides ou inapplicables, les autres resteraient en vigueur et de plein effet.
 
@@ -196,7 +196,7 @@ Dans l'hypothèse d'une traduction des présentes conditions dans une ou plusieu
 
 Les présentes conditions sont souscrites pour une durée indéterminée.
 
-## 12. MODIFICATION
+## 12. Modification
 
 BAYES IMPACT FRANCE se réserve le droit de modifier les présentes conditions générales à tout moment, y compris en ce qui concerne les frais d'utilisation ainsi que les éléments relatifs aux données personnelles.
 
@@ -212,7 +212,7 @@ L'usager qui n'accepte pas les conditions générales modifiées doit se désins
 
 Tout usager qui a recours au service postérieurement à l'entrée en vigueur des conditions générales modifiées est réputé avoir accepté ces modifications.
 
-## 13. LITIGES
+## 13. Litiges
 
 BAYES IMPACT FRANCE se réserve le droit de prendre toute mesure appropriée en cas de manquement par les usagers aux présentes conditions, ou d'infraction aux lois et règlements en vigueur, et notamment :
 •         suspendre ou résilier l'accès au service ;
@@ -229,7 +229,7 @@ Préalablement à tout recours au juge arbitral ou étatique, les usagers s'obli
 
 Les usagers souhaitant mettre en œuvre le processus de négociation devront en informer BAYES IMPACT FRANCE par lettre recommandée avec accusé de réception en indiquant les éléments du conflit. Une réunion au minimum sera alors organisée entre les usagers et BAYES IMPACT FRANCE. Si, au terme d'un délai de six mois, les usagers et BAYES IMPACT FRANCE ne parvenaient pas à s'entendre, le différend sera soumis à la juridiction compétente désignée ci-dessus. Le cours de la prescription sera suspendu à compter de la mise en œuvre du processus de négociation soit la date de réception de l'acte d'information envoyé par lettre recommandée avec accusé de réception. La suspension du cours de la prescription prendra fin à la date de la signature du procès-verbal de conciliation ou de non-conciliation. En cas de refus des usagers ou de BAYES IMPACT FRANCE de signer ledit procès-verbal, l'autre partie peut prendre acte de ce refus en l'informant qu'à défaut de réaction de sa part dans un délai d'un mois, la saisine du juge compétent sera possible. Durant tout le processus de négociation et jusqu'à son issue, les usagers s'interdisent d'exercer toute action en justice contre BAYES IMPACT FRANCE pour le conflit objet de la négociation.
 
-## 14. COORDONNÉES DU RESPONSABLE ET DE L'HÉBERGEUR
+## 14. Coordonnées du responsable et de l'hébergeur
 
 BOB EMPLOI est édité par l'association BAYES IMPACT FRANCE
 Le responsable de la publication est : Paul DUAN
@@ -239,6 +239,6 @@ Contact mail : contact@bob-emploi.fr
 
 BOB EMPLOI est hébergé par la société OVH, située à 2 rue Kellermann, 59100, Roubaix, téléphone 09 72 10 10 07.
 
-## 15. DATE
+## 15. Date
 
 Les présentes conditions générales sont entrées en vigueur le : 11 novembre 2016

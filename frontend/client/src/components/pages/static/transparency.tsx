@@ -16,6 +16,22 @@ import {isMobileVersion} from 'components/mobile'
 import {StaticPage} from 'components/static'
 import {ExternalLink, MAX_CONTENT_WIDTH, SmoothTransitions, colorToAlpha} from 'components/theme'
 
+const STARTING_FUNDING_AMOUNTS = [
+  {amount: 200000, distributionYears: 2, name: 'PIA'},
+  {amount: 300000, distributionYears: 2, name: 'Fondation JP Morgan Chase'},
+  {amount: 10000, distributionYears: 1, name: 'Prix Publicis 90'},
+  {amount: 185000, distributionYears: 1, name: 'Subvention Pôle emploi'},
+  {amount: 5000, distributionYears: 1, name: 'Five by five'},
+  {amount: 10000, distributionYears: 1, name: 'Iron Capital'},
+  {amount: 30000, distributionYears: 2, name: 'BPI'},
+]
+
+const GROWTH_FUNDING_AMOUNTS = [
+  {amount: 565000, distributionYears: 1, name: "La France s'engage"},
+  {amount: 1000000, distributionYears: 3, name: 'Google.org'},
+  {amount: 100000, distributionYears: 1, name: 'Galeries Lafayette'},
+]
+
 const textSectionStyle: React.CSSProperties = {
   backgroundColor: '#fff',
   display: 'flex',
@@ -81,17 +97,17 @@ const userStats = {
   // To get these numbers, update the dates and run the script
   // analytics/manual/stats_for_feedback_scores.js
   feedbackScores: [
-    {name: 'Mauvais', value: .07},
-    {name: 'Peu intéressant', value: .07},
-    {color: colors.GREENISH_TEAL, name: 'Intéressant', value: .28},
-    {color: colors.GREENISH_TEAL, name: 'Utile', value: .25},
-    {color: colors.GREENISH_TEAL, name: 'Très utile', value: .33},
+    {name: 'Mauvais', value: .0887},
+    {name: 'Peu intéressant', value: .0606},
+    {color: colors.GREENISH_TEAL, name: 'Intéressant', value: .2567},
+    {color: colors.GREENISH_TEAL, name: 'Utile', value: .2579},
+    {color: colors.GREENISH_TEAL, name: 'Très utile', value: .336},
   ],
   // Recomupted just below.
   positiveFeedbackPercentage: 0,
   // To get this number, update the dates and run the script analytics/manual/count_new_users.js
-  totalUserCount: 165679,
-  updatedAt: <span>au 1<sup>er</sup> janvier 2019</span>,
+  totalUserCount: 188085,
+  updatedAt: <span>au 1<sup>er</sup> août 2019</span>,
 }
 userStats.positiveFeedbackPercentage =
   Math.round(userStats.feedbackScores.slice(2).
@@ -570,15 +586,7 @@ export default class TransparencyPage extends React.PureComponent<{}> {
         de financer l'amorçage du projet et les deux premières années
         d'expérimentation.
         <FundingTable
-          style={{marginBottom: 40, marginTop: 30}} items={[
-            {amount: 200000, distributionYears: 2, name: 'PIA'},
-            {amount: 300000, distributionYears: 2, name: 'Fondation JP Morgan Chase'},
-            {amount: 10000, distributionYears: 1, name: 'Prix Publicis 90'},
-            {amount: 185000, distributionYears: 1, name: 'Subvention Pôle emploi'},
-            {amount: 5000, distributionYears: 1, name: 'Five by five'},
-            {amount: 10000, distributionYears: 1, name: 'Iron Capital'},
-            {amount: 30000, distributionYears: 2, name: 'BPI'},
-          ]} />
+          style={{marginBottom: 40, marginTop: 30}} items={STARTING_FUNDING_AMOUNTS} />
         <div style={subtitleStyle}>
           Croissance de l'impact et pérennisation
         </div>
@@ -589,11 +597,7 @@ export default class TransparencyPage extends React.PureComponent<{}> {
         travaux d'amélioration continue de {config.productName} et démultiplier notre impact
         dans la durée.
         <FundingTable
-          style={{marginTop: 30}} items={[
-            {amount: 565000, distributionYears: 1, name: "La France s'engage"},
-            {amount: 1000000, distributionYears: 3, name: 'Google.org'},
-            {amount: 100000, distributionYears: 1, name: 'Galeries Lafayette'},
-          ]} />
+          style={{marginTop: 30}} items={GROWTH_FUNDING_AMOUNTS} />
         <div style={sectionTitleStyle}>
           Utilisation du budget
         </div>
@@ -778,7 +782,7 @@ class PercentBarChart extends React.PureComponent<PercentBarChartProps, {hasAppe
       position: 'relative',
       width: 50,
     }
-    const barStyle = (color: string, value: number): React.CSSProperties => ({
+    const barStyle = (color: string|undefined, value: number): React.CSSProperties => ({
       backgroundColor: color || colors.RED_PINK,
       height: (hasAppeared ? value * 100 : 0) + '%',
       ...SmoothTransitions,

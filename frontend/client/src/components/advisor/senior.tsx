@@ -4,9 +4,9 @@ import PropTypes from 'prop-types'
 import {YouChooser, tutoyer} from 'store/french'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-senior.svg'
+import Picto from 'images/advices/picto-senior.svg'
 
-import {CardProps, MethodSuggestionList, TakeAwayTemplate, WithAdvice} from './base'
+import {CardProps, MethodSuggestionList} from './base'
 
 
 const getTips = (isFeminine?: boolean, userYou: YouChooser = tutoyer): React.ReactNode[] => [
@@ -25,41 +25,44 @@ const getTips = (isFeminine?: boolean, userYou: YouChooser = tutoyer): React.Rea
 ]
 
 
-class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
-  public static propTypes = {
-    profile: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
+interface SeniorTipProps {
+  style?: React.CSSProperties
+  tip: React.ReactNode
+}
 
-  public renderTip(tip, index): ReactStylableElement {
+const TipBase: React.FC<SeniorTipProps> =
+  ({tip, style}: SeniorTipProps): ReactStylableElement => {
     const trainingNameStyle: React.CSSProperties = {
+      ...style,
       fontStyle: 'italic',
       fontWeight: 'normal',
     }
-    return <div style={trainingNameStyle} key={`tip-${index}`}>
+    return <div style={trainingNameStyle}>
       {tip}
     </div>
   }
+TipBase.propTypes = {
+  style: PropTypes.object,
+  tip: PropTypes.node.isRequired,
+}
+const Tip = React.memo(TipBase)
 
-  public render(): React.ReactNode {
-    const {profile, userYou} = this.props
+const ExpandedAdviceCardContentBase: React.FC<CardProps> =
+  (props: CardProps): React.ReactElement => {
+    const {profile, userYou} = props
     const tips = getTips(profile.gender === 'FEMININE', userYou)
     const maybeS = tips.length > 1 ? 's' : ''
     const title = <React.Fragment>
       <GrowingNumber number={tips.length} /> qualité{maybeS} liée{maybeS} à l'âge à mettre en avant
     </React.Fragment>
     return <MethodSuggestionList title={title} isNotClickable={true}>
-      {tips.map(this.renderTip)}
+      {tips.map((tip, index): ReactStylableElement => <Tip key={`tip-${index}`} tip={tip} />)}
     </MethodSuggestionList>
   }
+ExpandedAdviceCardContentBase.propTypes = {
+  profile: PropTypes.object.isRequired,
+  userYou: PropTypes.func.isRequired,
 }
+const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
 
-
-class TakeAway extends React.PureComponent<WithAdvice> {
-  public render(): React.ReactNode {
-    return <TakeAwayTemplate found="atout" list={getTips()} />
-  }
-}
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

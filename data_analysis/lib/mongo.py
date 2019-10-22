@@ -11,6 +11,8 @@ import re
 import sys
 import time
 import typing
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Set, TextIO, \
+    Tuple, Type
 
 import pymongo
 from pymongo import collection as pymongo_collection
@@ -29,8 +31,8 @@ _MONGO_URL = os.getenv('MONGO_URL') or ''
 # WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
 _SLACK_IMPORT_URL = os.getenv('SLACK_IMPORT_URL')
 
-JsonType = typing.Dict[str, typing.Any]
-_FlagableCallable = typing.Callable[..., typing.List[JsonType]]
+JsonType = Dict[str, Any]
+_FlagableCallable = Callable[..., List[JsonType]]
 
 
 _T = typing.TypeVar('_T')
@@ -39,7 +41,7 @@ _T = typing.TypeVar('_T')
 class InvalidValueError(typing.Generic[_T], ValueError):
     """A value error that holds the invalid value."""
 
-    def __init__(self, value: _T, msg: typing.Optional[str] = None) -> None:
+    def __init__(self, value: _T, msg: Optional[str] = None) -> None:
         super(InvalidValueError, self).__init__(msg)
         self.invalid_value = value
 
@@ -47,14 +49,14 @@ class InvalidValueError(typing.Generic[_T], ValueError):
 class Importer(object):
     """A helper to import data in a MongoDB collection."""
 
-    def __init__(self, flags: argparse.Namespace, out: typing.TextIO = sys.stdout) -> None:
+    def __init__(self, flags: argparse.Namespace, out: TextIO = sys.stdout) -> None:
         self.flag_values = flags
         self.out = out
 
-    def _print(self, arg: typing.Any) -> None:
+    def _print(self, arg: Any) -> None:
         self.out.write(f'{arg}\n')
 
-    def _print_in_report(self, arg: typing.Any) -> None:
+    def _print_in_report(self, arg: Any) -> None:
         if _SLACK_IMPORT_URL:
             requests.post(_SLACK_IMPORT_URL, json={'attachments': [{
                 'mrkdwn_in': ['text'],
@@ -65,9 +67,9 @@ class Importer(object):
 
     def import_in_collection(
             self,
-            items: typing.List[JsonType],
+            items: List[JsonType],
             collection_name: str,
-            check_error: typing.Optional[Exception] = None) -> None:
+            check_error: Optional[Exception] = None) -> None:
         """Import items in a MongoDB collection."""
 
         real_collection = self._collection_from_flags(collection_name)
@@ -91,7 +93,11 @@ class Importer(object):
             # https://api.mongodb.com/python/current/examples/bulk.html
             if not chunk_size or chunk_size >= total:
                 self._print_in_report(f'Inserting all {total:d} objects at once.')
-                collection.insert_many(items)
+                try:
+                    collection.insert_many(items)
+                except pymongo.errors.BulkWriteError as error:
+                    self._print_in_report(error.details)
+                    raise
             else:
                 self._print_in_report(f'Inserting {total:d} objects in chunks of {chunk_size}')
                 for pos in tqdm.tqdm(range(0, total, chunk_size), file=sys.stdout):
@@ -139,7 +145,7 @@ class Importer(object):
 
     def review_diff(
             self,
-            new_list: typing.List[JsonType],
+            new_list: List[JsonType],
             old_mongo_collection: pymongo_collection.Collection,
             has_error: bool) -> bool:
         """Review the difference between an old and new dataset."""
@@ -152,7 +158,7 @@ class Importer(object):
         diff = _compute_diff(old_list, new_list)
         if not diff:
             self._print_in_report('The data is already up to date.')
-            return False
+            return not has_error
 
         if not has_error and self.flag_values.always_accept_diff:
             return True
@@ -171,14 +177,14 @@ class Importer(object):
                 return False
 
 
-def _get_doc_section(docstring: str, section_name: str) -> typing.Optional[str]:
+def _get_doc_section(docstring: str, section_name: str) -> Optional[str]:
     for doc_part in docstring.split('\n\n'):
         if doc_part.strip().startswith(section_name + ':\n'):
             return doc_part
     return None
 
 
-def _remove_left_padding(lines: typing.List[str], min_padding: int) -> typing.Iterator[str]:
+def _remove_left_padding(lines: List[str], min_padding: int) -> Iterator[str]:
     if not lines:
         return []
     padding = len(lines[0]) - len(lines[0].lstrip())
@@ -190,7 +196,7 @@ def _remove_left_padding(lines: typing.List[str], min_padding: int) -> typing.It
         yield line[padding:]
 
 
-def parse_args_doc(docstring: typing.Optional[str]) -> typing.Dict[str, str]:
+def parse_args_doc(docstring: Optional[str]) -> Dict[str, str]:
     """Parse the args documentation in a function's docstring.
 
     This function expects a very specific documentation format and parses it to
@@ -246,7 +252,7 @@ def parse_args_doc(docstring: typing.Optional[str]) -> typing.Dict[str, str]:
     return args_doc
 
 
-def _arg_names(func: _FlagableCallable) -> typing.Mapping[str, typing.Any]:
+def _arg_names(func: _FlagableCallable) -> Mapping[str, Any]:
     """Return the tuple of a function's args."""
 
     return inspect.signature(func).parameters
@@ -268,10 +274,10 @@ def _define_flags_args(func: _FlagableCallable, parser: argparse.ArgumentParser)
 _AType = typing.TypeVar('_AType')
 
 
-def _exec_from_flags(func: _FlagableCallable, flags: argparse.Namespace) -> typing.List[JsonType]:
+def _exec_from_flags(func: _FlagableCallable, flags: argparse.Namespace) -> List[JsonType]:
     """Execute a function pulling arguments from flags."""
 
-    args: typing.List[str] = []
+    args: List[str] = []
     for func_arg in _arg_names(func):
         args.append(getattr(flags, func_arg))
     return func(*args)
@@ -280,8 +286,8 @@ def _exec_from_flags(func: _FlagableCallable, flags: argparse.Namespace) -> typi
 def importer_main(
         func: _FlagableCallable,
         collection_name: str,
-        args: typing.Optional[typing.List[str]] = None,
-        out: typing.TextIO = sys.stdout) -> None:
+        args: Optional[List[str]] = None,
+        out: TextIO = sys.stdout) -> None:
     """Main function for an importer to MongoDB.
 
     Use this function as the main function in an importer script, e.g.
@@ -330,7 +336,7 @@ def importer_main(
     flags = parser.parse_args(args)
 
     importer = Importer(flags, out=out)
-    check_error: typing.Optional[Exception] = None
+    check_error: Optional[Exception] = None
 
     if flags.from_json:
         with open(flags.from_json) as input_file:
@@ -362,10 +368,8 @@ def importer_main(
 _ProtoType = typing.TypeVar('_ProtoType', bound=message.Message)
 
 
-def collection_to_proto_mapping(
-        collection: typing.Iterable[JsonType],
-        proto_type: typing.Type[_ProtoType]
-) -> typing.Iterator[typing.Tuple[typing.Any, _ProtoType]]:
+def collection_to_proto_mapping(collection: Iterable[JsonType], proto_type: Type[_ProtoType]) \
+        -> Iterator[Tuple[Any, _ProtoType]]:
     """Iterate over a Mongo collection parsing documents to protobuffers.
 
     Args:
@@ -381,7 +385,7 @@ def collection_to_proto_mapping(
         KeyError: if an ID is found more than once.
     """
 
-    ids: typing.Set[typing.Any] = set()
+    ids: Set[Any] = set()
     for document in collection:
         document_id = document['_id']
         del document['_id']
@@ -392,7 +396,7 @@ def collection_to_proto_mapping(
         yield document_id, parse_doc_to_proto(document, proto_type)
 
 
-def parse_doc_to_proto(document: JsonType, proto_type: typing.Type[_ProtoType]) -> _ProtoType:
+def parse_doc_to_proto(document: JsonType, proto_type: Type[_ProtoType]) -> _ProtoType:
     """Parse a single proto from a document."""
 
     proto = proto_type()
@@ -405,9 +409,9 @@ def parse_doc_to_proto(document: JsonType, proto_type: typing.Type[_ProtoType]) 
 
 
 def _compute_diff(
-        list_a: typing.List[JsonType],
-        list_b: typing.List[JsonType],
-        key: str = '_id') -> typing.Dict[typing.Any, typing.Any]:
+        list_a: List[JsonType],
+        list_b: List[JsonType],
+        key: str = '_id') -> Dict[Any, Any]:
     dict_a = collections.OrderedDict((value.get(key), value) for value in list_a)
     dict_b = collections.OrderedDict((value.get(key), value) for value in list_b)
 
@@ -415,9 +419,9 @@ def _compute_diff(
 
 
 def _compute_dict_diff(
-        dict_a: typing.Dict[typing.Any, typing.Any],
-        dict_b: typing.Dict[typing.Any, typing.Any]) -> typing.Dict[typing.Any, typing.Any]:
-    diff: typing.Dict[typing.Any, typing.Any] = collections.OrderedDict()
+        dict_a: Dict[Any, Any],
+        dict_b: Dict[Any, Any]) -> Dict[Any, Any]:
+    diff: Dict[Any, Any] = collections.OrderedDict()
 
     for a_key, a_value in dict_a.items():
         if a_key not in dict_b:

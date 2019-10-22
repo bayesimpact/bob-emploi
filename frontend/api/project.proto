@@ -78,7 +78,7 @@ message Project {
 
   // The date and time at which this project was created or if it was a
   // suggestion, when the suggestion was first created.
-  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp created_at = 15 [(field_usage) = APP_ONLY];
 
   // The date and time at which the main conclusions of this project were shown.
   google.protobuf.Timestamp diagnostic_shown_at = 44 [(field_usage) = APP_ONLY];
@@ -144,7 +144,7 @@ message Project {
   repeated Advice advices = 21 [(field_usage) = ALGORITHM_RESULT];
 
   // Tells whether the project is missing information and needs more information by the user.
-  bool is_incomplete = 23;
+  bool is_incomplete = 23 [(field_usage) = APP_ONLY];
 
   // Feedback from user when the advice given for this project was useless to them.
   // TODO(pascal): Convert to full feedback.
@@ -159,7 +159,7 @@ message Project {
   PassionateLevel passionate_level = 38;
 
   // Strategies we consider the user could follow. They are sorted by importance, so the first one
-  // is the most relevant to the user.
+  // is the most relevant to the user (relevance is computed using is_secondary and score).
   repeated Strategy strategies = 42 [(field_usage) = ALGORITHM_RESULT];
 
   // For each strategy, whether the user has decided to start working on them

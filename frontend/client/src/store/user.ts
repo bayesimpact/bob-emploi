@@ -102,7 +102,8 @@ export const filterPredicatesMatch = {
 }
 
 function isEmailTemplatePersonalized(
-  personalisations: string[], profile: bayes.bob.UserProfile, project: bayes.bob.Project): boolean {
+  personalisations: readonly string[], profile: bayes.bob.UserProfile,
+  project: bayes.bob.Project): boolean {
   // Check that personalization is not directly a frustration.
   const isFrustration = (profile.frustrations || []).find((frustration): boolean =>
     !!personalisations.find((personalisation): boolean => personalisation === frustration))
@@ -116,19 +117,34 @@ function isEmailTemplatePersonalized(
     find((predicate): boolean => predicate && predicate(profile, project))
 }
 
-function projectMatchAllFilters(project: bayes.bob.Project, filters: string[]): boolean {
+function projectMatchAllFilters(project: bayes.bob.Project, filters?: string[]): boolean {
   return !(filters || []).some((filter: string): boolean => !filterPredicatesMatch[filter](project))
 }
 
 // A function that returns a description for a degree.
 // If no degree, we do not return any a description.
-function getHighestDegreeDescription(userProfile: bayes.bob.UserProfile): string {
+function getHighestDegreeDescription(userProfile: bayes.bob.UserProfile): string|undefined {
   if (userProfile.highestDegree === 'NO_DEGREE') {
     // Exception where we do not want to show the option's name.
     return
   }
   const option = DEGREE_OPTIONS.find(({value}): boolean => value === userProfile.highestDegree)
   return option ? option.name : undefined
+}
+
+
+// 2635200000 = 1000 * 60 * 60 * 24 * 30.5
+const MILLIS_IN_MONTH = 2635200000
+
+
+// Returns user's job search length.
+// TODO(marielaure): Update this when we stop using jobSearchLengthMonths.
+function getJobSearchLengthMonths(project: bayes.bob.Project): number {
+  const {jobSearchHasNotStarted = false,
+    jobSearchLengthMonths = 0, jobSearchStartedAt = ''} = project
+  return jobSearchHasNotStarted ? -1 : jobSearchStartedAt ?
+    Math.round((Date.now() - new Date(jobSearchStartedAt).getTime()) / MILLIS_IN_MONTH) :
+    jobSearchLengthMonths
 }
 
 
@@ -174,14 +190,10 @@ function youForUser({profile: {canTutoie = false} = {}}): YouChooser {
 
 
 const COACHING_EMAILS_OPTIONS: SelectOption<bayes.bob.EmailFrequency>[] = [
-  {name: 'Oui de temps en temps (~1 mail par mois)', value: 'EMAIL_ONCE_A_MONTH'},
-  {name: 'Oui, autant que possible', value: 'EMAIL_MAXIMUM'},
-  {name: 'Non, pas de coaching, merci', value: 'EMAIL_NONE'},
+  {name: 'Occasionnel (~1 mail par mois)', value: 'EMAIL_ONCE_A_MONTH'},
+  {name: 'Régulier (~1 mail par semaine)', value: 'EMAIL_MAXIMUM'},
+  {name: 'Pas de coaching, merci', value: 'EMAIL_NONE'},
 ]
-
-
-// 2635200000 = 1000 * 60 * 60 * 24 * 30.5
-const MILLIS_IN_MONTH = 2635200000
 
 
 function pickRandom<T>(options: readonly T[]): T {
@@ -265,7 +277,39 @@ const sampleCities: readonly bayes.bob.FrenchCity[] = [
 ]
 
 
-function getUserExample(isRandom: boolean): bayes.bob.User {
+type PropsRequired<T, K extends keyof T> = T & Required<Pick<T, K>>
+
+
+type PopulatedUser = bayes.bob.User & {
+  profile: PropsRequired<bayes.bob.UserProfile,
+  | 'coachingEmailFrequency'
+  | 'familySituation'
+  | 'gender'
+  | 'hasCarDrivingLicense'
+  | 'highestDegree'
+  | 'origin'
+  | 'yearOfBirth'>
+  projects: [PropsRequired<bayes.bob.Project,
+  | 'areaType'
+  | 'city'
+  | 'employmentTypes'
+  | 'jobSearchStartedAt'
+  | 'kind'
+  | 'minSalary'
+  | 'networkEstimate'
+  | 'passionateLevel'
+  | 'previousJobSimilarity'
+  | 'seniority'
+  | 'targetJob'
+  | 'totalInterviewCount'
+  | 'trainingFulfillmentEstimate'
+  | 'weeklyApplicationsEstimate'
+  | 'weeklyOffersEstimate'
+  | 'workloads'>]
+}
+
+
+function getUserExample(isRandom: boolean): PopulatedUser {
   return {
     profile: {
       coachingEmailFrequency: pickRandom(COACHING_EMAILS_OPTIONS).value,
@@ -311,17 +355,15 @@ if (isRandomFastForward) {
 const userExample = getUserExample(isRandomFastForward)
 
 
-// TODO(pascal): Drop this feature flag once the feature has launched.
-const isLateSignupEnabled = !!Storage.getItem('lateSignup')
-if (isLateSignupEnabled) {
-  // eslint-disable-next-line no-console
-  console.log(
-    'Late Signup is activated. ' +
-    'To disable run: localStorage.removeItem("lateSignup") and refresh.')
+function getUniqueExampleEmail(): string {
+  return 'test-' + (new Date().getTime()) + '@example.com'
 }
 
 
-export {getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision, youForUser,
+export {
+  getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision, youForUser,
   userAge, getHighestDegreeDescription, keepMostRecentRevision,
   getFamilySituationOptions, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
-  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, userExample, isLateSignupEnabled}
+  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, userExample,
+  getUniqueExampleEmail, getJobSearchLengthMonths,
+}
