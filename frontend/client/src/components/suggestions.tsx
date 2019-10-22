@@ -1,5 +1,6 @@
 import _memoize from 'lodash/memoize'
-import React from 'react'
+import React, {useCallback, useEffect, useImperativeHandle,
+  useMemo, useRef, useState} from 'react'
 import PropTypes from 'prop-types'
 import algoliasearch from 'algoliasearch/reactnative'
 import autocomplete from 'autocomplete.js/dist/autocomplete.min'
@@ -7,6 +8,10 @@ import autocomplete from 'autocomplete.js/dist/autocomplete.min'
 import algoliaLogoUrl from 'images/algolia.svg'
 
 require('styles/algolia.css')
+
+const ALGOLIA_APP = 'K6ACI9BKKT'
+const ALGOLIA_API_KEY = 'da4db0bf437e37d6d49cefcb8768c67a'
+const ALGOLIA_CITY_INDEX = 'cities'
 
 
 interface AlgoliaSuggestProps {
@@ -86,7 +91,7 @@ class AlgoliaSuggest extends React.Component<AlgoliaSuggestProps> {
     } = this.props
     const algoliaClient = algoliasearch(algoliaApp, algoliaApiKey)
     const displayFunc = display ||
-      ((suggestion): React.ReactNode => suggestion[this.props.displayKey])
+      ((suggestion): React.ReactNode => this.props.displayKey && suggestion[this.props.displayKey])
     const handleSelected = (event, suggestion): void => {
       const displaySuggestion = displayFunc(suggestion)
       onSuggestSelect && onSuggestSelect(event, displaySuggestion, suggestion)
@@ -96,7 +101,7 @@ class AlgoliaSuggest extends React.Component<AlgoliaSuggestProps> {
     // Modifying the DOM without React is somewhat OK, but here it changes the
     // main DOM element of this component which confuses React when trying to
     // update the components before it.
-    const suggest = autocomplete(this.node, extraProps, [
+    const suggest = autocomplete(this.node.current, extraProps, [
       {
         display: displayFunc,
         source: autocomplete.sources.hits(
@@ -137,24 +142,37 @@ class AlgoliaSuggest extends React.Component<AlgoliaSuggestProps> {
       // React and we have no use for it for now.
       if ((prevProps.style && prevProps.style.display) !==
           (this.props.style && this.props.style.display)) {
-        this.hint.style.display = this.props.style.display
+        this.hint.style.display = this.props.style && this.props.style.display || null
       }
     }
   }
 
-  private hint: HTMLElement
+  private hint?: HTMLElement
 
   private suggest: ReturnType<typeof autocomplete>
 
-  private node: HTMLInputElement
+  private node: React.MutableRefObject<HTMLInputElement> =
+  React.createRef() as React.MutableRefObject<HTMLInputElement>
+
+  private handleRefs = (node): void => {
+    const {inputRef} = this.props
+    this.node.current = node
+    if (!inputRef) {
+      return
+    }
+    if (typeof inputRef === 'function') {
+      inputRef(node)
+      return
+    }
+    (inputRef as React.MutableRefObject<HTMLInputElement>).current = node
+  }
 
   public focus(): void {
-    this.node && this.node.focus()
+    this.node.current && this.node.current.focus()
   }
 
   public render(): React.ReactNode {
     const {
-      inputRef,
       onChange,
       onFocus,
       placeholder,
@@ -163,14 +181,9 @@ class AlgoliaSuggest extends React.Component<AlgoliaSuggestProps> {
     const wrappedOnChange = onChange && ((event): void => {
       onChange(event, event.target.value, null)
     })
-    // TODO(cyrille): Replace with createRef.
-    const handleRef = (node): void => {
-      this.node = node
-      inputRef && inputRef(node)
-    }
     // TODO(pascal): Also style with focus and hover effects like the other inputs.
     return <input
-      onChange={wrappedOnChange} ref={handleRef} style={style} placeholder={placeholder}
+      onChange={wrappedOnChange} ref={this.handleRefs} style={style} placeholder={placeholder}
       onFocus={onFocus} />
   }
 }
@@ -178,17 +191,17 @@ class AlgoliaSuggest extends React.Component<AlgoliaSuggestProps> {
 
 // Genderize a job name from `store/job.js`.
 // TODO: Find a way to avoid this duplication of code.
-function genderizeJob(job: bayes.bob.Job, gender: string): string {
+function genderizeJob(job: bayes.bob.Job|null, gender?: string): string {
   if (!job) {
     return ''
   }
   if (gender === 'FEMININE') {
-    return job.feminineName || job.name
+    return job.feminineName || job.name || ''
   }
   if (gender === 'MASCULINE') {
-    return job.masculineName || job.name
+    return job.masculineName || job.name || ''
   }
-  return job.name
+  return job.name || ''
 }
 
 
@@ -221,11 +234,11 @@ type Mutable<T> = {-readonly [K in keyof T]?: T[K]}
 
 
 // Assemble a Job proto from a JobSuggest suggestion.
-function jobFromSuggestion(suggestion: JobSuggestion): bayes.bob.Job {
+function jobFromSuggestion(suggestion: JobSuggestion): bayes.bob.Job|null {
   if (!suggestion) {
-    return
+    return null
   }
-  var job: Mutable<bayes.bob.Job> = {
+  const job: Mutable<bayes.bob.Job> = {
     codeOgr: suggestion.codeOgr,
     jobGroup: {
       name: suggestion.libelleRome,
@@ -257,13 +270,13 @@ const handleDisplay = _memoize(
   (isLowercased, gender): string => (isLowercased ? 'l' : 'L') + gender)
 
 
-interface SuggestProps<T> {
+interface SuggestConfig<T> {
   errorDelaySeconds?: number
   gender?: bayes.bob.Gender
   hitsPerPage?: number
   inputRef?: (input: HTMLInputElement) => void
   isLowercased?: boolean
-  onChange?: (value: T) => void
+  onChange?: (value: T|null) => void
   onError?: () => void
   onFocus?: () => void
   onSuggestSelect?: (event, displaySuggestion, suggestion) => void
@@ -272,6 +285,13 @@ interface SuggestProps<T> {
   value?: T
 }
 
+
+interface SuggestDefaultProps {
+  errorDelaySeconds: number
+}
+
+
+type SuggestProps<T> = SuggestConfig<T> & SuggestDefaultProps
 
 interface JobSuggestState {
   gender?: bayes.bob.Gender
@@ -282,9 +302,9 @@ interface JobSuggestState {
 
 // A Job autocomplete input.
 class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggestState> {
-  public static algoliaApp = 'K6ACI9BKKT'
+  public static algoliaApp = ALGOLIA_APP
 
-  public static algoliaApiKey = 'da4db0bf437e37d6d49cefcb8768c67a'
+  public static algoliaApiKey = ALGOLIA_API_KEY
 
   public static algoliaIndex = 'jobs'
 
@@ -319,7 +339,7 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
   }
 
   public static getDerivedStateFromProps({gender, isLowercased, value}, prevState):
-  Partial<JobSuggestState> {
+  Partial<JobSuggestState>|null {
     if (prevState.gender === gender && !!prevState.isLowercased === !!isLowercased
       && prevState.value === value) {
       return null
@@ -343,14 +363,14 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
 
   private inputRef: React.RefObject<AlgoliaSuggest> = React.createRef()
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private maybeLowerFirstLetter = (word): string =>
-    maybeLowerFirstLetter(word, this.props.isLowercased)
+    maybeLowerFirstLetter(word, !!this.props.isLowercased)
 
   private renderSuggestion = (suggestion): React.ReactNode => {
     const {gender} = this.props
-    var name = suggestion._highlightResult.libelleAppellationLong.value
+    let name = suggestion._highlightResult.libelleAppellationLong.value
     if (gender === 'FEMININE') {
       name = suggestion._highlightResult.libelleAppellationLongFeminin.value || name
     } else if (gender === 'MASCULINE') {
@@ -362,10 +382,10 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
 
   private handleChange = (event, value, suggestion): void => {
     event.stopPropagation()
-    const {errorDelaySeconds, gender, onChange, onError} = this.props
+    const {errorDelaySeconds, gender, onChange, onError} = this.props as SuggestProps<bayes.bob.Job>
 
     clearTimeout(this.timeout)
-    this.timeout = setTimeout((): void => {
+    this.timeout = window.setTimeout((): void => {
       this.hasError() && onError && onError()
     }, errorDelaySeconds * 1000)
 
@@ -387,7 +407,7 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
   }
 
   private hasError = (): boolean => {
-    return this.state.jobName && !this.props.value
+    return !!this.state.jobName && !this.props.value
   }
 
   public render(): React.ReactNode {
@@ -395,7 +415,7 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
       onChange: omittedOnChange, value: omittedValue,
       ...otherProps} = this.props
     const {jobName} = this.state
-    const fieldStyle = {...style}
+    const fieldStyle: React.CSSProperties = {...style}
     if (this.hasError()) {
       // TODO: Add a prop for `errorStyle`.
       fieldStyle.borderColor = 'red'
@@ -414,10 +434,10 @@ class JobSuggest extends React.Component<SuggestProps<bayes.bob.Job>, JobSuggest
 
 
 // Return the first job suggested by Algolia for this job name.
-function fetchFirstSuggestedJob(jobName: string): Promise<bayes.bob.Job> {
+function fetchFirstSuggestedJob(jobName: string): Promise<bayes.bob.Job|null> {
   const algoliaClient = algoliasearch(JobSuggest.algoliaApp, JobSuggest.algoliaApiKey)
   const jobIndex = algoliaClient.initIndex(JobSuggest.algoliaIndex)
-  return jobIndex.search(jobName).then((results): bayes.bob.Job => {
+  return jobIndex.search(jobName).then((results): bayes.bob.Job|null => {
     const firstJobSuggestion = results.hits && results.hits[0]
     if (!firstJobSuggestion) {
       return null
@@ -463,6 +483,10 @@ interface CitySuggestion {
   zipCode: string
 }
 
+export interface Focusable {
+  focus: () => void
+}
+
 
 const cityFromSuggestion = ({
   cityId,
@@ -500,94 +524,75 @@ const cityFromSuggestion = ({
 }
 
 
-interface CitySuggestState {
-  cityName?: string
-  value?: bayes.bob.FrenchCity
-}
-
-
 // A City autocomplete input.
-class CitySuggest extends React.Component<SuggestProps<bayes.bob.FrenchCity>, CitySuggestState> {
-  public static algoliaApp = 'K6ACI9BKKT'
+const CitySuggestBase:
+React.RefForwardingComponent<Focusable, SuggestConfig<bayes.bob.FrenchCity>> =
+(props: SuggestProps<bayes.bob.FrenchCity>,
+  ref: React.RefObject<Focusable>): React.ReactElement => {
+  const {style, onChange, value, ...otherProps} = props
+  const [cityName, setCityName] = useState('')
+  const inputRef = useRef<AlgoliaSuggest>(null)
 
-  public static algoliaApiKey = 'da4db0bf437e37d6d49cefcb8768c67a'
-
-  public static algoliaIndex = 'cities'
-
-  public static propTypes = {
-    onChange: PropTypes.func.isRequired,
-    style: PropTypes.object,
-    value: PropTypes.object,
-  }
-
-  public state: CitySuggestState = {
-    cityName: '',
-  }
-
-  public static getDerivedStateFromProps({value}, prevState): CitySuggestState {
-    if (prevState.value === value) {
-      return null
+  useEffect((): void => {
+    if (value && value.cityId && value.name) {
+      setCityName(value.name)
     }
-    if (!value || !value.cityId) {
-      return {value}
+  }, [value])
 
-    }
-    return {
-      cityName: value && value.name || '',
-      value,
-    }
-  }
+  useImperativeHandle(ref, (): Focusable => ({
+    focus: (): void => {
+      inputRef && inputRef.current && inputRef.current.focus()
+    },
+  }))
 
-  public focus(): void {
-    this.inputRef.current && this.inputRef.current.focus()
-  }
-
-  private inputRef: React.RefObject<AlgoliaSuggest> = React.createRef()
-
-  private renderSuggestion = (suggestion): React.ReactNode => {
-    var name = suggestion._highlightResult.name.value
+  const renderSuggestion = useCallback((suggestion): React.ReactNode => {
+    const name = suggestion._highlightResult.name.value
     return '<div>' + name + '<span class="aa-group">' +
         suggestion._highlightResult.departementName.value + '</span></div>'
-  }
+  }, [])
 
-  private handleChange = (event, value, suggestion): void => {
+  const handleChange = useCallback((event, value, suggestion): void => {
     event.stopPropagation()
-    const {onChange} = this.props
     if (!suggestion) {
-      this.setState({cityName: value})
+      setCityName(value)
       onChange && onChange(null)
       return
     }
     const city = cityFromSuggestion(suggestion)
     // Keep in sync with frontend/server/geo.py
-    this.setState({cityName: city.name})
+    setCityName(city.name || '')
     onChange && onChange(city)
-  }
+  }, [onChange])
 
-  public render(): React.ReactNode {
-    const {style, onChange: omittedOnChange, value, ...otherProps} = this.props
-    const {cityName} = this.state
-    const fieldStyle = {...style}
-    if (cityName && !value) {
-      fieldStyle.borderColor = 'red'
-    }
-    return <AlgoliaSuggest
-      {...otherProps} algoliaIndex={CitySuggest.algoliaIndex}
-      algoliaApp={CitySuggest.algoliaApp} algoliaApiKey={CitySuggest.algoliaApiKey}
-      displayValue={cityName} hint={true} autoselect={true} autoselectOnBlur={true}
-      hitsPerPage={5} displayKey="name" ref={this.inputRef}
-      style={fieldStyle}
-      onChange={this.handleChange}
-      suggestionTemplate={this.renderSuggestion} />
-  }
+  // TODO(marielaure): Change the color here to a theme color.
+  const fieldStyle = useMemo(() => ({
+    ...style,
+    ...cityName && !value && {borderColor: 'red'},
+  }), [style, cityName, value])
+
+  return <AlgoliaSuggest
+    {...otherProps} algoliaIndex={ALGOLIA_CITY_INDEX}
+    algoliaApp={ALGOLIA_APP} algoliaApiKey={ALGOLIA_API_KEY}
+    displayValue={cityName} hint={true} autoselect={true} autoselectOnBlur={true}
+    hitsPerPage={5} displayKey="name" ref={inputRef as React.Ref<AlgoliaSuggest>}
+    style={fieldStyle}
+    onChange={handleChange}
+    suggestionTemplate={renderSuggestion} />
 }
+const CitySuggest = React.forwardRef(CitySuggestBase)
+CitySuggest.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  style: PropTypes.object,
+  value: PropTypes.object,
+}
+
 
 
 // TODO(cyrille): Factorize with fetchJob.
 function fetchCity(location: bayes.bob.FrenchCity): Promise<bayes.bob.FrenchCity> {
-  const algoliaClient = algoliasearch(CitySuggest.algoliaApp, CitySuggest.algoliaApiKey)
+  const algoliaClient = algoliasearch(ALGOLIA_APP, ALGOLIA_API_KEY)
   const {departementId, cityId, name: cityName} = location
-  const cityIndex = algoliaClient.initIndex(CitySuggest.algoliaIndex)
+  const cityIndex = algoliaClient.initIndex(ALGOLIA_CITY_INDEX)
   return cityIndex.search(cityName || departementId).then(({hits}): CitySuggestion => {
     const bestCityById = hits.find(({cityId: id}): boolean => id === cityId)
     if (bestCityById) {
@@ -608,72 +613,55 @@ function fetchCity(location: bayes.bob.FrenchCity): Promise<bayes.bob.FrenchCity
 
 // TODO(pascal): Factorize with CitySuggest.
 // TODO(pascal): Use this when we're ready to add the activity sector back.
+const ActivitySuggest: React.FC<SuggestConfig<bayes.bob.ActivitySector>> =
+  (props): React.ReactElement => {
+    const {style, onChange, value, ...otherProps} = props
+    const [name, setName] = useState('')
+    useEffect((): void => {
+      if (value && value.naf && value.name) {
+        setName(value.name)
+      }
+    }, [value])
 
-interface ActivitySuggestState {
-  name?: string
-  value?: bayes.bob.ActivitySector
-}
+    const renderSuggestion = useCallback((suggestion): React.ReactNode => {
+      const name = suggestion._highlightResult.name.value
+      return `<div>${name}</div>`
+    }, [])
 
+    const handleChange = useCallback((event, value, suggestion): void => {
+      event.stopPropagation()
+      if (!suggestion) {
+        setName(value)
+        onChange && onChange(null)
+        return
+      }
+      const {naf, name} = suggestion
+      setName(name)
+      onChange && onChange({naf, name})
+    }, [onChange])
 
-class ActivitySuggest
-  extends React.Component<SuggestProps<bayes.bob.ActivitySector>, ActivitySuggestState> {
-  public static propTypes = {
-    onChange: PropTypes.func.isRequired,
-    style: PropTypes.object,
-    value: PropTypes.object,
-  }
-
-  public state = {
-    name: '',
-  }
-
-  public static getDerivedStateFromProps({value}, prevState): ActivitySuggestState {
-    if (prevState.value === value) {
-      return null
-    }
-    if (!value || !value.naf) {
-      return {value}
-    }
-    return {
-      name: value && value.name || '',
-      value,
-    }
-  }
-
-  private renderSuggestion = (suggestion): React.ReactNode => {
-    var name = suggestion._highlightResult.name.value
-    return `<div>${name}</div>`
-  }
-
-  private handleChange = (event, value, suggestion): void => {
-    event.stopPropagation()
-    const {onChange} = this.props
-    if (!suggestion) {
-      this.setState({name: value})
-      onChange && onChange(null)
-      return
-    }
-    const {naf, name} = suggestion
-    this.setState({name})
-    onChange && onChange({naf, name})
-  }
-
-  public render(): React.ReactNode {
-    const {style, onChange: omittedOnChange, value, ...otherProps} = this.props
-    const {name} = this.state
-    const fieldStyle = {...style}
-    if (name && !value) {
-      fieldStyle.borderColor = 'red'
-    }
+    const fieldStyle = useMemo((): React.CSSProperties|undefined => {
+      if (!name || value) {
+        return style
+      }
+      return {
+        ...style,
+        borderColor: 'red',
+      }
+    }, [name, style, value])
     return <AlgoliaSuggest
       {...otherProps} algoliaIndex="activities"
-      algoliaApp="K6ACI9BKKT" algoliaApiKey="da4db0bf437e37d6d49cefcb8768c67a"
+      algoliaApp={ALGOLIA_APP} algoliaApiKey={ALGOLIA_API_KEY}
       displayValue={name} hint={true} autoselect={true} autoselectOnBlur={true}
       hitsPerPage={5} displayKey="name"
       style={fieldStyle}
-      onChange={this.handleChange}
-      suggestionTemplate={this.renderSuggestion} />
+      onChange={handleChange}
+      suggestionTemplate={renderSuggestion} />
   }
+ActivitySuggest.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  style: PropTypes.object,
+  value: PropTypes.object,
 }
 
 

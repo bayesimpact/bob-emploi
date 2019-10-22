@@ -1,6 +1,8 @@
 """Tests for the authentication endpoints of the server module."""
 
 import typing
+from typing import Optional
+import unittest
 from unittest import mock
 
 import requests_mock
@@ -179,7 +181,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         self.assertEqual(('86420', 'A1234'), mock_get_job_proto.call_args[0][1:])
 
     def _test_new_user_in_city(
-            self, mock_requests: requests_mock.Mocker, city_id: str) -> typing.Optional[str]:
+            self, mock_requests: requests_mock.Mocker, city_id: str) -> Optional[str]:
         """Auth request with PE Connect for a new user in a city.
 
         Params:
@@ -224,7 +226,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         # Clean up.
         self._user_db.user.drop()
 
-        return typing.cast(typing.Optional[str], user['projects'][0].get('city', {}).get('cityId'))
+        return typing.cast(Optional[str], user['projects'][0].get('city', {}).get('cityId'))
 
     @mock.patch(auth.geo.__name__ + '.get_city_proto')
     def test_arrondissements(
@@ -249,7 +251,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
     def test_new_user_with_existing_email(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request with a pole-emploi token for a new user using an existing email."""
 
-        self.authenticate_new_user(email='pascal@pole-emploi.fr', password='psswd')
+        user_id = self.authenticate_new_user(email='pascal@pole-emploi.fr', password='psswd')
 
         mock_requests.post(
             'https://authentification-candidat.pole-emploi.fr/connexion/oauth2/access_token?'
@@ -270,7 +272,9 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
             '/api/user/authenticate',
             data='{"peConnectCode": "correct-code", "peConnectNonce": "correct-nonce"}',
             content_type='application/json')
-        self.assertEqual(403, response.status_code)
+        auth_response = self.json_from_response(response)
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
 
     def test_load_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request retrieves user."""
@@ -338,7 +342,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
 
         auth_response = self.json_from_response(response)
 
-        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertTrue(auth_response.get('isNewUser'))
         self.assertEqual('Lascap', auth_response['authenticatedUser']['profile'].get('name'))
         self.assertFalse(auth_response['authenticatedUser']['profile'].get('lastName'))
         self.assertEqual(
@@ -346,3 +350,7 @@ class AuthenticateEndpointPEConnectTestCase(base_test.ServerTestCase):
         self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
         self.assertEqual('pe-connect-user-id-1', auth_response['authenticatedUser']['peConnectId'])
         self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
+
+
+if __name__ == '__main__':
+    unittest.main()

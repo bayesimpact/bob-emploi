@@ -27,6 +27,10 @@ message Diagnostic {
   // The text introducing the strategies proposed for this diagnostic.
   // DEPRECATED (since 2019-03): Use strategies_introduction from DiagnosticTemplate instead.
   string strategies_introduction = 6 [deprecated=true, (string_format) = NATURAL_LANGUAGE];
+
+  // A list of categories used in the diagnostic with their relevance for the project. The most
+  // important (the one that was evaluated first) first.
+  repeated DiagnosticCategory categories = 11;
 }
 
 message SubDiagnostic {
@@ -77,7 +81,7 @@ enum DiagnosticTopic {
 // observation generator for submetrics.
 // TODO(cyrille): Deprecate its use as a sentence generator for the text field in Diagnostic.
 message DiagnosticTemplate {
-  // Main sentence to be shown to the user. It uses markup language.
+  // Main sentence to be shown to the user.
   string sentence_template = 1 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 
   // DEPRECATED (since 2018-11): Diagnostic text is now generated directly from a single
@@ -166,6 +170,7 @@ enum ProjectOrProfileField {
   REQUESTED_DIPLOMA_FIELD = 4;
   NETWORK_FIELD = 5;
   WEEKLY_APPLICATION_FIELD = 6;
+  EMPLOYMENT_TYPE_FIELD = 7;
 }
 
 // The trace of a diagnostic request made by a client. This is mainly used for analytics.
@@ -194,7 +199,6 @@ message LoggedDiagnosticRequest {
   string region_id = 7;
 }
 
-// TODO(cyrille): Add title.
 message DiagnosticCategory {
   // An identifier for the category. It should be human readable, but not in natural language,
   // for instance "stuck-market".
@@ -221,6 +225,15 @@ message DiagnosticCategory {
 
   // How much this category is relevant to a given context.
   CategoryRelevance relevance = 7 [(field_usage) = ALGORITHM_RESULT];
+
+  // Title for a metric corresponding to the category to be displayed in the categories train.
+  string metric_title = 8;
+
+  // Static explanation of the metric.
+  string metric_details = 9;
+
+  // Feminine version of the metrics_detail.
+  string metric_details_feminine = 10;
 }
 
 enum CategoryRelevance {

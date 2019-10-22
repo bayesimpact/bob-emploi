@@ -4,6 +4,7 @@ import datetime
 import json
 import time
 import typing
+from typing import Any, Callable, Dict
 import unittest
 from unittest import mock
 
@@ -14,11 +15,14 @@ from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
 
-
 _TIME = time.time
 
 
-def _clean_up_variable_flags(features_enabled: typing.Dict[str, typing.Any]) -> None:
+# TODO(pascal): Break up this module and drop the next line.
+# pylint: disable=too-many-lines
+
+
+def _clean_up_variable_flags(features_enabled: Dict[str, Any]) -> None:
     del_features = []
     for feature in features_enabled:
         for prefix in (
@@ -33,19 +37,6 @@ def _clean_up_variable_flags(features_enabled: typing.Dict[str, typing.Any]) -> 
 
 class UserEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the user endpoint to save the profile."""
-
-    def test_use_unguessable_object_id(self) -> None:
-        """Test that we don't use the standard MongoDB ObjectID.
-
-        The time from the objectId is random, so it might sometimes happen that
-        it is close to the current time, but with a low probability.
-        """
-
-        user_id = self.create_user()
-        id_generation_time = objectid.ObjectId(user_id).generation_time.replace(tzinfo=None)
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
-        self.assertTrue(id_generation_time < yesterday or id_generation_time > tomorrow)
 
     @mock.patch(now.__name__ + '.get')
     def test_app_use_endpoint(self, mock_now: mock.MagicMock) -> None:
@@ -74,6 +65,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'profile': {'city': {'name': 'foobar'}, 'name': 'Albert', 'year_of_birth': 1973},
             'projects': [{}],
             'emailsSent': [{'mailjetMessageId': 1234}],
+            'supportTickets': [{'ticketId': 'support-ticket'}],
         }
         user_id, auth_token = self.create_user_with_token(data=user_info, email='foo@bar.fr')
         tokens = self.json_from_response(self.app.get(
@@ -96,6 +88,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         # Pop _id field which is not JSON serializable
         user_data.pop('_id')
         self.assertNotIn('foo@bar.fr', json.dumps(user_data))
+        self.assertNotIn('support-ticket', json.dumps(user_data))
 
     def test_delete_user_missing_token(self) -> None:
         """Test trying user deletion without token."""
@@ -103,8 +96,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         response = self.app.delete('/api/user', data='{"profile": {"email": "foo@bar.fr"}}')
         self.assertEqual(403, response.status_code)
 
-    def test_delete_user_token(self) -> None:
-        """Delete a user without its ID but with an auth token."""
+    def test_try_delete_user_token(self) -> None:
+        """Try to delete a user without its ID but with an auth token."""
 
         user_info = {
             'profile': {'city': {'name': 'foobar'}, 'name': 'Albert', 'year_of_birth': 1973},
@@ -115,17 +108,10 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             '/api/user',
             data='{"profile": {"email": "foo@bar.fr"}}',
             headers={'Authorization': f'Bearer {token}'})
-        self.assertEqual(200, response.status_code)
-        auth_object = self._user_db.user_auth.find_one({'_id': mongomock.ObjectId(user_id)})
-        self.assertFalse(auth_object)
+        self.assertEqual(403, response.status_code)
+        self.assertIn('seulement pour le super-admin', response.get_data(as_text=True))
         user_data = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
-        self.assertEqual('REDACTED', user_data['profile']['email'])
-        self.assertEqual('REDACTED', user_data['profile']['name'])
-        self.assertEqual(1973, user_data['profile']['yearOfBirth'])
-        self.assertIn('deletedAt', user_data)
-        # Pop _id field which is not JSON serializable
-        user_data.pop('_id')
-        self.assertNotIn('foo@bar.fr', json.dumps(user_data))
+        self.assertEqual('foo@bar.fr', user_data['profile']['email'])
 
     @mock.patch(server.auth.__name__ + '._ADMIN_AUTH_TOKEN', new='custom-auth-token')
     def test_delete_user_with_admin_auth_token(self) -> None:
@@ -142,6 +128,29 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(200, response.status_code)
         user_data = self._user_db.user.find_one({'_id': mongomock.ObjectId(user_id)})
         self.assertEqual('REDACTED', user_data['profile']['email'])
+
+    def test_try_login_in_after_deletion(self) -> None:
+        """Test accessing data of a deleted user."""
+
+        user_id, auth_token = self.create_user_with_token()
+        tokens = self.json_from_response(self.app.get(
+            f'/api/user/{user_id}/generate-auth-tokens',
+            headers={'Authorization': 'Bearer ' + auth_token}))
+        unsubscribe_token = tokens['unsubscribe']
+        self.app.delete(
+            '/api/user',
+            data=f'{{"userId": "{user_id}"}}',
+            headers={'Authorization': 'Bearer ' + unsubscribe_token})
+
+        response = self.app.post(
+            f'/api/app/use/{user_id}',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        self.assertEqual(404, response.status_code)
+
+        auth_response = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"authToken": "{tokens["auth"]}", "userId": "{user_id}"}}')
+        self.assertEqual(404, auth_response.status_code)
 
     def test_get_user(self) -> None:
         """Basic Usage of retrieving a user from DB."""
@@ -167,6 +176,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         user_info2.pop('revision')
         user_info2.pop('hashedEmail')
         user_info2.pop('hasAccount')
+        user_info2.pop('hasPassword')
         self.assertEqual(user_info, user_info2)
 
         self.assertEqual(1, len(projects), projects)
@@ -349,16 +359,16 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         time_delay = [0]
         log_calls = []
 
-        def _delayed_time(*unused_args: typing.Any, **unused_kwargs: typing.Any) -> float:
+        def _delayed_time(*unused_args: Any, **unused_kwargs: Any) -> float:
             return _TIME() + time_delay[0]
         mock_time.side_effect = _delayed_time
 
-        def _wait_for_it(*unused_args: typing.Any, **unused_kwargs: typing.Any) -> None:
+        def _wait_for_it(*unused_args: Any, **unused_kwargs: Any) -> None:
             time_delay[0] += 6
         mock_advise.side_effect = _wait_for_it
 
-        def _log_call(level: str) -> typing.Callable[..., None]:
-            def _log_me(*unused_args: typing.Any, **unused_kwargs: typing.Any) -> None:
+        def _log_call(level: str) -> Callable[..., None]:
+            def _log_me(*unused_args: Any, **unused_kwargs: Any) -> None:
                 log_calls.append(level)
             return _log_me
         mock_warning.side_effect = _log_call('warning')
@@ -564,7 +574,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         self.assertEqual(
             {'overallScore', 'subDiagnostics', 'text'},
-            set(typing.cast(typing.Dict[str, typing.Any], project.get('diagnostic', {}))))
+            set(typing.cast(Dict[str, Any], project.get('diagnostic', {}))))
 
         all_advices = [
             {
@@ -845,7 +855,8 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         """Update the user but with the quick diagnostic route."""
 
         user_info = {'profile': {
-            'name': 'Albert', 'yearOfBirth': 1973, 'frustrations': ['NO_OFFERS']}}
+            'name': 'Albert', 'lastName': 'Einstein',
+            'yearOfBirth': 1973, 'frustrations': ['NO_OFFERS']}}
         user_id, auth_token = self.create_user_with_token(data=user_info)
 
         response = self.app.post(
@@ -857,6 +868,31 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         updated_user = self.get_user_info(user_id, auth_token)
         self.assertEqual('Alfred', updated_user.get('profile', {}).get('name'))
+        self.assertEqual('Einstein', updated_user.get('profile', {}).get('lastName', ''))
+        self.assertEqual(1973, updated_user.get('profile', {}).get('yearOfBirth'))
+        self.assertEqual(['NO_OFFERS'], updated_user.get('profile', {}).get('frustrations'))
+
+    def test_update_profile_with_quick_diagnostic_and_field_path(self) -> None:
+        """Update the user with the quick diagnostic route and a field path."""
+
+        user_info = {'profile': {
+            'name': 'Albert', 'lastName': 'Einstein', 'yearOfBirth': 1973,
+            'frustrations': ['NO_OFFERS']}}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        response = self.app.post(
+            f'/api/user/{user_id}/update-and-quick-diagnostic',
+            data=json.dumps({
+                'user': {'profile': {'name': 'Alfred', 'yearOfBirth': 1982}},
+                'fieldMask': 'profile.name,profile.lastName',
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        self.assertEqual(200, response.status_code, msg=response.get_data(as_text=True))
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertEqual('Alfred', updated_user.get('profile', {}).get('name', ''))
+        self.assertEqual('', updated_user.get('profile', {}).get('lastName', ''))
         self.assertEqual(1973, updated_user.get('profile', {}).get('yearOfBirth'))
         self.assertEqual(['NO_OFFERS'], updated_user.get('profile', {}).get('frustrations'))
 

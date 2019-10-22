@@ -1,26 +1,25 @@
 import AlertIcon from 'mdi-react/AlertIcon'
-import Radium from 'radium'
 import React from 'react'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import {Redirect} from 'react-router-dom'
 
 import {DispatchAllActions, getLaborStats, startAsGuest} from 'store/actions'
-import {isLateSignupEnabled, userExample} from 'store/user'
+import {userExample} from 'store/user'
 
 import facebookImage from 'images/facebook.svg'
 import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
 import twitterImage from 'images/twitter.svg'
 
 import {FastForward} from 'components/fast_forward'
+import {HelpDeskLink} from 'components/help'
 import {LoginLink} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar, PageWithNavigationBarProps} from 'components/navigation'
 import {STATIC_ADVICE_MODULES} from 'components/pages/static/static_advice/base'
-import {RadiumLink} from 'components/radium'
-import {CitySuggest, JobSuggest} from 'components/suggestions'
-import {Button, ExternalLink, MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH,
-  SmoothTransitions} from 'components/theme'
+import {RadiumExternalLink, SmartLink} from 'components/radium'
+import {CitySuggest, Focusable, JobSuggest} from 'components/suggestions'
+import {Button, MIN_CONTENT_PADDING, MAX_CONTENT_WIDTH, SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
 
 
@@ -38,7 +37,6 @@ interface RadiumCSSProperties extends React.CSSProperties {
 }
 
 
-const RadiumExternalLink = Radium(ExternalLink)
 class FooterLink extends React.PureComponent<FooterLinkProps> {
   public static propTypes = {
     isSelected: PropTypes.bool,
@@ -59,13 +57,11 @@ class FooterLink extends React.PureComponent<FooterLinkProps> {
       fontSize: 13,
       fontWeight: 'bold',
       padding: '5px 0',
-      textDecoration: 'none',
       ...SmoothTransitions,
       ...this.props.style,
     }
     const {isSelected: omittedIsSelected, style: omittedStyle, ...linkProps} = this.props
-    const LinkComponent = this.props.to ? RadiumLink : RadiumExternalLink
-    return <LinkComponent style={style} {...linkProps} />
+    return <SmartLink style={style} {...linkProps} />
   }
 }
 
@@ -178,9 +174,7 @@ class Footer extends React.PureComponent<FooterProps> {
             </React.Fragment>)}
 
             {this.renderLinkSection('Aide', null, <React.Fragment>
-              <FooterLink href={config.helpRequestUrl}>
-                Nous contacter
-              </FooterLink>
+              <HelpDeskLink><FooterLink>Nous contacter</FooterLink></HelpDeskLink>
 
               <FooterLink to={Routes.PROFESSIONALS_PAGE} isSelected={page === 'professionals'}>
                 Accompagnateurs
@@ -310,7 +304,6 @@ class StaticPage extends React.PureComponent<StaticPageProps> {
 interface TitleSectionProps {
   isLoginButtonShown?: boolean
   pageContent: {
-    buttonCaption?: string
     fontSize?: number
     subtitle?: string
     title: React.ReactNode
@@ -323,7 +316,6 @@ class TitleSection extends React.PureComponent<TitleSectionProps> {
   public static propTypes = {
     isLoginButtonShown: PropTypes.bool,
     pageContent: PropTypes.shape({
-      buttonCaption: PropTypes.string,
       fontSize: PropTypes.number,
       subtitle: PropTypes.string,
       title: PropTypes.node.isRequired,
@@ -331,26 +323,22 @@ class TitleSection extends React.PureComponent<TitleSectionProps> {
     style: PropTypes.object,
   }
 
-  private loginLinkRef: React.RefObject<HTMLAnchorElement | HTMLSpanElement> = React.createRef()
+  private loginLinkRef: React.RefObject<HTMLAnchorElement> = React.createRef()
 
   private handleClick = (): void => {
     this.loginLinkRef.current && this.loginLinkRef.current.click()
   }
 
   private renderLoginButtons(): React.ReactNode {
-    if (isLateSignupEnabled && !isMobileVersion) {
+    if (!isMobileVersion) {
       return <SearchBar
         style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}} to={Routes.INTRO_PAGE} />
     }
-    const {pageContent} = this.props
-    const {buttonCaption} = pageContent
     const buttonStyle = {
       fontSize: 15,
       padding: '15px 28px',
     }
-    const caption = isLateSignupEnabled ?
-      "Commencez, c'est gratuit\u00A0!" :
-      buttonCaption || 'Inscrivez-vous maintenant\u00A0!'
+    const caption = "Commencez, c'est gratuit\u00A0!"
     return <div>
       <FastForward onForward={this.handleClick} />
       <LoginLink
@@ -427,7 +415,7 @@ class SearchBarBase extends React.PureComponent<SearchBarProps, SearchBarState> 
     this.focusOnNext()
   }
 
-  private citySearch: React.RefObject<CitySuggest> = React.createRef()
+  private citySearch: React.RefObject<Focusable> = React.createRef()
 
   private jobSearch: React.RefObject<JobSuggest> = React.createRef()
 

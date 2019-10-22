@@ -1,7 +1,7 @@
 """Module to advise the user to volunteer with non-profits."""
 
 import collections
-import typing
+from typing import Dict
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
@@ -19,7 +19,7 @@ class _AdviceVolunteer(scoring_base.ModelBase):
         departement_id = project.details.city.departement_id
 
         # Get data from MongoDB.
-        volunteering_missions_dict: typing.Dict[str, association_pb2.VolunteeringMissions] = \
+        volunteering_missions_dict: Dict[str, association_pb2.VolunteeringMissions] = \
             collections.defaultdict(association_pb2.VolunteeringMissions)
         collection = project.database.volunteering_missions
         for record in collection.find({'_id': {'$in': [departement_id, '']}}):

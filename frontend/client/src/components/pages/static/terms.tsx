@@ -11,7 +11,7 @@ export default class TermsAndConditionsPage extends React.PureComponent<{}> {
     return <StaticPage page="terms" title={<span>
       Conditions générales d'utilisation<br />
       au <StrongTitle>11 novembre 2016</StrongTitle>
-    </span>}>
+    </span>} style={{padding: '20px 100px 100px'}}>
       <Markdown content={content} />
     </StaticPage>
   }

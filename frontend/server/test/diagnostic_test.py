@@ -1,8 +1,6 @@
 """Unit tests for the diagnostic part of bob_emploi.frontend.advisor module."""
 
-import json
 import logging
-import typing
 import unittest
 from unittest import mock
 
@@ -277,6 +275,11 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
     def test_missing_submetric_sentence(self, mock_warning: mock.MagicMock) -> None:
         """Logs a warning if no submetric sentence is found."""
 
+        self.database.diagnostic_submetrics_sentences_new.insert_one({
+            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
+            'sentenceTemplate': "Votre métier n'est pas du futur",
+            'filters': ['constant(0)']
+        })
         self.database.diagnostic_observations.insert_one({
             'sentenceTemplate': 'Vous faites un métier du futur.',
             'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
@@ -457,10 +460,16 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         project = project_pb2.Project()
         self.user.profile.gender = user_pb2.FEMININE
         self.user.profile.can_tutoie = True
-        self.database.translations.insert_one({
-            'string': 'Voici vos stratégies',
-            'fr_FR@tu': 'Voici tes stratégi%eFeminines',
-        })
+        self.database.translations.insert_many([
+            {
+                'string': 'Voici vos stratégies',
+                'fr_FR@tu': 'Voici tes stratégi%eFeminines',
+            },
+            {
+                'string': 'Overall text for women if category set',
+                'fr_FR@tu': 'Overall text for women if category set',
+            },
+        ])
         self.database.diagnostic_category.insert_one({
             'categoryId': 'women',
             'strategiesIntroduction': 'Voici vos strats',
@@ -705,184 +714,56 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         })
         diagnostic.maybe_diagnose(self.user, project, self.database)
         self.assertEqual('everyone', project.diagnostic.category_id)
+        self.assertEqual(['everyone'], [c.category_id for c in project.diagnostic.categories])
+        self.assertEqual(diagnostic_pb2.NEEDS_ATTENTION, project.diagnostic.categories[0].relevance)
 
     def test_missing_diagnostic_category(self) -> None:
         """Does not set a category ID if none is found."""
 
         project = project_pb2.Project()
         self.database.diagnostic_category.insert_one({
-            'categoryId': 'everyone',
+            'categoryId': 'noone',
             'filters': ['constant(0)'],
             'order': 1,
         })
         diagnostic.maybe_diagnose(self.user, project, self.database)
         self.assertFalse(project.diagnostic.category_id)
+        self.assertEqual(['noone'], [c.category_id for c in project.diagnostic.categories])
+        self.assertEqual(
+            diagnostic_pb2.RELEVANT_AND_GOOD, project.diagnostic.categories[0].relevance)
 
+    def test_diagnostic_multiple_categories(self) -> None:
+        """Compute the diagnostic category for a project."""
 
-class QuickAdvisorTest(base_test.ServerTestCase):
-    """Unit tests for the quick advisor."""
-
-    def setUp(self) -> None:
-        super().setUp()
-        user_info = {'profile': {'name': 'Albert', 'yearOfBirth': 1973}}
-        self.user_id, self.auth_token = self.create_user_with_token(data=user_info)
-
-    def _update_user(self, user_data: typing.Dict[str, typing.Any]) -> None:
-        self.app.post(
-            '/api/user',
-            data=json.dumps(user_data),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token})
-
-    def test_empty_project(self) -> None:
-        """Test a quick save when no project is set yet."""
-
-        response = self.app.post(
-            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
-            data=json.dumps({'user': {'profile': {'yearOfBirth': 1987}}}),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token})
-        self.assertEqual(200, response.status_code)
-
-        json_user = self.get_user_info(self.user_id, self.auth_token)
-        self.assertEqual(1987, json_user.get('profile', {}).get('yearOfBirth'))
-
-    def test_city_field(self) -> None:
-        """Test a quick advice when setting the city field."""
-
-        self._db.user_count.insert_one({
-            'aggregatedAt': '2016-11-15T16:51:55Z',
-            'departementCounts': {
-                '69': 365,
+        project = project_pb2.Project()
+        self.database.diagnostic_category.insert_many([
+            {
+                'categoryId': 'first',
+                'filters': ['constant(2)'],
+                'order': 1,
             },
-        })
-
-        response = self.json_from_response(self.app.post(
-            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
-            data=json.dumps({'user': {'projects': [{'city': {'departementId': '69'}}]}}),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token}))
-        self.assertEqual(
-            {'comments': [{
-                'field': 'CITY_FIELD',
-                'comment': {'stringParts': [
-                    'Super, ', '365', ' personnes dans ce département ont déjà testé le '
-                    'diagnostic de Bob\xa0!',
-                ]},
-            }]},
-            response,
-        )
-
-    def test_target_job_field(self) -> None:
-        """Test a quick advice when setting the target job field."""
-
-        self._db.user_count.insert_one({
-            'aggregatedAt': '2016-11-15T16:51:55Z',
-            'jobGroupCounts': {
-                'L1510': 256
+            {
+                'categoryId': 'second',
+                'filters': ['constant(0)'],
+                'order': 2,
             },
-        })
-
-        response = self.json_from_response(self.app.post(
-            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
-            data=json.dumps({'user': {'projects': [
-                {'targetJob': {'jobGroup': {'romeId': 'L1510'}}},
-            ]}}),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token}))
+            {
+                'categoryId': 'third',
+                'filters': ['constant(3)'],
+                'order': 3,
+            },
+        ])
+        diagnostic.maybe_diagnose(self.user, project, self.database)
+        self.assertEqual('first', project.diagnostic.category_id)
         self.assertEqual(
-            {'comments': [{
-                'field': 'TARGET_JOB_FIELD',
-                'comment': {'stringParts': [
-                    "Ça tombe bien, j'ai déjà accompagné ", '256', ' personnes pour ce métier\xa0!',
-                ]},
-            }]},
-            response,
-        )
-
-    def test_salary_field(self) -> None:
-        """Test a quick advice when setting the target job field to advise on salary."""
-
-        self._db.local_diagnosis.insert_one({
-            '_id': '69:L1510',
-            'imt': {'juniorSalary': {'shortText': 'De 1 300 € à 15 200 €'}}
-        })
-
-        user_info = self.get_user_info(self.user_id, self.auth_token)
-        # Junior user.
-        user_info['profile']['yearOfBirth'] = 1995
-        user_info['projects'] = [{'city': {'departementId': '69'}}]
-        self._update_user(user_info)
-
-        response = self.json_from_response(self.app.post(
-            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
-            data=json.dumps({'user': {'projects': [
-                {'targetJob': {'jobGroup': {'romeId': 'L1510'}}},
-            ]}}),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token}))
+            ['first', 'second', 'third'], [c.category_id for c in project.diagnostic.categories])
         self.assertEqual(
-            {'comments': [{
-                'field': 'SALARY_FIELD',
-                'isBeforeQuestion': True,
-                'comment': {'stringParts': [
-                    'En général les gens demandent un salaire de 1 300 € à 15 200 € par mois.',
-                ]},
-            }]},
-            response,
-        )
-
-    def test_salary_field_already_sent(self) -> None:
-        """Test that we do not send the salary again if nothing changed."""
-
-        self._db.local_diagnosis.insert_one({
-            '_id': '69:L1510',
-            'imt': {'juniorSalary': {'shortText': 'De 1 300 € à 15 200 €'}}
-        })
-
-        user_info = self.get_user_info(self.user_id, self.auth_token)
-        # Junior user.
-        user_info['profile']['yearOfBirth'] = 1995
-        user_info['projects'] = [{
-            'city': {'departementId': '69'},
-            'targetJob': {'jobGroup': {'romeId': 'L1510'}},
-        }]
-        self._update_user(user_info)
-
-        response = self.json_from_response(self.app.post(
-            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
-            data=json.dumps({'user': {'projects': [
-                {'targetJob': {'jobGroup': {'name': 'New name'}}},
-            ]}}),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token}))
-        self.assertFalse(response)
-
-    def test_required_diplomas_field(self) -> None:
-        """Test that we send the required diplomas once we know the target job."""
-
-        self._db.job_group_info.insert_one({
-            '_id': 'B9876',
-            'requirements': {'diplomas': [{'name': 'CAP'}]},
-        })
-
-        response = self.json_from_response(self.app.post(
-            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
-            data=json.dumps({'user': {'projects': [
-                {'targetJob': {'jobGroup': {'romeId': 'B9876'}}},
-            ]}}),
-            content_type='application/json',
-            headers={'Authorization': 'Bearer ' + self.auth_token}))
-        self.assertEqual(
-            {'comments': [{
-                'field': 'REQUESTED_DIPLOMA_FIELD',
-                'isBeforeQuestion': True,
-                'comment': {'stringParts': [
-                    'Les offres demandent souvent un CAP ou équivalent.',
-                ]},
-            }]},
-            response,
-        )
+            [
+                diagnostic_pb2.NEEDS_ATTENTION,
+                diagnostic_pb2.RELEVANT_AND_GOOD,
+                diagnostic_pb2.NEEDS_ATTENTION
+            ],
+            [c.relevance for c in project.diagnostic.categories])
 
 
 class FindCategoryTestCase(base_test.ServerTestCase):

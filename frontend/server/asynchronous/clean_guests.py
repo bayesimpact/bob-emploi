@@ -4,7 +4,7 @@ import argparse
 import datetime
 import logging
 import os
-import typing
+from typing import Any, Dict, List, Optional, Tuple
 
 import pymongo
 
@@ -20,7 +20,7 @@ _, _DB, _ = mongo.get_connections_from_env()
 
 
 def clean_guest_users(database: pymongo.database.Database, to_date: str, dry_run: bool = True) \
-        -> typing.Tuple[int, int]:
+        -> Tuple[int, int]:
     """Clean guest users who registered before a given date."""
 
     users = database.user.find({
@@ -41,15 +41,14 @@ def clean_guest_users(database: pymongo.database.Database, to_date: str, dry_run
     return num_users_cleaned, num_errors
 
 
-def _clean_guest_user(
-        user_db: pymongo.database.Database, user: typing.Dict[str, typing.Any]) -> bool:
+def _clean_guest_user(user_db: pymongo.database.Database, user: Dict[str, Any]) -> bool:
     user_proto = proto.create_from_mongo(user, user_pb2.User, 'user_id')
     assert user_proto
 
     return auth.delete_user(user_proto, user_db)
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Parse command line arguments and trigger the clean_guest_users function."""
 
     parser = argparse.ArgumentParser(description='Clean guests user from the database.')

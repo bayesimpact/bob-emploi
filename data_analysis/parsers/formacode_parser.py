@@ -2,7 +2,7 @@
 
 import re
 import sys
-import typing
+from typing import Iterator, Sequence, TextIO, Tuple
 
 # Matches ROME identifiers "H2101".
 _ROME_MATCHER = re.compile(r'(?:\b|_)([A-Z]\d{4})(?:\b|_)')
@@ -10,7 +10,7 @@ _ROME_MATCHER = re.compile(r'(?:\b|_)([A-Z]\d{4})(?:\b|_)')
 _FORMACODE_MATCHER = re.compile(r'(?:\b|\D)(\d{3} \d{2})(?:\b|\D)')
 
 
-def _parse_rome_formacode_file(pdf_dump: str) -> typing.Iterator[typing.Tuple[str, str]]:
+def _parse_rome_formacode_file(pdf_dump: str) -> Iterator[Tuple[str, str]]:
     """Parse a Correspondance from Rome to Formacode PDF dump.
 
     Yields:
@@ -24,7 +24,7 @@ def _parse_rome_formacode_file(pdf_dump: str) -> typing.Iterator[typing.Tuple[st
                 yield mapping
 
 
-def parse_rome_formacode_line(line: str) -> typing.Iterator[typing.Tuple[str, str]]:
+def parse_rome_formacode_line(line: str) -> Iterator[Tuple[str, str]]:
     """Parse a Correspondance line from Rome to Formacode PDF dump.
 
     Yields:
@@ -50,7 +50,7 @@ def parse_rome_formacode_line(line: str) -> typing.Iterator[typing.Tuple[str, st
         yield (rome_id, formacode)
 
 
-def main(args: typing.Sequence[str], out: typing.TextIO = sys.stdout) -> None:
+def main(args: Sequence[str], out: TextIO = sys.stdout) -> None:
     """Parse a Correspondance from Rome to Formacode PDF dump.
 
     Outputs a CSV file with a mapping from ROME ID of jobs to Formacode ID of

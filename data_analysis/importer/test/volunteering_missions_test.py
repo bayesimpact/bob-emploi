@@ -164,8 +164,28 @@ class VolunteeringMissionImporterTestCase(unittest.TestCase):
         self.assertEqual(['Cool Mission'], [m.title for m in missions[''].missions])
 
     @mock.patch(requests.__name__ + '.get')
-    def test_low_coverage_missions(self, mock_get: mock.MagicMock) -> None:
-        """Check that an error is raised when mission have a low coverage."""
+    def test_low_departements_coverage(self, mock_get: mock.MagicMock) -> None:
+        """Check that an error is raised when mission have a low departement coverage."""
+
+        mock_jobs = '\n'.join(
+            '''
+<job>
+  <JobTitle>Bénévolat : Cool Mission</JobTitle>
+  <JobId>12345</JobId>
+  <JobDescription>Mission proposée par Bayes Impact&lt;br /&gt;'''
+            '''&lt;b&gt;Informations complémentaires&lt;/b&gt;Nothing</JobDescription>
+  <applyURL>https://www.example.com/yes?param=true</applyURL>
+  <PostalCode>{}</PostalCode>
+</job>
+'''.format(x) for x in range(20))
+        mock_get().text = '<jobs>\n' + mock_jobs + '\n</jobs>'
+
+        with self.assertRaisesRegex(ValueError, 'The putative new data lacks coverage.'):
+            volunteering_missions.get_missions_dicts()
+
+    @mock.patch(requests.__name__ + '.get')
+    def test_low_missions_coverage(self, mock_get: mock.MagicMock) -> None:
+        """Check that an error is raised when mission have a too few missions."""
 
         mock_get().text = (
             '''
@@ -175,20 +195,21 @@ class VolunteeringMissionImporterTestCase(unittest.TestCase):
     <JobId>12345</JobId>
     <JobDescription>Mission proposée par Bayes Impact&lt;br /&gt;'''
             '''&lt;b&gt;Informations complémentaires&lt;/b&gt;Nothing</JobDescription>
-    <applyURL>https://www.example.com/yes?param=true</applyURL>
-    <PostalCode>69006</PostalCode>
+    <applyURL>https://www.example.com/yes</applyURL>
+    <PostalCode>13001</PostalCode>
   </job>
   <job>
-    <JobTitle>Bénévolat : Cool Mission #2</JobTitle>
-    <JobId>4200</JobId>
+    <JobTitle>Bénévolat : Cool Mission</JobTitle>
+    <JobId>12345</JobId>
     <JobDescription>Mission proposée par Bayes Impact&lt;br /&gt;'''
             '''&lt;b&gt;Informations complémentaires&lt;/b&gt;Nothing</JobDescription>
-    <applyURL>https://www.example.com/no</applyURL>
-    <PostalCode>75002</PostalCode>
+    <applyURL>https://www.example.com/yes</applyURL>
+    <PostalCode>31000</PostalCode>
   </job>
-</jobs>
+  </jobs>
 ''')
-        with self.assertRaises(ValueError):
+
+        with self.assertRaisesRegex(ValueError, 'The putative new data lacks coverage.'):
             volunteering_missions.get_missions_dicts()
 
 

@@ -12,6 +12,7 @@ import json
 import os
 import time
 import typing
+from typing import Any, Dict, List, Optional
 
 from algoliasearch import search_client
 from algoliasearch import helpers
@@ -20,8 +21,8 @@ import pandas
 from bob_emploi.data_analysis.lib import cleaned_data
 
 
-def prepare_activities(data_folder: str = 'data', stats_filename: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def prepare_activities(data_folder: str = 'data', stats_filename: Optional[str] = None) \
+        -> List[Dict[str, Any]]:
     """Prepare activities for upload to Algolia.
 
     Args:
@@ -50,7 +51,7 @@ def prepare_activities(data_folder: str = 'data', stats_filename: typing.Optiona
     activities['naf'] = activities.index
 
     return typing.cast(
-        typing.List[typing.Dict[str, typing.Any]],
+        List[Dict[str, Any]],
         activities[['objectID', 'naf', 'name', 'hiring']].to_dict(orient='records'))
 
 

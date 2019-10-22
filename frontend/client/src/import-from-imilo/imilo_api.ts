@@ -5,7 +5,8 @@ function cleanHtmlError(htmlErrorPage: string): string {
   const page = document.createElement('html')
   page.innerHTML = htmlErrorPage
   const content = page.getElementsByTagName('U')
-  return content.length && content[content.length - 1].textContent || page.textContent
+  return content.length && content[content.length - 1].textContent ||
+    page.textContent || htmlErrorPage
 }
 
 
@@ -69,7 +70,7 @@ function getIdentity(userId: string): Promise<IdentityPage> {
 
 
 interface MobilityPage {
-  drivingLicenses: {type: number}[]
+  drivingLicenses: readonly {type: number}[]
   fullRadiusMobility: string
   radiusMobility: number
 }
@@ -80,7 +81,7 @@ function getMobility(userId: string): Promise<MobilityPage> {
 }
 
 
-export type CursusPage = {
+export type CursusPage = readonly {
   fullAcademicLevel: string
   grade: number
 }[]
@@ -97,9 +98,9 @@ interface ImiloJob {
 }
 
 
-export type SituationsPage = {
-  fullPracticedJob: ImiloJob
-  fullPreparedJob: ImiloJob
+export type SituationsPage = readonly {
+  fullPracticedJob?: ImiloJob
+  fullPreparedJob?: ImiloJob
 }[]
 
 

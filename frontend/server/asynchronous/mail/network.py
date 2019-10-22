@@ -3,7 +3,7 @@
 import datetime
 import logging
 import re
-import typing
+from typing import Any, Dict, Optional
 from urllib import parse
 
 import pymongo
@@ -36,8 +36,8 @@ def strip_district(city: str) -> str:
 
 
 def _get_network_vars(
-        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
-        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
+        user: user_pb2.User, database: Optional[pymongo.database.Database] = None,
+        **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the network email.
 
     Returns:
@@ -87,8 +87,8 @@ def _get_network_vars(
 
 
 def network_plus_vars(
-        user: user_pb2.User, database: typing.Optional[pymongo.database.Database] = None,
-        **unused_kwargs: typing.Any) -> typing.Optional[typing.Dict[str, str]]:
+        user: user_pb2.User, database: Optional[pymongo.database.Database] = None,
+        **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the network email.
 
     Returns:

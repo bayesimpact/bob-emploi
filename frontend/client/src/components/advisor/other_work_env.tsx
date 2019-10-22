@@ -5,10 +5,16 @@ import PropTypes from 'prop-types'
 import {YouChooser} from 'store/french'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-other-work-env.svg'
+import Picto from 'images/advices/picto-other-work-env.svg'
 
-import {CardWithContentProps, CardProps, MethodSuggestionList, WithAdvice, WithAdviceData,
+import {CardWithContentProps, CardProps, MethodSuggestionList,
   connectExpandedCardWithContent} from './base'
+
+
+const emptyArray = [] as const
+
+
+const isNonEmptyString = (a: string|undefined): a is string => !!a
 
 
 class ExpandedAdviceCardContentBase
@@ -30,7 +36,8 @@ class ExpandedAdviceCardContentBase
 
   public render(): React.ReactNode {
     const {
-      adviceData: {workEnvironmentKeywords: {domains = [], sectors = [], structures = []} = {}},
+      adviceData: {workEnvironmentKeywords: {
+        domains = emptyArray, sectors = emptyArray, structures = emptyArray} = {}},
       handleExplore,
       project,
       userYou,
@@ -43,7 +50,9 @@ class ExpandedAdviceCardContentBase
     return <div>
       <div style={style}>
         {(domains.length > 1) ?
-          <Section kind="secteurs" items={domains.map(({name}): string => name)}
+          <Section
+            kind="secteurs"
+            items={domains.map(({name}): string|undefined => name).filter(isNonEmptyString)}
             {...{project, userYou}} onExplore={handleExplore('domain')} /> :
           <Section
             kind="secteurs" items={sectors} {...{project, userYou}}
@@ -57,7 +66,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.OtherWorkEnvAdviceData, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.OtherWorkEnvAdviceData, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
@@ -130,39 +139,4 @@ class Section extends React.PureComponent<SectionProps> {
 }
 
 
-type TakeAwayProps = WithAdviceData<bayes.bob.OtherWorkEnvAdviceData> & WithAdvice
-
-
-class TakeAwayBase extends React.PureComponent<TakeAwayProps> {
-  public static propTypes = {
-    adviceData: PropTypes.shape({
-      workEnvironmentKeywords: PropTypes.shape({
-        domains: PropTypes.array,
-        sectors: PropTypes.array,
-        structures: PropTypes.array,
-      }),
-    }).isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {
-      adviceData: {workEnvironmentKeywords: {domains = [], sectors = [], structures = []} = {}},
-    } = this.props
-    if (domains.length > 1) {
-      return `${domains.length} domaines trouvés`
-    }
-    if (sectors.length) {
-      const maybeS = sectors.length > 1 ? 's' : ''
-      return `${sectors.length} secteur${maybeS} trouvé${maybeS}`
-    }
-    if (structures.length) {
-      const maybeS = structures.length > 1 ? 's' : ''
-      return `${structures.length} structure${maybeS} trouvée${maybeS}`
-    }
-    return ''
-  }
-}
-const TakeAway = connectExpandedCardWithContent()(TakeAwayBase)
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

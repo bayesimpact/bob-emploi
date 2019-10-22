@@ -42,7 +42,7 @@ class _AdviceBetterJobInGroup(scoring_base.ModelBase):
                 "il y a plus d'offres dans des métiers proches"))
         if is_looking_for_new_job:
             reasons.append(project.translate_string(
-                'vous nous avezdit vouloir vous reconvertir'))
+                'vous nous avez dit vouloir vous reconvertir'))
         if reasons:
             return scoring_base.ExplainedScore(3, reasons)
         return scoring_base.ExplainedScore(2, [project.translate_string(

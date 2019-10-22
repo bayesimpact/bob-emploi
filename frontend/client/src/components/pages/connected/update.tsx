@@ -59,7 +59,9 @@ class UpdatePageBase extends React.PureComponent<PageProps, PageState> {
   private handleConfirmProjectCheck = (): void => {
     const {dispatch, history, oldProject} = this.props
     this.setState({isRequireProjectCheckModalShown: false})
-    dispatch(modifyProject(oldProject))
+    if (oldProject) {
+      dispatch(modifyProject(oldProject))
+    }
     history.push(Routes.ROOT)
   }
 
@@ -209,6 +211,6 @@ class UpdatePageBase extends React.PureComponent<PageProps, PageState> {
   }
 }
 export default connect(({user}: RootState): PageConnectedProps => ({
-  oldProject: user.projects && isOldProject(user.projects[0]) && user.projects[0],
+  oldProject: user.projects && isOldProject(user.projects[0]) && user.projects[0] || undefined,
   userYou: youForUser(user),
 }))(withRouter(UpdatePageBase))

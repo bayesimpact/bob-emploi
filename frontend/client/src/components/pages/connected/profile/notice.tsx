@@ -33,7 +33,7 @@ class NoticeStepBase extends React.PureComponent<StepProps> {
   private handleSubmit = (canTutoie: boolean): Promise<boolean> => {
     const {dispatch, onSubmit} = this.props
     dispatch(setUserProfile({canTutoie}, true))
-    onSubmit({})
+    onSubmit && onSubmit({})
     return Promise.resolve(true)
   }
 

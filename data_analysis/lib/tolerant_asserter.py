@@ -2,7 +2,7 @@
 
 import inspect
 import os
-import typing
+from typing import Any, Callable, List
 import unittest
 
 
@@ -32,16 +32,16 @@ class TolerantAsserter(object):
 
         self._asserter = asserter
         self._tolerance = tolerance
-        self._errors: typing.List[Exception] = []
+        self._errors: List[Exception] = []
 
-    def __getattr__(self, name: str) -> typing.Any:
+    def __getattr__(self, name: str) -> Any:
         attr = getattr(self._asserter, name)
         if inspect.ismethod(attr):
             return self._wrap(attr)
         return attr
 
-    def _wrap(self, method: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]:
-        def _wrapped_method(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+    def _wrap(self, method: Callable[..., Any]) -> Callable[..., Any]:
+        def _wrapped_method(*args: Any, **kwargs: Any) -> Any:
             try:
                 return method(*args, **kwargs)
             except AssertionError as error:

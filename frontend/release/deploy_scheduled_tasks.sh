@@ -79,8 +79,8 @@ if [ "$1" == "upload" ]; then
   readonly ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
   readonly ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
   readonly ALL_COMMON_RULES=$(sort <<< "$ALL_INDEX_RULES $ALL_TARGET_RULES" | uniq -d)
-  if [[ " ${ALL_RULES//$'\n'/ } " != *\ $RULE\ * ]]; then
-    echo "Invalid choice '$RULE'. choose the rule to upload from" $ALL_RULES
+  if [[ " ${ALL_COMMON_RULES//$'\n'/ } " != *\ $RULE\ * ]]; then
+    echo "Invalid choice '$RULE'. choose the rule to upload from" $ALL_COMMON_RULES
     exit 2
   fi
 
@@ -91,8 +91,30 @@ if [ "$1" == "upload" ]; then
   exit 0
 fi
 
+if [ "$1" == "run" ]; then
+  readonly RULE="$2"
+  if [[ -z "$RULE" ]]; then
+    echo "Need a rule name to upload."
+    exit 1
+  fi
+
+  readonly ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
+  readonly ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
+  readonly ALL_COMMON_RULES=$(sort <<< "$ALL_INDEX_RULES $ALL_TARGET_RULES" | uniq -d)
+  if [[ " ${ALL_COMMON_RULES//$'\n'/ } " != *\ $RULE\ * ]]; then
+    echo "Invalid choice '$RULE'. choose the rule to upload from" $ALL_COMMON_RULES
+    exit 2
+  fi
+
+  aws ecs run-task \
+    --task-definition "$(jq -r '.Targets[0].EcsParameters.TaskDefinitionArn' "$FOLDER/$RULE.json")" \
+    --overrides "$(python3 -c "$PY_INJECT_ENV_VARS_AND_PACK_INPUT" < "$FOLDER/$RULE.json" | jq -r '.Targets[0].Input')"
+  exit 0
+fi
+
 echo "Usage:"
 echo "  > \`deploy_scheduled_tasks.sh download\` to download all rules from AWS to this folder."
 echo "  > \`deploy_scheduled_tasks.sh upload <rule_name>\` to upload one of them."
 echo "  > \`deploy_scheduled_tasks.sh download <rule_name>\` to view a rule's definition."
+echo "  > \`deploy_scheduled_tasks.sh run <rule_name>\` to run a rule immediately."
 exit 1

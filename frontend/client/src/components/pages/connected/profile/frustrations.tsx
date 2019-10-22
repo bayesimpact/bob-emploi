@@ -153,7 +153,9 @@ class CustomFrustration extends React.PureComponent<CustomFrustrationProps, Sele
   }
 
   private handleEditValue = _memoize((isSelected: boolean): ((v: string) => void) =>
-    (v: string): void => isSelected === !v && this.setState({isSelected: !!v}))
+    (v: string): void => {
+      isSelected === !v && this.setState({isSelected: !!v})
+    })
 
   private removeEmpty = (): void => {
     const {onRemove} = this.props
@@ -180,7 +182,7 @@ class CustomFrustration extends React.PureComponent<CustomFrustrationProps, Sele
     return <div style={customFrustrationStyle}>
       <Checkbox
         isSelected={isSelected}
-        onClick={isSelected ? onRemove : null} />
+        onClick={isSelected ? onRemove : undefined} />
       <Input
         value={value} style={inputStyle} placeholder="Autre…" onChangeDelayMillisecs={1000}
         onEdit={this.handleEditValue(isSelected)}
@@ -224,7 +226,7 @@ class FrustrationsStep extends React.PureComponent<ProfileStepProps, StepState> 
       this.updater_.handleSubmit()
       return
     }
-    const frustrations = []
+    const frustrations: string[] = []
     jobSearchFrustrationOptions.concat(personalFrustrationOptions).forEach(
       (frustration): void => {
         if (Math.random() > .5) {
@@ -268,26 +270,23 @@ class FrustrationsStep extends React.PureComponent<ProfileStepProps, StepState> 
     const {frustrations} = profile
     const genderizedFrustrationOptions = genderizedOptions(
       jobSearchFrustrationOptions.concat(personalFrustrationOptions), profile)
-    const explanation = <div>
-      {isShownAsStepsDuringOnboarding ?
-        <React.Fragment>Y a-t-il des choses qui {userYou('te', 'vous')} bloquent
-          dans {userYou('ta', 'votre')} recherche d'emploi&nbsp;?<br /></React.Fragment> : null}
-      Je suis là pour {userYou("t'", 'vous ')}écouter et pour {userYou("t'", 'vous ')}aider en
-      fonction de {userYou('tes', 'vos')} besoins.
-    </div>
+    const explanation = isShownAsStepsDuringOnboarding ? <div>
+      Y a-t-il des choses qui {userYou('te', 'vous')} bloquent
+      dans {userYou('ta', 'votre')} recherche d'emploi&nbsp;?<br />
+    </div> : null
     const maybeShownCustomFrustrationsPlusOne = maybeShownCustomFrustrations.
       some(({isShown, value}): boolean => isShown && !value) ? maybeShownCustomFrustrations :
       maybeShownCustomFrustrations.concat([{isShown: true, value: ''}])
+    const label = isShownAsStepsDuringOnboarding ? '' :
+      `Éléments bloquants de ${userYou('ta', 'votre')} recherche`
     return <Step
-      title={isShownAsStepsDuringOnboarding ?
-        `${userYou('Tes', 'Vos')} éventuelles difficultés` :
-        `Ce qui ${userYou('te', 'vous')} bloque dans ${userYou('ta', 'votre')} recherche`}
+      title={`${userYou('Tes', 'Vos')} éventuelles difficultés`}
       explanation={explanation}
       fastForward={this.fastForward}
       onNextButtonClick={this.updater_.handleSubmit}
       onPreviousButtonClick={this.updater_.getBackHandler()}
       {...this.props}>
-      <FieldSet isInline={true}>
+      <FieldSet isInline={isShownAsStepsDuringOnboarding} label={label}>
         <CheckboxList
           options={genderizedFrustrationOptions}
           values={frustrations}

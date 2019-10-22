@@ -10,6 +10,7 @@ import datetime
 import logging
 import os
 import typing
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from airtable import airtable
 import requests
@@ -31,9 +32,9 @@ _SLACK_IMPORT_URL = os.getenv('SLACK_IMPORT_URL')
 class _Collectible(typing.NamedTuple):
     base_id: str
     table: str
-    fields: typing.Iterable[str]
-    id_field: typing.Optional[str] = None
-    view: typing.Optional[str] = None
+    fields: Iterable[str]
+    id_field: Optional[str] = None
+    view: Optional[str] = None
 
 
 # List of Airtable fields to collect for translation that will be used client-side.
@@ -58,7 +59,11 @@ CLIENT_COLLECTIBLES = [
     _Collectible(_BOB_ADVICE_BASE_ID, 'strategy_goals', ('content',), view='Ready to Import'),
     _Collectible(_BOB_ADVICE_BASE_ID, 'strategy_testimonials', (
         'job',
-        'content'), view='Ready to Import')]
+        'content'), view='Ready to Import'),
+    _Collectible(_BOB_ADVICE_BASE_ID, 'diagnostic_categories', (
+        'metric_details',
+        'metric_details_feminine'), view='Ready to Import'),
+]
 
 
 class StringCollector(object):
@@ -67,14 +72,14 @@ class StringCollector(object):
     def __init__(self, api_key: str) -> None:
         self._i18n_base = airtable.Airtable(_I18N_BASE_ID, api_key)
         self._existing_translations = {
-            typing.cast(typing.Dict[str, typing.Any], record['fields']).get('string'): record
+            typing.cast(Dict[str, Any], record['fields']).get('string'): record
             for record in self._i18n_base.iterate('translations')
         }
         self._api_key = api_key
-        self.bases: typing.Dict[str, airtable.Airtable] = {}
-        self._collected: typing.Dict[str, typing.Dict[str, str]] = \
+        self.bases: Dict[str, airtable.Airtable] = {}
+        self._collected: Dict[str, Dict[str, str]] = \
             collections.defaultdict(lambda: collections.defaultdict(str))
-        self._used_translations: typing.Set[str] = set()
+        self._used_translations: Set[str] = set()
         self._now = datetime.datetime.utcnow().isoformat() + 'Z'
 
     def _get_base(self, base_id: str) -> airtable.Airtable:
@@ -106,8 +111,8 @@ class StringCollector(object):
         self._existing_translations[text] = record
 
     def collect_from_table(
-            self, base_id: str, table: str, fields: typing.Iterable[str],
-            id_field: typing.Optional[str] = None, view: typing.Optional[str] = None) -> None:
+            self, base_id: str, table: str, fields: Iterable[str],
+            id_field: Optional[str] = None, view: Optional[str] = None) -> None:
         """Collect strings to translate from an Airtable.
 
         Args:
@@ -121,7 +126,7 @@ class StringCollector(object):
 
         base = self._get_base(base_id)
         for record in base.iterate(table, view=view):
-            record_fields = typing.cast(typing.Dict[str, typing.Any], record['fields'])
+            record_fields = typing.cast(Dict[str, Any], record['fields'])
             record_id = typing.cast(str, record['id'])
             for field in fields:
                 text = record_fields.get(field)
@@ -134,7 +139,7 @@ class StringCollector(object):
 
     def collect_for_airtable_importer(
             self, base_id: str, table: str, proto: str,
-            view: typing.Optional[str] = None) -> int:
+            view: Optional[str] = None) -> int:
         """Collect all strings needed for a given import.
 
         Return:
@@ -174,8 +179,7 @@ class StringCollector(object):
         for collectible in tables_to_collect:
             self.collect_from_table(*collectible)
 
-    def list_unused_translations(self) \
-            -> typing.Iterator[typing.Tuple[typing.Dict[str, typing.Any], typing.Optional[str]]]:
+    def list_unused_translations(self) -> Iterator[Tuple[Dict[str, Any], Optional[str]]]:
         """List all the translations that are in the DB but have not been collected in this run.
 
         We will only list translations that have the same origin as one of the origins used
@@ -189,14 +193,14 @@ class StringCollector(object):
         unused_translations = self._existing_translations.keys() - self._used_translations
         for unused_translation in unused_translations:
             record = self._existing_translations[unused_translation]
-            fields = typing.cast(typing.Dict[str, typing.Any], record['fields'])
+            fields = typing.cast(Dict[str, Any], record['fields'])
             if fields.get('origin') not in self._collected:
                 continue
             new_value = self._collected.get(typing.cast(str, fields.get('origin', '')), {})\
                 .get(fields.get('origin_id', ''))
             yield record, new_value
 
-    def remove(self, record: typing.Dict[str, typing.Any]) -> None:
+    def remove(self, record: Dict[str, Any]) -> None:
         """Remove a translation record."""
 
         del self._existing_translations[record['fields']['string']]
@@ -214,7 +218,7 @@ def _handle_unused_translations(collector: StringCollector, action: str = 'list'
     unused_translations = collector.list_unused_translations()
     for record, new_value in unused_translations:
         if action == 'list':
-            fields: typing.Dict[str, typing.Any] = collections.defaultdict(str)
+            fields: Dict[str, Any] = collections.defaultdict(str)
             fields.update(record['fields'])
             if new_value is None:
                 logging.warning(
@@ -254,7 +258,7 @@ def _print_report(text: str) -> None:
         }]})
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Collect all the strings in Airtable to translate."""
 
     parser = argparse.ArgumentParser(
@@ -308,17 +312,16 @@ def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
             collection_errors[collection] = num_failed_records
 
     _handle_unused_translations(collector, args.unused)
-    report_text = 'Here is the report:\n'
+    error_text = ''
     if collections_not_collected:
-        report_text += f'Strings not collected for {collections_not_collected}.'
-    else:
-        report_text += 'All the collections have been collected.'
-    if not collection_errors:
-        report_text += '\nAnd no errors have been found during collect.'
-    else:
+        error_text += f'Strings not collected for {collections_not_collected}.'
+    if collection_errors:
         errors = '\n'.join([f'{coll}: {collection_errors[coll]}' for coll in collection_errors])
-        report_text += f'\nErrors in collection:\n{errors}'
-    _print_report(report_text)
+        if not error_text:
+            error_text += 'All the collections have been collected.\n'
+        error_text += f'Errors in collection:\n{errors}'
+    if error_text:
+        _print_report(f'Here is the report:\n{error_text}')
 
 
 if __name__ == '__main__':

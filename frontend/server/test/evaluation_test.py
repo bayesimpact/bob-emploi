@@ -5,6 +5,7 @@ import json
 import unittest
 from unittest import mock
 import typing
+from typing import List
 
 from pymongo import errors
 
@@ -263,6 +264,7 @@ class EvalTestCase(base_test.ServerTestCase):
         use_case = self.json_from_response(response)
 
         self.assertEqual('newPool_00', use_case.get('useCaseId'))
+        self.assertTrue(use_case.get('userData', {}).get('hasAccount'))
 
         db_use_case = self._eval_db.use_case.find_one()
         db_use_case['useCaseId'] = db_use_case.pop('_id')
@@ -276,6 +278,52 @@ class EvalTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer blabla'}))
 
         self.assertEqual('newPool_01', use_case2.get('useCaseId'))
+
+    def test_create_from_ticket(self, mock_verify_id_token: mock.MagicMock) -> None:
+        """Create a use case from a user with an opened support ticket."""
+
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'pascal@bayesimpact.org',
+            'sub': '12345',
+        }
+        self.create_user(data={
+            'profile': {'yearOfBirth': 1987},
+            'supportTickets': [{'ticketId': 'support-id'}],
+        })
+        response = self.app.post(
+            '/api/eval/use-case/create',
+            data='{"ticketId": "support-id"}',
+            content_type='application/json',
+            headers={'Authorization': 'Bearer blabla'})
+        use_case = self.json_from_response(response)
+
+        self.assertEqual('_00', use_case.get('useCaseId'))
+        self.assertEqual(1987, use_case.get('userData', {}).get('profile', {}).get('yearOfBirth'))
+        self.assertNotIn('support-id', json.dumps(use_case))
+
+    def test_create_from_guest(self, mock_verify_id_token: mock.MagicMock) -> None:
+        """Create a use case from a guest user."""
+
+        mock_verify_id_token.return_value = {
+            'iss': 'accounts.google.com',
+            'email': 'pascal@bayesimpact.org',
+            'sub': '12345',
+        }
+        user_id, unused_token = self.create_guest_user(first_name='Pascal')
+        response = self.app.post(
+            '/api/eval/use-case/create',
+            data=f'{{"userId": "{user_id}", "poolName": "newPool"}}',
+            content_type='application/json',
+            headers={'Authorization': 'Bearer blabla'})
+        use_case = self.json_from_response(response)
+
+        self.assertEqual('newPool_00', use_case.get('useCaseId'))
+        self.assertFalse(use_case.get('userData', {}).get('hasAccount'))
+
+        db_use_case = self._eval_db.use_case.find_one()
+        db_use_case['useCaseId'] = db_use_case.pop('_id')
+        self.assertEqual(use_case, db_use_case)
 
     def test_create_unauthorized(self, mock_verify_id_token: mock.MagicMock) -> None:
         """Create a use case from a user."""
@@ -379,7 +427,7 @@ class EvalTestCase(base_test.ServerTestCase):
             'categoryId': f'frustration-{d + 1}',
             'filters': [f'for-frustrated({user_pb2.Frustration.Name(d + 1)})']
         } for d in range(3)]
-        typing.cast(typing.List[str], categories[0]['filters']).append(
+        typing.cast(List[str], categories[0]['filters']).append(
             f'for-frustrated({user_pb2.Frustration.Name(4)})')
         self._db.diagnostic_category.insert_many(categories)
 

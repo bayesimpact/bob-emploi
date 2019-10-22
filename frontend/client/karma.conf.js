@@ -26,14 +26,14 @@ module.exports = function(config) {
       },
     },
     files: [
-      'src/store/*.js',
-      'test/webpack/loadtests.js',
+      'src/store/*.ts',
+      'test/webpack/loadtests.ts',
     ],
     frameworks: ['mocha', 'chai'],
     port: 8080,
     preprocessors: {
-      'src/store/*.js': ['webpack', 'sourcemap', 'coverage'],
-      'test/webpack/loadtests.js': ['webpack', 'sourcemap'],
+      'src/store/*.ts': ['webpack', 'sourcemap', 'coverage'],
+      'test/webpack/loadtests.ts': ['webpack', 'sourcemap'],
     },
     reporters: ['mocha', 'progress', 'coverage'],
     singleRun: true,

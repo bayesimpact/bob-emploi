@@ -19,15 +19,18 @@ You can try it out on a local instance if you have a job offers file:
 import collections
 import enum
 import itertools
+import logging
 import typing
+from typing import Any, Dict, Iterator, List, Optional, Tuple
+
+import tqdm
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.data_analysis.lib import job_offers
 from bob_emploi.data_analysis.lib import mongo
 
-# Minimum ratio of job offers for a diploma to be considered as a
-# suggestion for the whole job group.
-_FILTER_DIPLOMA_RATIO = .05
+# Total number of job offers that we have in our "standard" input.
+_TOTAL_RECORDS = 11170764
 
 # Minimum ratio of job offers for a driving license to be considered as a
 # suggestion for the whole job group.
@@ -82,6 +85,12 @@ _DRIVING_LICENSE_TYPES = {
 }
 
 
+class _DiplomaRequirement(typing.NamedTuple):
+    is_required: bool
+    name: str
+    degree: 'job_pb2.DegreeLevel'
+
+
 class _ProxyFields(object):
     """A proxy class that updates field names on the fly.
 
@@ -91,16 +100,16 @@ class _ProxyFields(object):
     not prefixed by foo_ won't be accessible through the proxy.
     """
 
-    def __init__(self, target: typing.Any, prefix: str = '', suffix: str = '') -> None:
+    def __init__(self, target: Any, prefix: str = '', suffix: str = '') -> None:
         self._target = target
         self._prefix = prefix
         self._suffix = suffix
 
-    def __getattr__(self, field: str) -> typing.Any:
+    def __getattr__(self, field: str) -> Any:
         return getattr(self._target, self._prefix + field + self._suffix)
 
 
-def _diploma_name(job_offer_diploma: _ProxyFields) -> typing.Optional[str]:
+def _diploma_name(job_offer_diploma: _ProxyFields) -> Optional[str]:
     """Compute the diploma name.
 
     Check http://go/pe:notebooks/datasets/job_postings.ipynb for the rationale.
@@ -112,13 +121,10 @@ def _diploma_name(job_offer_diploma: _ProxyFields) -> typing.Optional[str]:
     if (not job_offer_diploma.type_code or
             job_offer_diploma.type_code == 'NULL'):
         return None
-    diploma_name = typing.cast(str, job_offer_diploma.type_name)
-    if diploma_name.endswith(' ou équivalent'):
-        diploma_name = diploma_name[:-len(' ou équivalent')]
-    if (not int(job_offer_diploma.subject_area_code) or
-            job_offer_diploma.subject_area_name == 'NULL'):
-        return diploma_name
-    return f'{diploma_name} en {job_offer_diploma.subject_area_name}'
+    name = typing.cast(str, job_offer_diploma.type_name)
+    if name.endswith(' ou équivalent'):
+        name = name[:-len(' ou équivalent')]
+    return name
 
 
 def _employment_type(job_offer: 'job_offers._JobOffer') -> job_pb2.EmploymentType:
@@ -138,6 +144,81 @@ def _employment_type(job_offer: 'job_offers._JobOffer') -> job_pb2.EmploymentTyp
     return job_pb2.CDD_LESS_EQUAL_3_MONTHS
 
 
+_DIPLOMA_TO_DEGREE = {
+    'Aucune formation scolaire': job_pb2.NO_DEGREE,
+    'Primaire à 4ème': job_pb2.NO_DEGREE,
+    '4ème achevée': job_pb2.NO_DEGREE,
+    'BEPC ou 3ème achevée': job_pb2.CAP_BEP,
+    '2nd ou 1ère achevée': job_pb2.CAP_BEP,
+    'CAP, BEP': job_pb2.CAP_BEP,
+    'Bac': job_pb2.BAC_BACPRO,
+    'Bac+2': job_pb2.BTS_DUT_DEUG,
+    'Bac+3, Bac+4': job_pb2.LICENCE_MAITRISE,
+    'Bac+5 et plus': job_pb2.DEA_DESS_MASTER_PHD,
+}
+
+
+_DEGREE_TO_DIPLOMA = {
+    job_pb2.NO_DEGREE: 'Aucune formation scolaire',
+    job_pb2.CAP_BEP: 'CAP, BEP',
+    job_pb2.BAC_BACPRO: 'Bac',
+    job_pb2.BTS_DUT_DEUG: 'Bac+2',
+    job_pb2.LICENCE_MAITRISE: 'Bac+3, Bac+4',
+    job_pb2.DEA_DESS_MASTER_PHD: 'Bac+5 et plus',
+}
+
+
+def _get_degree_from_diploma(job_offer_diploma: _ProxyFields) -> job_pb2.DegreeLevel:
+    """Get the degree of a diploma by its name in Pôle emploi job offers dataset."""
+
+    name = _diploma_name(job_offer_diploma)
+    if not name:
+        return job_pb2.UNKNOWN_DEGREE
+
+    degree = _DIPLOMA_TO_DEGREE.get(name)
+    if degree:
+        return degree
+    logging.warning('Unknown diploma: %s', name)
+    return job_pb2.UNKNOWN_DEGREE
+
+
+def list_diplomas(job_offer: 'job_offers._JobOffer') -> Iterator[_DiplomaRequirement]:
+    """List all diploma requirements for this job offer."""
+
+    diploma_1 = _ProxyFields(job_offer, 'degree_', '_1')
+    diploma_name_1 = _diploma_name(diploma_1)
+    dip_req_1: Optional[_DiplomaRequirement] = _DiplomaRequirement(
+        diploma_1.required_code == 'E',
+        diploma_name_1,
+        _get_degree_from_diploma(diploma_1)) if diploma_name_1 else None
+    diploma_2 = _ProxyFields(job_offer, 'degree_', '_2')
+    diploma_name_2 = _diploma_name(diploma_2)
+    dip_req_2: Optional[_DiplomaRequirement] = _DiplomaRequirement(
+        diploma_2.required_code == 'E',
+        diploma_name_2,
+        _get_degree_from_diploma(diploma_2)) if diploma_name_2 else None
+
+    if not (dip_req_1 or dip_req_2):
+        # No diploma requirements: we consider it's unknown.
+        return
+
+    best_suggestion: _DiplomaRequirement = typing.cast(_DiplomaRequirement, dip_req_1 or dip_req_2)
+    if dip_req_2 and best_suggestion.degree < dip_req_2.degree:
+        best_suggestion = dip_req_2
+    best_suggestion = _DiplomaRequirement(False, best_suggestion.name, best_suggestion.degree)
+
+    if dip_req_1 and dip_req_1.is_required:
+        best_requirement = dip_req_1
+    else:
+        best_requirement = _DiplomaRequirement(True, 'Aucune formation scolaire', job_pb2.NO_DEGREE)
+
+    if dip_req_2 and dip_req_2.is_required and dip_req_2.degree > best_requirement.degree:
+        best_requirement = dip_req_2
+
+    yield best_suggestion
+    yield best_requirement
+
+
 class _RequirementKind(enum.Enum):
     diplomas = 1
     driving_licenses = 2
@@ -150,9 +231,9 @@ class _RequirementsCollector(object):
 
     def __init__(self) -> None:
         self.num_offers = 0
-        self.suggestions: typing.Dict[_RequirementKind, typing.Dict[typing.Any, int]] = \
+        self.suggestions: Dict[_RequirementKind, Dict[Any, int]] = \
             collections.defaultdict(lambda: collections.defaultdict(int))
-        self.requirements: typing.Dict[_RequirementKind, typing.Dict[typing.Any, int]] = \
+        self.requirements: Dict[_RequirementKind, Dict[Any, int]] = \
             collections.defaultdict(lambda: collections.defaultdict(int))
 
     def collect(self, job_offer: 'job_offers._JobOffer') -> None:
@@ -166,8 +247,7 @@ class _RequirementsCollector(object):
         self._collect_job(job_offer)
         # TODO(pascal): Also collect lang.
 
-    def _add_suggestion(
-            self, kind: _RequirementKind, name: typing.Any, required: bool = False) -> None:
+    def _add_suggestion(self, kind: _RequirementKind, name: Any, required: bool = False) -> None:
         """Collect a suggestion."""
 
         self.suggestions[kind][name] += 1
@@ -175,7 +255,7 @@ class _RequirementsCollector(object):
             self.requirements[kind][name] += 1
 
     def _get_sorted_requirements(self, kind: _RequirementKind, threshold: float) \
-            -> typing.Iterator[typing.Tuple[typing.Any, int, int]]:
+            -> Iterator[Tuple[Any, int, int]]:
         """Get requirements sorted by most frequent first.
 
         Args:
@@ -201,16 +281,11 @@ class _RequirementsCollector(object):
 
     def _collect_diploma(self, job_offer: 'job_offers._JobOffer') -> None:
         kind = _RequirementKind.diplomas
-        diploma_1 = _ProxyFields(job_offer, 'degree_', '_1')
-        diploma_name_1 = _diploma_name(diploma_1)
-        diploma_2 = _ProxyFields(job_offer, 'degree_', '_2')
-        diploma_name_2 = _diploma_name(diploma_2)
-        if diploma_name_1:
-            self._add_suggestion(
-                kind, diploma_name_1, required=diploma_1.required_code == 'E')
-        if diploma_name_2 and diploma_name_1 != diploma_name_2:
-            self._add_suggestion(
-                kind, diploma_name_2, required=diploma_2.required_code == 'E')
+        for is_required, name, degree in list_diplomas(job_offer):
+            if is_required:
+                self.requirements[kind][(name, degree)] += 1
+            else:
+                self.suggestions[kind][(name, degree)] += 1
 
     def _collect_driving_license(self, job_offer: 'job_offers._JobOffer') -> None:
         kind = _RequirementKind.driving_licenses
@@ -262,7 +337,7 @@ class _RequirementsCollector(object):
             return
         self._add_suggestion(kind, str(int(job_offer.rome_profession_code)))
 
-    def get_proto_dict(self) -> typing.Dict[str, typing.List[typing.Any]]:
+    def get_proto_dict(self) -> Dict[str, List[Any]]:
         """Gets the requirements collected as a proto compatible dict.
 
         Returns:
@@ -271,9 +346,7 @@ class _RequirementsCollector(object):
         """
 
         return {
-            'diplomas': list(
-                self._get_diplomas(
-                    _FILTER_DIPLOMA_RATIO * self.num_offers)),
+            'diplomas': list(self._get_diplomas()),
             'drivingLicenses': list(
                 self._get_driving_licenses(
                     _FILTER_DRIVING_LICENSE_RATIO * self.num_offers)),
@@ -285,21 +358,32 @@ class _RequirementsCollector(object):
             'specificJobs': list(self._get_jobs(_FILTER_JOB_RATIO * self.num_offers)),
         }
 
-    def _get_diplomas(self, count_threshold: float) \
-            -> typing.Iterator[typing.Dict[str, typing.Any]]:
-        # Sort by descending count, then ascending diploma name.
-        diplomas = self._get_sorted_requirements(
-            _RequirementKind.diplomas, count_threshold)
-        for diploma_name, count, percent_required in diplomas:
-            # TODO: Add degree level here.
-            yield {
-                'name': diploma_name,
-                'percentSuggested': round(100 * count / self.num_offers),
-                'percentRequired': percent_required,
-            }
+    def _get_diplomas(self) -> Iterator[Dict[str, Any]]:
+        kind = _RequirementKind.diplomas
+        levels: Dict[job_pb2.DegreeLevel, Dict[str, int]] = \
+            collections.defaultdict(lambda: collections.defaultdict(int))
 
-    def _get_driving_licenses(self, count_threshold: float) \
-            -> typing.Iterator[typing.Dict[str, typing.Any]]:
+        num_suggestions = sum(self.suggestions[kind].values())
+        for name_and_level, count in self.suggestions[kind].items():
+            percent_suggested = round(100 * count / num_suggestions)
+            if percent_suggested:
+                levels[name_and_level[1]]['percentSuggested'] += percent_suggested
+
+        num_requirements = sum(self.requirements[kind].values())
+        for name_and_level, count in self.requirements[kind].items():
+            percent_required = round(100 * count / num_requirements)
+            if percent_required:
+                levels[name_and_level[1]]['percentRequired'] += percent_required
+
+        for level, counts in sorted(levels.items()):
+            if not level or level == job_pb2.NO_DEGREE:
+                continue
+            yield dict(
+                counts,
+                name=_DEGREE_TO_DIPLOMA[level],
+                diploma={'level': job_pb2.DegreeLevel.Name(level)})
+
+    def _get_driving_licenses(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
         # Sort by descending count, then ascending licence name.
         licenses = self._get_sorted_requirements(
             _RequirementKind.driving_licenses, count_threshold)
@@ -310,8 +394,7 @@ class _RequirementsCollector(object):
                 'drivingLicense': license_name,
             }
 
-    def _get_desktop_tools(self, count_threshold: float) \
-            -> typing.Iterator[typing.Dict[str, typing.Any]]:
+    def _get_desktop_tools(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
         # Sort by descending count, then ascending license name.
         tools = self._get_sorted_requirements(
             _RequirementKind.desktop_tools, count_threshold)
@@ -321,8 +404,7 @@ class _RequirementsCollector(object):
                 'officeSkillsLevel': level,
             }
 
-    def _get_contract_types(self) \
-            -> typing.Iterator[typing.Dict[str, typing.Any]]:
+    def _get_contract_types(self) -> Iterator[Dict[str, Any]]:
         contract_types = self._get_sorted_requirements(
             _RequirementKind.contract_type, 0)
         for contract_type, count, unused_percent_required in contract_types:
@@ -332,8 +414,7 @@ class _RequirementsCollector(object):
                 'contractType': job_pb2.EmploymentType.Name(contract_type),
             }
 
-    def _get_jobs(self, count_threshold: float) \
-            -> typing.Iterator[typing.Dict[str, typing.Any]]:
+    def _get_jobs(self, count_threshold: float) -> Iterator[Dict[str, Any]]:
         jobs = self._get_sorted_requirements(_RequirementKind.job, count_threshold)
         for job_id, count, unused_percent_required in jobs:
             yield {
@@ -342,7 +423,7 @@ class _RequirementsCollector(object):
             }
 
 
-def csv2dicts(job_offers_csv: str, colnames_txt: str) -> typing.List[typing.Dict[str, typing.Any]]:
+def csv2dicts(job_offers_csv: str, colnames_txt: str) -> List[Dict[str, Any]]:
     """Import the requirement from job offers grouped by Job Group in MongoDB.
 
     Args:
@@ -352,10 +433,9 @@ def csv2dicts(job_offers_csv: str, colnames_txt: str) -> typing.List[typing.Dict
         Requirements as a JobRequirements JSON-proto compatible dict.
     """
 
-    job_groups: typing.Dict[str, _RequirementsCollector] = \
-        collections.defaultdict(_RequirementsCollector)
-    for job_offer in job_offers.iterate(
-            job_offers_csv, colnames_txt, _REQUIRED_FIELDS):
+    job_groups: Dict[str, _RequirementsCollector] = collections.defaultdict(_RequirementsCollector)
+    all_job_offers = job_offers.iterate(job_offers_csv, colnames_txt, _REQUIRED_FIELDS)
+    for job_offer in tqdm.tqdm(all_job_offers, total=_TOTAL_RECORDS):
         if job_offer.rome_profession_card_code:
             job_groups[job_offer.rome_profession_card_code].collect(job_offer)
     return [

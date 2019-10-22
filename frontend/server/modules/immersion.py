@@ -1,6 +1,6 @@
 """Module to advise the user to try an immersion."""
 
-import typing
+from typing import List
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import association_pb2
@@ -18,7 +18,7 @@ class _ImmersionMissionLocale(scoring_base.ModelBase):
                 project.get_user_age() > 25:
             return scoring_base.NULL_EXPLAINED_SCORE
 
-        explanations: typing.List[str] = []
+        explanations: List[str] = []
         score: float = 2
 
         if project.details.network_estimate <= 2:

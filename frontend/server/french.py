@@ -8,10 +8,19 @@ frontend/src/store/french.js as well.
 import itertools
 import re
 import typing
-
-import typing_extensions
+from typing import Dict, List
 
 from bob_emploi.frontend.api import user_pb2
+
+if typing.TYPE_CHECKING:
+    import typing_extensions
+
+    class _NamedJob(typing_extensions.Protocol):
+        """Structural typing for classes which can produce a name depending on a gender."""
+
+        feminine_name: str
+        masculine_name: str
+        name: str
 
 
 _SOFT_START_REGEXP = re.compile('^[aâàäeéêëèhiïoôöuùûü]', re.IGNORECASE)
@@ -71,7 +80,7 @@ def in_city(city_name: str) -> str:
     return f'à {city_name}'
 
 
-_NUMBER_WORDS: typing.Dict[int, str] = {
+_NUMBER_WORDS: Dict[int, str] = {
     1: 'un',
     2: 'deux',
     3: 'trois',
@@ -81,7 +90,7 @@ _NUMBER_WORDS: typing.Dict[int, str] = {
 }
 
 
-def join_sentences_properly(sentences: typing.List[str]) -> str:
+def join_sentences_properly(sentences: List[str]) -> str:
     """
     Returns a nice sentence, depending on the length of the array 'sentences'.
     If two sentences, joins them with 'mais' coordinator.
@@ -108,15 +117,7 @@ def cleanup_firstname(firstname: str) -> str:
     return _FIRST_NAME_WORD_SEPARATORS.sub(' ', firstname.strip().title())
 
 
-class _NamedJob(typing_extensions.Protocol):
-    """Structural typing for classes which can produce a name depending on a gender."""
-
-    feminine_name: str
-    masculine_name: str
-    name: str
-
-
-def genderize_job(job: _NamedJob, gender: user_pb2.Gender, is_lowercased: bool = False) -> str:
+def genderize_job(job: '_NamedJob', gender: user_pb2.Gender, is_lowercased: bool = False) -> str:
     """Genderize a job."""
 
     def _maybe_lower(name: str) -> str:
@@ -129,7 +130,7 @@ def genderize_job(job: _NamedJob, gender: user_pb2.Gender, is_lowercased: bool =
         _maybe_lower(job.masculine_name), _maybe_lower(job.feminine_name), _maybe_lower(job.name))
 
 
-def _common_prefix_length(list1: typing.List[str], list2: typing.List[str]) -> int:
+def _common_prefix_length(list1: List[str], list2: List[str]) -> int:
     return sum(1 for _ in itertools.takewhile(lambda pair: pair[0] == pair[1], zip(list1, list2)))
 
 

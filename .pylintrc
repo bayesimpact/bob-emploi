@@ -1,5 +1,7 @@
 [MASTER]
-load-plugins=pylint_quotes,pylint_doc_spacing
+load-plugins=pylint_quotes,pylint_doc_spacing,pylint_import_modules
+
+# TODO(pascal): Find a way to enforce import order of module before specific classes.
 
 [REPORTS]
 output=colorized
@@ -16,6 +18,10 @@ ignore-long-lines=https?://\S{50}
 [MISCELLANEOUS]
 notes=FIXME,XXX
 string-quote=single-avoid-escape
+allowed-direct-imports=typing.{
+    AbstractSet,Any,Callable,Dict,ItemsView,Iterable,Iterator,KeysView,List,Mapping,
+    MutableMapping,NoReturn,Optional,Pattern,Sequence,Set,TextIO,Tuple,Type,Union},
+    typing_extensions.Literal
 
 [VARIABLES]
 dummy-variables-rgx=_?unused_.*

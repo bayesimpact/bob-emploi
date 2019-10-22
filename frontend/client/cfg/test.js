@@ -10,7 +10,7 @@ const constants = require('./const.json')
 
 module.exports = {
   devtool: 'eval',
-  entry: './test/webpack/loadtests.js',
+  entry: './test/webpack/loadtests.ts',
   mode: 'development',
   module: {
     rules: [
@@ -24,7 +24,16 @@ module.exports = {
           path.join(__dirname, '../test/webpack'),
         ],
         test: /\.[jt]sx?$/,
-        use: 'babel-loader',
+        use: {
+          loader: 'babel-loader',
+          options: {
+            plugins: [
+              '@babel/plugin-syntax-dynamic-import',
+              ['@babel/plugin-proposal-class-properties', {loose: false}],
+            ],
+            presets: [['@babel/env', {modules: false}], '@babel/react', '@babel/typescript'],
+          },
+        },
       },
     ],
   },

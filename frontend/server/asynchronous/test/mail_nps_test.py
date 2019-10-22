@@ -4,6 +4,7 @@ import datetime
 import inspect
 import signal
 import typing
+from typing import Callable, Iterator, List
 import unittest
 from unittest import mock
 from urllib import parse
@@ -229,18 +230,18 @@ _T = typing.TypeVar('_T')
 class _SigtermAfterNItems(typing.Generic[_T]):
     """Wrapper to iterate on a list but raise a SIGTERM after n items have been iterated."""
 
-    def __init__(self, items: typing.List[_T], sigterm_after_n: int):
+    def __init__(self, items: List[_T], sigterm_after_n: int):
         self._items = items
         self._sigterm_after_n = sigterm_after_n
 
-    def __iter__(self) -> typing.Iterator[_T]:
+    def __iter__(self) -> Iterator[_T]:
         return _SigtermAfterNItems(self._items, self._sigterm_after_n)
 
     def __next__(self) -> _T:
         if not self._items:
             raise StopIteration
         if not self._sigterm_after_n:
-            typing.cast(typing.Callable[..., None], signal.getsignal(signal.SIGTERM))(
+            typing.cast(Callable[..., None], signal.getsignal(signal.SIGTERM))(
                 signal.SIGTERM, inspect.currentframe())
         self._sigterm_after_n -= 1
         return self._items.pop()

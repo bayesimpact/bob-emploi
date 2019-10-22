@@ -1,7 +1,7 @@
 """Tests on Dockerfiles."""
 
 from os import path
-import typing
+from typing import List
 import unittest
 
 _BLOCK_SEPARATOR = '\n\n'
@@ -36,7 +36,7 @@ class SyncTestCase(unittest.TestCase):
         )
 
 
-def _read_blocks(filename: str) -> typing.List[str]:
+def _read_blocks(filename: str) -> List[str]:
     with open(path.join(path.dirname(path.dirname(__file__)), filename), 'r') as file_handle:
         file_content = file_handle.read()
     return [block.strip() for block in file_content.split(_BLOCK_SEPARATOR)]

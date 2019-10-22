@@ -4,6 +4,7 @@ import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/diagnostic.proto";
 import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/stats.proto";
 import "bob_emploi/frontend/api/user.proto";
 
 package bayes.bob;
@@ -109,6 +110,10 @@ message UseCaseCreateRequest {
 
     // ID of the user to create the use case from.
     string user_id = 3;
+
+    // ID of support ticket to create the use case from.
+    // Finds all users that have this ID as ticket.
+    string ticket_id = 4;
   }
 }
 
@@ -154,6 +159,9 @@ message LaborStatsData {
 
   // Market (departement x job group) statistics.
   LocalJobStats local_stats = 2;
+
+  // Product users statistics.
+  UsersCount user_counts = 3;
 }
 
 // A message for requesting computation of statistical distribution of use cases in different

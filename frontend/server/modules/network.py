@@ -1,7 +1,7 @@
 """Advice module to recommend using your network to find opportunities."""
 
 import random
-import typing
+from typing import Iterator
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
@@ -49,7 +49,7 @@ class _ImproveYourNetworkScoringModel(scoring_base.ModelBase):
 
     @scoring_base.ScoringProject.cached('contact-leads')
     def _list_contact_leads(self, project: scoring_base.ScoringProject) \
-            -> typing.Iterator[network_pb2.ContactLeadTemplate]:
+            -> Iterator[network_pb2.ContactLeadTemplate]:
         return scoring_base.filter_using_score(
             self._db.get_collection(project.database), lambda l: l.filters, project)
 

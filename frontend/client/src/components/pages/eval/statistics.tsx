@@ -1,15 +1,21 @@
 import _keyBy from 'lodash/keyBy'
 import _mapValues from 'lodash/mapValues'
+
 import React from 'react'
-import VisibilitySensor from 'react-visibility-sensor'
 
-import {getMonthName} from 'store/french'
-import {getApplicationModeText, getApplicationModes, getPEJobBoardURL} from 'store/job'
+import {getMonthName, lowerFirstLetter, vouvoyer} from 'store/french'
+import {getApplicationModeText, getApplicationModes, getPEJobBoardURL,
+  weeklyApplicationOptions} from 'store/job'
 import {PROJECT_EMPLOYMENT_TYPE_OPTIONS, SALARY_TO_GROSS_ANNUAL_FACTORS} from 'store/project'
+import {getJobSearchLengthMonths} from 'store/user'
 
-import {fetchCity} from 'components/suggestions'
-import {ExternalLink, SmoothTransitions, StringJoiner} from 'components/theme'
+import {isMobileVersion} from 'components/mobile'
+import {CategoriesTrain, DiplomaRequirementsHistogram, FrenchDepartementsMap, InterviewHistogram,
+  JobGroupStressBars, StressPictorialChart} from 'components/stats_charts'
+import {colorToAlpha, ExternalLink, StringJoiner} from 'components/theme'
 
+
+const emptyArray = [] as const
 
 const employmentTypes = _mapValues(
   _keyBy(PROJECT_EMPLOYMENT_TYPE_OPTIONS, 'value'), ({name}): string => name)
@@ -18,30 +24,24 @@ const employmentTypes = _mapValues(
 const getEmploymentType = (name: bayes.bob.EmploymentType): string =>
   employmentTypes[name] || name
 
-const metricForCategory = {
-  'confidence-for-search': 'Motivation pour la recherche / Confiance en soi',
-  'enhance-methods-to-interview': 'Méthode de recherche',
-  'find-what-you-like': 'Motivation pour le métier',
-  'missing-diploma': 'Diplômes',
-  'restrictive-contract': 'Flexibilité de contrat',
-  'stuck-in-village': 'Mobilité',
-  'stuck-market': 'Marché',
-}
-
-const relevanceColors: {[R in bayes.bob.CategoryRelevance]?: string} = {
-  'NEEDS_ATTENTION': colors.RED_PINK,
-  'NEUTRAL_RELEVANCE': colors.WARM_GREY,
-  'NOT_RELEVANT': 'rgba(0, 0, 0, 0)',
-  'RELEVANT_AND_GOOD': colors.GREENISH_TEAL,
-}
-
 interface SalaryProps extends bayes.bob.SalaryEstimation {
   title?: string
 }
 
+
+type MinMaxSalaryProps = SalaryProps & {
+  maxSalary: number
+  minSalary: number
+  unit: bayes.bob.SalaryUnit
+}
+
+
+const hasMinMaxSalaries = (p: SalaryProps): p is MinMaxSalaryProps => !!p.maxSalary && !!p.minSalary
+
+
 interface SalariesProps {
   barHeight: number
-  children: SalaryProps[]
+  children: readonly SalaryProps[]
   maxWidth: number
 }
 
@@ -113,11 +113,10 @@ class SalaryBars extends React.PureComponent<SalariesProps> {
   public render(): React.ReactNode {
     const {children} = this.props
     const annualChildren = children.
-      filter(({maxSalary, minSalary}: SalaryProps): boolean => !!maxSalary && !!minSalary).
-      map((child: SalaryProps): SalaryProps => ({
+      filter(hasMinMaxSalaries).
+      map((child: MinMaxSalaryProps): MinMaxSalaryProps => ({
         ...child,
         maxSalary: Math.round(child.maxSalary * SALARY_TO_GROSS_ANNUAL_FACTORS[child.unit]),
-        medianSalary: Math.round(child.medianSalary * SALARY_TO_GROSS_ANNUAL_FACTORS[child.unit]),
         minSalary: Math.round(child.minSalary * SALARY_TO_GROSS_ANNUAL_FACTORS[child.unit]),
       }))
     if (!annualChildren.length) {
@@ -132,204 +131,197 @@ class SalaryBars extends React.PureComponent<SalariesProps> {
   }
 }
 
-
-interface StressBarProps extends bayes.bob.RelatedLocalJobGroup {
-  children?: React.ReactNode
-  color?: string
-  scorePointWidth: number
+interface CountProps {
+  [label: string]: number
 }
 
-
-class JobGroupStressBar extends React.PureComponent<StressBarProps, {hasStarted: boolean}> {
-  public state = {
-    hasStarted: false,
-  }
-
-  private handleVisibilityChange = (isVisible: boolean): void =>
-    this.setState({hasStarted: isVisible})
-
-  public render(): React.ReactNode {
-    const {
-      children,
-      color,
-      jobGroup: {name = ''} = {},
-      localStats: {imt: {yearlyAvgOffersPer10Candidates = 0} = {}} = {},
-      mobilityType = '',
-      scorePointWidth,
-    } = this.props
-    const {hasStarted} = this.state
-    // TODO(cyrille): Visually show that this is not to scale above market score 10/10.
-    const width = hasStarted ? scorePointWidth * Math.min(11, yearlyAvgOffersPer10Candidates) : 1
-    const barStyle: React.CSSProperties = {
-      backgroundColor: color || mobilityType === 'CLOSE' ? colors.BOB_BLUE : colors.SQUASH,
-      flex: 'none',
-      height: 5,
-      marginBottom: 10,
-      marginRight: 12 * scorePointWidth - width,
-      position: 'relative',
-      width,
-      ...SmoothTransitions,
-    }
-    const bulletStyle: React.CSSProperties = {
-      backgroundColor: barStyle.backgroundColor,
-      borderRadius: 10,
-      height: 20,
-      position: 'absolute',
-      right: -10,
-      top: '50%',
-      transform: 'translateY(-50%)',
-      width: 20,
-    }
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      color: barStyle.backgroundColor,
-      display: 'flex',
-      margin: '10px 0',
-    }
-
-    return <div style={containerStyle}>
-      <VisibilitySensor
-        active={!hasStarted} intervalDelay={250}
-        partialVisibility={true} onChange={this.handleVisibilityChange}>
-        <div style={barStyle}>
-          <div style={bulletStyle} />
-        </div>
-      </VisibilitySensor>
-      {name} {children}
-    </div>
-  }
+interface ApplicationOption {
+  name: string
+  value: string
 }
 
-
-interface StressBarsProps {
-  jobGroups: readonly bayes.bob.RelatedLocalJobGroup[]
-  localStats: bayes.bob.LocalJobStats
-  scorePointWidth: number
-  targetJobGroup: bayes.bob.JobGroup
+interface DoughnutProps {
+  counts: CountProps
+  circlePadding: number
+  height: number
+  isSegmentsStartingTop: boolean
+  labels: ApplicationOption[]
+  style?: React.CSSProperties
+  thickness: number
 }
 
-class JobGroupStressBars extends React.PureComponent<StressBarsProps> {
+interface AttributeProps {
+  color: string
+  name: string
+  percentage: number
+  strokeDiff: number
+  value: string
+}
+
+class DoughnutChart extends React.PureComponent<DoughnutProps> {
   public static defaultProps = {
-    scorePointWidth: 50,
+    circlePadding: 10,
+    height: 160,
+    isSegmentsStartingTop: true,
+    thickness: 30,
+  }
+
+  private computeAngleOffsets(attributes: AttributeProps[], initialOffset: number): CountProps {
+    const angleOffsets = {}
+    attributes.reduce((offset, {percentage, value}): number => {
+      angleOffsets[value] = offset
+      return percentage * 360 + offset
+    }, initialOffset)
+    return angleOffsets
+  }
+
+  private getDoughnutAttributes(
+    labels: ApplicationOption[], counts: CountProps, circumference: number): AttributeProps[] {
+    const nbLabels = labels.length
+    const totalCounts = Object.values(counts).reduce((a: number, b: number): number => a + b)
+
+    return labels.map(({name, value}, index): AttributeProps => {
+      const percentage = counts[value] / totalCounts
+      const color = colorToAlpha(colors.BOB_BLUE, (index + 1) / nbLabels)
+      const strokeDiff = circumference - percentage * circumference
+      return {color, name, percentage, strokeDiff, value}
+    })
   }
 
   public render(): React.ReactNode {
-    const {jobGroups, localStats, scorePointWidth, targetJobGroup} = this.props
-    const axisStyle: React.CSSProperties = {
-      borderBottom: `1px solid ${colors.MODAL_PROJECT_GREY}`,
+    const {counts, circlePadding, isSegmentsStartingTop, height, labels,
+      thickness, style} = this.props
+    const cx = height / 2
+    const cy = cx
+    const initialAngleOffset = isSegmentsStartingTop ? -90 : 0
+    const radius = cx - 2 * circlePadding
+    const circumference = 2 * Math.PI * radius
+    const attributes = this.getDoughnutAttributes(labels, counts, circumference)
+    const angleOffsets = this.computeAngleOffsets(attributes, initialAngleOffset)
+    const figureStyle: React.CSSProperties = {
+      alignItems: 'center',
       display: 'flex',
-      justifyContent: 'space-between',
-      width: scorePointWidth * 10,
+      flexDirection: isMobileVersion ? 'column' : 'row',
+      ...style,
     }
-    const tickStyle: React.CSSProperties = {
-      backgroundColor: colors.MODAL_PROJECT_GREY,
-      height: 5,
-      width: 1,
+    const captionRowStyle: React.CSSProperties = {
+      alignItems: 'center',
+      display: 'flex',
+      marginLeft: isMobileVersion ? 0 : '1em',
+      marginTop: 10,
     }
-    const labelStyle = (tickIndex: number): React.CSSProperties => ({
-      left: scorePointWidth * tickIndex,
-      position: 'absolute',
-      top: 0,
-      transform: 'translateX(-50%)',
+    const captionEltStyle = (color): React.CSSProperties => ({
+      backgroundColor: color,
+      borderRadius: '.2em',
+      height: '1em',
+      marginRight: 5,
+      width: '1.618em',
     })
-    return <React.Fragment>
-      {jobGroups.map((relatedJobGroup): React.ReactNode =>
-        <JobGroupStressBar
-          scorePointWidth={scorePointWidth} key={relatedJobGroup.jobGroup.romeId}
-          {...relatedJobGroup} />)}
-      <JobGroupStressBar
-        color={colors.BOB_BLUE}
-        jobGroup={targetJobGroup}
-        scorePointWidth={scorePointWidth}
-        localStats={localStats}>(vous)</JobGroupStressBar>
-      <div style={axisStyle}>
-        {new Array(11).fill(undefined).map((unused, index): React.ReactNode =>
-          <div key={index} style={tickStyle} />)}
-      </div>
-      <div style={{marginTop: 5, position: 'relative'}}>
-        Beaucoup
-        <div style={labelStyle(4)}>Moyen</div>
-        <div style={labelStyle(8)}>Peu de concurrence</div>
-        <div style={{left: 600, position: 'absolute', top: 0}}>
-          <span style={{color: colors.SQUASH, marginRight: 10}}>Évolution</span>/
-          <span style={{color: colors.BOB_BLUE, marginLeft: 10}}>Proche</span>
-        </div>
-      </div>
-    </React.Fragment>
+    return <figure style={figureStyle}>
+      <svg height={2 * cx} width={2 * cx} viewBox={`0 0 ${2 * cx} ${2 * cx}`}>
+        <g>
+          {attributes.map(({color, strokeDiff, value}, index): React.ReactNode =>
+            <circle
+              cx={cx} cy={cy} r={radius} fill="transparent"
+              stroke={color} strokeWidth={thickness}
+              strokeDasharray={circumference} key={`circle-${index}`}
+              strokeDashoffset={strokeDiff}
+              transform={`rotate(${angleOffsets[value]}, ${cx}, ${cy})`}>
+            </circle>)}
+        </g>
+      </svg>
+      <figcaption style={{marginTop: isMobileVersion ? 0 : -10}}>
+        {attributes.map(({color, name, percentage, value}): React.ReactNode =>
+          percentage ? <div style={captionRowStyle} key={value}>
+            <div style={captionEltStyle(color)} />
+            {name}
+          </div> : null)}
+      </figcaption>
+    </figure>
   }
 }
+
 
 interface StatsProps {
-  categories: readonly bayes.bob.DiagnosticCategory[]
-  jobGroupInfo: bayes.bob.JobGroup
+  categories?: readonly bayes.bob.DiagnosticCategory[]
+  jobGroupInfo?: bayes.bob.JobGroup
+  profile: bayes.bob.UserProfile
   project: bayes.bob.Project
+  userCounts?: bayes.bob.UsersCount
 }
 
-class Stats extends React.PureComponent<StatsProps, {bestInDepartements: string[]}> {
-
-  public state = {
-    bestInDepartements: [],
-  }
-
-  public componentDidMount(): void {
-    this.fetchDepartements()
-  }
-
-  public componentDidUpdate({jobGroupInfo: {romeId = ''} = {}}): void {
-    if (this.props.jobGroupInfo.romeId !== romeId) {
-      this.fetchDepartements()
-    }
-  }
-
-  private fetchDepartements(): void {
-    const {jobGroupInfo: {bestDepartements = []} = {}} = this.props
-    Promise.all(bestDepartements.slice(0, 2).
-      map(({departementId}): Promise<bayes.bob.FrenchCity> => fetchCity({departementId}))).
-      then((bestCities): string[] => bestCities.
-        map(({departementName: name, departementPrefix: prefix}): string => prefix + name)).
-      then((bestInDepartements): void => this.setState({bestInDepartements}))
-  }
-
+class Stats extends React.PureComponent<StatsProps> {
   // TODO(pascal): Add more.
   public render(): React.ReactNode {
     const {
-      categories = [],
-      jobGroupInfo = {},
-      project: {city = {}, targetJob = {}, localStats: {
-        imt: {
-          activeMonths = [],
-          employmentTypePercentages = [],
-          juniorSalary = {},
-          lastWeekDemand = 0,
-          lastWeekOffers = 0,
-          seniorSalary = {},
-          yearlyAvgOffersPer10Candidates = 0,
+      categories = emptyArray,
+      jobGroupInfo = {}, jobGroupInfo: {
+        bestDepartements = [],
+        departementScores = undefined,
+        requirements: {
+          diplomas: diplomaRequirements = undefined,
         } = {},
-        lessStressfulJobGroups = [],
-        moreStressedJobseekersPercentage = 0,
-        numJobOffersLastYear = 0,
-        numJobOffersPreviousYear = 0,
-        salary: fhsSalary = {},
-        unemploymentDuration: {days: unemploymentDurationDays = 0} = {},
-      } = {}} = {},
+      } = {},
+      profile: {
+        gender = 'FEMININE',
+        highestDegree = undefined,
+      } = {},
+      project, project: {
+        city = {},
+        city: {departementId = undefined} = {},
+        totalInterviewCount = 0,
+        targetJob = {}, targetJob: {
+          jobGroup = {},
+          jobGroup: {name: jobGroupName = undefined} = {},
+        } = {},
+        localStats, localStats: {
+          imt: {
+            activeMonths = emptyArray,
+            employmentTypePercentages = emptyArray,
+            juniorSalary = {},
+            lastWeekDemand = 0,
+            lastWeekOffers = 0,
+            seniorSalary = {},
+            yearlyAvgOffersPer10Candidates = 0,
+          } = {},
+          lessStressfulJobGroups = emptyArray,
+          moreStressedJobseekersPercentage = 0,
+          numJobOffersLastYear = 0,
+          numJobOffersPreviousYear = 0,
+          salary: fhsSalary = {},
+          unemploymentDuration: {days: unemploymentDurationDays = 0} = {},
+        } = {},
+      } = {},
+      userCounts: {
+        longSearchInterviewCounts = undefined,
+        mediumSearchInterviewCounts = undefined,
+        weeklyApplicationCounts = undefined,
+      } = {},
     } = this.props
-    const {bestInDepartements} = this.state
+    // TODO(cyrille): Use departements directly once it's been imported.
+    const departements = departementScores || bestDepartements
     const applicationModes = getApplicationModes(jobGroupInfo)
     const {
       employmentType = '',
       percentage: contractPercentage = 0,
     } = employmentTypePercentages[0] || {}
+    const searchLenghtMonths = getJobSearchLengthMonths(project)
+    const specificInterviewCounts = (searchLenghtMonths < 7 ?
+      mediumSearchInterviewCounts : longSearchInterviewCounts)
+    const interviewText = searchLenghtMonths < 7 ? '6 mois après le début' : 'un an après le début'
+
+    const cardStyle = {
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      boxShadow: '0 5px 20px 0 rgba(0, 0, 0, 0.15)',
+      padding: 20,
+    }
     return <div>
       <section>
-        <h2>Catégories de Bob</h2>
-        <ul>{categories.filter(({categoryId}): boolean => categoryId !== 'bravo').
-          map(({relevance, categoryId}: bayes.bob.DiagnosticCategory): React.ReactNode =>
-            <li
-              style={{color: relevanceColors[relevance] || 'inherit'}}
-              title={categoryId} key={categoryId}>
-              {metricForCategory[categoryId] || categoryId}
-            </li>)}
-        </ul>
+        <h2>Facteurs pris en compte pour votre score</h2>
+        <CategoriesTrain
+          hasSelectedCategoryTag={true} areCategoryIdsShown={true}
+          style={cardStyle} categories={categories} />
       </section>
       {activeMonths.length ? <section>
         <h2>Mois les plus actifs</h2>
@@ -343,21 +335,31 @@ class Stats extends React.PureComponent<StatsProps, {bestInDepartements: string[
           "Il n'y a aucune offre dans ce métier dans ton département" :
           `Il y a ${yearlyAvgOffersPer10Candidates} offres pour 10 canditats`}
         {moreStressedJobseekersPercentage ?
-          ` (${100 - moreStressedJobseekersPercentage}% des chercheurs d'emploi ont moins
-          de concurrence)` : ''}
+          <StressPictorialChart
+            percent={moreStressedJobseekersPercentage} gender={gender}
+            size={200} userYou={vouvoyer} /> : null}
       </section> : <h2>Pas d'information sur le nombre d'offres par candidat</h2>}
+      {specificInterviewCounts ? <section>
+        <h2>Nombre d'entretiens décrochés {interviewText} de la recherche</h2>
+        <InterviewHistogram
+          userYou={vouvoyer}
+          interviewCounts={specificInterviewCounts}
+          totalInterviewCount={totalInterviewCount} />
+      </section> : <h2>Pas d'information sur le nombre d'entretiens des candidats</h2>}
       {applicationModes.length ? <section>
         <h2>Canaux de candidature</h2>
         {applicationModes.map(({mode, percentage}): React.ReactNode =>
           <div key={mode || 'OTHER_CHANNELS'}>
-            <strong>{getApplicationModeText(mode)}</strong>&nbsp;: {Math.round(percentage)}%
+            <strong>{getApplicationModeText(mode)}</strong>&nbsp;: {Math.round(percentage || 0)}%
           </div>)}
       </section> : <h2>Pas de canal de candidature clairement déterminé</h2>}
-      {bestInDepartements.length ? <section>
-        <h2>Département{bestInDepartements.length > 1 ? 's' : ''} qui recrutent</h2>
-        La concurrence est moins forte <StringJoiner lastSeparator=" et ">
-          {bestInDepartements}
-        </StringJoiner>
+      {departements.length ? <section>
+        <h2>
+          Concurrence en France en {lowerFirstLetter(jobGroupName || '')}
+        </h2>
+        <FrenchDepartementsMap
+          departements={departements} selectedDepartementId={departementId} userYou={vouvoyer}
+          style={{maxWidth: 500}} />
       </section> : <h2>Pas de département particulièrement en demande</h2>}
       {employmentType ? <section>
         <h2>Type de contrat</h2>
@@ -398,13 +400,21 @@ class Stats extends React.PureComponent<StatsProps, {bestInDepartements: string[
       {lessStressfulJobGroups.length ? <section>
         <h2>Meilleurs domaines dans le département</h2>
         <JobGroupStressBars
-          targetJobGroup={this.props.project.targetJob.jobGroup}
-          localStats={this.props.project.localStats}
-          jobGroups={lessStressfulJobGroups}>
-        </JobGroupStressBars>
+          targetJobGroup={{jobGroup, localStats}} userYou={vouvoyer} areMarketScoresShown={true}
+          jobGroups={lessStressfulJobGroups} style={{maxWidth: 600}} />
       </section> : <h2>
         Les metiers proches ont autant, voire plus, de concurrence dans ce département
       </h2>}
+      {weeklyApplicationCounts ? <section>
+        <h2>Nombre de candidatures hebdomadaires des utilisateurs de {config.productName}</h2>
+        <DoughnutChart counts={weeklyApplicationCounts} labels={weeklyApplicationOptions} />
+      </section> :
+        <h2>Pas d'infos sur les candidatures des utilisateurs de {config.productName}</h2>}
+      {diplomaRequirements ? <section>
+        <h2>Pourcentage des offres accessibles selon le diplôme</h2>
+        <DiplomaRequirementsHistogram
+          requirements={diplomaRequirements} highestDegree={highestDegree} />
+      </section> : <h2>Pas d'infos sur les diplômes requis pour ce métier</h2>}
     </div>
   }
 }

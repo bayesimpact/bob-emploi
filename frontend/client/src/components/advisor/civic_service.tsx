@@ -4,11 +4,11 @@ import PropTypes from 'prop-types'
 import {ofPrefix} from 'store/french'
 
 import {ExternalLink, GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-civic-service.svg'
+import Picto from 'images/advices/picto-civic-service.svg'
 import logoServiceCivique from 'images/logo-service-civique.png'
 
 import {CardProps, CardWithContentProps, Mission, MethodSuggestionList,
-  connectExpandedCardWithContent, makeTakeAwayFromAdviceData} from './base'
+  connectExpandedCardWithContent} from './base'
 
 
 class ExpandedAdviceCardContentBase
@@ -32,7 +32,7 @@ class ExpandedAdviceCardContentBase
     const {adviceData, handleExplore, project: {city}, userYou} = this.props
     const missions = adviceData && adviceData.missions || []
     const missionCount = missions.length
-    const {modifiedName: cityName, prefix} = ofPrefix(city.name)
+    const {modifiedName: cityName, prefix} = ofPrefix(city && city.name || '')
     const linkStyle = {
       color: colors.BOB_BLUE,
       textDecoration: 'none',
@@ -63,14 +63,8 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.VolunteeringMissions, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.VolunteeringMissions, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({missions}: bayes.bob.VolunteeringMissions):
-  readonly bayes.bob.VolunteeringMission[] => missions,
-  'mission', true)
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

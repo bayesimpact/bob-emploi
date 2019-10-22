@@ -263,6 +263,11 @@ input::-ms-reveal, input::-ms-clear {
   background: rgba(24, 136, 255, .2);  /* colors.BOB_BLUE */
 }
 
+/* Bold labels on fieldsets in the profile page. */
+.profile fieldset label {
+  font-weight: bold;
+}
+
 @keyframes bounce {
   from, 10%, 25%, 45%, to {bottom: 0}
   20%  {bottom: 20px}

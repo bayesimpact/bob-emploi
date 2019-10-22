@@ -1,7 +1,7 @@
 """Advice module to recommend seasonal jobs in other départements."""
 
 import logging
-import typing
+from typing import List
 
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
@@ -23,7 +23,7 @@ class _AdviceSeasonalRelocate(scoring_base.ModelBase):
             -> scoring_base.ExplainedScore:
         """Compute a score for the given ScoringProject."""
 
-        reasons: typing.List[str] = []
+        reasons: List[str] = []
 
         # For now we just match for people willing to move to the whole country.
         # There might be cases where we should be able to recommend to people who want to move to

@@ -2,7 +2,7 @@
 
 import hashlib
 import sys
-import typing
+from typing import Union
 
 import unidecode
 
@@ -28,7 +28,7 @@ def hash_line(line: str, keep: bool = False) -> str:
     return ','.join(fields) + '\n'
 
 
-def hash_files(inputfile: str, outputfile: str, keep: typing.Union[bool, str] = False) -> int:
+def hash_files(inputfile: str, outputfile: str, keep: Union[bool, str] = False) -> int:
     """Hash first field of each line of the input file and populate the output.
 
     Args:

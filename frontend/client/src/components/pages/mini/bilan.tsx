@@ -78,7 +78,7 @@ const levelsMap = {
 
 interface BilanCardProps {
   answers: {}
-  priority: TopicPriority
+  priority?: TopicPriority
   style?: React.CSSProperties
   topic: Topic
 }
@@ -100,7 +100,7 @@ class BilanCard extends React.PureComponent<BilanCardProps> {
     }).isRequired,
   }
 
-  public renderPriority(priority: TopicPriority): React.ReactNode {
+  public renderPriority(priority?: TopicPriority): React.ReactNode {
     if (!priority) {
       return null
     }
@@ -420,7 +420,7 @@ const BilanPage = connect(
   ): BilanPageInnerProps => {
     if (hash) {
       try {
-        return JSON.parse(decodeURIComponent(hash.substring(1)))
+        return JSON.parse(decodeURIComponent(hash.slice(1)))
       } catch (unusedError) {
         // Ignore the error.
       }

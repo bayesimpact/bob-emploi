@@ -12,28 +12,30 @@ RUN apt-get update -qqy && \
 # Requirements for python code (outside of notebooks). Keep them sorted.
 RUN pip install --upgrade \
   airtable \
-  'airtablemock>=0.0.9' \
-  'algoliasearch>=2.0' \
+  airtablemock \
+  algoliasearch \
   awscli \
   coverage \
   csvkit \
+  demjson \
   google-api-python-client \
   httplib2 \
   js2py \
-  'mongomock>=3.16' \
-  'mypy>=0.710' \
-  # TODO(pascal): Uncap once https://github.com/python/typeshed/commit/07ea661 is live in mypy.
-  'mypy-protobuf==1.9' \
+  mongomock \
+  mypy \
+  mypy-protobuf \
   nbformat \
   nose \
   nose-exclude \
+  nose_machineout2 \
   nose-watch \
-  'pandas>=0.24.1' \
+  pandas \
   polib \
   protobuf \
   pycodestyle \
-  pylint \
+  "pylint>=2.4.1" \
   pylint-doc-spacing \
+  pylint-import-modules \
   pylint-quotes \
   pymongo \
   python-emploi-store \
@@ -49,7 +51,7 @@ RUN pip install --upgrade \
   typing_extensions \
   xmltodict
 
-ARG PROTOBUF_VERSION=3.7.0
+ARG PROTOBUF_VERSION=3.9.2
 
 # Install Protobuf compiler.
 RUN \
@@ -61,6 +63,7 @@ ENV PYTHONPATH=/work:/usr/lib/python3/dist-packages/
 CMD ["make", "all"]
 
 COPY data_analysis/ /work/bob_emploi/data_analysis/
+RUN mv /work/bob_emploi/data_analysis/data /work/data
 COPY data_analysis/.coveragerc data_analysis/entrypoint.sh data_analysis/lint_and_test.sh data_analysis/Makefile* .pylintrc /work/
 COPY .pycodestyle /work/setup.cfg
 COPY frontend/api/*.proto /work/bob_emploi/frontend/api/

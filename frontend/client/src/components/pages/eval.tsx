@@ -39,6 +39,9 @@ import {UseCase} from './eval/use_case'
 require('normalize.css')
 require('styles/App.css')
 
+const emptyArray = [] as const
+const emptyObject = {} as const
+
 const OVERVIEW_ID = 'sommaire'
 const DIAGNOSTIC_PANEL = 'diagnostic'
 const ADVICE_PANEL = 'advice'
@@ -71,12 +74,12 @@ const panels: EvalPanelConfig[] = [
   {
     name: 'Conseils',
     panelId: ADVICE_PANEL,
-    predicate: ({advices}: UseCaseEvalPageState): boolean => advices && !!advices.length,
+    predicate: ({advices}: UseCaseEvalPageState): boolean => !!(advices && advices.length),
   },
   {
     name: 'Stratégies',
     panelId: STRATEGIES_PANEL,
-    predicate: ({strategies}: UseCaseEvalPageState): boolean => strategies && !!strategies.length,
+    predicate: ({strategies}: UseCaseEvalPageState): boolean => !!(strategies && strategies.length),
   },
   {
     name: 'Statistiques',
@@ -103,12 +106,13 @@ interface UseCaseEvalPageState {
   isSaved?: boolean
   jobGroupInfo?: bayes.bob.JobGroup
   localStats?: bayes.bob.LocalJobStats
-  pools?: readonly bayes.bob.UseCasePool[]
+  pools: readonly bayes.bob.UseCasePool[]
   selectedPoolName?: string
   selectedUseCase?: bayes.bob.UseCase
   shownPanel?: EvalPanel
   strategies?: readonly bayes.bob.Strategy[]
-  useCases?: readonly bayes.bob.UseCase[]
+  useCases: readonly bayes.bob.UseCase[]
+  userCounts?: bayes.bob.UsersCount
 }
 
 
@@ -133,26 +137,27 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
   public state: UseCaseEvalPageState = {
     advices: [],
     categories: [],
-    diagnostic: null,
+    diagnostic: undefined,
     evaluation: {},
-    initialUseCaseId: null,
+    initialUseCaseId: undefined,
     isCreatePoolModalShown: false,
     isModified: false,
     isOverviewShown: false,
     isSaved: false,
-    jobGroupInfo: null,
-    localStats: null,
-    pools: [],
+    jobGroupInfo: undefined,
+    localStats: undefined,
+    pools: emptyArray,
     selectedPoolName: undefined,
-    selectedUseCase: null,
+    selectedUseCase: undefined,
     shownPanel: DIAGNOSTIC_PANEL,
-    strategies: null,
-    useCases: [],
+    strategies: undefined,
+    useCases: emptyArray,
   }
 
   public static getDerivedStateFromProps(
     {location: {search}, match: {params: {useCaseId}}}: UseCaseEvalPageProps,
-    {selectedPoolName}: UseCaseEvalPageState): UseCaseEvalPageState {
+    {selectedPoolName}: UseCaseEvalPageState):
+    Pick<UseCaseEvalPageState, 'initialUseCaseId'|'isOverviewShown'|'selectedPoolName'>|null {
     if (selectedPoolName) {
       return null
     }
@@ -173,13 +178,10 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       return
     }
     dispatch(getEvalUseCasePools()).then((pools: void|bayes.bob.UseCasePool[]): void => {
-      if (!pools) {
-        return
-      }
       this.setState({
-        pools,
+        pools: pools || [],
         selectedPoolName: this.state.selectedPoolName ||
-          (pools.length ? pools[0].name : undefined),
+          (pools && pools.length ? pools[0].name : undefined),
       }, this.fetchPoolUseCases)
     })
   }
@@ -192,11 +194,11 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
 
   private getUseCaseFromEmail(): boolean {
     const {dispatch, location: {search}} = this.props
-    const {email, userId} = parse(search.substring(1))
-    if (!email && !userId) {
+    const {email, ticketId, userId} = parse(search.slice(1))
+    if (!email && !userId && !ticketId) {
       return false
     }
-    dispatch(createUseCase({email, userId})).
+    dispatch(createUseCase({email, ticketId, userId})).
       then((selectedUseCase: bayes.bob.UseCase|void): void => {
         if (!selectedUseCase || this.isUnmounting) {
           return
@@ -230,76 +232,80 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     const {panelId: nextPanel} =
       availablePanels.find(({panelId}): boolean => panelId === wantedPanel) ||
       availablePanels[0]
-    this.setState(({shownPanel}): UseCaseEvalPageState =>
+    this.setState(({shownPanel}): Pick<UseCaseEvalPageState, 'shownPanel'> =>
       nextPanel === shownPanel ? {} : {shownPanel: nextPanel})
   })
 
   private advise = (): void => {
     const {dispatch} = this.props
     const {selectedUseCase} = this.state
-    if (!selectedUseCase) {
+    if (!selectedUseCase || !selectedUseCase.userData) {
       return
     }
-    dispatch(getLaborStats(selectedUseCase.userData)).then((laborStats): void => {
-      if (!laborStats || this.isUnmounting) {
+    const {userData} = selectedUseCase
+    dispatch(getLaborStats(userData)).then((laborStats): void => {
+      if (!laborStats || this.isUnmounting || this.state.selectedUseCase !== selectedUseCase) {
         return
       }
-      const {jobGroupInfo, localStats} = laborStats
-      this.setState({jobGroupInfo, localStats})
+      const {jobGroupInfo, localStats, userCounts} = laborStats
+      this.setState({jobGroupInfo, localStats, userCounts})
     })
     dispatch(getAllCategories(selectedUseCase)).
       then((response: bayes.bob.DiagnosticCategories | void): void => {
-        if (!response || this.isUnmounting) {
+        if (!response || this.isUnmounting || this.state.selectedUseCase !== selectedUseCase) {
           return
         }
         this.setState({categories: response.categories})
       })
     // Compute the diagnostic.
-    dispatch(diagnoseProject(selectedUseCase.userData)).
+    dispatch(diagnoseProject(userData)).
       // Set diagnostic on state and compute the advice modules.
       then((diagnostic: bayes.bob.Diagnostic|void): void => {
-        if (!diagnostic || this.isUnmounting) {
+        if (!diagnostic || this.isUnmounting || this.state.selectedUseCase !== selectedUseCase) {
           return
         }
-        this.setState({diagnostic}, this.handleChoosePanel())
+        this.setState({diagnostic})
         const userWithDiagnostic = {
-          ...selectedUseCase.userData,
+          ...userData,
           projects: [{
-            ...selectedUseCase.userData.projects[0],
+            ...(userData.projects && userData.projects[0]),
             diagnostic,
           }],
         }
         dispatch(computeAdvicesForProject(userWithDiagnostic)).
           then((response: bayes.bob.Advices|void): void => {
-            if (this.isUnmounting || !response || !response.advices) {
+            if (this.isUnmounting || !response || !response.advices ||
+              this.state.selectedUseCase !== selectedUseCase) {
               return
             }
-            this.setState({advices: response.advices}, this.handleChoosePanel())
+            this.setState({advices: response.advices})
             const userWithAdviceAndDiagnostic = {
-              ...selectedUseCase.userData,
+              ...userData,
               projects: [{
-                ...selectedUseCase.userData.projects[0],
+                ...(userData.projects && userData.projects[0]),
                 advices: response.advices,
                 diagnostic,
               }],
             }
             dispatch(strategizeProject(userWithAdviceAndDiagnostic)).
               then((response: bayes.bob.Strategies|void): void => {
-                if (!response || this.isUnmounting) {
+                if (!response || this.isUnmounting ||
+                  this.state.selectedUseCase !== selectedUseCase) {
                   return
                 }
-                this.setState({strategies: response.strategies}, this.handleChoosePanel())
+                this.setState({strategies: response.strategies})
               })
           })
       })
   }
 
-  private getUrlFromState(): string {
+  private getUrlFromState(): string|null {
     const {selectedPoolName, selectedUseCase} = this.state
     const {match: {params: {useCaseId}}, location: {search}} = this.props
-    const {email, poolName, userId} = parse(search)
+    const {email, poolName, ticketId, userId} = parse(search)
     const selectedUseCaseId = selectedUseCase ? selectedUseCase.useCaseId : OVERVIEW_ID
-    if (email || userId || poolName === selectedPoolName && selectedUseCaseId === useCaseId) {
+    if (email || ticketId || userId ||
+      poolName === selectedPoolName && selectedUseCaseId === useCaseId) {
       return null
     }
     const searchString = selectedPoolName ? `?poolName=${encodeURIComponent(selectedPoolName)}` : ''
@@ -310,12 +316,17 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     const {evaluation = {}, userData = null} = selectedUseCase || {}
     this.setState({
       advices: [],
-      diagnostic: null,
+      categories: [],
+      diagnostic: undefined,
       evaluation,
       isModified: false,
       isOverviewShown: false,
       isSaved: false,
+      jobGroupInfo: undefined,
+      localStats: undefined,
       selectedUseCase,
+      strategies: [],
+      userCounts: undefined,
     }, this.advise)
     this.props.dispatch({type: 'SELECT_USER', user: userData})
   }
@@ -326,13 +337,13 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
 
   private selectNextUseCase = (): void => {
     const {selectedUseCase, useCases} = this.state
-    let nextUseCase = null
-    useCases.forEach((useCase: bayes.bob.UseCase): void => {
+    let nextUseCase: bayes.bob.UseCase|null = null;
+    (useCases || []).forEach((useCase: bayes.bob.UseCase): void => {
       const indexInPool = useCase.indexInPool || 0
-      if (indexInPool <= (selectedUseCase.indexInPool || 0)) {
+      if (indexInPool <= (selectedUseCase && selectedUseCase.indexInPool || 0)) {
         return
       }
-      if (!nextUseCase || indexInPool < (nextUseCase.indexInPool || 0)) {
+      if (!nextUseCase || indexInPool < (nextUseCase && nextUseCase.indexInPool || 0)) {
         nextUseCase = useCase
       }
     })
@@ -345,13 +356,13 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
 
   private handleSaveEval = (): void => {
     const {evaluation, pools, selectedPoolName, selectedUseCase, useCases} = this.state
-    const {useCaseId = undefined} = selectedUseCase || {}
+    const {useCaseId = undefined, evaluation: selectedEval = undefined} = selectedUseCase || {}
     if (!useCaseId) {
       return
     }
     this.setState({
       // Let the pool know if the use case got evaluated for the first time.
-      pools: selectedUseCase.evaluation ? pools : pools.map((pool): bayes.bob.UseCasePool => {
+      pools: selectedEval ? pools : pools.map((pool): bayes.bob.UseCasePool => {
         if (pool.name === selectedPoolName) {
           return {
             ...pool,
@@ -399,7 +410,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     }
     this.setState({
       isOverviewShown: true,
-      selectedUseCase: null,
+      selectedUseCase: undefined,
     })
     this.props.dispatch({type: 'SELECT_USER', user: null})
   }
@@ -431,7 +442,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
 
   private handleEvaluateAdvice = (adviceId: string, adviceEvaluation): void => {
     const {evaluation} = this.state
-    const advices = evaluation.advices
+    const advices = evaluation && evaluation.advices
     this.setState({
       evaluation: {
         ...evaluation,
@@ -449,7 +460,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
 
   private handleEvaluateDiagnosticSection = (sectionId, sectionEvaluation): void => {
     const {evaluation} = this.state
-    const diagnostic = evaluation.diagnostic
+    const diagnostic = evaluation && evaluation.diagnostic
     this.setState({
       evaluation: {
         ...evaluation,
@@ -482,15 +493,14 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
   }
 
   private renderHeaderLink = ({name, panelId, predicate}): React.ReactNode => {
-    if (!predicate(this.state)) {
-      return null
-    }
+    const isAvailable = predicate(this.state)
     const {shownPanel} = this.state
     const toggleTitleStyle = {
       ':hover': {
         borderBottom: `2px solid ${colors.BOB_BLUE_HOVER}`,
       },
       borderBottom: shownPanel === panelId ? `2px solid ${colors.BOB_BLUE}` : 'initial',
+      opacity: isAvailable ? 1 : .5,
       paddingBottom: 5,
     }
     return <HeaderLink
@@ -511,8 +521,8 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
   }
 
   private renderPanelContent(profile, project): React.ReactNode {
-    const {advices, categories, diagnostic, jobGroupInfo, localStats, shownPanel,
-      strategies} = this.state
+    const {advices, categories, diagnostic, evaluation, jobGroupInfo, localStats, shownPanel,
+      strategies, userCounts} = this.state
     const fullProject = {
       ...project,
       advices,
@@ -520,29 +530,36 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       localStats,
       strategies,
     }
+    const isPanelAvailable = !!panels.some(({panelId, predicate}): boolean =>
+      panelId === shownPanel && predicate(this.state))
+    if (!isPanelAvailable) {
+      return null
+    }
     switch (shownPanel) {
       case DIAGNOSTIC_PANEL:
         return <Assessment
-          diagnostic={diagnostic || {}}
-          diagnosticEvaluations={this.state.evaluation.diagnostic || {}}
+          diagnostic={diagnostic || emptyObject}
+          diagnosticEvaluations={evaluation && evaluation.diagnostic || emptyObject}
           onEvaluateSection={this.handleEvaluateDiagnosticSection}
         />
       case ADVICE_PANEL:
         return <AdvicesRecap
-          profile={profile} project={fullProject} advices={advices}
-          adviceEvaluations={this.state.evaluation.advices || {}}
+          profile={profile} project={fullProject} advices={advices || emptyArray}
+          adviceEvaluations={evaluation && evaluation.advices || emptyObject}
           onEvaluateAdvice={this.handleEvaluateAdvice}
           onRescoreAdvice={this.handleRescoreAdvice}
-          moduleNewScores={this.state.evaluation.modules || {}}
+          moduleNewScores={evaluation && evaluation.modules || emptyObject}
         />
       case STRATEGIES_PANEL:
         // TODO(cyrille): Make sure we can see what's inside the strategies.
         return <Strategies
           makeStrategyLink={getEmptyString}
           project={fullProject}
-          strategies={strategies || []} />
+          strategies={strategies || emptyArray} />
       case STATS_PANEL:
-        return <Stats categories={categories} project={fullProject} jobGroupInfo={jobGroupInfo} />
+        return <Stats
+          categories={categories} project={fullProject} profile={profile}
+          jobGroupInfo={jobGroupInfo} userCounts={userCounts} />
     }
   }
 
@@ -569,17 +586,19 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
   public render(): React.ReactNode {
     const {evaluation, isOverviewShown, isModified, isSaved, pools, selectedPoolName,
       selectedUseCase, useCases} = this.state
-    const poolOptions = pools.map(({evaluatedUseCaseCount, name, useCaseCount}): SelectOption => {
-      const isPoolEvaluated = evaluatedUseCaseCount === useCaseCount
-      return {
-        name: (isPoolEvaluated ? '✅ ' : evaluatedUseCaseCount >= 10 ? '✓ ' : '🎯 ') + name,
-        value: name,
-      }
-    })
-    const overviewOption = {
+    const poolOptions = pools.
+      map(({evaluatedUseCaseCount, name = '', useCaseCount}): SelectOption => {
+        const isPoolEvaluated = evaluatedUseCaseCount === useCaseCount
+        return {
+          name: (isPoolEvaluated ? '✅ ' :
+            evaluatedUseCaseCount && evaluatedUseCaseCount >= 10 ? '✓ ' : '🎯 ') + name,
+          value: name,
+        }
+      })
+    const overviewOption: SelectOption = {
       name: 'Sommaire',
       value: OVERVIEW_ID,
-    }
+    } as const
     const useCasesOptions = [overviewOption].concat([...useCases].
       sort((a: bayes.bob.UseCase, b: bayes.bob.UseCase): number =>
         (a.indexInPool || 0) - (b.indexInPool || 0)).
@@ -587,7 +606,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
         return {
           name: (evaluation ? '✅ ' : '🎯 ') +
             (indexInPool || 0).toString() + ' - ' + getUseCaseTitle(title, userData),
-          value: useCaseId,
+          value: useCaseId || '',
         }
       }))
     const {useCaseId = undefined, userData = undefined} = selectedUseCase || {}
@@ -636,11 +655,11 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       </div>
       <div style={centralPanelstyle}>
         {selectedUseCase ? this.renderBobMindPanel(profile, project) : null}
-        {isOverviewShown ? null :
+        {(isOverviewShown || !evaluation) ? null :
           <ScorePanel
             evaluation={evaluation}
-            isModified={isModified}
-            isSaved={isSaved}
+            isModified={!!isModified}
+            isSaved={!!isSaved}
             onSave={this.handleSaveEval}
             onUpdate={this.updateEvaluation}
             selectNextUseCase={this.selectNextUseCase}
@@ -793,7 +812,7 @@ function evalAuthReducer(state: AuthEvalState = {}, action: AllEvalActions): Aut
 }
 
 
-function evalUserReducer(state: bayes.bob.User = {}, action: AllEvalActions): bayes.bob.User {
+function evalUserReducer(state: bayes.bob.User = {}, action: AllEvalActions): bayes.bob.User|null {
   if (action.type === 'SELECT_USER') {
     return action.user
   }

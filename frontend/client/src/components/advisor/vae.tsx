@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import NewPicto from 'images/advices/picto-vae.svg'
+import Picto from 'images/advices/picto-vae.svg'
 
 import {ActionWithHandyLink, CardProps, MethodSuggestionList} from './base'
 
@@ -14,7 +14,7 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 
 
   private makeAvrilLink(): string {
-    const {project: {targetJob: {jobGroup: {romeId}}}} = this.props
+    const {project: {targetJob: {jobGroup: {romeId = ''} = {}} = {}} = {}} = this.props
     return `https://avril.pole-emploi.fr/diplomes?rome_code=${romeId}&utm_source=bob`
   }
 
@@ -43,7 +43,4 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 }
 
 
-const TakeAway = 'Démarche à suivre'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

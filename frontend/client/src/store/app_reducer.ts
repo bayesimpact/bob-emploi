@@ -20,7 +20,7 @@ function dropKey<K extends string, M>(data: M, key: K): Omit<M, K> {
 }
 
 
-function getJsonFromStorage<T extends {}>(storageKey: string): T {
+function getJsonFromStorage<T extends {}>(storageKey: string): T|null {
   const storedJson = Storage.getItem(storageKey)
   if (!storedJson) {
     return null
@@ -37,6 +37,15 @@ function setOnceJsonToStorage(storageKey: string, value: {}): void {
 }
 
 
+function isTimestampInCookieBeforeNow(cookieName: string): boolean {
+  const cookieValue = Storage.getItem(cookieName)
+  if (!cookieValue) {
+    return false
+  }
+  return new Date(parseInt(cookieValue)) > new Date()
+}
+
+
 const {quickDiagnostic: omittedQuickDiagnostic,
   ...initialFeatures}: InitialFeatures =
   getJsonFromStorage<InitialFeatures>(FEATURES_LOCAL_STORAGE_NAME) || {}
@@ -50,19 +59,25 @@ const appInitialData = {
   // Cache of job application modes.
   applicationModes: {},
   // Authentication token.
-  authToken: Storage.getItem(AUTH_TOKEN_COOKIE_NAME),
+  authToken: Storage.getItem(AUTH_TOKEN_COOKIE_NAME) || undefined,
   // Default props to use when creating a new project.
   defaultProjectProps: {},
+  // Whether the app loading time has already been measured.
+  hasLoadedApp: false,
   // Default for props storing if user has seen Bob Sharing modal.
   hasSeenShareModal: false,
+  // Whether the user used an expired token, so that they can ask for a new one in an email.
+  hasTokenExpired: false,
   // TODO(cyrille): Set as null if empty.
   initialFeatures,
-  initialUtm: getJsonFromStorage(UTM_LOCAL_STORAGE_NAME),
+  initialUtm: getJsonFromStorage(UTM_LOCAL_STORAGE_NAME) || undefined,
   isMobileVersion: false,
   // Cache of job requirements.
   jobRequirements: {},
-  lastAccessAt: null,
-  loginModal: null,
+  // Cache of labor stats per project.
+  laborStats: {},
+  lastAccessAt: undefined,
+  loginModal: undefined,
   newProjectProps: {},
   quickDiagnostic: {
     after: {},
@@ -73,8 +88,7 @@ const appInitialData = {
   // Cache for submetric visibility in diagnostic. It's a map with
   // submetric topics as key and a boolean as visibility status.
   submetricsExpansion: {},
-  userHasAcceptedCookiesUsage:
-    new Date(parseInt(Storage.getItem(ACCEPT_COOKIES_COOKIE_NAME))) > new Date(),
+  userHasAcceptedCookiesUsage: isTimestampInCookieBeforeNow(ACCEPT_COOKIES_COOKIE_NAME),
 }
 
 
@@ -89,8 +103,13 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           ...action.defaultProjectProps,
         },
       }
+    case 'PAGE_IS_LOADED':
+      return {
+        ...state,
+        hasLoadedApp: true,
+      }
     case 'GET_EXPANDED_CARD_CONTENT':
-      if (action.status === 'success' && action.project) {
+      if (action.status === 'success' && action.project.projectId && action.advice.adviceId) {
         return {
           ...state,
           adviceData: {
@@ -113,13 +132,13 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
     case 'CLOSE_LOGIN_MODAL':
       return {
         ...state,
-        loginModal: null,
+        loginModal: undefined,
       }
     case 'REMOVE_AUTH_DATA':
       Storage.removeItem(AUTH_TOKEN_COOKIE_NAME)
       return {
         ...state,
-        authToken: null,
+        authToken: undefined,
       }
     case 'GET_JOBS':
       if (action.status === 'success' && action.romeId) {
@@ -127,14 +146,14 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           ...state,
           specificJobs: {
             ...state.specificJobs,
-            [action.romeId]: action.response,
+            [action.romeId]: action.response || undefined,
           },
         }
       }
       break
     // TODO(cyrille): Merge the different fetch APIs for job group infos.
     case 'GET_APPLICATION_MODES':
-      if (action.status === 'success' && action.romeId) {
+      if (action.status === 'success' && action.romeId && action.response.applicationModes) {
         return {
           ...state,
           applicationModes: {
@@ -145,7 +164,8 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
       }
       break
     case 'GET_PROJECT_REQUIREMENTS':
-      if (action.status === 'success' && action.project) {
+      if (action.status === 'success' && action.project.targetJob &&
+        action.project.targetJob.codeOgr) {
         return {
           ...state,
           jobRequirements: {
@@ -171,9 +191,9 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
     case 'LOGOUT': // Fallthrough intended.
     case 'DELETE_USER_DATA':
       Storage.removeItem(AUTH_TOKEN_COOKIE_NAME)
-      return {...state, adviceData: {}, adviceTips: {}, authToken: null}
+      return {...state, adviceData: {}, adviceTips: {}, authToken: undefined}
     case 'GET_ADVICE_TIPS':
-      if (action.status !== 'success' || !action.advice || !action.project) {
+      if (action.status !== 'success' || !action.advice.adviceId || !action.project.projectId) {
         return state
       }
       return {
@@ -181,16 +201,31 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
         adviceTips: {
           ...state.adviceTips,
           [action.project.projectId]: {
-            ...(state.adviceTips[action.project.projectId] || {}),
+            ...(state.adviceTips && state.adviceTips[action.project.projectId] || {}),
             [action.advice.adviceId]: action.response as {actionId: string}[],
           },
         },
       }
     case 'MODIFY_PROJECT':
+      if (!action.project.projectId) {
+        return state
+      }
       return {
         ...state,
         adviceData: dropKey(state.adviceData, action.project.projectId),
+        laborStats: dropKey(state.laborStats, action.project.projectId),
       }
+    case 'GET_LOCAL_STATS':
+      if (action.status === 'success' && action.project.projectId) {
+        return {
+          ...state,
+          laborStats: {
+            ...state.laborStats,
+            [action.project.projectId]: action.response,
+          },
+        }
+      }
+      return state
     case 'TRACK_INITIAL_UTM':
       if (!state.initialUtm && action.utm) {
         setOnceJsonToStorage(UTM_LOCAL_STORAGE_NAME, action.utm)
@@ -208,8 +243,14 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
         initialFeatures: state.initialFeatures || action.features,
       }
     case 'AUTHENTICATE_USER':
-      if (action.status !== 'success' || !action.response.authToken) {
+      if (action.status !== 'success') {
         return state
+      }
+      if (!action.response.authToken) {
+        return {
+          ...state,
+          hasTokenExpired: action.response.hasTokenExpired,
+        }
       }
       Storage.setItem(AUTH_TOKEN_COOKIE_NAME, action.response.authToken)
       return {
@@ -239,14 +280,14 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           ...state,
           quickDiagnostic: {
             after: {
-              ...state.quickDiagnostic.after,
+              ...(state.quickDiagnostic && state.quickDiagnostic.after),
               ..._keyBy(
                 comments.filter(({isBeforeQuestion}): boolean => !isBeforeQuestion), 'field'),
             },
             before: {
-              ...state.quickDiagnostic.before,
+              ...(state.quickDiagnostic && state.quickDiagnostic.before),
               ..._keyBy(
-                comments.filter(({isBeforeQuestion}): boolean => isBeforeQuestion), 'field'),
+                comments.filter(({isBeforeQuestion}): boolean => !!isBeforeQuestion), 'field'),
             },
           },
         }
@@ -265,7 +306,7 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
 }
 
 const asyncInitialData = {
-  errorMessage: null,
+  errorMessage: undefined,
   isFetching: {},
 }
 
@@ -275,9 +316,10 @@ function isAsyncAction(action: Action<any>): action is AsyncAction<any, any> {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-function asyncState(state: AsyncState = asyncInitialData, action: AllActions): AsyncState {
+function asyncState(state: AsyncState<AllActions> = asyncInitialData, action: AllActions):
+AsyncState<AllActions> {
   if (action.type === 'HIDE_TOASTER_MESSAGE') {
-    return {...state, errorMessage: null}
+    return {...state, errorMessage: undefined}
   }
   if (action.type === 'DISPLAY_TOAST_MESSAGE') {
     return {...state, errorMessage: action.error}
@@ -285,17 +327,21 @@ function asyncState(state: AsyncState = asyncInitialData, action: AllActions): A
   if (!isAsyncAction(action)) {
     return state
   }
-  if (action.status === 'error') {
+  const authAction = action as {response: bayes.bob.AuthResponse}
+  if (action.status === 'error' || authAction.response && authAction.response.errorMessage) {
+    const errorMessage = (action.status === 'error') ?
+      (action.ignoreFailure || !action.error) ? '' : action.error.toString() :
+      authAction.response.errorMessage
     return {
       ...dropKey(state, 'authMethod'),
-      errorMessage: (action.ignoreFailure || !action.error) ? '' : action.error.toString(),
+      errorMessage,
       isFetching: {...state.isFetching, [action.type]: false},
     }
   }
   if (action.status === 'success') {
     return {
       ...dropKey(state, 'authMethod'),
-      errorMessage: null,
+      errorMessage: undefined,
       isFetching: {...state.isFetching, [action.type]: false},
     }
   }

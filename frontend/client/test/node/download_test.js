@@ -88,6 +88,14 @@ describe('download.js', () => {
       // Advice base.
       'appXmyc7yYj0pOcae': {
         'advice_modules': [],
+        'diagnostic_categories': [
+          {'fields': {'category_id': 'bravo'}},
+          {'fields': {
+            'category_id': 'stuck-market',
+            'metric_details': "Le marché c'est important.",
+            'metric_title': 'Marché',
+          }},
+        ],
         'email_templates': [],
         'strategy_goals': [
           {'fields':
@@ -144,6 +152,12 @@ describe('download.js', () => {
             'string': "Je connais des villes offrant plus d'opportunités",
           },
         },
+        {
+          'fields': {
+            'fr_FR@tu': "Le marché c'est important pour toi.",
+            'string': "Le marché c'est important.",
+          },
+        },
       ]},
     }))
     process.argv = ['node', 'download.js']
@@ -167,6 +181,24 @@ describe('download.js', () => {
   "A": {
     "atNext": "au prochain",
     "eventLocation": "salon de l'agriculture"
+  }
+}
+`,
+        'src/components/strategist/data/categories.json': `{
+  "bravo": {
+  },
+  "stuck-market": {
+    "metricDetails": "Le marché c'est important.",
+    "metricTitle": "Marché"
+  }
+}
+`,
+        'src/components/strategist/data/categories_fr_FR@tu.json': `{
+  "bravo": {
+  },
+  "stuck-market": {
+    "metricDetails": "Le marché c'est important pour toi.",
+    "metricTitle": "Marché"
   }
 }
 `,

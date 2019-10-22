@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import typing
+from typing import Any, Dict, List, Optional, Set, Type
 
 from google.protobuf import message
 import pymongo
@@ -36,6 +37,7 @@ from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
+from bob_emploi.frontend.api import auth_pb2
 from bob_emploi.frontend.api import commute_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import driving_license_pb2
@@ -73,13 +75,13 @@ class Importer(typing.NamedTuple):
     """Description of an importer."""
 
     name: str
-    script: typing.Optional[str]
-    args: typing.Optional[typing.Dict[str, str]]
+    script: Optional[str]
+    args: Optional[Dict[str, str]]
     is_imported: bool
     # Should be in the form of a AWS ScheduleExpression (e.g. '1 hour' or '7 days')
-    run_every: typing.Optional[str]
-    proto_type: typing.Optional[typing.Type[message.Message]]
-    key: typing.Optional[str]
+    run_every: Optional[str]
+    proto_type: Optional[Type[message.Message]]
+    key: Optional[str]
     # PII means Personally Identifiable Information, i.e. a name, an email.
     has_pii: bool
 
@@ -165,7 +167,7 @@ IMPORTERS = {
         proto_type=user_pb2.User, key='user_id', has_pii=True),
     'user_auth': Importer(
         name='App User Auth Data', script=None, args=None, is_imported=False, run_every=None,
-        proto_type=user_pb2.UserAuth, key='user_id', has_pii=True),
+        proto_type=auth_pb2.UserAuth, key='user_id', has_pii=True),
     # TODO(cyrille): Drop this importer, we don't use dashboard exports anymore.
     'dashboard_exports': Importer(
         name='Dashboard Export', script=None, args=None, is_imported=False, run_every=None,
@@ -312,7 +314,7 @@ IMPORTERS = {
     'adie_events': Importer(
         name='ADIE Events',
         script='adie_events',
-        args={'events_html': 'data/adie-evenements.html'},
+        args={'events_json': 'data/adie-events.json'},
         is_imported=True,
         run_every='7 days',
         proto_type=event_pb2.Event,
@@ -387,7 +389,7 @@ IMPORTERS = {
         args={
             'base_id': 'appXmyc7yYj0pOcae',
             'table': 'diagnostic_categories',
-            'view': 'viw4pPVwQkXGvLCuB',
+            'view': 'Ready to Import',
             'proto': 'DiagnosticCategory',
         },
         is_imported=True,
@@ -565,7 +567,11 @@ IMPORTERS = {
     'online_salons': Importer(
         name='Online salons',
         script='online_salons',
-        args={'events_file_name': f'data/pole_emploi/online-salons-{NOW}.json'},
+        args={
+            'events_file_name': f'data/pole_emploi/online-salons-{NOW}.json',
+            'french_regions_tsv': 'data/geo/insee_france_regions.tsv',
+            'prefix_tsv': 'data/geo/region_prefix.tsv',
+        },
         is_imported=True,
         run_every='7 days',
         proto_type=online_salon_pb2.OnlineSalon,
@@ -620,7 +626,7 @@ IMPORTERS = {
 _MAINTENANCE_COLLECTIONS = {'meta', 'system.indexes', 'objectlabs-system'}
 
 
-def is_personal_database(collection_names: typing.Set[str]) -> bool:
+def is_personal_database(collection_names: Set[str]) -> bool:
     """Determines if this is a database with PII collections or not."""
 
     imported = collection_names & IMPORTERS.keys()
@@ -635,8 +641,7 @@ def _is_archive(collection_name: str) -> bool:
 
 
 def compute_collections_diff(
-        importers: typing.Dict[str, Importer],
-        db_client: pymongo.database.Database) -> CollectionsDiff:
+        importers: Dict[str, Importer], db_client: pymongo.database.Database) -> CollectionsDiff:
     """Determine which collections have been imported and which are missing."""
 
     collection_names = {
@@ -659,8 +664,7 @@ def compute_collections_diff(
     )
 
 
-def get_meta_info(db_client: pymongo.database.Database) \
-        -> typing.Dict[str, typing.Dict[str, typing.Any]]:
+def get_meta_info(db_client: pymongo.database.Database) -> Dict[str, Dict[str, Any]]:
     """Get meta information for a specific collection."""
 
     meta_collection = db_client.meta.find()
@@ -671,7 +675,7 @@ def _plural(count: int) -> str:
     return ' is' if count == 1 else 's are'
 
 
-def _bold(value: typing.Any) -> str:
+def _bold(value: Any) -> str:
     return termcolor.colored(str(value), 'white', attrs=['bold'])
 
 
@@ -705,14 +709,14 @@ def print_single_importer(
         importer.name, collection_name, command)
 
 
-def _get_importer_targets(importer: Importer) -> typing.Set[str]:
+def _get_importer_targets(importer: Importer) -> Set[str]:
     if not importer.args:
         return set()
 
     return {target for target in importer.args.values() if target.startswith('data/')}
 
 
-def _show_command(cmd: typing.List[str]) -> str:
+def _show_command(cmd: List[str]) -> str:
     res = ''
     row = ''
     for arg in cmd:
@@ -765,8 +769,7 @@ def _revert_collection(collection_name: str, database: pymongo.database.Database
     database[archive].rename(collection_name, dropTarget=True)
 
 
-def _run_importer(
-        importer: Importer, collection_name: str, extra_args: typing.List[str]) -> None:
+def _run_importer(importer: Importer, collection_name: str, extra_args: List[str]) -> None:
 
     args = collections.OrderedDict(importer.args or {})
     args['mongo_collection'] = collection_name
@@ -839,7 +842,7 @@ def _print_report(db_client: pymongo.database.Database) -> None:
             status)
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Print a report on which collections have been imported."""
 
     if not _MONGO_URL:

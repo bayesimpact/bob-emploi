@@ -12,7 +12,7 @@ const horizontalSwipeMaxYDelta = 100
 const horizontalSwipeMinXDelta = 150
 
 
-let mobileListener: MobileFastForwardListener = null
+let mobileListener: MobileFastForwardListener|undefined
 
 
 // A listener for mobile fast forward:
@@ -29,19 +29,19 @@ class MobileFastForwardListener {
   private endTouch: {
     readonly x: number
     readonly y: number
-  }
+  } | undefined
 
   private forwardHandlers: ((event) => void)[]
 
   private lastClickTime: number
 
-  private numClicksInARow: number
+  private numClicksInARow = 0
 
   private startTouch: {
     readonly time: number
     readonly x: number
     readonly y: number
-  }
+  } | undefined
 
   private countClicksInARow = (): void => {
     const time = new Date().getTime()
@@ -66,7 +66,7 @@ class MobileFastForwardListener {
 
   private handleTouchStart = ({touches}): void => {
     if (touches.length !== 1) {
-      this.startTouch = null
+      this.startTouch = undefined
       return
     }
     this.startTouch = {
@@ -74,7 +74,7 @@ class MobileFastForwardListener {
       x: touches[0].pageX,
       y: touches[0].pageY,
     }
-    this.endTouch = null
+    this.endTouch = undefined
   }
 
   private handleTouchMove = ({touches}): void => {
@@ -89,8 +89,8 @@ class MobileFastForwardListener {
 
   private handleTouchEnd = (event): void => {
     if (!this.endTouch || !this.startTouch) {
-      this.startTouch = null
-      this.endTouch = null
+      this.startTouch = undefined
+      this.endTouch = undefined
       return
     }
     const {time, x, y} = this.startTouch
@@ -149,7 +149,7 @@ class FastForward extends React.PureComponent<{onForward: () => void}> {
     }
   }
 
-  private handler: () => void
+  private handler?: () => void
 
   public render(): React.ReactNode {
     return <ShortKey

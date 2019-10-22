@@ -2,14 +2,14 @@
 
 import os
 import sys
-import typing
+from typing import Optional, TextIO, Union
 
 import pandas as pd
 
 
 def main(
-        output_csv: typing.Union[str, typing.TextIO], filename: typing.Optional[str] = None,
-        data_folder: str = 'data') -> None:
+        output_csv: Union[str, TextIO], filename: Optional[str] = None, data_folder: str = 'data') \
+        -> None:
     """Compute the mapping between PCS and ROME classifications.
 
     Args:
@@ -22,7 +22,7 @@ def main(
         filename = os.path.join(data_folder, 'crosswalks/c2rp_table_supra_def_fap_pcs_rome.xlsx')
     pcs_fap_rome_xlsx = pd.read_excel(filename, sheet_name=None)
 
-    output_file: typing.TextIO
+    output_file: TextIO
     if isinstance(output_csv, str):
         output_file = open(output_csv, 'w')
     else:

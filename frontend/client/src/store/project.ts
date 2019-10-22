@@ -96,8 +96,8 @@ const PROJECT_PASSIONATE_OPTIONS: SelectOption<bayes.bob.PassionateLevel>[] = [
 ]
 
 
-const getSeniorityText = (seniority: string): string => {
-  const {short = ''} = SENIORITY[seniority] || {}
+const getSeniorityText = (seniority?: bayes.bob.ProjectSeniority): string => {
+  const {short = ''} = seniority && SENIORITY[seniority] || {}
   return short
 }
 
@@ -107,12 +107,12 @@ interface TitleComponents {
   where?: string
 }
 
-const createProjectTitleComponents = (project: bayes.bob.Project, gender: string):
+const createProjectTitleComponents = (project: bayes.bob.Project, gender?: bayes.bob.Gender):
 TitleComponents => {
-  const {cityName, prefix} = inCityPrefix(project.city && project.city.name)
+  const {cityName, prefix} = inCityPrefix(project.city && project.city.name || '')
   const where = prefix + cityName
   if (project.targetJob) {
-    const {long = ''} = SENIORITY[project.seniority] || {}
+    const {long = ''} = project.seniority && SENIORITY[project.seniority] || {}
     return {
       experience: long,
       what: genderizeJob(project.targetJob, gender),
@@ -141,7 +141,8 @@ TitleComponents => {
 }
 
 
-const createProjectTitle = (newProject: bayes.bob.Project, gender: bayes.bob.Gender): string => {
+const createProjectTitle = (newProject: bayes.bob.Project, gender?: bayes.bob.Gender):
+string|undefined => {
   const {what, where} = createProjectTitleComponents(newProject, gender)
   if (what && where) {
     return `${what} ${where}`
@@ -150,7 +151,7 @@ const createProjectTitle = (newProject: bayes.bob.Project, gender: bayes.bob.Gen
 
 
 const newProject =
-  (newProjectData: bayes.bob.Project, gender: bayes.bob.Gender): bayes.bob.Project => {
+  (newProjectData: bayes.bob.Project, gender?: bayes.bob.Gender): bayes.bob.Project => {
     const {
       projectId: omittedProjectId,
       createdAt: omittedCreatedAt,
@@ -179,7 +180,7 @@ const getTrainingFulfillmentEstimateOptions =
 const MILLISECS_PER_MONTH = 30.5 * 24 * 60 * 60 * 1000
 
 
-const isOldProject = (project: bayes.bob.Project): boolean => {
+const isOldProject = (project?: bayes.bob.Project): boolean => {
   if (!project || !project.createdAt) {
     return false
   }
@@ -189,13 +190,13 @@ const isOldProject = (project: bayes.bob.Project): boolean => {
 
 
 const flattenProject = (projectFields: bayes.bob.Project): bayes.bob.Project => ({
-  city: null,
+  city: undefined,
   employmentTypes: ['CDI'],
-  kind: null,
-  minSalary: null,
-  passionateLevel: null,
-  previousJobSimilarity: null,
-  targetJob: null,
+  kind: undefined,
+  minSalary: undefined,
+  passionateLevel: undefined,
+  previousJobSimilarity: undefined,
+  targetJob: undefined,
   workloads: ['FULL_TIME'],
   ...projectFields,
   createdAt: '',

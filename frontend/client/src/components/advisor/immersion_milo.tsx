@@ -5,7 +5,7 @@ import {genderize, inDepartement} from 'store/french'
 import {missionLocaleUrl} from 'store/job'
 
 import {ExternalLink, UpDownIcon, colorToAlpha} from 'components/theme'
-import NewPicto from 'images/advices/picto-immersion.svg'
+import Picto from 'images/advices/picto-immersion.svg'
 
 import {CardProps, CardWithContentProps, connectExpandedCardWithContent} from './base'
 
@@ -43,8 +43,8 @@ CardWithContentProps<bayes.bob.MissionLocaleData>, CardState> {
 
   private renderMiloLink(): React.ReactNode {
     const {adviceData, handleExplore, project: {city}, userYou} = this.props
-    const inYourDepartement = inDepartement(city)
-    if (!inYourDepartement) {
+    const inYourDepartement = city && inDepartement(city)
+    if (!city || !inYourDepartement) {
       return null
     }
     const url = missionLocaleUrl(adviceData, city.departementName)
@@ -130,11 +130,8 @@ CardWithContentProps<bayes.bob.MissionLocaleData>, CardState> {
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.MissionLocaleData, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.MissionLocaleData, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
-const TakeAway = '1 programme trouvé'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

@@ -6,58 +6,62 @@ import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
 import React from 'react'
 import ReactSelect from 'react-select'
-// TODO(pascal): Try to find a way to drop this.
-import {Props as ReactSelectProps} from 'react-select/lib/Select'
 
 import {isMobileVersion} from 'components/mobile'
 import {LabeledToggle} from 'components/theme'
-
 
 const getName = ({name}): string => name
 const getIsDisabled = ({disabled}: {disabled?: boolean}): boolean => !!disabled
 
 
 interface CheckboxListProps<T> {
-  checkboxStyle?: React.CSSProperties
+  checkboxStyle?: React.CSSProperties | ((index: number) => React.CSSProperties)
   onChange: (value: readonly T[]) => void
   options: readonly {
     name: React.ReactNode
     value: T
   }[]
+  selectedCheckboxStyle?: React.CSSProperties
   style?: React.CSSProperties
-  values: readonly T[]
+  values: readonly T[] | undefined
 }
 
 
+const emptyArray = [] as const
+
+
 interface CheckboxListState<T> {
-  values?: readonly T[]
-  valuesSelected?: Set<T>
+  values: readonly T[]
+  valuesSelected: Set<T>
 }
 
 
 class CheckboxList<T = string>
   extends React.PureComponent<CheckboxListProps<T>, CheckboxListState<T>> {
   public static propTypes = {
-    checkboxStyle: PropTypes.object,
     onChange: PropTypes.func.isRequired,
     // The sorted list of selectable options.
     options: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.node.isRequired,
       value: PropTypes.string,
     })),
+    selectedCheckboxStyle: PropTypes.object,
     style: PropTypes.object,
     values: PropTypes.arrayOf(PropTypes.string),
   }
 
-  public state: CheckboxListState<T> = {}
+  public state: CheckboxListState<T> = {
+    values: [],
+    valuesSelected: new Set(),
+  }
 
   public static getDerivedStateFromProps<T>({values = []}, {values: prevValues}):
-  CheckboxListState<T> {
+  CheckboxListState<T>|null {
     if (values === prevValues) {
       return null
     }
     return {
-      values,
+      values: values || emptyArray,
       valuesSelected: new Set(values),
     }
   }
@@ -72,19 +76,23 @@ class CheckboxList<T = string>
   })
 
   public render(): React.ReactNode {
-    const {options, checkboxStyle, onChange: omittedOnChange, values: omittedValues,
-      ...extraProps} = this.props
+    const {options, checkboxStyle, onChange: omittedOnChange, selectedCheckboxStyle,
+      values: omittedValues, ...extraProps} = this.props
     const {valuesSelected} = this.state
     const labelStyle = {
       marginTop: isMobileVersion ? 10 : 0,
-      ...checkboxStyle,
     }
 
     return <div {...extraProps}>
-      {(options || []).map((option): React.ReactNode => {
+      {(options || []).map((option, index): React.ReactNode => {
         const isSelected = valuesSelected.has(option.value)
         return <LabeledToggle
-          key={option.value + ''} label={option.name} type="checkbox" style={labelStyle}
+          key={option.value + ''} label={option.name} type="checkbox"
+          style={{
+            ...labelStyle,
+            ...(typeof checkboxStyle === 'function' ? checkboxStyle(index) : checkboxStyle),
+            ...isSelected && selectedCheckboxStyle,
+          }}
           isSelected={isSelected} onClick={this.handleChange(option.value)} />
       })}
     </div>
@@ -181,6 +189,7 @@ class FieldSet extends React.PureComponent<FieldSetProps> {
       marginBottom: hasNoteOrComment || isInline ? 0 : 25,
       marginLeft: 0,
       marginRight: 0,
+      minWidth: isInline ? 'initial' : isMobileVersion ? '100%' : 360,
       opacity: disabled ? 0.5 : 'inherit',
       padding: 0,
       position: 'relative',
@@ -221,17 +230,16 @@ interface SelectOption<T> {
 }
 
 
-type Omit<T, Keys> = Pick<T, Exclude<keyof T, Keys>>
-
+type ReactSelectProps<T> = ReactSelect<T>['props']
 
 interface SelectProps<T> extends Omit<ReactSelectProps<SelectOption<T>>, 'onChange'> {
   areUselessChangeEventsMuted?: boolean
   defaultMenuScroll?: number
   isMulti?: boolean
-  onChange: ((value: T) => void) | ((value: T[]) => void)
+  onChange: ((value: T) => void) | ((value: readonly T[]) => void)
   options: readonly SelectOption<T>[]
   style?: React.CSSProperties
-  value?: T | T[]
+  value?: T | readonly T[]
 }
 
 
@@ -281,14 +289,21 @@ class Select<T = string> extends React.PureComponent<SelectProps<T>> {
 
   private handleMenuOpen = (): void => {
     const {defaultMenuScroll, options, value} = this.props
-    if (!defaultMenuScroll || value ||
-      !this.subComponent.current || !this.subComponent.current.select) {
+    const {select = undefined} = this.subComponent && this.subComponent.current || {}
+    if (!select) {
       return
     }
-    const select = this.subComponent.current.select
+    // Either focus on the value or the defaultMenuScroll.
+    const focusedOption = value &&
+      options.findIndex(({value: thisValue}): boolean => value === thisValue) + 1 || 1 - 1 ||
+      defaultMenuScroll
+    if (!focusedOption) {
+      return
+    }
     setTimeout((): void => {
+      // Hack to have the desired element at the start of the menu page.
       select.setState(
-        {focusedOption: options[defaultMenuScroll - 1]},
+        {focusedOption: options[focusedOption - 1]},
         (): void => {
           select.focusOption('pagedown')
         },
@@ -296,17 +311,19 @@ class Select<T = string> extends React.PureComponent<SelectProps<T>> {
     })
   }
 
-  private makeValueProp = (): SelectOption<T> | SelectOption<T>[] => {
+  private makeValueProp = (): SelectOption<T> | SelectOption<T>[] | undefined => {
     const {isMulti, options, value} = this.props
     if (isMulti) {
-      return (value as T[]).map(
-        (v): SelectOption<T> => options.find(({value: optionValue}): boolean => v === optionValue))
+      return (value as T[]).
+        map((v): SelectOption<T> | undefined =>
+          options.find(({value: optionValue}): boolean => v === optionValue)).
+        filter((v): v is SelectOption<T> => !!v)
     }
     return options.find(({value: optionValue}): boolean => value === optionValue)
   }
 
   public render(): React.ReactNode {
-    const {defaultMenuScroll: omittedDefaultMenuScroll, onChange: omittedOnChange, options, style,
+    const {defaultMenuScroll: omittedDefaultScroll, onChange: omittedOnChange, options, style,
       value: omittedValue, ...otherProps} = this.props
     const selectStyle = {
       color: colors.CHARCOAL_GREY,

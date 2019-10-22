@@ -5,7 +5,7 @@ import collections
 import itertools
 import logging
 import random
-import typing
+from typing import List, Iterable, Iterator, Optional, Tuple, Union
 
 import pymongo
 
@@ -14,6 +14,7 @@ from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.api import diagnostic_pb2
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -39,7 +40,7 @@ def maybe_diagnose(
 
 def diagnose(
         user: user_pb2.User, project: project_pb2.Project, database: pymongo.database.Database) \
-        -> typing.Tuple[diagnostic_pb2.Diagnostic, typing.Optional[typing.List[int]]]:
+        -> Tuple[diagnostic_pb2.Diagnostic, Optional[List[int]]]:
     """Diagnose a project.
 
     Args:
@@ -61,7 +62,7 @@ def diagnose(
 
 def diagnose_scoring_project(
         scoring_project: scoring.ScoringProject, diagnostic: diagnostic_pb2.Diagnostic) \
-        -> typing.Tuple[diagnostic_pb2.Diagnostic, typing.Optional[typing.List[int]]]:
+        -> Tuple[diagnostic_pb2.Diagnostic, Optional[List[int]]]:
     """Diagnose a scoring project.
     Helper function that can be used for real users and personas.
 
@@ -72,9 +73,15 @@ def diagnose_scoring_project(
         a tuple with the modified diagnostic protobuf and a list of the orders of missing sentences.
     """
 
-    category = find_category(scoring_project)
-    if category:
-        diagnostic.category_id = category.category_id
+    del diagnostic.categories[:]
+    diagnostic.categories.extend(set_categories_relevance(scoring_project))
+    category: Optional[diagnostic_pb2.DiagnosticCategory]
+    for category in diagnostic.categories:
+        if category.relevance == diagnostic_pb2.NEEDS_ATTENTION:
+            diagnostic.category_id = category.category_id
+            break
+    else:
+        category = None
     _compute_sub_diagnostics_scores(scoring_project, diagnostic)
     # TODO(cyrille): Drop overall score computation once overall covers all possible cases.
     # Combine the sub metrics to create the overall score.
@@ -84,18 +91,23 @@ def diagnose_scoring_project(
         sum_score += sub_diagnostic.score
         text = _compute_sub_diagnostic_text(scoring_project, sub_diagnostic)
         if not text:
-            logging.warning(
-                'Uncovered case for subdiagnostic sentences in topic %s:\n%s',
-                diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
-                scoring_project)
+            all_texts = _SUBTOPIC_SENTENCE_TEMPLATES.get_collection(scoring_project.database)
+            if all_texts:
+                logging.warning(
+                    'Uncovered case for subdiagnostic sentences in topic %s:\n%s',
+                    diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
+                    scoring_project)
         sub_diagnostic.text = text
         observations = list(
             compute_sub_diagnostic_observations(scoring_project, sub_diagnostic.topic))
         if not observations:
-            logging.warning(
-                'No observation found on topic %s for project:\n%s',
-                diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
-                scoring_project)
+            all_observations = \
+                _SUBTOPIC_OBSERVATION_TEMPLATES.get_collection(scoring_project.database)
+            if all_observations:
+                logging.warning(
+                    'No observation found on topic %s for project:\n%s',
+                    diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
+                    scoring_project)
         del sub_diagnostic.observations[:]
         sub_diagnostic.observations.extend(observations)
         sum_weight += 1
@@ -114,6 +126,17 @@ def diagnose_scoring_project(
     return diagnostic, missing_sentences_orders
 
 
+# TODO(pascal): DRY with imt email.
+_EMPLOYMENT_TYPES = {
+    job_pb2.INTERNSHIP: 'stage',
+    job_pb2.CDI: 'CDI',
+    job_pb2.CDD_OVER_3_MONTHS: 'CDD de plus de 3 mois',
+    job_pb2.CDD_LESS_EQUAL_3_MONTHS: 'CDD de moins de 3 mois',
+    job_pb2.INTERIM: 'intérim',
+    job_pb2.ANY_CONTRACT_LESS_THAN_A_MONTH: "contrat de moins d'un mois",
+}
+
+
 def quick_diagnose(
         user: user_pb2.User, project: project_pb2.Project, user_diff: user_pb2.User,
         database: pymongo.database.Database) -> diagnostic_pb2.QuickDiagnostic:
@@ -126,7 +149,7 @@ def quick_diagnose(
     response = diagnostic_pb2.QuickDiagnostic()
     has_departement_diff = user_diff.projects and user_diff.projects[0].city.departement_id
     if has_departement_diff:
-        all_counts = _get_users_counts(database)
+        all_counts = get_users_counts(database)
         if all_counts:
             departement_count = all_counts.departement_counts[project.city.departement_id]
             if departement_count:
@@ -140,7 +163,7 @@ def quick_diagnose(
 
     has_rome_id_diff = user_diff.projects and user_diff.projects[0].target_job.job_group.rome_id
     if has_rome_id_diff:
-        all_counts = _get_users_counts(database)
+        all_counts = get_users_counts(database)
         if all_counts:
             job_group_count = all_counts.job_group_counts[project.target_job.job_group.rome_id]
             if job_group_count:
@@ -170,9 +193,24 @@ def quick_diagnose(
                     ]))
 
     if has_rome_id_diff:
-        diplomas = ', '.join(
-            diploma.name for diploma in scoring_project.requirements().diplomas)
-        if diplomas:
+        required_diplomas = sorted(
+            (d for d in scoring_project.requirements().diplomas
+             # Only mention real diplomas that are required in 10% or more of job offers.
+             if d.diploma.level != job_pb2.NO_DEGREE and d.percent_required > 10),
+            key=lambda d: d.percent_required,
+            reverse=True,
+            # Only take the 2 biggest ones.
+        )[:2]
+        if len(required_diplomas) == 2:
+            if required_diplomas[0].percent_required >= 70:
+                # The first one is doing more than 70% of requirements, just keep one.
+                required_diplomas = required_diplomas[:1]
+            else:
+                # Sort by degree level.
+                required_diplomas.sort(key=lambda d: d.diploma.level)
+
+        if required_diplomas:
+            diplomas = ', '.join(diploma.name for diploma in required_diplomas)
             response.comments.add(
                 field=diagnostic_pb2.REQUESTED_DIPLOMA_FIELD,
                 is_before_question=True,
@@ -180,7 +218,22 @@ def quick_diagnose(
                     f'Les offres demandent souvent un {diplomas} ou équivalent.'
                 ]))
 
-    # TODO(pascal): Diagnose more stuff here.
+    if has_rome_id_diff or has_departement_diff:
+        local_diagnosis = scoring_project.local_diagnosis()
+        if local_diagnosis.imt.employment_type_percentages:
+            main_employment_type_percentage = local_diagnosis.imt.employment_type_percentages[0]
+            if main_employment_type_percentage.percentage > 98:
+                percentage_text = 'La plupart'
+            else:
+                percentage_text = f'Plus de {int(main_employment_type_percentage.percentage)}%'
+            if main_employment_type_percentage.employment_type in _EMPLOYMENT_TYPES:
+                response.comments.add(
+                    field=diagnostic_pb2.EMPLOYMENT_TYPE_FIELD,
+                    is_before_question=True,
+                    comment=diagnostic_pb2.BoldedString(string_parts=[
+                        f'{percentage_text} des offres sont '
+                        f'en {_EMPLOYMENT_TYPES[main_employment_type_percentage.employment_type]}.'
+                    ]))
 
     return response
 
@@ -196,9 +249,9 @@ _DIAGNOSTIC_OVERALL: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTempla
 def _compute_diagnostic_overall(
         project: scoring.ScoringProject,
         diagnostic: diagnostic_pb2.Diagnostic,
-        category: typing.Optional[diagnostic_pb2.DiagnosticCategory]) -> diagnostic_pb2.Diagnostic:
+        category: Optional[diagnostic_pb2.DiagnosticCategory]) -> diagnostic_pb2.Diagnostic:
     all_overalls = _DIAGNOSTIC_OVERALL.get_collection(project.database)
-    restricted_overalls: typing.Iterable[diagnostic_pb2.DiagnosticTemplate] = []
+    restricted_overalls: Iterable[diagnostic_pb2.DiagnosticTemplate] = []
     if category and (
             not category.are_strategies_for_alpha_only or project.features_enabled.alpha):
         restricted_overalls = \
@@ -222,7 +275,7 @@ def _compute_diagnostic_overall(
 
 def _compute_diagnostic_text(
         scoring_project: scoring.ScoringProject, unused_overall_score: float) \
-        -> typing.Tuple[str, typing.List[int]]:
+        -> Tuple[str, List[int]]:
     """Create the left-side text of the diagnostic for a given project.
 
     Returns:
@@ -290,7 +343,7 @@ _SUBTOPIC_OBSERVATION_TEMPLATES: proto.MongoCachedCollection[diagnostic_pb2.Diag
 
 def compute_sub_diagnostic_observations(
         scoring_project: scoring.ScoringProject, topic: diagnostic_pb2.DiagnosticTopic) \
-        -> typing.Iterator[diagnostic_pb2.SubDiagnosticObservation]:
+        -> Iterator[diagnostic_pb2.SubDiagnosticObservation]:
     """Find all relevant observations for a given sub-diagnostic topic."""
 
     templates = scoring.filter_using_score((
@@ -314,9 +367,9 @@ _SUBTOPIC_SCORERS: \
 # TODO(cyrille): Rethink scoring for submetrics.
 def _compute_diagnostic_topic_score(
         topic: 'diagnostic_pb2.DiagnosticTopic',
-        scorers: typing.Iterable[diagnostic_pb2.DiagnosticSubmetricScorer],
+        scorers: Iterable[diagnostic_pb2.DiagnosticSubmetricScorer],
         scoring_project: scoring.ScoringProject) \
-        -> typing.Optional[diagnostic_pb2.SubDiagnostic]:
+        -> Optional[diagnostic_pb2.SubDiagnostic]:
     """Create the score for a given diagnostic submetric on a given project.
 
     Args:
@@ -363,7 +416,7 @@ def _compute_sub_diagnostics_scores(
 
 
 # TODO(cyrille): Use fetch_from_mongo once counts are saved under ID 'values'.
-def _get_users_counts(database: pymongo.database.Database) -> typing.Optional[stats_pb2.UsersCount]:
+def get_users_counts(database: pymongo.database.Database) -> Optional[stats_pb2.UsersCount]:
     """Get the count of users in departements and in job groups."""
 
     all_counts = next(
@@ -377,17 +430,56 @@ _DIAGNOSTIC_CATEGORY: \
 
 
 def list_categories(database: pymongo.database.Database) \
-        -> typing.Iterator[diagnostic_pb2.DiagnosticCategory]:
+        -> Iterator[diagnostic_pb2.DiagnosticCategory]:
     """Give the list of categories as defined in database."""
 
     return _DIAGNOSTIC_CATEGORY.get_collection(database)
 
 
+def _get_stuck_in_village_relevance(
+        unused_project: scoring.ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    return diagnostic_pb2.NOT_RELEVANT
+
+
+def _get_enhance_methods_relevance(
+        project: scoring.ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    if project.get_search_length_at_creation() < 0:
+        return diagnostic_pb2.NEUTRAL_RELEVANCE
+    return diagnostic_pb2.RELEVANT_AND_GOOD
+
+
+def _get_stuck_market_relevance(
+        project: scoring.ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    if project.market_stress() is None:
+        return diagnostic_pb2.NEUTRAL_RELEVANCE
+    return diagnostic_pb2.RELEVANT_AND_GOOD
+
+
+def _get_find_what_you_like_relevance(
+        project: scoring.ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+    if project.details.passionate_level == project_pb2.LIKEABLE_JOB:
+        return diagnostic_pb2.NEUTRAL_RELEVANCE
+    market_stress = project.market_stress()
+    if project.details.passionate_level < project_pb2.LIKEABLE_JOB and \
+            market_stress and market_stress < 10 / 7:
+        return diagnostic_pb2.NEUTRAL_RELEVANCE
+    return diagnostic_pb2.RELEVANT_AND_GOOD
+
+
+_CATEGORIES_RELEVANCE_GETTERS = {
+    # TODO(pascal): Add a relevance getter for confidence-for-search
+    'enhance-methods-to-interview': _get_enhance_methods_relevance,
+    'find-what-you-like': _get_find_what_you_like_relevance,
+    'stuck-in-village': _get_stuck_in_village_relevance,
+    'stuck-market': _get_stuck_market_relevance,
+}
+
+
 def set_categories_relevance(
-        project: typing.Union[scoring.ScoringProject, user_pb2.User],
-        categories: typing.Optional[typing.Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
-        database: typing.Optional[pymongo.database.Database] = None) \
-        -> typing.Iterator[diagnostic_pb2.DiagnosticCategory]:
+        project: Union[scoring.ScoringProject, user_pb2.User],
+        categories: Optional[Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
+        database: Optional[pymongo.database.Database] = None) \
+        -> Iterator[diagnostic_pb2.DiagnosticCategory]:
     """For all categories, tell whether it's relevant for a project.
 
     Arg list:
@@ -414,19 +506,22 @@ def set_categories_relevance(
     if not categories:
         categories = list_categories(database)
     for category in categories:
-        # TODO(cyrille): Fine tune the relevance of a category.
         if project.check_filters(category.filters):
             category.relevance = diagnostic_pb2.NEEDS_ATTENTION
         else:
-            category.relevance = diagnostic_pb2.RELEVANT_AND_GOOD
+            try:
+                category.relevance = \
+                    _CATEGORIES_RELEVANCE_GETTERS[category.category_id](project)
+            except KeyError:
+                category.relevance = diagnostic_pb2.RELEVANT_AND_GOOD
         yield category
 
 
 def find_category(
-        project: typing.Union[scoring.ScoringProject, user_pb2.User],
-        categories: typing.Optional[typing.Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
-        database: typing.Optional[pymongo.database.Database] = None) \
-        -> typing.Optional[diagnostic_pb2.DiagnosticCategory]:
+        project: Union[scoring.ScoringProject, user_pb2.User],
+        categories: Optional[Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
+        database: Optional[pymongo.database.Database] = None) \
+        -> Optional[diagnostic_pb2.DiagnosticCategory]:
     """Select the available category for a project, if it exists.
 
     Arg list:

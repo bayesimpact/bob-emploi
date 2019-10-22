@@ -1,5 +1,7 @@
 #!/bin/bash
 # Upload the code for our Lambda functions directly to AWS Lambda.
+# Needs bob-emploi-deploy-lambda IAM policy or equivalent.
+# https://console.aws.amazon.com/iam/home?region=us-east-1#/policies/arn:aws:iam::951168128976:policy/bob-emploi-deploy-lambda$serviceLevelSummary
 #
 # To use the new version, you would need to update the LambdaFunctionARN with
 # the new version numbers in "cloudfront.json".

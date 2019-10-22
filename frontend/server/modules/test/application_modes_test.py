@@ -7,6 +7,7 @@ from unittest import mock
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server.test import filters_test
 from bob_emploi.frontend.server.test import scoring_test
@@ -113,6 +114,7 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
         persona.project.job_search_started_at.FromDatetime(
             persona.project.created_at.ToDatetime() - datetime.timedelta(days=61))
         persona.project.weekly_applications_estimate = project_pb2.LESS_THAN_2
+        persona.project.diagnostic.ClearField('category_id')
         self.database.job_group_info.insert_one({
             '_id': 'A1234',
             'applicationModes': {
@@ -174,6 +176,16 @@ class SpontaneousApplicationScoringModelTestCase(scoring_test.ScoringModelTestBa
                 }
             },
         })
+        score = self._score_persona(persona)
+
+        self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
+
+    def test_bravo_frustrated(self) -> None:
+        """User is in the bravo category, and is frustrated about offers."""
+
+        persona = self._random_persona().clone()
+        persona.project.diagnostic.category_id = 'bravo'
+        persona.user_profile.frustrations.append(user_pb2.NO_OFFERS)
         score = self._score_persona(persona)
 
         self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/diagnostic.proto";
@@ -44,7 +45,7 @@ message User {
   string hashed_email = 14 [(field_usage) = PERSONAL_IDENTIFIER];
 
   // The date and time at which the user has registered with the app.
-  google.protobuf.Timestamp registered_at = 6;
+  google.protobuf.Timestamp registered_at = 6 [(field_usage) = APP_ONLY];
 
   // List of current projects for this user even the ones on stand-by.
   repeated Project projects = 3;
@@ -57,7 +58,7 @@ message User {
   bool app_not_available = 4 [(field_usage) = APP_ONLY];
 
   // Features enabled for this user.
-  Features features_enabled = 9;
+  Features features_enabled = 9 [(field_usage) = APP_ONLY];
 
   // The last date on which the user loaded their information through the API.
   // We only look at the date of this value, not at the time.
@@ -98,7 +99,7 @@ message User {
   repeated EmploymentStatus employment_status = 20 [(field_usage) = USER_FEEDBACK];
 
   // The date and time at which the user has deleted their account.
-  google.protobuf.Timestamp deleted_at = 21;
+  google.protobuf.Timestamp deleted_at = 21 [(field_usage) = APP_ONLY];
 
   // Metrics reported from the client.
   ClientSideMetrics client_metrics = 22;
@@ -107,95 +108,30 @@ message User {
   MaydayGrantee mayday = 26 [(field_usage) = APP_ONLY];
 
   // Next date after which we can try again sending a coaching email.
-  google.protobuf.Timestamp send_coaching_email_after = 27;
+  google.protobuf.Timestamp send_coaching_email_after = 27 [(field_usage) = ALGORITHM_RESULT];
 
   // Whether the user has (or had) an account linked using an email/password or an SSO connection.
   // Before July 2019, all users had account.
   bool has_account = 28 [(field_usage) = APP_ONLY];
+
+  // Whether the user has a custom password that allow them to login. The password itself is hashed
+  // and stored in another proto.
+  bool has_password = 29 [(field_usage) = APP_ONLY];
+
+  // A list of opened tickets on support help desk, ordered by creation date.
+  // Unused tickets should be deleted after some time.
+  // TODO(cyrille): Add a cleaner CRON.
+  repeated SupportTicket support_tickets = 30;
 }
 
-message UserAuth {
-  // A unique identifier for this user. It is not related to any public
-  // identifiers although it is not obfuscated in the API.
-  string user_id = 1;
+message SupportTicket {
+  // A unique identifier for this ticket.
+  string ticket_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
 
-  // A hashed version of the user's password: sha1(email + password).
-  string hashed_password = 2;
+  // An expiration date for this ticket.
+  google.protobuf.Timestamp delete_after = 2;
 }
 
-// See http://go/pe:password-design
-message AuthRequest {
-  // An authentication token from the OAuth2 Google Sign-in flow.
-  // See https://developers.google.com/identity/sign-in/web/backend-auth
-  string google_token_id = 1;
-
-  // An authentication token from the Facebook Login flow.
-  // See https://developers.facebook.com/docs/games/gamesonfacebook/login#parsingsr.
-  string facebook_signed_request = 2;
-
-  // The email of the user. It can be used with hashed password or without,
-  // then the server will return a hash_salt to use.
-  string email = 3;
-
-  // A hashed version of the user's password: sha1(salt + sha1(email +
-  // password)), or only sha1(email + password) when creating it for the first
-  // time.
-  string hashed_password = 4;
-
-  // Salt used for the hash.
-  string hash_salt = 5;
-
-  // First name of the user.
-  // TODO(cyrille): Move to user_data.
-  string first_name = 6;
-
-  // Last name of the user.
-  // TODO(cyrille): Move to user_data.
-  string last_name = 7;
-
-  // Reset auth token. A token that allows to authenticate the user directly.
-  string auth_token = 8;
-
-  // The user's ID to authenticate using the pair user ID / auth token.
-  string user_id = 9;
-
-  // Auth code returned by PE Connect.
-  // See https://www.emploi-store-dev.fr/portail-developpeur-cms/home/catalogue-des-api/documentation-des-api/utiliser-les-api/authorization-code-flow.html.
-  string pe_connect_code = 10;
-
-  // Random ID generated to get the PE Connect code.
-  string pe_connect_nonce = 11;
-
-  // Auth code returned by LinkedIn OAuth2.
-  // See https://developer.linkedin.com/docs/oauth2.
-  string linked_in_code = 12;
-
-  // Other fields to be set in the user's proto at registration.
-  AuthUserData user_data = 13;
-}
-
-message AuthUserData {
-  bool can_tutoie = 1;
-}
-
-message AuthResponse {
-  // The user's data.
-  User authenticated_user = 1;
-
-  // Whether the user is a new user (true) or one that was retrieved (false).
-  // This can be used by the client to update the phrasing.
-  bool is_new_user = 2;
-
-  // An opaque string to use as salt to hash the password in a following
-  // auth request.
-  string hash_salt = 3;
-
-  // Authentication token. More details in go/bob:security
-  string auth_token = 4;
-
-  // Timestamp of the last connection before this one.
-  google.protobuf.Timestamp last_access_at = 5;
-}
 
 message TrackingParameters {
   // A slug identifying the org, product or website that reffered the user to
@@ -297,7 +233,7 @@ message UserProfile {
   OptionalBool has_car_driving_license = 25;
 
   // How frequent should we send coaching emails (aka focus emails).
-  EmailFrequency coaching_email_frequency = 26;
+  EmailFrequency coaching_email_frequency = 26 [(field_usage) = APP_ONLY];
 }
 
 // A lightweight message to reference a user.
@@ -801,4 +737,9 @@ message QuickDiagnosticRequest {
   // the client is requesting a diagnostic. If not specified then try to give
   // all the mini diagnostics possible.
   ProjectOrProfileField field = 2;
+
+  // Fields that are sent. If they are not set, it means the default value should apply and replace
+  // the previous one.
+  // If it is empty, do not use it.
+  google.protobuf.FieldMask field_mask = 3;
 }

@@ -11,12 +11,20 @@ import blackRocketIcon from 'images/rocket.svg?fill=#000'
 import {getRocketFromStars, MAX_NUMBER_ROCKETS} from 'store/advice'
 
 
-interface ChainProps {
+type ChainProps = {
   areEmptyRocketsShown?: boolean
   rocketHeight?: number
-  numRockets?: number
-  numStars?: number
-}
+} & (
+  {
+    numRockets: number
+    numStars?: number
+  }
+  |
+  {
+    numRockets?: never
+    numStars: number
+  }
+)
 
 
 class RocketChain extends React.PureComponent<ChainProps> {
@@ -42,7 +50,7 @@ class RocketChain extends React.PureComponent<ChainProps> {
 
   public render(): React.ReactNode {
     const {areEmptyRocketsShown, numStars, numRockets, rocketHeight = 25} = this.props
-    const numFilledRockets = numRockets || getRocketFromStars(numStars)
+    const numFilledRockets = numRockets || getRocketFromStars(numStars || 0)
 
     return <React.Fragment>
       {this.renderRocketChain(numFilledRockets, rocketIcon, {height: rocketHeight}, '*')}

@@ -111,6 +111,7 @@ class NewProjectCriteriaStepBase
             values={workloads}
             onChange={this.handleChange('workloads')} />
         </div>
+        <OnboardingComment field="EMPLOYMENT_TYPE_FIELD" shouldShowAfter={false} />
       </FieldSet>
       {checks[0] ? <React.Fragment>
         <FieldSet
@@ -186,7 +187,8 @@ class SalaryInputBase extends React.PureComponent<SalaryInputProps, SalaryInputS
   }
 
   public static getDerivedStateFromProps(
-    {unitValue, value}: SalaryInputProps, {value: prevValue}: SalaryInputState): SalaryInputState {
+    {unitValue, value}: SalaryInputProps, {value: prevValue}: SalaryInputState):
+    SalaryInputState|null {
     if (value !== prevValue) {
       return {salaryValue: getSalaryValue(value, unitValue), value}
     }
@@ -246,7 +248,7 @@ class SalaryInputBase extends React.PureComponent<SalaryInputProps, SalaryInputS
   }
 }
 const SalaryInput = connect(({user}: RootState): {unitValue: string} => ({
-  unitValue: user.profile.preferredSalaryUnit || 'ANNUAL_GROSS_SALARY',
+  unitValue: user.profile && user.profile.preferredSalaryUnit || 'ANNUAL_GROSS_SALARY',
 }))(SalaryInputBase)
 
 

@@ -3,11 +3,15 @@ coverage
 mongomock>=3.12
 mypy>=0.710
 mypy-protobuf
+mypy_extensions
 nose
+nose_machineout2
 nose-watch
 pycodestyle
-pylint
+pylint>=2.4.1
 pylint-doc-spacing>=0.0.3
+pylint-import-modules>=0.2.0
 pylint-quotes
 requests_mock
 rstr
+typing_extensions

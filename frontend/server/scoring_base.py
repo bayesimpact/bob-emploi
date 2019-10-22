@@ -6,6 +6,7 @@ import logging
 import random
 import re
 import typing
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Pattern, Tuple, Union
 from urllib import parse
 
 from google.protobuf import message
@@ -71,7 +72,7 @@ _TEMPLATE_VAR = re.compile('%[a-z]+')
 _YOU_PATTERN = re.compile('%you<(.*?)/(.*?)>')
 
 # Keep in sync with frontend/client/src/store/project.ts
-_TO_GROSS_ANNUAL_FACTORS: typing.Dict[int, float] = {
+_TO_GROSS_ANNUAL_FACTORS: Dict[int, float] = {
     # net = gross x 80%
     job_pb2.ANNUAL_GROSS_SALARY: 1,
     job_pb2.HOURLY_NET_SALARY: 52 * 35 / 0.8,
@@ -94,7 +95,7 @@ _AType = typing.TypeVar('_AType')
 
 
 def _keep_only_departement_filters(
-        association: association_pb2.Association) -> typing.Iterator[str]:
+        association: association_pb2.Association) -> Iterator[str]:
     for association_filter in association.filters:
         if association_filter.startswith('for-departement'):
             yield association_filter
@@ -118,7 +119,7 @@ class ScoringProject(object):
             user_profile: user_pb2.UserProfile,
             features_enabled: user_pb2.Features,
             database: pymongo_database.Database,
-            now: typing.Optional[datetime.datetime] = None):
+            now: Optional[datetime.datetime] = None):
         self.details = project
         self.user_profile = user_profile
         self.features_enabled = features_enabled
@@ -126,21 +127,21 @@ class ScoringProject(object):
         self.now = now or datetime.datetime.utcnow()
 
         # Cache for scoring models.
-        self._scores: typing.Dict[str, typing.Union[Exception, float]] = {}
+        self._scores: Dict[str, Union[Exception, float]] = {}
 
         # Cache for DB data.
-        self._job_group_info: typing.Optional[job_pb2.JobGroup] = None
-        self._local_diagnosis: typing.Optional[job_pb2.LocalJobStats] = None
-        self._application_tips: typing.List[application_pb2.ApplicationTip] = []
-        self._region: typing.Optional[geo_pb2.Region] = None
-        self._trainings: typing.Optional[typing.List[training_pb2.Training]] = None
-        self._mission_locale_data: typing.Optional[association_pb2.MissionLocaleData] = None
+        self._job_group_info: Optional[job_pb2.JobGroup] = None
+        self._local_diagnosis: Optional[job_pb2.LocalJobStats] = None
+        self._application_tips: List[application_pb2.ApplicationTip] = []
+        self._region: Optional[geo_pb2.Region] = None
+        self._trainings: Optional[List[training_pb2.Training]] = None
+        self._mission_locale_data: Optional[association_pb2.MissionLocaleData] = None
 
         # Cache for modules.
-        self._module_cache: typing.Dict[str, typing.Any] = {}
+        self._module_cache: Dict[str, Any] = {}
 
         # Cache for template variables
-        self._template_variables: typing.Dict[str, str] = {}
+        self._template_variables: Dict[str, str] = {}
 
     def __str__(self) -> str:
         return 'Profile:\n{profile}Project:\n{project}Features:\n{features}'.format(**{
@@ -189,7 +190,7 @@ class ScoringProject(object):
         return base_value * _TO_GROSS_ANNUAL_FACTORS[salary.unit] / _TO_GROSS_ANNUAL_FACTORS[unit] \
             if salary.unit else base_value
 
-    def market_stress(self) -> typing.Optional[float]:
+    def market_stress(self) -> Optional[float]:
         """Get the ratio of # applicants / # job offers for the project."""
 
         imt = self.imt_proto()
@@ -206,11 +207,11 @@ class ScoringProject(object):
 
     @classmethod
     def cached(cls, cache_key: str) \
-            -> typing.Callable[[typing.Callable[..., _AType]], typing.Callable[..., _AType]]:
+            -> Callable[[Callable[..., _AType]], Callable[..., _AType]]:
         """Decorator to cache the result of a function inside the project."""
 
-        def _decorator(func: typing.Callable[..., _AType]) -> typing.Callable[..., _AType]:
-            def _project_decorated_func(self: typing.Any, project: 'ScoringProject') -> typing.Any:
+        def _decorator(func: Callable[..., _AType]) -> Callable[..., _AType]:
+            def _project_decorated_func(self: Any, project: 'ScoringProject') -> Any:
                 # TODO(cyrille): Find a way to make this work inside class definition also.
                 if not isinstance(project, cls):
                     raise TypeError(
@@ -246,7 +247,7 @@ class ScoringProject(object):
 
         return self.job_group_info().requirements
 
-    def get_trainings(self) -> typing.List[training_pb2.Training]:
+    def get_trainings(self) -> List[training_pb2.Training]:
         """Get the training opportunities from our partner's API."""
 
         if self._trainings is not None:
@@ -267,7 +268,7 @@ class ScoringProject(object):
         new_tip.content = content
         return new_tip
 
-    def list_application_tips(self) -> typing.List[application_pb2.ApplicationTip]:
+    def list_application_tips(self) -> List[application_pb2.ApplicationTip]:
         """List all application tips available for this project."""
 
         if self._application_tips:
@@ -280,7 +281,7 @@ class ScoringProject(object):
         ]
         return self._application_tips
 
-    def specific_to_job_advice_config(self) -> typing.Optional[advisor_pb2.DynamicAdvice]:
+    def specific_to_job_advice_config(self) -> Optional[advisor_pb2.DynamicAdvice]:
         """Find the first specific to job advice config that matches this project."""
 
         _configs = _SPECIFIC_TO_JOB_ADVICE.get_collection(self._db)
@@ -290,7 +291,7 @@ class ScoringProject(object):
     def _can_tutoie(self) -> bool:
         return self.user_profile.can_tutoie
 
-    def get_region(self) -> typing.Optional[geo_pb2.Region]:
+    def get_region(self) -> Optional[geo_pb2.Region]:
         """The region proto for this project."""
 
         if self._region:
@@ -422,7 +423,7 @@ class ScoringProject(object):
 
         return self.now.year - self.user_profile.year_of_birth
 
-    def get_best_application_mode(self) -> typing.Optional[job_pb2.ModePercentage]:
+    def get_best_application_mode(self) -> Optional[job_pb2.ModePercentage]:
         """Returns the best available recruiting mode, if it is known."""
 
         try:
@@ -460,7 +461,7 @@ class ScoringProject(object):
         self._scores[scoring_model_name] = score
         return score
 
-    def check_filters(self, filters: typing.Iterable[str], force_exists: bool = False) -> bool:
+    def check_filters(self, filters: Iterable[str], force_exists: bool = False) -> bool:
         """Whether the project satisfies all the given filters."""
 
         return all(self.score(f, force_exists=force_exists) > 0 for f in filters)
@@ -560,7 +561,7 @@ def _what_i_love_about(project: ScoringProject) -> str:
         project.job_group_info().what_i_love_about
 
 
-_TEMPLATE_VARIABLES: typing.Dict[str, typing.Callable[[ScoringProject], str]] = {
+_TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
     '%aJobName': _a_job_name,
     # This is a comma separated list of diplomas. Make sure before-hand that there's at least one.
     # Can be used as "nécessite %aRequiredDiploma".
@@ -621,7 +622,7 @@ class ExplainedScore(typing.NamedTuple):
     """Score for a metric and its explanations."""
 
     score: float
-    explanations: typing.List[str]
+    explanations: List[str]
 
 
 NULL_EXPLAINED_SCORE = ExplainedScore(0, [])
@@ -647,7 +648,7 @@ class ModelBase(object):
             raise NotImplementedError()
         return self.score_and_explain(project).score
 
-    def _explain(self, unused_project: ScoringProject) -> typing.List[str]:
+    def _explain(self, unused_project: ScoringProject) -> List[str]:
         """Compute the explanations for the score of the given ScoringProject.
 
         It should be overriden if explanations are independant from the score. Otherwise override
@@ -668,7 +669,7 @@ class ModelBase(object):
     def get_advice_override(
             self,
             unused_project: ScoringProject,
-            unused_advice: project_pb2.Advice) -> typing.Optional[project_pb2.Advice]:
+            unused_advice: project_pb2.Advice) -> Optional[project_pb2.Advice]:
         """Get override data for an advice."""
 
         return None
@@ -727,8 +728,8 @@ class BaseFilter(ModelBase):
 
     def __init__(
             self,
-            filter_func: typing.Callable[[ScoringProject], bool],
-            reasons: typing.Optional[typing.List[str]] = None):
+            filter_func: Callable[[ScoringProject], bool],
+            reasons: Optional[List[str]] = None):
         self.filter_func = filter_func
         self._reasons = reasons
 
@@ -739,7 +740,7 @@ class BaseFilter(ModelBase):
             return 3
         return 0
 
-    def _explain(self, unused_project: ScoringProject) -> typing.List[str]:
+    def _explain(self, unused_project: ScoringProject) -> List[str]:
         return self._reasons if self._reasons else []
 
 
@@ -763,16 +764,16 @@ class LowPriorityAdvice(ModelBase):
 
 
 class _ScoringModelRegexp(typing.NamedTuple):
-    regexp: typing.Pattern[str]
-    constructor: typing.Callable[..., ModelBase]
+    regexp: Pattern[str]
+    constructor: Callable[..., ModelBase]
 
 
-SCORING_MODEL_REGEXPS: typing.List[
-    typing.Tuple[typing.Pattern[str], typing.Callable[..., ModelBase]]] = []
+SCORING_MODEL_REGEXPS: List[
+    Tuple[Pattern[str], Callable[..., ModelBase]]] = []
 
 
 def get_scoring_model(
-        scoring_model_name: str, cache_generated_model: bool = True) -> typing.Optional[ModelBase]:
+        scoring_model_name: str, cache_generated_model: bool = True) -> Optional[ModelBase]:
     """Get a scoring model by its name, may generate it if needed and possible."""
 
     if scoring_model_name in SCORING_MODELS:
@@ -805,15 +806,15 @@ class RandomModel(ModelBase):
         return random.random() * 3
 
 
-SCORING_MODELS: typing.Dict[str, ModelBase] = {
+SCORING_MODELS: Dict[str, ModelBase] = {
     '': RandomModel(),
 }
 
 
 def filter_using_score(
-        iterable: typing.Iterable[_AType],
-        get_scoring_func: typing.Callable[[_AType], typing.Iterable[str]],
-        project: ScoringProject) -> typing.Iterator[_AType]:
+        iterable: Iterable[_AType],
+        get_scoring_func: Callable[[_AType], Iterable[str]],
+        project: ScoringProject) -> Iterator[_AType]:
     """Filter the elements of an iterable using scores.
 
     Args:
@@ -841,8 +842,8 @@ def register_model(model_name: str, model: ModelBase) -> None:
 
 
 def register_regexp(
-        regexp: typing.Pattern[str],
-        constructor: typing.Callable[..., ModelBase], example: str) -> None:
+        regexp: Pattern[str],
+        constructor: Callable[..., ModelBase], example: str) -> None:
     """Register regexp based scoring models."""
 
     if not regexp.match(example):

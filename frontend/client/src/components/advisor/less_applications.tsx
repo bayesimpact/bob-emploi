@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import NewPicto from 'images/advices/picto-less-applications.svg'
+import Picto from 'images/advices/picto-less-applications.svg'
 
-import {CardProps, MethodSuggestionList, TakeAwayTemplate, WithAdvice} from './base'
+import {CardProps, MethodSuggestionList} from './base'
 
 
 const tuTips = [
@@ -41,11 +41,4 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 }
 
 
-class TakeAway extends React.PureComponent<WithAdvice> {
-  public render(): React.ReactNode {
-    return <TakeAwayTemplate found="astuce" isFeminine={true} list={tuTips} />
-  }
-}
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

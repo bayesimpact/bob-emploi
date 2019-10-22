@@ -1,11 +1,12 @@
 const Airtable = require('airtable')
 const fs = require('fs')
 const stringify = require('json-stable-stringify')
-const forEach = require('lodash/forEach')
 const fromPairs = require('lodash/fromPairs')
 const keyBy = require('lodash/keyBy')
 const mapValues = require('lodash/mapValues')
 
+const forEach = (object, action) =>
+  Object.entries(object).forEach(([key, value]) => action(value, key))
 const adviceBase = new Airtable().base('appXmyc7yYj0pOcae')
 const romeBase = new Airtable().base('appMRMtWV61Kibt37')
 
@@ -53,6 +54,7 @@ const isDryRun = !!process.env.DRY_RUN
 
 const shouldDownload = {
   'advice_modules': shouldDownloadAll,
+  'categories': shouldDownloadAll,
   'email_templates': shouldDownloadAll,
   'events': shouldDownloadAll,
   'strategy_goals': shouldDownloadAll,
@@ -94,6 +96,8 @@ function checkNotRegexp(regexp, errorMessage, text) {
   }
   return text
 }
+const checkNotRegexpHighlight = (regexp, field, errorMessage, text) => checkNotRegexp(
+  regexp, `${field} ${errorMessage}: "${text.replace(regexp, '**$&**')}".`, text)
 const checkNoCurlyQuotes = (text, context) =>
   checkNotRegexp(
     /’/,
@@ -122,6 +126,10 @@ const strategyGoalsFromAirtable =
 const strategyTestimonialsFromAirtable =
   shouldDownload['strategy_testimonials'] &&
   adviceBase.table('strategy_testimonials').select({view: 'Ready to Import'}).all()
+
+const categoriesFromAirtable =
+  shouldDownload['categories'] &&
+  adviceBase.table('diagnostic_categories').select({view: 'Ready to Import'}).all()
 
 // STEP 2 //
 
@@ -189,6 +197,8 @@ const eventsTranslatableFields = ['event_location_prefix', 'event_location']
 const strategyGoalsTranslatableFields = ['content']
 
 const strategyTestimonialsTranslatableFields = ['content', 'job']
+
+const categoriesTranslatableFields = ['metric_details', 'metric_details_feminine']
 
 // Step 3 //
 
@@ -319,6 +329,46 @@ const mapStrategyTestimonials = ({id, fields}) => {
   return {content, createdAt, isMale, job, name, rating, strategyIds}
 }
 
+const mapCategory = ({id, fields}) => {
+  ['metric_title', 'metric_details', 'metric_details_feminine'].forEach(fieldname => {
+    const value = fields[fieldname]
+    if (!value) {
+      return
+    }
+    checkNoCurlyQuotes(value, `${fieldname} of ${id} of diagnostic_categories`)
+    checkNotRegexpHighlight(
+      /(^ | $)/g,
+      `${fieldname} of ${id}`, 'should not have extra spaces at the beginning or end',
+      value,
+    )
+    checkNotRegexpHighlight(
+      / [?;:!]/g,
+      `${fieldname} of ${id}`,
+      'should have unbreakable space before a French double punctuation mark',
+      value,
+    )
+    checkNotRegexpHighlight(
+      /^[a-z]/g,
+      `${fieldname} of ${id}`, 'should start with an uppercase letter',
+      value,
+    )
+    if (fieldname.startsWith('metric_details')) {
+      checkNotRegexpHighlight(
+        /[^.!?]$/g,
+        `${fieldname} of ${id}`, 'should end with a punctuation mark',
+        value,
+      )
+    }
+  })
+  const {
+    category_id: categoryId,
+    metric_title: metricTitle,
+    metric_details: metricDetails,
+    metric_details_feminine: metricDetailsFeminine,
+  } = fields
+  return {categoryId, metricDetails, metricDetailsFeminine, metricTitle}
+}
+
 // Step 4 //
 
 const reduceRecords = (recordToResult, reduceResults, reduceZero) => records => records.
@@ -390,6 +440,15 @@ const reduceStrategyTestimonials = reduceRecords(mapStrategyTestimonials,
   }
 )
 
+const reduceCategories = reduceRecords(mapCategory,
+  (categories, {categoryId, ...otherFields}) => {
+    return {
+      ...categories,
+      [categoryId]: otherFields,
+    }
+  }
+)
+
 // Step 5 //
 
 const writeToJson = jsonFile => jsonObject => {
@@ -432,6 +491,12 @@ const importAdvices = shouldDownload['advice_modules'] ? fromAirtableToObjects(
   writeToJson('src/components/advisor/data/categories.json')(jsonObjectsByLang.original.categories)
 }, maybeThrowError) : noOp
 
+const importCategories = shouldDownload['categories'] ? fromAirtableToObjects(
+  categoriesFromAirtable,
+  categoriesTranslatableFields,
+  reduceCategories,
+).then(writeWithTranslations('src/components/strategist/data/categories')) : noOp
+
 const importEmailTemplates = shouldDownload['email_templates'] ? fromAirtableToObjects(
   emailTemplatesFromAirtable,
   emailTemplatesTranslatableFields,
@@ -459,6 +524,7 @@ const importStrategyTestimonials = shouldDownload['strategy_testimonials'] ? fro
 
 module.exports = Promise.all([
   importAdvices,
+  importCategories,
   importEmailTemplates,
   importEvents,
   importStrategyGoals,

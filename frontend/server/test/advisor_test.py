@@ -1,9 +1,11 @@
 """Unit tests for the bob_emploi.frontend.advisor module."""
 
 import datetime
+from os import path
 import re
 import time
 import typing
+from typing import Any, Dict
 import unittest
 from unittest import mock
 
@@ -19,6 +21,9 @@ from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import mailjetmock
 from bob_emploi.frontend.server.test import scoring_test
+
+
+_TEMPLATE_PATH = path.join(path.dirname(path.dirname(__file__)), 'asynchronous/mail/templates')
 
 
 class _BaseTestCase(unittest.TestCase):
@@ -104,9 +109,9 @@ class MaybeAdviseTestCase(_BaseTestCase):
         mails_sent = mailjetmock.get_all_sent_messages()
         self.assertEqual(1, len(mails_sent), msg=mails_sent)
         data = mails_sent[0].properties['Variables']
-        self.assertEqual(
-            ['changeEmailSettingsUrl', 'date', 'firstName', 'gender', 'loginUrl', 'ofJob'],
-            sorted(data.keys()))
+        with open(path.join(_TEMPLATE_PATH, 'activation-email', 'vars.txt'), 'r') as vars_file:
+            template_vars = {v.strip() for v in vars_file}
+        self.assertEqual(template_vars, set(data.keys()))
 
         self.assertEqual('10 juin 2018', data['date'])
         self.assertEqual('Margaux', data['firstName'])
@@ -120,6 +125,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
         self.assertRegex(
             email_settings_url,
             rf'^{base_url}&auth=\d+\.[a-f0-9]+&coachingEmailFrequency=UNKNOWN_EMAIL_FREQUENCY$')
+        self.assertEqual('', data['isCoachingEnabled'])
 
     @mailjetmock.patch()
     def test_missing_email_address(self) -> None:
@@ -296,7 +302,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
 
     @mock.patch(advisor.scoring.scoring_base.__name__ + '.SCORING_MODELS', new_callable=dict)
     @mailjetmock.patch()
-    def test_explained_advice(self, mock_scoring_models: typing.Dict[str, typing.Any]) -> None:
+    def test_explained_advice(self, mock_scoring_models: Dict[str, Any]) -> None:
         """Test that the advisor gives explanations for the advices."""
 
         mock_scoring_models['constant(1)'] = mock.MagicMock(spec=[
@@ -367,7 +373,7 @@ class MaybeAdviseTestCase(_BaseTestCase):
     @mailjetmock.patch()
     def test_module_crashes(
             self, mock_logger: mock.MagicMock,
-            mock_scoring_models: typing.Dict[str, typing.Any]) -> None:
+            mock_scoring_models: Dict[str, Any]) -> None:
         """Test that the advisor does not crash if one module does."""
 
         mock_scoring_models['constant(1)'] = mock.MagicMock(spec=[

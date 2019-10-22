@@ -1,11 +1,10 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 
 import {YouChooser} from 'store/french'
 
-import NewPicto from 'images/advices/picto-long-term-mom.svg'
+import Picto from 'images/advices/picto-long-term-mom.svg'
 
-import {CardProps, MethodSuggestionList, Skill, TakeAwayTemplate, WithAdvice} from './base'
+import {CardProps, MethodSuggestionList, Skill} from './base'
 
 
 interface MomSkill {
@@ -47,14 +46,8 @@ const momSkills: MomSkill[] = [
 ]
 
 
-class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
-  public static propTypes = {
-    handleExplore: PropTypes.func.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {handleExplore, userYou} = this.props
+const ExpandedAdviceCardContent: React.FC<CardProps> =
+  ({handleExplore, userYou}: CardProps): React.ReactElement => {
     // TODO(cyrille): Put text in title/subtitle/headerContent, once OKed by product team.
     return <div>
       {userYou("Tu t'", 'Vous vous êt')}es un peu éloignée du monde de l'emploi, rien de plus
@@ -73,13 +66,6 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
       </MethodSuggestionList>
     </div>
   }
-}
 
 
-class TakeAway extends React.PureComponent<WithAdvice> {
-  public render(): React.ReactNode {
-    return <TakeAwayTemplate found="atout" list={momSkills} />
-  }
-}
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

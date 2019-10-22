@@ -1,9 +1,9 @@
 """Setup file for the data_analysis project."""
 
-from setuptools import setup, find_packages
+import setuptools
 
-setup(
+setuptools.setup(
     name='bob_emploi',
     version='0.0.1',
-    packages=find_packages()
+    packages=setuptools.find_packages()
 )

@@ -6,10 +6,10 @@ import {YouChooser, inCityPrefix, lowerFirstLetter} from 'store/french'
 
 import {isMobileVersion} from 'components/mobile'
 import {AppearingList, GrowingNumber, Tag} from 'components/theme'
-import NewPicto from 'images/advices/picto-commute.svg'
+import Picto from 'images/advices/picto-commute.svg'
 
-import {CardProps, CardWithContentProps, PercentageBoxes, connectExpandedCardWithContent,
-  makeTakeAwayFromAdviceData} from './base'
+import {CardProps, CardWithContentProps, PercentageBoxes,
+  connectExpandedCardWithContent} from './base'
 
 
 const maybeS = (count: number): string => count > 1 ? 's' : ''
@@ -58,7 +58,10 @@ class ExpandedAdviceCardContentBase
   }
 
   public render(): React.ReactNode {
-    const {project: {city = {}, targetJob = {}}, userYou} = this.props
+    const {
+      project: {city = {}, targetJob: {jobGroup: {name: jobGroupName = ''} = {}} = {}},
+      userYou,
+    } = this.props
     const otherCities = this.getOtherCities()
     const otherCitiesList = this.computeAllCities()
 
@@ -82,7 +85,7 @@ class ExpandedAdviceCardContentBase
         {maybeS(otherCitiesList.length)} proche{maybeS(otherCitiesList.length)} de chez
         {userYou(' toi', ' vous')} {otherCitiesList.length > 1 ? 'ont' : 'a'} beaucoup
         embauché en <strong>
-          {lowerFirstLetter(targetJob.jobGroup.name)}
+          {lowerFirstLetter(jobGroupName)}
         </strong> ces deux dernières années :
       </div>
       <AppearingList style={{marginTop: 15}}>
@@ -92,7 +95,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.CommutingCities, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.CommutingCities, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
@@ -134,7 +137,7 @@ class CommuteCitySuggestionBase extends React.Component<CommuteCitySuggestionPro
 
   public renderTargetCity(style: React.CSSProperties): React.ReactNode {
     const {city: {name}, hasComplexTarget, userYou} = this.props
-    const {prefix, cityName} = inCityPrefix(name)
+    const {prefix, cityName} = inCityPrefix(name || '')
     const hasSimpleLayout = !hasComplexTarget || isMobileVersion
     const targetCityStyle: React.CSSProperties = {
       fontStyle: 'italic',
@@ -154,7 +157,7 @@ class CommuteCitySuggestionBase extends React.Component<CommuteCitySuggestionPro
   }
 
   private renderOtherCity(style: React.CSSProperties): React.ReactNode {
-    const {distanceKm, name, relativeOffersPerInhabitant} = this.props.city
+    const {distanceKm = 0, name, relativeOffersPerInhabitant = 0} = this.props.city
     const multiplierStyle: React.CSSProperties = {
       color: colors.HOVER_GREEN,
       fontWeight: 'bold',
@@ -210,9 +213,4 @@ class CommuteCitySuggestionBase extends React.Component<CommuteCitySuggestionPro
 const CommuteCitySuggestion = Radium(CommuteCitySuggestionBase)
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({cities}: bayes.bob.CommutingCities): readonly bayes.bob.CommutingCity[] => cities,
-  'ville', true)
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

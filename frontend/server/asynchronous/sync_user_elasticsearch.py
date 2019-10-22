@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import typing
+from typing import Any, Dict, List, Optional, Mapping
 
 import certifi as _  # Needed to handle SSL in elasticsearch connections, for production use.
 import elasticsearch
@@ -22,9 +23,14 @@ from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
+from bob_emploi.frontend.server.asynchronous.mail import all_campaigns
 from bob_emploi.frontend.server.asynchronous import report
 
 _DB, _USER_DB, _UNUSED_EVAL_DB = mongo.get_connections_from_env()
+
+_ALL_COACHING_EMAILS = all_campaigns.campaign.get_coaching_campaigns().keys()
+
+_OPENED_EMAIL_STATUSES = {user_pb2.EMAIL_SENT_CLICKED, user_pb2.EMAIL_SENT_OPENED}
 
 
 def age_group(year_of_birth: int) -> str:
@@ -49,7 +55,7 @@ def age_group(year_of_birth: int) -> str:
     return 'G. 65+'
 
 
-def nps_love_score(nps_score: int) -> typing.Optional[int]:
+def nps_love_score(nps_score: int) -> Optional[int]:
     """Convert NPS scode to lovers/detractors values.
 
     Returns -1 for detractors, meaning NPS score is between 1 and 5.
@@ -67,7 +73,7 @@ def nps_love_score(nps_score: int) -> typing.Optional[int]:
     return None
 
 
-def bob_has_helped_love_score(answer: str) -> typing.Optional[int]:
+def bob_has_helped_love_score(answer: str) -> Optional[int]:
     """Convert 'Bob has helped ?' answers to lovers/detractors values.
 
     Return -1 if answer is 'NO'
@@ -82,7 +88,7 @@ def bob_has_helped_love_score(answer: str) -> typing.Optional[int]:
     return None
 
 
-def feedback_love_score(feedback_score: int) -> typing.Optional[int]:
+def feedback_love_score(feedback_score: int) -> Optional[int]:
     """Convert online feedback score to lovers/detractors values.
 
     Returns -1 if score is 1 or 2.
@@ -100,7 +106,7 @@ def feedback_love_score(feedback_score: int) -> typing.Optional[int]:
     return None
 
 
-def _get_employment_status(user: user_pb2.User) -> typing.Optional[user_pb2.EmploymentStatus]:
+def _get_employment_status(user: user_pb2.User) -> Optional[user_pb2.EmploymentStatus]:
     """Get the last employmentStatus for which we have an answer to bobHasHelped question, or get
     the last employmentStatus."""
 
@@ -117,7 +123,7 @@ def _get_degree_level(degree: job_pb2.DegreeLevel) -> str:
     return f'{degree:d} - {job_pb2.DegreeLevel.Name(degree)}'
 
 
-def _get_last_complete_project(user: user_pb2.User) -> typing.Optional[project_pb2.Project]:
+def _get_last_complete_project(user: user_pb2.User) -> Optional[project_pb2.Project]:
     """Get last project which is not is_incomplete."""
 
     return next(
@@ -153,10 +159,10 @@ _T = typing.TypeVar('_T')
 _U = typing.TypeVar('_U')
 
 
-def _remove_null_fields(mydict: typing.Dict[_T, typing.Optional[_U]]) -> typing.Dict[_T, _U]:
-    out: typing.Dict[_T, _U] = {}
+def _remove_null_fields(mydict: Dict[_T, Optional[_U]]) -> Dict[_T, _U]:
+    out: Dict[_T, _U] = {}
     for key, value in mydict.items():
-        clean_value: typing.Optional[_U]
+        clean_value: Optional[_U]
         if isinstance(value, dict):
             clean_value = typing.cast(_U, _remove_null_fields(value)) or None
         else:
@@ -166,7 +172,7 @@ def _remove_null_fields(mydict: typing.Dict[_T, typing.Optional[_U]]) -> typing.
     return out
 
 
-def _get_urban_context(city_id: str) -> typing.Optional[str]:
+def _get_urban_context(city_id: str) -> Optional[str]:
     target_city = proto.fetch_from_mongo(_DB, geo_pb2.FrenchCity, 'cities', city_id)
     if target_city:
         urban_context = target_city.urban_context
@@ -174,10 +180,11 @@ def _get_urban_context(city_id: str) -> typing.Optional[str]:
     return None
 
 
-def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]:
+def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
     """Gather analytics data to insert into elasticsearch."""
 
-    data: typing.Dict[str, typing.Any] = {
+    is_hooked = False
+    data: Dict[str, Any] = {
         'registeredAt': user.registered_at.ToJsonString(),
         'randomGroup': random.randint(0, 100) / 100,
         'profile': {
@@ -241,6 +248,10 @@ def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]
             data['project']['city']['urbanContext'] = urban_context
         if last_project.diagnostic.category_id:
             data['project']['diagnostic'] = {'categoryId': last_project.diagnostic.category_id}
+        for strat in last_project.opened_strategies:
+            if strat.started_at:
+                is_hooked = True
+                break
     last_status = _get_employment_status(user)
     if last_status:
         data['employmentStatus'] = json_format.MessageToDict(last_status)
@@ -263,6 +274,12 @@ def _user_to_analytics_data(user: user_pb2.User) -> typing.Dict[str, typing.Any]
             email.campaign_id: user_pb2.EmailSentStatus.Name(email.status)
             for email in sorted(user.emails_sent, key=lambda email: email.sent_at.ToDatetime())
         }
+        for email in user.emails_sent:
+            if email.campaign_id in _ALL_COACHING_EMAILS and email.status in _OPENED_EMAIL_STATUSES:
+                is_hooked = True
+                break
+
+    data['isHooked'] = is_hooked
 
     if user.client_metrics.first_session_duration_seconds:
         data['clientMetrics'] = {
@@ -314,7 +331,7 @@ def export_user_to_elasticsearch(
 
 def main(
         es_client: elasticsearch.Elasticsearch,
-        string_args: typing.Optional[typing.List[str]] = None) -> None:
+        string_args: Optional[List[str]] = None) -> None:
     """Parse command line arguments and trigger sync_employment_status function."""
 
     parser = argparse.ArgumentParser(
@@ -343,8 +360,7 @@ def main(
     export_user_to_elasticsearch(es_client, args.index, args.registered_from, dry_run=args.dry_run)
 
 
-def _get_auth_from_env(
-        env: typing.Mapping[str, str]) -> typing.Optional[requests_aws4auth.AWS4Auth]:
+def _get_auth_from_env(env: Mapping[str, str]) -> Optional[requests_aws4auth.AWS4Auth]:
     aws_in_docker = env.get('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
     if aws_in_docker:
         # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html

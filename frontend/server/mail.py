@@ -4,17 +4,19 @@ import logging
 import os
 import re
 import typing
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 import mailjet_rest
 from requests import exceptions
 from requests import models
-import typing_extensions
 
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import now
 
 if typing.TYPE_CHECKING:
     import mypy_extensions
+    import typing_extensions
+    from typing_extensions import Literal
 
     class _MailjetUser(mypy_extensions.TypedDict, total=False):
         Name: str
@@ -22,14 +24,14 @@ if typing.TYPE_CHECKING:
 
     _MailjetParsePartHeaderJson = mypy_extensions.TypedDict(  # pylint: disable=invalid-name
         '_MailjetParsePartHeaderJson', {
-            'Content-Type': typing.List[str],
-            'Content-Transfer-Encoding': typing.List[str],
-            'Content-Disposition': typing.List[str],
+            'Content-Type': List[str],
+            'Content-Transfer-Encoding': List[str],
+            'Content-Disposition': List[str],
         }, total=False)
 
     class _MailjetParsePartJson(mypy_extensions.TypedDict, total=False):
         # Add more attachments if needed.
-        ContentRef: typing_extensions.Literal[
+        ContentRef: Literal[
             'Html-part', 'Text-part', 'Attachment1', 'Attachment2', 'Attachment3',
         ]
         Headers: _MailjetParsePartHeaderJson
@@ -43,8 +45,8 @@ if typing.TYPE_CHECKING:
             # Sender in format "Name <Email>".
             'From': str,
             'Subject': str,
-            'Headers': typing.Dict[str, typing.Any],
-            'Parts': typing.List[_MailjetParsePartJson],
+            'Headers': Dict[str, Any],
+            'Parts': List[_MailjetParsePartJson],
             'Text-part': str,
             'Html-part': str,
             'SpamAssassinScore': str,
@@ -54,7 +56,9 @@ if typing.TYPE_CHECKING:
             # Add more attachments if needed.
         }, total=False)
 
-    class _MailjetSendAttachementJson(mypy_extensions.TypedDict, total=False):
+    _AttachmentRefType = Literal['Attachment1', 'Attachment2', 'Attachment3']
+
+    class _MailjetSendAttachmentJson(mypy_extensions.TypedDict, total=False):
         ContentType: str
         Filename: str
         Base64Content: str
@@ -62,19 +66,56 @@ if typing.TYPE_CHECKING:
     _MailjetSendMessageJson = mypy_extensions.TypedDict(  # pylint: disable=invalid-name
         '_MailjetSendMessageJson', {
             # Email of sender.
-            'To': typing.List[_MailjetUser],
+            'To': List[_MailjetUser],
             'From': _MailjetUser,
-            'HTMLPart': typing.Optional[str],
+            'HTMLPart': Optional[str],
             'Subject': str,
             'TemplateID': int,
             'TemplateLanguage': bool,
-            'TextPart': typing.Optional[str],
-            'Variables': typing.Dict[str, typing.Any],
-            'Attachments': typing.List[_MailjetSendAttachementJson],
+            'TextPart': Optional[str],
+            'Variables': Dict[str, Any],
+            'Attachments': List[_MailjetSendAttachmentJson],
         }, total=False)
 
     class _MailjetSendDataJson(mypy_extensions.TypedDict, total=False):
-        Messages: typing.List[_MailjetSendMessageJson]
+        Messages: List[_MailjetSendMessageJson]
+
+    class _Recipient(typing_extensions.Protocol):
+        @property
+        def email(self) -> str:
+            """Email address."""
+
+        @property
+        def last_name(self) -> str:
+            """Last name."""
+
+        @property
+        def name(self) -> str:
+            """First name."""
+
+    class _Response(typing_extensions.Protocol):
+        """This is a partial interface for the requests.models.Response class."""
+
+        @property
+        def status_code(self) -> int:
+            """The HTTP return code for this response."""
+
+            return 200
+
+        @property
+        def text(self) -> str:
+            """The body of this HTTP response as a string."""
+
+            return 'OK'
+
+        def json(self) -> Any:  # pylint: disable=invalid-name
+            """The body of this HTTP response encoded in JSON, decoded."""
+
+            return {}
+
+        def raise_for_status(self) -> None:
+            """Raises an exception if status_code is that of an error."""
+
 
 _MAILJET_APIKEY_PUBLIC = os.getenv('MAILJET_APIKEY_PUBLIC', 'f53ee2bc432e531d209aa686e3a725e1')
 # See https://app.mailjet.com/account/api_keys
@@ -94,49 +135,11 @@ _FILENAME_DISPOSITION_REGEX = re.compile(r'filename=("(?:\\"|[^"])+"|[^ ]+)')
 _ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'pascal@bayes.org')
 
 
-class _Recipient(typing_extensions.Protocol):
-    @property
-    def email(self) -> str:
-        """Email address."""
-
-    @property
-    def last_name(self) -> str:
-        """Last name."""
-
-    @property
-    def name(self) -> str:
-        """First name."""
-
-
-class _Response(typing_extensions.Protocol):
-    """This is a partial interface for the requests.models.Response class."""
-
-    @property
-    def status_code(self) -> int:
-        """The HTTP return code for this response."""
-
-        return 200
-
-    @property
-    def text(self) -> str:
-        """The body of this HTTP response as a string."""
-
-        return 'OK'
-
-    def json(self) -> typing.Any:  # pylint: disable=invalid-name
-        """The body of this HTTP response encoded in JSON, decoded."""
-
-        return {}
-
-    def raise_for_status(self) -> None:
-        """Raises an exception if status_code is that of an error."""
-
-
 class _FakeResponse(typing.NamedTuple):
     status_code: int = 200
     text: str = 'OK'
 
-    def json(self) -> typing.Dict[str, typing.Any]:  # pylint: disable=invalid-name
+    def json(self) -> Dict[str, Any]:  # pylint: disable=invalid-name
         """Get JSON encoded data from the body."""
 
         return {}
@@ -145,11 +148,11 @@ class _FakeResponse(typing.NamedTuple):
         """Raises an exception if status_code is that of an error."""
 
 
-def _mailjet_client(version: typing.Optional[str] = None) -> mailjet_rest.Client:
+def _mailjet_client(version: Optional[str] = None) -> mailjet_rest.Client:
     return mailjet_rest.Client(auth=(_MAILJET_APIKEY_PUBLIC, _MAILJET_SECRET), version=version)
 
 
-def _make_mailjet_user(user: typing.Union[str, _Recipient]) -> '_MailjetUser':
+def _make_mailjet_user(user: Union[str, '_Recipient']) -> '_MailjetUser':
     if isinstance(user, str):
         match = _NAME_AND_MAIL_REGEXP.match(user)
         if not match:
@@ -158,7 +161,7 @@ def _make_mailjet_user(user: typing.Union[str, _Recipient]) -> '_MailjetUser':
             'Email': match.group(2),
             'Name': match.group(1),
         }
-    recipient: _Recipient = user
+    recipient: '_Recipient' = user
     return {
         'Email': recipient.email,
         'Name': f'{recipient.name} {recipient.last_name}',
@@ -166,10 +169,10 @@ def _make_mailjet_user(user: typing.Union[str, _Recipient]) -> '_MailjetUser':
 
 
 def send_template(
-        template_id: str, recipient: _Recipient, template_vars: typing.Dict[str, typing.Any],
-        dry_run: bool = False, other_recipients: typing.Optional[typing.List[_Recipient]] = None,
+        template_id: str, recipient: '_Recipient', template_vars: Dict[str, Any],
+        dry_run: bool = False, other_recipients: Optional[List['_Recipient']] = None,
         sender_email: str = _MAIL_SENDER_EMAIL, sender_name: str = _MAIL_SENDER_NAME,
-        campaign_id: typing.Optional[str] = None) -> _Response:
+        campaign_id: Optional[str] = None) -> '_Response':
     """Send an email using a template.
 
     Args:
@@ -216,7 +219,7 @@ def send_template(
     return typing.cast(models.Response, mail_client.send.create(data=data))
 
 
-def get_message(message_id: int) -> typing.Optional[typing.Dict[str, typing.Any]]:
+def get_message(message_id: int) -> Optional[Dict[str, Any]]:
     """Get the status of a sent message, using its Mailjet Message ID."""
 
     mail_client = _mailjet_client()
@@ -227,7 +230,7 @@ def get_message(message_id: int) -> typing.Optional[typing.Dict[str, typing.Any]
     return next(iter(mailjet_response.json().get('Data', [])), None)
 
 
-def _get_message_ids(response: _Response) -> typing.Iterator[int]:
+def _get_message_ids(response: '_Response') -> Iterator[int]:
     sent_response = response.json()
     for message in sent_response.get('Messages', []):
         for recipient in message.get('To', []):
@@ -243,7 +246,7 @@ def _create_email_sent_proto(message_id: int) -> user_pb2.EmailSent:
     return email_sent
 
 
-def create_email_sent_proto(response: _Response) -> typing.Optional[user_pb2.EmailSent]:
+def create_email_sent_proto(response: '_Response') -> Optional[user_pb2.EmailSent]:
     """Create an EmailSent proto from a MailJet response for the first recipient."""
 
     message_id = next(_get_message_ids(response), 0)
@@ -253,8 +256,8 @@ def create_email_sent_proto(response: _Response) -> typing.Optional[user_pb2.Ema
     return _create_email_sent_proto(message_id)
 
 
-def create_email_sent_protos(response: _Response) \
-        -> typing.Iterator[user_pb2.EmailSent]:
+def create_email_sent_protos(response: '_Response') \
+        -> Iterator[user_pb2.EmailSent]:
     """Create an EmailSent proto for each recipient of an email from a MailJet response."""
 
     for message_id in _get_message_ids(response):
@@ -262,15 +265,15 @@ def create_email_sent_protos(response: _Response) \
 
 
 def send_direct_email(
-        recipient: _Recipient, email_data: '_MailjetParseJson',
-        subject: typing.Optional[str] = None) -> models.Response:
+        recipient: '_Recipient', email_data: '_MailjetParseJson',
+        subject: Optional[str] = None) -> models.Response:
     """Send an email for which we already have the content to a specific recipient.
 
     Original sender is kept, so it must be a validated email address in MailJet.
     """
 
     mail_client = _mailjet_client(version='v3.1')
-    attachments: typing.List['_MailjetSendAttachementJson'] = []
+    attachments: List['_MailjetSendAttachmentJson'] = []
     for part in email_data.get('Parts', []):
         ref = part.get('ContentRef')
         if not ref or not ref.startswith('Attachment'):
@@ -281,8 +284,9 @@ def send_direct_email(
             for dispo in iter(headers.get('Content-Disposition', []))
             if dispo.startswith('attachment')), None)
         filename = filename_match.group(1) if filename_match else ''
+        attachment_ref = typing.cast('_AttachmentRefType', ref)
         attachments.append({
-            'Base64Content': email_data.get(ref, ''),
+            'Base64Content': email_data.get(attachment_ref, ''),
             'ContentType': headers.get('Content-Type', [''])[0].split(';', 1)[0],
             'Filename': filename,
         })
@@ -299,7 +303,7 @@ def send_direct_email(
 
 def mailer_daemon(
         error_message: str, email_data: '_MailjetParseJson',
-        user_id: typing.Optional[str] = None) -> models.Response:
+        user_id: Optional[str] = None) -> models.Response:
     """Send an email back to the original sender of a Mailjet Parse API email,
     saying there has been an error."""
 

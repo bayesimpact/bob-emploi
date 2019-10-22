@@ -3,6 +3,7 @@
 import datetime
 import json
 import typing
+from typing import Any, Dict, List, Tuple
 import unittest
 from unittest import mock
 from urllib import parse
@@ -11,6 +12,7 @@ import requests_mock
 
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import now
+from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import mailjetmock
@@ -25,7 +27,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         response = self.app.get('/')
         self.assertEqual(200, response.status_code)
 
-    def _create_user_joe_the_cheminot(self) -> typing.Tuple[str, str]:
+    def _create_user_joe_the_cheminot(self) -> Tuple[str, str]:
         """Joe is a special user used to analyse feedback."""
 
         user_data = {
@@ -124,7 +126,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         response = self.app.get('/api/usage/stats')
         self.assertEqual(
             {
-                'totalUserCount': 8,
+                'totalUserCount': 6,
                 'weeklyNewUserCount': 3,
             },
             self.json_from_response(response))
@@ -183,19 +185,67 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + auth_token})
         tokens = self.json_from_response(response)
         self.assertEqual(
-            {'auth', 'employment-status', 'nps', 'reset', 'settings', 'unsubscribe', 'user'},
-            tokens.keys())
+            {
+                'auth', 'authUrl', 'employmentStatus', 'employmentStatusUrl', 'nps', 'npsUrl',
+                'reset', 'resetUrl', 'settings', 'settingsUrl', 'unsubscribe', 'unsubscribeUrl',
+                'user',
+            }, tokens.keys())
         auth.check_token(user_id, tokens['unsubscribe'], role='unsubscribe')
-        auth.check_token(user_id, tokens['employment-status'], role='employment-status')
+        auth.check_token(user_id, tokens['employmentStatus'], role='employment-status')
         auth.check_token(user_id, tokens['nps'], role='nps')
         auth.check_token(user_id, tokens['settings'], role='settings')
         auth.check_token(user_id, tokens['auth'], role='')
+        self.assertEqual({
+            'authToken': tokens['auth'],
+            'userId': user_id,
+        }, dict(parse.parse_qsl(parse.urlparse(tokens['authUrl']).query)))
+        self.assertEqual({
+            'token': tokens['employmentStatus'],
+            'user': user_id,
+        }, dict(parse.parse_qsl(parse.urlparse(tokens['employmentStatusUrl']).query)))
+        self.assertEqual({
+            'token': tokens['nps'],
+            'user': user_id,
+        }, dict(parse.parse_qsl(parse.urlparse(tokens['npsUrl']).query)))
+        self.assertEqual({
+            'auth': tokens['settings'],
+            'coachingEmailFrequency': 'EMAIL_MAXIMUM',
+            'user': user_id,
+        }, dict(parse.parse_qsl(parse.urlparse(tokens['settingsUrl']).query)))
+        self.assertEqual({
+            'auth': tokens['unsubscribe'],
+            'user': user_id,
+        }, dict(parse.parse_qsl(parse.urlparse(tokens['unsubscribeUrl']).query)))
         # Try reset token as auth token.
         response = self.app.post(
             '/api/user/authenticate',
             data=f'{{"email":"pascal@example.com","userId":"{user_id}",'
             f'"authToken":"{tokens["reset"]}","hashedPassword":"dummy"}}')
         self.assertEqual(200, response.status_code)
+        self.assertEqual({
+            'email': 'pascal@example.com',
+            'resetToken': tokens['reset'],
+        }, dict(parse.parse_qsl(parse.urlparse(tokens['resetUrl']).query)))
+        self.assertEqual(user_id, tokens['user'])
+
+    def test_generate_tokens_facebook(self) -> None:
+        """Check the /api/user/.../generate-auth-tokens for a Facebook user."""
+
+        user_id, auth_token = self.create_facebook_user_with_token('pascal@example.com')
+        response = self.app.get(
+            f'/api/user/{user_id}/generate-auth-tokens',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        tokens = self.json_from_response(response)
+        self.assertEqual(
+            {
+                'auth', 'authUrl', 'employmentStatus', 'employmentStatusUrl', 'nps', 'npsUrl',
+                'settings', 'settingsUrl', 'unsubscribe', 'unsubscribeUrl', 'user',
+            }, tokens.keys())
+        auth.check_token(user_id, tokens['unsubscribe'], role='unsubscribe')
+        auth.check_token(user_id, tokens['employmentStatus'], role='employment-status')
+        auth.check_token(user_id, tokens['nps'], role='nps')
+        auth.check_token(user_id, tokens['settings'], role='settings')
+        auth.check_token(user_id, tokens['auth'], role='')
         self.assertEqual(user_id, tokens['user'])
 
     def test_generate_tokens_missing_auth(self) -> None:
@@ -323,6 +373,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
                 'title': 'Second tip',
             },
         ])
+
         patcher = mailjetmock.patch()
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -370,7 +421,8 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             ['First tip', 'Second tip'],
             [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
 
-    def test_translated_tips(self) -> None:
+    @mock.patch('logging.exception')
+    def test_translated_tips(self, mock_log_exception: mock.MagicMock) -> None:
         """Test getting translated tips."""
 
         self._db.translations.insert_one({
@@ -387,6 +439,9 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             f'/api/advice/tips/other-work-env/{self.user_id}/{self.project_id}',
             headers={'Authorization': 'Bearer ' + self.auth_token})
         advice_tips = self.json_from_response(response)
+
+        mock_log_exception.assert_called_once()
+        self.assertIn('Falling back to vouvoiement', mock_log_exception.call_args[0][0])
 
         self.assertEqual(
             ['Premier tip', 'Second tip'],
@@ -415,12 +470,12 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
 class CacheClearEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the cache/clear endpoint."""
 
-    def _get_requirements(self, job_group_id: str) -> typing.List[str]:
+    def _get_requirements(self, job_group_id: str) -> List[str]:
         response = self.app.get(f'/api/job/requirements/{job_group_id}')
         requirements = json.loads(response.get_data(as_text=True))
         return [d['name'] for d in requirements['diplomas']]
 
-    def _update_job_group_db(self, data: typing.List[typing.Dict[str, typing.Any]]) -> None:
+    def _update_job_group_db(self, data: List[Dict[str, Any]]) -> None:
         self._db.job_group_info.drop()
         self._db.job_group_info.insert_many(data)
 
@@ -784,6 +839,14 @@ class LaborStatsTestCase(base_test.ServerTestCase):
             },
         })
 
+        self._db.user_count.insert_one({
+            '_id': 'values',
+            'weeklyApplicationCounts': {
+                'A_LOT': 10,
+                'SOME': 5,
+            },
+        })
+
         response = self.app.post(
             '/api/compute-labor-stats',
             data='{"projects": [{\
@@ -792,10 +855,72 @@ class LaborStatsTestCase(base_test.ServerTestCase):
             ]}',
             headers={'Authorization': 'Bearer blabla'})
         labor_stats = self.json_from_response(response)
+        self.assertEqual(
+            {'jobGroupInfo', 'localStats', 'userCounts'}, labor_stats.keys())
+
         imt = labor_stats.get('localStats', {}).get('imt', {})
+        self.assertEqual(5, imt.get('yearlyAvgOffersPer10Candidates'))
 
         self.assertEqual('The job', labor_stats.get('jobGroupInfo', {}).get('name'))
-        self.assertEqual(5, imt.get('yearlyAvgOffersPer10Candidates'))
+
+        self.assertEqual(
+            10, labor_stats.get('userCounts', {}).get('weeklyApplicationCounts', {}).get('A_LOT'))
+
+
+class SupportTestCase(base_test.ServerTestCase):
+    """Tests for the support endpoint."""
+
+    def test_create_support_ticket(self) -> None:
+        """A user is assigned a support ID if requested."""
+
+        user_id, token = self.create_user_with_token()
+
+        response = self.app.post(
+            f'/api/support/{user_id}',
+            headers={'Authorization': 'Bearer ' + token},
+            content_type='application/json')
+        ticket = self.json_from_response(response)
+        self.assertTrue(ticket.get('ticketId'))
+        delete_after = ticket.get('deleteAfter')
+        do_not_delete_before = proto.datetime_to_json_string(now.get() + datetime.timedelta(days=1))
+        delete_before = proto.datetime_to_json_string(now.get() + datetime.timedelta(days=30))
+        self.assertGreater(delete_after, do_not_delete_before)
+        self.assertLess(delete_after, delete_before)
+        user_data = self.get_user_info(user_id, token)
+        last_saved_ticket = typing.cast(Dict[str, str], user_data.get('supportTickets', [])[-1])
+        self.assertEqual(ticket, last_saved_ticket)
+
+    def test_create_specific_support_ticket(self) -> None:
+        """A user can create a support ticket with a declared ID."""
+
+        user_id, token = self.create_user_with_token()
+
+        response = self.app.post(
+            f'/api/support/{user_id}/support-id',
+            headers={'Authorization': 'Bearer ' + token},
+            content_type='application/json')
+        ticket = self.json_from_response(response)
+        self.assertEqual('support-id', ticket.get('ticketId'))
+
+    def test_create_two_tickets(self) -> None:
+        """Calling the route twice creates two tickets in order."""
+
+        user_id, token = self.create_user_with_token()
+        response = self.app.post(
+            f'/api/support/{user_id}',
+            headers={'Authorization': 'Bearer ' + token},
+            content_type='application/json')
+        ticket_id1 = self.json_from_response(response).get('ticketId')
+        response = self.app.post(
+            f'/api/support/{user_id}',
+            headers={'Authorization': 'Bearer ' + token},
+            content_type='application/json')
+        ticket_id2 = self.json_from_response(response).get('ticketId')
+        user_data = self.get_user_info(user_id, token)
+        saved_ticket_ids = [
+            ticket.get('ticketId') for ticket in user_data.get('supportTickets', [])]
+        self.assertEqual(
+            [ticket_id1, ticket_id2], saved_ticket_ids)
 
 
 if __name__ == '__main__':

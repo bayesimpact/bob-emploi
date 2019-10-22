@@ -10,7 +10,7 @@ import onisepPreviewImage from 'images/advices/explore-other-jobs/onisep.jpg'
 import placeDesMetiersPreviewImage from 'images/advices/explore-other-jobs/placedesmetiers.jpg'
 import semaineIndustriePreviewImage from 'images/advices/explore-other-jobs/semaineindustrie.jpg'
 import zoomSurLesMetiersPreviewImage from 'images/advices/explore-other-jobs/zoomsurlesmetiers.jpg'
-import NewPicto from 'images/advices/picto-explore-other-jobs.svg'
+import Picto from 'images/advices/picto-explore-other-jobs.svg'
 
 import {CardProps, CardWithImage} from './base'
 
@@ -122,7 +122,4 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 }
 
 
-const TakeAway = '5000 vidéos trouvées'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

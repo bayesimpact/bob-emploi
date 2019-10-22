@@ -8,8 +8,12 @@
     "module": "esNext",
     "moduleResolution": "node",
     "noEmit": true,
+    "noImplicitThis": true,
     "noUnusedLocals": true,
     "paths": {
+      "api/*": [
+        "bob_emploi/frontend/api/*"
+      ],
       "components/*": [
         "src/components/*"
       ],
@@ -21,6 +25,8 @@
       ]
     },
     "resolveJsonModule": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
     "target": "esNext"
   },
   "include": [
@@ -28,5 +34,8 @@
     "custom.d.ts",
     "src",
     "test"
+  ],
+  "exclude": [
+    "bob_emploi/analytics/*"
   ]
 }

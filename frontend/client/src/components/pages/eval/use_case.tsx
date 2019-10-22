@@ -22,7 +22,7 @@ interface SelectOption {
 }
 
 
-function getOptionName(options: SelectOption[], value: string): string {
+function getOptionName(options: SelectOption[], value?: string): string|undefined {
   if (value) {
     const myOption = options.find((option): boolean => option.value === value)
     return myOption && myOption.name || value
@@ -30,12 +30,12 @@ function getOptionName(options: SelectOption[], value: string): string {
   return undefined
 }
 
-function replaceFalseValue(oldValue: number, newValue: string): string {
+function replaceFalseValue(oldValue: number|undefined, newValue: string): string {
   return oldValue && oldValue !== -1 ? ('' + oldValue) : newValue
 }
 
 function getInterviewCountValidity(project: bayes.bob.Project): boolean {
-  return project.totalInterviewCount && project.totalInterviewCount !== 0
+  return !!project.totalInterviewCount && project.totalInterviewCount !== 0
 }
 
 
@@ -95,7 +95,7 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
     return <div>
       <div style={titleStyle}>{title}&nbsp;:</div>
       <ul style={{listStyleType: 'none'}}>
-        {elements.map((element, index): React.ReactNode =>
+        {elements.filter((element): boolean => !!element).map((element, index): React.ReactNode =>
           <li key={sectionKey + index}>{element}</li>)}
       </ul>
     </div>
@@ -110,7 +110,7 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
       [
         profile.gender === 'FEMININE' ? 'Femme' : 'Homme',
         getOptionName(familySituations, profile.familySituation),
-        userAge(profile.yearOfBirth) + ' ans',
+        profile.yearOfBirth ? `${userAge(profile.yearOfBirth)} ans` : 'âge inconnu',
         'Diplôme : ' + (getHighestDegreeDescription(profile) || 'aucun'),
         (profile.hasHandicap ? handicapText : null),
         `${location.name} ` +
@@ -127,7 +127,7 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
     return this.renderSection(
       'Recherche',
       [
-        project.jobSearchLengthMonths > 0 ?
+        project.jobSearchLengthMonths && project.jobSearchLengthMonths > 0 ?
           `Recherche depuis ${project.jobSearchLengthMonths} mois` :
           "N'a pas commencé sa recherche",
         'Offres par semaine : ' + project.weeklyOffersEstimate ?
@@ -143,7 +143,7 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
   private renderProject(
     profile: bayes.bob.UserProfile, project: bayes.bob.Project): React.ReactNode {
     const employmentStatus = (project.employmentTypes || []).map((employmentType): string => (
-      getOptionName(PROJECT_EMPLOYMENT_TYPE_OPTIONS, employmentType)
+      getOptionName(PROJECT_EMPLOYMENT_TYPE_OPTIONS, employmentType) || ''
     ))
     const employmentStatusText = employmentStatus.join(', ')
     const trainingFulfillmentOptions = getTrainingFulfillmentEstimateOptions(profile.gender)
@@ -203,6 +203,9 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
 
   public render(): React.ReactNode {
     const {userData} = this.props.useCase
+    if (!userData) {
+      return null
+    }
     const boxStyle = {
       backgroundColor: '#fff',
       borderRadius: 10,
@@ -215,8 +218,17 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
       height: 600,
       width: '100%',
     }
+    const guestStyle: React.CSSProperties = {
+      backgroundColor: colors.SQUASH,
+      borderRadius: 3,
+      color: '#fff',
+      display: 'inline-block',
+      fontWeight: 'bold',
+      margin: '0 auto',
+      padding: 3,
+    }
 
-    const {profile = {}, projects: [project = {}] = []} = userData
+    const {hasAccount, profile = {}, projects: [project = {}] = []} = userData
     const {city = {}} = project
 
     // TODO (Marie Laure): Use a helper function instead of this manual approach
@@ -228,7 +240,11 @@ class UseCase extends React.PureComponent<{useCase: bayes.bob.UseCase}> {
 
     const json = JSON.stringify(remainingData, null, 2).replace(/[{}",[\]]/g, '')
 
+    // TODO(cyrille): Maybe add a link to direct email if not a guest.
     return <div style={boxStyle}>
+      {hasAccount ? null : <div style={{textAlign: 'right'}}>
+        <div style={guestStyle}>Guest</div>
+      </div>}
       {this.renderProfile(profile, city)}
       {this.renderProject(profile, project || {})}
       {this.renderResearch(project)}

@@ -37,8 +37,8 @@ import Skills from './skills'
 interface AdviceModule {
   adviceId: string
   name: string
-  StaticAdviceCard: React.ComponentClass<CardProps>
-  Page: React.ComponentClass<AdvicePageProps>
+  StaticAdviceCard: React.ComponentType<CardProps>
+  Page: React.ComponentType<AdvicePageProps>
 }
 
 
@@ -188,12 +188,12 @@ class StaticAdvicePageBase extends React.PureComponent<StaticAdvicePageProps, Ad
     clearTimeout(this.shareTimeout)
   }
 
-  private shareTimeout: ReturnType<typeof setTimeout>
+  private shareTimeout?: number
 
   private handleVisibilityChange = (isVisible: boolean): void => {
     if (!this.props.hasSeenShareModal && isVisible) {
       clearTimeout(this.shareTimeout)
-      this.shareTimeout = setTimeout((): void => {
+      this.shareTimeout = window.setTimeout((): void => {
         this.setState({isShareBobShown: true})
       }, 5000)
     }
@@ -208,7 +208,7 @@ class StaticAdvicePageBase extends React.PureComponent<StaticAdvicePageProps, Ad
     const url = getAbsoluteUrl(Routes.STATIC_ADVICE_PAGE + `/${adviceId}${TRACK_HASH}`)
     if (hash === TRACK_HASH) {
       const newSearch = `${search}${search ? '&' : '?'}${stringify({
-        'utm_campaign': hash.substr(1),
+        'utm_campaign': hash.slice(1),
         'utm_medium': 'link',
         'utm_source': 'bob-emploi',
       })}`

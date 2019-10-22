@@ -6,8 +6,7 @@ MongoDB some basic info about a job group.
 You can try it out on a local instance:
  - Start your local environment with `docker-compose up frontend-dev`.
  - Run this script:
-    docker-compose run -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY \
-        --rm data-analysis-prepare \
+    docker-compose run --rm data-analysis-prepare \
         python bob_emploi/data_analysis/importer/job_group_info.py \
         --rome_csv_pattern data/rome/csv/unix_{}_v331_utf8.csv \
         --job_requirements_json data/job_offers/job_offers_requirements.json \
@@ -21,9 +20,11 @@ import json
 import os
 import re
 import typing
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from airtable import airtable
 import pandas
+import pymongo
 
 from bob_emploi.data_analysis.importer import airtable_to_protos
 from bob_emploi.data_analysis.lib import cleaned_data
@@ -39,6 +40,7 @@ _APPLICATION_MODE_PROTO_FIELDS = {
 _JOB_PROTO_JSON_FIELDS = [
     'name', 'masculineName', 'feminineName', 'codeOgr']
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
+USERS_MONGO_URL = os.getenv('USERS_MONGO_URL')
 
 
 def make_dicts(
@@ -53,10 +55,10 @@ def make_dicts(
         info_by_prefix_airtable: str,
         fap_growth_2012_2022_csv: str,
         imt_market_score_csv: str,
-        jobboards_airtable: typing.Optional[str] = None,
-        skills_for_future_airtable: typing.Optional[str] = None,
-        specific_to_job_airtable: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+        jobboards_airtable: Optional[str] = None,
+        skills_for_future_airtable: Optional[str] = None,
+        specific_to_job_airtable: Optional[str] = None) \
+        -> List[Dict[str, Any]]:
     """Import job info in MongoDB.
 
     Args:
@@ -119,6 +121,7 @@ def make_dicts(
         'Skill', job_groups.index, skills_for_future_airtable, 'rome_prefixes')
     specific_to_job_by_rome = _load_items_from_airtable(
         'DynamicAdvice', job_groups.index, specific_to_job_airtable, 'for-job-group')
+    users_highest_degrees = _load_highest_degrees_from_mongo()
 
     # Genderize names.
     masculine, feminine = rome_genderization.genderize(jobs.name)
@@ -194,10 +197,11 @@ def make_dicts(
     job_groups['growth20122022'].fillna(0, inplace=True)
 
     # Add best departements.
-    job_groups['bestDepartements'] = _get_less_stressful_departements_count(imt_market_score_csv)
+    job_groups['departementScores'] = _get_less_stressful_departements_count(imt_market_score_csv)
     # Fill NaN with empty [].
-    job_groups['bestDepartements'] = job_groups.bestDepartements.apply(
+    job_groups['departementScores'] = job_groups.departementScores.apply(
         lambda s: s if isinstance(s, list) else [])
+    job_groups['bestDepartements'] = job_groups.departementScores.apply(lambda ds: ds[:11])
 
     # Add national market score.
     job_groups['nationalMarketScore'] = _get_national_market_scores(imt_market_score_csv)
@@ -220,12 +224,19 @@ def make_dicts(
     if specific_to_job_by_rome:
         job_groups['specificAdvice'] = job_groups.index.map(specific_to_job_by_rome)
 
+    # Add highest degree counts from user base.
+    if users_highest_degrees is not None:
+        job_groups['userDegrees'] = users_highest_degrees
+        # Fill NaN with empty [].
+        job_groups['userDegrees'] = job_groups.userDegrees.apply(
+            lambda d: d if isinstance(d, list) else [])
+
     # Set index as field.
     job_groups.index.name = 'romeId'
     job_groups.reset_index(inplace=True)
     job_groups['_id'] = job_groups['romeId']
 
-    return typing.cast(typing.List[typing.Dict[str, typing.Any]], job_groups.to_dict('records'))
+    return typing.cast(List[Dict[str, Any]], job_groups.to_dict('records'))
 
 
 # TODO(cyrille): Factorize with local_diagnosis.
@@ -233,20 +244,20 @@ def _get_less_stressful_departements_count(market_score_csv: str) -> pandas.Data
     market_stats = cleaned_data.market_scores(filename=market_score_csv)
     market_stats_dept = market_stats[market_stats.AREA_TYPE_CODE == 'D'].reset_index()
 
-    # We keep only the first ten because we'll never use more examples.
+    def _zero_to_minus_one(val: int) -> int:
+        return val if val else -1
+
     return market_stats_dept\
         .sort_values('market_score', ascending=False)\
         .groupby(['rome_id'])\
-        .apply(lambda x: x[:11].to_dict(orient='records'))\
-        .apply(lambda dpts: [{
+        .apply(lambda x: x.to_dict(orient='records'))\
+        .apply(lambda departements: [{
             'departementId': d['departement_id'],
-            'localStats': {
-                'imt': {
-                    'yearlyAvgOffersPer10Candidates': d['yearly_avg_offers_per_10_candidates'],
-                    'yearlyAvgOffersDenominator': d['yearly_avg_offers_denominator']
-                },
-            },
-        } for d in dpts])
+            'localStats': {'imt': {
+                'yearlyAvgOffersPer10Candidates':
+                _zero_to_minus_one(d['yearly_avg_offers_per_10_candidates']),
+            }},
+        } for d in departements])
 
 
 def _get_national_market_scores(market_score_csv: str) -> pandas.Series:
@@ -255,19 +266,16 @@ def _get_national_market_scores(market_score_csv: str) -> pandas.Series:
         .market_score
 
 
-def _create_jobs_sampler(num_samples: typing.Optional[int]) \
-        -> typing.Callable[[pandas.DataFrame], typing.List[typing.Dict[str, typing.Any]]]:
-    def _sampling(jobs: pandas.DataFrame) -> typing.List[typing.Dict[str, typing.Any]]:
+def _create_jobs_sampler(num_samples: Optional[int]) \
+        -> Callable[[pandas.DataFrame], List[Dict[str, Any]]]:
+    def _sampling(jobs: pandas.DataFrame) -> List[Dict[str, Any]]:
         if num_samples is not None and len(jobs) > num_samples:
             jobs = jobs.sample(n=num_samples)
-        return typing.cast(
-            typing.List[typing.Dict[str, typing.Any]],
-            jobs[_JOB_PROTO_JSON_FIELDS].to_dict('records'))
+        return typing.cast(List[Dict[str, Any]], jobs[_JOB_PROTO_JSON_FIELDS].to_dict('records'))
     return _sampling
 
 
-def _group_work_environment_items(work_environments: pandas.DataFrame) \
-        -> typing.Dict[str, typing.List[str]]:
+def _group_work_environment_items(work_environments: pandas.DataFrame) -> Dict[str, List[str]]:
     """Combine work environment items as a dict.
 
     Returns:
@@ -297,8 +305,8 @@ def _group_work_environment_items(work_environments: pandas.DataFrame) \
     return environment
 
 
-def _load_domains_from_airtable(base_id: str, table: str, view: typing.Optional[str] = None) \
-        -> typing.Dict[str, str]:
+def _load_domains_from_airtable(base_id: str, table: str, view: Optional[str] = None) \
+        -> Dict[str, str]:
     """Load domain data from AirTable.
 
     Args:
@@ -314,8 +322,8 @@ def _load_domains_from_airtable(base_id: str, table: str, view: typing.Optional[
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
     client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    domains: typing.Dict[str, str] = {}
-    errors: typing.List[ValueError] = []
+    domains: Dict[str, str] = {}
+    errors: List[ValueError] = []
     for record in client.iterate(table, view=view):
         fields = record['fields']
         sector = fields.get('name')
@@ -335,7 +343,7 @@ def _load_domains_from_airtable(base_id: str, table: str, view: typing.Optional[
 
 
 def _load_strict_diplomas_from_airtable(
-        base_id: str, table: str, view: typing.Optional[str] = None) -> pandas.Series:
+        base_id: str, table: str, view: Optional[str] = None) -> pandas.Series:
     """Load strict requirement for diplomas data from AirTable.
 
     Args:
@@ -359,8 +367,8 @@ def _load_strict_diplomas_from_airtable(
     return pandas.Series(diploma_required)
 
 
-def _load_assets_from_airtable(base_id: str, table: str, view: typing.Optional[str] = None) \
-        -> typing.Dict[str, typing.Dict[str, str]]:
+def _load_assets_from_airtable(base_id: str, table: str, view: Optional[str] = None) \
+        -> Dict[str, Dict[str, str]]:
     """Load assets data from AirTable.
 
     Args:
@@ -374,8 +382,8 @@ def _load_assets_from_airtable(base_id: str, table: str, view: typing.Optional[s
             'https://airtable.com/account and set it in the AIRTABLE_API_KEY '
             'env var.')
     client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
-    assets: typing.List[typing.Tuple[str, typing.Dict[str, str]]] = []
-    errors: typing.List[ValueError] = []
+    assets: List[Tuple[str, Dict[str, str]]] = []
+    errors: List[ValueError] = []
     for record in client.iterate(table, view=view):
         try:
             assets.append(_load_asset_from_airtable(record['fields']))
@@ -397,10 +405,9 @@ _AIRTABLE_ASSET_TO_PROTO_FIELD = {
 _MARKDOWN_LIST_LINE_REGEXP = re.compile(r'^\* [A-ZÀÉÇÊ]|^  \* ')
 
 
-def _load_asset_from_airtable(airtable_fields: typing.Dict[str, typing.Any]) \
-        -> typing.Tuple[str, typing.Dict[str, str]]:
-    assets: typing.Dict[str, str] = {}
-    errors: typing.List[ValueError] = []
+def _load_asset_from_airtable(airtable_fields: Dict[str, Any]) -> Tuple[str, Dict[str, str]]:
+    assets: Dict[str, str] = {}
+    errors: List[ValueError] = []
     for proto_name, airtable_name in _AIRTABLE_ASSET_TO_PROTO_FIELD.items():
         value = airtable_fields.get(airtable_name)
         if value:
@@ -427,8 +434,7 @@ def _assert_markdown_list(value: str) -> str:
 
 
 def _load_prefix_info_from_airtable(
-        job_groups: typing.Iterable[str], base_id: str, table: str,
-        view: typing.Optional[str] = None) \
+        job_groups: Iterable[str], base_id: str, table: str, view: Optional[str] = None) \
         -> pandas.DataFrame:
     """Load info by prefix from AirTable.
 
@@ -485,9 +491,9 @@ def _load_prefix_info_from_airtable(
 
 
 def _load_items_from_airtable(
-        proto_name: str, job_groups: typing.Iterable[str],
-        airtable_connection: typing.Optional[str], rome_prefix_field: str) \
-        -> typing.Optional[typing.Mapping[str, typing.List[typing.Dict[str, typing.Any]]]]:
+        proto_name: str, job_groups: Iterable[str],
+        airtable_connection: Optional[str], rome_prefix_field: str) \
+        -> Optional[Mapping[str, List[Dict[str, Any]]]]:
     if not airtable_connection:
         return None
     parts = airtable_connection.split(':')
@@ -496,8 +502,7 @@ def _load_items_from_airtable(
         view = None
     else:
         base_id, table, view = parts
-    items: typing.Dict[str, typing.List[typing.Dict[str, typing.Any]]] = \
-        {job_group: [] for job_group in job_groups}
+    items: Dict[str, List[Dict[str, Any]]] = {job_group: [] for job_group in job_groups}
     converter = airtable_to_protos.PROTO_CLASSES[proto_name]
     client = airtable.Airtable(base_id, AIRTABLE_API_KEY)
     for record in client.iterate(table, view=view):
@@ -527,7 +532,7 @@ def _get_application_modes(application_mode_csv: str, rome_fap_crosswalk_txt: st
     return application_modes
 
 
-def _get_app_modes_perc(fap_modes: pandas.DataFrame) -> typing.Dict[str, typing.Any]:
+def _get_app_modes_perc(fap_modes: pandas.DataFrame) -> Dict[str, Any]:
     return {
         'modes': [
             {'mode': _APPLICATION_MODE_PROTO_FIELDS[row.APPLICATION_TYPE_CODE],
@@ -564,6 +569,32 @@ def _get_growth_2012_2022(fap_growth: pandas.DataFrame, rome_fap_crosswalk_txt: 
     return rome_fap_flat_mapping.groupby(level=0).apply(
         lambda faps: 0 if faps.num_jobs_2012.sum() == 0 else
         faps.growth_2012_2022.mul(faps.num_jobs_2012).sum() / faps.num_jobs_2012.sum())
+
+
+def _load_highest_degrees_from_mongo() -> pandas.Series:
+    if not USERS_MONGO_URL:
+        return None
+    client = pymongo.MongoClient(USERS_MONGO_URL).get_database()
+    all_users = client.user.aggregate([
+        {'$unwind': '$projects'},
+        {'$match': {'projects.isIncomplete': {'$ne': True}}},
+        {'$group': {
+            '_id': {
+                'romeId': '$projects.targetJob.jobGroup.romeId',
+                'degree': '$profile.highestDegree',
+            },
+            'count': {'$sum': 1},
+        }},
+        {'$project': {
+            'romeId': '$_id.romeId',
+            'degreeCount': {'degree': '$_id.degree', 'count': '$count'},
+        }},
+        {'$group': {
+            '_id': '$romeId',
+            'degrees': {'$push': '$degreeCount'},
+        }},
+    ])
+    return pandas.Series({r['_id']: r['degrees'] for r in all_users})
 
 
 if __name__ == '__main__':

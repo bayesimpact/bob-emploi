@@ -1,6 +1,6 @@
 """Module to advise the user to go to pôle emploi online salons."""
 
-import typing
+from typing import Callable, Dict, Iterable, List
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import online_salon_pb2
@@ -8,9 +8,9 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 
-_AREA_TYPE_TO_ID_GETTER: typing.Dict[
+_AREA_TYPE_TO_ID_GETTER: Dict[
     'geo_pb2.AreaType',
-    typing.Callable[[geo_pb2.FrenchCity], str]
+    Callable[[geo_pb2.FrenchCity], str]
 ] = {
     geo_pb2.REGION: lambda city: city.region_id,
     geo_pb2.DEPARTEMENT: lambda city: city.departement_id,
@@ -28,7 +28,7 @@ class _AdviceOnlineSalons(scoring_base.ModelBase):
 
     @scoring_base.ScoringProject.cached('online_salons')
     def _get_relevant_salons(self, project: scoring_base.ScoringProject) \
-            -> typing.List[online_salon_pb2.OnlineSalon]:
+            -> List[online_salon_pb2.OnlineSalon]:
         today = project.now
         # TODO(cyrille): Test filters.
         filtered_salons = scoring_base.filter_using_score(
@@ -87,7 +87,7 @@ class _AdviceOnlineSalons(scoring_base.ModelBase):
         return online_salon_pb2.OnlineSalons(salons=salons[:10])
 
 
-def _is_in_job_group(target_job_group_id: str, job_group_ids: typing.Iterable[str]) -> bool:
+def _is_in_job_group(target_job_group_id: str, job_group_ids: Iterable[str]) -> bool:
     for job_group_id in job_group_ids:
         if target_job_group_id.startswith(job_group_id):
             return True

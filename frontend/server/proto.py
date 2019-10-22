@@ -7,6 +7,8 @@ import functools
 import logging
 import os
 import typing
+from typing import Any, Callable, Dict, Iterator, ItemsView, KeysView, List, Optional, Tuple, \
+    Type, Union
 
 try:
     import flask
@@ -33,8 +35,8 @@ _ProtoType2 = typing.TypeVar('_ProtoType2', bound=message.Message)
 
 # TODO(cyrille): Maybe get the id_field from proto option.
 def parse_from_mongo(
-        mongo_dict: typing.Optional[typing.Dict[str, typing.Any]],
-        proto: message.Message, id_field: typing.Optional[str] = None) -> bool:
+        mongo_dict: Optional[Dict[str, Any]],
+        proto: message.Message, id_field: Optional[str] = None) -> bool:
     """Parse a Protobuf from a dict coming from MongoDB.
 
     Args:
@@ -70,10 +72,10 @@ def parse_from_mongo(
 
 # TODO(cyrille): overload to have non Optional output when there are only two parameters.
 def create_from_mongo(
-        mongo_dict: typing.Optional[typing.Dict[str, typing.Any]],
-        proto_type: typing.Type[_ProtoType1],
-        id_field: typing.Optional[str] = None,
-        always_create: bool = True) -> typing.Optional[_ProtoType1]:
+        mongo_dict: Optional[Dict[str, Any]],
+        proto_type: Type[_ProtoType1],
+        id_field: Optional[str] = None,
+        always_create: bool = True) -> Optional[_ProtoType1]:
     """Create a Protobuf from a dict coming from MongoDB.
 
     Args:
@@ -95,18 +97,18 @@ def create_from_mongo(
     return proto
 
 
-_DATABASE: typing.List[pymongo.database.Database] = []
-_MongoFindOneOutType = typing.Optional[typing.Dict[str, typing.Any]]
+_DATABASE: List[pymongo.database.Database] = []
+_MongoFindOneOutType = Optional[Dict[str, Any]]
 
 
 def _find_one(collection: str, document_id: str) -> _MongoFindOneOutType:
     return typing.cast(
-        typing.Optional[typing.Dict[str, typing.Any]],
+        Optional[Dict[str, Any]],
         _DATABASE[0][collection].find_one({'_id': document_id}))
 
 
-_CacheKeyType = typing.Tuple[str, str]
-_CacheValueType = typing.Tuple[_MongoFindOneOutType, datetime.datetime]
+_CacheKeyType = Tuple[str, str]
+_CacheValueType = Tuple[_MongoFindOneOutType, datetime.datetime]
 
 
 # Put _find_one as __init__ parameter if we ever need a LRU Cache with TTL somewhere else.
@@ -162,10 +164,10 @@ _CACHED_FIND_ONE = _CacheMongoDocuments()
 
 def fetch_from_mongo(
         database: pymongo.database.Database,
-        proto_type: typing.Type[_ProtoType1],
+        proto_type: Type[_ProtoType1],
         collection: str,
         document_id: str,
-        id_field: typing.Optional[str] = None) -> typing.Optional[_ProtoType1]:
+        id_field: Optional[str] = None) -> Optional[_ProtoType1]:
     """Fetch a (possibly cached) document from MongoDB and parse it to a Protobuf message.
 
     Args:
@@ -192,7 +194,7 @@ def clear_mongo_fetcher_cache() -> None:
 
 
 def _convert_datetimes_to_string(
-        values: typing.Union[typing.Dict[typing.Any, typing.Any], typing.List[typing.Any]]) -> None:
+        values: Union[Dict[Any, Any], List[Any]]) -> None:
     if isinstance(values, dict):
         for key, value in values.items():
             if isinstance(value, datetime.datetime):
@@ -210,10 +212,10 @@ def _convert_datetimes_to_string(
 
 # TODO(cyrille): Use typing overload to enforce in_type once pylint allows it.
 def flask_api(
-        out_type: typing.Optional[typing.Type[_ProtoType1]] = None,
-        in_type: typing.Optional[typing.Type[_ProtoType2]] = None) \
-        -> typing.Callable[
-            [typing.Callable[..., typing.Any]], typing.Callable[..., typing.Any]]:
+        out_type: Optional[Type[_ProtoType1]] = None,
+        in_type: Optional[Type[_ProtoType2]] = None) \
+        -> Callable[
+            [Callable[..., Any]], Callable[..., Any]]:
     """Decorator for flask endpoints that handles input and outputs as protos.
 
     The decorator converts the POST body from JSON to proto.
@@ -227,15 +229,15 @@ def flask_api(
         assert issubclass(in_type, message.Message)
 
     def _proto_api_decorator(
-            func: typing.Callable[..., typing.Union[str, flask.Response, _ProtoType2]]) \
-            -> typing.Callable[..., typing.Union[str, flask.Response]]:
-        def _decorated_fun(*args: typing.Any, **kwargs: typing.Any) \
-                -> typing.Union[str, flask.Response]:
+            func: Callable[..., Union[str, flask.Response, _ProtoType2]]) \
+            -> Callable[..., Union[str, flask.Response]]:
+        def _decorated_fun(*args: Any, **kwargs: Any) \
+                -> Union[str, flask.Response]:
             if in_type:
                 args = args + (_get_flask_input_proto(in_type),)
             ret = func(*args, **kwargs)
             if not out_type:
-                return typing.cast(typing.Union[str, flask.Response], ret)
+                return typing.cast(Union[str, flask.Response], ret)
             if not isinstance(ret, out_type):
                 raise TypeError(
                     f'{func.__name__} expects a {out_type.__name__} output but got: '
@@ -253,7 +255,7 @@ def flask_api(
     return _proto_api_decorator
 
 
-def _get_flask_input_proto(in_type: typing.Type[_ProtoType1]) -> _ProtoType1:
+def _get_flask_input_proto(in_type: Type[_ProtoType1]) -> _ProtoType1:
     proto = in_type()
 
     data = flask.request.get_data()
@@ -279,10 +281,10 @@ def _get_flask_input_proto(in_type: typing.Type[_ProtoType1]) -> _ProtoType1:
 
 
 def _cache_mongo_collection(
-        mongo_iterator: typing.Callable[[], typing.Iterator[typing.Dict[str, typing.Any]]],
-        cache: typing.Dict[str, _ProtoType1], proto_type: type, id_field: typing.Optional[str],
-        update_func: typing.Optional[typing.Callable[[_ProtoType1, str], None]] = None) \
-        -> typing.Dict[str, _ProtoType1]:
+        mongo_iterator: Callable[[], Iterator[Dict[str, Any]]],
+        cache: Dict[str, _ProtoType1], proto_type: type, id_field: Optional[str],
+        update_func: Optional[Callable[[_ProtoType1, str], None]] = None) \
+        -> Dict[str, _ProtoType1]:
     """Cache in memory the content of a Mongo request returning protos.
 
     Args:
@@ -314,11 +316,11 @@ class CachedCollection(typing.Generic[_Type]):
 
     def __init__(
             self,
-            populate: typing.Callable[[typing.Dict[str, _Type]], None],
+            populate: Callable[[Dict[str, _Type]], None],
             cache_duration: datetime.timedelta = _CACHE_DURATION):
         self._populate = populate
-        self._cache: typing.Optional[typing.Dict[str, _Type]] = None
-        self._cached_valid_until: typing.Optional[datetime.datetime] = None
+        self._cache: Optional[Dict[str, _Type]] = None
+        self._cached_valid_until: Optional[datetime.datetime] = None
         self._cache_duration = cache_duration
         self._cache_version = self._global_cache_version
 
@@ -334,24 +336,24 @@ class CachedCollection(typing.Generic[_Type]):
 
         return bool(self._cache)
 
-    def _ensure_cache(self) -> typing.Dict[str, _Type]:
+    def _ensure_cache(self) -> Dict[str, _Type]:
         instant = now.get()
         if self._cached_valid_until and self._cached_valid_until >= instant and \
                 self._cache_version >= self._global_cache_version:
-            return typing.cast(typing.Dict[str, _Type], self._cache)
+            return typing.cast(Dict[str, _Type], self._cache)
         self._cache_version = self._global_cache_version
         self._cached_valid_until = instant + self._cache_duration
         self._cache = collections.OrderedDict()
         self._populate(self._cache)
-        return typing.cast(typing.Dict[str, _Type], self._cache)
+        return typing.cast(Dict[str, _Type], self._cache)
 
-    def __getattr__(self, prop: str) -> typing.Any:
+    def __getattr__(self, prop: str) -> Any:
         return getattr(self._ensure_cache(), prop)
 
     def __getitem__(self, key: str) -> _Type:
         return self._ensure_cache()[key]
 
-    def __iter__(self) -> typing.Iterator[_Type]:
+    def __iter__(self) -> Iterator[_Type]:
         return iter(self.values())
 
     def __contains__(self, key: str) -> bool:
@@ -360,18 +362,18 @@ class CachedCollection(typing.Generic[_Type]):
     def __bool__(self) -> bool:
         return bool(self._ensure_cache())
 
-    def keys(self) -> typing.KeysView[str]:  # pylint: disable=invalid-name
+    def keys(self) -> KeysView[str]:  # pylint: disable=invalid-name
         """The set of keys of the collection."""
 
         return self._ensure_cache().keys()
 
-    def items(self) -> typing.ItemsView[str, _Type]:
+    def items(self) -> ItemsView[str, _Type]:
         """All items of the collection."""
 
         return self._ensure_cache().items()
 
     def get(  # pylint: disable=invalid-name
-            self, key: str, default: typing.Optional[_Type] = None) -> typing.Optional[_Type]:
+            self, key: str, default: Optional[_Type] = None) -> Optional[_Type]:
         """The value at the given key, or the default value if the key is not in the collection."""
 
         return self._ensure_cache().get(key, default)
@@ -381,9 +383,9 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
     """Handler for a collection of protobuffers in MongoDB."""
 
     def __init__(
-            self, proto_type: type, collection_name: str, id_field: typing.Optional[str] = None,
-            update_func: typing.Optional[typing.Callable[[_ProtoType1, str], None]] = None,
-            query: typing.Optional[typing.Dict[str, typing.Any]] = None):
+            self, proto_type: type, collection_name: str, id_field: Optional[str] = None,
+            update_func: Optional[Callable[[_ProtoType1, str], None]] = None,
+            query: Optional[Dict[str, Any]] = None):
         """Creates a new collection.
 
         Args:
@@ -399,8 +401,8 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
         self._update_func = update_func
         self._query = query
 
-        self._cache: typing.Optional[CachedCollection[_ProtoType1]] = None
-        self._database: typing.Optional[pymongo.database.Database] = None
+        self._cache: Optional[CachedCollection[_ProtoType1]] = None
+        self._database: Optional[pymongo.database.Database] = None
 
     def get_collection(self, database: pymongo.database.Database) -> CachedCollection[_ProtoType1]:
         """Gets access to the collection for a database."""
@@ -418,12 +420,12 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
         self._cache = None
         self._database = None
 
-    def _populate(self, cache: typing.Dict[str, _ProtoType1]) -> None:
-        def _mongo_iterator() -> typing.Iterator[typing.Dict[str, typing.Any]]:
+    def _populate(self, cache: Dict[str, _ProtoType1]) -> None:
+        def _mongo_iterator() -> Iterator[Dict[str, Any]]:
             assert self._database
             # TODO(pascal): Type pymongo find method and remove the cast.
             return typing.cast(
-                typing.Iterator[typing.Dict[str, typing.Any]],
+                Iterator[Dict[str, Any]],
                 self._database.get_collection(self._collection_name).find(self._query))
         _cache_mongo_collection(
             _mongo_iterator, cache, self._proto_type, self._id_field, self._update_func)

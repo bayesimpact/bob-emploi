@@ -79,7 +79,7 @@ class ImiloIntegrationPageBase
 
   private handleJsonChange = (userJson: string): void => this.setState({userJson})
 
-  private getUserData(userJson: string): bayes.bob.User {
+  private getUserData(userJson: string): bayes.bob.User|null {
     try {
       return JSON.parse(userJson.replace(/ObjectId\(("[a-f0-9]+")\)/, '$1'))
     } catch (error) {

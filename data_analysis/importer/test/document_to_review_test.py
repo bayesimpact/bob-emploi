@@ -1,6 +1,7 @@
 """Unit tests for the document_to_review module."""
 
 import typing
+from typing import Any, Dict
 import unittest
 from unittest import mock
 
@@ -35,10 +36,10 @@ class DocumentToReviewImporterTest(airtablemock.TestCase):
         self.assertEqual(
             ['Pascal'],
             [
-                typing.cast(typing.Dict[str, typing.Any], r.get('fields', {})).get('name')
+                typing.cast(Dict[str, Any], r.get('fields', {})).get('name')
                 for r in records
             ])
-        mongo_id = typing.cast(typing.Dict[str, typing.Any], records[0]['fields'])['mongo_id']
+        mongo_id = typing.cast(Dict[str, Any], records[0]['fields'])['mongo_id']
         self.assertTrue(mongo_id)
 
         database = pymongo.MongoClient()
@@ -70,7 +71,7 @@ class DocumentToReviewImporterTest(airtablemock.TestCase):
         ])
 
         records = list(base.iterate('cvs_and_cover_letters'))
-        fields = typing.cast(typing.Dict[str, typing.Any], records[0]['fields'])
+        fields = typing.cast(Dict[str, Any], records[0]['fields'])
         mongo_id = fields['mongo_id']
         self.assertTrue(mongo_id)
         self.assertTrue(fields.get('Bayes help needed'))
@@ -92,8 +93,7 @@ class DocumentToReviewImporterTest(airtablemock.TestCase):
             '--table', 'cvs_and_cover_letters',
         ])
 
-        record = typing.cast(
-            typing.Dict[str, typing.Any], next(base.iterate('cvs_and_cover_letters'))['fields'])
+        record = typing.cast(Dict[str, Any], next(base.iterate('cvs_and_cover_letters'))['fields'])
         self.assertFalse(record.get('Bayes help needed'))
         self.assertEqual(1, record.get('review_timeouts'))
 

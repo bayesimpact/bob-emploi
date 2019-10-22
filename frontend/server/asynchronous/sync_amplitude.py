@@ -5,6 +5,7 @@ import datetime
 import logging
 import os
 import typing
+from typing import Any, Dict, List, Optional
 
 from google.protobuf import json_format
 import pymongo
@@ -53,16 +54,15 @@ def _get_amplitude_id(user_id: str) -> str:
         raise KeyError(f'No user "{user_id}" found in Amplitude.')
 
 
-def _get_amplitude_events(amplitude_id: str, limit: typing.Optional[int] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
-    params: typing.Dict[str, typing.Any] = {'user': amplitude_id}
+def _get_amplitude_events(amplitude_id: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    params: Dict[str, Any] = {'user': amplitude_id}
     if limit:
         params['limit'] = limit
     response = requests.get(
         f'{_AMPLITUDE_API_URL}/useractivity', auth=_AMPLITUDE_AUTH, params=params)
     _account_for_api_requests_limit(response)
     response.raise_for_status()
-    return typing.cast(typing.List[typing.Dict[str, typing.Any]], response.json()['events'])
+    return typing.cast(List[Dict[str, Any]], response.json()['events'])
 
 
 def _parse_time(amplitude_time: str) -> datetime.datetime:
@@ -74,8 +74,7 @@ def _parse_time(amplitude_time: str) -> datetime.datetime:
         return datetime.datetime.strptime(amplitude_time, '%Y-%m-%d %H:%M:%S')
 
 
-def compute_first_session_duration(events: typing.List[typing.Dict[str, typing.Any]]) \
-        -> datetime.timedelta:
+def compute_first_session_duration(events: List[Dict[str, Any]]) -> datetime.timedelta:
     """Compute the duration of the user's first session."""
 
     if not events:
@@ -97,8 +96,7 @@ def compute_first_session_duration(events: typing.List[typing.Dict[str, typing.A
     return sorted_times[-1] - sorted_times[0]
 
 
-def _compute_is_mobile(events: typing.List[typing.Dict[str, typing.Any]]) \
-        -> 'user_pb2.OptionalBool':
+def _compute_is_mobile(events: List[Dict[str, Any]]) -> 'user_pb2.OptionalBool':
     """Compute whether a set of events contains at least one from a mobile version."""
 
     if not events:
@@ -136,7 +134,7 @@ def update_users_client_metrics(
 
 
 def _update_user_client_metric(
-        user_collection: pymongo.collection.Collection, user: typing.Dict[str, typing.Any],
+        user_collection: pymongo.collection.Collection, user: Dict[str, Any],
         dry_run: bool) -> None:
     user_id = user['_id']
     client_metrics = proto.create_from_mongo(user.get('clientMetrics'), user_pb2.ClientSideMetrics)
@@ -180,7 +178,7 @@ def _update_user_client_metric(
         }})
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Parse command line arguments and trigger the update_users_client_metrics function."""
 
     parser = argparse.ArgumentParser(

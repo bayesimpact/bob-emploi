@@ -20,6 +20,7 @@ You can try it out on a local instance:
 import collections
 import os
 import typing
+from typing import Any, Dict, Iterator, List, Optional, TextIO
 
 import emploi_store
 import tqdm
@@ -27,15 +28,14 @@ import tqdm
 from bob_emploi.data_analysis.lib import mongo
 
 
-def download_and_count(file: typing.Optional[typing.TextIO] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def download_and_count(file: Optional[TextIO] = None) -> List[Dict[str, Any]]:
     """Import the # of job offers available per job group and dept in MongoDB.
 
     Returns:
         Recent job offers count as a LocalJobStats JSON-proto compatible dict.
     """
 
-    counts: typing.Dict[str, int] = collections.defaultdict(int)
+    counts: Dict[str, int] = collections.defaultdict(int)
     for job_offer in tqdm.tqdm(_iterate_job_offers(), file=file):
         local_id = f'{job_offer["DEPARTEMENT_CODE"]}:{job_offer["ROME_PROFESSION_CARD_CODE"]}'
         counts[local_id] += 1
@@ -44,14 +44,14 @@ def download_and_count(file: typing.Optional[typing.TextIO] = None) \
         for local_id, count in counts.items()]
 
 
-def _iterate_job_offers() -> typing.Iterator[typing.Dict[str, str]]:
+def _iterate_job_offers() -> Iterator[Dict[str, str]]:
     client = emploi_store.Client(
         client_id=os.getenv('EMPLOI_STORE_CLIENT_ID'),
         client_secret=os.getenv('EMPLOI_STORE_CLIENT_SECRET'))
     package = client.get_package('offres')
     resource = package.get_resource(name="Offres d'emploi")
     return typing.cast(
-        typing.Iterator[typing.Dict[str, str]],
+        Iterator[Dict[str, str]],
         resource.records(fields=['DEPARTEMENT_CODE', 'ROME_PROFESSION_CARD_CODE']))
 
 

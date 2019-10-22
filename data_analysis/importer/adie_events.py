@@ -1,16 +1,14 @@
 """Importer for ADIE events.
 """
 
+import json
 import re
-import typing
-
-import js2py
-from scrapy import selector
+from typing import Any, Dict, List
 
 from bob_emploi.data_analysis.lib import mongo
 
-# Matches short dates, e.g. "23 février", "1er juin".
-_DATE_REGEXP = re.compile(r'(?P<day>\d+)(?:er)? (?P<month>\w+)')
+# Matches short dates, e.g. "23 février 2018", "1er juin 2019".
+_DATE_REGEXP = re.compile(r'(?P<day>\d+)(?:er)? (?P<month>\w+) (?P<year>\d+)')
 
 _FRENCH_MONTHS = {
     name: index + 1
@@ -20,44 +18,25 @@ _FRENCH_MONTHS = {
 }
 
 
-def adie_events2dicts(events_html: str) -> typing.List[typing.Dict[str, typing.Any]]:
-    """Convert the events page of ADIE into our own Event format before Mongo import.
+def adie_events2dicts(events_json: str) -> List[Dict[str, Any]]:
+    """Convert the scraped events of ADIE into our own Event format before Mongo import.
 
     Args:
-        events_html: the HTML content of the ADIE events page.
+        events_json: the JSON scraped from the ADIE events website.
 
     Returns:
         an iterable of dict with the JSON values of the Event proto.
     """
 
-    with open(events_html, 'rt') as events_file:
-        page_text = events_file.read()
-    page_selector = selector.Selector(text=page_text)
+    with open(events_json, 'rt') as events_file:
+        events = json.load(events_file)
+    events_to_import = {}
 
-    # Parse the markers with coordinates.
-    map_div = page_selector.xpath('//div[@class="acf-map"]')
-    markers = [
-        {
-            'data-lat': d.xpath('@data-lat').extract_first(),
-            'data-lng': d.xpath('@data-lng').extract_first(),
-        }
-        for d in map_div.xpath('div[@class="marker"]')
-    ]
+    for event in events:
+        event_proto = _adie_event_to_proto(event)
+        events_to_import[event_proto.get('_id')] = event_proto
 
-    # Parse the other attributes.
-    events_script = page_selector.xpath(
-        '//script[contains(., "var evenements = []")]/text()').extract_first()
-    if not events_script:
-        raise ValueError(
-            f'"{events_html}" does not contain the javascript to create events:\n{page_text}')
-
-    if 'evenement = []' not in events_script:
-        raise ValueError('The [] bug is fixed, please drop the replace code')
-    events_script = events_script.replace('evenement = []', 'evenement = {}')
-    events = js2py.eval_js(events_script + ';evenements')
-
-    # Join coordinates and other attributes.
-    return [_adie_event_to_proto(dict(a, **b)) for a, b in zip(markers, events)]
+    return list(events_to_import.values())
 
 
 def _parse_date(date: str) -> str:
@@ -66,28 +45,28 @@ def _parse_date(date: str) -> str:
         raise ValueError(f'Date "{date}" could not be parsed')
     day = int(match.group('day'))
     month = _FRENCH_MONTHS[match.group('month')]
-    return f'2018-{month:02d}-{day:02d}'
+    year = int(match.group('year'))
+    return f'{year:04d}-{month:02d}-{day:02d}'
 
 
-def _adie_event_to_proto(props: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
-    timing_text = _drop_first_word(props['date_ev_festival'])
+def _adie_event_to_proto(props: Dict[str, Any]) -> Dict[str, Any]:
+    props['cityName'] = props['ville'].title()
     return {
-        '_id': f"2018-06_{props['index_ev_festival']}",
-        'cityName': props['ville_ev_festival'],
+        '_id': props['rdvGroupeId'],
+        'cityName': props['cityName'],
         'description':
             '***Ça parle de quoi ?***\n\n'
-            '{description_ev_festival}\n\n'
+            '{sousTitre}\n\n'
             '***Ça se passe où ?***\n\n'
-            '{lieu_ev_festival}  \n'
-            '{adresse_ev_festival}\n\n'
+            '{nomSite}\n'
+            '{adresse1}, {adresse2}, {codePostal} {cityName}\n\n'
             '***Quand ?***\n\n'
-            'le {date_ev_festival}  \n'
-            '{heure_ev_festival}'.format(**props),
-        'latitude': props['data-lat'],
-        'longitude': props['data-lng'],
-        'timingText': f'le {timing_text}',
-        'startDate': _parse_date(_drop_first_word(props['date_ev_festival'])),
-        'title': props['nom_ev_festival'],
+            'le {date}\n'.format(**props),
+        'latitude': props['latitude'],
+        'longitude': props['longitude'],
+        'timingText': f'le {" ".join(props["date"].split(" ")[1:3])}',
+        'startDate': _parse_date(_drop_first_word(props['date'])),
+        'title': props['titre'],
     }
 
 

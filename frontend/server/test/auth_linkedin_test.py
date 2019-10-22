@@ -1,5 +1,6 @@
 """Tests for the authentication endpoint of the server module using LinkedIn."""
 
+import unittest
 from unittest import mock
 
 import requests_mock
@@ -147,7 +148,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
     def test_new_user_with_existing_email(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request with a LinkedIn code for a new user using an existing email."""
 
-        self.authenticate_new_user(email='pascal@linkedin.com', password='psswd')
+        user_id = self.authenticate_new_user(email='pascal@linkedin.com', password='psswd')
 
         mock_requests.post(
             'https://www.linkedin.com/oauth/v2/accessToken', json={'access_token': '123456'})
@@ -167,10 +168,9 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         response = self.app.post(
             '/api/user/authenticate',
             data='{"linkedInCode": "correct-code"}', content_type='application/json')
-        self.assertEqual(403, response.status_code)
-        self.assertIn(
-            "L'utilisateur existe mais utilise un autre moyen de connexion: Email/Mot de passe.",
-            response.get_data(as_text=True))
+        auth_response = self.json_from_response(response)
+        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
 
     def test_load_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Auth request retrieves user."""
@@ -236,7 +236,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
 
         auth_response = self.json_from_response(response)
 
-        self.assertFalse(auth_response.get('isNewUser'))
+        self.assertTrue(auth_response.get('isNewUser'))
         self.assertEqual('Lascap', auth_response['authenticatedUser']['profile'].get('name'))
         self.assertFalse(auth_response['authenticatedUser']['profile'].get('lastName'))
         self.assertEqual(
@@ -244,3 +244,7 @@ class AuthenticateEndpointLinkedInTest(base_test.ServerTestCase):
         self.assertTrue(auth_response['authenticatedUser'].get('hasAccount'))
         self.assertEqual('linked-in-user-id-1', auth_response['authenticatedUser']['linkedInId'])
         self.assertEqual(user_id, auth_response['authenticatedUser']['userId'])
+
+
+if __name__ == '__main__':
+    unittest.main()

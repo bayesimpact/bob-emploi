@@ -1,4 +1,3 @@
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import React from 'react'
 
@@ -23,10 +22,10 @@ interface CreatePoolModalProps extends ModalProps {
 
 
 interface CreatePoolModalState {
-  emailOrId?: string
-  emailSaved?: string
-  poolName?: string
-  shouldSaveCreated?: boolean
+  emailOrId: string
+  emailSaved: string
+  poolName: string
+  shouldSaveCreated: boolean
   useCaseIdCreated?: string
 }
 
@@ -37,19 +36,19 @@ class CreatePoolModal extends React.Component<CreatePoolModalProps, CreatePoolMo
     onTransientCreated: PropTypes.func,
   }
 
-  public state = {
+  public state: CreatePoolModalState = {
     emailOrId: '',
     emailSaved: '',
     poolName: '',
     shouldSaveCreated: false,
-    useCaseIdCreated: null,
+    useCaseIdCreated: undefined,
   }
 
   public componentWillUnmount(): void {
     this.isUnmounting = true
   }
 
-  private isUnmounting: boolean = false
+  private isUnmounting = false
 
   private emailInput: React.RefObject<Input> = React.createRef()
 
@@ -70,28 +69,33 @@ class CreatePoolModal extends React.Component<CreatePoolModalProps, CreatePoolMo
       [field]: emailOrId,
       ...shouldSaveCreated && {poolName},
     }
-    dispatch(createUseCase(request)).then((useCase): string => {
+    dispatch(createUseCase(request)).then((useCase): void => {
       if (!useCase || this.isUnmounting) {
         return
       }
       // TODO(cyrille): Handle the case when this callback might be very long.
       onTransientCreated && !shouldSaveCreated && onTransientCreated(useCase)
-      this.setState({
-        emailOrId: '',
-        ...shouldSaveCreated && {
+      if (shouldSaveCreated) {
+        this.setState({
+          emailOrId: '',
           emailSaved: emailOrId,
           useCaseIdCreated: useCase.useCaseId,
-        },
-      })
+        })
+      } else {
+        this.setState({emailOrId: ''})
+      }
     })
     this.emailInput.current && this.emailInput.current.focus()
   }
 
-  private handleFieldChange = _memoize((field: string): ((value: string) => void) =>
-    (value: string): void => this.setState({emailSaved: '', [field]: value}))
+  private handlePoolNameChange = (poolName: string): void =>
+    this.setState({emailSaved: '', poolName})
+
+  private handleEmailOrIdChange = (emailOrId: string): void =>
+    this.setState({emailOrId, emailSaved: ''})
 
   private handleToggleSaveCreated = (): void =>
-    this.setState(({shouldSaveCreated}): CreatePoolModalState =>
+    this.setState(({shouldSaveCreated}): Pick<CreatePoolModalState, 'shouldSaveCreated'> =>
       ({shouldSaveCreated: !shouldSaveCreated}))
 
   public render(): React.ReactNode {
@@ -107,12 +111,12 @@ class CreatePoolModal extends React.Component<CreatePoolModalProps, CreatePoolMo
       {shouldSaveCreated ? <FieldSet label="Nom du pool" style={{marginTop: 30}}>
         <Input
           placeholder="Saisir le nom du pool"
-          value={poolName} onChange={this.handleFieldChange('poolName')} />
+          value={poolName} onChange={this.handlePoolNameChange} />
       </FieldSet> : null}
       <FieldSet label="Adresse email ou ID d'un utilisateur" style={{marginBottom: 0}}>
         <Input
           placeholder="Saisir une adresse ou un ID" ref={this.emailInput}
-          value={emailOrId} onChange={this.handleFieldChange('emailOrId')} />
+          value={emailOrId} onChange={this.handleEmailOrIdChange} />
         <div style={{opacity: emailSaved ? 1 : 0, ...SmoothTransitions}}>
           Utilisateur <strong>{emailSaved}</strong> ajouté
           en tant que <strong>{useCaseIdCreated}</strong>

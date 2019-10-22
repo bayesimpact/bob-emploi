@@ -35,6 +35,7 @@ import csv
 import datetime
 import sys
 import typing
+from typing import Iterable, Iterator, Optional, Union
 
 import tqdm
 
@@ -45,7 +46,7 @@ from bob_emploi.data_analysis.lib import fhs
 
 class _CollectionMode(typing.NamedTuple):
     categories: str
-    only_one: typing.Union[bool, str]
+    only_one: Union[bool, str]
 
 
 _MODES = {
@@ -67,20 +68,20 @@ _MODES = {
 
 class _Criteria(typing.NamedTuple):
     jobseeker_id: str
-    code_rome: typing.Optional[str]
-    city_id: typing.Optional[str]
-    sex: typing.Optional[str]
+    code_rome: Optional[str]
+    city_id: Optional[str]
+    sex: Optional[str]
     reason_begin: str
     reason_end: str
-    begin_date: typing.Optional[datetime.date]
-    end_date: typing.Optional[datetime.date]
-    duration: typing.Optional[int]
+    begin_date: Optional[datetime.date]
+    end_date: Optional[datetime.date]
+    duration: Optional[int]
 
 
 def job_seeker_rows(
         job_seeker: fhs.JobSeeker, now: datetime.date, categories: str,
-        only_one: typing.Union[bool, str]) \
-        -> typing.Iterator[_Criteria]:
+        only_one: Union[bool, str]) \
+        -> Iterator[_Criteria]:
     """Extract a limited set of criteria for a job seeker.
 
     Args:
@@ -105,7 +106,7 @@ def job_seeker_rows(
     category_periods.exclude_after(now, lambda m: dict(
         m, MOTANN=fhs.CancellationReason.NOW))
 
-    periods: typing.Iterable[fhs.Period]
+    periods: Iterable[fhs.Period]
 
     if only_one == 'last':
         last_period = category_periods.last_contiguous_period()

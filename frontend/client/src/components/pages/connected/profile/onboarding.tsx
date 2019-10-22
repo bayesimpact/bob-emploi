@@ -1,13 +1,6 @@
 import {History} from 'history'
 import _keyBy from 'lodash/keyBy'
-import {DispatchAllActions,
-  FINISH_PROFILE_SITUATION,
-  FINISH_PROFILE_FRUSTRATIONS,
-  FINISH_PROFILE_SETTINGS,
-  FINISH_PROJECT_GOAL, FINISH_PROJECT_CRITERIA,
-  FINISH_PROJECT_EXPERIENCE,
-  ACCEPT_PRIVACY_NOTICE,
-  createFirstProject} from 'store/actions'
+import {AllActions, DispatchAllActions, createFirstProject} from 'store/actions'
 
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 
@@ -27,7 +20,7 @@ interface BaseStep {
   doesNotCount?: boolean
   isBlockingBackwardsNavigation?: boolean
   name: string
-  type?: string
+  type?: AllActions['type']
 }
 
 
@@ -45,38 +38,38 @@ interface ProjectBaseStep extends BaseStep {
 
 type AnyOnboardingStep = ProfileBaseStep | ProjectBaseStep
 
-const STEPS: AnyOnboardingStep[] = [
+const STEPS: readonly AnyOnboardingStep[] = [
   {
     component: NoticeStep,
     doesNotCount: true,
     isBlockingBackwardsNavigation: true,
     name: 'confidentialite',
     path: Routes.PROFILE_PAGE,
-    type: ACCEPT_PRIVACY_NOTICE,
+    type: 'ACCEPT_PRIVACY_NOTICE',
   },
   {
     component: GeneralStep,
     name: 'profil',
     path: Routes.PROFILE_PAGE,
-    type: FINISH_PROFILE_SITUATION,
+    type: 'FINISH_PROFILE_SITUATION',
   },
   {
     component: NewProjectGoalStep,
     name: 'but',
     path: Routes.NEW_PROJECT_PAGE,
-    type: FINISH_PROJECT_GOAL,
+    type: 'FINISH_PROJECT_GOAL',
   },
   {
     component: NewProjectCriteriaStep,
     name: 'criteres',
     path: Routes.NEW_PROJECT_PAGE,
-    type: FINISH_PROJECT_CRITERIA,
+    type: 'FINISH_PROJECT_CRITERIA',
   },
   {
     component: NewProjectExperienceStep,
     name: 'experience',
     path: Routes.NEW_PROJECT_PAGE,
-    type: FINISH_PROJECT_EXPERIENCE,
+    type: 'FINISH_PROJECT_EXPERIENCE',
   },
   {
     component: NewProjectJobsearchStep,
@@ -87,13 +80,13 @@ const STEPS: AnyOnboardingStep[] = [
     component: FrustrationsStep,
     name: 'frustrations',
     path: Routes.PROFILE_PAGE,
-    type: FINISH_PROFILE_FRUSTRATIONS,
+    type: 'FINISH_PROFILE_FRUSTRATIONS',
   },
   {
     component: SettingsStep,
     name: 'preferences',
     path: Routes.PROFILE_PAGE,
-    type: FINISH_PROFILE_SETTINGS,
+    type: 'FINISH_PROFILE_SETTINGS',
   },
 ]
 // Compute stepNumber for each step.
@@ -120,24 +113,15 @@ function isProfileStep(step: NumberedStep): step is ProfileBaseStep & WithNumber
 }
 
 
-const PROFILE_STEPS = _keyBy(
-  NUMBERED_STEPS.map((step: NumberedStep): ProfileBaseStep & WithNumber => {
-    if (isProfileStep(step)) {
-      return step
-    }
-    return null
-  }).filter((step): boolean => !!step),
-  'name')
+const PROFILE_STEPS = _keyBy(NUMBERED_STEPS.filter(isProfileStep), 'name')
 
 
-const PRFOJECT_STEPS = _keyBy(
-  NUMBERED_STEPS.map((step: NumberedStep): ProjectBaseStep & WithNumber => {
-    if (isProfileStep(step)) {
-      return null
-    }
-    return step
-  }).filter((step): boolean => !!step),
-  'name')
+function isProjectStep(step: NumberedStep): step is ProjectBaseStep & WithNumber {
+  return !isProfileStep(step)
+}
+
+
+const PRFOJECT_STEPS = _keyBy(NUMBERED_STEPS.filter(isProjectStep), 'name')
 
 
 // Total number of steps in the onboarding.
@@ -147,17 +131,17 @@ export const onboardingStepCount = nextStepNumber - 1
 type OnboardingPath = typeof Routes.PROFILE_PAGE | typeof Routes.NEW_PROJECT_PAGE
 
 
-function getProjectOnboardingStep(name: string): ProjectBaseStep & WithNumber {
-  return PRFOJECT_STEPS[name]
+function getProjectOnboardingStep(name?: string): ProjectBaseStep & WithNumber | undefined {
+  return name && PRFOJECT_STEPS[name] || undefined
 }
 
 
-function getProfileOnboardingStep(name: string): ProfileBaseStep & WithNumber {
-  return PROFILE_STEPS[name]
+function getProfileOnboardingStep(name?: string): ProfileBaseStep & WithNumber | undefined {
+  return name && PROFILE_STEPS[name] || undefined
 }
 
 
-function getOnboardingStep(path: OnboardingPath, name: string): NumberedStep {
+function getOnboardingStep(path: OnboardingPath, name: string): NumberedStep | undefined {
   if (path === Routes.PROFILE_PAGE) {
     return getProfileOnboardingStep(name)
   }
@@ -166,7 +150,7 @@ function getOnboardingStep(path: OnboardingPath, name: string): NumberedStep {
 
 
 function gotoRelativeStep(
-  path: OnboardingPath, name: string, dispatch: DispatchAllActions, history: History,
+  path: OnboardingPath, name: string, dispatch: DispatchAllActions|undefined, history: History,
   relativeStep: number): boolean {
   const currentStep = getOnboardingStep(path, name)
   if (!currentStep) {
@@ -202,11 +186,11 @@ function hasPreviousStep(path: string, name: string): boolean {
 
 
 const gotoPreviousStep = (path: string, name: string, history: History): boolean =>
-  gotoRelativeStep(path, name, null, history, -1)
+  gotoRelativeStep(path, name, undefined, history, -1)
 const gotoNextStep =
   (path: string, name: string, dispatch: DispatchAllActions, history: History): boolean =>
     gotoRelativeStep(path, name, dispatch, history, 1)
 
 
-export {getOnboardingStep, gotoNextStep, gotoPreviousStep, hasPreviousStep,
+export {gotoNextStep, gotoPreviousStep, hasPreviousStep,
   getProfileOnboardingStep, getProjectOnboardingStep}

@@ -1,6 +1,6 @@
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useMemo, useRef, useState} from 'react'
 
 import {FastTransitions} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
@@ -58,7 +58,7 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
 
   public static getDerivedStateFromProps(
     {children, isFastForwarded, isShown}: PhylacteryProps,
-    {lastShownStep}: PhylacteryState): PhylacteryState {
+    {lastShownStep}: PhylacteryState): PhylacteryState|null {
     if (isFastForwarded) {
       return {lastShownStep: children.filter((child): boolean => !!child).length}
     }
@@ -124,12 +124,16 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
 // A group of elements in a growing phylactery which should be seen as a whole bubble once expanded.
 class DiscussionBubble extends React.PureComponent<PhylacteryProps> {
   public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.element.isRequired).isRequired,
+    children: PropTypes.arrayOf(PropTypes.element).isRequired,
   }
 
   public render(): React.ReactNode {
     const {children, ...otherProps} = this.props
-    const nonNullChildren = children.filter((child): boolean => !!child)
+    const nonNullChildren = children.
+      filter((child): child is React.ReactElement<ElementProps> => !!child)
+    if (!nonNullChildren.length) {
+      return null
+    }
     return <GrowingPhylactery {...otherProps}>
       {nonNullChildren.
         map((child, index): React.ReactElement<ElementProps> => React.cloneElement(child, {
@@ -149,73 +153,71 @@ interface DiscussionProps extends PhylacteryProps {
 }
 
 
+const discussingEllipsisStyle: React.CSSProperties = {
+  alignSelf: 'center',
+  margin: '10px 0',
+  ...FastTransitions,
+}
+
+const notDiscussingEllipsisStyle: React.CSSProperties = {
+  ...discussingEllipsisStyle,
+  opacity: 0,
+}
+
 // A Component containing a growing phylactery. This allows to have scrolling with stuck-at-bottom
 // and disappearing top and bottom in a fixed height setting.
-class Discussion extends React.PureComponent<DiscussionProps, {isDiscussing: boolean}> {
-  public static propTypes = {
-    children: PropTypes.node,
-    headWidth: PropTypes.number,
-    isFastForwarded: PropTypes.bool,
-    isOneBubble: PropTypes.bool,
-    style: PropTypes.object,
-  }
+const DiscussionBase: React.FC<DiscussionProps> = (props): React.ReactElement => {
+  const {children, headWidth = 75, isFastForwarded, isOneBubble, style,
+    ...otherProps} = props
+  const [isDiscussing, setDiscussing] = useState(false)
+  const scrollSticker = useRef<BottomScrollSticker>(null)
+  const stickScrollToBottom = useCallback((): void => {
+    scrollSticker.current && scrollSticker.current.stick()
+  }, [scrollSticker])
+  const scrollableStyle = useMemo((): React.CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'column-reverse',
+    paddingBottom: 20,
+    ...style,
+  }), [style])
+  const Container = isOneBubble ? DiscussionBubble : GrowingPhylactery
 
-  public state = {
-    isDiscussing: false,
-  }
-
-  private scrollSticker: React.RefObject<BottomScrollSticker> = React.createRef()
-
-  private handleDiscussing = (isDiscussing: boolean): void => this.setState({isDiscussing})
-
-  private handleScrollStick = (): void => this.scrollSticker.current.stick()
-
-  public render(): React.ReactNode {
-    const {children, headWidth = 75, isFastForwarded, isOneBubble, style,
-      ...otherProps} = this.props
-    const {isDiscussing} = this.state
-    const scrollableStyle: React.CSSProperties = {
-      display: 'flex',
-      flexDirection: 'column-reverse',
-      paddingBottom: 20,
-      ...style,
-    }
-    const ellipsisStyle: React.CSSProperties = {
-      alignSelf: 'center',
-      margin: '10px 0',
-      opacity: isDiscussing ? 1 : 0,
-      ...FastTransitions,
-    }
-    const Container = isOneBubble ? DiscussionBubble : GrowingPhylactery
-
-    return <div style={scrollableStyle}>
-      <BottomScrollSticker ref={this.scrollSticker} />
-      <img
-        src={bobHeadImage} style={{
-          alignSelf: 'center',
-          width: headWidth,
-        }} alt={config.productName} />
-      <Ellipsis style={ellipsisStyle} />
-      <Container
-        {...{isFastForwarded, ...otherProps}}
-        setDiscussing={this.handleDiscussing}
-        onUpdate={this.handleScrollStick}>
-        {children}
-      </Container>
-    </div>
-  }
+  return <div style={scrollableStyle}>
+    <BottomScrollSticker ref={scrollSticker} />
+    <img
+      src={bobHeadImage} style={{
+        alignSelf: 'center',
+        width: headWidth,
+      }} alt={config.productName} />
+    <Ellipsis style={isDiscussing ? discussingEllipsisStyle : notDiscussingEllipsisStyle} />
+    <Container
+      {...{isFastForwarded, ...otherProps}}
+      setDiscussing={setDiscussing}
+      onUpdate={stickScrollToBottom}>
+      {children}
+    </Container>
+  </div>
 }
+DiscussionBase.propTypes = {
+  children: PropTypes.node,
+  headWidth: PropTypes.number,
+  isFastForwarded: PropTypes.bool,
+  isOneBubble: PropTypes.bool,
+  style: PropTypes.object,
+}
+const Discussion = React.memo(DiscussionBase)
 
 
 // A pseudo-component that keeps the document's main scroll to the bottom except if
 // the user manually changes the scroll.
+// TODO(cyrille): Replace with custom hook.
 class BottomScrollSticker extends React.PureComponent<{}, {isStuckToBottom: boolean}> {
   public state = {
     isStuckToBottom: true,
   }
 
   public componentDidMount(): void {
-    this.interval = setInterval(this.maybeScrollDown, 100)
+    this.interval = window.setInterval(this.maybeScrollDown, 100)
     document.addEventListener('scroll', this.onScroll)
   }
 
@@ -224,7 +226,7 @@ class BottomScrollSticker extends React.PureComponent<{}, {isStuckToBottom: bool
     clearInterval(this.interval)
   }
 
-  private interval: ReturnType<typeof setInterval>
+  private interval?: number
 
   public stick(): void {
     if (!this.state.isStuckToBottom) {
@@ -288,7 +290,7 @@ class WaitingElement extends React.PureComponent<WaitingElementProps> {
     }
     const {onDone, waitingMillisec} = this.props
     clearTimeout(this.timeout)
-    this.timeout = setTimeout((): void => {
+    this.timeout = window.setTimeout((): void => {
       onDone && onDone()
       this.setState({isShown: false})
     }, waitingMillisec)
@@ -298,7 +300,7 @@ class WaitingElement extends React.PureComponent<WaitingElementProps> {
     clearTimeout(this.timeout)
   }
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   public render(): React.ReactNode {
     const {children, isFastForwarded, isShown} = this.props
@@ -563,7 +565,9 @@ class BubbleToRead extends React.PureComponent<BubbleToReadProps> {
       return
     }
     clearTimeout(this.timeout)
-    this.timeout = setTimeout((): void => setDiscussing(true), 450)
+    if (setDiscussing) {
+      this.timeout = window.setTimeout((): void => setDiscussing(true), 450)
+    }
   }
 
   public componentWillUnmount(): void {
@@ -572,7 +576,7 @@ class BubbleToRead extends React.PureComponent<BubbleToReadProps> {
 
   private bubbleRef: React.RefObject<Bubble> = React.createRef()
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private computeReadingDuration = (): number => {
     const {readingTimeMillisec} = this.props
@@ -585,7 +589,7 @@ class BubbleToRead extends React.PureComponent<BubbleToReadProps> {
 
   public onDone = (): void => {
     const {onDone, setDiscussing} = this.props
-    setDiscussing(false)
+    setDiscussing && setDiscussing(false)
     onDone && onDone()
     this.setState({isDone: true})
   }
@@ -627,4 +631,5 @@ class QuestionBubble extends React.PureComponent<ElementProps & {isDone?: boolea
   }
 }
 
-export {Discussion, DiscussionBubble, BubbleToRead, NoOpElement, QuestionBubble, WaitingElement}
+export {Discussion, DiscussionBubble, Ellipsis, BubbleToRead, NoOpElement, QuestionBubble,
+  WaitingElement}

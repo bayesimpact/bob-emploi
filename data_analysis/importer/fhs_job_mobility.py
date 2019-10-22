@@ -22,6 +22,7 @@ import csv
 import datetime
 import sys
 import typing
+from typing import Iterator
 
 import tqdm
 
@@ -37,8 +38,7 @@ class _JobseekerCriteria(typing.NamedTuple):
 
 
 # TODO(marielaure): Add tests.
-def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) \
-        -> typing.Iterator[_JobseekerCriteria]:
+def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) -> Iterator[_JobseekerCriteria]:
     """Yields multiple rows per job seeker with several fields.
 
     Args:

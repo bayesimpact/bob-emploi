@@ -1,6 +1,6 @@
 """Module to translate strings on the frontend server."""
 
-import typing
+from typing import Dict, Optional
 
 from pymongo import database as pymongo_database
 
@@ -14,16 +14,16 @@ class TranslationMissingException(Exception):
 class _MongoCachedTranslations(object):
 
     def __init__(self) -> None:
-        self._cache: typing.Optional[proto.CachedCollection[typing.Dict[str, str]]] = None
-        self._database: typing.Optional[pymongo_database.Database] = None
+        self._cache: Optional[proto.CachedCollection[Dict[str, str]]] = None
+        self._database: Optional[pymongo_database.Database] = None
 
     def get_dict(self, database: pymongo_database.Database) \
-            -> proto.CachedCollection[typing.Dict[str, str]]:
+            -> proto.CachedCollection[Dict[str, str]]:
         """Get the translations dictionary from the database."""
 
         if self._cache is None or database != self._database:
 
-            def _populate_cache(cache: typing.Dict[str, typing.Dict[str, str]]) -> None:
+            def _populate_cache(cache: Dict[str, Dict[str, str]]) -> None:
                 for document in database.translations.find():
                     cache[document.get('string', '')] = document
 

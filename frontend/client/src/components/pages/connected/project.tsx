@@ -20,19 +20,18 @@ import {FEEDBACK_TAB, NEW_PROJECT_ID, Routes} from 'components/url'
 import {Diagnostic} from './project/diagnostic'
 import {PageWithFeedback} from './project/feedback_bar'
 import {PoleEmploiChangelogModal} from './project/pole_emploi'
+import {StatisticsPage} from './project/statistics'
+import {StrategyPage, StrategyPageParams} from './project/strategy'
 import {Workbench} from './project/workbench'
 
 
-function getProjectFromProps(props: PageProps): bayes.bob.Project {
-  const {match, user} = props
-  const projectId = match.params.projectId || ''
-  const project = (user.projects || []).
-    find((project: bayes.bob.Project): boolean => project.projectId === projectId)
+function getProject(pId: string, {projects = []}: bayes.bob.User): bayes.bob.Project {
+  const project = projects.find(({projectId}: bayes.bob.Project): boolean => projectId === pId)
   if (project) {
     return project
   }
-  if ((user.projects || []).length) {
-    return user.projects[0]
+  if (projects.length) {
+    return projects[0]
   }
   return {}
 }
@@ -42,8 +41,12 @@ function getProjectFromProps(props: PageProps): bayes.bob.Project {
 const TOTAL_WAITING_TIME_MILLISEC = 8000
 
 
+const emptyObject = {} as const
+
+
 interface WaitingProps {
   fadeOutTransitionDurationMillisec: number
+  isForceShown: boolean
   onDone?: () => void
   project: bayes.bob.Project
   style?: React.CSSProperties
@@ -55,6 +58,7 @@ interface WaitingProps {
 class WaitingProjectPage extends React.PureComponent<WaitingProps> {
   public static propTypes = {
     fadeOutTransitionDurationMillisec: PropTypes.number.isRequired,
+    isForceShown: PropTypes.bool,
     onDone: PropTypes.func,
     project: PropTypes.object.isRequired,
     style: PropTypes.object,
@@ -81,7 +85,7 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
     }
   }
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private getWaitingTexts(): string[] {
     const {userYou} = this.props
@@ -94,15 +98,21 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
   }
 
   private updateText = (waitingTextIndex: number): void => {
-    const {onDone, fadeOutTransitionDurationMillisec} = this.props
+    const {onDone, fadeOutTransitionDurationMillisec, isForceShown} = this.props
     const waitingTexts = this.getWaitingTexts()
     if (waitingTextIndex >= waitingTexts.length) {
-      this.setState({isFadingOut: true})
-      this.timeout = setTimeout(onDone, fadeOutTransitionDurationMillisec)
+      if (isForceShown) {
+        this.setState({waitingText: "En attente d'une réponse du serveur"})
+      } else {
+        this.setState({isFadingOut: true})
+      }
+      if (onDone) {
+        this.timeout = window.setTimeout(onDone, fadeOutTransitionDurationMillisec)
+      }
       return
     }
     this.setState({waitingText: waitingTexts[waitingTextIndex]})
-    this.timeout = setTimeout(
+    this.timeout = window.setTimeout(
       (): void => this.updateText(waitingTextIndex + 1),
       TOTAL_WAITING_TIME_MILLISEC / waitingTexts.length)
   }
@@ -138,9 +148,10 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
       fontWeight: 500,
       lineHeight: 1.5,
     }
+    const {targetJob: {jobGroup: {romeId = undefined} = {}} = {}} = project
     return <div style={containerStyle}>
-      <FastForward onForward={onDone} />
-      <JobGroupCoverImage romeId={project.targetJob.jobGroup.romeId} style={{zIndex: -1}} />
+      {onDone ? <FastForward onForward={onDone} /> : null}
+      {romeId ? <JobGroupCoverImage romeId={romeId} style={{zIndex: -1}} /> : null}
       <div style={boxStyle}>
         <header style={headerStyle}>{project.title}</header>
         <div style={{margin: 'auto', maxWidth: 360, paddingTop: 23}}>
@@ -161,6 +172,7 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
 
 
 interface PageConnectedProps {
+  project: bayes.bob.Project
   user: bayes.bob.User
 }
 
@@ -169,8 +181,8 @@ interface PageProps extends PageConnectedProps, RouteComponentProps<{projectId?:
 
 
 interface PageState {
-  isFirstTime: boolean
-  isWaitingInterstitialShown: boolean
+  isFirstTime?: boolean
+  isWaitingInterstitialShown?: boolean
 }
 
 
@@ -179,6 +191,15 @@ class ProjectPageBase extends React.PureComponent<PageProps, PageState> {
     location: ReactRouterPropTypes.location.isRequired,
     match: ReactRouterPropTypes.match.isRequired,
     user: PropTypes.object.isRequired,
+  }
+
+  public static getDerivedStateFromProps(
+    {match: {isExact}}, {isFirstTime: wasFirstTime}): PageState|null {
+    if (wasFirstTime && !isExact) {
+      // Disable isFirstTime once the URL changes to a sub page.
+      return {isFirstTime: false}
+    }
+    return null
   }
 
   public state = {
@@ -190,73 +211,103 @@ class ProjectPageBase extends React.PureComponent<PageProps, PageState> {
     this.setState({isWaitingInterstitialShown: false})
   }
 
-  private handleNotFirstTime = (): void => this.setState({isFirstTime: false})
+  private renderStats = (): React.ReactNode => {
+    const {match: {url}, project} = this.props
+    return <StatisticsPage baseUrl={url} project={project} />
+  }
 
-  private renderDashboard = (props: DashboardProps): React.ReactNode => {
-    const project = getProjectFromProps(this.props)
+  private renderAdvice = (props: RouteComponentProps<StrategyPageParams>): React.ReactNode => {
+    const {match: {url}, project, project: {advices = []}} = this.props
+    const {match: {params: {adviceId: aId}}} = props
+    const isAdvice = advices.some(({adviceId}): boolean =>
+      adviceId && aId && adviceId.startsWith(aId) || false)
+    if (!isAdvice) {
+      return this.renderStrategy(props)
+    }
+    return <Workbench {...props} baseUrl={url} project={project} />
+  }
+
+  private renderStrategy = (props: RouteComponentProps<StrategyPageParams>): React.ReactNode => {
+    const {match: {params: {strategyId}}} = props
+    const {location: {hash, search}, match: {url},
+      project, project: {advices = [], strategies = []}} = this.props
+    const strategyIndex =
+      strategies.findIndex(({strategyId: sId}): boolean => strategyId === sId)
+    if (strategyIndex >= 0) {
+      const strategy = strategies[strategyIndex] as bayes.bob.Strategy & {strategyId: string}
+      return <StrategyPage
+        {...props}
+        projectUrl={url} project={project}
+        strategyUrl={`${url}/${strategyId}`} strategy={strategy}
+        strategyRank={strategyIndex + 1} />
+    }
+    const isAdvice = advices.some(({adviceId}): boolean =>
+      adviceId && strategyId && adviceId.startsWith(strategyId) || false)
+    if (isAdvice) {
+      // Redirect to get a fake strategy (named 'conseil') as well.
+      return <Redirect to={`${url}/conseil/${strategyId}{search}{hash}`} />
+    }
+    // We're lost, redirect to diagnostic.
+    return <Redirect to={`${url}${search}${hash}`} />
+  }
+
+  private renderDiagnostic = (props: DashboardProps): React.ReactNode => {
+    const {match: {url}, project} = this.props
     const {isFirstTime} = this.state
     return <ProjectDashboardPage
-      project={project} baseUrl={this.props.match.url} {...{isFirstTime, ...props}}
-      onFirstTimeIsDone={this.handleNotFirstTime} />
+      project={project} baseUrl={url} {...{isFirstTime, ...props}} />
   }
 
   public render(): React.ReactNode {
-    const project = getProjectFromProps(this.props)
-    const {location, match: {params: {projectId = ''} = {}, url = ''} = {}, user} = this.props
+    const {location, match: {params: {projectId = ''} = {}, url = ''} = {}, project,
+      user} = this.props
     const {hash, search} = location
     const {isWaitingInterstitialShown} = this.state
 
     if (project.projectId && project.projectId !== projectId) {
-      return <Redirect to={Routes.PROJECT_PAGE + '/' + project.projectId + hash} />
+      return <Redirect to={Routes.PROJECT_PAGE + '/' + project.projectId + search + hash} />
     }
 
-    if (isWaitingInterstitialShown || (!project.advices && !project.diagnostic)) {
+    const isPageReady = !!(project.advices || project.diagnostic)
+    if (isWaitingInterstitialShown || !isPageReady) {
       return <WaitingProjectPage
-        userYou={youForUser(user)} userProfile={user.profile}
+        userYou={youForUser(user)} userProfile={user.profile || emptyObject}
         style={{flex: 1}} project={project}
-        onDone={this.handleWaitingInterstitialDone} />
+        onDone={this.handleWaitingInterstitialDone} isForceShown={!isPageReady} />
     }
 
     return <Switch>
-      <Route path={`${url}/:tab?`} render={this.renderDashboard} />
+      <Route path={`${Routes.PROJECT_PATH}/${FEEDBACK_TAB}`} render={this.renderDiagnostic} />
+      <Route path={Routes.STATS_PATH} render={this.renderStats} />
+      <Route path={Routes.ADVICE_PATH} render={this.renderAdvice} />
+      <Route path={Routes.STRATEGY_PATH} render={this.renderStrategy} />
+      <Route path={Routes.PROJECT_PATH} exact={true} render={this.renderDiagnostic} />
       <Redirect to={`${url}${search}${hash}`} />
     </Switch>
   }
 }
-export default connect(({user}: RootState): PageConnectedProps => ({user}))(ProjectPageBase)
+export default connect((
+  {user}: RootState,
+  {match: {params: {projectId = ''}}}: RouteComponentProps<{projectId?: string}>
+): PageConnectedProps => ({
+  project: getProject(projectId, user),
+  user,
+}))(ProjectPageBase)
 
-interface DashboardParams {
-  tab?: string
-}
-
-interface DashboardProps extends RouteComponentProps<DashboardParams> {
+interface DashboardProps extends RouteComponentProps<{}> {
   baseUrl: string
   isFirstTime: boolean
-  onFirstTimeIsDone: () => void
   project: bayes.bob.Project
 }
 
 
+// TODO(cyrille): Merge back in project page.
 class ProjectDashboardPage extends React.PureComponent<DashboardProps, {}> {
   public static propTypes = {
     baseUrl: PropTypes.string.isRequired,
     isFirstTime: PropTypes.bool,
-    location: ReactRouterPropTypes.location.isRequired,
     match: ReactRouterPropTypes.match.isRequired,
-    onFirstTimeIsDone: PropTypes.func.isRequired,
     project: PropTypes.object.isRequired,
-  }
-
-  public componentDidUpdate(): void {
-    const {
-      isFirstTime,
-      match: {params: {tab}},
-      onFirstTimeIsDone,
-    } = this.props
-
-    if (isFirstTime && tab) {
-      onFirstTimeIsDone()
-    }
   }
 
   private makeAdviceLink = (adviceId: string, strategyId: string): string => {
@@ -266,27 +317,12 @@ class ProjectDashboardPage extends React.PureComponent<DashboardProps, {}> {
 
   private makeStrategyLink = (strategyId: string): string => `${this.props.baseUrl}/${strategyId}`
 
-  private renderWorkbench = (props): React.ReactNode => {
-    const {baseUrl, project} = this.props
-    return <Workbench
-      {...props} baseUrl={baseUrl} project={project} style={{flex: 1}} urlOnClose={baseUrl} />
-  }
-
   public render(): React.ReactNode {
-    const {baseUrl, isFirstTime, location, match: {params: {tab}}, project} = this.props
-    const {hash, search} = location
+    const {baseUrl, isFirstTime, project} = this.props
 
-    if (!tab || tab === FEEDBACK_TAB) {
-      return <DiagnosticPage
-        makeAdviceLink={this.makeAdviceLink} makeStrategyLink={this.makeStrategyLink}
-        {... {baseUrl, isFirstTime, project}} />
-    }
-
-    return <Switch>
-      <Route path={`${baseUrl}/:strategyOrAdvice/:adviceId?`} render={this.renderWorkbench} />
-      {/* Got an unknown tab, redirect to base URL to switch to default tab. */}
-      <Redirect to={`${baseUrl}${search}${hash}`} />
-    </Switch>
+    return <DiagnosticPage
+      makeAdviceLink={this.makeAdviceLink} makeStrategyLink={this.makeStrategyLink}
+      {... {baseUrl, isFirstTime, project}} />
   }
 }
 
@@ -349,7 +385,7 @@ class DiagnosticPageBase extends React.PureComponent<DiagnosticProps, Diagnostic
     clearTimeout(this.timeout)
   }
 
-  private timeout: ReturnType<typeof setTimeout>
+  private timeout?: number
 
   private handleFullDiagnosticShown = (): void => {
     const {dispatch, project} = this.props
@@ -380,7 +416,7 @@ class DiagnosticPageBase extends React.PureComponent<DiagnosticProps, Diagnostic
     if (!diagnostic) {
       return <Redirect to={Routes.APP_UPDATED_PAGE} />
     }
-    const areStrategiesEnabled = !!(stratTwo === 'ACTIVE' && strategies.length)
+    const areStrategiesEnabled = !!(stratTwo === 'ACTIVE' && strategies && strategies.length)
     const diagnosticStyle = {
       backgroundColor: '#fff',
       flex: 1,
@@ -402,7 +438,7 @@ class DiagnosticPageBase extends React.PureComponent<DiagnosticProps, Diagnostic
       isChatButtonShown={true} style={pageStyle}>
       <PageWithFeedback project={project} baseUrl={baseUrl}>
         <PoleEmploiChangelogModal
-          isShown={isPoleEmploiChangelogShown} projectCreatedAt={createdAt}
+          isShown={isPoleEmploiChangelogShown} projectCreatedAt={createdAt || ''}
           onClose={this.handleHide('PoleEmploiChangelog')} />
         <Diagnostic
           diagnosticData={diagnostic}
@@ -411,8 +447,8 @@ class DiagnosticPageBase extends React.PureComponent<DiagnosticProps, Diagnostic
           onDownloadAsPdf={this.handleDownloadAsPdf}
           userName={profile.name}
           style={diagnosticStyle}
-          {...{advices, areStrategiesEnabled, isFirstTime, makeAdviceLink, makeStrategyLink,
-            project, strategies, userYou}}
+          {...{advices, areStrategiesEnabled, baseUrl, isFirstTime, makeAdviceLink,
+            makeStrategyLink, project, strategies, userYou}}
         />
       </PageWithFeedback>
     </PageWithNavigationBar>

@@ -5,6 +5,8 @@ import textwrap
 import unittest
 
 import airtablemock
+import mongomock
+import pymongo
 
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.data_analysis.lib import mongo
@@ -32,6 +34,7 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
     def setUp(self) -> None:
         patcher = airtablemock.patch(job_group_info.__name__ + '.airtable')
         patcher.start()
+        self.addCleanup(patcher.stop)
 
         job_group_info.AIRTABLE_API_KEY = 'key01234567'
 
@@ -75,7 +78,30 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
             'atVariousCompanies': 'à la MAIF, à la MATMUT',
             'whatILoveAboutFeminine': "j'adore vos allées",
         })
-        self.addCleanup(patcher.stop)
+
+        job_group_info.USERS_MONGO_URL = 'mongodb://fake-mongo-url/test'
+
+        db_patcher = mongomock.patch(('fake-mongo-url',))
+        db_patcher.start()
+        self.addCleanup(db_patcher.stop)
+        self.user_db = pymongo.MongoClient('mongodb://fake-mongo-url/test').get_database()
+        self.user_db.user.insert_many([
+            {'projects': [{
+                'isIncomplete': True,
+            }]},
+            {
+                'profile': {'highestDegree': 'CAP_BEP'},
+                'projects': [{'targetJob': {'jobGroup': {'romeId': 'D1501'}}}],
+            },
+            {
+                'profile': {'highestDegree': 'CAP_BEP'},
+                'projects': [{'targetJob': {'jobGroup': {'romeId': 'D1501'}}}],
+            },
+            {
+                'profile': {'highestDegree': 'BAC_BACPRO'},
+                'projects': [{'targetJob': {'jobGroup': {'romeId': 'D1501'}}}],
+            },
+        ])
 
     def test_make_dicts(self) -> None:
         """Test basic usage of the csv2dicts function."""
@@ -149,12 +175,17 @@ class JobGroupInfoImporterTestCase(unittest.TestCase):
         self.assertEqual('vous aimez être au service des autres', d1501.why_specific_company)
         self.assertEqual('à la MAIF, à la MATMUT', d1501.at_various_companies)
         self.assertEqual("j'adore vos allées", d1501.what_i_love_about_feminine)
-        self.assertEqual(4, len(d1501.best_departements))
-        best_departement_scores = [
-            d.local_stats.imt.yearly_avg_offers_per_10_candidates for d in d1501.best_departements]
-        self.assertEqual(sorted(best_departement_scores, reverse=True), best_departement_scores)
+        self.assertEqual(4, len(d1501.departement_scores))
+        self.assertEqual(d1501.best_departements, d1501.departement_scores)
+        departement_scores = [
+            d.local_stats.imt.yearly_avg_offers_per_10_candidates for d in d1501.departement_scores]
+        self.assertEqual(sorted(departement_scores, reverse=True), departement_scores)
+        self.assertEqual(-1, departement_scores[-1])
         self.assertAlmostEqual(0.8, d1501.national_market_score)
         self.assertTrue(d1501.is_diploma_strictly_required)
+        self.assertEqual(
+            2, next(ud.count for ud in d1501.user_degrees if ud.degree == job_pb2.CAP_BEP))
+        self.assertIn(job_pb2.BAC_BACPRO, {ud.degree for ud in d1501.user_degrees})
 
         # Test default values.
         g1204 = job_group_protos['G1204']

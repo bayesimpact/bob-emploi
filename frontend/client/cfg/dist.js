@@ -67,7 +67,7 @@ module.exports = {
       // the build 10 times. Probably related to
       // https://github.com/webpack-contrib/uglifyjs-webpack-plugin/issues/286
       terserOptions: {warnings: false},
-      warningsFilter: source => source && source.substr(0, srcDir.length) === srcDir,
+      warningsFilter: source => source && source.slice(0, srcDir.length) === srcDir,
     })],
   },
   output: {

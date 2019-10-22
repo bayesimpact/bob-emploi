@@ -2,7 +2,7 @@
 
 import io
 from os import path
-import typing
+from typing import List, Tuple
 import unittest
 
 from bob_emploi.data_analysis.parsers import formacode_parser
@@ -68,7 +68,7 @@ class FormacodeParserTestCase(unittest.TestCase):
             '• découpe des viandes H2101 _____ bOuChERiE')
 
 
-def _parse_line(line: str) -> typing.List[typing.Tuple[str, str]]:
+def _parse_line(line: str) -> List[Tuple[str, str]]:
     """Test helper to parse all mappings in one line."""
 
     return [m for m in formacode_parser.parse_rome_formacode_line(line)]

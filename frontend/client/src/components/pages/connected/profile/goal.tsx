@@ -54,7 +54,7 @@ const _CREATION_ARGS = {
   fieldShown: 'isCompanyCreationShown',
   title: "Nous ne traitons pas encore bien la création d'entreprise",
   tools: _CREATION_TOOLS,
-}
+} as const
 
 
 const _REORIENTATION_TOOLS = [
@@ -79,11 +79,11 @@ const _REORIENTATION_ARGS = {
   fieldShown: 'isReorientationShown',
   title: 'Nous ne traitons pas encore bien la reconversion professionnelle',
   tools: _REORIENTATION_TOOLS,
-}
+} as const
 
 
 interface ConnectedStepProps {
-  defaultProjectProps: bayes.bob.Project
+  defaultProjectProps?: bayes.bob.Project
 }
 
 
@@ -93,7 +93,7 @@ interface NewProjectGoalStepProps extends ConnectedStepProps, ProjectStepProps {
 
 
 interface StepState {
-  commentsRead?: {
+  commentsRead: {
     city: boolean
     targetJob: boolean
   }
@@ -101,6 +101,9 @@ interface StepState {
   isReorientationShown?: boolean
   isValidated?: boolean
 }
+
+
+type NullableStepStateKey = 'isCompanyCreationShown' | 'isReorientationShown' | 'isValidated'
 
 
 class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps, StepState> {
@@ -150,8 +153,11 @@ class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps
     }
   }
 
-  private handlePrevious = _memoize((field): (() => void) =>
-    (): void => this.setState({[field]: undefined}))
+  private handlePrevious = _memoize((field: NullableStepStateKey): (() => void) =>
+    (): void => {
+      const stateUpdate: Pick<StepState, NullableStepStateKey> = {[field]: undefined}
+      this.setState(stateUpdate)
+    })
 
   private handleSuggestChange = _memoize((field): ((value) => void) =>
     (value): void => {
@@ -251,7 +257,7 @@ class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps
     return <Step
       {...this.props} title={title}
       fastForward={this.fastForward}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : null}
+      onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}
       onPreviousButtonClick={this.handlePrevious(fieldShown)}>
 
       <div style={{fontSize: 14}}>
@@ -330,7 +336,7 @@ class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps
       title={`${userYou('Ton', 'Votre')} projet`}
       {...this.props} fastForward={this.fastForward}
       progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : null}>
+      onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}>
       <FieldSet label={`Quel est ${userYou('ton', 'votre')} projet\u00A0:`}
         isValid={!!kind} isValidated={isValidated} hasCheck={true}>
         <Select value={kind} options={PROJECT_KIND_OPTIONS} onChange={this.handleChange('kind')}

@@ -11,6 +11,7 @@ import logging
 import os
 import re
 import typing
+from typing import Any, Iterable, List, Optional, Union
 
 import requests
 
@@ -55,7 +56,7 @@ class EmailPolicy(object):
         instant = now.get()
         self.last_email_datetime = instant - datetime.timedelta(days=days_since_any_email)
 
-        self.retry_campaign_date_unread: typing.Optional[datetime.datetime]
+        self.retry_campaign_date_unread: Optional[datetime.datetime]
 
         if days_since_same_campaign_unread > 0:
             self.retry_campaign_date_unread = \
@@ -63,14 +64,14 @@ class EmailPolicy(object):
         else:
             self.retry_campaign_date_unread = None
 
-        self.retry_campaign_date: typing.Optional[datetime.datetime]
+        self.retry_campaign_date: Optional[datetime.datetime]
 
         if days_since_same_campaign > 0:
             self.retry_campaign_date = instant - datetime.timedelta(days=days_since_same_campaign)
         else:
             self.retry_campaign_date = None
 
-    def can_send(self, campaign_id: str, emails_sent: typing.Iterable[user_pb2.EmailSent]) -> bool:
+    def can_send(self, campaign_id: str, emails_sent: Iterable[user_pb2.EmailSent]) -> bool:
         """Check whether we can send this campaign to a user having the given sent emails."""
 
         for email in emails_sent:
@@ -127,7 +128,7 @@ def blast_campaign(
     if action == 'send' and auth.SECRET_SALT == auth.FAKE_SECRET_SALT:
         raise ValueError('Set the prod SECRET_SALT env var before continuing.')
     database, user_database, unused_ = mongo.get_connections_from_env()
-    this_campaign: campaign.Campaign[typing.Any] = campaign.get_campaign(campaign_id)
+    this_campaign: campaign.Campaign[Any] = campaign.get_campaign(campaign_id)
     collection = this_campaign.users_collection
     mongo_filters = dict(this_campaign.mongo_filters)
     mongo_filters[collection.email_field] = {
@@ -153,7 +154,7 @@ def blast_campaign(
         users_processed_count += 1
 
         user = typing.cast(
-            typing.Union[helper_pb2.Helper, review_pb2.DocumentToReview, user_pb2.User],
+            Union[helper_pb2.Helper, review_pb2.DocumentToReview, user_pb2.User],
             proto.create_from_mongo(user_dict, collection.proto, 'user_id'))
 
         if user_id_start and not user.user_id.startswith(user_id_start):
@@ -209,14 +210,13 @@ def blast_campaign(
 
 
 # TODO(cyrille): Put that in common with the other async tools.
-def _date_from_today(absolute_date: str, num_days_ago: typing.Optional[int]) \
-        -> str:
+def _date_from_today(absolute_date: str, num_days_ago: Optional[int]) -> str:
     if num_days_ago is None:
         return absolute_date
     return (now.get() - datetime.timedelta(days=num_days_ago)).strftime('%Y-%m-%d')
 
 
-def main(string_args: typing.Optional[typing.List[str]] = None) -> None:
+def main(string_args: Optional[List[str]] = None) -> None:
     """Parse command line arguments and send mails."""
 
     parser = argparse.ArgumentParser(

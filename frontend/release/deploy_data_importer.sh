@@ -1,5 +1,7 @@
 #!/bin/bash
 # Script to deploy a data-analysis-prepare release to be used by scheduled tasks.
+# Needs bob-emploi-deploy-importer IAM policy or equivalent.
+# https://console.aws.amazon.com/iam/home?region=us-east-1#/policies/arn:aws:iam::951168128976:policy/bob-emploi-deploy-importer
 #
 # The canonical place for our releases are the AWS docker images repository (aka ECR).
 #
@@ -9,7 +11,7 @@
 # - SLACK_INTEGRATION_URL: Webhook to report deploy status to Slack.
 #
 # Usage:
-# frontend/release/deploy.sh 2019-02-12_DATA_00
+# frontend/release/deploy_data_importer.sh 2019-02-12_DATA_00
 
 set -e
 readonly DIRNAME=$(dirname "$0")

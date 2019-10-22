@@ -1,6 +1,6 @@
 """Common function to handle jobs."""
 
-import typing
+from typing import Optional
 
 import pymongo
 
@@ -14,14 +14,14 @@ _JOB_GROUPS_INFO: proto.MongoCachedCollection[job_pb2.JobGroup] = \
 
 
 def get_group_proto(database: pymongo.database.Database, rome_id: str) \
-        -> typing.Optional[job_pb2.JobGroup]:
+        -> Optional[job_pb2.JobGroup]:
     """Get a JobGroup proto corresponding to the ROME job group ID."""
 
     return _JOB_GROUPS_INFO.get_collection(database).get(rome_id)
 
 
 def get_job_proto(database: pymongo.database.Database, job_id: str, rome_id: str) \
-        -> typing.Optional[job_pb2.Job]:
+        -> Optional[job_pb2.Job]:
     """Get a Job proto corresponding to the job ID if it is found in the ROME job group."""
 
     job_group = get_group_proto(database, rome_id)

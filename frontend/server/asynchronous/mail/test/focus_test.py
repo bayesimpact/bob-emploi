@@ -15,7 +15,7 @@ from bob_emploi.frontend.server.test import mailjetmock
 # updated as the tests here depend on it to be complete and accurate.
 _GOLDEN_FOCUS_CAMPAIGNS = (
     'focus-body-language', 'focus-network', 'focus-self-develop', 'focus-spontaneous',
-    'galita-1', 'galita-2', 'galita-3', 'imt', 'network-plus',
+    'galita-1', 'galita-2', 'galita-3', 'improve-cv', 'imt', 'network-plus',
 )
 
 

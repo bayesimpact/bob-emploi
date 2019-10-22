@@ -1,7 +1,7 @@
 """Module to advise the user to relocate to another département."""
 
 import itertools
-import typing
+from typing import Any, List
 
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import scoring_base
@@ -10,8 +10,8 @@ from bob_emploi.frontend.api import project_pb2
 
 
 @scoring_base.ScoringProject.cached('relocate')
-def _find_best_departements(unused_: typing.Any, project: scoring_base.ScoringProject) \
-        -> typing.List[project_pb2.DepartementScore]:
+def _find_best_departements(unused_: Any, project: scoring_base.ScoringProject) \
+        -> List[project_pb2.DepartementScore]:
     """Find which are the best departement to relocate for a given job group."""
 
     own_departement_offers = project.imt_proto().yearly_avg_offers_per_10_candidates
@@ -22,7 +22,7 @@ def _find_best_departements(unused_: typing.Any, project: scoring_base.ScoringPr
 
     best_departements = project.job_group_info().best_departements
 
-    result: typing.List[project_pb2.DepartementScore] = []
+    result: List[project_pb2.DepartementScore] = []
     for dep in itertools.islice(best_departements, 10):
         if dep.local_stats.imt.yearly_avg_offers_per_10_candidates <= own_departement_offers:
             return result

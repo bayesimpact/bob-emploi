@@ -24,26 +24,25 @@ const connectCookieMessage = connect(
 )
 
 
-class SimpleCookieMessage extends React.PureComponent<{}> {
-  public render(): React.ReactNode {
-    const linkStyle: React.CSSProperties = {
-      color: 'inherit',
-      cursor: 'pointer',
-      fontWeight: 600,
-      textDecoration: isMobileVersion ? 'underline' : 'none',
-    }
-    return <div>
-      {isMobileVersion ? 'Ce site utilise des ' : 'En poursuivant votre navigation sur ce ' +
-      "site, vous acceptez l'utilisation de cookies pour améliorer la qualité du service et pour " +
-      'réaliser des statistiques de visite. Vos données ne seront ni cédées à des tiers, ni ' +
-      'exploitées à des fins commerciales.'} <Link
-        style={linkStyle}
-        to={Routes.COOKIES_PAGE}>
-        {isMobileVersion ? 'cookies.' : 'En savoir plus'}
-      </Link>
-    </div>
+const SimpleCookieMessageBase: React.FC<{}> = (): React.ReactElement => {
+  const linkStyle: React.CSSProperties = {
+    color: 'inherit',
+    cursor: 'pointer',
+    fontWeight: 600,
+    textDecoration: isMobileVersion ? 'underline' : 'none',
   }
+  return <div>
+    {isMobileVersion ? 'Ce site utilise des ' : 'En poursuivant votre navigation sur ce ' +
+    "site, vous acceptez l'utilisation de cookies pour améliorer la qualité du service et pour " +
+    'réaliser des statistiques de visite. Vos données ne seront ni cédées à des tiers, ni ' +
+    'exploitées à des fins commerciales.'} <Link
+      style={linkStyle}
+      to={Routes.COOKIES_PAGE}>
+      {isMobileVersion ? 'cookies.' : 'En savoir plus'}
+    </Link>
+  </div>
 }
+const SimpleCookieMessage = React.memo(SimpleCookieMessageBase)
 
 
 interface CookieMessageProps {
@@ -54,30 +53,30 @@ interface CookieMessageProps {
 
 
 // TODO(marielaure): Check if this is used in desktop.
-class CookieMessageBase extends React.PureComponent<CookieMessageProps> {
-  public static propTypes = {
-    isMessageShown: PropTypes.bool,
-    onAcceptCookieUsage: PropTypes.func.isRequired,
-    style: PropTypes.object,
-  }
-
-  public render(): React.ReactNode {
-    const {isMessageShown, onAcceptCookieUsage} = this.props
+const CookieMessageBase: React.FC<CookieMessageProps> =
+  (props: CookieMessageProps): React.ReactElement|null => {
+    const {isMessageShown, onAcceptCookieUsage} = props
     if (!isMessageShown) {
       return null
     }
     const cookieBoxStyle = {
       background: colors.CHARCOAL_GREY,
       color: isMobileVersion ? '#fff' : colors.SILVER,
-      ...this.props.style,
+      ...props.style,
     }
     return <Banner
       style={cookieBoxStyle} onClose={onAcceptCookieUsage} hasRoundButton={isMobileVersion}>
       <SimpleCookieMessage />
     </Banner>
   }
+CookieMessageBase.propTypes = {
+  isMessageShown: PropTypes.bool,
+  onAcceptCookieUsage: PropTypes.func.isRequired,
+  style: PropTypes.object,
 }
-const CookieMessage = connectCookieMessage(CookieMessageBase)
+const CookieMessage = connectCookieMessage(React.memo(CookieMessageBase))
+
+
 
 
 interface CookieMessageOverlayProps {
@@ -87,14 +86,9 @@ interface CookieMessageOverlayProps {
 }
 
 
-class CookieMessageOverlayBase extends React.PureComponent<CookieMessageOverlayProps> {
-  public static propTypes = {
-    isMessageShown: PropTypes.bool.isRequired,
-    onAcceptCookieUsage: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {isMessageShown, onAcceptCookieUsage} = this.props
+const CookieMessageOverlayBase: React.FC<CookieMessageOverlayProps> =
+  (props: CookieMessageOverlayProps): React.ReactElement => {
+    const {isMessageShown, onAcceptCookieUsage} = props
     const containerStyle: React.CSSProperties = {
       backgroundColor: '#fff',
       borderRadius: 2,
@@ -130,8 +124,11 @@ class CookieMessageOverlayBase extends React.PureComponent<CookieMessageOverlayP
       <SimpleCookieMessage />
     </div>
   }
+CookieMessageOverlayBase.propTypes = {
+  isMessageShown: PropTypes.bool.isRequired,
+  onAcceptCookieUsage: PropTypes.func.isRequired,
 }
-const CookieMessageOverlay = connectCookieMessage(CookieMessageOverlayBase)
+const CookieMessageOverlay = connectCookieMessage(React.memo(CookieMessageOverlayBase))
 
 
 export {CookieMessage, CookieMessageOverlay}

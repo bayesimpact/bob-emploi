@@ -1,8 +1,10 @@
 import {getStrategyGoals, tutoyer} from 'store/french'
 
-const getStartedStrategy = (project: bayes.bob.Project, sId: string): bayes.bob.WorkingStrategy =>
+type ValidWorkingStrategy = bayes.bob.WorkingStrategy & {strategyId: string}
+const getStartedStrategy = (project: bayes.bob.Project, sId: string): ValidWorkingStrategy =>
   project.openedStrategies && project.openedStrategies.
-    find(({strategyId}: bayes.bob.WorkingStrategy): boolean => strategyId === sId) || {}
+    find((s: bayes.bob.WorkingStrategy): s is ValidWorkingStrategy => s.strategyId === sId) ||
+    {strategyId: sId}
 
 
 const getStrategyProgress = (goals, reachedGoals): number => {
@@ -16,7 +18,7 @@ export interface StrategyCompletion {
   isComplete: boolean
   isStarted: boolean
   progress: number
-  startedAt: string
+  startedAt?: string
 }
 
 
@@ -30,4 +32,9 @@ StrategyCompletion => {
   return {isComplete, isStarted, progress, startedAt}
 }
 
-export {getStartedStrategy, getStrategyCompletion, getStrategyProgress}
+
+const isValidStrategy = (s: bayes.bob.Strategy): s is bayes.bob.Strategy & {strategyId: string} =>
+  !!s.strategyId
+
+
+export {getStartedStrategy, getStrategyCompletion, getStrategyProgress, isValidStrategy}

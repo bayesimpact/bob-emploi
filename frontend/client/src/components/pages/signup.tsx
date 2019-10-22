@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import {parse} from 'query-string'
 import React from 'react'
 import {connect} from 'react-redux'
-import {Redirect, RouteComponentProps, withRouter} from 'react-router'
+import {Redirect, RouteComponentProps} from 'react-router'
 
 import {DispatchAllActions, RootState, closeLoginModal, loginUserFromToken, openLoginModal,
   openRegistrationModal} from 'store/actions'
@@ -23,7 +23,7 @@ interface ConnectedProps {
 }
 
 
-interface Props extends RouteComponentProps, ConnectedProps {
+interface Props extends RouteComponentProps<{}, {}, {pathname?: string}>, ConnectedProps {
   children?: never
   dispatch: DispatchAllActions
 }
@@ -43,7 +43,7 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
 
   public static getDerivedStateFromProps(
     {hasLoginModal}: Props,
-    {hasLoginModal: hadLoginModal}: State): State {
+    {hasLoginModal: hadLoginModal}: State): State|null {
     if (!hasLoginModal === !hadLoginModal) {
       return null
     }
@@ -96,7 +96,7 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
   }
 
   private renderMobile(): React.ReactNode {
-    const {canCloseModal} = this.props
+    const {canCloseModal, location: {state: {pathname = ''} = {}}} = this.props
     const containerStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
@@ -112,7 +112,7 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
     return <div style={containerStyle}>
       {canCloseModal ? <ModalCloseButton
         style={closeButtonStyle} onClick={this.handleClick} /> : null}
-      <LoginMethods onLogin={this.handleClick} />
+      <LoginMethods forwardLocation={pathname || '/'} onFinish={this.handleClick} />
     </div>
   }
 
@@ -129,9 +129,9 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
   }
 }
 const SignUpPage = connect(({app: {loginModal}}: RootState): ConnectedProps => ({
-  canCloseModal: loginModal && !(loginModal.defaultValues && loginModal.defaultValues.resetToken),
+  canCloseModal: !!loginModal && !(loginModal.defaultValues && loginModal.defaultValues.resetToken),
   hasLoginModal: !!loginModal,
-}))(withRouter(SignUpPageBase))
+}))(SignUpPageBase)
 
 
 interface BannerProps {
@@ -183,7 +183,7 @@ class SignUpBanner extends React.Component<BannerProps, BannerState> {
       position: 'relative',
       textAlign: isMobileVersion ? 'center' : 'left',
       ...style,
-      ...(isMobileVersion ? {width: 'calc(100vw - 30px)'} : {}),
+      ...(isMobileVersion ? {width: 'calc(100vw - 40px)'} : {}),
     }
     const textBannerStyle: React.CSSProperties = {
       fontSize: 18,
@@ -204,7 +204,7 @@ class SignUpBanner extends React.Component<BannerProps, BannerState> {
         <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />}
       <span style={textBannerStyle} >
         Pense{userYou('', 'z')} à {isMobileVersion ? null : <React.Fragment>
-          créer {userYou('ton', 'votre')} compte pour
+          créer {userYou('ton', 'votre')} compte pour{' '}
         </React.Fragment>}
         sauvegarder {userYou('ta', 'votre')} progression
       </span>

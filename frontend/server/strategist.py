@@ -4,6 +4,7 @@ import collections
 import itertools
 import logging
 import typing
+from typing import Dict, List, Optional, Tuple
 
 import pymongo
 
@@ -22,11 +23,14 @@ _STRATEGY_ADVICE_TEMPLATES: proto.MongoCachedCollection[strategy_pb2.StrategyAdv
 _STRATEGY_MODULES: proto.MongoCachedCollection[strategy_pb2.StrategyModule] = \
     proto.MongoCachedCollection(strategy_pb2.StrategyModule, 'strategy_modules')
 
-_STRATEGY_MODULES_WITH_TEMPLATES: typing.List[typing.Tuple[
+_STRATEGY_MODULES_WITH_TEMPLATES: List[Tuple[
     pymongo.database.Database,
-    typing.Dict[str, typing.List[strategy_pb2.StrategyModule]]]] = []
+    Dict[str, List[strategy_pb2.StrategyModule]]]] = []
 
 _SPECIFIC_TO_JOB_ADVICE_ID = 'specific-to-job'
+
+# Strategy with score less than that is considered less relevant to the user.
+_MAXIMUM_SECONDARY_SCORE = 10
 
 
 def clear_cache() -> None:
@@ -36,7 +40,7 @@ def clear_cache() -> None:
 
 
 def _get_strategy_modules_by_category(database: pymongo.database.Database) \
-        -> typing.Dict[str, typing.List[strategy_pb2.StrategyModule]]:
+        -> Dict[str, List[strategy_pb2.StrategyModule]]:
     """Populate the strategy modules with advice templates, and return them grouped by
     diagnostic category.
     """
@@ -56,7 +60,7 @@ def _get_strategy_modules_by_category(database: pymongo.database.Database) \
                 'Missing strategy "%s" for advice modules "%s"',
                 strategy_id, ', '.join(a.advice_id for a in full_advice))
         strategy.pieces_of_advice.extend(full_advice)
-    strategies_by_category: typing.Dict[str, typing.List[strategy_pb2.StrategyModule]] = \
+    strategies_by_category: Dict[str, List[strategy_pb2.StrategyModule]] = \
         collections.defaultdict(list)
     for strategy in strategies.values():
         for category_id in strategy.category_ids:
@@ -105,14 +109,18 @@ def strategize(
     for module in category_modules:
         _make_strategy(scoring_project, module, advice_scores)
     scoring_project.details.strategies.sort(key=lambda s: -s.score)
+    if not scoring_project.details.strategies:
+        return
+    scoring_project.details.strategies[0].is_principal = True
 
 
 def _make_strategy(
         project: scoring.ScoringProject, module: strategy_pb2.StrategyModule,
-        advice_scores: typing.Dict[str, float]) -> typing.Optional[strategy_pb2.Strategy]:
+        advice_scores: Dict[str, float]) -> Optional[strategy_pb2.Strategy]:
     score = project.score(module.trigger_scoring_model)
     if not score:
         return None
+    score = min(score * 100 / 3, 100 - project.details.diagnostic.overall_score)
     pieces_of_advice = []
     for advice in module.pieces_of_advice:
         user_advice_id = next((a for a in advice_scores if a.startswith(advice.advice_id)), None)
@@ -135,7 +143,10 @@ def _make_strategy(
         # Don't want to show a strategy without any advice modules.
         return None
     strategy = project.details.strategies.add(
-        score=int(score * 100 / 3),
+        description=project.populate_template(
+            project.translate_string(module.description_template)),
+        score=int(score),
+        is_secondary=score <= 10,
         title=project.translate_string(module.title),
         header=project.populate_template(project.translate_string(module.header_template)),
         strategy_id=module.strategy_id)

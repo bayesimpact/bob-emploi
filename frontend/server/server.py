@@ -8,16 +8,16 @@ MyGamePlan web application with data.
 
 import collections
 import datetime
-import hashlib
 import itertools
-import json
 import logging
 import os
 import random
 import re
 import time
 import typing
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 from urllib import parse
+import uuid
 
 from bson import objectid
 import flask
@@ -44,6 +44,7 @@ from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server import strategist
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import association_pb2
+from bob_emploi.frontend.api import auth_pb2
 from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import feedback_pb2
 from bob_emploi.frontend.api import geo_pb2
@@ -67,7 +68,7 @@ app.wsgi_app = proxy_fix.ProxyFix(app.wsgi_app)  # type: ignore
 
 RANDOMIZER = random.Random()
 
-_FlaskResponse = typing.Union[str, werkzeug.Response]
+_FlaskResponse = Union[str, werkzeug.Response]
 
 
 # TODO(marielaure): Clean up the unverified_data_zones table in _DB.
@@ -100,6 +101,16 @@ _Tick = collections.namedtuple('Tick', ['name', 'time'])
 # Log timing of requests that take too long to be treated.
 _LONG_REQUEST_DURATION_SECONDS = 5
 
+# How long a support ticket should be kept open.
+_SUPPORT_TICKET_LIFE_DAYS = 7
+
+
+@app.errorhandler(auth.ExpiredTokenException)
+def expired_token(error: auth.ExpiredTokenException) -> Tuple[str, int]:
+    """Handle the 498 error."""
+
+    return error.description or "Le jeton d'authentification est périmé", 498
+
 
 @app.route('/api/user', methods=['DELETE'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.UserId)
@@ -107,7 +118,7 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
     """Delete a user and their authentication information."""
 
     auth_token = flask.request.headers.get('Authorization', '').replace('Bearer ', '')
-    filter_user: typing.Optional[typing.Dict[str, typing.Any]]
+    filter_user: Optional[Dict[str, Any]]
     if user_data.user_id:
         try:
             auth.check_token(user_data.user_id, auth_token, role='unsubscribe')
@@ -118,12 +129,10 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
                 flask.abort(403, 'Wrong authentication token.')
         filter_user = {'_id': _safe_object_id(user_data.user_id)}
     elif user_data.profile.email:
-        # TODO(pascal): Drop this after 2018-09-01, until then we need to keep
-        # it as the link is used in old emails.
         try:
-            auth.check_token(user_data.profile.email, auth_token, role='unsubscribe')
+            auth.check_token('', auth_token, role='admin')
         except ValueError:
-            flask.abort(403, 'Accès refusé')
+            flask.abort(403, 'Accès refusé, action seulement pour le super-administrateur.')
         filter_user = _USER_DB.user.find_one({
             'hashedEmail': auth.hash_user_email(user_data.profile.email)}, {'_id': 1})
     else:
@@ -318,7 +327,7 @@ def update_and_quick_diagnose(
     """Update a user project and quickly diagnose it."""
 
     user_proto = _get_user_data(user_id)
-    project_proto: typing.Optional[project_pb2.Project]
+    project_proto: Optional[project_pb2.Project]
     if project_id:
         project_proto = _get_project_data(user_proto, project_id)
     elif user_proto.projects:
@@ -327,7 +336,7 @@ def update_and_quick_diagnose(
         project_proto = None
 
     if request.HasField('user'):
-        merged_project: typing.Optional[project_pb2.Project]
+        merged_project: Optional[project_pb2.Project]
         if request.user.projects and project_proto:
             merged_project = request.user.projects[0]
             _clear_replaceable_fields(project_proto, request.user.projects[0])
@@ -337,7 +346,10 @@ def update_and_quick_diagnose(
             merged_project = None
         _clear_replaceable_fields(user_proto, request.user)
 
-        user_proto.MergeFrom(request.user)
+        if request.HasField('field_mask'):
+            request.field_mask.MergeMessage(request.user, user_proto)
+        else:
+            user_proto.MergeFrom(request.user)
         user_proto = _save_user(user_proto, is_new_user=False)
 
         if merged_project:
@@ -528,10 +540,6 @@ def _save_user(user_data: user_pb2.User, is_new_user: bool) -> user_pb2.User:
     # Update hashed_email field if necessary, to make sure it's consistent with profile.email. This
     # must be done for all users, since (say) a Google authenticated user may try to connect with
     # password, so its email hash must be indexed.
-    # TODO(cyrille): Find a way to handle multi-authentication account more gracefully. Ideally in
-    # the end we might want to have:
-    #  - only one account with multiple way of authenticating
-    #  - the email is only a property and multiple accounts may have the same email
     if user_data.profile.email:
         user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
 
@@ -539,6 +547,10 @@ def _save_user(user_data: user_pb2.User, is_new_user: bool) -> user_pb2.User:
         _assert_no_credentials_change(previous_user_data, user_data)
         _copy_unmodifiable_fields(previous_user_data, user_data)
         _populate_feature_flags(user_data)
+
+        if user_data.profile.email and not previous_user_data.profile.email:
+            base_url = parse.urljoin(flask.request.base_url, '/')[:-1]
+            advisor.maybe_send_late_activation_emails(user_data, _DB, base_url)
 
     user_data.revision += 1
 
@@ -554,7 +566,6 @@ def _save_low_level(user_data: user_pb2.User, is_new_user: bool = False) -> user
     user_dict.update(_SERVER_TAG)
     user_dict.pop('userId', None)
     if is_new_user:
-        user_dict['_id'] = _get_unguessable_object_id()
         result = _USER_DB.user.insert_one(user_dict)
         user_data.user_id = str(result.inserted_id)
     else:
@@ -572,30 +583,17 @@ def _create_new_project_id(user_data: user_pb2.User) -> str:
     raise ValueError('Should never happen as itertools.count() does not finish')  # pragma: no-cover
 
 
-def _get_unguessable_object_id() -> objectid.ObjectId:
-    """Hash the ObjectID with our salt to avoid that new UserIds can easily be guessed.
-
-    See http://go/bob:security for details.
-    """
-
-    guessable_object_id = objectid.ObjectId()
-    salter = hashlib.sha1()
-    salter.update(str(guessable_object_id).encode('ascii'))
-    salter.update(auth.SECRET_SALT)
-    return objectid.ObjectId(salter.hexdigest()[:24])
+_SHOW_UNVERIFIED_DATA_USERS: Set[str] = set()
 
 
-_SHOW_UNVERIFIED_DATA_USERS: typing.Set[str] = set()
-
-
-def _show_unverified_data_users() -> typing.Set[str]:
+def _show_unverified_data_users() -> Set[str]:
     if not _SHOW_UNVERIFIED_DATA_USERS:
         for document in _USER_DB.show_unverified_data_users.find():
             _SHOW_UNVERIFIED_DATA_USERS.add(document['_id'])
     return _SHOW_UNVERIFIED_DATA_USERS
 
 
-def _validate_city(city: geo_pb2.FrenchCity) -> typing.Optional[geo_pb2.FrenchCity]:
+def _validate_city(city: geo_pb2.FrenchCity) -> Optional[geo_pb2.FrenchCity]:
     if not city.postcodes:
         return None
     return city
@@ -652,7 +650,7 @@ def _get_user_data(user_id: str) -> user_pb2.User:
 
     user_dict = _USER_DB.user.find_one({'_id': _safe_object_id(user_id)})
     user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id', always_create=False)
-    if not user_proto:
+    if not user_proto or user_proto.HasField('deleted_at'):
         # Switch to raising an error if you move this function in a lib.
         flask.abort(404, f'Utilisateur "{user_id}" inconnu.')
 
@@ -722,19 +720,27 @@ def _get_authenticator() -> auth.Authenticator:
     return authenticator
 
 
-def _update_returning_user(user_data: user_pb2.User) -> timestamp_pb2.Timestamp:
+def _update_returning_user(
+        user_data: user_pb2.User, force_update: bool = False, has_set_email: bool = False) \
+        -> timestamp_pb2.Timestamp:
     if user_data.HasField('requested_by_user_at_date'):
         start_of_day = now.get().replace(hour=0, minute=0, second=0, microsecond=0)
         if user_data.requested_by_user_at_date.ToDatetime() >= start_of_day:
-            # Nothing to update.
+            if force_update:
+                _save_low_level(user_data)
             return user_data.requested_by_user_at_date
-        last_connection = timestamp_pb2.Timestamp()
-        last_connection.CopyFrom(user_data.requested_by_user_at_date)
+        else:
+            last_connection = timestamp_pb2.Timestamp()
+            last_connection.CopyFrom(user_data.requested_by_user_at_date)
     else:
         last_connection = user_data.registered_at
 
     if user_data.profile.email:
         user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
+
+    if has_set_email:
+        base_url = parse.urljoin(flask.request.base_url, '/')[:-1]
+        advisor.maybe_send_late_activation_emails(user_data, _DB, base_url)
 
     user_data.requested_by_user_at_date.FromDatetime(now.get())
     # No need to pollute our DB with super precise timestamps.
@@ -747,8 +753,8 @@ def _update_returning_user(user_data: user_pb2.User) -> timestamp_pb2.Timestamp:
 # TODO: Split this into separate endpoints for registration and login.
 # Having both in the same endpoint makes refactoring the frontend more difficult.
 @app.route('/api/user/authenticate', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.AuthRequest, out_type=user_pb2.AuthResponse)
-def authenticate(auth_request: user_pb2.AuthRequest) -> user_pb2.AuthResponse:
+@proto.flask_api(in_type=auth_pb2.AuthRequest, out_type=auth_pb2.AuthResponse)
+def authenticate(auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
     """Authenticate a user."""
 
     authenticator = _get_authenticator()
@@ -756,8 +762,8 @@ def authenticate(auth_request: user_pb2.AuthRequest) -> user_pb2.AuthResponse:
 
 
 @app.route('/api/user/reset-password', methods=['POST'])
-@proto.flask_api(in_type=user_pb2.AuthRequest)
-def reset_password(auth_request: user_pb2.AuthRequest) -> str:
+@proto.flask_api(in_type=auth_pb2.AuthRequest)
+def reset_password(auth_request: auth_pb2.AuthRequest) -> str:
     """Sends an email to user with a reset token so that they can reset their password."""
 
     authenticator = _get_authenticator()
@@ -777,7 +783,8 @@ def convert_user_proto(user_with_advice: user_pb2.UserWithAdviceSelection) \
 
 @app.route('/api/user/<user_id>/generate-auth-tokens', methods=['GET'])
 @auth.require_user(lambda user_id: typing.cast(str, user_id))
-def generate_auth_tokens(user_id: str) -> str:
+@proto.flask_api(out_type=auth_pb2.AuthTokens)
+def generate_auth_tokens(user_id: str) -> auth_pb2.AuthTokens:
     r"""Generates auth token for a given user.
 
     Note that this is safe to do as long as the user had a proper and complete
@@ -795,15 +802,30 @@ def generate_auth_tokens(user_id: str) -> str:
     - warning: may not work in other browsers or in Private Navigation mode.
     """
 
-    return json.dumps({
-        'auth': auth.create_token(user_id, is_using_timestamp=True),
-        'employment-status': auth.create_token(user_id, 'employment-status'),
-        'nps': auth.create_token(user_id, 'nps'),
-        'reset': _get_authenticator().create_reset_token(user_id),
-        'settings': auth.create_token(user_id, 'settings'),
-        'unsubscribe': auth.create_token(user_id, 'unsubscribe'),
-        'user': user_id,
-    })
+    tokens = auth_pb2.AuthTokens(
+        user=user_id,
+        auth=auth.create_token(user_id, is_using_timestamp=True),
+        employment_status=auth.create_token(user_id, 'employment-status'),
+        nps=auth.create_token(user_id, 'nps'),
+        settings=auth.create_token(user_id, 'settings'),
+        unsubscribe=auth.create_token(user_id, 'unsubscribe'),
+    )
+
+    base_url = parse.urljoin(flask.request.base_url, '/')
+    tokens.auth_url = f'{base_url}?userId={user_id}&authToken={tokens.auth}'
+    tokens.employment_status_url = \
+        f'{base_url}/statut?token={tokens.employment_status}&user={user_id}'
+    tokens.nps_url = f'{base_url}/retours?token={tokens.nps}&user={user_id}'
+    tokens.settings_url = f'{base_url}/unsubscribe.html?user={user_id}&auth={tokens.settings}&' \
+        'coachingEmailFrequency=EMAIL_MAXIMUM'
+    tokens.unsubscribe_url = f'{base_url}/unsubscribe.html?user={user_id}&auth={tokens.unsubscribe}'
+
+    reset_token, email = _get_authenticator().create_reset_token(_safe_object_id(user_id))
+    if reset_token:
+        tokens.reset = reset_token
+        tokens.reset_url = f'{base_url}?email={email}&resetToken={reset_token}'
+
+    return tokens
 
 
 @app.route('/api/job/requirements/<rome_id>', methods=['GET'])
@@ -944,6 +966,22 @@ def _give_feedback(feedback: feedback_pb2.Feedback, slack_text: str) -> None:
     _USER_DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
 
 
+# TODO(cyrille): Consider using the same ticket for several requests with the same ID.
+@app.route('/api/support/<user_id>', methods=['POST'], defaults={'ticket_id': None})
+@app.route('/api/support/<user_id>/<ticket_id>', methods=['POST'])
+@auth.require_user(lambda user_id, ticket_id: typing.cast(str, user_id))
+@proto.flask_api(out_type=user_pb2.SupportTicket)
+def create_support_ticket(user_id: str, ticket_id: str) -> user_pb2.SupportTicket:
+    """Create a support ticket for the user, to be able to link them to support tickets."""
+
+    ticket = user_pb2.SupportTicket(ticket_id=ticket_id or f'support:{uuid.uuid4().hex}')
+    ticket.delete_after.FromDatetime(now.get() + datetime.timedelta(days=_SUPPORT_TICKET_LIFE_DAYS))
+    _USER_DB.user.update_one(
+        {'_id': _safe_object_id(user_id)},
+        {'$push': {'supportTickets': json_format.MessageToDict(ticket)}})
+    return ticket
+
+
 @app.route('/', methods=['GET'])
 def health_check() -> str:
     """Health Check endpoint.
@@ -1064,11 +1102,10 @@ def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> 
     return ''
 
 
-def _flatten_mongo_fields(
-        root: typing.Dict[str, typing.Any], prefix: str = '') -> typing.Dict[str, str]:
+def _flatten_mongo_fields(root: Dict[str, Any], prefix: str = '') -> Dict[str, str]:
     """Flatten a nested dict as individual fields with key separted by dots as Mongo does it."""
 
-    all_fields: typing.Dict[str, str] = {}
+    all_fields: Dict[str, str] = {}
     for key, value in root.items():
         if isinstance(value, dict):
             all_fields.update(_flatten_mongo_fields(value, prefix + key + '.'))
@@ -1135,7 +1172,7 @@ def get_employment_status(user_id: str) -> _FlaskResponse:
         can_tutoie=user_proto.profile.can_tutoie)
 
 
-def _maybe_redirect(**kwargs: typing.Any) -> _FlaskResponse:
+def _maybe_redirect(**kwargs: Any) -> _FlaskResponse:
     if 'redirect' not in flask.request.args:
         return ''
     redirect_url = flask.request.args.get('redirect', '')
@@ -1166,7 +1203,9 @@ def get_usage_stats() -> stats_pb2.UsersCount:
     }).count()
 
     return stats_pb2.UsersCount(
-        total_user_count=_USER_DB.user.count(),
+        total_user_count=_USER_DB.user.count_documents({
+            'featuresEnabled.excludeFromAnalytics': {'$ne': True},
+        }),
         weekly_new_user_count=weekly_new_user_count,
     )
 
@@ -1191,20 +1230,19 @@ def compute_labor_stats(user_proto: user_pb2.User) -> use_case_pb2.LaborStatsDat
     project = user_proto.projects[0]
     rome_id = project.target_job.job_group.rome_id
     departement_id = project.city.departement_id
-    local_stats = jobs.get_local_stats(
-        flask.current_app.config['DATABASE'], departement_id, rome_id)
-    job_group_info = jobs.get_group_proto(
-        flask.current_app.config['DATABASE'], rome_id)
+    database = flask.current_app.config['DATABASE']
+    local_stats = jobs.get_local_stats(database, departement_id, rome_id)
+    job_group_info = jobs.get_group_proto(database, rome_id)
+    # TODO(cyrille): Maybe only keep the relevant departement and job group.
+    user_counts = diagnostic.get_users_counts(database)
     return use_case_pb2.LaborStatsData(
-        job_group_info=job_group_info, local_stats=local_stats)
+        job_group_info=job_group_info, local_stats=local_stats, user_counts=user_counts)
 
 
 app.register_blueprint(evaluation.app, url_prefix='/api/eval')
 
 
-@typing.cast(
-    typing.Callable[[typing.Callable[[], None]], typing.Callable[[], None]],
-    app.before_request)
+@typing.cast(Callable[[Callable[[], None]], Callable[[], None]], app.before_request)
 def _before_request() -> None:
     flask.g.start = time.time()
     flask.g.ticks = []
@@ -1219,11 +1257,9 @@ def _is_test_user(user_proto: user_pb2.User) -> bool:
 
 
 @typing.cast(
-    typing.Callable[
-        [typing.Callable[[typing.Optional[Exception]], None]],
-        typing.Callable[[], None]],
+    Callable[[Callable[[Optional[Exception]], None]], Callable[[], None]],
     app.teardown_request)
-def _teardown_request(unused_exception: typing.Optional[Exception] = None) -> None:
+def _teardown_request(unused_exception: Optional[Exception] = None) -> None:
     total_duration = time.time() - flask.g.start
     if total_duration <= _LONG_REQUEST_DURATION_SECONDS:
         return

@@ -2,7 +2,7 @@
 
 import collections
 import datetime
-import typing
+from typing import Any, Dict, Iterator
 import unittest
 from unittest import mock
 
@@ -23,7 +23,7 @@ class FhsTestCase(unittest.TestCase):
     def test_job_seeker_iterator(self, mock_flatten_iterator: mock.MagicMock) -> None:
         """Basic usage of job_seeker_iterator."""
 
-        def _flatten_iterator(filename: str) -> typing.Iterator[typing.Dict[str, typing.Any]]:
+        def _flatten_iterator(filename: str) -> Iterator[Dict[str, Any]]:
             if '/de.csv' in filename:
                 return iter([
                     {

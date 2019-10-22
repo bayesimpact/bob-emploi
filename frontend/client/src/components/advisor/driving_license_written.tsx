@@ -5,7 +5,7 @@ import React from 'react'
 import {ofPrefix} from 'store/french'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-driving-license.svg'
+import Picto from 'images/advices/picto-driving-license.svg'
 
 import {AdviceSuggestionList, CardProps} from './base'
 
@@ -79,6 +79,4 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 }
 
 
-const TakeAway = '3 étapes à suivre'
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

@@ -12,7 +12,7 @@ We have three logical databases, corresponding to three environment variables:
 """
 
 import os
-import typing
+from typing import Tuple
 
 import pymongo
 from pymongo import database as pymongo_db
@@ -20,7 +20,7 @@ from pymongo import database as pymongo_db
 
 # TODO(pascal): Add NewType for personal database.
 def get_connections_from_env(default_mongo_url: str = 'mongodb://localhost/test') \
-        -> typing.Tuple[pymongo_db.Database, pymongo_db.Database, pymongo_db.Database]:
+        -> Tuple[pymongo_db.Database, pymongo_db.Database, pymongo_db.Database]:
     """Get database connections from environment.
 
     If MONGO_URL is not set, use the first defined of the following instead:

@@ -2,12 +2,12 @@
 
 import os
 import sys
-import typing
+from typing import List
 
-from sas7bdat import SAS7BDAT
+import sas7bdat
 
 
-def convert_files(files: typing.List[str]) -> None:
+def convert_files(files: List[str]) -> None:
     """Create a csv file for each matching sas7bdat file."""
 
     matching = [f for f in files if f.endswith('.sas7bdat')]
@@ -24,7 +24,7 @@ def convert_files(files: typing.List[str]) -> None:
         if os.path.exists(csv_filename):
             print('Skipping, resulting csv already exists')
             continue
-        with SAS7BDAT(filename) as infile:
+        with sas7bdat.SAS7BDAT(filename) as infile:
             infile.convert_file(csv_filename)
 
 

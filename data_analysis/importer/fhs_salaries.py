@@ -18,6 +18,7 @@ import csv
 from os import path
 import sys
 import typing
+from typing import Any, Dict, Tuple, Union
 
 import tqdm
 
@@ -61,7 +62,7 @@ _SALARY_BUCKET_SIZES = [
 ]
 
 
-def compute_annual_salary(amt: typing.Union[float, str], unit: str) -> float:
+def compute_annual_salary(amt: Union[float, str], unit: str) -> float:
     """Compute annual salary from a (possibly non-annual) amount and unit."""
 
     try:
@@ -76,7 +77,7 @@ def compute_annual_salary(amt: typing.Union[float, str], unit: str) -> float:
     return amt
 
 
-def bucketize_salary(de_dict: typing.Dict[str, typing.Any]) -> typing.Tuple[float, float]:
+def bucketize_salary(de_dict: Dict[str, Any]) -> Tuple[float, float]:
     """Bucketize the salary of a job seeker.
 
     Args:
@@ -115,7 +116,7 @@ class _JobSeekerBucket(typing.NamedTuple):
     salary_high: float
 
 
-def job_seeker_criteria(de_dict: typing.Dict[str, typing.Any]) -> _JobSeekerBucket:
+def job_seeker_criteria(de_dict: Dict[str, Any]) -> _JobSeekerBucket:
     """Extract a limited set of criteria for a job seeker.
 
     Args:
@@ -159,7 +160,7 @@ def main(fhs_folder: str, csv_output: str) -> None:
     # Estimation of the total # of rows in the FHS "de" table.
     total = 7000001
 
-    job_seeker_counts: typing.Dict[_JobSeekerBucket, int] = collections.defaultdict(int)
+    job_seeker_counts: Dict[_JobSeekerBucket, int] = collections.defaultdict(int)
     for de_dict in tqdm.tqdm(de_rows, total=total, file=sys.stdout):
         # Discard historical job requests, only work on the ones that are still
         # open.

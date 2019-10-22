@@ -4,6 +4,8 @@
 //
 // Features:
 //  - follow state of child (focused, hovered) and apply meta styles ':focus', ':hover'.
+import PropTypes from 'prop-types'
+import Radium from 'radium'
 import React from 'react'
 import {Link} from 'react-router-dom'
 
@@ -38,8 +40,8 @@ class RadiumLink extends React.PureComponent<Link['props'], RadiumState> {
     }
     return {
       ...style,
-      ...isFocused ? style[':focus'] : {},
-      ...isHovered ? style[':hover'] : {},
+      ...isFocused && style ? style[':focus'] : {},
+      ...isHovered && style ? style[':hover'] : {},
     }
   }
 
@@ -54,9 +56,13 @@ class RadiumLink extends React.PureComponent<Link['props'], RadiumState> {
 }
 
 
+interface RadiumProps<HTMLElement> extends Omit<React.HTMLProps<HTMLElement>, 'ref'> {
+  style?: RadiumCSSProperties
+}
+
 // TODO(cyrille): Use this wherever applicable.
 class RadiumExternalLink extends
-  React.PureComponent<React.HTMLProps<HTMLAnchorElement>, RadiumState> {
+  React.PureComponent<RadiumProps<HTMLAnchorElement>, RadiumState> {
   public state: RadiumState = {}
 
   private wrapOnCallback = (callbackName, state, newValue): ((e) => void) => (event): void => {
@@ -79,8 +85,8 @@ class RadiumExternalLink extends
     }
     return {
       ...style,
-      ...isFocused ? style[':focus'] : {},
-      ...isHovered ? style[':hover'] : {},
+      ...isFocused && style ? style[':focus'] : {},
+      ...isHovered && style ? style[':hover'] : {},
     }
   }
 
@@ -95,4 +101,37 @@ class RadiumExternalLink extends
 }
 
 
-export {RadiumExternalLink, RadiumLink}
+const RadiumDiv = React.memo(Radium((props: React.HTMLProps<HTMLDivElement>) => <div {...props} />))
+
+
+const RadiumSpan =
+  React.memo(Radium((props: React.HTMLProps<HTMLSpanElement>) => <span {...props} />))
+
+
+export type SmartLinkProps =
+  | RadiumProps<HTMLSpanElement>
+  | RadiumProps<HTMLAnchorElement>
+  | Link['props']
+
+// TODO(cyrille): Use wherever applicable.
+const SmartLinkBase: React.FC<SmartLinkProps> =
+({style, ...props}): React.ReactElement => {
+  const linkStyle: RadiumCSSProperties = {
+    color: 'inherit',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    ...style,
+  }
+  return (props as Link['prop']).to ? <RadiumLink {...props} style={linkStyle} /> :
+    (props as RadiumProps<HTMLAnchorElement>).href ?
+      <RadiumExternalLink {...props} style={linkStyle} /> :
+      <RadiumSpan {...props} style={linkStyle} />
+}
+SmartLinkBase.propTypes = {
+  href: PropTypes.string,
+  style: PropTypes.object,
+  to: PropTypes.string,
+}
+const SmartLink = React.memo(SmartLinkBase)
+
+export {SmartLink, RadiumDiv, RadiumExternalLink, RadiumLink, RadiumSpan}

@@ -66,12 +66,20 @@ function openImiloModal(title: string, bodyElement: HTMLElement, okLabel: string
       </div>
     </div>`
   document.body.appendChild(modal)
-  modal.querySelector('h2').textContent = title
-  modal.querySelector('.modal-body').appendChild(bodyElement)
+  const h2 = modal.querySelector('h2')
+  if (h2) {
+    h2.textContent = title
+  }
+  const modalBody = modal.querySelector('.modal-body')
+  if (modalBody) {
+    modalBody.appendChild(bodyElement)
+  }
   const okButton = modal.querySelector('button#btnOk') as HTMLElement
   okButton.textContent = okLabel
   const closeModal = (): void => {
-    modal.parentNode.removeChild(modal)
+    if (modal.parentNode) {
+      modal.parentNode.removeChild(modal)
+    }
   }
   const closeButton = modal.querySelector('button.close') as HTMLElement
   const cancelButton = modal.querySelector('button#btnCancel') as HTMLElement

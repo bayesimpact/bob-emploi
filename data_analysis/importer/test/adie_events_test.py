@@ -15,36 +15,35 @@ class AdieEventsTestCase(unittest.TestCase):
         """Basic usage."""
 
         collection = adie_events.adie_events2dicts(
-            path.join(path.dirname(__file__), 'testdata/adie-evenements.html'))
+            path.join(path.dirname(__file__), 'testdata/adie-events.json'))
         event_protos = dict(mongo.collection_to_proto_mapping(
             collection, event_pb2.Event))
-        self.assertEqual({'2018-06_0', '2018-06_1'}, set(event_protos))
-        event = event_protos['2018-06_0']
-        self.assertEqual("Zoom sur le microcrédit et l'accompagnement de l'Adie.", event.title)
-        self.assertEqual('Annecy', event.city_name)
+        self.assertLess({'a0w1W00000Mdkz2QAB', 'a0w1W00000MdkaRQAR'}, set(event_protos))
+        self.assertEqual(13, len(event_protos), msg=event_protos)
+        event = event_protos['a0w1W00000Mdkz2QAB']
+        self.assertEqual("Atelier de la création d'entreprise", event.title)
+        self.assertEqual('Anglet', event.city_name)
         self.assertEqual(
             '***Ça parle de quoi ?***\n'
             '\n'
-            "Posez vos questions, l'Adie vous répond ! En partenariat avec CMA. "
-            "Pour s'inscrire, appelez le 04 50 23 92 22.\n"
+            'ENA accueil\n'
             '\n'
             '***Ça se passe où ?***\n'
             '\n'
-            "Chambre des métiers et de l'artisanat  \n"
-            '28, avenue de France, 74000 Annecy\n'
+            "Agence Adie d'Anglet\n"
+            "Résidence de l'Alliance - Centre Jorlis, 3, rue du Pont de l'Aveugle, 64600 Anglet\n"
             '\n'
             '***Quand ?***\n'
             '\n'
-            'le lundi 5 février  \n'
-            'de 14h à 17h',
+            'le lundi 23 septembre 2019 de 14h00 à 16h00\n',
             event.description)
-        self.assertEqual('le 5 février', event.timing_text)
-        self.assertEqual('2018-02-05', event.start_date)
-        self.assertAlmostEqual(45.9100539, event.latitude, places=5)
+        self.assertEqual('le 23 septembre', event.timing_text)
+        self.assertEqual('2019-09-23', event.start_date)
+        self.assertAlmostEqual(43.499046, event.latitude, places=5)
 
-        event_special_date = event_protos['2018-06_1']
-        self.assertEqual('le 1er février', event_special_date.timing_text)
-        self.assertEqual('2018-02-01', event_special_date.start_date)
+        event_special_date = event_protos['a0w1W00000MdkaRQAR']
+        self.assertEqual('le 06 août', event_special_date.timing_text)
+        self.assertEqual('2019-08-06', event_special_date.start_date)
 
 
 if __name__ == '__main__':

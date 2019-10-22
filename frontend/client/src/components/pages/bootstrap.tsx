@@ -15,10 +15,10 @@ import {composeWithDevTools} from 'redux-devtools-extension'
 import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
 
-import {DispatchBootstrapActions, actionTypesToLog, computeAdvicesForProject,
+import {BootstrapAction, DispatchBootstrapActions, actionTypesToLog, computeAdvicesForProject,
   convertUserWithAdviceSelectionFromProto, convertUserWithAdviceSelectionToProto,
   displayToasterMessage, sendAdviceFeedback} from 'store/actions'
-import {getAdviceShortTitle} from 'store/advice'
+import {ValidAdvice, getAdviceShortTitle, isValidAdvice} from 'store/advice'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
 import {YouChooser, inCityPrefix, lowerFirstLetter, maybeContractPrefix,
@@ -52,8 +52,8 @@ function parseJsonAsync<T>(jsonText: string): Promise<T> {
 
 
 interface ProjectAndAdvice {
-  advice: bayes.bob.Advice
-  project: bayes.bob.Project
+  advice?: bayes.bob.Advice
+  project?: bayes.bob.Project
 }
 
 
@@ -68,7 +68,7 @@ interface PageProps extends PageConnectedProps, RouteComponentProps {
 
 
 interface PageState {
-  advices: readonly bayes.bob.Advice[]
+  advices: readonly ValidAdvice[]
   advicesById: {readonly [adviceId: string]: bayes.bob.Advice}
   badAdvices: ReadonlySet<string>
   cachedSharedUrl: string | null
@@ -87,7 +87,7 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
     user: PropTypes.object.isRequired,
   }
 
-  public state = {
+  public state: PageState = {
     advices: [],
     advicesById: {},
     badAdvices: new Set<string>(),
@@ -104,7 +104,7 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
     if (location.hash.length <= 1) {
       return
     }
-    const hashString = decodeURIComponent(location.hash.substr(1))
+    const hashString = decodeURIComponent(location.hash.slice(1))
     const protoPromise = hashString.startsWith('{') ?
       parseJsonAsync(hashString) : dispatch(convertUserWithAdviceSelectionFromProto(hashString))
     protoPromise.
@@ -139,9 +139,12 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
           return
         }
         const {advices} = response
+        const maybeSelectedAdvices = isEditorEnabled ?
+          advices :
+          (advices || []).filter(({adviceId}): boolean =>
+            !!adviceId && selectedAdvices.has(adviceId))
         this.setState({
-          advices: isEditorEnabled ?
-            advices : advices.filter(({adviceId}): boolean => selectedAdvices.has(adviceId)),
+          advices: (maybeSelectedAdvices || []).filter(isValidAdvice),
           advicesById: _keyBy(advices, 'adviceId'),
           cachedSharedUrl: null,
         })
@@ -202,9 +205,9 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
       onBadAdviceConfirmed: (feedback: string): void => {
         const {dispatch} = this.props
         const badAdvices = new Set(this.state.badAdvices)
-        badAdvices.add(advice.adviceId)
+        badAdvices.add(adviceId)
         const goodAdvices = new Set(this.state.goodAdvices)
-        goodAdvices.delete(advice.adviceId)
+        goodAdvices.delete(adviceId)
         this.setState({
           badAdvices,
           goodAdvices,
@@ -220,6 +223,9 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
     const {dispatch} = this.props
     const {advice, project} = this.getProjectAndAdvice(adviceId)
     const goodAdvices = new Set(this.state.goodAdvices)
+    if (!advice || !advice.adviceId) {
+      return
+    }
     goodAdvices.add(advice.adviceId)
     const badAdvices = new Set(this.state.badAdvices)
     badAdvices.delete(advice.adviceId)
@@ -246,7 +252,7 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
 
   private handleCloseBadAdviceModal = (): void => this.setState({isBadAdviceModalShown: false})
 
-  private renderLocation({city}: bayes.bob.Project): string {
+  private renderLocation({city}: bayes.bob.Project): string|null {
     if (!city || !city.name) {
       return null
     }
@@ -368,9 +374,9 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
       <BadAdviceModal
         isShown={isBadAdviceModalShown}
         onClose={this.handleCloseBadAdviceModal}
-        onConfirm={onBadAdviceConfirmed} />
+        onConfirm={onBadAdviceConfirmed || undefined} />
       <div style={{margin: '0 300px'}}>
-        {advices.map((advice: bayes.bob.Advice): React.ReactNode => <BootstrapAdviceCard
+        {advices.map((advice: ValidAdvice): React.ReactNode => <BootstrapAdviceCard
           key={advice.adviceId} advice={advice} isSelectable={isEditorEnabled}
           isSelected={selectedAdvices.has(advice.adviceId)} isBad={badAdvices.has(advice.adviceId)}
           isGood={goodAdvices.has(advice.adviceId)}
@@ -389,7 +395,7 @@ const BootstrapPage =
 
 
 type BadAdviceModalProps = Omit<ModalConfig, 'children' | 'style'> & {
-  onConfirm: (feedback: string) => void
+  onConfirm?: (feedback: string) => void
 }
 
 
@@ -413,7 +419,10 @@ class BadAdviceModal extends React.PureComponent<BadAdviceModalProps, {feedback:
 
   private handleFeedbackChange = (feedback: string): void => this.setState({feedback})
 
-  private handleConfirm = (): void => this.props.onConfirm(this.state.feedback)
+  private handleConfirm = (): void => {
+    const {onConfirm} = this.props
+    onConfirm && onConfirm(this.state.feedback)
+  }
 
   public render(): React.ReactNode {
     const {feedback} = this.state
@@ -522,8 +531,8 @@ class BootstrapAdviceCard extends React.PureComponent<CardProps, {isExpanded: bo
     }
     return <div style={containerStyle}>
       <ExplorerAdviceCard
-        {...this.props} style={style} userYou={vouvoyer}
-        onClick={isExpanded ? null : this.handleExpand}
+        {...this.props} style={style}
+        onClick={isExpanded ? undefined : this.handleExpand}
         howToSeeMore={isExpanded ? null : 'Cliquez pour voir le contenu'}
       />
       {this.renderSelectButtons()}
@@ -539,13 +548,16 @@ interface ResourcesPageConnectedProps {
 }
 
 
+const emptyProject: bayes.bob.Project = {}
+
+
 interface ResourcesPageProps extends ResourcesPageConnectedProps {
   dispatch: DispatchBootstrapActions
 }
 
 
 interface ResourcesPageState {
-  advices: readonly bayes.bob.Advice[]
+  advices: readonly ValidAdvice[]
 }
 
 
@@ -566,14 +578,14 @@ class ResourcesPageBase extends React.PureComponent<ResourcesPageProps, Resource
     if (cityId && jobId && (cityId !== prevCityId || jobId !== prevJobId)) {
       dispatch(computeAdvicesForProject(user)).
         then((response: void | bayes.bob.Advices): void => {
-          if (response) {
-            this.setState({advices: response.advices})
+          if (response && response.advices) {
+            this.setState({advices: response.advices.filter(isValidAdvice)})
           }
         })
     }
   }
 
-  private handleCityChange = (city: bayes.bob.FrenchCity): void => {
+  private handleCityChange = (city: bayes.bob.FrenchCity|null): void => {
     const {cityId: prevCityId} = this.props
     const {cityId = undefined} = city || {}
     if (!cityId && !prevCityId || cityId === prevCityId) {
@@ -582,7 +594,7 @@ class ResourcesPageBase extends React.PureComponent<ResourcesPageProps, Resource
     this.props.dispatch({city, type: SET_CITY})
   }
 
-  private handleJobChange = (job: bayes.bob.Job): void => {
+  private handleJobChange = (job: bayes.bob.Job|null): void => {
     const {jobId: prevJobId} = this.props
     const {codeOgr: jobId = undefined} = job || {}
     if (!jobId && !prevJobId || jobId === prevJobId) {
@@ -592,7 +604,7 @@ class ResourcesPageBase extends React.PureComponent<ResourcesPageProps, Resource
   }
 
   public render(): React.ReactNode {
-    const {user: {profile, projects: [project]}} = this.props
+    const {user: {profile, projects: [project = emptyProject] = []}} = this.props
     const {advices} = this.state
     const {city, targetJob} = project
 
@@ -631,7 +643,7 @@ class ResourcesPageBase extends React.PureComponent<ResourcesPageProps, Resource
         </div>
       </nav>
       <div style={resourcesContainerStyle}>
-        {city && targetJob ? advices.map((advice: bayes.bob.Advice): React.ReactNode =>
+        {city && targetJob ? advices.map((advice: ValidAdvice): React.ReactNode =>
           <ResourceAdviceCard
             key={advice.adviceId} userYou={vouvoyer}
             style={{display: 'inline-block', marginBottom: 40, width: '100%'}}
@@ -642,7 +654,7 @@ class ResourcesPageBase extends React.PureComponent<ResourcesPageProps, Resource
 }
 const ResourcesPage = connect(({user}: BootstrapState): ResourcesPageConnectedProps => {
   // TODO(pascal): Clear the advices when city/targetJob are changed.
-  const {city, targetJob} = user.projects[0]
+  const {city, targetJob} = user.projects && user.projects[0] || {}
   const {cityId = undefined} = city || {}
   const {codeOgr: jobId = undefined} = targetJob || {}
   return {cityId, jobId, user}
@@ -760,7 +772,7 @@ function bootstrapUserReducer(state = {profile: {}, projects: [{}]}, action): ba
 
 interface BootstrapState {
   app: AppState
-  asyncState: AsyncState
+  asyncState: AsyncState<BootstrapAction>
   user: bayes.bob.User
 }
 

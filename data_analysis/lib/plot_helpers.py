@@ -1,39 +1,40 @@
 """Helper functions to make plots in notebooks prettier and more convenient."""
 
 import typing
+from typing import Any, Callable, List, Optional, Tuple
 
 import pandas
-import typing_extensions
 
+if typing.TYPE_CHECKING:
+    import typing_extensions
 
-class _MatplotlibPatch(typing_extensions.Protocol):
-    def get_height(self) -> float:
-        """Get height of patch."""
+    class _MatplotlibPatch(typing_extensions.Protocol):
+        def get_height(self) -> float:
+            """Get height of patch."""
 
-    def get_width(self) -> float:
-        """Get height of patch."""
+        def get_width(self) -> float:
+            """Get height of patch."""
 
-    def get_x(self) -> float:
-        """Get X position of patch."""
+        def get_x(self) -> float:
+            """Get X position of patch."""
 
-    def get_y(self) -> float:
-        """Get Y position of patch."""
+        def get_y(self) -> float:
+            """Get Y position of patch."""
 
+    class _MatplotlibAxesSubplot(typing_extensions.Protocol):
+        @property
+        def patches(self) -> List[_MatplotlibPatch]:
+            """List of patches."""
 
-class _MatplotlibAxesSubplot(typing_extensions.Protocol):
-    @property
-    def patches(self) -> typing.List[_MatplotlibPatch]:
-        """List of patches."""
-
-    def annotate(
-            self, label: str, pos: typing.Tuple[float, float], offset: typing.Tuple[float, float],
-            textcoords: str) -> None:
-        """Add an annotation."""
+        def annotate(
+                self, label: str, pos: Tuple[float, float], offset: Tuple[float, float],
+                textcoords: str) -> None:
+            """Add an annotation."""
 
 
 def add_bar_labels(
-        axis: _MatplotlibAxesSubplot,
-        label_func: typing.Callable[[_MatplotlibPatch], str],
+        axis: '_MatplotlibAxesSubplot',
+        label_func: Callable[['_MatplotlibPatch'], str],
         vertical: bool = False) -> None:
     """Helper method to make bar graphs awesome."""
 
@@ -58,9 +59,9 @@ def groups_of_at_least_n(data_frame: pandas.DataFrame, col: str, group_size: int
 
 
 def hist_in_range(
-        series: pandas.Series, min_value: typing.Optional[float] = None,
-        max_value: typing.Optional[float] = None, bins: int = 50) \
-        -> typing.Any:
+        series: pandas.Series, min_value: Optional[float] = None,
+        max_value: Optional[float] = None, bins: int = 50) \
+        -> Any:
     """Display histogram of values in a given range.
 
     Arguments:

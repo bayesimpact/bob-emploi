@@ -8,14 +8,16 @@ import ReactDragList from 'react-drag-list'
 import {connect} from 'react-redux'
 import {Link} from 'react-router-dom'
 
-import {DispatchAllEvalActions, EvalRootState, GET_EVAL_FILTERS_USE_CASES,
-  GET_USE_CASE_DISTRIBUTION, getEvalFiltersUseCases, getUseCaseDistribution} from 'store/actions'
+import {DispatchAllEvalActions, EvalRootState, getEvalFiltersUseCases,
+  getUseCaseDistribution} from 'store/actions'
 import {getUseCaseTitle} from 'store/eval'
 
 import {Button, CircularProgress, Input, GrowingNumber, UpDownIcon} from 'components/theme'
 import {Select} from 'components/pages/connected/form_utils'
 import {Routes} from 'components/url'
 
+
+const emptyArray = [] as const
 
 interface SelectorProps {
   dispatch: DispatchAllEvalActions
@@ -24,9 +26,9 @@ interface SelectorProps {
 
 
 interface SelectorState {
-  filters?: readonly string[]
-  inputValue?: string
-  useCases?: readonly bayes.bob.UseCase[]
+  filters: readonly string[]
+  inputValue: string
+  useCases: readonly bayes.bob.UseCase[]
 }
 
 
@@ -42,7 +44,7 @@ class UseCaseSelectorBase extends React.PureComponent<SelectorProps, SelectorSta
     isFetching: PropTypes.bool,
   }
 
-  public state = {
+  public state: SelectorState = {
     filters: [],
     inputValue: '',
     useCases: [],
@@ -53,13 +55,17 @@ class UseCaseSelectorBase extends React.PureComponent<SelectorProps, SelectorSta
       this.setState({inputValue})
       return
     }
-    const stateUpdater: SelectorState = {inputValue: ''}
+    const stateUpdater: Pick<SelectorState, 'inputValue'> = {inputValue: ''}
     const {filters, inputValue: oldInputValue} = this.state
     const filter = inputValue.trim() || oldInputValue
     if (filter && !filters.includes(filter)) {
-      stateUpdater.filters = [...filters, filter]
+      this.setState({
+        ...stateUpdater,
+        filters: [...filters, filter],
+      })
+    } else {
+      this.setState(stateUpdater)
     }
-    this.setState(stateUpdater)
   }
 
   private handleFiltersChange = (filters: string[]): void => this.setState({filters})
@@ -78,7 +84,7 @@ class UseCaseSelectorBase extends React.PureComponent<SelectorProps, SelectorSta
   public render(): React.ReactNode {
     const {filters, inputValue, useCases} = this.state
     return <div style={{maxWidth: 600, padding: 20}}>
-      <Select
+      <Select<string>
         onInputChange={this.onInputChange}
         options={filters.map((value: string): SelectOption<string> => ({name: value, value}))}
         isMulti={true} value={filters} autoFocus={true} inputValue={inputValue} menuIsOpen={false}
@@ -98,7 +104,7 @@ class UseCaseSelectorBase extends React.PureComponent<SelectorProps, SelectorSta
 }
 const UseCaseSelector = connect(
   (
-    {asyncState: {isFetching: {[GET_EVAL_FILTERS_USE_CASES]: isFetching}}}: EvalRootState,
+    {asyncState: {isFetching: {GET_EVAL_FILTERS_USE_CASES: isFetching = false}}}: EvalRootState,
   ): {isFetching: boolean} => ({isFetching}))(UseCaseSelectorBase)
 
 
@@ -116,10 +122,10 @@ interface FilterDiff {
 
 
 interface FiltersState {
-  filters?: readonly FilterDiff[]
-  hasInput?: boolean
-  inputValue?: string
-  validFilters?: readonly string[]
+  filters: readonly FilterDiff[]
+  hasInput: boolean
+  inputValue: string
+  validFilters: readonly string[]
 }
 
 
@@ -144,7 +150,7 @@ class Filters extends React.PureComponent<FiltersProps> {
     return filters
   }
 
-  public state = {
+  public state: FiltersState = {
     filters: Filters.makeFiltersState(this.props.children, this.props.initial),
     hasInput: false,
     inputValue: '',
@@ -152,7 +158,8 @@ class Filters extends React.PureComponent<FiltersProps> {
   }
 
   public static getDerivedStateFromProps(
-    unusedProps, {filters, validFilters: previous}: FiltersState): FiltersState {
+    unusedProps, {filters, validFilters: previous}: FiltersState):
+    Pick<FiltersState, 'validFilters'>|null {
     const validFilters = filters.
       filter(({change}): boolean => !change || change === 'added').
       map(({filter}): string => filter)
@@ -166,7 +173,8 @@ class Filters extends React.PureComponent<FiltersProps> {
     if (!this.state.inputValue) {
       return
     }
-    this.setState(({filters, inputValue}: FiltersState): FiltersState => ({
+    this.setState(({filters, inputValue}: FiltersState):
+    Pick<FiltersState, 'filters'|'hasInput'|'inputValue'> => ({
       filters: [...filters, {change: 'added', filter: inputValue}],
       hasInput: false,
       inputValue: '',
@@ -184,7 +192,7 @@ class Filters extends React.PureComponent<FiltersProps> {
   private handleFilterChange = _memoize(
     (filter, shouldRemove): (() => void) => (): void => {
       const initial = new Set(this.props.initial)
-      this.setState(({filters}: FiltersState): FiltersState => ({
+      this.setState(({filters}: FiltersState): Pick<FiltersState, 'filters'> => ({
         filters: filters.map((filterState: FilterDiff): FilterDiff =>
           filterState.filter === filter ? {
             change: shouldRemove ? 'removed' : initial.has(filter) ? '' : 'added',
@@ -292,7 +300,7 @@ class BobThinkStats extends React.PureComponent<BobThinkStatsProps, {areUseCases
       totalCount, examples = []} = this.props
     const {
       count: initialCount = 0,
-      filters: initialFilters = [],
+      filters: initialFilters = emptyArray,
       order: initialOrder,
       totalCount: initialTotal,
     } = initial
@@ -335,12 +343,12 @@ class BobThinkStats extends React.PureComponent<BobThinkStatsProps, {areUseCases
       transform: 'translate(-50%,-50%)',
       zIndex: 1,
     }
-    const categoryPercentage = Math.round(100 * count / totalCount)
+    const categoryPercentage = Math.round(100 * count / (totalCount || 1))
     // TODO(cyrille): Make a better UI involving table.
     return <div style={containerStyle}>
       <span style={{...defaultElementStyle, marginLeft: 10, width: '3em'}}>
         {isEmptyThink ? null :
-          <ComparedValue old={initialOrder} value={order}>{order}</ComparedValue>}
+          <ComparedValue old={initialOrder} value={order || 0}>{order}</ComparedValue>}
       </span>
       <span style={{...defaultElementStyle, width: '10em'}}>
         {categoryId}
@@ -353,7 +361,7 @@ class BobThinkStats extends React.PureComponent<BobThinkStatsProps, {areUseCases
       </span>
       <span style={{...defaultElementStyle, fontWeight: 'bold'}}>
         <ComparedValue
-          old={Math.round(100 * initialCount / initialTotal)}
+          old={Math.round(100 * initialCount / (initialTotal || 1))}
           value={categoryPercentage} isHigherUp={true}>
           <GrowingNumber number={categoryPercentage} />%
         </ComparedValue>
@@ -397,7 +405,7 @@ class ComparedValue extends React.PureComponent<ComparedValueProps> {
   public render(): React.ReactNode {
     const {children, isHigherUp, old, value} = this.props
     const isNew = typeof old === 'undefined'
-    const isUp = isHigherUp ? value > old : value < old
+    const isUp = isHigherUp ? value > (old || 0) : value < (old || 0)
     const color = isUp ? colors.GREENISH_TEAL : colors.RED_PINK
     return <div style={{alignItems: 'center', display: 'flex'}}>
       {children}
@@ -418,6 +426,11 @@ const makeSendableCategory =
   (category): bayes.bob.DiagnosticCategory => _pick(category, ['categoryId', 'filters', 'order'])
 
 
+function hasCategoryId(c?: Category): c is Category & {categoryId: string} {
+  return !!(c && c.categoryId)
+}
+
+
 interface CategoriesDistributionProps {
   dispatch: DispatchAllEvalActions
   isFetchingDistribution: boolean
@@ -426,15 +439,15 @@ interface CategoriesDistributionProps {
 
 
 interface CategoriesDistributionState {
-  categories?: Category[]
-  initialCategories?: {[categoryId: string]: Category}
+  categories: readonly Category[]
+  initialCategories: {[categoryId: string]: Category}
   initialMissing?: Category
   lastCategories?: bayes.bob.DiagnosticCategory[]
-  maxCount?: number
-  missingUseCases?: {}
+  maxCount: number
+  missingUseCases: {}
   newCategory?: string
-  sendableCategories?: bayes.bob.DiagnosticCategory[]
-  totalCount?: number
+  sendableCategories: readonly bayes.bob.DiagnosticCategory[]
+  totalCount: number
 }
 
 
@@ -451,10 +464,12 @@ class CategoriesDistributionBase
     initialCategories: {},
     maxCount: 10,
     missingUseCases: {},
+    sendableCategories: [],
     totalCount: 0,
   }
 
-  public static getDerivedStateFromProps(unusedProps, {categories}): CategoriesDistributionState {
+  public static getDerivedStateFromProps(unusedProps, {categories}):
+  Pick<CategoriesDistributionState, 'sendableCategories'> {
     return {sendableCategories: categories.map(makeSendableCategory)}
   }
 
@@ -464,9 +479,9 @@ class CategoriesDistributionBase
         if (!response) {
           return
         }
-        const {categories, distribution, missingUseCases, totalCount} = response;
-        [...categories].sort(({order}): number => order)
-        const initialCategories = categories.map(
+        const {categories = [], distribution = {}, missingUseCases = {}, totalCount = 0} = response;
+        [...categories].sort(({order = 0}): number => order)
+        const initialCategories = categories.filter(hasCategoryId).map(
           ({categoryId, ...category}, index): Category => ({
             categoryId,
             ...category,
@@ -495,13 +510,14 @@ class CategoriesDistributionBase
         if (!response) {
           return
         }
-        const {distribution, missingUseCases, totalCount} = response
-        const newCategories = categories.map(({categoryId, ...category}): Category => ({
-          categoryId,
-          ...category,
-          ...distribution[categoryId],
-          totalCount,
-        }))
+        const {distribution = {}, missingUseCases = {}, totalCount = 0} = response
+        const newCategories = categories.filter(hasCategoryId).
+          map(({categoryId, ...category}): Category => ({
+            categoryId,
+            ...category,
+            ...distribution[categoryId],
+            totalCount,
+          }))
         this.setState({
           categories: newCategories,
           lastCategories: categories.map(makeSendableCategory),
@@ -515,7 +531,8 @@ class CategoriesDistributionBase
 
   private addCategory = (event): void => {
     event && event.preventDefault && event.preventDefault()
-    this.setState(({categories, newCategory, totalCount}): CategoriesDistributionState => ({
+    this.setState(({categories, newCategory, totalCount}):
+    Pick<CategoriesDistributionState, 'categories'|'newCategory'> => ({
       categories: [...categories, {
         categoryId: newCategory,
         filters: [],
@@ -528,7 +545,7 @@ class CategoriesDistributionBase
 
   private handleCategoryChange = _memoize((changedIndex: number): ((field, value) => void) =>
     (field, value): void => {
-      this.setState(({categories}): CategoriesDistributionState => ({
+      this.setState(({categories}): Pick<CategoriesDistributionState, 'categories'> => ({
         categories: categories.map((category, index): Category => index === changedIndex ? {
           ...category,
           [field]: value,
@@ -547,10 +564,14 @@ class CategoriesDistributionBase
   private handleMaxCountChange = (maxCountString: string): void =>
     this.setState({maxCount: parseInt(maxCountString || '0')})
 
-  private renderStats = (category: Category, index: number): React.ReactElement<BobThinkStats> =>
+  private renderStats = (category: Category & {categoryId: string}, index: number):
+  React.ReactElement<BobThinkStats> =>
     <BobThinkStats
       style={{backgroundColor: '#fff'}} onChange={this.handleCategoryChange(index)}
       initial={this.state.initialCategories[category.categoryId]} {...category} />
+
+  private getMutableCategories = _memoize(
+    (categories: readonly Category[]): Category[] => [...categories])
 
   public render(): React.ReactNode {
     const {categories, initialMissing, newCategory, maxCount, missingUseCases,
@@ -562,8 +583,9 @@ class CategoriesDistributionBase
       return null
     }
     return <div style={{padding: 10, ...this.props.style}}>
+      {/* TODO(pascal): Fix ReactDragList so that it does not modify its props! */}
       <ReactDragList
-        dataSource={categories}
+        dataSource={this.getMutableCategories(categories)}
         handles={false}
         rowKey="categoryId"
         row={this.renderStats}
@@ -597,7 +619,7 @@ class CategoriesDistributionBase
 }
 const CategoriesDistribution = connect(
   ({asyncState: {isFetching}}: EvalRootState): {isFetchingDistribution: boolean} => ({
-    isFetchingDistribution: isFetching[GET_USE_CASE_DISTRIBUTION],
+    isFetchingDistribution: isFetching['GET_USE_CASE_DISTRIBUTION'],
   }))(CategoriesDistributionBase)
 
 

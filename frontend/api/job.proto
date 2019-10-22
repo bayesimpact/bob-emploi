@@ -28,7 +28,7 @@ message Job {
 }
 
 // Description of a job group.
-// Next free ID: 31.
+// Next free ID: 34.
 message JobGroup {
   // Identifier of the group in the ROME index.
   string rome_id = 1;
@@ -146,7 +146,12 @@ message JobGroup {
 
   // The (at most 11) top departements in terms of offer/demand ratio, in descending order.
   // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
-  repeated DepartementStats best_departements = 26;
+  // DEPRECATED 2019-08. Use first elements from departements instead.
+  repeated DepartementStats best_departements = 26 [deprecated = true];
+
+  // The departements ordered by offer/demand ratio, in descending order.
+  // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
+  repeated DepartementStats departement_scores = 32;
 
   // The national market score (offer/demand ratio).
   // This data comes from Pôle emploi Information sur le Marché du Travail (IMT).
@@ -167,6 +172,10 @@ message JobGroup {
   // A list of pieces of advice specific to this job.
   // This data was manually built by Bayes Impact's Content Team over the years.
   repeated DynamicAdvice specific_advice = 31;
+
+  // A list of diploma levels that Bob users say they have, when looking in this job group, in no
+  // specific order.
+  repeated DegreeCount user_degrees = 33;
 }
 
 message DepartementStats {
@@ -383,11 +392,17 @@ message JobRequirement {
   string name = 1;
 
   // The percentage of cases (for the job or job group) that this would be a suggestion.
+  //
+  // Note that for diplomas, you should consider this as "suggesting to have at least this diploma",
+  // a higher one is usually preferred.
   int32 percent_suggested = 2;
 
   // How strong is this suggestion when it is suggested from 1 to 100: 1 - not
   // really required, no benefits; 50 - not absolutely required, but strongly
   // suggested; 100 absolutely required. 0 means unknown.
+  //
+  // For diplomas, this is actually the percentage of cases that this diploma is the highest
+  // requirement for.
   int32 percent_required = 5;
 
   // Additional info depending on the type of requirement.
@@ -615,4 +630,12 @@ enum MobilityType {
   // The job group can be consider as an evolution from
   // the user's job group.
   EVOLUTION = 2;
+}
+
+message DegreeCount {
+  // The level of the diploma the users say they have.
+  DegreeLevel degree = 1;
+
+  // The number of users who said they have this level of diploma.
+  uint32 count = 2;
 }

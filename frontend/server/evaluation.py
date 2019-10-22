@@ -5,6 +5,7 @@ import os
 import random
 import re
 import typing
+from typing import Iterable, Iterator, Tuple
 
 from bson import objectid
 import flask
@@ -31,7 +32,7 @@ _EMAILS_PATTERN = os.getenv('EMAILS_FOR_EVALUATIONS', '@bayesimpact.org')
 
 @app.route('/authorized', methods=['GET'])
 @auth.require_google_user(_EMAILS_PATTERN)
-def get_is_authorized() -> typing.Tuple[str, int]:
+def get_is_authorized() -> Tuple[str, int]:
     """Returns a 204 empty message if the user is an evaluator."""
 
     return '', 204
@@ -115,9 +116,15 @@ def create_use_case(request: use_case_pb2.UseCaseCreateRequest, requester_email:
     database = flask.current_app.config['EVAL_DATABASE']
     user_database = flask.current_app.config['USER_DATABASE']
 
+    identifier = request.WhichOneof('identifier')
+    if not identifier:
+        flask.abort(400, "Il manque un identifiant pour créer le cas d'usage.")
+
     if request.email:
         _log_request(request.email, requester_email, database)
         query = {'hashedEmail': auth.hash_user_email(request.email)}
+    elif request.ticket_id:
+        query = {'supportTickets.ticketId': request.ticket_id}
     else:
         query = {'_id': objectid.ObjectId(request.user_id)}
 
@@ -125,7 +132,9 @@ def create_use_case(request: use_case_pb2.UseCaseCreateRequest, requester_email:
     user_dict = user_database.user.find_one(query)
     if not user_dict:
         flask.abort(
-            404, f'Aucun utilisateur avec l\'email "{request.email}" n\'a été trouvé.')
+            404,
+            f'Aucun utilisateur avec l\'identifiant "{getattr(request, identifier)}" '
+            f"({identifier}) n\'a été trouvé.")
 
     # Find next free index in use case pool.
     last_use_case_in_pool = database.use_case.find(
@@ -160,7 +169,7 @@ _AUTOMATIC_EVAL_USE_CASE_ID_REGEX = re.compile(r'^\d{4}-\d{2}-\d{2}')
 
 
 def _match_filters_for_use_case(
-        filters: typing.Iterable[str], use_case: use_case_pb2.UseCase) -> bool:
+        filters: Iterable[str], use_case: use_case_pb2.UseCase) -> bool:
     user = use_case.user_data
     if not user.projects:
         return False
@@ -200,9 +209,9 @@ _MAX_DISTRIBUTION_EXAMPLES = 4
 
 
 def _make_diagnostic_category_distribution(
-        use_cases: typing.Iterator[use_case_pb2.UseCase],
+        use_cases: Iterator[use_case_pb2.UseCase],
         database: pymongo.database.Database,
-        categories: typing.Iterable[diagnostic_pb2.DiagnosticCategory]) \
+        categories: Iterable[diagnostic_pb2.DiagnosticCategory]) \
         -> use_case_pb2.UseCaseDistribution:
     """Give the distribution and examples for each diagnostic category on a pool of use cases."""
 
@@ -270,7 +279,7 @@ _SUBJECT_DOC = 'Wrong %s in email subject: "%s"\nSet subject as "<user_id> <subj
 #   query.
 # TODO(cyrille): Consider allowing attachements.
 @app.route('/mailjet', methods=['POST'])
-def direct_email_to_user() -> typing.Tuple[str, int]:
+def direct_email_to_user() -> Tuple[str, int]:
     """Send an email from incoming Mailjet API to a user, using its ID given in the subject.
 
     # Setting the Mailjet API Parse route:
@@ -309,7 +318,7 @@ def direct_email_to_user() -> typing.Tuple[str, int]:
         mail.mailer_daemon(_SUBJECT_DOC % ('user ID', user_id), mailjet_parse_email, user_id)
         return 'Invalid user ID', 202
 
-    def return_error(error: str) -> typing.Tuple[str, int]:
+    def return_error(error: str) -> Tuple[str, int]:
         logging.error('Couldn\'t send a direct email to user "%s"\n%s', user_id, error)
         mail.mailer_daemon(error, mailjet_parse_email, user_id)
         return error, 202

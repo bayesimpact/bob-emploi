@@ -13,11 +13,16 @@ from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import online_salon_pb2
 
+_TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
+# These two aren't really needed as a cache is mocked for regions.
+_FRENCH_REGION_FILENAME = path.join(_TESTDATA_FOLDER, 'geo/insee_france_regions.tsv')
+_REGION_PREFIX_FILENAME = path.join(_TESTDATA_FOLDER, 'geo/region_prefix.tsv')
+
 
 class OnlineSalonsImporterTestCase(airtablemock.TestCase):
     """Unit tests for the online salons importer."""
 
-    events_filename = path.join(path.dirname(__file__), 'testdata/online_salons.json')
+    events_filename = path.join(_TESTDATA_FOLDER, 'online_salons.json')
 
     @mock.patch(online_salons.airtable_to_protos.__name__ + '._AIRTABLE_API_KEY', new='apikey')
     @mock.patch(online_salons.__name__ + '._REGIONS', new=[{'94': {'prefix': 'en '}}])
@@ -95,7 +100,8 @@ class OnlineSalonsImporterTestCase(airtablemock.TestCase):
             }]},
         ]
 
-        collection = online_salons.json2dicts(self.events_filename)
+        collection = online_salons.json2dicts(
+            self.events_filename, _FRENCH_REGION_FILENAME, _REGION_PREFIX_FILENAME)
 
         protos = [
             mongo.parse_doc_to_proto(salon_json, online_salon_pb2.OnlineSalon)
@@ -159,7 +165,8 @@ class FetchLocationTestCase(unittest.TestCase):
             }},
             'regionId': '32',
         }]}
-        fetched_location = online_salons.fetch_location({'name': 'LIEVIN'})
+        fetched_location = online_salons.fetch_location(
+            _FRENCH_REGION_FILENAME, _REGION_PREFIX_FILENAME, {'name': 'LIEVIN'})
         self.assertTrue(fetched_location)
         self.assertEqual('CITY', fetched_location.get('areaType'))
         self.assertEqual('Liévin', fetched_location.get('city', {}).get('name'))
@@ -182,7 +189,9 @@ class FetchLocationTestCase(unittest.TestCase):
             }},
             'regionId': '94',
         }]}
-        fetched_location = online_salons.fetch_location({'regionId': '94'}, is_exact=True)
+        fetched_location = online_salons.fetch_location(
+            _FRENCH_REGION_FILENAME, _REGION_PREFIX_FILENAME, {'regionId': '94'},
+            is_exact=True)
         self.assertTrue(fetched_location)
         self.assertEqual('REGION', fetched_location.get('areaType'))
         self.assertEqual('Corse', fetched_location.get('city', {}).get('regionName'))

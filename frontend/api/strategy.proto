@@ -29,6 +29,15 @@ message Strategy {
     // DEPRECATED since 2019-05-14: The workflow has changed, and the content was a near duplicate
     // of header.
     string confirmation_talk = 6 [deprecated = true];
+
+    // Whether we consider this strategy not to be so relevant to the user's situation.
+    bool is_secondary = 7;
+
+    // Whether we consider this strategy to be the most relevant to the user's situation.
+    bool is_principal = 8;
+
+    // A short description of what this strategy is for.
+    string description = 9;
 }
 
 // An advice with a possible header to introduce it.
@@ -51,6 +60,7 @@ message Strategies {
 
 // A module for a strategy, that describes how it is selected and populated. This assumes that the
 // user is already in a given diagnostic category.
+// (Next ID: 7)
 message StrategyModule {
     // DEPRECATED since 2019-03: use category_ids instead.
     // The diagnostic category in which this strategy should be shown.
@@ -72,14 +82,11 @@ message StrategyModule {
     // The template for a header for this strategy.
     string header_template = 3 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 
-    // A template for the confirmation talk Bob gives before the user can commit to this strategy.
-    // DEPRECATED since 2019-05-14: The workflow has changed, and the content was a near duplicate
-    // of header.
-    string confirmation_talk_template = 7 [deprecated = true, (string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
-
     // The advices we want to give in this strategy. If none of them is given to the user, it should
     // not be shown.
     repeated StrategyAdviceTemplate pieces_of_advice = 4;
+
+    string description_template = 9 [(string_format) = NATURAL_LANGUAGE, (string_format) = SCORING_PROJECT_TEMPLATE];
 }
 
 message StrategyAdviceTemplate {

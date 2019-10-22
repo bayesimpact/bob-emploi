@@ -1,13 +1,14 @@
 """Module to advise the user to do spontaneous applications."""
 
 import itertools
-import typing
+from typing import Iterator, Optional
 
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import company_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.api import user_pb2
 
 
 class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
@@ -39,14 +40,18 @@ class _SpontaneousApplicationScoringModel(scoring_base.ModelBase):
             return scoring_base.ExplainedScore(2, [project.translate_string(
                 "c'est un des meilleurs canaux de recrutement pour votre métier")])
 
+        if project.details.diagnostic.category_id == 'bravo' and \
+                user_pb2.NO_OFFERS in project.user_profile.frustrations:
+            return scoring_base.ExplainedScore(2, [project.translate_string(
+                "vous nous avez dit ne pas trouver assez d'offres.")])
         return scoring_base.NULL_EXPLAINED_SCORE
 
     def _get_first_companies(
             self,
             project: project_pb2.Project,
-            contract: typing.Optional[str] = None,
+            contract: Optional[str] = None,
             distance_km: float = 10,
-            max_count: int = 5) -> typing.Iterator[company_pb2.Company]:
+            max_count: int = 5) -> Iterator[company_pb2.Company]:
         for company in itertools.islice(
                 companies.get_lbb_companies(project, contract=contract, distance_km=distance_km),
                 max_count):

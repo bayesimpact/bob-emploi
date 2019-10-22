@@ -4,6 +4,7 @@ import json
 import unittest
 
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -40,6 +41,19 @@ class AdviceImproveInterviewTestCase(scoring_test.ScoringModelTestBase):
         persona.project.diagnostic.category_id = 'enhance-methods-to-interview'
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
+
+    def test_in_bravo_category(self) -> None:
+        """Users has very few interviews but is in bravo category."""
+
+        persona = self._random_persona().clone()
+        persona.project.diagnostic.category_id = 'bravo'
+        if persona.project.job_search_length_months < 3:
+            persona.project.job_search_length_months = 3
+        if persona.project.job_search_length_months > 6:
+            persona.project.job_search_length_months = 6
+        persona.project.total_interview_count = 1
+        score = self._score_persona(persona)
+        self.assertEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
     def test_many_interviews_long_time(self) -> None:
         """Users has maximum interviews."""
@@ -118,6 +132,15 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
         persona.project.total_interview_count = 1
         score = self._score_persona(persona)
         self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
+
+    def test_bravo_frustrated(self) -> None:
+        """User is mostly good, but is frustrated about their resume."""
+
+        persona = self._random_persona().clone()
+        persona.project.diagnostic.category_id = 'bravo'
+        persona.user_profile.frustrations.append(user_pb2.RESUME)
+        score = self._score_persona(persona)
+        self.assertNotEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
 class ProjectResumeEndpointTestCase(base_test.ServerTestCase):

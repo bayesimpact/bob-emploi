@@ -1,5 +1,7 @@
 #!/bin/bash
 # Script to deploy new versions of cloudfront configuration from cloudfront.json.
+# Needs bob-emploi-deploy-cloudfront IAM policy or equivalent.
+# https://console.aws.amazon.com/iam/home?region=us-east-1#/policies/arn:aws:iam::951168128976:policy/bob-emploi-deploy-cloudfront$jsonEditor
 #
 # To get the latest version from AWS locally, run:
 #   deploy_cloudfront.sh download

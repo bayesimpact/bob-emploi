@@ -27,8 +27,8 @@ require('styles/mini.css')
 
 
 interface ConnectedQuestionPageProps extends Question {
-  answer: AnswerType
-  color: string
+  answer?: AnswerType
+  color?: string
   linkTo: string
   title: React.ReactNode
 }
@@ -47,12 +47,15 @@ const ConnectedQuestionPage = connect(
   ): ConnectedQuestionPageProps => {
     const {color = undefined, questions = [], title = undefined} =
       QUESTIONS_TREE.find(({url}): boolean => url === topicUrl) || {}
-    const question: Question = questions.find(({url}): boolean => url === questionUrl)
+    const question: Question|undefined = questions.find(({url}): boolean => url === questionUrl)
     return {
+      question: null,
+      type: 'yes/no',
+      url: questionUrl,
       ...question,
       answer: answers[topicUrl] ? answers[topicUrl][questionUrl] : undefined,
       color,
-      linkTo: `/mini/${question.nextUrl || ''}`,
+      linkTo: `/mini/${question && question.nextUrl || ''}`,
       title,
     }
   },

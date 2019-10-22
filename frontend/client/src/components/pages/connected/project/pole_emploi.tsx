@@ -14,6 +14,12 @@ import {Modal, ModalConfig} from 'components/modal'
 import {Button, RadioGroup, SmoothTransitions, Textarea} from 'components/theme'
 
 
+const DE_FOLLOWING_METHOD_OPTIONS = [
+  {name: 'Renforcé', value: 'RENFORCE'},
+  {name: 'Guidé', value: 'GUIDE'},
+  {name: 'Suivi', value: 'SUIVI'},
+]
+
 interface AdviceProps {
   children?: never
   onChange: (v: object) => void
@@ -76,11 +82,7 @@ class CounselorAdvice extends React.PureComponent<AdviceProps> {
         style={{fontSize: 15, justifyContent: 'space-around', margin: '0 20px'}}
         value={mode}
         onChange={this.handleChange('mode')}
-        options={[
-          {name: 'Renforcé', value: 'RENFORCE'},
-          {name: 'Guidé', value: 'GUIDE'},
-          {name: 'Suivi', value: 'SUIVI'},
-        ]} />
+        options={DE_FOLLOWING_METHOD_OPTIONS} />
     </div>
   }
 }
@@ -130,7 +132,7 @@ const steps: readonly Readonly<Step>[] = [
 
 
 interface ModalConnectedProps {
-  latestChangelogSeen: string
+  latestChangelogSeen?: string
 }
 
 
@@ -144,9 +146,9 @@ interface ModalProps
 
 
 interface ModalState {
-  onHidden?: (() => void) | null
-  stepIndex?: number
-  stepState?: object
+  onHidden?: (() => void)
+  stepIndex: number
+  stepState: object
 }
 
 
@@ -159,13 +161,14 @@ class PoleEmploiChangelogModalBase extends React.PureComponent<ModalProps, Modal
   }
 
   public state = {
-    onHidden: null,
+    onHidden: undefined,
     stepIndex: 0,
     stepState: {},
   }
 
   private handleStepStateChange = (state): void =>
-    this.setState(({stepState}): ModalState => ({stepState: {...stepState, ...state}}))
+    this.setState(({stepState}): Pick<ModalState, 'stepState'> =>
+      ({stepState: {...stepState, ...state}}))
 
   private handleClose = _memoize((step): (() => void) => (): void => {
     const {dispatch, onClose} = this.props
@@ -181,7 +184,7 @@ class PoleEmploiChangelogModalBase extends React.PureComponent<ModalProps, Modal
   }, ({changelog}): string => changelog)
 
   private handleNextStep = (): void =>
-    this.setState(({stepIndex}): ModalState => ({stepIndex: stepIndex + 1}))
+    this.setState(({stepIndex}): Pick<ModalState, 'stepIndex'> => ({stepIndex: stepIndex + 1}))
 
   private handleNextOrLastStep = (step, isLastStep): (() => void) =>
     isLastStep ? this.handleClose(step) : this.handleNextStep

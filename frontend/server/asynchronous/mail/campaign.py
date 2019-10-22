@@ -4,14 +4,13 @@ import datetime
 import logging
 import os
 import typing
+from typing import Any, Dict, Callable, KeysView, List, Optional, Type
 from urllib import parse
 
 from bson import objectid
 from google.protobuf import json_format
 from google.protobuf import message
-import mypy_extensions
 import pymongo
-import typing_extensions
 
 from bob_emploi.frontend.api import helper_pb2
 from bob_emploi.frontend.api import job_pb2
@@ -23,22 +22,45 @@ from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import mail
 
+_UserProto = typing.TypeVar('_UserProto', bound=message.Message)
+
+if typing.TYPE_CHECKING:
+    import mypy_extensions
+    import typing_extensions
+
+    class _Profile(typing_extensions.Protocol):
+        email: str
+
+        @property
+        def name(self) -> str:
+            """First name."""
+
+        @property
+        def last_name(self) -> str:
+            """Last name."""
+
+    _GetVarsFuncType = Callable[
+        [
+            _UserProto,
+            mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'database'),
+            mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'users_database'),
+        ],
+        Optional[Dict[str, str]],
+    ]
+
+    _OnEmailSentFuncType = Callable[
+        [
+            _UserProto,
+            mypy_extensions.DefaultNamedArg(user_pb2.EmailSent, 'email_sent'),
+            mypy_extensions.DefaultNamedArg(Dict[str, str], 'template_vars'),
+            mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'database'),
+            mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'user_database'),
+        ], None]
+
 
 # The base URL to use as the prefix of all links to the website. E.g. in dev,
 # you should use http://localhost:3000.
 BASE_URL = os.getenv('BASE_URL', 'https://www.bob-emploi.fr')
-
-
-class _Profile(typing_extensions.Protocol):
-    email: str
-
-    @property
-    def name(self) -> str:
-        """First name."""
-
-    @property
-    def last_name(self) -> str:
-        """Last name."""
 
 
 class _DocumentProfile(object):
@@ -64,16 +86,13 @@ class _DocumentProfile(object):
     last_name = property(lambda self: '')
 
 
-_UserProto = typing.TypeVar('_UserProto', bound=message.Message)
-
-
 class _UserCollection(typing.Generic[_UserProto]):
 
     def __init__(
-            self, proto: typing.Type[_UserProto], email_field: str,
-            get_profile: typing.Callable[[_UserProto], _Profile],
-            can_send_email: typing.Callable[[_UserProto], bool], mongo_collection: str,
-            get_id: typing.Callable[[_UserProto], str],
+            self, proto: Type[_UserProto], email_field: str,
+            get_profile: Callable[[_UserProto], '_Profile'],
+            can_send_email: Callable[[_UserProto], bool], mongo_collection: str,
+            get_id: Callable[[_UserProto], str],
             has_registered_at: bool = True):
         self._proto = proto
         self._email_field = email_field
@@ -96,7 +115,7 @@ class _UserCollection(typing.Generic[_UserProto]):
 BOB_ACTION_DOCUMENTS = _UserCollection(
     proto=review_pb2.DocumentToReview, email_field='ownerEmail',
     get_profile=typing.cast(
-        typing.Callable[[review_pb2.DocumentToReview], _Profile], _DocumentProfile),
+        Callable[[review_pb2.DocumentToReview], '_Profile'], _DocumentProfile),
     can_send_email=lambda doc: True, mongo_collection='cvs_and_cover_letters',
     get_id=lambda doc: doc.user_id, has_registered_at=False)
 BOB_ACTION_HELPERS = _UserCollection(
@@ -137,25 +156,11 @@ class Campaign(typing.Generic[_UserProto]):
     """
 
     def __init__(
-            self, mailjet_template: str, mongo_filters: typing.Dict[str, typing.Any],
-            get_vars: typing.Callable[
-                [
-                    _UserProto,
-                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'database'),
-                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'users_database'),
-                ],
-                typing.Optional[typing.Dict[str, str]],
-            ],
+            self, mailjet_template: str, mongo_filters: Dict[str, Any],
+            get_vars: '_GetVarsFuncType[_UserProto]',
             sender_name: str, sender_email: str,
-            on_email_sent: typing.Optional[typing.Callable[
-                [
-                    _UserProto,
-                    mypy_extensions.DefaultNamedArg(user_pb2.EmailSent, 'email_sent'),
-                    mypy_extensions.DefaultNamedArg(typing.Dict[str, str], 'template_vars'),
-                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'database'),
-                    mypy_extensions.DefaultNamedArg(pymongo.database.Database, 'user_database'),
-                ], None]] = None,  # pylint: disable=bad-whitespace
-            users_collection: _UserCollection[typing.Any] = BOB_USERS, is_coaching: bool = False,
+            on_email_sent: Optional['_OnEmailSentFuncType[_UserProto]'] = None,
+            users_collection: _UserCollection[Any] = BOB_USERS, is_coaching: bool = False,
             is_big_focus: bool = False) -> None:
         self._mailjet_template = mailjet_template
         self._mongo_filters = mongo_filters
@@ -176,7 +181,7 @@ class Campaign(typing.Generic[_UserProto]):
             self, campaign_id: str, user: _UserProto, database: pymongo.database.Database,
             users_database: pymongo.database.Database, action: str = 'dry-run',
             dry_run_email: str = 'pascal@bayes.org',
-            mongo_user_update: typing.Optional[typing.Dict[str, typing.Any]] = None) -> bool:
+            mongo_user_update: Optional[Dict[str, Any]] = None) -> bool:
         """Send an email for this campaign."""
 
         template_vars = self._get_vars(user, database=database, users_database=users_database)
@@ -230,7 +235,7 @@ class Campaign(typing.Generic[_UserProto]):
         return True
 
 
-_CAMPAIGNS: typing.Dict[str, Campaign[typing.Any]] = {}
+_CAMPAIGNS: Dict[str, Campaign[Any]] = {}
 
 
 def register_campaign(campaign_id: str, campaign: Campaign[_UserProto]) -> None:
@@ -247,19 +252,19 @@ def get_campaign(campaign_id: str) -> Campaign[_UserProto]:
     return _CAMPAIGNS[campaign_id]
 
 
-def list_all_campaigns() -> typing.KeysView[str]:
+def list_all_campaigns() -> KeysView[str]:
     """Fetch all available campaign IDs."""
 
     return _CAMPAIGNS.keys()
 
 
-def get_coaching_campaigns() -> typing.Dict[str, Campaign[typing.Any]]:
+def get_coaching_campaigns() -> Dict[str, Campaign[Any]]:
     """Fetch all coaching campaigns as a dict."""
 
     return {k: v for k, v in _CAMPAIGNS.items() if v.is_coaching}
 
 
-def as_template_boolean(truth: typing.Any) -> str:
+def as_template_boolean(truth: Any) -> str:
     """puts truth value of input as 'True' or '' in template vars."""
 
     return 'True' if truth else ''
@@ -276,7 +281,7 @@ def get_status_update_link(user_id: str, profile: user_pb2.UserProfile) -> str:
 
 # TODO(cyrille): Fix this to account for same mode in different FAPs.
 def get_application_modes(rome_id: str, database: pymongo.database.Database) \
-        -> typing.Optional[typing.List[job_pb2.ModePercentage]]:
+        -> Optional[List[job_pb2.ModePercentage]]:
     """Fetch all possible application modes for all FAP corresponding to the given ROME."""
 
     job_group_info = jobs.get_group_proto(database, rome_id)
@@ -289,7 +294,7 @@ def get_application_modes(rome_id: str, database: pymongo.database.Database) \
     return [mode for modes in fap_modes for mode in modes]
 
 
-def get_french_months_ago(instant: datetime.datetime) -> typing.Optional[str]:
+def get_french_months_ago(instant: datetime.datetime) -> Optional[str]:
     """Duration in months from given instant to now, in a French phrase.
     If duration is negative, returns None.
     """
@@ -326,7 +331,7 @@ def job_search_started_months_ago(project: project_pb2.Project) -> float:
     return delta.days / 30.5
 
 
-def get_default_vars(user: user_pb2.User) -> typing.Dict[str, str]:
+def get_default_vars(user: user_pb2.User) -> Dict[str, str]:
     """Compute default variables used in all emails: firstName, gender and unsubscribeLink."""
 
     unsubscribe_token = parse.quote(auth.create_token(user.profile.email, role='unsubscribe'))
@@ -339,8 +344,7 @@ def get_default_vars(user: user_pb2.User) -> typing.Dict[str, str]:
     }
 
 
-def get_default_coaching_email_vars(
-        user: user_pb2.User, **unused_kwargs: typing.Any) -> typing.Dict[str, str]:
+def get_default_coaching_email_vars(user: user_pb2.User, **unused_kwargs: Any) -> Dict[str, str]:
     """Compute default variables used in all coaching emails."""
 
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))

@@ -8,23 +8,22 @@ import {Link, Redirect} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, advicePageIsShown, workbenchIsShown} from 'store/actions'
-import {getAdviceShortTitle, getAdviceTitle} from 'store/advice'
+import {ValidAdvice, getAdviceShortTitle, getAdviceTitle} from 'store/advice'
 import {YouChooser} from 'store/french'
 import {youForUser} from 'store/user'
 
 import {AdviceCard} from 'components/advisor'
 import {isMobileVersion} from 'components/mobile'
-import {PageWithNavigationBar} from 'components/navigation'
+import {PageWithNavigationBar, Scrollable} from 'components/navigation'
 import {RocketChain} from 'components/rocket_chain'
 import {Button} from 'components/theme'
-import {Routes} from 'components/url'
 
-import {StrategyPage} from './strategy'
+const emptyObject = {} as const
 
 
 interface WorkbenchParams {
   adviceId?: string
-  strategyOrAdvice?: string
+  strategyId?: string
 }
 
 
@@ -40,15 +39,20 @@ interface WorkbenchProps extends RouteComponentProps<WorkbenchParams>, Workbench
 
 
 interface WorkbenchState {
-  advice?: bayes.bob.Advice
+  advice?: ValidAdvice
+}
+
+
+function isValidAdvice(a?: bayes.bob.Advice): a is ValidAdvice {
+  return !!(a && a.adviceId)
 }
 
 
 // TODO(pascal): Merge back with the WorkbenchWithAdvice below.
 class WorkbenchBase extends React.PureComponent<WorkbenchProps, WorkbenchState> {
-  private static getAdvice(adviceId, advices, isForced): bayes.bob.Advice {
+  private static getAdvice(adviceId, advices, isForced): ValidAdvice|undefined {
     if (!adviceId) {
-      return null
+      return undefined
     }
     const matchedAdvice = advices.find((a): boolean => a.adviceId.startsWith(adviceId))
     if (matchedAdvice) {
@@ -57,7 +61,7 @@ class WorkbenchBase extends React.PureComponent<WorkbenchProps, WorkbenchState> 
     if (isForced) {
       return {adviceId, numStars: 3, score: 10}
     }
-    return null
+    return undefined
   }
 
   public static propTypes = {
@@ -75,14 +79,14 @@ class WorkbenchBase extends React.PureComponent<WorkbenchProps, WorkbenchState> 
 
   public state: WorkbenchState = {}
 
-  public static getDerivedStateFromProps(nextProps, {advice: prevAdvice}): WorkbenchState {
+  public static getDerivedStateFromProps(nextProps, {advice: prevAdvice}): WorkbenchState|null {
     const {
       isForcedAllowed,
       location: {search},
       match: {params: {adviceId}},
       project: {advices = []},
     } = nextProps
-    const {forced} = parse(search.substr(1))
+    const {forced} = parse(search.slice(1))
     const advice = WorkbenchBase.getAdvice(adviceId, advices, isForcedAllowed && forced)
 
     return (advice !== prevAdvice) ? {advice} : null
@@ -92,46 +96,24 @@ class WorkbenchBase extends React.PureComponent<WorkbenchProps, WorkbenchState> 
     const {
       baseUrl,
       location: {hash, search},
-      match: {params: {adviceId, strategyOrAdvice}},
-      project: {advices: allAdvices = [], strategies = []},
+      match: {params: {strategyId}},
+      project: {strategies = []},
     } = this.props
 
+    // TODO(cyrille): DRY up this with project.tsx.
     const strategyIndex =
-      strategies.findIndex(({strategyId}): boolean => strategyId === strategyOrAdvice)
+      strategies.findIndex(({strategyId: sId}): boolean => strategyId === sId)
     const strategy = strategies[strategyIndex]
 
-    // If there's no adviceId and strategyOrAdvice is an advice,
-    // redirect to get a fake strategy (named 'conseil') as well.
-    if (!adviceId) {
-      if (allAdvices.find((a): boolean => a.adviceId.startsWith(strategyOrAdvice))) {
-        return <Redirect to={`${baseUrl}/conseil/${strategyOrAdvice}${search}${hash}`} />
-      }
-      if (!strategy) {
-        // TODO(pascal): Log an error to Sentry.
-        return <Redirect to={`${baseUrl}${search}${hash}`} />
-      }
-    }
-
     const {advice} = this.state
-    const getAdviceUrl = ({adviceId = ''}): string =>
-      `${baseUrl}/${strategyOrAdvice}/${adviceId}${search}${hash}`
-
     const hasStrategyPage = !!strategy
-    if (!advice) {
-      if (hasStrategyPage) {
-        // TODO(cyrille): Move to project.jsx.
-        return <StrategyPage {...this.props} strategy={strategy} strategyRank={strategyIndex + 1} />
-      }
-      if (strategy && strategy.piecesOfAdvice && strategy.piecesOfAdvice.length) {
-        // Select the first advice in the strategy.
-        return <Redirect to={getAdviceUrl(strategy.piecesOfAdvice[0])} />
-      }
-      // We're lost, go back to root.
-      return <Redirect to={Routes.ROOT + search + hash} />
+    const urlOnClose = hasStrategyPage ?
+      `${baseUrl}/${strategyId}/methodes${search}${hash}` : baseUrl
+    if (!isValidAdvice(advice)) {
+      // We're lost, go back to previous page.
+      return <Redirect to={urlOnClose} />
     }
 
-    const urlOnClose = hasStrategyPage ?
-      `${baseUrl}/${strategyOrAdvice}${search}${hash}` : baseUrl
     return <WorkbenchWithAdvice {...this.props} {...{advice, hasStrategyPage, urlOnClose}} />
   }
 }
@@ -155,7 +137,7 @@ interface WorkbenchWithAdviceConnectedProps {
 
 
 interface WorkbenchWithAdviceProps extends WorkbenchWithAdviceConnectedProps {
-  advice: bayes.bob.Advice
+  advice: bayes.bob.Advice & {adviceId: string}
   dispatch: DispatchAllActions
   hasStrategyPage?: boolean
   project: bayes.bob.Project
@@ -198,7 +180,7 @@ class WorkbenchWithAdviceBase extends React.PureComponent<WorkbenchWithAdvicePro
     dispatch(advicePageIsShown(project, advice))
   }
 
-  private pageDom: React.RefObject<PageWithNavigationBar> = React.createRef()
+  private pageDom: React.RefObject<Scrollable> = React.createRef()
 
   private renderAdvice(): React.ReactNode {
     const {advice, profile, project, userYou} = this.props
@@ -229,7 +211,7 @@ class WorkbenchWithAdviceBase extends React.PureComponent<WorkbenchWithAdvicePro
       <div style={adviceTitleStyle}>
         {getAdviceTitle(advice, userYou)}
         <div style={rocketsDivStyle}>
-          <RocketChain areEmptyRocketsShown={true} numStars={numStars} rocketHeight={18} />
+          <RocketChain areEmptyRocketsShown={true} numStars={numStars || 0} rocketHeight={18} />
         </div>
       </div>
       <div style={{padding: isMobileVersion ? 20 : '0 0 120px'}}>
@@ -308,7 +290,7 @@ class WorkbenchWithAdviceBase extends React.PureComponent<WorkbenchWithAdvicePro
   }
 }
 const WorkbenchWithAdvice = connect(({user}: RootState): WorkbenchWithAdviceConnectedProps => ({
-  profile: user.profile,
+  profile: user.profile || emptyObject,
   userYou: youForUser(user),
 }))(WorkbenchWithAdviceBase)
 

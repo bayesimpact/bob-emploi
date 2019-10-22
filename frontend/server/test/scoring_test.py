@@ -7,6 +7,7 @@ import numbers
 from os import path
 import random
 import typing
+from typing import Any, Dict, Iterable, Iterator, Optional, Set, Type
 import unittest
 from unittest import mock
 
@@ -88,19 +89,19 @@ class _Persona(object):
             name: str,
             user_profile: user_pb2.UserProfile,
             project: project_pb2.Project,
-            features_enabled: typing.Optional[user_pb2.Features] = None) -> None:
+            features_enabled: Optional[user_pb2.Features] = None) -> None:
         self.name = name
         self.user_profile = user_profile
         self.project = project
         self.features_enabled = features_enabled or user_pb2.Features()
 
     @classmethod
-    def load_set(cls, filename: str) -> typing.Dict[str, '_Persona']:
+    def load_set(cls, filename: str) -> Dict[str, '_Persona']:
         """Load a set of personas from a JSON file."""
 
         with open(filename) as personas_file:
             personas_json = json.load(personas_file)
-        personas: typing.Dict[str, _Persona] = {}
+        personas: Dict[str, _Persona] = {}
         for name, blob in personas_json.items():
             user_profile = user_pb2.UserProfile()
             assert proto.parse_from_mongo(blob['user'], user_profile)
@@ -117,7 +118,7 @@ class _Persona(object):
     def scoring_project(
             self,
             database: pymongo.database.Database,
-            now: typing.Optional[datetime.datetime] = None) -> scoring.ScoringProject:
+            now: Optional[datetime.datetime] = None) -> scoring.ScoringProject:
         """Creates a new scoring.ScoringProject for this persona."""
 
         return scoring.ScoringProject(
@@ -154,7 +155,7 @@ _PERSONAS = _Persona.load_set(path.join(_TESTDATA_FOLDER, 'personas.json'))
 class ScoringModelTestBase(unittest.TestCase):
     """Creates a base class for unit tests of a scoring model."""
 
-    model_id: typing.Optional[str] = None
+    model_id: Optional[str] = None
     model: scoring.ModelBase
 
     @classmethod
@@ -179,27 +180,27 @@ class ScoringModelTestBase(unittest.TestCase):
         super().setUp()
         proto.clear_mongo_fetcher_cache()
         self.database = mongomock.MongoClient().test
-        self.now: typing.Optional[datetime.datetime] = None
+        self.now: Optional[datetime.datetime] = None
 
     def _scoring_project(
             self,
-            persona: typing.Optional[_Persona] = None,
-            name: typing.Optional[str] = None) -> scoring.ScoringProject:
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> scoring.ScoringProject:
         if not persona:
             persona = _PERSONAS[name] if name is not None else self._random_persona()
         return persona.scoring_project(self.database, now=self.now)
 
     def _score_persona(
             self,
-            persona: typing.Optional[_Persona] = None,
-            name: typing.Optional[str] = None) -> float:
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> float:
         return self.model.score(self._scoring_project(persona, name))
 
     def _assert_score_persona_raises(
             self,
-            exception_type: typing.Type[Exception],
-            persona: typing.Optional[_Persona] = None,
-            name: typing.Optional[str] = None) -> None:
+            exception_type: Type[Exception],
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> None:
         if not persona:
             persona = _PERSONAS[name] if name is not None else self._random_persona()
         project = persona.scoring_project(self.database, now=self.now)
@@ -218,8 +219,8 @@ class AdviceScoringModelTestBase(ScoringModelTestBase):
 
     def _compute_expanded_card_data(
             self,
-            persona: typing.Optional[_Persona] = None,
-            name: typing.Optional[str] = None) -> message.Message:
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> message.Message:
         return self.model.get_expanded_card_data(self._scoring_project(persona, name))
 
 
@@ -236,18 +237,18 @@ class HundredScoringModelTestBase(ScoringModelTestBase):
 
         self._assert_score_persona_raises(scoring.NotEnoughDataException, self.persona)
 
-    def assert_good_score(self, score: float, limit: float = 70, msg: typing.Optional[str] = None) \
+    def assert_good_score(self, score: float, limit: float = 70, msg: Optional[str] = None) \
             -> None:
         """Asserts that the score is considered good (more than limit in percent)."""
 
         self.assertGreaterEqual(score, limit * 3 / 100, msg)
 
-    def assert_great_score(self, score: float, msg: typing.Optional[str] = None) -> None:
+    def assert_great_score(self, score: float, msg: Optional[str] = None) -> None:
         """Asserts that the score is the best possible."""
 
         self.assertEqual(score, 3, msg)
 
-    def assert_bad_score(self, score: float, limit: float = 30, msg: typing.Optional[str] = None) \
+    def assert_bad_score(self, score: float, limit: float = 30, msg: Optional[str] = None) \
             -> None:
         """Asserts that the score is considered bad (less than limit in percent).
         Also checks that it is not below 0%."""
@@ -255,7 +256,7 @@ class HundredScoringModelTestBase(ScoringModelTestBase):
         self.assertGreaterEqual(score, 0, msg='A bad score should not be under 0.')
         self.assertLessEqual(score, limit * 3 / 100, msg)
 
-    def assert_worse_score(self, score: float, msg: typing.Optional[str] = None) -> None:
+    def assert_worse_score(self, score: float, msg: Optional[str] = None) -> None:
         """Assert that the score is the worse possible (0%)."""
 
         self.assertEqual(score, 0, msg)
@@ -377,8 +378,8 @@ class ConstantScoreModelTestCase(ScoringModelTestBase):
             2, self._score_persona(persona), msg=f'Failed for "{persona.name}"')
 
 
-def persona_lbb_call_mock(project: project_pb2.Project, **unused_kwargs: typing.Any) \
-        -> typing.Iterator[typing.Dict[str, str]]:
+def persona_lbb_call_mock(project: project_pb2.Project, **unused_kwargs: Any) \
+        -> Iterator[Dict[str, str]]:
     """Mocking lbb call to return a specific iterator for a specific job group."""
 
     if project.target_job.job_group.rome_id == 'M1604':
@@ -415,7 +416,7 @@ class PersonasTestCase(unittest.TestCase):
         _load_json_to_mongo(database, 'specific_to_job_advice')
         _load_json_to_mongo(database, 'volunteering_missions')
 
-        scores: typing.Dict[str, typing.Dict[str, float]] = \
+        scores: Dict[str, Dict[str, float]] = \
             collections.defaultdict(lambda: collections.defaultdict(float))
         # Mock the "now" date so that scoring models that are based on time
         # (like "Right timing") are deterministic.
@@ -450,7 +451,7 @@ class PersonasTestCase(unittest.TestCase):
                 1, len(set(persona_scores)),
                 msg=f'Persona "{name}" has the same score across all models.')
 
-        model_scores_hashes: typing.Dict[str, typing.Set[str]] = collections.defaultdict(set)
+        model_scores_hashes: Dict[str, Set[str]] = collections.defaultdict(set)
         # A mapping of renamings in progress.
         renamings = {
             'for-exact-experienced(internship)': 'for-exact-experienced(intern)',
@@ -470,7 +471,7 @@ class PersonasTestCase(unittest.TestCase):
 
     def _assert_proper_explanations(
             self,
-            explanations: typing.Iterable[str],
+            explanations: Iterable[str],
             scoring_project: scoring.ScoringProject,
             msg: str) -> None:
         self.assertIsInstance(explanations, list, msg=msg)
@@ -522,20 +523,13 @@ class LifeBalanceTestCase(ScoringModelTestBase):
 
     model_id = 'advice-life-balance'
 
-    def test_short_searching(self) -> None:
-        """The user does not have a diploma problem."""
+    def test_not_handicaped(self) -> None:
+        """The user does not have a disability problem."""
 
         persona = self._random_persona().clone()
-        scoring_project = persona.scoring_project(self.database)
-        if persona.project.job_search_length_months > 3:
-            persona.project.job_search_length_months = 2
-        if scoring_project.get_search_length_at_creation() > 3:
-            persona.project.job_search_started_at.FromDatetime(
-                persona.project.created_at.ToDatetime() -
-                datetime.timedelta(days=61))
         persona.user_profile.has_handicap = False
         score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
+        self.assertNotEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
     def test_handicaped(self) -> None:
         """The user has a handicap."""
@@ -544,21 +538,6 @@ class LifeBalanceTestCase(ScoringModelTestBase):
         persona.user_profile.has_handicap = True
         score = self._score_persona(persona)
         self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
-
-    def test_long_searching(self) -> None:
-        """The user does not have a diploma problem."""
-
-        persona = self._random_persona().clone()
-        scoring_project = persona.scoring_project(self.database)
-        if persona.project.job_search_length_months < 4:
-            persona.project.job_search_length_months = 4
-        if scoring_project.get_search_length_at_creation() < 4:
-            persona.project.job_search_started_at.FromDatetime(
-                persona.project.created_at.ToDatetime() -
-                datetime.timedelta(days=122))
-        persona.user_profile.has_handicap = False
-        score = self._score_persona(persona)
-        self.assertEqual(score, 1, msg=f'Failed for "{persona.name}"')
 
 
 class AdviceVaeTestCase(ScoringModelTestBase):
@@ -1042,8 +1021,34 @@ class StrategyLikeableJobTestCase(HundredScoringModelTestBase):
         self.assert_good_score(score, limit=30, msg=f'Failed for "{persona.name}"')
 
 
+class StrategyForFrustratedTestCase(HundredScoringModelTestBase):
+    """Unit tests for the "For frustrated" strategy."""
+
+    model_id = 'strategy-for-frustrated(TRAINING, MOTIVATION)'
+
+    def test_frustrated(self) -> None:
+        """User is frustrated by something that matters."""
+
+        persona = self._random_persona().clone()
+        persona.user_profile.frustrations.append(user_pb2.TRAINING)
+
+        score = self._score_persona(persona)
+        self.assert_good_score(score, limit=15, msg=f'Failed for "{persona.name}"')
+
+    def test_not_frustrated(self) -> None:
+        """User is not frustrated byn something that matters."""
+
+        persona = self._random_persona().clone()
+        if 'TRAINING' in persona.user_profile.frustrations or\
+                'MOTIVATION' in persona.user_profile.frustrations:
+            del persona.user_profile.frustrations[:]
+
+        score = self._score_persona(persona)
+        self.assert_bad_score(score, limit=15, msg=f'Failed for "{persona.name}"')
+
+
 class StrategyInterviewSuccessTestCase(HundredScoringModelTestBase):
-    """Unit tests for the "Find a likeable job" strategy."""
+    """Unit tests for the "Succeed in interviews" strategy."""
 
     model_id = 'strategy-interview-success'
 

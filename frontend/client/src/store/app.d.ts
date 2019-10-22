@@ -5,39 +5,42 @@ interface InitialFeatures {
 
 interface AppState {
   adviceData: {[adviceId: string]: {[projectId: string]: {}}}
-  adviceTips: {[adviceId: string]: {[projectId: string]: {actionId: string}[]}}
-  applicationModes: {[romeId: string]: {[fap: string]: bayes.bob.RecruitingModesDistribution}}
-  authToken: string
-  defaultProjectProps: {}
+  adviceTips?: {[adviceId: string]: {[projectId: string]: readonly {actionId: string}[]}}
+  applicationModes?: {[romeId: string]: {[fap: string]: bayes.bob.RecruitingModesDistribution}}
+  authToken?: string
+  defaultProjectProps?: {}
   demo?: string
-  hasSeenShareModal: boolean
-  initialFeatures: InitialFeatures
-  initialUtm: {}
-  isMobileVersion: boolean
-  jobRequirements: {[codeOgr: string]: {
-    diplomas: string[]
-    drivingLicenses: string[]
+  hasLoadedApp?: boolean
+  hasSeenShareModal?: boolean
+  hasTokenExpired?: boolean
+  initialFeatures?: InitialFeatures
+  initialUtm?: {}
+  isMobileVersion?: boolean
+  jobRequirements?: {[codeOgr: string]: {
+    diplomas: readonly string[]
+    drivingLicenses: readonly string[]
   }}
+  laborStats?: {[projectId: string]: bayes.bob.LaborStatsData}
   lastAccessAt?: string
-  loginModal: {
+  loginModal?: {
     defaultValues?: {
       email?: string
       isReturningUser?: boolean
       resetToken?: string
     }
   }
-  newProjectProps: {}
-  quickDiagnostic: {
+  newProjectProps?: {}
+  quickDiagnostic?: {
     after: {}
     before: {}
   }
-  specificJobs: {}
-  submetricsExpansion: {}
-  userHasAcceptedCookiesUsage: boolean
+  specificJobs?: {}
+  submetricsExpansion?: {}
+  userHasAcceptedCookiesUsage?: boolean
 }
 
-interface AsyncState {
+interface AsyncState<AllActions extends {type: string}> {
   authMethod?: string
-  errorMessage: string
-  isFetching: {[actionType: string]: boolean}
+  errorMessage?: string
+  isFetching: {[actionType in AllActions['type']]?: boolean}
 }

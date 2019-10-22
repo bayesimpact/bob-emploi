@@ -54,7 +54,6 @@ coverage
 .ipynb_checkpoints
 
 # Sublime Text project files
-*.sublime-project
 *.sublime-workspace
 
 # BigQuery credentials: This file will be created automatically when you run
@@ -68,3 +67,6 @@ bigquery_credentials.dat
 # Files containing personal credentials related to this project.
 /frontend/release/openrc.sh
 /frontend/client/ssl
+
+# NPM Packages installed locally
+/node_modules

@@ -12,6 +12,13 @@
       "Description": "Delete all personal information from guest accounts older than a week.",
       "Name": "clean-guest-user",
       "ScheduleExpression": "rate(24 hours)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/clean-support-tickets",
+      "Description": "Delete all deprecated (older than a week) support tickets.",
+      "Name": "clean-support-tickets",
+      "ScheduleExpression": "rate(24 hours)",
       "State": "DISABLED"
     },
     {
@@ -89,6 +96,13 @@
       "Description": "Automate Workup events import.",
       "Name": "import-workup-events",
       "ScheduleExpression": "rate(7 days)",
+      "State": "ENABLED"
+    },
+    {
+      "Arn": "arn:aws:events:eu-west-3:951168128976:rule/open-job-groups",
+      "Description": "Automate Open Data export of our Job Groups info.",
+      "Name": "open-job-groups",
+      "ScheduleExpression": "rate(30 days)",
       "State": "ENABLED"
     },
     {

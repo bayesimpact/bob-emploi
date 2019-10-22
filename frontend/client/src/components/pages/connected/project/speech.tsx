@@ -9,9 +9,16 @@ import {Button, Markdown} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
 
 
-interface ParagraphProps {
-  bobPosition: 'bottom' | 'hidden' | 'top'
-  bobSize?: number
+type BobPositionProps = {
+  bobPosition: 'bottom' | 'top'
+  bobSize: number
+} | {
+  bobPosition: 'hidden'
+  bobSize?: never
+}
+
+
+type ParagraphProps = BobPositionProps & {
   children: React.ReactNode
   index: number
   parentChildCount: number
@@ -46,7 +53,7 @@ class BobTalkParagraph extends React.PureComponent<ParagraphProps> {
   }
 
   public render(): React.ReactNode {
-    const {bobPosition, bobSize, children, index, parentChildCount} = this.props
+    const {bobPosition, bobSize = 0, children, index, parentChildCount} = this.props
     const containerStyle: React.CSSProperties = {
       alignItems: 'flex-start',
       display: 'flex',
@@ -83,8 +90,7 @@ function isString(a: React.ReactNode): a is string {
 }
 
 
-interface BobTalkProps {
-  bobSize?: number
+type BobTalkProps = BobPositionProps & {
   style?: React.CSSProperties
 }
 
@@ -161,7 +167,7 @@ class BobModal extends React.PureComponent<ModalProps> {
     // TODO(cyrille): Consider making a new button type of this.
     return <Modal isShown={isShown} style={modalStyle}>
       <ShortKey keyCode="Escape" onKeyDown={onClose} />
-      <FastForward onForward={onConfirm} />
+      {onConfirm ? <FastForward onForward={onConfirm} /> : null}
       <div style={headerStyle}>
         <img src={bobHeadImage} alt={config.productName} style={{display: 'block', width: 56}} />
         {config.productName}

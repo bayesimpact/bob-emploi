@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import React from 'react'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-better-job-in-group.svg'
+import Picto from 'images/advices/picto-better-job-in-group.svg'
 
 import {ActionWithHandyLink, CardProps, ExpandableAction, MethodSuggestionList} from './base'
 
@@ -18,7 +18,7 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 
   public render(): React.ReactNode {
     const {handleExplore, profile: {yearOfBirth}, userYou} = this.props
-    const isYoung = yearOfBirth >= new Date().getFullYear() - 30
+    const isYoung = yearOfBirth && (yearOfBirth >= new Date().getFullYear() - 30)
     const argumentStyle = {
       borderLeft: `2px solid ${colors.MODAL_PROJECT_GREY}`,
       margin: '10px 0',
@@ -98,7 +98,4 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
 }
 
 
-const TakeAway = '4 étapes à suivre'
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

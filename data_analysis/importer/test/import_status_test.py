@@ -5,7 +5,7 @@ import json
 import logging
 import re
 import subprocess
-import typing
+from typing import Any, Dict, List
 import unittest
 from unittest import mock
 
@@ -28,7 +28,7 @@ class _AnyColorText(object):
     def __init__(self, text: str) -> None:
         self.text = _strip_colors(str(text))
 
-    def __eq__(self, other_text: typing.Any) -> bool:
+    def __eq__(self, other_text: Any) -> bool:
         return isinstance(other_text, str) and self.text == _strip_colors(other_text)
 
     def __repr__(self) -> str:
@@ -505,9 +505,7 @@ class ImportStatusBasicTests(unittest.TestCase):
 class ImportStatusSyncTests(unittest.TestCase):
     """Test that importers are sync with schedule tasks."""
 
-    def _get_task_scheduling(
-            self, rules: typing.List[typing.Dict[str, typing.Any]],
-            directory: str) -> typing.Dict[str, str]:
+    def _get_task_scheduling(self, rules: List[Dict[str, Any]], directory: str) -> Dict[str, str]:
         scheduled_tasks = {}
         for rule in rules:
             schedule_expression = rule.get('ScheduleExpression')

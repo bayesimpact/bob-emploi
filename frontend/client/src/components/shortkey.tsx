@@ -7,7 +7,7 @@ const keyListenerStack = {keydown: [], keyup: []}
 
 // Trigger all listeners in the stack until one returns false.
 const handleKeyEvent = (eventType): ((event) => void) => (event): void => {
-  for (var i = 0; i < keyListenerStack[eventType].length; ++i) {
+  for (let i = 0; i < keyListenerStack[eventType].length; ++i) {
     if (!keyListenerStack[eventType][i](event)) {
       return
     }

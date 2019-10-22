@@ -5,10 +5,10 @@ import React from 'react'
 import {inDepartement, lowerFirstLetter, maybeContractPrefix} from 'store/french'
 
 import {AppearingList, GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-relocate.svg'
+import Picto from 'images/advices/picto-relocate.svg'
 
-import {CardProps, CardWithContentProps, PercentageBoxes, connectExpandedCardWithContent,
-  makeTakeAwayFromAdviceData} from './base'
+import {CardProps, CardWithContentProps, PercentageBoxes,
+  connectExpandedCardWithContent} from './base'
 
 
 const maybeS = (count: number): string => count > 1 ? 's' : ''
@@ -36,8 +36,10 @@ class ExpandedAdviceCardContentBase
   }
 
   public render(): React.ReactNode {
-    const {handleExplore, project: {city,
-      targetJob: {jobGroup: {name}}}} = this.props
+    const {handleExplore, project: {
+      city,
+      targetJob: {jobGroup: {name = ''} = {}} = {},
+    }} = this.props
     const inDepartementText = city && inDepartement(city) || 'dans votre département'
     const otherDepartements = this.computeAllDepartements()
 
@@ -47,7 +49,7 @@ class ExpandedAdviceCardContentBase
 
     const targetDepList = <RelocateDepartmentSuggestion
       key="target-dep" onClick={handleExplore('target')}
-      departementScore={{name: city.departementName}}
+      departementScore={{name: city && city.departementName || ''}}
       isTargetDepartment={true} />
 
     return <div>
@@ -67,7 +69,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.RelocateData, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.RelocateData, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
@@ -119,7 +121,7 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
       fontWeight: 'bold',
       marginRight: 0,
     }
-    const roundedOffers = Math.round(departementScore.offerRatio * 10) / 10
+    const roundedOffers = Math.round((departementScore.offerRatio || 0) * 10) / 10
 
     return <div style={style} onClick={this.handleClick}>
       <span style={{fontWeight: 'bold', marginRight: 10}}>
@@ -161,10 +163,4 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
 const RelocateDepartmentSuggestion = Radium(RelocateDepartmentSuggestionBase)
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({departementScores}: bayes.bob.RelocateData):
-  readonly bayes.bob.DepartementScore[] => departementScores,
-  'département')
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}

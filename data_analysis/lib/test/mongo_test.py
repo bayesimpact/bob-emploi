@@ -7,6 +7,7 @@ import json
 from os import path
 import tempfile
 import typing
+from typing import Any, Dict, List
 import unittest
 from unittest import mock
 
@@ -17,7 +18,7 @@ from bob_emploi.data_analysis.lib import mongo
 from bob_emploi.frontend.api import user_pb2
 
 
-def _my_importer_func(arg1: typing.Any) -> typing.List[typing.Dict[str, typing.Any]]:
+def _my_importer_func(arg1: Any) -> List[Dict[str, Any]]:
     """A basic importer.
 
     Args:
@@ -66,7 +67,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_filter_ids(self) -> None:
         """Test of the filter_ids flag."""
 
-        def richer_importer_func() -> typing.List[typing.Dict[str, typing.Any]]:
+        def richer_importer_func() -> List[Dict[str, Any]]:
             """An importer with many outputs."""
 
             return list({'_id': f'foo-{i:02d}', 'value': i} for i in range(20))
@@ -92,7 +93,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_main_no_args_but_default(self) -> None:
         """Test the importer_main without args but with default value."""
 
-        def import_func(arg1: str = 'default value') -> typing.List[typing.Dict[str, typing.Any]]:
+        def import_func(arg1: str = 'default value') -> List[Dict[str, Any]]:
             """Foo."""
 
             return [{'dummy': 2, 'arg1': arg1}]
@@ -110,7 +111,7 @@ class ImporterMainTestCase(unittest.TestCase):
     def test_importer_main_with_input_file(self) -> None:
         """Test that the import_func doesn't get called with an input file."""
 
-        def importer_func() -> typing.List[typing.Dict[str, typing.Any]]:  # pragma: no-cover
+        def importer_func() -> List[Dict[str, Any]]:  # pragma: no-cover
             """Foo."""
 
             self.fail('Should not be called')
@@ -474,9 +475,7 @@ class ImporterTestCase(unittest.TestCase):
                 'Data for 2018-09-30 2nd attempt',
             ],
             [
-                typing.cast(
-                    typing.Dict[str, typing.Any],
-                    self.db_client.test[name].find_one())['_id']
+                typing.cast(Dict[str, Any], self.db_client.test[name].find_one())['_id']
                 for name in archive_names
             ])
 

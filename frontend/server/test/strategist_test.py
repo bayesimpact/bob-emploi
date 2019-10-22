@@ -1,7 +1,7 @@
 """Unit tests for the strategist module."""
 
 import json
-import typing
+from typing import Any, Dict
 import unittest
 
 from bob_emploi.frontend.server.test import base_test
@@ -19,6 +19,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
                 'strategyId': 'application-method',
                 'triggerScoringModel': 'constant(1)',
                 'title': 'Un troisième titre',
+                'descriptionTemplate': 'Vous êtes fait%eFeminine pour cette stratégie',
             },
             {
                 'categoryIds': ['stuck-market'],
@@ -54,18 +55,24 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
                 'strategyId': 'application-method',
             },
         ])
-        self._db.translations.insert_one({
-            'string': 'Vous devriez utiliser un commutateur',
-            'fr_FR@tu': 'Tu devrais utiliser un commutateur',
-        })
+        self._db.translations.insert_many([
+            {
+                'string': 'Vous devriez utiliser un commutateur',
+                'fr_FR@tu': 'Tu devrais utiliser un commutateur',
+            },
+            {
+                'string': 'Vous êtes fait%eFeminine pour cette stratégie',
+                'fr_FR@tu': 'Tu es fait%eFeminine pour cette stratégie',
+            }
+        ])
         self.user_id, self.auth_token = self.authenticate_new_user_token(email='foo@bar.com')
         # Modify this user if you don't want them to get a strategy.
-        self.project: typing.Dict[str, typing.Any] = {
+        self.project: Dict[str, Any] = {
             'advices': [{'adviceId': 'commute', 'numStars': 2}],
             'city': {'name': 'Toulouse'},
             'diagnostic': {'categoryId': 'stuck-market'},
         }
-        self.user_data: typing.Dict[str, typing.Any] = {
+        self.user_data: Dict[str, Any] = {
             'userId': self.user_id,
             'profile': {
                 'canTutoie': True,
@@ -104,6 +111,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         self.assertTrue(project.get('strategies'), msg=project)
         strategy = project['strategies'][0]
         self.assertEqual(100, strategy.get('score'))
+        self.assertFalse(strategy.get('isSecondary'))
         self.assertEqual('Un titre', strategy.get('title'))
         self.assertEqual('Un template à Toulouse', strategy.get('header'))
         self.assertEqual(
@@ -181,6 +189,10 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         self.assertEqual(
             ['other-work-env', 'network-application-good', 'improve-resume'],
             [s.get('piecesOfAdvice', [])[0].get('adviceId') for s in strategies])
+        self.assertEqual(
+            'Tu es faite pour cette stratégie', strategies[2].get('description'))
+        self.assertTrue(strategies[0].get('isPrincipal'))
+        self.assertNotIn(True, [s.get('isPrincipal') for s in strategies[1:]])
 
     def test_get_alpha_strategies(self) -> None:
         """Ensure an alpha user get strategies for a category in the works."""
@@ -194,7 +206,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
 
         user_id, auth_token = self.authenticate_new_user_token(email='foo@example.com')
         # Modify this user if you don't want them to get a strategy.
-        user_data: typing.Dict[str, typing.Any] = {
+        user_data: Dict[str, Any] = {
             'userId': user_id,
             'profile': {
                 'canTutoie': True,
@@ -273,6 +285,42 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         pieces_of_advice = strategies[0].get('piecesOfAdvice', [])
         self.assertCountEqual(
             ['other-work-env', 'specific-to-job'], [a.get('adviceId') for a in pieces_of_advice])
+
+    def test_capped_score(self) -> None:
+        """Ensure that a large delta is capped if the user already has a big score."""
+
+        self.project['diagnostic'] = {
+            'categoryId': 'stuck-market',
+            'overallScore': 80,
+        }
+        response = self.app.post(
+            '/api/user',
+            data=json.dumps(self.user_data),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        user_info = self.json_from_response(response)
+        strategies = user_info['projects'][0].get('strategies', [])
+        self.assertTrue(strategies)
+        for strategy in strategies:
+            self.assertGreaterEqual(20, strategy['score'])
+
+    def test_secondary(self) -> None:
+        """Ensure that low score strategies are flagged as secondary."""
+
+        self._db.strategy_modules.update_one(
+            {'strategyId': 'other-leads'},
+            {'$set': {'triggerScoringModel': 'constant(.3)'}})
+        response = self.app.post(
+            '/api/user',
+            data=json.dumps(self.user_data),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        user_info = self.json_from_response(response)
+        strategy = next(
+            strat for
+            strat in user_info['projects'][0].get('strategies', [])
+            if strat.get('strategyId') == 'other-leads')
+        self.assertTrue(strategy.get('isSecondary'))
 
 
 if __name__ == '__main__':

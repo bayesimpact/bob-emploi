@@ -4,7 +4,7 @@ The list is imported from Airtable.
 """
 
 import os
-import typing
+from typing import Any, Dict, List, Optional
 
 from airtable import airtable
 
@@ -13,8 +13,7 @@ from bob_emploi.data_analysis.lib import mongo
 API_KEY = os.getenv('AIRTABLE_API_KEY')
 
 
-def airtable2dicts(base_id: str, table: str, view: typing.Optional[str] = None) \
-        -> typing.List[typing.Dict[str, typing.Any]]:
+def airtable2dicts(base_id: str, table: str, view: Optional[str] = None) -> List[Dict[str, Any]]:
     """Import the users email from Airtable.
 
     Args:

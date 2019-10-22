@@ -21,6 +21,18 @@
             ],
             "environment": [
               {
+                "name": "AIRTABLE_API_KEY",
+                "value": "REDACTED"
+              },
+              {
+                "name": "EMPLOI_STORE_CLIENT_ID",
+                "value": "REDACTED"
+              },
+              {
+                "name": "EMPLOI_STORE_CLIENT_SECRET",
+                "value": "REDACTED"
+              },
+              {
                 "name": "SLACK_IMPORT_URL",
                 "value": "REDACTED"
               }

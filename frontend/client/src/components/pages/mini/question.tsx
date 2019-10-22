@@ -106,8 +106,8 @@ class AnswerCard extends React.PureComponent<AnswerCardProps, {isHover: boolean}
 
 
 interface QuestionPageProps {
-  answer: AnswerType
-  color: string
+  answer?: AnswerType
+  color?: string
   linkTo: string
   numSteps: number
   numStepsDone: number
@@ -127,7 +127,7 @@ interface QuestionPageState {
 
 class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageState> {
   public static getDerivedStateFromProps(
-    {answer, question}: QuestionPageProps, {question: lastQuestion}): QuestionPageState {
+    {answer, question}: QuestionPageProps, {question: lastQuestion}): QuestionPageState|null {
     if (question === lastQuestion) {
       return null
     }
@@ -164,7 +164,13 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
 
   private handleSetAnswer = _memoize((answer): (() => void) => (): void => this.setState({answer}))
 
-  private handleAnswer = (): void => this.props.onAnswer && this.props.onAnswer(this.state.answer)
+  private handleAnswer = (): void => {
+    const {onAnswer} = this.props
+    const {answer} = this.state
+    if (onAnswer && typeof answer !== 'undefined') {
+      onAnswer(answer)
+    }
+  }
 
   private renderTitle(): React.ReactNode {
     const {color, title} = this.props

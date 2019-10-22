@@ -1,7 +1,7 @@
 """Module to advise the user to go to events."""
 
 import random
-import typing
+from typing import List
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
@@ -33,7 +33,7 @@ class _AdviceEventScoringModel(scoring_base.ModelBase):
             "c'est un bon moyen d'étendre votre réseau")])
 
     @scoring_base.ScoringProject.cached('events')
-    def list_events(self, project: scoring_base.ScoringProject) -> typing.List[event_pb2.Event]:
+    def list_events(self, project: scoring_base.ScoringProject) -> List[event_pb2.Event]:
         """List all events close to the project's target."""
 
         today = project.now.strftime('%Y-%m-%d')

@@ -4,10 +4,10 @@ import PropTypes from 'prop-types'
 import {inDepartement} from 'store/french'
 
 import {GrowingNumber} from 'components/theme'
-import NewPicto from 'images/advices/picto-reorient-jobbing.svg'
+import Picto from 'images/advices/picto-reorient-jobbing.svg'
 
 import {CardProps, CardWithContentProps, DataSource, JobSuggestion, MethodSuggestionList,
-  connectExpandedCardWithContent, makeTakeAwayFromAdviceData} from './base'
+  connectExpandedCardWithContent} from './base'
 
 
 type GetProps<T> = T extends React.ComponentType<infer P> ? P : never
@@ -44,7 +44,8 @@ class ExpandedAdviceCardContentBase
       return null
     }
 
-    const inYourDepartement = inDepartement(city) || `dans ${userYou('ton', 'votre')} département`
+    const inYourDepartement = city && inDepartement(city) ||
+      `dans ${userYou('ton', 'votre')} département`
     const isPlural = allJobs.length > 1
 
     const title = <React.Fragment>
@@ -62,14 +63,8 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<{}, bayes.bob.JobbingReorientJobs, CardProps>()(
+  connectExpandedCardWithContent<bayes.bob.JobbingReorientJobs, CardProps>(
     ExpandedAdviceCardContentBase)
 
 
-const TakeAway = makeTakeAwayFromAdviceData(
-  ({reorientJobbingJobs}: bayes.bob.JobbingReorientJobs): readonly bayes.bob.ReorientJob[] =>
-    reorientJobbingJobs,
-  'métier')
-
-
-export default {ExpandedAdviceCardContent, NewPicto, TakeAway}
+export default {ExpandedAdviceCardContent, Picto}
