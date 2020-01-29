@@ -1,5 +1,7 @@
 import React from 'react'
 
+import {prepareT} from 'store/i18n'
+
 import {TestimonialCard} from 'components/testimonials'
 import picto from 'images/advices/picto-relocate.svg'
 
@@ -10,7 +12,8 @@ import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCar
 const adviceId = 'relocalisation'
 
 
-const name = 'Meilleures opportunités'
+// i18next-extract-mark-ns-next-line staticAdviceTitle
+const name = prepareT('Meilleures opportunités')
 
 
 const TESTIMONIALS = [
@@ -46,39 +49,38 @@ const TESTIMONIALS = [
 ]
 
 
-class Page extends React.PureComponent<AdvicePageProps> {
-  public render(): React.ReactNode {
-    return <StaticAdvicePage
-      adviceId={adviceId} {...this.props}
-      testimonials={TESTIMONIALS}
-      title={`Identifiez les meilleures opportunités avec ${config.productName}`}>
-      <AdviceSection
-        adviceId={adviceId} title="trouver les meilleures opportunités">
-        <AdviceDetail>
-          La liste des villes avec le plus d'<strong>entreprises</strong> qui recherchent des
-          profils proches du vôtre.
-        </AdviceDetail>
-        <AdviceDetail>
-          La liste des villes qui offrent le plus d'opportunités dans votre région
-          ou à moins de 30 min de chez vous.
-        </AdviceDetail>
-        <AdviceDetail>
-          Des informations sur les métiers à plus fort potentiel
-          de <strong>retour à l'emploi rapide</strong>.
-        </AdviceDetail>
-      </AdviceSection>
-    </StaticAdvicePage>
-  }
+const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactElement =>
+  <StaticAdvicePage
+    adviceId={adviceId} {...props}
+    testimonials={TESTIMONIALS}
+    title={`Identifiez les meilleures opportunités avec ${config.productName}`}>
+    <AdviceSection
+      adviceId={adviceId} title="trouver les meilleures opportunités">
+      <AdviceDetail>
+        La liste des villes avec le plus d'<strong>entreprises</strong> qui recherchent des
+        profils proches du vôtre.
+      </AdviceDetail>
+      <AdviceDetail>
+        La liste des villes qui offrent le plus d'opportunités dans votre région
+        ou à moins de 30 min de chez vous.
+      </AdviceDetail>
+      <AdviceDetail>
+        Des informations sur les métiers à plus fort potentiel
+        de <strong>retour à l'emploi rapide</strong>.
+      </AdviceDetail>
+    </AdviceSection>
+  </StaticAdvicePage>
+
+
+const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
+  <StaticAdviceCardBase picto={picto} name="CV percutant" {...props} >
+    Les <strong>villes</strong> avec le plus d'opportunités pour vous
+  </StaticAdviceCardBase>
+
+
+export default {
+  Page: React.memo(Page),
+  StaticAdviceCard: React.memo(StaticAdviceCard),
+  adviceId,
+  name,
 }
-
-
-class StaticAdviceCard extends React.PureComponent<CardProps> {
-  public render(): React.ReactNode {
-    return <StaticAdviceCardBase picto={picto} name="CV percutant" {...this.props} >
-      Les <strong>villes</strong> avec le plus d'opportunités pour vous
-    </StaticAdviceCardBase>
-  }
-}
-
-
-export default {Page, StaticAdviceCard, adviceId, name}

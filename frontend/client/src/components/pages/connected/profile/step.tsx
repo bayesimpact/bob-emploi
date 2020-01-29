@@ -1,3 +1,4 @@
+import {TFunction} from 'i18next'
 import _isEqual from 'lodash/isEqual'
 import _memoize from 'lodash/memoize'
 import _pick from 'lodash/pick'
@@ -5,8 +6,7 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import {connect} from 'react-redux'
 
-import {YouChooser} from 'store/french'
-import {RootState} from 'store/actions'
+import {DispatchAllActions, RootState, onboardingCommentIsShown} from 'store/actions'
 
 import {FastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
@@ -41,7 +41,7 @@ class ComponentProfileUpdater {
 
   public isFormValid = (): boolean => {
     return this.requiredFields_.every(
-      (fieldname: string): boolean => this.component_.props.profile[fieldname])
+      (fieldname): boolean => !!this.component_.props.profile[fieldname])
   }
 
   public handleSubmit = (): void => {
@@ -81,7 +81,7 @@ class ComponentProfileUpdater {
 class ProfileUpdater {
   protected fieldNames_: {readonly [fieldName in keyof bayes.bob.UserProfile]?: boolean}
 
-  public constructor(fieldNames) {
+  public constructor(fieldNames: {readonly [fieldName in keyof bayes.bob.UserProfile]?: boolean}) {
     this.fieldNames_ = fieldNames
   }
 
@@ -103,8 +103,8 @@ export interface StepProps {
   profile: bayes.bob.UserProfile
   stepNumber?: number
   style?: React.CSSProperties
+  t: TFunction
   totalStepCount?: number
-  userYou: YouChooser
 }
 
 
@@ -150,6 +150,7 @@ class Step extends React.PureComponent<BaseStepProps> {
     progressInStep: PropTypes.number.isRequired,
     stepNumber: PropTypes.number,
     style: PropTypes.object,
+    t: PropTypes.func.isRequired,
     title: PropTypes.string,
     totalStepCount: PropTypes.number,
   }
@@ -161,7 +162,7 @@ class Step extends React.PureComponent<BaseStepProps> {
   public render(): React.ReactNode {
     const {buttonsOverride, children, explanation, fastForward, isShownAsStepsDuringOnboarding,
       nextButtonContent, onPreviousButtonClick, onNextButtonClick, contentStyle, progressInStep,
-      style, stepNumber, totalStepCount, isNextButtonDisabled, title} = this.props
+      style, stepNumber, totalStepCount, isNextButtonDisabled, t, title} = this.props
     const stepStyle: React.CSSProperties = {
       alignItems: isMobileVersion ? 'stretch' : 'center',
       display: 'flex',
@@ -225,14 +226,15 @@ class Step extends React.PureComponent<BaseStepProps> {
           {onPreviousButtonClick ? <Button
             type="back" onClick={onPreviousButtonClick} style={{...buttonStyle, marginRight: 20}}
             isRound={true}>
-            Précédent
+            {t('Précédent')}
           </Button> : null}
           {onNextButtonClick ? <Button
             isRound={true}
             onClick={onNextButtonClick}
             disabled={isNextButtonDisabled}
             style={buttonStyle}>
-            {nextButtonContent || (isLastOnboardingStep ? 'Terminer le questionnaire' : 'Suivant')}
+            {nextButtonContent || (isLastOnboardingStep ?
+              t('Terminer le questionnaire') : t('Suivant'))}
           </Button> : null}
         </div> : null}
     </div>
@@ -242,6 +244,8 @@ class Step extends React.PureComponent<BaseStepProps> {
 
 interface OnboardingCommentContentProps {
   comment?: bayes.bob.BoldedString
+  onShown?: () => void
+  shouldWait?: boolean
   style?: React.CSSProperties
 }
 
@@ -251,16 +255,26 @@ class OnboardingCommentContent extends React.PureComponent<OnboardingCommentCont
     comment: PropTypes.shape({
       stringParts: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
     }),
+    onShown: PropTypes.func,
+    shouldWait: PropTypes.bool,
     style: PropTypes.object,
   }
 
   public state = {
-    isWaiting: true,
+    isWaiting: this.props.shouldWait,
   }
 
   public componentDidMount(): void {
-    clearTimeout(this.timeout)
-    this.timeout = window.setTimeout((): void => this.setState({isWaiting: false}), 2000)
+    const {onShown, shouldWait} = this.props
+    if (shouldWait) {
+      clearTimeout(this.timeout)
+      this.timeout = window.setTimeout((): void => {
+        this.setState({isWaiting: false})
+        onShown && onShown()
+      }, 2000)
+    } else {
+      onShown && onShown()
+    }
   }
 
   public componentWillUnmount(): void {
@@ -307,8 +321,8 @@ class OnboardingCommentContent extends React.PureComponent<OnboardingCommentCont
 
 
 interface OnboardingCommentConnectedProps {
-  commentAfter: bayes.bob.BoldedString
-  commentBefore: bayes.bob.BoldedString
+  commentAfter?: ValidDiagnosticComment
+  commentBefore?: ValidDiagnosticComment
   isFetching: boolean
 }
 
@@ -316,6 +330,8 @@ interface OnboardingCommentConnectedProps {
 interface OnboardingCommentProps extends OnboardingCommentConnectedProps {
   children?: React.ReactNode
   computingDelayMillisecs?: number
+  dispatch: DispatchAllActions
+  field: bayes.bob.ProjectOrProfileField
   onDone: () => void
   readingDelayMillisec?: number
   shouldShowAfter: boolean
@@ -324,7 +340,7 @@ interface OnboardingCommentProps extends OnboardingCommentConnectedProps {
 
 interface OnboardingCommentState {
   isComputing?: boolean
-  shownComment?: bayes.bob.BoldedString
+  shownComment?: ValidDiagnosticComment
 }
 
 
@@ -332,33 +348,44 @@ class OnboardingCommentBase
   extends React.PureComponent<OnboardingCommentProps, OnboardingCommentState> {
   private static bestComment(
     {commentAfter, commentBefore, shouldShowAfter}: OnboardingCommentProps,
-  ): bayes.bob.BoldedString {
+  ): ValidDiagnosticComment|undefined {
     return shouldShowAfter && commentAfter || commentBefore
   }
 
   public static propTypes = {
     children: PropTypes.node,
+    // Comment shown after the user has answered.
     commentAfter: PropTypes.shape({
-      stringParts: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+      comment: PropTypes.shape({
+        stringParts: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+      }).isRequired,
     }),
+    // Comment shown before the user has answered.
     commentBefore: PropTypes.shape({
-      stringParts: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+      comment: PropTypes.shape({
+        stringParts: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+      }).isRequired,
     }),
     // Minimal duration of the wait before the commentAfter is shown. If fetching the comment is
     // longer the wait won't be delayed unnecessarily.
     computingDelayMillisecs: PropTypes.number,
+    dispatch: PropTypes.func.isRequired,
+    field: PropTypes.string.isRequired,
     isFetching: PropTypes.bool,
     onDone: PropTypes.func.isRequired,
     // Duration of the wait after the commentAfter is shown, to let the user read the comment before
     // resuming filling the form.
     // TODO(cyrille): Remove all this logic.
     readingDelayMillisec: PropTypes.number,
+    // Whether the user has answered.
     shouldShowAfter: PropTypes.bool,
   }
 
   public static defaultProps = {
     computingDelayMillisecs: 0,
-    onDone: (): void => {},
+    onDone: (): void => {
+      // Do nothing.
+    },
     readingDelayMillisec: 0,
   }
 
@@ -366,7 +393,8 @@ class OnboardingCommentBase
     isComputing: this.props.shouldShowAfter,
   }
 
-  public static getDerivedStateFromProps(props, prevState): OnboardingCommentState|null {
+  public static getDerivedStateFromProps(
+    props: OnboardingCommentProps, prevState: OnboardingCommentState): OnboardingCommentState|null {
     const {isComputing, shownComment} = prevState
     if (isComputing) {
       if (props.commentBefore && props.commentBefore !== shownComment) {
@@ -382,7 +410,12 @@ class OnboardingCommentBase
   }
 
   public componentDidMount(): void {
-    const {commentAfter, isFetching, computingDelayMillisecs, onDone, shouldShowAfter} = this.props
+    const {commentAfter, isFetching, computingDelayMillisecs, dispatch, onDone,
+      shouldShowAfter} = this.props
+    const {shownComment} = this.state
+    if (shownComment && !shownComment.hasBeenShown) {
+      dispatch(onboardingCommentIsShown(shownComment))
+    }
     if (!shouldShowAfter) {
       return
     }
@@ -397,10 +430,15 @@ class OnboardingCommentBase
   }
 
   public componentDidUpdate(
-    {isFetching: wasFetching, shouldShowAfter: didShowAfter}, {shownComment: prevShownComment}):
-    void {
+    {isFetching: wasFetching, shouldShowAfter: didShowAfter}: OnboardingCommentProps,
+    {shownComment: prevShownComment}: OnboardingCommentState): void {
     const {shownComment} = this.state
-    const {commentAfter, isFetching, onDone, readingDelayMillisec, shouldShowAfter} = this.props
+    const {commentAfter, dispatch, isFetching, onDone, readingDelayMillisec,
+      shouldShowAfter} = this.props
+    if ((!prevShownComment || prevShownComment.hasBeenShown) &&
+      shownComment && !shownComment.hasBeenShown) {
+      dispatch(onboardingCommentIsShown(shownComment))
+    }
     if (shouldShowAfter && didShowAfter && prevShownComment !== shownComment) {
       clearTimeout(this.readingTimeout)
       this.readingTimeout = window.setTimeout(onDone, shownComment ? readingDelayMillisec : 0)
@@ -425,12 +463,16 @@ class OnboardingCommentBase
       commentAfter: omittedCommentAfter,
       commentBefore: omittedCommentBefore,
       computingDelayMillisecs: omittedComputingDelayMillisecs,
+      dispatch: omittedDispatch,
+      field: omittedField,
       onDone: omittedOnDone,
       readingDelayMillisec: omittedReadingDelayMillisec,
       shouldShowAfter: omittedShouldShowAfter,
       ...otherProps
     } = this.props
-    return <OnboardingCommentContent comment={shownComment} {...otherProps} />
+    return <OnboardingCommentContent
+      comment={shownComment && shownComment.comment}
+      shouldWait={!shownComment || !shownComment.hasBeenShown} {...otherProps} />
   }
 }
 // This component adds a comment from server relevant for the given field.
@@ -446,12 +488,12 @@ const OnboardingComment = connect(
       app: {quickDiagnostic: {after, before} = {after: {}, before: {}}},
       asyncState: {isFetching},
     }: RootState,
-    {field}: {field: string},
+    {field}: {field: bayes.bob.ProjectOrProfileField},
   ): OnboardingCommentConnectedProps => ({
-    commentAfter: after[field] && after[field].comment,
-    commentBefore: before[field] && before[field].comment,
+    commentAfter: after[field],
+    commentBefore: before[field],
     isFetching: !!isFetching['DIAGNOSE_ONBOARDING'],
-  })
+  }),
 )(OnboardingCommentBase)
 
 

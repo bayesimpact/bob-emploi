@@ -90,7 +90,7 @@ data/rome/csv/unix_%_utf8.csv: data/rome/RefRomeCsv.%.zip
 	# Check that the "3 D" bug is still there.
 	grep -q -r "3 D" data/rome/csv
 	# TODO: Get rid of this once the ROME has been cleaned up.
-	sed -i -e "s/2 D/2D/g;s/3 D/3D/g" data/rome/csv/*.csv
+	sed -i -e 's/2 D/2D/g;s/3 D/3D/g' data/rome/csv/*.csv
 
 data/dares/caracteristiques_des_personnes_en_emploi_2014.xls:
 	mkdir -p $(@D)
@@ -241,20 +241,6 @@ data/usa/national_occupational_projections.xls:
 	mkdir -p "$(@D)"
 	wget -O "$@" "https://www.bls.gov/emp/ind-occ-matrix/occupation.xlsx"
 
-data/actiris/WAB%.csv:
-	mkdir -p $(@D)/$$(date +%Y-%m-%d)
-	wget -O "$(@D)/$$(date +%Y-%m-%d)/$(@F)" https://viewstat.actiris.brussels/data/WAB/$(@F)
-	ln -s $$(date +%Y-%m-%d)/$(@F) $@
-
-data/actiris/WZB%.csv:
-	mkdir -p $(@D)/$$(date +%Y-%m-%d)
-	wget -O "$(@D)/$$(date +%Y-%m-%d)/$(@F)" https://viewstat.actiris.brussels/data/WZB/$(@F)
-	ln -s $$(date +%Y-%m-%d)/$(@F) $@
-
-data/actiris/professional-domains.json:
+data/vae-2018.xls:
 	mkdir -p $(@D)
-	wget -O "$@.html" https://viewstat.actiris.brussels/viewstat_werkloosheid_basisstatistieken.html
-	grep ",{code:'B_" "$@.html" | tr "'" '"' | sed -e 's/\(\w\+\):/"\1":/g;s/^ ,//' | jq -s 'map(select(.f == 3) + {id: .code | split("_")[1]} | del(.f) | del(.d) | del(.code))' > "$@"
-	rm "$@.html"
-
-actiris: data/actiris/WAB_A_ONTV.csv data/actiris/WAB_P_ONTV.csv data/actiris/WAB_A_OPEN.csv data/actiris/WZB_G21000.csv data/actiris/WZB_werkloosheidsgraad.csv data/actiris/professional-domains.json
+	wget -O "$@" https://cache.media.education.gouv.fr/file/2018/37/8/depp-ni-2018-18.30-donnees_1039378.xls

@@ -60,7 +60,7 @@ from bob_emploi.frontend.api import testimonial_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
-_ROME_VERSION = 'v339'
+_ROME_VERSION = 'v342'
 
 _ARCHIVE_NAME_MATCH = re.compile(r'\.\d{4}-\d\d-\d\d_[0-9a-f]{4,16}$')
 
@@ -488,11 +488,7 @@ IMPORTERS = {
     'translations': Importer(
         name='Strings translations',
         script='translations',
-        args={
-            'base_id': 'appkEc8N0Bw4Uok43',
-            'table': 'tblQL7A5EgRJWhQFo',
-            'view': 'viwLyQNlJtyD4l45k',
-        },
+        args={},
         is_imported=True,
         run_every=None,
         proto_type=None,
@@ -681,7 +677,7 @@ def _bold(value: Any) -> str:
 
 def print_single_importer(
         importer: Importer, collection_name: str,
-        mongo_url: str) -> None:
+        mongo_url: str, extra_args: List[str]) -> None:
     """Show detailed information for a single importer."""
 
     if not importer.is_imported:
@@ -701,7 +697,7 @@ def print_single_importer(
         [
             f'docker-compose run --rm -e MONGO_URL={mongo_url} data-analysis-prepare',
             f'python bob_emploi/data_analysis/importer/{importer.script}.py',
-        ] + [f'--{key} "{value}"' for key, value in args.items()]
+        ] + [f'--{key} "{value}"' for key, value in args.items()] + extra_args
     ) + '\n'
 
     logging.info(
@@ -794,7 +790,7 @@ def _warn_unknown_collection(collection_name: str) -> None:
         termcolor.colored(collection_name, 'red'), '\n  '.join(sorted(IMPORTERS.keys())))
 
 
-def _print_report(db_client: pymongo.database.Database) -> None:
+def _print_report(db_client: pymongo.database.Database, extra_args: List[str]) -> None:
     diff = compute_collections_diff(IMPORTERS, db_client)
 
     n_collections_missing = len(diff.collection_missing)
@@ -808,7 +804,7 @@ def _print_report(db_client: pymongo.database.Database) -> None:
             termcolor.colored(diff.collection_missing, 'red'))
         for missing_collection in diff.collection_missing:
             importer = IMPORTERS[missing_collection]
-            print_single_importer(importer, missing_collection, _MONGO_URL)
+            print_single_importer(importer, missing_collection, _MONGO_URL, extra_args)
 
     n_importers_missing = len(diff.importer_missing)
     logging.info(
@@ -874,7 +870,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
     if args.collection_name:
         try:
             print_single_importer(
-                IMPORTERS[args.collection_name], args.collection_name, _MONGO_URL)
+                IMPORTERS[args.collection_name], args.collection_name, _MONGO_URL, unknown_args)
         except KeyError:
             _warn_unknown_collection(args.collection_name)
         return
@@ -882,7 +878,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
     for collection_name in (args.run or []):
         try:
             importer = IMPORTERS[collection_name]
-            print_single_importer(importer, collection_name, _MONGO_URL)
+            print_single_importer(importer, collection_name, _MONGO_URL, unknown_args)
             if not args.make_data or _make_data_targets(importer):
                 _run_importer(importer, collection_name, unknown_args)
         except KeyError:
@@ -895,7 +891,7 @@ def main(string_args: Optional[List[str]] = None) -> None:
             _warn_unknown_collection(collection_name)
 
     if not args.revert and not args.run:
-        _print_report(db_client)
+        _print_report(db_client, unknown_args)
 
 
 if __name__ == '__main__':

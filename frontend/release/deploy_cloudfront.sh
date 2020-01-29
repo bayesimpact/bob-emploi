@@ -69,11 +69,11 @@ rm "$TEMP_PROD_FILE"
 readonly TEMP_MASTER_CONFIG_FILE="$(mktemp_json)"
 git show "origin/master:./$CONFIG_FILE" > "$TEMP_MASTER_CONFIG_FILE"
 
-if diff "$TEMP_PROD_CONFIG_FILE" "$TEMP_MASTER_CONFIG_FILE"; then
+if ! diff "$TEMP_PROD_CONFIG_FILE" "$TEMP_MASTER_CONFIG_FILE"; then
   echo "AWS live config and the config in origin/master are out of sync. Fix that first, then run this script again."
-  rm "$TEMP_PROD_CONFIG_FILE"
-  rm "$TEMP_MASTER_CONFIG_FILE"
   if [ -z "$DRY_RUN" ]; then
+    rm "$TEMP_PROD_CONFIG_FILE"
+    rm "$TEMP_MASTER_CONFIG_FILE"
     exit 5
   fi
 fi

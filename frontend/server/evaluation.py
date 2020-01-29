@@ -174,7 +174,7 @@ def _match_filters_for_use_case(
     if not user.projects:
         return False
     scoring_project = scoring.ScoringProject(
-        user.projects[0], user.profile, user.features_enabled, flask.current_app.config['DATABASE'])
+        user.projects[0], user, flask.current_app.config['DATABASE'])
     return scoring_project.check_filters(filters, force_exists=True)
 
 

@@ -1,5 +1,6 @@
 """Focus email module for improve one's CV."""
 
+import datetime
 import logging
 from typing import Any, Dict, Optional
 from urllib import parse
@@ -8,11 +9,11 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous.mail import campaign
 from bob_emploi.frontend.server import auth
-from bob_emploi.frontend.server import now
 
 
 def _get_improve_cv_vars(
-        user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, Any]]:
+        user: user_pb2.User, now: datetime.datetime,
+        **unused_kwargs: Any) -> Optional[Dict[str, Any]]:
     """Compute vars for the "Improve your CV" email."""
 
     if user_pb2.RESUME not in user.profile.frustrations:
@@ -27,10 +28,15 @@ def _get_improve_cv_vars(
     else:
         has_experience = ''
 
+    deep_link_advice_url = \
+        campaign.get_deep_link_advice(user.user_id, project, 'improve-resume') or \
+        campaign.get_deep_link_advice(user.user_id, project, 'fresh-resume')
+
     auth_token = parse.quote(auth.create_token(user.user_id, is_using_timestamp=True))
     return dict(campaign.get_default_coaching_email_vars(user), **{
+        'deepLinkAdviceUrl': deep_link_advice_url,
         'hasExperience': has_experience,
-        'isSeptember': campaign.as_template_boolean(now.get().month == 9),
+        'isSeptember': campaign.as_template_boolean(now.month == 9),
         'loginUrl': f'{campaign.BASE_URL}?userId={user.user_id}&authToken={auth_token}',
     })
 

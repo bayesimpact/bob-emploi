@@ -55,9 +55,23 @@ function download_and_unpack_rule() {
     python3 -c "$PY_UNPACK_INPUT_AND_REDACT_ENV_VARS" "$should_redact"
 }
 
+function check_rule() {
+  local rule="$1"
+  local verb="$2"
+
+  readonly ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
+  readonly ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
+  readonly ALL_COMMON_RULES=$(sort <<< "$ALL_INDEX_RULES $ALL_TARGET_RULES" | uniq -d)
+  if ! grep -x "$rule" <<< "$ALL_COMMON_RULES" > /dev/null ; then
+    echo "Invalid choice '$rule'. choose the rule to $verb from" $ALL_COMMON_RULES
+    exit 2
+  fi
+}
+
 if [ "$1" == "download" ]; then
   readonly RULE="$2"
   if [[ -n "$RULE" ]]; then
+    check_rule "$RULE" download
     download_and_unpack_rule "$RULE"
     exit 0
   fi
@@ -76,13 +90,7 @@ if [ "$1" == "upload" ]; then
     exit 1
   fi
 
-  readonly ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
-  readonly ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
-  readonly ALL_COMMON_RULES=$(sort <<< "$ALL_INDEX_RULES $ALL_TARGET_RULES" | uniq -d)
-  if [[ " ${ALL_COMMON_RULES//$'\n'/ } " != *\ $RULE\ * ]]; then
-    echo "Invalid choice '$RULE'. choose the rule to upload from" $ALL_COMMON_RULES
-    exit 2
-  fi
+  check_rule "$RULE" upload
 
   aws events put-rule --name "$RULE" --cli-input-json "$(jq -c '.Rules[] | select(.Name=="'$RULE'") | del(.Arn)' "$FOLDER/index.json")"
   aws events put-targets --cli-input-json "$(
@@ -98,13 +106,7 @@ if [ "$1" == "run" ]; then
     exit 1
   fi
 
-  readonly ALL_INDEX_RULES=$(jq -rc '.Rules[].Name' $FOLDER/index.json)
-  readonly ALL_TARGET_RULES=$(cd $FOLDER && ls *.json | sed s/\.json$//)
-  readonly ALL_COMMON_RULES=$(sort <<< "$ALL_INDEX_RULES $ALL_TARGET_RULES" | uniq -d)
-  if [[ " ${ALL_COMMON_RULES//$'\n'/ } " != *\ $RULE\ * ]]; then
-    echo "Invalid choice '$RULE'. choose the rule to upload from" $ALL_COMMON_RULES
-    exit 2
-  fi
+  check_rule "$RULE" run
 
   aws ecs run-task \
     --task-definition "$(jq -r '.Targets[0].EcsParameters.TaskDefinitionArn' "$FOLDER/$RULE.json")" \

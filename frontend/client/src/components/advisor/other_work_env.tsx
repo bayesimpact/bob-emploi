@@ -1,9 +1,9 @@
-import Radium from 'radium'
 import React from 'react'
 import PropTypes from 'prop-types'
 
 import {YouChooser} from 'store/french'
 
+import {RadiumDiv} from 'components/radium'
 import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-other-work-env.svg'
 
@@ -17,7 +17,7 @@ const emptyArray = [] as const
 const isNonEmptyString = (a: string|undefined): a is string => !!a
 
 
-class ExpandedAdviceCardContentBase
+class OtherWorkEnvMethod
   extends React.PureComponent<CardWithContentProps<bayes.bob.OtherWorkEnvAdviceData>> {
   public static propTypes = {
     adviceData: PropTypes.shape({
@@ -66,8 +66,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.OtherWorkEnvAdviceData, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.OtherWorkEnvAdviceData, CardProps>(OtherWorkEnvMethod)
 
 
 interface SearchableElementProps {
@@ -78,7 +77,7 @@ interface SearchableElementProps {
 }
 
 
-class SearchableElementBase extends React.PureComponent<SearchableElementProps> {
+class SearchableElement extends React.PureComponent<SearchableElementProps> {
   public static propTypes = {
     onClick: PropTypes.func,
     project: PropTypes.object.isRequired,
@@ -95,12 +94,11 @@ class SearchableElementBase extends React.PureComponent<SearchableElementProps> 
 
   public render(): React.ReactNode {
     const {title, style} = this.props
-    return <div style={style} onClick={this.handleClick}>
+    return <RadiumDiv style={style} onClick={this.handleClick}>
       {title}
-    </div>
+    </RadiumDiv>
   }
 }
-const SearchableElement = Radium(SearchableElementBase)
 
 
 interface SectionProps {

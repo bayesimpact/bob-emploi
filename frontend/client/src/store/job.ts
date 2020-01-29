@@ -1,4 +1,7 @@
+import {TFunction} from 'i18next'
 import {stringify} from 'query-string'
+
+import {prepareT} from 'store/i18n'
 
 // Genderize a job name.
 function genderizeJob(job?: bayes.bob.Job, gender?: bayes.bob.Gender): string {
@@ -35,10 +38,10 @@ function getIMTURL(job?: {codeOgr?: string}, city?: {departementId?: string}): s
 }
 
 
-const arrondissementPatch = {
-  '13055': {lieux: '13201', rayon: 20},
-  '69123': {lieux: '69381'},
-  '75056': {lieux: '75D'},
+const arrondissementPatch: {[cityId: string]: {lieux: string; rayon?: number}} = {
+  13055: {lieux: '13201', rayon: 20},
+  69123: {lieux: '69381'},
+  75056: {lieux: '75D'},
 }
 function getPEJobBoardURL(
   {jobGroup: {name = '', romeId = ''} = {}, name: jobName = ''}: bayes.bob.Job = {},
@@ -92,24 +95,25 @@ function getJobPlacesFromDepartementStats(
     }
     const jobGroup = jobGroups[currentJobGroupForDep[depIndex]]
     seenRomes.add(jobGroup.romeId)
-    jobPlaces.push({'inDepartement': dep.departementInName || '', 'jobGroup': jobGroup.name || ''})
+    jobPlaces.push({inDepartement: dep.departementInName || '', jobGroup: jobGroup.name || ''})
   }
   return jobPlaces
 }
 
 
-function missionLocaleUrl(missionLocaleData, departementName?: string): string {
+function missionLocaleUrl(
+  missionLocaleData?: bayes.bob.MissionLocaleData, departementName?: string): string {
   return missionLocaleData && missionLocaleData.agenciesListLink ||
       `https://www.google.fr/search?q=${
         encodeURIComponent(`mission locale ${departementName || ''}`)}`
 }
 
 const _APPLICATION_MODES = {
-  OTHER_CHANNELS: 'Autre canal (réponse à une offre, concours, salon, ...)',
-  PERSONAL_OR_PROFESSIONAL_CONTACTS: 'Réseau personnel ou professionnel',
-  PLACEMENT_AGENCY: 'Agence de recrutement',
-  SPONTANEOUS_APPLICATION: 'Candidature spontanée',
-  UNDEFINED_APPLICATION_MODE: 'Réponse à une offre',
+  OTHER_CHANNELS: prepareT('Autre canal (réponse à une offre, concours, salon, ...)'),
+  PERSONAL_OR_PROFESSIONAL_CONTACTS: prepareT('Réseau personnel ou professionnel'),
+  PLACEMENT_AGENCY: prepareT('Agence de recrutement'),
+  SPONTANEOUS_APPLICATION: prepareT('Candidature spontanée'),
+  UNDEFINED_APPLICATION_MODE: prepareT('Réponse à une offre'),
 } as const
 
 
@@ -119,18 +123,18 @@ function getApplicationModes(jobGroup: bayes.bob.JobGroup): readonly bayes.bob.M
 }
 
 
-function getApplicationModeText(mode?: bayes.bob.ApplicationMode): string {
-  return _APPLICATION_MODES[mode || 'UNDEFINED_APPLICATION_MODE']
+function getApplicationModeText(translate: TFunction, mode?: bayes.bob.ApplicationMode): string {
+  return translate(_APPLICATION_MODES[mode || 'UNDEFINED_APPLICATION_MODE'])
 }
 
 
 // Keep in increasing order, for the ApplicationWaffleChart in stats_charts.
 const weeklyApplicationOptions = [
-  {name: '0 ou 1 candidature par semaine', value: 'LESS_THAN_2'},
-  {name: '2 à 5 candidatures par semaine', value: 'SOME'},
-  {name: '6 à 15 candidatures par semaine', value: 'DECENT_AMOUNT'},
-  {name: 'Plus de 15 candidatures par semaine', value: 'A_LOT'},
-]
+  {name: prepareT('0 ou 1 candidature par semaine'), value: 'LESS_THAN_2'},
+  {name: prepareT('2 à 5 candidatures par semaine'), value: 'SOME'},
+  {name: prepareT('6 à 15 candidatures par semaine'), value: 'DECENT_AMOUNT'},
+  {name: prepareT('Plus de 15 candidatures par semaine'), value: 'A_LOT'},
+] as const
 
 
 export {genderizeJob, getIMTURL, getJobSearchURL, missionLocaleUrl, getApplicationModes,

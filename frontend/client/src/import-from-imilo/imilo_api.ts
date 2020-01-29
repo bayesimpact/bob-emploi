@@ -10,10 +10,10 @@ function cleanHtmlError(htmlErrorPage: string): string {
 }
 
 
-function handleJsonResponse<T>(response): Promise<T> {
+function handleJsonResponse<T>(response: Response): Promise<T> {
   // Errors are in HTML, not JSON.
   if (response.status >= 400 || response.status < 200) {
-    return response.text().then((errorMessage: string): void => {
+    return response.text().then((errorMessage: string): T => {
       throw cleanHtmlError(errorMessage)
     })
   }

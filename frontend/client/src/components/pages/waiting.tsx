@@ -3,24 +3,25 @@ import React from 'react'
 import loadingImage from 'images/logo-bob-loading.svg'
 
 
-// Keep this class in sync with index.html.
-class WaitingPage extends React.PureComponent<{}> {
-  public render(): React.ReactNode {
-    const style: React.CSSProperties = {
-      alignItems: 'center',
-      background: '#fff',
-      boxSizing: 'border-box',
-      display: 'flex',
-      height: '100%',
-      justifyContent: 'center',
-      position: 'fixed',
-      width: '100vw',
-    }
-    return <div style={style}>
-      <img src={loadingImage} alt="Chargement…" />
-    </div>
-  }
+const style: React.CSSProperties = {
+  alignItems: 'center',
+  background: '#fff',
+  boxSizing: 'border-box',
+  display: 'flex',
+  height: '100%',
+  justifyContent: 'center',
+  position: 'fixed',
+  width: '100vw',
 }
 
 
-export {WaitingPage}
+// Keep this component in sync with index.html.
+const WaitingPage: React.FC = (): React.ReactElement => {
+  return <div style={style}>
+    <img src={loadingImage} alt="Chargement…" />
+  </div>
+}
+const WaitingPageMemo = React.memo(WaitingPage)
+
+
+export {WaitingPageMemo as WaitingPage}

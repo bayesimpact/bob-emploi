@@ -10,12 +10,10 @@ import {CardProps, CardWithContentProps, DataSource, JobSuggestion, MethodSugges
   connectExpandedCardWithContent} from './base'
 
 
-type GetProps<T> = T extends React.ComponentType<infer P> ? P : never
-
 type JobSuggestionProps = GetProps<typeof JobSuggestion>
 
 
-class ExpandedAdviceCardContentBase
+class ReorientJobbing
   extends React.PureComponent<CardWithContentProps<bayes.bob.JobbingReorientJobs>> {
   public static propTypes = {
     adviceData: PropTypes.shape({
@@ -63,8 +61,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.JobbingReorientJobs, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.JobbingReorientJobs, CardProps>(ReorientJobbing)
 
 
 export default {ExpandedAdviceCardContent, Picto}

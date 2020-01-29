@@ -5,7 +5,6 @@
     "numJobOffersPreviousYear": 15,
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 2
     },
     "unemploymentDuration": {
@@ -44,7 +43,6 @@
     "_id": "06:N4105",
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 6
     }
   },
@@ -52,7 +50,6 @@
     "_id": "2A:N4105",
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 6
     }
   },
@@ -60,7 +57,6 @@
     "_id": "31:N4105",
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 6
     },
     "job_offers_change": 10
@@ -72,7 +68,6 @@
     },
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 6
     }
   },
@@ -82,7 +77,6 @@
     "numJobOffersPreviousYear": 15,
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 10
     }
   },
@@ -91,7 +85,6 @@
     "numJobOffersLastYear": 41,
     "numJobOffersPreviousYear": 15,
     "imt": {
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 10
     },
     "job_offers_change": 10,
@@ -131,7 +124,6 @@
     "numJobOffersPreviousYear": 2,
     "imt": {
       "activeMonths": ["FEBRUARY", "JULY", "SEPTEMBER"],
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 2
     },
     "unemploymentDuration": {
@@ -154,7 +146,6 @@
     "numJobOffersLastYear": 17,
     "numJobOffersPreviousYear": 15,
     "imt": {
-      "yearlyAvgOffersDenominator": 10,
       "yearlyAvgOffersPer10Candidates": 2,
       "employmentTypePercentages": [
         {"employmentType": "CDI" , "percentage": 5},

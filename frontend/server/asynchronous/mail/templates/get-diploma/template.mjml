@@ -1,0 +1,586 @@
+{
+  "attributes": {
+    "owa": "desktop",
+    "version": "4.5.1"
+  },
+  "children": [
+    {
+      "attributes": {},
+      "children": [
+        {
+          "attributes": {
+            "href": "https://fonts.googleapis.com/css?family=appleLogo",
+            "name": "appleLogo"
+          },
+          "id": "nr8oG7bzzruY",
+          "tagName": "mj-font"
+        },
+        {
+          "attributes": {
+            "href": "https://fonts.googleapis.com/css?family=Slack-Lato",
+            "name": "Slack-Lato"
+          },
+          "id": "FG-YJW5tDioJ",
+          "tagName": "mj-font"
+        },
+        {
+          "content": "",
+          "id": "8MMjDv82IWWv",
+          "tagName": "mj-preview"
+        }
+      ],
+      "id": "eqUP8NiVrtr8",
+      "tagName": "mj-head"
+    },
+    {
+      "attributes": {
+        "background-color": "#ffffff",
+        "color": "#55575d",
+        "font-family": "Arial, sans-serif",
+        "passport": {
+          "id": "G0UM2O0fs"
+        }
+      },
+      "children": [
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "padding": "20px 0px 20px 0px",
+            "passport": {
+              "header": true,
+              "hidden": true,
+              "id": "S7GHKBzYmTvqC"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "hidden": true,
+                  "id": "4z2LRze9bHhto"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "11px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "0px 0px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "hidden": true,
+                      "id": "K5MtuqQvnoS_Q"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\">Donnez un résumé de cet email à vos destinataires</p>",
+                  "id": "Dp__UVnvcQRP",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "qCD7QCfwtya7",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "jcLkjvf1vvK9",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "transparent",
+            "background-repeat": "repeat",
+            "full-width": "full-width",
+            "padding": "20px 0px 20px 0px",
+            "padding-bottom": "12px",
+            "padding-top": "12px",
+            "passport": {
+              "id": "8NDUUonjfO"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "kEqk3BetyH"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "0px 25px 0px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "PJDmA8MCFZ"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"font-size:14px\"><span style=\"color:#000000; font-family:Arial; text-decoration:none\">Bonjour {{var:firstName:\"\"}},</span> </span></p>",
+                  "id": "9KD-LV-BtvQu",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "BEtfDq0BUCfL",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "LVGZxz1EMqbY",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "DgaLG3hhhgR7_"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "sLIzucE9Id"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "Npe8Ljf0XQ"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">J'espère que vous allez bien.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Vous avez récemment commencé une stratégie sur Bob afin de trouver la formation requise et obtenir le ou les diplômes demandés par les recruteurs. Je pense que vous avez raison. En effet pour le métier {{var:ofJobName:\"\"}} un diplôme est en général nécessaire.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000; font-family:Arial; font-size:11pt; text-decoration:none\">Je me suis renseignée et j'ai trouvé quelques astuces pour identifier la formation qu'il vous faudrait.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">On regarde ensemble ? 🙂</span></p>",
+                  "id": "2QWeASg00ti7b",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "KawJiThsf-Ba",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "U3d7giIarS7w",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "HBDj1Z1tu8"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "RfRUtH-qsB"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "IfvHvToCMU"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><b style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Demander aux gens qui font le métier visé</b></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Les personnes qui sont en poste et qui font le métier que vous voulez faire pourront vous conseiller sur le diplôme qu'elles ont eu. Essayez de contacter une personne pour lui demander, ça vous fera gagner du temps de recherche et vous serez sûr{%if var:gender:\"\" == \"FEMININE\"%}e{%endif%} de faire la bonne formation.{%if var:deepTrainingAdviceUrl:\"\" != \"\"%}</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Découvrez ici un <a target=\"_blank\" href=\"{{var:deepTrainingAdviceUrl}}\">exemple de message</a> de contact.{%endif%}</span></p>",
+                  "id": "INPQbtj1FT6nO",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "jwc5t49HPZopg",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "K2akIU7MEQvwK",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "Xii4aFI0y"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "tlR-A8Z7Ic"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "LMBNCGlraQ"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><b style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Téléphoner aux recruteurs pour connaître leurs critères</b></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Les recruteurs peuvent aussi vous aider à identifier le diplôme nécessaire. Un simple coup de téléphone pour leur demander ne vous coûte rien et vous fera gagner du temps.{%if var:deepTrainingAdviceUrl:\"\" != \"\"%}</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Découvrez ici un <a target=\"_blank\" href=\"{{var:deepTrainingAdviceUrl}}\">exemple de message</a> pour savoir comment demander.{%endif%}</span></p>",
+                  "id": "mXmpDUnLmWx_W",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "AXLkMlr9lZnVW",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "4hssnx__euCd-",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "LjuuCHIo_"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "R1zP_Fos_p"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "LIrT_XTVaa"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><b style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Demander de l'aide à un conseiller emploi</b></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Votre conseiller emploi peut vous renseigner ou vous aider à chercher les informations dont vous avez besoin. N'hésitez pas à faire appel à ses services.{%if var:deepTrainingAdviceUrl:\"\" != \"\"%}</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Découvrez comment <a target=\"_blank\" href=\"{{var:deepTrainingAdviceUrl}}\">demander de l'aide</a> à votre conseiller par email.{%endif%}</span></p>",
+                  "id": "JeNxAVCU47Bma",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "UMYarGaqTM0g_",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "opJ4JWsYnuUv_",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "border": "0px solid #ffffff",
+            "padding": "0px 0px 0px 0px",
+            "padding-bottom": "0px",
+            "padding-left": "0px",
+            "padding-right": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "conditions": [
+                {
+                  "operator": ">",
+                  "varName": "numTrainings",
+                  "varValue": "0"
+                }
+              ],
+              "id": "WxEOvIzWv"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "fErs5Tva53"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "d82FQSLSBH"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Au cas où j'ai trouvé quelques formations {{var:inDepartement}} via La Bonne Formation&nbsp;:</span></p><ul>{%for training in var:trainings%}<li style=\"line-height: 1.38; margin: 10px 0px;\"><a href=\"{{training.url}}\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">{{training.name}}</span> ({{training.cityName}})</a></li>{%endfor%}</ul><div><span style=\"font-size: 15px; color: rgb(29, 28, 29); font-family: Slack-Lato, appleLogo, sans-serif;\">Mais je vous conseille de passer d'abord par les étapes ci-dessus.</span></div>",
+                  "id": "4pNC9y_RvyHL5",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "slHTOjjbUS3I5",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "yb_tOPWSWVAY3",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-color": "#ffffff",
+            "background-repeat": "repeat",
+            "background-size": "auto",
+            "border": "0px solid #ffffff",
+            "full-width": "full-width",
+            "padding": "20px 0px 0px 0px",
+            "padding-bottom": "0px",
+            "padding-left": "0px",
+            "padding-right": "0px",
+            "passport": {
+              "id": "RSgdIepJlcn"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "k1RK0J913aW"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "LX9qS_LMESg"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Souvenez-vous que les organismes de formation sont des entreprises et leur but est de vous donner envie de faire votre formation chez eux. Demander l'avis des gens du métier est important pour évaluer si la formation que vous rêvez de faire sera vraiment utile pour le métier que vous visez.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">J'espère que ces astuces pourront vous aider. Je reviens vers vous rapidement avec d'autres conseils. Si jamais entre temps vous trouvez un emploi, hésitez pas à nous en faire part et à nous dire ce qui a marché pour vous 🙂</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">Vous pouvez retrouver à tout moment votre diagnostic Bob ainsi que les stratégies que vous avez commencées en <a target=\"_blank\" href=\"{{var:loginUrl}}\">cliquant ici</a>.</span></p><p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#1d1c1d; font-family:Slack-Lato,appleLogo,sans-serif; font-size:15px\">À bientôt !</span></p>",
+                  "id": "Jp0ywQK-4Ehlf",
+                  "tagName": "mj-text"
+                },
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "Ih-qW0GQG"
+                    }
+                  },
+                  "content": "<p style=\"line-height: 1.38; margin: 10px 0;\"><span style=\"color:#000000\"><span style=\"font-size:14.6667px\">Joanna de Bob</span></span></p>",
+                  "id": "bnrnlWNJd7SSF",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "WKfKEafmgiyj1",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "lcJJPXMjiqrJV",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "vMgala0dc4K3OI",
+              "savedSectionID": 408382,
+              "version": "3.3.5"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "gUCVcn-gFmy"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "alt": "",
+                    "border": "none",
+                    "height": "auto",
+                    "href": "",
+                    "padding": "10px 25px",
+                    "padding-left": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "NsDr5hRcT2qsjB",
+                      "image-id": 6036334
+                    },
+                    "src": "http://r.bob-emploi.fr/tplimg/6u2u/b/oirn/2ugx1.png",
+                    "target": "_blank",
+                    "title": "",
+                    "width": "102px"
+                  },
+                  "id": "PmOHTAZr_KvWx",
+                  "tagName": "mj-image"
+                }
+              ],
+              "id": "6-iFRVveKqVaV",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "GJltpJxfGJ60B",
+          "tagName": "mj-section"
+        },
+        {
+          "attributes": {
+            "background-repeat": "repeat",
+            "padding": "20px 0",
+            "padding-bottom": "0px",
+            "padding-top": "0px",
+            "passport": {
+              "id": "PEXnHUp066O_ya",
+              "savedSectionID": 408701,
+              "version": "3.3.5"
+            },
+            "text-align": "center",
+            "vertical-align": "top"
+          },
+          "children": [
+            {
+              "attributes": {
+                "passport": {
+                  "id": "yL3qRnl8rks"
+                }
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "align": "left",
+                    "color": "#55575d",
+                    "font-family": "Arial, sans-serif",
+                    "font-size": "13px",
+                    "letter-spacing": "normal",
+                    "line-height": "22px",
+                    "padding": "10px 25px",
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "passport": {
+                      "id": "df3fe0gCmxn"
+                    }
+                  },
+                  "content": "<p style=\"margin: 10px 0;\"><span style=\"font-size:11px\">Vous recevez cet email car vous êtes inscrit{% if var:gender:\"\" == \"FEMININE\" %}e{% endif %}</span><span style=\"font-size:11px\">&nbsp;sur <a target=\"_blank\" href=\"https://www.bob-emploi.fr?utm_source=bob-emploi&amp;utm_medium=email\">Bob</a>&nbsp;et avez demandé des emails de coaching. <a target=\"_blank\" href=\"{{var:changeEmailSettingsUrl}}\"><u>Cliquez ici</u></a> si vous ne souhaitez plus en recevoir ou moins souvent. Vous avez arrêté de chercher du travail et souhaitez mettre votre compte Bob en veille ? <a target=\"_blank\" href=\"{{var:statusUpdateUrl}}\">cliquez ici</a>.</span></p>",
+                  "id": "OAHxFnoH5VZDd",
+                  "tagName": "mj-text"
+                }
+              ],
+              "id": "OOSmXF-LkTOCG",
+              "tagName": "mj-column"
+            }
+          ],
+          "id": "P7yPygCHtQvY6",
+          "tagName": "mj-section"
+        }
+      ],
+      "id": "cd_QAGRpxYTm",
+      "tagName": "mj-body"
+    }
+  ],
+  "id": "9cQwV_PunRsY",
+  "tagName": "mjml"
+}

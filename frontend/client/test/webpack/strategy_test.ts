@@ -23,14 +23,19 @@ describe('getStartedStrategy', (): void => {
 
 describe('getStrategyProgress', (): void => {
   it('should get progress from a list of goals', (): void => {
-    const goals = ['goal1', 'goal2', 'goal3', 'goal4']
-    const reachedGoals = {'goal1': true, 'goal2': false}
+    const goals = [
+      {content: 'Goal 1', goalId: 'goal1', stepTitle: 'title 1'},
+      {content: 'Goal 2', goalId: 'goal2', stepTitle: 'title 2'},
+      {content: 'Goal 3', goalId: 'goal3', stepTitle: 'title 3'},
+      {content: 'Goal 4', goalId: 'goal4', stepTitle: 'title 4'},
+    ]
+    const reachedGoals = {goal1: true, goal2: false}
     expect(getStrategyProgress(goals, reachedGoals)).to.equal(25)
   })
 
   it('should not crash if there are no goals', (): void => {
-    const goals = []
-    const reachedGoals = {}
+    const goals = [] as const
+    const reachedGoals = {} as const
     expect(getStrategyProgress(goals, reachedGoals)).to.equal(0)
   })
 })

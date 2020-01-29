@@ -6,7 +6,8 @@ import logging
 import random
 import re
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Pattern, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Pattern, Set, Tuple, \
+    Union
 from urllib import parse
 
 from google.protobuf import message
@@ -16,6 +17,7 @@ import unidecode
 from bob_emploi.frontend.api import application_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import advisor_pb2
+from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
@@ -67,7 +69,11 @@ _EXPERIENCE_DURATION = {
     project_pb2.EXPERT: 'plus de 10 ans',
 }
 # Matches variables that need to be replaced by populate_template.
-_TEMPLATE_VAR = re.compile('%[a-z]+')
+TEMPLATE_VAR_PATTERN = re.compile('%[a-zA-Z]{3,}')
+# Pattern to skip when looking for variables not replaced. Matches URLs with query strings, can be
+# used with a sub(r'\1') to drop the query string:
+# https://www.google.com?search=foo => https://www.google.com?
+_SKIP_VAR_PATTERN = re.compile(r'(https?://[^\?\s]*\?)\S+')
 # Matches tutoiement choices to be replaced by populate_template.
 _YOU_PATTERN = re.compile('%you<(.*?)/(.*?)>')
 
@@ -116,13 +122,13 @@ class ScoringProject(object):
     def __init__(
             self,
             project: project_pb2.Project,
-            user_profile: user_pb2.UserProfile,
-            features_enabled: user_pb2.Features,
+            user: user_pb2.User,
             database: pymongo_database.Database,
             now: Optional[datetime.datetime] = None):
         self.details = project
-        self.user_profile = user_profile
-        self.features_enabled = features_enabled
+        self.user_profile = user.profile
+        self.features_enabled = user.features_enabled
+        self.user = user
         self._db = database
         self.now = now or datetime.datetime.utcnow()
 
@@ -151,6 +157,13 @@ class ScoringProject(object):
                 'project': self.details,
             }.items()
         })
+
+    def get_other_project(self, project: project_pb2.Project) -> 'ScoringProject':
+        """Get a ScoringProject for a secondary project for the same user."""
+
+        if project == self.details:
+            return self
+        return self.__class__(project, self.user, self._db, self.now)
 
     # When scoring models need it, add methods to access data from DB:
     # project requirements from job offers, IMT, median unemployment duration
@@ -195,7 +208,7 @@ class ScoringProject(object):
 
         imt = self.imt_proto()
         offers = imt.yearly_avg_offers_per_10_candidates
-        if not offers or not imt.yearly_avg_offers_denominator:
+        if not offers:
             return None
         if offers == -1:
             # No job offers at all, ouch!
@@ -238,8 +251,8 @@ class ScoringProject(object):
         if self._job_group_info is not None:
             return self._job_group_info
 
-        self._job_group_info = jobs.get_group_proto(self.database, self._rome_id()) or \
-            job_pb2.JobGroup()
+        self._job_group_info = jobs.get_group_proto(
+            self.database, self._rome_id(), self.user_profile.locale) or job_pb2.JobGroup()
         return self._job_group_info
 
     def requirements(self) -> job_pb2.JobRequirements:
@@ -247,6 +260,7 @@ class ScoringProject(object):
 
         return self.job_group_info().requirements
 
+    # TODO(cyrille): Add trainings from fagerh.fr for for-handicapped.
     def get_trainings(self) -> List[training_pb2.Training]:
         """Get the training opportunities from our partner's API."""
 
@@ -375,7 +389,7 @@ class ScoringProject(object):
             logging.warning('%%you is deprecated in templates, please fix: %s', template)
         new_template = _YOU_PATTERN.sub(
             lambda v: v.group(1) if self._can_tutoie() else v.group(2), vars_template)
-        if _TEMPLATE_VAR.search(new_template):
+        if TEMPLATE_VAR_PATTERN.search(_SKIP_VAR_PATTERN.sub(r'\1', new_template)):
             msg = 'One or more template variables have not been replaced in:\n' + new_template
             if raise_on_missing_var:
                 raise ValueError(msg)  # pragma: no cover
@@ -385,11 +399,13 @@ class ScoringProject(object):
     def translate_string(self, string: str) -> str:
         """Translate a string to a language and locale defined by the project."""
 
-        if self.user_profile.can_tutoie:
+        locale = self.user_profile.locale or ('fr@tu' if self.user_profile.can_tutoie else '')
+
+        if locale and locale != 'fr':
             try:
-                return i18n.translate_string(string, 'fr_FR@tu', self._db)
+                return i18n.translate_string(string, locale, self._db)
             except i18n.TranslationMissingException:
-                logging.exception('Falling back to vouvoiement')
+                logging.exception('Falling back to French on "%s"', string)
 
         return string
 
@@ -561,6 +577,19 @@ def _what_i_love_about(project: ScoringProject) -> str:
         project.job_group_info().what_i_love_about
 
 
+def _url_encode(name: str) -> Callable[[ScoringProject], str]:
+    def _wrapped(project: ScoringProject) -> str:
+        return parse.quote(project._get_template_variable(name))  # pylint: disable=protected-access
+    return _wrapped
+
+
+def _of_job_name(project: ScoringProject) -> str:
+    translated = project.translate_string('de {job_name}').format(job_name=_job_name(project))
+    if translated.startswith('de '):
+        return french.maybe_contract_prefix('de ', "d'", _job_name(project))
+    return translated
+
+
 _TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
     '%aJobName': _a_job_name,
     # This is a comma separated list of diplomas. Make sure before-hand that there's at least one.
@@ -570,6 +599,7 @@ _TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
     '%anApplicationMode': _an_application_mode,
     '%cityId':
     lambda scoring_project: scoring_project.details.city.city_id,
+    # TODO(pascal): Investigate who's using that template and rename it to someting with URL in it.
     '%cityName': lambda scoring_project: parse.quote(scoring_project.details.city.name),
     '%departementId':
     lambda scoring_project: scoring_project.details.city.departement_id,
@@ -585,6 +615,8 @@ _TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
     '%inDepartement': _in_departement,
     '%inDomain': lambda scoring_project: scoring_project.job_group_info().in_domain,
     '%inRegion': _in_region,
+    # TODO(pascal): Don't use Url as a prefix, as this makes %jobGroupName forbidden (no variable
+    # can be the prefix of another variable).
     '%jobGroupNameUrl': lambda scoring_project: parse.quote(unidecode.unidecode(
         scoring_project.details.target_job.job_group.name.lower().replace(' ', '-').replace(
             "'", '-'))),
@@ -603,19 +635,23 @@ _TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
         scoring_project.details.target_job.masculine_name),
     '%name': lambda scoring_project: scoring_project.user_profile.name,
     '%ofCity': lambda scoring_project: french.of_city(scoring_project.details.city.name),
-    '%ofJobName': lambda scoring_project: french.maybe_contract_prefix(
-        'de ', "d'", _job_name(scoring_project)),
+    '%ofJobName': _of_job_name,
     '%placePlural': lambda scoring_project: scoring_project.job_group_info().place_plural,
     '%postcode': _postcode,
     '%regionId': lambda scoring_project: scoring_project.details.city.region_id,
     '%romeId': lambda scoring_project: scoring_project.details.target_job.job_group.rome_id,
     '%totalInterviewCount': _total_interview_count,
+    '%urlEncodeJobName': _url_encode('%jobName'),
     '%whatILoveAbout': _what_i_love_about,
 }
 
 
 class NotEnoughDataException(Exception):
     """Exception raised while scoring if there's not enough data to compute a score."""
+
+    def __init__(self, msg: str = '', fields: Optional[Set[str]] = None) -> None:
+        super().__init__(msg, fields)
+        self.fields = fields or set()
 
 
 class ExplainedScore(typing.NamedTuple):
@@ -645,7 +681,7 @@ class ModelBase(object):
         """
 
         if self.score_and_explain.__code__ == ModelBase.score_and_explain.__code__:
-            raise NotImplementedError()
+            raise NotImplementedError(f'Score method not implemented in {self.__class__.__name__}')
         return self.score_and_explain(project).score
 
     def _explain(self, unused_project: ScoringProject) -> List[str]:
@@ -701,6 +737,34 @@ class ModelHundredBase(ModelBase):
         """
 
         return random.random() * 100
+
+
+class RelevanceModelBase(ModelBase):
+    """A base scoring model to help define scoring models for relevance.
+
+    The sub-classes should override the score_relevance method.
+    """
+
+    def score(self, project: ScoringProject) -> int:
+        relevance = self.score_relevance(project)
+        if relevance == diagnostic_pb2.NOT_RELEVANT:
+            return 0
+        if relevance == diagnostic_pb2.NEUTRAL_RELEVANCE:
+            return 1
+        if relevance == diagnostic_pb2.RELEVANT_AND_GOOD:
+            return 3
+        raise TypeError(f'Unexpected relevance: {diagnostic_pb2.CategoryRelevance.Name(relevance)}')
+
+    # TODO(cyrille): Restrict the output type
+    # so that it cannot be other than one of the three above.
+    def score_relevance(self, unused_project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+        """Compute a relevance for the given project.
+
+        Default to RELEVANT_AND_GOOD,
+        since this is the behaviour when no relevance model is present.
+        """
+
+        return diagnostic_pb2.RELEVANT_AND_GOOD
 
 
 class ConstantScoreModel(ModelBase):
@@ -784,11 +848,12 @@ def get_scoring_model(
         if regexp_match:
             try:
                 scoring_model = constructor(*regexp_match.groups())
-            except ValueError:
+            except ValueError as err:
                 logging.error(
-                    'Model ID "%s" raised an error for constructor "%s".',
+                    'Model ID "%s" raised an error for constructor "%s":\n%s',
                     scoring_model_name,
-                    constructor.__name__)
+                    constructor.__name__,
+                    err)
                 return None
             if scoring_model and cache_generated_model:
                 SCORING_MODELS[scoring_model_name] = scoring_model

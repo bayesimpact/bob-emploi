@@ -1,64 +1,62 @@
-import _memoize from 'lodash/memoize'
-import React from 'react'
+import React, {useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react'
 
-class Path extends React.PureComponent<React.SVGProps<SVGPathElement>, {isHovered?: boolean}> {
-  public state = {
-    isHovered: false,
-  }
 
-  private ref: React.RefObject<SVGPathElement> = React.createRef()
+const nameStyle: React.CSSProperties = {
+  fontWeight: 'bold',
+  pointerEvents: 'none',
+}
 
-  private handleHover = _memoize((isHovered): (() => void) => (): void =>
-    this.setState({isHovered}))
-
-  private center(): {x: number; y: number}|undefined {
-    if (!this.ref.current && this.props.d) {
+const Path: React.FC<React.SVGProps<SVGPathElement>> = (props: React.SVGProps<SVGPathElement>) => {
+  const {d, name} = props
+  const [isHovered, setIsHovered] = useState(false)
+  const [center, setCenter] = useState<{x?: number; y?: number}>({})
+  const pathEl = useRef<SVGPathElement>(null)
+  const hover = useCallback(() => setIsHovered(true), [])
+  const unhover = useCallback(() => setIsHovered(false), [])
+  useLayoutEffect(() => {
+    if (!pathEl.current && d) {
       // Take the initial point from path.
-      const [x, y] = this.props.d.split(' ')[1].split(',').map(parseFloat)
-      return {x, y}
+      const [x, y] = d.split(' ')[1].split(',').map(parseFloat)
+      setCenter({x, y})
+      return
     }
-    if (!this.ref.current) {
-      return undefined
+    if (!pathEl.current) {
+      return
     }
     // Take the middle of the bounding box.
-    const {height, width, x, y} = this.ref.current.getBBox()
-    return {
+    const {height, width, x, y} = pathEl.current.getBBox() || {}
+    setCenter({
       x: x + width / 2,
       y: y + height / 2,
-    }
-  }
+    })
+  }, [d])
 
-  public render(): React.ReactNode {
-    const nameStyle: React.CSSProperties = {
-      fontWeight: 'bold',
-      pointerEvents: 'none',
-    }
-    return <React.Fragment>
-      <path
-        stroke="#000" fill="#fff"
-        onMouseOver={this.handleHover(true)} onMouseOut={this.handleHover(false)}
-        ref={this.ref} {...this.props} />
-      {this.state.isHovered ?
-        <text
-          id="caption" alignmentBaseline="central" textAnchor="middle"
-          style={nameStyle} z={1} {...this.center()}>
-          {this.props.name}
-        </text> : null}
-    </React.Fragment>
-  }
+  return <React.Fragment>
+    <path
+      stroke="#000" fill="#fff"
+      onMouseOver={hover} onMouseOut={unhover}
+      ref={pathEl} {...props} />
+    {isHovered ?
+      <text
+        id="caption" alignmentBaseline="central" textAnchor="middle"
+        style={nameStyle} z={1} x={center.x} y={center.y} >
+        {name}
+      </text> : null}
+  </React.Fragment>
 }
 
 
-interface DepartementsProps extends Omit<React.HTMLProps<SVGElement>, 'ref'> {
+interface DepartementsProps extends Omit<React.SVGProps<SVGSVGElement>, 'ref'> {
   departementProps: {[departementId: string]: Omit<React.SVGProps<SVGPathElement>, 'ref'>}
   pathProps?: Omit<React.SVGProps<SVGPathElement>, 'ref'>
   sortFunc?: (departementIdA: string, departementIdB: string) => number
 }
 
-class FrenchDepartements extends React.PureComponent<DepartementsProps> {
-  public render(): React.ReactNode {
-    const {departementProps, pathProps, sortFunc, ...svgProps} = this.props
-    const departments = [
+const FrenchDepartements: React.FC<DepartementsProps> =
+(props: DepartementsProps): React.ReactElement => {
+  const {departementProps, pathProps, sortFunc, ...svgProps} = props
+  const departments = useMemo(() => {
+    const rawDepartements = [
       <Path
         d="m 413.70408,308.36159 6.69,-20.52 0.4,1.07 1.39,-0.84 3.02,1.84 3.26,-1.47 1.3,0.28
         0.05,-0.91 1.58,0.81 1.23,2.86 3.26,0.7 0,0 0.38,1.07 -1.02,0.92 3.23,1.85 -0.65,0.72
@@ -1694,19 +1692,20 @@ class FrenchDepartements extends React.PureComponent<DepartementsProps> {
         id="95" key="95" {...pathProps} {...departementProps['95']} />,
     ]
     if (sortFunc) {
-      departments.sort(({key: departementIdA}, {key: departementIdB}): number =>
+      rawDepartements.sort(({key: departementIdA}, {key: departementIdB}): number =>
         sortFunc(departementIdA as string, departementIdB as string))
     }
-    return <svg
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Carte des départements de France"
-      viewBox="0 0 612.3844 584.36005"
-      width="612.3844"
-      height="584.36005" {...svgProps}>
-      {departments}
-      <use xlinkHref="#caption" />
-    </svg>
-  }
+    return rawDepartements
+  }, [pathProps, departementProps, sortFunc])
+  return <svg
+    xmlns="http://www.w3.org/2000/svg"
+    aria-label="Carte des départements de France"
+    viewBox="0 0 612.3844 584.36005"
+    width="612.3844"
+    height="584.36005" {...svgProps}>
+    {departments}
+    <use xlinkHref="#caption" />
+  </svg>
 }
 
 export default FrenchDepartements

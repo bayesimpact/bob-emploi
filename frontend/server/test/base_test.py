@@ -71,6 +71,8 @@ class ServerTestCase(unittest.TestCase):
         # Simulate a clean load of the modules.
 
         self.app = server.app.test_client()
+        self.app_context = typing.cast(
+            Callable[[], typing.ContextManager[None]], server.app.app_context)
         proto.clear_mongo_fetcher_cache()
         self._db = mongomock.MongoClient().get_database('test')
         server.app.config['DATABASE'] = self._db
@@ -203,7 +205,7 @@ class ServerTestCase(unittest.TestCase):
 
         if email is None:
             email = f'foo{self._user_db.user.count_documents({}):d}@bar.fr'
-        server.ADVISOR_DISABLED_FOR_TESTING = not advisor
+        server.user.ADVISOR_DISABLED_FOR_TESTING = not advisor
 
         # Create password.
         user_id, auth_token = self.authenticate_new_user_token(email=email, password=password)
@@ -219,7 +221,7 @@ class ServerTestCase(unittest.TestCase):
             headers={'Authorization': 'Bearer ' + auth_token, 'Content-Type': 'application/json'})
         self.assertEqual(200, response.status_code, response.get_data())
 
-        server.ADVISOR_DISABLED_FOR_TESTING = False
+        server.user.ADVISOR_DISABLED_FOR_TESTING = False
 
         return user_id, auth_token
 

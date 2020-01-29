@@ -41,6 +41,9 @@ class ImproveCvTest(mail_blast_test.CampaignTestBase):
     def test_basic_focus(self) -> None:
         """Basic usage."""
 
+        self.user.registered_at.FromDatetime(datetime.datetime(2019, 6, 1))
+        self.project.advices.add().advice_id = 'improve-resume'
+
         self._assert_user_receives_focus()
 
         self._assert_has_unsubscribe_link()
@@ -48,9 +51,8 @@ class ImproveCvTest(mail_blast_test.CampaignTestBase):
             'coachingEmailFrequency': 'EMAIL_ONCE_A_MONTH',
         })
         self._assert_has_status_update_link('statusUpdateUrl')
-        base_url = f'https://www.bob-emploi.fr?userId={self.user.user_id}'
-        self._assert_regex_field(
-            'loginUrl', rf'^{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
+        self._assert_has_logged_url('loginUrl')
+        self._assert_has_logged_url('deepLinkAdviceUrl', '/projet/0/methode/improve-resume')
 
         self._assert_remaining_variables({
             'firstName': 'Patrick',
@@ -63,6 +65,7 @@ class ImproveCvTest(mail_blast_test.CampaignTestBase):
     def test_first_job_in_september(self) -> None:
         """User is looking for its first job in September."""
 
+        self.user.registered_at.FromDatetime(datetime.datetime(2019, 6, 1))
         self.project.kind = project_pb2.FIND_A_FIRST_JOB
 
         self._assert_user_receives_focus()
@@ -77,6 +80,7 @@ class ImproveCvTest(mail_blast_test.CampaignTestBase):
             'loginUrl', rf'^{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
 
         self._assert_remaining_variables({
+            'deepLinkAdviceUrl': '',
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
             'hasExperience': 'False',
@@ -87,6 +91,7 @@ class ImproveCvTest(mail_blast_test.CampaignTestBase):
     def test_antoher_job_in_september(self) -> None:
         """User is looking for another job in September."""
 
+        self.user.registered_at.FromDatetime(datetime.datetime(2019, 6, 1))
         self.project.kind = project_pb2.FIND_ANOTHER_JOB
 
         self._assert_user_receives_focus()
@@ -101,6 +106,7 @@ class ImproveCvTest(mail_blast_test.CampaignTestBase):
             'loginUrl', rf'^{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
 
         self._assert_remaining_variables({
+            'deepLinkAdviceUrl': '',
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
             'hasExperience': 'True',

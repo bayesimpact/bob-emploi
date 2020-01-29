@@ -5,8 +5,8 @@ import React, {useCallback, useEffect} from 'react'
 import {connect} from 'react-redux'
 
 import {DispatchAllActions, readTip, openTipExternalLink} from 'store/actions'
-import {YouChooser} from 'store/french'
 
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {RadiumDiv} from 'components/radium'
 
@@ -22,15 +22,14 @@ interface ModalProps {
   dispatch: DispatchAllActions
   isShown?: boolean
   onClose: () => void
-  userYou: YouChooser
 }
 
 
 // TODO(pascal): Add static propTypes back.
 const ActionDescriptionModalBase: React.FC<ModalProps> =
-({action, dispatch, isShown, onClose, userYou}: ModalProps): React.ReactElement|null => {
+({action, dispatch, isShown, onClose}: ModalProps): React.ReactElement|null => {
   useEffect(() => {
-    if (isShown && action && action.status === 'ACTION_UNREAD') {
+    if (isShown && action?.status === 'ACTION_UNREAD') {
       dispatch(readTip(action))
     }
   }, [action, dispatch, isShown])
@@ -64,14 +63,14 @@ const ActionDescriptionModalBase: React.FC<ModalProps> =
       <ActionModalHeader {...action} />
       <div style={contentStyle}>
         <Markdown content={shortDescription} />
-        <div style={titleStyle}>
-          {userYou('Tu ne sais ', 'Vous ne savez ')}pas par où commencer&nbsp;?
-        </div>
-        <div style={{marginBottom: 15, marginTop: 5}}>
+        <Trans style={titleStyle}>
+          Vous ne savez pas par où commencer&nbsp;?
+        </Trans>
+        <Trans style={{marginBottom: 15, marginTop: 5}}>
           <ExternalLink
             style={linkStyle} href={link} onClick={handleLinkClick}>
-            Clique{userYou('', 'z')} ici</ExternalLink> pour avoir un coup de pouce.
-        </div>
+            Cliquez ici</ExternalLink> pour avoir un coup de pouce.
+        </Trans>
       </div>
     </div>
   </Modal>
@@ -159,9 +158,9 @@ const ActionBase: React.FC<ActionProps> = (props: ActionProps): React.ReactEleme
   const style: RadiumCSSProperties = {
     ':focus': {backgroundColor: colors.LIGHT_GREY},
     ':hover': {backgroundColor: colors.LIGHT_GREY},
-    backgroundColor: '#fff',
-    marginBottom: 1,
-    position: 'relative',
+    'backgroundColor': '#fff',
+    'marginBottom': 1,
+    'position': 'relative',
     ...propsStyle,
   }
   const contentStyle: React.CSSProperties = {

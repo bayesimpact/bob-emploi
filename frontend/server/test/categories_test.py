@@ -24,7 +24,6 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '31:A1234',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 5,
             }
         })
@@ -62,7 +61,6 @@ class FindWhatYouLikeTestCase(filters_test.FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '69:A1234',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 8,
             }
         })
@@ -247,7 +245,7 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             '/api/eval/use-case/categories',
             data=json.dumps(use_case_json), headers={'Authorization': 'ze-admin-token'})
         return {
-            category['categoryId']: category['relevance']
+            category['categoryId']: category.get('relevance')
             for category in self.json_from_response(response)['categories']
         }
 
@@ -274,6 +272,77 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
         }
         categories = self._get_categories_relevance(use_case_json)
         self.assertEqual({'stuck-in-village': 'NOT_RELEVANT'}, categories)
+
+    def test_custom_relevance_scoring_model(self) -> None:
+        """Check relevances using a custom scoring model."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'custom',
+                'filters': ['for-women'],
+                'relevanceScoringModel': 'for-job-group(D1102)'
+            },
+        ])
+
+        # Matches the filter.
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {
+                'projects': [{'targetJob': {'jobGroup': {'rome_id': 'D1102'}}}],
+                'profile': {'gender': 'FEMININE'},
+            },
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'custom': 'NEEDS_ATTENTION'}, categories)
+
+        # Does not match the filter but matches the relevance scoring model.
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {
+                'projects': [{'targetJob': {'jobGroup': {'rome_id': 'D1102'}}}],
+                'profile': {'gender': 'MASCULINE'},
+            },
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'custom': 'RELEVANT_AND_GOOD'}, categories)
+
+        # Does not match the filter nor the relevance scoring model.
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {
+                'projects': [{'targetJob': {'jobGroup': {'rome_id': 'A5677'}}}],
+                'profile': {'gender': 'MASCULINE'},
+            },
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'custom': 'NOT_RELEVANT'}, categories)
+
+    def test_custom_relevance_neutral(self) -> None:
+        """Check neutral relevances using a custom scoring model."""
+
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'custom',
+                'filters': ['for-women'],
+                'relevanceScoringModel': 'constant(1)'
+            },
+        ])
+
+        # Matches the filter.
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{}], 'profile': {'gender': 'FEMININE'}},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'custom': 'NEEDS_ATTENTION'}, categories)
+
+        # Does not match the filter but matches the relevance scoring model.
+        use_case_json = {
+            'useCaseId': '2019-01-20_00',
+            'userData': {'projects': [{}], 'profile': {'gender': 'MASCULINE'}},
+        }
+        categories = self._get_categories_relevance(use_case_json)
+        self.assertEqual({'custom': 'NEUTRAL_RELEVANCE'}, categories)
 
     def test_enhance_methods_to_interview(self) -> None:
         """Check enhance-method-to-interview various relevances."""
@@ -320,7 +389,6 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
             '_id': '69:D1201',
             'imt': {
                 'yearlyAvgOffersPer10Candidates': 8,
-                'yearlyAvgOffersDenominator': 10,
             },
         })
 
@@ -358,7 +426,6 @@ class CategoryRelevanceTest(base_test.ServerTestCase):
         self._db.local_diagnosis.insert_one({
             '_id': '31:A1234',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 8,
             },
         })

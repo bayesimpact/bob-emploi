@@ -9,7 +9,7 @@ message JobBoard {
   string title = 1;
 
   // Link to the job board.
-  string link = 2 [(string_format) = URL_FORMAT];
+  string link = 2 [(string_format) = URL_FORMAT, (string_format) = SCORING_PROJECT_TEMPLATE];
 
   // A set of filter IDs: do not show the job board if one these
   // filters returns false for the project.

@@ -4,7 +4,6 @@ from bob_emploi.frontend.api import driving_license_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
-from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import geo
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
@@ -30,7 +29,7 @@ def _score_and_explain_after_filters(project: scoring_base.ScoringProject) \
     once some prerequisite filters have been met.
     """
 
-    if project.user_profile.has_car_driving_license != user_pb2.FALSE:
+    if project.user_profile.has_car_driving_license != project_pb2.FALSE:
         return scoring_base.NULL_EXPLAINED_SCORE
     reasons = []
     license_required = next((

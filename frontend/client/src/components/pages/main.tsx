@@ -1,33 +1,35 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
+import i18n from 'i18next'
 import {History, createBrowserHistory} from 'history'
 import {parse} from 'query-string'
-import Radium from 'radium'
-import React from 'react'
-import {LoadingComponentProps} from 'react-loadable'
+import React, {Suspense} from 'react'
 import {connect, Provider} from 'react-redux'
 import {RouteComponentProps} from 'react-router'
 import {Redirect, Route, Switch} from 'react-router-dom'
 import {Store, createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
-import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
 import {polyfill} from 'smoothscroll-polyfill'
 
 import {actionTypesToLog, fetchUser, switchToMobileVersionAction, migrateUserToAdvisor,
   trackInitialUtm, activateDemoInFuture, activateDemo, pageIsLoaded, isActionRegister, RootState,
-  DispatchAllActions, AllActions} from 'store/actions'
+  DispatchAllActions, AllActions, hideToasterMessageAction} from 'store/actions'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
 import {createFacebookAnalyticsMiddleWare} from 'store/facebook_analytics'
 import {createGoogleAnalyticsMiddleWare} from 'store/google_analytics'
+import {init as i18nInit} from 'store/i18n'
+import {Logger} from 'store/logging'
 import {onboardingComplete} from 'store/main_selectors'
+import {parsedValueFlattener, removeAmpersandDoubleEncoding} from 'store/parse'
+import {createSentryMiddleware} from 'store/sentry'
 import {userReducer} from 'store/user_reducer'
+import {getUserLocale, isAdvisorUser} from 'store/user'
 
 import {LoginModal} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {Snackbar} from 'components/snackbar'
-import {Routes, SIGNUP_HASH} from 'components/url'
-import {WebpackChunksLoader} from 'components/webpack_chunks_loader'
+import {Routes, SIGNUP_HASH, staticPages} from 'components/url'
 import {IntroPage} from './intro'
 import {SignUpPage} from './signup'
 import {WaitingPage} from './waiting'
@@ -37,113 +39,21 @@ require('styles/App.css')
 
 polyfill()
 
-// Timing between background loading of webpack chunks.
-const WEBPACK_CHUNKS_LOADING_DELAY_MILLISECS = 3000
-// Loads chunks one after the other, in the background.
-const chunkLoader = new WebpackChunksLoader(
-  WEBPACK_CHUNKS_LOADING_DELAY_MILLISECS, WaitingPage as React.ComponentType<LoadingComponentProps>)
+const LandingPage = React.lazy((): Promise<typeof import('./landing')> =>
+  import(/* webpackChunkName: 'landing', webpackPrefetch: 3 */'./landing'))
 
-const LandingPage = chunkLoader.createLoadableComponent(
-  (): Promise<typeof import('./landing')> =>
-  import(/* webpackChunkName: 'landing' */'./landing'), 'landing', 3)
+const StaticPages = React.lazy((): Promise<typeof import('./static')> =>
+  import(/* webpackChunkName: 'static', webpackPrefetch: 0 */'./static'))
 
-
-interface StaticPage<PropsType = {}> {
-  Component: React.ComponentType<PropsType>
-  route: string
-}
+const LoadableProfilePage = React.lazy((): Promise<typeof import('./connected/profile')> =>
+  import(/* webpackChunkName: 'connected', webpackPrefetch: 2 */'./connected/profile'))
+const LoadableNewProjectPage = React.lazy((): Promise<typeof import('./connected/new_project')> =>
+  import(/* webpackChunkName: 'connected', webpackPrefetch: 2 */'./connected/new_project'))
+const LoadableProjectPage = React.lazy((): Promise<typeof import('./connected/project')> =>
+  import(/* webpackChunkName: 'connected', webpackPrefetch: 2 */'./connected/project'))
 
 
-interface StaticPageLoader<PropsType> {
-  loader: () => Promise<React.ComponentType<PropsType>|{default: React.ComponentType<PropsType>}>
-  route: string
-}
-
-
-function preparePage<P>({loader, route}: StaticPageLoader<P>): StaticPage<P> {
-  return {
-    Component: chunkLoader.createLoadableComponent(loader, 'static', 0),
-    route,
-  }
-}
-
-
-const staticPages:
-readonly (StaticPage | StaticPage<RouteComponentProps<{adviceId?: string}>>)[] = [
-  {
-    loader: (): Promise<typeof import('./static/contribution')> =>
-      import(/* webpackChunkName: 'static' */'./static/contribution'),
-    route: Routes.CONTRIBUTION_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/cookies')> =>
-      import(/* webpackChunkName: 'static' */'./static/cookies'),
-    route: Routes.COOKIES_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/privacy')> =>
-      import(/* webpackChunkName: 'static' */'./static/privacy'),
-    route: Routes.PRIVACY_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/transparency')> =>
-      import(/* webpackChunkName: 'static' */'./static/transparency'),
-    route: Routes.TRANSPARENCY_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/team')> =>
-      import(/* webpackChunkName: 'static' */'./static/team'),
-    route: Routes.TEAM_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/professionals')> =>
-      import(/* webpackChunkName: 'static' */'./static/professionals'),
-    route: Routes.PROFESSIONALS_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/video_signup')> =>
-      import(/* webpackChunkName: 'static' */'./static/video_signup'),
-    route: Routes.VIDEO_SIGNUP_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/terms')> =>
-      import(/* webpackChunkName: 'static' */'./static/terms'),
-    route: Routes.TERMS_AND_CONDITIONS_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/vision')> =>
-      import(/* webpackChunkName: 'static' */'./static/vision'),
-    route: Routes.VISION_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/imilo_integration')> =>
-      import(/* webpackChunkName: 'static' */'./static/imilo_integration'),
-    route: Routes.IMILO_INTEGRATION_PAGE,
-  },
-  {
-    loader: (): Promise<typeof import('./static/static_advice')> =>
-      import(/* webpackChunkName: 'static' */'./static/static_advice'),
-    route: Routes.STATIC_ADVICE_PATH,
-  },
-].map(preparePage)
-
-
-const LoadableProfilePage = chunkLoader.createLoadableComponent(
-  (): Promise<typeof import('./connected/profile')> =>
-    import(/* webpackChunkName: 'connected' */'./connected/profile'),
-  'connected', 2)
-const LoadableNewProjectPage = chunkLoader.createLoadableComponent(
-  (): Promise<typeof import('./connected/new_project')> =>
-    import(/* webpackChunkName: 'connected' */'./connected/new_project'),
-  'connected', 2)
-const LoadableUpdatePage = chunkLoader.createLoadableComponent(
-  (): Promise<typeof import('./connected/update')> =>
-    import(/* webpackChunkName: 'connected' */'./connected/update'),
-  'connected', 2)
-const LoadableProjectPage = chunkLoader.createLoadableComponent(
-  (): Promise<typeof import('./connected/project')> =>
-    import(/* webpackChunkName: 'connected' */'./connected/project'),
-  'connected', 2)
+i18nInit()
 
 
 // Whitelist for the path of pages for which we allow storing the scroll position to jump
@@ -152,7 +62,7 @@ const PAGES_WITH_STORED_SCROLL = [Routes.PROJECT_PAGE]
 
 
 interface UserCheckedPagesConnectedProps {
-  demo?: string
+  demo?: keyof bayes.bob.Features
   hasLoginModal: boolean
   isFetchingUser: boolean
   user: bayes.bob.User
@@ -182,24 +92,20 @@ class UserCheckedPagesBase extends
   }
 
   public componentDidUpdate(prevProps: UserCheckedPagesProps): void {
-    const {demo, dispatch, user: {userId}} = this.props
-    if (!userId || userId === prevProps.user.userId) {
+    const {demo, dispatch, user, user: {featuresEnabled, profile, userId}} = this.props
+    if (!userId || user === prevProps.user) {
       return
     }
-    if (demo) {
+    if (demo && (!featuresEnabled || featuresEnabled[demo] !== 'ACTIVE')) {
       dispatch(activateDemo(demo))
     }
-    if (!this.isAdvisorUser(this.props.user)) {
+    if (!isAdvisorUser(user)) {
       dispatch(migrateUserToAdvisor())
     }
-  }
-
-  // TODO(cyrille): Make it static.
-  private isAdvisorUser(user): boolean {
-    const {advisor = undefined, switchedFromMashupToAdvisor = false} = user.featuresEnabled || {}
-    return (!advisor || advisor === 'ACTIVE') &&
-      (user.projects || []).length <= 1 ||
-      switchedFromMashupToAdvisor
+    const newLocale = getUserLocale(profile)
+    if (newLocale !== i18n.language) {
+      i18n.changeLanguage(newLocale)
+    }
   }
 
   public render(): React.ReactNode {
@@ -213,44 +119,45 @@ class UserCheckedPagesBase extends
       !hasRegisteredUser && state ||
       !hasUser && (hash === SIGNUP_HASH || (authToken && userId))
     return <React.Fragment>
-      <Switch>
-        {hasUrlLoginIncentive ? <Route path="*" component={SignUpPage} /> : null}
-        {/* Pages that can be access both for logged-in and anonymous users. */}
-        {staticPages.map(({Component, route}): React.ReactNode => <Route
-          path={route} key={`route-${route}`} component={Component} />)}
+      <Suspense fallback={<WaitingPage />}>
+        <Switch>
+          {hasUrlLoginIncentive ? <Route path="*" component={SignUpPage} /> : null}
 
-        {/* User is being fetched. */}
-        {isFetchingUser ? <Route path="*" component={WaitingPage} /> : null}
+          {/* Pages that can be access both for logged-in and anonymous users. */}
+          {staticPages.map((path: string): React.ReactElement =>
+            <Route path={path} key={path} component={StaticPages} />)}
 
-        {/* Landing page for anonymous users. */}
-        {hasUser ? null : <Route path={Routes.JOB_SIGNUP_PAGE} component={LandingPage} />}
-        {hasUser ? null : <Route path={Routes.ROOT} exact={true} component={LandingPage} />}
+          {/* User is being fetched. */}
+          {isFetchingUser ? <Route path="*" component={WaitingPage} /> : null}
 
-        {/* Intro page for anonymous users.*/}
-        {hasUser ? null : <Route path={Routes.INTRO_PAGE} component={IntroPage} />}
+          {/* Landing page for anonymous users. */}
+          {hasUser ? null : <Route path={Routes.JOB_SIGNUP_PAGE} component={LandingPage} />}
+          {hasUser ? null : <Route path={Routes.ROOT} exact={true} component={LandingPage} />}
 
-        {/* Signup and login routes. */}
-        {/* We're on a connected page, without a user, so we show the login modal. */}
-        {hasUser ? null : <Route path="*" component={SignUpPage} />}
-        {isMobileVersion && !hasRegisteredUser ?
-          <Route path={Routes.SIGNUP_PAGE} component={SignUpPage} /> : null}
+          {/* Intro page for anonymous users.*/}
+          {hasUser ? null : <Route path={Routes.INTRO_PAGE} component={IntroPage} />}
 
-        {/* Pages for logged-in users that might not have completed their onboarding. */}
-        <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={LoadableProfilePage} />
-        <Route path={Routes.NEW_PROJECT_ONBOARDING_PAGES} component={LoadableNewProjectPage} />
-        {/* TODO(cyrille): Drop this page. */}
-        <Route path={Routes.APP_UPDATED_PAGE} component={LoadableUpdatePage} />
+          {/* Signup and login routes. */}
+          {/* We're on a connected page, without a user, so we show the login modal. */}
+          {hasUser ? null : <Route path="*" component={SignUpPage} />}
+          {isMobileVersion && !hasRegisteredUser ?
+            <Route path={Routes.SIGNUP_PAGE} component={SignUpPage} /> : null}
 
-        {onboardingComplete(user) ? null : <Redirect to={Routes.PROFILE_PAGE} />}
+          {/* Pages for logged-in users that might not have completed their onboarding. */}
+          <Route path={Routes.PROFILE_ONBOARDING_PAGES} component={LoadableProfilePage} />
+          <Route path={Routes.NEW_PROJECT_ONBOARDING_PAGES} component={LoadableNewProjectPage} />
 
-        {/* Pages for logged-in user that have completed their onboarding. */}
-        <Route path={Routes.PROJECT_PATH} component={LoadableProjectPage} />
-        <Route path={Routes.PROJECT_PAGE} component={LoadableProjectPage} />
-        <Redirect to={Routes.PROJECT_PAGE + search + hash} />
+          {onboardingComplete(user) ? null : <Redirect to={Routes.PROFILE_PAGE} />}
 
-      </Switch>
-      {hasLoginModal && !isMobileVersion && (hasUrlLoginIncentive || !hasRegisteredUser) ?
-        <LoginModal /> : null}
+          {/* Pages for logged-in user that have completed their onboarding. */}
+          <Route path={Routes.PROJECT_PATH} component={LoadableProjectPage} />
+          <Route path={Routes.PROJECT_PAGE} component={LoadableProjectPage} />
+          <Redirect to={Routes.PROJECT_PAGE + search + hash} />
+
+        </Switch>
+        {hasLoginModal && !isMobileVersion && (hasUrlLoginIncentive || !hasRegisteredUser) ?
+          <LoginModal /> : null}
+      </Suspense>
     </React.Fragment>
   }
 }
@@ -267,13 +174,8 @@ const UserCheckedPages = connect(
   }))(UserCheckedPagesBase)
 
 
-interface PageHolderProps {
+interface PageHolderProps extends RouteComponentProps<{}> {
   dispatch: DispatchAllActions
-  location: {
-    hash: string
-    pathname: string
-    search: string
-  }
 }
 
 
@@ -282,14 +184,24 @@ interface PageHolderState {
 }
 
 
+const MainSnackbar = connect(
+  ({asyncState}: RootState): {snack?: string} => ({
+    snack: asyncState.errorMessage,
+  }),
+  (dispatch: DispatchAllActions) => ({
+    onHide: (): void => void dispatch(hideToasterMessageAction),
+  }),
+)(Snackbar)
+
+
 // The main layout containing any page. Especially it handles the error message
 // bar.
 class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
-  public state = {}
+  public state: PageHolderState = {}
 
   public componentDidMount(): void {
     const {dispatch, location} = this.props
-    this.handleSearchParamsUpdated(location.search || {})
+    this.handleSearchParamsUpdated(location.search)
     dispatch(pageIsLoaded(location))
     if (isMobileVersion) {
       dispatch(switchToMobileVersionAction)
@@ -298,7 +210,8 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
     }
   }
 
-  public getSnapshotBeforeUpdate({location: {pathname: prevPath}}): PageHolderState|null {
+  public getSnapshotBeforeUpdate(
+    {location: {pathname: prevPath}}: PageHolderProps): PageHolderState|null {
     const {location: {pathname = {}}} = this.props
     const isScrollStorable = PAGES_WITH_STORED_SCROLL.
       some((path: string): boolean => prevPath.startsWith(path))
@@ -312,14 +225,15 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
   }
 
   public componentDidUpdate(
-    {location: {pathname: prevPath, search: prevSearch}}, prevState, snapshot): void {
+    {location: {pathname: prevPath, search: prevSearch}}: PageHolderProps,
+    prevState: PageHolderState, snapshot: PageHolderState|null): void {
     const {dispatch, location} = this.props
     const {pathname, search} = location
     if (snapshot) {
       this.setState(snapshot)
     }
     if (prevSearch !== search) {
-      this.handleSearchParamsUpdated(search || {})
+      this.handleSearchParamsUpdated(search)
     }
     if (prevPath !== pathname) {
       window.scrollTo(0, this.state[pathname] || 0)
@@ -327,7 +241,7 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
     }
   }
 
-  private handleSearchParamsUpdated(search): void {
+  private handleSearchParamsUpdated(search: string): void {
     const {dispatch} = this.props
     const {
       activate,
@@ -337,22 +251,22 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
       utm_source: source,
     } = parse(search)
     if (campaign || content || medium || source) {
-      dispatch(trackInitialUtm({campaign, content, medium, source}))
+      dispatch(trackInitialUtm({
+        campaign: parsedValueFlattener.last(campaign),
+        content: parsedValueFlattener.last(content),
+        medium: parsedValueFlattener.last(medium),
+        source: parsedValueFlattener.last(source),
+      }))
     }
     if (activate) {
-      dispatch(activateDemoInFuture(activate))
+      if (typeof activate === 'object') {
+        activate.forEach((demo: string): void => {
+          dispatch(activateDemoInFuture(demo as keyof bayes.bob.Features))
+        })
+      } else {
+        dispatch(activateDemoInFuture(activate as keyof bayes.bob.Features))
+      }
     }
-  }
-
-  private removeAmpersandDoubleEncoding(): string {
-    const {hash, pathname, search} = this.props.location
-    const query = parse(search)
-    if (!Object.keys(query).some((key: string): boolean => key.startsWith('amp;'))) {
-      return ''
-    }
-    return pathname + '?' + Object.keys(query).map((key: string): string =>
-      encodeURIComponent(key.replace(/^amp;/, '')) + '=' +
-      encodeURIComponent(query[key])).join('&') + hash
   }
 
   private resolveInviteShortLink(): string {
@@ -366,7 +280,7 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
   }
 
   public render(): React.ReactNode {
-    const updatedPath = this.removeAmpersandDoubleEncoding()
+    const updatedPath = removeAmpersandDoubleEncoding(this.props.location)
     if (updatedPath) {
       return <Redirect to={updatedPath} />
     }
@@ -374,12 +288,10 @@ class PageHolderBase extends React.Component<PageHolderProps, PageHolderState> {
     if (invitePath) {
       return <Redirect to={invitePath} />
     }
-    return <Radium.StyleRoot>
-      <div style={{backgroundColor: colors.BACKGROUND_GREY, color: colors.DARK_TWO}}>
-        <UserCheckedPages {...this.props} />
-        <Snackbar timeoutMillisecs={4000} />
-      </div>
-    </Radium.StyleRoot>
+    return <div style={{backgroundColor: colors.BACKGROUND_GREY, color: colors.DARK_TWO}}>
+      <UserCheckedPages {...this.props} />
+      <MainSnackbar timeoutMillisecs={4000} />
+    </div>
   }
 }
 const PageHolder = connect()(PageHolderBase)
@@ -393,33 +305,23 @@ class App extends React.Component<{}, AppState> {
   private static createHistoryAndStore(): AppState {
     const history = createBrowserHistory()
 
-    const ravenMiddleware = RavenMiddleware(
-      config.sentryDSN, {
-        release: config.clientVersion,
-      }, {
-        stateTransformer: function(state: AppState): {} {
-          return {
-            ...state,
-            // Don't send user info to Sentry.
-            user: 'Removed with ravenMiddleware stateTransformer',
-          }
-        },
-      })
-    const amplitudeMiddleware = createAmplitudeMiddleware(actionTypesToLog)
+    const sentryMiddleware = createSentryMiddleware()
+    const amplitudeMiddleware = createAmplitudeMiddleware(new Logger(actionTypesToLog))
     const googleAnalyticsMiddleware = createGoogleAnalyticsMiddleWare(config.googleUAID, {
       PAGE_IS_LOADED: 'pageview',
     })
     const facebookAnalyticsMiddleware = createFacebookAnalyticsMiddleWare(config.facebookPixelID, {
       AUTHENTICATE_USER: {
-        params: {'content_name': config.productName},
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        params: {content_name: config.productName},
         predicate: isActionRegister,
         type: 'CompleteRegistration',
       },
     })
     // Enable devTools middleware.
     const finalCreateStore = composeWithDevTools(applyMiddleware(
-      // ravenMiddleware needs to be first to correctly catch exception down the line.
-      ravenMiddleware,
+      // sentryMiddleware needs to be first to correctly catch exception down the line.
+      sentryMiddleware,
       thunk,
       amplitudeMiddleware,
       googleAnalyticsMiddleware,
@@ -434,7 +336,7 @@ class App extends React.Component<{}, AppState> {
         asyncState,
         router: connectRouter(history),
         user: userReducer,
-      })
+      }),
     )
     if (module.hot) {
       module.hot.accept(['store/user_reducer', 'store/app_reducer'], (): void => {

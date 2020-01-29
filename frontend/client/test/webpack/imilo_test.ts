@@ -1,19 +1,20 @@
 import {expect} from 'chai'
-import {convertImiloPropsToBobProps, getNestedValue} from '../../src/import-from-imilo/imilo'
+import {convertImiloPropsToBobProps,
+  createNestedValueGetter} from '../../src/import-from-imilo/imilo'
 
 
-describe('getNestedValue', (): void => {
+describe('createNestedValueGetter', (): void => {
   const props = {a: {b: {c: 1}}}
   it('should get a nested value', (): void => {
-    expect(getNestedValue(props, ['a', 'b', 'c'])).to.equal(1)
+    expect(createNestedValueGetter(props)(['a', 'b', 'c'])).to.equal(1)
   })
 
   it('should not fail if a branch is missing', (): void => {
-    expect(getNestedValue(props, ['a', 'd'])).to.equal(undefined)
+    expect(createNestedValueGetter(props)(['a', 'd'])).to.equal(undefined)
   })
 
   it('should use the second parameter as a default value', (): void => {
-    expect(getNestedValue(props, ['a', 'd'], 2)).to.equal(2)
+    expect(createNestedValueGetter(props)(['a', 'd'], 2)).to.equal(2)
   })
 })
 
@@ -21,7 +22,7 @@ describe('getNestedValue', (): void => {
 describe('convertImiloPropsToBobProps', (): void => {
   it('should convert properly if all props are present', (): void => {
     const imiloProps = {
-      'Coordonnées': {
+      Coordonnées: {
         currentAddress: {
           fullCity: {
             codeCommune: '32208',
@@ -30,11 +31,11 @@ describe('convertImiloPropsToBobProps', (): void => {
           zipCode: '32700',
         },
       },
-      'Cursus': [
+      Cursus: [
         {fullAcademicLevel: 'Bac', grade: 2},
         {fullAcademicLevel: 'BTS', grade: 9},
       ],
-      'Identité': {
+      Identité: {
         childrenNumber: 2,
         identity: {
           birthDate: '15/05/1982',
@@ -46,12 +47,12 @@ describe('convertImiloPropsToBobProps', (): void => {
           situation: 4,
         },
       },
-      'Mobilité': {
+      Mobilité: {
         drivingLicenses: [{type: 8}],
         fullRadiusMobility: 'département',
         radiusMobility: 2,
       },
-      'Situations': [{
+      Situations: [{
         fullPracticedJob: {
           code: 'G1101',
           description: 'Accueil touristique',
@@ -68,7 +69,7 @@ describe('convertImiloPropsToBobProps', (): void => {
     expect(new Date(createdAt!)).to.be.at.most(after)
     // @ts-ignore
     delete bobProps.projects[0].createdAt
-    expect(bobProps).to.deep.eql({
+    expect(bobProps).to.eql({
       profile: {
         email: 'test@example.com',
         familySituation: 'SINGLE_PARENT_SITUATION',

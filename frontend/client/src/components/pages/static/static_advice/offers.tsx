@@ -1,5 +1,7 @@
 import React from 'react'
 
+import {prepareT} from 'store/i18n'
+
 import picto from 'images/advices/picto-find-a-jobboard.svg'
 
 import {TestimonialCard} from 'components/testimonials'
@@ -11,7 +13,8 @@ import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCar
 const adviceId = 'offres'
 
 
-const name = "Plus d'offres d'emploi"
+// i18next-extract-mark-ns-next-line staticAdviceTitle
+const name = prepareT("Plus d'offres d'emploi")
 
 const TESTIMONIALS = [
   <TestimonialCard

@@ -6,31 +6,26 @@ This file contains the JSON API that will provide the
 MyGamePlan web application with data.
 """
 
-import collections
 import datetime
-import itertools
 import logging
 import os
 import random
-import re
 import time
 import typing
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 from urllib import parse
 import uuid
 
-from bson import objectid
 import flask
 from google.protobuf import json_format
 from google.protobuf import message
-from google.protobuf import timestamp_pb2
-import requests
 import sentry_sdk
 from sentry_sdk.integrations import flask as sentry_flask
 from sentry_sdk.integrations import logging as sentry_logging
 import werkzeug
 from werkzeug.middleware import proxy_fix
 
+from bob_emploi.frontend.server import ali
 from bob_emploi.frontend.server import action
 from bob_emploi.frontend.server import advisor
 from bob_emploi.frontend.server import auth
@@ -42,6 +37,8 @@ from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server import strategist
+from bob_emploi.frontend.server import user
+from bob_emploi.frontend.server.asynchronous.mail import focus
 from bob_emploi.frontend.api import action_pb2
 from bob_emploi.frontend.api import association_pb2
 from bob_emploi.frontend.api import auth_pb2
@@ -56,12 +53,6 @@ from bob_emploi.frontend.api import strategy_pb2
 from bob_emploi.frontend.api import use_case_pb2
 from bob_emploi.frontend.api import user_pb2
 
-if typing.TYPE_CHECKING:
-    from typing_extensions import Literal
-
-# TODO(pascal): Split in submodules and remove the exception below.
-# pylint: disable=too-many-lines
-
 app = flask.Flask(__name__)  # pylint: disable=invalid-name
 # Get original host and scheme used before proxies (load balancer, nginx, etc).
 app.wsgi_app = proxy_fix.ProxyFix(app.wsgi_app)  # type: ignore
@@ -70,39 +61,22 @@ RANDOMIZER = random.Random()
 
 _FlaskResponse = Union[str, werkzeug.Response]
 
+# TODO(pascal): Split this module then remove next line.
+# pylint: disable=too-many-lines
+
 
 # TODO(marielaure): Clean up the unverified_data_zones table in _DB.
 _DB, _USER_DB, _EVAL_DB = mongo.get_connections_from_env()
-
-_SERVER_TAG = {'_server': os.getenv('SERVER_VERSION', 'dev')}
-
-_TEST_USER_REGEXP = re.compile(os.getenv('TEST_USER_REGEXP', r'@(bayes.org|example.com)$'))
-_ALPHA_USER_REGEXP = re.compile(os.getenv('ALPHA_USER_REGEXP', r'@example.com$'))
-_POLE_EMPLOI_USER_REGEXP = \
-    re.compile(os.getenv('POLE_EMPLOI_USER_REGEXP', r'@pole-emploi.fr$'))
-_EXCLUDE_FROM_ANALYTICS_REGEXP = re.compile(
-    os.getenv('EXCLUDE_FROM_ANALYTICS_REGEXP', r'@(bayes.org|bayesimpact.org|example.com)$'))
-
-# Email regex from http://emailregex.com/
-_EMAIL_REGEX = re.compile(r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)')
-
-# For testing on old users, we sometimes want to enable advisor for newly
-# created users.
-# TODO(pascal): Remove that when we stop testing about users that do not have
-# the advisor feature.
-ADVISOR_DISABLED_FOR_TESTING = False
-
-# A Slack WebHook URL to send final reports to. Defined in the Incoming
-# WebHooks of https://bayesimpact.slack.com/apps/manage/custom-integrations
-_SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
-
-_Tick = collections.namedtuple('Tick', ['name', 'time'])
 
 # Log timing of requests that take too long to be treated.
 _LONG_REQUEST_DURATION_SECONDS = 5
 
 # How long a support ticket should be kept open.
 _SUPPORT_TICKET_LIFE_DAYS = 7
+
+# Time of the day (as a number of hours since midnight) at which focus emails are sent.
+# Only used for simulation, the actual timing is handled by scheduled tasks.
+_FOCUS_EMAIL_SENDING_TIME = 9
 
 
 @app.errorhandler(auth.ExpiredTokenException)
@@ -127,7 +101,7 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
                 auth.check_token(user_data.user_id, auth_token, role='auth')
             except ValueError:
                 flask.abort(403, 'Wrong authentication token.')
-        filter_user = {'_id': _safe_object_id(user_data.user_id)}
+        filter_user = {'_id': user.safe_object_id(user_data.user_id)}
     elif user_data.profile.email:
         try:
             auth.check_token('', auth_token, role='admin')
@@ -141,7 +115,7 @@ def delete_user(user_data: user_pb2.User) -> user_pb2.UserId:
     if not filter_user:
         return user_pb2.UserId()
 
-    user_proto = _get_user_data(str(filter_user['_id']))
+    user_proto = user.get_user_data(str(filter_user['_id']))
     if not auth.delete_user(user_proto, _USER_DB):
         flask.abort(500, 'Erreur serveur, impossible de supprimer le compte.')
 
@@ -163,7 +137,7 @@ def update_user_settings(profile: user_pb2.UserProfile, user_id: str) -> user_pb
         # by the focus email script.
         updater['$unset'] = {'sendCoachingEmailAfter': 1}
 
-    _USER_DB.user.update_one({'_id': _safe_object_id(user_id)}, updater)
+    _USER_DB.user.update_one({'_id': user.safe_object_id(user_id)}, updater)
 
     return user_pb2.UserId(user_id=user_id)
 
@@ -177,7 +151,7 @@ def get_user(user_id: str) -> user_pb2.User:
     Returns: The data for a user identified by user_id.
     """
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     user_proto.user_id = user_id
     return user_proto
 
@@ -185,7 +159,7 @@ def get_user(user_id: str) -> user_pb2.User:
 @app.route('/api/user', methods=['POST'])
 @proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
 @auth.require_user(lambda user_data: typing.cast(user_pb2.User, user_data).user_id)
-def user(user_data: user_pb2.User) -> user_pb2.User:
+def save_user(user_data: user_pb2.User) -> user_pb2.User:
     """Save the user data sent by client.
 
     Input:
@@ -195,7 +169,7 @@ def user(user_data: user_pb2.User) -> user_pb2.User:
 
     if not user_data.user_id:
         flask.abort(400, 'Impossible de sauver les données utilisateur sans ID.')
-    return _save_user(user_data, is_new_user=False)
+    return user.save_user(user_data, is_new_user=False)
 
 
 @app.route('/api/user/<user_id>/project/<project_id>', methods=['POST'])
@@ -210,7 +184,7 @@ def save_project(
     Returns: The project data as it was saved.
     """
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     if not project_data.project_id:
         project_data.project_id = project_id
     project_index = next((
@@ -220,7 +194,7 @@ def save_project(
         flask.abort(404, "Le projet n'existe pas.")
     # TODO(cyrille): Add a route for resetting
     user_proto.projects[project_index].MergeFrom(project_data)
-    return _get_project_data(_save_user(user_proto, is_new_user=False), project_id)
+    return _get_project_data(user.save_user(user_proto, is_new_user=False), project_id)
 
 
 @app.route('/api/user/<user_id>/project/<project_id>/advice/<advice_id>', methods=['POST'])
@@ -235,7 +209,7 @@ def update_advice(advice_data: project_pb2.Advice, user_id: str, project_id: str
     Returns: The advice data as it was saved.
     """
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     project_index = next((
         index for index, p in enumerate(user_proto.projects)
         if p.project_id == project_id), None)
@@ -248,7 +222,7 @@ def update_advice(advice_data: project_pb2.Advice, user_id: str, project_id: str
         flask.abort(404, "Le conseil n'existe pas pour ce projet.")
 
     user_proto.projects[project_index].advices[advice_index].MergeFrom(advice_data)
-    updated_user = _save_user(user_proto, is_new_user=False)
+    updated_user = user.save_user(user_proto, is_new_user=False)
     updated_project = _get_project_data(updated_user, project_id)
     return _get_advice_data(updated_project, advice_id)
 
@@ -261,7 +235,7 @@ def update_strategy(
         user_id: str, project_id: str, strategy_id: str) -> project_pb2.WorkingStrategy:
     """Save the strategy information sent by the client."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     project_index = next((
         index for index, p in enumerate(user_proto.projects)
         if p.project_id == project_id), None)
@@ -279,9 +253,30 @@ def update_strategy(
     strategy.MergeFrom(strategy_data)
     strategy.last_modified_at.GetCurrentTime()
     strategy.last_modified_at.nanos = 0
-    updated_user = _save_user(user_proto, is_new_user=False)
+    updated_user = user.save_user(user_proto, is_new_user=False)
     updated_project = _get_project_data(updated_user, project_id)
     return _get_strategy_data(updated_project, strategy_id)
+
+
+@app.route('/api/user/<user_id>/project/<project_id>/strategy/<strategy_id>', methods=['DELETE'])
+@auth.require_user(lambda user_id, project_id, strategy_id: typing.cast(str, user_id))
+def stop_strategy(user_id: str, project_id: str, strategy_id: str) -> str:
+    """Stop a strategy."""
+
+    user_proto = user.get_user_data(user_id)
+    project_index = next((
+        index for index, p in enumerate(user_proto.projects)
+        if p.project_id == project_id), None)
+    if project_index is None:
+        flask.abort(404, "Le projet n'existe pas.")
+    strategy_index = next((
+        i for i, a in enumerate(user_proto.projects[project_index].opened_strategies)
+        if a.strategy_id == strategy_id), None)
+    if strategy_index is None:
+        flask.abort(404, "La stratégie n'existe pas.")
+    del user_proto.projects[project_index].opened_strategies[strategy_index]
+    user.save_user(user_proto, is_new_user=False)
+    return 'OK'
 
 
 def _clear_replaceable_fields(
@@ -326,7 +321,7 @@ def update_and_quick_diagnose(
         -> diagnostic_pb2.QuickDiagnostic:
     """Update a user project and quickly diagnose it."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     project_proto: Optional[project_pb2.Project]
     if project_id:
         project_proto = _get_project_data(user_proto, project_id)
@@ -350,7 +345,7 @@ def update_and_quick_diagnose(
             request.field_mask.MergeMessage(request.user, user_proto)
         else:
             user_proto.MergeFrom(request.user)
-        user_proto = _save_user(user_proto, is_new_user=False)
+        user_proto = user.save_user(user_proto, is_new_user=False)
 
         if merged_project:
             request.user.projects.extend([merged_project])
@@ -367,7 +362,7 @@ def update_and_quick_diagnose(
 def migrate_to_advisor(user_id: str) -> user_pb2.User:
     """Migrate a user of the Mashup to use the Advisor."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     has_multiple_projects = len(user_proto.projects) > 1
     was_using_mashup = \
         user_proto.features_enabled.advisor == user_pb2.CONTROL or has_multiple_projects
@@ -376,11 +371,11 @@ def migrate_to_advisor(user_id: str) -> user_pb2.User:
     user_proto.features_enabled.ClearField('advisor_email')
     user_proto.features_enabled.switched_from_mashup_to_advisor = was_using_mashup
     _USER_DB.user.update_one(
-        {'_id': _safe_object_id(user_id)}, {'$set': {
+        {'_id': user.safe_object_id(user_id)}, {'$set': {
             'featuresEnabled': json_format.MessageToDict(user_proto.features_enabled)}},
         upsert=False)
 
-    return _save_user(user_proto, is_new_user=False)
+    return user.save_user(user_proto, is_new_user=False)
 
 
 @app.route('/api/project/diagnose', methods=['POST'])
@@ -425,162 +420,14 @@ def compute_advices_for_project(user_proto: user_pb2.User) -> project_pb2.Advice
 def use_app(user_id: str) -> user_pb2.User:
     """Update the user's data to mark that they have just used the app."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     start_of_day = now.get().replace(hour=0, minute=0, second=0, microsecond=0)
     if user_proto.requested_by_user_at_date.ToDatetime() >= start_of_day:
         return user_proto
     user_proto.requested_by_user_at_date.FromDatetime(now.get())
     # No need to pollute our DB with super precise timestamps.
     user_proto.requested_by_user_at_date.nanos = 0
-    return _save_user(user_proto, is_new_user=False)
-
-
-def _save_project(
-        project: project_pb2.Project,
-        previous_project: project_pb2.Project,
-        user_data: user_pb2.User) -> project_pb2.Project:
-    # TODO(cyrille): Check for completeness here, rather than in client.
-    if project.is_incomplete:
-        return project
-    _tick('Process project start')
-    rome_id = project.target_job.job_group.rome_id
-    departement_id = project.city.departement_id
-    if not project.project_id:
-        # Add ID, timestamp and stats to new projects
-        project.project_id = _create_new_project_id(user_data)
-        project.created_at.FromDatetime(now.get())
-        project.created_at.nanos = 0
-
-    if not project.WhichOneof('job_search_length') and project.job_search_length_months:
-        if project.job_search_length_months < 0:
-            project.job_search_has_not_started = True
-        else:
-            job_search_length_days = 30.5 * project.job_search_length_months
-            job_search_length_duration = datetime.timedelta(days=job_search_length_days)
-            project.job_search_started_at.FromDatetime(
-                project.created_at.ToDatetime() - job_search_length_duration)
-            project.job_search_started_at.nanos = 0
-
-    _tick('Populate local stats')
-    if previous_project.city.departement_id != departement_id or \
-            previous_project.target_job.job_group.rome_id != rome_id:
-        project.ClearField('local_stats')
-    if not project.HasField('local_stats'):
-        project.local_stats.CopyFrom(jobs.get_local_stats(_DB, departement_id, rome_id))
-
-    _tick('Diagnostic')
-    diagnostic.maybe_diagnose(user_data, project, _DB)
-
-    _tick('Advisor')
-    advisor.maybe_advise(
-        user_data, project, _DB, parse.urljoin(flask.request.base_url, '/')[:-1])
-
-    _tick('Strategies')
-    strategist.maybe_strategize(user_data, project, _DB)
-
-    _tick('New feedback')
-    if project.feedback.text and not previous_project.feedback.text:
-        stars = ':star:' * project.feedback.score
-        user_url = parse.urljoin(
-            flask.request.base_url, f'/eval?userId={user_data.user_id}')
-        feedback = '\n> '.join(project.feedback.text.split('\n'))
-        slack_text = f'[{stars}] <{user_url}|{user_data.user_id}>\n> {feedback}'
-        _give_feedback(
-            feedback_pb2.Feedback(
-                user_id=str(user_data.user_id),
-                project_id=str(project.project_id),
-                feedback=project.feedback.text,
-                source=feedback_pb2.PROJECT_FEEDBACK,
-                score=project.feedback.score),
-            slack_text=slack_text)
-
-    _tick('Process project end')
-    return project
-
-
-def _save_user(user_data: user_pb2.User, is_new_user: bool) -> user_pb2.User:
-    _tick('Save user start')
-
-    if is_new_user:
-        previous_user_data = user_data
-    else:
-        _tick('Load old user data')
-        previous_user_data = _get_user_data(user_data.user_id)
-        if user_data.revision and previous_user_data.revision > user_data.revision:
-            # Do not overwrite newer data that was saved already: just return it.
-            return previous_user_data
-
-    if not previous_user_data.registered_at.seconds:
-        user_data.registered_at.FromDatetime(now.get())
-        # No need to pollute our DB with super precise timestamps.
-        user_data.registered_at.nanos = 0
-        # Disable Advisor for new users in tests.
-        if ADVISOR_DISABLED_FOR_TESTING:
-            user_data.features_enabled.advisor = user_pb2.CONTROL
-            user_data.features_enabled.advisor_email = user_pb2.CONTROL
-    elif not _is_test_user(previous_user_data):
-        user_data.registered_at.CopyFrom(previous_user_data.registered_at)
-        user_data.features_enabled.advisor = previous_user_data.features_enabled.advisor
-        user_data.features_enabled.strat_two = previous_user_data.features_enabled.strat_two
-
-    _populate_feature_flags(user_data)
-
-    for project in user_data.projects:
-        previous_project = next(
-            (p for p in previous_user_data.projects if p.project_id == project.project_id),
-            project_pb2.Project())
-        _save_project(project, previous_project, user_data)
-
-    if user_data.profile.coaching_email_frequency != \
-            previous_user_data.profile.coaching_email_frequency:
-        # Invalidate the send_coaching_email_after field: it will be recomputed
-        # by the focus email script.
-        user_data.ClearField('send_coaching_email_after')
-
-    # Update hashed_email field if necessary, to make sure it's consistent with profile.email. This
-    # must be done for all users, since (say) a Google authenticated user may try to connect with
-    # password, so its email hash must be indexed.
-    if user_data.profile.email:
-        user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
-
-    if not is_new_user:
-        _assert_no_credentials_change(previous_user_data, user_data)
-        _copy_unmodifiable_fields(previous_user_data, user_data)
-        _populate_feature_flags(user_data)
-
-        if user_data.profile.email and not previous_user_data.profile.email:
-            base_url = parse.urljoin(flask.request.base_url, '/')[:-1]
-            advisor.maybe_send_late_activation_emails(user_data, _DB, base_url)
-
-    user_data.revision += 1
-
-    _tick('Save user')
-    _save_low_level(user_data, is_new_user=is_new_user)
-    _tick('Return user proto')
-
-    return user_data
-
-
-def _save_low_level(user_data: user_pb2.User, is_new_user: bool = False) -> user_pb2.User:
-    user_dict = json_format.MessageToDict(user_data)
-    user_dict.update(_SERVER_TAG)
-    user_dict.pop('userId', None)
-    if is_new_user:
-        result = _USER_DB.user.insert_one(user_dict)
-        user_data.user_id = str(result.inserted_id)
-    else:
-        _USER_DB.user.replace_one({'_id': _safe_object_id(user_data.user_id)}, user_dict)
-    return user_data
-
-
-def _create_new_project_id(user_data: user_pb2.User) -> str:
-    existing_ids = set(p.project_id for p in user_data.projects) |\
-        set(p.project_id for p in user_data.deleted_projects)
-    for id_candidate in itertools.count():
-        id_string = f'{id_candidate:x}'
-        if id_string not in existing_ids:
-            return id_string
-    raise ValueError('Should never happen as itertools.count() does not finish')  # pragma: no-cover
+    return user.save_user(user_proto, is_new_user=False)
 
 
 _SHOW_UNVERIFIED_DATA_USERS: Set[str] = set()
@@ -597,84 +444,6 @@ def _validate_city(city: geo_pb2.FrenchCity) -> Optional[geo_pb2.FrenchCity]:
     if not city.postcodes:
         return None
     return city
-
-
-def _copy_unmodifiable_fields(previous_user_data: user_pb2.User, user_data: user_pb2.User) -> None:
-    """Copy unmodifiable fields.
-
-    Some fields cannot be changed by the API: we only copy over the fields
-    from the previous state.
-    """
-
-    if _is_test_user(user_data):
-        # Test users can do whatever they want.
-        return
-    for field in ('features_enabled', 'last_email_sent_at'):
-        typed_field = typing.cast('Literal["features_enabled", "last_email_sent_at"]', field)
-        if previous_user_data.HasField(typed_field):
-            getattr(user_data, typed_field).CopyFrom(getattr(previous_user_data, typed_field))
-        else:
-            user_data.ClearField(typed_field)
-
-
-def _assert_no_credentials_change(previous: user_pb2.User, new: user_pb2.User) -> None:
-    if previous.facebook_id != new.facebook_id:
-        flask.abort(403, "Impossible de modifier l'identifiant Facebook.")
-    if previous.google_id != new.google_id:
-        flask.abort(403, "Impossible de modifier l'identifiant Google.")
-    if previous.profile.email == new.profile.email:
-        return
-    if (new.facebook_id and not previous.profile.email) or new.google_id:
-        # Email address can be changed for Google SSO users and can be set when empty for FB users.
-        if not _EMAIL_REGEX.match(new.profile.email):
-            flask.abort(403, 'Adresse email invalide.')
-        email_taken = bool(_USER_DB.user.find(
-            {'hashedEmail': auth.hash_user_email(new.profile.email)}, {'_id': 1}).limit(1).count())
-        if email_taken:
-            flask.abort(403, "L'utilisateur existe mais utilise un autre moyen de connexion.")
-        return
-    flask.abort(403, "Impossible de modifier l'adresse email.")
-
-
-def _safe_object_id(_id: str) -> objectid.ObjectId:
-    try:
-        return objectid.ObjectId(_id)
-    except objectid.InvalidId:
-        # Switch to raising an error if you move this function in a lib.
-        flask.abort(
-            400, f'L\'identifiant "{_id}" n\'est pas un identifiant MongoDB valide.')
-
-
-def _get_user_data(user_id: str) -> user_pb2.User:
-    """Load user data from DB."""
-
-    user_dict = _USER_DB.user.find_one({'_id': _safe_object_id(user_id)})
-    user_proto = proto.create_from_mongo(user_dict, user_pb2.User, 'user_id', always_create=False)
-    if not user_proto or user_proto.HasField('deleted_at'):
-        # Switch to raising an error if you move this function in a lib.
-        flask.abort(404, f'Utilisateur "{user_id}" inconnu.')
-
-    _populate_feature_flags(user_proto)
-
-    # TODO(cyrille): Remove this once we've generated observations for old users.
-    for project in user_proto.projects:
-        if not project.diagnostic.sub_diagnostics:
-            continue
-        scoring_project = scoring.ScoringProject(
-            project, user_proto.profile, user_proto.features_enabled, _DB)
-        for sub_diagnostic in project.diagnostic.sub_diagnostics:
-            if not sub_diagnostic.observations:
-                sub_diagnostic.observations.extend(
-                    diagnostic.compute_sub_diagnostic_observations(
-                        scoring_project, sub_diagnostic.topic))
-
-    # TODO(pascal): Remove the fields completely after this has been live for a
-    # week.
-    user_proto.profile.ClearField('city')
-    user_proto.profile.ClearField('latest_job')
-    user_proto.profile.ClearField('situation')
-
-    return user_proto
 
 
 def _get_project_data(user_proto: user_pb2.User, project_id: str) -> project_pb2.Project:
@@ -712,44 +481,6 @@ _ACTION_STOPPED_STATUSES = frozenset([
     action_pb2.ACTION_DECLINED])
 
 
-def _get_authenticator() -> auth.Authenticator:
-    authenticator = auth.Authenticator(
-        _USER_DB, _DB, lambda u: _save_user(u, is_new_user=True),
-        _update_returning_user,
-    )
-    return authenticator
-
-
-def _update_returning_user(
-        user_data: user_pb2.User, force_update: bool = False, has_set_email: bool = False) \
-        -> timestamp_pb2.Timestamp:
-    if user_data.HasField('requested_by_user_at_date'):
-        start_of_day = now.get().replace(hour=0, minute=0, second=0, microsecond=0)
-        if user_data.requested_by_user_at_date.ToDatetime() >= start_of_day:
-            if force_update:
-                _save_low_level(user_data)
-            return user_data.requested_by_user_at_date
-        else:
-            last_connection = timestamp_pb2.Timestamp()
-            last_connection.CopyFrom(user_data.requested_by_user_at_date)
-    else:
-        last_connection = user_data.registered_at
-
-    if user_data.profile.email:
-        user_data.hashed_email = auth.hash_user_email(user_data.profile.email)
-
-    if has_set_email:
-        base_url = parse.urljoin(flask.request.base_url, '/')[:-1]
-        advisor.maybe_send_late_activation_emails(user_data, _DB, base_url)
-
-    user_data.requested_by_user_at_date.FromDatetime(now.get())
-    # No need to pollute our DB with super precise timestamps.
-    user_data.requested_by_user_at_date.nanos = 0
-    _save_low_level(user_data)
-
-    return last_connection
-
-
 # TODO: Split this into separate endpoints for registration and login.
 # Having both in the same endpoint makes refactoring the frontend more difficult.
 @app.route('/api/user/authenticate', methods=['POST'])
@@ -757,7 +488,7 @@ def _update_returning_user(
 def authenticate(auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
     """Authenticate a user."""
 
-    authenticator = _get_authenticator()
+    authenticator = user.get_authenticator()
     return authenticator.authenticate(auth_request)
 
 
@@ -766,7 +497,7 @@ def authenticate(auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
 def reset_password(auth_request: auth_pb2.AuthRequest) -> str:
     """Sends an email to user with a reset token so that they can reset their password."""
 
-    authenticator = _get_authenticator()
+    authenticator = user.get_authenticator()
     authenticator.send_reset_password_token(auth_request.email)
     return '{}'
 
@@ -814,13 +545,13 @@ def generate_auth_tokens(user_id: str) -> auth_pb2.AuthTokens:
     base_url = parse.urljoin(flask.request.base_url, '/')
     tokens.auth_url = f'{base_url}?userId={user_id}&authToken={tokens.auth}'
     tokens.employment_status_url = \
-        f'{base_url}/statut?token={tokens.employment_status}&user={user_id}'
-    tokens.nps_url = f'{base_url}/retours?token={tokens.nps}&user={user_id}'
-    tokens.settings_url = f'{base_url}/unsubscribe.html?user={user_id}&auth={tokens.settings}&' \
+        f'{base_url}statut/mise-a-jour?token={tokens.employment_status}&user={user_id}'
+    tokens.nps_url = f'{base_url}retours?token={tokens.nps}&user={user_id}'
+    tokens.settings_url = f'{base_url}unsubscribe.html?user={user_id}&auth={tokens.settings}&' \
         'coachingEmailFrequency=EMAIL_MAXIMUM'
-    tokens.unsubscribe_url = f'{base_url}/unsubscribe.html?user={user_id}&auth={tokens.unsubscribe}'
+    tokens.unsubscribe_url = f'{base_url}unsubscribe.html?user={user_id}&auth={tokens.unsubscribe}'
 
-    reset_token, email = _get_authenticator().create_reset_token(_safe_object_id(user_id))
+    reset_token, email = user.get_authenticator().create_reset_token(user.safe_object_id(user_id))
     if reset_token:
         tokens.reset = reset_token
         tokens.reset_url = f'{base_url}?email={email}&resetToken={reset_token}'
@@ -852,7 +583,7 @@ def _get_expanded_card_data(
         flask.abort(404, f'Le module "{advice_id}" n\'a pas de données supplémentaires')
 
     scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, _DB, now=now.get())
+        project, user_proto, _DB, now=now.get())
     return model.get_expanded_card_data(scoring_project)
 
 
@@ -863,7 +594,7 @@ def get_advice_expanded_card_data(user_id: str, project_id: str, advice_id: str)
         -> message.Message:
     """Retrieve expanded card data for an advice module for a project."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     return _get_expanded_card_data(user_proto, _get_project_data(user_proto, project_id), advice_id)
 
 
@@ -883,7 +614,7 @@ def compute_expanded_card_data(user_proto: user_pb2.User, advice_id: str) -> mes
 def advice_tips(user_id: str, project_id: str, advice_id: str) -> action_pb2.AdviceTips:
     """Get all available tips for a piece of advice."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     project = _get_project_data(user_proto, project_id)
     piece_of_advice = _get_advice_data(project, advice_id)
 
@@ -893,6 +624,40 @@ def advice_tips(user_id: str, project_id: str, advice_id: str) -> action_pb2.Adv
     for tip_template in all_tips:
         action.instantiate(response.tips.add(), user_proto, project, tip_template, _DB)
     return response
+
+
+@app.route('/api/emails/simulate', methods=['POST'])
+@proto.flask_api(in_type=user_pb2.User, out_type=user_pb2.User)
+def simulate_focus_emails(user_proto: user_pb2.User) -> user_pb2.User:
+    """Simulate sending focus emails."""
+
+    instant = now.get()
+
+    # Complete the user's proto with mandatory fields.
+    if not user_proto.HasField('registered_at'):
+        user_proto.registered_at.FromDatetime(instant)
+    if not user_proto.profile.coaching_email_frequency:
+        user_proto.profile.coaching_email_frequency = user_pb2.EMAIL_MAXIMUM
+    if not user_proto.projects:
+        user_proto.projects.add()
+
+    for attempt in range(200):
+        campaign_id = focus.send_focus_email_to_user(
+            'ghost', user_proto, database=_DB, users_database=_USER_DB, instant=instant)
+        if attempt and not campaign_id:
+            # No more email to send.
+            # Note that the first call might not return a campaign ID as we do not send focus emails
+            # right away.
+            break
+        instant = user_proto.send_coaching_email_after.ToDatetime()
+        if instant.hour > _FOCUS_EMAIL_SENDING_TIME or \
+                instant.hour == _FOCUS_EMAIL_SENDING_TIME and instant.minute:
+            instant += datetime.timedelta(days=1)
+        instant = instant.replace(hour=9, minute=0)
+
+    output = user_pb2.User()
+    output.emails_sent.extend(user_proto.emails_sent)
+    return output
 
 
 @app.route('/api/cache/clear', methods=['GET'])
@@ -956,14 +721,8 @@ def give_feedback(feedback: feedback_pb2.Feedback) -> str:
             auth.check_token(feedback.user_id, auth_token, role='auth')
         except ValueError:
             flask.abort(403, 'Unauthorized token')
-    _give_feedback(feedback, slack_text=feedback.feedback)
+    user.give_feedback(feedback, slack_text=feedback.feedback)
     return ''
-
-
-def _give_feedback(feedback: feedback_pb2.Feedback, slack_text: str) -> None:
-    if slack_text and _SLACK_WEBHOOK_URL:
-        requests.post(_SLACK_WEBHOOK_URL, json={'text': f':mega: {slack_text}'})
-    _USER_DB.feedbacks.insert_one(json_format.MessageToDict(feedback))
 
 
 # TODO(cyrille): Consider using the same ticket for several requests with the same ID.
@@ -977,7 +736,7 @@ def create_support_ticket(user_id: str, ticket_id: str) -> user_pb2.SupportTicke
     ticket = user_pb2.SupportTicket(ticket_id=ticket_id or f'support:{uuid.uuid4().hex}')
     ticket.delete_after.FromDatetime(now.get() + datetime.timedelta(days=_SUPPORT_TICKET_LIFE_DAYS))
     _USER_DB.user.update_one(
-        {'_id': _safe_object_id(user_id)},
+        {'_id': user.safe_object_id(user_id)},
         {'$push': {'supportTickets': json_format.MessageToDict(ticket)}})
     return ticket
 
@@ -990,27 +749,6 @@ def health_check() -> str:
     """
 
     return 'Up and running'
-
-
-def _populate_feature_flags(user_proto: user_pb2.User) -> None:
-    """Update the feature flags."""
-
-    user_proto.features_enabled.ClearField('action_done_button_discreet')
-    user_proto.features_enabled.ClearField('action_done_button_control')
-
-    if _ALPHA_USER_REGEXP.search(user_proto.profile.email):
-        user_proto.features_enabled.alpha = True
-    if _POLE_EMPLOI_USER_REGEXP.search(user_proto.profile.email):
-        user_proto.features_enabled.pole_emploi = True
-    if _EXCLUDE_FROM_ANALYTICS_REGEXP.search(user_proto.profile.email):
-        user_proto.features_enabled.exclude_from_analytics = True
-    if user_proto.features_enabled.strat_two == user_pb2.CONTROL:
-        # Keep control users from strat_two.
-        return
-    if any(p.strategies for p in user_proto.projects):
-        user_proto.features_enabled.strat_two = user_pb2.ACTIVE
-    else:
-        user_proto.features_enabled.ClearField('strat_two')
 
 
 @app.route('/api/user/nps-survey-response', methods=['POST'])
@@ -1026,13 +764,13 @@ def set_nps_survey_response(nps_survey_response: user_pb2.NPSSurveyResponse) -> 
     if not user_dict:
         flask.abort(404, f'Utilisateur "{nps_survey_response.email}" inconnu.')
     user_id = user_dict['_id']
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     # We use MergeFrom, as 'curated_useful_advice_ids' will likely be set in a second call.
     user_proto.net_promoter_score_survey_response.MergeFrom(nps_survey_response)
     # No need to keep the email field in the survey response as it is the same as in profile.email.
     user_proto.net_promoter_score_survey_response.ClearField('email')
     _USER_DB.user.update_one(
-        {'_id': _safe_object_id(user_id)},
+        {'_id': user.safe_object_id(user_id)},
         {'$set': {'netPromoterScoreSurveyResponse': json_format.MessageToDict(
             user_proto.net_promoter_score_survey_response
         )}},
@@ -1058,7 +796,7 @@ def set_nps_response(user_id: str) -> _FlaskResponse:
     user_to_update.net_promoter_score_survey_response.score = score
 
     _USER_DB.user.update_one(
-        {'_id': _safe_object_id(user_id)},
+        {'_id': user.safe_object_id(user_id)},
         {'$set': json_format.MessageToDict(user_to_update)},
         upsert=False)
 
@@ -1077,7 +815,7 @@ def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> 
     user_to_update.net_promoter_score_survey_response.general_feedback_comment = \
         set_nps_request.comment
 
-    user_id = _safe_object_id(set_nps_request.user_id)
+    user_id = user.safe_object_id(set_nps_request.user_id)
 
     if set_nps_request.comment:
         previous_user = _USER_DB.user.find_one(
@@ -1089,7 +827,7 @@ def set_nps_response_comment(set_nps_request: user_pb2.SetNPSCommentRequest) -> 
         user_url = parse.urljoin(
             flask.request.base_url, f'/eval?userId={set_nps_request.user_id}')
         comment = '\n> '.join(set_nps_request.comment.split('\n'))
-        _give_feedback(
+        user.give_feedback(
             feedback_pb2.Feedback(
                 user_id=set_nps_request.user_id,
                 feedback=set_nps_request.comment,
@@ -1121,7 +859,7 @@ def _flatten_mongo_fields(root: Dict[str, Any], prefix: str = '') -> Dict[str, s
 def update_employment_status(new_status: user_pb2.EmploymentStatus, user_id: str) -> str:
     """Update user's last employment status."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     # Create another empty User message to update only the employment_status field.
     user_to_update = user_pb2.User()
     user_to_update.employment_status.extend(user_proto.employment_status[:])
@@ -1138,7 +876,7 @@ def update_employment_status(new_status: user_pb2.EmploymentStatus, user_id: str
     new_status.ClearField('created_at')
     recent_status.MergeFrom(new_status)
     _USER_DB.user.update_one(
-        {'_id': _safe_object_id(user_id)},
+        {'_id': user.safe_object_id(user_id)},
         {'$set': json_format.MessageToDict(user_to_update)},
         upsert=False)
 
@@ -1150,7 +888,7 @@ def update_employment_status(new_status: user_pb2.EmploymentStatus, user_id: str
 def get_employment_status(user_id: str) -> _FlaskResponse:
     """Save user's first click and redirect them to the full survey."""
 
-    user_proto = _get_user_data(user_id)
+    user_proto = user.get_user_data(user_id)
     # Create another empty User message to update only employment_status field.
     user_to_update = user_pb2.User()
     user_to_update.employment_status.extend(user_proto.employment_status[:])
@@ -1162,7 +900,7 @@ def get_employment_status(user_id: str) -> _FlaskResponse:
     except json_format.ParseError:
         flask.abort(422, 'Paramètres invalides.')
     _USER_DB.user.update_one(
-        {'_id': _safe_object_id(user_id)},
+        {'_id': user.safe_object_id(user_id)},
         {'$set': json_format.MessageToDict(user_to_update)},
         upsert=False)
 
@@ -1240,20 +978,13 @@ def compute_labor_stats(user_proto: user_pb2.User) -> use_case_pb2.LaborStatsDat
 
 
 app.register_blueprint(evaluation.app, url_prefix='/api/eval')
+app.register_blueprint(ali.app, url_prefix='/api/ali')
 
 
 @typing.cast(Callable[[Callable[[], None]], Callable[[], None]], app.before_request)
 def _before_request() -> None:
     flask.g.start = time.time()
     flask.g.ticks = []
-
-
-def _tick(tick_name: str) -> None:
-    flask.g.ticks.append(_Tick(tick_name, time.time()))
-
-
-def _is_test_user(user_proto: user_pb2.User) -> bool:
-    return bool(_TEST_USER_REGEXP.search(user_proto.profile.email))
 
 
 @typing.cast(
@@ -1279,7 +1010,7 @@ if os.getenv('SENTRY_DSN'):
     # Setup logging basic's config first so that we also get basic logging to STDERR.
     logging.basicConfig(level=logging.INFO)
     sentry_sdk.init(
-        dsn=os.getenv('SENTRY_DSN'), release=_SERVER_TAG['_server'],
+        dsn=os.getenv('SENTRY_DSN'), release=user.SERVER_TAG['_server'],
         integrations=[
             sentry_logging.LoggingIntegration(level=logging.INFO, event_level=logging.WARNING),
             sentry_flask.FlaskIntegration()])

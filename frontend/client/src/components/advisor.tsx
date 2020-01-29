@@ -1,22 +1,23 @@
+import * as Sentry from '@sentry/browser'
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React, {useEffect, useMemo, useState} from 'react'
-import Raven from 'raven-js'
-import {connect} from 'react-redux'
+import React, {Suspense, useEffect, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
+import {connect, useDispatch} from 'react-redux'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import {DispatchAllActions, RootState, adviceCardIsShown, exploreAdvice,
   seeAdvice} from 'store/actions'
 import {getAdviceTitle} from 'store/advice'
-import {YouChooser, genderize, getAdviceModules, upperFirstLetter} from 'store/french'
-import {youForUser} from 'store/user'
+import {YouChooser, genderize, getAdviceModule, upperFirstLetter} from 'store/french'
+import {useUserYou} from 'store/user'
 
 import constructionImage from 'images/construction-picto.svg'
 import defaultPicto from 'images/default-picto.svg'
 import {AlphaTag} from 'components/pages/connected/project/advice'
 import {RocketChain} from 'components/rocket_chain'
 import {isMobileVersion} from 'components/mobile'
-import {StringJoiner} from 'components/theme'
+import {CircularProgress, StringJoiner} from 'components/theme'
 import {TipsList} from 'components/tips'
 
 import {CardProps, WithAdvice} from './advisor/base'
@@ -43,6 +44,7 @@ import LessApplications from './advisor/less_applications'
 import LifeBalance from './advisor/life_balance'
 import LongTermMom from './advisor/long_term_mom'
 import MotivationEmail from './advisor/motivation_email'
+import Needs from './advisor/needs'
 import NetworkApplication from './advisor/network_bad'
 import NetworkApplicationMedium from './advisor/network_medium'
 import NetworkApplicationGood from './advisor/network_good'
@@ -93,6 +95,7 @@ export const ADVICE_MODULES: {[moduleId: string]: Module} = {
   'life-balance': LifeBalance,
   'long-term-mom': LongTermMom,
   'motivation-email': MotivationEmail,
+  'needs-for-handicap': Needs,
   'network-application': NetworkApplication,
   'network-application-good': NetworkApplicationGood,
   'network-application-medium': NetworkApplicationMedium,
@@ -116,28 +119,28 @@ export const ADVICE_MODULES: {[moduleId: string]: Module} = {
 const missingPicto = new Set()
 
 
-function getAdvicePicto(adviceId): string {
+function getAdvicePicto(adviceId: string): string {
   const module = ADVICE_MODULES[adviceId] || null
-  if (module && !module.Picto && Raven.captureMessage && !missingPicto.has(adviceId)) {
-    Raven.captureMessage(`Picto is missing for "${adviceId}".`)
+  if (module && !module.Picto && Sentry.captureMessage && !missingPicto.has(adviceId)) {
+    Sentry.captureMessage(`Picto is missing for "${adviceId}".`)
     missingPicto.add(adviceId)
   }
-  return module && module.Picto || defaultPicto
+  return module?.Picto || defaultPicto
 }
 
 
 interface AdviceCardProps extends WithAdvice {
   areTipsShown?: boolean
-  dispatch: DispatchAllActions
   onShow?: () => void
   style?: React.CSSProperties
-  userYou: YouChooser
 }
 
 
 const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): React.ReactElement => {
-  const {advice, areTipsShown, dispatch, onShow, project, style, userYou} = props
+  const {advice, areTipsShown, onShow, project, style} = props
   const [hasBeenSeen, setHasBeenSeen] = useState(false)
+  const userYou = useUserYou()
+  const dispatch = useDispatch()
   useEffect((): void => {
     dispatch(adviceCardIsShown(project, advice))
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -148,7 +151,7 @@ const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): Reac
     }
     setHasBeenSeen(true)
     dispatch(seeAdvice(project, advice))
-    onShow && onShow()
+    onShow?.()
   }, [advice, dispatch, project, setHasBeenSeen, onShow])
   return <div style={style} id={advice.adviceId}>
     <VisibilitySensor
@@ -163,18 +166,15 @@ const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): Reac
     </VisibilitySensor>
   </div>
 }
-const AdviceCard = connect(({user}: RootState): {userYou: YouChooser} =>
-  ({userYou: youForUser(user)}))(React.memo(AdviceCardBase))
+const AdviceCard = React.memo(AdviceCardBase)
 AdviceCardBase.propTypes = {
   advice: PropTypes.shape({
     adviceId: PropTypes.string.isRequired,
   }).isRequired,
   areTipsShown: PropTypes.bool,
-  dispatch: PropTypes.func.isRequired,
   onShow: PropTypes.func,
   project: PropTypes.object.isRequired,
   style: PropTypes.object,
-  userYou: PropTypes.func.isRequired,
 }
 
 
@@ -185,17 +185,13 @@ export interface ExplorerAdviceCardConfig extends ExpandedAdviceCardConfig {
 }
 
 
-interface ExplorerAdviceCardProps extends ExplorerAdviceCardConfig {
-  userYou: YouChooser
-}
-
-
-const ExplorerLeftPanelBase: React.FC<ExplorerAdviceCardProps> = (props: ExplorerAdviceCardProps):
+const ExplorerLeftPanelBase: React.FC<ExplorerAdviceCardConfig> = (props: ExplorerAdviceCardConfig):
 React.ReactElement => {
-  const {advice, howToSeeMore, userYou} = props
+  const {advice, howToSeeMore} = props
   const {howToSeeMore: omittedHowToSeeMore, style, ...otherProps} = props
-  const title = getAdviceTitle(advice, userYou)
-  const {explanations: staticExplanations = []} = getAdviceModules(userYou)[advice.adviceId] || {}
+  const {t} = useTranslation()
+  const title = getAdviceTitle(advice, t)
+  const {explanations: staticExplanations = []} = getAdviceModule(advice.adviceId, t) || {}
   const allExplanations = (staticExplanations || []).concat(advice.explanations || [])
   const containerStyle: React.CSSProperties = {
     background: '#fff',
@@ -265,7 +261,7 @@ React.ReactElement => {
         Parce que&nbsp;:
       </span>
       <StringJoiner separator={explanationSeparator} lastSeparator={explanationSeparator}>
-        {allExplanations.map((explanation, index): React.ReactNode => <span
+        {allExplanations.map((explanation, index): React.ReactElement => <span
           style={explanationStyle} key={`explanation-${index}`}>
           {explanation}
         </span>)}
@@ -290,11 +286,11 @@ React.ReactElement => {
 }
 const ExplorerLeftPanel = React.memo(ExplorerLeftPanelBase)
 
-const ExplorerRightPanelBase: React.FC<ExplorerAdviceCardProps> = (props: ExplorerAdviceCardProps):
-React.ReactElement|null => {
-  const {advice: {adviceId, numStars}, style, userYou} = props
-  const {userGainCallout = undefined, userGainDetails = undefined} =
-    getAdviceModules(userYou)[adviceId] || {}
+const ExplorerRightPanelBase: React.FC<ExplorerAdviceCardConfig> =
+(props: ExplorerAdviceCardConfig): React.ReactElement|null => {
+  const {advice: {adviceId, numStars}, style} = props
+  const {t} = useTranslation()
+  const {userGainCallout = undefined, userGainDetails = undefined} = getAdviceModule(adviceId, t)
   if (!userGainCallout && !userGainDetails && isMobileVersion) {
     return null
   }
@@ -365,8 +361,8 @@ React.ReactElement|null => {
 }
 const ExplorerRightPanel = React.memo(ExplorerRightPanelBase)
 
-const ExplorerAdviceCardBase: React.FC<ExplorerAdviceCardProps> =
-(props: ExplorerAdviceCardProps): React.ReactElement => {
+const ExplorerAdviceCardBase: React.FC<ExplorerAdviceCardConfig> =
+(props: ExplorerAdviceCardConfig): React.ReactElement => {
   const {onClick, style} = props
   const containerStyle: React.CSSProperties = {
     boxShadow: '0 10px 30px rgba(0, 0, 0, .2)',
@@ -381,9 +377,7 @@ const ExplorerAdviceCardBase: React.FC<ExplorerAdviceCardProps> =
     <ExplorerRightPanel {...props} style={{flex: 1}} />
   </div>
 }
-const ExplorerAdviceCard = connect(({user}: RootState): {userYou: YouChooser} => ({
-  userYou: youForUser(user),
-}))(React.memo(ExplorerAdviceCardBase))
+const ExplorerAdviceCard = React.memo(ExplorerAdviceCardBase)
 ExplorerAdviceCardBase.propTypes = {
   advice: PropTypes.shape({
     adviceId: PropTypes.string.isRequired,
@@ -394,7 +388,6 @@ ExplorerAdviceCardBase.propTypes = {
   howToSeeMore: PropTypes.node,
   onClick: PropTypes.func,
   style: PropTypes.object,
-  userYou: PropTypes.func.isRequired,
 }
 
 export interface ExpandedAdviceCardConfig extends WithAdvice {
@@ -405,11 +398,11 @@ export interface ExpandedAdviceCardConfig extends WithAdvice {
 
 interface ExpandedAdviceCardConnectedProps {
   profile: bayes.bob.UserProfile
-  userYou: YouChooser
 }
 
 interface GenericExpandedAdviceProps extends ExpandedAdviceCardConnectedProps {
   style?: React.CSSProperties
+  userYou: YouChooser
 }
 
 interface ExpandedAdviceCardProps
@@ -444,25 +437,33 @@ const GenericExpandedAdviceBase: React.FC<GenericExpandedAdviceProps> =
 }
 const GenericExpandedAdvice = React.memo(GenericExpandedAdviceBase)
 
+
+const suspenseWaitingStyle: React.CSSProperties = {
+  margin: 'auto',
+}
+
+
 // TODO(pascal): Add a visual marker if this advice is only shown to alpha users.
 const ExpandedAdviceCardContentBase: React.FC<ExpandedAdviceCardProps> =
 (props: ExpandedAdviceCardProps): React.ReactElement => {
-  const {advice, dispatch, profile, project, style, userYou} = props
+  const {advice, dispatch, profile, project, style} = props
+  const userYou = useUserYou()
+  const {t} = useTranslation('advisor')
   const handleExplore = useMemo(() => _memoize((visualElement: string): (() => void) =>
     (): void => {
       dispatch(exploreAdvice(project, advice, visualElement))
     }), [advice, dispatch, project])
-  const module = ADVICE_MODULES[advice.adviceId] || null
-  const PageComponent = module && module.ExpandedAdviceCardContent || null
+  const PageComponent = ADVICE_MODULES[advice.adviceId]?.ExpandedAdviceCardContent || null
   if (PageComponent) {
-    return <PageComponent {...props} handleExplore={handleExplore} />
+    return <Suspense fallback={<CircularProgress style={suspenseWaitingStyle} />}>
+      <PageComponent {...props} handleExplore={handleExplore} userYou={userYou} t={t} />
+    </Suspense>
   }
   return <GenericExpandedAdvice {...{profile, style, userYou}} />
 }
 const ExpandedAdviceCardContent =
   connect(({user}: RootState): ExpandedAdviceCardConnectedProps => ({
     profile: user.profile || {},
-    userYou: youForUser(user),
   }))(React.memo(ExpandedAdviceCardContentBase))
 ExpandedAdviceCardContentBase.propTypes = {
   advice: PropTypes.object.isRequired,
@@ -472,7 +473,6 @@ ExpandedAdviceCardContentBase.propTypes = {
     projectId: PropTypes.string,
   }).isRequired,
   style: PropTypes.object,
-  userYou: PropTypes.func.isRequired,
 }
 
 
@@ -481,24 +481,26 @@ interface MethodHeaderProps {
   project: bayes.bob.Project
   style?: React.CSSProperties
   title?: string
-  userYou: YouChooser
 }
 
 
 const MethodHeaderBase: React.FC<MethodHeaderProps> =
 (props: MethodHeaderProps): React.ReactElement => {
-  const {advice, advice: {adviceId, isForAlphaOnly}, style, title, userYou} = props
+  const {advice, advice: {adviceId, isForAlphaOnly, numStars}, style, title} = props
+  const {t} = useTranslation()
+  const hasStrongImpact = numStars && numStars > 2
   const containerStyle: React.CSSProperties = {
     alignItems: 'center',
     display: 'flex',
     flexDirection: isMobileVersion ? 'row-reverse' : 'row',
     ...style,
   }
-  const methodStyle: React.CSSProperties = {
-    color: colors.WARM_GREY,
+  const impactStyle = useMemo((): React.CSSProperties => ({
+    color: hasStrongImpact ? colors.GREENISH_TEAL : colors.SQUASH,
     fontSize: 12,
+    fontWeight: 'bold',
     textTransform: 'uppercase',
-  }
+  }), [hasStrongImpact])
   const titleStyle: React.CSSProperties = {
     alignItems: 'center',
     display: 'flex',
@@ -509,15 +511,16 @@ const MethodHeaderBase: React.FC<MethodHeaderProps> =
     marginRight: 15,
     width: isMobileVersion ? 35 : 40,
   }
-  const shownTitle = upperFirstLetter(title || getAdviceTitle(advice, userYou))
+  const shownTitle = upperFirstLetter(title || getAdviceTitle(advice, t))
+  const impact = hasStrongImpact ? t('Fort impact') : t('Impact moyen')
   return <header style={containerStyle}>
     <AdvicePicto adviceId={adviceId} style={pictoStyle} />
     <div style={{flex: 1, margin: '0 15'}}>
-      {isMobileVersion ? null : <div style={methodStyle}>Méthode</div>}
       <div style={titleStyle}>
         {shownTitle}
         {isForAlphaOnly ? <AlphaTag style={{marginLeft: 10}} /> : null}
       </div>
+      {isMobileVersion ? null : <div style={impactStyle}>{impact}</div>}
     </div>
   </header>
 }
@@ -531,13 +534,11 @@ MethodHeaderBase.propTypes = {
   }),
   style: PropTypes.object,
   title: PropTypes.string,
-  userYou: PropTypes.func.isRequired,
 }
 
 
 interface MethodProps extends MethodHeaderProps, WithAdvice {
   style?: React.CSSProperties
-  userYou: YouChooser
 }
 
 

@@ -2,6 +2,7 @@
 
 import datetime
 import inspect
+import os
 import signal
 import typing
 from typing import Callable, Iterator, List
@@ -10,11 +11,14 @@ from unittest import mock
 from urllib import parse
 
 import mongomock
+import pymongo
 
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import mail_nps
+from bob_emploi.frontend.server.asynchronous import report
+from bob_emploi.frontend.server.asynchronous.mail import campaign
 from bob_emploi.frontend.server.test import mailjetmock
 
 _USER_PENDING_NPS_DICT = {
@@ -31,27 +35,33 @@ _USER_PENDING_NPS_DICT = {
 
 
 # TODO(marielaure): Add tests for slack report.
-@mock.patch(mail_nps.report.__name__ + '.requests.post')
-@mock.patch(mail_nps.report.__name__ + '._SLACK_WEBHOOK_URL', 'https://slack.example.com/webhook')
+@mock.patch(report.__name__ + '.requests.post')
+@mock.patch(report.__name__ + '._SLACK_WEBHOOK_URL', 'https://slack.example.com/webhook')
+@mock.patch(campaign.__name__ + '.BASE_URL', 'http://localhost:3000')
 @mailjetmock.patch()
+@mock.patch.dict(
+    os.environ, {'USERS_MONGO_URL': 'mongodb://my-db/db', 'MONGO_URL': 'mongodb://my-db/db'})
+@mongomock.patch('mongodb://my-db')
 class MailingTestCase(unittest.TestCase):
     """Unit tests."""
 
     def setUp(self) -> None:
         super().setUp()
         mail_nps.DRY_RUN = False
-        self._db = mongomock.MongoClient().database
         self._now = datetime.datetime(2018, 1, 24, 10, 0, 0)
 
     def test_main(self, mock_post: mock.MagicMock) -> None:
         """Overall test."""
 
-        self._db.user.insert_one({
-            '_id': 'my-own-user-id',
+        _db = pymongo.MongoClient('mongodb://my-db/db').db
+        _db.user.drop()
+        _db.user.insert_one({
+            '_id': mongomock.ObjectId('5daf2298484ae6c93351b822'),
             'profile': {
                 'name': 'Pascal',
                 'lastName': 'Corpet',
                 'email': 'pascal+test@bayes.org',
+                'locale': 'en',
             },
             'registeredAt': datetime.datetime(2018, 1, 22, 10, 0, 0).isoformat() + 'Z',
             'projects': [{
@@ -59,7 +69,7 @@ class MailingTestCase(unittest.TestCase):
             }],
         })
 
-        mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
+        mail_nps.main(self._now, '1')
 
         sent_messages = mailjetmock.get_all_sent_messages()
         self.assertEqual(['pascal+test@bayes.org'], [m.recipient['Email'] for m in sent_messages])
@@ -78,9 +88,9 @@ class MailingTestCase(unittest.TestCase):
             parse.urlunparse(nps_form_url[:4] + ('',) + nps_form_url[5:]))
         nps_form_args = parse.parse_qs(nps_form_url.query)
         self.assertEqual({'user', 'token', 'redirect'}, nps_form_args.keys())
-        self.assertEqual(['my-own-user-id'], nps_form_args['user'])
-        auth.check_token('my-own-user-id', nps_form_args['token'][0], role='nps')
-        self.assertEqual(['http://localhost:3000/retours'], nps_form_args['redirect'])
+        self.assertEqual(['5daf2298484ae6c93351b822'], nps_form_args['user'])
+        auth.check_token('5daf2298484ae6c93351b822', nps_form_args['token'][0], role='nps')
+        self.assertEqual(['http://localhost:3000/retours?hl=en'], nps_form_args['redirect'])
         mock_post.assert_called_once_with(
             'https://slack.example.com/webhook',
             json={
@@ -89,21 +99,23 @@ class MailingTestCase(unittest.TestCase):
         )
 
         modified_user = user_pb2.User()
-        proto.parse_from_mongo(self._db.user.find_one(), modified_user)
+        proto.parse_from_mongo(_db.user.find_one(), modified_user)
         self.assertEqual(
-            sent_messages[0].message_id,
-            modified_user.emails_sent[0].mailjet_message_id)
+            [sent_messages[0].message_id],
+            [m.mailjet_message_id for m in modified_user.emails_sent])
         self.assertEqual('nps', modified_user.emails_sent[0].campaign_id)
 
     def test_too_soon(self, mock_post: mock.MagicMock) -> None:
         """Test that we do not send the NPS email if the user registered recently."""
 
-        self._db.user.insert_one(
+        _db = pymongo.MongoClient('mongodb://my-db/db').db
+        _db.user.drop()
+        _db.user.insert_one(
             dict(
                 _USER_PENDING_NPS_DICT,
                 registeredAt=(self._now - datetime.timedelta(hours=6)).isoformat() + 'Z'))
 
-        mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '0')
+        mail_nps.main(self._now, '0')
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
         mock_post.assert_called_once_with(
@@ -117,7 +129,9 @@ class MailingTestCase(unittest.TestCase):
     def test_no_incomplete(self, mock_post: mock.MagicMock) -> None:
         """Do not send if project is not complete."""
 
-        self._db.user.insert_one({
+        _db = pymongo.MongoClient('mongodb://my-db/db').db
+        _db.user.drop()
+        _db.user.insert_one({
             'profile': {
                 'name': 'Pascal',
                 'lastName': 'Corpet',
@@ -130,7 +144,7 @@ class MailingTestCase(unittest.TestCase):
             }],
         })
 
-        mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
+        mail_nps.main(self._now, '1')
         self.assertFalse(mailjetmock.get_all_sent_messages())
         mock_post.assert_called_once_with(
             'https://slack.example.com/webhook',
@@ -143,8 +157,10 @@ class MailingTestCase(unittest.TestCase):
     def test_no_missing_email(self, mock_post: mock.MagicMock) -> None:
         """Do not send if there's no email address."""
 
-        self._db.user.insert_one({
-            '_id': 'my-own-user-id',
+        _db = pymongo.MongoClient('mongodb://my-db/db').db
+        _db.user.drop()
+        _db.user.insert_one({
+            '_id': '5daf2298484ae6c93351b822',
             'profile': {
                 'name': 'Pascal',
                 'lastName': 'Corpet',
@@ -155,7 +171,7 @@ class MailingTestCase(unittest.TestCase):
             }],
         })
 
-        mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
+        mail_nps.main(self._now, '1')
         self.assertFalse(mailjetmock.get_all_sent_messages())
         mock_post.assert_called_once_with(
             'https://slack.example.com/webhook',
@@ -168,16 +184,17 @@ class MailingTestCase(unittest.TestCase):
     def test_no_dupes(self, mock_post: mock.MagicMock) -> None:
         """Test that we do not send duplicate emails if we run the script twice."""
 
-        self._db.user.insert_one(_USER_PENDING_NPS_DICT)
+        _db = pymongo.MongoClient('mongodb://my-db/db').db
+        _db.user.drop()
+        _db.user.insert_one(_USER_PENDING_NPS_DICT)
 
-        mail_nps.main(self._db.user, 'http://localhost:3000', self._now, '1')
+        mail_nps.main(self._now, '1')
 
         self.assertTrue(mailjetmock.get_all_sent_messages())
         mailjetmock.clear_sent_messages()
 
         # Running the script again 10 minutes later.
-        mail_nps.main(
-            self._db.user, 'http://localhost:3000', self._now + datetime.timedelta(minutes=10), '1')
+        mail_nps.main(self._now + datetime.timedelta(minutes=10), '1')
         self.assertFalse(mailjetmock.get_all_sent_messages())
         calls = [
             mock.call(
@@ -194,34 +211,6 @@ class MailingTestCase(unittest.TestCase):
                 },)
         ]
         self.assertEqual(calls, mock_post.mock_calls)
-
-    def test_signal(self, mock_post: mock.MagicMock) -> None:
-        """Test that the batch send fails gracefully on SIGTERM."""
-
-        self._db.user.insert_many([
-            dict(
-                _USER_PENDING_NPS_DICT,
-                _id=mongomock.ObjectId('580f4a4271cd4a0007672a%dd' % i))
-            for i in range(10)
-        ])
-
-        users = list(self._db.user.find({}))
-
-        db_user = mock.MagicMock()
-        db_user.find.return_value = _SigtermAfterNItems(users, 3)
-
-        mail_nps.main(db_user, 'http://localhost:3000', self._now, '1')
-
-        sent_messages = mailjetmock.get_all_sent_messages()
-        self.assertEqual(4, len(sent_messages), msg=sent_messages)
-        self.assertEqual(4, db_user.update_one.call_count)
-        mock_post.assert_called_once_with(
-            'https://slack.example.com/webhook',
-            json={
-                'text':
-                    "Report for NPS blast: I've sent 4 emails (with 0 errors)."
-            },
-        )
 
 
 _T = typing.TypeVar('_T')

@@ -14,7 +14,7 @@ import "bob_emploi/frontend/api/training.proto";
 
 package bayes.bob;
 
-// Next available tag: 46.
+// Next available tag: 47.
 message Project {
   // A unique identifier for this project.
   string project_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
@@ -170,6 +170,15 @@ message Project {
   // For each strategy, whether the user has decided to start working on them
   // or not.
   repeated WorkingStrategy opened_strategies = 45 [(field_usage) = APP_ONLY];
+
+  // Whether the user has a relevant resume for this project.
+  OptionalBool has_resume = 46;
+
+  // Whether the user project is clear (declarative), i.e. this is really what they want to do.
+  // Note that this would be different than having a project defined that the user does not like
+  // very much (category find-what-you-like), as this should reflect that we (Bob) are not sure
+  // whether the user even chose that job to begin with.
+  OptionalBool has_clear_project = 47;
 }
 
 message WorkingStrategy {
@@ -472,19 +481,25 @@ enum TrainingFulfillmentEstimate {
 enum ProjectSeniority {
   UNKNOWN_PROJECT_SENIORITY = 0;
 
-  INTERN = 1;
+  NO_SENIORITY = 1;
+
+  INTERN = 2;
 
   // Less than 2 years
-  JUNIOR = 2;
+  JUNIOR = 3;
 
   // 2 to less than 6 years.
-  INTERMEDIARY = 3;
+  INTERMEDIARY = 4;
 
   // 6 to less than 10 years.
-  SENIOR = 4;
+  SENIOR = 5;
 
   // More than 10 years.
-  EXPERT = 5;
+  EXPERT = 6;
+
+  // More than 20 years. WARNING: This is not always suggested to users, so experts might have more
+  // than 20 years experience.
+  CARREER = 7;
 }
 
 enum ProjectWorkload {
@@ -574,4 +589,10 @@ enum PassionateLevel {
   LIKEABLE_JOB = 2;
   PASSIONATING_JOB = 3;
   LIFE_GOAL_JOB = 4;
+}
+
+enum OptionalBool {
+  UNKNOWN_BOOL = 0;
+  FALSE = 1;
+  TRUE = 2;
 }

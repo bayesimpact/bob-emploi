@@ -1,5 +1,7 @@
 import React from 'react'
 
+import {prepareT} from 'store/i18n'
+
 import {TestimonialCard} from 'components/testimonials'
 import motivationEmailPicto from 'images/advices/picto-motivation-email.svg'
 
@@ -10,7 +12,8 @@ import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCar
 const adviceId = 'lettre-motivation'
 
 
-const name = 'Lettre de motivation'
+// i18next-extract-mark-ns-next-line staticAdviceTitle
+const name = prepareT('Lettre de motivation')
 
 
 const TESTIMONIALS = [
@@ -45,41 +48,40 @@ const TESTIMONIALS = [
 ]
 
 
-class StaticAdviceCard extends React.PureComponent<CardProps> {
-  public render(): React.ReactNode {
-    return <StaticAdviceCardBase
-      name="Lettre de motivation" picto={motivationEmailPicto} {...this.props}>
-      Des <strong>exemples de mails de motivation</strong> et de relance pour obtenir
-      des <strong>réponses</strong>.
-    </StaticAdviceCardBase>
-  }
+const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
+  <StaticAdviceCardBase
+    name="Lettre de motivation" picto={motivationEmailPicto} {...props}>
+    Des <strong>exemples de mails de motivation</strong> et de relance pour obtenir
+    des <strong>réponses</strong>.
+  </StaticAdviceCardBase>
+
+
+const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactElement =>
+  <StaticAdvicePage
+    {...props}
+    adviceId={adviceId}
+    testimonials={TESTIMONIALS}
+    title={`Réussir vos mails et lettres de motivation avec ${config.productName}`}>
+    <AdviceSection
+      adviceId={adviceId} title="réussir votre lettre de motivation">
+      <AdviceDetail>
+        Trouver des modèles de <strong>mails de motivation</strong>.
+      </AdviceDetail>
+      <AdviceDetail>
+        Trouver les meilleurs outils gratuits pour générer des
+        <strong> exemples de lettres de motivation</strong>.
+      </AdviceDetail>
+      <AdviceDetail>
+        Trouver des astuces pour <strong>adapter vos mails et lettres de motivation </strong>
+        en fonction de la situation.
+      </AdviceDetail>
+    </AdviceSection>
+  </StaticAdvicePage>
+
+
+export default {
+  Page: React.memo(Page),
+  StaticAdviceCard: React.memo(StaticAdviceCard),
+  adviceId,
+  name,
 }
-
-
-class Page extends React.PureComponent<AdvicePageProps> {
-  public render(): React.ReactNode {
-    return <StaticAdvicePage
-      {...this.props}
-      adviceId={adviceId}
-      testimonials={TESTIMONIALS}
-      title={`Réussir vos mails et lettres de motivation avec ${config.productName}`}>
-      <AdviceSection
-        adviceId={adviceId} title="réussir votre lettre de motivation">
-        <AdviceDetail>
-          Trouver des modèles de <strong>mails de motivation</strong>.
-        </AdviceDetail>
-        <AdviceDetail>
-          Trouver les meilleurs outils gratuits pour générer des
-          <strong> exemples de lettres de motivation</strong>.
-        </AdviceDetail>
-        <AdviceDetail>
-          Trouver des astuces pour <strong>adapter vos mails et lettres de motivation </strong>
-          en fonction de la situation.
-        </AdviceDetail>
-      </AdviceSection>
-    </StaticAdvicePage>
-  }
-}
-
-
-export default {Page, StaticAdviceCard, adviceId, name}

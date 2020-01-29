@@ -6,6 +6,8 @@ const sinon = require('sinon')
 
 const sandbox = sinon.createSandbox()
 
+/* eslint-disable camelcase */
+
 
 // TODO(pascal): Move to its own package.
 class AirtableMockTable {
@@ -74,88 +76,101 @@ describe('download.js', () => {
     // TODO(pascal): Add more data expectations.
     sandbox.stub(Airtable.prototype, 'base').callsFake(airtableMock({
       // ROME base.
-      'appMRMtWV61Kibt37': {
+      appMRMtWV61Kibt37: {
         'Event Types': [
           {
-            'fields': {
-              'event_location': "salon de l'agriculture",
-              'event_location_prefix': 'au prochain',
-              'rome_prefix': 'A',
+            fields: {
+              event_location: "salon de l'agriculture",
+              event_location_prefix: 'au prochain',
+              rome_prefix: 'A',
             },
           },
+        ],
+        'VAE Stats': [
+          {fields: {
+            name: "Éducateur spécialisé (diplôme d'État)",
+            rome_ids: ['K1207'],
+            vae_ratio_in_diploma: 43,
+          }},
         ],
       },
       // Advice base.
-      'appXmyc7yYj0pOcae': {
-        'advice_modules': [],
-        'diagnostic_categories': [
-          {'fields': {'category_id': 'bravo'}},
-          {'fields': {
-            'category_id': 'stuck-market',
-            'metric_details': "Le marché c'est important.",
-            'metric_title': 'Marché',
+      appXmyc7yYj0pOcae: {
+        advice_modules: [],
+        diagnostic_categories: [
+          {fields: {category_id: 'bravo'}},
+          {fields: {
+            category_id: 'stuck-market',
+            metric_details: "Le marché c'est important.",
+            metric_title: 'Marché',
           }},
         ],
-        'email_templates': [],
-        'strategy_goals': [
-          {'fields':
+        email_templates: [],
+        strategy_goals: [
+          {fields:
             {
-              'content': "Je connais des villes offrant plus d'opportunités",
-              'goal_id': 'better-cities',
-              'strategy_ids': ['other-leads', 'get-moving'],
+              content: "Je connais des villes offrant plus d'opportunités",
+              goal_id: 'better-cities',
+              strategy_ids: ['other-leads', 'get-moving'],
             },
           },
         ],
-        'strategy_testimonials': [
-          {'fields':
+        strategy_testimonials: [
+          {fields:
             {
-              'content': "J'ai adoré",
-              'created_at': '2/13/2019',
-              'is_male': false,
-              'job': 'Informaticienne',
-              'name': 'Petra',
-              'rating': 3,
-              'strategy_ids': ['other-leads', 'get-moving'],
+              content: "J'ai adoré",
+              created_at: '2/13/2019',
+              is_male: false,
+              job: 'Informaticienne',
+              name: 'Petra',
+              rating: 3,
+              strategy_ids: ['other-leads', 'get-moving'],
             },
           },
         ],
       },
       // Translations.
-      'appkEc8N0Bw4Uok43': {'translations': [
+      appkEc8N0Bw4Uok43: {translations: [
         {
-          'fields': {
-            'fr_FR@tu': 'au prochain',
+          fields: {
+            'fr@tu': 'au prochain',
             'string': 'au prochain',
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': 'Informaticienne',
+          fields: {
+            'fr@tu': 'Informaticienne',
             'string': 'Informaticienne',
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': "salon de l'agriculture",
+          fields: {
+            'fr@tu': "salon de l'agriculture",
             'string': "salon de l'agriculture",
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': "J'ai adoré",
+          fields: {
+            'fr@tu': "J'ai adoré",
             'string': "J'ai adoré",
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': 'Je connais des villes offrant plus de possibilités.',
+          fields: {
+            'fr@tu': 'Je connais des villes avec plus.',
             'string': "Je connais des villes offrant plus d'opportunités",
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': "Le marché c'est important pour toi.",
+          fields: {
+            'fr@tu': "Le marché c'est important pour toi.",
             'string': "Le marché c'est important.",
+          },
+        },
+        {
+          fields: {
+            'fr@tu': 'Marché',
+            'string': 'Marché',
           },
         },
       ]},
@@ -166,38 +181,23 @@ describe('download.js', () => {
       // https://github.com/chaijs/chai/issues/1228 is resolved.
       expect(_sortBy([...filesWritten], 0)).to.deep.eq(_sortBy(Object.entries({
         'src/components/advisor/data/advice_modules.json': '{\n}\n',
-        'src/components/advisor/data/advice_modules_fr_FR@tu.json': '{\n}\n',
         'src/components/advisor/data/categories.json': '{\n}\n',
         'src/components/advisor/data/email_templates.json': '{\n}\n',
-        'src/components/advisor/data/email_templates_fr_FR@tu.json': '{\n}\n',
-        'src/components/advisor/data/events.json': `{
-  "A": {
-    "atNext": "au prochain",
-    "eventLocation": "salon de l'agriculture"
+        'src/components/advisor/data/vae.json': `[
+  {
+    "name": "Éducateur spécialisé (diplôme d'État)",
+    "romeIds": [
+      "K1207"
+    ],
+    "vaeRatioInDiploma": 43
   }
-}
-`,
-        'src/components/advisor/data/events_fr_FR@tu.json': `{
-  "A": {
-    "atNext": "au prochain",
-    "eventLocation": "salon de l'agriculture"
-  }
-}
+]
 `,
         'src/components/strategist/data/categories.json': `{
   "bravo": {
   },
   "stuck-market": {
     "metricDetails": "Le marché c'est important.",
-    "metricTitle": "Marché"
-  }
-}
-`,
-        'src/components/strategist/data/categories_fr_FR@tu.json': `{
-  "bravo": {
-  },
-  "stuck-market": {
-    "metricDetails": "Le marché c'est important pour toi.",
     "metricTitle": "Marché"
   }
 }
@@ -212,21 +212,6 @@ describe('download.js', () => {
   "other-leads": [
     {
       "content": "Je connais des villes offrant plus d'opportunités",
-      "goalId": "better-cities"
-    }
-  ]
-}
-`,
-        'src/components/strategist/data/goals_fr_FR@tu.json': `{
-  "get-moving": [
-    {
-      "content": "Je connais des villes offrant plus de possibilités.",
-      "goalId": "better-cities"
-    }
-  ],
-  "other-leads": [
-    {
-      "content": "Je connais des villes offrant plus de possibilités.",
       "goalId": "better-cities"
     }
   ]
@@ -255,27 +240,12 @@ describe('download.js', () => {
   ]
 }
 `,
-        'src/components/strategist/data/testimonials_fr_FR@tu.json': `{
-  "get-moving": [
-    {
-      "content": "J'ai adoré",
-      "createdAt": "2/13/2019",
-      "isMale": false,
-      "job": "Informaticienne",
-      "name": "Petra",
-      "rating": 3
-    }
-  ],
-  "other-leads": [
-    {
-      "content": "J'ai adoré",
-      "createdAt": "2/13/2019",
-      "isMale": false,
-      "job": "Informaticienne",
-      "name": "Petra",
-      "rating": 3
-    }
-  ]
+        'src/translations/fr@tu/categories.json': `{
+  "Le marché c'est important.": "Le marché c'est important pour toi."
+}
+`,
+        'src/translations/fr@tu/goals.json': `{
+  "Je connais des villes offrant plus d'opportunités": "Je connais des villes avec plus."
 }
 `,
       }), 0))
@@ -286,95 +256,100 @@ describe('download.js', () => {
     // TODO(pascal): Add more data expectations.
     sandbox.stub(Airtable.prototype, 'base').callsFake(airtableMock({
       // ROME base.
-      'appMRMtWV61Kibt37': {
+      appMRMtWV61Kibt37: {
         'Event Types': [
           {
-            'fields': {
-              'event_location': "salon de l'agriculture",
-              'event_location_prefix': 'au prochain',
-              'rome_prefix': 'A',
+            fields: {
+              event_location: "salon de l'agriculture",
+              event_location_prefix: 'au prochain',
+              rome_prefix: 'A',
             },
           },
         ],
       },
       // Advice base.
-      'appXmyc7yYj0pOcae': {
-        'advice_modules': [],
-        'email_templates': [],
-        'strategy_goals': [
-          {'fields':
+      appXmyc7yYj0pOcae: {
+        advice_modules: [],
+        email_templates: [],
+        strategy_goals: [
+          {fields:
             {
-              'content': "Je connais des villes offrant plus d'opportunités",
-              'goal_id': 'better-cities',
-              'strategy_ids': ['other-leads', 'get-moving'],
+              content: "Je connais des villes offrant plus d'opportunités",
+              goal_id: 'better-cities',
+              strategy_ids: ['other-leads', 'get-moving'],
             },
           },
         ],
-        'strategy_testimonials': [
-          {'fields':
+        strategy_testimonials: [
+          {fields:
             {
-              'content': "J'ai adoré",
-              'created_at': '2/13/2019',
-              'is_male': false,
-              'job': 'Informaticienne',
-              'name': 'Petra',
-              'rating': 3,
-              'strategy_ids': ['other-leads', 'get-moving'],
+              content: "J'ai adoré",
+              created_at: '2/13/2019',
+              is_male: false,
+              job: 'Informaticienne',
+              name: 'Petra',
+              rating: 3,
+              strategy_ids: ['other-leads', 'get-moving'],
             },
           },
         ],
       },
       // Translations.
-      'appkEc8N0Bw4Uok43': {'translations': [
+      appkEc8N0Bw4Uok43: {translations: [
         {
-          'fields': {
-            'fr_FR@tu': 'au prochain',
+          fields: {
+            'fr@tu': 'au prochain',
             'string': 'au prochain',
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': 'Informaticienne',
+          fields: {
+            'fr@tu': 'Informaticienne',
             'string': 'Informaticienne',
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': "salon de l'agriculture",
+          fields: {
+            'fr@tu': "salon de l'agriculture",
             'string': "salon de l'agriculture",
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': "J'ai adoré",
+          fields: {
+            'fr@tu': "J'ai adoré",
             'string': "J'ai adoré",
           },
         },
         {
-          'fields': {
-            'fr_FR@tu': 'Je connais des villes offrant plus de possibilités.',
+          fields: {
+            'fr@tu': 'Je connais des villes avec plus.',
             'string': "Je connais des villes offrant plus d'opportunités",
           },
         },
       ]},
     }))
-    process.argv = ['node', 'download.js', 'events']
+    process.argv = ['node', 'download.js', 'strategyGoals']
     return require('../../download.js').then(() => {
       // TODO(cyrille): Fallback to Map deep-equality once
       // https://github.com/chaijs/chai/issues/1228 is resolved.
       expect(_sortBy([...filesWritten], 0)).to.deep.eq(_sortBy(Object.entries({
-        'src/components/advisor/data/events.json': `{
-  "A": {
-    "atNext": "au prochain",
-    "eventLocation": "salon de l'agriculture"
-  }
+        'src/components/strategist/data/goals.json': `{
+  "get-moving": [
+    {
+      "content": "Je connais des villes offrant plus d'opportunités",
+      "goalId": "better-cities"
+    }
+  ],
+  "other-leads": [
+    {
+      "content": "Je connais des villes offrant plus d'opportunités",
+      "goalId": "better-cities"
+    }
+  ]
 }
 `,
-        'src/components/advisor/data/events_fr_FR@tu.json': `{
-  "A": {
-    "atNext": "au prochain",
-    "eventLocation": "salon de l'agriculture"
-  }
+        'src/translations/fr@tu/goals.json': `{
+  "Je connais des villes offrant plus d'opportunités": "Je connais des villes avec plus."
 }
 `,
       }), 0))

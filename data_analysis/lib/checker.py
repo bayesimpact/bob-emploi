@@ -19,9 +19,6 @@ from bob_emploi.frontend.api import user_pb2
 # sync with frontend/src/store/link.js.
 _LINK_REGEXP = re.compile(r'^[^/]+://[^/]*[^/.](?:/|$)')
 
-# Matches variables that need to be replaced by populate_template.
-_TEMPLATE_VAR = re.compile(r'%\w+')
-
 # Matches a space at first or end of a line (in a possibly multiline string).
 _STRIPABLE_SPACE_REGEX = re.compile(r'(^ +| +$)', re.MULTILINE)
 
@@ -175,14 +172,14 @@ def _create_mock_scoring_project() -> scoring.ScoringProject:
             'diplomas': [{'name': 'Bac+2'}],
         },
     })
-    user_profile = user_pb2.UserProfile()
+    user = user_pb2.User()
     project = project_pb2.Project()
     project.target_job.job_group.rome_id = 'A1234'
     project.created_at.FromDatetime(datetime.datetime.now())
     project.job_search_started_at.FromDatetime(
         datetime.datetime.now() - datetime.timedelta(days=30))
     features = user_pb2.Features()
-    return scoring.ScoringProject(project, user_profile, features, _db)
+    return scoring.ScoringProject(project, user, features, _db)
 
 
 class MissingTemplateVarsChecker(ValueChecker):
@@ -201,7 +198,7 @@ class MissingTemplateVarsChecker(ValueChecker):
         """
 
         new_sentence = self._scoring_project.populate_template(field_value)
-        missing_templates = _TEMPLATE_VAR.findall(new_sentence)
+        missing_templates = scoring.TEMPLATE_VAR_PATTERN.findall(new_sentence)
         if missing_templates:
             raise ValueError(
                 'One or more template variables have not been replaced: '

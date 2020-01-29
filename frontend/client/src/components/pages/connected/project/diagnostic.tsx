@@ -6,8 +6,8 @@ import _sortBy from 'lodash/sortBy'
 import DownloadIcon from 'mdi-react/DownloadIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import Radium from 'radium'
-import React from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
+import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {Link} from 'react-router-dom'
 import VisibilitySensor from 'react-visibility-sensor'
@@ -16,17 +16,19 @@ import {DispatchAllActions, RomeJobGroup, RootState, changeSubmetricExpansion,
   fetchApplicationModes, followJobOffersLinkAction} from 'store/actions'
 import {clearEmoji, clearMarkup} from 'store/clean_text'
 import {YouChooser, inDepartement, lowerFirstLetter, vouvoyer} from 'store/french'
+import {prepareT} from 'store/i18n'
 import {genderizeJob, getApplicationModeText, getApplicationModes,
   getPEJobBoardURL} from 'store/job'
 import {Score, ScoreComponent, colorFromPercent, computeBobScore} from 'store/score'
 
 import categories from 'components/advisor/data/categories.json'
 import {FastForward} from 'components/fast_forward'
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {ModifyProjectModal} from 'components/navigation'
 import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
   WaitingElement} from 'components/phylactery'
-import {RadiumExternalLink, SmartLink} from 'components/radium'
+import {RadiumDiv, RadiumExternalLink, SmartLink, useRadium} from 'components/radium'
 import {SignUpBanner} from 'components/pages/signup'
 import {CategoriesTrain} from 'components/stats_charts'
 import {BobScoreCircle, Button, GrowingNumber, JobGroupCoverImage, PercentBar, PieChart, Markdown,
@@ -46,7 +48,7 @@ import {BobModal, BobTalk} from './speech'
 const emptyArray = [] as const
 
 
-const categorySets = _mapValues(categories, (list: string[]): Set<string> => new Set(list))
+const categorySets = _mapValues(categories, (list: readonly string[]): Set<string> => new Set(list))
 
 const APPLICATION_MODES_VC_CATEGORIES = new Set([
   'bravo',
@@ -57,18 +59,16 @@ const APPLICATION_MODES_VC_CATEGORIES = new Set([
 const SECTION_COLOR = colorToAlpha(colors.DARK, .5)
 
 // TODO(cyrille): Use HelpDeskLink component here.
-const defaultDiagnosticSentences = (userYou: YouChooser): string => `Nous ne sommes pas encore
-capable de ${userYou('te', 'vous')} proposer une analyse globale de ${userYou('ta', 'votre')}
-situation. Certaines informations sur ${userYou('ton', 'votre')} marché ne sont pas encore
+const defaultDiagnosticSentences = prepareT(`Nous ne sommes pas encore capable de vous proposer une
+analyse globale de votre situation. Certaines informations sur votre marché ne sont pas encore
 disponibles dans notre base de données.
 
-Cependant, ${userYou('tu peux', 'vous pouvez')} déjà consulter les indicateurs ci-contre.
+Cependant, vous pouvez déjà consulter les indicateurs ci-contre.
 
-Pour obtenir une analyse de ${userYou('ton', 'votre')} profil,
-${userYou(' tu peux', ' vous pouvez')} nous envoyer [un message](${config.helpRequestUrl}).
+Pour obtenir une analyse de votre profil, vous pouvez nous
+envoyer [un message]({{helpRequestUrl}}).
 
-Un membre de l'équipe de ${config.productName} ${userYou("t'", 'vous ')}enverra un diagnostic
-personnalisé.`
+Un membre de l'équipe de {{productName}} vous enverra un diagnostic personnalisé.`)
 
 interface Gauge {
   gaugeDataURL?: string
@@ -79,7 +79,8 @@ interface Gauge {
 
 // Convert an inline SVG in the DOM to an image.
 // (Move to a common library if it's needed somewhere else).
-function svg2image(svgDom, mimeType, qualityOption): Promise<Gauge> {
+function svg2image(svgDom: SVGSVGElement|null, mimeType: string, qualityOption: number):
+Promise<Gauge> {
   if (!svgDom) {
     return Promise.resolve({})
   }
@@ -87,7 +88,7 @@ function svg2image(svgDom, mimeType, qualityOption): Promise<Gauge> {
   const width = svgDom.width.baseVal ? svgDom.width.baseVal.value : svgDom.clientWidth
   const height = svgDom.height.baseVal ? svgDom.height.baseVal.value : svgDom.clientHeight
 
-  const svg = svgDom.cloneNode(true)
+  const svg = svgDom.cloneNode(true) as SVGSVGElement
   svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
   if (!svg.getAttribute('width')) {
     // Required for Firefox to work.
@@ -121,63 +122,6 @@ function svg2image(svgDom, mimeType, qualityOption): Promise<Gauge> {
 }
 
 
-interface ComponentScoreProps {
-  component: {
-    isDefined?: boolean
-    percent: number
-    text: string
-    title: (youChooser: YouChooser) => string
-  }
-  style?: React.CSSProperties
-  userYou: YouChooser
-}
-
-
-// TODO(cyrille): Drop, since unused
-class ComponentScore extends React.PureComponent<ComponentScoreProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    component: PropTypes.shape({
-      isDefined: PropTypes.bool,
-      percent: PropTypes.number.isRequired,
-      text: PropTypes.string.isRequired,
-      title: PropTypes.func.isRequired,
-    }).isRequired,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {children, component, userYou, style} = this.props
-    const {isDefined, title, percent, text} = component
-    const componentScoreStyle: React.CSSProperties = {
-      borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`,
-      color: colors.DARK_TWO,
-      opacity: isDefined ? 'initial' : 0.5,
-      paddingBottom: 17,
-      width: '100%',
-      ...style,
-    }
-    const titleStyle: React.CSSProperties = {
-      fontSize: 16,
-      fontWeight: 'bold',
-      marginBottom: 9,
-    }
-    const textStyle: React.CSSProperties = {
-      fontSize: 14,
-      lineHeight: 1.29,
-      margin: '10px 0 0 13px',
-    }
-    return <div style={componentScoreStyle}>
-      <div style={titleStyle}>{title(userYou)}</div>
-      <PercentBar percent={percent} color={colorFromPercent(percent)} isPercentShown={isDefined} />
-      <div style={textStyle}><Markdown content={text} /></div>
-      {children}
-    </div>
-  }
-}
-
-
 interface SubmetricDropDownConnectedProps {
   submetricsExpansion?: {[topicId: string]: boolean}
 }
@@ -195,7 +139,6 @@ interface SubmetricDropDownProps extends SubmetricDropDownConnectedProps {
   text: string
   title?: string
   topic: string
-  userYou: YouChooser
 }
 
 
@@ -214,7 +157,6 @@ class SubmetricDropDownBase extends React.PureComponent<SubmetricDropDownProps> 
     text: PropTypes.string.isRequired,
     title: PropTypes.string,
     topic: PropTypes.string.isRequired,
-    userYou: PropTypes.func.isRequired,
   }
 
   private handleExpansionChange = _memoize((isExpanded: boolean): (() => void) => (): void => {
@@ -224,8 +166,7 @@ class SubmetricDropDownBase extends React.PureComponent<SubmetricDropDownProps> 
 
   public render(): React.ReactNode {
     const {advices, children, isAlwaysExpanded, isDefined, isFirstSubmetric,
-      makeAdviceLink, percent, submetricsExpansion, style, text, title, topic,
-      userYou} = this.props
+      makeAdviceLink, percent, submetricsExpansion, style, text, title, topic} = this.props
     const isExpanded = !!(isAlwaysExpanded || submetricsExpansion && submetricsExpansion[topic])
     const border = `1px solid ${colors.NEW_GREY}`
     const containerStyle: React.CSSProperties = {
@@ -258,7 +199,7 @@ class SubmetricDropDownBase extends React.PureComponent<SubmetricDropDownProps> 
       margin: isMobileVersion ? '0 22px' : '0 0 0 30px',
       visibility: isDefined ? 'initial' : 'hidden',
     }
-    const advicesProps = {advices, makeAdviceLink, userYou}
+    const advicesProps = {advices, makeAdviceLink}
     const bobTalkStyle: React.CSSProperties = {
       marginTop: 10,
       maxWidth: isMobileVersion ? 'initial' : 380,
@@ -375,7 +316,7 @@ class SubmetricScore extends React.PureComponent<SubmetricScoreProps, SubmetricS
     const obsContainerStyle = {
       padding: '0 30px 20px',
     }
-    const observationStyle = (index, isAttentionNeeded): React.CSSProperties => ({
+    const observationStyle = (index: number, isAttentionNeeded?: boolean): React.CSSProperties => ({
       alignItems: 'center',
       borderTop: index ? `solid 1px ${colors.MODAL_PROJECT_GREY}` : 'initial',
       display: 'flex',
@@ -429,7 +370,7 @@ class SubmetricScore extends React.PureComponent<SubmetricScoreProps, SubmetricS
 
 
 interface DiagnosticSummaryProps {
-  components: ScoreComponent[]
+  components: readonly ScoreComponent[]
   isSmall?: boolean
   style?: React.CSSProperties
 }
@@ -511,40 +452,11 @@ class DiagnosticMetrics extends React.PureComponent<DiagnosticMetricsProps> {
             advices={advices.
               filter(({adviceId, diagnosticTopics}): boolean =>
                 diagnosticTopics ? diagnosticTopics.includes(topic) :
-                  (categorySets[topic] || new Set()).has(adviceId))}
-            {...{isDefined, percent, text, userYou}} >
+                  (!!adviceId && (categorySets[topic] || new Set()).has(adviceId)))}
+            {...{isDefined, percent, text}} >
             {topicChildren ? topicChildren(component) : null}
           </SubmetricDropDown>
         })}
-    </div>
-  }
-}
-
-
-interface DiagnosticTextProps {
-  diagnosticSentences: string
-  userYou: YouChooser
-}
-
-
-// TODO(cyrille): Drop, since unused.
-class DiagnosticText extends React.PureComponent<DiagnosticTextProps> {
-  public static propTypes = {
-    diagnosticSentences: PropTypes.string,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {diagnosticSentences, userYou} = this.props
-    const pepTalkStyle = {
-      color: colors.DARK_TWO,
-      fontSize: 17,
-      lineHeight: '25px',
-      margin: '0 auto',
-      maxWidth: 500,
-    }
-    return <div style={pepTalkStyle}>
-      <Markdown content={diagnosticSentences || defaultDiagnosticSentences(userYou)} />
     </div>
   }
 }
@@ -555,7 +467,7 @@ interface HoverableBobHeadProps extends React.HTMLProps<HTMLDivElement> {
 }
 
 
-class HoverableBobHeadBase extends React.PureComponent<HoverableBobHeadProps> {
+class HoverableBobHead extends React.PureComponent<HoverableBobHeadProps> {
   public static propTypes = {
     style: PropTypes.object,
     width: PropTypes.number.isRequired,
@@ -571,21 +483,20 @@ class HoverableBobHeadBase extends React.PureComponent<HoverableBobHeadProps> {
       ':hover': {
         boxShadow: '0 10px 15px 0 rgba(0, 0, 0, 0.2)',
       },
-      borderRadius: width,
-      bottom: 0,
-      height: width,
-      left: 0,
-      position: 'absolute',
-      right: 0,
+      'borderRadius': width,
+      'bottom': 0,
+      'height': width,
+      'left': 0,
+      'position': 'absolute',
+      'right': 0,
       width,
     }
     return <div style={{position: 'relative', ...style}} {...otherProps}>
-      <div style={hoverStyle} />
+      <RadiumDiv style={hoverStyle} />
       <img src={bobHeadImage} alt={config.productName} style={{display: 'block', width}} />
     </div>
   }
 }
-const HoverableBobHead = Radium(HoverableBobHeadBase)
 
 
 interface SideLinkProps extends Omit<React.HTMLProps<HTMLAnchorElement>, 'href' | 'ref'> {
@@ -607,13 +518,13 @@ class SideLink extends React.PureComponent<SideLinkProps> {
       ':hover': {
         backgroundColor: colors.LIGHT_GREY,
       },
-      alignItems: 'center',
-      borderTop: `1px solid ${colors.MODAL_PROJECT_GREY}`,
-      color: colors.SLATE,
-      display: 'flex',
-      fontSize: 14,
-      padding: '15px 20px',
-      textDecoration: 'none',
+      'alignItems': 'center',
+      'borderTop': `1px solid ${colors.MODAL_PROJECT_GREY}`,
+      'color': colors.SLATE,
+      'display': 'flex',
+      'fontSize': 14,
+      'padding': '15px 20px',
+      'textDecoration': 'none',
     }
     return <RadiumExternalLink href={href} style={style} {...otherProps}>
       <div style={{flex: 1}}>{children}</div>
@@ -628,6 +539,18 @@ function hasRomeId(jobGroup?: bayes.bob.JobGroup): jobGroup is RomeJobGroup {
 }
 
 
+type ImageProps = React.ImgHTMLAttributes<HTMLImageElement>
+const AltImageBase =
+(props: Omit<ImageProps, 'alt'> & {children: string}): React.ReactElement => {
+  const {children, ...otherProps} = props
+  return <img {...otherProps} alt={children} />
+}
+AltImageBase.propTypes = {
+  alt: PropTypes.string.isRequired,
+}
+const AltImage = React.memo(AltImageBase)
+
+
 interface VisualCardConnectedProps {
   jobGroupInfo: bayes.bob.JobGroup
 }
@@ -637,10 +560,9 @@ interface VisualCardConfig {
   children?: never
   project: bayes.bob.Project
   style?: React.CSSProperties
-  userYou: YouChooser
 }
 
-interface VisualCardProps extends VisualCardConnectedProps, VisualCardConfig {
+interface VisualCardProps extends VisualCardConnectedProps, VisualCardConfig, WithTranslation {
   dispatch: DispatchAllActions
 }
 
@@ -661,7 +583,7 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
       }),
     }),
     style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
+    t: PropTypes.func.isRequired,
   }
 
 
@@ -674,7 +596,7 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
     }
   }
 
-  private renderStrongCompetition(offersPerCandidates): React.ReactNode {
+  private renderStrongCompetition(offersPerCandidates: number): React.ReactNode {
     const containerStyle: React.CSSProperties = {
       position: 'relative',
       ...this.props.style,
@@ -686,20 +608,19 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
     const offers = Math.round(20 * offersPerCandidates)
     return <div style={containerStyle}>
       <img alt="" src={strongCompetitionImage} style={{width: '100%'}} />
-      <div style={textStyle}>
+      <Trans style={textStyle}>
         <div style={{fontSize: 13}}>
-          pour {offers} offres d'emploi pourvues
+          pour {{offers}} offres d'emploi pourvues
         </div>
         <div style={{fontSize: 18, fontWeight: 900}}>
-          {20 - offers} candidats sur 20 restent au chômage
+          {{candidates: 20 - offers}} candidats sur 20 restent au chômage
         </div>
-      </div>
+      </Trans>
     </div>
   }
 
   // TODO(marielaure): Refactor this when there are more.
   private renderWorkTime(): React.ReactNode {
-    const {userYou} = this.props
     const containerStyle: React.CSSProperties = {
       position: 'relative',
       ...this.props.style,
@@ -708,21 +629,23 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
       paddingBottom: 20,
       textAlign: 'center',
     }
-    return <div style={containerStyle}>
-      <img alt="50000" src={workTimeImage} style={{padding: '25px 25px 20px', width: '100%'}} />
+    return <Trans style={containerStyle}>
+      <AltImage src={workTimeImage} style={{padding: '25px 25px 20px', width: '100%'}}>
+        50&nbsp;000
+      </AltImage>
       <div style={textStyle}>
         <div style={{fontSize: 13}}>
-          heures de {userYou('ta', 'votre')} vie
+          heures de votre vie
         </div>
         <div style={{fontSize: 18, fontWeight: 900}}>
           seront passées au travail
         </div>
       </div>
-    </div>
+    </Trans>
   }
 
   private renderApplicationModes(): React.ReactNode {
-    const {jobGroupInfo, project: {city, targetJob: {jobGroup: {name = ''} = {}} = {}}, style} =
+    const {jobGroupInfo, project: {city, targetJob: {jobGroup: {name = ''} = {}} = {}}, style, t} =
       this.props
     if (!jobGroupInfo.applicationModes) {
       return null
@@ -759,31 +682,38 @@ class BobThinksVisualCardBase extends React.PureComponent<VisualCardProps> {
       marginTop: 25,
       paddingTop: 10,
     }
+    // i18next-extract-disable-next-line
+    const maybeInDepartement = city && inDepartement(city, t) || null
+    const jobGroupName = lowerFirstLetter(name)
     return <div style={containerStyle}>
-      <h2 style={titleStyle}>
-        Recrutement en {lowerFirstLetter(name)} {city && inDepartement(city) || null}
-      </h2>
+      <Trans style={titleStyle} parent="h2">
+        Recrutement en {{jobGroupName}} {{maybeInDepartement}}
+      </Trans>
       <div style={{alignItems: 'center', display: 'flex', marginBottom: 10}}>
         {new Array(4).fill(undefined).map((unused, index): React.ReactNode =>
           <div key={index} style={itemStyle(colors.BOB_BLUE)} />)}
-        <span style={{fontWeight: 'bold', marginLeft: 15}}>{getApplicationModeText(bestMode)}</span>
+        <span style={{fontWeight: 'bold', marginLeft: 15}}>
+          {getApplicationModeText(t, bestMode)}
+        </span>
       </div>
       <div style={{alignItems: 'center', display: 'flex', marginBottom: 10}}>
         {new Array(4).fill(undefined).map((unused, index): React.ReactNode =>
           <div
             key={index} style={itemStyle(index ? colors.MODAL_PROJECT_GREY : colors.BOB_BLUE)} />)}
-        <span style={{marginLeft: 15}}>{getApplicationModeText(worstMode)}{footnote}</span>
+        <span style={{marginLeft: 15}}>{getApplicationModeText(t, worstMode)}{footnote}</span>
       </div>
       {footnote ? <div style={footnoteStyle}>
-        *Seulement 7 personnes sur 100 trouvent un emploi grâce aux offres d'emploi
+        {footnote}
+        {t("Seulement 7 personnes sur 100 trouvent un emploi grâce aux offres d'emploi")}
       </div> : null}
     </div>
   }
 
   private renderMissingDiploma(): React.ReactNode {
-    return <div style={this.props.style}>
+    const {style, t} = this.props
+    return <div style={style}>
       <img
-        src={missingDiplomaImage} alt="Un diplôme peut faire la différence"
+        src={missingDiplomaImage} alt={t('Un diplôme peut faire la différence')}
         style={{width: '100%'}} />
     </div>
   }
@@ -818,7 +748,7 @@ const BobThinksVisualCard = connect(
     {project: {targetJob: {jobGroup: {romeId = undefined} = {}} = {}}}: VisualCardConfig):
   VisualCardConnectedProps => ({
     jobGroupInfo: {applicationModes: romeId ? applicationModes[romeId] : undefined},
-  }))(BobThinksVisualCardBase)
+  }))(withTranslation()(BobThinksVisualCardBase))
 
 
 interface IntroductionProps {
@@ -827,122 +757,117 @@ interface IntroductionProps {
 }
 
 
-class StrategiesIntroduction extends React.PureComponent<IntroductionProps> {
-  public static propTypes = {
-    onClick: PropTypes.func.isRequired,
-    text: PropTypes.string,
-  }
-
-  public render(): React.ReactNode {
-    const {onClick, text} = this.props
-    const introductionStyle: React.CSSProperties = {
-      color: colors.SLATE,
-      fontSize: 16,
-      fontWeight: 'normal',
-      lineHeight: 1.5,
-      margin: 20,
-      maxWidth: 410,
-      textAlign: 'center',
-    }
-    return <div style={{alignItems: 'center', display: 'flex', flexDirection: 'column'}}>
-      <FastForward onForward={onClick} />
-      {text ? <div style={introductionStyle}>{text}</div> : null}
-      <Button type="validation" onClick={onClick} style={{margin: 20}}>
-        Découvrir mes stratégies
-      </Button>
-    </div>
-  }
+const stratIntroContainerStyle: React.CSSProperties = {
+  alignItems: 'center',
+  display: 'flex',
+  flexDirection: 'column',
 }
+const introductionStyle: React.CSSProperties = {
+  color: colors.SLATE,
+  fontSize: 16,
+  fontWeight: 'normal',
+  lineHeight: 1.5,
+  margin: 20,
+  maxWidth: 410,
+  textAlign: 'center',
+}
+const stratIntroButtonStyle: React.CSSProperties = {margin: 20}
+
+
+const StrategiesIntroductionBase: React.FC<IntroductionProps> =
+({onClick, text}: IntroductionProps): React.ReactElement => {
+  return <div style={stratIntroContainerStyle}>
+    <FastForward onForward={onClick} />
+    {text ? <div style={introductionStyle}>{text}</div> : null}
+    <Button type="validation" onClick={onClick} style={stratIntroButtonStyle}>
+      Découvrir mes stratégies
+    </Button>
+  </div>
+}
+StrategiesIntroductionBase.propTypes = {
+  onClick: PropTypes.func.isRequired,
+  text: PropTypes.string,
+}
+const StrategiesIntroduction = React.memo(StrategiesIntroductionBase)
 
 
 interface ScoreSectionProps {
-  maxBarLength: number
+  maxBarLength?: number
   score: {
     color: string
     percent: number
   }
-  strokeWidth: number
+  strokeWidth?: number
   style?: React.CSSProperties
 }
 
 
-class FlatScoreSection extends React.PureComponent<ScoreSectionProps> {
-  public static propTypes = {
-    maxBarLength: PropTypes.number.isRequired,
-    score: PropTypes.shape({
-      color: PropTypes.string.isRequired,
-      percent: PropTypes.number.isRequired,
-    }).isRequired,
-    strokeWidth: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
-
-  public static defaultProps = {
-    maxBarLength: 200,
-    strokeWidth: 4,
-  }
-
-  public state = {
-    hasStartedGrowing: false,
-  }
-
-  private startGrowing = (isVisible: boolean): void => {
+const FlatScoreSectionBase: React.FC<ScoreSectionProps> =
+(props: ScoreSectionProps): React.ReactElement => {
+  const {maxBarLength = 200, score: {color, percent}, strokeWidth = 4, style} = props
+  const [hasStartedGrowing, setHasStartedGrowing] = useState(false)
+  const startGrowing = useCallback((isVisible: boolean): void => {
     if (!isVisible) {
       return
     }
-    this.setState({hasStartedGrowing: true})
-  }
-
-  public render(): React.ReactNode {
-    const {maxBarLength, score: {color, percent}, strokeWidth, style} = this.props
-    const {hasStartedGrowing} = this.state
-    const durationMillisec = 1000
-    const percentColor = !hasStartedGrowing ? colors.RED_PINK : color
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      justifyContent: 'space-between',
-      padding: '0 20px',
-      textAlign: 'left',
-      ...style,
-    }
-    const transitionStyle: React.CSSProperties = {
-      transition: `stroke ${durationMillisec}ms linear,
-        stroke-dashoffset ${durationMillisec}ms linear`,
-    }
-    const barLength = percent * maxBarLength / 100
-    return <VisibilitySensor
-      active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
-      onChange={this.startGrowing}>
-      <div style={containerStyle}>
-        <div style={{display: 'flex', flexDirection: 'column', paddingTop: 10}}>
-          <div style={{fontSize: 16, fontWeight: 900}}>Score global</div>
-          <div style={{width: maxBarLength}}>
-            <svg fill="none" viewBox={`0 0 ${maxBarLength} 30`}>
-              <g strokeLinecap="round">
-                <path
-                  stroke={colors.SILVER}
-                  d={`M ${strokeWidth} 10 H ${maxBarLength - strokeWidth}`} opacity={0.8}
-                  strokeWidth={strokeWidth} />
-                <path
-                  stroke={percentColor}
-                  style={transitionStyle}
-                  d={`M ${strokeWidth} 10 H ${percent * maxBarLength / 100}`}
-                  strokeDashoffset={hasStartedGrowing ? 0 : barLength}
-                  strokeDasharray={barLength}
-                  strokeWidth={2 * strokeWidth}
-                />
-              </g>
-            </svg>
-          </div>
-        </div>
-        <div style={{fontSize: 22, fontWeight: 900}}>
-          <GrowingNumber durationMillisec={durationMillisec} number={percent} isSteady={true} />%
+    setHasStartedGrowing(true)
+  }, [])
+  const durationMillisec = 1000
+  const percentColor = !hasStartedGrowing ? colors.RED_PINK : color
+  const containerStyle: React.CSSProperties = useMemo(() => ({
+    alignItems: 'center',
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '0 20px',
+    textAlign: 'left',
+    ...style,
+  }), [style])
+  const transitionStyle: React.CSSProperties = useMemo(() => ({
+    transition: `stroke ${durationMillisec}ms linear,
+      stroke-dashoffset ${durationMillisec}ms linear`,
+  }), [durationMillisec])
+  const barLength = percent * maxBarLength / 100
+  return <VisibilitySensor
+    active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
+    onChange={startGrowing}>
+    <div style={containerStyle}>
+      <div style={{display: 'flex', flexDirection: 'column', paddingTop: 10}}>
+        <div style={{fontSize: 16, fontWeight: 900}}>Score global</div>
+        <div style={{width: maxBarLength}}>
+          <svg fill="none" viewBox={`0 0 ${maxBarLength} 30`}>
+            <g strokeLinecap="round">
+              <path
+                stroke={colors.SILVER}
+                d={`M ${strokeWidth} 10 H ${maxBarLength - strokeWidth}`} opacity={0.8}
+                strokeWidth={strokeWidth} />
+              <path
+                stroke={percentColor}
+                style={transitionStyle}
+                d={`M ${strokeWidth} 10 H ${percent * maxBarLength / 100}`}
+                strokeDashoffset={hasStartedGrowing ? 0 : barLength}
+                strokeDasharray={barLength}
+                strokeWidth={2 * strokeWidth}
+              />
+            </g>
+          </svg>
         </div>
       </div>
-    </VisibilitySensor>
-  }
+      <div style={{fontSize: 22, fontWeight: 900}}>
+        <GrowingNumber durationMillisec={durationMillisec} number={percent} isSteady={true} />%
+      </div>
+    </div>
+  </VisibilitySensor>
 }
+FlatScoreSectionBase.propTypes = {
+  maxBarLength: PropTypes.number,
+  score: PropTypes.shape({
+    color: PropTypes.string.isRequired,
+    percent: PropTypes.number.isRequired,
+  }).isRequired,
+  strokeWidth: PropTypes.number,
+  style: PropTypes.object,
+}
+const FlatScoreSection = React.memo(FlatScoreSectionBase)
 
 
 interface PdfDownloadLinkProps {
@@ -954,21 +879,10 @@ interface PdfDownloadLinkProps {
 }
 
 
-class PdfDownloadLinkBase extends React.PureComponent<PdfDownloadLinkProps> {
-  public static propTypes = {
-    diagnosticData: PropTypes.object,
-    gaugeRef: PropTypes.object.isRequired,
-    onDownloadAsPdf: PropTypes.func,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
-  }
+const PdfDownloadLinkBase = (props: PdfDownloadLinkProps): React.ReactElement|null => {
+  const {diagnosticData, gaugeRef, onDownloadAsPdf, style, userYou} = props
 
-  private exportToPdf = (): void => {
-    svg2image(this.props.gaugeRef.current, 'image/jpeg', 1).then(this.createPdf)
-  }
-
-  private createPdf = ({gaugeDataURL, gaugeWidth, gaugeHeight}): void => {
-    const {diagnosticData, onDownloadAsPdf, userYou} = this.props
+  const createPdf = useCallback(({gaugeDataURL, gaugeWidth, gaugeHeight}: Gauge): void => {
     if (!onDownloadAsPdf) {
       return
     }
@@ -978,7 +892,7 @@ class PdfDownloadLinkBase extends React.PureComponent<PdfDownloadLinkProps> {
     const centerWidth = 14.85 // 29.7 cm / 2
 
     // Header.
-    if (gaugeDataURL && gaugeWidth) {
+    if (gaugeDataURL && gaugeWidth && gaugeHeight) {
       doc.addImage(gaugeDataURL, 'JPEG', centerWidth - 1.5, 2.4, 3, 3 * gaugeHeight / gaugeWidth)
     }
     doc.setFontSize(14)
@@ -1044,78 +958,78 @@ class PdfDownloadLinkBase extends React.PureComponent<PdfDownloadLinkProps> {
 
     doc.save(`Diagnostic de ${config.productName}`)
     onDownloadAsPdf()
-  }
+  }, [diagnosticData, onDownloadAsPdf, userYou])
 
-  public render(): React.ReactNode {
-    const {onDownloadAsPdf, style} = this.props
-    if (!onDownloadAsPdf) {
-      return
-    }
-    const getColorStyle = (name): React.CSSProperties & {':hover': React.CSSProperties} => ({
-      ':hover': {[name]: 'inherit'},
-      [name]: colors.COOL_GREY,
-    })
-    const downloadStyle: React.CSSProperties & {':hover': React.CSSProperties} = {
-      ...getColorStyle('color'),
-      cursor: 'pointer',
-      fontSize: 13,
-      fontWeight: 500,
-      padding: isMobileVersion ? '20px 0' : '10px 0',
-      textDecoration: 'underline',
-      ...SmoothTransitions,
-      ...style,
-    }
-    const downloadIconStyle: React.CSSProperties & {':hover': React.CSSProperties} = {
-      ...getColorStyle('fill'),
-      height: 16,
-      verticalAlign: 'middle',
-      ...SmoothTransitions,
-    }
-    return <a onClick={this.exportToPdf} style={downloadStyle}>
-      <DownloadIcon style={downloadIconStyle} />
-      Télécharger mon diagnostic en PDF
-    </a>
+  const exportToPdf = useCallback((): void => {
+    svg2image(gaugeRef.current, 'image/jpeg', 1).then(createPdf)
+  }, [gaugeRef, createPdf])
+
+  const downloadStyle = useMemo((): RadiumCSSProperties => ({
+    ':hover': {color: 'inherit'},
+    'color': colors.COOL_GREY,
+    'cursor': 'pointer',
+    'fontSize': 13,
+    'fontWeight': 500,
+    'padding': isMobileVersion ? '20px 0' : '10px 0',
+    'textDecoration': 'underline',
+    ...SmoothTransitions,
+    ...style,
+  }), [style])
+
+  const [radiumProps, {isHovered}] = useRadium<HTMLAnchorElement>({style: downloadStyle})
+
+  const downloadIconStyle = useMemo((): React.CSSProperties => ({
+    fill: isHovered ? 'inherit' : colors.COOL_GREY,
+    height: 16,
+    verticalAlign: 'middle',
+    ...SmoothTransitions,
+  }), [isHovered])
+
+  if (!onDownloadAsPdf) {
+    return null
   }
+  return <a onClick={exportToPdf} {...radiumProps}>
+    <DownloadIcon style={downloadIconStyle} />
+    Télécharger mon diagnostic en PDF
+  </a>
 }
-const PdfDownloadLink = Radium(PdfDownloadLinkBase)
+PdfDownloadLinkBase.propTypes = {
+  diagnosticData: PropTypes.object,
+  gaugeRef: PropTypes.object.isRequired,
+  onDownloadAsPdf: PropTypes.func,
+  style: PropTypes.object,
+  userYou: PropTypes.func.isRequired,
+}
+const PdfDownloadLink = React.memo(PdfDownloadLinkBase)
 
 
 // A component to even the filling of rows in a text element.
 // NOTE: Move to theme if we ever use it elsewhere.
-class BalancedTitle extends React.PureComponent<{}, {lineWidth: number}> {
-
-  public state = {
-    lineWidth: 0,
-  }
-
-  private handleHiddenTitle = (dom: HTMLDivElement|null): void => {
+const BalancedTitleBase: React.FC<{children: React.ReactNode}> =
+({children}: {children: React.ReactNode}): React.ReactElement => {
+  const [lineWidth, setLineWidth] = useState(0)
+  const handleHiddenTitle = useCallback((dom: HTMLDivElement|null): void => {
     if (!dom) {
       return
     }
     // Target width is that of in-flow div, which is dom's grand-parent.
     const {clientWidth} = dom && dom.parentElement && dom.parentElement.parentElement || {}
-    clientWidth && this.setState({
-      lineWidth: dom.clientWidth / Math.ceil(dom.clientWidth / clientWidth),
-    })
-  }
-
-  public render(): React.ReactNode {
-    const {children} = this.props
-    const {lineWidth} = this.state
-    const titleStyle = {
-      margin: '0 auto',
-      ...!!lineWidth && {maxWidth: `calc(2em + ${lineWidth}px`},
-    }
-    return <React.Fragment>
-      {lineWidth ? null : <div style={{opacity: 0, overflow: 'hidden'}}>
-        <div style={{position: 'absolute', width: '300vw'}}>
-          <div ref={this.handleHiddenTitle} style={{position: 'absolute'}}>{children}</div>
-        </div>
-      </div>}
-      <div style={titleStyle}>{children}</div>
-    </React.Fragment>
-  }
+    clientWidth && setLineWidth(dom.clientWidth / Math.ceil(dom.clientWidth / clientWidth))
+  }, [])
+  const titleStyle = useMemo((): React.CSSProperties => ({
+    margin: '0 auto',
+    ...!!lineWidth && {maxWidth: `calc(2em + ${lineWidth}px`},
+  }), [lineWidth])
+  return <React.Fragment>
+    {lineWidth ? null : <div style={{opacity: 0, overflow: 'hidden'}}>
+      <div style={{position: 'absolute', width: '300vw'}}>
+        <div ref={handleHiddenTitle} style={{position: 'absolute'}}>{children}</div>
+      </div>
+    </div>}
+    <div style={titleStyle}>{children}</div>
+  </React.Fragment>
 }
+const BalancedTitle = React.memo(BalancedTitleBase)
 
 
 interface BobScoreProps {
@@ -1133,11 +1047,11 @@ const scoreTitleStyle: React.CSSProperties = {
   textAlign: 'center',
 }
 
-const ScoreTitleParagraph = (props): React.ReactElement =>
+const ScoreTitleParagraph = (props: React.HTMLProps<HTMLDivElement>): React.ReactElement =>
   <div {...props} style={scoreTitleStyle} />
 
 const getScoreTitleStrong = _memoize((color: string) =>
-  function ScoreTitleStrong(props): React.ReactElement {
+  function ScoreTitleStrong(props: React.HTMLProps<HTMLSpanElement>): React.ReactElement {
     return <span style={{color}} {...props} />
   })
 
@@ -1202,10 +1116,10 @@ const cardStyle: React.CSSProperties = {
 interface ScoreWithHeaderProps {
   baseUrl: string
   gender?: bayes.bob.Gender
+  isAnimated?: boolean
   openModifyModal: () => void
   project: bayes.bob.Project
   score: Score
-  userYou: YouChooser
 }
 
 const scoreHeaderStyle: React.CSSProperties = {
@@ -1245,12 +1159,12 @@ const modifyProjectStyle: RadiumCSSProperties = {
   ':hover': {
     opacity: 1,
   },
-  fontSize: 13,
-  opacity: .7,
-  position: 'absolute',
-  right: 20,
-  textDecoration: 'underline',
-  top: 10,
+  'fontSize': 13,
+  'opacity': .7,
+  'position': 'absolute',
+  'right': 20,
+  'textDecoration': 'underline',
+  'top': 10,
 }
 
 const scoreCardStyle: React.CSSProperties = {
@@ -1289,31 +1203,30 @@ const separatorStyle: React.CSSProperties = {
 
 const ScoreWithHeaderBase: React.FC<ScoreWithHeaderProps> =
   (props: ScoreWithHeaderProps): React.ReactElement => {
-    const {baseUrl, openModifyModal, gender, project, score, userYou} = props
+    const {baseUrl, isAnimated, openModifyModal, gender, project, score} = props
     const {
       city: {name: cityName = undefined} = {}, diagnostic: {categories = emptyArray} = {},
       targetJob, targetJob: {jobGroup: {romeId = undefined} = {}} = {},
     } = project
     const jobName = genderizeJob(targetJob, gender)
+    const {t} = useTranslation()
     return <React.Fragment>
       <div style={scoreHeaderStyle}>
         {romeId ? <JobGroupCoverImage romeId={romeId} style={headerJobCoverStyle} /> : null}
         <p style={jobStyle}>{jobName}</p>
         <p style={cityStyle}>{cityName}</p>
-        <SmartLink onClick={openModifyModal} style={modifyProjectStyle}>Modifier</SmartLink>
+        <SmartLink onClick={openModifyModal} style={modifyProjectStyle}>{t('Modifier')}</SmartLink>
       </div>
       <div style={scoreCardStyle}>
-        <BobScore score={score} isTitleShown={false} isAnimated={true} />
+        <BobScore score={score} isTitleShown={false} isAnimated={isAnimated} />
         {/* TODO(marielaure): Make sure the title is well balanced. */}
         <div style={mainSentenceStyle}>{score.shortTitle}</div>
         <div style={{margin: '0 20px'}}>
-          <CategoriesTrain
-            areDetailsShownAsHover={true}
-            categories={categories} userYou={userYou} gender={gender} />
+          <CategoriesTrain areDetailsShownAsHover={true} categories={categories} gender={gender} />
           <div style={separatorStyle} />
         </div>
         <Link to={`${baseUrl}/${STATS_PAGE}`} style={statsLinkStyle}>
-          En savoir plus
+          {t('En savoir plus')}
           <ChevronRightIcon size={18} style={{marginLeft: '.2em'}} />
         </Link>
       </div>
@@ -1322,6 +1235,7 @@ const ScoreWithHeaderBase: React.FC<ScoreWithHeaderProps> =
 ScoreWithHeaderBase.propTypes = {
   baseUrl: PropTypes.string.isRequired,
   gender: PropTypes.oneOf(['FEMININE', 'MASCULINE', 'UNKNOWN_GENDER']),
+  isAnimated: PropTypes.bool,
   project: PropTypes.shape({
     city: PropTypes.shape({
       name: PropTypes.string.isRequired,
@@ -1337,7 +1251,6 @@ ScoreWithHeaderBase.propTypes = {
     percent: PropTypes.number.isRequired,
     shortTitle: PropTypes.string.isRequired,
   }).isRequired,
-  userYou: PropTypes.func.isRequired,
 }
 const ScoreWithHeader = React.memo(ScoreWithHeaderBase)
 
@@ -1348,7 +1261,7 @@ interface DiagnosticConnectedProps {
 }
 
 
-interface DiagnosticProps extends DiagnosticConnectedProps {
+interface DiagnosticProps extends DiagnosticConnectedProps, WithTranslation {
   advices?: readonly bayes.bob.Advice[]
   areStrategiesEnabled?: boolean
   baseUrl: string
@@ -1408,6 +1321,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     }),
     strategies: PropTypes.array,
     style: PropTypes.object,
+    t: PropTypes.func.isRequired,
     userName: PropTypes.string,
     userYou: PropTypes.func.isRequired,
   }
@@ -1425,7 +1339,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     onShown && onShown()
   }
 
-  public componentDidUpdate(prev): void {
+  public componentDidUpdate(prev: DiagnosticProps): void {
     const {diagnosticData, userName, userYou} = this.props
     if (prev.userName === userName && prev.userYou(true, false) === userYou(true, false) &&
       prev.diagnosticData === diagnosticData) {
@@ -1481,14 +1395,19 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
     this.setState({isModifyModalShown}))
 
   private renderDiagnosticText(isModal?: boolean): React.ReactNode {
-    const {diagnosticData: {text}, isFirstTime, style, userYou} = this.props
+    const {diagnosticData: {text}, isFirstTime, style, t} = this.props
     const {percent, title} = this.getScore()
-    const sentences = (text || defaultDiagnosticSentences(userYou)).split('\n\n')
+    // i18next-extract-disable-next-line
+    const sentences = (text || t(
+      defaultDiagnosticSentences, {
+        helpRequestUrl: config.helpRequestUrl,
+        productName: config.productName,
+      }) || '').split('\n\n')
     const sentencesToDisplay = title ? [title, ...sentences] : sentences
     if (isModal) {
       return <BobModal
         isShown={true} onConfirm={this.handleCloseDiagnosticText}
-        buttonText="OK, voir mon diagnostic">
+        buttonText={t('OK, voir mon diagnostic')}>
         {sentencesToDisplay.join('\n\n')}
       </BobModal>
     }
@@ -1578,7 +1497,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       isModifyModalShown} = this.state
     const {advices = [], areStrategiesEnabled, baseUrl, diagnosticData, gender, hasAccount,
       isFirstTime, onDownloadAsPdf, makeAdviceLink, makeStrategyLink, project,
-      project: {city, targetJob}, strategies = [], style, userYou} = this.props
+      project: {city, targetJob}, strategies = [], style, t, userYou} = this.props
     const {categoryId, strategiesIntroduction} = diagnosticData
     const isBobTalksModalShown = areStrategiesEnabled && isDiagnosticTextShown && !isMobileVersion
     if (isDiagnosticTextShown && !isBobTalksModalShown) {
@@ -1611,22 +1530,24 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
           project={project} isShown={isModifyModalShown}
           onClose={this.setModifyModalShown(false)} />}
         {isSignUpBannerShown ?
-          <SignUpBanner style={{margin: '0 0 50px', width: 1000}} userYou={userYou} /> : null}
+          <SignUpBanner style={{margin: '0 0 50px', width: 1000}} /> : null}
         <div style={contentStyle}>
           {isBobTalksModalShown ? this.renderDiagnosticText(true) : null}
-          {isMobileVersion ? null : <div style={{position: 'relative', width: 360, zIndex: 0}}>
-            <h2 style={panelTitleStyle}>{userYou('Ton', 'Votre')} projet</h2>
+          {isMobileVersion ? null : <div style={{position: 'relative', width: 360, zIndex: 1}}>
+            <Trans parent="h2" style={panelTitleStyle}>Votre projet</Trans>
             <ScoreWithHeader
               openModifyModal={this.setModifyModalShown(true)}
-              {...{baseUrl, gender, project, score, userYou}} />
+              {...{baseUrl, gender, project, score}} isAnimated={isFirstTime} />
             <div style={{...cardStyle, overflow: 'hidden'}}>
-              <BobThinksVisualCard category={categoryId} {...{project, userYou}} />
+              <BobThinksVisualCard category={categoryId} {...{project}} />
               {/* TODO(cyrille): Only hide the link when the footnote is
                 actually present in the visual card. */}
               {categoryId && APPLICATION_MODES_VC_CATEGORIES.has(categoryId) ?
                 null : <SideLink
                   onClick={this.handleDispatch(followJobOffersLinkAction)}
-                  href={getPEJobBoardURL(targetJob, city)}>Voir les offres d'emploi</SideLink>}
+                  href={getPEJobBoardURL(targetJob, city)}>
+                  {t("Voir les offres d'emploi")}
+                </SideLink>}
             </div>
             {/* TODO(pascal): Re-enable PDF */}
           </div>}
@@ -1643,7 +1564,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
             {areStrategiesShown ? <Strategies
               {...{adviceProps, makeAdviceLink, makeStrategyLink,
                 project, userYou}}
-              strategies={strategies}
+              strategies={strategies} isAnimationEnabled={isFirstTime}
               strategyStyle={cardStyle} titleStyle={panelTitleStyle} /> : null}
           </div>
         </div>
@@ -1682,7 +1603,7 @@ class DiagnosticBase extends React.PureComponent<DiagnosticProps> {
       }
     return <div style={pageStyle}>
       {isSignUpBannerShown ?
-        <SignUpBanner style={{margin: '0 0 50px', width: 1000}} userYou={userYou} /> : null}
+        <SignUpBanner style={{margin: '0 0 50px', width: 1000}} /> : null}
       <HoverableBobHead
         style={bobHeadStyle}
         onClick={this.handleReopenDiagnosticText} />
@@ -1704,7 +1625,7 @@ const Diagnostic = connect(({user: {hasAccount, profile: {gender} = {}}}: RootSt
 DiagnosticConnectedProps => ({
   gender,
   hasAccount: !!hasAccount,
-}))(DiagnosticBase)
+}))(withTranslation()(DiagnosticBase))
 
 
-export {BobThinksVisualCard, ComponentScore, DiagnosticText, DiagnosticMetrics, Diagnostic}
+export {BobThinksVisualCard, DiagnosticMetrics, Diagnostic}

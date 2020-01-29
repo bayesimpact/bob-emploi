@@ -10,7 +10,7 @@ import {CardProps, CardWithContentProps, MethodSuggestionList,
   connectExpandedCardWithContent} from './base'
 
 
-class ExpandedAdviceCardContentBase
+class SeasonalRelocate
   extends React.PureComponent<CardWithContentProps<bayes.bob.MonthlySeasonalJobbingStats>> {
   public static propTypes = {
     adviceData: PropTypes.shape({
@@ -28,11 +28,11 @@ class ExpandedAdviceCardContentBase
     const {
       adviceData: {
         departementStats = [{
-          'departementInName': 'dans le Var',
-          'jobGroups': [
+          departementInName: 'dans le Var',
+          jobGroups: [
             {
-              'name': 'Hôtellerie',
-              'romeId': '10293',
+              name: 'Hôtellerie',
+              romeId: '10293',
             },
           ],
         }],
@@ -53,8 +53,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.MonthlySeasonalJobbingStats, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.MonthlySeasonalJobbingStats, CardProps>(SeasonalRelocate)
 
 
 export default {ExpandedAdviceCardContent, Picto}

@@ -42,7 +42,7 @@ function postJson<T>(
   path: string, data: any, isExpectingResponse: boolean, authToken?: string):
   Promise<T | HTTPResponse> {
 /* eslint-enable @typescript-eslint/no-explicit-any */
-  const headers = {
+  const headers: {[key: string]: string} = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   }
@@ -63,7 +63,7 @@ function postJson<T>(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deleteJson<T>(path: string, data: any, authToken?: string): Promise<T> {
-  const headers = {
+  const headers: {[key: string]: string} = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   }
@@ -78,8 +78,8 @@ function deleteJson<T>(path: string, data: any, authToken?: string): Promise<T> 
 }
 
 function getJson<T>(path: string, authToken?: string): Promise<T> {
-  const headers = {
-    'Accept': 'application/json',
+  const headers: {[key: string]: string} = {
+    Accept: 'application/json',
   }
   if (authToken) {
     headers['Authorization'] = 'Bearer ' + authToken
@@ -149,8 +149,11 @@ function useCaseDistributionPost(
 
 function expandedCardContentGet<T>(
   user: bayes.bob.User, project: bayes.bob.Project, {adviceId}: bayes.bob.Advice,
-  authToken: string): Promise<T> {
+  authToken?: string): Promise<T> {
   if (user.userId && project.projectId) {
+    if (!authToken) {
+      throw new Error("L'authentification de la connexion a été perdue")
+    }
     return getJson(`/api/advice/${adviceId}/${user.userId}/${project.projectId}`, authToken)
   }
   return postJson(
@@ -225,6 +228,20 @@ function advicePost(
     `/api/user/${userId}/project/${projectId}/advice/${adviceId}`, advice, true, authToken)
 }
 
+function simulateFocusEmailsPost(user: bayes.bob.User): Promise<bayes.bob.User> {
+  return postJson('/api/emails/simulate', user, true)
+}
+
+function strategyDelete(
+  {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, {strategyId}: bayes.bob.Strategy,
+  authToken: string): Promise<string> {
+  const path = `/api/user/${userId}/project/${projectId}/strategy/${strategyId}`
+  return fetchWithoutCookies(path, {
+    headers: {Authorization: `Bearer ${authToken}`},
+    method: 'delete',
+  }).then((response): Promise<string> => response.text())
+}
+
 function strategyPost(
   {userId}: bayes.bob.User, {projectId}: bayes.bob.Project, strategy: bayes.bob.Strategy,
   authToken: string): Promise<bayes.bob.Strategy> {
@@ -279,9 +296,14 @@ Promise<bayes.bob.DiagnosticCategories> {
   return postJson('/api/eval/use-case/categories', useCase, true, authToken)
 }
 
+function aliUserDataPost(request: bayes.ali.User): Promise<bayes.ali.EmailStatuses> {
+  return postJson('/api/ali/user', request, true)
+}
+
 export {
   advicePost,
   adviceTipsGet,
+  aliUserDataPost,
   applicationModesGet,
   convertUserWithAdviceSelectionFromProtoPost,
   convertUserWithAdviceSelectionToProtoPost,
@@ -303,6 +325,8 @@ export {
   projectStrategizePost,
   projectPost,
   resetPasswordPost,
+  simulateFocusEmailsPost,
+  strategyDelete,
   strategyPost,
   supportTicketPost,
   useCaseDistributionPost,

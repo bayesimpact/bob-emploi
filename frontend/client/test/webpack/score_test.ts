@@ -62,7 +62,8 @@ describe('computeBobScore', (): void => {
     })
     expect(components.map(({topic}): bayes.bob.DiagnosticTopic|undefined => topic)).
       to.have.members(
-        allKnownTopics, components.map(({topic}): bayes.bob.DiagnosticTopic|undefined => topic))
+        allKnownTopics,
+        components.map(({topic}): string => topic || '').join(','))
     expect(components.map(({title}): ((userYou: YouChooser) => string) => title)).
       to.have.lengthOf(allKnownTopics.length)
     const computedTexts = components.map(({text}): string|undefined => text)

@@ -7,6 +7,8 @@ const entrypoints = require('./entrypoints')
 const imageMinJpg = require('imagemin-mozjpeg')
 const imageMinPng = require('imagemin-optipng')
 const imageMinSvg = require('imagemin-svgo')
+// Allow node to require json5 files.
+require('json5/lib/register')
 
 const srcPath = path.join(__dirname, '../src')
 const sslPath = '/etc/ssl/webpack-dev'
@@ -42,10 +44,10 @@ module.exports = {
         use: ['style-loader', 'css-loader'],
       },
       {
-        test: /\.(eot|ttf|woff2?)(\?[a-z0-9=&.]+)?$/,
+        test: /\.(eot|ttf|woff2?)(\?[\d&.=a-z]+)?$/,
         use: {
           loader: 'url-loader',
-          query: {limit: 8192},
+          options: {limit: 8192},
         },
       },
       {
@@ -62,7 +64,12 @@ module.exports = {
         use: [
           {
             loader: 'url-loader',
-            query: {limit: 8192},
+            options: {
+              // Keep it as CommonJS so that we can use it to render as require in
+              // HtmlWebpackPlugin template.
+              esModule: false,
+              limit: 8192,
+            },
           },
           'svg-transform-loader',
           {
@@ -83,11 +90,11 @@ module.exports = {
         ],
       },
       {
-        test: /\.(png|jpg|gif)(\?[a-z0-9=&.]+)?$/,
+        test: /\.(png|jpg|gif)(\?[\d&.=a-z]+)?$/,
         use: [
           {
             loader: 'url-loader',
-            query: {limit: 8192},
+            options: {limit: 8192},
           },
           {
             loader: 'img-loader',
@@ -100,6 +107,11 @@ module.exports = {
       {
         test: /\.txt$/,
         use: 'raw-loader',
+      },
+      {
+        test: /\.json$/,
+        type: 'javascript/auto',
+        use: 'json5-loader',
       },
     ],
   },
@@ -119,6 +131,7 @@ module.exports = {
       images: path.join(srcPath, 'images'),
       store: path.join(srcPath, 'store'),
       styles: path.join(srcPath, 'styles'),
+      translations: path.join(srcPath, 'translations'),
     },
     extensions: ['.js', '.jsx', '_pb.js', '.ts', '.tsx'],
   },

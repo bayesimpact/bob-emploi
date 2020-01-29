@@ -94,7 +94,7 @@
   },
   "driving-license-euro": {
     "explanations": [
-      "vous avez entre 16 et 18 ans"
+      "vous avez entre 16 et 26 ans"
     ],
     "goal": "passer le permis",
     "shortTitle": "Prêt pour le permis",
@@ -287,6 +287,14 @@
     },
     "userGainCallout": "3x",
     "userGainDetails": "plus de chances de décrocher un entretien"
+  },
+  "needs-for-handicap": {
+    "goal": "arriver à parler de ses besoins à un employeur",
+    "shortTitle": "Communication sur le handicap",
+    "title": "Aider l'employeur à comprendre ses besoins",
+    "titleXStars": {
+    },
+    "userGainDetails": "d'attractivité de votre profil"
   },
   "network-application": {
     "callToAction": "Voir des exemples de mails pour contacter votre réseau",

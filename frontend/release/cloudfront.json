@@ -139,7 +139,7 @@
             {
               "EventType": "viewer-request",
               "IncludeBody": false,
-              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:17"
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:19"
             }
           ],
           "Quantity": 1
@@ -190,7 +190,7 @@
             {
               "EventType": "viewer-request",
               "IncludeBody": false,
-              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:17"
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:19"
             }
           ],
           "Quantity": 1
@@ -241,7 +241,7 @@
             {
               "EventType": "viewer-request",
               "IncludeBody": false,
-              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:17"
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:19"
             }
           ],
           "Quantity": 1
@@ -292,7 +292,7 @@
             {
               "EventType": "viewer-request",
               "IncludeBody": false,
-              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:17"
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:19"
             }
           ],
           "Quantity": 1
@@ -343,7 +343,7 @@
             {
               "EventType": "viewer-request",
               "IncludeBody": false,
-              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:17"
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:19"
             }
           ],
           "Quantity": 1
@@ -394,7 +394,58 @@
             {
               "EventType": "viewer-request",
               "IncludeBody": false,
-              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:17"
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:19"
+            }
+          ],
+          "Quantity": 1
+        },
+        "MaxTTL": 600,
+        "MinTTL": 0,
+        "PathPattern": "/unml/a-li/*",
+        "SmoothStreaming": false,
+        "TargetOriginId": "PE Static Assets on OVH",
+        "TrustedSigners": {
+          "Enabled": false,
+          "Quantity": 0
+        },
+        "ViewerProtocolPolicy": "redirect-to-https"
+      },
+      {
+        "AllowedMethods": {
+          "CachedMethods": {
+            "Items": [
+              "HEAD",
+              "GET"
+            ],
+            "Quantity": 2
+          },
+          "Items": [
+            "HEAD",
+            "GET"
+          ],
+          "Quantity": 2
+        },
+        "Compress": false,
+        "DefaultTTL": 600,
+        "FieldLevelEncryptionId": "",
+        "ForwardedValues": {
+          "Cookies": {
+            "Forward": "none"
+          },
+          "Headers": {
+            "Quantity": 0
+          },
+          "QueryString": false,
+          "QueryStringCacheKeys": {
+            "Quantity": 0
+          }
+        },
+        "LambdaFunctionAssociations": {
+          "Items": [
+            {
+              "EventType": "viewer-request",
+              "IncludeBody": false,
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:bob-aux-pages-redirect:19"
             }
           ],
           "Quantity": 1
@@ -499,7 +550,7 @@
         "ViewerProtocolPolicy": "redirect-to-https"
       }
     ],
-    "Quantity": 10
+    "Quantity": 11
   },
   "CallerReference": "1477742068362",
   "Comment": "",
@@ -541,7 +592,7 @@
         {
           "EventType": "viewer-request",
           "IncludeBody": false,
-          "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:opengraph-redirect:22"
+          "LambdaFunctionARN": "arn:aws:lambda:us-east-1:951168128976:function:opengraph-redirect:25"
         }
       ],
       "Quantity": 1

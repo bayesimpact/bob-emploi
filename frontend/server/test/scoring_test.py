@@ -7,15 +7,17 @@ import numbers
 from os import path
 import random
 import typing
-from typing import Any, Dict, Iterable, Iterator, Optional, Set, Type
+from typing import Any, Dict, Iterable, Iterator, Optional, Set, Type, Union
 import unittest
 from unittest import mock
 
 from google.protobuf import message
 import mongomock
+import pyjson5
 import pymongo
 import rstr
 
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
@@ -26,7 +28,6 @@ from bob_emploi.frontend.server import proto
 
 _TESTDATA_FOLDER = path.join(path.dirname(__file__), 'testdata')
 
-
 # TODO(cyrille): Move strategy scorer tests to its own module and re-enable rule below.
 # pylint: disable=too-many-lines
 
@@ -35,7 +36,7 @@ def _load_json_to_mongo(database: pymongo.database.Database, collection: str) ->
     """Load a MongoDB collection from a JSON file."""
 
     with open(path.join(_TESTDATA_FOLDER, collection + '.json')) as json_file:
-        json_blob = json.load(json_file)
+        json_blob = pyjson5.load(json_file)
     database[collection].insert_many(json_blob)
 
 
@@ -49,8 +50,7 @@ class ScoringProjectTestCase(unittest.TestCase):
         user.profile.gender = user_pb2.MASCULINE
         user.features_enabled.alpha = True
         project = project_pb2.Project(title='Developpeur web a Lyon')
-        project_str = str(scoring.ScoringProject(
-            project, user.profile, user.features_enabled, None))
+        project_str = str(scoring.ScoringProject(project, user, None))
         self.assertIn(str(user.profile), project_str)
         self.assertIn(str(project), project_str)
         self.assertIn(str(user.features_enabled), project_str)
@@ -62,12 +62,39 @@ class ScoringProjectTestCase(unittest.TestCase):
         user.profile.name = 'Cyrille'
         user.features_enabled.alpha = True
         project = project_pb2.Project(project_id='secret-project')
-        project_str = str(scoring.ScoringProject(
-            project, user.profile, user.features_enabled, None))
+        project_str = str(scoring.ScoringProject(project, user, None))
         self.assertNotIn('Cyrille', project_str)
         self.assertNotIn('secret-project', project_str)
         self.assertEqual('Cyrille', user.profile.name)
         self.assertEqual('secret-project', project.project_id)
+
+    def test_jobgroup_info_locale(self) -> None:
+        """A scoring project can be represented as a meaningful string."""
+
+        user = user_pb2.User()
+        user.profile.locale = 'nl'
+        database = mongomock.MongoClient().test
+        database.job_group_info.insert_many(
+            [{'_id': 'A1234', 'name': 'french'}, {'_id': 'nl:A1234', 'name': 'dutch'}])
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')))
+        scoring_project = scoring.ScoringProject(project, user, database)
+        job_group_info = scoring_project.job_group_info()
+        self.assertEqual('dutch', job_group_info.name)
+
+    def test_jobgroup_info_fr_locale(self) -> None:
+        """A scoring project can be represented as a meaningful string."""
+
+        user = user_pb2.User()
+        user.profile.locale = ''
+        database = mongomock.MongoClient().test
+        database.job_group_info.insert_many(
+            [{'_id': 'A1234', 'name': 'french'}, {'_id': 'nl:A1234', 'name': 'dutch'}])
+        project = project_pb2.Project(
+            target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')))
+        scoring_project = scoring.ScoringProject(project, user, database)
+        job_group_info = scoring_project.job_group_info()
+        self.assertEqual('french', job_group_info.name)
 
 
 class _Persona(object):
@@ -84,35 +111,45 @@ class _Persona(object):
         project: a Project protobuf defining their main project.
     """
 
-    def __init__(
-            self,
-            name: str,
-            user_profile: user_pb2.UserProfile,
-            project: project_pb2.Project,
-            features_enabled: Optional[user_pb2.Features] = None) -> None:
+    def __init__(self, name: str, user: user_pb2.User) -> None:
         self.name = name
-        self.user_profile = user_profile
-        self.project = project
-        self.features_enabled = features_enabled or user_pb2.Features()
+        self._user = user
+
+    @property
+    def user(self) -> user_pb2.User:  # pylint: disable=missing-function-docstring
+        return self._user
+
+    @property
+    def user_profile(self) -> user_pb2.UserProfile:  # pylint: disable=missing-function-docstring
+        return self._user.profile
+
+    @property
+    def project(self) -> project_pb2.Project:  # pylint: disable=missing-function-docstring
+        return self.user.projects[0]
+
+    @property
+    def features_enabled(self) -> user_pb2.Features:  # pylint: disable=missing-function-docstring
+        return self.user.features_enabled
 
     @classmethod
     def load_set(cls, filename: str) -> Dict[str, '_Persona']:
         """Load a set of personas from a JSON file."""
 
         with open(filename) as personas_file:
-            personas_json = json.load(personas_file)
+            personas_json = pyjson5.load(personas_file)
         personas: Dict[str, _Persona] = {}
         for name, blob in personas_json.items():
-            user_profile = user_pb2.UserProfile()
-            assert proto.parse_from_mongo(blob['user'], user_profile)
-            features_enabled = user_pb2.Features()
+            user = user_pb2.User()
+            assert proto.parse_from_mongo(blob['user'], user.profile)
             if 'featuresEnabled' in blob:
-                assert proto.parse_from_mongo(blob['featuresEnabled'], features_enabled)
-            project = project_pb2.Project()
-            assert proto.parse_from_mongo(blob['project'], project)
+                assert proto.parse_from_mongo(blob['featuresEnabled'], user.features_enabled)
+            if 'project' in blob:
+                assert proto.parse_from_mongo(blob['project'], user.projects.add())
+            if 'projects' in blob:
+                for project in blob['projects']:
+                    assert proto.parse_from_mongo(project, user.projects.add())
             assert name not in personas
-            personas[name] = cls(
-                name, user_profile=user_profile, project=project, features_enabled=features_enabled)
+            personas[name] = cls(name, user)
         return personas
 
     def scoring_project(
@@ -123,8 +160,7 @@ class _Persona(object):
 
         return scoring.ScoringProject(
             project=self.project,
-            user_profile=self.user_profile,
-            features_enabled=self.features_enabled,
+            user=self._user,
             database=database,
             now=now)
 
@@ -137,22 +173,63 @@ class _Persona(object):
         original one.
         """
 
-        name = f'{self.name} cloned'
-        user_profile = user_pb2.UserProfile()
-        user_profile.CopyFrom(self.user_profile)
-        project = project_pb2.Project()
-        project.CopyFrom(self.project)
-        features_enabled = user_pb2.Features()
-        features_enabled.CopyFrom(self.features_enabled)
-        return _Persona(
-            name=name, user_profile=user_profile,
-            project=project, features_enabled=features_enabled)
+        user = user_pb2.User()
+        user.CopyFrom(self._user)
+        return _Persona(name=f'{self.name} cloned', user=user)
 
 
-_PERSONAS = _Persona.load_set(path.join(_TESTDATA_FOLDER, 'personas.json'))
+_PERSONAS = _Persona.load_set(path.join(_TESTDATA_FOLDER, 'personas.json5'))
 
 
-class ScoringModelTestBase(unittest.TestCase):
+class PersonaTestBase(unittest.TestCase):
+    """A base class for tests using personas."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        proto.clear_mongo_fetcher_cache()
+        self.database = mongomock.MongoClient().test
+        self.now: Optional[datetime.datetime] = None
+
+    def _scoring_project(
+            self,
+            # TODO(cyrille): Use Union[_Persona, name, None].
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> scoring.ScoringProject:
+        if not persona:
+            persona = _PERSONAS[name] if name is not None else self._random_persona()
+        return persona.scoring_project(self.database, now=self.now)
+
+    def _score(
+            self,
+            model: Union[str, scoring.ModelBase, None] = None,
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> float:
+        if isinstance(model, str):
+            model = scoring.get_scoring_model(model)
+        if model is None:  # pragma: no-cover
+            raise NotImplementedError(
+                f'The model_id {model} is not the ID of any known model')
+        return model.score(self._scoring_project(persona, name))
+
+    def _assert_score_raises(
+            self,
+            model: Union[str, scoring.ModelBase],
+            exception_type: Type[Exception],
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> None:
+        if not persona:
+            persona = _PERSONAS[name] if name is not None else self._random_persona()
+        with self.assertRaises(exception_type, msg=f'Fail for "{persona.name}"'):
+            self._score(model, persona, name)
+
+    def _random_persona(self) -> _Persona:
+        return _PERSONAS[random.choice(list(_PERSONAS))]
+
+    def _clone_persona(self, name: str) -> _Persona:
+        return _PERSONAS[name].clone()
+
+
+class ScoringModelTestBase(PersonaTestBase):
     """Creates a base class for unit tests of a scoring model."""
 
     model_id: Optional[str] = None
@@ -176,42 +253,18 @@ class ScoringModelTestBase(unittest.TestCase):
         super().tearDownClass()
         cls._patcher.stop()  # type: ignore
 
-    def setUp(self) -> None:
-        super().setUp()
-        proto.clear_mongo_fetcher_cache()
-        self.database = mongomock.MongoClient().test
-        self.now: Optional[datetime.datetime] = None
-
-    def _scoring_project(
-            self,
-            persona: Optional[_Persona] = None,
-            name: Optional[str] = None) -> scoring.ScoringProject:
-        if not persona:
-            persona = _PERSONAS[name] if name is not None else self._random_persona()
-        return persona.scoring_project(self.database, now=self.now)
-
     def _score_persona(
             self,
             persona: Optional[_Persona] = None,
             name: Optional[str] = None) -> float:
-        return self.model.score(self._scoring_project(persona, name))
+        return self._score(self.model, persona, name)
 
     def _assert_score_persona_raises(
             self,
             exception_type: Type[Exception],
             persona: Optional[_Persona] = None,
             name: Optional[str] = None) -> None:
-        if not persona:
-            persona = _PERSONAS[name] if name is not None else self._random_persona()
-        project = persona.scoring_project(self.database, now=self.now)
-        with self.assertRaises(exception_type, msg=f'Fail for "{persona.name}"'):
-            self.model.score(project)
-
-    def _random_persona(self) -> _Persona:
-        return _PERSONAS[random.choice(list(_PERSONAS))]
-
-    def _clone_persona(self, name: str) -> _Persona:
-        return _PERSONAS[name].clone()
+        self._assert_score_raises(self.model, exception_type, persona, name)
 
 
 class AdviceScoringModelTestBase(ScoringModelTestBase):
@@ -456,6 +509,11 @@ class PersonasTestCase(unittest.TestCase):
         renamings = {
             'for-exact-experienced(internship)': 'for-exact-experienced(intern)',
         }
+        for base_name, target_name in renamings.items():
+            self.assertEqual(
+                json.dumps(scores.pop(base_name), sort_keys=True),
+                json.dumps(scores[target_name], sort_keys=True),
+                msg=f'The model "{base_name}" is not consistent with its renaming "{target_name}"')
         for model_name, model_scores in scores.items():
             model = scoring.SCORING_MODELS[model_name]
             if isinstance(model, scoring.ConstantScoreModel):
@@ -464,7 +522,7 @@ class PersonasTestCase(unittest.TestCase):
                 1, len(set(model_scores.values())),
                 msg=f'Model "{model_name}" has the same score for all personas.')
             scores_hash = json.dumps(model_scores, sort_keys=True)
-            model_scores_hashes[scores_hash].add(renamings.get(model_name, model_name))
+            model_scores_hashes[scores_hash].add(model_name)
         models_with_same_score = \
             [models for models in model_scores_hashes.values() if len(models) > 1]
         self.assertFalse(models_with_same_score, msg='Some models always have the same scores')
@@ -730,43 +788,6 @@ class AdviceOtherWorkEnvTestCase(ScoringModelTestBase):
         self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
 
 
-class AdviceWowBakerTestCase(ScoringModelTestBase):
-    """Unit tests for the "Wow Baker" advice."""
-
-    model_id = 'advice-wow-baker'
-
-    def test_not_baker(self) -> None:
-        """Does not trigger for non baker."""
-
-        persona = self._random_persona().clone()
-        if persona.project.target_job.job_group.rome_id == 'D1102':
-            persona.project.target_job.job_group.rome_id = 'M1607'
-
-        score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
-
-    def test_chief_baker(self) -> None:
-        """Does not trigger for a chief baker."""
-
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'D1102'
-        persona.project.target_job.code_ogr = '12006'
-
-        score = self._score_persona(persona)
-        self.assertEqual(score, 0, msg=f'Failed for "{persona.name}"')
-
-    def test_baker_not_chief(self) -> None:
-        """Does not trigger for a chief baker."""
-
-        persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'D1102'
-        if persona.project.target_job.code_ogr == '12006':
-            persona.project.target_job.code_ogr = '10868'
-
-        score = self._score_persona(persona)
-        self.assertEqual(score, 3, msg=f'Failed for "{persona.name}"')
-
-
 class AdviceSpecificToJobTestCase(ScoringModelTestBase):
     """Unit tests for the "Specicif to Job" advice."""
 
@@ -889,8 +910,7 @@ class FilterUsingScoreTestCase(unittest.TestCase):
 
     dummy_project = scoring.ScoringProject(
         project_pb2.Project(),
-        user_pb2.UserProfile(),
-        user_pb2.Features(),
+        user_pb2.User(),
         mongomock.MongoClient().test)
 
     @classmethod

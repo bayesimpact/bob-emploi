@@ -1,17 +1,17 @@
 // ATTENTION: Keep in sync with frontend/release/nginx.conf.
 module.exports = {
-  app: {
+  'app': {
     entry: './src/entry',
     htmlFilename: 'index.html',
     usesHotLoader: true,
   },
-  bootstrap: {
+  'bootstrap': {
     entry: './src/bootstrap_entry',
     htmlFilename: 'bootstrap.html',
     rewrite: /^\/conseiller\/(nouveau-profil-et-projet|ressources)/,
     usesHotLoader: true,
   },
-  eval: {
+  'eval': {
     entry: './src/eval_entry',
     htmlFilename: 'eval.html',
     rewrite: /^\/eval($|\/)/,
@@ -23,20 +23,20 @@ module.exports = {
   'mini-onboarding': {
     entry: './src/mini_onboarding_entry',
     htmlFilename: 'mini-onboarding.html',
-    rewrite: /^\/mini/,
+    rewrite: /^\/(mini|unml\/a-li)/,
     usesHotLoader: true,
   },
-  nps: {
+  'nps': {
     entry: './src/components/pages/nps',
     htmlFilename: 'nps.html',
     rewrite: /^\/retours$/,
   },
-  statusUpdate: {
+  'statusUpdate': {
     entry: './src/components/pages/status_update',
     htmlFilename: 'statut.html',
     rewrite: /^\/statut($|\/)/,
   },
-  unsubscribe: {
+  'unsubscribe': {
     entry: './src/components/pages/unsubscribe',
     htmlFilename: 'unsubscribe.html',
     rewrite: /^\/unsubscribe/,

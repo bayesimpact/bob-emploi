@@ -51,7 +51,11 @@ readonly ECR="951168128976.dkr"
 readonly ECR_DOMAIN="${ECR}.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
 readonly DOCKER_IMAGE="${ECR_DOMAIN}/$DOCKER_REPO:$DOCKER_TAG"
 readonly ECS_FAMILY="data-importer"
-readonly GIT_ORIGIN_WITH_WRITE_PERMISSION=https://$GITHUB_TOKEN@github.com/bayesimpact/bob-emploi-internal.git
+if [[ -z "$GITHUB_TOKEN" ]]; then
+  readonly GIT_ORIGIN_WITH_WRITE_PERMISSION="origin"
+else
+  readonly GIT_ORIGIN_WITH_WRITE_PERMISSION="https://$GITHUB_TOKEN@github.com/bayesimpact/bob-emploi-internal.git"
+fi
 
 
 echo_info 'Creating a task definition revision…'
@@ -75,8 +79,7 @@ else
 
   echo_success 'Task definition is updated!'
 
-  git remote set-url origin $GIT_ORIGIN_WITH_WRITE_PERMISSION
-  git push -f origin $TAG:prod-data-importer
+  git push -f "$GIT_ORIGIN_WITH_WRITE_PERMISSION" $TAG:prod-data-importer
 
   # Ping Slack to say the deployment is done.
   readonly SLACK_MESSAGE=$(mktemp)

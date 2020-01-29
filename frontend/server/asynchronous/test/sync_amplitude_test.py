@@ -7,6 +7,7 @@ from unittest import mock
 import mongomock
 import requests_mock
 
+from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import sync_amplitude
@@ -59,7 +60,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
         self.assertEqual(
             25 * 60 + 5,
             user.client_metrics.first_session_duration_seconds)
-        self.assertEqual(user_pb2.FALSE, user.client_metrics.is_first_session_mobile)
+        self.assertEqual(project_pb2.FALSE, user.client_metrics.is_first_session_mobile)
 
     def test_unknown_user(self, mock_requests: requests_mock.Mocker) -> None:
         """Test update_users_client_metrics with an unknown user."""
@@ -125,7 +126,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
         self.assertEqual(
             85 * 60 + 5,
             user.client_metrics.first_session_duration_seconds)
-        self.assertEqual(user_pb2.FALSE, user.client_metrics.is_first_session_mobile)
+        self.assertEqual(project_pb2.FALSE, user.client_metrics.is_first_session_mobile)
 
     @mock.patch('logging.info')
     def test_dry_run(
@@ -273,7 +274,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
         self.assertEqual(
             25 * 60 + 5,
             user.client_metrics.first_session_duration_seconds)
-        self.assertEqual(user_pb2.TRUE, user.client_metrics.is_first_session_mobile)
+        self.assertEqual(project_pb2.TRUE, user.client_metrics.is_first_session_mobile)
 
     def test_adding_mobile_afterwards(self, mock_requests: requests_mock.Mocker) -> None:
         """Adding the mobile information after already syncing."""
@@ -338,7 +339,7 @@ class SyncAmplitudeTestCase(unittest.TestCase):
             mock_db.user.find_one(mongomock.ObjectId('7ed900dbfbebd00000000004')), user)
         self.assertEqual('1234', user.client_metrics.amplitude_id)
         self.assertEqual(5, user.client_metrics.first_session_duration_seconds)
-        self.assertEqual(user_pb2.TRUE, user.client_metrics.is_first_session_mobile)
+        self.assertEqual(project_pb2.TRUE, user.client_metrics.is_first_session_mobile)
 
     @mock.patch('logging.error')
     def test_missing_sentry(

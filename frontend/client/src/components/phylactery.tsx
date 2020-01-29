@@ -102,9 +102,9 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
     // WARNING: Children of global bubble div are in reverse order, to allow the presence of a
     // scrollbar.
     return <React.Fragment>
-      {children.filter((child): boolean => !!child).map(
+      {children.filter((child): child is React.ReactElement<ElementProps> => !!child).map(
         (child: React.ReactElement<ElementProps>, index: number):
-        {child: React.ReactElement<ElementProps>; index: number} => ({child, index})
+        {child: React.ReactElement<ElementProps>; index: number} => ({child, index}),
       ).reverse().map(({child, index}): React.ReactElement<ElementProps> =>
         React.cloneElement(child, {
           isFastForwarded,
@@ -114,7 +114,7 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
           onUpdate,
           setDiscussing,
           style: {flex: '0 0 auto', ...child.props.style},
-        })
+        }),
       )}
     </React.Fragment>
   }
@@ -122,28 +122,26 @@ class GrowingPhylactery extends React.PureComponent<PhylacteryProps, PhylacteryS
 
 
 // A group of elements in a growing phylactery which should be seen as a whole bubble once expanded.
-class DiscussionBubble extends React.PureComponent<PhylacteryProps> {
-  public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.element).isRequired,
+const DiscussionBubbleBase = (props: PhylacteryProps): React.ReactElement|null => {
+  const {children, ...otherProps} = props
+  const nonNullChildren = children.
+    filter((child): child is React.ReactElement<ElementProps> => !!child)
+  if (!nonNullChildren.length) {
+    return null
   }
-
-  public render(): React.ReactNode {
-    const {children, ...otherProps} = this.props
-    const nonNullChildren = children.
-      filter((child): child is React.ReactElement<ElementProps> => !!child)
-    if (!nonNullChildren.length) {
-      return null
-    }
-    return <GrowingPhylactery {...otherProps}>
-      {nonNullChildren.
-        map((child, index): React.ReactElement<ElementProps> => React.cloneElement(child, {
-          isClosingConversation: index === nonNullChildren.length - 1,
-          isOpeningConversation: !index,
-          key: index,
-        }))}
-    </GrowingPhylactery>
-  }
+  return <GrowingPhylactery {...otherProps}>
+    {nonNullChildren.
+      map((child, index): React.ReactElement<ElementProps> => React.cloneElement(child, {
+        isClosingConversation: index === nonNullChildren.length - 1,
+        isOpeningConversation: !index,
+        key: index,
+      }))}
+  </GrowingPhylactery>
 }
+DiscussionBubbleBase.propTypes = {
+  children: PropTypes.arrayOf(PropTypes.element).isRequired,
+}
+const DiscussionBubble = React.memo(DiscussionBubbleBase)
 
 
 interface DiscussionProps extends PhylacteryProps {
@@ -313,59 +311,54 @@ class WaitingElement extends React.PureComponent<WaitingElementProps> {
 
 
 interface EllipsisProps {
-  bulletMargin: number
-  bulletSize: number
+  bulletMargin?: number
+  bulletSize?: number
   style?: React.CSSProperties
 }
 
 
+const bulletColors = [0.1, 0.2, 0.4].map((alpha): string => `rgba(0, 0, 0, ${alpha})`)
+
+
 // A '...' to let time for the user to read the previous bubble in a growing phylactery.
-class Ellipsis extends React.PureComponent<EllipsisProps> {
-  public static propTypes = {
-    bulletMargin: PropTypes.number.isRequired,
-    bulletSize: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
+const EllipsisBase = (props: EllipsisProps): React.ReactElement => {
+  const {bulletMargin = 5, bulletSize = 12, style: externalStyle} = props
+  // TODO(marielaure): Make everything more fluid (e.g. making the whole bubble disappear).
+  const style = useMemo((): React.CSSProperties => ({
+    borderRadius: 16,
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginTop: 5,
+    padding: 10,
+    width: 20 + bulletColors.length * (bulletSize + bulletMargin) - bulletMargin,
+    ...externalStyle,
+  }), [bulletMargin, bulletSize, externalStyle])
+  const animationDuration = 700
+  const bulletStyle = (backgroundColor: string, delay: number): React.CSSProperties => ({
+    animationDelay: `${0.5 + delay * 0.2}s`,
+    animationDirection: 'normal',
+    animationDuration: `${animationDuration}ms`,
+    animationFillMode: 'forwards',
+    animationIterationCount: 'infinite',
+    animationName: 'jump',
+    animationTimingFunction: 'ease-out',
+    backgroundColor,
+    borderRadius: bulletSize,
+    height: bulletSize,
+    width: bulletSize,
+  })
 
-  public static defaultProps = {
-    bulletMargin: 5,
-    bulletSize: 12,
-  }
-
-  public render(): React.ReactNode {
-    const {bulletMargin, bulletSize, style: externalStyle} = this.props
-    const bulletColors = [0.1, 0.2, 0.4].map((alpha): string => `rgba(0, 0, 0, ${alpha})`)
-    // TODO(marielaure): Make everything more fluid (e.g. making the whole bubble disappear).
-    const style = {
-      borderRadius: 16,
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginTop: 5,
-      padding: 10,
-      width: 20 + bulletColors.length * (bulletSize + bulletMargin) - bulletMargin,
-      ...externalStyle,
-    }
-    const animationDuration = 700
-    const bulletStyle = (backgroundColor, delay): React.CSSProperties => ({
-      animationDelay: `${0.5 + delay * 0.2}s`,
-      animationDirection: 'normal',
-      animationDuration: `${animationDuration}ms`,
-      animationFillMode: 'forwards',
-      animationIterationCount: 'infinite',
-      animationName: 'jump',
-      animationTimingFunction: 'ease-out',
-      backgroundColor,
-      borderRadius: bulletSize,
-      height: bulletSize,
-      width: bulletSize,
-    })
-
-    return <div style={style}>
-      {bulletColors.map((color, index): React.ReactNode =>
-        <div key={color} style={bulletStyle(color, index)} />)}
-    </div>
-  }
+  return <div style={style}>
+    {bulletColors.map((color, index): React.ReactNode =>
+      <div key={color} style={bulletStyle(color, index)} />)}
+  </div>
 }
+EllipsisBase.propTypes = {
+  bulletMargin: PropTypes.number,
+  bulletSize: PropTypes.number,
+  style: PropTypes.object,
+}
+const Ellipsis = React.memo(EllipsisBase)
 
 
 interface WaitingOnDoneProps extends ElementProps {
@@ -545,7 +538,9 @@ class BubbleToRead extends React.PureComponent<BubbleToReadProps> {
   }
 
   public static defaultProps = {
-    setDiscussing: (): void => {},
+    setDiscussing: (): void => {
+      // Do nothing.
+    },
   }
 
   public state = {
@@ -609,27 +604,32 @@ class BubbleToRead extends React.PureComponent<BubbleToReadProps> {
 }
 
 
+interface QuestionBubbleProps extends ElementProps {
+  children: React.ReactNode
+  isDone?: boolean
+}
+
+
 // A bubble containing a question asked to the user. Takes a 'isDone' prop to know if the question
 // has been answered.
-class QuestionBubble extends React.PureComponent<ElementProps & {isDone?: boolean}> {
-  public static propTypes = {
-    children: PropTypes.node,
-    isDone: PropTypes.bool,
-    isFastForwarded: PropTypes.bool,
-    isShown: PropTypes.bool,
-    onDone: PropTypes.func,
-    onShown: PropTypes.func,
-    onUpdate: PropTypes.func,
-  }
-
-  public render(): React.ReactNode {
-    const {children, isDone, isFastForwarded, isShown, onDone, onShown, onUpdate} = this.props
-    return <GrowingPhylactery {...{isFastForwarded, isShown, onDone, onShown, onUpdate}}>
-      <NoOpElement>{children}</NoOpElement>
-      <WaitingOnDone isDone={isDone} />
-    </GrowingPhylactery>
-  }
+const QuestionBubbleBase = (props: QuestionBubbleProps): React.ReactElement => {
+  const {children, isDone, isFastForwarded, isShown, onDone, onShown, onUpdate} = props
+  return <GrowingPhylactery {...{isFastForwarded, isShown, onDone, onShown, onUpdate}}>
+    <NoOpElement>{children}</NoOpElement>
+    <WaitingOnDone isDone={isDone} />
+  </GrowingPhylactery>
 }
+QuestionBubbleBase.propTypes = {
+  children: PropTypes.node,
+  isDone: PropTypes.bool,
+  isFastForwarded: PropTypes.bool,
+  isShown: PropTypes.bool,
+  onDone: PropTypes.func,
+  onShown: PropTypes.func,
+  onUpdate: PropTypes.func,
+}
+const QuestionBubble = React.memo(QuestionBubbleBase)
+
 
 export {Discussion, DiscussionBubble, Ellipsis, BubbleToRead, NoOpElement, QuestionBubble,
   WaitingElement}

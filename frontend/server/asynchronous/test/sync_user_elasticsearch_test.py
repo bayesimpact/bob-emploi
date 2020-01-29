@@ -5,7 +5,7 @@ import datetime
 import json
 import os
 import typing
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import unittest
 from unittest import mock
 
@@ -19,10 +19,8 @@ from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server.asynchronous import sync_user_elasticsearch
 
 if typing.TYPE_CHECKING:
-    import typing_extensions
-
     # TODO(pascal): Drop once requests_mock gets typed.
-    class _RequestsMock(typing_extensions.Protocol):
+    class _RequestsMock(typing.Protocol):
 
         def get(  # pylint: disable=invalid-name
                 self, path: str, status_code: int = 200, text: str = '',
@@ -36,12 +34,6 @@ if typing.TYPE_CHECKING:
                 headers: Optional[Dict[str, str]] = None,
                 request_headers: Optional[Dict[str, str]] = None) -> requests.Response:
             """Decide what to do when a post request is sent."""
-
-
-# TODO(pascal): Drop once requests_mock gets typed.
-_requests_mock_mock = typing.cast(  # pylint: disable=invalid-name
-    Callable[[], Callable[[Callable[..., Any]], Callable[..., Any]]],
-    requests_mock.mock)
 
 
 @mock.patch(now.__name__ + '.get', new=lambda: datetime.datetime(2017, 11, 16))
@@ -171,7 +163,7 @@ class SyncTestCase(unittest.TestCase):
         self.assertEqual(
             {
                 'index': 'bobusers',
-                'doc_type': 'user',
+                'doc_type': '_doc',
                 'id': user_id,
             },
             kwargs)
@@ -290,7 +282,7 @@ class SyncTestCase(unittest.TestCase):
 
         self._check_city_corner_case({'urbanContext': '3 - URBAN'}, {'urbanContext': 'URBAN'})
 
-    @_requests_mock_mock()
+    @requests_mock.mock()
     @mock.patch.dict(os.environ, {
         'ELASTICSEARCH_URL': 'http://elastic-dev:9200',
         'AWS_CONTAINER_CREDENTIALS_RELATIVE_URI': '/get-my-credentials',
@@ -428,6 +420,20 @@ class SyncTestCase(unittest.TestCase):
             data.get('nps_response'))
 
         mock_warning.assert_called_once_with('Cannot convert nps_score %s', 200)
+
+    def test_nps_request(self) -> None:
+        """NPS request computation."""
+
+        user = user_pb2.User()
+        user.registered_at.FromDatetime(datetime.datetime(2019, 10, 19, 20, 31, 33))
+        nps_email = user.emails_sent.add(campaign_id='nps')
+        nps_email.sent_at.FromDatetime(datetime.datetime(2019, 10, 22, 8, 15))
+        user.net_promoter_score_survey_response.responded_at.FromDatetime(
+            datetime.datetime(2019, 10, 22, 8, 15))
+        data = self._compute_user_data(user)
+        self.assertEqual(
+            {'hasResponded': True, 'sentAfterDays': 2},
+            data.get('nps_request'))
 
     def _compute_data_bob_has_helped(
             self, created_at: datetime.datetime, bob_has_helped: str) -> Dict[str, Any]:

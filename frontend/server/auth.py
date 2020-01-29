@@ -12,7 +12,7 @@ import random
 import re
 import time
 import typing
-from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple
+from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple, TypedDict
 from urllib import parse
 
 from bson import objectid
@@ -47,6 +47,11 @@ if typing.TYPE_CHECKING:
             mypy_extensions.DefaultNamedArg(bool, 'has_set_email'),
         ],
         timestamp_pb2.Timestamp]
+
+_LinkedInEmailResponse = TypedDict(  # pylint: disable=invalid-name
+    '_LinkedInEmailResponse', {
+        'handle~': Dict[str, str],
+    }, total=False)
 
 _GOOGLE_SSO_ISSUERS = frozenset({
     'accounts.google.com', 'https://accounts.google.com'})
@@ -270,19 +275,22 @@ class Authenticator(object):
     """An object to authenticate requests."""
 
     def __init__(
-            self, user_db: pymongo.database.Database, db: pymongo.database.Database,
+            self, user_db: pymongo.database.Database, db: Optional[pymongo.database.Database],
             save_new_user: Callable[[user_pb2.User], user_pb2.User],
-            update_returning_user: '_UpdateReturningUserFuncType') -> None:
+            update_returning_user: '_UpdateReturningUserFuncType',
+            user_collection: str = 'user') -> None:
         self._user_db = user_db
         self._db = db
         self._save_new_user = save_new_user
         self._update_returning_user = update_returning_user
+        self._user_collection = self._user_db.get_collection(user_collection)
 
     def save_new_user(
             self, user: user_pb2.User, user_data: auth_pb2.AuthUserData) -> user_pb2.User:
         """Save a user with additional data."""
 
         user.profile.can_tutoie = user_data.can_tutoie
+        user.profile.locale = user_data.locale
 
         return self._save_new_user(user)
 
@@ -298,7 +306,7 @@ class Authenticator(object):
         if auth_request.linked_in_code:
             return self._linked_in_authenticate(auth_request)
         if auth_request.email:
-            return self._password_authenticate(auth_request)
+            return self._email_authenticate(auth_request)
         if auth_request.user_id:
             return self._token_authenticate(auth_request)
 
@@ -312,7 +320,7 @@ class Authenticator(object):
     def _google_authenticate(self, auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
         id_info = _decode_google_id_token(auth_request.google_token_id)
         response = auth_pb2.AuthResponse()
-        user_dict = self._user_db.user.find_one({'googleId': id_info['sub']})
+        user_dict = self._user_collection.find_one({'googleId': id_info['sub']})
         if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
@@ -341,10 +349,10 @@ class Authenticator(object):
             flask.abort(
                 user_info_response.status_code,
                 user_info_response.json().get('error', {}).get('message', ''))
-        user_info = user_info_response.json()
+        user_info = typing.cast(Dict[str, str], user_info_response.json())
 
         response = auth_pb2.AuthResponse()
-        user_dict = self._user_db.user.find_one({'facebookId': user_info['id']})
+        user_dict = self._user_collection.find_one({'facebookId': user_info['id']})
         if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
@@ -389,7 +397,7 @@ class Authenticator(object):
                 user_info_response.text)
             flask.abort(403, user_info_response.text)
 
-        user_info = user_info_response.json()
+        user_info = typing.cast(Dict[str, str], user_info_response.json())
 
         city = None
         if 'coordonnees' in scopes:
@@ -400,10 +408,11 @@ class Authenticator(object):
                     'pe-nom-application': 'Bob Emploi',
                 })
             if coordinates_response.status_code >= 200 and coordinates_response.status_code < 400:
-                coordinates = coordinates_response.json()
+                coordinates = typing.cast(Dict[str, str], coordinates_response.json())
                 code_insee = coordinates.get('codeINSEE')
-                clean_code_insee = _replace_arrondissement_insee_to_city(code_insee)
-                city = geo.get_city_proto(clean_code_insee)
+                if code_insee:
+                    clean_code_insee = _replace_arrondissement_insee_to_city(code_insee)
+                    city = geo.get_city_proto(clean_code_insee)
 
         job = None
         if 'competences' in scopes:
@@ -420,7 +429,7 @@ class Authenticator(object):
                     job = jobs.get_job_proto(self._db, job_id, rome_id)
 
         response = auth_pb2.AuthResponse()
-        user_dict = self._user_db.user.find_one({'peConnectId': user_info['sub']})
+        user_dict = self._user_collection.find_one({'peConnectId': user_info['sub']})
         if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
@@ -469,11 +478,11 @@ class Authenticator(object):
                 'LinkedIn Auth fails (%d): "%s"', user_info_response.status_code,
                 user_info_response.text)
             flask.abort(403, user_info_response.text)
-        user_info = user_info_response.json()
+        user_info = typing.cast(Dict[str, str], user_info_response.json())
 
         response = auth_pb2.AuthResponse()
         # TODO(cyrille): Factorize with other 3rd party auth.
-        user_dict = self._user_db.user.find_one({'linkedInId': user_info['id']})
+        user_dict = self._user_collection.find_one({'linkedInId': user_info['id']})
         if proto.parse_from_mongo(user_dict, response.authenticated_user, 'user_id'):
             self._handle_returning_user(response)
         else:
@@ -485,7 +494,8 @@ class Authenticator(object):
                     'LinkedIn Auth fails (%d): "%s"', email_response.status_code,
                     email_response.text)
                 flask.abort(403, email_response.text)
-            email = email_response.json().get('handle~', {}).get('emailAddress')
+            email_response_json = typing.cast(_LinkedInEmailResponse, email_response.json())
+            email = email_response_json.get('handle~', {}).get('emailAddress')
             user = response.authenticated_user
             is_existing_user, had_email = self._load_user_from_token_or_email(
                 auth_request, user, email)
@@ -506,7 +516,7 @@ class Authenticator(object):
 
     def _assert_user_not_existing(self, email: str) -> None:
         existing_user = next(
-            self._user_db.user.find(
+            self._user_collection.find(
                 {'hashedEmail': hash_user_email(email)},
                 {'_id': 1, 'googleId': 1, 'facebookId': 1, 'peConnectId': 1, 'linkedInId': 1})
             .limit(1),
@@ -526,16 +536,16 @@ class Authenticator(object):
             403,
             f"L'utilisateur existe mais utilise un autre moyen de connexion: {user_auth_name}.")
 
-    def _password_authenticate(self, auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
+    def _email_authenticate(self, auth_request: auth_pb2.AuthRequest) -> auth_pb2.AuthResponse:
         instant = int(time.time())
         response = auth_pb2.AuthResponse()
         response.hash_salt = _timestamped_hash(instant, auth_request.email)
 
-        user_dict = self._user_db.user.find_one(
+        user_dict = self._user_collection.find_one(
             {'hashedEmail': hash_user_email(auth_request.email)})
 
         if not user_dict:
-            return self._password_register(auth_request, response)
+            return self._email_register(auth_request, response)
 
         user_object_id = user_dict['_id']
         user_id = str(user_object_id)
@@ -547,6 +557,14 @@ class Authenticator(object):
             return response
 
         if not user_auth_dict:
+            if not auth_request.auth_token:
+                # User is trying to connect with a password, but never created one.
+                self.send_auth_token(user_dict)
+                flask.abort(
+                    403,
+                    f'Nous avons envoyé un email à {auth_request.email} avec un lien pour se '
+                    'connecter',
+                )
             try:
                 check_token(user_id, auth_request.auth_token, role='auth')
             except ValueError as error:
@@ -614,10 +632,10 @@ class Authenticator(object):
 
         return response
 
-    def _password_register(
+    def _email_register(
             self, auth_request: auth_pb2.AuthRequest, response: auth_pb2.AuthResponse) \
             -> auth_pb2.AuthResponse:
-        """Registers a new user using a password."""
+        """Registers a new user using an email address."""
 
         is_existing_user = self._load_user_with_token(
             auth_request, response.authenticated_user, is_timestamp_required=False)
@@ -627,7 +645,8 @@ class Authenticator(object):
             if not (auth_request.first_name and auth_request.last_name):
                 flask.abort(422, 'Un champs requis est manquant (prénom ou nom)')
 
-        if is_existing_user or auth_request.hashed_password:
+        should_create_account = not is_existing_user and auth_request.hashed_password
+        if is_existing_user or should_create_account:
             force_update |= response.authenticated_user.profile.email != auth_request.email
             response.authenticated_user.profile.email = auth_request.email
             response.authenticated_user.hashed_email = hash_user_email(auth_request.email)
@@ -640,7 +659,7 @@ class Authenticator(object):
 
         if is_existing_user:
             self._handle_returning_user(response, had_email=had_email, force_update=force_update)
-        elif auth_request.hashed_password:
+        elif should_create_account:
             response.authenticated_user.profile.name = auth_request.first_name
             response.authenticated_user.profile.last_name = auth_request.last_name
             self.save_new_user(response.authenticated_user, auth_request.user_data)
@@ -654,6 +673,7 @@ class Authenticator(object):
             response.is_password_updated = True
 
         response.is_new_user = not is_existing_user
+        # TODO(cyrille): Consider dropping if there's no user_id.
         response.auth_token = create_token(response.authenticated_user.user_id, 'auth')
         return response
 
@@ -708,7 +728,7 @@ class Authenticator(object):
         except ValueError as error:
             flask.abort(403, f"Le sel n'a pas été généré par ce serveur : {error}.")
 
-        user_dict = self._user_db.user.find_one({'_id': user_id})
+        user_dict = self._user_collection.find_one({'_id': user_id})
 
         if not user_dict:
             flask.abort(404, 'Utilisateur inconnu.')
@@ -721,7 +741,7 @@ class Authenticator(object):
             self, auth_request: auth_pb2.AuthRequest, user: user_pb2.User,
             email: Optional[str]) -> Tuple[bool, bool]:
         is_existing_user = email and proto.parse_from_mongo(
-            self._user_db.user.find_one({'hashedEmail': hash_user_email(email)}),
+            self._user_collection.find_one({'hashedEmail': hash_user_email(email)}),
             user, 'user_id') or \
             self._load_user_with_token(auth_request, user, is_timestamp_required=False)
         had_email = bool(user.profile.email)
@@ -740,7 +760,7 @@ class Authenticator(object):
     def create_reset_token(self, user_id: objectid.ObjectId) -> Tuple[Optional[str], str]:
         """Create a token to reset the user's password."""
 
-        user_dict = self._user_db.user.find_one({'_id': user_id})
+        user_dict = self._user_collection.find_one({'_id': user_id})
         return self._create_reset_token_from_user(user_dict)
 
     def _create_reset_token_from_user(self, user_dict: Dict[str, Any]) -> Tuple[Optional[str], str]:
@@ -760,7 +780,7 @@ class Authenticator(object):
     def send_reset_password_token(self, email: str) -> None:
         """Sends an email to user with a reset token so that they can reset their password."""
 
-        user_dict = self._user_db.user.find_one({'hashedEmail': hash_user_email(email)})
+        user_dict = self._user_collection.find_one({'hashedEmail': hash_user_email(email)})
         if not user_dict:
             flask.abort(403, f"Nous n'avons pas d'utilisateur avec cet email : {email}")
 
@@ -781,6 +801,28 @@ class Authenticator(object):
             'firstName': user_profile.name,
         }
         result = mail.send_template('71254', user_profile, template_vars)
+        if result.status_code != 200:
+            logging.error('Failed to send an email with MailJet:\n %s', result.text)
+            flask.abort(result.status_code)
+
+    def send_auth_token(self, user_dict: Dict[str, Any]) -> None:
+        """Sends an email to the user with an auth token so that they can log in."""
+
+        user_profile = typing.cast(
+            user_pb2.UserProfile,
+            proto.create_from_mongo(user_dict.get('profile'), user_pb2.UserProfile))
+
+        user_id = str(user_dict['_id'])
+        auth_token = create_token(user_id, is_using_timestamp=True)
+        # TODO(pascal): Factorize with campaign.create_logged_url.
+        auth_link = parse.urljoin(flask.request.url, '/?' + parse.urlencode({
+            'userId': user_id,
+            'authToken': auth_token}))
+        template_vars = {
+            'authLink': auth_link,
+            'firstName': user_profile.name,
+        }
+        result = mail.send_template('1140080', user_profile, template_vars)
         if result.status_code != 200:
             logging.error('Failed to send an email with MailJet:\n %s', result.text)
             flask.abort(result.status_code)
@@ -808,9 +850,9 @@ def _get_oauth2_access_token(
         ))
     if token_response.status_code < 200 or token_response.status_code >= 400:
         try:
-            json_error = token_response.json()
+            json_error = typing.cast(Dict[str, str], token_response.json())
         except json.decoder.JSONDecodeError:
-            json_error = None
+            json_error = {}
         if json_error and json_error.keys() == {'error', 'error_description'}:
             error_description = json_error['error_description']
             if json_error['error'] in ('redirect_uri_mismatch', 'invalid_redirect_uri'):

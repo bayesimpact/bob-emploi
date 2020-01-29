@@ -1,68 +1,63 @@
-import React from 'react'
+import {TOptions} from 'i18next'
 import PropTypes from 'prop-types'
+import React, {useMemo} from 'react'
 
-import {YouChooser, tutoyer} from 'store/french'
-
+import {Trans} from 'components/i18n'
 import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-senior.svg'
 
 import {CardProps, MethodSuggestionList} from './base'
 
 
-const getTips = (isFeminine?: boolean, userYou: YouChooser = tutoyer): React.ReactNode[] => [
-  <span key="stable"><strong>Stable</strong>, {userYou('tu en seras', 'vous en serez')} d'autant
-    plus fiable.</span>,
-  <span key="experiemente">
-    <strong>Expérimenté{isFeminine ? 'e' : ''}</strong>,
-    {userYou(' tu pourras', ' vous pourrez')} partager avec l'équipe toutes les compétences
-    que {userYou('tu as', 'vous avez')} acquises auparavant.
-  </span>,
-  <span key="operationnel">
-    <strong>Opérationnel{isFeminine ? 'le' : ''}</strong>,
-    {userYou(' tu seras', ' vous serez')} un plus pour l'équipe tout de suite
-    car {userYou('tu sais faire ton', 'vous savez faire votre')} métier.
-  </span>,
-]
-
-
 interface SeniorTipProps {
+  children: React.ReactNode
   style?: React.CSSProperties
-  tip: React.ReactNode
 }
 
 const TipBase: React.FC<SeniorTipProps> =
-  ({tip, style}: SeniorTipProps): ReactStylableElement => {
-    const trainingNameStyle: React.CSSProperties = {
+  ({children, style}: SeniorTipProps): ReactStylableElement => {
+    const trainingNameStyle = useMemo((): React.CSSProperties => ({
       ...style,
       fontStyle: 'italic',
       fontWeight: 'normal',
-    }
+    }), [style])
     return <div style={trainingNameStyle}>
-      {tip}
+      {children}
     </div>
   }
 TipBase.propTypes = {
+  children: PropTypes.node.isRequired,
   style: PropTypes.object,
-  tip: PropTypes.node.isRequired,
 }
 const Tip = React.memo(TipBase)
 
-const ExpandedAdviceCardContentBase: React.FC<CardProps> =
+
+const SeniorMethod: React.FC<CardProps> =
   (props: CardProps): React.ReactElement => {
-    const {profile, userYou} = props
-    const tips = getTips(profile.gender === 'FEMININE', userYou)
-    const maybeS = tips.length > 1 ? 's' : ''
-    const title = <React.Fragment>
-      <GrowingNumber number={tips.length} /> qualité{maybeS} liée{maybeS} à l'âge à mettre en avant
-    </React.Fragment>
+    const {profile, t} = props
+    const tOptions = useMemo((): TOptions => ({
+      context: profile.gender,
+    }), [profile.gender])
+    const title = <Trans parent={null} t={t}>
+      <GrowingNumber number={3} /> qualités liées à l'âge à mettre en avant
+    </Trans>
     return <MethodSuggestionList title={title} isNotClickable={true}>
-      {tips.map((tip, index): ReactStylableElement => <Tip key={`tip-${index}`} tip={tip} />)}
+      <Trans parent={Tip} t={t} tOptions={tOptions}>
+        <strong>Stable</strong>, vous en serez d'autant plus fiable.
+      </Trans>
+      <Trans parent={Tip} t={t} tOptions={tOptions}>
+        <strong>Expérimenté·e</strong>, vous pourrez partager avec l'équipe toutes les compétences
+        que vous avez acquises auparavant.
+      </Trans>
+      <Trans parent={Tip} t={t} tOptions={tOptions}>
+        <strong>Opérationnel·le</strong>, vous serez un plus pour l'équipe tout de suite
+        car vous savez faire votre métier.
+      </Trans>
     </MethodSuggestionList>
   }
-ExpandedAdviceCardContentBase.propTypes = {
+SeniorMethod.propTypes = {
   profile: PropTypes.object.isRequired,
-  userYou: PropTypes.func.isRequired,
 }
-const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = React.memo(SeniorMethod)
 
 export default {ExpandedAdviceCardContent, Picto}

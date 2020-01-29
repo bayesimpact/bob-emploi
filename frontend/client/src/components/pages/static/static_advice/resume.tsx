@@ -1,5 +1,7 @@
 import React from 'react'
 
+import {prepareT} from 'store/i18n'
+
 import picto from 'images/advices/picto-resume.png'
 
 import {TestimonialCard} from 'components/testimonials'
@@ -11,7 +13,8 @@ import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCar
 const adviceId = 'cv-percutant'
 
 
-const name = 'CV plus percutant'
+// i18next-extract-mark-ns-next-line staticAdviceTitle
+const name = prepareT('CV plus percutant')
 
 
 const TESTIMONIALS = [
@@ -44,40 +47,39 @@ const TESTIMONIALS = [
 ]
 
 
-class Page extends React.PureComponent<AdvicePageProps> {
-  public render(): React.ReactNode {
-    return <StaticAdvicePage
-      adviceId={adviceId} {...this.props}
-      testimonials={TESTIMONIALS}
-      title={`Rendez votre CV plus percutant avec ${config.productName}`}>
-      <AdviceSection
-        adviceId={adviceId} title="réussir son CV">
-        <AdviceDetail>
-          Identifier les <strong>qualités</strong> importantes à mettre
-          dans votre <strong>CV</strong>.
-        </AdviceDetail>
-        <AdviceDetail>
-          Trouver les meilleurs outils gratuits pour générer
-          des <strong>exemples de CV</strong>.
-        </AdviceDetail>
-        <AdviceDetail>
-          Trouver des astuces pour repérer les bons <strong>mots-clés</strong> et
-          <strong> adapter vos CV</strong> en fonction <strong>des offres d'emploi</strong>.
-        </AdviceDetail>
-      </AdviceSection>
-    </StaticAdvicePage>
-  }
+const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactElement =>
+  <StaticAdvicePage
+    adviceId={adviceId} {...props}
+    testimonials={TESTIMONIALS}
+    title={`Rendez votre CV plus percutant avec ${config.productName}`}>
+    <AdviceSection
+      adviceId={adviceId} title="réussir son CV">
+      <AdviceDetail>
+        Identifier les <strong>qualités</strong> importantes à mettre
+        dans votre <strong>CV</strong>.
+      </AdviceDetail>
+      <AdviceDetail>
+        Trouver les meilleurs outils gratuits pour générer
+        des <strong>exemples de CV</strong>.
+      </AdviceDetail>
+      <AdviceDetail>
+        Trouver des astuces pour repérer les bons <strong>mots-clés</strong> et
+        <strong> adapter vos CV</strong> en fonction <strong>des offres d'emploi</strong>.
+      </AdviceDetail>
+    </AdviceSection>
+  </StaticAdvicePage>
+
+
+const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
+  <StaticAdviceCardBase picto={picto} name="CV percutant" {...props} >
+    Les qualités indispensables à mettre dans votre <strong>CV</strong> selon
+    votre <strong>métier</strong>
+  </StaticAdviceCardBase>
+
+
+export default {
+  Page: React.memo(Page),
+  StaticAdviceCard: React.memo(StaticAdviceCard),
+  adviceId,
+  name,
 }
-
-
-class StaticAdviceCard extends React.PureComponent<CardProps> {
-  public render(): React.ReactNode {
-    return <StaticAdviceCardBase picto={picto} name="CV percutant" {...this.props} >
-      Les qualités indispensables à mettre dans votre <strong>CV</strong> selon
-      votre <strong>métier</strong>
-    </StaticAdviceCardBase>
-  }
-}
-
-
-export default {Page, StaticAdviceCard, adviceId, name}

@@ -544,9 +544,10 @@ class Galita3VarsTestCase(mail_blast_test.CampaignTestBase):
         })
         self._assert_has_status_update_link(field='statusUpdateUrl')
 
-        self.assertEqual(
-            'https://www.bob-emploi.fr/projet/123/follow-up',
-            self._variables.pop('deepLinkToAdvice'))
+        self._assert_has_logged_url(
+            'deepLinkToAdvice',
+            '/projet/123/methode/follow-up',
+        )
 
 
 class ViralSharingVarsTestCase(mail_blast_test.CampaignTestBase):
@@ -591,6 +592,28 @@ class ViralSharingVarsTestCase(mail_blast_test.CampaignTestBase):
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
         })
+
+
+class HandicapComTestCase(mail_blast_test.CampaignTestBase):
+    """Test of handicap-week newsletter email."""
+
+    campaign_id = 'handicap-week'
+
+    def test_newsletter(self) -> None:
+        """User asked for the newsletter."""
+
+        self.user.profile.name = 'Patrick'
+        self.user.profile.is_newsletter_enabled = True
+        self._assert_user_receives_campaign()
+        self._assert_remaining_variables({
+            'firstName': 'Patrick',
+        })
+
+    def test_no_newsletter(self) -> None:
+        """User didn't ask for the newsletter."""
+
+        self.user.profile.is_newsletter_enabled = False
+        self._assert_user_receives_campaign(should_be_sent=False)
 
 
 class OpenClassroomsVarsTestCase(mail_blast_test.CampaignTestBase):

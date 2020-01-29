@@ -121,7 +121,7 @@ def _hash_user_id(user_id: str) -> str:
 
 
 def blast_campaign(
-        campaign_id: str, action: str, registered_from: str, registered_to: str,
+        campaign_id: str, action: 'campaign.Action', registered_from: str, registered_to: str,
         dry_run_email: str, user_hash: str, user_id_start: str, email_policy: EmailPolicy) -> int:
     """Send a campaign of personalized emails."""
 
@@ -176,7 +176,8 @@ def blast_campaign(
 
         try:
             if not this_campaign.send_mail(
-                    campaign_id, user, database, user_database, action, dry_run_email):
+                    campaign_id, user, database=database, users_database=user_database,
+                    action=action, dry_run_email=dry_run_email, now=now.get()):
                 no_template_vars_count += 1
                 continue
         except requests.exceptions.HTTPError as error:

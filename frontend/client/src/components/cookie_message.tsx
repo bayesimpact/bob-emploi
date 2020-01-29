@@ -1,12 +1,13 @@
 import CloseIcon from 'mdi-react/CloseIcon'
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
 import {connect} from 'react-redux'
 import {Link} from 'react-router-dom'
 
 import {RootState, acceptCookiesUsageAction} from 'store/actions'
 
 import {Banner} from 'components/banner'
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {Button, SmoothTransitions} from 'components/theme'
 import {Routes} from 'components/url'
@@ -31,16 +32,19 @@ const SimpleCookieMessageBase: React.FC<{}> = (): React.ReactElement => {
     fontWeight: 600,
     textDecoration: isMobileVersion ? 'underline' : 'none',
   }
-  return <div>
-    {isMobileVersion ? 'Ce site utilise des ' : 'En poursuivant votre navigation sur ce ' +
-    "site, vous acceptez l'utilisation de cookies pour améliorer la qualité du service et pour " +
-    'réaliser des statistiques de visite. Vos données ne seront ni cédées à des tiers, ni ' +
-    'exploitées à des fins commerciales.'} <Link
-      style={linkStyle}
-      to={Routes.COOKIES_PAGE}>
-      {isMobileVersion ? 'cookies.' : 'En savoir plus'}
+  if (isMobileVersion) {
+    return <Trans>
+      Ce site utilise des <Link style={linkStyle} to={Routes.COOKIES_PAGE}>cookies</Link>.
+    </Trans>
+  }
+  return <Trans>
+    En poursuivant votre navigation sur ce site, vous acceptez l'utilisation de cookies pour
+    améliorer la qualité du service et pour réaliser des statistiques de visite. Vos données ne
+    seront ni cédées à des tiers, ni exploitées à des fins commerciales. <Link
+      style={linkStyle} to={Routes.COOKIES_PAGE}>
+      En savoir plus
     </Link>
-  </div>
+  </Trans>
 }
 const SimpleCookieMessage = React.memo(SimpleCookieMessageBase)
 
@@ -108,14 +112,14 @@ const CookieMessageOverlayBase: React.FC<CookieMessageOverlayProps> =
       ':hover': {
         backgroundColor: colors.COOL_GREY,
       },
-      backgroundColor: colors.MODAL_PROJECT_GREY,
-      borderRadius: 50,
-      height: 30,
-      padding: 3,
-      position: 'absolute',
-      right: -15,
-      top: -15,
-      width: 30,
+      'backgroundColor': colors.MODAL_PROJECT_GREY,
+      'borderRadius': 50,
+      'height': 30,
+      'padding': 3,
+      'position': 'absolute',
+      'right': -15,
+      'top': -15,
+      'width': 30,
     }
     return <div style={containerStyle}>
       <Button onClick={onAcceptCookieUsage} aria-label="Fermer" style={closeButtonStyle}>

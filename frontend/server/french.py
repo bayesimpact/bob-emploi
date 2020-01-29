@@ -13,9 +13,7 @@ from typing import Dict, List
 from bob_emploi.frontend.api import user_pb2
 
 if typing.TYPE_CHECKING:
-    import typing_extensions
-
-    class _NamedJob(typing_extensions.Protocol):
+    class _NamedJob(typing.Protocol):
         """Structural typing for classes which can produce a name depending on a gender."""
 
         feminine_name: str

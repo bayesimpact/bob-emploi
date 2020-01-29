@@ -11,7 +11,7 @@
         "containerOverrides": [
           {
             "command": [
-              "python bob_emploi/frontend/server/asynchronous/mail_nps.py  2"
+              "python bob_emploi/frontend/server/asynchronous/mail_nps.py 7"
             ],
             "environment": [
               {

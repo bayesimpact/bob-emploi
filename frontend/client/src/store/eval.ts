@@ -1,6 +1,8 @@
+import {TFunction} from 'i18next'
+
 import {createProjectTitleComponents} from 'store/project'
 
-export function getUseCaseTitle(title?: string, userData?: bayes.bob.User): string {
+export function getUseCaseTitle(t: TFunction, title?: string, userData?: bayes.bob.User): string {
   if (title) {
     return title
   }
@@ -9,6 +11,6 @@ export function getUseCaseTitle(title?: string, userData?: bayes.bob.User): stri
     return ''
   }
   const project = projects[0]
-  const {what, where} = createProjectTitleComponents(project, gender)
+  const {what, where} = createProjectTitleComponents(project, t, gender)
   return `${what} ${where}`
 }
