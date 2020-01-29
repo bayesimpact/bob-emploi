@@ -102,7 +102,7 @@ def strategize(
         -> None:
     """Make strategies for the user."""
 
-    scoring_project = scoring.ScoringProject(project, user.profile, user.features_enabled, database)
+    scoring_project = scoring.ScoringProject(project, user, database)
     advice_scores = {a.advice_id: a.num_stars for a in project.advices}
     category_modules = _get_strategy_modules_by_category(database).get(
         project.diagnostic.category_id, [])
@@ -110,6 +110,8 @@ def strategize(
         _make_strategy(scoring_project, module, advice_scores)
     scoring_project.details.strategies.sort(key=lambda s: -s.score)
     if not scoring_project.details.strategies:
+        if category_modules:
+            logging.warning('We could not find *any* strategy for a project:\n%s', scoring_project)
         return
     scoring_project.details.strategies[0].is_principal = True
 
@@ -137,8 +139,7 @@ def _make_strategy(
         specific_to_job_config = project.specific_to_job_advice_config()
         if specific_to_job_config and module.strategy_id in specific_to_job_config.strategy_ids:
             pieces_of_advice.append(strategy_pb2.StrategyAdvice(
-                advice_id=_SPECIFIC_TO_JOB_ADVICE_ID,
-                teaser=project.translate_string(specific_to_job_config.goal)))
+                advice_id=_SPECIFIC_TO_JOB_ADVICE_ID))
     if not pieces_of_advice:
         # Don't want to show a strategy without any advice modules.
         return None

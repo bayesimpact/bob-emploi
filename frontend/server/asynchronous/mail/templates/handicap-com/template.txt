@@ -1,0 +1,32 @@
+RÉPONDRE AUX PARCOURS DE VIE SPÉCIFIQUES  ♿
+================================================================================
+Bayes Impact a travaillé avec Hanploi [http://r.bob-emploi.fr/lnk/AT4AADIv-ggAAAAAAAAAAG1yNsMAARpchvMAAAAAAAeZAwBd1sCDT1l7-a-JRy-Im3NnSH5kqAAHPJo/1/gFTSC89dVYbaX3H9H2wClw/aHR0cHM6Ly93d3cuaGFucGxvaS5jb20v]  pour adapter les conseils de Bob, son outil d’aide à la recherche d’emploi.
+
+Cette semaine, c'est la Semaine européenne pour l’emploi des personnes handicapées [http://r.bob-emploi.fr/lnk/AT4AADIv-ggAAAAAAAAAAG1yNsMAARpchvMAAAAAAAeZAwBd1sCDT1l7-a-JRy-Im3NnSH5kqAAHPJo/2/MAfAD6-9_tz89ONZuy2sGA/aHR0cDovL3d3dy5zZW1haW5lLWVtcGxvaS1oYW5kaWNhcC5jb20v].  Notre équipe a récemment créé de nouveaux contenus pour améliorer l'expérience de Bob pour des personnes en situation de handicap. Ces dernières représentent près de 7% des travailleurs  en France, et 6% de nos utilisateurs.
+
+Nous avons donc travaillé avec Hanploi sur les défis particuliers auxquels ces personnes peuvent être confrontées dans leurs recherches d’emploi. Le but : prodiguer des conseils clairs et accessibles.
+
+Pour n'importe quelle utilisatrice, l'algorithme  de Bob trouve les stratégies de recherche d’emploi les plus pertinentes ainsi que les méthodes pour atteindre son objectif.
+
+Dans l’exemple ci-dessus, il s’agit d’aider un utilisateur à décider comment parler de son handicap auprès d’un employeur. Aujourd'hui, c'est plus de la moitié des méthodes de recherche d'emploi qui ont été revues et adaptées.
+
+Des efforts restent à faire pour un coaching encore plus inclusif, mais nous espérons avoir apporté une pierre de plus à l'édifice avec ces dernières fonctionnalités.
+<<Tester Bob>> [https:///www-bob-emploi.fr]
+
+L'équipe de Bayes Impact, qui retourne travailler sur Bob !
+--------------------------------------------------------------------------------
+
+
+
+Bob est rendu possible grâce au soutien à notre ONG Bayes Impact de nombreuses organisations et individus engagés, dont notamment : 
+
+Google.org - La Fondation La France s'engage - JP Morgan - Les Galeries Lafayette 
+
+Retrouvez l'ensemble de nos soutiens par ici [https://www.bayesimpact.org/fr/about/partners-funders].
+<<Faire un don à notre ONG>> [https://www.helloasso.com/associations/bayes-impact-france/formulaires/3]
+
+Cet email a été envoyé à [[EMAIL_TO]], cliquez ici pour vous désabonner [[[UNSUB_LINK_FR]]].
+
+
+
+[https://fr.mailjet.com/?utm_source=footer&utm_medium=email&utm_campaign=logo1]

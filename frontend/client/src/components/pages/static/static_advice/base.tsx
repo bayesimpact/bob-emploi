@@ -1,7 +1,9 @@
+import {TFunction} from 'i18next'
 import CheckIcon from 'mdi-react/CheckIcon'
 import PropTypes from 'prop-types'
 import {stringify} from 'query-string'
-import React from 'react'
+import React, {useMemo} from 'react'
+import {useTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {RouteComponentProps} from 'react-router'
 import {Link, Redirect} from 'react-router-dom'
@@ -12,6 +14,7 @@ import {DispatchAllActions, RootState, staticAdvicePageIsShown} from 'store/acti
 
 import {CardCarousel} from 'components/card_carousel'
 import {CookieMessageOverlay} from 'components/cookie_message'
+import {Trans} from 'components/i18n'
 import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {ShareModal} from 'components/share'
@@ -42,7 +45,7 @@ interface AdviceModule {
 }
 
 
-const STATIC_ADVICE_MODULES: AdviceModule[] = [
+const STATIC_ADVICE_MODULES: readonly AdviceModule[] = [
   AssociationHelp,
   Events,
   Interview,
@@ -59,6 +62,7 @@ const TRACK_HASH = '#sa'
 
 export interface CardProps {
   style?: React.CSSProperties
+  t: TFunction
 }
 
 
@@ -69,77 +73,90 @@ interface AdviceCardProps extends CardProps {
 }
 
 
-class StaticAdviceCardBase extends React.PureComponent<AdviceCardProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    name: PropTypes.string,
-    picto: PropTypes.string,
-    style: PropTypes.object,
-  }
+const imageCardStyle = {height: 80, marginTop: 30, width: 80}
+const childrenCardStyle = {padding: 40}
 
-  public render(): React.ReactNode {
-    const {children, name, picto, style, ...otherProps} = this.props
-    const containerStyle: React.CSSProperties = {
-      backgroundColor: '#fff',
-      color: '#000',
-      flexDirection: 'column',
-      textAlign: 'center',
-      ...style,
-    }
+const StaticAdviceCard = (props: AdviceCardProps): React.ReactElement => {
+  const {children, name, picto, style, t: omittedT, ...otherProps} = props
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: '#fff',
+    color: '#000',
+    flexDirection: 'column',
+    textAlign: 'center',
+    ...style,
+  }), [style])
 
-    return <div style={containerStyle} {...otherProps}>
-      <img style={{height: 80, marginTop: 30, width: 80}} src={picto} alt={name} />
-      <div style={{padding: 40}}>{children}</div>
-    </div>
-  }
+  return <div style={containerStyle} {...otherProps}>
+    <img style={imageCardStyle} src={picto} alt={name} />
+    <div style={childrenCardStyle}>{children}</div>
+  </div>
+}
+StaticAdviceCard.ropTypes = {
+  children: PropTypes.node,
+  name: PropTypes.string,
+  picto: PropTypes.string,
+  style: PropTypes.object,
+}
+const StaticAdviceCardBase = React.memo(StaticAdviceCard)
+
+
+const sectionStyle: React.CSSProperties = {
+  backgroundColor: '#fff',
+  padding: '20px 0',
+  position: 'relative',
+}
+const headerStyle: React.CSSProperties = {
+  fontSize: isMobileVersion ? 28 : 33,
+  fontWeight: 'normal',
+  margin: 'auto',
+  maxWidth: 750,
+  padding: '80px 10px',
+  textAlign: 'center',
+}
+const linkStyle: React.CSSProperties = {
+  borderRadius: 10,
+  boxShadow: '0 15px 40px 0 rgba(0, 0, 0, 0.25)',
+  textDecoration: 'initial',
+}
+const staticAdviceCardStyle: React.CSSProperties = {
+  height: '100%',
 }
 
-class StaticAdviceNavigation extends React.PureComponent<{currentAdviceId?: string}> {
-  public static propTypes = {
-    currentAdviceId: PropTypes.string,
-  }
 
-  public render(): React.ReactNode {
-    const adviceCardsToShow = STATIC_ADVICE_MODULES.filter(
+const StaticAdviceNavigationBase = (props: {currentAdviceId?: string}): React.ReactElement|null => {
+  const {currentAdviceId} = props
+
+  const adviceCardsToShow = useMemo(
+    (): readonly AdviceModule[] => STATIC_ADVICE_MODULES.filter(
       ({adviceId, StaticAdviceCard}): boolean =>
-        adviceId !== this.props.currentAdviceId && !!StaticAdviceCard)
-    if (!adviceCardsToShow.length) {
-      return null
-    }
-    const sectionStyle: React.CSSProperties = {
-      backgroundColor: '#fff',
-      padding: '20px 0',
-      position: 'relative',
-    }
-    const headerStyle: React.CSSProperties = {
-      fontSize: isMobileVersion ? 28 : 33,
-      fontWeight: 'normal',
-      margin: 'auto',
-      maxWidth: 750,
-      padding: '80px 10px',
-      textAlign: 'center',
-    }
-    const linkStyle: React.CSSProperties = {
-      borderRadius: 10,
-      boxShadow: '0 15px 40px 0 rgba(0, 0, 0, 0.25)',
-      textDecoration: 'initial',
-    }
-    return <section style={sectionStyle}>
-      <h2 style={headerStyle}>
-        {config.productName} peut aussi augmenter l'efficacité de
-        votre <strong>recherche d'emploi</strong> grâce à&nbsp;:
-      </h2>
-      <CardCarousel maxWidth={MAX_CONTENT_WIDTH}>
-        {adviceCardsToShow.map(({StaticAdviceCard, adviceId}): Link =>
-          <Link
-            style={linkStyle} key={`advice-${adviceId}`}
-            to={Routes.STATIC_ADVICE_PAGE + `/${adviceId}`}>
-            <StaticAdviceCard style={{height: '100%'}} />
-          </Link>)}
-      </CardCarousel>
-    </section>
+        adviceId !== currentAdviceId && !!StaticAdviceCard,
+    ),
+    [currentAdviceId],
+  )
+  const {t} = useTranslation('staticAdvice')
+
+  if (!adviceCardsToShow.length) {
+    return null
   }
+  return <section style={sectionStyle}>
+    <Trans parent="h2" style={headerStyle} t={t}>
+      {{productName: config.productName}} peut aussi augmenter l'efficacité de
+      votre <strong>recherche d'emploi</strong> grâce à&nbsp;:
+    </Trans>
+    <CardCarousel maxWidth={MAX_CONTENT_WIDTH}>
+      {adviceCardsToShow.map(({StaticAdviceCard, adviceId}): ReactStylableElement =>
+        <Link
+          style={linkStyle} key={`advice-${adviceId}`}
+          to={Routes.STATIC_ADVICE_PAGE + `/${adviceId}`}>
+          <StaticAdviceCard style={staticAdviceCardStyle} t={t} />
+        </Link>)}
+    </CardCarousel>
+  </section>
 }
+StaticAdviceNavigationBase.propTypes = {
+  currentAdviceId: PropTypes.string,
+}
+const StaticAdviceNavigation = React.memo(StaticAdviceNavigationBase)
 
 
 interface AdviceCardConnectedProps {
@@ -147,14 +164,16 @@ interface AdviceCardConnectedProps {
 }
 
 
-export type AdvicePageProps = RouteComponentProps<{}> & AdviceCardConnectedProps
+export interface AdvicePageProps extends RouteComponentProps<{}>, AdviceCardConnectedProps {
+  t: TFunction
+}
 
 
 interface StaticAdvicePageProps extends AdvicePageProps {
   adviceId: string
   children?: React.ReactNode
   dispatch: DispatchAllActions
-  testimonials: React.ReactElement<{author: {name: string}}>[]
+  testimonials: readonly React.ReactElement<{author: {name: string}}>[]
   title?: string
 }
 
@@ -171,6 +190,7 @@ class StaticAdvicePageBase extends React.PureComponent<StaticAdvicePageProps, Ad
     dispatch: PropTypes.func.isRequired,
     hasSeenShareModal: PropTypes.bool,
     location: ReactRouterPropTypes.location.isRequired,
+    t: PropTypes.func.isRequired,
     testimonials: PropTypes.arrayOf(PropTypes.element.isRequired),
     title: PropTypes.string.isRequired,
   }
@@ -202,15 +222,18 @@ class StaticAdvicePageBase extends React.PureComponent<StaticAdvicePageProps, Ad
   private handleCloseShare = (): void => this.setState({isShareBobShown: false})
 
   public render(): React.ReactNode {
-    const {adviceId, children, dispatch, location: {hash, pathname, search}, testimonials,
+    const {adviceId, children, dispatch, location: {hash, pathname, search}, t, testimonials,
       title} = this.props
     const {isShareBobShown} = this.state
     const url = getAbsoluteUrl(Routes.STATIC_ADVICE_PAGE + `/${adviceId}${TRACK_HASH}`)
     if (hash === TRACK_HASH) {
       const newSearch = `${search}${search ? '&' : '?'}${stringify({
-        'utm_campaign': hash.slice(1),
-        'utm_medium': 'link',
-        'utm_source': 'bob-emploi',
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        utm_campaign: hash.slice(1),
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        utm_medium: 'link',
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        utm_source: 'bob-emploi',
       })}`
       return <Redirect to={`${pathname}${newSearch}`} />
     }
@@ -232,11 +255,9 @@ class StaticAdvicePageBase extends React.PureComponent<StaticAdvicePageProps, Ad
       <StaticAdviceNavigation currentAdviceId={adviceId} />
       <ShareModal
         onClose={this.handleCloseShare} isShown={isShareBobShown} dispatch={dispatch}
-        title="Ce conseil pourrait aider vos amis&nbsp;?"
+        title={t('Ce conseil pourrait aider vos amis\u00A0?')}
         url={url} visualElement={`static-advice-modal-${adviceId}`}
-        intro={<React.Fragment>
-          <strong>Envoyez-leur directement ce lien&nbsp;!</strong>
-        </React.Fragment>} />
+        intro={<strong>{t('Envoyez-leur directement ce lien\u00A0!')}</strong>} />
     </StaticPage>
   }
 }
@@ -244,33 +265,33 @@ const StaticAdvicePage = connect(({app: {hasSeenShareModal}}: RootState):
 AdviceCardConnectedProps => ({hasSeenShareModal}))(StaticAdvicePageBase)
 
 
-class AdviceDetail extends React.PureComponent<{children?: React.ReactNode}> {
-  public static propTypes = {
-    children: PropTypes.node,
-  }
-
-  public render(): React.ReactNode {
-    const containerStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      marginBottom: 20,
-      marginRight: 50,
-    }
-    const iconStyle = {
-      backgroundColor: colors.GREENISH_TEAL,
-      fill: '#fff',
-      flexShrink: 0,
-      fontSize: 16,
-      height: 21,
-      marginRight: 20,
-      width: 21,
-    }
-    return <div style={containerStyle}>
-      <CheckIcon style={iconStyle} />
-      <span>{this.props.children}</span>
-    </div>
-  }
+const adviceDetailContainerStyle = {
+  alignItems: 'center',
+  display: 'flex',
+  marginBottom: 20,
+  marginRight: 50,
 }
+const adviceDetailIconStyle = {
+  backgroundColor: colors.GREENISH_TEAL,
+  fill: '#fff',
+  flexShrink: 0,
+  fontSize: 16,
+  height: 21,
+  marginRight: 20,
+  width: 21,
+}
+
+
+const AdviceDetailBase = (props: {children?: React.ReactNode}): React.ReactElement => {
+  return <div style={adviceDetailContainerStyle}>
+    <CheckIcon style={adviceDetailIconStyle} />
+    <span>{props.children}</span>
+  </div>
+}
+AdviceDetailBase.propTypes = {
+  children: PropTypes.node,
+}
+const AdviceDetail = React.memo(AdviceDetailBase)
 
 
 interface AdviceSectionProps {
@@ -281,76 +302,78 @@ interface AdviceSectionProps {
 }
 
 
-class AdviceSection extends React.PureComponent<AdviceSectionProps> {
-  public static propTypes = {
-    adviceId: PropTypes.string,
-    children: PropTypes.node,
-    image: PropTypes.string,
-    title: PropTypes.string.isRequired,
-  }
+const adviceSectionStyle: React.CSSProperties = {
+  backgroundColor: '#fff',
+  color: '#000',
+  fontSize: 16,
+  minHeight: 365,
+  padding: isMobileVersion ? '50px 10px' : `100px ${MIN_CONTENT_PADDING}px`,
+  textAlign: 'left',
+}
+const adviceSectionHeaderStyle: React.CSSProperties = {
+  fontSize: isMobileVersion ? 18 : 21,
+  fontWeight: 'normal',
+  lineHeight: 1,
+  marginBottom: 50,
+  marginTop: 0,
+}
+const adviceSectionLayoutStyle: React.CSSProperties = {
+  alignItems: 'center',
+  display: 'flex',
+  flexDirection: isMobileVersion ? 'column' : 'row',
+  justifyContent: 'center',
+  paddingBottom: 45,
+}
+const carouselStyle: React.CSSProperties = {
+  flex: 1,
+}
 
-  public render(): React.ReactNode {
-    const {adviceId, children, image, title} = this.props
-    const style: React.CSSProperties = {
-      backgroundColor: '#fff',
-      color: '#000',
-      fontSize: 16,
-      minHeight: 365,
-      padding: isMobileVersion ? '50px 10px' : `100px ${MIN_CONTENT_PADDING}px`,
-      textAlign: 'left',
-    }
-    const headerStyle: React.CSSProperties = {
-      fontSize: isMobileVersion ? 18 : 21,
-      fontWeight: 'normal',
-      lineHeight: 1,
-      marginBottom: 50,
-      marginTop: 0,
-    }
-    const layoutStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      justifyContent: 'center',
-      paddingBottom: 45,
-    }
-    const carouselStyle: React.CSSProperties = {
-      flex: 1,
-    }
-    return <section style={style}>
-      <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
-        <h2 style={headerStyle}>
-          3 points pour <strong>{title}</strong>
-        </h2>
-        <div style={layoutStyle}>
-          <div style={carouselStyle}>
-            {children}
-          </div>
-          <div style={{flex: 1, position: 'relative'}}>
-            <div style={{alignItems: 'center', bottom: 0, display: 'flex', justifyContent: 'center',
-              left: 0, position: 'absolute', right: 0, top: 0, zIndex: 1}}>
-              <LoginButton
-                style={{fontSize: 16, zIndex: 1}}
-                isSignUp={true} visualElement={`${adviceId}-screenshot`} type="validation">
-                Obtenir mes conseils personnalisés
-              </LoginButton>
-            </div>
-            <img
-              style={{zIndex: 0, ...Styles.VENDOR_PREFIXED('filter', 'blur(5px)')}}
-              src={image || defaultAdviceImage} alt="" />
-          </div>
+
+const AdviceSectionBase = (props: AdviceSectionProps): React.ReactElement => {
+  const {adviceId, children, image, title} = props
+  const {t} = useTranslation('staticAdvice')
+  return <section style={adviceSectionStyle}>
+    <div style={{margin: 'auto', maxWidth: MAX_CONTENT_WIDTH}}>
+      <Trans style={adviceSectionHeaderStyle} parent="h2" t={t}>
+        3 points pour <strong>{{title}}</strong>
+      </Trans>
+      <div style={adviceSectionLayoutStyle}>
+        <div style={carouselStyle}>
+          {children}
         </div>
-        <div style={{marginTop: 25, maxWidth: 700}}>
-          Chaque personne est différente, le chemin pour déployer son potentiel l'est aussi.
-          <br />
-          <br />
-          C'est pourquoi <span style={{color: colors.BOB_BLUE}}>
-            {config.productName} analyse attentivement votre profil
-          </span> et vous propose ensuite des solutions personnalisées et adaptées à vos besoins.
+        <div style={{flex: 1, position: 'relative'}}>
+          <div style={{alignItems: 'center', bottom: 0, display: 'flex', justifyContent: 'center',
+            left: 0, position: 'absolute', right: 0, top: 0, zIndex: 1}}>
+            <LoginButton
+              style={{fontSize: 16, zIndex: 1}}
+              isSignUp={true} visualElement={`${adviceId}-screenshot`} type="validation">
+              {t('Obtenir mes conseils personnalisés')}
+            </LoginButton>
+          </div>
+          <img
+            style={{zIndex: 0, ...Styles.VENDOR_PREFIXED('filter', 'blur(5px)')}}
+            src={image || defaultAdviceImage} alt="" />
         </div>
       </div>
-    </section>
-  }
+      <Trans style={{marginTop: 25, maxWidth: 700}} t={t}>
+        Chaque personne est différente, le chemin pour déployer son potentiel l'est aussi.
+        <br />
+        <br />
+        C'est pourquoi <span style={{color: colors.BOB_BLUE}}>
+          {{productName: config.productName}} analyse attentivement votre profil
+        </span> et vous propose ensuite des solutions personnalisées et adaptées à vos besoins.
+      </Trans>
+    </div>
+  </section>
 }
+AdviceSectionBase.propTypes = {
+  adviceId: PropTypes.string,
+  children: PropTypes.node,
+  image: PropTypes.string,
+  title: PropTypes.string.isRequired,
+}
+const AdviceSection = React.memo(AdviceSectionBase)
+
 
 export {AdviceDetail, AdviceSection, StaticAdviceCardBase, StaticAdvicePage,
   STATIC_ADVICE_MODULES}

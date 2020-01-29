@@ -25,7 +25,7 @@ from typing import Dict, List, Optional, Set, Union
 import pandas
 from scrapy import selector
 
-_ROME_VERSION = 'v339'
+_ROME_VERSION = 'v342'
 
 # Denominator to compute Market Score because the number of yearly average
 # offers are given for 10 candidates.

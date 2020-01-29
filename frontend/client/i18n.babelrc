@@ -1,0 +1,43 @@
+{
+  // TODO(pascal): Switch to js config so that we can avoid repeating most of that config here.
+  plugins: [
+    '@babel/plugin-syntax-dynamic-import',
+    ['@babel/plugin-proposal-class-properties', { loose: false }],
+    ['@babel/plugin-proposal-optional-chaining', { loose: false }],
+    ['i18next-extract', {
+        defaultContexts: [''],
+        keySeparator: null,
+        nsSeparator: null,
+        outputPath: 'src/translations/{{locale}}/{{ns}}.json',
+        tFunctionNames: ['prepareT', 't'],
+        useI18nextDefaultValue: ['fr'],
+    }],
+  ],
+  overrides:  [
+    {
+      test: 'src/components/advisor/*',
+      plugins: [['i18next-extract', {
+          defaultContexts: [''],
+          defaultNS: 'advisor',
+          keySeparator: null,
+          nsSeparator: null,
+          outputPath: 'src/translations/{{locale}}/{{ns}}.json',
+          tFunctionNames: ['prepareT', 't'],
+          useI18nextDefaultValue: ['fr'],
+      }]],
+    },
+    {
+      test: 'src/components/pages/static/static_advice/*',
+      plugins: [['i18next-extract', {
+          defaultContexts: [''],
+          defaultNS: 'staticAdvice',
+          keySeparator: null,
+          nsSeparator: null,
+          outputPath: 'src/translations/{{locale}}/{{ns}}.json',
+          tFunctionNames: ['prepareT', 't'],
+          useI18nextDefaultValue: ['fr'],
+      }]],
+    },
+  ],
+  presets: [['@babel/env', {modules: false}], '@babel/react', '@babel/typescript'],
+}

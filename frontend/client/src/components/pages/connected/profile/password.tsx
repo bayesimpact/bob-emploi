@@ -1,9 +1,11 @@
 import React, {useCallback, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 
 import {DispatchAllActions, RootState, askPasswordReset, changePassword, displayToasterMessage,
   emailCheck, registerNewUser} from 'store/actions'
 
+import {Trans} from 'components/i18n'
 import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {RadiumSpan} from 'components/radium'
@@ -35,14 +37,16 @@ const ForgottenPasswordNoteBase: React.FC<NoteProps> =
       response && setHasAskedForReset(true))
   }, [email, dispatch, setHasAskedForReset])
   if (hasAskedForReset) {
-    return <span>Un email a été envoyé à {email} pour réinitialiser le mot de passe.</span>
+    return <Trans parent="span">
+      Un email a été envoyé à {{email}} pour réinitialiser le mot de passe.
+    </Trans>
   }
   const noteStyle: RadiumCSSProperties = {
     ':hover': {
       textDecoration: 'underline',
     },
-    cursor: 'pointer',
-    fontStyle: 'italic',
+    'cursor': 'pointer',
+    'fontStyle': 'italic',
   }
   return <RadiumSpan style={noteStyle} onClick={handleResetPassword}>
     Mot de passe oublié&nbsp;?
@@ -58,6 +62,7 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
   const [oldPassword, setOldPassword] = useState('')
   const [password, setPassword] = useState('')
   const [isValidated, setIsValidated] = useState(false)
+  const {t} = useTranslation()
   const handleChangePassword = useCallback(() => {
     if (!email) {
       return
@@ -75,12 +80,15 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
       setOldPassword('')
       setPassword('')
       setIsValidated(false)
-      const passwordModified = hasPassword ? 'modifié' : 'créé'
-      dispatch(displayToasterMessage(`Le mot de passe a bien été ${passwordModified}`))
+      dispatch(displayToasterMessage(
+        hasPassword ?
+          t('Le mot de passe a bien été modifié') :
+          t('Le mot de passe a bien été créé'),
+      ))
     })
   }, [
     dispatch, email, hasPassword, oldPassword,
-    password, setIsValidated, setPassword, setOldPassword,
+    password, setIsValidated, setPassword, setOldPassword, t,
   ])
   const handleForward = useCallback(() => {
     if ((!hasPassword || oldPassword) && password) {
@@ -95,7 +103,7 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
     }
   }, [handleChangePassword, hasPassword, oldPassword, password, setOldPassword, setPassword])
   if (!hasAccount) {
-    return <Step fastForward={handleForward} title="Créer un compte" {...props}>
+    return <Step fastForward={handleForward} title={t('Créer un compte')} {...props}>
       Avec un compte, je peux revenir sur {config.productName} plus tard pour suivre mes progrès
       (c'est gratuit et le restera toujours).
       <LoginButton
@@ -105,10 +113,10 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
       </LoginButton>
     </Step>
   }
-  return <Step fastForward={handleForward} title="Mot de passe" {...props}>
+  return <Step fastForward={handleForward} title={t('Mot de passe')} {...props}>
     {hasPassword && email ? <React.Fragment>
       <FieldSet
-        hasNoteOrComment={true} label="Mot de passe actuel"
+        hasNoteOrComment={true} label={t('Mot de passe actuel')}
         isValid={!!oldPassword} isValidated={isValidated}>
         <WithNote note={<ForgottenPasswordNote email={email} dispatch={dispatch} />}>
           <Input
@@ -118,7 +126,7 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
       </FieldSet>
     </React.Fragment> : null}
     <FieldSet
-      label={`${hasPassword ? 'Nouveau' : 'Créer un'} mot de passe`}
+      label={hasPassword ? t('Nouveau mot de passe') : t('Créer un mot de passe')}
       isValid={!!password} isValidated={isValidated}>
       <Input
         type="password" autoComplete="new-password"
@@ -129,13 +137,13 @@ const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactEle
       onClick={handleChangePassword}
       isProgressShown={isAuthenticating}
       isRound={true} type="navigation">
-      Enregistrer
+      {t('Enregistrer')}
     </Button>
   </Step>
 }
 const PasswordStep = connect(({user: {hasPassword}, asyncState: {isFetching}}: RootState) => ({
-  hasPassword,
-  isAuthenticating: isFetching['USER_AUTHENTICATE'],
+  hasPassword: !!hasPassword,
+  isAuthenticating: !!isFetching['AUTHENTICATE_USER'],
 }))(React.memo(PasswordStepBase))
 
 

@@ -4,6 +4,7 @@ process.env.CHROME_BIN = require('puppeteer').executablePath()
 
 module.exports = function(config) {
   const clientConfig = {
+    captureConsole: false,
     mocha: {},
   }
   if (config.grep) {
@@ -35,7 +36,7 @@ module.exports = function(config) {
       'src/store/*.ts': ['webpack', 'sourcemap', 'coverage'],
       'test/webpack/loadtests.ts': ['webpack', 'sourcemap'],
     },
-    reporters: ['mocha', 'progress', 'coverage'],
+    reporters: ['mocha', 'coverage'],
     singleRun: true,
     webpack: webpackCfg,
     webpackServer: {

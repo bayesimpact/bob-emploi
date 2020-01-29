@@ -25,4 +25,4 @@ else
     path="$folder"
 fi
 
-docker-compose run -e TEST_REAL_DATA --rm --no-deps $service nosetests --with-machineout "bob_emploi/$path"
+docker-compose run -e TEST_REAL_DATA --rm --no-deps $service nosetests --with-terseout "bob_emploi/$path"

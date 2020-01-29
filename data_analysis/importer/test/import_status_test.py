@@ -71,7 +71,7 @@ class ImportStatusBasicTests(unittest.TestCase):
         importer = import_status.Importer(
             name='no import needed', script=None, args=None, is_imported=False,
             run_every=None, proto_type=None, key=None, has_pii=False)
-        import_status.print_single_importer(importer, 'no-import-needed', 'url')
+        import_status.print_single_importer(importer, 'no-import-needed', 'url', [])
         mock_log_info.assert_any_call(
             'No import needed for %s',
             termcolor.colored('no-import-needed', 'green'))
@@ -85,7 +85,7 @@ class ImportStatusBasicTests(unittest.TestCase):
             script='run', args={'this': 'value'},
             is_imported=True, run_every=None,
             proto_type=None, key=None, has_pii=False)
-        import_status.print_single_importer(importer, 'foo', 'url')
+        import_status.print_single_importer(importer, 'foo', 'url', [])
         mock_log_info.assert_any_call(
             'To import "%s" in "%s", run:\n%s',
             'with command',

@@ -52,6 +52,10 @@
     "name": "salon-arles"
   },
   {
+    "mailjetTemplate": "1101331",
+    "name": "handicap-com"
+  },
+  {
     "mailjetTemplate": "334851",
     "name": "viral-sharing-1"
   },
@@ -82,5 +86,29 @@
   {
     "mailjetTemplate": "980269",
     "name": "improve-cv"
+  },
+  {
+    "mailjetTemplate": "1088068",
+    "name": "account-deletion-notice"
+  },
+  {
+    "mailjetTemplate": "1107108",
+    "name": "ali_connect_user"
+  },
+  {
+    "mailjetTemplate": "1109007",
+    "name": "ali_connect_counselor"
+  },
+  {
+    "mailjetTemplate": "1118228",
+    "name": "prepare-your-application"
+  },
+  {
+    "mailjetTemplate": "1130230",
+    "name": "get-diploma"
+  },
+  {
+    "mailjetTemplate": "1183675",
+    "name": "jobbing"
   }
 ]

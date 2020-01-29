@@ -1,5 +1,4 @@
 import {expect} from 'chai'
-import {tutoyer, vouvoyer} from 'store/french'
 import {AssetProp, assetProps} from 'store/skills'
 
 // @ts-ignore
@@ -16,12 +15,9 @@ describe('assetProps', (): void => {
 
   it('gives consistent data for all assets and all users', (): void => {
     describedAssets.map((asset): AssetProp => assetProps[asset]).
-      forEach(({description, icon, name}): void => {
+      forEach(({icon, name}): void => {
         expect(name).to.be.a('string').that.is.not.empty
         expect(icon).not.to.be.undefined
-        expect(description).to.be.a('function')
-        expect(description(tutoyer)).to.be.a('string').that.is.not.empty
-        expect(description(vouvoyer)).to.be.a('string').that.is.not.empty
       })
   })
 })

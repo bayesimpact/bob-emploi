@@ -1,116 +1,106 @@
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
 
 import {getEmailTemplates} from 'store/french'
+import {prepareT} from 'store/i18n'
 import {isEmailTemplatePersonalized, projectMatchAllFilters} from 'store/user'
 
+import {Trans} from 'components/i18n'
 import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-network-application.svg'
 
-import {CardProps, CardWithContentProps, MethodSuggestionList, EmailTemplate,
-  connectExpandedCardWithContent} from './base'
+import {CardProps, MethodSuggestionList, EmailTemplate, useAdviceData} from './base'
 
 
 const CONTACT_EXCUSES = [
   {
-    example: "J'ai vu que \\[partager une actualité de votre profession\\] cela m'a fait " +
+    example: prepareT(
+      "J'ai vu que \\[partager une actualité de votre profession\\] cela m'a fait " +
       'penser à vous. \\[ajouter un lien vers un article sur le sujet\\]',
-    name: 'Partager une actualité',
+    ),
+    name: prepareT('Partager une actualité'),
   },
   {
-    example: 'Je suis tombé(e) sur cet article qui pourra vous intéresser.' +
+    example: prepareT(
+      'Je suis tombé·e sur cet article qui pourra vous intéresser.' +
       " \\[ajouter un lien vers l'article\\]",
-    name: 'Partager un article',
+    ),
+    name: prepareT('Partager un article'),
   },
   {
-    example: '\\[entreprise/organisation\\] organise une conférence sur \\[sujet\\].' +
+    example: prepareT(
+      '\\[entreprise/organisation\\] organise une conférence sur \\[sujet\\].' +
       " J'ai pensé que cet évènement pourrait vous intéresser. J'espère que nous" +
       ' pourrons nous y croiser.',
-    name: 'Partager un événement',
+    ),
+    name: prepareT('Partager un événement'),
   },
-]
+] as const
 
 
-interface WithIntro {
+interface NetworkCardProps extends CardProps {
   intro?: React.ReactNode
 }
-
-
-type NetworkCardProps = CardWithContentProps<bayes.bob.ContactLeads> & WithIntro
 
 
 const emptyArray = [] as const
 
 
-class NetworkAdvicePageBase extends React.PureComponent<NetworkCardProps> {
-  public static propTypes = {
-    adviceData: PropTypes.shape({
-      leads: PropTypes.arrayOf(PropTypes.shape({
-        name: PropTypes.string.isRequired,
-      }).isRequired),
-    }).isRequired,
-    handleExplore: PropTypes.func.isRequired,
-    intro: PropTypes.node,
-    profile: PropTypes.object.isRequired,
-    project: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  // TODO(pascal): Move to the methods' UI.
-  public render(): React.ReactNode {
-    const {adviceData, handleExplore, profile, project, userYou, intro} = this.props
-    const leads = adviceData.leads || []
-    const selectedEmails = getEmailTemplates(userYou).network.
-      filter(({filters}): boolean => projectMatchAllFilters(project, filters))
-    // TODO(pascal): Remove the selectedEmails
-    const emailCount = leads.length || selectedEmails.length
-    const leadsTitle = <React.Fragment>
-      <GrowingNumber number={emailCount} isSteady={true} /> exemple{emailCount > 1 ? 's ' : ' '}
-      d'email pour contacter son réseau
-    </React.Fragment>
-    const excusesTitle = <React.Fragment>
-      <GrowingNumber number={3} isSteady={true} /> prétextes pour envoyer un message à
-      quelqu'un
-    </React.Fragment>
-    // TODO(cyrille): Put intro inside one of the method sections.
-    return <div>
-      {intro ? <div style={{marginBottom: 20}}>{intro}</div> : null}
-      <MethodSuggestionList title={leadsTitle}>
-        {(leads.length) ?
-          leads.map((lead, idx): ReactStylableElement|null => lead.emailExample ? <EmailTemplate
-            isMethodSuggestion={true}
-            content={lead.emailExample}
-            tip={lead.contactTip}
-            title={lead.name}
-            key={`lead-${idx}`}
-            onContentShown={handleExplore('contact lead')}
-            userYou={userYou} /> : null)
-          : selectedEmails.map((email, idx): ReactStylableElement => <EmailTemplate
-            isMethodSuggestion={true}
-            content={email.content}
-            title={email.title}
-            whyForYou={
-              isEmailTemplatePersonalized(email.personalizations || emptyArray, profile, project) ?
-                email.reason : undefined}
-            key={`advice-${idx}`}
-            onContentShown={handleExplore('email template')}
-            userYou={userYou} />)}
-      </MethodSuggestionList>
-      <MethodSuggestionList style={{marginTop: 20}} title={excusesTitle}>
-        {CONTACT_EXCUSES.map((excuse, idx): ReactStylableElement => <EmailTemplate
+// TODO(pascal): Move to the methods' UI.
+const NetworkAdvicePageBase = (props: NetworkCardProps): React.ReactElement => {
+  const {handleExplore, profile, profile: {gender}, project, t, t: translate, intro} = props
+  const {leads = emptyArray} = useAdviceData<bayes.bob.ContactLeads>(props)
+  const selectedEmails = getEmailTemplates(t).network.
+    filter(({filters}): boolean => projectMatchAllFilters(project, filters))
+  // TODO(pascal): Remove the selectedEmails
+  const emailCount = leads.length || selectedEmails.length
+  const leadsTitle = <Trans parent={null} count={emailCount} t={t}>
+    <GrowingNumber number={emailCount} isSteady={true} /> exemple d'email pour contacter son réseau
+  </Trans>
+  const excusesTitle = <Trans parent={null} t={t}>
+    <GrowingNumber number={3} isSteady={true} /> prétextes pour envoyer un message à
+    quelqu'un
+  </Trans>
+  // TODO(cyrille): Put intro inside one of the method sections.
+  return <div>
+    {intro ? <div style={{marginBottom: 20}}>{intro}</div> : null}
+    <MethodSuggestionList title={leadsTitle}>
+      {(leads.length) ?
+        leads.map((lead, idx): ReactStylableElement|null => lead.emailExample ? <EmailTemplate
           isMethodSuggestion={true}
-          content={excuse.example}
-          title={excuse.name}
-          key={`example-${idx}`}
-          onContentShown={handleExplore('contact excuses')}
-          userYou={userYou} />)}
-      </MethodSuggestionList>
-    </div>
-  }
+          content={lead.emailExample}
+          tip={lead.contactTip}
+          title={lead.name}
+          key={`lead-${idx}`}
+          onContentShown={handleExplore('contact lead')} /> : null)
+        : selectedEmails.map((email, idx): ReactStylableElement => <EmailTemplate
+          isMethodSuggestion={true}
+          content={email.content}
+          title={email.title}
+          whyForYou={
+            isEmailTemplatePersonalized(email.personalizations || emptyArray, profile, project) ?
+              email.reason : undefined}
+          key={`advice-${idx}`}
+          onContentShown={handleExplore('email template')} />)}
+    </MethodSuggestionList>
+    <MethodSuggestionList style={{marginTop: 20}} title={excusesTitle}>
+      {CONTACT_EXCUSES.map((excuse, idx): ReactStylableElement => <EmailTemplate
+        isMethodSuggestion={true}
+        content={translate(excuse.example, {context: gender})}
+        title={translate(excuse.name)}
+        key={`example-${idx}`}
+        onContentShown={handleExplore('contact excuses')} />)}
+    </MethodSuggestionList>
+  </div>
 }
-const NetworkAdvicePage =
-  connectExpandedCardWithContent<bayes.bob.ContactLeads, CardProps & WithIntro>(
-    NetworkAdvicePageBase)
+NetworkAdvicePageBase.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+  intro: PropTypes.node,
+  profile: PropTypes.object.isRequired,
+  project: PropTypes.object.isRequired,
+  t: PropTypes.func.isRequired,
+}
+const NetworkAdvicePage = React.memo(NetworkAdvicePageBase)
 
 
 export {NetworkAdvicePage, Picto}

@@ -1,6 +1,7 @@
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import React from 'react'
+import {WithTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {RouteComponentProps} from 'react-router'
 import {Redirect, Route, Switch} from 'react-router-dom'
@@ -9,9 +10,11 @@ import ReactRouterPropTypes from 'react-router-prop-types'
 import {DispatchAllActions, RootState, diagnosticIsShown, diagnosticTalkIsShown,
   downloadDiagnosticAsPdf} from 'store/actions'
 import {YouChooser} from 'store/french'
+import {prepareT} from 'store/i18n'
 import {youForUser} from 'store/user'
 
 import {FastForward} from 'components/fast_forward'
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar} from 'components/navigation'
 import {JobGroupCoverImage, CircularProgress, SmoothTransitions} from 'components/theme'
@@ -44,30 +47,33 @@ const TOTAL_WAITING_TIME_MILLISEC = 8000
 const emptyObject = {} as const
 
 
+const waitingTexts = [
+  prepareT('Analyse du marché du travail dans votre région'),
+  prepareT('Analyse de votre situation actuelle'),
+  prepareT('Évaluation des axes stratégiques prioritaires'),
+  prepareT('Préparation des solutions potentielles'),
+] as const
+
+
 interface WaitingProps {
-  fadeOutTransitionDurationMillisec: number
+  fadeOutTransitionDurationMillisec?: number
   isForceShown: boolean
   onDone?: () => void
   project: bayes.bob.Project
   style?: React.CSSProperties
   userProfile: bayes.bob.UserProfile
-  userYou: YouChooser
 }
 
 
-class WaitingProjectPage extends React.PureComponent<WaitingProps> {
+class WaitingProjectPageBase extends React.PureComponent<WaitingProps & WithTranslation> {
   public static propTypes = {
-    fadeOutTransitionDurationMillisec: PropTypes.number.isRequired,
+    fadeOutTransitionDurationMillisec: PropTypes.number,
     isForceShown: PropTypes.bool,
     onDone: PropTypes.func,
     project: PropTypes.object.isRequired,
     style: PropTypes.object,
+    t: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public static defaultProps = {
-    fadeOutTransitionDurationMillisec: 600,
   }
 
   public state = {
@@ -87,22 +93,17 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
 
   private timeout?: number
 
-  private getWaitingTexts(): string[] {
-    const {userYou} = this.props
-    return [
-      `Analyse du marché du travail dans ${userYou('ta', 'votre')} région`,
-      `Analyse de ${userYou('ta', 'votre')} situation actuelle`,
-      'Évaluation des axes stratégiques prioritaires',
-      'Préparation des solutions potentielles',
-    ]
+  private getWaitingTexts(): readonly string[] {
+    const {t: translate} = this.props
+    return waitingTexts.map((text: ReturnType<typeof prepareT>): string => translate(text))
   }
 
   private updateText = (waitingTextIndex: number): void => {
-    const {onDone, fadeOutTransitionDurationMillisec, isForceShown} = this.props
+    const {onDone, fadeOutTransitionDurationMillisec = 600, isForceShown, t} = this.props
     const waitingTexts = this.getWaitingTexts()
     if (waitingTextIndex >= waitingTexts.length) {
       if (isForceShown) {
-        this.setState({waitingText: "En attente d'une réponse du serveur"})
+        this.setState({waitingText: t("En attente d'une réponse du serveur")})
       } else {
         this.setState({isFadingOut: true})
       }
@@ -118,7 +119,7 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
   }
 
   public render(): React.ReactNode {
-    const {onDone, project, style, userProfile, userYou} = this.props
+    const {onDone, project, style, userProfile} = this.props
     const {isFadingOut} = this.state
     const containerStyle: React.CSSProperties = {
       alignItems: 'center',
@@ -154,11 +155,10 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
       {romeId ? <JobGroupCoverImage romeId={romeId} style={{zIndex: -1}} /> : null}
       <div style={boxStyle}>
         <header style={headerStyle}>{project.title}</header>
-        <div style={{margin: 'auto', maxWidth: 360, paddingTop: 23}}>
-          Merci {userProfile.name} pour {userYou('ta', 'votre')} patience&nbsp;!<br /><br />
-          Nous analysons {userYou('tes', 'vos')} informations pour
-          créer {userYou('ton', 'votre')} diagnostic personnalisé.
-        </div>
+        <Trans style={{margin: 'auto', maxWidth: 360, paddingTop: 23}}>
+          Merci {{firstName: userProfile.name}} pour votre patience&nbsp;!<br /><br />
+          Nous analysons vos informations pour créer votre diagnostic personnalisé.
+        </Trans>
         <div style={{padding: 30}}>
           <CircularProgress style={{color: waitingNoticeStyle.color}} />
         </div>
@@ -169,6 +169,7 @@ class WaitingProjectPage extends React.PureComponent<WaitingProps> {
     </div>
   }
 }
+const WaitingProjectPage = withTranslation()(WaitingProjectPageBase)
 
 
 interface PageConnectedProps {
@@ -194,7 +195,7 @@ class ProjectPageBase extends React.PureComponent<PageProps, PageState> {
   }
 
   public static getDerivedStateFromProps(
-    {match: {isExact}}, {isFirstTime: wasFirstTime}): PageState|null {
+    {match: {isExact}}: PageProps, {isFirstTime: wasFirstTime}: PageState): PageState|null {
     if (wasFirstTime && !isExact) {
       // Disable isFirstTime once the URL changes to a sub page.
       return {isFirstTime: false}
@@ -251,7 +252,7 @@ class ProjectPageBase extends React.PureComponent<PageProps, PageState> {
     return <Redirect to={`${url}${search}${hash}`} />
   }
 
-  private renderDiagnostic = (props: DashboardProps): React.ReactNode => {
+  private renderDiagnostic = (props: RouteComponentProps<{}>): React.ReactNode => {
     const {match: {url}, project} = this.props
     const {isFirstTime} = this.state
     return <ProjectDashboardPage
@@ -271,7 +272,7 @@ class ProjectPageBase extends React.PureComponent<PageProps, PageState> {
     const isPageReady = !!(project.advices || project.diagnostic)
     if (isWaitingInterstitialShown || !isPageReady) {
       return <WaitingProjectPage
-        userYou={youForUser(user)} userProfile={user.profile || emptyObject}
+        userProfile={user.profile || emptyObject}
         style={{flex: 1}} project={project}
         onDone={this.handleWaitingInterstitialDone} isForceShown={!isPageReady} />
     }
@@ -288,7 +289,7 @@ class ProjectPageBase extends React.PureComponent<PageProps, PageState> {
 }
 export default connect((
   {user}: RootState,
-  {match: {params: {projectId = ''}}}: RouteComponentProps<{projectId?: string}>
+  {match: {params: {projectId = ''}}}: RouteComponentProps<{projectId?: string}>,
 ): PageConnectedProps => ({
   project: getProject(projectId, user),
   user,
@@ -395,7 +396,8 @@ class DiagnosticPageBase extends React.PureComponent<DiagnosticProps, Diagnostic
     dispatch(diagnosticIsShown(project))
   }
 
-  private handleHide: ((string) => () => void) = _memoize((visualElement: string): (() => void) =>
+  private handleHide: ((v: string) => () => void) =
+  _memoize((visualElement: string): (() => void) =>
     (): void => this.setState({[`is${visualElement}Shown`]: false}))
 
   private handleDiagnosticTextShown = (): void => {
@@ -413,9 +415,6 @@ class DiagnosticPageBase extends React.PureComponent<DiagnosticProps, Diagnostic
       isFirstTime, makeAdviceLink, makeStrategyLink, profile, project, userYou} = this.props
     const {isPoleEmploiChangelogShown} = this.state
     const {advices, createdAt, diagnostic, strategies} = project
-    if (!diagnostic) {
-      return <Redirect to={Routes.APP_UPDATED_PAGE} />
-    }
     const areStrategiesEnabled = !!(stratTwo === 'ACTIVE' && strategies && strategies.length)
     const diagnosticStyle = {
       backgroundColor: '#fff',
@@ -441,7 +440,7 @@ class DiagnosticPageBase extends React.PureComponent<DiagnosticProps, Diagnostic
           isShown={isPoleEmploiChangelogShown} projectCreatedAt={createdAt || ''}
           onClose={this.handleHide('PoleEmploiChangelog')} />
         <Diagnostic
-          diagnosticData={diagnostic}
+          diagnosticData={diagnostic || emptyObject}
           onFullDiagnosticShown={this.handleFullDiagnosticShown}
           onDiagnosticTextShown={this.handleDiagnosticTextShown}
           onDownloadAsPdf={this.handleDownloadAsPdf}

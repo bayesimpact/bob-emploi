@@ -61,7 +61,7 @@ const ExpandedAdviceCardContent: React.FC<CardProps> =
       </strong>. En voici quelques idées&nbsp;:
       <MethodSuggestionList style={{marginTop: 20}}>
         {momSkills.map((content): React.ReactElement<{style?: RadiumCSSProperties}> => <Skill
-          {...{handleExplore, userYou, ...content}} key={content.name}
+          {...{handleExplore, ...content}} key={content.name}
           description={content.description(userYou)} />)}
       </MethodSuggestionList>
     </div>

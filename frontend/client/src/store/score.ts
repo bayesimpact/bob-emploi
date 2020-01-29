@@ -14,7 +14,7 @@ interface StaticSubmetric {
   icon: string
   shortTitle: string
   title: (userYou: YouChooser) => string
-  topic: bayes.bob.DiagnosticTopic
+  topic: Exclude<bayes.bob.DiagnosticTopic, 'UNKNOWN_DIAGNOSTIC_TOPIC'>
 }
 
 
@@ -110,12 +110,12 @@ export interface ScoreComponent extends bayes.bob.SubDiagnostic {
   shortTitle: string
   text: string
   title: (userYou: YouChooser) => string
-  topic: bayes.bob.DiagnosticTopic
+  topic: Exclude<bayes.bob.DiagnosticTopic, 'UNKNOWN_DIAGNOSTIC_TOPIC'>
 }
 
 export interface Score extends DiagnosticTitle {
   color: string
-  components: ScoreComponent[]
+  components: readonly ScoreComponent[]
   percent: number
 }
 

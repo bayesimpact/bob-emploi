@@ -1,16 +1,14 @@
 import {expect} from 'chai'
-import {getAdviceGoal, getAdviceShortTitle,
-  getAdviceTitle} from 'store/advice'
+import {getAdviceGoal, getAdviceShortTitle, getAdviceTitle} from 'store/advice'
 
-
-const tutoyer = <T>(tu: T): T => tu
+import {ADVICE_MODULES} from 'components/advisor'
 
 
 describe('getAdviceTitle', (): void => {
   it('returns a different title depending on the number of stars', (): void => {
-    const title1Star = getAdviceTitle({adviceId: 'life-balance', numStars: 1}, tutoyer)
-    const title2Stars = getAdviceTitle({adviceId: 'life-balance', numStars: 2}, tutoyer)
-    const title3Stars = getAdviceTitle({adviceId: 'life-balance', numStars: 3}, tutoyer)
+    const title1Star = getAdviceTitle({adviceId: 'life-balance', numStars: 1})
+    const title2Stars = getAdviceTitle({adviceId: 'life-balance', numStars: 2})
+    const title3Stars = getAdviceTitle({adviceId: 'life-balance', numStars: 3})
     expect(title1Star).to.be.ok
     expect(title2Stars).to.be.ok
     expect(title3Stars).to.be.ok
@@ -20,20 +18,25 @@ describe('getAdviceTitle', (): void => {
   })
 
   it('returns a title even if no stars are specified', (): void => {
-    expect(getAdviceTitle({adviceId: 'other-work-env'}, tutoyer)).to.be.ok
+    expect(getAdviceTitle({adviceId: 'other-work-env'})).to.be.ok
   })
 
   it('prefers a title defined on the advice itself', (): void => {
-    const title = getAdviceTitle(
-      {adviceId: 'network-application', numStars: 1, title: 'yep'}, tutoyer)
+    const title = getAdviceTitle({adviceId: 'network-application', numStars: 1, title: 'yep'})
     expect(title).to.eq('yep')
   })
+
+  Object.keys(ADVICE_MODULES).map((adviceId): ReturnType<typeof it> =>
+    it('returns a non-empty title for advice ' + adviceId, (): void => {
+      const title = getAdviceTitle({adviceId})
+      expect(title).to.not.be.empty
+    }))
 })
 
 
 describe('getAdviceShortTitle', (): void => {
   it('returns a title', (): void => {
-    expect(getAdviceShortTitle({adviceId: 'other-work-env'}, tutoyer)).to.be.ok
+    expect(getAdviceShortTitle({adviceId: 'other-work-env'})).to.be.ok
   })
 
   it('prefers a title defined on the advice itself', (): void => {
@@ -41,15 +44,21 @@ describe('getAdviceShortTitle', (): void => {
       adviceId: 'network-application',
       numStars: 1,
       shortTitle: 'yep',
-    }, tutoyer)
+    })
     expect(title).to.eq('yep')
   })
+
+  Object.keys(ADVICE_MODULES).map((adviceId): ReturnType<typeof it> =>
+    it('returns a non-empty title for advice ' + adviceId, (): void => {
+      const title = getAdviceShortTitle({adviceId})
+      expect(title).to.not.be.empty
+    }))
 })
 
 
 describe('getAdviceGoal', (): void => {
   it('returns a goal', (): void => {
-    expect(getAdviceGoal({adviceId: 'specific-to-job'}, tutoyer)).to.be.ok
+    expect(getAdviceGoal({adviceId: 'specific-to-job'})).to.be.ok
   })
 
   it('prefers a goal defined on the advice itself', (): void => {
@@ -57,7 +66,13 @@ describe('getAdviceGoal', (): void => {
       adviceId: 'network-application',
       goal: 'yep',
       numStars: 1,
-    }, tutoyer)
+    })
     expect(goal).to.eq('yep')
   })
+
+  Object.keys(ADVICE_MODULES).map((adviceId): ReturnType<typeof it> =>
+    it('returns a non-empty goal for advice ' + adviceId, (): void => {
+      const goal = getAdviceGoal({adviceId})
+      expect(goal).to.not.be.empty
+    }))
 })

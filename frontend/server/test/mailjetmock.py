@@ -53,6 +53,9 @@ class _SentMessage(object):
         if self.status in {'sent', 'opened'}:
             self.status = 'clicked'
 
+    def __repr__(self) -> str:
+        return f'_SentMessage({self.recipient}, {self.properties}, {self.message_id})'
+
 
 def _create_json_response(json_content: _JsonDict, status_code: int = 200) -> requests.Response:
     response = requests.Response()

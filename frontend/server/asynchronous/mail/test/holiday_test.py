@@ -45,7 +45,19 @@ class ChristmasVarsTestCase(mail_blast_test.CampaignTestBase):
 
         self._assert_has_unsubscribe_link()
 
+        self._assert_has_logged_url(
+            'adviceUrlCommute',
+            '/projet/0/methode/commute',
+        )
+        self._assert_has_logged_url(
+            'adviceUrlRelocate',
+            '/projet/0/methode/relocate',
+        )
+
         self._assert_remaining_variables({
+            'adviceUrlBodyLanguage': '',
+            'adviceUrlCreateYourCompany': '',
+            'adviceUrlImproveInterview': '',
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
             'couldFreelance': 'True',

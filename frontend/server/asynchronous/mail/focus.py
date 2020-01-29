@@ -7,8 +7,9 @@ import os
 import random
 import re
 import typing
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Iterator, List, Optional
 
+from bson import objectid
 import pymongo
 import requests
 
@@ -34,7 +35,7 @@ _POTENTIAL_CAMPAIGNS = set(_FOCUS_CAMPAIGNS)
 _DURATION_BEFORE_FIRST_EMAIL = datetime.timedelta(days=3)
 
 
-def _send_focus_emails(action: str, dry_run_email: str) -> None:
+def _send_focus_emails(action: 'campaign.Action', dry_run_email: str) -> None:
     database, users_database, unused_eval_database = mongo.get_connections_from_env()
 
     instant = now.get()
@@ -56,27 +57,10 @@ def _send_focus_emails(action: str, dry_run_email: str) -> None:
         user = typing.cast(user_pb2.User, proto.create_from_mongo(user_dict, user_pb2.User))
         user.user_id = str(user_id)
 
-        if not user.HasField('send_coaching_email_after'):
-            send_coaching_email_after = _compute_next_coaching_email_date(user)
-            if send_coaching_email_after > instant:
-                users_database.user.update_one({'_id': user_id}, {'$set': {
-                    'sendCoachingEmailAfter': proto.datetime_to_json_string(
-                        send_coaching_email_after
-                    ),
-                }})
-                continue
-
-        # Compute next send_coaching_email_after.
-        next_send_coaching_email_after = proto.datetime_to_json_string(
-            instant + _compute_duration_to_next_coaching_email(user)
-        )
-
         try:
-            campaign_id = _send_focus_email_to_user(
-                action, dry_run_email, user, database, users_database,
-                mongo_user_update={'$set': {
-                    'sendCoachingEmailAfter': next_send_coaching_email_after,
-                }})
+            campaign_id = send_focus_email_to_user(
+                action, user, dry_run_email=dry_run_email, database=database,
+                users_database=users_database, instant=instant)
         except requests.exceptions.HTTPError as error:
             if action == 'dry-run':
                 raise
@@ -88,18 +72,6 @@ def _send_focus_emails(action: str, dry_run_email: str) -> None:
             counts[campaign_id] += 1
             continue
 
-        # No focus email was supported: it seems that we have sent all the
-        # ones we had. However maybe in the future we'll add more focus
-        # emails so let's wait the same amount of time we have waited until
-        # this email (this makes to wait 1 period, then 2, 4, …).
-        last_coaching_email_sent_at = typing.cast(
-            datetime.datetime,
-            _compute_last_coaching_email_date(user, user.registered_at.ToDatetime()))
-        send_coaching_email_after = instant + (instant - last_coaching_email_sent_at)
-        users_database.user.update_one({'_id': user_id}, {'$set': {
-            'sendCoachingEmailAfter': proto.datetime_to_json_string(send_coaching_email_after),
-        }})
-
     report_message = 'Focus emails sent:\n' + '\n'.join([
         f' • *{campaign_id}*: {count} email{"s" if count > 1 else ""}'
         for campaign_id, count in counts.items()
@@ -109,10 +81,28 @@ def _send_focus_emails(action: str, dry_run_email: str) -> None:
     logging.info(report_message)
 
 
-def _send_focus_email_to_user(
-        action: str, dry_run_email: str, user: user_pb2.User,
+def send_focus_email_to_user(
+        action: 'campaign.Action', user: user_pb2.User, *, dry_run_email: Optional[str] = None,
         database: pymongo.database.Database, users_database: pymongo.database.Database,
-        mongo_user_update: Dict[str, Any]) -> Optional[str]:
+        instant: datetime.datetime) -> Optional[str]:
+    """Try to send a focus email to the user and returns the campaign ID."""
+
+    if not user.HasField('send_coaching_email_after'):
+        send_coaching_email_after = _compute_next_coaching_email_date(user)
+        if send_coaching_email_after > instant:
+            user.send_coaching_email_after.FromDatetime(send_coaching_email_after)
+            if user.user_id:
+                users_database.user.update_one(
+                    {'_id': objectid.ObjectId(user.user_id)}, {'$set': {
+                        'sendCoachingEmailAfter': proto.datetime_to_json_string(
+                            send_coaching_email_after,
+                        ),
+                    }})
+            return None
+
+    # Compute next send_coaching_email_after.
+    next_send_coaching_email_after = instant + _compute_duration_to_next_coaching_email(user)
+
     focus_emails_sent = set()
     last_focus_email_sent = None
     for email_sent in user.emails_sent:
@@ -133,11 +123,30 @@ def _send_focus_email_to_user(
 
     for campaign_id in potential_campaigns:
         if _FOCUS_CAMPAIGNS[campaign_id].send_mail(
-                campaign_id, user, database, users_database, action, dry_run_email,
-                mongo_user_update=mongo_user_update):
+                campaign_id, user, database=database, users_database=users_database, action=action,
+                dry_run_email=dry_run_email,
+                mongo_user_update={'$set': {
+                    'sendCoachingEmailAfter': proto.datetime_to_json_string(
+                        next_send_coaching_email_after,
+                    ),
+                }}, now=instant):
+            user.send_coaching_email_after.FromDatetime(next_send_coaching_email_after)
             return campaign_id
 
-    logging.debug('No more available focus email for "%s"', user.user_id)
+    # No focus email was supported: it seems that we have sent all the
+    # ones we had. However maybe in the future we'll add more focus
+    # emails so let's wait the same amount of time we have waited until
+    # this email (this makes to wait 1 period, then 2, 4, …).
+    last_coaching_email_sent_at = typing.cast(
+        datetime.datetime,
+        _compute_last_coaching_email_date(user, user.registered_at.ToDatetime()))
+    send_coaching_email_after = instant + (instant - last_coaching_email_sent_at)
+    user.send_coaching_email_after.FromDatetime(send_coaching_email_after)
+    if user.user_id and action != 'ghost':
+        logging.debug('No more available focus email for "%s"', user.user_id)
+        users_database.user.update_one({'_id': objectid.ObjectId(user.user_id)}, {'$set': {
+            'sendCoachingEmailAfter': proto.datetime_to_json_string(send_coaching_email_after),
+        }})
     return None
 
 

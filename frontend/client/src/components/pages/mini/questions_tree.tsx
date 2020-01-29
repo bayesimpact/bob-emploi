@@ -17,32 +17,36 @@ export type TopicId =
 export type QuestionType = 'yes/no/later' | 'yes/no' | 'confidence' | 'levels'
 
 
-export interface Question {
-  nextUrl?: string
-  numSteps?: number
-  numStepsDone?: number
+export interface QuestionDef {
   readonly question: React.ReactNode
   readonly type: QuestionType
   readonly url: string
 }
 
 
+export interface Question extends QuestionDef {
+  nextUrl?: string
+  numSteps: number
+  numStepsDone: number
+}
+
+
 export type AnswerType = -2 | -1 | 1 | 2 | boolean | 'later'
 
 
-export interface Topic {
+export interface Topic<Q extends QuestionDef = Question> {
   readonly color: string
   firstQuestionUrl?: string
   readonly image: string
   nextTopic?: string
-  readonly questions: Question[]
+  readonly questions: readonly Q[]
   readonly talkAboutIt: string
   readonly title: string
   readonly url: TopicId
 }
 
 
-const QUESTIONS_TREE: Topic[] = [
+const QUESTIONS_TREE_DEF: readonly Topic<QuestionDef>[] = [
   {
     color: colors.MINI_TOPIC_SKILLS,
     image: competencesImage,
@@ -273,63 +277,79 @@ const QUESTIONS_TREE: Topic[] = [
     title: 'Mes loisirs et mes activités extra-professionnelles',
     url: 'loisirs',
   },
-]
+] as const
 
 
 // Add a field `firstQuestionUrl` to each topic with the URL of the first question.
-function addFirstQuestionUrls(tree: Topic[]): void {
-  tree.forEach((topic: Topic): void => {
-    const {questions, url} = topic
-    if (questions && questions[0] && questions[0].url) {
-      topic.firstQuestionUrl = `${url}/${questions[0].url}`
+function addFirstQuestionUrls<Q extends QuestionDef>(
+  tree: readonly Topic<Q>[]): readonly Topic<Q>[] {
+  return tree.map((topic: Topic<Q>): Topic<Q> => {
+    const {questions: [{url: firstQuestionUrl = undefined} = {}], url} = topic
+    if (firstQuestionUrl) {
+      return {
+        ...topic,
+        firstQuestionUrl: `/${url}/${firstQuestionUrl}`,
+      }
     }
+    return topic
   })
 }
 
 
 // Add a field `nextUrl` to each question with the URL of the next question.
-function addNextQuestionUrls(tree: Topic[]): void {
-  tree.forEach((topic: Topic): void => {
-    if (!topic.questions) {
-      return
+function addNextQuestionUrls<Q extends QuestionDef>(
+  tree: readonly Topic<Q>[]): readonly Topic<Q>[] {
+  return tree.map((topic: Topic<Q>): Topic<Q> => {
+    return {
+      ...topic,
+      questions: topic.questions.map((question: Q, index: number): Q => {
+        if (topic.questions[index + 1]) {
+          return {
+            ...question,
+            nextUrl: `/${topic.url}/${topic.questions[index + 1].url}`,
+          }
+        }
+        return question
+      }),
     }
-    topic.questions.forEach((question: Question, index: number): void => {
-      if (topic.questions[index + 1]) {
-        question.nextUrl = `${topic.url}/${topic.questions[index + 1].url}`
-      }
-    })
   })
 }
 
 
 // Add two fields numSteps and numStepsDone to each question.
-function countSteps(tree: Topic[]): void {
-  tree.forEach((topic: Topic): void => {
-    if (!topic.questions) {
-      return
-    }
-    topic.questions.forEach((question: Question, index: number): void => {
-      question.numSteps = topic.questions.length
-      question.numStepsDone = index
-    })
-  })
+function countSteps(tree: readonly Topic<QuestionDef>[]): readonly Topic[] {
+  return tree.map((topic: Topic<QuestionDef>): Topic => ({
+    ...topic,
+    questions: topic.questions.map((question: QuestionDef, index: number): Question => ({
+      ...question,
+      numSteps: topic.questions.length,
+      numStepsDone: index,
+    })),
+  }))
 }
 
 
 // Add a field `nextTopic` to each topic.
-function addNextTopicUrls(tree: Topic[]): void {
-  tree.forEach((topic: Topic, index: number): void => {
+function addNextTopicUrls<Q extends QuestionDef>(tree: readonly Topic<Q>[]): readonly Topic<Q>[] {
+  return tree.map((topic: Topic<Q>, index: number): Topic<Q> => {
     if (tree[index + 1]) {
-      topic.nextTopic = tree[index + 1].url
+      return {
+        ...topic,
+        nextTopic: tree[index + 1].url,
+      }
     }
+    return topic
   })
 }
 
 
-addFirstQuestionUrls(QUESTIONS_TREE)
-addNextQuestionUrls(QUESTIONS_TREE)
-countSteps(QUESTIONS_TREE)
-addNextTopicUrls(QUESTIONS_TREE)
+const QUESTIONS_TREE = addNextTopicUrls(
+  countSteps(
+    addNextQuestionUrls(
+      addFirstQuestionUrls(QUESTIONS_TREE_DEF),
+    ),
+  ),
+)
 
 
 export {QUESTIONS_TREE}

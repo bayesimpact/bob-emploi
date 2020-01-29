@@ -39,7 +39,7 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         }
         return self.create_user_with_token(data=user_data, email='foo@bar.fr')
 
-    @mock.patch(server.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
+    @mock.patch(server.user.__name__ + '._SLACK_WEBHOOK_URL', 'slack://bob-bots')
     @requests_mock.mock()
     def test_feedback(self, mock_requests: requests_mock.Mocker) -> None:
         """Basic call to "/api/feedback"."""
@@ -285,6 +285,26 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
         diagnostic = self.json_from_response(response)
         self.assertEqual({'overallScore', 'subDiagnostics', 'text'}, diagnostic.keys())
 
+    @mock.patch(server.now.__name__ + '.get')
+    def test_simulate_focus_emails(self, mock_now: mock.MagicMock) -> None:
+        """Check the simulate focus emails endpoint."""
+
+        mock_now.return_value = datetime.datetime(2019, 11, 27, 15, 24)
+        response = self.app.post(
+            '/api/emails/simulate',
+            data='{"profile": {"frustrations": ["SELF_CONFIDENCE", "RESUME", "MOTIVATION"]}}',
+            content_type='application/json')
+        emails = self.json_from_response(response)
+        self.assertEqual({'emailsSent'}, emails.keys())
+        self.assertGreaterEqual(len(emails['emailsSent']), 2, msg=emails['emailsSent'])
+        self.assertIn(
+            'T09:00', emails['emailsSent'][0]['sentAt'], msg='Focus emails should be sent at 9AM')
+        self.assertGreater(emails['emailsSent'][0]['sentAt'], '2019-11-29')
+        self.assertLess(emails['emailsSent'][0]['sentAt'], '2019-12-10')
+        self.assertGreater(emails['emailsSent'][1]['sentAt'], '2019-12-02')
+        self.assertLess(emails['emailsSent'][1]['sentAt'], '2019-12-17')
+        self.assertTrue(emails['emailsSent'][0]['subject'])
+
 
 class ProjectRequirementsEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the requirements endpoints."""
@@ -422,12 +442,12 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
 
     @mock.patch('logging.exception')
-    def test_translated_tips(self, mock_log_exception: mock.MagicMock) -> None:
-        """Test getting translated tips."""
+    def test_tutoie_tips(self, mock_log_exception: mock.MagicMock) -> None:
+        """Test getting translated tips as tutoiement."""
 
         self._db.translations.insert_one({
             'string': 'First tip',
-            'fr_FR@tu': 'Premier tip',
+            'fr@tu': 'Premier tip',
         })
         user_info = self.get_user_info(self.user_id, self.auth_token)
         user_info['profile']['canTutoie'] = True
@@ -441,10 +461,36 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
         advice_tips = self.json_from_response(response)
 
         mock_log_exception.assert_called_once()
-        self.assertIn('Falling back to vouvoiement', mock_log_exception.call_args[0][0])
+        self.assertIn('Falling back to French', mock_log_exception.call_args[0][0])
 
         self.assertEqual(
             ['Premier tip', 'Second tip'],
+            [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
+
+    @mock.patch('logging.exception')
+    def test_translated_tips(self, mock_log_exception: mock.MagicMock) -> None:
+        """Test getting translated tips."""
+
+        self._db.translations.insert_one({
+            'string': 'First tip',
+            'nl': 'Eerste tip',
+        })
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        user_info['profile']['locale'] = 'nl'
+        self.json_from_response(self.app.post(
+            '/api/user', data=json.dumps(user_info), content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token}))
+
+        response = self.app.get(
+            f'/api/advice/tips/other-work-env/{self.user_id}/{self.project_id}',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+        advice_tips = self.json_from_response(response)
+
+        mock_log_exception.assert_called_once()
+        self.assertIn('Falling back to French', mock_log_exception.call_args[0][0])
+
+        self.assertEqual(
+            ['Eerste tip', 'Second tip'],
             [t.get('title') for t in advice_tips.get('tips', [])], msg=advice_tips)
 
     def test_feminine_tips(self) -> None:

@@ -95,7 +95,7 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
 
         self._assert_has_status_update_link(field='statusUpdateUrl')
 
-        base_url = f'https://www.bob-emploi.fr?user={self.user.user_id}'
+        base_url = f'https://www.bob-emploi.fr?userId={self.user.user_id}'
         self._assert_regex_field(
             'loginUrl', rf'{re.escape(base_url)}&authToken=\d+\.[a-f0-9]+$')
 
@@ -341,6 +341,8 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
     def test_best_application_mode_is_spontaneous(self) -> None:
         """Best application mode is spontaneous."""
 
+        self.project.advices.add(advice_id='spontaneous-application')
+        self.project.advices.add(advice_id='network-test')
         self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
             'applicationModes': {
                 'A0Z42': {
@@ -364,6 +366,7 @@ class ImtVarsTestCase(mail_blast_test.CampaignTestBase):
     def test_best_application_mode_is_network(self) -> None:
         """Best application mode is spontaneous."""
 
+        self.project.advices.add(advice_id='spontaneous-application')
         self.project.advices.add(advice_id='network-test')
         self.database.job_group_info.update_one({'_id': 'B1234'}, {'$set': {
             'applicationModes': {

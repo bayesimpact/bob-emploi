@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/descriptor.proto";
 
-package bayes.bob;
+package bayes;
 
 extend google.protobuf.FieldOptions {
   // Give a bit more semantics to a field so that we can programatically

@@ -1,13 +1,16 @@
 import PropTypes from 'prop-types'
-import React from 'react'
-import {connect} from 'react-redux'
+import React, {useCallback} from 'react'
+import {WithTranslation, withTranslation} from 'react-i18next'
+import {useDispatch} from 'react-redux'
 import {RouteComponentProps, StaticContext, withRouter} from 'react-router'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {inDepartement, lowerFirstLetter} from 'store/french'
+import {getLanguage, isTuPossible} from 'store/i18n'
 import {DispatchAllActions, registerNewGuestUser} from 'store/actions'
 
 import {FastForward} from 'components/fast_forward'
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar} from 'components/navigation'
 import {BubbleToRead, Discussion, DiscussionBubble, NoOpElement,
@@ -77,7 +80,7 @@ class ValidateInput extends React.PureComponent<ValidateInputProps, ValidateInpu
 
   private handleChange = (value: string): void => this.setState({value})
 
-  private handleSubmit = (e): void => {
+  private handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault()
     this.handleClick()
   }
@@ -100,7 +103,7 @@ class ValidateInput extends React.PureComponent<ValidateInputProps, ValidateInpu
         {...otherProps} ref={this.input}
         value={this.state.value} onChange={this.handleChange} />
       <Button style={buttonStyle} onClick={this.handleClick} isRound={true}>
-        Valider
+        <Trans parent={null}>Valider</Trans>
       </Button>
     </form>
   }
@@ -113,11 +116,11 @@ const tutoiementOptions = [
 ]
 
 
-interface IntroProps {
+interface IntroProps extends WithTranslation {
   city?: bayes.bob.FrenchCity
   job?: bayes.bob.Job
   name?: string
-  onSubmit: (canTutoie: boolean, name: string) => Promise<boolean>
+  onSubmit: (canTutoie: boolean, locale: string, name: string) => Promise<boolean>
   stats?: bayes.bob.LaborStatsData
 }
 
@@ -128,11 +131,12 @@ interface IntroState {
   isFastForwarded?: boolean
   isGuest?: boolean
   isSubmitClicked?: boolean
+  isTuNeeded: boolean
   newName?: string
 }
 
 
-class Intro extends React.PureComponent<IntroProps, IntroState> {
+class IntroBase extends React.PureComponent<IntroProps, IntroState> {
   public static propTypes = {
     city: PropTypes.shape({
       cityId: PropTypes.string.isRequired,
@@ -150,12 +154,15 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
         imt: PropTypes.object,
       }),
     }),
+    t: PropTypes.func.isRequired,
   }
 
   public state: IntroState = {
     areCGUAccepted: !!this.props.name,
     isGuest: !this.props.name,
     isSubmitClicked: false,
+    // Keep it as state so that we do not change the question even if the language changes.
+    isTuNeeded: isTuPossible(this.props.i18n.language),
   }
 
   public componentWillUnmount(): void {
@@ -169,16 +176,26 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
   private cguRef: React.RefObject<LabeledToggle> = React.createRef()
 
   private toggleCGU = (): void => {
-    this.setState(({areCGUAccepted}: IntroState): IntroState => ({areCGUAccepted: !areCGUAccepted}))
+    this.setState(({areCGUAccepted}: IntroState): Pick<IntroState, 'areCGUAccepted'> =>
+      ({areCGUAccepted: !areCGUAccepted}))
   }
 
   private canSubmit = (): boolean => {
-    const {areCGUAccepted, canTutoie, isGuest, newName} = this.state
+    const {areCGUAccepted, canTutoie, isGuest, isTuNeeded, newName} = this.state
     const finalName = isGuest ? newName : this.props.name
-    return !!(areCGUAccepted && finalName && typeof canTutoie === 'boolean')
+    return !!(areCGUAccepted && finalName && (!isTuNeeded || typeof canTutoie === 'boolean'))
   }
 
-  private handleChangeTutoiement = (canTutoie): void => this.setState({canTutoie})
+  private getLocale(): string {
+    const {canTutoie} = this.state
+    const rootLanguage = getLanguage()
+    return `${rootLanguage}${canTutoie ? '@tu' : ''}`
+  }
+
+  private handleChangeTutoiement = (canTutoie?: boolean): void => {
+    const {i18n} = this.props
+    this.setState({canTutoie}, () => i18n.changeLanguage(this.getLocale()))
+  }
 
   private handleSubmit = (): void => {
     const {canTutoie, isGuest, newName} = this.state
@@ -186,7 +203,7 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
     const finalName = isGuest ? newName : name
     if (this.canSubmit() && finalName) {
       this.setState({isSubmitClicked: true})
-      onSubmit(!!canTutoie, finalName).then((): void => {
+      onSubmit(!!canTutoie, this.getLocale(), finalName).then((): void => {
         if (!this.isUnmounted) {
           this.setState({isSubmitClicked: false})
         }
@@ -202,10 +219,11 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
     this.cguRef.current && this.cguRef.current.focus()
   }
 
-  private updateName = (newName: string): void => this.setState({newName})
+  private updateName = (newName: string): void =>
+    this.setState({newName: newName.trim()})
 
   private onFastForward = (): void => {
-    const {areCGUAccepted, canTutoie, isFastForwarded, isGuest, newName} = this.state
+    const {areCGUAccepted, canTutoie, isFastForwarded, isGuest, isTuNeeded, newName} = this.state
     if (!isFastForwarded) {
       this.setState({isFastForwarded: true})
       return
@@ -214,7 +232,7 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
       this.setState({newName: 'Angèle'})
       return
     }
-    if (typeof canTutoie !== 'boolean') {
+    if (typeof canTutoie !== 'boolean' && isTuNeeded) {
       this.setState({canTutoie: Math.random() < .5})
       return
     }
@@ -231,9 +249,9 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
       job: {jobGroup: {name: jobGroupName = ''} = {}} = {},
       name,
       stats: {localStats: {imt: {yearlyAvgOffersPer10Candidates = 0} = {}} = {}} = {},
+      t,
     } = this.props
-    const {areCGUAccepted, canTutoie, isGuest, isSubmitClicked, newName} = this.state
-    const userYou = (tu: string, vous: string): string => canTutoie ? tu : vous
+    const {areCGUAccepted, canTutoie, isGuest, isSubmitClicked, isTuNeeded, newName} = this.state
     const isCompetitionShown = jobGroupName && departementName && !!yearlyAvgOffersPer10Candidates
     const isToughCompetition = isCompetitionShown && yearlyAvgOffersPer10Candidates < 6
     const boldStyle = {
@@ -253,50 +271,66 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
       paddingBottom: 10,
       width: isMobileVersion ? 280 : 'initial',
     }
-    // TODO(pascal): Use stats props if it's set.
+    const inCity = city ? inDepartement(city, t) : ''
+    const toughCompetition = isToughCompetition ? t('rude') : t('faible')
+    const isNameNeeded = isGuest
     return <React.Fragment>
       <FastForward onForward={this.onFastForward} />
       <Discussion
         style={discussionStyle} isFastForwarded={this.state.isFastForwarded}>
         <DiscussionBubble>
           {isCompetitionShown && city ? <BubbleToRead>
-            Le saviez-vous&nbsp;?! La concurrence
-            en {lowerFirstLetter(jobGroupName)} {inDepartement(city)} est {isToughCompetition ?
-              'rude' : 'faible'},{' '}
-            <strong>
-              {yearlyAvgOffersPer10Candidates}{' '}
-              offre{yearlyAvgOffersPer10Candidates > 1 ? 's' : null} pour 10 candidats
-            </strong>.
+            <Trans parent={null} count={yearlyAvgOffersPer10Candidates} key="bob-intro">
+              Le saviez-vous&nbsp;?! La concurrence
+              en {{jobGroupName: lowerFirstLetter(jobGroupName)}} {{inCity}} est{' '}
+              {{toughCompetition}}, <strong>
+                {{yearlyAvgOffersPer10Candidates}} offre pour 10 candidats
+              </strong>.
+            </Trans>
           </BubbleToRead> : null}
           {isCompetitionShown ? <BubbleToRead>
             {isToughCompetition ?
-              "Ce n'est pas simple mais vous pouvez y arriver." :
-              "C'est une très bonne nouvelle\u00A0!"}
+              t("Ce n'est pas simple mais vous pouvez y arriver.") :
+              t("C'est une très bonne nouvelle\u00A0!")}
           </BubbleToRead> : null}
-          <BubbleToRead>Bienvenue{isGuest ? null : <strong> {name}</strong>}&nbsp;!</BubbleToRead>
+          <BubbleToRead><Trans parent={null}>
+            Bienvenue<strong>{{optionalName: isGuest ? '' : (' ' + name)}}</strong>&nbsp;!
+          </Trans></BubbleToRead>
           <BubbleToRead>
-            Je suis <strong style={boldStyle}>{config.productName}</strong>, votre assistant
-            personnel pour accélérer votre recherche.
+            <Trans parent={null}>
+              Je suis <strong style={boldStyle}>{{productName: config.productName}}</strong>, votre
+              assistant personnel pour accélérer votre recherche.
+            </Trans>
           </BubbleToRead>
           <BubbleToRead>
-            Je vais vous accompagner tout au long de votre projet et vous aider à le réaliser au
-            plus vite.
+            <Trans parent={null}>
+              Je vais vous accompagner tout au long de votre projet et vous aider à le réaliser au
+              plus vite.
+            </Trans>
           </BubbleToRead>
-          <BubbleToRead>
-            Mais avant de commencer, {isGuest ? 'comment vous appelez-vous' : 'peut-on se tutoyer'}
-            &nbsp;?
-          </BubbleToRead>
+          {isNameNeeded ? <BubbleToRead>
+            <Trans parent={null}>
+              Mais avant de commencer, comment vous appelez-vous&nbsp;?
+            </Trans>
+          </BubbleToRead> :
+            isTuNeeded ? <BubbleToRead>
+              Mais avant de commencer, peut-on se tutoyer&nbsp;?
+            </BubbleToRead> : null}
         </DiscussionBubble>
-        {isGuest ? <QuestionBubble isDone={!!newName}>
+        {isNameNeeded ? <QuestionBubble isDone={!!newName}>
           <ValidateInput
             defaultValue={name || newName} onChange={this.updateName}
-            placeholder="Tapez votre prénom"
+            placeholder={t('Tapez votre prénom')}
             style={{marginBottom: 5, marginTop: 15}} shouldFocusOnMount={true} />
         </QuestionBubble> : null}
-        {isGuest ? <BubbleToRead>
-          Enchanté, {newName}&nbsp;! Peut-on se tutoyer&nbsp;?
+        {isNameNeeded ? <BubbleToRead>
+          <Trans parent={null}>
+            Enchanté, {{newName: newName || ''}}&nbsp;!
+          </Trans>{' '}{isTuNeeded ? <React.Fragment>
+            Peut-on se tutoyer&nbsp;?
+          </React.Fragment> : null}
         </BubbleToRead> : null}
-        <QuestionBubble
+        {isTuNeeded ? <QuestionBubble
           isDone={typeof canTutoie === 'boolean'}
           onShown={this.handleTutoieQuestionIsShown}>
           <RadioGroup
@@ -304,51 +338,54 @@ class Intro extends React.PureComponent<IntroProps, IntroState> {
             ref={this.tutoieRadioGroup}
             onChange={this.handleChangeTutoiement}
             options={tutoiementOptions} value={canTutoie} />
-        </QuestionBubble>
+        </QuestionBubble> : null}
         <DiscussionBubble>
-          <BubbleToRead>
+          {isTuNeeded ? <BubbleToRead>
             Parfait, c'est noté.
+          </BubbleToRead> : null}
+          <BubbleToRead>
+            <Trans parent={null}>
+              Pour évaluer votre projet je vais avoir besoin de vous poser quelques questions
+              rapides.
+            </Trans>
           </BubbleToRead>
           <BubbleToRead>
-            Pour évaluer {userYou('ton', 'votre')} projet je vais avoir besoin
-            de {userYou('te', 'vous')} poser quelques questions rapides.
+            <Trans parent={null}>
+              Cela ne prendra qu'entre <strong style={boldStyle}>2</strong> et
+              <strong style={boldStyle}> 5 minutes</strong> et me permettra de bien
+              cerner vos besoins.
+            </Trans>
           </BubbleToRead>
           <BubbleToRead>
-            {userYou('Ça', 'Cela')} ne prendra qu'entre <strong style={boldStyle}>2</strong> et
-            <strong style={boldStyle}> 5 minutes</strong> et me permettra de bien
-            cerner {userYou('tes', 'vos')} besoins.
-          </BubbleToRead>
-          <BubbleToRead>
-            On commence&nbsp;?
+            <Trans parent={null}>
+              On commence&nbsp;?
+            </Trans>
           </BubbleToRead>
         </DiscussionBubble>
         <NoOpElement
           style={{margin: '20px auto 0', textAlign: 'center'}}
           onShown={this.handleFinalGroupIsShown}>
           {isGuest ? <React.Fragment>
-            <LabeledToggle ref={this.cguRef} label={<React.Fragment>
+            <LabeledToggle ref={this.cguRef} label={<Trans parent={null}>
               J'ai lu et j'accepte
               les <ExternalLink href={Routes.TERMS_AND_CONDITIONS_PAGE} style={linkStyle}>
                 CGU
               </ExternalLink>
-            </React.Fragment>} isSelected={areCGUAccepted} onClick={this.toggleCGU}
+            </Trans>} isSelected={areCGUAccepted} onClick={this.toggleCGU}
             type="checkbox" /><br />
           </React.Fragment> : null}
           <Button
             isRound={true} onClick={this.handleSubmit} style={buttonStyle}
             disabled={!this.canSubmit() || isSubmitClicked} isProgressShown={isSubmitClicked}>
-            Commencer le questionnaire
+            <Trans parent={null}>Commencer le questionnaire</Trans>
           </Button>
         </NoOpElement>
       </Discussion>
     </React.Fragment>
   }
 }
+const Intro = withTranslation()(IntroBase)
 
-
-interface IntroPageProps {
-  dispatch: DispatchAllActions
-}
 
 interface IntroSate {
   city?: bayes.bob.FrenchCity
@@ -357,35 +394,40 @@ interface IntroSate {
 }
 
 
-class IntroPageBase
-  extends React.PureComponent<IntroPageProps & RouteComponentProps<{}, StaticContext, IntroSate>> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    location: ReactRouterPropTypes.location.isRequired,
-  }
-
-  private handleSubmit = (canTutoie: boolean, name: string): Promise<boolean> => {
-    return this.props.dispatch(registerNewGuestUser(name, {canTutoie})).
-      then((response): boolean => !!response)
-  }
-
-  public render(): React.ReactNode {
-    const {city = undefined, job = undefined, stats = undefined} = this.props.location.state || {}
-    const pageStyle: React.CSSProperties = {
-      alignItems: 'flex-end',
-      backgroundColor: '#fff',
-      display: 'flex',
-      justifyContent: 'center',
-      padding: '0 20px',
-    }
-    return <PageWithNavigationBar page="intro" style={pageStyle} areNavLinksShown={false}>
-      <div style={{maxWidth: 440}}>
-        <Intro onSubmit={this.handleSubmit} {...{city, job, stats}} />
-      </div>
-    </PageWithNavigationBar>
-  }
+const pageStyle: React.CSSProperties = {
+  alignItems: 'flex-end',
+  backgroundColor: '#fff',
+  display: 'flex',
+  justifyContent: 'center',
+  padding: '0 20px',
 }
-const IntroPage = withRouter(connect()(IntroPageBase))
+
+
+const IntroPageBase =
+(props: RouteComponentProps<{}, StaticContext, IntroSate>): React.ReactElement => {
+  const {location} = props
+
+  const dispatch = useDispatch<DispatchAllActions>()
+  const handleSubmit = useCallback(
+    (canTutoie: boolean, locale: string, name: string): Promise<boolean> => {
+      return dispatch(registerNewGuestUser(name, {canTutoie, locale})).
+        then((response): boolean => !!response)
+    },
+    [dispatch],
+  )
+
+  const {city = undefined, job = undefined, stats = undefined} = location.state || {}
+  return <PageWithNavigationBar page="intro" style={pageStyle}>
+    <div style={{maxWidth: 440}}>
+      <Intro onSubmit={handleSubmit} {...{city, job, stats}} />
+    </div>
+  </PageWithNavigationBar>
+}
+IntroPageBase.propTypes = {
+  dispatch: PropTypes.func.isRequired,
+  location: ReactRouterPropTypes.location.isRequired,
+}
+const IntroPage = withRouter(React.memo(IntroPageBase))
 
 
 export {Intro, IntroPage}

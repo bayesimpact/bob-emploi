@@ -1,6 +1,7 @@
 
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
+import {WithTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {RouteComponentProps, withRouter} from 'react-router'
 import {Redirect} from 'react-router-dom'
@@ -8,7 +9,6 @@ import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, editFirstProject} from 'store/actions'
 import {flattenProject} from 'store/project'
-import {youForUser} from 'store/user'
 
 import {isMobileVersion} from 'components/mobile'
 import {CircularProgress} from 'components/theme'
@@ -28,7 +28,8 @@ interface PageConnectedProps {
 }
 
 
-interface PageProps extends PageConnectedProps, RouteComponentProps<{stepName?: string}> {
+interface PageProps
+  extends PageConnectedProps, RouteComponentProps<{stepName?: string}>, WithTranslation {
   dispatch: DispatchAllActions
 }
 
@@ -45,6 +46,7 @@ class NewProjectPageBase extends React.PureComponent<PageProps, PageState> {
     history: ReactRouterPropTypes.history.isRequired,
     isCreatingProject: PropTypes.bool,
     match: ReactRouterPropTypes.match.isRequired,
+    t: PropTypes.func.isRequired,
     userProfile: PropTypes.shape({
       name: PropTypes.string.isRequired,
     }).isRequired,
@@ -69,12 +71,12 @@ class NewProjectPageBase extends React.PureComponent<PageProps, PageState> {
   private pageDom: React.RefObject<Scrollable> = React.createRef()
 
   private handleSubmit = (): void => {
-    const {dispatch, history, match: {params: {stepName}}} = this.props
+    const {dispatch, history, match: {params: {stepName}}, t: translate} = this.props
     const {type = undefined} = getProjectOnboardingStep(stepName) || {}
     if (!stepName || !this.state.newProject) {
       return
     }
-    dispatch(editFirstProject(this.state.newProject, type))
+    dispatch(editFirstProject(this.state.newProject, translate, type))
     gotoNextStep(Routes.NEW_PROJECT_PAGE, stepName, dispatch, history)
   }
 
@@ -87,7 +89,7 @@ class NewProjectPageBase extends React.PureComponent<PageProps, PageState> {
   }
 
   public render(): React.ReactNode {
-    const {existingProject, isCreatingProject, match, userProfile} = this.props
+    const {existingProject, isCreatingProject, match, t, userProfile} = this.props
     // Prevent people from manually going back and creating another project.
     if (existingProject && !existingProject.isIncomplete) {
       return <Redirect to={`${Routes.PROJECT_PAGE}/{existingProject.projectId}`} />
@@ -114,7 +116,7 @@ class NewProjectPageBase extends React.PureComponent<PageProps, PageState> {
         onSubmit={this.handleSubmit} profile={userProfile}
         onPreviousButtonClick={isMobileVersion ? undefined : this.handleBack}
         newProject={this.state.newProject} totalStepCount={onboardingStepCount}
-        userYou={youForUser({profile: userProfile})} stepNumber={stepNumber} />
+        stepNumber={stepNumber} t={t} />
     }
     return <PageWithNavigationBar style={{backgroundColor: '#fff'}}
       onBackClick={isMobileVersion ? this.handleBack : undefined}
@@ -128,4 +130,4 @@ export default connect(({app, asyncState, user}: RootState): PageConnectedProps 
   isCreatingProject: !!asyncState.isFetching['CREATE_PROJECT_SAVE'],
   userProfile: user.profile || emptyObject,
   ...app.newProjectProps,
-}))(withRouter(NewProjectPageBase))
+}))(withTranslation()(withRouter(NewProjectPageBase)))

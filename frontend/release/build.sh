@@ -47,7 +47,7 @@ cp \
   frontend/release/nginx.conf \
   frontend/release/entrypoint.sh \
   frontend/release/Dockerfile \
-  frontend/client/cfg/const_dist.json \
+  frontend/client/cfg/const_dist.json5 \
   "$BUILD_DIR"
 time docker build --pull \
   --build-arg GIT_SHA1="$GIT_SHA1" \

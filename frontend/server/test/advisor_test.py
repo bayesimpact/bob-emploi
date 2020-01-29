@@ -35,11 +35,16 @@ class _BaseTestCase(unittest.TestCase):
             '_id': 'rec1CWahSiEtlwEHW',
             'goal': 'Reorientation !',
         })
+        self.database.translations.insert_one({
+            'string': 'de {job_name}',
+            'fr@tu': 'de {job_name}',
+        })
 
         self.user = user_pb2.User(
             features_enabled=user_pb2.Features(advisor=user_pb2.ACTIVE, workbench=user_pb2.ACTIVE),
             profile=user_pb2.UserProfile(
-                name='Margaux', gender=user_pb2.FEMININE, email='margaux@example.fr'))
+                name='Margaux', gender=user_pb2.FEMININE, email='margaux@example.fr',
+                locale='fr@tu'))
         proto.CachedCollection.update_cache_version()
 
 
@@ -124,7 +129,8 @@ class MaybeAdviseTestCase(_BaseTestCase):
         base_url = re.escape(f'http://base.example.com/unsubscribe.html?user={self.user.user_id}')
         self.assertRegex(
             email_settings_url,
-            rf'^{base_url}&auth=\d+\.[a-f0-9]+&coachingEmailFrequency=UNKNOWN_EMAIL_FREQUENCY$')
+            rf'^{base_url}&auth=\d+\.[a-f0-9]+&coachingEmailFrequency=UNKNOWN_EMAIL_FREQUENCY&'
+            r'hl=fr%40tu$')
         self.assertEqual('', data['isCoachingEnabled'])
 
     @mailjetmock.patch()
@@ -440,6 +446,9 @@ class MaybeAdviseTestCase(_BaseTestCase):
                 break
         else:
             self.fail(f'No call to warning with "Timeout"\n:{mock_warning.call_args_list}')
+
+        # Wait for the scorer to finish so that we don't taint other tests.
+        time.sleep(2)
 
 
 class OtherWorkEnvScoringModelTestCase(scoring_test.AdviceScoringModelTestBase):

@@ -1,35 +1,42 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import {createBrowserHistory} from 'history'
+import {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import {parse} from 'query-string'
-import Radium from 'radium'
-import React from 'react'
-import GoogleLogin from 'react-google-login'
+import React, {Suspense, useCallback, useMemo, useState} from 'react'
+import GoogleLogin, {GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
+import {useTranslation} from 'react-i18next'
 import {connect, Provider} from 'react-redux'
 import {Redirect, Route, RouteComponentProps, Switch} from 'react-router'
 import ReactRouterPropTypes from 'react-router-prop-types'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
-import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
 
 import {AllEvalActions, AuthEvalState, DispatchAllEvalActions, EvalRootState,
   computeAdvicesForProject, diagnoseProject, getEvalUseCasePools, strategizeProject,
-  getEvalUseCases, getLaborStats, getAllCategories, createUseCase} from 'store/actions'
+  getEvalUseCases, getLaborStats, getAllCategories, createUseCase, simulateFocusEmails,
+  hideToasterMessageAction} from 'store/actions'
 
 import {app, asyncState} from 'store/app_reducer'
 import {getUseCaseTitle} from 'store/eval'
+import {init as i18nInit} from 'store/i18n'
+import {parseQueryString, parsedValueFlattener} from 'store/parse'
+import {createSentryMiddleware} from 'store/sentry'
 
+import {RadiumDiv, RadiumSpan} from 'components/radium'
 import {Snackbar} from 'components/snackbar'
 import {Button, SmoothTransitions, Textarea} from 'components/theme'
 import {Select} from 'components/pages/connected/form_utils'
+import {WaitingPage} from 'components/pages/waiting'
 import {Routes} from 'components/url'
 
 import {Strategies} from './connected/project/strategy'
 import {AdvicesRecap} from './eval/advices_recap'
 import {Assessment} from './eval/assessment'
 import {CategoriesDistribution, UseCaseSelector} from './eval/categories'
+import {Coaching} from './eval/coaching'
 import {CreatePoolModal} from './eval/create_pool_modal'
 import {PoolOverview} from './eval/overview'
 import {EVAL_SCORES} from './eval/score_levels'
@@ -47,15 +54,17 @@ const DIAGNOSTIC_PANEL = 'diagnostic'
 const ADVICE_PANEL = 'advice'
 const STRATEGIES_PANEL = 'strategies'
 const STATS_PANEL = 'statistics'
+const COACHING_PANEL = 'coaching'
 
 type EvalPanel =
   | typeof DIAGNOSTIC_PANEL
   | typeof ADVICE_PANEL
   | typeof STRATEGIES_PANEL
   | typeof STATS_PANEL
+  | typeof COACHING_PANEL
 
 
-const getEmptyString = (): string => ''
+i18nInit()
 
 
 interface EvalPanelConfig {
@@ -65,7 +74,7 @@ interface EvalPanelConfig {
 }
 
 
-const panels: EvalPanelConfig[] = [
+const panels: readonly EvalPanelConfig[] = [
   {
     name: 'Diagnostic',
     panelId: DIAGNOSTIC_PANEL,
@@ -86,11 +95,21 @@ const panels: EvalPanelConfig[] = [
     panelId: STATS_PANEL,
     predicate: (): boolean => true,
   },
+  {
+    name: 'Coaching',
+    panelId: COACHING_PANEL,
+    predicate: ({emailsSent}: UseCaseEvalPageState): boolean => !!(emailsSent && emailsSent.length),
+  },
 ]
+
+
+const emptyUser = {} as const
+
 
 interface UseCaseEvalPageProps extends RouteComponentProps<{useCaseId: string}> {
   dispatch: DispatchAllEvalActions
   fetchGoogleIdToken: () => Promise<string>
+  t: TFunction
 }
 
 
@@ -98,6 +117,8 @@ interface UseCaseEvalPageState {
   advices?: readonly bayes.bob.Advice[]
   diagnostic?: bayes.bob.Diagnostic
   categories?: readonly bayes.bob.DiagnosticCategory[]
+  coachingEmailFrequency: bayes.bob.EmailFrequency
+  emailsSent?: readonly bayes.bob.EmailSent[]
   evaluation?: bayes.bob.UseCaseEvaluation
   initialUseCaseId?: string
   isCreatePoolModalShown?: boolean
@@ -132,11 +153,13 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
         useCaseId: PropTypes.string,
       }).isRequired,
     }).isRequired,
+    t: PropTypes.func.isRequired,
   }
 
   public state: UseCaseEvalPageState = {
     advices: [],
     categories: [],
+    coachingEmailFrequency: 'EMAIL_MAXIMUM',
     diagnostic: undefined,
     evaluation: {},
     initialUseCaseId: undefined,
@@ -168,7 +191,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     return {
       initialUseCaseId: useCaseId,
       isOverviewShown: useCaseId === OVERVIEW_ID,
-      selectedPoolName: poolName,
+      selectedPoolName: parsedValueFlattener.last(poolName),
     }
   }
 
@@ -177,7 +200,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     if (this.getUseCaseFromEmail()) {
       return
     }
-    dispatch(getEvalUseCasePools()).then((pools: void|bayes.bob.UseCasePool[]): void => {
+    dispatch(getEvalUseCasePools()).then((pools: void|readonly bayes.bob.UseCasePool[]): void => {
       this.setState({
         pools: pools || [],
         selectedPoolName: this.state.selectedPoolName ||
@@ -194,7 +217,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
 
   private getUseCaseFromEmail(): boolean {
     const {dispatch, location: {search}} = this.props
-    const {email, ticketId, userId} = parse(search.slice(1))
+    const {email, ticketId, userId} = parseQueryString(search.slice(1))
     if (!email && !userId && !ticketId) {
       return false
     }
@@ -214,17 +237,18 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     if (!selectedPoolName) {
       return
     }
-    dispatch(getEvalUseCases(selectedPoolName)).then((useCases: bayes.bob.UseCase[]|void): void => {
-      if (!useCases) {
-        return
-      }
-      const initialUseCase = initialUseCaseId && useCases.find(
-        ({useCaseId}: bayes.bob.UseCase): boolean => useCaseId === initialUseCaseId)
-      this.setState({useCases})
-      if (!isOverviewShown) {
-        this.selectUseCase(initialUseCase || useCases.length && useCases[0] || null)
-      }
-    })
+    dispatch(getEvalUseCases(selectedPoolName)).
+      then((useCases: readonly bayes.bob.UseCase[]|void): void => {
+        if (!useCases) {
+          return
+        }
+        const initialUseCase = initialUseCaseId && useCases.find(
+          ({useCaseId}: bayes.bob.UseCase): boolean => useCaseId === initialUseCaseId)
+        this.setState({useCases})
+        if (!isOverviewShown) {
+          this.selectUseCase(initialUseCase || useCases.length && useCases[0] || null)
+        }
+      })
   }
 
   private handleChoosePanel = _memoize((wantedPanel?: string): (() => void) => (): void => {
@@ -268,7 +292,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
         const userWithDiagnostic = {
           ...userData,
           projects: [{
-            ...(userData.projects && userData.projects[0]),
+            ...userData.projects?.[0],
             diagnostic,
           }],
         }
@@ -282,7 +306,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
             const userWithAdviceAndDiagnostic = {
               ...userData,
               projects: [{
-                ...(userData.projects && userData.projects[0]),
+                ...userData.projects?.[0],
                 advices: response.advices,
                 diagnostic,
               }],
@@ -294,8 +318,39 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
                   return
                 }
                 this.setState({strategies: response.strategies})
+                this.updateCoachingEmails()
               })
           })
+      })
+  }
+
+  private updateCoachingEmails = (): void => {
+    const {dispatch} = this.props
+    const {advices, coachingEmailFrequency, diagnostic, selectedUseCase, strategies} = this.state
+    if (!selectedUseCase) {
+      return
+    }
+    const {userData} = selectedUseCase
+    const userWithAdviceDiagnosticAndStrategies = {
+      ...userData,
+      profile: {
+        ...userData?.profile,
+        coachingEmailFrequency,
+      },
+      projects: [{
+        ...userData?.projects?.[0],
+        advices,
+        diagnostic,
+        strategies,
+      }],
+    }
+    dispatch(simulateFocusEmails(userWithAdviceDiagnosticAndStrategies)).
+      then((response: bayes.bob.User|void): void => {
+        if (!response || this.isUnmounting || !response.emailsSent ||
+          this.state.selectedUseCase !== selectedUseCase) {
+          return
+        }
+        this.setState({emailsSent: response.emailsSent})
       })
   }
 
@@ -312,19 +367,20 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     return `${Routes.EVAL_PAGE}/${selectedUseCaseId}${searchString}`
   }
 
-  private selectUseCase = (selectedUseCase): void => {
-    const {evaluation = {}, userData = null} = selectedUseCase || {}
+  private selectUseCase = (selectedUseCase?: bayes.bob.UseCase|null): void => {
+    const {evaluation = {}, userData = emptyUser} = selectedUseCase || {}
     this.setState({
       advices: [],
       categories: [],
       diagnostic: undefined,
+      emailsSent: [],
       evaluation,
       isModified: false,
       isOverviewShown: false,
       isSaved: false,
       jobGroupInfo: undefined,
       localStats: undefined,
-      selectedUseCase,
+      selectedUseCase: selectedUseCase || undefined,
       strategies: [],
       userCounts: undefined,
     }, this.advise)
@@ -333,6 +389,11 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
 
   private handlePoolChange = (selectedPoolName: string): void => {
     this.setState({selectedPoolName}, this.fetchPoolUseCases)
+  }
+
+  private handleCoachingEmailFrequency =
+  (coachingEmailFrequency: bayes.bob.EmailFrequency): void => {
+    this.setState({coachingEmailFrequency}, this.updateCoachingEmails)
   }
 
   private selectNextUseCase = (): void => {
@@ -412,13 +473,13 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       isOverviewShown: true,
       selectedUseCase: undefined,
     })
-    this.props.dispatch({type: 'SELECT_USER', user: null})
+    this.props.dispatch({type: 'SELECT_USER', user: emptyUser})
   }
 
   private handleRescoreAdvice = (adviceId: string, newScore: string): void => {
     const {evaluation} = this.state
     if (!newScore) {
-      const modules = {...evaluation && evaluation.modules}
+      const modules: {[key: string]: number} = {...evaluation && evaluation.modules}
       delete modules[adviceId]
       this.setState({
         evaluation: {
@@ -440,7 +501,8 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     })
   }
 
-  private handleEvaluateAdvice = (adviceId: string, adviceEvaluation): void => {
+  private handleEvaluateAdvice =
+  (adviceId: string, adviceEvaluation: bayes.bob.AdviceEvaluation): void => {
     const {evaluation} = this.state
     const advices = evaluation && evaluation.advices
     this.setState({
@@ -458,7 +520,8 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     })
   }
 
-  private handleEvaluateDiagnosticSection = (sectionId, sectionEvaluation): void => {
+  private handleEvaluateDiagnosticSection =
+  (sectionId: string, sectionEvaluation: bayes.bob.GenericEvaluation): void => {
     const {evaluation} = this.state
     const diagnostic = evaluation && evaluation.diagnostic
     this.setState({
@@ -492,24 +555,24 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       onClose={this.handleShowCreatePoolModal(false)} />
   }
 
-  private renderHeaderLink = ({name, panelId, predicate}): React.ReactNode => {
+  private renderHeaderLink = ({name, panelId, predicate}: EvalPanelConfig): React.ReactNode => {
     const isAvailable = predicate(this.state)
     const {shownPanel} = this.state
     const toggleTitleStyle = {
       ':hover': {
         borderBottom: `2px solid ${colors.BOB_BLUE_HOVER}`,
       },
-      borderBottom: shownPanel === panelId ? `2px solid ${colors.BOB_BLUE}` : 'initial',
-      opacity: isAvailable ? 1 : .5,
-      paddingBottom: 5,
+      'borderBottom': shownPanel === panelId ? `2px solid ${colors.BOB_BLUE}` : 'initial',
+      'opacity': isAvailable ? 1 : .5,
+      'paddingBottom': 5,
     }
     return <HeaderLink
       onClick={this.handleChoosePanel(panelId)} isSelected={shownPanel === panelId} key={panelId}>
-      <span style={toggleTitleStyle}>{name}</span>
+      <RadiumSpan style={toggleTitleStyle}>{name}</RadiumSpan>
     </HeaderLink>
   }
 
-  private updateEvaluation = (changes): void => {
+  private updateEvaluation = (changes: bayes.bob.UseCaseEvaluation): void => {
     const {evaluation} = this.state
     this.setState({
       evaluation: {
@@ -520,9 +583,10 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
     })
   }
 
-  private renderPanelContent(profile, project): React.ReactNode {
-    const {advices, categories, diagnostic, evaluation, jobGroupInfo, localStats, shownPanel,
-      strategies, userCounts} = this.state
+  private renderPanelContent(
+    profile: bayes.bob.UserProfile, project: bayes.bob.Project): React.ReactNode {
+    const {advices, categories, coachingEmailFrequency, diagnostic, emailsSent, evaluation,
+      jobGroupInfo, localStats, shownPanel, strategies, userCounts} = this.state
     const fullProject = {
       ...project,
       advices,
@@ -553,18 +617,23 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       case STRATEGIES_PANEL:
         // TODO(cyrille): Make sure we can see what's inside the strategies.
         return <Strategies
-          makeStrategyLink={getEmptyString}
           project={fullProject}
           strategies={strategies || emptyArray} />
       case STATS_PANEL:
         return <Stats
           categories={categories} project={fullProject} profile={profile}
           jobGroupInfo={jobGroupInfo} userCounts={userCounts} />
+      case COACHING_PANEL:
+        return <Coaching
+          project={fullProject} emailsSent={emailsSent || emptyArray}
+          coachingEmailFrequency={coachingEmailFrequency}
+          onChangeFrequency={this.handleCoachingEmailFrequency} />
     }
   }
 
   // TODO(cyrille): Move to its own component.
-  private renderBobMindPanel(profile, project): React.ReactNode {
+  private renderBobMindPanel(
+    profile: bayes.bob.UserProfile, project: bayes.bob.Project): React.ReactNode {
     const toggleStyle: React.CSSProperties = {
       display: 'flex',
       flexDirection: 'row',
@@ -584,6 +653,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
   }
 
   public render(): React.ReactNode {
+    const {t} = this.props
     const {evaluation, isOverviewShown, isModified, isSaved, pools, selectedPoolName,
       selectedUseCase, useCases} = this.state
     const poolOptions = pools.
@@ -605,7 +675,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       map(({indexInPool, title, useCaseId, userData, evaluation}): SelectOption => {
         return {
           name: (evaluation ? '✅ ' : '🎯 ') +
-            (indexInPool || 0).toString() + ' - ' + getUseCaseTitle(title, userData),
+            (indexInPool || 0).toString() + ' - ' + getUseCaseTitle(this.props.t, title, userData),
           value: useCaseId || '',
         }
       }))
@@ -649,12 +719,12 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
             Créer un cas d'utilisation
           </Button>
         </div>
-        {selectedUseCase ? <UseCase useCase={selectedUseCase} /> : null}
+        {selectedUseCase ? <UseCase useCase={selectedUseCase} t={t} /> : null}
         {isOverviewShown ? <PoolOverview
           useCases={useCases} onSelectUseCase={this.selectUseCase} /> : null}
       </div>
       <div style={centralPanelstyle}>
-        {selectedUseCase ? this.renderBobMindPanel(profile, project) : null}
+        {selectedUseCase ? this.renderBobMindPanel(profile || emptyObject, project) : null}
         {(isOverviewShown || !evaluation) ? null :
           <ScorePanel
             evaluation={evaluation}
@@ -674,125 +744,129 @@ interface ScoreButtonProps {
   children: React.ReactNode
   image: string
   isSelected: boolean
-  onClick: () => void
+  onClick: (score: bayes.bob.UseCaseScore) => void
+  score: bayes.bob.UseCaseScore
 }
 
 
-class ScoreButtonBase extends React.PureComponent<ScoreButtonProps> {
-  public static propTypes = {
-    children: PropTypes.node.isRequired,
-    image: PropTypes.string.isRequired,
-    isSelected: PropTypes.bool,
-    onClick: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {children, image, isSelected, onClick} = this.props
-    const containerStyle: RadiumCSSProperties = {
-      ':hover': {
-        opacity: 1,
-      },
-      cursor: 'pointer',
-      fontSize: 13,
-      fontWeight: 500,
-      opacity: isSelected ? 1 : .5,
-      padding: '25px 10px',
-      textAlign: 'center',
-    }
-    return <div style={containerStyle} onClick={onClick}>
-      <img src={image} alt="" style={{paddingBottom: 10}} /><br />
-      {children}
-    </div>
-  }
+const ScoreButtonBase = (props: ScoreButtonProps): React.ReactElement => {
+  const {children, image, isSelected, onClick, score} = props
+  const handleClick = useCallback((): void => onClick(score), [onClick, score])
+  const containerStyle = useMemo((): RadiumCSSProperties => ({
+    ':hover': {
+      opacity: 1,
+    },
+    'cursor': 'pointer',
+    'fontSize': 13,
+    'fontWeight': 500,
+    'opacity': isSelected ? 1 : .5,
+    'padding': '25px 10px',
+    'textAlign': 'center',
+  }), [isSelected])
+  return <RadiumDiv style={containerStyle} onClick={handleClick}>
+    <img src={image} alt="" style={{paddingBottom: 10}} /><br />
+    {children}
+  </RadiumDiv>
 }
-const ScoreButton = Radium(ScoreButtonBase)
+ScoreButtonBase.propTypes = {
+  children: PropTypes.node.isRequired,
+  image: PropTypes.string.isRequired,
+  isSelected: PropTypes.bool,
+  onClick: PropTypes.func.isRequired,
+  score: PropTypes.string.isRequired,
+}
+const ScoreButton = React.memo(ScoreButtonBase)
 
 
-class ConceptEvalPage extends React.PureComponent {
-  public render(): React.ReactNode {
-    return <div style={{alignItems: 'center', display: 'flex', flexDirection: 'column'}}>
-      <UseCaseSelector />
-      <CategoriesDistribution style={{maxWidth: 1000}} />
-    </div>
-  }
+const conceptEvalPageStyle: React.CSSProperties = {
+  alignItems: 'center',
+  display: 'flex',
+  flexDirection: 'column',
 }
 
 
-interface AuthEvalPageProps extends RouteComponentProps<{useCaseId: string}> {
-  dispatch: DispatchAllEvalActions
-  fetchGoogleIdToken: () => Promise<string>
+const ConceptEvalPageBase = (): React.ReactElement => {
+  const {t} = useTranslation()
+  return <div style={conceptEvalPageStyle}>
+    <UseCaseSelector t={t} />
+    <CategoriesDistribution style={{maxWidth: 1000}} t={t} />
+  </div>
 }
+const ConceptEvalPage = React.memo(ConceptEvalPageBase)
 
 
-interface AuthEvalPageState {
-  hasAuthenticationFailed: boolean
-}
-
-
-class AuthenticateEvalPageBase extends React.PureComponent<AuthEvalPageProps, AuthEvalPageState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    fetchGoogleIdToken: PropTypes.func,
-  }
-
-  public state = {
-    hasAuthenticationFailed: false,
-  }
-
-  private handleGoogleLogin = (googleUser): void => {
-    const {dispatch} = this.props
-    const googleIdToken = googleUser.getAuthResponse().id_token
-    fetch('/api/eval/authorized', {
-      headers: {'Authorization': 'Bearer ' + googleIdToken},
-    }).then((response): void => {
-      if (response.status >= 400 || response.status < 200) {
-        this.handleGoogleFailure()
-        return
-      }
-      dispatch({googleUser, type: 'AUTH'})
-    })
-  }
-
-  private handleGoogleFailure = (): void => {
-    this.setState({hasAuthenticationFailed: true})
-  }
-
-  private renderConceptPage = (): React.ReactNode => <ConceptEvalPage {...this.props} />
-
-  private renderUseCasePage = (): React.ReactNode => <UseCaseEvalPage {...this.props} />
-
-  public render(): React.ReactNode {
-    const {fetchGoogleIdToken} = this.props
-    if (fetchGoogleIdToken) {
-      return <Switch>
-        <Route path={Routes.CONCEPT_EVAL_PAGE} render={this.renderConceptPage} />
-        <Route path="*" render={this.renderUseCasePage} />
-      </Switch>
-    }
-
-    return <div style={{padding: 20, textAlign: 'center'}}>
-      <GoogleLogin
-        clientId={config.googleSSOClientId}
-        isSignedIn={true}
-        onSuccess={this.handleGoogleLogin}
-        onFailure={this.handleGoogleFailure} />
-      {this.state.hasAuthenticationFailed ? <div style={{margin: 20}}>
-        L'authentification a échoué. L'accès à cet outil est restreint.<br />
-        Contactez nous : contact@bob-emploi.fr
-      </div> : null}
-    </div>
-  }
-}
 interface AuthEvalPageConnectedProps {
   fetchGoogleIdToken?: () => Promise<string>
 }
+interface AuthEvalPageProps
+  extends RouteComponentProps<{useCaseId: string}>, AuthEvalPageConnectedProps {
+  dispatch: DispatchAllEvalActions
+}
+
+
+const AuthenticateEvalPageBase = (props: AuthEvalPageProps): React.ReactElement => {
+  const [hasAuthenticationFailed, setHasAuthenticationFailed] = useState(false)
+  const {dispatch, fetchGoogleIdToken, ...otherProps} = props
+
+  const handleGoogleFailure = useCallback((): void => setHasAuthenticationFailed(true), [])
+
+  const handleGoogleLogin = useCallback(
+    (googleResponse: GoogleLoginResponse|GoogleLoginResponseOffline): void => {
+      const googleUser = googleResponse as GoogleLoginResponse
+      if (!googleUser.getId) {
+        throw new Error('Google Login offline response, this should never happen')
+      }
+      const googleIdToken = googleUser.getAuthResponse().id_token
+      fetch('/api/eval/authorized', {
+        headers: {Authorization: 'Bearer ' + googleIdToken},
+      }).then((response): void => {
+        if (response.status >= 400 || response.status < 200) {
+          handleGoogleFailure()
+          return
+        }
+        dispatch({googleUser, type: 'AUTH'})
+      })
+    },
+    [dispatch, handleGoogleFailure],
+  )
+
+  const {t} = useTranslation()
+
+  if (fetchGoogleIdToken) {
+    return <Switch>
+      <Route path={Routes.CONCEPT_EVAL_PAGE}>
+        <ConceptEvalPage />
+      </Route>
+      <Route path="*">
+        <UseCaseEvalPage
+          dispatch={dispatch} t={t} fetchGoogleIdToken={fetchGoogleIdToken} {...otherProps} />
+      </Route>
+    </Switch>
+  }
+
+  return <div style={{padding: 20, textAlign: 'center'}}>
+    <GoogleLogin
+      clientId={config.googleSSOClientId}
+      isSignedIn={true}
+      onSuccess={handleGoogleLogin}
+      onFailure={handleGoogleFailure} />
+    {hasAuthenticationFailed ? <div style={{margin: 20}}>
+      L'authentification a échoué. L'accès à cet outil est restreint.<br />
+      Contactez nous : contact@bob-emploi.fr
+    </div> : null}
+  </div>
+}
+AuthenticateEvalPageBase.propTypes = {
+  dispatch: PropTypes.func.isRequired,
+  fetchGoogleIdToken: PropTypes.func,
+}
 const AuthenticateEvalPage = connect(({auth}: EvalRootState): AuthEvalPageConnectedProps => ({
   fetchGoogleIdToken: auth.fetchGoogleIdToken,
-}))(AuthenticateEvalPageBase)
+}))(React.memo(AuthenticateEvalPageBase))
 
 
 
-function fetchGoogleIdToken(googleUser): Promise<string> {
+function fetchGoogleIdToken(googleUser: GoogleLoginResponse): Promise<string> {
   const {'expires_at': expiresAt, 'id_token': idToken} = googleUser.getAuthResponse()
   if (expiresAt > new Date().getTime()) {
     return Promise.resolve(idToken)
@@ -812,7 +886,8 @@ function evalAuthReducer(state: AuthEvalState = {}, action: AllEvalActions): Aut
 }
 
 
-function evalUserReducer(state: bayes.bob.User = {}, action: AllEvalActions): bayes.bob.User|null {
+function evalUserReducer(
+  state: bayes.bob.User = emptyUser, action: AllEvalActions): bayes.bob.User {
   if (action.type === 'SELECT_USER') {
     return action.user
   }
@@ -822,19 +897,10 @@ function evalUserReducer(state: bayes.bob.User = {}, action: AllEvalActions): ba
 
 const history = createBrowserHistory()
 
-const ravenMiddleware = RavenMiddleware(config.sentryDSN, {release: config.clientVersion}, {
-  stateTransformer: function(state: EvalRootState): {} {
-    return {
-      ...state,
-      // Don't send user info to Sentry.
-      user: 'Removed with ravenMiddleware stateTransformer',
-    }
-  },
-})
 // Enable devTools middleware.
 const finalCreateStore = composeWithDevTools(
-  // ravenMiddleware needs to be first to correctly catch exception down the line.
-  applyMiddleware(ravenMiddleware, thunk, routerMiddleware(history)),
+  // sentryMiddleware needs to be first to correctly catch exception down the line.
+  applyMiddleware(createSentryMiddleware(), thunk, routerMiddleware(history)),
 )(createStore)
 
 // Create the store that will be provided to connected components via Context.
@@ -845,7 +911,7 @@ const store = finalCreateStore(
     auth: evalAuthReducer,
     router: connectRouter(history),
     user: evalUserReducer,
-  })
+  }),
 )
 if (module.hot) {
   module.hot.accept(['store/app_reducer'], (): void => {
@@ -866,30 +932,27 @@ interface HeaderLinkProps extends React.HTMLProps<HTMLSpanElement> {
 }
 
 
-class HeaderLinkBase extends React.PureComponent<HeaderLinkProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    isSelected: PropTypes.bool,
-    style: PropTypes.object,
-  }
-
-  public render(): React.ReactNode {
-    const {children, isSelected, style, ...extraProps} = this.props
-    const containerStyle: React.CSSProperties = {
-      cursor: 'pointer',
-      fontSize: 15,
-      fontWeight: isSelected ? 'bold' : 'initial',
-      marginRight: 30,
-      textAlign: 'center',
-      width: 80,
-      ...style,
-    }
-    return <span style={containerStyle} {...extraProps}>
-      {children}
-    </span>
-  }
+const HeaderLinkBase = (props: HeaderLinkProps): React.ReactElement => {
+  const {children, isSelected, style, ...extraProps} = props
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    cursor: 'pointer',
+    fontSize: 15,
+    fontWeight: isSelected ? 'bold' : 'initial',
+    marginRight: 30,
+    textAlign: 'center',
+    width: 80,
+    ...style,
+  }), [isSelected, style])
+  return <span style={containerStyle} {...extraProps}>
+    {children}
+  </span>
 }
-const HeaderLink = Radium(HeaderLinkBase)
+HeaderLinkBase.propTypes = {
+  children: PropTypes.node,
+  isSelected: PropTypes.bool,
+  style: PropTypes.object,
+}
+const HeaderLink = React.memo(HeaderLinkBase)
 
 
 interface ScorePanelProps {
@@ -903,94 +966,108 @@ interface ScorePanelProps {
 }
 
 
-class ScorePanel extends React.PureComponent<ScorePanelProps> {
-  public static propTypes = {
-    evaluation: PropTypes.shape({
-      comments: PropTypes.string,
-      score: PropTypes.string,
-    }).isRequired,
-    isModified: PropTypes.bool,
-    isSaved: PropTypes.bool,
-    onSave: PropTypes.func.isRequired,
-    onUpdate: PropTypes.func.isRequired,
-    selectNextUseCase: PropTypes.func.isRequired,
-    style: PropTypes.object,
-  }
+const scorePanelButtonsContainerStyle: React.CSSProperties = {
+  alignItems: 'center',
+  display: 'flex',
+  justifyContent: 'space-between',
+  width: '100%',
+}
 
-  private handleCommentChange = (comments): void => this.props.onUpdate({comments})
+const ScorePanelBase = (props: ScorePanelProps): React.ReactElement => {
+  const {
+    evaluation: {comments = '', score = ''}, onSave, isSaved, isModified, onUpdate,
+    selectNextUseCase, style,
+  } = props
 
-  private handleScoreUpdate = _memoize(
-    (score: bayes.bob.UseCaseScore): (() => void) => (): void => this.props.onUpdate({score}))
+  const handleCommentChange = useCallback(
+    (comments: string): void => onUpdate({comments}),
+    [onUpdate],
+  )
 
-  public render(): React.ReactNode {
-    const {evaluation: {comments = '', score = ''}, onSave, isSaved,
-      isModified, selectNextUseCase, style} = this.props
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '30px 30px 0px',
-      ...style,
-    }
+  const updateScore = useCallback(
+    (score: bayes.bob.UseCaseScore): void => onUpdate({score}),
+    [onUpdate],
+  )
 
-    const savedMessageStyle = {
-      fontSize: 12,
-      opacity: (isSaved && !isModified) ? 1 : 0,
-      ...SmoothTransitions,
-    }
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '30px 30px 0px',
+    ...style,
+  }), [style])
 
-    const buttonsContainerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      justifyContent: 'space-between',
-      width: '100%',
-    }
-    return <div style={containerStyle}>
-      <strong style={{alignSelf: 'flex-start', paddingBottom: 25}}>Évaluation</strong>
-      <Textarea
-        style={{minHeight: 100, width: '100%'}} value={comments || ''}
-        placeholder="Commentaires"
-        onChange={this.handleCommentChange} />
-      <div style={buttonsContainerStyle}>
-        <div style={{display: 'flex'}}>
-          {EVAL_SCORES.map((level): React.ReactNode => <ScoreButton
-            key={`${level.score}-button`}
-            onClick={this.handleScoreUpdate(level.score)}
-            isSelected={score === level.score} image={level.image}>
-            {level.title}
-          </ScoreButton>)}
-        </div>
-        <div style={{margin: '10px 0', paddingRight: 10}}>
-          {isModified ?
-            <Button type="validation" onClick={onSave}>Enregister</Button>
-            :
-            <Button type="navigation" onClick={selectNextUseCase}>Suivant</Button>
-          }
-        </div>
+  const savedMessageStyle = useMemo((): React.CSSProperties => ({
+    fontSize: 12,
+    opacity: (isSaved && !isModified) ? 1 : 0,
+    ...SmoothTransitions,
+  }), [isSaved, isModified])
+
+  return <div style={containerStyle}>
+    <strong style={{alignSelf: 'flex-start', paddingBottom: 25}}>Évaluation</strong>
+    <Textarea
+      style={{minHeight: 100, width: '100%'}} value={comments || ''}
+      placeholder="Commentaires"
+      onChange={handleCommentChange} />
+    <div style={scorePanelButtonsContainerStyle}>
+      <div style={{display: 'flex'}}>
+        {EVAL_SCORES.map((level): React.ReactNode => <ScoreButton
+          key={`${level.score}-button`}
+          onClick={updateScore}
+          isSelected={score === level.score} image={level.image}
+          score={level.score}>
+          {level.title}
+        </ScoreButton>)}
       </div>
-      <div style={savedMessageStyle}>
-        Évaluation sauvegardée
+      <div style={{margin: '10px 0', paddingRight: 10}}>
+        {isModified ?
+          <Button type="validation" onClick={onSave}>Enregister</Button>
+          :
+          <Button type="navigation" onClick={selectNextUseCase}>Suivant</Button>
+        }
       </div>
     </div>
-  }
+    <div style={savedMessageStyle}>
+      Évaluation sauvegardée
+    </div>
+  </div>
 }
+ScorePanelBase.propTypes = {
+  evaluation: PropTypes.shape({
+    comments: PropTypes.string,
+    score: PropTypes.string,
+  }).isRequired,
+  isModified: PropTypes.bool,
+  isSaved: PropTypes.bool,
+  onSave: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  selectNextUseCase: PropTypes.func.isRequired,
+  style: PropTypes.object,
+}
+const ScorePanel = React.memo(ScorePanelBase)
 
 
-class App extends React.Component {
-  public render(): React.ReactNode {
-    return <Provider store={store}>
-      <Radium.StyleRoot>
-        <div style={{backgroundColor: colors.BACKGROUND_GREY, color: colors.DARK_TWO}}>
-          <ConnectedRouter history={history}>
-            <Route path={Routes.EVAL_PATH} component={AuthenticateEvalPage} />
-          </ConnectedRouter>
-          <Snackbar timeoutMillisecs={4000} />
-        </div>
-      </Radium.StyleRoot>
-    </Provider>
-  }
-}
+const EvalSnackbar = connect(
+  ({asyncState}: EvalRootState): {snack?: string} => ({
+    snack: asyncState.errorMessage,
+  }),
+  (dispatch: DispatchAllEvalActions) => ({
+    onHide: (): void => void dispatch(hideToasterMessageAction),
+  }),
+)(Snackbar)
+
+
+const App = (): React.ReactElement => <Provider store={store}>
+  <Suspense fallback={<WaitingPage />}>
+    <div style={{backgroundColor: colors.BACKGROUND_GREY, color: colors.DARK_TWO}}>
+      <ConnectedRouter history={history}>
+        <Route path={Routes.EVAL_PATH} component={AuthenticateEvalPage} />
+      </ConnectedRouter>
+      <EvalSnackbar timeoutMillisecs={4000} />
+    </div>
+  </Suspense>
+</Provider>
 
 
 export {App}

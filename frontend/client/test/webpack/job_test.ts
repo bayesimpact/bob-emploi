@@ -6,26 +6,11 @@ import {jobFromSuggestion} from 'components/suggestions'
 // @ts-ignore
 import {ApplicationMode} from 'api/job_pb'
 
+const fakeT = (text: string): string => text
+
 describe('jobFromSuggestion', (): void => {
 
   it('should assemble a job proto from a suggestion', (): void => {
-    const job = jobFromSuggestion({
-      codeOgr: '38972',
-      codeRome: 'M1403',
-      libelleAppellationCourt: 'Data Manager(euse)',
-      libelleAppellationLong: 'Data Manager / Manageuse',
-      libelleRome: 'Études et prospectives socio-économiques',
-    })
-    expect(job).to.deep.equal({
-      codeOgr: '38972',
-      jobGroup: {
-        name: 'Études et prospectives socio-économiques',
-        romeId: 'M1403',
-      },
-      name: 'Data Manager(euse)',
-    })
-  })
-  it('should add genderize names when available', (): void => {
     const job = jobFromSuggestion({
       codeOgr: '38972',
       codeRome: 'M1403',
@@ -53,33 +38,33 @@ describe('getJobPlacesFromDepartementStats', (): void => {
   it('should get back suggestions of jobs in departements without twice the same job', (): void => {
     const departementStats = [
       {
-        'departementId': '06',
-        'departementInName': 'En Guyanne',
-        'jobGroups': [
+        departementId: '06',
+        departementInName: 'En Guyanne',
+        jobGroups: [
           {
-            'name': 'Professeur de piano',
-            'offers': 123,
-            'romeId': 'I1202',
+            name: 'Professeur de piano',
+            offers: 123,
+            romeId: 'I1202',
           },
           {
-            'name': 'Professeur de guitarre',
-            'offers': 120,
-            'romeId': 'I1203',
+            name: 'Professeur de guitarre',
+            offers: 120,
+            romeId: 'I1203',
           },
         ],
       }, {
-        'departementId': '2A',
-        'departementInName': 'A la réunion',
-        'jobGroups': [
+        departementId: '2A',
+        departementInName: 'A la réunion',
+        jobGroups: [
           {
-            'name': 'Professeur de piano',
-            'offers': 123,
-            'romeId': 'I1202',
+            name: 'Professeur de piano',
+            offers: 123,
+            romeId: 'I1202',
           },
           {
-            'name': 'Professeur de flûte',
-            'offers': 120,
-            'romeId': 'I1203',
+            name: 'Professeur de flûte',
+            offers: 120,
+            romeId: 'I1203',
           },
         ],
       },
@@ -285,12 +270,14 @@ describe('getApplicationModes', (): void => {
 describe('getApplicationModeText', (): void => {
   const allModes = Object.keys(ApplicationMode) as readonly bayes.bob.ApplicationMode[]
   allModes.map((mode): void => {
-    ApplicationMode[mode] && it(`should return a non-empty string for ${mode}`, (): void =>
-      expect(getApplicationModeText(mode)).to.not.be.empty)
+    ApplicationMode[mode] && it(`should return a non-empty string for ${mode}`, (): void => {
+      expect(getApplicationModeText(fakeT, mode)).to.not.be.empty
+    })
   })
 
   it('should return the same string for empty mode and 0 mode', (): void => {
     const zeroMode = allModes.find((mode): boolean => !ApplicationMode[mode])
-    expect(getApplicationModeText(undefined)).to.equal(getApplicationModeText(zeroMode))
+    expect(getApplicationModeText(fakeT, undefined)).
+      to.equal(getApplicationModeText(fakeT, zeroMode))
   })
 })

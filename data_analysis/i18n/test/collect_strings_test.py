@@ -43,6 +43,11 @@ class CollectStringsTest(airtablemock.TestCase):
         self.assertCountEqual(expected, actual)
         return actual
 
+    def test_client_collectibles(self) -> None:
+        """Sanity check on CLIENT_COLLECTIBLES."""
+
+        self.assertGreaterEqual(len(collect_strings.CLIENT_COLLECTIBLES), 4)
+
     @mock.patch(collect_strings.__name__ + '.requests.post')
     @mock.patch(
         collect_strings.__name__ + '._SLACK_IMPORT_URL', 'https://slack.example.com/webhook')

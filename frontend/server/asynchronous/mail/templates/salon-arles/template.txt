@@ -5,9 +5,10 @@ Je suis tombée sur une super opportunité pour vous {%if var:isLocal:"" == "Tru
 Les Maisons d’Arles recherchent plus de 70 profils dans l’hôtellerie et la restauration !
 
  * Pour les rencontrer en ligne c’est par ici. [https://salonenligne.pole-emploi.fr/candidat/?salonId=630]
- * Besoin d’un coup de main pour vous préparer ? Bob vous aide ici [https://www.bob-emploi.fr/projet/0/avancer/improve-interview].
+ {%if var:improveInterviewAdviceUrl:"" != ""%}
+ * Besoin d’un coup de main pour vous préparer ? Bob vous aide ici [{{var:improveInterviewAdviceUrl:"https://www.bob-emploi.fr/"}}].
 Bonne chance ! Je suis sûre que vous avez tout pour être retenu{% if var:gender:"" == "FEMININE" %}e{%endif%}.
-
+{%endif%}
 Tenez-moi au courant.
 
 À très vite,

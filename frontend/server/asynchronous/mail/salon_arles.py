@@ -38,6 +38,8 @@ def _get_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, s
                 is_local = True
 
     return dict(campaign.get_default_vars(user), **{
+        'improveInterviewAdviceUrl': campaign.get_deep_link_advice(
+            user.user_id, project, 'improve-interview'),
         'isLocal': campaign.as_template_boolean(is_local),
     })
 

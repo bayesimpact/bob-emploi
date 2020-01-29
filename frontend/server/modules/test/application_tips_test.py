@@ -1,10 +1,12 @@
 """Unit tests for the application_tips module."""
 
+import datetime
 import json
 import unittest
 
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import scoring_test
 
@@ -81,6 +83,9 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
             persona.project.job_search_length_months = 3
         if persona.project.job_search_length_months > 6:
             persona.project.job_search_length_months = 6
+        persona.project.job_search_started_at.FromDatetime(
+            persona.project.created_at.ToDatetime() -
+            datetime.timedelta(30.5 * persona.project.job_search_length_months))
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1
@@ -127,6 +132,9 @@ class AdviceImproveResumeTestCase(scoring_test.ScoringModelTestBase):
             persona.project.job_search_length_months = 3
         if persona.project.job_search_length_months > 6:
             persona.project.job_search_length_months = 6
+        persona.project.job_search_started_at.FromDatetime(
+            persona.project.created_at.ToDatetime() -
+            datetime.timedelta(30.5 * persona.project.job_search_length_months))
         if persona.project.weekly_applications_estimate < project_pb2.DECENT_AMOUNT:
             persona.project.weekly_applications_estimate = project_pb2.DECENT_AMOUNT
         persona.project.total_interview_count = 1
@@ -239,7 +247,7 @@ class ProjectResumeEndpointTestCase(base_test.ServerTestCase):
         })
         self._db.translations.insert_one({
             'string': 'Vous êtes spécial',
-            'fr_FR@tu': 'Tu es spécial',
+            'fr@tu': 'Tu es spécial',
         })
 
         user_info = self.get_user_info(self.user_id, self.auth_token)
@@ -356,6 +364,117 @@ class ProjectInterviewEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual(
             ['Very specialized', 'Specialized', 'Generic'],
             [t.get('content') for t in tips.get('qualities', [])])
+
+
+class EnhanceMethodsToInterviewTestCase(scoring_test.ScoringModelTestBase):
+    """Tests for the enhance-methods-to-interview category scorer."""
+
+    model_id = 'category-enhance-methods-to-interview'
+
+    def test_search_not_started(self) -> None:
+        """User hasn't started their search, we cannot tell anything."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_has_not_started = True
+        with self.assertRaises(scoring.NotEnoughDataException) as err:
+            self._score_persona(persona)
+        self.assertIn('not started', str(err.exception))
+
+    def test_missing_interviews(self) -> None:
+        """User didn't give their amount of interviews."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.ClearField('total_interview_count')
+        with self.assertRaises(scoring.NotEnoughDataException) as err:
+            self._score_persona(persona)
+        self.assertIn('projects.0.totalInterviewCount', err.exception.fields)
+
+    def test_missing_applications(self) -> None:
+        """User didn't give their estimate of applications."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.ClearField('weekly_applications_estimate')
+        persona.project.total_interview_count = 2
+        with self.assertRaises(scoring.NotEnoughDataException) as err:
+            self._score_persona(persona)
+        self.assertIn('projects.0.weeklyApplicationsEstimate', err.exception.fields)
+
+    def test_many_applications_no_interview(self) -> None:
+        """User does a lot of applications, with no result."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.total_interview_count = -1
+        persona.project.weekly_applications_estimate = project_pb2.A_LOT
+        self.assertEqual(3, self._score_persona(persona))
+
+    def test_many_interviews(self) -> None:
+        """User alread has had many interviews."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.total_interview_count = 6
+        self.assertEqual(0, self._score_persona(persona))
+
+    def test_some_applications_few_interviews(self) -> None:
+        """User has some interviews, but not enough."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.total_interview_count = 2
+        persona.project.weekly_applications_estimate = project_pb2.SOME
+        score = self._score_persona(persona)
+        self.assertLess(0, score)
+        self.assertGreater(3, score)
+
+
+class RelevanceMethodsToInterviewTestCase(scoring_test.ScoringModelTestBase):
+    """Tests for the enhance-methods-to-interview relevance scorer."""
+
+    model_id = 'relevance-enhance-methods-to-interview'
+
+    def test_search_not_started(self) -> None:
+        """User hasn't started their search, we cannot tell anything."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_has_not_started = True
+        self.assertEqual(1, self._score_persona(persona))
+
+    def test_missing_interviews(self) -> None:
+        """User didn't give their amount of interviews."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.ClearField('total_interview_count')
+        persona.project.weekly_applications_estimate = project_pb2.A_LOT
+        self.assertEqual(1, self._score_persona(persona))
+
+    def test_missing_applications(self) -> None:
+        """User didn't give their estimate of applications."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.ClearField('weekly_applications_estimate')
+        persona.project.total_interview_count = -1
+        self.assertEqual(1, self._score_persona(persona))
+
+    def test_many_interviews(self) -> None:
+        """User alread has had many interviews."""
+
+        persona = self._random_persona().clone()
+        persona.project.job_search_started_at.FromDatetime(
+            datetime.datetime.now() - datetime.timedelta(days=90))
+        persona.project.total_interview_count = 6
+        self.assertEqual(3, self._score_persona(persona))
 
 
 if __name__ == '__main__':

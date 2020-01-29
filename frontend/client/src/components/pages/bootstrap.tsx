@@ -5,29 +5,33 @@ import _memoize from 'lodash/memoize'
 import ThumbDownIcon from 'mdi-react/ThumbDownIcon'
 import ThumbUpIcon from 'mdi-react/ThumbUpIcon'
 import PropTypes from 'prop-types'
-import Radium from 'radium'
-import React from 'react'
+import React, {Suspense, useMemo} from 'react'
+import {useTranslation} from 'react-i18next'
 import {connect, Provider} from 'react-redux'
 import {Route, RouteComponentProps, Switch} from 'react-router'
 import ReactRouterPropTypes from 'react-router-prop-types'
-import {createStore, applyMiddleware, combineReducers} from 'redux'
+import {Action, createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
-import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
 
-import {BootstrapAction, DispatchBootstrapActions, actionTypesToLog, computeAdvicesForProject,
-  convertUserWithAdviceSelectionFromProto, convertUserWithAdviceSelectionToProto,
-  displayToasterMessage, sendAdviceFeedback} from 'store/actions'
+import {BootstrapAction, BootstrapState, DispatchBootstrapActions, actionTypesToLog,
+  computeAdvicesForProject, convertUserWithAdviceSelectionFromProto,
+  convertUserWithAdviceSelectionToProto, displayToasterMessage,
+  sendAdviceFeedback, hideToasterMessageAction} from 'store/actions'
 import {ValidAdvice, getAdviceShortTitle, isValidAdvice} from 'store/advice'
 import {createAmplitudeMiddleware} from 'store/amplitude'
 import {app, asyncState} from 'store/app_reducer'
-import {YouChooser, inCityPrefix, lowerFirstLetter, maybeContractPrefix,
+import {inCityPrefix, lowerFirstLetter, maybeContractPrefix,
   vouvoyer} from 'store/french'
+import {init as i18nInit} from 'store/i18n'
+import {Logger} from 'store/logging'
+import {createSentryMiddleware} from 'store/sentry'
 
 import {AdvicePicto, ExpandedAdviceCardConfig, ExpandedAdviceCardContent, ExplorerAdviceCard,
   ExplorerAdviceCardConfig} from 'components/advisor'
 import {Modal, ModalConfig} from 'components/modal'
 import {isMobileVersion} from 'components/mobile'
+import {useRadium} from 'components/radium'
 import {Snackbar} from 'components/snackbar'
 import {CitySuggest, JobSuggest} from 'components/suggestions'
 import {Button, Checkbox, ExternalLink, MAX_CONTENT_WIDTH,
@@ -38,13 +42,53 @@ import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
 import 'normalize.css'
 import 'styles/App.css'
 
+import {WaitingPage} from './waiting'
+
 const SET_CITY = 'SET_CITY'
 const SET_JOB = 'SET_JOB'
 const SET_USER = 'SET_USER'
 const SEND_ADVICE_SELECTION = 'SEND_ADVICE_SELECTION'
 
-const HoverableThumbDownIcon = Radium(ThumbDownIcon)
-const HoverableThumbUpIcon = Radium(ThumbUpIcon)
+
+i18nInit()
+
+
+interface SetUserAction extends Action<typeof SET_USER> {
+  user: BootstrapUser
+}
+
+interface SetCityAction extends Action<typeof SET_CITY> {
+  city: bayes.bob.FrenchCity
+}
+
+interface SetJobAction extends Action<typeof SET_JOB> {
+  job: bayes.bob.Job
+}
+
+type SendAdviceSelectionAction = Action<typeof SEND_ADVICE_SELECTION>
+
+type AllActions =
+  | BootstrapAction
+  | SendAdviceSelectionAction
+  | SetCityAction
+  | SetJobAction
+  | SetUserAction
+
+
+type IconProps = Omit<GetProps<typeof ThumbDownIcon>, 'style'> & {style?: RadiumCSSProperties}
+
+
+const HoverableThumbDownIconBase = (props: IconProps): React.ReactElement => {
+  const [radiumProps] = useRadium<SVGSVGElement, IconProps>(props)
+  return <ThumbDownIcon {...radiumProps} />
+}
+const HoverableThumbDownIcon = React.memo(HoverableThumbDownIconBase)
+const HoverableThumbUpIconBase = (props: IconProps): React.ReactElement => {
+  const [radiumProps] = useRadium<SVGSVGElement, IconProps>(props)
+  return <ThumbUpIcon {...radiumProps} />
+}
+const HoverableThumbUpIcon = React.memo(HoverableThumbUpIconBase)
+
 
 function parseJsonAsync<T>(jsonText: string): Promise<T> {
   return new Promise((resolve): void => resolve(JSON.parse(jsonText)))
@@ -105,8 +149,10 @@ class BootstrapPageBase extends React.PureComponent<PageProps, PageState> {
       return
     }
     const hashString = decodeURIComponent(location.hash.slice(1))
-    const protoPromise = hashString.startsWith('{') ?
-      parseJsonAsync(hashString) : dispatch(convertUserWithAdviceSelectionFromProto(hashString))
+    const protoPromise: Promise<bayes.bob.UserWithAdviceSelection|void> =
+      hashString.startsWith('{') ?
+        parseJsonAsync<bayes.bob.UserWithAdviceSelection>(hashString) :
+        dispatch(convertUserWithAdviceSelectionFromProto(hashString))
     protoPromise.
       catch((error): void => {
         dispatch(displayToasterMessage(`${error.message} en parsant ${hashString}`))
@@ -453,8 +499,7 @@ class BadAdviceModal extends React.PureComponent<BadAdviceModalProps, {feedback:
 }
 
 
-interface CardProps
-  extends Omit<ExplorerAdviceCardConfig, 'style' | 'userYou' | 'onClick' | 'howToSeeMore'> {
+interface CardProps extends Omit<ExplorerAdviceCardConfig, 'style' | 'onClick' | 'howToSeeMore'> {
   isBad?: boolean
   isGood?: boolean
   isSelectable?: boolean
@@ -495,14 +540,14 @@ class BootstrapAdviceCard extends React.PureComponent<CardProps, {isExpanded: bo
     }
     const thumbStyle = {
       ':hover': {fill: colors.GREYISH_BROWN},
-      fill: colors.COOL_GREY,
-      width: 20,
+      'fill': colors.COOL_GREY,
+      'width': 20,
       ...SmoothTransitions,
     }
     const selectedThumbStyle = {
       ...thumbStyle,
       ':hover': {fill: colors.BOB_BLUE},
-      fill: colors.BOB_BLUE,
+      'fill': colors.BOB_BLUE,
     }
     return <div style={{marginLeft: 10}}>
       <div style={buttonStyle} onClick={this.handleChangeSelection}>
@@ -645,7 +690,7 @@ class ResourcesPageBase extends React.PureComponent<ResourcesPageProps, Resource
       <div style={resourcesContainerStyle}>
         {city && targetJob ? advices.map((advice: ValidAdvice): React.ReactNode =>
           <ResourceAdviceCard
-            key={advice.adviceId} userYou={vouvoyer}
+            key={advice.adviceId}
             style={{display: 'inline-block', marginBottom: 40, width: '100%'}}
             {...{advice, profile, project}} />) : null}
       </div>
@@ -661,76 +706,77 @@ const ResourcesPage = connect(({user}: BootstrapState): ResourcesPageConnectedPr
 })(ResourcesPageBase)
 
 
-interface ResourceCardProps extends ExpandedAdviceCardConfig {
-  userYou: YouChooser
+const headerStyle = {
+  alignItems: 'center',
+  backgroundColor: colors.BOB_BLUE_HOVER,
+  borderRadius: '5px 5px 0 0',
+  color: '#fff',
+  display: 'flex',
+  fontWeight: 900,
+  padding: 10,
+}
+const cardStyle = {
+  borderColor: colors.MODAL_PROJECT_GREY,
+  borderRadius: '0 0 5px 5px',
+  borderStyle: 'solid',
+  borderWidth: '0 1px 1px 1px',
 }
 
 
-class ResourceAdviceCard extends React.PureComponent<ResourceCardProps> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {advice, style, userYou, ...cardContentProps} = this.props
-    const headerStyle = {
-      alignItems: 'center',
-      backgroundColor: colors.BOB_BLUE_HOVER,
-      borderRadius: '5px 5px 0 0',
-      color: '#fff',
-      display: 'flex',
-      fontWeight: 900,
-      padding: 10,
-    }
-    const cardStyle = {
-      borderColor: colors.MODAL_PROJECT_GREY,
-      borderRadius: '0 0 5px 5px',
-      borderStyle: 'solid',
-      borderWidth: '0 1px 1px 1px',
-    }
-
-    // TODO(pascal): Display only resources instead of full advice (e.g. drop
-    // the extra text introducing the resources in each card).
-    return <section style={{fontSize: 16, ...style}}>
-      <header style={headerStyle}>
-        <AdvicePicto adviceId={advice.adviceId} style={{height: 48, marginRight: 8}} />
-        {getAdviceShortTitle(advice, userYou)}
-      </header>
-      <div style={cardStyle}>
-        <ExpandedAdviceCardContent {...cardContentProps} {...{advice, userYou}} />
-      </div>
-    </section>
-  }
+const ResourceAdviceCardBase = (props: ExpandedAdviceCardConfig): React.ReactElement => {
+  const {advice, style, ...cardContentProps} = props
+  const {t} = useTranslation()
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    fontSize: 16,
+    ...style,
+  }), [style])
+  // TODO(pascal): Display only resources instead of full advice (e.g. drop
+  // the extra text introducing the resources in each card).
+  return <section style={containerStyle}>
+    <header style={headerStyle}>
+      <AdvicePicto adviceId={advice.adviceId} style={{height: 48, marginRight: 8}} />
+      {getAdviceShortTitle(advice, t)}
+    </header>
+    <div style={cardStyle}>
+      <ExpandedAdviceCardContent {...cardContentProps} {...{advice}} />
+    </div>
+  </section>
 }
+ResourceAdviceCardBase.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+  }).isRequired,
+  style: PropTypes.object,
+  t: PropTypes.func.isRequired,
+}
+const ResourceAdviceCard = React.memo(ResourceAdviceCardBase)
+
 
 const history = createBrowserHistory()
 
-const ravenMiddleware = RavenMiddleware(config.sentryDSN, {release: config.clientVersion}, {
-  stateTransformer: function(state): {} {
-    return {
-      ...state,
-      // Don't send user info to Sentry.
-      user: 'Removed with ravenMiddleware stateTransformer',
-    }
-  },
-})
-const amplitudeMiddleware = createAmplitudeMiddleware({
+const amplitudeMiddleware = createAmplitudeMiddleware(new Logger({
   ...actionTypesToLog,
   [SEND_ADVICE_SELECTION]: 'Send advice cards selection for external profile',
   [SET_USER]: 'Show advice cards for external profile',
-})
+}))
 // Enable devTools middleware.
 const finalCreateStore = composeWithDevTools(
-  // ravenMiddleware needs to be first to correctly catch exception down the line.
-  applyMiddleware(ravenMiddleware, thunk, amplitudeMiddleware, routerMiddleware(history)),
+  // sentryMiddleware needs to be first to correctly catch exception down the line.
+  applyMiddleware(createSentryMiddleware(), thunk, amplitudeMiddleware, routerMiddleware(history)),
 )(createStore)
 
 
-function bootstrapUserReducer(state = {profile: {}, projects: [{}]}, action): bayes.bob.User {
+type BootstrapUser = bayes.bob.User & {
+  profile: bayes.bob.UserProfile
+  projects: [bayes.bob.Project & {mobility?: {
+    areaType?: bayes.bob.AreaType
+    city?: bayes.bob.FrenchCity
+  }}]
+}
+
+
+function bootstrapUserReducer(
+  state: BootstrapUser = {profile: {}, projects: [{}]}, action: AllActions): BootstrapUser {
   if (action.type === SET_USER) {
     if (action.user.projects && action.user.projects[0]) {
       const project = action.user.projects && action.user.projects[0]
@@ -770,13 +816,6 @@ function bootstrapUserReducer(state = {profile: {}, projects: [{}]}, action): ba
 }
 
 
-interface BootstrapState {
-  app: AppState
-  asyncState: AsyncState<BootstrapAction>
-  user: bayes.bob.User
-}
-
-
 // Create the store that will be provided to connected components via Context.
 const store = finalCreateStore(
   combineReducers({
@@ -784,7 +823,7 @@ const store = finalCreateStore(
     asyncState,
     router: connectRouter(history),
     user: bootstrapUserReducer,
-  })
+  }),
 )
 if (module.hot) {
   module.hot.accept(['store/app_reducer'], (): void => {
@@ -799,20 +838,30 @@ if (module.hot) {
 }
 
 
+const BootstrapSnackbar = connect(
+  ({asyncState}: BootstrapState): {snack?: string} => ({
+    snack: asyncState.errorMessage,
+  }),
+  (dispatch: DispatchBootstrapActions) => ({
+    onHide: (): void => void dispatch(hideToasterMessageAction),
+  }),
+)(Snackbar)
+
+
 class App extends React.PureComponent {
   public render(): React.ReactNode {
     return <Provider store={store}>
-      <Radium.StyleRoot>
-        <div style={{backgroundColor: '#fff', color: colors.DARK_TWO}}>
-          <ConnectedRouter history={history}>
+      <div style={{backgroundColor: '#fff', color: colors.DARK_TWO}}>
+        <ConnectedRouter history={history}>
+          <Suspense fallback={<WaitingPage />}>
             <Switch>
               <Route path={Routes.BOOTSTRAP_PAGE} component={BootstrapPage} />
               <Route path={Routes.RESOURCES_PAGE} component={ResourcesPage} />
             </Switch>
-          </ConnectedRouter>
-          <Snackbar timeoutMillisecs={4000} />
-        </div>
-      </Radium.StyleRoot>
+          </Suspense>
+        </ConnectedRouter>
+        <BootstrapSnackbar timeoutMillisecs={4000} />
+      </div>
     </Provider>
   }
 }

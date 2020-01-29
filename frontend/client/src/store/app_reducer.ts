@@ -50,7 +50,7 @@ const {quickDiagnostic: omittedQuickDiagnostic,
   ...initialFeatures}: InitialFeatures =
   getJsonFromStorage<InitialFeatures>(FEATURES_LOCAL_STORAGE_NAME) || {}
 
-const appInitialData = {
+const appInitialData: AppState = {
   // Cache for advice data. It is organized as a map of maps: the first key
   // being the project ID and the second one the advice ID.
   adviceData: {},
@@ -75,6 +75,7 @@ const appInitialData = {
   // Cache of job requirements.
   jobRequirements: {},
   // Cache of labor stats per project.
+  // TODO(pascal): Cleanup, it's not used anymore.
   laborStats: {},
   lastAccessAt: undefined,
   loginModal: undefined,
@@ -170,8 +171,7 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           ...state,
           jobRequirements: {
             ...state.jobRequirements,
-            [action.project.targetJob.codeOgr]:
-              action.response as {diplomas: string[]; drivingLicenses: string[]},
+            [action.project.targetJob.codeOgr]: action.response,
           },
         }
       }
@@ -213,19 +213,7 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
       return {
         ...state,
         adviceData: dropKey(state.adviceData, action.project.projectId),
-        laborStats: dropKey(state.laborStats, action.project.projectId),
       }
-    case 'GET_LOCAL_STATS':
-      if (action.status === 'success' && action.project.projectId) {
-        return {
-          ...state,
-          laborStats: {
-            ...state.laborStats,
-            [action.project.projectId]: action.response,
-          },
-        }
-      }
-      return state
     case 'TRACK_INITIAL_UTM':
       if (!state.initialUtm && action.utm) {
         setOnceJsonToStorage(UTM_LOCAL_STORAGE_NAME, action.utm)
@@ -265,8 +253,6 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
       }
     case 'ACTIVATE_DEMO':
       return dropKey(state, 'demo')
-    case 'PRODUCT_UPDATED_PAGE_IS_SHOWN':
-      return dropKey(state, 'lastAccessAt')
     case 'SHARE_PRODUCT_MODAL_IS_SHOWN':
       return {
         ...state,
@@ -282,17 +268,49 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
             after: {
               ...(state.quickDiagnostic && state.quickDiagnostic.after),
               ..._keyBy(
-                comments.filter(({isBeforeQuestion}): boolean => !isBeforeQuestion), 'field'),
+                comments.filter((c): c is bayes.bob.DiagnosticComment & {field: string} =>
+                  !c.isBeforeQuestion && !!c.field), 'field'),
             },
             before: {
               ...(state.quickDiagnostic && state.quickDiagnostic.before),
               ..._keyBy(
-                comments.filter(({isBeforeQuestion}): boolean => !!isBeforeQuestion), 'field'),
+                comments.filter((c): c is bayes.bob.DiagnosticComment & {field: string} =>
+                  !!c.isBeforeQuestion && !!c.field), 'field'),
             },
           },
         }
       }
       return state
+    case 'ONBOARDING_COMMENT_IS_SHOWN':
+      return {
+        ...state,
+        quickDiagnostic: {
+          after: {
+            ...(state.quickDiagnostic && state.quickDiagnostic.after),
+            ...(!action.comment.isBeforeQuestion ? {[action.comment.field]: {
+              field: action.comment.field,
+              ...state.quickDiagnostic && state.quickDiagnostic.after[action.comment.field],
+              hasBeenShown: true,
+            }} : undefined),
+          },
+          before: {
+            ...(state.quickDiagnostic && state.quickDiagnostic.before),
+            ...(action.comment.isBeforeQuestion ? {[action.comment.field]: {
+              field: action.comment.field,
+              ...state.quickDiagnostic && state.quickDiagnostic.before[action.comment.field],
+              hasBeenShown: true,
+            }} : undefined),
+          },
+        },
+      }
+    case 'COMMENT_IS_SHOWN':
+      return {
+        ...state,
+        hasSeenComment: {
+          ...state.hasSeenComment,
+          [action.commentKey]: true,
+        },
+      }
     case 'CHANGE_SUBMETRIC_EXPANSION':
       return {
         ...state,
@@ -308,6 +326,7 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
 const asyncInitialData = {
   errorMessage: undefined,
   isFetching: {},
+  pendingFetch: {},
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -324,6 +343,14 @@ AsyncState<AllActions> {
   if (action.type === 'DISPLAY_TOAST_MESSAGE') {
     return {...state, errorMessage: action.error}
   }
+  if (action.type === 'ASYNC_STARTED') {
+    return {
+      ...state,
+      pendingFetch: {
+        ...state.pendingFetch,
+        [action.fetchKey]: action.promise,
+      }}
+  }
   if (!isAsyncAction(action)) {
     return state
   }
@@ -332,17 +359,33 @@ AsyncState<AllActions> {
     const errorMessage = (action.status === 'error') ?
       (action.ignoreFailure || !action.error) ? '' : action.error.toString() :
       authAction.response.errorMessage
+    let pendingFetch: typeof state.pendingFetch
+    if (action.fetchKey) {
+      const {[action.fetchKey]: omittedPendingFetch, ...otherPendingFetch} = state.pendingFetch
+      pendingFetch = otherPendingFetch
+    } else {
+      pendingFetch = state.pendingFetch
+    }
     return {
       ...dropKey(state, 'authMethod'),
       errorMessage,
       isFetching: {...state.isFetching, [action.type]: false},
+      pendingFetch,
     }
   }
   if (action.status === 'success') {
+    let pendingFetch: typeof state.pendingFetch
+    if (action.fetchKey) {
+      const {[action.fetchKey]: omittedPendingFetch, ...otherPendingFetch} = state.pendingFetch
+      pendingFetch = otherPendingFetch
+    } else {
+      pendingFetch = state.pendingFetch
+    }
     return {
       ...dropKey(state, 'authMethod'),
       errorMessage: undefined,
       isFetching: {...state.isFetching, [action.type]: false},
+      pendingFetch,
     }
   }
   const isFetching = {...state.isFetching, [action.type]: true}

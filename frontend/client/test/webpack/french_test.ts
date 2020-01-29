@@ -1,10 +1,15 @@
 import {expect} from 'chai'
-import {YouChooser, lowerFirstLetter, ofPrefix, maybeContract, maybeContractPrefix, getDateString,
-  toTitleCase, getEvents, getAdviceModules, getEmailTemplates, slugify, getMonthName,
+import i18n from 'i18next'
+import {lowerFirstLetter, ofPrefix, maybeContract, maybeContractPrefix, getDateString,
+  toTitleCase, getAdviceModule, getEmailTemplates, slugify, getMonthName,
   getDiffBetweenDatesInString} from 'store/french'
 
 // @ts-ignore
 import {Month} from 'api/job'
+
+
+i18n.init({lng: 'fr', resources: {}})
+
 
 describe('maybeContract', (): void => {
   it('should not contract if the next word starts with a consonant', (): void => {
@@ -76,6 +81,11 @@ describe('lowerFirstLetter', (): void => {
 
 
 describe('ofPrefix', (): void => {
+  before((): void => {
+    i18n.changeLanguage('fr')
+    i18n.addResourceBundle('fr', 'translation', {})
+  })
+
   it('should add a simple "de" prefix for regular names', (): void => {
     expect(ofPrefix('Toulouse')).to.eql({modifiedName: 'Toulouse', prefix: 'de '})
   })
@@ -99,6 +109,18 @@ describe('ofPrefix', (): void => {
 
   it('should contract on capital vowel', (): void => {
     expect(ofPrefix('Arles')).to.eql({modifiedName: 'Arles', prefix: "d'"})
+  })
+
+  it('should contract the prefix when used with the French language', (): void => {
+    const t = i18n.getFixedT('fr', 'translation')
+    expect(ofPrefix('Les Ulis', t)).to.eql({modifiedName: 'Ulis', prefix: 'des '})
+  })
+
+  it('should not contract the prefix when used with the English language', (): void => {
+    i18n.changeLanguage('en')
+    i18n.addResourceBundle('en', 'translation', {'de {{fullName}}': 'of {{fullName}}'})
+    const t = i18n.getFixedT('en', 'other')
+    expect(ofPrefix('Les Ulis', t)).to.eql({modifiedName: 'Les Ulis', prefix: 'of '})
   })
 })
 
@@ -135,62 +157,26 @@ describe('toTitleCase', (): void => {
 })
 
 
-const userYouFromBool = (canTutoie): YouChooser => {
-  return function <T>(tu: T, vous: T): T {
-    return canTutoie ? tu : vous
-  }
-}
-const isEventJson = (json): void => {
-  expect(json).to.be.an('object')
-  expect(Object.keys(json).every((key): boolean => key.length === 1)).to.be.true
-  Object.keys(json).forEach((key): void =>
-    expect(json[key]).to.include.all.keys('atNext', 'eventLocation')
-  )
-}
-
-
-describe('getEvents', (): void => {
-  it(
-    'should return the right json format for tutoiement',
-    (): void => isEventJson(getEvents(userYouFromBool(true))),
-  )
-
-  it(
-    'should return the right json format for vouvoiement',
-    (): void => isEventJson(getEvents(userYouFromBool(false))),
-  )
-
-  // TODO(cyrille): Check they are different once they really are.
-})
-
-
-const adviceModuleKeys = new Set([
-  'callToAction',
-  'explanations',
-  'goal',
-  'shortTitle',
-  'title',
-  'titleXStars',
-  'userGainCallout',
-  'userGainDetails',
-])
-
-const isAdviceModuleJson = (json): void => {
-  expect(json).to.be.an('object')
-  Object.keys(json).forEach((adviceId): void => {
-    const unexpectedKeys = Object.keys(json[adviceId]).
-      filter((key): boolean => !adviceModuleKeys.has(key))
-    expect(unexpectedKeys).to.be.empty
+describe('getAdviceModule', (): void => {
+  it('should return a proper module (check point)', (): void => {
+    i18n.changeLanguage('fr')
+    i18n.addResourceBundle('fr', 'adviceModules', {})
+    const t = i18n.getFixedT('fr', 'translation')
+    const freshResumeModule = getAdviceModule('fresh-resume', t)
+    expect(freshResumeModule).to.be.ok
+    expect(freshResumeModule.goal).to.eq('bien refaire votre CV')
   })
-}
 
-
-describe('getAdviceModules', (): void => {
-  it('should return the right json format for tutoiement',
-    (): void => isAdviceModuleJson(getAdviceModules(userYouFromBool(true))))
-
-  it('should return the right json format for vouvoiement',
-    (): void => isAdviceModuleJson(getAdviceModules(userYouFromBool(false))))
+  it('should return the right json format for another language than fr', (): void => {
+    i18n.addResourceBundle('en', 'adviceModules', {
+      'bien refaire votre CV': 'redo your resume properly',
+    }, true)
+    i18n.changeLanguage('en')
+    const t = i18n.getFixedT('en', 'translation')
+    const enModule = getAdviceModule('fresh-resume', t)
+    expect(enModule).to.be.ok
+    expect(enModule.goal).to.eq('redo your resume properly')
+  })
 })
 
 
@@ -204,9 +190,9 @@ const emailTemplatesKeys = new Set([
 ])
 
 
-const isEmailTemplatesJson = (json): void => {
+const isEmailTemplatesJson = (json: ReturnType<typeof getEmailTemplates>): void => {
   expect(json).to.be.an('object')
-  Object.keys(json).forEach((adviceId): void => {
+  Object.keys(json).forEach((adviceId: string): void => {
     const value = json[adviceId]
     expect(value).to.be.an('array')
     value.forEach((template): void => {
@@ -219,11 +205,26 @@ const isEmailTemplatesJson = (json): void => {
 
 
 describe('getEmailTemplates', (): void => {
-  it('should return the right json format for tutoiement',
-    (): void => isEmailTemplatesJson(getEmailTemplates(userYouFromBool(true))))
+  // TODO(pascal): Consider dropping that test, it's covered by static typing already.
+  it('should return the right json format', (): void => {
+    i18n.changeLanguage('fr')
+    i18n.addResourceBundle('fr', 'emailTemplates', {})
+    const t = i18n.getFixedT('fr', 'translation')
+    isEmailTemplatesJson(getEmailTemplates(t))
+  })
 
-  it('should return the right json format for vouvoiement',
-    (): void => isEmailTemplatesJson(getEmailTemplates(userYouFromBool(false))))
+  it('should return the right json format for another language than fr', (): void => {
+    i18n.addResourceBundle('en', 'emailTemplates', {
+      'Demander un devis à une auto-école partenaire': 'Ask in English',
+    }, true)
+    i18n.changeLanguage('en')
+    const t = i18n.getFixedT('en', 'translation')
+
+    const enTemplates = getEmailTemplates(t)
+    isEmailTemplatesJson(enTemplates)
+
+    expect(enTemplates['driving-license-euro'][0].title).to.eq('Ask in English')
+  })
 })
 
 
@@ -272,19 +273,23 @@ describe('getDateFromNowInString', (): void => {
 
 
 describe('slugify', (): void => {
-  it('should return only lower case', (): void =>
-    expect(slugify('ABCDEfghIJK')).to.eq('abcdefghijk'))
+  it('should return only lower case', (): void => {
+    expect(slugify('ABCDEfghIJK')).to.eq('abcdefghijk')
+  })
 
-  it('should replace spaces with dashes', (): void =>
-    expect(slugify('le petit chaperon rouge')).to.eq('le-petit-chaperon-rouge'))
+  it('should replace spaces with dashes', (): void => {
+    expect(slugify('le petit chaperon rouge')).to.eq('le-petit-chaperon-rouge')
+  })
 
-  it('should replace accented characters with non accented version', (): void =>
-    expect(slugify('àêrïen')).to.eq('aerien'))
+  it('should replace accented characters with non accented version', (): void => {
+    expect(slugify('àêrïen')).to.eq('aerien')
+  })
 })
 
 
-describe('getMonthName', (): void => Object.keys(Month).forEach((month: bayes.bob.Month): void => {
-  Month[month] && it(`should return a non-empty string for ${month}`, (): void =>
-    expect(getMonthName(month)).to.not.be.empty)
-}))
-
+describe('getMonthName', (): void => (Object.keys(Month) as readonly bayes.bob.Month[]).
+  forEach((month: bayes.bob.Month): void => {
+    Month[month] && it(`should return a non-empty string for ${month}`, (): void => {
+      expect(getMonthName(month)).to.not.be.empty
+    })
+  }))

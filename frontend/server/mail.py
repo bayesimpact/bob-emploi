@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import typing
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Literal, Optional, TypedDict, Union
 
 import mailjet_rest
 from requests import exceptions
@@ -14,29 +14,25 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import now
 
 if typing.TYPE_CHECKING:
-    import mypy_extensions
-    import typing_extensions
-    from typing_extensions import Literal
-
-    class _MailjetUser(mypy_extensions.TypedDict, total=False):
+    class _MailjetUser(TypedDict, total=False):
         Name: str
         Email: str
 
-    _MailjetParsePartHeaderJson = mypy_extensions.TypedDict(  # pylint: disable=invalid-name
+    _MailjetParsePartHeaderJson = TypedDict(  # pylint: disable=invalid-name
         '_MailjetParsePartHeaderJson', {
             'Content-Type': List[str],
             'Content-Transfer-Encoding': List[str],
             'Content-Disposition': List[str],
         }, total=False)
 
-    class _MailjetParsePartJson(mypy_extensions.TypedDict, total=False):
+    class _MailjetParsePartJson(TypedDict, total=False):
         # Add more attachments if needed.
         ContentRef: Literal[
             'Html-part', 'Text-part', 'Attachment1', 'Attachment2', 'Attachment3',
         ]
         Headers: _MailjetParsePartHeaderJson
 
-    _MailjetParseJson = mypy_extensions.TypedDict(  # pylint: disable=invalid-name
+    _MailjetParseJson = TypedDict(  # pylint: disable=invalid-name
         '_MailjetParseJson', {
             # Email of sender.
             'Sender': str,
@@ -58,12 +54,12 @@ if typing.TYPE_CHECKING:
 
     _AttachmentRefType = Literal['Attachment1', 'Attachment2', 'Attachment3']
 
-    class _MailjetSendAttachmentJson(mypy_extensions.TypedDict, total=False):
+    class _MailjetSendAttachmentJson(TypedDict, total=False):
         ContentType: str
         Filename: str
         Base64Content: str
 
-    _MailjetSendMessageJson = mypy_extensions.TypedDict(  # pylint: disable=invalid-name
+    _MailjetSendMessageJson = TypedDict(  # pylint: disable=invalid-name
         '_MailjetSendMessageJson', {
             # Email of sender.
             'To': List[_MailjetUser],
@@ -77,10 +73,10 @@ if typing.TYPE_CHECKING:
             'Attachments': List[_MailjetSendAttachmentJson],
         }, total=False)
 
-    class _MailjetSendDataJson(mypy_extensions.TypedDict, total=False):
+    class _MailjetSendDataJson(TypedDict, total=False):
         Messages: List[_MailjetSendMessageJson]
 
-    class _Recipient(typing_extensions.Protocol):
+    class _Recipient(typing.Protocol):
         @property
         def email(self) -> str:
             """Email address."""
@@ -93,7 +89,7 @@ if typing.TYPE_CHECKING:
         def name(self) -> str:
             """First name."""
 
-    class _Response(typing_extensions.Protocol):
+    class _Response(typing.Protocol):
         """This is a partial interface for the requests.models.Response class."""
 
         @property

@@ -1,5 +1,4 @@
 import PropTypes from 'prop-types'
-import Radium from 'radium'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
 import cyrilleImage from 'images/people/cyrille.png'
@@ -19,6 +18,7 @@ import twitterIcon from 'images/share/twitter-ico.svg'
 
 import {isMobileVersion} from 'components/mobile'
 import {ModalCloseButton} from 'components/modal'
+import {RadiumDiv, RadiumExternalLink} from 'components/radium'
 import {StaticPage, TitleSection} from 'components/static'
 import {ExternalLink, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING,
   SmoothTransitions} from 'components/theme'
@@ -153,17 +153,17 @@ interface PersonTileProps {
 const PersonTileBase: React.FC<PersonTileProps> = (props) => {
   const {isSelected, name, onClick, position, picture} = props
   const boxShadow = '0 12px 25px 0 rgba(0, 0, 0, 0.15)'
-  const personStyle: React.CSSProperties & {':hover': React.CSSProperties} = {
+  const personStyle: RadiumCSSProperties = {
     ':hover': {
       boxShadow,
     },
-    backgroundColor: '#fff',
-    boxShadow: isSelected ? boxShadow : 'initial',
-    color: colors.DARK,
-    cursor: 'pointer',
-    display: 'flex',
-    flexDirection: 'column',
-    textAlign: 'center',
+    'backgroundColor': '#fff',
+    'boxShadow': isSelected ? boxShadow : 'initial',
+    'color': colors.DARK,
+    'cursor': 'pointer',
+    'display': 'flex',
+    'flexDirection': 'column',
+    'textAlign': 'center',
     ...tileSize,
   }
   const descriptionStyle: React.CSSProperties = {
@@ -183,13 +183,13 @@ const PersonTileBase: React.FC<PersonTileProps> = (props) => {
     marginTop: 6,
   }
 
-  return <div style={personStyle} onClick={onClick}>
+  return <RadiumDiv style={personStyle} onClick={onClick}>
     <img style={{display: 'block', width: '100%'}} src={picture} alt="" />
     <div style={descriptionStyle}>
       <div style={nameStyle}>{name}</div>
       <div style={positionStyle}>{position}</div>
     </div>
-  </div>
+  </RadiumDiv>
 }
 PersonTileBase.propTypes = {
   isSelected: PropTypes.bool.isRequired,
@@ -198,7 +198,7 @@ PersonTileBase.propTypes = {
   picture: PropTypes.string.isRequired,
   position: PropTypes.string.isRequired,
 }
-const PersonTile = React.memo(Radium(PersonTileBase))
+const PersonTile = React.memo(PersonTileBase)
 
 
 interface TeamPageRowProps {
@@ -249,13 +249,11 @@ PersonRowBase.propTypes = {
 const PersonRow = React.memo(PersonRowBase)
 
 
-const handleBioOpen = (bioDiv): void => {
-  if (bioDiv) {
-    const clientHeight = document.documentElement.clientHeight
-    const divRect = bioDiv.getBoundingClientRect()
-    if (divRect.top < 0 || divRect.bottom > clientHeight) {
-      window.scroll({behavior: 'smooth', top: window.scrollY + divRect.top - (clientHeight / 2)})
-    }
+const handleBioOpen = (bioDiv: HTMLDivElement): void => {
+  const clientHeight = document.documentElement.clientHeight
+  const divRect = bioDiv.getBoundingClientRect()
+  if (divRect.top < 0 || divRect.bottom > clientHeight) {
+    window.scroll({behavior: 'smooth', top: window.scrollY + divRect.top - (clientHeight / 2)})
   }
 }
 
@@ -328,16 +326,16 @@ const SocialLinkBase: React.FC<SocialLinkProps> = (props) => {
     ':hover': {
       opacity: 1,
     },
-    opacity: 0,
-    position: 'absolute',
+    'opacity': 0,
+    'position': 'absolute',
     ...SmoothTransitions,
   }
-  return <ExternalLink
+  return <RadiumExternalLink
     style={{cursor: 'pointer', margin: '0 5px', position: 'relative', textDecoration: 'none'}}
     href={url}>
     <img src={icon} style={colorIconStyle} alt="" />
     <img src={grayIcon} alt={shareId} />
-  </ExternalLink>
+  </RadiumExternalLink>
 }
 SocialLinkBase.propTypes = {
   grayIcon: PropTypes.string.isRequired,
@@ -345,7 +343,7 @@ SocialLinkBase.propTypes = {
   shareId: PropTypes.string.isRequired,
   url: PropTypes.string.isRequired,
 }
-const SocialLink = React.memo(Radium(SocialLinkBase))
+const SocialLink = React.memo(SocialLinkBase)
 
 
 interface PersonBioProps {

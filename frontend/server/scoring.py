@@ -3,11 +3,10 @@
 See design doc at http://go/bob:scoring-advices.
 """
 
-import datetime
 import logging
 import re
 import typing
-from typing import Callable, List, Iterable, Optional, Set
+from typing import Callable, Generator, Iterator, List, Iterable, Optional, Set
 
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
@@ -26,16 +25,20 @@ from bob_emploi.frontend.server.modules import civic_service
 from bob_emploi.frontend.server.modules import commute
 from bob_emploi.frontend.server.modules import create_your_company
 from bob_emploi.frontend.server.modules import diagnostic
+from bob_emploi.frontend.server.modules import diplomas
 from bob_emploi.frontend.server.modules import driving_license
 from bob_emploi.frontend.server.modules import events
 from bob_emploi.frontend.server.modules import immersion
 from bob_emploi.frontend.server.modules import jobboards
+from bob_emploi.frontend.server.modules import language
 from bob_emploi.frontend.server.modules import network
 from bob_emploi.frontend.server.modules import online_salons
+from bob_emploi.frontend.server.modules import project_clarity
 from bob_emploi.frontend.server.modules import relocate
 from bob_emploi.frontend.server.modules import reorient_jobbing
 from bob_emploi.frontend.server.modules import reorient_to_close_job
 from bob_emploi.frontend.server.modules import seasonal_relocate
+from bob_emploi.frontend.server.modules import seniority
 from bob_emploi.frontend.server.modules import skill_for_future
 from bob_emploi.frontend.server.modules import volunteer
 # Re-export some base elements from here as well.
@@ -51,10 +54,38 @@ from bob_emploi.frontend.server.scoring_base import NULL_EXPLAINED_SCORE
 from bob_emploi.frontend.server.scoring_base import ScoringProject
 from bob_emploi.frontend.server.scoring_base import SCORING_MODEL_REGEXPS
 from bob_emploi.frontend.server.scoring_base import SCORING_MODELS
+from bob_emploi.frontend.server.scoring_base import TEMPLATE_VAR_PATTERN
 # pylint: enable=unused-import,import-only-modules
 
 # TODO(cyrille): Move strategy scorers to its own module and re-enable rule below.
 # pylint: disable=too-many-lines
+_Type = typing.TypeVar('_Type')
+
+
+# TODO(cyrille): Consider replacing with an Iterator[_Type, Set[str]], for simplicity.
+class IteratorWithMissingFields(Iterable[_Type]):
+    """A wrapper of iterators to get their return value as a missing_fields attribute.
+
+    Instantiate this class with an iterator that returns (not yields) a set of missing fields.
+    An object of this class can be used as an iterator,
+    so it can be iterated upon (for instance in a loop).
+    Once iterated upon, it gives the missing fields in its missing_fields attribute.
+    """
+
+    def __init__(self, gen: Generator[_Type, None, Set[str]]):
+        self.gen = gen
+        self._missing_fields: Optional[Set[str]] = None
+
+    def __iter__(self) -> Iterator[_Type]:
+        self._missing_fields = yield from self.gen
+
+    @property
+    def missing_fields(self) -> Set[str]:
+        """The missing fields the iterator has aggregated."""
+
+        if self._missing_fields is None:
+            raise ValueError(f'An IteratorWithMissingFields has not been iterated upon yet')
+        return self._missing_fields
 
 
 class _AdviceTrainingScoringModel(scoring_base.ModelBase):
@@ -139,7 +170,7 @@ class _AdviceSpecificToJob(scoring_base.ModelBase):
         config = project.specific_to_job_advice_config()
         if not config:
             logging.warning(
-                'Did not found any config for specific-to-job advice for job "%s".',
+                'Did not find any config for specific-to-job advice for job "%s".',
                 project.details.target_job.code_ogr)
             return None
 
@@ -609,6 +640,17 @@ class _StressedJobFilter(scoring_base.BaseFilter):
         return 1 / national_market_score >= self._min_stress
 
 
+class _LongSearchFilter(scoring_base.BaseFilter):
+    """A scoring model to filter on the search length."""
+
+    def __init__(self, min_search: str) -> None:
+        super().__init__(self._filter)
+        self._min_search = int(min_search)
+
+    def _filter(self, project: ScoringProject) -> bool:
+        return project.get_search_length_at_creation() >= self._min_search
+
+
 class _AdviceFollowupEmail(scoring_base.ModelBase):
 
     def score_and_explain(self, project: ScoringProject) -> ExplainedScore:
@@ -772,6 +814,45 @@ class _StrategyForFrustrated(scoring_base.ModelHundredBase):
         return 10
 
 
+class _MultiProjectsModelBase(scoring_base.ModelBase):
+
+    def __init__(self, project_filter_name: str) -> None:
+        super().__init__()
+        if get_scoring_model(project_filter_name) is None:
+            raise ValueError(f'Scorer does not exist: {project_filter_name}')
+        self._project_filter_name = project_filter_name
+
+    def _iter_on_project_scores(self, project: ScoringProject) -> Iterable[float]:
+        for each_project in project.user.projects:
+            yield project.get_other_project(each_project).score(self._project_filter_name)
+
+
+class _ForAnyProject(_MultiProjectsModelBase):
+
+    def score(self, project: ScoringProject) -> float:
+        """Compute a score for the given ScoringProject."""
+
+        for score in self._iter_on_project_scores(project):
+            if score:
+                return score
+        return 0
+
+
+class _ForAllProjects(_MultiProjectsModelBase):
+
+    def score(self, project: ScoringProject) -> float:
+        """Compute a score for the given ScoringProject."""
+
+        # TODO(cyrille): Rewrite this to be logically consistent with forall.
+        first_score = 0.
+        for score in self._iter_on_project_scores(project):
+            if not score:
+                return score
+            elif not first_score:
+                first_score = score
+        return first_score
+
+
 _UNEMPLOYED_KINDS = {
     project_pb2.FIND_A_FIRST_JOB,
     project_pb2.FIND_A_NEW_JOB,
@@ -884,6 +965,17 @@ scoring_base.register_regexp(
 scoring_base.register_regexp(
     re.compile(r'^strategy-for-frustrated\((.*)\)$'), _StrategyForFrustrated,
     'strategy-for-frustrated(MOTIVATION, TRAINING)')
+# Matches strings like "for-any-project(filter-on-project)".
+scoring_base.register_regexp(
+    re.compile(r'^for-any-project\((.*)\)$'), _ForAnyProject,
+    'for-any-project(constant(0))')
+# Matches strings like "for-all-projects(filter-on-project)".
+scoring_base.register_regexp(
+    re.compile(r'^for-all-projects\((.*)\)$'), _ForAllProjects,
+    'for-all-projects(constant(0))')
+# Matches strings like "for-long-search(12)".
+scoring_base.register_regexp(
+    re.compile(r'^for-long-search\(([0-9]+)\)$'), _LongSearchFilter, 'for-long-search(12)')
 
 
 scoring_base.register_model(
@@ -904,9 +996,6 @@ scoring_base.register_model(
     'advice-senior', _AdviceSenior())
 scoring_base.register_model(
     'advice-specific-to-job', _AdviceSpecificToJob())
-scoring_base.register_model(
-    'advice-wow-baker', _JobGroupWithoutJobFilter(
-        job_groups={'D1102'}, exclude_jobs={'12006'}))
 scoring_base.register_model(
     'advice-training', _AdviceTrainingScoringModel())
 scoring_base.register_model(
@@ -933,7 +1022,8 @@ scoring_base.register_model(
     'for-currently-in-training', _TrainingFullfilmentFilter(project_pb2.CURRENTLY_IN_TRAINING))
 scoring_base.register_model(
     'for-driver', _UserProfileFilter(
-        lambda user: bool(user.has_car_driving_license >= user_pb2.TRUE or user.driving_licenses)))
+        lambda user: user.has_car_driving_license >= project_pb2.TRUE or
+        bool(user.driving_licenses)))
 scoring_base.register_model(
     'for-employed', scoring_base.BaseFilter(
         lambda scoring_project: scoring_project.user_profile.situation == user_pb2.EMPLOYED or
@@ -984,9 +1074,10 @@ scoring_base.register_model(
     'for-first-time-in-job', _ProjectFilter(
         lambda project: project.previous_job_similarity == project_pb2.NEVER_DONE))
 scoring_base.register_model(
-    'for-frustrated-young(25)', _UserProfileFilter(
-        lambda user: user_pb2.AGE_DISCRIMINATION in user.frustrations and
-        datetime.date.today().year - user.year_of_birth < 25))
+    'for-frustrated-young(25)', scoring_base.BaseFilter(
+        lambda scoring_project:
+        user_pb2.AGE_DISCRIMINATION in scoring_project.user_profile.frustrations and
+        scoring_project.get_user_age() < 25))
 scoring_base.register_model(
     'for-good-overall-score(50)', _ProjectFilter(
         lambda project: project.diagnostic.overall_score > 50))
@@ -1005,9 +1096,6 @@ scoring_base.register_model(
     'for-job-applied-by-mail', _ApplicationMediumFilter(job_pb2.APPLY_BY_EMAIL))
 scoring_base.register_model(
     'for-job-applied-in-person', _ApplicationMediumFilter(job_pb2.APPLY_IN_PERSON))
-scoring_base.register_model(
-    'for-long-search(7)', scoring_base.BaseFilter(
-        lambda scoring_project: scoring_project.get_search_length_at_creation() >= 7))
 scoring_base.register_model(
     'for-long-term-mom', _UserProfileFilter(_is_long_term_mom))
 scoring_base.register_model(
@@ -1087,6 +1175,9 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-unqualified(bac)', _UserProfileFilter(
         lambda user: user.highest_degree <= job_pb2.BAC_BACPRO))
+scoring_base.register_model(
+    'for-no-degree', _UserProfileFilter(
+        lambda user: user.highest_degree == job_pb2.NO_DEGREE))
 # TODO(cyrille): Replace with for-lower-market-tension(7) and remove.
 scoring_base.register_model(
     'for-unstressed-market(10/7)', _MarketTensionFilter('7'))
@@ -1096,6 +1187,8 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-very-short-contract', _ProjectFilter(
         lambda project: job_pb2.INTERIM in project.employment_types))
+scoring_base.register_model(
+    'for-with-resume', _ProjectFilter(lambda project: project.has_resume >= project_pb2.TRUE))
 scoring_base.register_model(
     'for-women', _UserProfileFilter(lambda user: user.gender == user_pb2.FEMININE))
 scoring_base.register_model(

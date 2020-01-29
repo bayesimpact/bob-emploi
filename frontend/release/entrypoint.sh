@@ -7,9 +7,9 @@ fi
 
 # Replace the dist constants to use ones from the environment if any.
 
-# Convert the JSON file in a map file with "key value" format.
+# Convert the JSON5 file in a map file with "key value" format.
 readonly DIST_VARS=$(mktemp)
-cut -s -d '"' -f 2,4 /usr/share/bob-emploi/dist.json | tr \" \  > "${DIST_VARS}"
+grep "^  " /usr/share/bob-emploi/dist.json5 | sed -e "s/  \(.*\): '\(.*\)',/\1 \2/" > "${DIST_VARS}"
 
 function replace_string() {
   from=$1; to=$2; shift; shift

@@ -1,26 +1,41 @@
 // Convert Imilo Props to Bob User Props.
-import Raven from 'raven-js'
+import * as Sentry from '@sentry/browser'
 
 import {CursusPage, ImiloProps, SituationsPage} from './imilo_api'
 
 
-Raven.config(config.sentryDSN, {
-  'ignoreUrls': [/portail\.i-milo\.fr/],
-}).install()
+Sentry.init({
+  blacklistUrls: [/portail\.i-milo\.fr/],
+  dsn: config.sentryDSN,
+})
 
 
-// Safely get prop value by path in a nested object.
+type NestedValueGetter =
+  (<T>(nestedKeys: string[]) => T|undefined) &
+  (<T>(nestedKeys: string[], defaultValue: T) => T)
+
+
+const NOT_FOUND = {} as const
+
+// Safely get prop value by path in a nested object. If one of the element of the path is not
+// present, returns the default value or undefined if none provided.
 // Example:
 // const props = {a: {b: {c: 1}}}
-// getNestedValue(props, ['a', 'b', 'c']) returns 1
-// getNestedValue(props, ['a', 'd']) returns undefined
-// getNestedValue(props, ['a', 'd'], 2) returns 2
+// createNestedValueGetter(props)(['a', 'b', 'c']) returns 1
+// createNestedValueGetter(props)(['a', 'd']) returns undefined
+// createNestedValueGetter(props)(['a', 'd'], 2) returns 2
 // TODO(cyrille): Strong-type to make sure props has a field of type T at position nestedKeys.
-function getNestedValue<T>(props: object, nestedKeys: string[], defaultValue?: T): T|undefined {
-  const notFound = {}
-  const value = nestedKeys.reduce((propsInPath, key): T|object =>
-    propsInPath !== notFound && key in propsInPath ? propsInPath[key] : notFound, props) as T
-  return value === notFound ? defaultValue : value
+function createNestedValueGetter(props: object): NestedValueGetter {
+  function getNestedValue<T>(nestedKeys: string[]): T|undefined
+  function getNestedValue<T>(nestedKeys: string[], defaultValue: T): T
+  function getNestedValue<T>(nestedKeys: string[], defaultValue?: T): T|undefined {
+    const value = nestedKeys.reduce((propsInPath, key): T|object =>
+      // @ts-ignore
+      propsInPath !== NOT_FOUND && key in propsInPath ? propsInPath[key] : NOT_FOUND, props)
+    return value === NOT_FOUND ? defaultValue : value
+  }
+
+  return getNestedValue
 }
 
 
@@ -76,30 +91,34 @@ const bobDegreeOrder: readonly bayes.bob.DegreeLevel[] = [
 
 function mapToBob<V>(name: string, mapping: {[key: number]: V}, value: number, fullValue: V): V {
   if (!mapping[value]) {
-    Raven.captureMessage(
-      `Unknown value for i-milo -> Bob mapping ${name} "${value}".`,
-      {extra: {
-        fullValue,
-        value,
-      }},
-    )
+    Sentry.withScope(scope => {
+      scope.setExtra('fullValue', fullValue)
+      scope.setExtra('value', value)
+      Sentry.captureMessage(`Unknown value for i-milo -> Bob mapping ${name} "${value}".`)
+    })
   }
   return mapping[value]
 }
 
 
-function getBobHighestDegree(imiloDegrees: CursusPage): bayes.bob.DegreeLevel|undefined {
+function getBobHighestDegree(imiloDegrees?: CursusPage): bayes.bob.DegreeLevel|undefined {
+  if (!imiloDegrees) {
+    return undefined
+  }
   const bobDegrees = imiloDegrees.reduce(
-    (degrees, {fullAcademicLevel, grade}): {[grade: string]: bayes.bob.DegreeLevel} => ({
+    (degrees, {fullAcademicLevel, grade}): {[K in bayes.bob.DegreeLevel]?: true} => ({
       ...degrees,
       [mapToBob('Academic Level', imiloGradeToBobDegree, grade, fullAcademicLevel)]: true,
-    }), {})
+    }), {} as {[K in bayes.bob.DegreeLevel]?: true})
   const bobHighestDegree = bobDegreeOrder.find((degree): boolean => !!bobDegrees[degree])
   return bobHighestDegree
 }
 
 
-function getBobTargetJob(imiloSituations: SituationsPage): bayes.bob.Job|undefined {
+function getBobTargetJob(imiloSituations?: SituationsPage): bayes.bob.Job|undefined {
+  if (!imiloSituations) {
+    return undefined
+  }
   const jobs = imiloSituations.map((situation): bayes.bob.Job|undefined => {
     const job = situation.fullPracticedJob || situation.fullPreparedJob
     if (!job) {
@@ -114,22 +133,25 @@ function getBobTargetJob(imiloSituations: SituationsPage): bayes.bob.Job|undefin
 }
 
 function convertImiloPropsToBobProps(imiloProps: ImiloProps): bayes.bob.User {
-  const imilo = getNestedValue.bind(undefined, imiloProps)
+  const imilo = createNestedValueGetter(imiloProps)
   // 4 is the ID of the situation "Célibataire".
-  const isSingle = imilo(['Identité', 'identity', 'situation']) === 4
-  const hasKids = imilo(['Identité', 'childrenNumber']) > 0
+  const isSingle = imilo<number>(['Identité', 'identity', 'situation']) === 4
+  const childrenNumber = imilo<number>(['Identité', 'childrenNumber'])
+  const hasKids = childrenNumber && childrenNumber > 0
   const cityId = imilo(['Coordonnées', 'currentAddress', 'fullCity', 'codeCommune'], '')
   const city = {
     cityId,
     // TODO(florian): Cope for oversea départements (e.g. 976)
     departementId: cityId.slice(0, 2),
-    name: imilo(['Coordonnées', 'currentAddress', 'fullCity', 'description']),
-    postcodes: imilo(['Coordonnées', 'currentAddress', 'zipCode']),
+    name: imilo<string>(['Coordonnées', 'currentAddress', 'fullCity', 'description']),
+    postcodes: imilo<string>(['Coordonnées', 'currentAddress', 'zipCode']),
   }
-  const areaType = mapToBob(
-    'Radius Mobility', imiloToBobMobility, imilo(['Mobilité', 'radiusMobility']),
+  const radiusMobility = imilo<number>(['Mobilité', 'radiusMobility'])
+  const areaType = typeof radiusMobility === 'undefined' ? undefined : mapToBob(
+    'Radius Mobility', imiloToBobMobility, radiusMobility,
     imilo(['Mobilité', 'fullRadiusMobility']),
   )
+  const civility = imilo<number>(['Identité', 'identity', 'civility'])
   let bobProps: bayes.bob.User = {
     profile: {
       email: imilo(['Identité', 'identity', 'email']),
@@ -137,8 +159,8 @@ function convertImiloPropsToBobProps(imiloProps: ImiloProps): bayes.bob.User {
         (hasKids ? 'SINGLE_PARENT_SITUATION' : 'SINGLE') :
         (hasKids ? 'FAMILY_WITH_KIDS' : 'IN_A_RELATIONSHIP'),
       // 2 is the ID of the civility "Monsieur".
-      gender: mapToBob(
-        'Civility', imiloToBobGender, imilo(['Identité', 'identity', 'civility']),
+      gender: typeof civility === 'undefined' ? undefined : mapToBob(
+        'Civility', imiloToBobGender, civility,
         imilo(['Identité', 'identity', 'fullCivility']),
       ),
       highestDegree: getBobHighestDegree(imilo(['Cursus'])),
@@ -173,4 +195,4 @@ function convertImiloPropsToBobProps(imiloProps: ImiloProps): bayes.bob.User {
 }
 
 
-export {convertImiloPropsToBobProps, getNestedValue}
+export {convertImiloPropsToBobProps, createNestedValueGetter}

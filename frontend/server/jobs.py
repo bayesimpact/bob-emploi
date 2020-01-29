@@ -13,11 +13,14 @@ _JOB_GROUPS_INFO: proto.MongoCachedCollection[job_pb2.JobGroup] = \
     proto.MongoCachedCollection(job_pb2.JobGroup, 'job_group_info')
 
 
-def get_group_proto(database: pymongo.database.Database, rome_id: str) \
+def get_group_proto(database: pymongo.database.Database, rome_id: str, locale: str = 'fr') \
         -> Optional[job_pb2.JobGroup]:
     """Get a JobGroup proto corresponding to the ROME job group ID."""
 
-    return _JOB_GROUPS_INFO.get_collection(database).get(rome_id)
+    locale_prefix = ''
+    if locale:
+        locale_prefix = '' if locale.startswith('fr') else f'{locale[:2]}:'
+    return _JOB_GROUPS_INFO.get_collection(database).get(f'{locale_prefix}{rome_id}')
 
 
 def get_job_proto(database: pymongo.database.Database, job_id: str, rome_id: str) \

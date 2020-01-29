@@ -6,7 +6,7 @@ See http://go/bob:advisor-design.
 import locale
 import logging
 import threading
-from typing import Dict, List, Optional, Set
+from typing import Dict, Generator, Iterable, List, Optional, Set
 from urllib import parse
 
 from pymongo import database as pymongo_database
@@ -82,18 +82,28 @@ def compute_advices_for_project(
         user: the user's data, mainly used for their profile and features_enabled.
         project: the project data. It will not be modified.
         database: access to the MongoDB with market data.
+        scoring_timeout_seconds: how long we wait to compute each advice scoring model.
     Returns:
         an Advices protobuffer containing a list of recommendations.
     """
 
-    scoring_project = scoring.ScoringProject(
-        project, user.profile, user.features_enabled, database, now=now.get())
+    scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
+    advice_modules = _advice_modules(database)
+    advices = project_pb2.Advices()
+    advices.advices.extend(
+        compute_available_methods(scoring_project, advice_modules, scoring_timeout_seconds))
+    return advices
+
+
+def _compute_available_methods(
+        scoring_project: scoring.ScoringProject,
+        method_modules: Iterable[advisor_pb2.AdviceModule],
+        scoring_timeout_seconds: float) -> Generator[project_pb2.Advice, None, Set[str]]:
     scores: Dict[str, float] = {}
     reasons: Dict[str, List[str]] = {}
-    advice_modules = _advice_modules(database)
-    advice = project_pb2.Advices()
-    for module in advice_modules:
-        if not module.is_ready_for_prod and not user.features_enabled.alpha:
+    missing_fields: Set[str] = set()
+    for module in method_modules:
+        if not module.is_ready_for_prod and not scoring_project.features_enabled.alpha:
             continue
         scoring_model = scoring.get_scoring_model(module.trigger_scoring_model)
         if scoring_model is None:
@@ -101,12 +111,12 @@ def compute_advices_for_project(
                 'Not able to score advice "%s", the scoring model "%s" is unknown.',
                 module.advice_id, module.trigger_scoring_model)
             continue
-        if user.features_enabled.all_modules:
+        if scoring_project.user.features_enabled.all_modules:
             scores[module.advice_id] = 3
         else:
             thread = threading.Thread(
                 target=_compute_score_and_reasons,
-                args=(scores, reasons, module, scoring_model, scoring_project))
+                args=(scores, reasons, module, scoring_model, scoring_project, missing_fields))
             thread.start()
             # TODO(pascal): Consider scoring different models in parallel.
             thread.join(timeout=scoring_timeout_seconds)
@@ -116,35 +126,60 @@ def compute_advices_for_project(
                     module.trigger_scoring_model, scoring_project)
 
     modules = sorted(
-        advice_modules,
+        method_modules,
         key=lambda m: (scores.get(m.advice_id, 0), m.advice_id),
         reverse=True)
     incompatible_modules: Set[str] = set()
+    has_module = False
     for module in modules:
         score = scores.get(module.advice_id)
         if not score:
             # We can break as others will have 0 score as well.
             break
-        if module.airtable_id in incompatible_modules and not user.features_enabled.all_modules:
+        if module.airtable_id in incompatible_modules and \
+                not scoring_project.user.features_enabled.all_modules:
             continue
-        piece_of_advice = advice.advices.add()
-        piece_of_advice.advice_id = module.advice_id
-        piece_of_advice.num_stars = score
+        piece_of_advice = project_pb2.Advice(
+            advice_id=module.advice_id,
+            num_stars=score,
+            is_for_alpha_only=not module.is_ready_for_prod)
         piece_of_advice.explanations.extend(
             scoring_project.populate_template(reason)
             for reason in reasons.get(module.advice_id, []))
-        if not module.is_ready_for_prod:
-            piece_of_advice.is_for_alpha_only = True
 
         incompatible_modules.update(module.incompatible_advice_ids)
 
         _maybe_override_advice_data(piece_of_advice, module, scoring_project)
+        has_module = True
+        yield piece_of_advice
 
-    if not advice.advices and advice_modules:
+    if not has_module and method_modules:
         logging.warning(
-            'We could not find *any* advice for a project:\n%s', scoring_project)
+            'We could not find *any* advice for a project:\nModules tried:\n"%s"\nProject:\n%s',
+            '", "'.join(m.advice_id for m in method_modules),
+            scoring_project)
 
-    return advice
+    return missing_fields
+
+
+def compute_available_methods(
+        scoring_project: scoring.ScoringProject,
+        method_modules: Iterable[advisor_pb2.AdviceModule],
+        scoring_timeout_seconds: float = 3) \
+        -> scoring.IteratorWithMissingFields[project_pb2.Advice]:
+    """Advise on a user project.
+
+    Args:
+        scoring_project: the user's data.
+        advice_modules: a list of modules, from which we want to derive the advices.
+        scoring_timeout_seconds: how long we wait to compute each advice scoring model.
+    Returns:
+        an Iterator of recommendations, with a missing_fields attribute about which fields
+        would help improve the process.
+    """
+
+    return scoring.IteratorWithMissingFields(
+        _compute_available_methods(scoring_project, method_modules, scoring_timeout_seconds))
 
 
 def _compute_score_and_reasons(
@@ -152,10 +187,21 @@ def _compute_score_and_reasons(
         reasons: Dict[str, List[str]],
         module: advisor_pb2.AdviceModule,
         scoring_model: scoring.ModelBase,
-        scoring_project: scoring.ScoringProject) -> None:
+        scoring_project: scoring.ScoringProject,
+        missing_fields_aggregator: Set[str]) -> None:
     try:
         scores[module.advice_id], reasons[module.advice_id] = \
             scoring_model.score_and_explain(scoring_project)
+    except scoring.NotEnoughDataException as err:
+        if err.fields:
+            # We don't know whether this is useful or not, so we give it anyway,
+            # and ask for missing fields.
+            scores[module.advice_id] = .1
+            reasons[module.advice_id] = []
+            missing_fields_aggregator.update(err.fields)
+        else:
+            logging.exception(
+                'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, scoring_project)
     except Exception:  # pylint: disable=broad-except
         logging.exception(
             'Scoring "%s" crashed for:\n%s', module.trigger_scoring_model, scoring_project)
@@ -188,8 +234,7 @@ def _send_activation_email(
     # Set locale.
     locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 
-    scoring_project = scoring.ScoringProject(
-        project, user.profile, user.features_enabled, database, now=now.get())
+    scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
     auth_token = parse.quote(auth.create_token(user.user_id, is_using_timestamp=True))
     settings_token = parse.quote(auth.create_token(user.user_id, role='settings'))
     coaching_email_frequency_name = \
@@ -197,7 +242,8 @@ def _send_activation_email(
     data = {
         'changeEmailSettingsUrl':
             f'{base_url}/unsubscribe.html?user={user.user_id}&auth={settings_token}&'
-            f'coachingEmailFrequency={coaching_email_frequency_name}',
+            f'coachingEmailFrequency={coaching_email_frequency_name}&'
+            f'hl={parse.quote(user.profile.locale)}',
         'date': now.get().strftime('%d %B %Y'),
         'firstName': user.profile.name,
         'gender': user_pb2.Gender.Name(user.profile.gender),
@@ -263,8 +309,7 @@ def list_all_tips(
     tip_templates = filter(None, (all_tip_templates.get(t) for t in module.tip_template_ids))
 
     # Filter tips.
-    scoring_project = scoring.ScoringProject(
-        project, user.profile, user.features_enabled, database, now=now.get())
+    scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
     filtered_tips = scoring.filter_using_score(
         tip_templates, lambda t: t.filters, scoring_project)
 

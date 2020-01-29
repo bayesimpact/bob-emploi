@@ -5,7 +5,7 @@ import Picto from 'images/advices/picto-body-language.svg'
 import {CardProps} from './base'
 
 
-const ExpandedAdviceCardContentBase: React.FC<CardProps> = (): React.ReactElement => {
+const BodyLanguage: React.FC<CardProps> = (): React.ReactElement => {
   const coverallStyle: React.CSSProperties = {
     bottom: 0,
     left: 0,
@@ -25,6 +25,6 @@ const ExpandedAdviceCardContentBase: React.FC<CardProps> = (): React.ReactElemen
   </div>
 
 }
-const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = React.memo(BodyLanguage)
 
 export default {ExpandedAdviceCardContent, Picto}

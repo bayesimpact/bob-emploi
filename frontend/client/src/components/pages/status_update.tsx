@@ -1,15 +1,18 @@
-import _memoize from 'lodash/memoize'
+import i18next from 'i18next'
 import {parse} from 'query-string'
-import React from 'react'
+import React, {Suspense, useCallback, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import ReactDOM from 'react-dom'
 
-import {YouChooser, tutoyer, vouvoyer} from 'store/french'
+import {init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
 
-import logoProductImage from 'images/logo-bob-beta.svg'
+import logoProductImage from 'images/bob-logo.svg'
 
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {ShareModal} from 'components/share'
 import {Button, MIN_CONTENT_PADDING, RadioGroup} from 'components/theme'
+import {WaitingPage} from 'components/pages/waiting'
 import {CheckboxList, FieldSet} from 'components/pages/connected/form_utils'
 
 require('styles/App.css')
@@ -17,128 +20,194 @@ require('styles/App.css')
 // TODO(cyrille): Report events to Amplitude.
 
 
+// i18next-extract-mark-ns-start statusUpdate
+
+i18nInit()
+
+
 const FORM_OPTIONS = {
   'en-recherche': {
-    'headerText': (userYou: YouChooser): string => `Merci de nous avoir donné des nouvelles,
-      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00A0! J'ai juste quelques
-      questions de plus.`,
-    'seeking': 'STILL_SEEKING',
-    'seekingOptions': [],
-    'situationOptions': [
-      {name: "J'ai un travail mais je cherche encore", value: 'WORKING'},
-      {name: 'Je suis en formation', value: 'FORMATION'},
-      {name: 'Je cherche toujours un emploi', value: 'SEEKING'},
+    headerText: prepareT(
+      "Merci de nous avoir donné des nouvelles, vous nous rendez un fier service\u00A0! J'ai " +
+      'juste quelques questions de plus.',
+    ),
+    seeking: 'STILL_SEEKING',
+    seekingOptions: [],
+    situationOptions: [
+      {name: prepareT("J'ai un travail mais je cherche encore"), value: 'WORKING'},
+      {name: prepareT('Je suis en formation'), value: 'FORMATION'},
+      {name: prepareT('Je cherche toujours un emploi'), value: 'SEEKING'},
     ],
   },
   'mise-a-jour': {
-    'headerText': (userYou: YouChooser): string => `Merci de nous avoir donné des nouvelles,
-      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00A0!`,
-    'seekingOptions': [
-      {name: "Je suis toujours à la recherche d'un emploi", value: 'STILL_SEEKING'},
-      {name: 'Je ne cherche plus', value: 'STOP_SEEKING'},
+    headerText: prepareT(
+      "Merci de nous avoir donné des nouvelles, vous nous rendez un fier service\u00A0! J'ai " +
+      'juste quelques questions de plus.',
+    ),
+    seeking: undefined,
+    seekingOptions: [
+      {name: prepareT("Je suis toujours à la recherche d'un emploi"), value: 'STILL_SEEKING'},
+      {name: prepareT('Je ne cherche plus'), value: 'STOP_SEEKING'},
     ],
-    'situationOptions': [
-      {name: "J'ai un travail", value: 'WORKING'},
-      {name: 'Je suis en formation', value: 'FORMATION'},
-      {name: "Je suis à la recherche d'un emploi", value: 'SEEKING'},
-      {name: "C'est compliqué", value: 'COMPLICATED'},
+    situationOptions: [
+      {name: prepareT("J'ai un travail"), value: 'WORKING'},
+      {name: prepareT('Je suis en formation'), value: 'FORMATION'},
+      {name: prepareT("Je suis à la recherche d'un emploi"), value: 'SEEKING'},
+      {name: prepareT("C'est compliqué"), value: 'COMPLICATED'},
     ],
   },
   'ne-recherche-plus': {
-    'headerText': (userYou: YouChooser): string => `Merci de nous avoir donné des nouvelles,
-      ${userYou(' tu nous rends', ' vous nous rendez')} un fier service\u00A0! J'ai juste quelques
-      questions de plus qui nous servent à collecter des statistiques pour améliorer notre
-      impact\u00A0:`,
-    'seeking': 'STOP_SEEKING',
-    'seekingOptions': [],
-    'situationOptions': [
-      {name: "J'ai un travail", value: 'WORKING'},
-      {name: 'Je suis en formation', value: 'FORMATION'},
-      {name: "C'est compliqué", value: 'COMPLICATED'},
+    headerText: prepareT(
+      "Merci de nous avoir donné des nouvelles, vous nous rendez un fier service\u00A0! J'ai " +
+      'juste quelques questions de plus qui nous servent à collecter des statistiques pour ' +
+      'améliorer notre impact\u00A0:',
+    ),
+    seeking: 'STOP_SEEKING',
+    seekingOptions: [],
+    situationOptions: [
+      {name: prepareT("J'ai un travail"), value: 'WORKING'},
+      {name: prepareT('Je suis en formation'), value: 'FORMATION'},
+      {name: prepareT("C'est compliqué"), value: 'COMPLICATED'},
     ],
   },
 } as const
 
-
-const NEW_JOB_CONTRACT_TYPE_OPTIONS = [
-  {name: 'Un contrat de moins de 30 jours', value: 'ANY_CONTRACT_LESS_THAN_A_MONTH'},
-  {name: 'Un CDD de 1 à 3 mois', value: 'CDD_LESS_EQUAL_3_MONTHS'},
-  {name: 'Un CDD de plus de 3 mois', value: 'CDD_OVER_3_MONTHS'},
-  {name: 'Un CDI', value: 'CDI'},
-]
+type PageType = keyof typeof FORM_OPTIONS
 
 
-const bobHasHelpedOptions = _memoize((feminineE: string) => [
-  {name: 'Oui, vraiment décisif', value: 'YES_A_LOT'},
-  {name: `Oui, ça m'a aidé${feminineE}`, value: 'YES'},
-  {name: 'Non, pas du tout', value: 'NOT_AT_ALL'},
-])
+type Option<T> = {
+  name: string
+  value: T
+}
 
 
-const bobFeaturesThatHelpedOptions = _memoize((feminineE: string) => [
-  {name: "Le diagnostic m'a été utile", value: 'DIAGNOSTIC'},
-  {name: 'Utiliser plus le bouche à oreille', value: 'NETWORK'},
-  {name: 'Utiliser plus les candidatures spontanées', value: 'SPONTANEOUS'},
-  {name: 'Des astuces pour mon CV et lettre de motivation', value: 'RESUME_TIPS'},
-  {name: 'Des astuces pour les entretiens', value: 'INTERVIEW_TIPS'},
+const NEW_JOB_CONTRACT_TYPE_OPTIONS: readonly Option<bayes.bob.EmploymentType>[] = [
+  {name: prepareT('Un contrat de moins de 30 jours'), value: 'ANY_CONTRACT_LESS_THAN_A_MONTH'},
+  {name: prepareT('Un CDD de 1 à 3 mois'), value: 'CDD_LESS_EQUAL_3_MONTHS'},
+  {name: prepareT('Un CDD de plus de 3 mois'), value: 'CDD_OVER_3_MONTHS'},
+  {name: prepareT('Un CDI'), value: 'CDI'},
+] as const
+
+
+const bobHasHelpedOptions = [
+  {name: prepareT('Oui, vraiment décisif'), value: 'YES_A_LOT'},
+  {name: prepareT("Oui, ça m'a aidé·e", {context: ''}), value: 'YES'},
+  {name: prepareT('Non, pas du tout'), value: 'NOT_AT_ALL'},
+] as const
+
+
+const bobFeaturesThatHelpedOptions = [
+  {name: prepareT("Le diagnostic m'a été utile"), value: 'DIAGNOSTIC'},
+  {name: prepareT('Utiliser plus le bouche à oreille'), value: 'NETWORK'},
+  {name: prepareT('Utiliser plus les candidatures spontanées'), value: 'SPONTANEOUS'},
+  {name: prepareT('Des astuces pour mon CV et lettre de motivation'), value: 'RESUME_TIPS'},
+  {name: prepareT('Des astuces pour les entretiens'), value: 'INTERVIEW_TIPS'},
   {
-    name: `${config.productName} m'a poussé${feminineE} à changer de stratégie`,
+    name: prepareT(
+      "{{productName}} m'a poussé·e à changer de stratégie",
+      {context: '', productName: config.productName},
+    ),
     value: 'STRATEGY_CHANGE',
   },
-])
+] as const
 
 
-interface PageState extends bayes.bob.EmploymentStatus {
-  errorMessage?: string
-  isFormSent: boolean
-  isSendingUpdate: boolean
-  isValidated: boolean
-  page?: keyof (typeof FORM_OPTIONS)
+interface Params {
+  page?: PageType
   params: {
     can_tutoie?: string
-    gender?: string
+    gender?: bayes.bob.Gender
+    hl?: string
     token?: string
     user?: string
   }
+  seeking?: bayes.bob.SeekingStatus
 }
 
 
 type Location = typeof window.location
+function getParamsFromLocation({pathname, search}: Location): Params {
+  const page = pathname.replace('/statut/', '') as PageType
+  const {seeking = undefined} = FORM_OPTIONS[page] || {}
+  return {
+    page: FORM_OPTIONS[page] ? page : undefined,
+    params: parse(search),
+    ...seeking && {seeking},
+  }
+}
+
+function redirectToLandingPage(): void {
+  window.location.href = '/'
+}
+
+const {page, params, seeking: initialSeeking} = getParamsFromLocation(window.location)
+// TODO(pascal): Drop that after 2020-02-15
+if (params.can_tutoie && !params.hl) {
+  i18next.changeLanguage('fr@tu')
+}
 
 
-class StatusUpdatePage extends React.PureComponent<{}, PageState> {
-  private static getStateFromLocation({pathname, search}: Location):
-  Pick<PageState, 'page'|'params'|'seeking'>|Pick<PageState, 'page'|'params'> {
-    const page = pathname.replace('/statut/', '')
-    const {seeking = undefined} = FORM_OPTIONS[page] || {}
-    return {
-      page: FORM_OPTIONS[page] ? (page as keyof (typeof FORM_OPTIONS)) : undefined,
-      params: parse(search),
-      ...seeking && {seeking},
+const headerStyle = {
+  alignItems: 'center',
+  backgroundColor: colors.BOB_BLUE,
+  display: 'flex',
+  height: 56,
+  justifyContent: 'center',
+  width: '100%',
+}
+const containerStyle: React.CSSProperties = {
+  padding: isMobileVersion ? `0 ${MIN_CONTENT_PADDING}px` : 'initial',
+}
+const pageStyle: React.CSSProperties = {
+  alignItems: 'center',
+  color: colors.DARK_TWO,
+  display: 'flex',
+  flexDirection: 'column',
+  fontSize: 15,
+  fontWeight: 500,
+  lineHeight: 1.5,
+  minHeight: '100vh',
+  paddingBottom: 40,
+}
+
+
+const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
+  const [bobFeaturesThatHelped, setBobFeaturesThatHelped] =
+    useState<readonly bayes.bob.UsefulFeature[]>([])
+  const [bobHasHelped, setBobHasHelped] = useState('')
+  const [newJobContractType, setNewJobContractType] =
+    useState<bayes.bob.EmploymentType|undefined>(undefined)
+  const [seeking, setSeeking] = useState(initialSeeking)
+  const [situation, setSituation] = useState('')
+  const [isFormSent, setIsFormSent] = useState(false)
+  const [isValidated, setIsValidated] = useState(false)
+  const [isSendingUpdate, setIsSendingUpdate] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string|undefined>(undefined)
+  const {t, t: translate} = useTranslation('statusUpdate')
+
+  const handleUpdateResponse = useCallback((response: Response): void => {
+    setIsSendingUpdate(false)
+    if (response.status >= 400 || response.status < 200) {
+      response.text().then((errorMessage: string): void => {
+        const page = document.createElement('html')
+        page.innerHTML = errorMessage
+        const content = page.getElementsByTagName('P') as HTMLCollectionOf<HTMLElement>
+        setErrorMessage(content.length && content[0].textContent || page.textContent || undefined)
+      })
+      return
     }
-  }
+    setIsFormSent(true)
+    setIsSendingUpdate(false)
+  }, [])
 
-  public state: PageState = {
-    isFormSent: false,
-    isSendingUpdate: false,
-    isValidated: false,
-    params: {},
-    ...StatusUpdatePage.getStateFromLocation(window.location),
-  }
-
-  private handleCancel(): void {
-    window.location.href = '/'
-  }
-
-  private handleUpdate = (): void => {
-    const {bobFeaturesThatHelped, bobHasHelped, newJobContractType,
-      params, seeking, situation} = this.state
+  const handleUpdate = useCallback((): void => {
     if (!bobHasHelped || !situation) {
-      this.setState({isValidated: true})
+      setIsValidated(true)
       return
     }
     const {token = '', user = ''} = params || {}
-    this.setState({errorMessage: undefined, isSendingUpdate: true})
+    setErrorMessage(undefined)
+    setIsSendingUpdate(true)
     const newStatus: bayes.bob.EmploymentStatus = {
       bobFeaturesThatHelped,
       bobHasHelped,
@@ -149,170 +218,152 @@ class StatusUpdatePage extends React.PureComponent<{}, PageState> {
     fetch(`/api/employment-status/${user}`, {
       body: JSON.stringify(newStatus),
 
-      headers: {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'},
+      headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
       method: 'post',
-    }).then(this.handleUpdateResponse)
+    }).then(handleUpdateResponse)
+  }, [bobFeaturesThatHelped, bobHasHelped, handleUpdateResponse, newJobContractType, seeking,
+    situation])
+  const {headerText, seekingOptions, situationOptions} = FORM_OPTIONS[page || 'mise-a-jour']
+  const {gender} = params
+  const localizedSeekingOptions = useMemo(
+    (): readonly Option<bayes.bob.SeekingStatus>[] =>
+      localizeOptions<Option<bayes.bob.SeekingStatus>>(t, seekingOptions),
+    [seekingOptions, t],
+  )
+  const localizedSituationOptions = useMemo(
+    (): readonly Option<string>[] => localizeOptions(t, situationOptions),
+    [situationOptions, t],
+  )
+  const localizedContractTypeOptions = useMemo(
+    (): readonly Option<bayes.bob.EmploymentType>[] =>
+      localizeOptions(t, NEW_JOB_CONTRACT_TYPE_OPTIONS),
+    [t],
+  )
+  const localizedBobHasHelpedOptions = useMemo(
+    (): readonly Option<string>[] => localizeOptions(t, bobHasHelpedOptions, {context: gender}),
+    [gender, t],
+  )
+  const localizedFeatureThatHelpedOptions = useMemo(
+    (): readonly Option<bayes.bob.UsefulFeature>[] =>
+      localizeOptions(t, bobFeaturesThatHelpedOptions, {
+        context: gender, productName: config.productName,
+      }),
+    [gender, t],
+  )
+
+  if (!page) {
+    return <Trans style={pageStyle} t={t}>Page introuvable</Trans>
   }
-
-  private handleUpdateResponse = (response): void => {
-    if (response.status >= 400 || response.status < 200) {
-      response.text().then((errorMessage: string): void => {
-        const page = document.createElement('html')
-        page.innerHTML = errorMessage
-        const content = page.getElementsByTagName('P') as HTMLCollectionOf<HTMLElement>
-        this.setState({
-          errorMessage: content.length && content[0].textContent || page.textContent || undefined,
-          isSendingUpdate: false,
-        })
-      })
-      return
-    }
-    this.setState({isFormSent: true, isSendingUpdate: false})
-  }
-
-  private handleUpdateSeeking = (seeking: bayes.bob.SeekingStatus): void => this.setState({seeking})
-
-  private handleUpdateSituation = (situation: string): void => this.setState({situation})
-
-  private handleUpdateNewJobContractType = (newJobContractType: bayes.bob.EmploymentType): void =>
-    this.setState({newJobContractType})
-
-  private handleUpdateBobHasHepled = (bobHasHelped: string): void => this.setState({bobHasHelped})
-
-  private handleUpdateFeatures = (bobFeaturesThatHelped: bayes.bob.UsefulFeature[]): void =>
-    this.setState({bobFeaturesThatHelped})
-
-  private renderHeader(): React.ReactNode {
-    const style = {
-      alignItems: 'center',
-      backgroundColor: colors.BOB_BLUE,
-      display: 'flex',
-      height: 56,
-      justifyContent: 'center',
-      width: '100%',
-    }
-    return <header style={style}>
-      <img
-        style={{cursor: 'pointer', height: 40}} onClick={this.handleCancel}
-        src={logoProductImage} alt={config.productName} />
-    </header>
-  }
-
-  public render(): React.ReactNode {
-    const {bobFeaturesThatHelped, bobHasHelped, seeking, errorMessage, isFormSent,
-      isSendingUpdate, isValidated, newJobContractType, page, params, situation} = this.state
-    const {can_tutoie: canTutoie, gender} = params
-    const containerStyle: React.CSSProperties = {
-      padding: isMobileVersion ? `0 ${MIN_CONTENT_PADDING}px` : 'initial',
-    }
-    const pageStyle: React.CSSProperties = {
-      alignItems: 'center',
-      color: colors.DARK_TWO,
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: 15,
-      fontWeight: 500,
-      lineHeight: 1.5,
-      minHeight: '100vh',
-      paddingBottom: 40,
-    }
-    if (!page) {
-      return <div style={pageStyle}>Page introuvable</div>
-    }
-    const userYou = canTutoie === 'true' ? tutoyer : vouvoyer
-    const {headerText, seekingOptions, situationOptions} = FORM_OPTIONS[page]
-    const isEmploymentDurationQuestionShown = seeking === 'STOP_SEEKING' && situation === 'WORKING'
-    const isHowProductHelpedQuestionShown = bobHasHelped && /YES/.test(bobHasHelped)
-    const feminineE = gender === 'FEMININE' ? 'e' : ''
-    if (isFormSent) {
-      return <div style={{...containerStyle, ...pageStyle}}>
-        Merci pour ces informations&nbsp;!
-        <ShareModal isShown={!!(bobHasHelped && /YES/.test(bobHasHelped))}
-          campaign="rer" visualElement="status-update"
-          title="Merci beaucoup !" intro={<React.Fragment>
-            {newJobContractType || situation === 'FORMATION' ? <span>
-              <div style={{marginBottom: 20}}>
-                Et félicitations pour {userYou('ton ', 'votre ')}
-                nouvel{newJobContractType ? ' emploi' : 'le formation'}&nbsp;!<br />
-                Nous sommes ravis d'avoir pu {userYou("t'", 'vous ')}aider.
-              </div>
-            </span> : null}
-            Si {userYou('tu penses', 'vous pensez')} que {config.productName} peut aider une
-            personne que {userYou("tu connais, n'hésite", "vous connaissez, n'hésitez")} pas à
-            lui <strong>partager ce lien&nbsp;:</strong>
-          </React.Fragment>} />
-      </div>
-    }
-    return <div style={pageStyle}>
-      {this.renderHeader()}
-      <div style={containerStyle}>
-        <div
-          style={{fontSize: 16, margin: '40px 0 20px', maxWidth: 500}}>{headerText(userYou)}</div>
-        <div style={{maxWidth: 500}}>
-          {seekingOptions ?
-            <FieldSet
-              label={`${userYou('Es-tu', 'Êtes-vous')} toujours à la recherche d'un emploi ?`}
-              isValidated={isValidated} isValid={!!seeking}>
-              <RadioGroup
-                onChange={this.handleUpdateSeeking}
-                style={{flexDirection: 'column'}}
-                options={seekingOptions}
-                value={seeking} />
-            </FieldSet> : null}
-          <FieldSet
-            label={`Quelle est ${userYou('ta', 'votre')} situation aujourd'hui ?`}
-            isValidated={isValidated} isValid={!!situation}>
-            <RadioGroup
-              onChange={this.handleUpdateSituation}
-              style={{flexDirection: 'column'}}
-              options={situationOptions}
-              value={situation} />
-          </FieldSet>
-          {isEmploymentDurationQuestionShown ? <FieldSet
-            label={`Quel type de contrat a${userYou('s-tu', 'vez-vous')} décroché ?`}
-            isValidated={isValidated} isValid={!!newJobContractType}>
-            <RadioGroup
-              onChange={this.handleUpdateNewJobContractType}
-              style={{flexDirection: 'column'}}
-              options={NEW_JOB_CONTRACT_TYPE_OPTIONS}
-              value={newJobContractType} />
-          </FieldSet> : null}
-          <FieldSet
-            label={`${config.productName} ${userYou("t'", 'vous ')}a t-il apporté un plus
-              dans ${userYou('ta', 'votre')} recherche ?`}
-            isValidated={isValidated} isValid={!!bobHasHelped}>
-            <RadioGroup
-              onChange={this.handleUpdateBobHasHepled}
-              style={{flexDirection: 'column'}}
-              options={bobHasHelpedOptions(feminineE)}
-              value={bobHasHelped} />
-          </FieldSet>
-          {isHowProductHelpedQuestionShown ? <FieldSet
-            label={`Comment ${config.productName} ${userYou("t'", 'vous ')}a-t-il
-              aidé${feminineE} ?`}>
-            <CheckboxList
-              options={bobFeaturesThatHelpedOptions(feminineE)}
-              values={bobFeaturesThatHelped}
-              onChange={this.handleUpdateFeatures}
-            />
-            {/* TODO(pascal): Add a freeform text for "other feature that helped." */}
-          </FieldSet> : null}
-        </div>
-        <div style={{textAlign: 'center'}}>
-          <Button
-            onClick={this.handleUpdate}
-            isProgressShown={isSendingUpdate}>
-            Envoyer
-          </Button>
-          {errorMessage ? <div style={{marginTop: 20}}>
-            {errorMessage}
-          </div> : null}
-        </div>
-        <div style={{flex: 1}} />
-      </div>
+  const isEmploymentDurationQuestionShown = seeking === 'STOP_SEEKING' && situation === 'WORKING'
+  const isHowProductHelpedQuestionShown = bobHasHelped && /YES/.test(bobHasHelped)
+  if (isFormSent) {
+    return <div style={{...containerStyle, ...pageStyle}}>
+      {t('Merci pour ces informations\u00A0!')}
+      <ShareModal isShown={!!(bobHasHelped && /YES/.test(bobHasHelped))}
+        campaign="rer" visualElement="status-update"
+        title={t('Merci beaucoup\u00A0!')} intro={<React.Fragment>
+          {newJobContractType || situation === 'FORMATION' ? <span>
+            {newJobContractType ?
+              <Trans style={{marginBottom: 20}} t={t}>
+                Et félicitations pour votre nouvel emploi&nbsp;!<br />
+                Nous sommes ravis d'avoir pu vous aider.
+              </Trans> :
+              <Trans style={{marginBottom: 20}} t={t}>
+                Et félicitations pour votre nouvelle formation&nbsp;!<br />
+                Nous sommes ravis d'avoir pu vous aider.
+              </Trans>
+            }
+          </span> : null}
+          <Trans parent={null} t={t}>
+            Si vous pensez que {{productName: config.productName}} peut aider une
+            personne que vous connaissez, n'hésitez pas à lui <strong>
+              partager ce lien
+            </strong>&nbsp;:
+          </Trans>
+        </React.Fragment>} />
     </div>
   }
+  return <div style={pageStyle}>
+    <header style={headerStyle}>
+      <img
+        style={{cursor: 'pointer', height: 30}} onClick={redirectToLandingPage}
+        src={logoProductImage} alt={config.productName} />
+    </header>
+    <div style={containerStyle}>
+      <div style={{fontSize: 16, margin: '40px 0 20px', maxWidth: 500}}>
+        {translate(headerText)}
+      </div>
+      <div style={{maxWidth: 500}}>
+        {seekingOptions.length ?
+          <FieldSet
+            label={t("Êtes-vous toujours à la recherche d'un emploi\u00A0?")}
+            isValidated={isValidated} isValid={!!seeking}>
+            <RadioGroup<bayes.bob.SeekingStatus>
+              onChange={setSeeking}
+              style={{flexDirection: 'column'}}
+              options={localizedSeekingOptions}
+              value={seeking} />
+          </FieldSet> : null}
+        <FieldSet
+          label={t("Quelle est votre situation aujourd'hui\u00A0?")}
+          isValidated={isValidated} isValid={!!situation}>
+          <RadioGroup<string>
+            onChange={setSituation}
+            style={{flexDirection: 'column'}}
+            options={localizedSituationOptions}
+            value={situation} />
+        </FieldSet>
+        {isEmploymentDurationQuestionShown ? <FieldSet
+          label={t('Quel type de contrat avez-vous décroché\u00A0?')}
+          isValidated={isValidated} isValid={!!newJobContractType}>
+          <RadioGroup<bayes.bob.EmploymentType>
+            onChange={setNewJobContractType}
+            style={{flexDirection: 'column'}}
+            options={localizedContractTypeOptions}
+            value={newJobContractType} />
+        </FieldSet> : null}
+        <FieldSet
+          label={t(
+            '{{productName}} vous a-t-il apporté un plus dans votre recherche\u00A0?',
+            {productName: config.productName},
+          )}
+          isValidated={isValidated} isValid={!!bobHasHelped}>
+          <RadioGroup<string>
+            onChange={setBobHasHelped}
+            style={{flexDirection: 'column'}}
+            options={localizedBobHasHelpedOptions}
+            value={bobHasHelped} />
+        </FieldSet>
+        {isHowProductHelpedQuestionShown ? <FieldSet
+          label={t(
+            'Comment {{productName}} vous a-t-il aidé·e\u00A0?',
+            {context: gender, productName: config.productName},
+          )}>
+          <CheckboxList<bayes.bob.UsefulFeature>
+            options={localizedFeatureThatHelpedOptions}
+            values={bobFeaturesThatHelped}
+            onChange={setBobFeaturesThatHelped}
+          />
+          {/* TODO(pascal): Add a freeform text for "other feature that helped." */}
+        </FieldSet> : null}
+      </div>
+      <div style={{textAlign: 'center'}}>
+        <Button
+          onClick={handleUpdate}
+          isProgressShown={isSendingUpdate}>
+          {t('Envoyer')}
+        </Button>
+        {errorMessage ? <div style={{marginTop: 20}}>
+          {errorMessage}
+        </div> : null}
+      </div>
+      <div style={{flex: 1}} />
+    </div>
+  </div>
 }
+const StatusUpdatePage = React.memo(StatusUpdatePageBase)
 
 
-ReactDOM.render(<StatusUpdatePage />, document.getElementById('app'))
+ReactDOM.render(<Suspense fallback={<WaitingPage />}>
+  <StatusUpdatePage />
+</Suspense>, document.getElementById('app'))

@@ -5,10 +5,12 @@ import {connect} from 'react-redux'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding, fetchProjectRequirements,
   setUserProfile} from 'store/actions'
+import {localizeOptions, prepareT} from 'store/i18n'
 import {PROJECT_EXPERIENCE_OPTIONS, SENIORITY_OPTIONS,
-  getTrainingFulfillmentEstimateOptions} from 'store/project'
+  TRAINING_FULFILLMENT_ESTIMATE_OPTIONS} from 'store/project'
 import {userExample} from 'store/user'
 
+import {Trans} from 'components/i18n'
 import {RadioGroup} from 'components/theme'
 import {FieldSet, Select} from 'components/pages/connected/form_utils'
 
@@ -16,25 +18,25 @@ import {OnboardingComment, ProjectStepProps, Step} from './step'
 
 
 const networkEstimateOptions = [
-  {name: "J'ai de très bons contacts", value: 3},
-  {name: "J'ai quelques personnes en tête", value: 2},
-  {name: 'Je ne pense pas', value: 1},
+  {name: prepareT("J'ai de très bons contacts"), value: 3},
+  {name: prepareT("J'ai quelques personnes en tête"), value: 2},
+  {name: prepareT('Je ne pense pas'), value: 1},
 ]
 
 const drivingLicenseOptions = [
-  {name: 'oui', value: 'TRUE'},
-  {name: 'non', value: 'FALSE'},
-]
+  {name: prepareT('oui'), value: 'TRUE'},
+  {name: prepareT('non'), value: 'FALSE'},
+] as const
 
 // TODO: Move to store.
-function isSeniorityRequired(previousJobSimilarity): boolean {
+function isSeniorityRequired(previousJobSimilarity?: bayes.bob.PreviousJobSimilarity): boolean {
   return previousJobSimilarity !== 'NEVER_DONE'
 }
 
 
 interface StepConnectedProps {
   isFetchingRequirements: boolean
-  jobRequirements: bayes.bob.JobRequirements
+  jobRequirements: {[codeOgr: string]: bayes.bob.JobRequirements}
 }
 
 
@@ -53,14 +55,14 @@ interface StepState {
 
 const getRequirements = (
   {jobRequirements, newProject: {targetJob}}: StepProps,
-  requirementId: 'diplomas' | 'drivingLicenses'): bayes.bob.JobRequirement[] => {
+  requirementId: 'diplomas' | 'drivingLicenses'): readonly bayes.bob.JobRequirement[] => {
   const {codeOgr = ''} = targetJob || {}
   const {[requirementId]: requirements = []} = jobRequirements[codeOgr] || {}
   return requirements
 }
 
-const isTrainingRequired = (props): boolean =>
-  getRequirements(props, 'diplomas').length || props.isFetchingRequirements
+const isTrainingRequired = (props: StepProps): boolean =>
+  !!getRequirements(props, 'diplomas').length || props.isFetchingRequirements
 
 
 function hasGroupWithRomeId(job?: bayes.bob.Job): job is {jobGroup: {romeId: string}} {
@@ -94,7 +96,7 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
       gender: PropTypes.string,
       hasCarDrivingLicense: PropTypes.oneOf(drivingLicenseOptions.map(({value}): string => value)),
     }).isRequired,
-    userYou: PropTypes.func.isRequired,
+    t: PropTypes.func.isRequired,
   }
 
   public state: StepState = {}
@@ -190,27 +192,35 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
     )
   }
 
-  private handleChange = _memoize((field): ((value) => void) => (value): void => {
-    const {dispatch, newProject: {seniority}} = this.props
-    if (field === 'hasCarDrivingLicense') {
-      dispatch(diagnoseOnboarding({profile: {[field]: value}}))
-    } else {
-      const userUpdate = {projects: [{[field]: value}]}
+  private handleDrivingLicenseChange = (value: bayes.bob.OptionalBool): void => {
+    this.props.dispatch(diagnoseOnboarding({profile: {hasCarDrivingLicense: value}}))
+  }
+
+  private handleChange<K extends keyof bayes.bob.Project>(field: K):
+  ((value: bayes.bob.Project[K]) => void) {
+    return (value: bayes.bob.Project[K]): void => {
+      const {dispatch, newProject: {seniority}} = this.props
+      const userUpdate: {projects: [bayes.bob.Project]} = {projects: [{[field]: value}]}
       if (field === 'previousJobSimilarity' && value === 'NEVER_DONE' && seniority) {
-        userUpdate['projects'][0]['seniority'] = 'UNKNOWN_PROJECT_SENIORITY'
+        userUpdate['projects'][0] = {
+          ...userUpdate['projects'][0],
+          seniority: 'UNKNOWN_PROJECT_SENIORITY',
+        }
       }
       dispatch(diagnoseOnboarding(userUpdate))
-    }
 
-    const stateUpdate: StepState = {[field]: value}
-    if (field === 'trainingFulfillmentEstimate') {
-      stateUpdate.trainingCommentRead = false
+      const stateUpdate: StepState = {[field]: value}
+      if (field === 'trainingFulfillmentEstimate') {
+        stateUpdate.trainingCommentRead = false
+      }
+      if (field === 'networkEstimate') {
+        stateUpdate.networkCommentRead = false
+      }
+      this.setState(stateUpdate)
     }
-    if (field === 'networkEstimate') {
-      stateUpdate.networkCommentRead = false
-    }
-    this.setState(stateUpdate)
-  })
+  }
+
+  private handleChangeMemoized = _memoize(this.handleChange)
 
   private isDrivingLicenseRequired = (): boolean => {
     const {isFetchingRequirements, newProject: {city}} = this.props
@@ -226,18 +236,17 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
 
   public render(): React.ReactNode {
     const {newProject: {previousJobSimilarity, seniority, networkEstimate}, profile: {gender,
-      hasCarDrivingLicense}, userYou} = this.props
+      hasCarDrivingLicense}, t} = this.props
     const {isValidated, trainingCommentRead, trainingFulfillmentEstimate,
       networkCommentRead} = this.state
     const needSeniority = isSeniorityRequired(previousJobSimilarity)
     const needTraining = isTrainingRequired(this.props)
     const needLicense = this.isDrivingLicenseRequired()
 
-    const networkLabel = <span>
-      {userYou('As-tu', 'Avez-vous')} un bon réseau&nbsp;?
-      Connais{userYou('-tu', 'sez-vous')} des gens qui
-      pourraient {userYou("t'", 'vous ')}aider à trouver un poste&nbsp;?
-    </span>
+    const networkLabel = <Trans parent="span">
+      Avez-vous un bon réseau&nbsp;?
+      Connaissez-vous des gens qui pourraient vous aider à trouver un poste&nbsp;?
+    </Trans>
     // Keep in sync with 'isValid' props from list of fieldset below.
     const checks = [
       previousJobSimilarity,
@@ -246,41 +255,39 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
       hasCarDrivingLicense || !needLicense,
       networkEstimate && networkCommentRead,
     ]
-    // TODO(cyrille): Tutoie everywhere relevant.
     return <Step
       {...this.props} fastForward={this.fastForward}
-      title={`${userYou('Ton', 'Votre')} expérience`}
+      title={t('Votre expérience')}
       progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
       onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}>
       <div>
-        <FieldSet label={`A${userYou('s-tu', 'vez-vous')} déjà fait ce métier\u00A0?`}
+        <FieldSet label={t('Avez-vous déjà fait ce métier\u00A0?')}
           isValid={!!previousJobSimilarity} isValidated={isValidated} hasCheck={true}>
           <Select
-            options={PROJECT_EXPERIENCE_OPTIONS} value={previousJobSimilarity}
-            placeholder={`choisis${userYou('', 'sez')} un type d'expérience`}
-            onChange={this.handleChange('previousJobSimilarity')} />
+            options={localizeOptions(t, PROJECT_EXPERIENCE_OPTIONS)} value={previousJobSimilarity}
+            placeholder={t("choisissez un type d'expérience")}
+            onChange={this.handleChangeMemoized('previousJobSimilarity')} />
         </FieldSet>
         {checks[0] && needSeniority ? <FieldSet
-          label={`Quel est ${userYou('ton', 'votre')} niveau d'expérience dans ce métier\u00A0?`}
+          label={t("Quel est votre niveau d'expérience dans ce métier\u00A0?")}
           isValid={!!seniority} isValidated={isValidated}
           hasCheck={true}>
-          <Select options={SENIORITY_OPTIONS} value={seniority}
-            placeholder={`choisis${userYou('', 'sez')} un niveau d'expérience`}
-            onChange={this.handleChange('seniority')} />
+          <Select options={localizeOptions(t, SENIORITY_OPTIONS)} value={seniority}
+            placeholder={t("choisissez un niveau d'expérience")}
+            onChange={this.handleChangeMemoized('seniority')} />
         </FieldSet> : null}
         {checks.slice(0, 2).every((c): boolean => !!c) && needTraining ? <React.Fragment>
           <FieldSet
-            label={`Pense${userYou(
-              's-tu', 'z-vous')} avoir les diplômes requis pour ce métier\u00A0?`}
+            label={t('Pensez-vous avoir les diplômes requis pour ce métier\u00A0?')}
             hasNoteOrComment={true}
             style={{maxWidth: 600}}
             isValid={!!trainingFulfillmentEstimate} isValidated={isValidated}
             hasCheck={true}>
             <Select
-              options={getTrainingFulfillmentEstimateOptions(gender)}
-              placeholder={`choisis${userYou('', 'sez')} une qualification`}
+              options={localizeOptions(t, TRAINING_FULFILLMENT_ESTIMATE_OPTIONS, {context: gender})}
+              placeholder={t('choisissez une qualification')}
               value={trainingFulfillmentEstimate}
-              onChange={this.handleChange('trainingFulfillmentEstimate')} />
+              onChange={this.handleChangeMemoized('trainingFulfillmentEstimate')} />
           </FieldSet>
           <OnboardingComment
             field="REQUESTED_DIPLOMA_FIELD" key={trainingFulfillmentEstimate}
@@ -288,14 +295,14 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
             shouldShowAfter={!!trainingFulfillmentEstimate} />
         </React.Fragment> : null}
         {checks.slice(0, 3).every((c): boolean => !!c) && needLicense ? <FieldSet
-          label={`A${userYou('s-tu', 'vez-vous')} le permis de conduire\u00A0?`}
+          label={t('Avez-vous le permis de conduire\u00A0?')}
           style={{maxWidth: 600}}
           isValid={!!hasCarDrivingLicense}
           isValidated={isValidated} hasCheck={true}>
-          <RadioGroup
+          <RadioGroup<bayes.bob.OptionalBool>
             style={{justifyContent: 'space-around'}}
-            onChange={this.handleChange('hasCarDrivingLicense')}
-            options={drivingLicenseOptions}
+            onChange={this.handleDrivingLicenseChange}
+            options={localizeOptions(t, drivingLicenseOptions)}
             value={hasCarDrivingLicense} />
         </FieldSet> : null}
         {checks.slice(0, 4).every((c): boolean => !!c) ? <React.Fragment>
@@ -305,11 +312,10 @@ class NewProjectExperienceStepBase extends React.PureComponent<StepProps, StepSt
             hasNoteOrComment={true}
             hasCheck={true}>
             <Select<number>
-              options={networkEstimateOptions}
+              options={localizeOptions(t, networkEstimateOptions)}
               value={networkEstimate}
-              placeholder={`choisis${userYou('', 'sez')} une estimation de ${userYou(
-                'ton', 'votre')} réseau`}
-              onChange={this.handleChange('networkEstimate')} />
+              placeholder={t('choisissez une estimation de votre réseau')}
+              onChange={this.handleChangeMemoized('networkEstimate')} />
           </FieldSet>
           <OnboardingComment field="NETWORK_FIELD" key={networkEstimate}
             onDone={this.handleCommentRead('network')}

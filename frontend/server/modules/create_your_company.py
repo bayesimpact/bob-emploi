@@ -15,10 +15,8 @@ from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 
 if typing.TYPE_CHECKING:
-    import typing_extensions
-
     # TODO(cyrille): Move to a lib if we need it somewhere else.
-    class GeoLocalizationProtocol(typing_extensions.Protocol):
+    class GeoLocalizationProtocol(typing.Protocol):
         """Typing protocol for protos localized on a sphere."""
 
         latitude: float

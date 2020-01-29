@@ -11,7 +11,15 @@ from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import diagnostic
 from bob_emploi.frontend.server import proto
+from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.server.test import base_test
+
+
+class NeverEnoughDataScoringModel(scoring_base.ModelBase):
+    """A scoring model that always throws a NotEnoughDataException."""
+
+    def score(self, project: scoring_base.ScoringProject) -> float:
+        raise scoring_base.NotEnoughDataException(fields={'projects.0'})
 
 
 class MaybeDiagnoseTestCase(unittest.TestCase):
@@ -251,11 +259,11 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.database.translations.insert_many([
             {
                 'string': 'Vous êtes une star',
-                'fr_FR@tu': 'Tu es une star',
+                'fr@tu': 'Tu es une star',
             },
             {
                 'string': "Votre métier est d'avenir",
-                'fr_FR@tu': "Ton métier est d'avenir",
+                'fr@tu': "Ton métier est d'avenir",
             },
         ])
         self.user.profile.can_tutoie = True
@@ -349,11 +357,13 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
             sub_diagnostic.topic for sub_diagnostic in project.diagnostic.sub_diagnostics}))
         self.assertEqual('You are a star', project.diagnostic.text)
 
-    def test_diagnostic_overall(self) -> None:
+    @mock.patch('logging.exception')
+    def test_diagnostic_overall(self, mock_logging: mock.MagicMock) -> None:
         """Compute a nice diagnostic with overall sentence."""
 
         project = project_pb2.Project()
         self.user.profile.gender = user_pb2.FEMININE
+        self.user.profile.locale = 'fr'
         self.database.diagnostic_overall.insert_one({
             'filters': ['for-women'],
             'score': 50,
@@ -365,6 +375,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertEqual(
             'Manque de précision dans la recherche', project.diagnostic.overall_sentence)
         self.assertEqual('Vous devriez réfléchir à vos méthodes', project.diagnostic.text)
+        mock_logging.assert_not_called()
 
     def test_translate_diagnostic_overall(self) -> None:
         """Diagnostic overall uses translations."""
@@ -381,11 +392,11 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.database.translations.insert_many([
             {
                 'string': 'Vous devriez réfléchir à vos méthodes',
-                'fr_FR@tu': 'Tu devrais réfléchir à tes méthodes',
+                'fr@tu': 'Tu devrais réfléchir à tes méthodes',
             },
             {
                 'string': 'Manque de précision dans votre recherche',
-                'fr_FR@tu': 'Manque de précision dans ta recherche',
+                'fr@tu': 'Manque de précision dans ta recherche',
             },
         ])
         self.assertTrue(diagnostic.maybe_diagnose(self.user, project, self.database))
@@ -463,11 +474,11 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.database.translations.insert_many([
             {
                 'string': 'Voici vos stratégies',
-                'fr_FR@tu': 'Voici tes stratégi%eFeminines',
+                'fr@tu': 'Voici tes stratégi%eFeminines',
             },
             {
                 'string': 'Overall text for women if category set',
-                'fr_FR@tu': 'Overall text for women if category set',
+                'fr@tu': 'Overall text for women if category set',
             },
         ])
         self.database.diagnostic_category.insert_one({
@@ -695,7 +706,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         ])
         self.database.translations.insert_one({
             'string': 'Vous êtes jeune.',
-            'fr_FR@tu': 'Tu es jeune.',
+            'fr@tu': 'Tu es jeune.',
         })
 
         diagnostic.maybe_diagnose(self.user, project, self.database)
@@ -716,6 +727,7 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
         self.assertEqual('everyone', project.diagnostic.category_id)
         self.assertEqual(['everyone'], [c.category_id for c in project.diagnostic.categories])
         self.assertEqual(diagnostic_pb2.NEEDS_ATTENTION, project.diagnostic.categories[0].relevance)
+        self.assertTrue(project.diagnostic.categories[0].is_highlighted)
 
     def test_missing_diagnostic_category(self) -> None:
         """Does not set a category ID if none is found."""
@@ -764,6 +776,9 @@ class MaybeDiagnoseTestCase(unittest.TestCase):
                 diagnostic_pb2.NEEDS_ATTENTION
             ],
             [c.relevance for c in project.diagnostic.categories])
+        self.assertEqual(
+            [True, False, False],
+            [c.is_highlighted for c in project.diagnostic.categories])
 
 
 class FindCategoryTestCase(base_test.ServerTestCase):
@@ -816,8 +831,7 @@ class FindCategoryTestCase(base_test.ServerTestCase):
     def test_project_category(self) -> None:
         """The first category relevant for the project is selected."""
 
-        project = diagnostic.scoring.ScoringProject(
-            self.user.projects[0], self.user.profile, self.user.features_enabled, self._db)
+        project = diagnostic.scoring.ScoringProject(self.user.projects[0], self.user, self._db)
         self._db.diagnostic_category.insert_many([
             {
                 'categoryId': 'no-profile',
@@ -841,8 +855,7 @@ class FindCategoryTestCase(base_test.ServerTestCase):
     def test_param_overrides_project(self) -> None:
         """Explicit database is more relevant than scoring project's."""
 
-        project = diagnostic.scoring.ScoringProject(
-            self.user.projects[0], self.user.profile, self.user.features_enabled, self._db)
+        project = diagnostic.scoring.ScoringProject(self.user.projects[0], self.user, self._db)
         self._db.diagnostic_category.insert_one({
             'categoryId': 'every-one',
             'filters': ['constant(3)'],
@@ -857,6 +870,18 @@ class FindCategoryTestCase(base_test.ServerTestCase):
         category = diagnostic.find_category(project, database=_db)
         assert category
         self.assertEqual('every-one-in-custom-db', category.category_id)
+
+    @mock.patch.dict(scoring_base.SCORING_MODELS, {'fake-scorer': NeverEnoughDataScoringModel()})
+    def test_missing_fields(self) -> None:
+        """Missing fields are set when categories raises NotEnoughDataException."""
+
+        self._db.diagnostic_category.insert_one({
+            'categoryId': 'always-raises',
+            'filters': ['fake-scorer'],
+        })
+        categories = diagnostic.set_categories_relevance(self.user, database=self._db)
+        self.assertEqual(1, len(list(categories)))
+        self.assertEqual({'projects.0'}, categories.missing_fields)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,27 @@
+Bonjour {{var:firstName}},
+
+
+
+Cela fait longtemps que nous ne vous avons pas vu{%if var:gender == "FEMININE" %}e{%endif%} sur Bob. Est-ce que vous aimeriez bénéficier encore de coaching pour une recherche d'emploi ? Sinon, nous préférons supprimer votre compte.
+
+Le site a beaucoup évolué en deux ans de travail par notre association. Ce qui ne change pas et ne changera jamais : Bob reste gratuit et totalement confidentiel.
+
+Si vous voulez garder votre compte sur Bob, un clic sur le bouton ci-dessous vous mènera à votre diagnostic de recherche d'emploi.
+
+Si vous ne faites rien, votre compte et toutes vos données personnelles seront supprimés d'ici une semaine.
+<<Voir mon diagnostic>> [{{var:loginUrl:"https://www.bob-emploi.fr/"}}]
+
+
+
+
+Bonne journée,
+
+Joanna et l’équipe de Bob
+Paul, John, Pascal, Marie Laure, Cyrille, Nicolas, Florian.
+
+
+--------------------------------------------------------------------------------
+Comme promis [https://www.bob-emploi.fr/vie-privee], Bob ne partage pas vos réponses avec d’autres organismes : vos données sont confidentielles et le resteront pour toujours.
+
+Bob est un projet à but non lucratif et indépendant. réalisé en partenariat avec Pôle emploi et de nombreuses associations d'accompagnement personnel et professionnel.
+--------------------------------------------------------------------------------

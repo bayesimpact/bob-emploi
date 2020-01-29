@@ -12,7 +12,8 @@ import Picto from 'images/advices/picto-immersion.svg'
 import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
 
 
-const pmsmpEmailContent = (name, eFeminine): string => `Chère Madame, cher Monsieur,\n\n
+const pmsmpEmailContent = (name: string|undefined, eFeminine: string): string =>
+  `Chère Madame, cher Monsieur,\n\n
 
 J'ai commencé à construire un projet d'orientation vers le métier de .....
 
@@ -29,7 +30,7 @@ Merci.
 
 Bien cordialement,
 
-${name}`
+${name || ''}`
 
 interface ImmersionElementProps {
   isFree?: boolean
@@ -155,7 +156,7 @@ const linkStyle = {
 }
 
 const ProgramBase: React.FC<ProgramProps> = (props: ProgramProps): React.ReactElement => {
-  const {handleExplore, profile: {gender, name}, userYou} = props
+  const {handleExplore, profile: {gender, name}} = props
   const url = 'https://clara.pole-emploi.fr/aides/detail/pmsmp'
   return <MethodSuggestionList
     title="Faire un mini-stage en entreprise"
@@ -175,7 +176,7 @@ const ProgramBase: React.FC<ProgramProps> = (props: ProgramProps): React.ReactEl
       </p>
     </React.Fragment>}>
     <EmailTemplate
-      isMethodSuggestion={true} userYou={userYou}
+      isMethodSuggestion={true}
       title="Comment en parler avec mon conseiller&nbsp;?" onContentShown={handleExplore('email')}
       content={pmsmpEmailContent(name, gender === 'FEMININE' ? 'e' : '')} />
     {/* TODO(cyrille): Add a direct action to show an email template for pe counselor asking for
@@ -187,7 +188,6 @@ ProgramBase.propTypes = {
   profile: PropTypes.shape({
     gender: PropTypes.string,
   }).isRequired,
-  userYou: PropTypes.func.isRequired,
 }
 const Program = React.memo(ProgramBase)
 
@@ -205,21 +205,21 @@ const ProgramLinksBase: React.FC<{userYou: YouChooser}> =
   }
 const ProgramLinks = React.memo(ProgramLinksBase)
 
-const ExpandedAdviceCardContentBase: React.FC<CardProps> =
+const ImmersionMethod: React.FC<CardProps> =
   (props: CardProps): React.ReactElement => {
     return <div>
       <Program {...props} />
       <ProgramLinks userYou={props.userYou} />
     </div>
   }
-ExpandedAdviceCardContentBase.propTypes = {
+ImmersionMethod.propTypes = {
   handleExplore: PropTypes.func.isRequired,
   profile: PropTypes.shape({
     gender: PropTypes.string,
   }).isRequired,
   userYou: PropTypes.func.isRequired,
 }
-const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = React.memo(ImmersionMethod)
 
 
 export default {ExpandedAdviceCardContent, Picto}

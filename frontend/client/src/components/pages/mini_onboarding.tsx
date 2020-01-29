@@ -1,32 +1,36 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import {History, createBrowserHistory} from 'history'
+import Storage from 'local-storage-fallback'
 import PropTypes from 'prop-types'
 import {composeWithDevTools} from 'redux-devtools-extension'
-import Radium from 'radium'
 import React from 'react'
 import {connect, Provider} from 'react-redux'
 import {RouteComponentProps} from 'react-router'
-import {Route, Switch} from 'react-router-dom'
+import {Redirect, Route, Switch} from 'react-router-dom'
 import {Store, createStore, applyMiddleware, combineReducers} from 'redux'
-import RavenMiddleware from 'redux-raven-middleware'
 import thunk from 'redux-thunk'
-
+import sha1 from 'sha1'
 
 import {createAmplitudeMiddleware} from 'store/amplitude'
+import {createSentryMiddleware} from 'store/sentry'
+
+import {useTitleUpdate} from 'components/navigation'
+import {Snackbar} from 'components/snackbar'
 
 import {BilanPage} from './mini/bilan'
 import {HubPage} from './mini/hub'
+import {LandingPage} from './mini/landing'
 import {QuestionPage} from './mini/question'
-import {AnswerType, Question, QUESTIONS_TREE} from './mini/questions_tree'
-import {Action, DispatchActions, MINI_ONBOARDING_ANSWER, MINI_ONBOARDING_LOAD,
-  MINI_ONBOARDING_RESTART, MINI_ONBOARDING_SET_TOPIC_PRIORITY, RootState, TopicPriority,
-  UserState} from './mini/store'
+import {UserLandingPage} from './mini/user_landing'
+import {AnswerType, Question, QUESTIONS_TREE, TopicId} from './mini/questions_tree'
+import {Action, AppState, DispatchActions, Logger, MiniRootState, PageProps, Routes,
+  TopicPriority, UserState} from './mini/store'
 import {ThankYouPage} from './mini/thank_you'
 
 require('styles/mini.css')
 
 
-interface ConnectedQuestionPageProps extends Question {
+type ConnectedQuestionPageProps = {question?: undefined} | Question & {
   answer?: AnswerType
   color?: string
   linkTo: string
@@ -36,26 +40,27 @@ interface ConnectedQuestionPageProps extends Question {
 
 interface QuestionPageParams {
   questionUrl: string
-  topicUrl: string
+  topicUrl: TopicId
 }
 
 
 const ConnectedQuestionPage = connect(
   (
-    {user: {answers}}: RootState,
+    {user: {answers}}: MiniRootState,
     {match: {params: {questionUrl, topicUrl}}}: RouteComponentProps<QuestionPageParams>,
   ): ConnectedQuestionPageProps => {
     const {color = undefined, questions = [], title = undefined} =
       QUESTIONS_TREE.find(({url}): boolean => url === topicUrl) || {}
     const question: Question|undefined = questions.find(({url}): boolean => url === questionUrl)
+    if (!question) {
+      return {}
+    }
+    const topicAnswers = answers[topicUrl]
     return {
-      question: null,
-      type: 'yes/no',
-      url: questionUrl,
       ...question,
-      answer: answers[topicUrl] ? answers[topicUrl][questionUrl] : undefined,
+      answer: topicAnswers?.[questionUrl],
       color,
-      linkTo: `/mini/${question && question.nextUrl || ''}`,
+      linkTo: question?.nextUrl || Routes.HUB_PAGE,
       title,
     }
   },
@@ -68,7 +73,7 @@ const ConnectedQuestionPage = connect(
         answer,
         question: questionUrl,
         topic: topicUrl,
-        type: MINI_ONBOARDING_ANSWER,
+        type: 'MINI_ONBOARDING_ANSWER',
       })
     },
   }),
@@ -86,9 +91,8 @@ const imageBackgroundStyle = {
 }
 
 
-interface ConnectedPriorityQuestionPageProps
-  extends Pick<Question, Exclude<keyof Question, 'url'>> {
-  answer: AnswerType
+interface ConnectedPriorityQuestionPageProps extends Omit<Question, 'url'> {
+  answer?: AnswerType
   color: string
   linkTo: string
   title: string
@@ -96,21 +100,21 @@ interface ConnectedPriorityQuestionPageProps
 
 
 interface PriorityQuestionPageParams {
-  topicUrl: string
+  topicUrl: TopicId
 }
 
 
 const ConnectedPriorityQuestionPage = connect(
   (
-    {user: {priorities}}: RootState,
+    {user: {priorities}}: MiniRootState,
     {match: {params: {topicUrl}}}: RouteComponentProps<PriorityQuestionPageParams>,
   ): ConnectedPriorityQuestionPageProps => {
     const topicIndex = QUESTIONS_TREE.findIndex(({url}): boolean => topicUrl === url)
     const {color, image, nextTopic, talkAboutIt, title} = QUESTIONS_TREE[topicIndex]
     return {
-      answer: priorities[topicUrl],
+      answer: typeof topicUrl === 'undefined' ? undefined : priorities[topicUrl],
       color: colors.MINI_PEA,
-      linkTo: nextTopic ? `/mini/aborder/${nextTopic}` : '/mini/merci',
+      linkTo: nextTopic ? `/aborder/${nextTopic}` : Routes.THANKS_PAGE,
       numSteps: QUESTIONS_TREE.length,
       numStepsDone: topicIndex,
       // TODO(pascal): Handle non-masculine gender.
@@ -134,97 +138,204 @@ const ConnectedPriorityQuestionPage = connect(
       dispatch({
         priority: answer as TopicPriority,
         topic: topicUrl,
-        type: MINI_ONBOARDING_SET_TOPIC_PRIORITY,
+        type: 'MINI_ONBOARDING_SET_TOPIC_PRIORITY',
       })
     },
   }),
 )(QuestionPage)
 
 
-class MiniOnboardingPageBase extends React.PureComponent<{dispatch: DispatchActions}> {
+const basename = window.location.pathname.startsWith('/mini') ? '/mini' : '/unml/a-li'
+
+
+// TODO(cyrille): Drop the component once MiniOnboardingPage is a functional component.
+const TitleUpdate: React.FC<{}> = (): null => {
+  useTitleUpdate(basename)
+  return null
+}
+
+class MiniOnboardingPageBase extends React.PureComponent<PageProps> {
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    hasSeenLanding: PropTypes.bool.isRequired,
+    isUserSupervised: PropTypes.bool.isRequired,
   }
 
   public componentDidMount(): void {
-    this.props.dispatch({type: MINI_ONBOARDING_LOAD})
+    this.props.dispatch({hash: window.location.hash.slice(1), type: 'MINI_ONBOARDING_LOAD'})
   }
 
   public render(): React.ReactNode {
     return <div style={{fontFamily: 'Open Sans'}}>
+      <TitleUpdate />
       <Switch>
-        <Route path="/mini/merci" component={ThankYouPage} />
-        <Route path="/mini/bilan" component={BilanPage} />
-        <Route path="/mini/aborder/:topicUrl" component={ConnectedPriorityQuestionPage} />
-        <Route path="/mini/:topicUrl/:questionUrl" component={ConnectedQuestionPage} />
-        <Route path="*" component={HubPage} />
+        <Route path={Routes.THANKS_PAGE} component={ThankYouPage} />
+        <Route path={Routes.BILAN_PAGE} component={BilanPage} />
+        <Route path={Routes.LANDING_PAGE} component={LandingPage} />
+        <Route path={Routes.USER_LANDING_PAGE} component={UserLandingPage} />
+        <Route path={Routes.HUB_PAGE} component={HubPage} />
+        <Route path={Routes.PRIORITY_PATH} component={ConnectedPriorityQuestionPage} />
+        <Route path={Routes.QUESTION_PATH} component={ConnectedQuestionPage} />
+        <Redirect to={this.props.hasSeenLanding ? this.props.isUserSupervised ?
+          Routes.HUB_PAGE : Routes.USER_LANDING_PAGE : Routes.LANDING_PAGE} />
       </Switch>
     </div>
   }
 }
-const MiniOnboardingPage = connect()(MiniOnboardingPageBase)
+const MiniOnboardingPage =
+  connect(({app: {hasSeenLanding, isUserSupervised, orgInfo}}: MiniRootState) => ({
+    hasSeenLanding: !!hasSeenLanding || Object.values(orgInfo).some(Boolean),
+    isUserSupervised: !!isUserSupervised,
+  }))(MiniOnboardingPageBase)
 
 
-const initialUserState = {answers: {}, priorities: {}}
+const STORAGE_PREFIX = 'ali-'
+const initialUserState: UserState = {
+  answers: {},
+  isUserSupervised: !!Storage.getItem(`${STORAGE_PREFIX}isUserSupervised`),
+  orgInfo: {
+    advisor: Storage.getItem(`${STORAGE_PREFIX}advisor`) || '',
+    departement: Storage.getItem(`${STORAGE_PREFIX}departement`) || '',
+    email: Storage.getItem(`${STORAGE_PREFIX}email`) || '',
+    milo: Storage.getItem(`${STORAGE_PREFIX}milo`) || '',
+  },
+  priorities: {},
+}
 
 
 function userReducer(state: UserState = initialUserState, action: Action): UserState {
-  if (action.type === MINI_ONBOARDING_ANSWER) {
-    return {
-      ...state,
-      answers: {
-        ...state.answers,
-        [action.topic]: {
-          ...(state.answers && state.answers[action.topic]),
-          [action.question]: action.answer,
+  switch (action.type) {
+    case 'MINI_ONBOARDING_LOAD':
+      if (action.hash) {
+        const user = JSON.parse(decodeURIComponent(action.hash))
+        return {
+          ...state,
+          ...user,
+        }
+      }
+      return state
+    case 'MINI_ONBOARDING_ANSWER':
+      return {
+        ...state,
+        answers: {
+          ...state.answers,
+          [action.topic]: {
+            ...(state.answers && state.answers[action.topic]),
+            [action.question]: action.answer,
+          },
         },
-      },
+      }
+    case 'MINI_ONBOARDING_SET_TOPIC_PRIORITY':
+      return {
+        ...state,
+        priorities: {
+          ...state.priorities,
+          [action.topic]: action.priority,
+        },
+      }
+    case 'MINI_ONBOARDING_RESTART': {
+      const {answers, priorities} = initialUserState
+      const {userId: omittedUserId, ...otherState} = state
+      return {
+        ...otherState,
+        answers,
+        priorities,
+      }
     }
+    case 'MINI_ONBOARDING_SAVE':
+      if (action.status) {
+        return state
+      }
+      return {
+        ...state,
+        userId: state.userId || sha1(Math.random() + ''),
+      }
+    case 'MINI_UPDATE_ORG_INFO':
+      return {
+        ...state,
+        orgInfo: {
+          ...state.orgInfo,
+          ...action.orgInfo,
+        },
+      }
   }
-  if (action.type === MINI_ONBOARDING_SET_TOPIC_PRIORITY) {
-    return {
-      ...state,
-      priorities: {
-        ...state.priorities,
-        [action.topic]: action.priority,
-      },
+  return state
+}
+
+const initialAppState = {
+  isUserSupervised: initialUserState.isUserSupervised,
+  orgInfo: initialUserState.orgInfo,
+}
+function appReducer(state: AppState = initialAppState, action: Action): AppState {
+  switch (action.type) {
+    case 'MINI_ONBOARDING_FINISH_LANDING': {
+      const {isUserSupervised} = action
+      Storage.setItem(STORAGE_PREFIX + 'isUserSupervised', isUserSupervised ? '1' : '')
+      return {
+        ...state,
+        hasSeenLanding: true,
+        isUserSupervised,
+      }
     }
-  }
-  if (action.type === MINI_ONBOARDING_RESTART) {
-    return initialUserState
+    case 'MINI_UPDATE_ORG_INFO': {
+      const {orgInfo} = action
+      Object.entries(orgInfo).forEach(([key, value]: [string, string|undefined]): void =>
+        void (value && Storage.setItem(STORAGE_PREFIX + key, value)))
+      return {
+        ...state,
+        orgInfo: {
+          ...state.orgInfo,
+          ...orgInfo,
+        },
+      }
+    }
+    case 'MINI_HIDE_TOASTER_MESSAGE': {
+      const {errorMessage: omittedErrorMessage, ...otherState} = state
+      return otherState
+    }
+    case 'MINI_DISPLAY_TOASTER_MESSAGE': {
+      return {
+        ...state,
+        errorMessage: action.error,
+      }
+    }
   }
   return state
 }
 
 
-interface AppState {
+const MiniOnboardingSnackbar = connect(
+  ({app}: MiniRootState): {snack?: string} => ({
+    snack: app.errorMessage,
+  }),
+  (dispatch: DispatchActions) => ({
+    onHide: (): void => void dispatch({type: 'MINI_HIDE_TOASTER_MESSAGE'}),
+  }),
+)(Snackbar)
+
+
+interface AppComponentState {
   history: History
-  store: Store<RootState, Action>
+  store: Store<MiniRootState, Action>
 }
 
 
-class App extends React.PureComponent<{}, AppState> {
-  private static createBrowserHistoryAndStore(): AppState {
-    const history = createBrowserHistory()
+class App extends React.PureComponent<{}, AppComponentState> {
+  private static createBrowserHistoryAndStore(): AppComponentState {
+    const history = createBrowserHistory({basename})
 
-    const ravenMiddleware = RavenMiddleware(config.sentryDSN, {release: config.clientVersion}, {
-      stateTransformer: function(state): {} {
-        return {
-          ...state,
-          // Don't send user info to Sentry.
-          user: 'Removed with ravenMiddleware stateTransformer',
-        }
-      },
-    })
-    const amplitudeMiddleware = createAmplitudeMiddleware({
-      [MINI_ONBOARDING_ANSWER]: 'Answer mini onboarding',
-      [MINI_ONBOARDING_LOAD]: 'Load mini onboarding',
-      [MINI_ONBOARDING_SET_TOPIC_PRIORITY]: 'Mini onboarding set topic priority',
-    })
+    const amplitudeMiddleware = createAmplitudeMiddleware(new Logger({
+      MINI_GENERATE_SUMMARY: 'Bilan achevé',
+      MINI_ONBOARDING_ANSWER: 'Une question au formulaire répondue',
+      MINI_ONBOARDING_LOAD: 'Formulaire ouvert',
+      MINI_ONBOARDING_SET_TOPIC_PRIORITY: 'Une priorité choisie',
+      MINI_OPEN_SUMMARY: 'Bilan final affiché',
+      MINI_PRINT_SUMMARY: 'Bilan final imprimé',
+    }), config.aliAmplitudeToken)
     // Enable devTools middleware.
     const finalCreateStore = composeWithDevTools(applyMiddleware(
-      // ravenMiddleware needs to be first to correctly catch exception down the line.
-      ravenMiddleware,
+      // sentryMiddleware needs to be first to correctly catch exception down the line.
+      createSentryMiddleware(),
       thunk,
       amplitudeMiddleware,
       routerMiddleware(history),
@@ -233,9 +344,10 @@ class App extends React.PureComponent<{}, AppState> {
     // Create the store that will be provided to connected components via Context.
     const store = finalCreateStore(
       combineReducers({
+        app: appReducer,
         router: connectRouter(history),
         user: userReducer,
-      })
+      }),
     )
     return {history, store}
   }
@@ -245,11 +357,10 @@ class App extends React.PureComponent<{}, AppState> {
   public render(): React.ReactNode {
     const {history, store} = this.state
     return <Provider store={store}>
-      <Radium.StyleRoot>
-        <ConnectedRouter history={history}>
-          <Route path="*" component={MiniOnboardingPage} />
-        </ConnectedRouter>
-      </Radium.StyleRoot>
+      <ConnectedRouter history={history}>
+        <Route path="*" component={MiniOnboardingPage} />
+      </ConnectedRouter>
+      <MiniOnboardingSnackbar timeoutMillisecs={4000} />
     </Provider>
   }
 }

@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types'
-import Radium from 'radium'
 import React from 'react'
 
 import {inDepartement, lowerFirstLetter, maybeContractPrefix} from 'store/french'
 
+import {RadiumDiv} from 'components/radium'
 import {AppearingList, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-relocate.svg'
 
@@ -14,8 +14,7 @@ import {CardProps, CardWithContentProps, PercentageBoxes,
 const maybeS = (count: number): string => count > 1 ? 's' : ''
 
 
-class ExpandedAdviceCardContentBase
-  extends React.PureComponent<CardWithContentProps<bayes.bob.RelocateData>> {
+class RelocateMethod extends React.PureComponent<CardWithContentProps<bayes.bob.RelocateData>> {
   public static propTypes = {
     adviceData: PropTypes.shape({
       departementScores: PropTypes.arrayOf(PropTypes.object.isRequired),
@@ -69,8 +68,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.RelocateData, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.RelocateData, CardProps>(RelocateMethod)
 
 
 interface SuggestionProps {
@@ -81,7 +79,7 @@ interface SuggestionProps {
 }
 
 
-class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionProps> {
+class RelocateDepartmentSuggestion extends React.PureComponent<SuggestionProps> {
   public static propTypes = {
     departementScore: PropTypes.object.isRequired,
     isTargetDepartment: PropTypes.bool,
@@ -103,7 +101,7 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
       fontWeight: 'bold',
       marginRight: 10,
     }
-    return <div style={style} onClick={this.handleClick}>
+    return <RadiumDiv style={style} onClick={this.handleClick}>
       <span style={targetDepartmentStyle}>
         {departementScore.name} (votre département, pour comparer)
       </span>
@@ -111,7 +109,7 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
       <div style={{fontStyle: 'italic', fontWeight: 'normal'}}>
         Offres par candidat&nbsp;:
       </div> <PercentageBoxes percentage={1} />
-    </div>
+    </RadiumDiv>
   }
 
   private renderOtherDepartement(style: RadiumCSSProperties): React.ReactNode {
@@ -123,7 +121,7 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
     }
     const roundedOffers = Math.round((departementScore.offerRatio || 0) * 10) / 10
 
-    return <div style={style} onClick={this.handleClick}>
+    return <RadiumDiv style={style} onClick={this.handleClick}>
       <span style={{fontWeight: 'bold', marginRight: 10}}>
         {departementScore.name}
       </span>
@@ -134,7 +132,7 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
             {roundedOffers}x plus
           </div> <PercentageBoxes percentage={roundedOffers} /></span> : null}
       </span>
-    </div>
+    </RadiumDiv>
   }
 
   public render(): React.ReactNode {
@@ -143,15 +141,15 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
       ':hover': {
         backgroundColor: colors.LIGHT_GREY,
       },
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-      cursor: 'pointer',
-      display: 'flex',
-      fontSize: 13,
-      fontWeight: 'bold',
-      height: 50,
-      padding: '0 20px',
+      'alignItems': 'center',
+      'backgroundColor': '#fff',
+      'border': `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+      'cursor': 'pointer',
+      'display': 'flex',
+      'fontSize': 13,
+      'fontWeight': 'bold',
+      'height': 50,
+      'padding': '0 20px',
       ...style,
     }
     if (isTargetDepartment) {
@@ -160,7 +158,6 @@ class RelocateDepartmentSuggestionBase extends React.PureComponent<SuggestionPro
     return this.renderOtherDepartement(containerStyle)
   }
 }
-const RelocateDepartmentSuggestion = Radium(RelocateDepartmentSuggestionBase)
 
 
 export default {ExpandedAdviceCardContent, Picto}

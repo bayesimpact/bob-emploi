@@ -270,13 +270,13 @@ class ExtraDataTestCase(scoring_test.AdviceScoringModelTestBase):
         """Test that the advisor computes extra data for the "Spontaneous Application" advice."""
 
         persona = self._random_persona().clone()
-        persona.project = project_pb2.Project(
+        persona.project.CopyFrom(project_pb2.Project(
             target_job=job_pb2.Job(job_group=job_pb2.JobGroup(rome_id='A1234')),
             job_search_length_months=7,
             weekly_applications_estimate=project_pb2.A_LOT,
             employment_types=[job_pb2.CDI],
             total_interview_count=1,
-        )
+        ))
         persona.project.city.departement_id = '14'
 
         self.database.job_group_info.insert_one({

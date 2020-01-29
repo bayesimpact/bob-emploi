@@ -2,12 +2,12 @@ import _groupBy from 'lodash/groupBy'
 import _mapKeys from 'lodash/mapKeys'
 import _mapValues from 'lodash/mapValues'
 import _memoize from 'lodash/memoize'
-import Radium from 'radium'
 import React from 'react'
 import PropTypes from 'prop-types'
 
 import {ValidAdvice, isValidAdvice} from 'store/advice'
 
+import {RadiumDiv} from 'components/radium'
 import {Textarea} from 'components/theme'
 import optimizeImage from 'images/optimize-picto.svg'
 import commentImage from 'images/comment-picto.svg'
@@ -18,19 +18,21 @@ import {ADVICE_SCORES} from './score_levels'
 
 
 const ADVICE_GROUP_PROPS = {
-  '1': {
+  1: {
     image: '',
     title: 'À regarder',
   },
-  '2': {
+  2: {
     image: twoStarsImage,
     title: '2 étoiles',
   },
-  '3': {
+  3: {
     image: threeStarsImage,
     title: '3 étoiles',
   },
-}
+} as const
+
+type NumStars = '1'|'2'|'3'
 
 const emptyArray = [] as const
 
@@ -70,12 +72,15 @@ class AdvicesRecap extends React.PureComponent<AdvicesRecapProps> {
       padding: 10,
       ...style,
     }
-    const adviceGroups: {[numStars: number]: readonly bayes.bob.Advice[]} =
-      _groupBy(advices, 'numStars')
-    const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse()
+    const adviceGroups: {[K in NumStars]?: readonly bayes.bob.Advice[]} =
+      _groupBy(
+        advices.filter(({numStars}: bayes.bob.Advice): boolean =>
+          !!numStars && !!ADVICE_GROUP_PROPS[(numStars + '') as NumStars]),
+        'numStars')
+    const groupKeys = Object.keys(ADVICE_GROUP_PROPS).sort().reverse() as NumStars[]
     return <div style={containerStyle}>
       <div>
-        {groupKeys.map((numStars: string): React.ReactNode => (
+        {groupKeys.map((numStars: NumStars): React.ReactNode => (
           <AdvicesRecapSection
             key={`section-${numStars}-stars`} advices={adviceGroups[numStars] || emptyArray}
             {...{adviceEvaluations, moduleNewScores, numStars,
@@ -91,11 +96,11 @@ interface AdvicesRecapSectionProps {
   adviceEvaluations: {
     [adviceId: string]: bayes.bob.AdviceEvaluation
   }
-  advices: bayes.bob.Advice[]
+  advices: readonly bayes.bob.Advice[]
   moduleNewScores: {
     [adviceId: string]: number
   }
-  numStars: string
+  numStars: NumStars
   onEvaluateAdvice: (adviceId: string, evaluation: bayes.bob.AdviceEvaluation) => void
   onRescoreAdvice: (adviceId: string, newScore: string) => void
   profile: bayes.bob.UserProfile
@@ -152,11 +157,12 @@ class AdvicesRecapSection
     this.setState({[commentState]: !this.state[commentState]})
   })
 
-  private handleCommentAdvice = _memoize((adviceId: string): ((string) => void) =>
+  private handleCommentAdvice = _memoize((adviceId: string): ((comment: string) => void) =>
     (comment: string): void => this.props.onEvaluateAdvice(adviceId, {comment}))
 
-  private handleExtraInputKeyPress = ({key, target}): void => {
-    (key === 'Enter') && this.handleAddAdvice((target as HTMLInputElement).value)
+  private handleExtraInputKeyPress =
+  ({key, currentTarget}: React.KeyboardEvent<HTMLInputElement>): void => {
+    (key === 'Enter') && this.handleAddAdvice(currentTarget.value)
   }
 
   private renderRescoreButtons = ({adviceId}: ValidAdvice): React.ReactNode => {
@@ -165,7 +171,7 @@ class AdvicesRecapSection
     return ADVICE_SCORES.map(({image, value}): React.ReactNode => {
       return <EvalElementButton
         key={`rescore-${adviceId}-${value}-stars`}
-        isPreselected={value === numStars}
+        isPreselected={value === (numStars + '')}
         isSelected={value === newScore}
         onClick={this.handleRescoreAdvice(adviceId, value)}>
         <img src={image} alt={`${numStars}*`} />
@@ -241,7 +247,7 @@ class AdvicesRecapSection
     const rescoredAdvices = Object.keys(moduleNewScores)
     const extraAdvices = rescoredAdvices.filter(
       (adviceId: string): boolean => !advicesShown.has(adviceId) &&
-      (moduleNewScores[adviceId] + '') === numStars)
+      (moduleNewScores[adviceId] + '') === (numStars + ''))
     const extraAdviceStyle = {
       border: `solid 1px ${colors.BOB_BLUE}`,
       margin: '5px 0',
@@ -269,7 +275,7 @@ class AdvicesRecapSection
     const headerStyle = {
       display: 'flex',
       justifyContent: 'center',
-      'padding': '15px 0px',
+      padding: '15px 0px',
     }
     return <div>
       <div style={headerStyle}>
@@ -294,7 +300,7 @@ interface EvalElementButtonProps {
 }
 
 
-class EvalElementButtonBase extends React.PureComponent<EvalElementButtonProps> {
+class EvalElementButton extends React.PureComponent<EvalElementButtonProps> {
   public static propTypes = {
     children: PropTypes.node.isRequired,
     isPreselected: PropTypes.bool,
@@ -310,18 +316,17 @@ class EvalElementButtonBase extends React.PureComponent<EvalElementButtonProps> 
         filter: 'initial',
         opacity: 1,
       },
-      cursor: 'pointer',
-      filter: isSelected ? 'initial' : 'grayscale(100%)',
-      opacity: (isPreselected && !isSelected) ? .5 : 1,
-      padding: 5,
+      'cursor': 'pointer',
+      'filter': isSelected ? 'initial' : 'grayscale(100%)',
+      'opacity': (isPreselected && !isSelected) ? .5 : 1,
+      'padding': 5,
       ...style,
     }
-    return <div onClick={onClick} style={containerStyle}>
+    return <RadiumDiv onClick={onClick} style={containerStyle}>
       {children}
-    </div>
+    </RadiumDiv>
   }
 }
-const EvalElementButton = Radium(EvalElementButtonBase)
 
 
 export {AdvicesRecap, EvalElementButton}

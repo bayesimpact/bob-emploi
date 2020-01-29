@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package bayes.ali;
+
+message User {
+  // The date and time at which the user has registered with the app.
+  // TODO(marielaure): Deprecate that if it is not used anymore.
+  google.protobuf.Timestamp registered_at = 1;
+
+  // User's email.
+  string user_email = 2;
+
+  // User's counselor's name.
+  string counselor_name = 3;
+
+  // User's counselor's name.
+  string counselor_email = 4;
+
+  // URL to retrieve user's results.
+  string results_url = 5;
+}
+
+message EmailStatuses {
+  // Whether the user was sent an email.
+  bool has_user_email = 1;
+
+  // Whether the advisor was sent an email.
+  bool has_counselor_email = 2;
+}

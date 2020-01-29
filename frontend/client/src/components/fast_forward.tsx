@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types'
 import React from 'react'
+import {Redirect} from 'react-router-dom'
 
 import {isMobileVersion} from 'components/mobile'
 import {ShortKey} from 'components/shortkey'
@@ -31,7 +32,7 @@ class MobileFastForwardListener {
     readonly y: number
   } | undefined
 
-  private forwardHandlers: ((event) => void)[]
+  private forwardHandlers: (() => void)[]
 
   private lastClickTime: number
 
@@ -64,7 +65,7 @@ class MobileFastForwardListener {
     document.addEventListener('touchend', this.handleTouchEnd)
   }
 
-  private handleTouchStart = ({touches}): void => {
+  private handleTouchStart = ({touches}: TouchEvent): void => {
     if (touches.length !== 1) {
       this.startTouch = undefined
       return
@@ -77,7 +78,7 @@ class MobileFastForwardListener {
     this.endTouch = undefined
   }
 
-  private handleTouchMove = ({touches}): void => {
+  private handleTouchMove = ({touches}: TouchEvent): void => {
     if (touches.length !== 1) {
       return
     }
@@ -87,7 +88,7 @@ class MobileFastForwardListener {
     }
   }
 
-  private handleTouchEnd = (event): void => {
+  private handleTouchEnd = (): void => {
     if (!this.endTouch || !this.startTouch) {
       this.startTouch = undefined
       this.endTouch = undefined
@@ -105,14 +106,14 @@ class MobileFastForwardListener {
       return
     }
     const firstHandler = this.forwardHandlers[0]
-    firstHandler && firstHandler(event)
+    firstHandler && firstHandler()
   }
 
-  public add(handler): void {
+  public add(handler: () => void): void {
     this.forwardHandlers.unshift(handler)
   }
 
-  public remove(handler): void {
+  public remove(handler: () => void): void {
     const handlerIndex = this.forwardHandlers.findIndex((h): boolean => h === handler)
     if (handlerIndex >= 0) {
       this.forwardHandlers.splice(handlerIndex, 1)
@@ -121,9 +122,27 @@ class MobileFastForwardListener {
 }
 
 
-class FastForward extends React.PureComponent<{onForward: () => void}> {
+interface LinkFastForwardProps {
+  onForward?: () => void
+  to: string
+}
+
+interface ActionFastForwardProps {
+  onForward: () => void
+  to?: string
+}
+
+type FastForwardProps = LinkFastForwardProps | ActionFastForwardProps
+
+class FastForward extends React.PureComponent<FastForwardProps, {forwarded: boolean}> {
+  // TODO(cyrille): Fix this when both are set.
   public static propTypes = {
-    onForward: PropTypes.func.isRequired,
+    onForward: PropTypes.func,
+    to: PropTypes.string,
+  }
+
+  public state = {
+    forwarded: false,
   }
 
   public componentDidMount(): void {
@@ -133,10 +152,7 @@ class FastForward extends React.PureComponent<{onForward: () => void}> {
     if (!mobileListener) {
       mobileListener = new MobileFastForwardListener()
     }
-    this.handler = (): void => {
-      const {onForward} = this.props
-      onForward && onForward()
-    }
+    this.handler = (): void => this.props.onForward?.()
     mobileListener.add(this.handler)
   }
 
@@ -151,10 +167,20 @@ class FastForward extends React.PureComponent<{onForward: () => void}> {
 
   private handler?: () => void
 
+  private onForward = (): void => {
+    this.props.onForward?.()
+    this.setState({forwarded: true})
+  }
+
   public render(): React.ReactNode {
+    const {to} = this.props
+    // TODO(cyrille): Change to functional component, and use useHistory hook from react-router.
+    if (this.state.forwarded && typeof to !== 'undefined') {
+      return <Redirect to={to} push={true} />
+    }
     return <ShortKey
       keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
-      onKeyUp={this.props.onForward} />
+      onKeyUp={this.onForward} />
   }
 }
 

@@ -63,6 +63,7 @@ type ReactStylableElement = React.ReactElement<{style?: RadiumCSSProperties}>
 
 declare const colors: {[name: string]: string}
 declare const config: {
+  readonly aliAmplitudeToken: string
   readonly amplitudeToken: string
   readonly clientVersion: string
   readonly donationUrl: string
@@ -80,3 +81,5 @@ declare const config: {
   readonly sentryDSN: string
   readonly zendeskDomain: string
 }
+
+type GetProps<T> = T extends React.ComponentType<infer Props> ? Props : never

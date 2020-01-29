@@ -1,5 +1,6 @@
 """Unit tests for the jobboards module."""
 
+from typing import Any, Dict
 import unittest
 
 from bob_emploi.frontend.api import project_pb2
@@ -70,6 +71,31 @@ class EndpointTestCase(base_test.ServerTestCase):
 
         jobboards = self.json_from_response(response)
         self.assertEqual({'jobBoards': [{'title': 'Indeed'}]}, jobboards)
+
+    def test_template_in_link(self) -> None:
+        """Job board with a template in the link."""
+
+        def _set_rome_id_a1234(user: Dict[str, Any]) -> None:
+            user['projects'][0]['targetJob']['jobGroup']['romeId'] = 'A1234'
+
+        self.user_id, self.auth_token = self.create_user_with_token(
+            modifiers=[base_test.add_project_modifier, _set_rome_id_a1234], advisor=True)
+        user_info = self.get_user_info(self.user_id, self.auth_token)
+        self.project_id = user_info['projects'][0]['projectId']
+
+        self._db.jobboards.insert_one({
+            'title': 'Pôle emploi',
+            'link': 'https://offres.pole-emploi.fr/search?rome=%romeId'
+        })
+        response = self.app.get(
+            f'/api/advice/find-a-jobboard/{self.user_id}/{self.project_id}',
+            headers={'Authorization': 'Bearer ' + self.auth_token})
+
+        jobboards = self.json_from_response(response)
+        self.assertEqual({'jobBoards': [{
+            'title': 'Pôle emploi',
+            'link': 'https://offres.pole-emploi.fr/search?rome=A1234'
+        }]}, jobboards)
 
     def test_filtered_jobboards(self) -> None:
         """Job board not useful for this project is filtered."""

@@ -16,6 +16,7 @@ const raiseOnExplore = (): void => {
   throw 'onExplore was called during first render'
 }
 const noExplore = (): (() => void) => raiseOnExplore
+const noOpTranslate = (text: string): string => text
 
 
 describe('Advice module', (): void => {
@@ -34,14 +35,15 @@ describe('Advice module', (): void => {
           },
           user: {},
         })
-        new ShallowRenderer().render(<Provider store={store}>
+        ShallowRenderer.createRenderer().render(<Provider store={store}>
           <ExpandedAdviceCardContent
             advice={{adviceId}}
             dispatch={noOp}
             handleExplore={noExplore}
             profile={{}}
             project={{projectId: '0'}}
-            userYou={vouvoyer} />
+            userYou={vouvoyer}
+            t={noOpTranslate} />
         </Provider>)
       })
     })

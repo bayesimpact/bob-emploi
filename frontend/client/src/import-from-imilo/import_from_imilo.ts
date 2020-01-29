@@ -12,17 +12,17 @@ function getImiloPropsFromAllPages(
   userId: string, onPageComplete: (pageName: string) => void): Promise<ImiloProps> {
   // Get all the URLs that contains part of the i-milo user data (user 'Dossier').
   const pageApis: ImiliPropsFetcher = {
-    'Coordonnées': getCoords,
-    'Cursus': getDegrees,
-    'Identité': getIdentity,
-    'Mobilité': getMobility,
-    'Situations': getSituations,
+    Coordonnées: getCoords,
+    Cursus: getDegrees,
+    Identité: getIdentity,
+    Mobilité: getMobility,
+    Situations: getSituations,
   }
 
   // On each page collect the i-milo user data.
   const imiloPropsFromAllPages: Partial<ImiloProps> = {}
   // Chain loading all pages one after the other.
-  return Object.keys(pageApis).
+  return (Object.keys(pageApis) as readonly (keyof ImiloProps)[]).
     reduce(
       <K extends keyof ImiloProps>(iterateOverPreviousPages: Promise<void>, pageName: K):
       Promise<void> =>
@@ -33,7 +33,7 @@ function getImiloPropsFromAllPages(
             // Callback to get opportunity to show progress done.
             onPageComplete(pageName)
           }),
-      Promise.resolve()
+      Promise.resolve(),
     ).
     then((): ImiloProps => imiloPropsFromAllPages as ImiloProps)
 }
@@ -41,7 +41,7 @@ function getImiloPropsFromAllPages(
 
 const BOB_BOOTSTRAP_ADVICES_ENDPOINT =
   'https://www.bob-emploi.fr/conseiller/nouveau-profil-et-projet#'
-function openAdvicesPageForBobProps(bobProps): void {
+function openAdvicesPageForBobProps(bobProps: bayes.bob.User): void {
   window.open(
     BOB_BOOTSTRAP_ADVICES_ENDPOINT + encodeURIComponent(JSON.stringify(bobProps)), '_blank')
 }
@@ -118,12 +118,12 @@ function startImportProcess(): void {
     }
   }
 
-  const updateModalToShowDataReadyForBob = (bobProps): void => {
+  const updateModalToShowDataReadyForBob = (bobProps: bayes.bob.User): void => {
     if (loadingElement) {
       loadingElement.textContent += ' ✅'
     }
     const bobPropsJson = JSON.stringify(bobProps, null, 2).
-      replace(/[{}",[\]]/g, '').
+      replace(/[",[\]{}]/g, '').
       split('\n').filter((line: string): string => line.trim()).join('\n')
     bodyElement.innerHTML +=
       `<h5>Données que Bob va utiliser pour son diagnostic&nbsp:</h5>

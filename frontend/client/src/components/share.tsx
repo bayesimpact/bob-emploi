@@ -1,14 +1,15 @@
 import _pick from 'lodash/pick'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useMemo} from 'react'
+import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
 import {EmailShareButton, FacebookIcon, FacebookShareButton, LinkedinIcon, LinkedinShareButton,
   TwitterIcon, TwitterShareButton, WhatsappIcon, WhatsappShareButton} from 'react-share'
 
 import {DispatchAllActions, shareProductModalIsShown, shareProductToNetwork} from 'store/actions'
-import {YouChooser} from 'store/french'
 
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
-import {Modal, ModalCloseButton, ModalConfig} from 'components/modal'
+import {Modal, ModalCloseButton, ModalConfig, useModal} from 'components/modal'
 import {Button, SmoothTransitions, Textarea} from 'components/theme'
 import {getAbsoluteUrl, Routes} from 'components/url'
 import emailIcon from 'images/email-icon.png'
@@ -25,243 +26,238 @@ declare global {
 
 interface ButtonProps {
   beforeOnClick?: () => void | Promise<void>
+  children: React.ReactNode
   url: string
 }
 
 
-class SmsShareButton extends React.PureComponent<ButtonProps> {
-  public static propTypes = {
-    beforeOnClick: PropTypes.func,
-    children: PropTypes.node,
-    url: PropTypes.string.isRequired,
-  }
+function useOpenUrl(url: string, beforeOnClick?: () => void | Promise<void>): (() => void) {
+  return useCallback((): void => {
+    const promise = beforeOnClick && beforeOnClick()
+    if (promise && promise.then) {
+      promise.then((): void => {
+        window.open(url, '_blank')
+      })
+      return
+    }
+    window.open(url, '_blank')
+  }, [beforeOnClick, url])
+}
+
+
+const SmsShareButtonBase: React.FC<ButtonProps> = (props: ButtonProps): React.ReactElement => {
+  const {beforeOnClick, children, url} = props
+  const {t} = useTranslation()
 
   // TODO(cyrille): Make better (or more generic) text.
-  private getSmsLink(): string {
+  const smsLink = useMemo((): string => {
     const text =
-      `Salut!\nTu connais Bob\u00A0?\nEn 15 minutes, il te propose un diagnostic et des conseils
-      personnalisés pour ta recherche d'emploi. Essaye, c'est gratuit\u00A0!\n\n${this.props.url}`
+      t(
+        'Salut\u00A0!\nTu connais {{productName}}\u00A0?\nEn 15 minutes, il te propose un ' +
+        "diagnostic et des conseils personnalisés pour ta recherche d'emploi. Essaye, c'est " +
+        'gratuit\u00A0!',
+        {productName: config.productName},
+      ) + '\n\n' + url
     return `sms:body=${encodeURIComponent(text)}`
-  }
+  }, [t, url])
 
-  private onClick = (): void => {
-    const {beforeOnClick} = this.props
-    const promise = beforeOnClick && beforeOnClick()
-    if (promise && promise.then) {
-      promise.then((): void => {
-        window.open(this.getSmsLink(), '_blank')
-      })
-      return
-    }
-    window.open(this.getSmsLink(), '_blank')
-  }
+  const onClick = useOpenUrl(smsLink, beforeOnClick)
 
   // TODO(cyrille): Try not to render anything if protocol is not understood by browser.
-  public render(): React.ReactNode {
-    return <div onClick={this.onClick}>
-      {this.props.children}
-    </div>
-  }
+  return <div onClick={onClick}>
+    {children}
+  </div>
 }
+SmsShareButtonBase.propTypes = {
+  beforeOnClick: PropTypes.func,
+  children: PropTypes.node,
+  url: PropTypes.string.isRequired,
+}
+const SmsShareButton = React.memo(SmsShareButtonBase)
 
 
-class FbMessengerShareButton extends React.PureComponent<ButtonProps> {
-  public static propTypes = {
-    beforeOnClick: PropTypes.func,
-    children: PropTypes.node,
-    url: PropTypes.string.isRequired,
-  }
+const FbMessengerButtonBase: React.FC<ButtonProps> = (props: ButtonProps): React.ReactElement => {
+  const {beforeOnClick, children, url} = props
 
-  private getFbMessengerLink(): string {
+  const link = useMemo((): string => {
     return `fb-messenger://share?link=${
-      encodeURIComponent(this.props.url)
+      encodeURIComponent(url)
     }&app_id=${encodeURIComponent(config.facebookSSOAppId)}`
-  }
+  }, [url])
 
-  private onClick = (): void => {
-    const {beforeOnClick} = this.props
-    const promise = beforeOnClick && beforeOnClick()
-    if (promise && promise.then) {
-      promise.then((): void => {
-        window.open(this.getFbMessengerLink(), '_blank')
-      })
-      return
-    }
-    window.open(this.getFbMessengerLink(), '_blank')
-  }
+  const onClick = useOpenUrl(link, beforeOnClick)
 
   // TODO(cyrille): Try not to render anything if protocol is not understood by browser.
-  public render(): React.ReactNode {
-    return <div onClick={this.onClick}>
-      {this.props.children}
-    </div>
-  }
+  return <div onClick={onClick}>
+    {children}
+  </div>
 }
+FbMessengerButtonBase.propTypes = {
+  beforeOnClick: PropTypes.func,
+  children: PropTypes.node,
+  url: PropTypes.string.isRequired,
+}
+const FbMessengerShareButton = React.memo(FbMessengerButtonBase)
 
 
 interface BannerProps {
   dispatch: DispatchAllActions
   onClose?: () => void
   style?: React.CSSProperties
-  userYou: YouChooser
+}
+
+
+const messageStyle: React.CSSProperties = {
+  alignItems: isMobileVersion ? 'center' : 'baseline',
+  display: 'flex',
+  flexDirection: isMobileVersion ? 'column' : 'row',
+  margin: 'auto',
+  maxWidth: 1000,
+}
+const textStyle: React.CSSProperties = {
+  flex: 1,
+  fontSize: 14,
+  lineHeight: '20px',
+  marginRight: isMobileVersion ? 'initial' : 100,
+  padding: isMobileVersion ? '0 20px' : 'initial',
+}
+// TODO(marielaure): Make sure the button is below the "See my advice" button in mobile.
+const shareButtonStyle: React.CSSProperties = {
+  alignSelf: isMobileVersion ? 'center' : 'flex-end',
+  flexShrink: 0,
+  marginBottom: 30,
+}
+// TODO(marielaure): Move the close button to the center-left.
+const closeStyle: React.CSSProperties = {
+  backgroundColor: colors.COOL_GREY,
+  boxShadow: 'initial',
+  fontSize: 10,
+  left: 0,
+  position: 'static',
+  right: 'initial',
+  width: 35,
 }
 
 
 // TODO(cyrille): Find a way to put this back somewhere in the flow, we've had approx 20 people per
 // months thanks to this one.
-class ShareBanner extends React.PureComponent<BannerProps, {isShareBobShown: boolean}> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    onClose: PropTypes.func,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
-  }
+const ShareBannerBase: React.FC<BannerProps> = (props: BannerProps): React.ReactElement => {
+  const {dispatch, onClose, style} = props
+  const {t} = useTranslation()
+  const [isShareBobShown, showModal, hideModal] = useModal()
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: colors.PALE_BLUE,
+    ...style,
+  }), [style])
 
-  public state = {
-    isShareBobShown: false,
-  }
+  // TODO(marielaure): Add a close button and make this position fixed and enable it when user
+  // has read most of the assessment.
+  return <div style={containerStyle}>
+    {onClose ? <ModalCloseButton onClick={onClose} style={closeStyle} /> : null}
+    <div style={messageStyle}>
+      <div style={textStyle}>
+        <p>
+          <Trans parent="strong" style={{fontSize: 18}}>
+            Nous avons une petite faveur à vous demander…
+          </Trans>
+        </p>
 
-  private handleShareClick = (): void => {
-    this.setState({isShareBobShown: true})
-  }
+        <Trans parent="p">
+          Nous pensons que personne ne devrait être seul dans sa recherche. C'est
+          pourquoi <strong>{{productName: config.productName}} est entièrement gratuit et à but non
+          lucratif.</strong> Notre mission est de redistribuer l'information pour éclairer
+          le chemin de chacun. Mais nous n'avons pas le budget marketing d'une entreprise
+          commerciale. Pour aider le plus de monde possible, nous avons besoin
+          de vous.
+        </Trans>
 
-  private handleHideShareBob = (): void => this.setState({isShareBobShown: false})
+        <Trans parent="p">
+          <strong style={{color: colors.BOB_BLUE}}>
+            En partageant {{productName: config.productName}} à une personne à qui nous pourrions
+            être utiles, vous nous aidez à rendre le monde un peu meilleur
+          </strong> - et ça ne prend qu'une minute.
+        </Trans>
 
-  public render(): React.ReactNode {
-    const {dispatch, onClose, style, userYou} = this.props
-    const {isShareBobShown} = this.state
-    const containerStyle = {
-      backgroundColor: colors.PALE_BLUE,
-      ...style,
-    }
-    const messageStyle: React.CSSProperties = {
-      alignItems: isMobileVersion ? 'center' : 'baseline',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      margin: 'auto',
-      maxWidth: 1000,
-    }
-    const textStyle: React.CSSProperties = {
-      flex: 1,
-      fontSize: 14,
-      lineHeight: '20px',
-      marginRight: isMobileVersion ? 'initial' : 100,
-      padding: isMobileVersion ? '0 20px' : 'initial',
-    }
-    // TODO(marielaure): Make sure the button is below the "See my advice" button in mobile.
-    const shareButtonStyle: React.CSSProperties = {
-      alignSelf: isMobileVersion ? 'center' : 'flex-end',
-      flexShrink: 0,
-      marginBottom: 30,
-    }
-
-    // TODO(marielaure): Move the close button to the center-left.
-    const closeStyle: React.CSSProperties = {
-      backgroundColor: colors.COOL_GREY,
-      boxShadow: 'initial',
-      fontSize: 10,
-      left: 0,
-      position: 'static',
-      right: 'initial',
-      width: 35,
-    }
-
-    // TODO(marielaure): Add a close button and make this position fixed and enable it when user
-    // has read most of the assessment.
-    return <div style={containerStyle}>
-      {onClose ? <ModalCloseButton onClick={onClose} style={closeStyle} /> : null}
-      <div style={messageStyle}>
-        <div style={textStyle}>
-          <p>
-            <strong style={{fontSize: 18}}>
-              Nous avons une petite faveur à {userYou('te', 'vous')} demander…
-            </strong>
-          </p>
-
-          <p>
-            Nous pensons que personne ne devrait être seul dans sa recherche. C'est
-            pourquoi <strong>{config.productName} est entièrement gratuit et à but non
-            lucratif. </strong> Notre mission est de redistribuer l'information pour éclairer
-            le chemin de chacun. Mais nous n'avons pas le budget marketing d'une entreprise
-            commerciale. Pour aider le plus de monde possible, nous avons besoin
-            de {userYou('toi', ' vous')}.
-          </p>
-
-          <p>
-            <strong style={{color: colors.BOB_BLUE}}>
-              En partageant {config.productName} à une personne à qui nous pourrions être utiles,
-              {userYou(' tu nous aides', ' vous nous aidez')} à rendre le monde un peu meilleur
-            </strong> - et ça ne prend qu'une minute.
-          </p>
-
-          <p>
-            Merci <span aria-label={`on ${userYou("t'", 'vous ')}aime`} role="img">
-              &#x2764;&#xfe0F;</span>
-          </p>
-        </div>
-        <Button onClick={this.handleShareClick} style={shareButtonStyle} type="validation">
-          Partager {config.productName} maintenant
-        </Button>
+        <Trans parent="p">
+          Merci <span aria-label={t('on vous aime')} role="img">
+            &#x2764;&#xfe0F;</span>
+        </Trans>
       </div>
-      {/* TODO(marielaure): Put more relevant text here. */}
-      <ShareModal
-        onClose={this.handleHideShareBob} isShown={isShareBobShown}
-        title="Partagez avec vos amis" dispatch={dispatch}
-        campaign="as" visualElement="assessment"
-        intro={<React.Fragment>
-          <strong>Merci&nbsp;!</strong><br />
-          on s'occupe du reste&nbsp;!
-        </React.Fragment>} />
+      <Button onClick={showModal} style={shareButtonStyle} type="validation">
+        Partager {config.productName} maintenant
+      </Button>
     </div>
-  }
+    {/* TODO(marielaure): Put more relevant text here. */}
+    <ShareModal
+      onClose={hideModal} isShown={isShareBobShown}
+      title={t('Partagez avec vos amis')} dispatch={dispatch}
+      campaign="as" visualElement="assessment"
+      intro={<Trans parent={null}>
+        <strong>Merci&nbsp;!</strong><br />
+        on s'occupe du reste&nbsp;!
+      </Trans>} />
+  </div>
 }
+ShareBannerBase.propTypes = {
+  dispatch: PropTypes.func.isRequired,
+  onClose: PropTypes.func,
+  style: PropTypes.object,
+}
+const ShareBanner = React.memo(ShareBannerBase)
 
 
 type ModalProps = Omit<ModalConfig, 'children'> & ButtonsProps & {
+  children?: React.ReactNode
   intro: React.ReactNode
 }
 
 
-class ShareModal extends React.PureComponent<ModalProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    intro: PropTypes.node,
-    isShown: PropTypes.bool,
-    style: PropTypes.object,
-    title: PropTypes.string,
-  }
-
-  public render(): React.ReactNode {
-    const {children, intro, style, title, ...otherProps} = this.props
-    const modalStyle: React.CSSProperties = {
-      display: 'flex',
-      flexDirection: 'column',
-      fontWeight: 'normal',
-      justifyContent: 'space-between',
-      lineHeight: 1.19,
-      margin: 20,
-      width: isMobileVersion ? 'initial' : 500,
-      ...style,
-    }
-    const contentStyle = {
-      padding: isMobileVersion ? 30 : '30px 50px 50px',
-    }
-    // TODO(cyrille): Add content in share links (quote/hashtag in FB, title/desc in LinkedIn, ...).
-    return <Modal style={modalStyle} title={title} {...otherProps}>
-      <div style={contentStyle}>
-        {intro ? <div style={{marginBottom: 15}}>
-          {intro}
-        </div> : null}
-
-        <ShareButtons {..._pick(this.props, ['campaign', 'dispatch', 'url', 'visualElement'])} />
-
-        {children ? <div style={{marginTop: 15}}>
-          {children}
-        </div> : null}
-      </div>
-    </Modal>
-  }
+const shareModalContentStyle = {
+  padding: isMobileVersion ? 30 : '30px 50px 50px',
 }
+const shareModalIntroStyle = {
+  marginBottom: 15,
+}
+const shareModalChildrenStyle = {
+  marginTop: 15,
+}
+
+
+const ShareModalBase: React.FC<ModalProps> = (props: ModalProps): React.ReactElement => {
+  const {children, intro, style, title, ...otherProps} = props
+  const modalStyle = useMemo((): React.CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'column',
+    fontWeight: 'normal',
+    justifyContent: 'space-between',
+    lineHeight: 1.19,
+    margin: 20,
+    width: isMobileVersion ? 'initial' : 500,
+    ...style,
+  }), [style])
+  // TODO(cyrille): Add content in share links (quote/hashtag in FB, title/desc in LinkedIn, ...).
+  return <Modal style={modalStyle} title={title} {...otherProps}>
+    <div style={shareModalContentStyle}>
+      {intro ? <div style={shareModalIntroStyle}>
+        {intro}
+      </div> : null}
+
+      <ShareButtons {..._pick(props, ['campaign', 'dispatch', 'url', 'visualElement'])} />
+
+      {children ? <div style={shareModalChildrenStyle}>
+        {children}
+      </div> : null}
+    </div>
+  </Modal>
+}
+ShareModalBase.propTypes = {
+  children: PropTypes.node,
+  intro: PropTypes.node,
+  isShown: PropTypes.bool,
+  style: PropTypes.object,
+  title: PropTypes.string,
+}
+const ShareModal = React.memo(ShareModalBase)
 
 
 interface ButtonsProps {
@@ -279,11 +275,12 @@ interface ButtonsState {
 }
 
 
-class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
+class ShareButtonsBase extends React.PureComponent<ButtonsProps & WithTranslation, ButtonsState> {
   public static propTypes = {
     // The IDs are referenced at https://airtable.com/tblpbiUqtvn3poeXd.
     campaign: PropTypes.string,
     dispatch: PropTypes.func,
+    t: PropTypes.func.isRequired,
     url: PropTypes.string,
     // The visual element reference that explains the context in which this
     // modal is shown. This is only to differentiate in logs.
@@ -346,6 +343,7 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
   private shareLinkRef: React.RefObject<Textarea> = React.createRef()
 
   private renderShareLink = (): React.ReactNode => {
+    const {t} = this.props
     const {canBrowserShare, isShareLinkJustCopied, shareButtonWidth} = this.state
     const inputStyle: React.CSSProperties = {
       border: `solid 1px ${colors.SILVER}`,
@@ -380,16 +378,16 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
       <Textarea
         readOnly={true} className="blue-select"
         style={inputStyle}
-        value={`Je recommande à tous mes amis en recherche d'emploi ${this.getLink()}`}
+        value={t("Je recommande à tous mes amis en recherche d'emploi ") + this.getLink()}
         ref={this.shareLinkRef} />
       <div ref={this.buttonRef} style={buttonStyle}>
         <Button
           onClick={this.copyShareLink} isRound={true} >
-          {canBrowserShare ? 'Partager' : 'Copier'}
+          {canBrowserShare ? t('Partager') : t('Copier')}
         </Button>
       </div>
       <span style={shareLinkCopiedStyle}>
-        Lien copié dans le presse papier
+        {t('Lien copié dans le presse papier')}
       </span>
     </div>
   }
@@ -448,6 +446,7 @@ class ShareButtons extends React.PureComponent<ButtonsProps, ButtonsState> {
     </React.Fragment>
   }
 }
+const ShareButtons = withTranslation()(ShareButtonsBase)
 
 
 export {ShareBanner, ShareButtons, ShareModal}

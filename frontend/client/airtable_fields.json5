@@ -1,0 +1,57 @@
+// Please, keep in sync with
+// data_analysis/i18n/collect_strings.py StringCollector.collect_for_client
+{
+  adviceModules: {
+    base: 'appXmyc7yYj0pOcae',
+    idField: 'advice_id',
+    table: 'advice_modules',
+    translatableFields: [
+      'explanations (for client)',
+      'goal',
+      'title',
+      'title_3_stars',
+      'title_2_stars',
+      'title_1_star',
+      'user_gain_details',
+    ],
+    view: 'Ready to Import',
+  },
+  categories: {
+    base: 'appXmyc7yYj0pOcae',
+    table: 'diagnostic_categories',
+    translatableFields: [
+      'metric_title',
+      'metric_details',
+      'metric_details_feminine',
+    ],
+    view: 'Ready to Import',
+  },
+  emailTemplates: {
+    base: 'appXmyc7yYj0pOcae',
+    table: 'email_templates',
+    // TODO(pascal): Add content here.
+    translatableFields: [
+      'reason',
+      'title',
+    ],
+    view: 'Ready to Import',
+  },
+  strategyGoals: {
+    base: 'appXmyc7yYj0pOcae',
+    table: 'strategy_goals',
+    // TODO(pascal): Add stepTitle here.
+    translatableFields: [
+      'content',
+    ],
+    view: 'Ready to Import',
+  },
+  strategyTestimonials: {
+    base: 'appXmyc7yYj0pOcae',
+    table: 'strategy_testimonials',
+    translatableFields: [
+      'content',
+      'job',
+    ],
+    view: 'Ready to Import',
+  },
+}

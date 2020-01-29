@@ -8,8 +8,7 @@ import {CardProps, CardWithContentProps, DataSource, MethodSuggestionList, Skill
   connectExpandedCardWithContent} from './base'
 
 
-class ExpandedAdviceCardContentBase
-  extends React.PureComponent<CardWithContentProps<bayes.bob.JobSkills>> {
+class SkillForFuture extends React.PureComponent<CardWithContentProps<bayes.bob.JobSkills>> {
   public static propTypes = {
     adviceData: PropTypes.shape({
       skills: PropTypes.arrayOf(PropTypes.shape({
@@ -23,11 +22,10 @@ class ExpandedAdviceCardContentBase
     profile: PropTypes.shape({
       gender: PropTypes.string,
     }).isRequired,
-    userYou: PropTypes.func.isRequired,
   }
 
   public render(): React.ReactNode {
-    const {adviceData: {skills = []}, handleExplore, userYou} = this.props
+    const {adviceData: {skills = []}, handleExplore} = this.props
     const title = <React.Fragment>
       <GrowingNumber number={skills.length} isSteady={true} /> compétences pour préparer l'avenir*
     </React.Fragment>
@@ -38,13 +36,12 @@ class ExpandedAdviceCardContentBase
       title={title} footer={footer} isNotClickable={true}
       subtitle="Des clins d'œils vers les métiers de demain pour faire envie aux recruteurs">
       {skills.map((skill, index): ReactStylableElement => <Skill
-        key={skill.name} isRecommended={!index} {...{handleExplore, userYou, ...skill}} />)}
+        key={skill.name} isRecommended={!index} {...{handleExplore, ...skill}} />)}
     </MethodSuggestionList>
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.JobSkills, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.JobSkills, CardProps>(SkillForFuture)
 
 
 export default {ExpandedAdviceCardContent, Picto}

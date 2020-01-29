@@ -1,0 +1,83 @@
+[
+  {
+    "name": "Éducateur technique spécialisé (diplôme d'État)",
+    "romeIds": [
+      "K1207"
+    ],
+    "vaeRatioInDiploma": 36.9
+  },
+  {
+    "name": "Éducateur spécialisé (diplôme d'État)",
+    "romeIds": [
+      "K1207"
+    ],
+    "vaeRatioInDiploma": 25.1
+  },
+  {
+    "name": "Moniteur éducateur (diplôme d'État)",
+    "romeIds": [
+      "K1207"
+    ],
+    "vaeRatioInDiploma": 20
+  },
+  {
+    "name": "Assistance technique d'ingénieur (BTS)",
+    "romeIds": [
+      "M1605",
+      "I1304",
+      "H2204",
+      "H1504"
+    ],
+    "vaeRatioInDiploma": 12.6
+  },
+  {
+    "name": "Logistique (bac pro)",
+    "romeIds": [
+      "N1103",
+      "N1202",
+      "N1101"
+    ],
+    "vaeRatioInDiploma": 9.5
+  },
+  {
+    "name": "Métiers de la sécurité (BAC PRO)",
+    "romeIds": [
+      "K2503",
+      "K1204",
+      "K2501"
+    ],
+    "vaeRatioInDiploma": 8.8
+  },
+  {
+    "name": "Aide à domicile (MC niveau V)",
+    "romeIds": [
+      "K1302"
+    ],
+    "vaeRatioInDiploma": 7.7
+  },
+  {
+    "name": "Après vente automobile option véhicules particuliers (BTS)",
+    "romeIds": [
+      "I1604"
+    ],
+    "vaeRatioInDiploma": 7.7
+  },
+  {
+    "name": "Assistant de manager (BTS)",
+    "romeIds": [
+      "M1604",
+      "D1401",
+      "M1605",
+      "M1607"
+    ],
+    "vaeRatioInDiploma": 7.6
+  },
+  {
+    "name": "Coiffure (BP)",
+    "romeIds": [
+      "D1202",
+      "L1501"
+    ],
+    "vaeRatioInDiploma": 7.1
+  }
+]

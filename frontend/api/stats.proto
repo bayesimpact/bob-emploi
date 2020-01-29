@@ -2,6 +2,8 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
+import "bob_emploi/frontend/api/project.proto";
+
 package bayes.bob;
 
 message UsersCount {
@@ -34,6 +36,36 @@ message UsersCount {
   // number of interviews.
   map<string, int32> long_search_interview_counts = 10;
 
+  // Number of users according to their job passion levels and
+  // their job search lengths.
+  repeated PassionLevelCategory passion_level_counts = 11;
+
   // Time when aggregation of data happened.
   google.protobuf.Timestamp aggregated_at = 6;
+}
+
+message PassionLevelCategory {
+  SearchLengthCategory search_length = 1;
+  repeated PassionLevelCount level_counts = 2;
+}
+
+message PassionLevelCount {
+  // Level of passion the user has for its searched job.
+  PassionateLevel passionate_level = 1;
+
+  // Number of users with this passionate level.
+  int32 count = 2;
+}
+
+enum SearchLengthCategory {
+  UNKNOWN_SEARCH_LENGTH = 0;
+
+  // Search length lower than 4 months.
+  SHORT_SEARCH_LENGTH = 1;
+
+  // Search length between 4 months and 1 year.
+  MEDIUM_SEARCH_LENGTH = 2;
+
+  // Search length over a year.
+  LONG_SEARCH_LENGTH = 3;
 }

@@ -1,4 +1,7 @@
 import {expect} from 'chai'
+import {GoogleLoginResponse} from 'react-google-login'
+import {ThunkAction} from 'redux-thunk'
+
 import {AllActions, AsyncAction, RootState, asyncAuthenticate, getDefinedFieldsPath,
   googleAuthenticateUser} from 'store/actions'
 
@@ -10,6 +13,7 @@ const defaultRootState: RootState = {
   asyncState: {
     errorMessage: undefined,
     isFetching: {},
+    pendingFetch: {},
   },
   user: {},
 }
@@ -19,17 +23,23 @@ const defaultRootState: RootState = {
 // first one before the asynchronous action with ASYNC_MARKER, and a second
 // one containing the response once it's done. This capture function returns
 // a promise of the response contained in the second one.
-function captureAsyncAction<T extends string, R, A extends AsyncAction<T, R>>(
-  action, state: RootState = defaultRootState): Promise<R> {
+function captureAsyncAction<T extends string, R, A extends AsyncAction<T, R> & AllActions>(
+  action: ThunkAction<Promise<R|void>, RootState, {}, A>,
+  state: RootState = defaultRootState): Promise<R|void> {
   const dispatched: AllActions[] = []
-  const dispatch = (actionDispatched): Promise<R> | void => {
+  const dispatch = (actionDispatched: ThunkAction<Promise<R|void>, RootState, {}, A>|A):
+  Promise<R|void>|void => {
     if (typeof actionDispatched === 'function') {
-      return actionDispatched(dispatch, (): RootState => state)
+      return actionDispatched(dispatch, (): RootState => state, {})
     }
     dispatched.push(actionDispatched)
   }
-  // @ts-ignore
-  return dispatch(action).then((response: R): R => {
+  const promise = dispatch(action)
+  expect(promise).to.be.ok
+  if (!promise) {
+    return Promise.resolve()
+  }
+  return promise.then((response: void|R): void|R => {
     const firstDispatchedAction = dispatched[0] as A
 
     expect(firstDispatchedAction.ASYNC_MARKER).to.be.ok
@@ -65,7 +75,7 @@ describe('googleAuthenticateUser action generator', (): void => {
   // Mock the server API when accessing the user/authenticate endpoint to sign
   // in with Facebook.
   const mockApi = {
-    userAuthenticate: ({googleTokenId}): Promise<bayes.bob.AuthResponse> => {
+    userAuthenticate: ({googleTokenId}: bayes.bob.AuthRequest): Promise<bayes.bob.AuthResponse> => {
       expect(googleTokenId).to.equal('mlkdfh')
       return new Promise((resolve): void => {
         setTimeout((): void => resolve({authenticatedUser: {googleId: '123'}}))
@@ -73,16 +83,31 @@ describe('googleAuthenticateUser action generator', (): void => {
     },
   }
 
+  const mockGoogleLoginResponse = {
+    getAuthResponse: (): ReturnType<GoogleLoginResponse['getAuthResponse']> =>
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      ({id_token: 'mlkdfh'} as ReturnType<GoogleLoginResponse['getAuthResponse']>),
+    getId(): string {
+      return ''
+    },
+    isSignedIn(): boolean {
+      return true
+    },
+  } as GoogleLoginResponse
+
   it('should set the first and last name of the user', (): Promise<void> => {
     const action = googleAuthenticateUser({
-      getAuthResponse: (): {'id_token': string} => ({'id_token': 'mlkdfh'}),
-      getBasicProfile: (): {} => ({
+      ...mockGoogleLoginResponse,
+      getBasicProfile: (): ReturnType<GoogleLoginResponse['getBasicProfile']> => ({
+        getEmail: (): string => 'corpet@gmail.com',
         getFamilyName: (): string => 'Corpet',
         getGivenName: (): string => 'Pascal',
         getId: (): string => '123',
+        getImageUrl: (): string => '',
+        getName: (): string => 'Pascal Corpet',
       }),
     }, mockApi)
-    return captureAsyncAction(action).then((response): void => {
+    return captureAsyncAction(action).then((response: bayes.bob.AuthResponse|void): void => {
       expect(response).to.deep.equal({authenticatedUser: {
         googleId: '123',
         profile: {
@@ -96,15 +121,15 @@ describe('googleAuthenticateUser action generator', (): void => {
   it('should populate the names even if the Google account does not have any',
     (): Promise<void> => {
       const action = googleAuthenticateUser({
-        getAuthResponse: (): {'id_token': string} => ({'id_token': 'mlkdfh'}),
-        getBasicProfile: (): {} => ({
+        ...mockGoogleLoginResponse,
+        getBasicProfile: (): ReturnType<GoogleLoginResponse['getBasicProfile']> => ({
           getEmail: (): string => 'corpet@gmail.com',
-          getFamilyName: (): void => undefined,
-          getGivenName: (): void => undefined,
+          getFamilyName: (): string => '',
+          getGivenName: (): string => '',
           getId: (): string => '123',
-        }),
+        } as ReturnType<GoogleLoginResponse['getBasicProfile']>),
       }, mockApi)
-      return captureAsyncAction(action).then((response): void => {
+      return captureAsyncAction(action).then((response: bayes.bob.AuthResponse|void): void => {
         expect(response).to.deep.equal({authenticatedUser: {
           googleId: '123',
           profile: {
@@ -140,8 +165,8 @@ describe('asyncAuthenticate', () => {
         userId,
       },
     }
-    const action = asyncAuthenticate(forwardAuthenticate, {}, 'some method')
-    return captureAsyncAction(action, state).then((response): void => {
+    const action = asyncAuthenticate(forwardAuthenticate, {}, 'password')
+    return captureAsyncAction(action, state).then((response: bayes.bob.AuthResponse|void): void => {
       expect(response).to.deep.equal({authToken: token, authenticatedUser: {userId}})
     })
   })
@@ -163,7 +188,7 @@ describe('asyncAuthenticate', () => {
       },
     }
     const action = asyncAuthenticate(forwardAuthenticate, {}, 'password')
-    return captureAsyncAction(action, state).then((response): void => {
+    return captureAsyncAction(action, state).then((response: bayes.bob.AuthResponse|void): void => {
       expect(response).to.deep.equal({authToken: token, authenticatedUser: {userId}})
     })
   })
@@ -185,7 +210,7 @@ describe('asyncAuthenticate', () => {
       },
     }
     const action = asyncAuthenticate(forwardAuthenticate, {}, 'password')
-    return captureAsyncAction(action, state).then((response): void => {
+    return captureAsyncAction(action, state).then((response: bayes.bob.AuthResponse|void): void => {
       expect(response).to.deep.equal({})
     })
   })

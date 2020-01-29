@@ -1,15 +1,16 @@
+import {TFunction} from 'i18next'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {YouChooser, genderize, getDateString, inCityPrefix} from 'store/french'
+import {getDateString, inCityPrefix} from 'store/french'
 
+import {Trans} from 'components/i18n'
 import {RadiumExternalLink} from 'components/radium'
 import {ExternalLink, GrowingNumber, StringJoiner} from 'components/theme'
 import Picto from 'images/advices/picto-online-salons.svg'
 import poleEmploiLogo from 'images/ple-emploi-ico.png'
 
-import {CardProps, CardWithContentProps, ExpandableAction, MethodSuggestionList,
-  connectExpandedCardWithContent} from './base'
+import {CardProps, ExpandableAction, MethodSuggestionList, useAdviceData} from './base'
 
 
 const daysBetween = (date1: Date, date2: Date): number =>
@@ -62,49 +63,45 @@ NewWindowLinkBase.propTypes = {
 const NewWindowLink = React.memo(NewWindowLinkBase)
 
 
-// TODO(cyrille): Remove reference to Pôle emploi if we ever find other salons.
-const footer = <React.Fragment>
-  <img src={poleEmploiLogo} style={{height: 40, marginLeft: 20}} alt="" />
-  Voir tous les salons sur <ExternalLink
-    href="https://salonenligne.pole-emploi.fr/candidat/voirtouslessalons"
-    style={{color: colors.BOB_BLUE, textDecoration: 'none'}}>
-    le site de pôle emploi
-  </ExternalLink>
-</React.Fragment>
-const ExpandedAdviceCardContentBase: React.FC<CardWithContentProps<bayes.bob.OnlineSalons>> =
-  (props: CardWithContentProps<bayes.bob.OnlineSalons>): React.ReactElement|null => {
-    const {
-      adviceData: {salons = []},
-      handleExplore,
-      profile: {gender},
-      project: {city: {cityId: userCityId = '', regionId: userRegionId = ''} = {}},
-      userYou,
-    } = props
+const OnlineSalonsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement|null => {
+  const {
+    handleExplore,
+    profile: {gender},
+    project: {city: {cityId: userCityId = '', regionId: userRegionId = ''} = {}},
+    t,
+  } = props
+  const {salons = []} = useAdviceData<bayes.bob.OnlineSalons>(props)
 
-    if (!salons.length) {
-      return null
-    }
-    const genderE = genderize('·e', 'e', '', gender)
-    const maybeS = salons.length > 1 ? 's' : ''
-    const title = <React.Fragment>
-      <GrowingNumber number={salons.length} /> salon{maybeS} en ligne où candidater
-    </React.Fragment>
-    const subtitle = `
-      ${userYou('Tu peux', 'Vous pouvez')} être mis${genderE} directement en relation avec des
-      entreprises qui recrutent et passer des entretiens sans avoir à sortir de
-      chez ${userYou('toi', 'vous')}.
-    `
-
-    return <MethodSuggestionList title={title} subtitle={subtitle} footer={footer}>
-      {salons.map((salon, index): React.ReactElement<SalonProps>|null => <Salon
-        {...salon} key={`salon-${index}`}
-        {...{handleExplore, userCityId, userRegionId, userYou}} />)}
-    </MethodSuggestionList>
+  if (!salons.length) {
+    return null
   }
-ExpandedAdviceCardContentBase.propTypes = {
-  adviceData: PropTypes.shape({
-    salons: PropTypes.arrayOf(PropTypes.object.isRequired),
-  }).isRequired,
+
+  // TODO(cyrille): Remove reference to Pôle emploi if we ever find other salons.
+  const footer = <Trans parent={null} t={t}>
+    <img src={poleEmploiLogo} style={{height: 40, marginLeft: 20}} alt="" />
+    Voir tous les salons sur <ExternalLink
+      href="https://salonenligne.pole-emploi.fr/candidat/voirtouslessalons"
+      style={{color: colors.BOB_BLUE, textDecoration: 'none'}}>
+      le site de Pôle emploi
+    </ExternalLink>
+  </Trans>
+
+  const title = <Trans parent={null} t={t} count={salons.length}>
+    <GrowingNumber number={salons.length} /> salon en ligne où candidater
+  </Trans>
+  const subtitle = t(
+    'Vous pouvez être mis·e directement en relation avec des entreprises qui recrutent et passer ' +
+    'des entretiens sans avoir à sortir de chez vous',
+    {context: gender},
+  )
+
+  return <MethodSuggestionList title={title} subtitle={subtitle} footer={footer}>
+    {salons.map((salon, index): React.ReactElement<SalonProps>|null => <Salon
+      {...salon} key={`salon-${index}`}
+      {...{handleExplore, t, userCityId, userRegionId}} />)}
+  </MethodSuggestionList>
+}
+OnlineSalonsMethod.propTypes = {
   handleExplore: PropTypes.func.isRequired,
   profile: PropTypes.shape({
     gender: PropTypes.oneOf(['FEMININE', 'MASCULINE']),
@@ -115,11 +112,9 @@ ExpandedAdviceCardContentBase.propTypes = {
       regionId: PropTypes.string,
     }),
   }).isRequired,
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.OnlineSalons, CardProps>(
-    React.memo(ExpandedAdviceCardContentBase))
+const ExpandedAdviceCardContent = React.memo(OnlineSalonsMethod)
 
 
 interface Interest {
@@ -129,16 +124,16 @@ interface Interest {
 }
 interface InterestProps {
   interests: readonly Interest[]
-  userYou: YouChooser
+  t: TFunction
 }
 
 const InterestsBase: React.FC<InterestProps> = (props: InterestProps): React.ReactElement|null => {
-  const {interests, userYou} = props
+  const {interests, t} = props
   if (!interests.length) {
     return null
   }
   return <div>
-    Ce salon pourrait {userYou("t'", 'vous ')}intéresser parce que&nbsp;:
+    {t('Ce salon pourrait vous intéresser parce que\u00A0:')}
     <ul>{interests.map(({value}): React.ReactNode => <li key={value}>{value}</li>)}
     </ul>
   </div>
@@ -147,25 +142,25 @@ const Interests = React.memo(InterestsBase)
 
 const getInterests = (
   jobGroupIds: readonly string[], locations: readonly bayes.bob.Location[],
-  offerCount: number, userRegionId: string, userYou: YouChooser): Interest[] => {
+  offerCount: number, userRegionId: string, t: TFunction): Interest[] => {
   const interests: Interest[] = []
   if (offerCount > 20) {
     interests.push({
       color: colors.BOB_BLUE,
-      value: "il y a beaucoup d'offres",
+      value: t("il y a beaucoup d'offres"),
     })
   }
   if (locations.some(({city: {regionId = ''} = {}}): boolean => regionId === userRegionId)) {
     interests.push({
       personal: true,
-      value: `il propose des postes dans ${userYou('ta', 'votre')} région`,
+      value: t('il propose des postes dans votre région'),
     })
   }
   // If job groups are given, it means the user's is one of them.
   if (jobGroupIds.length) {
     interests.push({
       personal: true,
-      value: `il propose des postes dans ${userYou('ton', 'votre')} domaine`,
+      value: t('il propose des postes dans votre domaine'),
     })
   }
   return interests
@@ -195,15 +190,15 @@ LocationProps|null => {
 }
 
 
-type GetTagProps<T> = T extends React.ComponentType<{tag?: infer TP}> ? TP : never
+type TagProps = GetProps<typeof ExpandableAction>['tag']
 
-const makeTimeTagProps = (applicationEndDate, startDate):
-GetTagProps<typeof ExpandableAction>|undefined => {
+
+const makeTimeTagProps = (applicationEndDate: Date, startDate: Date): TagProps|undefined => {
   const now = new Date()
-  if (daysBetween(now, new Date(applicationEndDate)) < 15) {
+  if (daysBetween(now, applicationEndDate) < 15) {
     return {color: colors.SQUASH, value: 'Ferme bientôt'}
   }
-  if (now > new Date(startDate)) {
+  if (now > startDate) {
     return {color: colors.GREENISH_TEAL, value: 'En ce moment'}
   }
   return undefined
@@ -216,9 +211,9 @@ const emptyArray = [] as const
 interface SalonProps extends bayes.bob.OnlineSalon {
   handleExplore: (visualElement: string) => (() => void)
   style?: React.CSSProperties
+  t: TFunction
   userCityId: string
   userRegionId: string
-  userYou: YouChooser
 }
 
 const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|null => {
@@ -233,11 +228,11 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
       {areaType = undefined, city, city: {cityId = '', name: cityName = ''} = {}}] = [{}],
     offerCount,
     style,
+    t,
     title,
     url,
     userCityId,
     userRegionId,
-    userYou,
   } = props
   const moreInfos: React.ReactElement[] = []
   if (domain) {
@@ -251,8 +246,8 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
   }
   const interests =
     useMemo(() => getInterests(
-      jobGroupIds || emptyArray, locations || emptyArray, offerCount || 0, userRegionId, userYou),
-    [jobGroupIds, locations, offerCount, userRegionId, userYou])
+      jobGroupIds || emptyArray, locations || emptyArray, offerCount || 0, userRegionId, t),
+    [jobGroupIds, locations, offerCount, userRegionId, t])
   if (!applicationStartDate || !applicationEndDate) {
     return null
   }
@@ -262,10 +257,10 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
   return <ExpandableAction
     whyForYou={interests.some(({personal}): boolean => !!personal) ? 'personnel' : ''}
     tag={makeTimeTagProps(startDate, endDate)}
-    isMethodSuggestion={true} {...{style, title, userYou}}
+    isMethodSuggestion={true} {...{style, title}}
     onContentShown={handleExplore('salon info')}>
     <div>
-      <Interests {...{interests, userYou}} />
+      <Interests {...{interests, t}} />
       <div>
         Candidatures du {getDateString(startDate)} au {getDateString(endDate)}
         {moreInfos.length ? <React.Fragment><br />
@@ -274,7 +269,7 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
       </div>
       <div style={{display: 'flex', fontWeight: 'bold', margin: '12px 0'}}>
         <NewWindowLink href={url} isStandardStyle={true} onClick={handleExplore('salon')}>
-          En savoir plus sur le salon
+          {t('En savoir plus sur le salon')}
         </NewWindowLink>
         {(cityId && cityId !== userCityId && areaType === 'CITY') ?
           <NewWindowLink
@@ -304,11 +299,11 @@ SalonBase.propTypes = {
   offerCount: PropTypes.number,
   startDate: PropTypes.string,
   style: PropTypes.object,
+  t: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   url: PropTypes.string.isRequired,
   userCityId: PropTypes.string,
   userRegionId: PropTypes.string,
-  userYou: PropTypes.func.isRequired,
 }
 const Salon = React.memo(SalonBase)
 

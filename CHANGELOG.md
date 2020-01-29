@@ -1,5 +1,132 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2020-01-28_01
+
+- More English translations
+- Clean Code, Bug fixes
+
+Deployed on Wed, 29 Jan 2020 11:51:58 +0000
+
+# 2020-01-27_00
+
+2020-01-22_00
+
+- New landing page
+- Advance English translation
+- Clean Code, Bug Fixes, ...
+
+Deployed on Mon, 27 Jan 2020 16:00:46 +0000
+
+# 2020-01-17_01
+
+- Translation continuing
+- Clean Code, Bug Fixes, ...
+- Drop the beta on the logo
+
+Deployed on Fri, 17 Jan 2020 14:38:44 +0000
+
+# 2020-01-10_00
+
+- More translation work
+- Fixes and small improvements especially for coaching (stop a strategy, etc.)
+
+Deployed on Fri, 10 Jan 2020 14:33:04 +0000
+
+# 2019-12-20_00
+
+- UI updates on A-Li.
+- Client translation ongoing.
+- Under the hood: Progress on coaching.
+- Small fixes.
+
+Deployed on Fri, 20 Dec 2019 09:45:38 +0000
+
+# 2019-12-16_00
+
+- Enforce coaching before showing a category.
+- Prepare the English version (intro and profile pages).
+- New focus email for get-diploma strategy.
+- Various fixes and improvements
+
+Deployed on Mon, 16 Dec 2019 15:55:33 +0000
+
+# 2019-12-09_01
+
+2019-12-09_00
+
+- Fix critical bug when accessing a signed page URL without a user.
+- Fix Bugs in A-Li
+
+[Hook] Create a hook for userYou. (#11297)
+
+Deployed on Tue, 10 Dec 2019 10:42:07 +0000
+
+# 2019-12-06_00
+
+- A-Li get ready for launch
+- New focus email to prepare your application
+- First steps of i18n (English) - behind the scene
+- Small fixes and updates
+
+Deployed on Fri, 06 Dec 2019 14:16:16 +0000
+
+# 2019-12-02_00
+
+- A-Li new flow and UI
+- Simulate coaching emails in eval
+- Various bug fixes
+
+Deployed on Mon, 02 Dec 2019 09:50:42 +0000
+
+# 2019-11-26_01
+
+- Bug Fixes, Clean Code, ...
+
+Deployed on Tue, 26 Nov 2019 12:36:18 +0000
+
+# 2019-11-22_00
+
+- Update the goal panel in strategies
+- Add a library for methods
+- Add a graph on Bob users motivation in stats page
+- Clean Code, Bug Fixes, ...
+
+Deployed on Fri, 22 Nov 2019 15:14:53 +0000
+
+# 2019-11-15_00
+
+- New graphs in the Stats Page.
+- Prepare A-Li for launch on /unml/a-li
+- Fix a deep link in focus emails.
+- Start new larger goals for strat v2.
+
+Deployed on Fri, 15 Nov 2019 16:02:08 +0000
+
+# 2019-11-14_00
+
+- Add new graphs in the Stats Page.
+- Unify the way we create deep links to advice pages in focus emails.
+- Merge account and profile tabs once logged in.
+- Enable deep link using templates for job boards.
+- Small fixes and glitches.
+
+Deployed on Thu, 14 Nov 2019 10:31:48 +0000
+
+# 2019-11-06_00
+
+- Add content for people in a handicap situation
+- Prepare a chart for VAE stats
+- Clean Code, Bug Fixes
+
+Deployed on Wed, 06 Nov 2019 15:36:36 +0000
+
+# 2019-10-29_00
+
+- Update NPS survey
+- Small changes, Clean code, bug fixes, ...
+
+Deployed on Tue, 29 Oct 2019 15:43:39 +0000
+
 # 2019-10-16_00
 
 - New strategy UI on diagnostic page

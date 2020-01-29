@@ -1,15 +1,12 @@
 import PropTypes from 'prop-types'
 import React from 'react'
-import {connect} from 'react-redux'
-
-import {DispatchAllActions, RootState, hideToasterMessageAction} from 'store/actions'
 
 import {isMobileVersion} from 'components/mobile'
 import {OutsideClickHandler} from './theme'
 
 
 interface SnackbarProps {
-  dispatch: DispatchAllActions
+  onHide: () => void
   snack?: React.ReactNode
   style?: React.CSSProperties
   timeoutMillisecs: number
@@ -23,9 +20,9 @@ interface SnackbarState {
 }
 
 
-class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
+class Snackbar extends React.PureComponent<SnackbarProps, SnackbarState> {
   public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
+    onHide: PropTypes.func.isRequired,
     snack: PropTypes.node,
     style: PropTypes.object,
     timeoutMillisecs: PropTypes.number.isRequired,
@@ -41,7 +38,8 @@ class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
   }
 
   public componentDidUpdate(
-    {snack: previousSnack}: Pick<SnackbarProps, 'snack'>, {isVisible: wasVisible}): void {
+    {snack: previousSnack}: Pick<SnackbarProps, 'snack'>,
+    {isVisible: wasVisible}: Pick<SnackbarState, 'isVisible'>): void {
     const {snack, timeoutMillisecs} = this.props
     const {isVisible, nextSnacks, snack: visibleSnack} = this.state
 
@@ -73,7 +71,7 @@ class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
     }
     clearTimeout(this.timer)
     this.setState({isVisible: false})
-    this.props.dispatch(hideToasterMessageAction)
+    this.props.onHide()
   }
 
   private handleTransitionEnd = (): void => {
@@ -95,7 +93,7 @@ class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
 
   public render(): React.ReactNode {
     const {snack, isVisible} = this.state
-    const {dispatch: omittedDispatch, snack: omittedSnack, style,
+    const {onHide: omittedOnHide, snack: omittedSnack, style,
       timeoutMillisecs: omittedTimeoutMillisecs, ...otherProps} = this.props
     const containerStyle: React.CSSProperties = {
       bottom: 0,
@@ -132,11 +130,7 @@ class SnackbarBase extends React.PureComponent<SnackbarProps, SnackbarState> {
       </div>
     </OutsideClickHandler>
   }
-
 }
-const Snackbar = connect(({asyncState}: RootState): {snack?: string} => ({
-  snack: asyncState.errorMessage,
-}))(SnackbarBase)
 
 
 export {Snackbar}
