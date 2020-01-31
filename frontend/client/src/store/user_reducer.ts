@@ -195,6 +195,10 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
       }
       return increaseRevision({
         ...state,
+        profile: {
+          ...state.profile,
+          hasCompletedOnboarding: true,
+        },
         projects: [project],
       })
     }
@@ -304,6 +308,17 @@ function userReducer(state: bayes.bob.User = initialData, action: AllActions): b
       } else if (action.status === 'success' && action.response) {
         // Coming back from server: replace the strategy by the result.
         return updateStrategy(state, action.project, action.response, true)
+      }
+      return state
+    case 'STOP_STRATEGY':
+      if (!action.status) {
+        // Before sending the update to the server, let's modify the client state to make the
+        // change faster.
+        return updateProject(state, {
+          ...action.project,
+          openedStrategies: (action.project.openedStrategies || []).
+            filter(({strategyId}): boolean => strategyId !== action.strategy.strategyId),
+        })
       }
       return state
     case 'TRACK_INITIAL_UTM':

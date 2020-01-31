@@ -7,8 +7,8 @@ const WebpackPwaManifest = require('webpack-pwa-manifest')
 
 const baseConfig = require('./base')
 const entrypoints = require('./entrypoints')
-const colors = require('./colors.json')
-const constants = require('./const.json')
+const colors = require('./colors.json5')
+const constants = require('./const.json5')
 
 
 module.exports = {
@@ -40,6 +40,7 @@ module.exports = {
               'react-hot-loader/babel',
               '@babel/plugin-syntax-dynamic-import',
               ['@babel/plugin-proposal-class-properties', {loose: false}],
+              ['@babel/plugin-proposal-optional-chaining', {loose: false}],
             ],
             presets: [['@babel/env', {modules: false}], '@babel/react', '@babel/typescript'],
           },
@@ -81,13 +82,15 @@ module.exports = {
         chunks: [key],
         filename: `${entrypoints[key].htmlFilename}`,
         template: './src/index.html',
-      })
+      }),
     ),
     new WebpackPwaManifest({
-      'background_color': '#1888ff', // Colors.BOB_BLUE
+      // eslint-disable-next-line camelcase
+      background_color: '#1888ff', // Colors.BOB_BLUE
       lang: 'fr-FR',
       name: 'Bob',
-      'theme_color': '#1888ff', // Colors.BOB_BLUE
+      // eslint-disable-next-line camelcase
+      theme_color: '#1888ff', // Colors.BOB_BLUE
     }),
     new webpack.NoEmitOnErrorsPlugin(),
   ],

@@ -1,13 +1,13 @@
 import PropTypes from 'prop-types'
-import {parse} from 'query-string'
 import React from 'react'
 import {connect} from 'react-redux'
 import {Redirect, RouteComponentProps} from 'react-router'
 
 import {DispatchAllActions, RootState, closeLoginModal, loginUserFromToken, openLoginModal,
   openRegistrationModal} from 'store/actions'
-import {YouChooser} from 'store/french'
+import {parseQueryString} from 'store/parse'
 
+import {Trans} from 'components/i18n'
 import {LoginButton, LoginMethods} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {ModalCloseButton} from 'components/modal'
@@ -58,7 +58,8 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
     if (isMobileVersion && hasLoginModal) {
       return
     }
-    const {authToken, email = '', resetToken, state, userId: userId} = parse(search)
+    const {authToken, email = '', resetToken, state, userId: userId} =
+      parseQueryString(search)
     if (hash === SIGNUP_HASH) {
       dispatch(openRegistrationModal({email}, 'urlHash'))
       return
@@ -78,7 +79,8 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
     dispatch(openLoginModal({email}, 'returninguser'))
   }
 
-  public componentDidUpdate(unusedPrevProps, {shouldRedirect: prevShouldRedirect}): void {
+  public componentDidUpdate(
+    unusedPrevProps: Props, {shouldRedirect: prevShouldRedirect}: State): void {
     const {history, location: {pathname}} = this.props
     const {shouldRedirect} = this.state
     if (!prevShouldRedirect && shouldRedirect && pathname === Routes.SIGNUP_PAGE) {
@@ -136,7 +138,6 @@ const SignUpPage = connect(({app: {loginModal}}: RootState): ConnectedProps => (
 
 interface BannerProps {
   onClose?: () => void
-  userYou: YouChooser
   style?: React.CSSProperties
 }
 
@@ -150,7 +151,6 @@ class SignUpBanner extends React.Component<BannerProps, BannerState> {
   public static propTypes = {
     onClose: PropTypes.func,
     style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
   }
 
   public state = {
@@ -164,7 +164,7 @@ class SignUpBanner extends React.Component<BannerProps, BannerState> {
   }
 
   public render(): React.ReactNode {
-    const {style, userYou} = this.props
+    const {style} = this.props
     const {isShown} = this.state
     if (!isShown) {
       // TODO(pascal): Add a transition when hiding the banner.
@@ -202,12 +202,12 @@ class SignUpBanner extends React.Component<BannerProps, BannerState> {
       <ModalCloseButton onClick={this.handleClose} style={closeStyle} />
       {isMobileVersion ? null :
         <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />}
-      <span style={textBannerStyle} >
-        Pense{userYou('', 'z')} à {isMobileVersion ? null : <React.Fragment>
-          créer {userYou('ton', 'votre')} compte pour{' '}
-        </React.Fragment>}
-        sauvegarder {userYou('ta', 'votre')} progression
-      </span>
+      {isMobileVersion ? <Trans style={textBannerStyle} parent="span">
+
+        Pensez à sauvegarder votre progression
+      </Trans> : <Trans style={textBannerStyle} parent="span">
+        Pensez à créer votre compte pour sauvegarder votre progression
+      </Trans>}
       <span style={{flex: 1}}></span>
       <LoginButton
         type="navigation" isRound={true} visualElement="diagnostic">

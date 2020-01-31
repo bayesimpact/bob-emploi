@@ -129,7 +129,7 @@ describe('app reducer', (): void => {
           },
         },
       },
-    }
+    } as const
     const newState = app(oldState, action)
     expect(newState.quickDiagnostic).to.deep.equal({
       after: {},
@@ -141,5 +141,52 @@ describe('app reducer', (): void => {
         },
       },
     })
+  })
+
+  it('should mark onboarding comments as read', (): void => {
+    const oldState = {
+      adviceData: {},
+      quickDiagnostic: {
+        after: {},
+        before: {
+          TARGET_JOB_FIELD: {
+            comment: {stringParts: ['Bonjour ', 'Angèle', ', comment vas-tu ?']},
+            field: 'TARGET_JOB_FIELD',
+            isBeforeQuestion: true,
+          },
+        },
+      },
+    } as const
+    const action = {
+      comment: {
+        field: 'TARGET_JOB_FIELD',
+        isBeforeQuestion: true,
+      },
+      type: 'ONBOARDING_COMMENT_IS_SHOWN',
+    } as const
+    const newState = app(oldState, action)
+    expect(newState.quickDiagnostic).to.deep.equal({
+      after: {},
+      before: {
+        TARGET_JOB_FIELD: {
+          comment: {stringParts: ['Bonjour ', 'Angèle', ', comment vas-tu ?']},
+          field: 'TARGET_JOB_FIELD',
+          hasBeenShown: true,
+          isBeforeQuestion: true,
+        },
+      },
+    })
+  })
+
+  it('should mark comment as shown', (): void => {
+    const oldState = {
+      adviceData: {},
+    }
+    const action = {
+      commentKey: 'coaching',
+      type: 'COMMENT_IS_SHOWN',
+    } as const
+    const newState = app(oldState, action)
+    expect(newState.hasSeenComment).to.deep.equal({coaching: true})
   })
 })

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/browser'
 import _memoize from 'lodash/memoize'
 import {MdiReactIconProps} from 'mdi-react/dist/typings'
 import ArrowDownIcon from 'mdi-react/ArrowDownIcon'
@@ -10,13 +11,12 @@ import ChevronUpIcon from 'mdi-react/ChevronUpIcon'
 import MenuDownIcon from 'mdi-react/MenuDownIcon'
 import MenuUpIcon from 'mdi-react/MenuUpIcon'
 import PropTypes from 'prop-types'
-import Radium from 'radium'
-import Raven from 'raven-js'
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import ReactMarkdown from 'react-markdown'
 import VisibilitySensor from 'react-visibility-sensor'
 
 import {isMobileVersion} from 'components/mobile'
+import {useRadium} from 'components/radium'
 
 import 'styles/fonts/Lato/font.css'
 
@@ -41,7 +41,10 @@ const componentsToColor = (components: [number, number, number]): string =>
   '#' + components.map((n: number): string => n.toString(16)).join('')
 
 // Change #rrggbb color to rgba(r, g, b, alpha)
-export const colorToAlpha = (color: string, alpha: number): string => {
+export const colorToAlpha = (color: string|undefined, alpha: number): string => {
+  if (!color) {
+    return ''
+  }
   const [red, green, blue] = colorToComponents(color)
   return `rgba(${red}, ${green}, ${blue}, ${alpha === 0 ? 0 : alpha || 1})`
 }
@@ -71,6 +74,20 @@ export const MAX_CONTENT_WIDTH = 1000
 
 // Minimum padding between screen borders and content on medium screens.
 export const MIN_CONTENT_PADDING = 20
+
+
+function vendorProperties<K extends keyof React.CSSProperties>(
+  property: K, value: React.CSSProperties[K]): React.CSSProperties {
+  const style: React.CSSProperties = {}
+  const propertySuffix = property.slice(0, 1).toUpperCase() + property.slice(1);
+  ['Moz', 'Ms', 'O', 'Webkit'].forEach((prefix): void => {
+    // @ts-ignore
+    style[prefix + propertySuffix] = value
+  })
+  style[property] = value
+  return style
+}
+
 
 export const Styles = {
   // Style for the sticker on top of a box that tells the users why we show them this box.
@@ -106,15 +123,7 @@ export const Styles = {
     width: '100%',
     ...SmoothTransitions,
   },
-  VENDOR_PREFIXED: (property: string, value): React.CSSProperties => {
-    const style = {}
-    const propertySuffix = property.slice(0, 1).toUpperCase() + property.slice(1);
-    ['Moz', 'Ms', 'O', 'Webkit'].forEach((prefix): void => {
-      style[prefix + propertySuffix] = value
-    })
-    style[property] = value
-    return style
-  },
+  VENDOR_PREFIXED: vendorProperties,
 } as const
 
 
@@ -132,8 +141,8 @@ const BUTTON_TYPE_STYLES: {[type: string]: TypeStyle} = {
     ':hover': {
       boxShadow: 'none',
     },
-    backgroundColor: colors.SILVER,
-    boxShadow: 'none',
+    'backgroundColor': colors.SILVER,
+    'boxShadow': 'none',
   },
   deletion: {
     backgroundColor: colors.RED_PINK,
@@ -150,9 +159,9 @@ const BUTTON_TYPE_STYLES: {[type: string]: TypeStyle} = {
       boxShadow: 'none',
       transform: 'translateY(0)',
     },
-    backgroundColor: 'transparent',
-    boxShadow: 'none',
-    color: colors.SLATE,
+    'backgroundColor': 'transparent',
+    'boxShadow': 'none',
+    'color': colors.SLATE,
     ...SmoothTransitions,
   },
   navigation: {
@@ -175,18 +184,25 @@ export interface ButtonProps extends Omit<React.ComponentPropsWithoutRef<'button
   isNarrow?: boolean
   isProgressShown?: boolean
   isRound?: boolean
-  style?: React.CSSProperties
+  style?: RadiumCSSProperties
   type?: keyof typeof BUTTON_TYPE_STYLES
 }
 
 
 export interface RadiumButtonProps extends React.ComponentPropsWithoutRef<'button'> {
   innerRef: React.RefObject<HTMLButtonElement>
+  style?: RadiumCSSProperties
 }
 
 
-const RadiumButton = Radium(({innerRef, ...props}: RadiumButtonProps): React.ReactElement =>
-  <button {...props} ref={innerRef} />)
+// TODO(cyrille): Use forwardRef.
+const RadiumButtonBase = ({innerRef, ...otherProps}: RadiumButtonProps): React.ReactElement => {
+  const [radiumProps] = useRadium<HTMLButtonElement, Omit<RadiumButtonProps, 'innerRef'>>(
+    otherProps,
+  )
+  return <button ref={innerRef} {...radiumProps} />
+}
+const RadiumButton = React.memo(RadiumButtonBase)
 
 
 class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
@@ -223,28 +239,24 @@ class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
   private timeout: number|undefined
 
   public blur(): void {
-    this.dom.current && this.dom.current.blur()
+    this.dom.current?.blur()
   }
 
   public focus(): void {
-    this.dom.current && this.dom.current.focus()
+    this.dom.current?.focus()
   }
 
-  private handleClick = (event): void => {
+  private handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
     const {bounceDurationMs, onClick} = this.props
     if (!onClick) {
       return
     }
-    if (event && event.stopPropagation) {
-      event.stopPropagation()
-    }
-    if (event && event.preventDefault) {
-      event.preventDefault()
-    }
+    event?.stopPropagation?.()
+    event?.preventDefault?.()
     this.setState({isClicking: true})
     this.timeout = window.setTimeout((): void => {
       this.setState({isClicking: false})
-      onClick && onClick(event)
+      onClick(event)
     }, bounceDurationMs)
   }
 
@@ -252,7 +264,7 @@ class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
     const {bounceDurationMs, children, disabled, isNarrow, isProgressShown, type, style,
       isHighlighted, isRound, ...otherProps} = this.props
     const {isClicking} = this.state
-    const typeStyle = type && BUTTON_TYPE_STYLES[type] || BUTTON_TYPE_STYLES.navigation
+    const typeStyle = BUTTON_TYPE_STYLES[type || 'navigation']
 
     const buttonStyle: RadiumCSSProperties = {
       border: 'none',
@@ -300,7 +312,7 @@ class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
     } else {
       buttonStyle[':hover'] = {}
       buttonStyle.backgroundColor = typeStyle.disabledColor ||
-        (typeStyle.backgroundColor && colorToAlpha(typeStyle.backgroundColor, .5)) ||
+        (colorToAlpha(typeStyle?.backgroundColor, .5)) ||
         'rgba(67, 212, 132, 0.5)'
       buttonStyle.cursor = 'inherit'
     }
@@ -326,11 +338,12 @@ class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
 }
 
 
-class ExternalLink extends React.PureComponent<React.HTMLProps<HTMLAnchorElement>> {
-  public render(): React.ReactNode {
-    return <a rel="noopener noreferrer" target="_blank" {...this.props} />
-  }
-}
+type LinkProps = React.HTMLProps<HTMLAnchorElement>
+
+
+const ExternalLinkBase: React.FC<LinkProps> = (props: LinkProps): React.ReactElement =>
+  <a rel="noopener noreferrer" target="_blank" {...props} />
+const ExternalLink = React.memo(ExternalLinkBase)
 
 
 // TODO(cyrille): Find a cleaner way to define this.
@@ -338,12 +351,21 @@ interface MarkDownParagraphRendererProps extends React.HTMLProps<HTMLDivElement>
   nodeKey?: string
 }
 
-class SingeLineParagraph extends React.PureComponent<MarkDownParagraphRendererProps> {
-  public render(): React.ReactNode {
-    const {nodeKey: omittedNodeKey, value: omittedValue, ...otherProps} = this.props
-    return <div {...otherProps} />
-  }
+const SingleLineParagraphBase: React.FC<MarkDownParagraphRendererProps> =
+({nodeKey: unusedNodeKey, value: unusedValue, ...otherProps}: MarkDownParagraphRendererProps):
+React.ReactElement => <div {...otherProps} />
+const SingleLineParagraph = React.memo(SingleLineParagraphBase)
+
+
+interface MarkdownLinkProps extends LinkProps {
+  nodeKey?: string
 }
+
+
+const MarkdownLinkBase =
+({nodeKey: unusedNodeKey, value: unusedValue, ...linkProps}: MarkdownLinkProps):
+React.ReactElement|null => <ExternalLink {...linkProps} />
+const MarkdownLink = React.memo(MarkdownLinkBase)
 
 
 interface MarkdownProps extends Omit<ReactMarkdown['props'], 'source' | 'escapeHtml'> {
@@ -353,28 +375,25 @@ interface MarkdownProps extends Omit<ReactMarkdown['props'], 'source' | 'escapeH
 }
 
 
-class Markdown extends React.PureComponent<MarkdownProps> {
-  public static propTypes = {
-    content: PropTypes.string,
-    isSingleLine: PropTypes.bool,
-    renderers: PropTypes.object,
+const MarkdownBase: React.FC<MarkdownProps> = (props: MarkdownProps): React.ReactElement|null => {
+  const {content, isSingleLine, renderers, ...extraProps} = props
+  if (!content) {
+    return null
   }
-
-  public render(): React.ReactNode {
-    const {content, isSingleLine, renderers, ...extraProps} = this.props
-    if (!content) {
-      return null
-    }
-    return <ReactMarkdown
-      source={content} escapeHtml={true}
-      renderers={{
-        link: ({nodeKey: unusedNodeKey, value: unusedValue, ...props}): React.ReactElement =>
-          <ExternalLink {...props} />,
-        ...isSingleLine ? {paragraph: SingeLineParagraph} : {},
-        ...renderers}}
-      {...extraProps} />
-  }
+  return <ReactMarkdown
+    source={content} escapeHtml={true}
+    renderers={{
+      link: MarkdownLink,
+      ...isSingleLine ? {paragraph: SingleLineParagraph} : {},
+      ...renderers}}
+    {...extraProps} />
 }
+MarkdownBase.propTypes = {
+  content: PropTypes.string,
+  isSingleLine: PropTypes.bool,
+  renderers: PropTypes.object,
+}
+const Markdown = React.memo(MarkdownBase)
 
 
 interface CircularProgressProps {
@@ -427,7 +446,7 @@ class CircularProgress extends React.PureComponent<CircularProgressProps, Circul
 
   private scalePathTimer: number|undefined
 
-  private scalePath(step): void {
+  private scalePath(step: number): void {
     const {periodMilliseconds} = this.props
     this.setState({scalePathStep: step})
     this.scalePathTimer = window.setTimeout(
@@ -468,7 +487,7 @@ class CircularProgress extends React.PureComponent<CircularProgressProps, Circul
       transition: `all ${isWrapperRotated ? '10' : '0'}s linear`,
       width: size,
     }
-    const getArcLength = (fraction): number => fraction * Math.PI * (size - thickness)
+    const getArcLength = (fraction: number): number => fraction * Math.PI * (size - thickness)
     let strokeDasharray, strokeDashoffset, transitionDuration
     if (scalePathStep === 0) {
       strokeDasharray = `${getArcLength(0)}, ${getArcLength(1)}`
@@ -506,10 +525,19 @@ class CircularProgress extends React.PureComponent<CircularProgressProps, Circul
   }
 }
 
+
+interface MultiSizeImageDef {
+  src: string
+  images: readonly {
+    path: string
+  }[]
+}
+
+
 // Function to use smaller version of image on mobile in css.
 // Uses responsive-loader format, so image must be imported as
 // 'myImage.jpg?multi&sizes[]=<fullSize>&sizes[]=<mobileSize>'
-function chooseImageVersion(responsiveImage, isMobileVersion): string {
+function chooseImageVersion(responsiveImage: MultiSizeImageDef, isMobileVersion: boolean): string {
   return !isMobileVersion ? responsiveImage.src :
     responsiveImage.images[1] ?
       responsiveImage.images[1].path :
@@ -517,15 +545,9 @@ function chooseImageVersion(responsiveImage, isMobileVersion): string {
 }
 
 
-const IMAGE_SIZE_SHAPE = PropTypes.shape({
-  mediaCondition: PropTypes.string,
-  width: PropTypes.string.isRequired,
-})
-
-
 interface MultiSizeImageProps {
   alt: string
-  sizes: {
+  sizes: readonly {
     mediaCondition?: string
     width: string
   }[]
@@ -541,36 +563,35 @@ interface MultiSizeImageProps {
 // You must still implement the sizes, although a default is set to first image width.
 // You can get most of the props directly from responsive-loader:
 // `import myImageAllSizes from 'myImage.jpg/png?multi&sizes[]=<defaultSize>&sizes[]=<otherSize>'`
-class MultiSizeImage extends React.PureComponent<MultiSizeImageProps> {
-  public static propTypes = {
-    alt: PropTypes.string.isRequired,
-    sizes: PropTypes.arrayOf(IMAGE_SIZE_SHAPE.isRequired),
-    srcs: PropTypes.shape({
-      src: PropTypes.string.isRequired,
-      srcSet: PropTypes.string,
-      width: PropTypes.number,
-    }).isRequired,
-  }
+const MultiSizeImageBase = (props: MultiSizeImageProps): React.ReactElement => {
+  const {alt, srcs, sizes, ...otherProps} = props
+  const width = srcs.width
 
-
-  private sizeRow(size): string {
-    const {mediaCondition, width} = size
-    return mediaCondition ? `${mediaCondition} ${width}` : width
-  }
-
-  private makeSizesProp(sizes, width): string {
+  const sizesProp = useMemo((): string => {
     if (!sizes || !sizes.length) {
-      return width || ''
+      return (width + '') || ''
     }
-    return sizes.map(this.sizeRow).join(', ')
-  }
-
-  public render(): React.ReactNode {
-    const {alt, srcs, sizes, ...props} = this.props
-    const sizesProp = this.makeSizesProp(sizes, srcs.width)
-    return <img alt={alt} src={srcs.src} srcSet={srcs.srcSet} sizes={sizesProp} {...props} />
-  }
+    function sizeRow(size: {mediaCondition?: string; width: string}): string {
+      const {mediaCondition, width} = size
+      return mediaCondition ? `${mediaCondition} ${width}` : width
+    }
+    return sizes.map(sizeRow).join(', ')
+  }, [sizes, width])
+  return <img alt={alt} src={srcs.src} srcSet={srcs.srcSet} sizes={sizesProp} {...otherProps} />
 }
+MultiSizeImageBase.propTypes = {
+  alt: PropTypes.string.isRequired,
+  sizes: PropTypes.arrayOf(PropTypes.shape({
+    mediaCondition: PropTypes.string,
+    width: PropTypes.string.isRequired,
+  }).isRequired),
+  srcs: PropTypes.shape({
+    src: PropTypes.string.isRequired,
+    srcSet: PropTypes.string,
+    width: PropTypes.number,
+  }).isRequired,
+}
+const MultiSizeImage = React.memo(MultiSizeImageBase)
 
 
 interface JobGroupCoverImageProps {
@@ -588,81 +609,82 @@ interface JobGroupCoverImageProps {
 }
 
 
-class JobGroupCoverImage extends React.PureComponent<JobGroupCoverImageProps> {
-  public static propTypes = {
-    blur: PropTypes.number,
-    coverOpacity: PropTypes.number,
-    grayScale: PropTypes.number,
-    opaqueCoverColor: PropTypes.string,
-    opaqueCoverGradient: PropTypes.shape({
-      left: PropTypes.string.isRequired,
-      middle: PropTypes.string,
-      right: PropTypes.string.isRequired,
-    }),
-    romeId: PropTypes.string.isRequired,
-    style: PropTypes.object,
-  }
+const coverAll: React.CSSProperties = {
+  bottom: 0,
+  left: 0,
+  position: 'absolute',
+  right: 0,
+  top: 0,
+}
 
-  public static defaultProps = {
-    coverOpacity: .4,
-    opaqueCoverColor: '#000',
-  }
 
-  public render(): React.ReactNode {
-    const {blur, coverOpacity, grayScale, opaqueCoverColor,
-      opaqueCoverGradient, romeId, style} = this.props
-    const url = (isMobileVersion ? config.jobGroupImageSmallUrl : config.jobGroupImageUrl).
-      replace('ROME_ID', romeId)
-    const coverAll: React.CSSProperties = {
-      bottom: 0,
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-    }
-    const coverImageStyle: React.CSSProperties = {
-      ...coverAll,
-      backgroundImage: url ? `url("${url}")` : 'inherit',
-      backgroundPosition: 'center center',
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: 'cover',
-      zIndex: -2,
-    }
-    const containerStyle = {
-      ...coverAll,
-      ...style,
-    }
+const JobGroupCoverImageBase: React.FC<JobGroupCoverImageProps> = (props: JobGroupCoverImageProps):
+React.ReactElement => {
+  const {blur, coverOpacity = .4, grayScale, opaqueCoverColor = '#000',
+    opaqueCoverGradient, romeId, style} = props
+  const url = (isMobileVersion ? config.jobGroupImageSmallUrl : config.jobGroupImageUrl).
+    replace('ROME_ID', romeId)
+  const filters = useMemo((): readonly string[] => {
     const filters: string[] = []
     if (blur) {
       filters.push(`blur(${blur}px)`)
-      containerStyle.overflow = 'hidden'
     }
     if (grayScale) {
       filters.push(`grayscale(${grayScale}%)`)
     }
-    if (filters.length) {
-      Object.assign(coverImageStyle, Styles.VENDOR_PREFIXED('filter', filters.join(' ')))
-    }
-    const opaqueCoverStyle = {
-      ...coverAll,
-      backgroundColor: opaqueCoverColor,
-      opacity: coverOpacity,
-      zIndex: -1,
-    }
+    return filters
+  }, [blur, grayScale])
+  const coverImageStyle = useMemo((): React.CSSProperties => ({
+    ...coverAll,
+    backgroundImage: url ? `url("${url}")` : 'inherit',
+    backgroundPosition: 'center center',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover',
+    zIndex: -2,
+    ...(filters.length ? Styles.VENDOR_PREFIXED('filter', filters.join(' ')) : undefined),
+  }), [filters, url])
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    ...coverAll,
+    ...style,
+    ...(blur ? {overflow: 'hidden'} : undefined),
+  }), [blur, style])
+  const opaqueCoverStyle = useMemo((): React.CSSProperties => {
+    const additionalStyle: React.CSSProperties = {}
     if (opaqueCoverGradient) {
       const gradientParts = ['104deg', opaqueCoverGradient.left]
       if (opaqueCoverGradient.middle) {
         gradientParts.push(opaqueCoverGradient.middle)
       }
       gradientParts.push(opaqueCoverGradient.right)
-      opaqueCoverStyle.background = `linear-gradient(${gradientParts.join(', ')})`
+      additionalStyle.background = `linear-gradient(${gradientParts.join(', ')})`
     }
-    return <div style={containerStyle}>
-      {url ? <div style={coverImageStyle} /> : null}
-      <div style={opaqueCoverStyle} />
-    </div>
-  }
+    return {
+      ...coverAll,
+      backgroundColor: opaqueCoverColor,
+      opacity: coverOpacity,
+      zIndex: -1,
+      ...additionalStyle,
+    }
+  }, [coverOpacity, opaqueCoverColor, opaqueCoverGradient])
+  return <div style={containerStyle}>
+    {url ? <div style={coverImageStyle} /> : null}
+    <div style={opaqueCoverStyle} />
+  </div>
 }
+JobGroupCoverImageBase.propTypes = {
+  blur: PropTypes.number,
+  coverOpacity: PropTypes.number,
+  grayScale: PropTypes.number,
+  opaqueCoverColor: PropTypes.string,
+  opaqueCoverGradient: PropTypes.shape({
+    left: PropTypes.string.isRequired,
+    middle: PropTypes.string,
+    right: PropTypes.string.isRequired,
+  }),
+  romeId: PropTypes.string.isRequired,
+  style: PropTypes.object,
+}
+const JobGroupCoverImage = React.memo(JobGroupCoverImageBase)
 
 
 interface RadioButtonProps {
@@ -670,7 +692,7 @@ interface RadioButtonProps {
   isHovered?: boolean
   isSelected?: boolean
   onBlur?: () => void
-  onClick?: () => void
+  onClick?: (event?: React.SyntheticEvent<HTMLDivElement>) => void
   onFocus?: () => void
   style?: React.CSSProperties
 }
@@ -697,20 +719,20 @@ class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: bool
     const {onBlur, onFocus} = this.props
     this.setState({isFocused})
     if (isFocused) {
-      onFocus && onFocus()
+      onFocus?.()
     } else {
-      onBlur && onBlur()
+      onBlur?.()
     }
   })
 
-  private handleClick = (): void => {
+  private handleClick = (event?: React.SyntheticEvent<HTMLDivElement>): void => {
     this.focus()
     const {isDisabled, onClick} = this.props
-    !isDisabled && onClick && onClick()
+    !isDisabled && onClick?.(event)
   }
 
   public focus(): void {
-    this.dom.current && this.dom.current.focus()
+    this.dom.current?.focus()
   }
 
   public render(): React.ReactNode {
@@ -724,7 +746,7 @@ class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: bool
       borderRadius: '50%',
       borderStyle: 'solid',
       borderWidth: 1,
-      cursor: onClick ? 'pointer' : 'initial',
+      ...onClick && {cursor: 'pointer'},
       height: 20,
       position: 'absolute',
       width: 20,
@@ -746,7 +768,7 @@ class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: bool
       ...style,
     }
     return <div
-      style={containerStyle} tabIndex={0} ref={this.dom}
+      style={containerStyle} tabIndex={isDisabled ? undefined : 0} ref={this.dom}
       onFocus={this.handleFocused(true)}
       onBlur={this.handleFocused(false)}
       onClick={this.handleClick}
@@ -793,7 +815,7 @@ class Checkbox extends React.PureComponent<CheckboxProps, {isFocused: boolean}> 
     (): void => this.setState({isFocused}))
 
   public focus(): void {
-    this.dom.current && this.dom.current.focus()
+    this.dom.current?.focus()
   }
 
   public render(): React.ReactNode {
@@ -811,7 +833,7 @@ class Checkbox extends React.PureComponent<CheckboxProps, {isFocused: boolean}> 
       borderStyle: 'solid',
       borderWidth: 1,
       color: '#fff',
-      cursor: onClick ? 'pointer' : 'initial',
+      ...onClick && {cursor: 'pointer'},
       display: 'flex',
       fontSize: 16,
       height: size,
@@ -827,7 +849,7 @@ class Checkbox extends React.PureComponent<CheckboxProps, {isFocused: boolean}> 
       ...style,
     }
     return <div
-      style={containerStyle} tabIndex={0} ref={this.dom}
+      style={containerStyle} tabIndex={isDisabled ? undefined : 0} ref={this.dom}
       onFocus={this.handleFocused(true)}
       onBlur={this.handleFocused(false)}
       onClick={onClick}
@@ -842,33 +864,49 @@ class Checkbox extends React.PureComponent<CheckboxProps, {isFocused: boolean}> 
 
 interface SwipeProps {
   isDisabled?: boolean
+  isHovered?: boolean
   isSelected?: boolean
-  onClick?: () => void
-  size: number
+  onClick?: (event?: React.SyntheticEvent<HTMLDivElement>) => void
+  size?: number
   style?: React.CSSProperties
 }
 
 // TODO(cyrille): Handle actual swipe.
-// TODO(cyrille): Handle focus / hover / active.
-class SwipeToggle extends React.PureComponent<SwipeProps> {
+class SwipeToggle extends React.PureComponent<SwipeProps, {isFocused: boolean}> {
   public static defaultProps = {
     size: 20,
   } as const
 
+  public state = {
+    isFocused: false,
+  }
+
+  private dom: React.RefObject<HTMLDivElement> = React.createRef()
+
+  private handleClick = (event?: React.SyntheticEvent<HTMLDivElement>): void => {
+    this.focus()
+    const {isDisabled, onClick} = this.props
+    !isDisabled && onClick?.(event)
+  }
+
+  private handleFocused = _memoize((isFocused): (() => void) =>
+    (): void => this.setState({isFocused}))
+
   public focus(): void {
-    if (Raven.captureMessage) {
-      Raven.captureMessage('Trying to focus on a SwipeToggle element.')
-    }
+    this.dom.current?.focus()
   }
 
   public render(): React.ReactNode {
-    const {isDisabled, isSelected, onClick: unsafeOnClick, size, style} = this.props
-    const onClick = isDisabled ? undefined : unsafeOnClick
+    const {isDisabled, isHovered, isSelected, onClick: unsafeOnClick, size = 20, style} = this.props
+    const {isFocused} = this.state
+    const isHighlighted = !isDisabled && (isHovered || isFocused)
     const containerStyle = {
       backgroundColor: isSelected ? colors.BOB_BLUE : '#fff',
-      border: `1px solid ${isSelected ? colors.BOB_BLUE : colors.MODAL_PROJECT_GREY}`,
+      border: `1px solid ${isSelected ?
+        isHighlighted ? colors.DARK_BLUE : colors.BOB_BLUE :
+        isHighlighted ? colors.COOL_GREY : colors.MODAL_PROJECT_GREY}`,
       borderRadius: size,
-      ...onClick || {cursor: 'pointer'},
+      ...(isDisabled || !unsafeOnClick) ? undefined : {cursor: 'pointer'},
       height: size,
       width: 1.7 * size,
       ...SmoothTransitions,
@@ -884,7 +922,12 @@ class SwipeToggle extends React.PureComponent<SwipeProps> {
       width: size,
       ...FastTransitions,
     }
-    return <div style={containerStyle} onClick={onClick}>
+    return <div
+      style={containerStyle} onClick={this.handleClick}
+      tabIndex={isDisabled ? undefined : 0} ref={this.dom}
+      onFocus={this.handleFocused(true)}
+      onBlur={this.handleFocused(false)}
+      onKeyPress={isFocused ? this.handleClick : undefined}>
       <div style={toggleStyle} />
     </div>
   }
@@ -903,7 +946,7 @@ interface LabeledToggleProps {
   isSelected?: boolean
   label: React.ReactNode
   onBlur?: () => void
-  onClick?: () => void
+  onClick?: (event?: React.SyntheticEvent<HTMLDivElement>) => void
   onFocus?: () => void
   style?: React.CSSProperties
   type: keyof typeof TOGGLE_INPUTS
@@ -915,7 +958,7 @@ interface ToggleInputProps {
   isHovered?: boolean
   isSelected?: boolean
   onBlur?: () => void
-  onClick?: () => void
+  onClick?: (event?: React.SyntheticEvent<HTMLDivElement>) => void
   onFocus?: () => void
   size?: number
   style?: React.CSSProperties
@@ -940,18 +983,18 @@ class LabeledToggle extends React.PureComponent<LabeledToggleProps, {isHovered: 
   private handleHover = _memoize((isHovered): (() => void) =>
     (): void => this.setState({isHovered}))
 
-  private handleClick = (event?): void => {
+  private handleClick = (event?: React.SyntheticEvent<HTMLDivElement>): void => {
     const {onClick} = this.props
-    if (event && onClick) {
+    if (onClick) {
       // Prevent the click to be consumed twice.
-      event.stopPropagation()
+      event?.stopPropagation()
     }
     this.focus()
-    onClick && onClick()
+    onClick?.(event)
   }
 
   public focus(): void {
-    this.inputRef.current && this.inputRef.current.focus()
+    this.inputRef.current?.focus()
   }
 
   public render(): React.ReactNode {
@@ -973,7 +1016,8 @@ class LabeledToggle extends React.PureComponent<LabeledToggleProps, {isHovered: 
       onClick={isDisabled ? undefined : this.handleClick}>
       <ToggleInput
         style={{flex: 'none'}} ref={this.inputRef}
-        onClick={this.handleClick} {...{isDisabled, isHovered, isSelected, onBlur, onFocus}} />
+        onClick={isDisabled ? undefined : this.handleClick}
+        {...{isDisabled, isHovered, isSelected, onBlur, onFocus}} />
       <span style={{marginLeft: 10}}>
         {label}
       </span>
@@ -988,13 +1032,10 @@ interface UpDownIconProps extends MdiReactIconProps {
 }
 
 
-class UpDownIcon extends React.PureComponent<UpDownIconProps> {
-  public static propTypes = {
-    icon: PropTypes.oneOf(['arrow', 'chevron', 'menu']).isRequired,
-    isUp: PropTypes.bool,
-  }
+const UpDownIconBase = (props: UpDownIconProps): React.ReactElement => {
+  const {icon, isUp, ...otherProps} = props
 
-  private chooseIcon(icon, isUp): React.ComponentType<MdiReactIconProps> {
+  const Icon = useMemo((): React.ComponentType<MdiReactIconProps> => {
     if (icon === 'arrow') {
       return isUp ? ArrowUpIcon : ArrowDownIcon
     }
@@ -1002,14 +1043,14 @@ class UpDownIcon extends React.PureComponent<UpDownIconProps> {
       return isUp ? ChevronUpIcon : ChevronDownIcon
     }
     return isUp ? MenuUpIcon : MenuDownIcon
-  }
-
-  public render(): React.ReactNode {
-    const {icon, isUp, ...otherProps} = this.props
-    const Icon = this.chooseIcon(icon, isUp)
-    return <Icon {...otherProps} />
-  }
+  }, [icon, isUp])
+  return <Icon {...otherProps} />
 }
+UpDownIconBase.propTypes = {
+  icon: PropTypes.oneOf(['arrow', 'chevron', 'menu']).isRequired,
+  isUp: PropTypes.bool,
+}
+const UpDownIcon = React.memo(UpDownIconBase)
 
 
 interface IconInputProps extends InputProps {
@@ -1039,7 +1080,7 @@ class IconInput extends React.PureComponent<IconInputProps> {
   private input: React.RefObject<Input> = React.createRef()
 
   public focus = (): void => {
-    this.input.current && this.input.current.focus()
+    this.input.current?.focus()
   }
 
   public render(): React.ReactNode {
@@ -1082,30 +1123,35 @@ interface WithNoteProps {
 }
 
 
-class WithNote extends React.PureComponent<WithNoteProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    hasComment: PropTypes.bool,
-    note: PropTypes.node.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {children, hasComment, note} = this.props
-    const noteStyle = {
-      color: colors.COOL_GREY,
-      fontSize: 15,
-      lineHeight: 1.1,
-      marginBottom: hasComment ? 0 : 20,
-      marginTop: 8,
-    }
-    return <div style={{display: 'flex', flexDirection: 'column'}}>
-      {children}
-      <div style={noteStyle}>
-        {note}
-      </div>
-    </div>
-  }
+const noteContainerStyle: React.CSSProperties = {display: 'flex', flexDirection: 'column'}
+const noteStyleWithoutComment: React.CSSProperties = {
+  color: colors.COOL_GREY,
+  fontSize: 15,
+  lineHeight: 1.1,
+  marginTop: 8,
 }
+const noteStyleWithComment: React.CSSProperties = {
+  ...noteStyleWithoutComment,
+  marginBottom: 20,
+}
+
+
+const WithNoteBase = (props: WithNoteProps): React.ReactElement => {
+  const {children, hasComment, note} = props
+  const noteStyle = hasComment ? noteStyleWithComment : noteStyleWithoutComment
+  return <div style={noteContainerStyle}>
+    {children}
+    <div style={noteStyle}>
+      {note}
+    </div>
+  </div>
+}
+WithNoteBase.propTypes = {
+  children: PropTypes.node,
+  hasComment: PropTypes.bool,
+  note: PropTypes.node.isRequired,
+}
+const WithNote = React.memo(WithNoteBase)
 
 
 type HTMLInputElementProps = React.HTMLProps<HTMLInputElement>
@@ -1146,7 +1192,8 @@ class Input extends React.PureComponent<InputProps, InputState> {
     lastChangedValue: this.props.value,
   }
 
-  public static getDerivedStateFromProps({value}, {propValue}): InputState|null {
+  public static getDerivedStateFromProps(
+    {value}: InputProps, {propValue}: InputState): InputState|null {
     if (propValue !== value) {
       return {propValue: value, value}
     }
@@ -1154,7 +1201,7 @@ class Input extends React.PureComponent<InputProps, InputState> {
   }
 
   // TODO(cyrille): Check behaviour when onChangeDelayMillisecs changes.
-  public componentDidUpdate(prevProps, {value: prevValue}): void {
+  public componentDidUpdate(prevProps: InputProps, {value: prevValue}: InputState): void {
     const {onChange, onChangeDelayMillisecs} = this.props
     const {lastChangedValue, value} = this.state
     // Nothing to do if the update is not related to a change in state value.
@@ -1186,37 +1233,37 @@ class Input extends React.PureComponent<InputProps, InputState> {
     if (this.state.lastChangedValue === value) {
       return
     }
-    onChange && onChange(value)
+    onChange?.(value)
     !isLastSave && this.setState({lastChangedValue: value})
   }
 
-  private handleChange = (event): void => {
+  private handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     event.stopPropagation()
     const {applyFunc, onChange, onEdit, onChangeDelayMillisecs} = this.props
     const value = applyFunc ? applyFunc(event.target.value) : event.target.value
     this.setState({value})
-    onChangeDelayMillisecs ? onEdit && onEdit(value) : onChange && onChange(value)
+    onChangeDelayMillisecs ? onEdit?.(value) : onChange?.(value)
   }
 
-  private handleBlur = (event): void => {
+  private handleBlur = (event: React.FocusEvent<HTMLInputElement>): void => {
     const {onBlur, onChange, onChangeDelayMillisecs} = this.props
     if (onChangeDelayMillisecs && onChange) {
       clearTimeout(this.timeout)
       this.onChange(this.state.value || '')
     }
-    onBlur && onBlur(event)
+    onBlur?.(event)
   }
 
   public blur(): void {
-    this.dom.current && this.dom.current.blur()
+    this.dom.current?.blur()
   }
 
   public focus(): void {
-    this.dom.current && this.dom.current.focus()
+    this.dom.current?.focus()
   }
 
   public select(): void {
-    this.dom.current && this.dom.current.select()
+    this.dom.current?.select()
   }
 
   public render(): React.ReactNode {
@@ -1239,85 +1286,72 @@ class Input extends React.PureComponent<InputProps, InputState> {
 interface PieChartProps {
   backgroundColor?: string
   children?: React.ReactNode
-  durationMillisec: number
+  durationMillisec?: number
   percentage: number
-  radius: number
-  strokeWidth: number
+  radius?: number
+  strokeWidth?: number
   style?: React.CSSProperties
 }
 
 
 // TODO(cyrille): Use this in transparency page.
-class PieChart extends React.PureComponent<PieChartProps, {hasStartedGrowing: boolean}> {
-  public static propTypes = {
-    backgroundColor: PropTypes.string,
-    children: PropTypes.node,
-    durationMillisec: PropTypes.number.isRequired,
-    percentage: PropTypes.number.isRequired,
-    radius: PropTypes.number.isRequired,
-    strokeWidth: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
+const PieChartBase = (props: PieChartProps): React.ReactElement => {
+  const {backgroundColor, children, durationMillisec = 1000, percentage, radius = 60,
+    strokeWidth = 15, style} = props
+  const [hasStartedGrowing, setHasStartedGrowing] = useState(false)
 
-  public static defaultProps = {
-    durationMillisec: 1000,
-    radius: 60,
-    strokeWidth: 15,
-  }
-
-  public state = {
-    hasStartedGrowing: false,
-  }
-
-  private startGrowing = (isVisible): void => {
+  const startGrowing = useCallback((isVisible: boolean): void => {
     if (!isVisible) {
       return
     }
-    this.setState({
-      hasStartedGrowing: true,
-    })
-  }
+    setHasStartedGrowing(true)
+  }, [])
 
   // TODO(cyrille): Add default value for style.color, or require it in props.
-  public render(): React.ReactNode {
-    const {backgroundColor, children, durationMillisec, percentage, radius,
-      strokeWidth, style} = this.props
-    const {hasStartedGrowing} = this.state
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      fontSize: 28,
-      fontWeight: 'bold',
-      height: 2 * radius,
-      justifyContent: 'center',
-      position: 'relative',
-      width: 2 * radius,
-      ...style,
-    }
-    const currentPercentage = hasStartedGrowing ? percentage : 0
-    const innerRadius = radius - strokeWidth / 2
-    const perimeter = innerRadius * 2 * Math.PI
-    const strokeLength = perimeter * currentPercentage / 100
-    return <span style={containerStyle}>
-      <VisibilitySensor
-        active={!hasStartedGrowing} intervalDelay={250}
-        onChange={this.startGrowing}>
-        <svg
-          style={{left: 0, position: 'absolute', top: 0}}
-          viewBox={`-${radius} -${radius} ${2 * radius} ${2 * radius}`}>
-          <circle
-            r={innerRadius} fill="none" stroke={backgroundColor} strokeWidth={strokeWidth} />
-          <circle
-            r={innerRadius} fill="none" stroke={style && style.color}
-            strokeDashoffset={perimeter / 4}
-            strokeDasharray={`${strokeLength},${perimeter - strokeLength}`} strokeLinecap="round"
-            strokeWidth={strokeWidth} style={{transition: `${durationMillisec}ms`}} />
-        </svg>
-      </VisibilitySensor>
-      {children}
-    </span>
-  }
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    alignItems: 'center',
+    display: 'flex',
+    fontSize: 28,
+    fontWeight: 'bold',
+    height: 2 * radius,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 2 * radius,
+    ...style,
+  }), [radius, style])
+  const currentPercentage = hasStartedGrowing ? percentage : 0
+  const innerRadius = radius - strokeWidth / 2
+  const perimeter = innerRadius * 2 * Math.PI
+  const strokeLength = perimeter * currentPercentage / 100
+  return <span style={containerStyle}>
+    <VisibilitySensor
+      active={!hasStartedGrowing} intervalDelay={250}
+      onChange={startGrowing}>
+      <svg
+        style={{left: 0, position: 'absolute', top: 0}}
+        viewBox={`-${radius} -${radius} ${2 * radius} ${2 * radius}`}>
+        <circle
+          r={innerRadius} fill="none" stroke={backgroundColor} strokeWidth={strokeWidth} />
+        <circle
+          r={innerRadius} fill="none" stroke={style?.color}
+          strokeDashoffset={perimeter / 4}
+          strokeDasharray={`${strokeLength},${perimeter - strokeLength}`} strokeLinecap="round"
+          strokeWidth={strokeWidth} style={{transition: `${durationMillisec}ms`}} />
+      </svg>
+    </VisibilitySensor>
+    {children}
+  </span>
 }
+PieChartBase.propTypes = {
+  backgroundColor: PropTypes.string,
+  children: PropTypes.node,
+  durationMillisec: PropTypes.number.isRequired,
+  percentage: PropTypes.number.isRequired,
+  radius: PropTypes.number.isRequired,
+  strokeWidth: PropTypes.number.isRequired,
+  style: PropTypes.object,
+}
+const PieChart = React.memo(PieChartBase)
 
 
 interface GrowingNumberConfig {
@@ -1329,8 +1363,8 @@ interface GrowingNumberConfig {
 
 
 const GrowingNumberBase: React.FC<GrowingNumberConfig> =
-(props: GrowingNumberConfig & {durationMillisec: number}): React.ReactElement => {
-  const {durationMillisec, isSteady, number, style} = props
+(props: GrowingNumberConfig): React.ReactElement => {
+  const {durationMillisec = 1000, isSteady, number, style} = props
   const [growingForMillisec, setGrowingForMillisecs] = useState(0)
   const [hasGrown, setHasGrown] = useState(false)
   const [hasStartedGrowing, setHasStartedGrowing] = useState(false)
@@ -1371,13 +1405,10 @@ const GrowingNumberBase: React.FC<GrowingNumberConfig> =
   </span>
 }
 GrowingNumberBase.propTypes = {
-  durationMillisec: PropTypes.number.isRequired,
+  durationMillisec: PropTypes.number,
   isSteady: PropTypes.bool,
   number: PropTypes.number.isRequired,
   style: PropTypes.object,
-}
-GrowingNumberBase.defaultProps = {
-  durationMillisec: 1000,
 }
 const GrowingNumber = React.memo(GrowingNumberBase)
 
@@ -1385,66 +1416,60 @@ const GrowingNumber = React.memo(GrowingNumberBase)
 // This component avoids that the element touches the border when on mobile.
 // For now, we only use is for text, hence a solution that does not require a component would be,
 // better, but we didn't find one yet.
-class PaddedOnMobile extends React.PureComponent<{style?: React.CSSProperties}> {
-  public static propTypes = {
-    children: PropTypes.node,
-    style: PropTypes.object,
-  }
+const PaddedOnMobileBase = (props: React.HTMLProps<HTMLDivElement>): React.ReactElement => {
+  const {style, ...otherProps} = props
 
-  public render(): React.ReactNode {
-    const {children, style} = this.props
-    const containerStyle = {
-      ...style,
-      padding: isMobileVersion ? '0 20px' : 0,
-    }
-    return <div style={containerStyle}>{children}</div>
-  }
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    ...style,
+    padding: isMobileVersion ? '0 20px' : 0,
+  }), [style])
+  return <div style={containerStyle} {...otherProps} />
 }
+PaddedOnMobileBase.propTypes = {
+  style: PropTypes.object,
+}
+const PaddedOnMobile = React.memo(PaddedOnMobileBase)
 
 
 export interface AppearingListProps extends Omit<React.HTMLProps<HTMLDivElement>, 'ref'> {
   children: ReactStylableElement | null | (ReactStylableElement|null)[]
+  isAnimationEnabled?: boolean
   maxNumChildren?: number
 }
 
 
-class AppearingList extends React.PureComponent<AppearingListProps, {isShown: boolean}> {
-  public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.node.isRequired),
-    maxNumChildren: PropTypes.number,
-  }
-
-  public state = {
-    isShown: false,
-  }
-
-  private handleShow = (isShown): void => this.setState({isShown})
-
-  public render(): React.ReactNode {
-    const {children, maxNumChildren, ...extraProps} = this.props
-    const validChildren = React.Children.toArray(children).filter(
-      (c: ReactStylableElement|null): c is ReactStylableElement => !!c
-    )
-    const {isShown} = this.state
-    const itemStyle = (index, style): React.CSSProperties => ({
-      opacity: isShown ? 1 : 0,
+const AppearingListBase = (props: AppearingListProps): React.ReactElement => {
+  const {children, isAnimationEnabled = true, maxNumChildren, ...extraProps} = props
+  const [isShown, setIsShown] = useState(!isAnimationEnabled)
+  const validChildren = React.Children.toArray(children).filter(
+    (c): c is ReactStylableElement => !!c,
+  )
+  const itemStyle = (index: number, style?: RadiumCSSProperties): RadiumCSSProperties => ({
+    opacity: isShown ? 1 : 0,
+    ...(isAnimationEnabled ? {
       transition: `opacity 300ms ease-in ${index * 700 / validChildren.length}ms`,
-      ...style,
-    })
-    const shownChildren = maxNumChildren ? validChildren.slice(0, maxNumChildren) : validChildren
-    return <VisibilitySensor
-      active={!isShown} intervalDelay={250} partialVisibility={true}
-      onChange={this.handleShow}>
-      <div {...extraProps}>
-        {shownChildren.map((item, index): React.ReactNode =>
-          React.cloneElement(item, {
-            key: item.key || index,
-            style: itemStyle(index, item.props.style),
-          }))}
-      </div>
-    </VisibilitySensor>
-  }
+    } : undefined),
+    ...style,
+  })
+  const shownChildren = maxNumChildren ? validChildren.slice(0, maxNumChildren) : validChildren
+  return <VisibilitySensor
+    active={!isShown} intervalDelay={250} partialVisibility={true}
+    onChange={setIsShown}>
+    <div {...extraProps}>
+      {shownChildren.map((item, index): React.ReactNode =>
+        React.cloneElement(item, {
+          key: item.key || index,
+          style: itemStyle(index, item.props.style),
+        }))}
+    </div>
+  </VisibilitySensor>
 }
+AppearingListBase.PropTypes = {
+  children: PropTypes.arrayOf(PropTypes.node.isRequired),
+  isAnimationEnabled: PropTypes.bool,
+  maxNumChildren: PropTypes.number,
+}
+const AppearingList = React.memo(AppearingListBase)
 
 
 interface TagProps {
@@ -1453,7 +1478,7 @@ interface TagProps {
 }
 
 const getTagStyle = (style?: React.CSSProperties): React.CSSProperties => {
-  const padding = style && style.fontStyle === 'italic' ? '6px 7px 6px 5px' : 6
+  const padding = style?.fontStyle === 'italic' ? '6px 7px 6px 5px' : 6
   return {
     backgroundColor: colors.GREENISH_TEAL,
     borderRadius: 2,
@@ -1484,43 +1509,32 @@ const Tag = React.memo(TagBase)
 
 
 interface StringJoinerProps {
-  children: React.ReactNode[]
-  lastSeparator: React.ReactNode
-  separator: React.ReactNode
+  children: (React.ReactElement|string)[]|React.ReactElement|string
+  lastSeparator?: React.ReactNode
+  separator?: React.ReactNode
 }
 
 
-class StringJoiner extends React.PureComponent<StringJoinerProps> {
-  public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.node.isRequired),
-    lastSeparator: PropTypes.node.isRequired,
-    separator: PropTypes.node.isRequired,
-  }
-
-  public static defaultProps = {
-    lastSeparator: ' ou ',
-    separator: ', ',
-  }
-
-  public render(): React.ReactNode {
-    const {children, lastSeparator, separator} = this.props
-    if (Object.prototype.toString.call(children) !== '[object Array]') {
-      return children
+const StringJoinerBase = (props: StringJoinerProps): React.ReactElement => {
+  // TODO(pascal): Translate those separators.
+  const {children, lastSeparator = ' ou ', separator = ', '} = props
+  const parts: React.ReactNode[] = []
+  const numChildren = React.Children.count(children)
+  React.Children.forEach(children, (child: React.ReactElement|string, index: number): void => {
+    if (index) {
+      const nextSeparator = (index === numChildren - 1) ? lastSeparator : separator
+      parts.push(<span key={`sep-${index}`}>{nextSeparator}</span>)
     }
-    if (children.length === 1) {
-      return children[0]
-    }
-    const parts: React.ReactNode[] = []
-    children.forEach((child, index): void => {
-      if (index) {
-        const nextSeparator = (index === children.length - 1) ? lastSeparator : separator
-        parts.push(<span key={`sep-${index}`}>{nextSeparator}</span>)
-      }
-      parts.push(child)
-    })
-    return <span>{parts}</span>
-  }
+    parts.push(child)
+  })
+  return <span>{parts}</span>
 }
+StringJoinerBase.propTypes = {
+  children: PropTypes.arrayOf(PropTypes.node.isRequired),
+  lastSeparator: PropTypes.node,
+  separator: PropTypes.node,
+}
+const StringJoiner = React.memo(StringJoinerBase)
 
 
 interface OutsideClickHandlerProps extends React.HTMLProps<HTMLDivElement> {
@@ -1547,10 +1561,11 @@ class OutsideClickHandler extends React.PureComponent<OutsideClickHandlerProps> 
 
   private wrapperRef: React.RefObject<HTMLDivElement> = React.createRef()
 
-  private handleClickOutside = (event): void => {
-    if (this.wrapperRef.current && !this.wrapperRef.current.contains(event.target)) {
-      this.props.onOutsideClick()
+  private handleClickOutside = (event: MouseEvent): void => {
+    if (event.target && this.wrapperRef.current?.contains(event.target as Node)) {
+      return
     }
+    this.props.onOutsideClick()
   }
 
   public render(): React.ReactNode {
@@ -1564,58 +1579,51 @@ class OutsideClickHandler extends React.PureComponent<OutsideClickHandlerProps> 
 
 interface PercentBarProps {
   color: string
-  height: number
-  isPercentShown: boolean
+  height?: number
+  isPercentShown?: boolean
   percent?: number
   style?: React.CSSProperties
 }
 
 
-class PercentBar extends React.PureComponent<PercentBarProps> {
-  public static propTypes = {
-    color: PropTypes.string.isRequired,
-    height: PropTypes.number.isRequired,
-    isPercentShown: PropTypes.bool.isRequired,
-    percent: PropTypes.number,
-    style: PropTypes.object,
-  }
+const PercentBarBase = (props: PercentBarProps): React.ReactElement => {
+  const {color, height = 25, percent = 0, isPercentShown = true, style} = props
 
-  public static defaultProps = {
-    height: 25,
-    isPercentShown: true,
-    percent: 0,
-  }
-
-  public render(): React.ReactNode {
-    const {color, height, percent, isPercentShown, style} = this.props
-    const containerStyle: React.CSSProperties = {
-      backgroundColor: colors.MODAL_PROJECT_GREY,
-      borderRadius: 25,
-      height: height,
-      overflow: 'hidden',
-      width: '100%',
-      ...style,
-    }
-    const percentStyle: React.CSSProperties = {
-      backgroundColor: color,
-      color: '#fff',
-      fontSize: 14,
-      fontWeight: 'bold',
-      height: '100%',
-      lineHeight: height - 10 + 'px',
-      paddingBottom: 3,
-      paddingLeft: isPercentShown ? 18 : 0,
-      paddingTop: 7,
-      width: `${percent}%`,
-      ...SmoothTransitions,
-    }
-    return <div style={containerStyle}>
-      {percent ? <div style={percentStyle}>
-        {isPercentShown ? `${Math.round(percent)}%` : ''}
-      </div> : null}
-    </div>
-  }
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: colors.MODAL_PROJECT_GREY,
+    borderRadius: 25,
+    height: height,
+    overflow: 'hidden',
+    width: '100%',
+    ...style,
+  }), [height, style])
+  const percentStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: color,
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    height: '100%',
+    lineHeight: height - 10 + 'px',
+    paddingBottom: 3,
+    paddingLeft: isPercentShown ? 18 : 0,
+    paddingTop: 7,
+    width: `${percent}%`,
+    ...SmoothTransitions,
+  }), [color, height, isPercentShown, percent])
+  return <div style={containerStyle}>
+    {percent ? <div style={percentStyle}>
+      {isPercentShown ? `${Math.round(percent)}%` : ''}
+    </div> : null}
+  </div>
 }
+PercentBarBase.propTypes = {
+  color: PropTypes.string.isRequired,
+  height: PropTypes.number,
+  isPercentShown: PropTypes.bool,
+  percent: PropTypes.number,
+  style: PropTypes.object,
+}
+const PercentBar = React.memo(PercentBarBase)
 
 
 interface CarouselArrowProps {
@@ -1628,39 +1636,37 @@ interface CarouselArrowProps {
 
 
 // TODO(marielaure): Find a way to refactor carousels. There are too many custom ones.
-class CarouselArrow extends React.PureComponent<CarouselArrowProps> {
-  public static propTypes = {
-    chevronSize: PropTypes.number,
-    handleClick: PropTypes.func.isRequired,
-    isLeft: PropTypes.bool,
-    isVisible: PropTypes.bool,
-    style: PropTypes.object,
-  }
-
-  public render(): React.ReactNode {
-    const {chevronSize, handleClick, isLeft, isVisible, style} = this.props
-    const chevronContainerStyle = (isVisible): React.CSSProperties => ({
-      alignItems: 'center',
-      backgroundColor: colors.BOB_BLUE,
-      borderRadius: 25,
-      boxShadow: '0 2px 3px 0 rgba(0, 0, 0, 0.2)',
-      cursor: isVisible ? 'pointer' : 'auto',
-      display: 'flex',
-      height: 45,
-      justifyContent: 'center',
-      opacity: isVisible ? 1 : 0,
-      width: 45,
-      ...SmoothTransitions,
-      ...style,
-    })
-    return <div
-      style={chevronContainerStyle(isVisible)}
-      onClick={handleClick}>
-      {isLeft ? <ChevronLeftIcon color="#fff" size={chevronSize} /> :
-        <ChevronRightIcon color="#fff" size={chevronSize} />}
-    </div>
-  }
+const CarouselArrowBase = (props: CarouselArrowProps): React.ReactElement => {
+  const {chevronSize, handleClick, isLeft, isVisible, style} = props
+  const chevronContainerStyle = useMemo((): React.CSSProperties => ({
+    alignItems: 'center',
+    backgroundColor: colors.BOB_BLUE,
+    borderRadius: 25,
+    boxShadow: '0 2px 3px 0 rgba(0, 0, 0, 0.2)',
+    cursor: isVisible ? 'pointer' : 'auto',
+    display: 'flex',
+    height: 45,
+    justifyContent: 'center',
+    opacity: isVisible ? 1 : 0,
+    width: 45,
+    ...SmoothTransitions,
+    ...style,
+  }), [isVisible, style])
+  return <div
+    style={chevronContainerStyle}
+    onClick={handleClick}>
+    {isLeft ? <ChevronLeftIcon color="#fff" size={chevronSize} /> :
+      <ChevronRightIcon color="#fff" size={chevronSize} />}
+  </div>
 }
+CarouselArrowBase.propTypes = {
+  chevronSize: PropTypes.number,
+  handleClick: PropTypes.func.isRequired,
+  isLeft: PropTypes.bool,
+  isVisible: PropTypes.bool,
+  style: PropTypes.object,
+}
+const CarouselArrow = React.memo(CarouselArrowBase)
 
 
 type HTMLTextAreaProps = React.HTMLProps<HTMLTextAreaElement>
@@ -1677,18 +1683,18 @@ class Textarea extends React.PureComponent<TextareaProps> {
 
   private dom: React.RefObject<HTMLTextAreaElement> = React.createRef()
 
-  private handleChange = (event): void => {
+  private handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
     event.stopPropagation()
     const {onChange} = this.props
-    onChange && onChange(event.target.value || '')
+    onChange?.(event.target.value || '')
   }
 
   public focus(): void {
-    this.dom.current && this.dom.current.focus()
+    this.dom.current?.focus()
   }
 
   public select(): void {
-    this.dom.current && this.dom.current.select()
+    this.dom.current?.select()
   }
 
   public render(): React.ReactNode {
@@ -1698,26 +1704,24 @@ class Textarea extends React.PureComponent<TextareaProps> {
 }
 
 
-class ColoredBullet extends React.PureComponent<{color: string}> {
-  public static propTypes = {
-    color: PropTypes.string.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const bulletStyle = {
-      backgroundColor: this.props.color,
-      borderRadius: '50%',
-      height: 10,
-      margin: '0 20px 0 5px',
-      width: 10,
-    }
-    return <div style={bulletStyle} />
-  }
+const ColoredBulletBase = (props: {color: string}): React.ReactElement => {
+  const bulletStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: props.color,
+    borderRadius: '50%',
+    height: 10,
+    margin: '0 20px 0 5px',
+    width: 10,
+  }), [props.color])
+  return <div style={bulletStyle} />
 }
+ColoredBulletBase.propTypes = {
+  color: PropTypes.string.isRequired,
+}
+const ColoredBullet = React.memo(ColoredBulletBase)
 
 
 interface VideoFrameProps {
-  aspectRatio: number
+  aspectRatio?: number
   children: React.ReactElement<{
     height: string
     style: RadiumCSSProperties
@@ -1727,39 +1731,42 @@ interface VideoFrameProps {
 }
 
 
+const coverallStyle: React.CSSProperties = {
+  bottom: 0,
+  left: 0,
+  position: 'absolute',
+  right: 0,
+  top: 0,
+} as const
+
+
 // A nice way to have 16/9 video iframes.
-class VideoFrame extends React.PureComponent<VideoFrameProps> {
-  public static propTypes = {
-    // Desired width/height ratio for the frame.
-    aspectRatio: PropTypes.number.isRequired,
-    children: PropTypes.element.isRequired,
-    style: PropTypes.object,
-  }
-
-  public static defaultProps = {
-    aspectRatio: 16 / 9,
-  }
-
-  public render(): React.ReactNode {
-    const {aspectRatio, children, style} = this.props
-    const coverallStyle = {
-      bottom: 0,
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-    }
-    return <div style={style}>
-      <div style={{height: 0, paddingBottom: `${100 / aspectRatio}%`, position: 'relative'}}>
-        {React.cloneElement(children, {
-          height: '100%',
-          style: {...children.props.style, ...coverallStyle},
-          width: '100%',
-        })}
-      </div>
+const VideoFrameBase = (props: VideoFrameProps): React.ReactElement => {
+  const {aspectRatio = 16 / 9, children, style} = props
+  const childrenStyle = useMemo((): React.CSSProperties => ({
+    ...children.props.style,
+    ...coverallStyle,
+  }), [children.props.style])
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    height: 0, paddingBottom: `${100 / aspectRatio}%`, position: 'relative',
+  }), [aspectRatio])
+  return <div style={style}>
+    <div style={containerStyle}>
+      {React.cloneElement(children, {
+        height: '100%',
+        style: childrenStyle,
+        width: '100%',
+      })}
     </div>
-  }
+  </div>
 }
+VideoFrameBase.propTypes = {
+  // Desired width/height ratio for the frame.
+  aspectRatio: PropTypes.number,
+  children: PropTypes.element.isRequired,
+  style: PropTypes.object,
+}
+const VideoFrame = React.memo(VideoFrameBase)
 
 
 const missingImages: Set<string> = new Set([])
@@ -1786,9 +1793,9 @@ class Img extends React.PureComponent<ImgProps, {hasErred?: boolean}> {
   private handleError = (): void => {
     if (!this.state.hasErred && this.imgRef.current) {
       const src = this.imgRef.current.src
-      if (Raven.captureMessage && !missingImages.has(src)) {
-        Raven.captureMessage(`Image source is no longer available: ${src}.`)
-        missingImages.add(src)
+      if (!missingImages.has(src)) {
+        Sentry.captureMessage?.(`Image source is no longer available: ${src}.`) &&
+          missingImages.add(src)
       }
       const {fallbackSrc} = this.props
       if (fallbackSrc) {
@@ -1807,17 +1814,17 @@ class Img extends React.PureComponent<ImgProps, {hasErred?: boolean}> {
 
 interface CircleProps {
   color: string
-  durationMillisec: number
+  durationMillisec?: number
   gaugeRef?: React.RefObject<SVGSVGElement>
-  halfAngleDeg: number
-  isAnimated: boolean
-  isCaptionShown: boolean
-  isPercentShown: boolean
+  halfAngleDeg?: number
+  isAnimated?: boolean
+  isCaptionShown?: boolean
+  isPercentShown?: boolean
   percent: number
-  radius: number
-  scoreSize: number
-  startColor: string
-  strokeWidth: number
+  radius?: number
+  scoreSize?: number
+  startColor?: string
+  strokeWidth?: number
   style?: React.CSSProperties & {
     marginBottom?: number
     marginLeft?: number
@@ -1827,188 +1834,170 @@ interface CircleProps {
 }
 
 
-class BobScoreCircle extends React.PureComponent<CircleProps, {hasStartedGrowing: boolean}> {
-  public static propTypes = {
-    color: PropTypes.string.isRequired,
-    durationMillisec: PropTypes.number.isRequired,
-    gaugeRef: PropTypes.shape({
-      current: PropTypes.object,
-    }),
-    halfAngleDeg: PropTypes.number.isRequired,
-    // TODO(cyrille): Fix the non-animated version.
-    isAnimated: PropTypes.bool.isRequired,
-    isCaptionShown: PropTypes.bool.isRequired,
-    isPercentShown: PropTypes.bool.isRequired,
-    percent: PropTypes.number.isRequired,
-    radius: PropTypes.number.isRequired,
-    scoreSize: PropTypes.number.isRequired,
-    startColor: PropTypes.string.isRequired,
-    strokeWidth: PropTypes.number.isRequired,
-    style: PropTypes.object,
-  }
-
-  public static defaultProps = {
-    durationMillisec: 1000,
-    halfAngleDeg: 60,
-    isAnimated: true,
-    isCaptionShown: true,
-    isPercentShown: true,
-    radius: 78.6,
-    scoreSize: 31,
-    startColor: colors.RED_PINK,
-    strokeWidth: 4.3,
-  }
-
-  public state = {
-    hasStartedGrowing: !this.props.isAnimated,
-  }
-
-  private startGrowing = (isVisible: boolean): void => {
-    if (!isVisible) {
-      return
-    }
-    this.setState({hasStartedGrowing: true})
-  }
-
-  // Gives the point on the Bob score circle according to clockwise angle with origin at the bottom.
-  private getPointFromAngle = (rad: number): {x: number; y: number} => {
-    const {radius} = this.props
-    const x = -radius * Math.sin(rad)
-    const y = radius * Math.cos(rad)
-    return {x, y}
-  }
-
-  private describeSvgArc = (startAngle: number, endAngle: number): string => {
-    const {radius} = this.props
-    const largeArcFlag = endAngle - startAngle <= Math.PI ? '0' : '1'
-    const start = this.getPointFromAngle(startAngle)
-    const end = this.getPointFromAngle(endAngle)
-    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`
-  }
-
-  public render(): React.ReactNode {
-    const {
-      color,
-      durationMillisec,
-      gaugeRef,
-      halfAngleDeg,
-      isAnimated,
-      isCaptionShown,
-      isPercentShown,
-      percent,
-      radius,
-      scoreSize,
-      startColor,
-      strokeWidth,
-      style,
-      ...extraProps
-    } = this.props
-    const {hasStartedGrowing} = this.state
-
-    const startAngle = halfAngleDeg * Math.PI / 180
-    const endAngle = 2 * Math.PI - startAngle
-    const percentAngle = 2 * (Math.PI - startAngle) * percent / 100 + startAngle
-
-    const largeRadius = radius + 3 * strokeWidth
-    const totalWidth = 2 * largeRadius
-    const totalHeight = largeRadius + strokeWidth + this.getPointFromAngle(startAngle).y
-
-    const arcLength = radius * (percentAngle - startAngle)
-    const percentPath = this.describeSvgArc(startAngle, percentAngle)
-    const fullPath = this.describeSvgArc(startAngle, endAngle)
-    const containerStyle: React.CSSProperties = {
-      height: totalHeight,
-      position: 'relative',
-      width: totalWidth,
-      ...style,
-      marginBottom: (style && style.marginBottom || 0) - strokeWidth,
-      marginLeft: (style && style.marginLeft || 0) + 20 - strokeWidth,
-      marginRight: (style && style.marginRight || 0) + 20 - strokeWidth,
-      marginTop: (style && style.marginTop || 0) - 3 * strokeWidth,
-    }
-    const innerTextStyle: React.CSSProperties = {
-      fontWeight: 'bold',
-      left: 0,
-      position: 'absolute',
-      right: 0,
-    }
-    const percentStyle: React.CSSProperties = {
-      ...innerTextStyle,
-      display: 'flex',
-      fontSize: scoreSize,
-      justifyContent: 'center',
-      lineHeight: '37px',
-      marginRight: 'auto',
-      top: largeRadius, // center in circle, not in svg
-      transform: 'translate(0, -80%)',
-    }
-    const percentColor = !hasStartedGrowing ? startColor : color
-    const transitionStyle: React.CSSProperties = {
-      transition: `stroke ${durationMillisec}ms linear,
-        stroke-dashoffset ${durationMillisec}ms linear`,
-    }
-    const captionStyle: React.CSSProperties = {
-      ...innerTextStyle,
-      bottom: 0,
-      color: colors.COOL_GREY,
-      fontSize: 10,
-      fontStyle: 'italic',
-      margin: 'auto',
-      maxWidth: 100,
-      textAlign: 'center',
-      textTransform: 'uppercase',
-    }
-    return <VisibilitySensor
-      active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
-      onChange={this.startGrowing}>
-      <div {...extraProps} style={containerStyle}>
-        {isPercentShown ? <div style={percentStyle}>
-          {isAnimated ?
-            <GrowingNumber
-              durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
-            percent
-          }%</div> : null}
-        {isCaptionShown ? <div style={captionStyle}>score d'employabilité</div> : null}
-        <svg
-          fill="none" ref={gaugeRef}
-          viewBox={`${-largeRadius} ${-largeRadius} ${totalWidth} ${totalHeight}`}>
-          <g strokeLinecap="round">
-            <path
-              d={fullPath} stroke={colorToAlpha(colors.SILVER, .3)} strokeWidth={2 * strokeWidth} />
-            <path
-              style={transitionStyle}
-              d={percentPath}
-              stroke={percentColor}
-              strokeDasharray={`${arcLength}, ${2 * arcLength}`}
-              strokeDashoffset={hasStartedGrowing ? 0 : arcLength}
-              strokeWidth={2 * strokeWidth}
-            />
-            <path
-              d={percentPath}
-              style={transitionStyle}
-              stroke={percentColor}
-              strokeDasharray={`0, ${arcLength}`}
-              strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
-              strokeWidth={6 * strokeWidth} />
-            <path
-              d={percentPath}
-              stroke="#fff"
-              style={transitionStyle}
-              strokeDasharray={`0, ${arcLength}`}
-              strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
-              strokeWidth={2 * strokeWidth} />
-          </g>
-        </svg>
-      </div>
-    </VisibilitySensor>
-  }
+const innerTextStyle: React.CSSProperties = {
+  fontWeight: 'bold',
+  left: 0,
+  position: 'absolute',
+  right: 0,
+}
+const bobScoreCaptionStyle: React.CSSProperties = {
+  ...innerTextStyle,
+  bottom: 0,
+  color: colors.COOL_GREY,
+  fontSize: 10,
+  fontStyle: 'italic',
+  margin: 'auto',
+  maxWidth: 100,
+  textAlign: 'center',
+  textTransform: 'uppercase',
 }
 
 
+const BobScoreCircleBase = (props: CircleProps): React.ReactElement => {
+  const {
+    color,
+    durationMillisec = 1000,
+    gaugeRef,
+    halfAngleDeg = 60,
+    isAnimated = true,
+    isCaptionShown = true,
+    isPercentShown = true,
+    percent,
+    radius = 78.6,
+    scoreSize = 31,
+    startColor = colors.RED_PINK,
+    strokeWidth = 4.3,
+    style,
+    ...extraProps
+  } = props
+  const [hasStartedGrowing, setHasStartedGrowing] = useState(!isAnimated)
+  const startGrowing = useCallback((isVisible: boolean): void => {
+    if (!isVisible) {
+      return
+    }
+    setHasStartedGrowing(true)
+  }, [])
+
+  // Gives the point on the Bob score circle according to clockwise angle with origin at the bottom.
+  const getPointFromAngle = useCallback((rad: number): {x: number; y: number} => {
+    const x = -radius * Math.sin(rad)
+    const y = radius * Math.cos(rad)
+    return {x, y}
+  }, [radius])
+
+  const describeSvgArc = useCallback((startAngle: number, endAngle: number): string => {
+    const largeArcFlag = endAngle - startAngle <= Math.PI ? '0' : '1'
+    const start = getPointFromAngle(startAngle)
+    const end = getPointFromAngle(endAngle)
+    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`
+  }, [getPointFromAngle, radius])
+
+  const startAngle = halfAngleDeg * Math.PI / 180
+  const endAngle = 2 * Math.PI - startAngle
+  const percentAngle = 2 * (Math.PI - startAngle) * percent / 100 + startAngle
+
+  const largeRadius = radius + 3 * strokeWidth
+  const totalWidth = 2 * largeRadius
+  const totalHeight = largeRadius + strokeWidth + getPointFromAngle(startAngle).y
+
+  const arcLength = radius * (percentAngle - startAngle)
+  const percentPath = describeSvgArc(startAngle, percentAngle)
+  const fullPath = describeSvgArc(startAngle, endAngle)
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    height: totalHeight,
+    position: 'relative',
+    width: totalWidth,
+    ...style,
+    marginBottom: (style?.marginBottom || 0) - strokeWidth,
+    marginLeft: (style?.marginLeft || 0) + 20 - strokeWidth,
+    marginRight: (style?.marginRight || 0) + 20 - strokeWidth,
+    marginTop: (style?.marginTop || 0) - 3 * strokeWidth,
+  }), [style, strokeWidth, totalHeight, totalWidth])
+  const percentStyle = useMemo((): React.CSSProperties => ({
+    ...innerTextStyle,
+    display: 'flex',
+    fontSize: scoreSize,
+    justifyContent: 'center',
+    lineHeight: '37px',
+    marginRight: 'auto',
+    top: largeRadius, // center in circle, not in svg
+    transform: 'translate(0, -80%)',
+  }), [largeRadius, scoreSize])
+  const percentColor = !hasStartedGrowing ? startColor : color
+  const transitionStyle: React.CSSProperties = {
+    transition: `stroke ${durationMillisec}ms linear,
+      stroke-dashoffset ${durationMillisec}ms linear`,
+  }
+  return <VisibilitySensor
+    active={!hasStartedGrowing} intervalDelay={250} partialVisibility={true}
+    onChange={startGrowing}>
+    <div {...extraProps} style={containerStyle}>
+      {isPercentShown ? <div style={percentStyle}>
+        {isAnimated ?
+          <GrowingNumber
+            durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
+          percent
+        }%</div> : null}
+      {isCaptionShown ? <div style={bobScoreCaptionStyle}>score d'employabilité</div> : null}
+      <svg
+        fill="none" ref={gaugeRef}
+        viewBox={`${-largeRadius} ${-largeRadius} ${totalWidth} ${totalHeight}`}>
+        <g strokeLinecap="round">
+          <path
+            d={fullPath} stroke={colorToAlpha(colors.SILVER, .3)} strokeWidth={2 * strokeWidth} />
+          <path
+            style={transitionStyle}
+            d={percentPath}
+            stroke={percentColor}
+            strokeDasharray={`${arcLength}, ${2 * arcLength}`}
+            strokeDashoffset={hasStartedGrowing ? 0 : arcLength}
+            strokeWidth={2 * strokeWidth}
+          />
+          <path
+            d={percentPath}
+            style={transitionStyle}
+            stroke={percentColor}
+            strokeDasharray={`0, ${arcLength}`}
+            strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
+            strokeWidth={6 * strokeWidth} />
+          <path
+            d={percentPath}
+            stroke="#fff"
+            style={transitionStyle}
+            strokeDasharray={`0, ${arcLength}`}
+            strokeDashoffset={hasStartedGrowing ? -arcLength + 1 : 0}
+            strokeWidth={2 * strokeWidth} />
+        </g>
+      </svg>
+    </div>
+  </VisibilitySensor>
+}
+BobScoreCircleBase.propTypes = {
+  color: PropTypes.string,
+  durationMillisec: PropTypes.number,
+  gaugeRef: PropTypes.shape({
+    current: PropTypes.object,
+  }),
+  halfAngleDeg: PropTypes.number,
+  // TODO(cyrille): Fix the non-animated version.
+  isAnimated: PropTypes.bool,
+  isCaptionShown: PropTypes.bool,
+  isPercentShown: PropTypes.bool,
+  percent: PropTypes.number,
+  radius: PropTypes.number,
+  scoreSize: PropTypes.number,
+  startColor: PropTypes.string,
+  strokeWidth: PropTypes.number,
+  style: PropTypes.object,
+}
+const BobScoreCircle = React.memo(BobScoreCircleBase)
+
+
 interface RadioGroupProps<T> {
+  childStyle?: React.CSSProperties
   onChange: (value: T) => void
   options: readonly {
-    name: string
+    name: React.ReactNode
     value: T
   }[]
   style?: React.CSSProperties
@@ -2023,9 +2012,10 @@ interface RadioGroupState {
 
 class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>, RadioGroupState> {
   public static propTypes = {
+    childStyle: PropTypes.object,
     onChange: PropTypes.func.isRequired,
     options: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.string.isRequired,
+      name: PropTypes.node.isRequired,
       value: PropTypes.oneOfType([
         PropTypes.bool,
         PropTypes.number,
@@ -2049,7 +2039,7 @@ class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>, RadioGroupSt
   private handleChange = _memoize((value: T): (() => void) =>
     (): void => this.props.onChange(value))
 
-  private handleKeyDown = (event): void => {
+  private handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     const {keyCode} = event
     // Left or Up.
     if (keyCode === 37 || keyCode === 38) {
@@ -2082,7 +2072,7 @@ class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>, RadioGroupSt
     if (!this.optionsRef) {
       return
     }
-    const optionRef = this.optionsRef[focusIndex] && this.optionsRef[focusIndex].current
+    const optionRef = this.optionsRef[focusIndex]?.current
     if (optionRef) {
       optionRef.focus()
     }
@@ -2095,7 +2085,7 @@ class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>, RadioGroupSt
   }
 
   public render(): React.ReactNode {
-    const {options, style, value} = this.props
+    const {childStyle, options, style, value} = this.props
     const containerStyle: React.CSSProperties = {
       display: 'flex',
       flexWrap: 'wrap',
@@ -2108,8 +2098,8 @@ class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>, RadioGroupSt
     return <div style={containerStyle} onKeyDown={this.handleKeyDown}>
       {options.map((option, index): React.ReactNode => {
         return <LabeledToggle
-          key={option.value + ''} label={option.name} type="radio"
-          ref={this.optionsRef && this.optionsRef[index]}
+          key={option.value + ''} label={option.name} type="radio" style={childStyle}
+          ref={this.optionsRef?.[index]}
           isSelected={option.value === value}
           onClick={this.handleChange(option.value)}
           onFocus={this.getFocusHandler(index)}

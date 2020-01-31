@@ -1,7 +1,7 @@
 """Tests for the bob_emploi.importer.airtable_to_protos module."""
 
 import typing
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 import unittest
 from unittest import mock
 
@@ -347,6 +347,28 @@ class JobBoardConverterTestCase(_ConverterTestCase):
             'filters': ['for-departement(49)', 'for-job-group(A12,B)'],
         }], self.airtable2dicts())
 
+    def test_job_board_encoded_url(self) -> None:
+        """Make sure encoded special chars are not taken for missing template vars."""
+
+        self.add_record({
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche?lieux=%cityId&redirect=%2F',
+        })
+        self.assertEqual([{
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche?lieux=%cityId&redirect=%2F',
+        }], self.airtable2dicts())
+
+    def test_job_board_missing_templalte(self) -> None:
+        """Make sure encoded special chars are not taken for missing template vars."""
+
+        self.add_record({
+            'title': 'Pôle emploi',
+            'link': 'https://candidat.pole-emploi.fr/offres/recherche?lieux=%location',
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
 
 class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
     """Tests for the contact leads converter translations."""
@@ -406,7 +428,7 @@ class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
         })
         self.add_translation('English name', {'fr_FR@tu': 'Nom anglais'})
         self.add_translation(
-            'Hé, tu te souviens de moi\u00a0?', {'fr_FR@tu': 'Hé, %tu te souviens de moi\u00a0?'})
+            'Hé, tu te souviens de moi\u00a0?', {'fr_FR@tu': 'Hé, tu te %souviens de moi\u00a0?'})
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
@@ -1182,6 +1204,59 @@ class StrategyAdviceTemplateConverterTestCase(_ConverterTestCase):
             'headerTemplate': 'Voici comment commuter.',
             'strategyId': 'rec0123456789',
         }], self.airtable2dicts())
+
+    @mock.patch(airtable_to_protos.logging.__name__ + '.error')
+    def test_dupes(self, mock_logging: mock.MagicMock) -> None:
+        """Should warn when two records have the same strategy/advice."""
+
+        self.add_record({
+            'advice_id': ['commute'],
+            'header_template': 'Voici comment commuter.',
+            'strategy_id': ['rec0123456789'],
+        })
+        self.add_record({
+            'advice_id': ['commute'],
+            'header_template': 'Voici comment commuter différement.',
+            'strategy_id': ['rec0123456789'],
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+        mock_logging.assert_called_once()
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn('There are duplicate records', error_message)
+
+
+class _VariousUniqueKeysConverter(airtable_to_protos.ProtoAirtableConverter):
+
+    def __init__(self) -> None:
+        super().__init__(network_pb2.ContactLeadTemplate)
+
+    def unique_keys(self, record: Dict[str, Any]) -> Sequence[Any]:
+        """Function to return keys that should be unique among other records."""
+
+        # Return each letter as a unique key. Note that it can only work if the record all have
+        # names with the same number of letters.
+        return tuple((letter,) for letter in record.get('name', ''))
+
+
+@mock.patch.dict(
+    airtable_to_protos.PROTO_CLASSES, {'various_unique_keys': _VariousUniqueKeysConverter()})
+class VariousUniqueKeysConverterTest(_ConverterTestCase):
+    """Test a converter that have various number of unique keys."""
+
+    converter_id = 'various_unique_keys'
+
+    @mock.patch(airtable_to_protos.logging.__name__ + '.error')
+    def test_various_unique_keys(self, mock_logging: mock.MagicMock) -> None:
+        """Checks that if the converter changes the number of keys it returns, tests fail."""
+
+        self.add_record({'name': '1'})
+        self.add_record({'name': 'four'})
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+        mock_logging.assert_called_once()
+        error_message = mock_logging.call_args[0][0] % mock_logging.call_args[0][1:]
+        self.assertIn('does not have the same number of unique keys', error_message)
 
 
 if __name__ == '__main__':

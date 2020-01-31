@@ -1,5 +1,7 @@
 import React from 'react'
 
+import {prepareT} from 'store/i18n'
+
 import {TestimonialCard} from 'components/testimonials'
 import picto from 'images/advices/picto-events.svg'
 
@@ -10,7 +12,8 @@ import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCar
 const adviceId = 'evenements'
 
 
-const name = 'Meilleurs évènements emploi'
+// i18next-extract-mark-ns-next-line staticAdviceTitle
+const name = prepareT('Meilleurs évènements emploi')
 
 
 const TESTIMONIALS = [
@@ -43,38 +46,37 @@ const TESTIMONIALS = [
 ]
 
 
-class Page extends React.PureComponent<AdvicePageProps> {
-  public render(): React.ReactNode {
-    return <StaticAdvicePage
-      adviceId={adviceId} {...this.props}
-      testimonials={TESTIMONIALS}
-      title={`Trouvez les meilleurs évènements emploi avec ${config.productName}`}>
-      <AdviceSection
-        adviceId={adviceId} title="rencontrer des gens à des évènements">
-        <AdviceDetail>
-          Une sélection d'évènements et de <strong>salons de l'emploi</strong> près de chez vous.
-        </AdviceDetail>
-        <AdviceDetail>
-          Des astuces pour aller vers les gens pendant l'évènement et
-          des <strong>exemples de mails</strong> pour garder le contact après.
-        </AdviceDetail>
-        <AdviceDetail>
-          Une sélection des meilleurs <strong>outils gratuits</strong> pour trouver des
-          évènements près de chez vous.
-        </AdviceDetail>
-      </AdviceSection>
-    </StaticAdvicePage>
-  }
+const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactElement =>
+  <StaticAdvicePage
+    adviceId={adviceId} {...props}
+    testimonials={TESTIMONIALS}
+    title={`Trouvez les meilleurs évènements emploi avec ${config.productName}`}>
+    <AdviceSection
+      adviceId={adviceId} title="rencontrer des gens à des évènements">
+      <AdviceDetail>
+        Une sélection d'évènements et de <strong>salons de l'emploi</strong> près de chez vous.
+      </AdviceDetail>
+      <AdviceDetail>
+        Des astuces pour aller vers les gens pendant l'évènement et
+        des <strong>exemples de mails</strong> pour garder le contact après.
+      </AdviceDetail>
+      <AdviceDetail>
+        Une sélection des meilleurs <strong>outils gratuits</strong> pour trouver des
+        évènements près de chez vous.
+      </AdviceDetail>
+    </AdviceSection>
+  </StaticAdvicePage>
+
+
+const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
+  <StaticAdviceCardBase picto={picto} name={name} {...props} >
+    Des <strong>évènements emploi</strong> sélectionnés pour vous
+  </StaticAdviceCardBase>
+
+
+export default {
+  Page: React.memo(Page),
+  StaticAdviceCard: React.memo(StaticAdviceCard),
+  adviceId,
+  name,
 }
-
-
-class StaticAdviceCard extends React.PureComponent<CardProps> {
-  public render(): React.ReactNode {
-    return <StaticAdviceCardBase picto={picto} name={name} {...this.props} >
-      Des <strong>évènements emploi</strong> sélectionnés pour vous
-    </StaticAdviceCardBase>
-  }
-}
-
-
-export default {Page, StaticAdviceCard, adviceId, name}

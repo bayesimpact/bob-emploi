@@ -1,5 +1,7 @@
 import React from 'react'
 
+import {prepareT} from 'store/i18n'
+
 import {TestimonialCard} from 'components/testimonials'
 import picto from 'images/advices/picto-skill-for-future.svg'
 
@@ -10,7 +12,8 @@ import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCar
 const adviceId = 'competences'
 
 
-const name = 'Compétences clés'
+// i18next-extract-mark-ns-next-line staticAdviceTitle
+const name = prepareT('Compétences clés')
 
 
 const TESTIMONIALS = [
@@ -39,41 +42,40 @@ const TESTIMONIALS = [
 ]
 
 
-class Page extends React.PureComponent<AdvicePageProps> {
-  public render(): React.ReactNode {
-    return <StaticAdvicePage
-      adviceId={adviceId} {...this.props}
-      testimonials={TESTIMONIALS}
-      title={
-        `Identifiez les compétences clés pour booster votre carrière avec ${config.productName}`
-      }>
-      <AdviceSection
-        adviceId={adviceId} title="anticiper l'avenir de votre métier">
-        <AdviceDetail>
-          Un <strong>diagnostic</strong> pour analyser des <strong>perspectives d'avenir </strong>
-          offertes par votre métier.
-        </AdviceDetail>
-        <AdviceDetail>
-          Une liste des <strong>compétences</strong> qui peuvent faire la différence dans votre
-          domaine.
-        </AdviceDetail>
-        <AdviceDetail>
-          Des idées de <strong>formations</strong> à suivre pour vous épanouir et booster
-          votre <strong>carrière</strong>.
-        </AdviceDetail>
-      </AdviceSection>
-    </StaticAdvicePage>
-  }
+const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactElement =>
+  <StaticAdvicePage
+    adviceId={adviceId} {...props}
+    testimonials={TESTIMONIALS}
+    title={
+      `Identifiez les compétences clés pour booster votre carrière avec ${config.productName}`
+    }>
+    <AdviceSection
+      adviceId={adviceId} title="anticiper l'avenir de votre métier">
+      <AdviceDetail>
+        Un <strong>diagnostic</strong> pour analyser des <strong>perspectives d'avenir </strong>
+        offertes par votre métier.
+      </AdviceDetail>
+      <AdviceDetail>
+        Une liste des <strong>compétences</strong> qui peuvent faire la différence dans votre
+        domaine.
+      </AdviceDetail>
+      <AdviceDetail>
+        Des idées de <strong>formations</strong> à suivre pour vous épanouir et booster
+        votre <strong>carrière</strong>.
+      </AdviceDetail>
+    </AdviceSection>
+  </StaticAdvicePage>
+
+
+const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
+  <StaticAdviceCardBase picto={picto} name={name} {...props} >
+    Les <strong>compétences clés</strong> pour booster votre carrière
+  </StaticAdviceCardBase>
+
+
+export default {
+  Page: React.memo(Page),
+  StaticAdviceCard: React.memo(StaticAdviceCard),
+  adviceId,
+  name,
 }
-
-
-class StaticAdviceCard extends React.PureComponent<CardProps> {
-  public render(): React.ReactNode {
-    return <StaticAdviceCardBase picto={picto} name={name} {...this.props} >
-      Les <strong>compétences clés</strong> pour booster votre carrière
-    </StaticAdviceCardBase>
-  }
-}
-
-
-export default {Page, StaticAdviceCard, adviceId, name}

@@ -2,21 +2,25 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 
+type EventType = 'keydown' | 'keyup'
+
 // Stacks of short key listeners. The ones entered last are tried first.
-const keyListenerStack = {keydown: [], keyup: []}
+const keyListenerStack: {[K in EventType]: ((event: KeyboardEvent) => boolean)[]} =
+  {keydown: [], keyup: []}
 
 // Trigger all listeners in the stack until one returns false.
-const handleKeyEvent = (eventType): ((event) => void) => (event): void => {
-  for (let i = 0; i < keyListenerStack[eventType].length; ++i) {
-    if (!keyListenerStack[eventType][i](event)) {
-      return
+const handleKeyEvent = (eventType: EventType): ((event: KeyboardEvent) => void) =>
+  (event: KeyboardEvent): void => {
+    for (const handler of keyListenerStack[eventType]) {
+      if (!handler(event)) {
+        return
+      }
     }
   }
-}
 const handleKeyEvents = {
   keydown: handleKeyEvent('keydown'),
   keyup: handleKeyEvent('keyup'),
-}
+} as const
 
 
 interface ShortKeyProps {
@@ -28,11 +32,15 @@ interface ShortKeyProps {
   onKeyUp?: () => void
 }
 
+type ShortKeyState = {
+  [K in EventType]?: (event: KeyboardEvent) => boolean
+}
+
 
 // An invisible component that executes a function when a short-key is used.
 // Some keys (like Escape) only trigger a "keydown" event whereas some
 // combinations (like Ctrl+Shift+F) work better with a "keyup" event.
-class ShortKey extends React.PureComponent<ShortKeyProps> {
+class ShortKey extends React.PureComponent<ShortKeyProps, ShortKeyState> {
   public static propTypes = {
     children: PropTypes.node,
     hasCtrlModifier: PropTypes.bool,
@@ -45,6 +53,8 @@ class ShortKey extends React.PureComponent<ShortKeyProps> {
     // component with the same short-key got called first.
     onKeyUp: PropTypes.func,
   }
+
+  public state: ShortKeyState = {}
 
   public componentDidMount(): void {
     const {onKeyDown, onKeyUp} = this.props
@@ -77,8 +87,8 @@ class ShortKey extends React.PureComponent<ShortKeyProps> {
     this.stopListeningToEvent('keydown')
   }
 
-  private listenToEvent = (eventType, onEvent): void => {
-    const listener = (event): boolean => {
+  private listenToEvent = (eventType: EventType, onEvent: () => void): void => {
+    const listener = (event: KeyboardEvent): boolean => {
       const {hasCtrlModifier, keyCode, hasShiftModifier} = this.props
       if (event.code === keyCode && event.ctrlKey === !!hasCtrlModifier &&
           event.shiftKey === !!hasShiftModifier) {
@@ -92,14 +102,14 @@ class ShortKey extends React.PureComponent<ShortKeyProps> {
     if (keyListenerStack[eventType].length === 1) {
       document.addEventListener(eventType, handleKeyEvents[eventType], false)
     }
-    this.setState({[eventType + 'Listener']: listener})
+    this.setState({[eventType]: listener})
   }
 
-  private stopListeningToEvent(eventType): void {
-    if (!this.state || !this.state[eventType + 'Listener']) {
+  private stopListeningToEvent(eventType: EventType): void {
+    const listener = this.state[eventType]
+    if (!listener) {
       return
     }
-    const listener = this.state[eventType + 'Listener']
     keyListenerStack[eventType].splice(keyListenerStack[eventType].indexOf(listener), 1)
     if (!keyListenerStack[eventType].length) {
       document.removeEventListener(eventType, handleKeyEvents[eventType], false)

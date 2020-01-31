@@ -2,455 +2,552 @@
   "application-methods": [
     {
       "content": "Dans mes candidatures, j'ai repris des **mots clefs** utilisés par l'employeur",
-      "goalId": "application-keywords"
+      "goalId": "application-keywords",
+      "stepTitle": "Candidater en utilisant les mots clés utilisés par les recruteurs"
     },
     {
       "content": "J'ai fait **relire** mon CV et lettre de motivation par quelqu'un en qui j'ai **confiance**",
-      "goalId": "resume-readover"
+      "goalId": "resume-readover",
+      "stepTitle": "Faire relire son CV par une personne de confiance"
     },
     {
       "content": "J'ai identifié **3 points faibles sur mon CV** qui pourraient inquiéter un recruteur",
-      "goalId": "resume-awareness"
+      "goalId": "resume-awareness",
+      "stepTitle": "Identifier les points faibles dans son CV"
     },
     {
       "content": "Je sais comment **mieux tourner** les points faibles de mon CV",
-      "goalId": "resume-pimp"
+      "goalId": "resume-pimp",
+      "stepTitle": "Faire des points faibles de son CV des avantages"
     }
   ],
   "application-methods-bravo": [
     {
       "content": "J'ai vérifié que mon CV inclut une liste de mes **compétences**",
-      "goalId": "CV-skills-list"
+      "goalId": "CV-skills-list",
+      "stepTitle": "Vérifier que son CV inclut une liste de compétences clés"
     },
     {
       "content": "J'ai personnalisé **à fond** chacune de mes candidatures selon les **attentes** de l'employeur",
-      "goalId": "personalised-applications"
+      "goalId": "personalised-applications",
+      "stepTitle": "Personnaliser ses candidatures selon les attentes de l'employeur"
     },
     {
       "content": "Dans mes candidatures, j'ai repris des **mots clefs** utilisés par l'employeur",
-      "goalId": "application-keywords"
+      "goalId": "application-keywords",
+      "stepTitle": "Candidater en utilisant les mots clés utilisés par les recruteurs"
     },
     {
       "content": "J'ai identifié **3 points faibles sur mon CV** qui pourraient inquiéter un recruteur",
-      "goalId": "resume-awareness"
+      "goalId": "resume-awareness",
+      "stepTitle": "Identifier les points faibles dans son CV"
     },
     {
       "content": "Je sais comment **mieux tourner** les points faibles de mon CV",
-      "goalId": "resume-pimp"
+      "goalId": "resume-pimp",
+      "stepTitle": "Faire des points faibles de son CV des avantages"
     }
   ],
   "application-methods-to-interview": [
     {
       "content": "J'ai vérifié que mon CV inclut une liste de mes **compétences**",
-      "goalId": "CV-skills-list"
+      "goalId": "CV-skills-list",
+      "stepTitle": "Vérifier que son CV inclut une liste de compétences clés"
     },
     {
       "content": "J'ai personnalisé **à fond** chacune de mes candidatures selon les **attentes** de l'employeur",
-      "goalId": "personalised-applications"
+      "goalId": "personalised-applications",
+      "stepTitle": "Personnaliser ses candidatures selon les attentes de l'employeur"
     },
     {
       "content": "J'ai fait **relire** mon CV et lettre de motivation par quelqu'un en qui j'ai **confiance**",
-      "goalId": "resume-readover"
+      "goalId": "resume-readover",
+      "stepTitle": "Faire relire son CV par une personne de confiance"
     },
     {
       "content": "J'ai identifié **3 points faibles sur mon CV** qui pourraient inquiéter un recruteur",
-      "goalId": "resume-awareness"
+      "goalId": "resume-awareness",
+      "stepTitle": "Identifier les points faibles dans son CV"
     },
     {
       "content": "Je sais comment **mieux tourner** les points faibles de mon CV",
-      "goalId": "resume-pimp"
+      "goalId": "resume-pimp",
+      "stepTitle": "Faire des points faibles de son CV des avantages"
     }
   ],
   "application-methods-to-interview-start": [
     {
       "content": "J'ai vérifié que mon CV inclut une liste de mes **compétences**",
-      "goalId": "CV-skills-list"
+      "goalId": "CV-skills-list",
+      "stepTitle": "Vérifier que son CV inclut une liste de compétences clés"
     },
     {
       "content": "J'ai personnalisé **à fond** chacune de mes candidatures selon les **attentes** de l'employeur",
-      "goalId": "personalised-applications"
+      "goalId": "personalised-applications",
+      "stepTitle": "Personnaliser ses candidatures selon les attentes de l'employeur"
     },
     {
       "content": "J'ai fait **relire** mon CV et lettre de motivation par quelqu'un en qui j'ai **confiance**",
-      "goalId": "resume-readover"
+      "goalId": "resume-readover",
+      "stepTitle": "Faire relire son CV par une personne de confiance"
     },
     {
       "content": "J'ai identifié **3 points faibles sur mon CV** qui pourraient inquiéter un recruteur",
-      "goalId": "resume-awareness"
+      "goalId": "resume-awareness",
+      "stepTitle": "Identifier les points faibles dans son CV"
     },
     {
       "content": "Je sais comment **mieux tourner** les points faibles de mon CV",
-      "goalId": "resume-pimp"
+      "goalId": "resume-pimp",
+      "stepTitle": "Faire des points faibles de son CV des avantages"
     }
   ],
   "apply-in-unliked-job": [
     {
       "content": "Dans mes candidatures, j'ai repris des **mots clefs** utilisés par l'employeur",
-      "goalId": "application-keywords"
+      "goalId": "application-keywords",
+      "stepTitle": "Candidater en utilisant les mots clés utilisés par les recruteurs"
     },
     {
       "content": "J'ai fait **relire** mon CV et lettre de motivation par quelqu'un en qui j'ai **confiance**",
-      "goalId": "resume-readover"
+      "goalId": "resume-readover",
+      "stepTitle": "Faire relire son CV par une personne de confiance"
     },
     {
       "content": "J'ai identifié **3 points faibles sur mon CV** qui pourraient inquiéter un recruteur",
-      "goalId": "resume-awareness"
+      "goalId": "resume-awareness",
+      "stepTitle": "Identifier les points faibles dans son CV"
     },
     {
       "content": "Je sais comment **mieux tourner** les points faibles de mon CV",
-      "goalId": "resume-pimp"
+      "goalId": "resume-pimp",
+      "stepTitle": "Faire des points faibles de son CV des avantages"
     },
     {
       "content": "Je connais **3 postes** qui recrutent **plus**",
-      "goalId": "better-jobs-awareness"
+      "goalId": "better-jobs-awareness",
+      "stepTitle": "Trouver des postes qui recrutent plus"
     }
   ],
   "auto-didact": [
     {
       "content": "J'ai contacté 3 recruteurs pour demander si un parcours d'autodidacte leur serait acceptable",
-      "goalId": "autodidact-viability"
+      "goalId": "autodidact-viability",
+      "stepTitle": "Vérifier si un profil autodidact est compatible pour ce métier"
     },
     {
       "content": "Pour choisir mes cours, j'ai pris note des compétences qui auront de plus en plus d'importance à l'avenir",
-      "goalId": "skill-for-future"
+      "goalId": "skill-for-future",
+      "stepTitle": "Identifier quels sont les compétences importantes pour l'avenir"
     },
     {
       "content": "J'ai trouvé des formations ou des tutoriels sur internet",
-      "goalId": "find-autodidact"
+      "goalId": "find-autodidact",
+      "stepTitle": "Trouver des formations ou des tutos sur internets"
     },
     {
       "content": "Avant de commencer à me former, j'ai trouvé un créneau de temps pour garder un rythme régulier ",
-      "goalId": "autodidact-time-management"
+      "goalId": "autodidact-time-management",
+      "stepTitle": "Trouver le bon créneau et garder un rythme régulier durant la formation"
     },
     {
       "content": "J'ai pu **poser des questions directement** à quelqu'un qui fait **ce métier**",
-      "goalId": "network-contact"
+      "goalId": "network-contact",
+      "stepTitle": "Poser des questions à une personne faisant le même métier"
     }
   ],
   "confidence-boost": [
     {
       "content": "J'ai fait une liste de **3** de mes réussites",
-      "goalId": "achievement-awareness"
+      "goalId": "achievement-awareness",
+      "stepTitle": "Lister ses réussites"
     },
     {
       "content": "Je sais que je suis dans le **top 15%** de personnes sur Bob qui ont des chances de trouver un poste bientôt",
-      "goalId": "comparative-boost"
+      "goalId": "comparative-boost",
+      "stepTitle": "Savoir se situer par rapport aux autres candidats"
     },
     {
       "content": "J'arrive à **accepter** que certaines journées sont moins efficaces que d'autres, sans **m'en vouloir**",
-      "goalId": "accept-myself"
+      "goalId": "accept-myself",
+      "stepTitle": "Accepter d'être moins efficaces certains jours, sans s'en vouloir"
     },
     {
       "content": "J'ai pris du temps pour **moi**",
-      "goalId": "self-care"
+      "goalId": "self-care",
+      "stepTitle": "S'aérer l'esprit"
     }
   ],
   "diploma-free-job": [
     {
       "content": "J'ai adapté mon **CV** pour **cibler** un métier qui **recrute** beaucoup dans mon département",
-      "goalId": "diploma-free-application"
+      "goalId": "diploma-free-application",
+      "stepTitle": "Adapter son CV pour cibler un métier qui recrute beaucoup dans le département"
     },
     {
       "content": "J'ai considéré la possibilité de trouver un **job alimentaire** pendant ma recherche d'emploi",
-      "goalId": "alimentary-job-for-search"
+      "goalId": "alimentary-job-for-search",
+      "stepTitle": "Trouver un job tout en continuant sa recherche d'emploi"
     },
     {
       "content": "J'ai comparé les différences de **salaire** entre les métiers **avec** et **sans** diplôme",
-      "goalId": "diploma-salary-impact"
+      "goalId": "diploma-salary-impact",
+      "stepTitle": "Comparer les différences de salaire entre les métiers avec et sans diplôme"
     }
   ],
   "get-alternance": [
     {
-      "content": "J'ai obtenu un **entretien d'embauche** avant de me fixer sur une formation",
-      "goalId": "interview-before-training-centre"
-    },
-    {
-      "content": "J'ai une idée de ma **rémunération** et de son impact sur mon quotidien ",
-      "goalId": "alternance-pay"
-    },
-    {
-      "content": "J'ai signé un contrat en alternance",
-      "goalId": "alternance-started"
-    },
-    {
       "content": "J'ai vérifié qu'il y a **besoin** d'obtenir un diplôme pour ce poste",
-      "goalId": "check-diploma"
+      "goalId": "check-diploma",
+      "stepTitle": "Vérifier le diplôme pour ce poste"
     },
     {
       "content": "J'ai **regardé les statistiques** pour confirmer qu'il y a du travail dans ce métier",
-      "goalId": "check-market"
+      "goalId": "check-market",
+      "stepTitle": "Vérifier qu'il y a du travail dans ce métier"
+    },
+    {
+      "content": "J'ai obtenu un **entretien d'embauche** avant de me fixer sur une formation",
+      "goalId": "interview-before-training-centre",
+      "stepTitle": "Obtenir un entretien d'embauche avant de se fixer sur une formation"
+    },
+    {
+      "content": "J'ai une idée de ma **rémunération** et de son impact sur mon quotidien ",
+      "goalId": "alternance-pay",
+      "stepTitle": "Avoir une idée de sa rémunération exact"
+    },
+    {
+      "content": "J'ai signé un contrat en alternance",
+      "goalId": "alternance-started",
+      "stepTitle": "Signer un contrat en alternance"
     }
   ],
   "get-diploma": [
     {
-      "content": "J'ai préparé **5 questions** à poser à des centres de formation ",
-      "goalId": "training-centre-questions"
+      "content": "J'ai identifié le diplôme requis",
+      "goalId": "first-step-diploma",
+      "stepTitle": "Identifier le diplôme requis"
     },
     {
-      "content": "J'ai demandé au centre de formation de me mettre en contact avec **3 anciens élèves**",
-      "goalId": "training-centre-alumni"
+      "content": "J'ai trouvé la formation qui me convient",
+      "goalId": "second-step-diploma",
+      "stepTitle": "Trouver la formation qui convient"
     },
     {
-      "content": "J'ai **3 arguments pour évaluer mon projet** avec mon conseiller emploi",
-      "goalId": "employment-service-biais"
+      "content": "J'ai trouvé un financement",
+      "goalId": "third-step-diploma",
+      "stepTitle": "Trouver un financement"
     },
     {
-      "content": "J'ai vérifié qu'il y a **besoin** d'obtenir un diplôme pour ce poste",
-      "goalId": "check-diploma"
-    },
-    {
-      "content": "J'ai **regardé les statistiques** pour confirmer qu'il y a du travail dans ce métier",
-      "goalId": "check-market"
-    },
-    {
-      "content": "J'ai pu **poser des questions directement** à quelqu'un qui fait **ce métier**",
-      "goalId": "network-contact"
+      "content": "Je sais m'inscrire à la formation",
+      "goalId": "fouth-step-diploma",
+      "stepTitle": "S'inscrire dans la formation"
     }
   ],
   "interview-success": [
     {
       "content": "J'arrive à présenter à l'oral mon **parcours** en 2 minutes",
-      "goalId": "elevator-pitch"
+      "goalId": "elevator-pitch",
+      "stepTitle": "Présenter son parcours à l'oral en 2 minutes"
     },
     {
       "content": "J'arrive à présenter à l'oral mes **qualités** en 2 minutes",
-      "goalId": "competences-pitch"
+      "goalId": "competences-pitch",
+      "stepTitle": "Présenter ses qualités à l'oral en 2 minutes"
     },
     {
       "content": "J'ai regardé la vidéo sur le **langage corporel** pour préparer mes entretiens",
-      "goalId": "body-language-video"
+      "goalId": "body-language-video",
+      "stepTitle": "Travailler le langage corporel"
     },
     {
       "content": "J'ai fait un entrainement pour mes entretiens avec quelqu'un qui connait ce métier",
-      "goalId": "interview-practice"
+      "goalId": "interview-practice",
+      "stepTitle": "S'entrainer aux entretiens avec quelqu'un du métier"
     },
     {
       "content": "Pour chacune de mes qualités, j'ai trouvé un **exemple concret** de quelque chose que j'ai **réalisée**",
-      "goalId": "examples-for-interview"
+      "goalId": "examples-for-interview",
+      "stepTitle": "Organiser sa préparation aux entretiens"
     }
   ],
   "interview-success-bravo": [
     {
       "content": "J'arrive à présenter à l'oral mon **parcours** en 2 minutes",
-      "goalId": "elevator-pitch"
+      "goalId": "elevator-pitch",
+      "stepTitle": "Présenter son parcours à l'oral en 2 minutes"
     },
     {
       "content": "J'arrive à présenter à l'oral mes **qualités** en 2 minutes",
-      "goalId": "competences-pitch"
+      "goalId": "competences-pitch",
+      "stepTitle": "Présenter ses qualités à l'oral en 2 minutes"
     },
     {
       "content": "J'ai regardé la vidéo sur le **langage corporel** pour préparer mes entretiens",
-      "goalId": "body-language-video"
+      "goalId": "body-language-video",
+      "stepTitle": "Travailler le langage corporel"
     },
     {
       "content": "J'ai fait un entrainement pour mes entretiens avec quelqu'un qui connait ce métier",
-      "goalId": "interview-practice"
+      "goalId": "interview-practice",
+      "stepTitle": "S'entrainer aux entretiens avec quelqu'un du métier"
     },
     {
       "content": "Pour chacune de mes qualités, j'ai trouvé un **exemple concret** de quelque chose que j'ai **réalisée**",
-      "goalId": "examples-for-interview"
+      "goalId": "examples-for-interview",
+      "stepTitle": "Organiser sa préparation aux entretiens"
     }
   ],
   "interview-success-start": [
     {
       "content": "J'arrive à présenter à l'oral mon **parcours** en 2 minutes",
-      "goalId": "elevator-pitch"
+      "goalId": "elevator-pitch",
+      "stepTitle": "Présenter son parcours à l'oral en 2 minutes"
     },
     {
       "content": "J'arrive à présenter à l'oral mes **qualités** en 2 minutes",
-      "goalId": "competences-pitch"
+      "goalId": "competences-pitch",
+      "stepTitle": "Présenter ses qualités à l'oral en 2 minutes"
     },
     {
       "content": "J'ai regardé la vidéo sur le **langage corporel** pour préparer mes entretiens",
-      "goalId": "body-language-video"
+      "goalId": "body-language-video",
+      "stepTitle": "Travailler le langage corporel"
     },
     {
       "content": "J'ai fait un entrainement pour mes entretiens avec quelqu'un qui connait ce métier",
-      "goalId": "interview-practice"
+      "goalId": "interview-practice",
+      "stepTitle": "S'entrainer aux entretiens avec quelqu'un du métier"
     },
     {
       "content": "Pour chacune de mes qualités, j'ai trouvé un **exemple concret** de quelque chose que j'ai **réalisée**",
-      "goalId": "examples-for-interview"
+      "goalId": "examples-for-interview",
+      "stepTitle": "Organiser sa préparation aux entretiens"
     }
   ],
   "keep-going": [
     {
       "content": "J'arrive à **accepter** que certaines journées sont moins efficaces que d'autres, sans **m'en vouloir**",
-      "goalId": "accept-myself"
+      "goalId": "accept-myself",
+      "stepTitle": "Accepter d'être moins efficaces certains jours, sans s'en vouloir"
     },
     {
       "content": "J'ai fait le point sur mon sommeil, mon alimentation et ma santé mentale",
-      "goalId": "wellbeing-check"
+      "goalId": "wellbeing-check",
+      "stepTitle": "Faire attention à se ménager"
     },
     {
       "content": "J'ai trouvé un accompagnateur (un ami, un conseiller emploi, une association) pour ma recherche",
-      "goalId": "find-buddy"
+      "goalId": "find-buddy",
+      "stepTitle": "Trouver une personne à qui parler pendant ma recherche"
     }
   ],
   "life-balance": [
     {
       "content": "J'ai défini un **premier objectif** facile à attendre, par exemple \"contacter 3 personnes cette semaine\"",
-      "goalId": "easy-goal"
+      "goalId": "easy-goal",
+      "stepTitle": "Définir des objectifs faciles à atteindre"
     },
     {
       "content": "J'ai fait le point sur mon sommeil, mon alimentation et ma santé mentale",
-      "goalId": "wellbeing-check"
+      "goalId": "wellbeing-check",
+      "stepTitle": "Faire attention à se ménager"
     },
     {
       "content": "J'ai trouvé un accompagnateur (un ami, un conseiller emploi, une association) pour ma recherche",
-      "goalId": "find-buddy"
+      "goalId": "find-buddy",
+      "stepTitle": "Trouver une personne à qui parler pendant ma recherche"
     }
   ],
   "likeable-job": [
     {
       "content": "J'ai trouvé **3 idées de métiers** qui me donnent envie d'en savoir plus",
-      "goalId": "desire-for-jobs"
+      "goalId": "desire-for-jobs",
+      "stepTitle": "Trouver des métiers qui donne envie d'essayer"
     },
     {
       "content": "Je connais **3 métiers** qui pourraient convenir à ma **personnalité**",
-      "goalId": "jobs-that-fit"
+      "goalId": "jobs-that-fit",
+      "stepTitle": "Trouver des métiers qui colle avec sa personnalité"
     },
     {
       "content": "J'ai investi de mon temps pour **mieux connaître** un métier",
-      "goalId": "active-immersion"
+      "goalId": "active-immersion",
+      "stepTitle": "Mieux connaitre un métier"
     }
   ],
   "motivate-in-job": [
     {
       "content": "J'arrive à **identifier ce qui me plait ou non** dans ce métier",
-      "goalId": "job-awareness"
+      "goalId": "job-awareness",
+      "stepTitle": "Identifier les aspects positifs et négatifs dans un métier"
     },
     {
       "content": "J'ai pris du temps pour **moi**",
-      "goalId": "self-care"
+      "goalId": "self-care",
+      "stepTitle": "S'aérer l'esprit"
     },
     {
       "content": "J'ai discuté avec **quelqu'un qui fait ce métier**",
-      "goalId": "network-motivation"
+      "goalId": "network-motivation",
+      "stepTitle": "Apprendre en discutant avec une personne qui fait ce métier"
     }
   ],
   "other-leads": [
     {
       "content": "Je connais **3 villes** où il y a **moins de concurrence**",
-      "goalId": "better-cities-awareness"
+      "goalId": "better-cities-awareness",
+      "stepTitle": "Identifier les villes où il y a moins de concurrence"
     },
     {
       "content": "J'ai commencé à postuler dans des **villes** où **la concurrence est plus faible**",
-      "goalId": "better-cities-apply"
+      "goalId": "better-cities-apply",
+      "stepTitle": "Postuler dans des villes où la concurrence est plus faible"
     },
     {
       "content": "Je connais **3 métiers** où il y a **moins de concurrence**",
-      "goalId": "better-jobs-awareness"
+      "goalId": "better-jobs-awareness",
+      "stepTitle": "Identifier les métiers où il y a moins de concurrence"
     },
     {
       "content": "J'ai considéré la possibilité de **changer de métier**",
-      "goalId": "consider-other-jobs"
+      "goalId": "consider-other-jobs",
+      "stepTitle": "Évaluer la possibilité de changer de métier"
     },
     {
       "content": "J'ai pris en compte ce qu'un changement signifierait **pour mes proches**",
-      "goalId": "impact-on-entourage"
+      "goalId": "impact-on-entourage",
+      "stepTitle": "Évaluer avec mes proches un changement professionnel"
     },
     {
       "content": " J'ai commencé une **réorientation professionnelle** vers un de ces métiers",
-      "goalId": "start-reorienting"
+      "goalId": "start-reorienting",
+      "stepTitle": "Commencer une réorientation professionnelle"
     }
   ],
   "presearch-methods": [
     {
       "content": "Je sais dans quels **secteurs** mon métier offre des **opportunités**",
-      "goalId": "other-sectors-awareness"
+      "goalId": "other-sectors-awareness",
+      "stepTitle": "Identifier les secteurs qui présentent des opportunités"
     },
     {
       "content": "J'ai assisté à **2 évènements** en lien avec mon métier ",
-      "goalId": "events-attended"
+      "goalId": "events-attended",
+      "stepTitle": "Assister à des événements en lien avec mon métier"
     },
     {
       "content": "J'ai pris contact avec un groupe ou une association pour **me faire accompagner**",
-      "goalId": "association-contact"
-    },
-    {
-      "content": "J'ai pu **poser des questions directement** à quelqu'un qui fait **ce métier**",
-      "goalId": "network-contact"
+      "goalId": "association-contact",
+      "stepTitle": "Prendre contact avec un groupe ou une association"
     },
     {
       "content": "Je connais **3 personnes dans mon secteur** que je pourrais contacter",
-      "goalId": "network-list"
+      "goalId": "network-list",
+      "stepTitle": "Contacter des personnes de son réseau proche"
+    },
+    {
+      "content": "J'ai pu **poser des questions directement** à quelqu'un qui fait **ce métier**",
+      "goalId": "network-contact",
+      "stepTitle": "Poser des questions à une personne faisant le même métier"
     }
   ],
   "targeted-search": [
     {
       "content": "J'ai discuté avec **quelqu'un qui fait ce métier**",
-      "goalId": "network-motivation"
+      "goalId": "network-motivation",
+      "stepTitle": "Apprendre en discutant avec une personne qui fait ce métier"
     },
     {
       "content": "J'ai trouvé des informations sur **comment** les autres trouvent du travail dans mon métier ",
-      "goalId": "targeted-insights"
+      "goalId": "targeted-insights",
+      "stepTitle": "Savoir comment les autres trouvent du travail dans ce métier"
     },
     {
       "content": "Je m'organise pour passer plus de temps à postuler avec la méthode de recherche qui **marche le mieux**",
-      "goalId": "targeted-time-spent"
+      "goalId": "targeted-time-spent",
+      "stepTitle": "Postuler avec la méthode de recherche qui marche le mieux"
     },
     {
       "content": "J'ai envoyé une candidature par un moyen (réseau, candidature spontanée) que je n'avais pas encore **essayé**",
-      "goalId": "targeted-done"
+      "goalId": "targeted-done",
+      "stepTitle": "Candidature par un moyen que je n'avais pas encore essayé"
     }
   ],
   "targeted-search-bravo": [
     {
-      "content": "J'ai trouvé des informations sur **comment** les autres trouvent du travail dans mon métier ",
-      "goalId": "targeted-insights"
+      "content": "Je sais m'informer sur les entreprises",
+      "goalId": "first-step-target-bravo",
+      "stepTitle": "S'informer sur les entreprises"
     },
     {
-      "content": "Je m'organise pour passer plus de temps à postuler avec la méthode de recherche qui **marche le mieux**",
-      "goalId": "targeted-time-spent"
+      "content": "Je sais organiser ma recherche",
+      "goalId": "second-step-targeted-search-bravo",
+      "stepTitle": "Organiser sa recherche"
     },
     {
-      "content": "J'ai envoyé une candidature par un moyen (réseau, candidature spontanée) que je n'avais pas encore **essayé**",
-      "goalId": "targeted-done"
+      "content": "Je sais postuler stratégiquement",
+      "goalId": "third-step-targeted-search-bravo",
+      "stepTitle": "Postuler stratégiquement"
+    },
+    {
+      "content": "Je sais relancer les entreprises",
+      "goalId": "fourth-step-targeted-search-bravo",
+      "stepTitle": "Relancer les entreprises"
     }
   ],
   "targeted-search-start": [
     {
       "content": "J'ai discuté avec **quelqu'un qui fait ce métier**",
-      "goalId": "network-motivation"
+      "goalId": "network-motivation",
+      "stepTitle": "Apprendre en discutant avec une personne qui fait ce métier"
     },
     {
       "content": "J'ai trouvé des informations sur **comment** les autres trouvent du travail dans mon métier ",
-      "goalId": "targeted-insights"
+      "goalId": "targeted-insights",
+      "stepTitle": "Savoir comment les autres trouvent du travail dans ce métier"
     },
     {
       "content": "Je m'organise pour passer plus de temps à postuler avec la méthode de recherche qui **marche le mieux**",
-      "goalId": "targeted-time-spent"
+      "goalId": "targeted-time-spent",
+      "stepTitle": "Postuler avec la méthode de recherche qui marche le mieux"
     },
     {
       "content": "J'ai envoyé une candidature par un moyen (réseau, candidature spontanée) que je n'avais pas encore **essayé**",
-      "goalId": "targeted-done"
+      "goalId": "targeted-done",
+      "stepTitle": "Candidature par un moyen que je n'avais pas encore essayé"
     }
   ],
   "try-without-diploma": [
     {
       "content": "Dans mes candidatures, j'ai repris des **mots clefs** utilisés par l'employeur",
-      "goalId": "application-keywords"
+      "goalId": "application-keywords",
+      "stepTitle": "Candidater en utilisant les mots clés utilisés par les recruteurs"
     },
     {
       "content": "J'ai fait **relire** mon CV et lettre de motivation par quelqu'un en qui j'ai **confiance**",
-      "goalId": "resume-readover"
+      "goalId": "resume-readover",
+      "stepTitle": "Faire relire son CV par une personne de confiance"
     },
     {
       "content": "J'ai identifié **3 points faibles sur mon CV** qui pourraient inquiéter un recruteur",
-      "goalId": "resume-awareness"
+      "goalId": "resume-awareness",
+      "stepTitle": "Identifier les points faibles dans son CV"
     },
     {
       "content": "Je sais comment **mieux tourner** les points faibles de mon CV",
-      "goalId": "resume-pimp"
-    },
-    {
-      "content": "J'ai pu **poser des questions directement** à quelqu'un qui fait **ce métier**",
-      "goalId": "network-contact"
+      "goalId": "resume-pimp",
+      "stepTitle": "Faire des points faibles de son CV des avantages"
     },
     {
       "content": "Je connais **3 personnes dans mon secteur** que je pourrais contacter",
-      "goalId": "network-list"
+      "goalId": "network-list",
+      "stepTitle": "Contacter des personnes de son réseau proche"
+    },
+    {
+      "content": "J'ai pu **poser des questions directement** à quelqu'un qui fait **ce métier**",
+      "goalId": "network-contact",
+      "stepTitle": "Poser des questions à une personne faisant le même métier"
     }
   ]
 }

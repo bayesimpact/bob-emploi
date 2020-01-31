@@ -1,17 +1,16 @@
-import Raven from 'raven-js'
+import * as Sentry from '@sentry/browser'
+import i18n, {TFunction} from 'i18next'
+import _mapValues from 'lodash/mapValues'
+import _memoize from 'lodash/memoize'
+import _pick from 'lodash/pick'
+
+import {prepareNamespace} from 'store/i18n'
 
 // TODO(pascal): Move these files to the store.
-import adviceModulesTu from 'components/advisor/data/advice_modules_fr_FR@tu.json'
 import adviceModulesVous from 'components/advisor/data/advice_modules.json'
-import emailTemplatesTu from 'components/advisor/data/email_templates_fr_FR@tu.json'
 import emailTemplatesVous from 'components/advisor/data/email_templates.json'
-import eventsTu from 'components/advisor/data/events_fr_FR@tu.json'
-import eventsVous from 'components/advisor/data/events.json'
-import categoriesTu from 'components/strategist/data/categories_fr_FR@tu.json'
 import categoriesVous from 'components/strategist/data/categories.json'
-import goalsTu from 'components/strategist/data/goals_fr_FR@tu.json'
 import goalsVous from 'components/strategist/data/goals.json'
-import testimonialsTu from 'components/strategist/data/testimonials_fr_FR@tu.json'
 import testimonialsVous from 'components/strategist/data/testimonials.json'
 
 // Module to help with phrasing French sentences.
@@ -23,7 +22,7 @@ import testimonialsVous from 'components/strategist/data/testimonials.json'
 // Use contract form of a word if the next word starts
 // with a vowel or silent H.
 export const maybeContract = (full: string, contracted: string, nextWord: string): string => {
-  if (nextWord && /^[aâàäeéêëèhiïoôöuùûü]/i.test(nextWord)) {
+  if (nextWord && /^[aehiouàâäèéêëïôöùûü]/i.test(nextWord)) {
     return contracted
   }
   return full
@@ -83,7 +82,7 @@ const alwaysUpperKeywords = new Set([
 
 // Upper the first letter of each word of a string.
 export const toTitleCase = (text: string): string => {
-  const words = text.match(/([\w]+(\W+|$))/g)
+  const words = text.match(/(\w+(\W+|$))/g)
   if (!words) {
     return text
   }
@@ -184,7 +183,17 @@ interface ModifiedNameAndPrefix {
 // Compute the prefix in front of a name when writing about "of Name N",
 // e.g. "Toulouse" => "de ", "Le Mans" => "du ", "Orange" => "d'". Also return the part of the
 // name without the prefix.
-export const ofPrefix = (fullName: string): ModifiedNameAndPrefix => {
+// TODO(pascal): Change all callers and make t required.
+export const ofPrefix = (fullName: string, t?: TFunction): ModifiedNameAndPrefix => {
+  if (t) {
+    const translated = t('de {{fullName}}', {fullName, ns: 'translation'})
+    if (!translated.startsWith('de ')) {
+      return {
+        modifiedName: fullName,
+        prefix: translated.slice(0, translated.length - fullName.length),
+      }
+    }
+  }
   if (fullName.match(/^[AEIOUY]/)) {
     return {
       modifiedName: fullName,
@@ -216,9 +225,15 @@ export const ofPrefix = (fullName: string): ModifiedNameAndPrefix => {
   }
 }
 
-// TODO(cyrille): Use wherever applicable.
-export const inDepartement = (city: bayes.bob.FrenchCity): string|null => {
+// TODO(pascal): Change all callers and make t required.
+export const inDepartement = (city: bayes.bob.FrenchCity, t?: TFunction): string|null => {
   const {departementName = '', departementPrefix = ''} = city || {}
+  if (t) {
+    const inDepartement = t('dans {{departementName}}', {departementName})
+    if (!inDepartement.startsWith('dans ')) {
+      return inDepartement
+    }
+  }
   if (departementName && departementPrefix) {
     return departementPrefix + departementName
   }
@@ -229,40 +244,26 @@ export const inDepartement = (city: bayes.bob.FrenchCity): string|null => {
 export type YouChooser = <T>(tuVersion: T, vousVersion: T) => T
 
 
-interface EventText {
-  atNext: string
-  eventLocation: string
-}
-interface EventTexts {
-  [prefix: string]: EventText
-}
-
-const canTutoieFrom = (userYou: YouChooser): boolean => userYou && userYou(true, false)
-// TODO(cyrille): Drop this.
-export const getEvents = (userYou: YouChooser): EventTexts =>
-  canTutoieFrom(userYou) ? eventsTu : eventsVous
+// TODO(pascal): Move to user.ts
+export type ClientFilter = 'for-experienced(2)'|'for-experienced(6)'
 
 interface EmailTemplate {
   readonly content: string
-  readonly filters?: string[]
-  readonly personalizations?: string[]
+  readonly filters?: readonly ClientFilter[]
+  readonly personalizations?: readonly string[]
   readonly reason?: string
   readonly title: string
 }
 interface EmailTemplates {
-  readonly [adviceModule: string]: EmailTemplate[]
+  readonly [adviceModule: string]: readonly EmailTemplate[]
 }
 
 export const tutoyer = <T>(tuSentence: T): T => tuSentence
 export const vouvoyer = <V>(unusedTuSentence: V, vousSentence: V): V => vousSentence
 
-// TODO(cyrille): Load lazily if files get too big.
-export const getEmailTemplates = (userYou: YouChooser = tutoyer): EmailTemplates =>
-  canTutoieFrom(userYou) ? emailTemplatesTu : emailTemplatesVous
-
 export interface AdviceModule {
   callToAction?: string
-  explanations?: string[]
+  explanations?: readonly string[]
   goal: string
   shortTitle: string
   title: string
@@ -274,20 +275,74 @@ interface AdviceModules {
   [adviceModule: string]: AdviceModule
 }
 
-export const getAdviceModules = (userYou: YouChooser): AdviceModules =>
-  canTutoieFrom(userYou) ? adviceModulesTu : adviceModulesVous
+
+// TODO(pascal): Move to i18n.ts.
+
+function getFieldsTranslator<K extends string, T extends {readonly [k in K]?: string}>(
+  translate: TFunction, keys: readonly K[], ns?: string): ((raw: T) => T) {
+  if (ns) {
+    prepareNamespace(ns)
+  }
+  return (raw: T): T => {
+    const translated: {[k in K]: string|undefined} = _mapValues(
+      _pick(raw, keys),
+      (fieldValue?: string): string|undefined => fieldValue && translate(fieldValue, {ns}),
+    )
+    return {...raw, ...translated}
+  }
+}
+
+
+const translatedAdviceModules = _memoize(
+  (translate: TFunction): AdviceModules => {
+    const translator = getFieldsTranslator<'goal'|'title'|'userGainDetails', AdviceModule>(
+      translate, ['goal', 'title', 'userGainDetails'], 'adviceModules')
+    const stringTranslate = (s: string): string => translate(s)
+    const adviceModules: AdviceModules = adviceModulesVous
+    return _mapValues(adviceModules, (adviceModule: AdviceModule): AdviceModule => ({
+      ...translator(adviceModule),
+      explanations: adviceModule.explanations?.map(stringTranslate),
+      titleXStars: _mapValues(adviceModule.titleXStars, stringTranslate),
+    }))
+  },
+  (): string => i18n.language,
+)
+
+
+const emptyObject = {} as const
+
+
+export const getAdviceModule = (adviceModuleId: string, translate?: TFunction): AdviceModule => {
+  const modules = translate ? translatedAdviceModules(translate) : adviceModulesVous
+  return modules[adviceModuleId] || emptyObject
+}
+
 
 export interface StrategyGoal {
   content: string
   goalId: string
+  stepTitle: string
 }
 
+const translatedGoals = _memoize(
+  (translate: TFunction): {[k in keyof typeof goalsVous]: readonly StrategyGoal[]} => {
+    const translator = getFieldsTranslator<'content'|'stepTitle', StrategyGoal>(
+      translate, ['content', 'stepTitle'], 'goals')
+    return _mapValues(goalsVous, goals => goals.map(translator))
+  },
+  (): string => i18n.language,
+)
+
+
+const emptyArray = [] as const
+
+
 export const getStrategyGoals =
-  (userYou: YouChooser, strategyId: string): readonly StrategyGoal[] => {
-    const goals = canTutoieFrom(userYou) ? goalsTu : goalsVous
-    const strategyGoals = goals[strategyId] || []
+  (strategyId: string, translate?: TFunction): readonly StrategyGoal[] => {
+    const goals = translate ? translatedGoals(translate) : goalsVous
+    const strategyGoals = goals[strategyId as keyof typeof goalsVous] || emptyArray
     if (!strategyGoals.length) {
-      Raven.captureMessage(`No goals defined for the strategy "${strategyId}"`)
+      Sentry.captureMessage(`No goals defined for the strategy "${strategyId}"`)
     }
     return strategyGoals
   }
@@ -298,8 +353,31 @@ interface DiagnosticCategoryMap {
 }
 
 
-export const getCategories = (userYou: YouChooser): DiagnosticCategoryMap =>
-  canTutoieFrom(userYou) ? categoriesTu : categoriesVous
+export const getTranslatedCategories = _memoize(
+  (translate: TFunction): DiagnosticCategoryMap => {
+    return _mapValues(
+      categoriesVous,
+      getFieldsTranslator(
+        translate, ['metricDetails', 'metricDetailsFeminine', 'metricTitle'], 'categories'),
+    )
+  },
+  (): string => i18n.language,
+)
+
+
+export const getEmailTemplates = _memoize(
+  (translate: TFunction): EmailTemplates => {
+    // TODO(cyrille): Load lazily if files get too big.
+    const emailTemplates: EmailTemplates = emailTemplatesVous
+    const translator = getFieldsTranslator<'content'|'reason'|'title', EmailTemplate>(
+      translate, ['content', 'reason', 'title'], 'emailTemplates')
+    return _mapValues(
+      emailTemplates,
+      (values: readonly EmailTemplate[]): readonly EmailTemplate[] => values.map(translator),
+    )
+  },
+  (): string => i18n.language,
+)
 
 
 export interface StrategyTestimonial {
@@ -312,12 +390,23 @@ export interface StrategyTestimonial {
 }
 
 interface StrategyTestimonials {
-  readonly [strategy: string]: StrategyTestimonial[]
+  readonly [strategy: string]: readonly StrategyTestimonial[]
 }
 
 
-export const getStrategiesTestimonials = (userYou: YouChooser): StrategyTestimonials =>
-  userYou(testimonialsTu, testimonialsVous)
+export const getStrategiesTestimonials = _memoize(
+  (translate: TFunction): StrategyTestimonials => {
+    const testimonials: StrategyTestimonials = testimonialsVous
+    const translator = getFieldsTranslator<'content'|'job', StrategyTestimonial>(
+      translate, ['content', 'job'], 'testimonials')
+    return _mapValues(
+      testimonials,
+      (values: readonly StrategyTestimonial[]): readonly StrategyTestimonial[] =>
+        values.map(translator),
+    )
+  },
+  (): string => i18n.language,
+)
 
 export const genderize =
   (neutralSentence: string, herSentence: string, hisSentence: string,
@@ -356,6 +445,7 @@ const _FRENCH_MONTHS = {
   OCTOBER: 'octobre',
   NOVEMBER: 'novembre',
   DECEMBER: 'décembre',
+  UNKNOWN_MONTH: '',
 } as const
 /* eslint-enable sort-keys */
 export const getMonthName = (month: bayes.bob.Month): string =>

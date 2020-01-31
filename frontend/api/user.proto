@@ -1,11 +1,9 @@
 syntax = "proto3";
 
-import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 import "bob_emploi/frontend/api/diagnostic.proto";
-import "bob_emploi/frontend/api/discovery.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
 import "bob_emploi/frontend/api/options.proto";
@@ -14,7 +12,7 @@ import "bob_emploi/frontend/api/project.proto";
 package bayes.bob;
 
 // All data for a user of the mashup app, a job seeker.
-// Next ID: 29
+// Next ID: 32
 message User {
   // A unique identifier for this user. It is not related to any public
   // identifiers although it is not obfuscated in the API. It looks like a normal Mongo ObjectID,
@@ -154,7 +152,7 @@ message TrackingParameters {
 }
 
 // Profile of a user, a job seeker.
-// Next ID: 27.
+// Next IDs: 2, 4, 6, 14, 30, 31.
 message UserProfile {
   // Where the user is living.
   // We wanted to distinguish where the user is living from where they search
@@ -226,6 +224,10 @@ message UserProfile {
   // Whether the user asked to be "tutoyé".
   bool can_tutoie = 23 [(field_usage) = APP_ONLY];
 
+  // The locale that the user prefers. E.g. "en", "nl", "fr", "fr@tu" (the tutoiement version of
+  // French).
+  string locale = 28 [(field_usage) = APP_ONLY];
+
   // The driving licenses the user has.
   repeated DrivingLicense driving_licenses = 24 [(list_format) = REPLACEABLE];
 
@@ -234,6 +236,15 @@ message UserProfile {
 
   // How frequent should we send coaching emails (aka focus emails).
   EmailFrequency coaching_email_frequency = 26 [(field_usage) = APP_ONLY];
+
+  // Whether the user has completed their profile end to end.
+  // It can be used not to ask a question a second time when editing a project for instance.
+  // Do not rely on it for users before 2019-12.
+  bool has_completed_onboarding = 27 [(field_usage) = APP_ONLY];
+
+  // Set of languages on which we know the user's level. If a language is missing here, it means
+  // that we don't know its current level.
+  repeated LanguageKnowledge languages = 29;
 }
 
 // A lightweight message to reference a user.
@@ -241,6 +252,20 @@ message UserId {
   // A unique identifier for this user. It is not related to any public
   // identifiers although it is not obfuscated in the API.
   string user_id = 1;
+}
+
+// A user, together with information on whether it should be completed by the client and how.
+// Completion would allow a more relevant algorithm result.
+message UpdatableUser {
+  User user = 1;
+
+  // Whether the missing data is necessary for a relevant assessment, or simply optimization.
+  bool is_completion_required = 2;
+
+  // A list of fields that need completion for a better assessment of the user.
+  // The fields follow the FieldMask JSON format for a user,
+  // except that repeated fields are allowed, with the index specified, eg: `projects.0.hasResume`.
+  repeated string missing_fields = 3;
 }
 
 // A message containing fields according to which we can decide whether the app is available or not.
@@ -519,6 +544,19 @@ enum UserOrigin {
   FROM_PIMMS = 8;
 }
 
+message LanguageKnowledge {
+  // Locale of the language (e.g. "fr", "fr-BE", "en", "nl").
+  string locale = 1;
+
+  // Whether the user has a good read/write knowledge of the language
+  // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
+  bool has_written_knowledge = 2;
+
+  // Whether the user has a good listen/speak knowledge of the language
+  // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
+  bool has_spoken_knowledge = 3;
+}
+
 // Status of the email sent to user to compute the Net Promoter Score.
 enum NPSEmailStatus {
   // User was created before the NPS experiment was ever started.
@@ -591,6 +629,9 @@ message EmailSent {
 
   // Number of days (truncated) between sent_at and last_status_checked_at.
   int32 last_status_checked_after_days = 7;
+
+  // Subject of the email (actually of the template) that was sent.
+  string subject = 8;
 }
 
 // Status of email sent. This relies only on the mailjet API and is named
@@ -693,12 +734,6 @@ message ClientSideMetrics {
 
   // Whether the first session is mobile.
   OptionalBool is_first_session_mobile = 3;
-}
-
-enum OptionalBool {
-  UNKNOWN_BOOL = 0;
-  FALSE = 1;
-  TRUE = 2;
 }
 
 message MaydayGrantee {

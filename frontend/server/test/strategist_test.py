@@ -58,11 +58,11 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         self._db.translations.insert_many([
             {
                 'string': 'Vous devriez utiliser un commutateur',
-                'fr_FR@tu': 'Tu devrais utiliser un commutateur',
+                'fr@tu': 'Tu devrais utiliser un commutateur',
             },
             {
                 'string': 'Vous êtes fait%eFeminine pour cette stratégie',
-                'fr_FR@tu': 'Tu es fait%eFeminine pour cette stratégie',
+                'fr@tu': 'Tu es fait%eFeminine pour cette stratégie',
             }
         ])
         self.user_id, self.auth_token = self.authenticate_new_user_token(email='foo@bar.com')
@@ -267,7 +267,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         })
         self._db.translations.insert_one({
             'string': 'planter des choux dans votre jardin',
-            'fr_FR@tu': 'planter des choux dans ton jardin',
+            'fr@tu': 'planter des choux dans ton jardin',
         })
         self.project['targetJob'] = {'jobGroup': {'romeId': 'A1234'}}
         self.project['advices'] = [
@@ -285,6 +285,9 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         pieces_of_advice = strategies[0].get('piecesOfAdvice', [])
         self.assertCountEqual(
             ['other-work-env', 'specific-to-job'], [a.get('adviceId') for a in pieces_of_advice])
+        # Teaser should not be set from the server.
+        self.assertFalse(next(
+            a.get('teaser') for a in pieces_of_advice if a.get('adviceId') == 'specific-to-job'))
 
     def test_capped_score(self) -> None:
         """Ensure that a large delta is capped if the user already has a big score."""

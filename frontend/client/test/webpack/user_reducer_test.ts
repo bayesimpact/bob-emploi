@@ -144,7 +144,7 @@ describe('user reducer', (): void => {
         ASYNC_MARKER: 'ASYNC_MARKER',
         project: {projectId: '0'},
         response: {
-          reachedGoals: {'goal1': true},
+          reachedGoals: {goal1: true},
           startedAt: '2019-04-13T12:00:00Z',
           strategyId: 'other-leads',
         },
@@ -175,7 +175,7 @@ describe('user reducer', (): void => {
         ASYNC_MARKER: 'ASYNC_MARKER',
         project: {projectId: '0'},
         response: {
-          reachedGoals: {'goal1': true},
+          reachedGoals: {goal1: true},
           startedAt: '2019-04-13T12:00:00Z',
           strategyId: 'other-leads',
         },

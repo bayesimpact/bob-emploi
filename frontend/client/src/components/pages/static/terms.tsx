@@ -6,13 +6,18 @@ import {Markdown} from 'components/theme'
 import content from './terms/content.txt'
 
 
-export default class TermsAndConditionsPage extends React.PureComponent<{}> {
-  public render(): React.ReactNode {
-    return <StaticPage page="terms" title={<span>
-      Conditions générales d'utilisation<br />
-      au <StrongTitle>11 novembre 2016</StrongTitle>
-    </span>} style={{padding: '20px 100px 100px'}}>
-      <Markdown content={content} />
-    </StaticPage>
-  }
+const style = {
+  padding: '20px 100px 100px',
 }
+
+
+const TermsAndConditionsPage = (): React.ReactElement => <StaticPage
+  page="terms" title={<span>
+    Conditions générales d'utilisation<br />
+    au <StrongTitle>11 novembre 2016</StrongTitle>
+  </span>} style={style}>
+  <Markdown content={content} />
+</StaticPage>
+
+
+export default React.memo(TermsAndConditionsPage)

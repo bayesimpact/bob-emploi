@@ -6,7 +6,7 @@ ADD dist /usr/share/bob-emploi/html
 
 ADD nginx.conf /etc/nginx/conf.d/default.conf
 ADD entrypoint.sh /usr/share/bob-emploi/
-ADD const_dist.json /usr/share/bob-emploi/dist.json
+ADD const_dist.json5 /usr/share/bob-emploi/dist.json5
 
 CMD ["/usr/share/bob-emploi/entrypoint.sh"]
 

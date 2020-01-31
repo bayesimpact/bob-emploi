@@ -14,7 +14,7 @@ const emptyArray = [] as const
 
 
 // TODO(marielaure): Refactor this with reorientation-jobbing advice.
-class ExpandedAdviceCardContentBase
+class ReorientToCloseJobs
   extends React.PureComponent<CardWithContentProps<bayes.bob.ReorientCloseJobs>> {
   public static propTypes = {
     adviceData: PropTypes.shape({
@@ -62,8 +62,7 @@ class ExpandedAdviceCardContentBase
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.ReorientCloseJobs, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.ReorientCloseJobs, CardProps>(ReorientToCloseJobs)
 
 
 interface SectionProps {

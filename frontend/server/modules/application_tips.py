@@ -2,13 +2,28 @@
 
 import itertools
 import random
-from typing import Optional
+from typing import Optional, Set
 
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import application_pb2
+from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
+
+_APPLICATION_PER_WEEK = {
+    project_pb2.LESS_THAN_2: 0,
+    project_pb2.SOME: 2,
+    project_pb2.DECENT_AMOUNT: 6,
+    project_pb2.A_LOT: 15,
+}
+
+_NUM_INTERVIEWS = {
+    project_pb2.LESS_THAN_2: 0,
+    project_pb2.SOME: 1,
+    project_pb2.DECENT_AMOUNT: 5,
+    project_pb2.A_LOT: 10,
+}
 
 
 def _get_handcrafted_job_requirements(project: scoring_base.ScoringProject) \
@@ -80,26 +95,12 @@ class _AdviceFreshResume(scoring_base.ModelBase):
 class _AdviceImproveResume(scoring_base.ModelBase):
     """A scoring model to trigger the "Improve your resume to get more interviews" advice."""
 
-    _APPLICATION_PER_WEEK = {
-        project_pb2.LESS_THAN_2: 0,
-        project_pb2.SOME: 2,
-        project_pb2.DECENT_AMOUNT: 6,
-        project_pb2.A_LOT: 15,
-    }
-
-    _NUM_INTERVIEWS = {
-        project_pb2.LESS_THAN_2: 0,
-        project_pb2.SOME: 1,
-        project_pb2.DECENT_AMOUNT: 5,
-        project_pb2.A_LOT: 10,
-    }
-
     def _num_interviews(self, project: scoring_base.ScoringProject) -> int:
         if project.details.total_interview_count < 0:
             return 0
         if project.details.total_interview_count:
             return project.details.total_interview_count
-        return self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
+        return _NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
 
     def _num_interviews_increase(self, project: scoring_base.ScoringProject) -> float:
         """Compute the increase (in ratio) of # of interviews that one could hope for."""
@@ -108,9 +109,9 @@ class _AdviceImproveResume(scoring_base.ModelBase):
                 project.details.total_interview_count > 20:
             return 0
 
-        job_search_length_weeks = project.details.job_search_length_months * 52 / 12
+        job_search_length_weeks = project.get_search_length_at_creation() * 52 / 12
         num_applicants_per_offer = project.market_stress() or 2.85
-        weekly_applications = self._APPLICATION_PER_WEEK.get(
+        weekly_applications = _APPLICATION_PER_WEEK.get(
             project.details.weekly_applications_estimate, 0)
         num_applications = job_search_length_weeks * weekly_applications
         num_potential_interviews = num_applications / num_applicants_per_offer
@@ -141,13 +142,6 @@ class _AdviceImproveResume(scoring_base.ModelBase):
 class _AdviceImproveInterview(scoring_base.ModelBase):
     """A scoring model to trigger the "Improve your interview skills" advice."""
 
-    _NUM_INTERVIEWS = {
-        project_pb2.LESS_THAN_2: 0,
-        project_pb2.SOME: 1,
-        project_pb2.DECENT_AMOUNT: 5,
-        project_pb2.A_LOT: 10,
-    }
-
     def score_and_explain(self, project: scoring_base.ScoringProject) \
             -> scoring_base.ExplainedScore:
         if project.details.diagnostic.category_id == 'enhance-methods-to-interview':
@@ -159,12 +153,12 @@ class _AdviceImproveInterview(scoring_base.ModelBase):
         elif project.details.total_interview_count > 0:
             num_interviews = project.details.total_interview_count
         else:
-            num_interviews = self._NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
+            num_interviews = _NUM_INTERVIEWS.get(project.details.total_interviews_estimate, 0)
         num_monthly_interviews = num_interviews / (project.details.job_search_length_months or 1)
         if num_monthly_interviews > _max_monthly_interviews(project):
             return scoring_base.ExplainedScore(3, reasons)
         # Whatever the number of month of search, trigger 3 if the user did more than 5 interviews:
-        if num_interviews >= self._NUM_INTERVIEWS[project_pb2.DECENT_AMOUNT]:
+        if num_interviews >= _NUM_INTERVIEWS[project_pb2.DECENT_AMOUNT]:
             return scoring_base.ExplainedScore(3, reasons)
         if project.details.diagnostic.category_id == 'bravo':
             return scoring_base.ExplainedScore(1, [])
@@ -186,6 +180,56 @@ class _AdviceImproveInterview(scoring_base.ModelBase):
         return tips_proto
 
 
+class _EnhanceMethodsToInterview(scoring_base.ModelBase):
+    """A scoring model for the category enhance-method-to-interview."""
+
+    def score(self, project: scoring_base.ScoringProject) -> float:
+        job_search_length = project.get_search_length_now()
+
+        # User has not started their job search.
+        if job_search_length <= 0:
+            raise scoring_base.NotEnoughDataException(
+                'Search not started yet. We cannot say whether this is blocking.')
+
+        missing_fields: Set[str] = set()
+        if not project.details.total_interview_count:
+            missing_fields.add('projects.0.totalInterviewCount')
+        if not project.details.weekly_applications_estimate:
+            missing_fields.add('projects.0.weeklyApplicationsEstimate')
+
+        # Either negative or between 0 and 1.
+        interview_score = 1 - max(0, project.details.total_interview_count) / job_search_length
+        if interview_score <= 0:
+            # User has at least one interview per month, they don't need more tips on getting
+            # interviews.
+            return 0
+
+        if missing_fields:
+            raise scoring_base.NotEnoughDataException(
+                'Missing some information about applications', fields=missing_fields)
+
+        # Varies between 0 and 3.
+        application_score = _APPLICATION_PER_WEEK[project.details.weekly_applications_estimate] / 5
+
+        # Varies between 0 and 3.
+        return interview_score * application_score
+
+
+class _MethodsToInterviewRelevance(scoring_base.RelevanceModelBase):
+    """A scoring model for the relevance of the category enhance-method-to-interview."""
+
+    def score_relevance(self, project: scoring_base.ScoringProject) \
+            -> diagnostic_pb2.CategoryRelevance:
+        try:
+            project.score('category-enhance-methods-to-interview')
+        except scoring_base.NotEnoughDataException:
+            return diagnostic_pb2.NEUTRAL_RELEVANCE
+        return diagnostic_pb2.RELEVANT_AND_GOOD
+
+
 scoring_base.register_model('advice-fresh-resume', _AdviceFreshResume())
 scoring_base.register_model('advice-improve-interview', _AdviceImproveInterview())
 scoring_base.register_model('advice-improve-resume', _AdviceImproveResume())
+scoring_base.register_model('category-enhance-methods-to-interview', _EnhanceMethodsToInterview())
+scoring_base.register_model(
+    'relevance-enhance-methods-to-interview', _MethodsToInterviewRelevance())

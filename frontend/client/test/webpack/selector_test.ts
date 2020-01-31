@@ -33,7 +33,7 @@ describe('Onboarding complete', (): void => {
 
   const requiredFields = [
     'gender', 'highestDegree', 'name', 'yearOfBirth',
-  ]
+  ] as const
   for (const field of requiredFields) {
     it(`should return false for the required field "${field}" missing`, (): void => {
       const user = getCompleteUser()

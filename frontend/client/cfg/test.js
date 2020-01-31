@@ -4,8 +4,8 @@ const mapKeys = require('lodash/mapKeys')
 const mapValues = require('lodash/mapValues')
 
 const baseConfig = require('./base')
-const colors = require('./colors.json')
-const constants = require('./const.json')
+const colors = require('./colors.json5')
+const constants = require('./const.json5')
 
 
 module.exports = {
@@ -19,6 +19,11 @@ module.exports = {
         use: 'null-loader',
       },
       {
+        test: /\.json$/,
+        type: 'javascript/auto',
+        use: 'json5-loader',
+      },
+      {
         include: [
           path.join(__dirname, '../src'),
           path.join(__dirname, '../test/webpack'),
@@ -30,6 +35,7 @@ module.exports = {
             plugins: [
               '@babel/plugin-syntax-dynamic-import',
               ['@babel/plugin-proposal-class-properties', {loose: false}],
+              ['@babel/plugin-proposal-optional-chaining', {loose: false}],
             ],
             presets: [['@babel/env', {modules: false}], '@babel/react', '@babel/typescript'],
           },

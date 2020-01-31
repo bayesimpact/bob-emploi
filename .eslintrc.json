@@ -29,6 +29,7 @@
     "@mysticatea",
     "@typescript-eslint",
     "import",
+    "json5",
     "jsx-a11y",
     "react",
     "react-hooks",
@@ -62,7 +63,7 @@
     "array-bracket-spacing": "error",
     "arrow-spacing": "error",
     "brace-style": ["error", "1tbs", {"allowSingleLine": false}],
-    "camelcase": ["error", {"properties": "always"}],
+    "camelcase": ["error", {"ignoreDestructuring": true}],
     "comma-dangle": ["error", "always-multiline"],
     "comma-spacing": "error",
     "comma-style": "error",
@@ -80,6 +81,7 @@
     }],
     "import/first": ["error", "absolute-first"],
     "import/newline-after-import": "error",
+    "import/no-duplicates": ["error", {"considerQueryString": true}],
     "import/unambiguous": 0,
     "indent": ["error", 2, {"SwitchCase": 1}],
     "jsx-a11y/accessible-emoji": "error",
@@ -107,7 +109,14 @@
     "prefer-const": "error",
     "prefer-rest-params": "error",
     "quotes": ["error", "single", "avoid-escape"],
+    "quote-props": ["warn", "consistent-as-needed", {
+        "numbers": true,
+        "unnecessary": true
+    }],
     "react/boolean-prop-naming": ["error", {"rule": "^(is|are|has|should|can)[A-Z].*"}],
+    "react/function-component-definition": ["error", {
+        "namedComponents": "arrow-function"
+    }],
     "react/jsx-curly-brace-presence": ["error", "never"],
     "react/jsx-curly-spacing": "error",
     "react/jsx-equals-spacing": "error",
@@ -119,7 +128,15 @@
     ]}],
     "react/no-unused-prop-types": ["error", {"skipShapeProps": true}],
     "react/no-unused-state": "error",
-    "react/sort-comp": "error",
+    "react/sort-comp": ["error", {
+        "order":  [
+            "static-variables",
+            "static-methods",
+            "lifecycle",
+            "everything-else",
+            "render"
+        ]
+    }],
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "error",
     // TODO(cyrille): Consider adding the analogue for objects.

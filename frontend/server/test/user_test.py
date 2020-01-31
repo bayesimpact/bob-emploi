@@ -1019,6 +1019,32 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertFalse(updated_strategy.get('reachedGoals', {}).get('goal-2', True))
         self.assertEqual('2019-04-15T00:00:00Z', updated_strategy.get('startedAt'))
 
+    def test_stop_strategy(self) -> None:
+        """Stop an opened strategy in a project."""
+
+        user_info = {'projects': [{'projectId': '0'}]}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        self.app.post(
+            f'/api/user/{user_id}/project/0/strategy/other-leads',
+            data=json.dumps({
+                'reachedGoals': {'goal-1': True, 'goal-2': False},
+                'strategyId': 'other-leads',
+            }),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + auth_token})
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertTrue(updated_user['projects'][0].get('openedStrategies'))
+
+        response = self.app.delete(
+            f'/api/user/{user_id}/project/0/strategy/other-leads',
+            headers={'Authorization': 'Bearer ' + auth_token})
+        self.assertEqual(200, response.status_code)
+
+        updated_user = self.get_user_info(user_id, auth_token)
+        self.assertFalse(updated_user['projects'][0].get('openedStrategies'))
+
 
 if __name__ == '__main__':
     unittest.main()

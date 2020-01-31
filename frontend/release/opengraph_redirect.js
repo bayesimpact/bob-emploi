@@ -108,12 +108,18 @@ const pages = {
       'pour la suite',
     title: 'Transparence',
   },
+  'unml': {
+    description: 'Faites le point sur où vous en êtes avec votre conseiller des Missions Locales',
+    fullTitle: 'Bilan des Missions Locales',
+  },
   'vie-privee': {
     description: 'Nous nous engageons à respecter le meilleur niveau de ' +
       'protection en conformité avec la réglementation Informatique et Liberté.',
     title: 'Vie privée',
   },
 }
+
+pages['mini'] = pages['unml']
 
 function isOpenGraphBot(userAgent) {
   return /facebot|facebookexternalhit|slackbot|twitterbot|linkedinbot/.test(

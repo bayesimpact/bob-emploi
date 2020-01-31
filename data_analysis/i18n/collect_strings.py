@@ -13,6 +13,7 @@ import typing
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from airtable import airtable
+import json5
 import requests
 
 from bob_emploi.frontend.api import options_pb2
@@ -37,33 +38,22 @@ class _Collectible(typing.NamedTuple):
     view: Optional[str] = None
 
 
+def _get_client_collectibles(filename: str) -> Iterator[_Collectible]:
+    with open(filename) as fields_file:
+        fields = json5.load(fields_file)
+    for collection in fields.values():
+        yield _Collectible(
+            base_id=collection['base'],
+            table=collection['table'],
+            fields=tuple(collection['translatableFields']),
+            id_field=collection.get('idField'),
+            view=collection['view'],
+        )
+
+
 # List of Airtable fields to collect for translation that will be used client-side.
-# Please keep in sync with translatable fields in frontend/client/download.js
-CLIENT_COLLECTIBLES = [
-    _Collectible(_BOB_ADVICE_BASE_ID, 'advice_modules', (
-        'explanations (for client)',
-        'goal',
-        'title',
-        'title_3_stars',
-        'title_2_stars',
-        'title_1_star',
-        'user_gain_details',
-    ), view='Ready to Import', id_field='advice_id'),
-    _Collectible(_BOB_ADVICE_BASE_ID, 'email_templates', (
-        'reason',
-        'title',
-    ), view='Ready to Import'),
-    _Collectible(_ROME_BASE_ID, 'Event Types', (
-        'event_location_prefix',
-        'event_location')),
-    _Collectible(_BOB_ADVICE_BASE_ID, 'strategy_goals', ('content',), view='Ready to Import'),
-    _Collectible(_BOB_ADVICE_BASE_ID, 'strategy_testimonials', (
-        'job',
-        'content'), view='Ready to Import'),
-    _Collectible(_BOB_ADVICE_BASE_ID, 'diagnostic_categories', (
-        'metric_details',
-        'metric_details_feminine'), view='Ready to Import'),
-]
+CLIENT_COLLECTIBLES = tuple(_get_client_collectibles(
+    'bob_emploi/frontend/client/airtable_fields.json5'))
 
 
 class StringCollector(object):

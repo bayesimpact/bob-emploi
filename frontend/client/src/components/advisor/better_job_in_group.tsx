@@ -53,11 +53,11 @@ class WeightedJob extends React.PureComponent<WeightedJobProps> {
       ':hover': {
         color: colors.BOB_BLUE,
       },
-      cursor: 'pointer',
-      fontSize: 13,
-      fontWeight: isTargetJob ? 'bold' : 'initial',
-      paddingLeft: 20,
-      paddingRight: 20,
+      'cursor': 'pointer',
+      'fontSize': 13,
+      'fontWeight': isTargetJob ? 'bold' : 'initial',
+      'paddingLeft': 20,
+      'paddingRight': 20,
     }
     const offersCountStyle = {
       color: isBetterThanTarget ? colors.GREENISH_TEAL : colors.COOL_GREY,
@@ -109,7 +109,7 @@ class WeightedJob extends React.PureComponent<WeightedJobProps> {
 
 
 interface CardConnectedProps {
-  jobGroupInfo: bayes.bob.JobGroup
+  jobGroupInfo?: bayes.bob.JobGroup
 }
 
 
@@ -133,7 +133,7 @@ interface CardState {
 }
 
 
-class ExpandedAdviceCardContentBase extends React.PureComponent<CardInnerProps, CardState> {
+class BetterJobInGroup extends React.PureComponent<CardInnerProps, CardState> {
   public static propTypes = {
     dispatch: PropTypes.func.isRequired,
     handleExplore: PropTypes.func.isRequired,
@@ -202,8 +202,8 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<CardInnerProps, 
       project: {targetJob: {codeOgr = '', jobGroup = {}} = {}} = {}, userYou} = this.props
     const {areAllJobsShown, weightedJobs}: CardState = this.state
     const targetJobIndex = weightedJobs.
-      findIndex(({job}: WeightedJobState): boolean => !!job && job.codeOgr === codeOgr)
-    const maxWeight = Math.min((weightedJobs[0] && weightedJobs[0].weight || 1) + .1, 1)
+      findIndex(({job}: WeightedJobState): boolean => job?.codeOgr === codeOgr)
+    const maxWeight = Math.min((weightedJobs[0]?.weight || 1) + .1, 1)
     const title = <React.Fragment>
       <GrowingNumber number={targetJobIndex} /> métier{targetJobIndex > 1 ? 's' : ''} avec plus
       d'offres d'emploi
@@ -232,9 +232,9 @@ const ExpandedAdviceCardContent = connect(
     {app}: RootState,
     {project: {targetJob: {jobGroup: {romeId = undefined} = {}} = {}} = {}}: CardProps,
   ): CardConnectedProps => ({
-    jobGroupInfo: app.specificJobs && romeId && app.specificJobs[romeId],
-  })
-)(ExpandedAdviceCardContentBase)
+    jobGroupInfo: app.specificJobs && romeId && app.specificJobs[romeId] || undefined,
+  }),
+)(BetterJobInGroup)
 
 
 export default {ExpandedAdviceCardContent, Picto}

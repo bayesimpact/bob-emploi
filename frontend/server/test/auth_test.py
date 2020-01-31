@@ -858,6 +858,47 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         saved_user = self.user_info_from_db(user_id)
         self.assertTrue(saved_user.get('hasAccount'))
 
+    @mailjetmock.patch()
+    def test_send_auth_email_to_guest_user(self) -> None:
+        """Create an account with email from a guest user, then use this email to auth."""
+
+        user_id, auth_token = self.create_guest_user(first_name='Lascap')
+        # Add an email to the guest user.
+        self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"email": "foo@bar.fr", "userId": "{user_id}", "authToken": "{auth_token}"}}',
+            content_type='application/json')
+
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+
+        # Try to connect with a password.
+        salt = self._get_salt('foo@bar.fr')
+        request = \
+            f'{{"email": "foo@bar.fr", "hashSalt": "{salt}", ' \
+            f'"hashedPassword": "{_sha1(salt, _sha1("foo@bar.fr", "psswd"))}"}}'
+        response = self.app.post(
+            '/api/user/authenticate', data=request, content_type='application/json')
+        self.assertEqual(403, response.status_code)
+        self.assertIn('foo@bar.fr', response.get_data(as_text=True))
+
+        # Open the auth email.
+        mails_sent = mailjetmock.get_all_sent_messages()
+        self.assertEqual(1, len(mails_sent), msg=mails_sent)
+        self.assertEqual('foo@bar.fr', mails_sent[0].recipient['Email'])
+        data = mails_sent[0].properties['Variables']
+        self.assertEqual('Lascap', data['firstName'])
+        url_args = parse.parse_qs(parse.urlparse(data['authLink']).query)
+        self.assertLessEqual({'userId', 'authToken'}, url_args.keys())
+        self.assertEqual([user_id], url_args['userId'])
+        auth_token = url_args['authToken'][0]
+
+        # Log in from email.
+        response = self.app.post(
+            '/api/user/authenticate',
+            data=f'{{"userId": "{user_id}", "authToken": "{auth_token}"}}',
+            content_type='application/json')
+        self.json_from_response(response)
+
 
 def _sha1(*args: str) -> str:
     return base_test.sha1(*args)

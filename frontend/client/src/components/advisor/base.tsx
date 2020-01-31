@@ -1,15 +1,18 @@
+import {TFunction} from 'i18next'
 import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import Radium from 'radium'
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {connect, useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, getExpandedCardContent} from 'store/actions'
 import {YouChooser} from 'store/french'
+import {LocalizableString} from 'store/i18n'
 import {getJobSearchURL} from 'store/job'
 import {assetProps} from 'store/skills'
 
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {RadiumDiv} from 'components/radium'
 import {AppearingList, AppearingListProps, CircularProgress, ExternalLink, Markdown,
@@ -45,7 +48,6 @@ interface ExpandableActionProps {
   tag?: TagProps
   title: React.ReactNode
   type?: 'apply-to-offer' | 'spontaneous-application'
-  userYou: YouChooser
   // TODO(marielaure): Make this a classic tag.
   // TODO(cyrille): Make this a boolean.
   whyForYou?: string
@@ -71,25 +73,28 @@ const ExpandableActionType = React.memo(ExpandableActionTypeBase)
 
 const ExpandableActionBase: React.FC<ExpandableActionProps> =
 (props: ExpandableActionProps): React.ReactElement => {
-  const {children, children: {props: {onClick = undefined} = {}} = {}, contentName,
-    isMethodSuggestion, onContentShown, style, title, userYou, tag, type, whyForYou} = props
+  const {t} = useTranslation('advisor')
+  const {children, children: {props: {onClick = undefined} = {}} = {}, contentName = t('plus'),
+    isMethodSuggestion, onContentShown, style, title, tag, type, whyForYou} = props
   const [isContentShown, setIsContentShown] = useState(false)
   const handleClick = useCallback((): void => {
     setIsContentShown(!isContentShown)
     if (!isContentShown) {
-      onContentShown && onContentShown()
+      onContentShown?.()
     }
   }, [isContentShown, onContentShown, setIsContentShown])
-  const preventParentClick = useMemo(() => (event): void => {
-    event.stopPropagation()
-    onClick && onClick(event)
+  const preventParentClick = useMemo(() => (event?: MouseEvent): void => {
+    if (event) {
+      event.stopPropagation()
+    }
+    onClick?.(event)
   }, [onClick])
   const containerStyle: RadiumCSSProperties = {
     ...style,
     ':hover': {
       backgroundColor: isContentShown ? '#fff' : colors.LIGHT_GREY,
     },
-    backgroundColor: '#fff',
+    'backgroundColor': '#fff',
   }
   if (!isMethodSuggestion) {
     containerStyle.border = `solid 1px ${colors.MODAL_PROJECT_GREY}`
@@ -120,7 +125,7 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
     paddingBottom: 0,
     paddingTop: 0,
   }
-  const childStyle = (props): React.CSSProperties => ({
+  const childStyle = (props: {style?: React.CSSProperties}): React.CSSProperties => ({
     cursor: 'initial',
     fontWeight: isMethodSuggestion ? 'normal' : 'initial',
     ...props.style || {},
@@ -133,7 +138,7 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
     fontWeight: 'normal',
     textAlign: 'right',
   }
-  const tagStyle = (backgroundColor): React.CSSProperties => ({
+  const tagStyle = (backgroundColor?: string): React.CSSProperties => ({
     backgroundColor,
     marginLeft: 10,
   })
@@ -144,7 +149,7 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
         {title}
       </strong>
       {whyForYou ? <Tag style={tagStyle(colors.BOB_BLUE)}>
-        {userYou('Selectionné pour toi', 'Selectionné pour vous')}
+        {t('Selectionné pour vous')}
       </Tag> : null}
       {tag ? <Tag style={tagStyle(tag.color)}>
         {tag.value}
@@ -152,7 +157,7 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
       <ExpandableActionType type={type} />
       <span style={{flex: 1}} />
       {isMobileVersion ? null : <span style={seeContentStyle}>
-        Voir {isContentShown ? 'moins' : contentName}{' '}
+        {isContentShown ? t('Voir moins') : t('Voir {{contentName}}', {contentName})}{' '}
       </span>}
       <UpDownIcon icon="chevron" isUp={isContentShown} style={iconStyle} />
     </header>
@@ -164,16 +169,13 @@ const ExpandableActionBase: React.FC<ExpandableActionProps> =
 }
 const ExpandableAction: React.ComponentType<ExpandableActionProps> =
   React.memo(ExpandableActionBase)
-ExpandableActionBase.defaultProps = {
-  contentName: 'plus',
-}
+
 
 export interface EmailTemplateProps extends Omit<ExpandableActionProps, 'children'> {
   content: string
   style?: React.CSSProperties
   tip?: string
   title: React.ReactNode
-  userYou: YouChooser
   whyForYou?: string
 }
 
@@ -181,6 +183,7 @@ export interface EmailTemplateProps extends Omit<ExpandableActionProps, 'childre
 const EmailTemplateBase: React.FC<EmailTemplateProps> =
 (props: EmailTemplateProps): React.ReactElement => {
   const {content, contentName, isMethodSuggestion, tip} = props
+  const {t} = useTranslation('advisor')
   const contentStyle: React.CSSProperties = {
     borderLeft: `solid 4px ${colors.MODAL_PROJECT_GREY}`,
     color: colors.CHARCOAL_GREY,
@@ -197,7 +200,7 @@ const EmailTemplateBase: React.FC<EmailTemplateProps> =
     paddingBottom: 15,
     paddingLeft: 15,
   }
-  return <ExpandableAction {...props} contentName={contentName || "l'email"}>
+  return <ExpandableAction {...props} contentName={contentName || t("l'email")}>
     <div>
       <div style={contentStyle}>
         <Markdown style={{}} content={content} />
@@ -213,7 +216,6 @@ EmailTemplateBase.propTypes = {
   style: PropTypes.object,
   tip: PropTypes.string,
   title: PropTypes.node.isRequired,
-  userYou: PropTypes.func.isRequired,
   whyForYou: PropTypes.string,
 }
 const EmailTemplate = React.memo(EmailTemplateBase)
@@ -234,16 +236,16 @@ const ToolCardBase: React.FC<ToolCardProps> = (props: ToolCardProps): React.Reac
   const {children, hasBorder, href, imageSrc, onClick, style} = props
   const handleClick = useCallback((): void => {
     window.open(href, '_blank')
-    onClick && onClick()
+    onClick?.()
   }, [href, onClick])
   const cardStyle: RadiumCSSProperties = {
     ':hover': {
       backgroundColor: colors.LIGHT_GREY,
     },
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    cursor: 'pointer',
-    display: 'flex',
+    'alignItems': 'center',
+    'backgroundColor': '#fff',
+    'cursor': 'pointer',
+    'display': 'flex',
     ...(hasBorder && {
       border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
       borderRadius: 4,
@@ -290,6 +292,7 @@ export interface CardProps extends WithAdvice {
   dispatch: DispatchAllActions
   handleExplore: (visualElement: string) => () => void
   profile: bayes.bob.UserProfile
+  t: TFunction
   userYou: YouChooser
 }
 
@@ -323,7 +326,7 @@ type CombinedProps<AdviceDataType, Config> =
 // populate it.
 // TODO(pascal): Migrate all callers to use the useAdviceData hook instead.
 const connectExpandedCardWithContent = <AdviceDataType, Config extends WithAdvice>(
-  Component: React.ComponentType<CombinedProps<AdviceDataType, Config>>
+  Component: React.ComponentType<CombinedProps<AdviceDataType, Config>>,
 ): React.ComponentType<Omit<Config, 'adviceData'>> => {
   const ExpandedCardWithContentBase: React.FC<CombinedProps<AdviceDataType, Config>> =
   (props: CombinedProps<AdviceDataType, Config>):
@@ -344,7 +347,7 @@ const connectExpandedCardWithContent = <AdviceDataType, Config extends WithAdvic
         project.projectId && (app.adviceData[project.projectId] || {})[advice.adviceId] ||
         emptyObject
       return {adviceData}
-    }
+    },
   // TODO(pascal): Fix the type and remove this comment.
   // @ts-ignore
   )(React.memo(ExpandedCardWithContentBase))
@@ -356,14 +359,21 @@ function useAdviceData<AdviceDataType>(props: CardProps): Partial<AdviceDataType
   const dispatch = useDispatch()
   const adviceData = useSelector(({app}: RootState): Partial<AdviceDataType>|undefined =>
     project.projectId && (app.adviceData[project.projectId] || {})[adviceId] || undefined)
-  const hasAdviceData = !!adviceData
-  useEffect(() => {
-    if (!hasAdviceData) {
-      dispatch(getExpandedCardContent(project, adviceId))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasAdviceData, dispatch, project.projectId, adviceId])
-  return adviceData || {}
+  const key = `adviceData-${project.projectId}-${adviceId}`
+  const fetchingPromise = useSelector(
+    ({asyncState}: RootState): Promise<AdviceDataType>|undefined =>
+      asyncState.pendingFetch[key] as (Promise<AdviceDataType>|undefined),
+  )
+  if (adviceData) {
+    return adviceData
+  }
+  if (fetchingPromise) {
+    throw fetchingPromise
+  }
+  throw new Promise((resolve) => {
+    dispatch(getExpandedCardContent(project, adviceId, key))
+    resolve()
+  })
 }
 
 
@@ -376,15 +386,15 @@ interface TipsSectionProps {
   handleExplore: (visualElement: string) => () => void
   id?: string
   style?: React.CSSProperties
-  tips: bayes.bob.ApplicationTip[]
-  title?: string | ((userYou: YouChooser) => string)
-  userYou: YouChooser
+  t: TFunction
+  tips: readonly bayes.bob.ApplicationTip[]
+  title: LocalizableString
 }
 
 
 const TipsSectionBase: React.FC<TipsSectionProps> =
 (props: TipsSectionProps): React.ReactElement => {
-  const {gender, handleExplore, id, style, tips, title, userYou} = props
+  const {gender, handleExplore, id, style, t, t: translate, tips, title} = props
   const isMasculine = gender === 'MASCULINE'
   const [areAllItemsShown, setAreAllItemsShown] = useState(false)
   const moreItemsClickHandler = useCallback(() => {
@@ -397,19 +407,19 @@ const TipsSectionBase: React.FC<TipsSectionProps> =
       <ChevronDownIcon style={{fill: colors.CHARCOAL_GREY, height: 20, width: 20}} />
     </div>
   const isSpecificToJob = ({filters = undefined}: bayes.bob.ApplicationTip): boolean =>
-    (filters || []).some((f?: string): boolean => !!f && f.startsWith('for-job-group'))
+    (filters || []).some((f?: string): boolean => !!f?.startsWith('for-job-group'))
   const tagStyle = {
     backgroundColor: colors.GREENISH_TEAL,
     marginLeft: 15,
   }
-  const stringTitle = typeof title === 'function' ? title(userYou) : title
   return <MethodSuggestionList
-    maxNumChildren={areAllItemsShown ? 0 : MAX_SHOWN_TIPS} isNotClickable={true} title={stringTitle}
+    maxNumChildren={areAllItemsShown ? 0 : MAX_SHOWN_TIPS} isNotClickable={true}
+    title={translate(title)}
     style={style} footer={footer}>
     {tips.map((tip, index): ReactStylableElement => <div key={`tip-${id}-${index}`}>
       <Markdown content={isMasculine && tip.contentMasculine || tip.content} />
       {isSpecificToJob(tip) ?
-        <Tag style={tagStyle}>Pour {userYou('ton', 'votre')} métier</Tag> : null}
+        <Tag style={tagStyle}>{t('Pour votre métier')}</Tag> : null}
     </div>)}
   </MethodSuggestionList>
 }
@@ -418,43 +428,53 @@ TipsSectionBase.propTypes = {
   handleExplore: PropTypes.func.isRequired,
   id: PropTypes.string,
   style: PropTypes.object,
+  t: PropTypes.func.isRequired,
   tips: PropTypes.arrayOf(PropTypes.shape({
     content: PropTypes.string.isRequired,
     contentMasculine: PropTypes.string,
     filters: PropTypes.arrayOf(PropTypes.string.isRequired),
   })).isRequired,
-  title: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-  userYou: PropTypes.func.isRequired,
+  title: PropTypes.string,
 }
 const TipsSection = React.memo(TipsSectionBase)
 
-
-interface SectionsProps {
-  sections: readonly {data: string; title: string | ((userYou: YouChooser) => string)}[]
-}
-
-type ApplicationTips = bayes.bob.InterviewTips | bayes.bob.ResumeTips
-type ImproveApplicationTipsProps = CardWithContentProps<ApplicationTips> & SectionsProps
 
 type BoxProps = {component: React.ReactElement} | {isTarget?: true; percentage: number}
 const hasComponent = (b: BoxProps): b is {component: React.ReactElement} =>
   !!(b as {component: React.ReactElement}).component
 
 
+type ApplicationTips = bayes.bob.InterviewTips | bayes.bob.ResumeTips
+type ImproveApplicationTipsProps = CardWithContentProps<ApplicationTips> & SectionsProps
+interface SectionProps {
+  data: keyof bayes.bob.InterviewTips | keyof bayes.bob.ResumeTips
+  title: LocalizableString
+}
+interface SectionsProps {
+  sections: readonly SectionProps[]
+}
+
+
 const ImproveApplicationTipsBase: React.FC<ImproveApplicationTipsProps> =
 (props: ImproveApplicationTipsProps): React.ReactElement => {
   const {adviceData, profile: {gender}, sections, ...otherProps} = props
-  if (sections.some(({data}): boolean => !adviceData[data])) {
+  if (sections.some(({data}: SectionProps): boolean => !adviceData[data as 'qualities'])) {
     return <CircularProgress style={{margin: 'auto'}} />
   }
   return <div>
-    {sections.map(({data: id, title}, index): React.ReactNode => <TipsSection
-      tips={adviceData[id]} key={`section-${id}`}
-      {...{...otherProps, gender, id, title}} style={index ? {marginTop: 40} : {}} />)}
+    {sections.map(({data: id, title}: SectionProps, index: number): React.ReactNode => {
+      const tips = adviceData[id as 'qualities']
+      if (!tips) {
+        return null
+      }
+      return <TipsSection
+        tips={tips} key={`section-${id}`}
+        {...{...otherProps, gender, id, title}} style={index ? {marginTop: 40} : {}} />
+    })}
   </div>
 }
 const ImproveApplicationTips =
-  connectExpandedCardWithContent<ApplicationTips, WithAdvice & SectionsProps>(
+  connectExpandedCardWithContent<ApplicationTips, CardProps & SectionsProps>(
     React.memo(ImproveApplicationTipsBase))
 
 
@@ -520,21 +540,23 @@ interface AdviceSuggestionListProps extends AppearingListProps {
 // TODO(cyrille): Drop this one once transition to MethodSuggestionList is complete.
 const AdviceSuggestionListBase: React.FC<AdviceSuggestionListProps> =
 ({children, isNotClickable, ...extraProps}: AdviceSuggestionListProps): React.ReactElement => {
-  const childStyle = (index, props): RadiumCSSProperties => ({
+  const childStyle =
+  (index: number, props: {isNotClickable?: boolean; style?: RadiumCSSProperties}):
+  RadiumCSSProperties => ({
     ':hover': (isNotClickable || props.isNotClickable) ? {} : {
       backgroundColor: colors.LIGHT_GREY,
     },
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-    cursor: (isNotClickable || props.isNotClickable) ? 'initial' : 'pointer',
-    display: 'flex',
-    fontSize: 13,
-    fontWeight: 'bold',
-    marginTop: index ? -1 : 0,
-    minHeight: 50,
-    paddingLeft: methodPadding,
-    paddingRight: methodPadding,
+    'alignItems': 'center',
+    'backgroundColor': '#fff',
+    'border': `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+    'cursor': (isNotClickable || props.isNotClickable) ? 'initial' : 'pointer',
+    'display': 'flex',
+    'fontSize': 13,
+    'fontWeight': 'bold',
+    'marginTop': index ? -1 : 0,
+    'minHeight': 50,
+    'paddingLeft': methodPadding,
+    'paddingRight': methodPadding,
     ...SmoothTransitions,
     ...props.style,
   })
@@ -562,19 +584,19 @@ const MethodSuggestionBase: React.FC<MethodSuggestionProps> =
     ...style,
     ':hover': {
       backgroundColor: colors.LIGHT_GREY,
-      ...children.props.style && children.props.style[':hover'],
-      ...style && style[':hover'],
+      ...children.props.style?.[':hover'],
+      ...style?.[':hover'],
     },
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    display: 'flex',
-    fontSize: 13,
-    fontWeight: 'bold',
-    minHeight: 50,
-    paddingBottom: 15,
-    paddingLeft: methodPadding,
-    paddingRight: methodPadding,
-    paddingTop: 15,
+    'alignItems': 'center',
+    'backgroundColor': '#fff',
+    'display': 'flex',
+    'fontSize': 13,
+    'fontWeight': 'bold',
+    'minHeight': 50,
+    'paddingBottom': 15,
+    'paddingLeft': methodPadding,
+    'paddingRight': methodPadding,
+    'paddingTop': 15,
   }
   if (!isNotClickable) {
     insideStyle.cursor = 'pointer'
@@ -673,8 +695,8 @@ const MethodSuggestionListBase: React.FC<MethodSuggestionListProps> =
     ...otherProps} = props
   const itemStyle = useCallback((index: number): React.CSSProperties => {
     const lastChildIndex = React.Children.
-      map(children, (child, index): number => child ? index : 0).
-      filter((i): number => i).reverse()[0] || 0
+      map(children, (child, index): number => child ? index : 0)?.
+      filter((i): number => i)?.reverse()?.[0] || 0
     if ((title || index) && (footer || index < lastChildIndex)) {
       return {}
     }
@@ -695,8 +717,8 @@ const MethodSuggestionListBase: React.FC<MethodSuggestionListProps> =
           child ? <MethodSuggestion
             style={itemStyle(index)}
             isNotClickable={isNotClickable || child.props.isNotClickable}
-            isTopLimitVisible={!!index || !!title}>{child}</MethodSuggestion> : null).
-        filter((e: ReactStylableElement|null): e is ReactStylableElement => !!e)}
+            isTopLimitVisible={!!index || !!title}>{child}</MethodSuggestion> : null)?.
+        filter((e: ReactStylableElement|null): e is ReactStylableElement => !!e) || null}
     </AppearingList>
   </MethodSection>
 }
@@ -739,7 +761,7 @@ interface JobSuggestionProps {
 }
 
 const JobSuggestionCaption: React.FC<{style?: React.CSSProperties}> =
-({style}: {style: React.CSSProperties}): React.ReactElement => {
+({style}: {style?: React.CSSProperties}): React.ReactElement => {
   const captionStyle: React.CSSProperties = {
     fontStyle: 'normal',
     marginRight: 10,
@@ -755,7 +777,7 @@ const JobSuggestionJob: React.FC<JobSuggestionProps> =
 ({gender, job, onClick, style}: JobSuggestionProps): React.ReactElement|null => {
   const handleClick = useCallback((): void => {
     window.open(getJobSearchURL(job, gender), '_blank')
-    onClick && onClick()
+    onClick?.()
   }, [gender, job, onClick])
   const multiplierStyle: React.CSSProperties = {
     color: colors.HOVER_GREEN,
@@ -809,14 +831,14 @@ const JobSuggestionBase: React.FC<JobSuggestionProps> =
     ':hover': {
       backgroundColor: colors.LIGHT_GREY,
     },
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    border: `solid 1px ${colors.MODAL_PROJECT_GREY}`,
-    cursor: 'pointer',
-    display: 'flex',
-    fontSize: 13,
-    fontWeight: 'bold',
-    minHeight: isMobileVersion ? 'initial' : 50,
+    'alignItems': 'center',
+    'backgroundColor': '#fff',
+    'border': `solid 1px ${colors.MODAL_PROJECT_GREY}`,
+    'cursor': 'pointer',
+    'display': 'flex',
+    'fontSize': 13,
+    'fontWeight': 'bold',
+    'minHeight': isMobileVersion ? 'initial' : 50,
     ...style,
   }
   if (isCaption) {
@@ -844,57 +866,61 @@ interface MissionProps {
   onContentShown?: () => void
   style?: React.CSSProperties
   title?: string
-  userYou: YouChooser
 }
 
 
 const MissionBase: React.FC<MissionProps> = (props: MissionProps): React.ReactElement => {
   const {aggregatorName, associationName, description, isAvailableEverywhere,
-    link, onContentShown, style, title, userYou} = props
+    link, onContentShown, style, title} = props
+  const {t} = useTranslation('advisor')
   const contentStyle: React.CSSProperties = {
     borderLeft: `solid 4px ${colors.MODAL_PROJECT_GREY}`,
     color: colors.CHARCOAL_GREY,
     fontSize: 13,
     lineHeight: 1.6,
-    margin: '25px 0',
     overflow: 'hidden',
     paddingLeft: 15,
     ...SmoothTransitions,
   }
   const tag = isAvailableEverywhere && !isMobileVersion &&
-    {color: colors.GREENISH_TEAL, value: 'depuis chez vous'} || undefined
+    {color: colors.GREENISH_TEAL, value: t('depuis chez vous')} || undefined
+  // TODO(pascal): Make the array readonly once it's fixed in react-i18next.
+  const aggregatorLink = useMemo((): React.ReactElement[] => [
+    <ExternalLink href={link} key="0" />,
+  ], [link])
   return <ExpandableAction
-    contentName="la mission"
+    contentName={t('la mission')}
     isMethodSuggestion={true}
     onContentShown={onContentShown}
     style={style}
     tag={tag}
-    title={associationName}
-    userYou={userYou}>
+    title={associationName}>
     <div style={contentStyle}>
       <div style={{marginBottom: 20}}>
-        <strong>Intitulé de la mission&nbsp;:</strong><br />
+        <Trans parent="strong" t={t}>Intitulé de la mission&nbsp;:</Trans><br />
         {title}
       </div>
 
       <div>
-        <strong>Description&nbsp;:</strong><br />
+        <Trans parent="strong" t={t}>Description&nbsp;:</Trans><br />
         <Markdown content={description} />
       </div>
 
-      {link ? <div style={{marginTop: 20}}>
-      Lire la suite sur <ExternalLink href={link}>{aggregatorName}</ExternalLink>
-      </div> : null}
+      {link ? <Trans
+        style={{marginTop: 20}} t={t}
+        i18nKey="Lire la suite sur <0>{{aggregatorName}}</0>"
+        values={{aggregatorName}}
+        components={aggregatorLink} /> : null}
     </div>
   </ExpandableAction>
 }
-const Mission = Radium(React.memo(MissionBase))
+const Mission = React.memo(MissionBase)
 
 
 interface ListItemProps {
   children: React.ReactNode
   hasBorder?: boolean
-  style?: React.CSSProperties
+  style?: RadiumCSSProperties
 }
 
 
@@ -916,9 +942,9 @@ const ListItemBase: React.FC<ListItemProps> = (props: ListItemProps): React.Reac
   }
   return <React.Fragment>
     {hasBorder ? <div style={borderStyle} /> : null}
-    <div style={containerStyle} {...extraProps}>
+    <RadiumDiv style={containerStyle} {...extraProps}>
       {children}
-    </div>
+    </RadiumDiv>
   </React.Fragment>
 }
 ListItemBase.propTypes = {
@@ -926,20 +952,17 @@ ListItemBase.propTypes = {
   hasBorder: PropTypes.bool,
   style: PropTypes.object,
 }
-const ListItem = Radium(React.memo(ListItemBase))
+const ListItem = React.memo(ListItemBase)
 
 
-interface DataSoureConfig {
+interface DataSourceConfig {
   children: React.ReactNode
   isStarShown?: boolean
   style?: React.CSSProperties
 }
 
-interface DataSourceProps extends DataSoureConfig {
-  isStarShown: boolean
-}
-
-const DataSourceBase: React.FC<DataSoureConfig> = (props: DataSourceProps): React.ReactElement => {
+const DataSourceBase: React.FC<DataSourceConfig> =
+(props: DataSourceConfig): React.ReactElement => {
   const {children, isStarShown, style} = props
   const sourceStyle = {
     color: colors.COOL_GREY,
@@ -1028,6 +1051,7 @@ const SkillAssetBase: React.FC<SkillAssetProps> = (props: SkillAssetProps):
 React.ReactElement|null => {
   const {asset, style} = props
   const [isHovered, setIsHovered] = useState(false)
+  const {t: translate} = useTranslation()
   const onMouseOver = useCallback((): void => setIsHovered(true), [setIsHovered])
   const onMouseLeave = useCallback((): void => setIsHovered(false), [setIsHovered])
   const {icon = undefined, name = undefined} = assetProps[asset] || {}
@@ -1071,9 +1095,9 @@ React.ReactElement|null => {
   return <div style={containerStyle}>
     <img
       onMouseOver={onMouseOver} onMouseLeave={onMouseLeave}
-      src={icon} style={imageStyle} alt={name} />
+      src={icon} style={imageStyle} alt={translate(name)} />
     <div style={tooltipStyle}>
-      <div style={nameStyle}>{name}</div>
+      <div style={nameStyle}>{translate(name)}</div>
       <div style={tooltipTailStyle} />
     </div>
   </div>
@@ -1125,18 +1149,17 @@ interface SkillProps extends bayes.bob.Skill {
   handleExplore: (visualElement: string) => () => void
   isRecommended?: boolean
   style?: React.CSSProperties
-  userYou: YouChooser
 }
 
 const SkillBase: React.FC<SkillProps> = (props: SkillProps): React.ReactElement => {
-  const {assets = [], description, discoverUrl, handleExplore, name, style, userYou} = props
+  const {assets = [], description, discoverUrl, handleExplore, name, style} = props
   return <ActionWithHandyLink
     onClick={handleExplore('link-skill')} linkIntro="Découvrir cette" linkName="compétence"
     {...{description, discoverUrl, style}}>
     <div style={{alignItems: 'center', display: 'flex', marginBottom: 15}}>
       <span style={{flex: 1}}>{name}</span>
       {assets.map((asset): React.ReactNode => <SkillAsset
-        key={`${name}-${asset}`} {...{asset, userYou}} style={{marginLeft: 5}} />)}
+        key={`${name}-${asset}`} {...{asset}} style={{marginLeft: 5}} />)}
     </div>
   </ActionWithHandyLink>
 }
@@ -1193,5 +1216,5 @@ const CardWithImage = React.memo(CardWithImageBase)
 
 export {ToolCard, EmailTemplate, ImproveApplicationTips, AdviceSuggestionList, Skill,
   StaticAdviceCardContent, Tip, PercentageBoxes, connectExpandedCardWithContent, JobSuggestion,
-  ExpandableAction, Mission, DataSource, MethodSection,
+  ExpandableAction, Mission, DataSource, MethodSection, HandyLink,
   ListItem, MethodSuggestionList, CardWithImage, ActionWithHandyLink, useAdviceData}

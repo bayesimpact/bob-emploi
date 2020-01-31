@@ -1,7 +1,8 @@
 import React from 'react'
 
-import {YouChooser} from 'store/french'
 import Picto from 'images/advices/picto-improve-interview.svg'
+
+import {prepareT} from 'store/i18n'
 
 import {CardProps, ImproveApplicationTips} from './base'
 
@@ -9,18 +10,17 @@ import {CardProps, ImproveApplicationTips} from './base'
 const SECTIONS = [
   {
     data: 'qualities',
-    title: 'Qualités les plus attendues par les recruteurs\u00A0:',
+    title: prepareT('Qualités les plus attendues par les recruteurs\u00A0:'),
   },
   {
     data: 'preparations',
-    title: (userYou: YouChooser): string =>
-      userYou('Pour préparer ton entretien', 'Pour préparer votre entretien'),
+    title: prepareT('Pour préparer votre entretien'),
   },
 ] as const
 
-const ExpandedAdviceCardContentBase: React.FC<CardProps> = (props): React.ReactElement =>
+const ImproveInterview: React.FC<CardProps> = (props): React.ReactElement =>
   <ImproveApplicationTips {...props} sections={SECTIONS} />
-const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
+const ExpandedAdviceCardContent = React.memo(ImproveInterview)
 
 
 export default {ExpandedAdviceCardContent, Picto}

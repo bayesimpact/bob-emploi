@@ -7,7 +7,6 @@ import "bob_emploi/frontend/api/user.proto";
 package bayes.bob;
 
 
-// Next ID: 16.
 message UserAuth {
   // A unique identifier for this user. It is not related to any public
   // identifiers although it is not obfuscated in the API.
@@ -17,6 +16,7 @@ message UserAuth {
   string hashed_password = 2;
 }
 
+// Next ID: 15.
 // See http://go/pe:password-design
 message AuthRequest {
   // An authentication token from the OAuth2 Google Sign-in flow.
@@ -24,7 +24,7 @@ message AuthRequest {
   string google_token_id = 1;
 
   // An access token from the Facebook Login flow.
-  string facebook_access_token = 15;
+  string facebook_access_token = 2;
 
   // The email of the user. It can be used with hashed password or without,
   // then the server will return a hash_salt to use.
@@ -72,6 +72,8 @@ message AuthRequest {
 
 message AuthUserData {
   bool can_tutoie = 1;
+
+  string locale = 2;
 }
 
 message AuthResponse {

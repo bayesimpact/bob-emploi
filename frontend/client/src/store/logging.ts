@@ -36,17 +36,18 @@ const getUser = (action: AllActions, state: RootState): bayes.bob.User => {
 }
 
 interface Properties {
-  [feature: string]: string | string[] | boolean
+  [feature: string]: string | readonly string[] | boolean | number
 }
 
 const flattenFeatureFlags = (featuresEnabled: bayes.bob.Features): Properties => {
-  const features = {}
+  const features: Properties = {}
   const boolFeatures: string[] = []
   for (const feature in featuresEnabled) {
-    if (featuresEnabled[feature] === true) {
+    const featureValue = featuresEnabled[feature as keyof bayes.bob.Features]
+    if (featureValue === true) {
       boolFeatures.push(feature)
-    } else {
-      features['Features.' + feature] = featuresEnabled[feature]
+    } else if (featureValue) {
+      features['Features.' + feature] = featureValue
     }
   }
   features['Features'] = boolFeatures.sort()
@@ -83,7 +84,7 @@ export class Logger {
   }
 
   public getEventProperties(action: AllActions, state: RootState): Properties {
-    const properties = {}
+    const properties: Properties = {}
     if (this.browser.name) {
       properties['$browser'] = this.browser.name
     }
@@ -105,13 +106,14 @@ export class Logger {
     if (loadLandingPageAction.landingPageKind) {
       properties['Feature.landingPage'] = loadLandingPageAction.landingPageKind
       if (loadLandingPageAction.defaultProjectProps &&
-          loadLandingPageAction.defaultProjectProps.targetJob) {
+          loadLandingPageAction.defaultProjectProps.targetJob &&
+          loadLandingPageAction.defaultProjectProps.targetJob.masculineName) {
         properties['Landing Page Specific Job Name'] =
           loadLandingPageAction.defaultProjectProps.targetJob.masculineName
       }
     }
     const tipAction = action as TipAction<string>
-    if (tipAction.action) {
+    if (tipAction.action && tipAction.action.title) {
       properties['Action Title'] = tipAction.action.title
     }
     const feedbackAction = action as WithFeedback
@@ -195,7 +197,7 @@ export class Logger {
       situation = '',
       yearOfBirth = 0,
     } = profile || {}
-    const profileData = {}
+    const profileData: Properties = {}
     if (gender) {
       profileData['Gender'] = gender
     }

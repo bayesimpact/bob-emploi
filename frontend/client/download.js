@@ -1,13 +1,15 @@
 const Airtable = require('airtable')
 const fs = require('fs')
 const stringify = require('json-stable-stringify')
+const pickBy = require('lodash/pickBy')
 const fromPairs = require('lodash/fromPairs')
 const keyBy = require('lodash/keyBy')
-const mapValues = require('lodash/mapValues')
+require('json5/lib/register')
+
+const airtableFields = require('./airtable_fields.json5')
 
 const forEach = (object, action) =>
   Object.entries(object).forEach(([key, value]) => action(value, key))
-const adviceBase = new Airtable().base('appXmyc7yYj0pOcae')
 const romeBase = new Airtable().base('appMRMtWV61Kibt37')
 
 /* eslint-disable no-console */
@@ -19,7 +21,7 @@ const romeBase = new Airtable().base('appMRMtWV61Kibt37')
 //
 // Or pick a specific table to download:
 //
-// docker-compose run --rm frontend-dev npm run download events
+// docker-compose run --rm frontend-dev npm run download categories
 //
 // For each data file, the gathering of information is in five steps:
 // - download the data from airtable as a list of records (easy step).
@@ -53,12 +55,12 @@ const shouldDownloadAll = process.argv.length === 2
 const isDryRun = !!process.env.DRY_RUN
 
 const shouldDownload = {
-  'advice_modules': shouldDownloadAll,
-  'categories': shouldDownloadAll,
-  'email_templates': shouldDownloadAll,
-  'events': shouldDownloadAll,
-  'strategy_goals': shouldDownloadAll,
-  'strategy_testimonials': shouldDownloadAll,
+  adviceModules: shouldDownloadAll,
+  categories: shouldDownloadAll,
+  emailTemplates: shouldDownloadAll,
+  strategyGoals: shouldDownloadAll,
+  strategyTestimonials: shouldDownloadAll,
+  vae: shouldDownloadAll,
 }
 
 if (!shouldDownloadAll) {
@@ -102,34 +104,14 @@ const checkNoCurlyQuotes = (text, context) =>
   checkNotRegexp(
     /’/,
     `Curly quotes ’ are not allowed in ${context}: "${text}"`,
-    text
+    text,
   )
 
 // STEP 1 //
 
-const adviceModulesFromAirtable =
-  shouldDownload['advice_modules'] &&
-  adviceBase.table('advice_modules').select({view: 'Ready to Import'}).all()
-
-const emailTemplatesFromAirtable =
-  shouldDownload['email_templates'] &&
-  adviceBase.table('email_templates').select({view: 'Ready to Import'}).all()
-
-const eventsFromAirtable =
-  shouldDownload['events'] &&
-  romeBase.table('Event Types').select({view: 'viwUsUaBuIuYmz4ZK'}).all()
-
-const strategyGoalsFromAirtable =
-  shouldDownload['strategy_goals'] &&
-  adviceBase.table('strategy_goals').select({view: 'Ready to Import'}).all()
-
-const strategyTestimonialsFromAirtable =
-  shouldDownload['strategy_testimonials'] &&
-  adviceBase.table('strategy_testimonials').select({view: 'Ready to Import'}).all()
-
-const categoriesFromAirtable =
-  shouldDownload['categories'] &&
-  adviceBase.table('diagnostic_categories').select({view: 'Ready to Import'}).all()
+const vaeFromAirtable =
+  shouldDownload.vae &&
+  romeBase.table('VAE Stats').select({view: 'Ready to Import'}).all()
 
 // STEP 2 //
 
@@ -149,56 +131,30 @@ const getTranslationOrThrow = (object, lang, sentence) => {
   return sentence
 }
 
-// Translates a list of records as output from airtable, using a list of locales to match the
-// translation table, and a list of translatable fields (other fields won't be translated). Any
-// missing translation key or locale specific translation will throw an error.
-// Outputs an object whose keys are the locale and the reserved word `original`, and whose values
-// are the translated list of records.
-const translateRecords = (langs, translatableFields) => airTableRecords =>
+// Gather strings to translate and their tranlations in multiple locales.
+// The output is a tuple with the original records, then a map of translation dicts.
+const gatherTranslations = (langs, translatableFields) => airTableRecords =>
   translations.then(translationDict => {
     // Make one records list for each lang.
-    const recordsByLang = fromPairs(langs.map(lang => [lang, []]))
-    airTableRecords.forEach(({fields, id}) => {
-      // Make one record.fields object for each lang.
-      const recordFieldsByLang = fromPairs(langs.map(lang => [lang, {}]))
+    const translatedStringsByLang = fromPairs(langs.map(lang => [lang, {}]))
+    airTableRecords.forEach(({fields}) => {
       forEach(fields, (value, field) => {
-        // Translate each translatable field (or throw error).
-        if (translatableFields.includes(field)) {
-          const fieldByLang = translationDict[value]
-          langs.forEach(lang =>
-            recordFieldsByLang[lang][field] = getTranslationOrThrow(fieldByLang, lang, value))
-        } else {
-          // Copy all other fields.
-          langs.forEach(lang => recordFieldsByLang[lang][field] = value)
+        if (!translatableFields.includes(field)) {
+          return
         }
+        // Translate each translatable field (or throw error).
+        const fieldByLang = translationDict[value]
+        langs.forEach(lang => {
+          const translatedValue = getTranslationOrThrow(fieldByLang, lang, value)
+          if (translatedValue !== value) {
+            translatedStringsByLang[lang][value] = translatedValue
+          }
+        })
       })
-      // Push all translated records into their respective list.
-      forEach(recordFieldsByLang, (fields, lang) => recordsByLang[lang].push({fields, id}))
     })
-    return {...recordsByLang, original: airTableRecords}
+    return [airTableRecords, pickBy(translatedStringsByLang, t => !!Object.keys(t).length)]
   }, maybeThrowError)
 
-// Please, keep in sync with
-// data_analysis/i18n/collect_strings.py StringCollector.collect_for_client
-const adviceModulesTranslatableFields = [
-  'explanations (for client)',
-  'goal',
-  'title',
-  'title_3_stars',
-  'title_2_stars',
-  'title_1_star',
-  'user_gain_details',
-]
-
-const emailTemplatesTranslatableFields = ['reason', 'title']
-
-const eventsTranslatableFields = ['event_location_prefix', 'event_location']
-
-const strategyGoalsTranslatableFields = ['content']
-
-const strategyTestimonialsTranslatableFields = ['content', 'job']
-
-const categoriesTranslatableFields = ['metric_details', 'metric_details_feminine']
 
 // Step 3 //
 
@@ -278,38 +234,27 @@ const mapEmailTemplates = record => {
   return {adviceId, newTemplate: {content, filters, personalizations, reason, title, type}}
 }
 
-const mapEvents = record => {
-  forEach(record.fields, (text, key) => checkNoCurlyQuotes(text, `${key} field of Event Types`))
-  const {
-    'event_location_prefix': atNext,
-    'event_location': eventLocation,
-    'rome_prefix': romePrefix,
-  } = record.fields
-  if (atNext && eventLocation && romePrefix) {
-    return {[romePrefix]: {atNext, eventLocation}}
-  }
-}
-
 const mapStrategyGoals = ({fields}) => {
   forEach(fields, (text, key) => checkNoCurlyQuotes(text, `${key} field of strategy_goals`))
   const {
     content,
-    'goal_id': goalId,
-    'strategy_ids': strategyIds,
+    goal_id: goalId,
+    step_title: stepTitle,
+    strategy_ids: strategyIds,
   } = fields
-  return {content, goalId, strategyIds}
+  return {content, goalId, stepTitle, strategyIds}
 }
 
 const mapStrategyTestimonials = ({id, fields}) => {
   forEach(fields, (text, key) => checkNoCurlyQuotes(text, `${key} field of strategy_testimonials`))
   const {
     content,
-    'created_at': createdAt,
-    'is_male': isMale,
+    created_at: createdAt,
+    is_male: isMale,
     job,
     name,
     rating,
-    'strategy_ids': strategyIds,
+    strategy_ids: strategyIds,
   } = fields
   if (!content || !createdAt || !job || !name || !rating || !strategyIds || !strategyIds.length) {
     throwError(new Error(`Testimonial with record ID "${id}" has an empty field.`))
@@ -321,9 +266,9 @@ const mapStrategyTestimonials = ({id, fields}) => {
     content,
   )
   checkNotRegexp(
-    / [?;:!]/,
+    / [!:;?]/,
     `Content of ${id} should have unbreakable space before a French double punctuation mark:
-      "${content.replace(/ [?;:!]/g, '**$&**')}".`,
+      "${content.replace(/ [!:;?]/g, '**$&**')}".`,
     content,
   )
   return {content, createdAt, isMale, job, name, rating, strategyIds}
@@ -342,7 +287,7 @@ const mapCategory = ({id, fields}) => {
       value,
     )
     checkNotRegexpHighlight(
-      / [?;:!]/g,
+      / [!:;?]/g,
       `${fieldname} of ${id}`,
       'should have unbreakable space before a French double punctuation mark',
       value,
@@ -354,7 +299,7 @@ const mapCategory = ({id, fields}) => {
     )
     if (fieldname.startsWith('metric_details')) {
       checkNotRegexpHighlight(
-        /[^.!?]$/g,
+        /[^!.?]$/g,
         `${fieldname} of ${id}`, 'should end with a punctuation mark',
         value,
       )
@@ -367,6 +312,15 @@ const mapCategory = ({id, fields}) => {
     metric_details_feminine: metricDetailsFeminine,
   } = fields
   return {categoryId, metricDetails, metricDetailsFeminine, metricTitle}
+}
+
+const mapVae = ({fields}) => {
+  const {
+    name,
+    vae_ratio_in_diploma: vaeRatioInDiploma,
+    rome_ids: romeIds,
+  } = fields
+  return {name, romeIds, vaeRatioInDiploma}
 }
 
 // Step 4 //
@@ -406,10 +360,8 @@ const reduceEmailTemplates = reduceRecords(
   },
 )
 
-const reduceEvents = reduceRecords(mapEvents, (accumulator, added) => ({...accumulator, ...added}))
-
 const reduceStrategyGoals = reduceRecords(mapStrategyGoals,
-  (strategies, {content, goalId, strategyIds}) => {
+  (strategies, {strategyIds, ...goalProps}) => {
     // TODO(cyrille): Restrict the number of goals per strategy.
     const updatedStrategies = fromPairs(strategyIds.map(strategyId => {
       if (strategies[strategyId] && strategies[strategyId].length > 5) {
@@ -417,14 +369,14 @@ const reduceStrategyGoals = reduceRecords(mapStrategyGoals,
       }
       return [strategyId, [
         ...strategies[strategyId] || [],
-        {content, goalId},
+        goalProps,
       ]]
     }))
     return {
       ...strategies,
       ...updatedStrategies,
     }
-  }
+  },
 )
 
 const reduceStrategyTestimonials = reduceRecords(mapStrategyTestimonials,
@@ -437,7 +389,7 @@ const reduceStrategyTestimonials = reduceRecords(mapStrategyTestimonials,
       ...strategies,
       ...updatedStrategies,
     }
-  }
+  },
 )
 
 const reduceCategories = reduceRecords(mapCategory,
@@ -446,8 +398,10 @@ const reduceCategories = reduceRecords(mapCategory,
       ...categories,
       [categoryId]: otherFields,
     }
-  }
+  },
 )
+
+const reduceVae = records => records.slice(0, 10).map(mapVae)
 
 // Step 5 //
 
@@ -458,75 +412,74 @@ const writeToJson = jsonFile => jsonObject => {
   fs.writeFile(jsonFile, stringify(jsonObject, {space: 2}) + '\n', maybeThrowError)
 }
 
-// Writes all the different version of a JSON object into multiple files, depending on locale.
-// - `jsonFile` is the file where the original object should be put (without the .json extension)
-// - `jsonObjectsByLang` is an object containing all the translated versions of the object to save,
-//      the original one being under the key `original` and others under their locale
-// - `prepare` is an optional function to apply on each translation of the object before it should
-//      be saved
-const writeWithTranslations = (jsonFile, prepare) => jsonObjectsByLang => {
-  const {original, ...others} = prepare ? mapValues(jsonObjectsByLang, prepare) : jsonObjectsByLang
-  writeToJson(jsonFile + '.json')(original)
-  forEach(others, (translated, lang) => {
-    writeToJson(`${jsonFile}_${lang}.json`)(translated)
+const writeWithTranslations = (jsonFile, namespace) => ([records, translations]) => {
+  writeToJson(`${jsonFile}.json`)(records)
+  forEach(translations, (translated, lang) => {
+    writeToJson(`src/translations/${lang}/${namespace}.json`)(translated)
   })
 }
 
-const langs = ['fr_FR@tu']
-
-const fromAirtableToObjects = (airtablePromise, translatableFields, mapReducer) =>
-  airtablePromise.
-    then(translateRecords(langs, translatableFields), maybeThrowError).
-    then(objectsByLang => mapValues(objectsByLang, mapReducer), maybeThrowError)
+const fromAirtableToObjects = (collection, mapReducer) => {
+  const {base, table, view, translatableFields} = airtableFields[collection]
+  return new Airtable().base(base).table(table).select({view}).all().
+    then(gatherTranslations(['fr@tu'], translatableFields), maybeThrowError).
+    then(([records, translations]) => [mapReducer(records), translations], maybeThrowError)
+}
 
 const noOp = Promise.resolve()
 
-const importAdvices = shouldDownload['advice_modules'] ? fromAirtableToObjects(
-  adviceModulesFromAirtable,
-  adviceModulesTranslatableFields,
+const importAdvices = shouldDownload.adviceModules ? fromAirtableToObjects(
+  'adviceModules',
   reduceAdviceModules,
-).then(jsonObjectsByLang => {
+).then(([{categories, modules}, translations]) => {
   writeWithTranslations(
-    'src/components/advisor/data/advice_modules', ({modules}) => modules)(jsonObjectsByLang)
-  writeToJson('src/components/advisor/data/categories.json')(jsonObjectsByLang.original.categories)
+    'src/components/advisor/data/advice_modules', 'adviceModules',
+  )([modules, translations])
+  writeToJson('src/components/advisor/data/categories.json')(categories)
 }, maybeThrowError) : noOp
 
-const importCategories = shouldDownload['categories'] ? fromAirtableToObjects(
-  categoriesFromAirtable,
-  categoriesTranslatableFields,
+const importCategories = shouldDownload.categories ? fromAirtableToObjects(
+  'categories',
   reduceCategories,
-).then(writeWithTranslations('src/components/strategist/data/categories')) : noOp
+).then(
+  writeWithTranslations('src/components/strategist/data/categories', 'categories'),
+  maybeThrowError,
+) : noOp
 
-const importEmailTemplates = shouldDownload['email_templates'] ? fromAirtableToObjects(
-  emailTemplatesFromAirtable,
-  emailTemplatesTranslatableFields,
-  reduceEmailTemplates,
-).then(writeWithTranslations('src/components/advisor/data/email_templates'), maybeThrowError) : noOp
+const importEmailTemplates = shouldDownload.emailTemplates ?
+  fromAirtableToObjects(
+    'emailTemplates',
+    reduceEmailTemplates,
+  ).then(
+    writeWithTranslations('src/components/advisor/data/email_templates', 'emailTemplates'),
+    maybeThrowError,
+  ) : noOp
 
-const importEvents = shouldDownload['events'] ? fromAirtableToObjects(
-  eventsFromAirtable,
-  eventsTranslatableFields,
-  reduceEvents,
-).then(writeWithTranslations('src/components/advisor/data/events'), maybeThrowError) : noOp
-
-const importStrategyGoals = shouldDownload['strategy_goals'] ? fromAirtableToObjects(
-  strategyGoalsFromAirtable,
-  strategyGoalsTranslatableFields,
+const importStrategyGoals = shouldDownload.strategyGoals ? fromAirtableToObjects(
+  'strategyGoals',
   reduceStrategyGoals,
-).then(writeWithTranslations('src/components/strategist/data/goals'), maybeThrowError) : noOp
+).then(
+  writeWithTranslations('src/components/strategist/data/goals', 'goals'),
+  maybeThrowError,
+) : noOp
 
 // TODO(cyrille): Merge this with the previous one (goals) in a single file.
-const importStrategyTestimonials = shouldDownload['strategy_testimonials'] ? fromAirtableToObjects(
-  strategyTestimonialsFromAirtable,
-  strategyTestimonialsTranslatableFields,
+const importStrategyTestimonials = shouldDownload.strategyTestimonials ? fromAirtableToObjects(
+  'strategyTestimonials',
   reduceStrategyTestimonials,
-).then(writeWithTranslations('src/components/strategist/data/testimonials'), maybeThrowError) : noOp
+).then(
+  writeWithTranslations('src/components/strategist/data/testimonials', 'testimonials'),
+  maybeThrowError,
+) : noOp
+
+const importVae = shouldDownload.vae ?
+  vaeFromAirtable.then(reduceVae).then(writeToJson('src/components/advisor/data/vae.json')) : noOp
 
 module.exports = Promise.all([
   importAdvices,
   importCategories,
   importEmailTemplates,
-  importEvents,
   importStrategyGoals,
   importStrategyTestimonials,
+  importVae,
 ])

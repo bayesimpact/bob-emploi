@@ -323,6 +323,41 @@ class QuickAdvisorTest(base_test.ServerTestCase):
             response,
         )
 
+    def test_i18n(self) -> None:
+        """Test a quick advice when setting the city field in English."""
+
+        self._db.user_count.insert_one({
+            'aggregatedAt': '2016-11-15T16:51:55Z',
+            'departementCounts': {
+                '69': 365,
+            },
+        })
+        self._db.translations.insert_many([
+            {
+                'string': 'Super, <strong>{count}</strong> personnes dans ce département ont déjà '
+                          'testé le diagnostic de Bob\xa0!',
+                'en': 'Great, <strong>{count}</strong> people have tested Bob in this area!',
+            }
+        ])
+
+        response = self.json_from_response(self.app.post(
+            f'/api/user/{self.user_id}/update-and-quick-diagnostic',
+            data=json.dumps({'user': {
+                'profile': {'locale': 'en'},
+                'projects': [{'city': {'departementId': '69'}}],
+            }}),
+            content_type='application/json',
+            headers={'Authorization': 'Bearer ' + self.auth_token}))
+        self.assertEqual(
+            {'comments': [{
+                'field': 'CITY_FIELD',
+                'comment': {'stringParts': [
+                    'Great, ', '365', ' people have tested Bob in this area!',
+                ]},
+            }]},
+            response,
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

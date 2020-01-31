@@ -1,9 +1,11 @@
+import {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import React from 'react'
 
 import {ofPrefix} from 'store/french'
 
+import {Trans} from 'components/i18n'
 import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-driving-license.svg'
 
@@ -27,8 +29,8 @@ const platforms = [
 ]
 
 
-const ofPlatformName = (name): string => {
-  const {modifiedName, prefix} = ofPrefix(name)
+const ofPlatformName = (name: string, t?: TFunction): string => {
+  const {modifiedName, prefix} = ofPrefix(name, t)
   return `${prefix}${modifiedName}`
 }
 
@@ -36,7 +38,7 @@ const ofPlatformName = (name): string => {
 class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
   public static propTypes = {
     handleExplore: PropTypes.func.isRequired,
-    userYou: PropTypes.func.isRequired,
+    t: PropTypes.func.isRequired,
   }
 
   private handleExplorePlatform = _memoize((link: string): (() => void) => (): void => {
@@ -45,33 +47,36 @@ class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
   })
 
   private renderPlatforms(): React.ReactNode {
-    const platformStyle = {
-    }
+    const {t} = this.props
     return <AdviceSuggestionList>
       {platforms.map(({link, name, price}): ReactStylableElement => <div
-        key={`platform-${name}`} style={platformStyle}
+        key={`platform-${name}`}
         onClick={this.handleExplorePlatform(link)}>
-        <span>{name} &mdash; {price ? `${price}\u00A0€` : 'GRATUIT'}</span>
+        <span>{name} &mdash; {price ? `${price}\u00A0€` : t('GRATUIT')}</span>
         <span style={{flex: 1}} />
-        <span>Aller sur le site {ofPlatformName(name)}</span>
+        <Trans parent="span" t={t} tOptions={{platform: name}}>
+          Aller sur le site {{ofPlatform: ofPlatformName(name)}}
+        </Trans>
       </div>)}
     </AdviceSuggestionList>
   }
 
   public render(): React.ReactNode {
-    const {userYou} = this.props
+    const {t} = this.props
     return <div>
       <div style={{marginBottom: 35}}>
         <p>
-          Attaque{userYou('-toi', 'z-vous')} à la première étape du permis de conduire&nbsp;: la
-          révision du code en ligne.
+          {t(
+            'Attaquez-vous à la première étape du permis de conduire\u00A0: la révision du code ' +
+            'en ligne.',
+          )}
         </p>
-        <p>
+        <Trans parent="p" t={t}>
           J'ai sélectionné <GrowingNumber
             style={{fontWeight: 'bold'}} number={3} isSteady={true} /> plateformes
           (j'ai aussi inclus des services payants, simplement parce que je les trouve
           bien et pas très chers comparés aux autres options).
-        </p>
+        </Trans>
       </div>
       {this.renderPlatforms()}
     </div>

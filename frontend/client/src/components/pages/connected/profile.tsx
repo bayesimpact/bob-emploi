@@ -1,6 +1,9 @@
+import {TFunction} from 'i18next'
+import _pick from 'lodash/pick'
 import CheckIcon from 'mdi-react/CheckIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useState} from 'react'
+import {WithTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {RouteComponentProps, withRouter} from 'react-router'
 import {Redirect} from 'react-router-dom'
@@ -9,8 +12,9 @@ import ReactRouterPropTypes from 'react-router-prop-types'
 import {DispatchAllActions, RootState, diagnoseOnboarding, displayToasterMessage,
   setUserProfile} from 'store/actions'
 import {onboardingComplete} from 'store/main_selectors'
-import {USER_PROFILE_FIELDS, youForUser} from 'store/user'
+import {USER_PROFILE_FIELDS} from 'store/user'
 
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {PageWithNavigationBar, Scrollable} from 'components/navigation'
 import {RadiumLink} from 'components/radium'
@@ -62,7 +66,7 @@ const PAGE_VIEW_STEPS: readonly PageViewStep[] = [
 interface PageViewTab {
   fragment: string
   predicate?: (user: bayes.bob.User) => boolean
-  title: (user?: bayes.bob.User) => string
+  title: (user: bayes.bob.User, t: TFunction) => string
 }
 
 interface UserPageViewTab {
@@ -73,28 +77,24 @@ interface UserPageViewTab {
 const PAGE_VIEW_TABS: readonly PageViewTab[] = [
   {
     fragment: 'compte',
-    title: ({hasAccount}: bayes.bob.User): string => hasAccount ? 'Compte' : 'Nom',
+    title: (unusedUser: bayes.bob.User, t: TFunction): string => t('Profil'),
   },
   {
     fragment: 'securite',
     // TODO(cyrille): Prepare this page for users without an email and/or an account.
     predicate: ({hasAccount, profile: {email} = {}}: bayes.bob.User): boolean =>
       !hasAccount || !!email,
-    title: ({hasAccount}: bayes.bob.User): string => hasAccount ?
-      'Mot de passe' : 'Créer un compte',
+    title: ({hasAccount}: bayes.bob.User, t: TFunction): string => hasAccount ?
+      t('Mot de passe') : t('Créer un compte'),
   },
   {
     fragment: 'notifications',
-    title: (): string => 'Notifications et coaching',
-  },
-  {
-    fragment: 'infos',
-    title: (): string => 'Profil',
+    title: (unusedUser: bayes.bob.User, t: TFunction): string => t('Notifications et coaching'),
   },
 ]
 
 
-interface OnboardingViewProps extends RouteComponentProps<{}> {
+interface OnboardingViewProps extends RouteComponentProps<{}>, WithTranslation {
   dispatch: DispatchAllActions
   featuresEnabled?: bayes.bob.Features
   hasAccount?: boolean
@@ -111,6 +111,7 @@ class OnboardingViewBase extends React.PureComponent<OnboardingViewProps> {
     history: ReactRouterPropTypes.history.isRequired,
     onProfileSave: PropTypes.func.isRequired,
     stepName: PropTypes.string.isRequired,
+    t: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,
   }
 
@@ -129,13 +130,8 @@ class OnboardingViewBase extends React.PureComponent<OnboardingViewProps> {
     if (!type) {
       return
     }
-    const profileUpdates = {}
     // Filter fields of stepUpdates to keep only the ones that are part of the profile.
-    for (const field in USER_PROFILE_FIELDS) {
-      if (stepUpdates && Object.prototype.hasOwnProperty.call(stepUpdates, field)) {
-        profileUpdates[field] = stepUpdates[field]
-      }
-    }
+    const profileUpdates: bayes.bob.UserProfile = _pick(stepUpdates, USER_PROFILE_FIELDS)
     onProfileSave(profileUpdates, type, !!isLastProjectStep)
   }
 
@@ -156,7 +152,7 @@ class OnboardingViewBase extends React.PureComponent<OnboardingViewProps> {
   }
 
   public render(): React.ReactNode {
-    const {featuresEnabled, hasAccount, stepName, userProfile} = this.props
+    const {featuresEnabled, hasAccount, stepName, t, userProfile} = this.props
     const {
       component: StepComponent,
       stepNumber,
@@ -181,15 +177,14 @@ class OnboardingViewBase extends React.PureComponent<OnboardingViewProps> {
         featuresEnabled={featuresEnabled || emptyObject}
         isShownAsStepsDuringOnboarding={true}
         stepNumber={stepNumber} totalStepCount={onboardingStepCount}
-        profile={userProfile || emptyObject} hasAccount={hasAccount}
-        userYou={youForUser({profile: userProfile})} />
+        profile={userProfile || emptyObject} hasAccount={hasAccount} t={t} />
     </PageWithNavigationBar>
   }
 }
-const OnboardingView = withRouter(OnboardingViewBase)
+const OnboardingView = withTranslation()(withRouter(OnboardingViewBase))
 
 
-interface PageViewProps {
+interface PageViewProps extends WithTranslation {
   dispatch: DispatchAllActions
   featuresEnabled: bayes.bob.Features
   hasAccount?: boolean
@@ -219,15 +214,15 @@ interface TabsProps {
 }
 const tabStyle = (isSelected: boolean): RadiumCSSProperties => ({
   ':hover': isSelected ? {} : {backgroundColor: colorToAlpha(colors.BOB_BLUE, .1)},
-  alignItems: 'center',
+  'alignItems': 'center',
   ...isSelected && {backgroundColor: colors.BOB_BLUE},
-  borderRadius: 10,
-  color: isSelected ? '#fff' : 'inherit',
-  display: 'flex',
-  height: 50,
-  margin: 5,
-  padding: '0 20px',
-  textDecoration: 'none',
+  'borderRadius': 10,
+  'color': isSelected ? '#fff' : 'inherit',
+  'display': 'flex',
+  'height': 50,
+  'margin': 5,
+  'padding': '0 20px',
+  'textDecoration': 'none',
 })
 const TabListBase: React.FC<TabsProps> = (props: TabsProps): React.ReactElement => {
   const {stepName, style, tabs} = props
@@ -256,6 +251,7 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
     hasAccount: PropTypes.bool,
     onChange: PropTypes.func.isRequired,
     stepName: PropTypes.string,
+    t: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,
   }
 
@@ -265,7 +261,8 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
     totalSavesCount: 0,
   }
 
-  public componentDidUpdate(prevProps, {totalSavesCount: createdSaveIndex}): void {
+  public componentDidUpdate(
+    prevProps: PageViewProps, {totalSavesCount: createdSaveIndex}: PageViewState): void {
     if (createdSaveIndex !== this.state.totalSavesCount) {
       this.setActiveSave(createdSaveIndex, true)
       this.savesTimeout.push(
@@ -279,7 +276,7 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
 
   private savesTimeout: (ReturnType<typeof setTimeout>)[] = []
 
-  private setActiveSave = (rankToSet, setActive): void => {
+  private setActiveSave = (rankToSet: number, setActive: boolean): void => {
     this.setState(({saves}: PageViewState): Pick<PageViewState, 'saves'> => ({
       saves: saves.map(({isActive, rank}): SaveState => ({
         isActive: rank === rankToSet ? setActive : isActive,
@@ -293,7 +290,7 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
       this.setState(({saves, totalSavesCount}: PageViewState): PageViewState => ({
         saves: [...saves, {isActive: false, rank: totalSavesCount}],
         totalSavesCount: totalSavesCount + 1,
-      }))
+      })),
     )
   }
 
@@ -304,7 +301,7 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
   }
 
   public render(): React.ReactNode {
-    const {featuresEnabled, hasAccount, onChange, stepName, tabs, userProfile} = this.props
+    const {featuresEnabled, hasAccount, onChange, stepName, t, tabs, userProfile} = this.props
     if (isMobileVersion && stepName) {
       // No tabs on mobile.
       return <Redirect to={Routes.PROFILE_PAGE} />
@@ -322,7 +319,7 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
       return <Redirect to={`${Routes.PROFILE_PAGE}/${firstTab}`} />
     }
     const {saves} = this.state
-    const getSavedPopUpStyle = (isActive, index): React.CSSProperties => ({
+    const getSavedPopUpStyle = (isActive: boolean, index: number): React.CSSProperties => ({
       alignItems: 'center',
       backgroundColor: '#fff',
       borderRadius: 10,
@@ -367,7 +364,8 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
       {saves.map(({isActive, rank}, index): React.ReactNode => <div
         key={rank} style={getSavedPopUpStyle(isActive, index)}
         onTransitionEnd={isActive ? undefined : this.getSaveRemover(rank)} >
-        <div style={checkIconStyle}><CheckIcon size={24} style={{color: '#fff'}} /></div>Sauvegardé
+        <div style={checkIconStyle}><CheckIcon size={24} style={{color: '#fff'}} /></div>
+        <Trans parent={null}>Sauvegardé</Trans>
       </div>)}
       <div style={{alignItems: 'flex-start', display: 'flex', margin: '40px 20px 0'}}>
         {isMobileVersion ? null :
@@ -388,19 +386,20 @@ class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
               isShownAsStepsDuringOnboarding={false}
               buttonsOverride={<div />}
               profile={userProfile}
-              featuresEnabled={featuresEnabled} hasAccount={hasAccount}
-              userYou={youForUser({profile: userProfile})} />
+              featuresEnabled={featuresEnabled} hasAccount={hasAccount} t={t} />
           })}
         </div>
       </div>
     </div>
   }
 }
-const PageView = connect(({user}: RootState): {tabs: UserPageViewTab[]} => ({
-  tabs: PAGE_VIEW_TABS.
-    filter(({predicate}): boolean => !predicate || predicate(user)).
-    map(({fragment, title}) => ({fragment, title: title(user)})),
-}))(PageViewBase)
+const PageView = withTranslation()(connect(
+  ({user}: RootState, {t}: WithTranslation): {tabs: UserPageViewTab[]} => ({
+    tabs: PAGE_VIEW_TABS.
+      filter(({predicate}): boolean => !predicate || predicate(user)).
+      map(({fragment, title}) => ({fragment, title: title(user, t)})),
+  }),
+)(PageViewBase))
 
 
 interface ProfilePageConnectedProps {

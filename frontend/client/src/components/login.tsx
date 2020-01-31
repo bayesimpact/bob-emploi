@@ -6,28 +6,31 @@ import GoogleIcon from 'mdi-react/GoogleIcon'
 import LockOutlineIcon from 'mdi-react/LockOutlineIcon'
 import PropTypes from 'prop-types'
 import {parse, stringify} from 'query-string'
-import React from 'react'
-import FacebookLogin, {ReactFacebookLoginProps} from 'react-facebook-login'
-import GoogleLogin from 'react-google-login'
+import React, {useCallback, useMemo, useState} from 'react'
+import FacebookLogin, {ReactFacebookLoginInfo, ReactFacebookLoginProps} from 'react-facebook-login'
+import GoogleLogin, {GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
+import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {RouteComponentProps, withRouter} from 'react-router'
-import {Link} from 'react-router-dom'
+import {Link, LinkProps} from 'react-router-dom'
 
 import {DispatchAllActions, RootState, askPasswordReset, changePassword, closeLoginModal,
   displayToasterMessage, emailCheck, facebookAuthenticateUser, googleAuthenticateUser,
   linkedInAuthenticateUser, loginUser, noOp, openLoginModal, openRegistrationModal,
   peConnectAuthenticateUser, registerNewUser, resetPassword, startAsGuest} from 'store/actions'
+import {parseQueryString, parsedValueFlattener} from 'store/parse'
 import {getUniqueExampleEmail} from 'store/user'
 import {validateEmail} from 'store/validations'
 
 import {FastForward} from 'components/fast_forward'
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalCloseButton} from 'components/modal'
 import {ButtonProps, Button, CircularProgress, IconInput, LabeledToggle, Styles,
   chooseImageVersion} from 'components/theme'
 import {Routes} from 'components/url'
 import linkedInIcon from 'images/linked-in.png'
-import logoProductImage from 'images/logo-bob-beta.svg'
+import logoProductImage from 'images/bob-logo.svg'
 import peConnectIcon from 'images/pole-emploi-connect.svg'
 import portraitCoverImage from 'images/catherine_portrait.jpg?multi&sizes[]=1440&sizes[]=600'
 
@@ -41,7 +44,7 @@ const LINKEDIN_SCOPES = ['r_liteprofile', 'r_emailaddress']
 
 const toLocaleLowerCase = (email: string): string => email.toLocaleLowerCase()
 
-const stopPropagation = (event): void => event.stopPropagation()
+const stopPropagation = (event: React.SyntheticEvent): void => event.stopPropagation()
 
 interface LoginConnectedProps {
   isAskingForPasswordReset?: boolean
@@ -58,49 +61,58 @@ interface LoginProps extends LoginConnectedProps {
   storedState?: StoredState
 }
 
-interface LoginState {
-  email: string
-  hashSalt: string
-  isTryingToResetPassword: boolean
-  password: string
-  passwordResetRequestedEmail?: string
+const loginBoxStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  marginTop: 15,
+}
+const lostPasswordLinkStyle: React.CSSProperties = {
+  color: colors.COOL_GREY,
+  display: 'inline-block',
+  fontSize: 13,
+  marginLeft: 15,
+  marginTop: 12,
+  textDecoration: 'none',
 }
 
-class LoginFormBase extends React.PureComponent<LoginProps, LoginState> {
-  public static propTypes = {
-    defaultEmail: PropTypes.string,
-    dispatch: PropTypes.func.isRequired,
-    isAskingForPasswordReset: PropTypes.bool,
-    isAuthenticatingEmail: PropTypes.bool,
-    isAuthenticatingOther: PropTypes.bool,
-    onLogin: PropTypes.func.isRequired,
-    onShowRegistrationFormClick: PropTypes.func.isRequired,
-  }
 
-  public state: LoginState = {
-    email: this.props.defaultEmail || '',
-    hashSalt: '',
-    isTryingToResetPassword: false,
-    password: '',
-    passwordResetRequestedEmail: undefined,
-  }
+const LoginFormBase = (props: LoginProps): React.ReactElement => {
+  const {
+    defaultEmail,
+    dispatch,
+    isAskingForPasswordReset,
+    isAuthenticatingOther,
+    isAuthenticatingEmail,
+    onLogin,
+    onShowRegistrationFormClick,
+    stateToStore,
+    storedState,
+  } = props
 
-  private handleEmailChange = (email: string): void => this.setState({email})
+  const [email, setEmail] = useState(defaultEmail)
+  const [hashSalt, setHashSalt] = useState('')
+  const [isTryingToResetPassword, setIsTryingToResetPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const [passwordResetRequestedEmail, setPasswordRequestedEmail] = useState('')
 
-  private handlePasswordChange = (password: string): void => this.setState({password})
+  const {t} = useTranslation()
 
-  private handleLogin = (event?): void => {
-    const {dispatch} = this.props
+  const isFormValid = useMemo((): boolean => {
+    return !!((isTryingToResetPassword || password) && validateEmail(email))
+  }, [email, isTryingToResetPassword, password])
+
+  const handleLogin = useCallback((event?: React.SyntheticEvent): void => {
     if (event && event.preventDefault) {
       event.preventDefault()
     }
-    if (!this.isFormValid()) {
+    if (!isFormValid) {
       return
     }
-    dispatch(emailCheck(this.state.email)).
+    dispatch(emailCheck(email)).
       then((response): bayes.bob.AuthResponse | void => {
         if (response && response.hashSalt) {
-          this.setState({hashSalt: response.hashSalt})
+          setHashSalt(response.hashSalt)
         }
         return response
       }).
@@ -110,15 +122,14 @@ class LoginFormBase extends React.PureComponent<LoginProps, LoginState> {
         }
         if (response.isNewUser) {
           // TODO: Emphasize to registration form if response.isNewUser
-          dispatch(displayToasterMessage("L'utilisateur n'existe pas."))
+          dispatch(displayToasterMessage(t("L'utilisateur n'existe pas.")))
           return
         }
-        const {email, password, hashSalt} = this.state
         // TODO: Use different API endpoints for login and registration.
         dispatch(loginUser(email, password, hashSalt)).
           then((response): bayes.bob.AuthResponse | void => {
             if (response && response.authenticatedUser) {
-              this.props.onLogin(response.authenticatedUser)
+              onLogin(response.authenticatedUser)
               // TODO: Take care of the else case when the authentication was
               // not successful but we got back some new salt. (response.hashSalt)
             }
@@ -126,113 +137,100 @@ class LoginFormBase extends React.PureComponent<LoginProps, LoginState> {
           })
         return response
       })
-  }
+  }, [dispatch, email, hashSalt, isFormValid, onLogin, password, t])
 
-  private handleLostPasswordClick = (event): void => {
-    const {dispatch} = this.props
-    const {email} = this.state
+  const handleLostPasswordClick = useCallback((event?: React.SyntheticEvent): void => {
     if (event) {
       event.preventDefault()
     }
     if (!validateEmail(email)) {
       dispatch(displayToasterMessage(
-        'Entrez correctement votre email dans le champs ci-dessus pour récupérer ' +
-          'votre mot de passe.'))
-      this.setState({isTryingToResetPassword: true})
+        t('Entrez correctement votre email dans le champs ci-dessus pour récupérer ' +
+          'votre mot de passe.')))
+      setIsTryingToResetPassword(true)
       return
     }
     dispatch(askPasswordReset(email)).then((response): bayes.bob.AuthResponse | void => {
       if (response) {
-        this.setState({passwordResetRequestedEmail: email})
+        setPasswordRequestedEmail(email)
         return response
       }
     })
-  }
+  }, [dispatch, email, t])
 
-  private isFormValid = (): boolean => {
-    const {email, isTryingToResetPassword, password} = this.state
-    return !!((isTryingToResetPassword || password) && validateEmail(email))
-  }
+  const isMissingEmail = !email
+  const isMissingPassword = !password
 
-  private fastForward = (): void => {
-    const {email, password} = this.state
-    if (this.isFormValid()) {
-      this.handleLogin()
+  const fastForward = useCallback((): void => {
+    if (isFormValid) {
+      handleLogin()
       return
     }
-    this.setState({
-      email: email || 'test@example.com',
+    if (isMissingEmail) {
+      setEmail('test@example.com')
+    }
+    if (isMissingPassword) {
       // Let's hope it's the right password.
-      password: password || 'password',
-    })
-  }
-
-  public render(): React.ReactNode {
-    const {email, isTryingToResetPassword, password, passwordResetRequestedEmail} = this.state
-    const {isAskingForPasswordReset, isAuthenticatingEmail,
-      isAuthenticatingOther, onLogin, stateToStore, storedState} = this.props
-    const loginBoxStyle: React.CSSProperties = {
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      marginTop: 15,
+      setPassword('password')
     }
-    const lostPasswordLinkStyle: React.CSSProperties = {
-      color: colors.COOL_GREY,
-      display: 'inline-block',
-      fontSize: 13,
-      marginLeft: 15,
-      marginTop: 12,
-      textDecoration: 'none',
-    }
-    const handleSubmit = isTryingToResetPassword ? this.handleLostPasswordClick : this.handleLogin
-    return <form style={loginBoxStyle} onSubmit={handleSubmit}>
-      <FastForward onForward={this.fastForward} />
-      <FormHeader
-        title={isTryingToResetPassword ? 'Mot de passe oublié ?' : "S'identifier"}
-        question={isTryingToResetPassword ? '' : 'Pas encore de compte ?'}
-        linkText="Inscrivez-vous !"
-        onClick={this.props.onShowRegistrationFormClick} />
+  }, [handleLogin, isFormValid, isMissingEmail, isMissingPassword])
 
-      <SocialLoginButtons stateToStore={stateToStore} storedState={storedState} onLogin={onLogin} />
+  const handleSubmit = isTryingToResetPassword ? handleLostPasswordClick : handleLogin
+  return <form style={loginBoxStyle} onSubmit={handleSubmit}>
+    <FastForward onForward={fastForward} />
+    <FormHeader
+      title={isTryingToResetPassword ? t('Mot de passe oublié\u00A0?') : t("S'identifier")}
+      question={isTryingToResetPassword ? '' : t('Pas encore de compte\u00A0?')}
+      linkText={t('Inscrivez-vous\u00A0!')}
+      onClick={onShowRegistrationFormClick} />
 
-      <FormSection title="Identification par mot de passe">
-        <IconInput
-          shouldFocusOnMount={!email}
-          type="email" autoComplete="current-password"
-          placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
-          applyFunc={toLocaleLowerCase}
-          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          onChange={this.handleEmailChange} />
-        {isTryingToResetPassword ? null : <IconInput
-          iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          type="password" autoComplete="new-password"
-          shouldFocusOnMount={!!email}
-          placeholder="Mot de passe" value={password} iconComponent={LockOutlineIcon}
-          onChange={this.handlePasswordChange}
-          style={{marginTop: 10}} />}
-      </FormSection>
+    <SocialLoginButtons stateToStore={stateToStore} storedState={storedState} onLogin={onLogin} />
 
-      {isTryingToResetPassword ? null : <a
-        style={{...lostPasswordLinkStyle, cursor: 'pointer'}}
-        onClick={this.handleLostPasswordClick}>
-        Mot de passe oublié ?
-      </a>}
-      {passwordResetRequestedEmail ?
-        <span style={lostPasswordLinkStyle}>
-          Un email a été envoyé à {passwordResetRequestedEmail}
-        </span>
-        : <Button
-          disabled={!this.isFormValid() || isAuthenticatingOther || isAuthenticatingEmail}
-          onClick={handleSubmit}
-          style={{alignSelf: 'center', marginTop: 30}}
-          isNarrow={true}
-          isProgressShown={(isAuthenticatingEmail || isAskingForPasswordReset)}
-          type="validation">
-          {isTryingToResetPassword ? 'Récupérer son mot de passe' : "S'identifier"}
-        </Button>}
-    </form>
-  }
+    <FormSection title={t('Identification par mot de passe')}>
+      <IconInput
+        shouldFocusOnMount={!email}
+        type="email" autoComplete="current-password"
+        placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
+        applyFunc={toLocaleLowerCase}
+        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+        onChange={setEmail} />
+      {isTryingToResetPassword ? null : <IconInput
+        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+        type="password" autoComplete="new-password"
+        shouldFocusOnMount={!!email}
+        placeholder={t('Mot de passe')} value={password} iconComponent={LockOutlineIcon}
+        onChange={setPassword}
+        style={{marginTop: 10}} />}
+    </FormSection>
+
+    {isTryingToResetPassword ? null : <Trans
+      style={{...lostPasswordLinkStyle, cursor: 'pointer'}}
+      onClick={handleLostPasswordClick} parent="a">
+      Mot de passe oublié&nbsp;?
+    </Trans>}
+    {passwordResetRequestedEmail ?
+      <Trans style={lostPasswordLinkStyle} parent="span">
+        Un email a été envoyé à {{passwordResetRequestedEmail}}
+      </Trans>
+      : <Button
+        disabled={!isFormValid || isAuthenticatingOther || isAuthenticatingEmail}
+        onClick={handleSubmit}
+        style={{alignSelf: 'center', marginTop: 30}}
+        isNarrow={true}
+        isProgressShown={(isAuthenticatingEmail || isAskingForPasswordReset)}
+        type="validation">
+        {isTryingToResetPassword ? t('Récupérer son mot de passe') : t("S'identifier")}
+      </Button>}
+  </form>
+}
+LoginFormBase.propTypes = {
+  defaultEmail: PropTypes.string,
+  dispatch: PropTypes.func.isRequired,
+  isAskingForPasswordReset: PropTypes.bool,
+  isAuthenticatingEmail: PropTypes.bool,
+  isAuthenticatingOther: PropTypes.bool,
+  onLogin: PropTypes.func.isRequired,
+  onShowRegistrationFormClick: PropTypes.func.isRequired,
 }
 const LoginForm =
   connect(({asyncState: {authMethod, isFetching}}: RootState): LoginConnectedProps => ({
@@ -240,7 +238,7 @@ const LoginForm =
     isAuthenticatingEmail:
       isFetching['EMAIL_CHECK'] || isFetching['AUTHENTICATE_USER'] && authMethod === 'password',
     isAuthenticatingOther: isFetching['AUTHENTICATE_USER'] && authMethod !== 'password',
-  }))(LoginFormBase)
+  }))(React.memo(LoginFormBase))
 
 
 interface ResetPasswordConnectedProps {
@@ -248,12 +246,12 @@ interface ResetPasswordConnectedProps {
   isAuthenticating: boolean
 }
 
-interface ResetPasswordProps extends ResetPasswordConnectedProps {
+interface ResetPasswordProps extends ResetPasswordConnectedProps, WithTranslation {
   defaultEmail?: string
   dispatch: DispatchAllActions
   inputRef?: React.RefObject<IconInput>
-  isEmailShown: boolean
-  isTitleShown: boolean
+  isEmailShown?: boolean
+  isTitleShown?: boolean
   onLogin: (user: bayes.bob.User) => void
   resetToken?: string
   style?: React.CSSProperties
@@ -279,6 +277,7 @@ class ResetPasswordFormBase extends React.PureComponent<ResetPasswordProps, Rese
     onLogin: PropTypes.func.isRequired,
     resetToken: PropTypes.string,
     style: PropTypes.object,
+    t: PropTypes.func.isRequired,
   }
 
   public static defaultProps = {
@@ -342,7 +341,7 @@ class ResetPasswordFormBase extends React.PureComponent<ResetPasswordProps, Rese
     }
   }
 
-  private handleResetPasswordForm = (event): void => {
+  private handleResetPasswordForm = (event: React.SyntheticEvent): void => {
     event.preventDefault()
     this.handleResetPassword()
   }
@@ -366,26 +365,30 @@ class ResetPasswordFormBase extends React.PureComponent<ResetPasswordProps, Rese
   }
 
   private renderExpiredToken(): React.ReactNode {
+    const {t} = this.props
     const {passwordResetRequestedEmail} = this.state
     const emailSentStyle = {
       fontStyle: 'italic',
       marginTop: 10,
     }
     return <div>
-      <FormHeader title="Moyen d'authentification périmé" />
-      Le lien que vous avez utilisé est trop vieux.
-      Veuillez vous <LoginLink visualElement="expired-resetToken">reconnecter</LoginLink> ou{' '}
-      <a href="#" onClick={this.handleResendEmail}>cliquer ici</a> pour réinitialiser votre
-      mot de passe.
-      {passwordResetRequestedEmail ? <div style={emailSentStyle}>
-        Un email a été envoyé à {passwordResetRequestedEmail}
-      </div> : null}
+      <FormHeader title={t("Moyen d'authentification périmé")} />
+      <Trans>
+        Le lien que vous avez utilisé est trop vieux. Veuillez
+        vous <LoginLink visualElement="expired-resetToken">
+          reconnecter
+        </LoginLink> ou <a href="#" onClick={this.handleResendEmail}>cliquer ici</a> pour
+        réinitialiser votre mot de passe.
+      </Trans>
+      {passwordResetRequestedEmail ? <Trans style={emailSentStyle}>
+        Un email a été envoyé à {{passwordResetRequestedEmail}}
+      </Trans> : null}
     </div>
   }
 
   public render(): React.ReactNode {
-    const {inputRef, hasTokenExpired, isAuthenticating, isTitleShown, resetToken,
-      style} = this.props
+    const {inputRef, hasTokenExpired, isAuthenticating, isTitleShown = true, resetToken,
+      style, t} = this.props
     if (hasTokenExpired) {
       return this.renderExpiredToken()
     }
@@ -398,21 +401,21 @@ class ResetPasswordFormBase extends React.PureComponent<ResetPasswordProps, Rese
       ...style,
     }
     return <form style={loginBoxStyle} onSubmit={this.handleResetPasswordForm}>
-      {isTitleShown ? <FormHeader title="Changez votre mot de passe" /> : null}
+      {isTitleShown ? <FormHeader title={t('Changez votre mot de passe')} /> : null}
       {resetToken ? <IconInput
         iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
         shouldFocusOnMount={!email} autoComplete="email"
-        type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
+        type="email" placeholder={t('Email')} value={email} iconComponent={EmailOutlineIcon}
         applyFunc={toLocaleLowerCase}
         onChange={this.handleEmailChange} /> : <IconInput
         iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
         type="password" autoComplete="password" shouldFocusOnMount={true}
-        placeholder="Mot de passe actuel" value={oldPassword} iconComponent={LockOutlineIcon}
+        placeholder={t('Mot de passe actuel')} value={oldPassword} iconComponent={LockOutlineIcon}
         onChange={this.handleOldPasswordChange} ref={inputRef} />}
       <IconInput
         iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
         type="password" autoComplete="new-password" shouldFocusOnMount={!!email}
-        placeholder="Nouveau mot de passe" value={password} iconComponent={LockOutlineIcon}
+        placeholder={t('Nouveau mot de passe')} value={password} iconComponent={LockOutlineIcon}
         onChange={this.handlePasswordChange}
         style={{marginTop: 10}} ref={resetToken ? inputRef : undefined} />
       <Button
@@ -422,7 +425,7 @@ class ResetPasswordFormBase extends React.PureComponent<ResetPasswordProps, Rese
         isProgressShown={isAuthenticating}
         isNarrow={true}
         type="validation">
-        Changer le mot de passe
+        <Trans parent={null}>Changer le mot de passe</Trans>
       </Button>
     </form>
   }
@@ -431,7 +434,7 @@ const ResetPasswordForm = connect(
   ({app: {hasTokenExpired}, asyncState: {isFetching}}: RootState): ResetPasswordConnectedProps => ({
     hasTokenExpired: !!hasTokenExpired,
     isAuthenticating: !!(isFetching['EMAIL_CHECK'] || isFetching['AUTHENTICATE_USER']),
-  }))(ResetPasswordFormBase)
+  }))(withTranslation()(ResetPasswordFormBase))
 
 
 interface RegistrationConnectedProps {
@@ -449,47 +452,44 @@ interface RegistrationProps extends RegistrationConnectedProps {
   storedState?: StoredState
 }
 
-interface RegistrationState {
-  email: string
-  hasAcceptedTerms: boolean
-  lastName: string
-  name: string
-  password: string
+const registrationBoxStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  marginTop: 15,
 }
 
-class RegistrationFormBase extends React.PureComponent<RegistrationProps, RegistrationState> {
-  public static propTypes = {
-    defaultEmail: PropTypes.string.isRequired,
-    dispatch: PropTypes.func.isRequired,
-    hasUser: PropTypes.bool,
-    isAuthenticating: PropTypes.bool,
-    onLogin: PropTypes.func.isRequired,
-    onShowLoginFormClick: PropTypes.func.isRequired,
-    shouldRequestNames: PropTypes.bool,
-  }
 
-  public state: RegistrationState = {
-    email: this.props.defaultEmail,
-    hasAcceptedTerms: !!this.props.hasUser,
-    lastName: '',
-    name: '',
-    password: '',
-  }
+const RegistrationFormBase = (props: RegistrationProps): React.ReactElement => {
+  const {
+    defaultEmail,
+    dispatch,
+    hasUser,
+    isAuthenticating,
+    onLogin,
+    onShowLoginFormClick,
+    shouldRequestNames,
+    stateToStore,
+    storedState,
+  } = props
 
-  private handleNameChange = (name: string): void => this.setState({name})
+  const [email, setEmail] = useState(defaultEmail)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(!!hasUser)
+  const [lastName, setLastName] = useState('')
+  const [name, setName] = useState('')
+  const [password, setPassword] = useState('')
 
-  private handleLastNameChange = (lastName: string): void => this.setState({lastName})
+  const {t} = useTranslation()
 
-  private handleEmailChange = (email: string): void => this.setState({email})
+  const isFormValid = useMemo((): boolean => {
+    return !!(hasAcceptedTerms && password && validateEmail(email) &&
+      (!shouldRequestNames || (lastName && name)))
+  }, [shouldRequestNames, lastName, name, password, hasAcceptedTerms, email])
 
-  private handlePasswordChange = (password: string): void => this.setState({password})
-
-  private handleRegister = (): void => {
-    if (!this.isFormValid()) {
+  const handleRegister = useCallback((): void => {
+    if (!isFormValid) {
       return
     }
-    const {email, password, name, lastName} = this.state
-    const {dispatch, onLogin, onShowLoginFormClick} = this.props
     dispatch(registerNewUser(email, password, name, lastName)).
       then((response): bayes.bob.AuthResponse | void => {
         if (!response) {
@@ -498,127 +498,127 @@ class RegistrationFormBase extends React.PureComponent<RegistrationProps, Regist
         // TODO: Handle this more explicitly after switch to two endpoints.
         // User already exists
         if (!response.authenticatedUser) {
-          dispatch(displayToasterMessage(
-            'Ce compte existe déjà, merci de vous connecter avec vos identifiants'))
+          dispatch(displayToasterMessage(t(
+            'Ce compte existe déjà, merci de vous connecter avec vos identifiants')))
           onShowLoginFormClick()
           return
         }
         onLogin(response.authenticatedUser)
         return response
       })
-  }
+  }, [email, lastName, name, password, isFormValid, dispatch, onLogin, onShowLoginFormClick, t])
 
-  private handleToggleAcceptTerms = (): void =>
-    this.setState(({hasAcceptedTerms}: RegistrationState):
-    Pick<RegistrationState, 'hasAcceptedTerms'> => ({hasAcceptedTerms: !hasAcceptedTerms}))
+  const handleToggleAcceptTerms = useCallback(
+    (): void => setHasAcceptedTerms(!hasAcceptedTerms),
+    [hasAcceptedTerms],
+  )
 
-  private isFormValid = (): boolean => {
-    const {shouldRequestNames} = this.props
-    const {email, hasAcceptedTerms, password, lastName, name} = this.state
-    return !!(hasAcceptedTerms && password && validateEmail(email) &&
-      (!shouldRequestNames || (lastName && name)))
-  }
+  const isMissingEmail = !email
+  const isMissingPassword = !password
+  const isMissingName = !name
+  const isMissingLastName = !name
 
-  private fastForward = (): void => {
-    const {email, hasAcceptedTerms, password, lastName, name} = this.state
-    if (this.isFormValid()) {
-      this.handleRegister()
+  const fastForward = useCallback((): void => {
+    if (isFormValid) {
+      handleRegister()
       return
     }
-    const {shouldRequestNames} = this.props
+    if (isMissingEmail) {
+      setEmail(getUniqueExampleEmail())
+    }
+    if (isMissingPassword) {
+      setPassword('password')
+    }
     // TODO(marielaure) Clean when launching Late Sign Up.
     if (!shouldRequestNames && hasAcceptedTerms) {
-      this.setState({
-        email: email || getUniqueExampleEmail(),
-        password: password || 'password',
-      })
       return
     }
-    this.setState({
-      email: email || getUniqueExampleEmail(),
-      hasAcceptedTerms: true,
-      lastName: lastName || 'Dupont',
-      name: name || 'Angèle',
-      password: password || 'password',
-    })
-  }
-
-  public render(): React.ReactNode {
-    const {email, hasAcceptedTerms, password, name, lastName} = this.state
-    const {isAuthenticating, hasUser, onLogin, shouldRequestNames,
-      stateToStore, storedState} = this.props
-    const registrationBoxStyle: React.CSSProperties = {
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      marginTop: 15,
+    setHasAcceptedTerms(true)
+    if (isMissingLastName) {
+      setLastName('Dupont')
     }
-    // TODO(marielaure) Clean when launching Late Sign Up.
-    return <form style={registrationBoxStyle} onSubmit={this.handleRegister}>
-      <FastForward onForward={this.fastForward} />
-      <FormHeader
-        title="Créer un compte"
-        question="Déjà un compte ?"
-        linkText="Connectez-vous !"
-        onClick={this.props.onShowLoginFormClick} />
+    if (isMissingName) {
+      setName('Angèle')
+    }
+  }, [
+    isMissingName, isMissingPassword, isMissingEmail, isMissingLastName, isFormValid,
+    handleRegister, hasAcceptedTerms, shouldRequestNames,
+  ])
 
-      <SocialLoginButtons
-        stateToStore={stateToStore} storedState={storedState} onLogin={onLogin} isNewUser={true} />
+  // TODO(marielaure) Clean when launching Late Sign Up.
+  return <form style={registrationBoxStyle} onSubmit={handleRegister}>
+    <FastForward onForward={fastForward} />
+    <FormHeader
+      title={t('Créer un compte')}
+      question={t('Déjà un compte\u00A0?')}
+      linkText={t('Connectez-vous\u00A0!')}
+      onClick={onShowLoginFormClick} />
 
-      <FormSection title="Inscription par mot de passe">
-        {shouldRequestNames ? <React.Fragment>
-          <IconInput
-            iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-            shouldFocusOnMount={true} autoComplete="given-name"
-            type="text" placeholder="Prénom" value={name} iconComponent={AccountOutlineIcon}
-            onChange={this.handleNameChange} />
-          <IconInput
-            iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-            type="text" placeholder="Nom" value={lastName} iconComponent={AccountOutlineIcon}
-            onChange={this.handleLastNameChange} autoComplete="family-name"
-            style={{marginTop: 10}} />
-        </React.Fragment> : null}
+    <SocialLoginButtons
+      stateToStore={stateToStore} storedState={storedState} onLogin={onLogin} isNewUser={true} />
+
+    <FormSection title={t('Inscription par mot de passe')}>
+      {shouldRequestNames ? <React.Fragment>
         <IconInput
           iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          type="email" placeholder="Email" value={email} iconComponent={EmailOutlineIcon}
-          applyFunc={toLocaleLowerCase} autoComplete="email"
-          onChange={this.handleEmailChange}
-          style={{marginTop: 10}} />
+          shouldFocusOnMount={true} autoComplete="given-name"
+          type="text" placeholder={t('Prénom')} value={name} iconComponent={AccountOutlineIcon}
+          onChange={setName} />
         <IconInput
           iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-          type="password" autoComplete="new-password"
-          placeholder="Créer un mot de passe" value={password} iconComponent={LockOutlineIcon}
-          onChange={this.handlePasswordChange}
+          type="text" placeholder={t('Nom')} value={lastName} iconComponent={AccountOutlineIcon}
+          onChange={setLastName} autoComplete="family-name"
           style={{marginTop: 10}} />
-      </FormSection>
+      </React.Fragment> : null}
+      <IconInput
+        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+        type="email" placeholder={t('Email')} value={email} iconComponent={EmailOutlineIcon}
+        applyFunc={toLocaleLowerCase} autoComplete="email"
+        onChange={setEmail}
+        style={{marginTop: 10}} />
+      <IconInput
+        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+        type="password" autoComplete="new-password"
+        placeholder={t('Créer un mot de passe')} value={password} iconComponent={LockOutlineIcon}
+        onChange={setPassword}
+        style={{marginTop: 10}} />
+    </FormSection>
 
-      <div style={{fontSize: 12, margin: '10px auto 0', maxWidth: 325}}>
-        Nous sommes une association loi 1901 à but non lucratif&nbsp;:
-        {' '}{config.productName} est <strong>gratuit</strong> et le restera
-        toujours.
-      </div>
-      {hasUser ? null : <LabeledToggle
-        type="checkbox" label={<span>
-            J'ai lu et j'accepte les <Link
-            to={Routes.TERMS_AND_CONDITIONS_PAGE} target="_blank" rel="noopener noreferrer"
-            onClick={stopPropagation}>
-              conditions générales d'utilisation
-          </Link>
-        </span>}
-        style={{fontSize: 12, marginTop: 10}}
-        isSelected={hasAcceptedTerms}
-        onClick={this.handleToggleAcceptTerms} />}
-      <Button
-        disabled={!this.isFormValid()}
-        onClick={this.handleRegister}
-        style={{alignSelf: 'center', marginTop: 30}}
-        isNarrow={true}
-        isProgressShown={isAuthenticating}
-        type="validation">
-        S'inscrire
-      </Button>
-    </form>
-  }
+    <Trans style={{fontSize: 12, margin: '10px auto 0', maxWidth: 325}}>
+      Nous sommes une association loi 1901 à but non
+      lucratif&nbsp;: {{productName: config.productName}} est <strong>gratuit</strong> et
+      le restera toujours.
+    </Trans>
+    {hasUser ? null : <LabeledToggle
+      type="checkbox" label={<Trans parent="span">
+          J'ai lu et j'accepte les <Link
+          to={Routes.TERMS_AND_CONDITIONS_PAGE} target="_blank" rel="noopener noreferrer"
+          onClick={stopPropagation}>
+            conditions générales d'utilisation
+        </Link>
+      </Trans>}
+      style={{fontSize: 12, marginTop: 10}}
+      isSelected={hasAcceptedTerms}
+      onClick={handleToggleAcceptTerms} />}
+    <Button
+      disabled={!isFormValid}
+      onClick={handleRegister}
+      style={{alignSelf: 'center', marginTop: 30}}
+      isNarrow={true}
+      isProgressShown={isAuthenticating}
+      type="validation">
+      <Trans parent={null}>S'inscrire</Trans>
+    </Button>
+  </form>
+}
+RegistrationFormBase.propTypes = {
+  defaultEmail: PropTypes.string.isRequired,
+  dispatch: PropTypes.func.isRequired,
+  hasUser: PropTypes.bool,
+  isAuthenticating: PropTypes.bool,
+  onLogin: PropTypes.func.isRequired,
+  onShowLoginFormClick: PropTypes.func.isRequired,
+  shouldRequestNames: PropTypes.bool,
 }
 const RegistrationForm = connect(({app, asyncState, user}: RootState):
 RegistrationConnectedProps => {
@@ -633,35 +633,36 @@ RegistrationConnectedProps => {
     isAuthenticating: !!asyncState.isFetching['AUTHENTICATE_USER'],
     shouldRequestNames: !name,
   }
-})(RegistrationFormBase)
+})(React.memo(RegistrationFormBase))
 
 
 interface SectionProps {
+  children: React.ReactNode
   title: React.ReactNode
 }
 
-class FormSection extends React.PureComponent<SectionProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    title: PropTypes.node.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {children, title} = this.props
-    const titleStyle: React.CSSProperties = {
-      color: colors.GREYISH_BROWN,
-      fontSize: 14,
-      margin: '30px 0 15px',
-      textAlign: 'center',
-    }
-    return <React.Fragment>
-      <div style={titleStyle}>
-        {title}
-      </div>
-      {children}
-    </React.Fragment>
-  }
+const formSectionTitleStyle: React.CSSProperties = {
+  color: colors.GREYISH_BROWN,
+  fontSize: 14,
+  margin: '30px 0 15px',
+  textAlign: 'center',
 }
+
+
+const FormSectionBase = (props: SectionProps): React.ReactElement => {
+  const {children, title} = props
+  return <React.Fragment>
+    <div style={formSectionTitleStyle}>
+      {title}
+    </div>
+    {children}
+  </React.Fragment>
+}
+FormSectionBase.propTypes = {
+  children: PropTypes.node,
+  title: PropTypes.node.isRequired,
+}
+const FormSection = React.memo(FormSectionBase)
 
 
 interface HeaderProps {
@@ -671,43 +672,42 @@ interface HeaderProps {
   title: string
 }
 
-
-class FormHeader extends React.PureComponent<HeaderProps> {
-  public static propTypes = {
-    linkText: PropTypes.string,
-    onClick: PropTypes.func,
-    question: PropTypes.string,
-    title: PropTypes.string.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {linkText, onClick, question, title} = this.props
-    const headlineStyle: React.CSSProperties = {
-      color: colors.DARK_TWO,
-      fontSize: 23,
-      fontWeight: 500,
-      lineHeight: 1.6,
-      textAlign: 'center',
-    }
-    const contentStyle: React.CSSProperties = {
-      fontSize: 14,
-      lineHeight: 1.4,
-      textAlign: 'center',
-    }
-    const linkStyle: React.CSSProperties = {
-      color: colors.BOB_BLUE,
-      cursor: 'pointer',
-      textDecoration: 'underline',
-    }
-    return <div style={{marginBottom: 20}}>
-      <div style={headlineStyle}>{title}</div>
-      {question && onClick && linkStyle && linkText ? <div style={contentStyle}>
-        <span>{question} </span>
-        <span onClick={onClick} style={linkStyle}>{linkText}</span>
-      </div> : null}
-    </div>
-  }
+const headerHeadlineStyle: React.CSSProperties = {
+  color: colors.DARK_TWO,
+  fontSize: 23,
+  fontWeight: 500,
+  lineHeight: 1.6,
+  textAlign: 'center',
 }
+const formHeaderContentStyle: React.CSSProperties = {
+  fontSize: 14,
+  lineHeight: 1.4,
+  textAlign: 'center',
+}
+const formHeaderLinkStyle: React.CSSProperties = {
+  color: colors.BOB_BLUE,
+  cursor: 'pointer',
+  textDecoration: 'underline',
+}
+
+
+const FormHeaderBase = (props: HeaderProps): React.ReactElement => {
+  const {linkText, onClick, question, title} = props
+  return <div style={{marginBottom: 20}}>
+    <div style={headerHeadlineStyle}>{title}</div>
+    {question && onClick && linkText ? <div style={formHeaderContentStyle}>
+      <span>{question} </span>
+      <span onClick={onClick} style={formHeaderLinkStyle}>{linkText}</span>
+    </div> : null}
+  </div>
+}
+FormHeaderBase.propTypes = {
+  linkText: PropTypes.string,
+  onClick: PropTypes.func,
+  question: PropTypes.string,
+  title: PropTypes.string.isRequired,
+}
+const FormHeader = React.memo(FormHeaderBase)
 
 
 function getLocalStorageKey(state: string): string {
@@ -755,7 +755,7 @@ interface OAuth2Props extends React.HTMLProps<HTMLButtonElement> {
   isNewUser?: boolean
   logo: string
   onFailure?: (error: {message: string}) => void
-  onSuccess?: (auth: {code?: string; nonce?: string}) => void
+  onSuccess?: (auth: {code: string; nonce: string}) => void
   scopes?: string[]
   stateToStore?: StoredState
   storedState?: StoredState
@@ -810,16 +810,19 @@ class OAuth2ConnectLogin extends React.PureComponent<OAuth2Props> {
       return
     }
     if (error || !code) {
-      if (/(user cancelled|owner did not authorize)/i.test(errorDescription)) {
+      const fullError: string|undefined = parsedValueFlattener.join(errorDescription)
+      if (fullError && /(user cancelled|owner did not authorize)/i.test(fullError)) {
         // User cancelled their request so they are aware of what happened.
         onFailure && onFailure(new Error('Authentification annulée'))
         return
       }
       onFailure && onFailure(new Error(
-        errorDescription || error || "Erreur lors de l'authentification, code manquant"))
+        fullError || parsedValueFlattener.join(error) ||
+        "Erreur lors de l'authentification, code manquant"))
       return
     }
-    onSuccess && onSuccess({code, nonce})
+    const lastCode = parsedValueFlattener.last(code)
+    lastCode && onSuccess && onSuccess({code: lastCode, nonce})
   }
 
   private startSigninFlow = (): void => {
@@ -828,10 +831,13 @@ class OAuth2ConnectLogin extends React.PureComponent<OAuth2Props> {
     const {host, protocol} = window.location
     const redirectUri = `${protocol}//${host}${Routes.ROOT}`
     const url = `${authorizeEndpoint}?${stringify({
-      'client_id': clientId,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      client_id: clientId,
       nonce,
-      'redirect_uri': redirectUri,
-      'response_type': 'code',
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      redirect_uri: redirectUri,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      response_type: 'code',
       state,
       ...(scopes ? {scope: scopes.join(' ')} : {}),
       ...authorizeParams,
@@ -954,7 +960,7 @@ class LoginModalBase extends React.PureComponent<ModalProps, ModalState> {
       <div style={coverImageStyle} />
       <div>
         <img
-          style={{height: 30, marginLeft: 60, marginTop: 30}}
+          style={{height: 25, marginLeft: 60, marginTop: 30}}
           src={logoProductImage} alt={config.productName} />
         <div style={portraitQuoteStyle}>
           <div style={{color: '#fff', fontStyle: 'italic', maxWidth: 360}}>
@@ -985,11 +991,11 @@ class LoginModalBase extends React.PureComponent<ModalProps, ModalState> {
       ':hover': {
         opacity: .9,
       },
-      boxShadow: 'initial',
-      opacity: .6,
-      right: 50,
-      top: 50,
-      transform: 'initial',
+      'boxShadow': 'initial',
+      'opacity': .6,
+      'right': 50,
+      'top': 50,
+      'transform': 'initial',
     }
 
     return <Modal
@@ -1055,7 +1061,7 @@ class LoginMethodsBase extends React.PureComponent<MethodsProps, MethodsState> {
     if (!search) {
       return null
     }
-    const {state} = parse(search)
+    const {state} = parseQueryString(search)
     if (!state || state === prevState) {
       return null
     }
@@ -1121,7 +1127,7 @@ class LoginMethodsBase extends React.PureComponent<MethodsProps, MethodsState> {
 const LoginMethods: React.ComponentType<MethodsConfig> = withRouter(connect(
   (
     {app: {loginModal}}: RootState,
-    {forwardLocation, location: {pathname}}: MethodsConfig & RouteComponentProps
+    {forwardLocation, location: {pathname}}: MethodsConfig & RouteComponentProps,
   ): MethodsConnectedProps => {
     const {email = '', isReturningUser = false, resetToken = ''} = loginModal &&
       loginModal.defaultValues || {}
@@ -1141,33 +1147,32 @@ const circularProgressStyle: React.CSSProperties = {
   verticalAlign: 'middle',
   width: 170,
 }
+const googleIconStyle: React.CSSProperties = {
+  height: 24,
+  marginRight: 10,
+  verticalAlign: 'middle',
+  width: 34,
+}
 
 interface GoogleButtonProps {
   isAuthenticating?: boolean
   onClick: () => void
 }
 
-class GoogleButton extends React.PureComponent<GoogleButtonProps> {
-  public static propTypes = {
-    isAuthenticating: PropTypes.bool,
-    onClick: PropTypes.func.isRequired,
-  }
-
-  public render(): React.ReactNode {
-    const {isAuthenticating, onClick} = this.props
-    const googleIconStyle: React.CSSProperties = {
-      height: 24,
-      marginRight: 10,
-      verticalAlign: 'middle',
-      width: 34,
-    }
-    return <button className="login google-login" onClick={onClick}>
-      <GoogleIcon style={googleIconStyle} />{isAuthenticating ?
-        <CircularProgress size={23} style={circularProgressStyle} thickness={2} /> :
-        'Se connecter avec Google'}
-    </button>
-  }
+const GoogleButtonBase = (props: GoogleButtonProps): React.ReactElement => {
+  const {isAuthenticating, onClick} = props
+  const {t} = useTranslation()
+  return <button className="login google-login" onClick={onClick}>
+    <GoogleIcon style={googleIconStyle} />{isAuthenticating ?
+      <CircularProgress size={23} style={circularProgressStyle} thickness={2} /> :
+      t('Se connecter avec {{service}}', {service: 'Google'})}
+  </button>
 }
+GoogleButtonBase.propTypes = {
+  isAuthenticating: PropTypes.bool,
+  onClick: PropTypes.func.isRequired,
+}
+const GoogleButton = React.memo(GoogleButtonBase)
 
 interface StatefulFacebookLoginProps extends ReactFacebookLoginProps {
   stateToStore?: StoredState
@@ -1186,7 +1191,7 @@ class StatefulFacebookLogin extends
 
   private timeout?: number
 
-  private handleClick = (event): void => {
+  private handleClick = (event: React.MouseEvent<HTMLDivElement>): void => {
     const {appId, onClick, stateToStore} = this.props
     if (isMobileVersion) {
       setStoredState({...stateToStore, clientId: appId}, this.state.stateKey)
@@ -1227,35 +1232,29 @@ interface SocialButtonProps extends SocialButtonConnectedProps {
   style?: React.CSSProperties
 }
 
-class SocialLoginButtonsBase extends React.PureComponent<SocialButtonProps> {
-  public static propTypes = {
-    authMethod: PropTypes.string,
-    dispatch: PropTypes.func.isRequired,
-    isAuthenticating: PropTypes.bool,
-    isNewUser: PropTypes.bool,
-    onLogin: PropTypes.func.isRequired,
-    style: PropTypes.object,
-  }
+const SocialLoginButtonsBase = (props: SocialButtonProps): React.ReactElement => {
+  const {authMethod, dispatch, isAuthenticating, isNewUser: wantsNewUser, onLogin} = props
 
-  private handleAuthResponse = (response: bayes.bob.AuthResponse | void): void => {
+  const {t} = useTranslation()
+
+  const handleAuthResponse = useCallback((response: bayes.bob.AuthResponse | void): void => {
     if (!response) {
       return
     }
-    const {dispatch, isNewUser: wantsNewUser, onLogin} = this.props
     const {authenticatedUser, isNewUser} = response
     if (!authenticatedUser) {
       return
     }
     if (isNewUser && !wantsNewUser) {
-      dispatch(displayToasterMessage("Création d'un nouveau compte"))
+      dispatch(displayToasterMessage(t("Création d'un nouveau compte")))
     } else if (!isNewUser && wantsNewUser) {
-      dispatch(displayToasterMessage('Connexion avec le compte existant'))
+      dispatch(displayToasterMessage(t('Connexion avec le compte existant')))
     }
     // TODO(pascal): Make sure we go to /confidentialite page on first registration.
     onLogin(authenticatedUser)
-  }
+  }, [dispatch, wantsNewUser, onLogin, t])
 
-  private handleFacebookLogin = (facebookAuth): void => {
+  const handleFacebookLogin = useCallback((facebookAuth: ReactFacebookLoginInfo): void => {
     // The facebookAuth object contains:
     //  - the email address: email
     //  - the facebook user ID: userID
@@ -1263,98 +1262,115 @@ class SocialLoginButtonsBase extends React.PureComponent<SocialButtonProps> {
     //  - the URL of a profile picture: picture.data.url
     const email = facebookAuth && facebookAuth.email
     if (email) {
-      this.props.dispatch(facebookAuthenticateUser(facebookAuth)).then(this.handleAuthResponse)
+      dispatch(facebookAuthenticateUser(facebookAuth)).then(handleAuthResponse)
     }
-  }
+  }, [dispatch, handleAuthResponse])
 
-  private handleGoogleLogin = (googleAuth): void => {
-    // The googleAuth object contains the profile in getBasicProfile()
-    //  - the Google ID: getId()
-    //  - the email address: getEmail()
-    //  - the first name: getGivenName()
-    //  - the last name: getFamilyName()
-    //  - the full name: getName()
-    //  - the URL of a profile picture: getImageUrl()
-    const email = googleAuth && googleAuth.getBasicProfile().getEmail()
-    if (email) {
-      this.props.dispatch(googleAuthenticateUser(googleAuth)).then(this.handleAuthResponse)
-    }
-  }
+  const handleGoogleLogin = useCallback(
+    (googleResponse: GoogleLoginResponse|GoogleLoginResponseOffline): void => {
+      const googleAuth = googleResponse as GoogleLoginResponse
+      if (!googleAuth.getId) {
+        throw new Error('Google Login offline response, this should never happen')
+      }
+      // The googleAuth object contains the profile in getBasicProfile()
+      //  - the Google ID: getId()
+      //  - the email address: getEmail()
+      //  - the first name: getGivenName()
+      //  - the last name: getFamilyName()
+      //  - the full name: getName()
+      //  - the URL of a profile picture: getImageUrl()
+      const email = googleAuth && googleAuth.getBasicProfile().getEmail()
+      if (email) {
+        dispatch(googleAuthenticateUser(googleAuth)).then(handleAuthResponse)
+      }
+    },
+    [dispatch, handleAuthResponse],
+  )
 
-  private handleGoogleFailure = ({details}): void => {
-    const {dispatch} = this.props
+  const handleGoogleFailure = useCallback(({details}: {details: string}): void => {
     dispatch(displayToasterMessage(details))
-  }
+  }, [dispatch])
 
-  private handleConnectFailure = (error): void => {
-    const {dispatch} = this.props
+  const handleConnectFailure = useCallback((error: {message: string}): void => {
     dispatch(displayToasterMessage(error.message))
-  }
+  }, [dispatch])
 
-  private handlePEConnectLogin = ({code, nonce}): void => {
-    this.props.dispatch(peConnectAuthenticateUser(code, nonce)).then(this.handleAuthResponse)
-  }
+  const handlePEConnectLogin = useCallback(({code, nonce}: {code: string; nonce: string}): void => {
+    dispatch(peConnectAuthenticateUser(code, nonce)).then(handleAuthResponse)
+  }, [dispatch, handleAuthResponse])
 
-  private handleLinkedinLogin = ({code}): void => {
-    this.props.dispatch(linkedInAuthenticateUser(code)).then(this.handleAuthResponse)
-  }
+  const handleLinkedinLogin = useCallback(({code}: {code: string}): void => {
+    dispatch(linkedInAuthenticateUser(code)).then(handleAuthResponse)
+  }, [dispatch, handleAuthResponse])
 
-  private renderGoogleButton = _memoize((isGoogleAuthenticating: boolean):
-  ((props: GoogleButtonProps) => React.ReactElement) => (props): React.ReactElement =>
-    <GoogleButton isAuthenticating={isGoogleAuthenticating} {...props} />)
+  const isGoogleAuthenticating = !!isAuthenticating && authMethod === 'google'
+  const MyGoogleButton = useCallback(
+    (props: GoogleButtonProps): React.ReactElement =>
+      <GoogleButton isAuthenticating={isGoogleAuthenticating} {...props} />,
+    [isGoogleAuthenticating],
+  )
 
-  public render(): React.ReactNode {
-    const {authMethod, isAuthenticating, stateToStore, storedState, style} = this.props
-    const socialLoginBox: React.CSSProperties = {
-      ...style,
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      fontSize: 15,
-    }
-    const circularProgress = <CircularProgress
-      size={23} style={circularProgressStyle} thickness={2} />
-    return <div style={socialLoginBox}>
-      <StatefulFacebookLogin
-        appId={config.facebookSSOAppId} language="fr" isDisabled={isAuthenticating}
-        callback={this.handleFacebookLogin}
-        fields="email,name,picture,gender,birthday"
-        storedState={storedState}
-        size="small" icon="fa-facebook" stateToStore={stateToStore}
-        textButton={isAuthenticating && authMethod === 'facebook' ?
-          // react-facebook-login expects a string. Beware on lib update.
-          circularProgress as unknown as string : 'Se connecter avec Facebook'}
-        cssClass="login facebook-login" />
-      <GoogleLogin
-        clientId={config.googleSSOClientId} disabled={isAuthenticating}
-        onSuccess={this.handleGoogleLogin}
-        onFailure={this.handleGoogleFailure}
-        render={this.renderGoogleButton(!!isAuthenticating && authMethod === 'google')} />
-      <OAuth2ConnectLogin
-        authorizeEndpoint="https://authentification-candidat.pole-emploi.fr/connexion/oauth2/authorize"
-        scopes={PE_CONNECT_SCOPES}
-        authorizeParams={{realm: '/individu'}} disabled={isAuthenticating}
-        clientId={config.emploiStoreClientId} stateToStore={stateToStore} storedState={storedState}
-        className="login pe-connect-login"
-        logo={peConnectIcon}
-        onSuccess={this.handlePEConnectLogin}
-        onFailure={this.handleConnectFailure}>
-        {isAuthenticating && authMethod === 'peConnect' ?
-          circularProgress : <React.Fragment>Se connecter avec pôle emploi</React.Fragment>}
-      </OAuth2ConnectLogin>
-      <OAuth2ConnectLogin
-        clientId={config.linkedInClientId} disabled={isAuthenticating} stateToStore={stateToStore}
-        authorizeEndpoint="https://www.linkedin.com/oauth/v2/authorization"
-        scopes={LINKEDIN_SCOPES} storedState={storedState}
-        onSuccess={this.handleLinkedinLogin}
-        onFailure={this.handleConnectFailure}
-        logo={linkedInIcon} style={{marginBottom: 0}}
-        className="login linkedin-login">
-        {isAuthenticating && authMethod === 'linkedIn' ?
-          circularProgress : <React.Fragment>Se connecter avec LinkedIn</React.Fragment>}
-      </OAuth2ConnectLogin>
-    </div>
-  }
+  const {stateToStore, storedState, style} = props
+  const socialLoginBox = useMemo((): React.CSSProperties => ({
+    ...style,
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    fontSize: 15,
+  }), [style])
+  const circularProgress = <CircularProgress
+    size={23} style={circularProgressStyle} thickness={2} />
+  return <div style={socialLoginBox}>
+    <StatefulFacebookLogin
+      appId={config.facebookSSOAppId} language="fr" isDisabled={isAuthenticating}
+      callback={handleFacebookLogin}
+      fields="email,name,picture,gender,birthday"
+      storedState={storedState}
+      size="small" icon="fa-facebook" stateToStore={stateToStore}
+      textButton={isAuthenticating && authMethod === 'facebook' ?
+        // react-facebook-login expects a string. Beware on lib update.
+        circularProgress as unknown as string :
+        t('Se connecter avec {{service}}', {service: 'Facebook'})}
+      cssClass="login facebook-login" />
+    <GoogleLogin
+      clientId={config.googleSSOClientId} disabled={isAuthenticating}
+      onSuccess={handleGoogleLogin}
+      onFailure={handleGoogleFailure}
+      render={MyGoogleButton} />
+    <OAuth2ConnectLogin
+      authorizeEndpoint="https://authentification-candidat.pole-emploi.fr/connexion/oauth2/authorize"
+      scopes={PE_CONNECT_SCOPES}
+      authorizeParams={{realm: '/individu'}} disabled={isAuthenticating}
+      clientId={config.emploiStoreClientId} stateToStore={stateToStore} storedState={storedState}
+      className="login pe-connect-login"
+      logo={peConnectIcon}
+      onSuccess={handlePEConnectLogin}
+      onFailure={handleConnectFailure}>
+      {isAuthenticating && authMethod === 'peConnect' ?
+        circularProgress : <Trans parent={null}>
+        Se connecter avec {{service: 'pôle emploi'}}
+        </Trans>}
+    </OAuth2ConnectLogin>
+    <OAuth2ConnectLogin
+      clientId={config.linkedInClientId} disabled={isAuthenticating} stateToStore={stateToStore}
+      authorizeEndpoint="https://www.linkedin.com/oauth/v2/authorization"
+      scopes={LINKEDIN_SCOPES} storedState={storedState}
+      onSuccess={handleLinkedinLogin}
+      onFailure={handleConnectFailure}
+      logo={linkedInIcon} style={{marginBottom: 0}}
+      className="login linkedin-login">
+      {isAuthenticating && authMethod === 'linkedIn' ?
+        circularProgress : <Trans parent={null}>Se connecter avec {{service: 'LinkedIn'}}</Trans>}
+    </OAuth2ConnectLogin>
+  </div>
+}
+SocialLoginButtonsBase.propTypes = {
+  authMethod: PropTypes.string,
+  dispatch: PropTypes.func.isRequired,
+  isAuthenticating: PropTypes.bool,
+  isNewUser: PropTypes.bool,
+  onLogin: PropTypes.func.isRequired,
+  style: PropTypes.object,
 }
 const SocialLoginButtons = connect(({asyncState: {authMethod, isFetching}}: RootState):
 SocialButtonConnectedProps => ({
@@ -1381,20 +1397,21 @@ interface LoginLinkProps extends LinkConfig, LinkConnectedProps, RouteComponentP
   innerRef?: React.RefObject<HTMLAnchorElement>
 }
 
-class LoginLinkBase extends React.PureComponent<LoginLinkProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    dispatch: PropTypes.func.isRequired,
-    email: PropTypes.string,
-    isGuest: PropTypes.bool,
-    isRegisteredUser: PropTypes.bool,
-    isSignUp: PropTypes.bool,
-    style: PropTypes.object,
-    visualElement: PropTypes.string.isRequired,
-  }
+const LoginLinkBase = (props: LoginLinkProps): React.ReactElement => {
+  const {
+    children,
+    dispatch,
+    email,
+    innerRef,
+    isGuest,
+    isRegisteredUser,
+    isSignUp,
+    location: {pathname},
+    style,
+    visualElement,
+  } = props
 
-  private handleClick = (): void => {
-    const {email, isGuest, isRegisteredUser, isSignUp, dispatch, visualElement} = this.props
+  const handleClick = useCallback((): void => {
     if (isRegisteredUser) {
       return
     }
@@ -1407,10 +1424,9 @@ class LoginLinkBase extends React.PureComponent<LoginLinkProps> {
     } else {
       dispatch(openLoginModal({email}, visualElement))
     }
-  }
+  }, [email, isGuest, isRegisteredUser, isSignUp, dispatch, visualElement])
 
-  private getNewLocation(): Link['to'] {
-    const {isGuest, isRegisteredUser, isSignUp, location: {pathname}} = this.props
+  const to = useMemo((): LinkProps['to']|null => {
     if (isRegisteredUser) {
       return Routes.PROJECT_PAGE
     }
@@ -1424,26 +1440,32 @@ class LoginLinkBase extends React.PureComponent<LoginLinkProps> {
       }
     }
     return null
-  }
+  }, [isGuest, isRegisteredUser, isSignUp, pathname])
 
-  public render(): React.ReactNode {
-    const {children, innerRef, style} = this.props
-    const to = this.getNewLocation()
-    const commonProps = {
-      children,
-      onClick: this.handleClick,
-      style,
-    }
-    if (to) {
-      return <Link {...commonProps} innerRef={innerRef} to={to} />
-    }
-    return <a {...commonProps} href="#" ref={innerRef} />
+  const commonProps = useMemo((): Pick<LinkProps, 'children'|'onClick'|'style'> => ({
+    children,
+    onClick: handleClick,
+    style,
+  }), [children, handleClick, style])
+  if (to) {
+    return <Link {...commonProps} innerRef={innerRef} to={to} />
   }
+  return <a {...commonProps} href="#" ref={innerRef} />
+}
+LoginLinkBase.propTypes = {
+  children: PropTypes.node,
+  dispatch: PropTypes.func.isRequired,
+  email: PropTypes.string,
+  isGuest: PropTypes.bool,
+  isRegisteredUser: PropTypes.bool,
+  isSignUp: PropTypes.bool,
+  style: PropTypes.object,
+  visualElement: PropTypes.string.isRequired,
 }
 const LoginLink = connect(({user: {hasAccount, userId}}: RootState): LinkConnectedProps => ({
   isGuest: !!userId && !hasAccount,
   isRegisteredUser: !!userId && !!hasAccount,
-}))(withRouter(LoginLinkBase))
+}))(withRouter(React.memo(LoginLinkBase)))
 
 
 class LoginButton extends React.PureComponent<LinkConfig & ButtonProps> {

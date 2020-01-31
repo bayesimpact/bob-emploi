@@ -25,13 +25,11 @@ function bob_demo_var {
   ssh demo-mygameplan.bayes.org 'bash --login -c "echo \$'$1'"'
 }
 
-# Access multiple production environment vars of Bob for a local docker run.
-#
-# You need to have awscli and jq installed, as well have read access to the
-# prod configuration.
-function bob_prod_vars {
+function _multiple_ecs_vars {
+  task_definition=$1
+  shift
   tmpfile=$(mktemp)
-  aws ecs describe-task-definition --task-definition=frontend-flask > $tmpfile
+  aws ecs describe-task-definition --task-definition=$task_definition > $tmpfile
   for var in "$@"; do
     value="$(_ecs_var_from_json flask "$var" "$tmpfile")"
     echo -n "-e $var=$value "
@@ -41,13 +39,20 @@ function bob_prod_vars {
   rm "$tmpfile"
 }
 
+# Access multiple production environment vars of Bob for a local docker run.
+#
+# You need to have awscli and jq installed, as well have read access to the
+# prod configuration.
+function bob_prod_vars {
+  _multiple_ecs_vars frontend-flask $@
+}
+
 function bob_importer_var {
   aws ecs describe-task-definition --task-definition=data-importer | _ecs_var_from_json master "$@"
 }
 
 function mailjet_template {
-  # TODO(cyrille): Deal with `grep -P` issue on MacOS.
-  "$BOB_ROOT_FOLDER/frontend/server/asynchronous/mail/templates/mailjet.sh" "$@"
+  $BOB_ROOT_FOLDER/frontend/cli/mailjet.sh "$@"
 }
 
 function _mailjet_template {

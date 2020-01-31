@@ -14,15 +14,18 @@ from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import jobs
-from bob_emploi.frontend.server import now
 from bob_emploi.frontend.server.asynchronous.mail import campaign
 # pylint: disable=unused-import
 # Import all plugins: they register themselves when imported.
+from bob_emploi.frontend.server.asynchronous.mail import deletion
 from bob_emploi.frontend.server.asynchronous.mail import holiday
 from bob_emploi.frontend.server.asynchronous.mail import imt
 from bob_emploi.frontend.server.asynchronous.mail import improve_cv
+from bob_emploi.frontend.server.asynchronous.mail import jobbing
+from bob_emploi.frontend.server.asynchronous.mail import prepare_your_application
 from bob_emploi.frontend.server.asynchronous.mail import network
 from bob_emploi.frontend.server.asynchronous.mail import salon_arles
+from bob_emploi.frontend.server.asynchronous.mail import training
 # pylint: enable=unused-import
 
 
@@ -31,9 +34,9 @@ _READ_EMAIL_STATUSES = frozenset([
     user_pb2.EMAIL_SENT_OPENED, user_pb2.EMAIL_SENT_CLICKED])
 
 
-_ONE_YEAR_AGO = now.get() - datetime.timedelta(365)
-_SIX_MONTHS_AGO = now.get() - datetime.timedelta(180)
-_ONE_MONTH_AGO = now.get() - datetime.timedelta(30)
+_ONE_YEAR_AGO = datetime.datetime.now() - datetime.timedelta(365)
+_SIX_MONTHS_AGO = datetime.datetime.now() - datetime.timedelta(180)
+_ONE_MONTH_AGO = datetime.datetime.now() - datetime.timedelta(30)
 _EXPERIENCE_AS_TEXT = {
     project_pb2.JUNIOR: 'quelques temps',
     project_pb2.INTERMEDIARY: 'plus de 2 ans',
@@ -43,7 +46,8 @@ _EXPERIENCE_AS_TEXT = {
 
 
 def _get_spontaneous_vars(
-        user: user_pb2.User, database: Optional[pymongo.database.Database] = None,
+        user: user_pb2.User, now: datetime.datetime,
+        database: Optional[pymongo.database.Database] = None,
         **unused_kwargs: Any) -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the spontaneous email.
 
@@ -54,7 +58,7 @@ def _get_spontaneous_vars(
 
     project = user.projects[0]
 
-    job_search_length = campaign.job_search_started_months_ago(project)
+    job_search_length = campaign.job_search_started_months_ago(project, now)
     if job_search_length < 0:
         logging.info('No info on user search duration')
         return None
@@ -162,7 +166,7 @@ def _get_spontaneous_vars(
     })
 
 
-def _get_self_development_vars(user: user_pb2.User, **unused_kwargs: Any) \
+def _get_self_development_vars(user: user_pb2.User, now: datetime.datetime, **unused_kwargs: Any) \
         -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the self-development email.
 
@@ -173,7 +177,7 @@ def _get_self_development_vars(user: user_pb2.User, **unused_kwargs: Any) \
 
     project = user.projects[0]
 
-    job_search_length = campaign.job_search_started_months_ago(project)
+    job_search_length = campaign.job_search_started_months_ago(project, now)
     if job_search_length < 0:
         logging.info('No info on user search duration')
         return None
@@ -226,7 +230,9 @@ def _body_language_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[D
     })
 
 
-def _employment_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict[str, str]]:
+def _employment_vars(
+        user: user_pb2.User, now: datetime.datetime, **unused_kwargs: Any) \
+        -> Optional[Dict[str, str]]:
     """Compute vars for a given user for the employment survey.
 
     Returns:
@@ -234,7 +240,7 @@ def _employment_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dict
         should be sent.
     """
 
-    registered_months_ago = campaign.get_french_months_ago(user.registered_at.ToDatetime())
+    registered_months_ago = campaign.get_french_months_ago(user.registered_at.ToDatetime(), now=now)
     if not registered_months_ago:
         logging.warning('User registered only recently (%s)', user.registered_at)
         return None
@@ -315,10 +321,9 @@ def _get_galita3_vars(user: user_pb2.User, **unused_kwargs: Any) -> Optional[Dic
     deep_link_to_follow_up_advice = ' '
     if user.projects:
         for project in user.projects:
-            if any(a.advice_id == 'follow-up' for a in project.advices):
-                # TODO(pascal): Add an auth token.
-                deep_link_to_follow_up_advice = \
-                    f'{campaign.BASE_URL}/projet/{project.project_id}/follow-up'
+            link = campaign.get_deep_link_advice(user.user_id, project, 'follow-up')
+            if link:
+                deep_link_to_follow_up_advice = link
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'deepLinkToAdvice': deep_link_to_follow_up_advice,
     })
@@ -447,6 +452,15 @@ _CAMPAIGNS = {
         sender_name='Florian de Bob',
         sender_email='florian@bob-emploi.fr',
     ),
+    'handicap-week': campaign.Campaign(
+        mailjet_template='1101331',
+        mongo_filters={
+            'profile.isNewsletterEnabled': True,
+        },
+        get_vars=lambda u, **kw: {'firstName': u.profile.name},
+        sender_name='Bob',
+        sender_email='bob@bob-emploi.fr',
+    ),
     'new-diagnostic': campaign.Campaign(
         mailjet_template='310559',
         mongo_filters={
@@ -510,8 +524,8 @@ _CAMPAIGNS = {
                 '$in': ['UNKNOWN_DEGREE', 'NO_DEGREE', 'CAP_BEP', 'BAC_BACPRO']
             },
             'profile.yearOfBirth': {
-                '$gt': now.get().year - 54,
-                '$lt': now.get().year - 18,
+                '$gt': datetime.datetime.now().year - 54,
+                '$lt': datetime.datetime.now().year - 18,
             },
             'registeredAt': {'$gt': _SIX_MONTHS_AGO},
         },

@@ -1,10 +1,10 @@
 import CloseIcon from 'mdi-react/CloseIcon'
 import PropTypes from 'prop-types'
-import Radium from 'radium'
-import React from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
 import ReactHeight from 'react-height'
 
 import {isMobileVersion} from 'components/mobile'
+import {useRadium} from 'components/radium'
 import {ShortKey} from 'components/shortkey'
 
 // TODO(pascal): Harmonize how we import components from other components.
@@ -262,49 +262,49 @@ interface ButtonProps {
 }
 
 
-class ModalCloseButtonBase extends React.PureComponent<ButtonProps> {
-  public static propTypes = {
-    onClick: PropTypes.func.isRequired,
-    shouldCloseOnEscape: PropTypes.bool,
-    style: PropTypes.object,
-  }
-
-  public render(): React.ReactNode {
-    const {shouldCloseOnEscape, onClick, style, ...otherProps} = this.props
-    const closeButtonStyle: RadiumCSSProperties = {
-      ':hover': {
-        backgroundColor: colors.SLATE,
-      },
-      alignItems: 'center',
-      backgroundColor: colors.CHARCOAL_GREY,
-      borderRadius: '100%',
-      bottom: '100%',
-      boxShadow: '0 0 25px 0 rgba(0, 0, 0, 0.5)',
-      color: '#fff',
-      cursor: 'pointer',
-      display: 'flex',
-      fontSize: 19,
-      height: 35,
-      justifyContent: 'center',
-      position: 'absolute',
-      right: isMobileVersion ? 5 : 0,
-      transform: 'translate(50%, 50%)',
-      width: 35,
-      zIndex: 1,
-      ...SmoothTransitions,
-      ...style,
-    }
-    const closeIconStyle = {
-      height: 33,
-      width: 19,
-    }
-    return <div {...otherProps} style={closeButtonStyle} onClick={onClick}>
-      <ShortKey keyCode="Escape" onKeyDown={shouldCloseOnEscape ? onClick : undefined} />
-      <CloseIcon style={closeIconStyle} />
-    </div>
-  }
+const closeIconStyle = {
+  height: 33,
+  width: 19,
 }
-const ModalCloseButton = Radium(ModalCloseButtonBase)
+
+
+const ModalCloseButtonBase = (props: ButtonProps): React.ReactElement => {
+  const {shouldCloseOnEscape, onClick, style, ...otherProps} = props
+  const closeButtonStyle: RadiumCSSProperties = useMemo((): RadiumCSSProperties => ({
+    ':hover': {
+      backgroundColor: colors.SLATE,
+    },
+    'alignItems': 'center',
+    'backgroundColor': colors.CHARCOAL_GREY,
+    'borderRadius': '100%',
+    'bottom': '100%',
+    'boxShadow': '0 0 25px 0 rgba(0, 0, 0, 0.5)',
+    'color': '#fff',
+    'cursor': 'pointer',
+    'display': 'flex',
+    'fontSize': 19,
+    'height': 35,
+    'justifyContent': 'center',
+    'position': 'absolute',
+    'right': isMobileVersion ? 5 : 0,
+    'transform': 'translate(50%, 50%)',
+    'width': 35,
+    'zIndex': 1,
+    ...SmoothTransitions,
+    ...style,
+  }), [style])
+  const [radiumProps] = useRadium<HTMLDivElement>({style: closeButtonStyle})
+  return <div {...otherProps} {...radiumProps} onClick={onClick}>
+    <ShortKey keyCode="Escape" onKeyDown={shouldCloseOnEscape ? onClick : undefined} />
+    <CloseIcon style={closeIconStyle} />
+  </div>
+}
+ModalCloseButtonBase.propTypes = {
+  onClick: PropTypes.func.isRequired,
+  shouldCloseOnEscape: PropTypes.bool,
+  style: PropTypes.object,
+}
+const ModalCloseButton = React.memo(ModalCloseButtonBase)
 
 
 class ModalHeader extends React.PureComponent<{style?: React.CSSProperties}> {
@@ -334,4 +334,12 @@ class ModalHeader extends React.PureComponent<{style?: React.CSSProperties}> {
 }
 
 
-export {Modal, ModalHeader, ModalCloseButton}
+function useModal(isShownInitially?: boolean): [boolean, () => void, () => void] {
+  const [isShown, setVisibility] = useState(!!isShownInitially)
+  const show = useCallback((): void => setVisibility(true), [])
+  const hide = useCallback((): void => setVisibility(false), [])
+  return [isShown, show, hide]
+}
+
+
+export {Modal, ModalHeader, ModalCloseButton, useModal}

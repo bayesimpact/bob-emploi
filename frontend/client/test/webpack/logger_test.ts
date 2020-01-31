@@ -11,6 +11,7 @@ describe('Logger', (): void => {
     asyncState: {
       errorMessage: undefined,
       isFetching: {},
+      pendingFetch: {},
     },
     user: {},
   }

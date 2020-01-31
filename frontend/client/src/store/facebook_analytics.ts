@@ -56,7 +56,7 @@ function createFacebookAnalyticsMiddleWare(
     })
 
   const handleNextDispatch = (next: DispatchAllActions): ReturnType<MiddlewareReturnType> =>
-    (anyAction: AnyAction): ReturnType<ReturnType<MiddlewareReturnType>> => {
+    (anyAction: AllActions): ReturnType<ReturnType<MiddlewareReturnType>> => {
       const {params = undefined, predicate = undefined, type = undefined} =
         actionsTypePredicate[anyAction.type] || {}
       if (predicate && type && predicate(anyAction)) {

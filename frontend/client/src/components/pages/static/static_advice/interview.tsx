@@ -1,5 +1,7 @@
 import React from 'react'
 
+import {prepareT} from 'store/i18n'
+
 import {TestimonialCard} from 'components/testimonials'
 import picto from 'images/advices/picto-improve-interview.svg'
 
@@ -10,7 +12,8 @@ import {AdviceDetail, AdvicePageProps, AdviceSection, CardProps, StaticAdviceCar
 const adviceId = 'entretien'
 
 
-const name = "Entretien d'embauche"
+// i18next-extract-mark-ns-next-line staticAdviceTitle
+const name = prepareT("Entretien d'embauche")
 
 
 const TESTIMONIALS = [
@@ -40,38 +43,37 @@ const TESTIMONIALS = [
 ]
 
 
-class Page extends React.PureComponent<AdvicePageProps> {
-  public render(): React.ReactNode {
-    return <StaticAdvicePage
-      adviceId={adviceId} {...this.props}
-      testimonials={TESTIMONIALS}
-      title={`Préparez vos entretiens d'embauche avec ${config.productName}`}>
-      <AdviceSection
-        adviceId={adviceId} title="réussir vos entretiens d'embauche">
-        <AdviceDetail>
-          La liste des qualités à mettre en avant <strong>selon votre métier</strong> pour vous
-          aider à réussir vos entretiens.
-        </AdviceDetail>
-        <AdviceDetail>
-          Une sélection de réponses à préparer et de bonnes questions à poser
-          au <strong>recruteur</strong> à la fin de vos entretiens.
-        </AdviceDetail>
-        <AdviceDetail>
-          Des exemples de <strong>mails de remerciement</strong> à envoyer après l'entretien.
-        </AdviceDetail>
-      </AdviceSection>
-    </StaticAdvicePage>
-  }
+const Page: React.FC<AdvicePageProps> = (props: AdvicePageProps): React.ReactElement =>
+  <StaticAdvicePage
+    adviceId={adviceId} {...props}
+    testimonials={TESTIMONIALS}
+    title={`Préparez vos entretiens d'embauche avec ${config.productName}`}>
+    <AdviceSection
+      adviceId={adviceId} title="réussir vos entretiens d'embauche">
+      <AdviceDetail>
+        La liste des qualités à mettre en avant <strong>selon votre métier</strong> pour vous
+        aider à réussir vos entretiens.
+      </AdviceDetail>
+      <AdviceDetail>
+        Une sélection de réponses à préparer et de bonnes questions à poser
+        au <strong>recruteur</strong> à la fin de vos entretiens.
+      </AdviceDetail>
+      <AdviceDetail>
+        Des exemples de <strong>mails de remerciement</strong> à envoyer après l'entretien.
+      </AdviceDetail>
+    </AdviceSection>
+  </StaticAdvicePage>
+
+
+const StaticAdviceCard: React.FC<CardProps> = (props: CardProps): React.ReactElement =>
+  <StaticAdviceCardBase picto={picto} name={name} {...props} >
+    Les bonnes questions à préparer avant un <strong>entretien d'embauche</strong>
+  </StaticAdviceCardBase>
+
+
+export default {
+  Page: React.memo(Page),
+  StaticAdviceCard: React.memo(StaticAdviceCard),
+  adviceId,
+  name,
 }
-
-
-class StaticAdviceCard extends React.PureComponent<CardProps> {
-  public render(): React.ReactNode {
-    return <StaticAdviceCardBase picto={picto} name={name} {...this.props} >
-      Les bonnes questions à préparer avant un <strong>entretien d'embauche</strong>
-    </StaticAdviceCardBase>
-  }
-}
-
-
-export default {Page, StaticAdviceCard, adviceId, name}

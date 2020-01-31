@@ -89,7 +89,7 @@ def _make_market_stress_section(market_score: float) -> Optional[Dict[str, str]]
 
 def _make_application_mode_section(
         best_application_mode: Optional[job_pb2.ModePercentage],
-        advices: Iterable[project_pb2.Advice], user_id: str) -> Optional[Dict[str, str]]:
+        project: project_pb2.Project, user_id: str) -> Optional[Dict[str, str]]:
     if not best_application_mode or best_application_mode.mode == job_pb2.OTHER_CHANNELS:
         return None
     application_mode_advice = ''
@@ -97,12 +97,12 @@ def _make_application_mode_section(
         application_mode_advice = 'spontaneous-application'
     elif best_application_mode.mode == job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS:
         application_mode_advice = next((
-            advice.advice_id for advice in advices
+            advice.advice_id for advice in project.advices
             if advice.advice_id.startswith('network')), '')
     application_mode_link = ''
     if application_mode_advice:
-        application_mode_link = campaign.create_logged_url(
-            user_id, path=f'/projet/0/methode/{application_mode_advice}')
+        application_mode_link = campaign.get_deep_link_advice(
+            user_id, project, application_mode_advice)
     return {
         'link': application_mode_link,
         'title': _APPLICATION_MODES_SHORT[best_application_mode.mode],
@@ -175,8 +175,7 @@ def _get_imt_vars(
 
     project = user.projects[0]
     assert database
-    scoring_project = scoring.ScoringProject(
-        project, user.profile, user.features_enabled, database)
+    scoring_project = scoring.ScoringProject(project, user, database)
 
     genderized_job_name = french.lower_first_letter(french.genderize_job(
         project.target_job, user.profile.gender))
@@ -196,7 +195,7 @@ def _get_imt_vars(
         shown_sections.append('marketStress')
 
     application_modes_section = _make_application_mode_section(
-        scoring_project.get_best_application_mode(), project.advices, user.user_id)
+        scoring_project.get_best_application_mode(), project, user.user_id)
     if application_modes_section:
         shown_sections.append('applicationModes')
 

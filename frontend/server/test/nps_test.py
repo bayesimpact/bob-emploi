@@ -239,7 +239,7 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             request.json().get('text', ''))
         return True
 
-    @mock.patch(base_test.server.__name__ + '._SLACK_WEBHOOK_URL', new='slack://bob-bots')
+    @mock.patch(base_test.server.user.__name__ + '._SLACK_WEBHOOK_URL', new='slack://bob-bots')
     @requests_mock.mock()
     def test_nps_zero_score_and_comment(self, mock_requests: requests_mock.Mocker) -> None:
         """Set the NPS score to 0 then comment"""

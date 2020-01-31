@@ -6,8 +6,8 @@ readonly OK='\033[0;32mok\033[0m'
 # Checking all colors with format #123abc, #1a9 are in the config colors.json (except for #000 and #fff).
 readonly COLOR_REGEX="#[0-9a-f]{6}|#[0-9a-f]{3}(?<!000|fff)"
 readonly FRONTEND_FOLDER="$(dirname ${BASH_SOURCE[0]})"
-readonly CONFIG_COLORS_COUNT=$(grep -m 1 '^\}$' -B10000 "$FRONTEND_FOLDER/cfg/colors.json" |\
-  grep -icE $COLOR_REGEX)
+readonly CONFIG_COLORS_COUNT=$(json5 "$FRONTEND_FOLDER/cfg/colors.json5" | jq -r '.[]' |\
+  grep -icP $COLOR_REGEX)
 # TODO(cyrille): Make sure the import colors are in the config as well.
 readonly IMPORT_COLORS_COUNT=$(grep -iP $COLOR_REGEX -rh --include \*.js  --include \*.jsx --include \*.ts  --include \*.tsx "$FRONTEND_FOLDER/src" | grep ^import | wc -l | tr -d ' ')
 readonly TOTAL_COLORS_COUNT=$(grep -iP $COLOR_REGEX -roh --include \*.js  --include \*.jsx --include \*.ts  --include \*.tsx "$FRONTEND_FOLDER/src" | wc -w | tr -d ' ')
@@ -22,7 +22,7 @@ fi
 
 # Checking all colors of the Colors object are used.
 if ! COLORS_DIFF=$(diff -y \
-  <(grep -iP $COLOR_REGEX "$FRONTEND_FOLDER/cfg/colors.json" | sed 's/":.*//;s/^ *"//') \
+  <(json5 "$FRONTEND_FOLDER/cfg/colors.json5" | jq -r 'keys|.[]' | sort -u) \
   <(grep -ohr colors\\.\\w\\+ "$FRONTEND_FOLDER/src/" | sort -u | sed -e 's/colors.//')); then
   echo -e "$ERROR: config colors do not match used colors:\n$COLORS_DIFF"
   exit 2

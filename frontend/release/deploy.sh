@@ -105,7 +105,11 @@ if [ -z "$GITHUB_TOKEN" ]; then
   exit 9
 fi
 
-readonly GIT_ORIGIN_WITH_WRITE_PERMISSION=https://$GITHUB_TOKEN@github.com/bayesimpact/bob-emploi-internal.git
+if [[ -z "$GITHUB_TOKEN" ]]; then
+  readonly GIT_ORIGIN_WITH_WRITE_PERMISSION="origin"
+else
+  readonly GIT_ORIGIN_WITH_WRITE_PERMISSION="https://$GITHUB_TOKEN@github.com/bayesimpact/bob-emploi-internal.git"
+fi
 readonly DOCKER_SERVER_REPO="bob-emploi-frontend-server"
 readonly DOCKER_CLIENT_REPO="bob-emploi-frontend"
 readonly DOCKER_TAG="tag-$TAG"
@@ -123,20 +127,16 @@ readonly S3_BUCKET=bob-emploi-client
 readonly ALTERNATE_AWS_REGION=
 
 
-# Deploying the server.
+function docker_tag_exists {
+  local image=$1
+  local tag=$2
+  curl --silent -f -lSL "https://index.docker.io/v1/repositories/$image/tags/$tag" > /dev/null
+}
 
-
-# If we are in the CircleCI step 'deploy' of the 'release' workflow, then we already know that
-# Docker Hub images are ready. Note that 'hub ci-status' would not be successful if we ran it
-# as we are still in the workflow (deadlock).
-if [ "$CIRCLE_STAGE" != 'deploy' ]; then
-  echo_info 'Checking that the server Docker image exists…'
-  # TODO(pascal): Check for a better way that the Docker image exists, querying
-  # Docker Hub is too long because you need to list all the tags.
-  hub ci-status $TAG > /dev/null || {
-    echo_error "The tag $TAG did not run properly on CircleCI, chances are the tag does not exist in Docker Registry."
-    exit 10
-  }
+echo_info 'Checking that the Docker images exists…'
+if (! docker_tag_exists bayesimpact/$DOCKER_CLIENT_REPO $DOCKER_TAG) || (! docker_tag_exists bayesimpact/$DOCKER_SERVER_REPO $DOCKER_TAG); then
+  echo_error "The tag $DOCKER_TAG is not present in Docker Registry."
+  exit 10
 fi
 
 # Prepare Release Notes.
@@ -156,6 +156,7 @@ if [ -z "$(grep "^." $RELEASE_NOTES)" ]; then
   exit 12
 fi
 
+# Deploying the server.
 echo_info 'Creating a new task definition…'
 # Do not print sensitive info from AWS.
 readonly CURRENT_SETTINGS=${-}
@@ -251,8 +252,7 @@ echo "Deployed on $(date -R -u)" >> $RELEASE_NOTES
 readonly PREVIOUS_RELEASE="$(git describe --tags origin/prod)"
 if [ -z "$DRY_RUN" ]; then
   hub release edit --draft=false --file=$RELEASE_NOTES $TAG
-  git remote set-url origin $GIT_ORIGIN_WITH_WRITE_PERMISSION
-  git push -f origin $TAG:prod
+  git push -f "$GIT_ORIGIN_WITH_WRITE_PERMISSION" $TAG:prod
 fi
 
 # TODO(cyrille): Add release info to Sentry, with sourcemap url.

@@ -348,6 +348,13 @@
   ],
   "interview-success": [
     {
+      "content": "Bob m'a fait avoir un déclic par rapport à ma présentation lors de mes entretiens.",
+      "createdAt": "2019-10-23",
+      "job": "Auxiliaire de vie",
+      "name": "Lily",
+      "rating": 5
+    },
+    {
       "content": "Merci, j'ai bien utilisé votre méthode pour les entretiens avant d'aller passer mon premier.",
       "createdAt": "2019-04-15",
       "job": "Assistante de direction",
@@ -364,6 +371,13 @@
   ],
   "interview-success-bravo": [
     {
+      "content": "Bob m'a fait avoir un déclic par rapport à ma présentation lors de mes entretiens.",
+      "createdAt": "2019-10-23",
+      "job": "Auxiliaire de vie",
+      "name": "Lily",
+      "rating": 5
+    },
+    {
       "content": "J'aime beaucoup les conseils. Même si je suis moi-même professionnelle de l'accompagnement et de la formation, ils sont les bienvenus !",
       "createdAt": "2019-04-16",
       "job": "Conseillère en insertion professionnelle",
@@ -379,6 +393,13 @@
     }
   ],
   "interview-success-start": [
+    {
+      "content": "Bob m'a fait avoir un déclic par rapport à ma présentation lors de mes entretiens.",
+      "createdAt": "2019-10-23",
+      "job": "Auxiliaire de vie",
+      "name": "Lily",
+      "rating": 5
+    },
     {
       "content": "Merci, j'ai bien utilisé votre méthode pour les entretiens avant d'aller passer mon premier.",
       "createdAt": "2019-04-15",
@@ -552,6 +573,13 @@
     }
   ],
   "other-leads": [
+    {
+      "content": "Réactivité, bienveillance, conseils judicieux.\nPar exemple : réfléchir à plusieurs autres métiers.\nLes statistiques sur le lieu de recherche d'emploi m'ont été utiles.",
+      "createdAt": "2019-10-23",
+      "job": "Assistante de direction",
+      "name": "Mélanie",
+      "rating": 5
+    },
     {
       "content": "Merci pour les pistes et conseils pratiques et terre à terre. ++++bravo",
       "createdAt": "2019-04-25",

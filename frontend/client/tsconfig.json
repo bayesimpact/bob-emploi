@@ -8,7 +8,6 @@
     "module": "esNext",
     "moduleResolution": "node",
     "noEmit": true,
-    "noImplicitThis": true,
     "noUnusedLocals": true,
     "paths": {
       "api/*": [
@@ -22,11 +21,13 @@
       ],
       "store/*": [
         "src/store/*"
+      ],
+      "translations/*": [
+        "src/translations/*"
       ]
     },
     "resolveJsonModule": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
+    "strict": true,
     "target": "esNext"
   },
   "include": [

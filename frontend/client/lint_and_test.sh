@@ -4,6 +4,9 @@ EXIT=0
 echo "Running lint…"
 npm run --silent lint || EXIT=$?
 
+echo "Extracting translations…"
+npm run --silent i18n || EXIT=$?
+
 echo "Running tests…"
 npm --silent test || EXIT=$?
 

@@ -1,9 +1,8 @@
 """Unit tests for the bob_emploi.frontend.asynchronous.mail.mail_blast module."""
 
 import datetime
-import json
 import os
-from os import path
+from os import path as os_path
 import random
 import re
 from typing import Any, Dict, Optional, Pattern, Union
@@ -24,8 +23,6 @@ from bob_emploi.frontend.server.asynchronous.mail import mail_blast
 from bob_emploi.frontend.server.test import mailjetmock
 
 
-_TEMPLATE_PATH = path.join(path.dirname(path.dirname(__file__)), 'templates')
-_TEMPLATE_INDEX_PATH = path.join(_TEMPLATE_PATH, 'mailjet.json')
 _FAKE_CAMPAIGNS = {'fake-user-campaign': campaign.Campaign(
     '000000', {},
     lambda user, **unused_kwargs: {'key': 'value'},
@@ -41,18 +38,11 @@ class CampaignTestBase(unittest.TestCase):
     # May be overriden in subclasses.
     mongo_collection = 'user'
 
-    # Populated during setUpClass.
-    all_templates: Dict[str, str]
-
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
         if not cls.campaign_id:
             raise NotImplementedError(f'The class "{cls.__name__}" is missing a campaing_id')
-        with open(_TEMPLATE_INDEX_PATH, 'r') as mailjet_json_file:
-            cls.all_templates = {
-                t['mailjetTemplate']: t['name'] for t in json.load(mailjet_json_file)
-            }
 
     def setUp(self) -> None:
         super().setUp()
@@ -86,6 +76,7 @@ class CampaignTestBase(unittest.TestCase):
             self.user.profile.email = user_email
             self.user.profile.year_of_birth = 1990
             self.project = self.user.projects.add()
+            self.project.project_id = '0'
             self.project.target_job.masculine_name = 'Coiffeur'
             self.project.target_job.feminine_name = 'Coiffeuse'
             self.project.target_job.name = 'Coiffeur / Coiffeuse'
@@ -133,12 +124,10 @@ class CampaignTestBase(unittest.TestCase):
 
         # Test that variables used in the template are populated.
         template_id = str(all_sent_messages[0].properties['TemplateID'])
-        self.assertIn(
-            template_id, self.all_templates,
-            msg=f'No template ID for campaign "{self.campaign_id}"')
-        # TODO(pascal): Consider renaming templates so that they have the same name as campaigns.
-        template_name = self.all_templates[template_id]
-        with open(path.join(_TEMPLATE_PATH, template_name, 'vars.txt'), 'r') as vars_file:
+        template_path = campaign.get_template_folder(template_id)
+        self.assertTrue(template_path, msg=f'No template for campaign "{self.campaign_id}"')
+        assert template_path
+        with open(os_path.join(template_path, 'vars.txt'), 'r') as vars_file:
             template_vars = {v.strip() for v in vars_file}
         for template_var in template_vars:
             self.assertIn(
@@ -214,11 +203,17 @@ class CampaignTestBase(unittest.TestCase):
             **kwargs)
 
     def _assert_has_status_update_link(self, field: str = 'statusUpdateLink') -> None:
-        # TODO(pascal): Use _assert_url_field.
-        base_url = re.escape(
-            f'https://www.bob-emploi.fr/statut/mise-a-jour?user={self.user.user_id}')
-        gender = user_pb2.Gender.Name(self.user.profile.gender)
-        self._assert_regex_field(field, fr'^{base_url}&token=\d+\.[a-f0-9]+&gender={gender}$')
+        self._assert_url_field(
+            field, 'https://www.bob-emploi.fr/statut/mise-a-jour',
+            user=self.user.user_id,
+            token=re.compile(r'\d+\.[a-f0-9]+'),
+            gender=user_pb2.Gender.Name(self.user.profile.gender))
+
+    def _assert_has_logged_url(self, field: str = 'loginUrl', path: str = '') -> None:
+        self._assert_url_field(
+            field, f'https://www.bob-emploi.fr{path}',
+            userId=self.user.user_id,
+            authToken=re.compile(r'\d+\.[a-f0-9]+$'))
 
     def _assert_remaining_variables(self, variables: Dict[str, Any]) -> None:
         self.assertEqual(variables, self._variables)

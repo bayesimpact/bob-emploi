@@ -31,7 +31,11 @@ class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
         """List all job boards for this project."""
 
         all_job_boards = self._db.get_collection(project.database)
-        return list(scoring_base.filter_using_score(all_job_boards, lambda j: j.filters, project))
+        filtered_job_boards = list(
+            scoring_base.filter_using_score(all_job_boards, lambda j: j.filters, project))
+        for job_board in filtered_job_boards:
+            job_board.link = project.populate_template(job_board.link)
+        return filtered_job_boards
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
             -> jobboard_pb2.JobBoards:

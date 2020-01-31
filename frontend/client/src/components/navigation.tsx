@@ -1,3 +1,4 @@
+import {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
 import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
@@ -5,27 +6,26 @@ import CloseIcon from 'mdi-react/CloseIcon'
 import MenuIcon from 'mdi-react/MenuIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
+import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {useLocation} from 'react-router'
 import {Link} from 'react-router-dom'
 
 import {DispatchAllActions, RootState, logoutAction, modifyProject, noOp} from 'store/actions'
-import {YouChooser} from 'store/french'
 import {onboardingComplete} from 'store/main_selectors'
-import {youForUser} from 'store/user'
 
 import bellImage from 'images/bell.svg'
 import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
-import logoProductBetaImage from 'images/logo-bob-beta.svg'
 
 import {DebugModal} from 'components/debug'
 import {FastForward} from 'components/fast_forward'
+import {Trans} from 'components/i18n'
 import {HelpDeskLink} from 'components/help'
 import {LoginLink} from 'components/login'
 import {AccountDeletionModal} from 'components/logout'
 import {isMobileVersion} from 'components/mobile'
-import {Modal, ModalConfig} from 'components/modal'
-import {RadiumDiv, SmartLink, SmartLinkProps} from 'components/radium'
+import {Modal, ModalConfig, useModal} from 'components/modal'
+import {RadiumDiv, SmartLink} from 'components/radium'
 import {ShortKey} from 'components/shortkey'
 import {Button, ExternalLink, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, OutsideClickHandler,
   SmoothTransitions, UpDownIcon} from 'components/theme'
@@ -47,12 +47,14 @@ interface Notification {
 }
 
 // TODO(cyrille): Maybe drop this altogether.
-const getPeNotifs = _memoize((userYou): readonly Notification[] => [
+const getPeNotifs = _memoize((t: TFunction): readonly Notification[] => [
   {
     href: 'https://projects.invisionapp.com/boards/SK39VCS276T8J/',
-    subtitle: `Trouve${userYou('', 'z')} ici nos resources` +
-      `pour présenter ${config.productName}`,
-    title: `${userYou('Tu es', 'Vous êtes')} conseiller Pôle emploi ?`,
+    subtitle: t(
+      'Trouvez ici nos ressources pour présenter {{productName}}',
+      {productName: config.productName},
+    ),
+    title: t('Vous êtes conseiller Pôle emploi\u00A0?'),
   },
 ])
 
@@ -82,12 +84,12 @@ const iconStyle = {
   ':hover': {
     opacity: 1,
   },
-  cursor: 'pointer',
-  opacity: .6,
-  outline: 'none',
-  padding: 15,
-  width: 45,
-  zIndex: 1,
+  'cursor': 'pointer',
+  'opacity': .6,
+  'outline': 'none',
+  'padding': 15,
+  'width': 45,
+  'zIndex': 1,
   ...SmoothTransitions,
 }
 
@@ -187,59 +189,33 @@ const navLinkStyle: React.CSSProperties = {
 }
 
 
-interface LinkProps {
-  children?: React.ReactNode
-  href?: string
+type LinkProps = GetProps<typeof SmartLink> & {
   isOnTransparentBar?: boolean
   isSelected?: boolean
-  onClick?: () => void
-  selectionStyle?: 'bottom' | 'top'
-  style?: React.CSSProperties
-  to?: string
 }
 
-
-const selectMarkStyle: React.CSSProperties = {
-  backgroundColor: colors.RED_PINK,
-  borderRadius: '3px 3px 0 0',
-  bottom: 0,
-  height: 4,
-  left: '35%',
-  position: 'absolute',
-  width: '30%',
-}
-
-const selectMarkOnTopStyle: React.CSSProperties = {
-  ...selectMarkStyle,
-  borderRadius: '0 0 3px 3px',
-  bottom: 'initial',
-  top: 0,
-}
 
 const NavigationLinkBase: React.FC<LinkProps> = (props: LinkProps): React.ReactElement => {
-  const {children, isOnTransparentBar, isSelected, selectionStyle, style, ...extraProps} = props
-  const markStyle = selectionStyle === 'top' ? selectMarkOnTopStyle : selectMarkStyle
+  const {children, isOnTransparentBar, isSelected, style, ...extraProps} = props
   const containerStyle: RadiumCSSProperties = useMemo((): RadiumCSSProperties => ({
     ':focus': isOnTransparentBar ? lightBlueTextStyle : whiteTextStyle,
     ':hover': isOnTransparentBar ? lightBlueTextStyle : whiteTextStyle,
     ...navLinkStyle,
     ...(!isOnTransparentBar !== !isSelected) && whiteTextStyle,
-    cursor: 'pointer',
-    position: 'relative',
-    textDecoration: 'none',
+    'cursor': 'pointer',
+    'position': 'relative',
+    'textDecoration': 'none',
     ...SmoothTransitions,
     ...style,
   }), [isOnTransparentBar, isSelected, style])
   return <SmartLink style={containerStyle} {...extraProps}>
     {children}
-    {(isSelected && selectionStyle) ? <div style={markStyle} /> : null}
   </SmartLink>
 }
 NavigationLinkBase.propTypes = {
   children: PropTypes.node,
   isOnTransparentBar: PropTypes.bool,
   isSelected: PropTypes.bool,
-  selectionStyle: PropTypes.oneOf(['bottom', 'top']),
   style: PropTypes.object,
   to: PropTypes.string,
 }
@@ -261,18 +237,18 @@ const menuLinkHoverStyle = {
   backgroundColor: colors.BOB_BLUE,
   color: '#fff',
 }
-const MenuLinkBase: React.FC<SmartLinkProps> =
-({style, ...extraProps}: SmartLinkProps): React.ReactElement => {
+const MenuLinkBase: React.FC<GetProps<typeof SmartLink>> =
+({style, ...extraProps}: GetProps<typeof SmartLink>): React.ReactElement => {
   const containerStyle = useMemo(() => ({
     ...menuLinkStyle,
     ...style,
     ':focus': {
       ...menuLinkHoverStyle,
-      ...style ? style['hover'] : {},
+      ...style ? style[':hover'] : {},
     },
     ':hover': {
       ...menuLinkHoverStyle,
-      ...style ? style['hover'] : {},
+      ...style ? style[':hover'] : {},
     },
   }), [style])
   return <SmartLink {...extraProps} style={containerStyle} />
@@ -293,11 +269,9 @@ interface NavBarConnectedProps {
   isOnboardingComplete: boolean
   project?: bayes.bob.Project
   userName?: string
-  userYou: YouChooser
 }
 
 interface NavBarProps extends NavBarConnectedProps {
-  areNavLinksShown: boolean
   children?: string | React.ReactElement<{style?: React.CSSProperties}>
   dispatch: DispatchAllActions
   isLogoShown?: boolean
@@ -477,6 +451,7 @@ const MobileNavigationBarBase: React.FC<NavBarProps> = (props): React.ReactEleme
     ...menuIconStyle,
     ...isMenuShown && {opacity: 0.5},
   }), [isMenuShown])
+  const {t} = useTranslation()
   const linkStyle = (otherPage: string): React.CSSProperties =>
     otherPage === page ? currentPageLinkStyle : otherPageLinkStyle
   const isProjectModifiable = project && project.projectId && !project.isIncomplete
@@ -500,42 +475,33 @@ const MobileNavigationBarBase: React.FC<NavBarProps> = (props): React.ReactEleme
             />
             {isLoggedIn ? <React.Fragment>
               {isGuest ? <LoginLink visualElement="menu" style={linkStyle('login')} isSignUp={true}>
-                Créer mon compte
+                {t('Créer mon compte')}
               </LoginLink> : null}
               {isProjectModifiable ? <a
                 style={otherPageLinkStyle}
                 onClick={openModifyProjectModal}>
-                Modifier mon projet
+                {t('Modifier mon projet')}
               </a> : null}
               <Link
                 to={Routes.PROFILE_PAGE}
                 style={linkStyle('profile')}>
-                Mes informations
+                {t('Mes informations')}
               </Link>
               <HelpDeskLink style={otherPageLinkStyle}>Nous contacter</HelpDeskLink>
               {isGuest ? <SmartLink
                 style={otherPageLinkStyle}
                 onClick={deleteGuest}>
-                Supprimer mes informations
+                {t('Supprimer mes informations')}
               </SmartLink> :
                 <Link to={Routes.ROOT} style={otherPageLinkStyle} onClick={logOut}>
-                  Déconnexion
+                  {t('Déconnexion')}
                 </Link>}
             </React.Fragment> : <React.Fragment>
               <Link to={Routes.ROOT} style={linkStyle('landing')}>
-                Accueil
-              </Link>
-              <Link to={Routes.VISION_PAGE} style={linkStyle('vision')}>
-                Notre mission
-              </Link>
-              <Link to={Routes.TEAM_PAGE} style={linkStyle('equipe')}>
-                Qui est {config.productName}&nbsp;?
-              </Link>
-              <Link to={Routes.TRANSPARENCY_PAGE} style={linkStyle('transparency')}>
-                Où en sommes-nous&nbsp;?
+                {t('Accueil')}
               </Link>
               <LoginLink style={linkStyle('login')} visualElement="menu">
-                Se connecter
+                {t('Se connecter')}
               </LoginLink>
             </React.Fragment>}
           </div>
@@ -575,10 +541,9 @@ MobileNavigationBarBase.propTypes = {
   }),
 }
 
-const logo = <img src={logoProductBetaImage} style={{height: 30}} alt={config.productName} />
+const logo = <img src={logoProductWhiteImage} style={{height: 25}} alt={config.productName} />
 
-type AnonymousNavBarProps =
-  Pick<NavBarProps, 'areNavLinksShown' | 'isLogoShown' | 'isTransparent' | 'page' | 'style'>
+type AnonymousNavBarProps = Pick<NavBarProps, 'isLogoShown' | 'isTransparent' | 'style'>
 
 const reducedNavBarStyle: React.CSSProperties = {
   alignItems: 'center',
@@ -609,42 +574,25 @@ const connectContainerStyle: React.CSSProperties = {
 }
 
 const AnonymousNavigationBarBase: React.FC<AnonymousNavBarProps> = (props): React.ReactElement => {
-  const {areNavLinksShown, isLogoShown, isTransparent, page, style} = props
+  const {isLogoShown, isTransparent, style} = props
   const reducedContainerStyle = useMemo((): React.CSSProperties => ({
     ...style,
     display: 'block',
     padding: `0 ${MIN_CONTENT_PADDING}px`,
   }), [style])
+  const {t} = useTranslation()
   return <nav style={reducedContainerStyle}>
     <div style={reducedNavBarStyle}>
       <div style={logoContainerStyle}>
         <Link to={Routes.ROOT}>{isLogoShown ? logo : null}</Link>
       </div>
 
-      {areNavLinksShown ? <React.Fragment>
-        <NavigationLink
-          to={Routes.VISION_PAGE} isSelected={page === 'vision'} selectionStyle="top"
-          isOnTransparentBar={isTransparent}>
-          Notre mission
-        </NavigationLink>
-        <NavigationLink
-          to={Routes.TEAM_PAGE} isSelected={page === 'equipe'} selectionStyle="top"
-          isOnTransparentBar={isTransparent}>
-          Qui est {config.productName}&nbsp;?
-        </NavigationLink>
-        <NavigationLink
-          to={Routes.TRANSPARENCY_PAGE} isSelected={page === 'transparency'}
-          selectionStyle="top" isOnTransparentBar={isTransparent}>
-          Où en sommes-nous&nbsp;?
-        </NavigationLink>
-      </React.Fragment> : null}
-
       <LoginLink visualElement="navbar">
         <div style={connectContainerStyle}>
           <NavigationLink
             isOnTransparentBar={isTransparent}
             style={{padding: '20px 0 21px 25px'}}>
-            Se connecter
+            {t('Se connecter')}
           </NavigationLink>
         </div>
       </LoginLink>
@@ -652,10 +600,8 @@ const AnonymousNavigationBarBase: React.FC<AnonymousNavBarProps> = (props): Reac
   </nav>
 }
 AnonymousNavigationBarBase.propTypes = {
-  areNavLinksShown: PropTypes.bool.isRequired,
   isLogoShown: PropTypes.bool,
   isTransparent: PropTypes.bool,
-  page: PropTypes.string,
   style: PropTypes.object,
 }
 const AnonymousNavigationBar = React.memo(AnonymousNavigationBarBase)
@@ -711,8 +657,8 @@ const onboardingLeftSpaceStyle = {
 }
 
 const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => {
-  const {areNavLinksShown, children, dispatch, featuresEnabled, isGuest, isLoggedIn, isLogoShown,
-    isOnboardingComplete, isTransparent, page, project, style, userName, userYou} = props
+  const {children, dispatch, featuresEnabled, isGuest, isLoggedIn, isLogoShown,
+    isOnboardingComplete, isTransparent, page, project, style, userName} = props
   const {closeMenu,
     deleteGuest,
     hideModifyProjectModal,
@@ -743,17 +689,17 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
     ':hover': {
       backgroundColor: isMenuShown ? '#fff' : colors.NICE_BLUE,
     },
-    alignItems: 'center',
-    backgroundColor: isMenuShown ? '#fff' : 'initial',
-    bottom: 0,
-    color: isMenuShown ? colors.DARK_TWO : '#fff',
-    display: 'flex',
-    justifyContent: 'center',
-    left: 0,
-    padding: 25,
-    position: 'absolute',
-    right: 0,
-    top: 0,
+    'alignItems': 'center',
+    'backgroundColor': isMenuShown ? '#fff' : 'initial',
+    'bottom': 0,
+    'color': isMenuShown ? colors.DARK_TWO : '#fff',
+    'display': 'flex',
+    'justifyContent': 'center',
+    'left': 0,
+    'padding': 25,
+    'position': 'absolute',
+    'right': 0,
+    'top': 0,
     ...SmoothTransitions,
   }), [isMenuShown])
   const dropDownStyle = useMemo((): React.CSSProperties => ({
@@ -774,9 +720,9 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
     transition: 'height 100ms',
     zIndex: 2,
   }), [dropDownButtonStyle.backgroundColor, isMenuShown])
+  const {t} = useTranslation()
   if (!isLoggedIn) {
-    return <AnonymousNavigationBar
-      style={containerStyle} {...{areNavLinksShown, isLogoShown, isTransparent, page}} />
+    return <AnonymousNavigationBar style={containerStyle} {...{isLogoShown, isTransparent}} />
   }
   const isDuringOnboarding =
     (page === 'profile' || page === 'new_project') && !isOnboardingComplete
@@ -804,7 +750,7 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
 
     <Notifications
       page={page}
-      notifications={featuresEnabled.poleEmploi ? getPeNotifs(userYou) : emptyArray} />
+      notifications={featuresEnabled.poleEmploi ? getPeNotifs(t) : emptyArray} />
 
     <OutsideClickHandler
       onOutsideClick={isMenuShown ? closeMenu : noOp} style={menuStyle}
@@ -820,27 +766,27 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
           {isGuest ?
             <LoginLink visualElement="menu" isSignUp={true} style={{textDecoration: 'none'}}>
               <MenuLink style={{fontWeight: 'bold'}}>
-                Créer mon compte
+                {t('Créer mon compte')}
               </MenuLink>
             </LoginLink> : null}
-          <MenuLink to={Routes.PROFILE_PAGE}>Mes informations</MenuLink>
+          <MenuLink to={Routes.PROFILE_PAGE}>{t('Mes informations')}</MenuLink>
           {isProjectModifiable ?
             <MenuLink onClick={openModifyProjectModal}>
-              Modifier mon projet
+              {t('Modifier mon projet')}
             </MenuLink> : null}
           <MenuLink to={Routes.CONTRIBUTION_PAGE}>Contribuer</MenuLink>
           <HelpDeskLink href="https://aide.bob-emploi.fr/hc/fr">
-            <MenuLink>Aide</MenuLink>
+            <MenuLink>{t('Aide')}</MenuLink>
           </HelpDeskLink>
-          <HelpDeskLink><MenuLink>Nous contacter</MenuLink></HelpDeskLink>
+          <HelpDeskLink><MenuLink>{t('Nous contacter')}</MenuLink></HelpDeskLink>
           {isGuest ? <MenuLink
             onClick={deleteGuest}
-            style={{':hover': {color: '#fff'}, color: colors.COOL_GREY}}>
-            Supprimer mes informations
+            style={{':hover': {color: '#fff'}, 'color': colors.COOL_GREY}}>
+            {t('Supprimer mes informations')}
           </MenuLink> : <MenuLink
             onClick={logOut} to={Routes.ROOT}
-            style={{':hover': {color: '#fff'}, color: colors.COOL_GREY}}>
-            Déconnexion
+            style={{':hover': {color: '#fff'}, 'color': colors.COOL_GREY}}>
+            {t('Déconnexion')}
           </MenuLink>}
         </div>
       </div>
@@ -848,7 +794,6 @@ const NavigationBarBase: React.FC<NavBarProps> = (props): React.ReactElement => 
   </nav>
 }
 NavigationBarBase.propTypes = {
-  areNavLinksShown: PropTypes.bool.isRequired,
   // Allow only one child: it will be part of a flex flow so it can use
   // alignSelf to change its own layout.
   children: PropTypes.oneOfType([
@@ -871,7 +816,6 @@ NavigationBarBase.propTypes = {
   }),
   style: PropTypes.object,
   userName: PropTypes.string,
-  userYou: PropTypes.func.isRequired,
 }
 const NavigationBar = connect(({user}: RootState): NavBarConnectedProps => ({
   featuresEnabled: user.featuresEnabled || {},
@@ -880,17 +824,15 @@ const NavigationBar = connect(({user}: RootState): NavBarConnectedProps => ({
   isOnboardingComplete: onboardingComplete(user),
   project: user.projects && user.projects[0],
   userName: user.profile && user.profile.name,
-  userYou: youForUser(user),
 }))(React.memo(isMobileVersion ? MobileNavigationBarBase : NavigationBarBase))
 
 
 // Hook that listens to location changes (from React Router) and
 // updates the HTML title and meta description.
-const useTitleUpdate = (): void => {
+const useTitleUpdate = (basename = ''): void => {
   const {pathname} = useLocation()
   useEffect(() => {
-    const {description, title} = getPageDescription(pathname.slice(1))
-
+    const {description, title} = getPageDescription((basename + pathname).slice(1))
     // Update the title.
     for (const titleElement of document.getElementsByTagName('title')) {
       titleElement.textContent = title
@@ -902,19 +844,25 @@ const useTitleUpdate = (): void => {
         metaElement.setAttribute('content', description || '')
       }
     }
-  }, [pathname])
+  }, [basename, pathname])
 }
 
 
 const ConnectedZendeskChatButton =
   connect(
-    ({user: {profile}}: RootState): {user?: bayes.bob.UserProfile} => ({user: profile})
+    ({user: {profile}}: RootState): {user?: bayes.bob.UserProfile} => ({user: profile}),
   )(ZendeskChatButton)
 
 
 
+interface ScrollOptions {
+  behavior?: 'smooth'
+  top: number
+}
+
+
 export interface Scrollable {
-  scroll: (options) => void
+  scroll: (options: ScrollOptions) => void
   scrollDelta: (delta: number) => void
   scrollTo: (top: number) => void
 }
@@ -927,7 +875,6 @@ interface ContentProps {
 }
 
 export interface PageWithNavigationBarProps extends ContentProps {
-  areNavLinksShown?: boolean
   isChatButtonShown?: boolean
   isCookieDisclaimerShown?: boolean
   isLogoShown?: boolean
@@ -959,7 +906,7 @@ React.CSSProperties => isContentScrollable ? {
 }
 
 const PageContentBase: React.RefForwardingComponent<Scrollable, ContentProps> =
-(props: ContentProps, ref: React.RefObject<Scrollable>): React.ReactElement => {
+(props: ContentProps, ref: React.Ref<Scrollable>): React.ReactElement => {
   const {children, isContentScrollable, onScroll, style, ...extraProps} = props
   const scrollableDom =
     useRef<HTMLDivElement|HTMLBodyElement>(window.document.body as HTMLBodyElement)
@@ -973,7 +920,7 @@ const PageContentBase: React.RefForwardingComponent<Scrollable, ContentProps> =
       }
     }
   }, [isContentScrollable, onScroll])
-  const scroll = useCallback((options): void => {
+  const scroll = useCallback((options: ScrollOptions): void => {
     if (scrollableDom.current) {
       scrollableDom.current.scroll(options)
     }
@@ -1037,21 +984,19 @@ const navBarStyle = {flexShrink: 0}
 
 const PageWithNavigationBarBase:
 React.RefForwardingComponent<Scrollable, PageWithNavigationBarProps> =
-(props: PageWithNavigationBarProps, ref: React.RefObject<Scrollable>): React.ReactElement => {
-  const {areNavLinksShown, isChatButtonShown, isContentScrollable,
+(props: PageWithNavigationBarProps, ref: React.Ref<Scrollable>): React.ReactElement => {
+  const {isChatButtonShown, isContentScrollable,
     isCookieDisclaimerShown, isLogoShown, isNavBarTransparent, navBarContent, onBackClick,
     page, ...extraProps} = props
   useTitleUpdate()
-  const [isDebugModalShown, setIsDebugModalShown] = useState(false)
-  const showDebugModal = useCallback(() => setIsDebugModalShown(true), [])
-  const hideDebugModal = useCallback(() => setIsDebugModalShown(false), [])
+  const [isDebugModalShown, showDebugModal, hideDebugModal] = useModal()
   return <div style={isContentScrollable ? contentScrollablePageStyle : pageStyle}>
     {isCookieDisclaimerShown ? <CookieMessage style={{flexShrink: 0}} /> : null}
     <BetaMessage style={{flexShrink: 0}} />
     <div style={pageWrapperStyle}>
       <NavigationBar
         page={page} onBackClick={onBackClick} isTransparent={isNavBarTransparent}
-        isLogoShown={isLogoShown} style={navBarStyle} areNavLinksShown={!!areNavLinksShown}>
+        isLogoShown={isLogoShown} style={navBarStyle}>
         {navBarContent}
       </NavigationBar>
       <ConnectedZendeskChatButton
@@ -1071,7 +1016,6 @@ React.RefForwardingComponent<Scrollable, PageWithNavigationBarProps> =
 }
 const PageWithNavigationBar = React.forwardRef(PageWithNavigationBarBase)
 PageWithNavigationBar.propTypes = {
-  areNavLinksShown: PropTypes.bool,
   children: PropTypes.node,
   isChatButtonShown: PropTypes.bool,
   isContentScrollable: PropTypes.bool,
@@ -1088,74 +1032,73 @@ PageWithNavigationBar.propTypes = {
   style: PropTypes.object,
 }
 PageWithNavigationBar.defaultProps = {
-  areNavLinksShown: true,
   isCookieDisclaimerShown: true,
   isLogoShown: true,
 }
 
 
-interface ModifyProjectModalProps extends Omit<ModalConfig, 'children'> {
+interface ModifyProjectModalProps extends Omit<ModalConfig, 'children'>, WithTranslation {
   dispatch: DispatchAllActions
   project: bayes.bob.Project
 }
 
 
-class ModifyProjectModalBase extends React.PureComponent<ModifyProjectModalProps> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    onClose: PropTypes.func.isRequired,
-    project: PropTypes.shape({
-      projectId: PropTypes.string.isRequired,
-    }),
-  }
-
-  private handleConfirm = (): void => {
-    const {dispatch, project} = this.props
-    dispatch(modifyProject(project))
-  }
-
-  public render(): React.ReactNode {
-    const {dispatch: omittedDispatch, onClose, project: omittedProject, ...extraProps} = this.props
-    const modalStyle: React.CSSProperties = {
-      margin: isMobileVersion ? '0 20px' : 0,
-      paddingBottom: isMobileVersion ? 30 : 40,
-    }
-    const noticeStyle: React.CSSProperties = {
-      margin: isMobileVersion ? '35px 20px 40px' : '35px 50px 40px',
-      maxWidth: 400,
-    }
-    const buttonsContainerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      justifyContent: 'center',
-    }
-    const buttonStyle: React.CSSProperties = {
-      width: 140,
-    }
-    const topBottomStyle: React.CSSProperties = {
-      ...buttonStyle,
-      marginBottom: isMobileVersion ? 10 : 0,
-      marginRight: isMobileVersion ? 0 : 15,
-    }
-    return <Modal
-      style={modalStyle} title="Modifier mes informations" onClose={onClose} {...extraProps}>
-      <FastForward onForward={this.handleConfirm} />
-      <div style={noticeStyle}>
-        En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.
-      </div>
-      <div style={buttonsContainerStyle}>
-        <Button type="back" onClick={onClose} isRound={true} style={topBottomStyle}>
-          Annuler
-        </Button>
-        <Button onClick={this.handleConfirm} isRound={true} style={buttonStyle}>
-          Continuer
-        </Button>
-      </div>
-    </Modal>
-  }
+const modalStyle: React.CSSProperties = {
+  margin: isMobileVersion ? '0 20px' : 0,
+  paddingBottom: isMobileVersion ? 30 : 40,
 }
-const ModifyProjectModal = connect()(ModifyProjectModalBase)
+const noticeStyle: React.CSSProperties = {
+  margin: isMobileVersion ? '35px 20px 40px' : '35px 50px 40px',
+  maxWidth: 400,
+}
+const buttonsContainerStyle: React.CSSProperties = {
+  alignItems: 'center',
+  display: 'flex',
+  flexDirection: isMobileVersion ? 'column' : 'row',
+  justifyContent: 'center',
+}
+const buttonStyle: React.CSSProperties = {
+  width: 140,
+}
+const topBottomStyle: React.CSSProperties = {
+  ...buttonStyle,
+  marginBottom: isMobileVersion ? 10 : 0,
+  marginRight: isMobileVersion ? 0 : 15,
+}
 
 
-export {ModifyProjectModal, PageWithNavigationBar}
+const ModifyProjectModalBase = (props: ModifyProjectModalProps): React.ReactElement => {
+  const {dispatch, onClose, project, t, ...extraProps} = props
+
+  const handleConfirm = useCallback((): void => {
+    dispatch(modifyProject(project))
+  }, [dispatch, project])
+
+  return <Modal
+    style={modalStyle} title={t('Modifier mes informations')} onClose={onClose} {...extraProps}>
+    <FastForward onForward={handleConfirm} />
+    <Trans style={noticeStyle}>
+      En modifiant votre projet vous perdrez certains éléments de votre diagnostic actuel.
+    </Trans>
+    <Trans style={buttonsContainerStyle}>
+      <Button type="back" onClick={onClose} isRound={true} style={topBottomStyle}>
+        Annuler
+      </Button>
+      <Button onClick={handleConfirm} isRound={true} style={buttonStyle}>
+        Continuer
+      </Button>
+    </Trans>
+  </Modal>
+}
+ModifyProjectModalBase.propTypes = {
+  dispatch: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  project: PropTypes.shape({
+    projectId: PropTypes.string.isRequired,
+  }),
+  t: PropTypes.func.isRequired,
+}
+const ModifyProjectModal = withTranslation()(connect()(React.memo(ModifyProjectModalBase)))
+
+
+export {ModifyProjectModal, PageWithNavigationBar, useTitleUpdate}

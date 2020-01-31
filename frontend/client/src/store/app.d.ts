@@ -3,23 +3,26 @@ interface InitialFeatures {
 }
 
 
+type ValidDiagnosticComment = bayes.bob.DiagnosticComment & {field: bayes.bob.ProjectOrProfileField}
+
+
 interface AppState {
   adviceData: {[adviceId: string]: {[projectId: string]: {}}}
   adviceTips?: {[adviceId: string]: {[projectId: string]: readonly {actionId: string}[]}}
   applicationModes?: {[romeId: string]: {[fap: string]: bayes.bob.RecruitingModesDistribution}}
   authToken?: string
   defaultProjectProps?: {}
-  demo?: string
+  demo?: keyof bayes.bob.Features
   hasLoadedApp?: boolean
+  hasSeenComment?: {
+    [commentKey: string]: true
+  }
   hasSeenShareModal?: boolean
   hasTokenExpired?: boolean
   initialFeatures?: InitialFeatures
   initialUtm?: {}
   isMobileVersion?: boolean
-  jobRequirements?: {[codeOgr: string]: {
-    diplomas: readonly string[]
-    drivingLicenses: readonly string[]
-  }}
+  jobRequirements?: {[codeOgr: string]: bayes.bob.JobRequirements}
   laborStats?: {[projectId: string]: bayes.bob.LaborStatsData}
   lastAccessAt?: string
   loginModal?: {
@@ -31,10 +34,16 @@ interface AppState {
   }
   newProjectProps?: {}
   quickDiagnostic?: {
-    after: {}
-    before: {}
+    after: {
+      [field in bayes.bob.ProjectOrProfileField]?: ValidDiagnosticComment
+    }
+    before: {
+      [field in bayes.bob.ProjectOrProfileField]?: ValidDiagnosticComment
+    }
   }
-  specificJobs?: {}
+  specificJobs?: {
+    [romeId: string]: bayes.bob.JobGroup
+  }
   submetricsExpansion?: {}
   userHasAcceptedCookiesUsage?: boolean
 }
@@ -42,5 +51,7 @@ interface AppState {
 interface AsyncState<AllActions extends {type: string}> {
   authMethod?: string
   errorMessage?: string
+  // TODO(pascal): Restrict to asynchronous action types.
   isFetching: {[actionType in AllActions['type']]?: boolean}
+  pendingFetch: {[key: string]: Promise<{}>}
 }

@@ -1,10 +1,10 @@
 import {expect} from 'chai'
 // @ts-ignore
 import {FamilySituation, Frustration, UserOrigin} from 'api/user'
-import {getUserFrustrationTags, getFamilySituationOptions, increaseRevision,
+import {getUserFrustrationTags, FAMILY_SITUATION_OPTIONS, increaseRevision,
   getHighestDegreeDescription, ORIGIN_OPTIONS, keepMostRecentRevision,
   isEmailTemplatePersonalized, projectMatchAllFilters, filterPredicatesMatch,
-  personalizationsPredicates, youForUser, getJobSearchLengthMonths} from 'store/user'
+  personalizationsPredicates, youForUser, getJobSearchLengthMonths, getUserLocale} from 'store/user'
 import emailTemplates from 'components/advisor/data/email_templates.json'
 
 
@@ -53,18 +53,18 @@ describe('email personalization', (): void => {
   })
 
   it('should return true for adequate network', (): void => {
-    const profile = {}
+    const profile = {} as const
     const project = {networkEstimate: 3}
-    const personalizations = ['NETWORK_SCORE_3']
+    const personalizations = ['NETWORK_SCORE_3'] as const
     const result = isEmailTemplatePersonalized(personalizations, profile, project)
     expect(result).to.be.true
   })
 
   it('should return false for the same job personalization if the user has not done it',
     (): void => {
-      const profile = {}
+      const profile = {} as const
       const project = {previousJobSimilarity: 'NEVER_DONE'} as const
-      const personalizations = ['SAME_JOB']
+      const personalizations = ['SAME_JOB'] as const
       const result = isEmailTemplatePersonalized(personalizations, profile, project)
       expect(result).to.be.false
     })
@@ -73,7 +73,7 @@ describe('email personalization', (): void => {
 
 describe('projectMatchAllFilters', (): void => {
   it('should match if there are no filters', (): void => {
-    const filters = []
+    const filters = [] as const
     const project = {seniority: 'UNKNOWN'} as const
     // @ts-ignore We want to force the type to see what happens with an unknown value.
     const result = projectMatchAllFilters(project, filters)
@@ -81,28 +81,28 @@ describe('projectMatchAllFilters', (): void => {
   })
 
   it('should not match for juniors with for-experienced(2)', (): void => {
-    const filters = ['for-experienced(2)']
+    const filters = ['for-experienced(2)'] as const
     const project = {seniority: 'JUNIOR'} as const
     const result = projectMatchAllFilters(project, filters)
     expect(result).to.be.false
   })
 
   it('should match intermediary with for-experienced(2)', (): void => {
-    const filters = ['for-experienced(2)']
+    const filters = ['for-experienced(2)'] as const
     const project = {seniority: 'INTERMEDIARY'} as const
     const result = projectMatchAllFilters(project, filters)
     expect(result).to.be.true
   })
 
   it('should not match intermediary with for-experienced(6)', (): void => {
-    const filters = ['for-experienced(6)']
+    const filters = ['for-experienced(6)'] as const
     const project = {seniority: 'INTERMEDIARY'} as const
     const result = projectMatchAllFilters(project, filters)
     expect(result).to.be.false
   })
 
   it('should match intermediary with for-experienced(6)', (): void => {
-    const filters = ['for-experienced(6)']
+    const filters = ['for-experienced(6)'] as const
     const project = {seniority: 'SENIOR'} as const
     const result = projectMatchAllFilters(project, filters)
     expect(result).to.be.true
@@ -129,11 +129,10 @@ describe('getHighestDegreeDescription', (): void => {
 })
 
 
-describe('getFamilySituationOptions', (): void => {
-  const familySituations = getFamilySituationOptions()
+describe('FAMILY_SITUATION_OPTIONS', (): void => {
+  const familySituations = FAMILY_SITUATION_OPTIONS
   familySituations.forEach((situation): void => {
     it(`"${situation.name}" should have correct values`, (): void => {
-      expect(situation).to.contain.all.keys('name', 'value')
       const {name, value} = situation
       expect(name).to.be.ok
       expect(value).to.be.ok
@@ -218,7 +217,7 @@ describe('Network email templates filters', (): void => {
   })
 
   it('should use all the filters defined by filterPredicatesMatch', (): void => {
-    const usedFilters = {}
+    const usedFilters: {[filter: string]: true} = {}
     emailTemplates.network.forEach(({filters}): void => {
       if (filters) {
         filters.forEach((filter): void => {
@@ -250,7 +249,7 @@ describe('Network email templates personalizations', (): void => {
   })
 
   it('should use all the personalizations defined by personalizationsPredicates', (): void => {
-    const usedPersonalizations = {}
+    const usedPersonalizations: {[personalization: string]: true} = {}
     emailTemplates.network.forEach(({personalizations}): void => {
       if (personalizations) {
         personalizations.forEach((personalization): void => {
@@ -297,5 +296,23 @@ describe('getJobSearchLengthMonths', (): void => {
     expect(getJobSearchLengthMonths(project)).to.equal(4)
     // Put back the date.
     global.Date.now = realDateNow
+  })
+})
+
+
+describe('getUserLocale', (): void => {
+  it('should return "fr" by defaut', (): void => {
+    const locale = getUserLocale()
+    expect(locale).to.equal('fr')
+  })
+
+  it('should return "fr@tu" for tutoiement', (): void => {
+    const locale = getUserLocale({canTutoie: true})
+    expect(locale).to.equal('fr@tu')
+  })
+
+  it("should return the user's locale", (): void => {
+    const locale = getUserLocale({locale: 'en'})
+    expect(locale).to.equal('en')
   })
 })

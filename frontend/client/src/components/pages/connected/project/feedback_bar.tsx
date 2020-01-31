@@ -1,23 +1,22 @@
+import {TFunction, TOptions} from 'i18next'
 import _max from 'lodash/max'
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useImperativeHandle, useMemo, useState} from 'react'
+import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import {RouteComponentProps, withRouter} from 'react-router'
-import {Redirect, Route, Switch} from 'react-router-dom'
+import {Redirect, Route, Switch, useHistory} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, sendProjectFeedback} from 'store/actions'
 import {getAdviceShortTitle, isValidAdvice} from 'store/advice'
-import {YouChooser} from 'store/french'
-import {youForUser} from 'store/user'
+import {prepareT} from 'store/i18n'
 
 import starIcon from 'images/star.svg'
 import whiteStarIcon from 'images/star-white.svg'
-// eslint-disable-next-line import/no-duplicates
 import starOutlineIcon from 'images/star-outline.svg'
-// eslint-disable-next-line import/no-duplicates
 import greyStarOutlineIcon from 'images/star-outline.svg?stroke=#9596a0'
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {Modal} from 'components/modal'
 import {ShareModal} from 'components/share'
@@ -26,12 +25,12 @@ import {FEEDBACK_TAB} from 'components/url'
 import {CheckboxList} from 'components/pages/connected/form_utils'
 
 const feedbackTitle = {
-  '1': 'Vraiment inutile',
-  '2': 'Peu intéressant',
-  '3': 'Intéressant',
-  '4': 'Pertinent',
-  '5': 'Très pertinent',
-}
+  1: prepareT('Vraiment inutile'),
+  2: prepareT('Peu intéressant'),
+  3: prepareT('Intéressant'),
+  4: prepareT('Pertinent'),
+  5: prepareT('Très pertinent'),
+} as const
 
 
 // Add a delay after a given date.
@@ -46,7 +45,7 @@ const addDuration = (time: string, delayMillisec: number): Date | undefined => {
 // Get the date and time at which to show the request feedback.
 const getRequestFeedbackShowDate = (
   {app: {submetricsExpansion = {}}, user: {featuresEnabled: {stratTwo} = {}}}: RootState,
-  {advices, diagnosticShownAt, feedback, openedStrategies = [], strategies}: bayes.bob.Project
+  {advices, diagnosticShownAt, feedback, openedStrategies = [], strategies}: bayes.bob.Project,
 ): Date | undefined => {
   // Feedback already given.
   if (feedback && feedback.score) {
@@ -78,17 +77,16 @@ const getRequestFeedbackShowDate = (
 
 interface FormProps {
   dispatch: DispatchAllActions
-  isFeminine: boolean
+  gender?: bayes.bob.Gender
   onSubmit?: () => void
   project: bayes.bob.Project
   score?: number
-  userYou: YouChooser
+  t: TFunction
 }
 
 
 interface BarConnectedProps {
-  isFeminine: boolean
-  userYou: YouChooser
+  gender?: bayes.bob.Gender
 }
 
 
@@ -101,7 +99,7 @@ interface BarConfig {
 }
 
 
-interface BarProps extends BarConnectedProps, BarConfig {
+interface BarProps extends BarConnectedProps, BarConfig, WithTranslation {
   dispatch: DispatchAllActions
 }
 
@@ -117,7 +115,7 @@ class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
     evaluationUrl: PropTypes.string.isRequired,
     isShown: PropTypes.bool.isRequired,
     project: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
+    t: PropTypes.func.isRequired,
   }
 
   public state = {
@@ -125,11 +123,11 @@ class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
     score: 0,
   }
 
-  private form: React.RefObject<FeedbackForm> = React.createRef()
+  private form: React.RefObject<FormRef> = React.createRef()
 
   private openModal = (score: number): void => {
     if (this.form.current) {
-      this.form.current.setState({score})
+      this.form.current.setScore(score)
     }
     this.setState({isModalShown: true, score})
   }
@@ -153,7 +151,7 @@ class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
   }
 
   public render(): React.ReactNode {
-    const {isShown, project: {feedback}, userYou} = this.props
+    const {isShown, project: {feedback}} = this.props
     const {score} = this.state
     if (feedback && feedback.score) {
       return null
@@ -188,9 +186,7 @@ class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
       {this.renderModal()}
       <div style={isMobileVersion ? {overflow: 'hidden'} : fixedBottomStyle}>
         <div style={containerStyle}>
-          <FeedbackStars
-            userYou={userYou} score={score} onStarClick={this.openModal}
-            isWhite={true} />
+          <FeedbackStars score={score} onStarClick={this.openModal} isWhite={true} />
         </div>
       </div>
       {isMobileVersion ? null : <div style={{height: 80}} />}
@@ -198,14 +194,12 @@ class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
   }
 }
 const FeedbackBar = connect(({user}: RootState): BarConnectedProps => ({
-  isFeminine: !!(user.profile && user.profile.gender === 'FEMININE'),
-  userYou: youForUser(user),
-}))(FeedbackBarBase)
+  gender: user.profile?.gender,
+}))(withTranslation()(FeedbackBarBase))
 
 
 interface PageWithFeedbackConnectedProps {
   showAfter: Date | undefined
-  userYou: YouChooser
 }
 
 
@@ -219,7 +213,7 @@ interface PageWithFeedbackConfig
 interface PageWithFeedbackProps
   extends PageWithFeedbackConfig,
   RouteComponentProps<{}, {}, {returningFromFeedbackPage?: boolean}>,
-  PageWithFeedbackConnectedProps {
+  PageWithFeedbackConnectedProps, WithTranslation {
   dispatch: DispatchAllActions
 }
 
@@ -236,7 +230,6 @@ class PageWithFeedbackBase
     location: ReactRouterPropTypes.location.isRequired,
     project: PropTypes.object.isRequired,
     showAfter: PropTypes.instanceOf(Date),
-    userYou: PropTypes.func.isRequired,
   }
 
   public state = {
@@ -293,7 +286,6 @@ class PageWithFeedbackBase
   private renderPage = ({match: {params: {score}}}: PageRouteProps): React.ReactNode => {
     const {baseUrl,
       children: omittedChildren, dispatch: omittedDispatch, location: omittedLocation,
-      userYou: omittedUserYou,
       ...otherProps} = this.props
     return <FeedbackPage
       {...otherProps} score={score ? parseInt(score, 10) : undefined}
@@ -301,7 +293,7 @@ class PageWithFeedbackBase
   }
 
   public render(): React.ReactNode {
-    const {baseUrl, children, dispatch, showAfter: omittedShowAfter, userYou,
+    const {baseUrl, children, dispatch, showAfter: omittedShowAfter, t,
       ...barProps} = this.props
     const {isShareBobShown, isShown} = this.state
     const evaluationUrl = `${baseUrl}/${FEEDBACK_TAB}`
@@ -314,12 +306,12 @@ class PageWithFeedbackBase
           onSubmit={this.handleReturnFromFeedback} isShown={isShown} />
         <ShareModal
           onClose={this.hideShareModal} isShown={isShareBobShown}
-          title={userYou('Toi aussi, aide tes amis', 'Vous aussi, aidez vos amis')}
+          title={t('Vous aussi, aidez vos amis')}
           campaign="fs" visualElement="feedback" dispatch={dispatch}
-          intro={<React.Fragment>
-            <strong>{userYou('Envoie', 'Envoyez')}-leur directement ce lien <br /></strong>
+          intro={<Trans parent={null}>
+            <strong>Envoyez-leur directement ce lien <br /></strong>
             et on s'occupe du reste&nbsp;!
-          </React.Fragment>} />
+          </Trans>} />
       </React.Fragment>
     </Switch>
   }
@@ -327,9 +319,8 @@ class PageWithFeedbackBase
 const PageWithFeedback = connect(
   (state: RootState, {project}: PageWithFeedbackConfig): PageWithFeedbackConnectedProps => ({
     showAfter: getRequestFeedbackShowDate(state, project),
-    userYou: youForUser(state.user),
-  })
-)(withRouter(PageWithFeedbackBase))
+  }),
+)(withRouter(withTranslation()(PageWithFeedbackBase)))
 
 
 interface PageProps extends BarConnectedProps, FormProps {
@@ -337,31 +328,22 @@ interface PageProps extends BarConnectedProps, FormProps {
 }
 
 
-class FeedbackPageBase extends React.PureComponent<PageProps, {isFeedbackSubmitted: boolean}> {
-  public state = {
-    isFeedbackSubmitted: false,
-  }
+const FeedbackPageBase = (props: PageProps): React.ReactElement => {
+  const {backTo, ...formProps} = props
+  const history = useHistory()
 
-  private handleSubmit = (): void => this.setState({isFeedbackSubmitted: true})
-
-  public render(): React.ReactNode {
-    if (this.state.isFeedbackSubmitted) {
-      return <Redirect to={this.props.backTo} />
+  const handleSubmit = useCallback((): void => {
+    if (typeof backTo === 'string') {
+      history.push(backTo)
+    } else {
+      history.push(backTo.pathname, backTo.state)
     }
-    return <FeedbackForm {...this.props} onSubmit={this.handleSubmit} />
-  }
+  }, [backTo, history])
+  return <FeedbackForm {...formProps} onSubmit={handleSubmit} />
 }
 const FeedbackPage = connect(({user}: RootState): BarConnectedProps => ({
-  isFeminine: !!(user.profile && user.profile.gender === 'FEMININE'),
-  userYou: youForUser(user),
-}))(FeedbackPageBase)
-
-
-interface FormState {
-  score?: number
-  selectedAdvices?: string[]
-  text?: string
-}
+  gender: user.profile?.gender,
+}))(React.memo(FeedbackPageBase))
 
 
 interface SelectOption {
@@ -370,97 +352,112 @@ interface SelectOption {
 }
 
 
-class FeedbackForm extends React.PureComponent<FormProps, FormState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    isFeminine: PropTypes.bool,
-    onSubmit: PropTypes.func,
-    project: PropTypes.object.isRequired,
-    score: PropTypes.number,
-    userYou: PropTypes.func.isRequired,
-  }
+interface FormRef {
+  setScore: (score: number) => void
+}
 
-  public state = {
-    score: this.props.score || 0,
-    selectedAdvices: [],
-    text: '',
-  }
 
-  private saveFeedback = (): void => {
-    const {dispatch, onSubmit, project} = this.props
-    const {score, text, selectedAdvices} = this.state
-    const usefulAdviceModules = {};
-    (selectedAdvices || []).forEach((adviceId: string): void => {
+const FeedbackFormBase = (props: FormProps, ref: React.Ref<FormRef>): React.ReactElement => {
+  const {dispatch, gender, onSubmit, project, project: {advices}, t} = props
+  const [score, setScore] = useState(props.score || 0)
+  const [selectedAdvices, setSelectedAdvices] = useState<readonly string[]>([])
+  const [text, setText] = useState('')
+
+  useImperativeHandle(ref, () => ({setScore}))
+
+  const saveFeedback = useCallback((): void => {
+    const usefulAdviceModules: {[adviceId: string]: boolean} = {}
+    selectedAdvices.forEach((adviceId: string): void => {
       usefulAdviceModules[adviceId] = true
     })
     dispatch(sendProjectFeedback(project, {score, text, usefulAdviceModules}))
     onSubmit && onSubmit()
+  }, [dispatch, onSubmit, project, score, selectedAdvices, text])
+
+  const isGoodFeedback = score > 2
+  const shownAdvices = (advices || []).filter(({status}): boolean => status === 'ADVICE_READ')
+  const containerStyle: React.CSSProperties = {
+    padding: isMobileVersion ? 20 : 50,
   }
-
-  private handleUpdateScore = (value: number): void => this.setState({score: value})
-
-  private handleUpdateSelectedAdvices = (value: string[]): void =>
-    this.setState({selectedAdvices: value})
-
-  private handleUpdateText = (value: string): void => this.setState({text: value})
-
-  public render(): React.ReactNode {
-    const {isFeminine, project: {advices}, userYou} = this.props
-    const {score, selectedAdvices, text} = this.state
-    const isGoodFeedback = score > 2
-    const shownAdvices = (advices || []).filter(({status}): boolean => status === 'ADVICE_READ')
-    const containerStyle: React.CSSProperties = {
-      padding: isMobileVersion ? 20 : 50,
-    }
-    const contentStyle: React.CSSProperties = {
-      fontSize: 15,
-      padding: '35px 0',
-      position: 'relative',
-      width: isMobileVersion ? 'initial' : 600,
-    }
-    return <div style={containerStyle}>
-      <div style={{borderBottom: `solid 2px ${colors.SILVER}`, paddingBottom: 35}}>
-        <FeedbackStars
-          userYou={userYou} score={score} onStarClick={this.handleUpdateScore}
-          size={30} />
-      </div>
-      <div style={contentStyle}>
-        <div style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>
-          {isGoodFeedback ? <span>
-            Qu'est-ce qui {userYou("t'", 'vous ')}a le plus
-            aidé{isFeminine ? 'e' : ''} dans {config.productName}&nbsp;?
-          </span> : <span>
-            {userYou('Peux-tu', 'Pouvez-vous')} nous dire ce qui n'a pas fonctionné
-            pour {userYou('toi', 'vous')}&nbsp;?
-          </span>}
-        </div>
-        <Textarea
-          style={{height: 180, padding: 10, width: '100%'}}
-          placeholder={`${userYou('Écris ton', 'Écrivez votre')} commentaire ici`}
-          value={text} onChange={this.handleUpdateText} />
-        {isGoodFeedback ? <div>
-          <div style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>
-            Y a-t-il des conseils qui {userYou("t'", 'vous ')}ont particulièrement
-            intéressé{isFeminine ? 'e' : ''}&nbsp;?
-          </div>
-          <CheckboxList
-            onChange={this.handleUpdateSelectedAdvices} values={selectedAdvices}
-            options={(shownAdvices).
-              filter(isValidAdvice).
-              filter((a): boolean => !!(a.numStars && a.numStars > 1)).
-              map((advice): SelectOption => ({
-                name: getAdviceShortTitle(advice, userYou),
-                value: advice.adviceId,
-              })).
-              filter(({name}): boolean => !!name)} />
-        </div> : null}
-      </div>
-      <div style={{textAlign: 'center'}}>
-        <Button onClick={this.saveFeedback} isRound={true}>Envoyer</Button>
-      </div>
+  const contentStyle: React.CSSProperties = {
+    fontSize: 15,
+    padding: '35px 0',
+    position: 'relative',
+    width: isMobileVersion ? 'initial' : 600,
+  }
+  const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
+  return <div style={containerStyle}>
+    <div style={{borderBottom: `solid 2px ${colors.SILVER}`, paddingBottom: 35}}>
+      <FeedbackStars score={score} onStarClick={setScore} size={30} />
     </div>
-  }
+    <div style={contentStyle}>
+      <div style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>
+        {isGoodFeedback ? <Trans parent="span" tOptions={tOptions}>
+          Qu'est-ce qui vous a le plus aidé·e dans {{productName: config.productName}}&nbsp;?
+        </Trans> : <Trans parent="span">
+          Pouvez-vous nous dire ce qui n'a pas fonctionné pour vous&nbsp;?
+        </Trans>}
+      </div>
+      <Textarea
+        style={{height: 180, padding: 10, width: '100%'}}
+        placeholder={t('Écrivez votre commentaire ici')}
+        value={text} onChange={setText} />
+      {isGoodFeedback ? <div>
+        <Trans style={{fontSize: 18, fontWeight: 'bold', marginBottom: 20}} tOptions={tOptions}>
+          Y a-t-il des conseils qui vous ont particulièrement intéressé·e&nbsp;?
+        </Trans>
+        <CheckboxList
+          onChange={setSelectedAdvices} values={selectedAdvices}
+          options={(shownAdvices).
+            filter(isValidAdvice).
+            filter((a): boolean => !!(a.numStars && a.numStars > 1)).
+            map((advice): SelectOption => ({
+              name: getAdviceShortTitle(advice, t),
+              value: advice.adviceId,
+            })).
+            filter(({name}): boolean => !!name)} />
+      </div> : null}
+    </div>
+    <div style={{textAlign: 'center'}}>
+      <Button onClick={saveFeedback} isRound={true}>{t('Envoyer')}</Button>
+    </div>
+  </div>
 }
+FeedbackFormBase.propTypes = {
+  dispatch: PropTypes.func.isRequired,
+  gender: PropTypes.string,
+  onSubmit: PropTypes.func,
+  project: PropTypes.object.isRequired,
+  score: PropTypes.number,
+}
+const FeedbackForm = React.forwardRef(FeedbackFormBase)
+
+
+type NumStars = 1|2|3|4|5
+type NumStarsString = '1'|'2'|'3'|'4'|'5'
+
+
+interface StarProps extends
+  Omit<React.ComponentPropsWithoutRef<'img'>, 'onClick'|'onMouseEnter'|'onMouseLeave'> {
+  alt: string
+  numStars: NumStars
+  onClick: (numStars: NumStars) => void
+  onMouseEnter: (numStars: NumStars) => void
+  onMouseLeave?: (numStars: NumStars) => void
+}
+
+
+const FeedbackStarBase = (props: StarProps): React.ReactElement => {
+  const {alt, numStars, onClick, onMouseEnter, onMouseLeave, ...imgProps} = props
+  const enter = useCallback(() => onMouseEnter(numStars), [numStars, onMouseEnter])
+  const leave = useCallback(() => onMouseLeave?.(numStars), [numStars, onMouseLeave])
+  const click = useCallback(() => onClick(numStars), [numStars, onClick])
+  return <img
+    onMouseEnter={isMobileVersion ? undefined : enter}
+    onMouseLeave={isMobileVersion ? undefined : leave}
+    onClick={click} alt={alt} {...imgProps} />
+}
+const FeedbackStar = React.memo(FeedbackStarBase)
 
 
 interface StarsProps {
@@ -468,70 +465,60 @@ interface StarsProps {
   isWhite?: boolean
   onStarClick: (star: number) => void
   score: number
-  size: number
-  userYou: YouChooser
+  size?: number
 }
 
 
-class FeedbackStars extends React.PureComponent<StarsProps, {hoveredStars: number}> {
-  public static propTypes = {
-    isWhite: PropTypes.bool,
-    onStarClick: PropTypes.func.isRequired,
-    score: PropTypes.number.isRequired,
-    size: PropTypes.number,
-    userYou: PropTypes.func.isRequired,
-  }
+const starsTitleStyle: React.CSSProperties = {fontSize: 16, fontWeight: 500, marginBottom: 5}
 
-  public static defaultProps = {
-    size: 20,
-  }
 
-  public state = {
-    hoveredStars: 0,
-  }
+const FeedbackStarsBase = (props: StarsProps): React.ReactElement => {
+  const {isWhite, onStarClick, score, size = 20} = props
+  const {t} = useTranslation()
+  const [hoveredStars, setHoveredStars] = useState<0|NumStars>(0)
+  const highlightedStars = hoveredStars || score || 0
 
-  private handleClickStar = _memoize((numStars: number): (() => void) =>
-    (): void => this.props.onStarClick(numStars))
+  const resetHoveredStars = useCallback((): void => setHoveredStars(0), [])
 
-  private renderTitle(numStars: number): React.ReactNode {
-    const {userYou} = this.props
-    return feedbackTitle[numStars] ||
-      `Que pense${userYou('s-tu', 'z-vous')} de ${config.productName}\u00A0?`
-  }
+  const title = useMemo((): React.ReactNode => {
+    const title = feedbackTitle[(highlightedStars + '') as NumStarsString] ||
+      prepareT('Que pensez-vous de {{productName}}\u00A0?')
+    // i18next-extract-disable-next-line
+    return t(title, {productName: config.productName})
+  }, [highlightedStars, t])
 
-  public render(): React.ReactNode {
-    const {isWhite, score, size} = this.props
-    const {hoveredStars} = this.state
-    const highlightedStars = hoveredStars || score || 0
-    const starStyle = {
-      cursor: 'pointer',
-      height: size + 10,
-      padding: 5,
-    }
-    const notOnMobile = (callback: () => void): ((() => void) | undefined) =>
-      isMobileVersion ? undefined : callback
-    const fullStar = isWhite ? whiteStarIcon : starIcon
-    const emptyStar = isWhite ? starOutlineIcon : greyStarOutlineIcon
-    return <div style={{textAlign: 'center'}}>
-      <div style={{fontSize: 16, fontWeight: 500, marginBottom: 5}}>
-        {this.renderTitle(highlightedStars)}
-      </div>
-      <div>
-        {/* TODO(pascal): Drop the arrow props below. */}
-        {new Array(5).fill(null).map((unused, index): React.ReactNode => <img
-          onMouseEnter={notOnMobile((): void => this.setState({hoveredStars: index + 1}))}
-          onMouseLeave={notOnMobile((): void => {
-            if (hoveredStars === index + 1) {
-              this.setState({hoveredStars: 0})
-            }
-          })}
-          style={starStyle} alt={`${index + 1} étoile${index ? 's' : ''}`}
-          onClick={this.handleClickStar(index + 1)}
-          src={(index < highlightedStars) ? fullStar : emptyStar} key={`star-${index}`} />)}
-      </div>
+  const starStyle = useMemo((): React.CSSProperties => ({
+    cursor: 'pointer',
+    height: size + 10,
+    padding: 5,
+  }), [size])
+
+  const fullStar = isWhite ? whiteStarIcon : starIcon
+  const emptyStar = isWhite ? starOutlineIcon : greyStarOutlineIcon
+  return <div style={{textAlign: 'center'}}>
+    <div style={starsTitleStyle}>
+      {title}
     </div>
-  }
+    <div>
+      {new Array(5).fill(null).map((unused, index): React.ReactNode => <FeedbackStar
+        onMouseEnter={setHoveredStars}
+        onMouseLeave={(hoveredStars === index + 1) ? resetHoveredStars : undefined}
+        style={starStyle}
+        alt={t('{{numStars}} étoile', {count: index + 1, numStars: index + 1})}
+        onClick={onStarClick}
+        src={(index < highlightedStars) ? fullStar : emptyStar}
+        key={index}
+        numStars={(index + 1) as NumStars} />)}
+    </div>
+  </div>
 }
+FeedbackStarsBase.propTypes = {
+  isWhite: PropTypes.bool,
+  onStarClick: PropTypes.func.isRequired,
+  score: PropTypes.number.isRequired,
+  size: PropTypes.number,
+}
+const FeedbackStars = React.memo(FeedbackStarsBase)
 
 
 export {PageWithFeedback}

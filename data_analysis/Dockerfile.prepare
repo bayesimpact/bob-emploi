@@ -18,17 +18,19 @@ RUN pip install --upgrade \
   coverage \
   csvkit \
   demjson \
+  dnspython \
   google-api-python-client \
   httplib2 \
   js2py \
+  json5 \
   mongomock \
   mypy \
   mypy-protobuf \
   nbformat \
   nose \
   nose-exclude \
-  nose_machineout2 \
   nose-watch \
+  nose-terse-output \
   pandas \
   polib \
   protobuf \
@@ -68,6 +70,7 @@ COPY data_analysis/.coveragerc data_analysis/entrypoint.sh data_analysis/lint_an
 COPY .pycodestyle /work/setup.cfg
 COPY frontend/api/*.proto /work/bob_emploi/frontend/api/
 COPY frontend/server/ /work/bob_emploi/frontend/server/
+COPY frontend/client/airtable_fields.json5 /work/bob_emploi/frontend/client/airtable_fields.json5
 COPY frontend/release/scheduled-tasks /work/bob_emploi/frontend/release/scheduled-tasks
 # TODO(pascal): Clean up our typing stubs for mongomock package once it gets typed.
 RUN [ ! -f /usr/local/lib/python3.7/site-packages/mongomock/__init__.pyi ]

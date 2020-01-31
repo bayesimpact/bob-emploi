@@ -1,4 +1,4 @@
-import {getStrategyGoals, tutoyer} from 'store/french'
+import {getStrategyGoals} from 'store/french'
 
 type ValidWorkingStrategy = bayes.bob.WorkingStrategy & {strategyId: string}
 const getStartedStrategy = (project: bayes.bob.Project, sId: string): ValidWorkingStrategy =>
@@ -7,7 +7,8 @@ const getStartedStrategy = (project: bayes.bob.Project, sId: string): ValidWorki
     {strategyId: sId}
 
 
-const getStrategyProgress = (goals, reachedGoals): number => {
+const getStrategyProgress =
+(goals: ReturnType<typeof getStrategyGoals>, reachedGoals: {[key: string]: boolean}): number => {
   const numReachedGoals = Object.values(reachedGoals).
     filter((hasGoal: boolean): boolean => hasGoal).length
   return numReachedGoals * 100 / (goals.length || 1)
@@ -24,9 +25,9 @@ export interface StrategyCompletion {
 
 const getStrategyCompletion = (project: bayes.bob.Project, strategyId: string):
 StrategyCompletion => {
-  const {startedAt, reachedGoals = []} = getStartedStrategy(project, strategyId)
+  const {startedAt, reachedGoals = {}} = getStartedStrategy(project, strategyId)
   const isStarted = !!startedAt
-  const goals = getStrategyGoals(tutoyer, strategyId)
+  const goals = getStrategyGoals(strategyId)
   const progress = getStrategyProgress(goals, reachedGoals)
   const isComplete = progress === 100
   return {isComplete, isStarted, progress, startedAt}

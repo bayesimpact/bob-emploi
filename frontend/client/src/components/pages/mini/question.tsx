@@ -1,7 +1,7 @@
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import React from 'react'
-import {Link, Redirect} from 'react-router-dom'
+import {Redirect} from 'react-router-dom'
 
 import {FastForward} from 'components/fast_forward'
 import notAtAllImage from 'images/mini/not-at-all.png'
@@ -11,6 +11,8 @@ import yesClearlyImage from 'images/mini/yes-clearly.png'
 
 import {GenericPage} from './page'
 import {AnswerType, QuestionType} from './questions_tree'
+import {Routes} from './store'
+import {Button} from './theme'
 
 
 const levelColors = {
@@ -106,6 +108,7 @@ class AnswerCard extends React.PureComponent<AnswerCardProps, {isHover: boolean}
 
 
 interface QuestionPageProps {
+  children?: never
   answer?: AnswerType
   color?: string
   linkTo: string
@@ -125,9 +128,10 @@ interface QuestionPageState {
 }
 
 
-class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageState> {
+class QuestionPageBase extends React.PureComponent<QuestionPageProps, QuestionPageState> {
   public static getDerivedStateFromProps(
-    {answer, question}: QuestionPageProps, {question: lastQuestion}): QuestionPageState|null {
+    {answer, question}: QuestionPageProps,
+    {question: lastQuestion}: QuestionPageState): QuestionPageState|null {
     if (question === lastQuestion) {
       return null
     }
@@ -140,7 +144,7 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
     const {type} = this.props
     const {answer} = this.state
     if (answer === undefined) {
-      let possibleAnswers
+      let possibleAnswers: readonly AnswerType[]
       switch (type) {
         case 'confidence':
         case 'levels': // Fallthrough intended.
@@ -225,27 +229,15 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
     if (answer === undefined) {
       return null
     }
-    const buttonStyle = {
-      backgroundColor: colors.MINI_PEA,
-      borderRadius: 15,
-      boxShadow: '0px 10px 15px 0 rgba(0, 0, 0, 0.2)',
-      color: colors.MINI_WHITE,
-      cursor: 'pointer',
-      fontFamily: 'Fredoka One',
-      fontSize: 21,
-      padding: '15px 70px',
-      textDecoration: 'none',
-    }
     if (isFastForwarded) {
       return <Redirect to={linkTo} push={true} />
     }
-    return <Link
-      style={buttonStyle} onClick={this.handleAnswer} to={linkTo}>
+    return <Button onClick={this.handleAnswer} to={linkTo}>
       {numStepsDone + 1 < numSteps ? 'suivant' : 'terminé'}
-    </Link>
+    </Button>
   }
 
-  private renderYesNoAnswers(answer): React.ReactNode {
+  private renderYesNoAnswers(answer?: AnswerType): React.ReactNode {
     return <React.Fragment>
       <AnswerCard
         answer="Oui" key="yes/no-yes" style={{minWidth: 168}} isSelected={answer === true}
@@ -256,8 +248,8 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
     </React.Fragment>
   }
 
-  private renderConfidenceAnswers(answer): React.ReactNode {
-    const joinImage = (src, text): React.ReactNode => <React.Fragment>
+  private renderConfidenceAnswers(answer?: AnswerType): React.ReactNode {
+    const joinImage = (src: string, text: string): React.ReactNode => <React.Fragment>
       <img src={src} alt="" style={{marginBottom: 10}} /><br />
       {text}
     </React.Fragment>
@@ -288,7 +280,7 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
       position: 'relative',
     }
     const barStyle: React.CSSProperties = {
-      backgroundColor: levelColors[level],
+      backgroundColor: levelColors[(level + '') as keyof typeof levelColors],
       borderRadius: 10,
       bottom: 0,
       height: 35 + (level + 2) * (117 - 35) / 4,
@@ -301,7 +293,7 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
     </div>
   }
 
-  private renderLevelsAnswers(answer): React.ReactNode {
+  private renderLevelsAnswers(answer?: AnswerType): React.ReactNode {
     const textStyle: React.CSSProperties = {
       color: colors.MINI_WARM_GREY,
       fontSize: 13,
@@ -316,7 +308,7 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
     </React.Fragment>
   }
 
-  private renderYesNoLaterAnswers(answer): React.ReactNode {
+  private renderYesNoLaterAnswers(answer?: AnswerType): React.ReactNode {
     return <React.Fragment>
       <AnswerCard
         answer="Oui" style={{minWidth: 168}} isSelected={answer === true} key="ynl-yes"
@@ -330,7 +322,7 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
     </React.Fragment>
   }
 
-  private renderAnswers(answer): React.ReactNode {
+  private renderAnswers(answer?: AnswerType): React.ReactNode {
     const {type} = this.props
     switch (type) {
       case 'confidence': return this.renderConfidenceAnswers(answer)
@@ -343,9 +335,6 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
 
   public render(): React.ReactNode {
     const {answer, question} = this.state
-    if (!question) {
-      return <Redirect to="/mini" />
-    }
     const {color} = this.props
     const contentStyle: React.CSSProperties = {
       alignItems: 'center',
@@ -366,7 +355,8 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
       alignItems: 'center',
       display: 'flex',
     }
-    return <GenericPage bottomButton={this.renderButton()}>
+    return <GenericPage hasLogo={true} bottomButton={this.renderButton()}>
+      {/* TODO(cyrille): Use FastForward.props.to */}
       <FastForward onForward={this.fastForward} />
       {this.renderTitle()}
       {this.renderProgress()}
@@ -379,6 +369,21 @@ class QuestionPage extends React.PureComponent<QuestionPageProps, QuestionPageSt
     </GenericPage>
   }
 }
+
+
+type MaybeQuestionPageProps = Partial<QuestionPageProps>
+
+
+const MaybeQuestionPage: React.FC<MaybeQuestionPageProps> = (props: MaybeQuestionPageProps):
+React.ReactElement => {
+  const {linkTo, numSteps, numStepsDone, onAnswer, question, title, type, ...otherProps} = props
+  if (question && linkTo && numSteps && onAnswer && title && type && numStepsDone !== undefined) {
+    return <QuestionPageBase
+      {...otherProps} {...{linkTo, numSteps, numStepsDone, onAnswer, question, title, type}} />
+  }
+  return <Redirect to={Routes.HUB_PAGE} />
+}
+const QuestionPage = React.memo(MaybeQuestionPage)
 
 
 export {QuestionPage}

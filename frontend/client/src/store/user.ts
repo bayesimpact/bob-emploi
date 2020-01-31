@@ -1,46 +1,41 @@
 import Storage from 'local-storage-fallback'
-import PropTypes from 'prop-types'
+import {useSelector} from 'react-redux'
 
-import {YouChooser, tutoyer, vouvoyer} from './french'
+import {ClientFilter, YouChooser, tutoyer, vouvoyer} from './french'
+import {WithLocalizableName, prepareT} from './i18n'
 import {PROJECT_EXPERIENCE_OPTIONS, PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
-  SENIORITY_OPTIONS, getTrainingFulfillmentEstimateOptions} from './project'
+  SENIORITY_OPTIONS, TRAINING_FULFILLMENT_ESTIMATE_OPTIONS} from './project'
 
 
 // TODO: Remove situation after the deprecated fields got removed from the
 // user.proto.
-const USER_PROFILE_FIELDS = {
-  city: PropTypes.object,
-  coachingEmailFrequency: PropTypes.string,
-  customFrustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
-  drivingLicenses: PropTypes.arrayOf(PropTypes.string.isRequired),
-  email: PropTypes.string.isRequired,
-  englishLevelEstimate: PropTypes.number,
-  // TODO(pascal): Enforce one of FamilySituation from proto without bloating the client size.
-  familySituation: PropTypes.string,
-  frustrations: PropTypes.arrayOf(PropTypes.string.isRequired),
-  gender: PropTypes.string,
-  hasHandicap: PropTypes.bool,
-  highestDegree: PropTypes.string,
-  lastName: PropTypes.string.isRequired,
-  latestJob: PropTypes.object,
-  name: PropTypes.string.isRequired,
-  officeSkillsEstimate: PropTypes.number,
-  // TODO(pascal): Enforce one of UserOrigin from proto without bloating the client size.
-  origin: PropTypes.string,
-  situation: PropTypes.string,
-  yearOfBirth: PropTypes.number,
-}
+const USER_PROFILE_FIELDS: readonly (keyof bayes.bob.UserProfile)[] = [
+  'coachingEmailFrequency',
+  'customFrustrations',
+  'drivingLicenses',
+  'email',
+  'familySituation',
+  'frustrations',
+  'gender',
+  'hasHandicap',
+  'highestDegree',
+  'lastName',
+  'name',
+  'origin',
+  'yearOfBirth',
+]
 
 function userAge(yearOfBirth: number): number {
   const todayYear = (new Date()).getFullYear()
   return todayYear - yearOfBirth
 }
 
+
 // Returns a list of all frustrations of a user, as tags.
 // TODO(guillaume): Pull directly from Airtable when we know for sure the shape.
-function getUserFrustrationTags(profile: bayes.bob.UserProfile): string[] {
+function getUserFrustrationTags(profile: bayes.bob.UserProfile): readonly string[] {
   const maybeE = profile.gender === 'FEMININE' ? 'e' : ''
-  const frustrationsToTag = {
+  const frustrationsToTag: {[f: string]: string} = {
     AGE_DISCRIMINATION: 'Discriminations (âge)',
     ATYPIC_PROFILE: 'Profil atypique',
     EXPERIENCE: "L'expérience demandée",
@@ -55,8 +50,9 @@ function getUserFrustrationTags(profile: bayes.bob.UserProfile): string[] {
     TIME_MANAGEMENT: 'Gestion de mon temps',
     TRAINING: 'Formations professionnelles',
   }
-  return (profile.frustrations || []).filter(
-    (f: string): boolean => frustrationsToTag[f]).map((f: string): string => frustrationsToTag[f])
+  return (profile.frustrations || []).
+    map((f: bayes.bob.Frustration): string|undefined => frustrationsToTag[f]).
+    filter((t: string|undefined): t is string => !!t)
 }
 
 
@@ -66,7 +62,13 @@ interface SelectOption<T = string> {
 }
 
 
-const DEGREE_OPTIONS: (SelectOption<bayes.bob.DegreeLevel> & {readonly equivalent?: string})[] = [
+interface LocalizedSelectOption<T = string> extends WithLocalizableName {
+  readonly value: T
+}
+
+
+const DEGREE_OPTIONS:
+readonly (SelectOption<bayes.bob.DegreeLevel> & {readonly equivalent?: string})[] = [
   {name: '--', value: 'NO_DEGREE'},
   {name: 'CAP - BEP', value: 'CAP_BEP'},
   {name: 'Bac - Bac Pro', value: 'BAC_BACPRO'},
@@ -76,34 +78,51 @@ const DEGREE_OPTIONS: (SelectOption<bayes.bob.DegreeLevel> & {readonly equivalen
 ]
 
 
-const ORIGIN_OPTIONS: SelectOption<bayes.bob.UserOrigin>[] = [
-  {name: 'Recommandé par un ami', value: 'FROM_A_FRIEND'},
-  {name: "Par un groupe de recherche d'emploi", value: 'FROM_JOBSEEKER_GROUP'},
-  {name: 'Présenté dans une information collective Pôle emploi', value: 'FROM_PE_WORKSHOP'},
-  {name: "Mon conseiller Pôle emploi me l'a recommandé", value: 'FROM_PE_COUNSELOR'},
-  {name: 'Recommandé par un médiateur PIMMS', value: 'FROM_PIMMS'},
-  {name: 'Recommandé par un autre site ou moteur de recherche', value: 'FROM_WEBSITE'},
-  {name: 'Autre', value: 'FROM_OTHER'},
+const ORIGIN_OPTIONS: readonly LocalizedSelectOption<bayes.bob.UserOrigin>[] = [
+  {name: prepareT('Recommandé par un ami'), value: 'FROM_A_FRIEND'},
+  {name: prepareT("Par un groupe de recherche d'emploi"), value: 'FROM_JOBSEEKER_GROUP'},
+  {
+    name: prepareT('Présenté dans une information collective Pôle emploi'),
+    value: 'FROM_PE_WORKSHOP',
+  },
+  {name: prepareT("Mon conseiller Pôle emploi me l'a recommandé"), value: 'FROM_PE_COUNSELOR'},
+  {name: prepareT('Recommandé par un médiateur PIMMS'), value: 'FROM_PIMMS'},
+  {name: prepareT('Recommandé par un autre site ou moteur de recherche'), value: 'FROM_WEBSITE'},
+  {name: prepareT('Autre'), value: 'FROM_OTHER'},
 ]
 
-export const personalizationsPredicates = {
-  GRADUATE: ({highestDegree}): boolean => highestDegree === 'LICENCE_MAITRISE' ||
-    highestDegree === 'DEA_DESS_MASTER_PHD',
-  NETWORK_SCORE_1: (profile, {networkEstimate}): boolean => networkEstimate === 1,
-  NETWORK_SCORE_2: (profile, {networkEstimate}): boolean => networkEstimate === 2,
-  NETWORK_SCORE_3: (profile, {networkEstimate}): boolean => networkEstimate === 3,
-  SAME_JOB: (profile, {previousJobSimilarity}): boolean => previousJobSimilarity !== 'NEVER_DONE',
-}
+const GENDER_OPTIONS: readonly LocalizedSelectOption<bayes.bob.Gender>[] = [
+  {name: prepareT('une femme'), value: 'FEMININE'},
+  {name: prepareT('un homme'), value: 'MASCULINE'},
+] as const
 
-export const filterPredicatesMatch = {
-  'for-experienced(2)': ({seniority}): boolean => seniority === 'EXPERT' ||
+export const personalizationsPredicates = {
+  GRADUATE: ({highestDegree}: bayes.bob.UserProfile): boolean =>
+    highestDegree === 'LICENCE_MAITRISE' || highestDegree === 'DEA_DESS_MASTER_PHD',
+  NETWORK_SCORE_1: (profile: bayes.bob.UserProfile, {networkEstimate}: bayes.bob.Project):
+  boolean => networkEstimate === 1,
+  NETWORK_SCORE_2: (profile: bayes.bob.UserProfile, {networkEstimate}: bayes.bob.Project):
+  boolean => networkEstimate === 2,
+  NETWORK_SCORE_3: (profile: bayes.bob.UserProfile, {networkEstimate}: bayes.bob.Project):
+  boolean => networkEstimate === 3,
+  SAME_JOB: (profile: bayes.bob.UserProfile, {previousJobSimilarity}: bayes.bob.Project): boolean =>
+    previousJobSimilarity !== 'NEVER_DONE',
+} as const
+type Personalization = keyof typeof personalizationsPredicates
+type PersonalizationPredicate =
+  (profile: bayes.bob.UserProfile, project: bayes.bob.Project) => boolean
+
+type ProjectPredicate = (project: bayes.bob.Project) => boolean
+export const filterPredicatesMatch: {[K in ClientFilter]: ProjectPredicate} = {
+  'for-experienced(2)': ({seniority}: bayes.bob.Project): boolean => seniority === 'EXPERT' ||
     seniority === 'SENIOR' || seniority === 'INTERMEDIARY',
-  'for-experienced(6)': ({seniority}): boolean => seniority === 'EXPERT' || seniority === 'SENIOR',
+  'for-experienced(6)': ({seniority}: bayes.bob.Project): boolean =>
+    seniority === 'EXPERT' || seniority === 'SENIOR',
 }
 
 function isEmailTemplatePersonalized(
-  personalisations: readonly string[], profile: bayes.bob.UserProfile,
-  project: bayes.bob.Project): boolean {
+  personalisations: readonly string[],
+  profile: bayes.bob.UserProfile, project: bayes.bob.Project): boolean {
   // Check that personalization is not directly a frustration.
   const isFrustration = (profile.frustrations || []).find((frustration): boolean =>
     !!personalisations.find((personalisation): boolean => personalisation === frustration))
@@ -112,13 +131,16 @@ function isEmailTemplatePersonalized(
   }
 
   return !!personalisations.
-    map((p: string): ((profile: bayes.bob.UserProfile, project: bayes.bob.Project) => boolean) =>
-      personalizationsPredicates[p]).
-    find((predicate): boolean => predicate && predicate(profile, project))
+    map((p: string): PersonalizationPredicate|undefined =>
+      personalizationsPredicates[p as Personalization]).
+    find((predicate: PersonalizationPredicate|undefined): boolean =>
+      !!predicate && predicate(profile, project))
 }
 
-function projectMatchAllFilters(project: bayes.bob.Project, filters?: string[]): boolean {
-  return !(filters || []).some((filter: string): boolean => !filterPredicatesMatch[filter](project))
+function projectMatchAllFilters(project: bayes.bob.Project, filters?: readonly ClientFilter[]):
+boolean {
+  return !(filters || []).
+    some((filter: ClientFilter): boolean => !filterPredicatesMatch[filter](project))
 }
 
 // A function that returns a description for a degree.
@@ -148,21 +170,12 @@ function getJobSearchLengthMonths(project: bayes.bob.Project): number {
 }
 
 
-// Returns a list of options for family situation depending on gender.
-function getFamilySituationOptions(gender?: bayes.bob.Gender):
-SelectOption<bayes.bob.FamilySituation>[] {
-  return [
-    {name: 'Célibataire', value: 'SINGLE'},
-    {name: 'En couple', value: 'IN_A_RELATIONSHIP'},
-    {name: 'Famille avec enfants', value: 'FAMILY_WITH_KIDS'},
-    {
-      name:
-        `${gender === 'FEMININE' ? 'Mère' :
-          gender === 'MASCULINE' ? 'Père' : 'Parent'} seul${gender === 'FEMININE' ? 'e' : ''}`,
-      value: 'SINGLE_PARENT_SITUATION',
-    },
-  ]
-}
+const FAMILY_SITUATION_OPTIONS: readonly LocalizedSelectOption<bayes.bob.FamilySituation>[] = [
+  {name: prepareT('Célibataire'), value: 'SINGLE'},
+  {name: prepareT('En couple'), value: 'IN_A_RELATIONSHIP'},
+  {name: prepareT('Famille avec enfants'), value: 'FAMILY_WITH_KIDS'},
+  {name: prepareT('Parent seul'), value: 'SINGLE_PARENT_SITUATION'},
+]
 
 
 function increaseRevision({revision, ...otherFields}: bayes.bob.User): bayes.bob.User {
@@ -184,16 +197,35 @@ bayes.bob.User {
 }
 
 
-function youForUser({profile: {canTutoie = false} = {}}): YouChooser {
+function getUserLocale(profile?: bayes.bob.UserProfile): string {
+  const {canTutoie = false, locale = 'fr'} = profile || {}
+  if (canTutoie && locale === 'fr') {
+    return 'fr@tu'
+  }
+  return locale
+}
+
+
+function youForUser({profile: {canTutoie = false} = {}}: bayes.bob.User): YouChooser {
   return canTutoie ? tutoyer : vouvoyer
 }
 
 
-const COACHING_EMAILS_OPTIONS: SelectOption<bayes.bob.EmailFrequency>[] = [
-  {name: 'Occasionnel (~1 mail par mois)', value: 'EMAIL_ONCE_A_MONTH'},
-  {name: 'Régulier (~1 mail par semaine)', value: 'EMAIL_MAXIMUM'},
-  {name: 'Pas de coaching, merci', value: 'EMAIL_NONE'},
+function useUserYou(): YouChooser {
+  return useSelector(({user}: {user: bayes.bob.User}) => youForUser(user))
+}
+
+
+const COACHING_EMAILS_OPTIONS: LocalizedSelectOption<bayes.bob.EmailFrequency>[] = [
+  {name: prepareT('Occasionnel (~1 email par mois)'), value: 'EMAIL_ONCE_A_MONTH'},
+  {name: prepareT('Régulier (~1 email par semaine)'), value: 'EMAIL_MAXIMUM'},
+  {name: prepareT("Pas d'email de coaching, merci"), value: 'EMAIL_NONE'},
 ]
+
+
+function useGender(): bayes.bob.Gender|undefined {
+  return useSelector(({user: {profile}}: {user: bayes.bob.User}) => profile?.gender)
+}
 
 
 function pickRandom<T>(options: readonly T[]): T {
@@ -313,7 +345,7 @@ function getUserExample(isRandom: boolean): PopulatedUser {
   return {
     profile: {
       coachingEmailFrequency: pickRandom(COACHING_EMAILS_OPTIONS).value,
-      familySituation: pickRandom(getFamilySituationOptions()).value,
+      familySituation: pickRandom(FAMILY_SITUATION_OPTIONS).value,
       // TODO(pascal): Add frustrations.
       gender: pickRandom(['FEMININE', 'MASCULINE']),
       hasCarDrivingLicense: pickRandom(['TRUE', 'FALSE']),
@@ -334,7 +366,7 @@ function getUserExample(isRandom: boolean): PopulatedUser {
       seniority: pickRandom(SENIORITY_OPTIONS).value,
       targetJob: isRandom ? pickRandom(sampleJobs) : sampleJobs[0],
       totalInterviewCount: isRandom ? (Math.floor(Math.random() * 22) || -1) : -1,
-      trainingFulfillmentEstimate: pickRandom(getTrainingFulfillmentEstimateOptions()).value,
+      trainingFulfillmentEstimate: pickRandom(TRAINING_FULFILLMENT_ESTIMATE_OPTIONS).value,
       weeklyApplicationsEstimate: 'SOME',
       weeklyOffersEstimate: 'DECENT_AMOUNT',
       workloads: ['FULL_TIME'],
@@ -360,10 +392,19 @@ function getUniqueExampleEmail(): string {
 }
 
 
+function isAdvisorUser(user: bayes.bob.User): boolean {
+  const {advisor = undefined, switchedFromMashupToAdvisor = false} = user.featuresEnabled || {}
+  return (!advisor || advisor === 'ACTIVE') &&
+    (user.projects || []).length <= 1 ||
+    switchedFromMashupToAdvisor
+}
+
+
 export {
   getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision, youForUser,
   userAge, getHighestDegreeDescription, keepMostRecentRevision,
-  getFamilySituationOptions, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
-  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, userExample,
-  getUniqueExampleEmail, getJobSearchLengthMonths,
+  FAMILY_SITUATION_OPTIONS, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
+  projectMatchAllFilters, COACHING_EMAILS_OPTIONS, GENDER_OPTIONS, userExample,
+  getUniqueExampleEmail, getJobSearchLengthMonths, useUserYou, getUserLocale, isAdvisorUser,
+  useGender,
 }

@@ -29,7 +29,7 @@ message Diagnostic {
   string strategies_introduction = 6 [deprecated=true, (string_format) = NATURAL_LANGUAGE];
 
   // A list of categories used in the diagnostic with their relevance for the project. The most
-  // important (the one that was evaluated first) first.
+  // important (the one that was evaluated first) first. Only one of these can be highlighted.
   repeated DiagnosticCategory categories = 11;
 }
 
@@ -151,6 +151,9 @@ message DiagnosticComment {
 
   // The actual comment.
   BoldedString comment = 3;
+
+  // Whether the comment was shown to the user. This field is only updated by the client.
+  bool has_been_shown = 4;
 }
 
 // A formatted string that can be used to express a diagnostic with no
@@ -207,6 +210,13 @@ message DiagnosticCategory {
   // The filters defining whether a project could belong to the category.
   repeated string filters = 2 [(string_format) = SCORING_MODEL_ID];
 
+  // A scoring model to evaluate the relevance of this category. It is only evaluated if the
+  // filters above fail (i.e. the user is not in that category), and then:
+  // - A score of 0 means the category is not relevant (hide it from user)
+  // - A score of 1 means the category is neutral (not enough data, or just medium)
+  // - A score of 3 means the category is very relevant but the user nailed that particular point.
+  string relevance_scoring_model = 11 [(string_format) = SCORING_MODEL_ID];
+
   // The order of priority for the category. It allows to choose a category when several apply for a
   // given project. The category with smallest order is always preferred.
   int32 order = 3;
@@ -227,13 +237,16 @@ message DiagnosticCategory {
   CategoryRelevance relevance = 7 [(field_usage) = ALGORITHM_RESULT];
 
   // Title for a metric corresponding to the category to be displayed in the categories train.
-  string metric_title = 8;
+  string metric_title = 8 [(string_format) = NATURAL_LANGUAGE];
 
   // Static explanation of the metric.
-  string metric_details = 9;
+  string metric_details = 9 [(string_format) = NATURAL_LANGUAGE];
 
   // Feminine version of the metrics_detail.
-  string metric_details_feminine = 10;
+  string metric_details_feminine = 10 [(string_format) = NATURAL_LANGUAGE];
+
+  // Whether this category should be highlighted in a list of categories.
+  bool is_highlighted = 12;
 }
 
 enum CategoryRelevance {

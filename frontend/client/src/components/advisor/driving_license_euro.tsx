@@ -22,7 +22,10 @@ interface CardState {
 }
 
 
-class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProps, CardState> {
+const emptyArray = [] as const
+
+
+class DrivingLicenseEuro extends React.PureComponent<ExpandedCardProps, CardState> {
   public static propTypes = {
     advice: PropTypes.shape({
       adviceId: PropTypes.string.isRequired,
@@ -53,13 +56,15 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
         departementPrefix: PropTypes.string,
       }),
     }).isRequired,
+    t: PropTypes.func.isRequired,
     userYou: PropTypes.func.isRequired,
   }
 
-  public state = {}
+  public state: CardState = {}
 
   public static getDerivedStateFromProps(
-    {adviceData: {schools = []} = {}}: ExpandedCardProps, {schools: prevSchools}): CardState|null {
+    {adviceData: {schools = emptyArray} = {}}: ExpandedCardProps,
+    {schools: prevSchools}: CardState): CardState|null {
     if (prevSchools === schools) {
       return null
     }
@@ -118,7 +123,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     </div>
   }
 
-  private renderFindingSchool(key): React.ReactNode {
+  private renderFindingSchool(key: string): React.ReactNode {
     const {
       adviceData: {schoolListLink, schools = []},
       handleExplore,
@@ -141,8 +146,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     return <ExpandableAction key={key}
       contentName="la liste des auto-écoles"
       title="Trouver une auto-école agréée pour le permis à 1&nbsp;€"
-      onContentShown={handleExplore('schools')}
-      userYou={userYou}>
+      onContentShown={handleExplore('schools')}>
       <div style={{marginBottom: 20}}>
         Nous avons trouvé {schools.length ?
           <span><GrowingNumber style={{fontWeight: 'bold'}}
@@ -159,7 +163,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
                   {name}
                 </div>
                 <div>{address}</div>
-              </div>
+              </div>,
             ),
             schoolListLink ?
               <div
@@ -175,7 +179,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     </ExpandableAction>
   }
 
-  private renderDocumentation(key, isMinor): React.ReactNode {
+  private renderDocumentation(key: string, isMinor: boolean): React.ReactNode {
     const {
       adviceData: {missionLocale},
       handleExplore,
@@ -261,7 +265,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
     </ExpandableAction>
   }
 
-  private renderFindABank(key): React.ReactNode {
+  private renderFindABank(key: string): React.ReactNode {
     const {adviceData: {partnerBanks}, handleExplore, userYou} = this.props
     if (!partnerBanks || !partnerBanks.length) {
       return null
@@ -287,7 +291,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
             <ExternalLink
               href={link} key={`partner-${name}`} onClick={handleExplore('bank')}>
               <img src={logo} alt={name} style={{margin: 10, maxHeight: 60, maxWidth: 160}} />
-            </ExternalLink>
+            </ExternalLink>,
           )}
         </div>
       </div>
@@ -295,15 +299,15 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
   }
 
   public render(): React.ReactNode {
-    const {advice: {adviceId}, handleExplore, profile: {yearOfBirth}, userYou} = this.props
+    const {advice: {adviceId}, handleExplore, profile: {yearOfBirth}, t} = this.props
 
     const isMinor = (yearOfBirth && (new Date().getFullYear() - yearOfBirth) < 18) || false
 
-    const emails = (getEmailTemplates(userYou)[adviceId] || []).
+    const emails = (getEmailTemplates(t)[adviceId] || []).
       map((template, index): React.ReactNode =>
         <EmailTemplate
-          {...template} key={`email-${index}`} userYou={userYou}
-          onContentShown={handleExplore('email')} />
+          {...template} key={`email-${index}`}
+          onContentShown={handleExplore('email')} />,
       )
     const actions = [
       this.renderFindingSchool('finding-school'),
@@ -332,8 +336,7 @@ class ExpandedAdviceCardContentBase extends React.PureComponent<ExpandedCardProp
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.OneEuroProgram, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.OneEuroProgram, CardProps>(DrivingLicenseEuro)
 
 
 export default {ExpandedAdviceCardContent, Picto}

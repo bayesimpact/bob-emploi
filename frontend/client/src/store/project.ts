@@ -1,52 +1,53 @@
+import {TFunction} from 'i18next'
+
+import {WithLocalizableName, prepareT} from 'store/i18n'
 import {genderizeJob} from 'store/job'
 import {inCityPrefix} from 'store/french'
 
 
-interface SelectOption<T = string> {
-  readonly disabled?: true
-  readonly name: string
+interface LocalizedSelectOption<T = string> extends WithLocalizableName {
   readonly value: T
+  readonly disabled?: true
 }
 
-
-const PROJECT_EXPERIENCE_OPTIONS: SelectOption<bayes.bob.PreviousJobSimilarity>[] = [
-  {name: "Oui, j'ai déjà fait ce métier", value: 'DONE_THIS'},
-  {name: "J'ai déjà fait un métier similaire", value: 'DONE_SIMILAR'},
-  {name: "C'est un nouveau métier pour moi", value: 'NEVER_DONE'},
+const PROJECT_EXPERIENCE_OPTIONS: LocalizedSelectOption<bayes.bob.PreviousJobSimilarity>[] = [
+  {name: prepareT("Oui, j'ai déjà fait ce métier"), value: 'DONE_THIS'},
+  {name: prepareT("J'ai déjà fait un métier similaire"), value: 'DONE_SIMILAR'},
+  {name: prepareT("C'est un nouveau métier pour moi"), value: 'NEVER_DONE'},
 ]
 
-const PROJECT_LOCATION_AREA_TYPE_OPTIONS: SelectOption<bayes.bob.AreaType>[] = [
-  {name: 'Uniquement dans cette ville', value: 'CITY'},
-  {name: 'Dans le département', value: 'DEPARTEMENT'},
-  {name: 'Dans toute la région', value: 'REGION'},
-  {name: 'Dans toute la France', value: 'COUNTRY'},
-  {disabled: true, name: "À l'international", value: 'WORLD'},
+const PROJECT_LOCATION_AREA_TYPE_OPTIONS: LocalizedSelectOption<bayes.bob.AreaType>[] = [
+  {name: prepareT('Uniquement dans cette ville'), value: 'CITY'},
+  {name: prepareT('Dans le département'), value: 'DEPARTEMENT'},
+  {name: prepareT('Dans toute la région'), value: 'REGION'},
+  {name: prepareT('Dans toute la France'), value: 'COUNTRY'},
+  {disabled: true, name: prepareT("À l'international"), value: 'WORLD'},
 ]
 
-const PROJECT_EMPLOYMENT_TYPE_OPTIONS: SelectOption<bayes.bob.EmploymentType>[] = [
-  {name: 'CDI', value: 'CDI'},
-  {name: 'CDD long (+ de 3 mois)', value: 'CDD_OVER_3_MONTHS'},
-  {name: 'CDD court (- de 3 mois)', value: 'CDD_LESS_EQUAL_3_MONTHS'},
-  {name: 'interim', value: 'INTERIM'},
-  {name: 'alternance', value: 'ALTERNANCE'},
-  {name: 'stage', value: 'INTERNSHIP'},
+const PROJECT_EMPLOYMENT_TYPE_OPTIONS: LocalizedSelectOption<bayes.bob.EmploymentType>[] = [
+  {name: prepareT('CDI'), value: 'CDI'},
+  {name: prepareT('CDD long (+ de 3 mois)'), value: 'CDD_OVER_3_MONTHS'},
+  {name: prepareT('CDD court (- de 3 mois)'), value: 'CDD_LESS_EQUAL_3_MONTHS'},
+  {name: prepareT('interim'), value: 'INTERIM'},
+  {name: prepareT('alternance'), value: 'ALTERNANCE'},
+  {name: prepareT('stage'), value: 'INTERNSHIP'},
 ]
 
-const PROJECT_KIND_OPTIONS: SelectOption<bayes.bob.ProjectKind>[] = [
-  {name: 'Retrouver un emploi', value: 'FIND_A_NEW_JOB'},
-  {name: 'Me reconvertir', value: 'REORIENTATION'},
-  {name: 'Trouver mon premier emploi', value: 'FIND_A_FIRST_JOB'},
-  {name: 'Trouver un autre emploi (je suis en poste)', value: 'FIND_ANOTHER_JOB'},
+const PROJECT_KIND_OPTIONS: LocalizedSelectOption<bayes.bob.ProjectKind>[] = [
+  {name: prepareT('Retrouver un emploi'), value: 'FIND_A_NEW_JOB'},
+  {name: prepareT('Me reconvertir'), value: 'REORIENTATION'},
+  {name: prepareT('Trouver mon premier emploi'), value: 'FIND_A_FIRST_JOB'},
+  {name: prepareT('Trouver un autre emploi (je suis en poste)'), value: 'FIND_ANOTHER_JOB'},
   {
-    name: 'Développer ou reprendre une activité',
+    name: prepareT('Développer ou reprendre une activité'),
     value: 'CREATE_OR_TAKE_OVER_COMPANY',
   },
 ]
 
 
-const PROJECT_WORKLOAD_OPTIONS: SelectOption<bayes.bob.ProjectWorkload>[] = [
-  {name: 'à temps plein', value: 'FULL_TIME'},
-  {name: 'à temps partiel', value: 'PART_TIME'},
+const PROJECT_WORKLOAD_OPTIONS: LocalizedSelectOption<bayes.bob.ProjectWorkload>[] = [
+  {name: prepareT('à temps plein'), value: 'FULL_TIME'},
+  {name: prepareT('à temps partiel'), value: 'PART_TIME'},
 ]
 
 
@@ -61,44 +62,54 @@ const SALARY_TO_GROSS_ANNUAL_FACTORS = {
 
 
 const SENIORITY = {
+  CARREER: {
+    long: prepareT("avec plus de 20 ans d'expérience"),
+    short: prepareT('Plus de 20 ans'),
+  },
   EXPERT: {
-    long: "avec plus de 10 ans d'expérience",
-    short: 'Plus de 10 ans',
+    long: prepareT("avec plus de 10 ans d'expérience"),
+    short: prepareT('Plus de 10 ans'),
   },
   INTERMEDIARY: {
-    long: "avec entre 2 et 5 ans d'expérience",
-    short: '2 à 5 ans',
+    long: prepareT("avec entre 2 et 5 ans d'expérience"),
+    short: prepareT('2 à 5 ans'),
   },
   INTERN: {
-    long: 'avec une expérience de stage',
-    short: 'Stage',
+    long: prepareT('avec une expérience de stage'),
+    short: prepareT('Stage'),
   },
   JUNIOR: {
-    long: "avec moins de deux ans d'expérience",
-    short: 'Moins de 2 ans',
+    long: prepareT("avec moins de deux ans d'expérience"),
+    short: prepareT('Moins de 2 ans'),
+  },
+  NO_SENIORITY: {
+    long: prepareT('sans expérience'),
+    short: prepareT("pas d'expérience"),
   },
   SENIOR: {
-    long: "avec entre 5 et 10 ans d'expérience",
-    short: '6 à 10 ans',
+    long: prepareT("avec entre 5 et 10 ans d'expérience"),
+    short: prepareT('6 à 10 ans'),
   },
+  UNKNOWN_PROJECT_SENIORITY: undefined,
 } as const
 
 
 const SENIORITY_OPTIONS = (['INTERN', 'JUNIOR', 'INTERMEDIARY', 'SENIOR', 'EXPERT'] as const).
-  map((value): SelectOption<bayes.bob.ProjectSeniority> => ({name: SENIORITY[value].short, value}))
+  map((value): LocalizedSelectOption<bayes.bob.ProjectSeniority> =>
+    ({name: SENIORITY[value].short, value}))
 
 
-const PROJECT_PASSIONATE_OPTIONS: SelectOption<bayes.bob.PassionateLevel>[] = [
-  {name: 'Le métier de ma vie', value: 'LIFE_GOAL_JOB'},
-  {name: 'Un métier passionnant', value: 'PASSIONATING_JOB'},
-  {name: 'Un métier intéressant', value: 'LIKEABLE_JOB'},
-  {name: 'Un métier comme un autre', value: 'ALIMENTARY_JOB'},
+const PROJECT_PASSIONATE_OPTIONS: LocalizedSelectOption<bayes.bob.PassionateLevel>[] = [
+  {name: prepareT('Le métier de ma vie'), value: 'LIFE_GOAL_JOB'},
+  {name: prepareT('Un métier passionnant'), value: 'PASSIONATING_JOB'},
+  {name: prepareT('Un métier intéressant'), value: 'LIKEABLE_JOB'},
+  {name: prepareT('Un métier comme un autre'), value: 'ALIMENTARY_JOB'},
 ]
 
 
-const getSeniorityText = (seniority?: bayes.bob.ProjectSeniority): string => {
-  const {short = ''} = seniority && SENIORITY[seniority] || {}
-  return short
+const getSeniorityText = (translate: TFunction, seniority?: bayes.bob.ProjectSeniority): string => {
+  const {short = undefined} = seniority && SENIORITY[seniority] || {}
+  return short ? translate(short) : ''
 }
 
 interface TitleComponents {
@@ -107,51 +118,54 @@ interface TitleComponents {
   where?: string
 }
 
-const createProjectTitleComponents = (project: bayes.bob.Project, gender?: bayes.bob.Gender):
-TitleComponents => {
-  const {cityName, prefix} = inCityPrefix(project.city && project.city.name || '')
-  const where = prefix + cityName
-  if (project.targetJob) {
-    const {long = ''} = project.seniority && SENIORITY[project.seniority] || {}
-    return {
-      experience: long,
-      what: genderizeJob(project.targetJob, gender),
-      where,
+const createProjectTitleComponents =
+  (project: bayes.bob.Project, t: TFunction, gender?: bayes.bob.Gender):
+  TitleComponents => {
+    const {cityName, prefix} = inCityPrefix(project.city && project.city.name || '')
+    const where = prefix + cityName
+    if (project.targetJob) {
+      const {long = undefined} = project.seniority && SENIORITY[project.seniority] || {}
+      return {
+        // i18next-extract-disable-next-line
+        experience: long ? t(long) : '',
+        what: genderizeJob(project.targetJob, gender),
+        where,
+      }
     }
-  }
-  if (project.kind === 'CREATE_COMPANY') {
-    return {
-      what: 'Créer une entreprise',
-      where,
+    if (project.kind === 'CREATE_COMPANY') {
+      return {
+        what: t('Créer une entreprise'),
+        where,
+      }
     }
-  }
-  if (project.kind === 'TAKE_OVER_COMPANY') {
-    return {
-      what: 'Reprendre une entreprise',
-      where,
+    if (project.kind === 'TAKE_OVER_COMPANY') {
+      return {
+        what: t('Reprendre une entreprise'),
+        where,
+      }
     }
-  }
-  if (project.kind === 'REORIENTATION') {
-    return {
-      what: 'Me réorienter',
-      where,
+    if (project.kind === 'REORIENTATION') {
+      return {
+        what: t('Me réorienter'),
+        where,
+      }
     }
+    return {}
   }
-  return {}
-}
 
 
-const createProjectTitle = (newProject: bayes.bob.Project, gender?: bayes.bob.Gender):
-string|undefined => {
-  const {what, where} = createProjectTitleComponents(newProject, gender)
-  if (what && where) {
-    return `${what} ${where}`
+const createProjectTitle =
+  (newProject: bayes.bob.Project, t: TFunction, gender?: bayes.bob.Gender): string|undefined => {
+    const {what, where} = createProjectTitleComponents(newProject, t, gender)
+    if (what && where) {
+      return `${what} ${where}`
+    }
   }
-}
 
 
 const newProject =
-  (newProjectData: bayes.bob.Project, gender?: bayes.bob.Gender): bayes.bob.Project => {
+  (newProjectData: bayes.bob.Project, t: TFunction, gender?: bayes.bob.Gender):
+  bayes.bob.Project => {
     const {
       projectId: omittedProjectId,
       createdAt: omittedCreatedAt,
@@ -160,33 +174,30 @@ const newProject =
     return {
       ...cleanedProject,
       status: 'PROJECT_CURRENT',
-      title: createProjectTitle(newProjectData, gender),
+      title: createProjectTitle(newProjectData, t, gender),
     }
   }
 
 
-const getTrainingFulfillmentEstimateOptions =
-  (gender?: bayes.bob.Gender): SelectOption<bayes.bob.TrainingFulfillmentEstimate>[] => {
-    const genderE = gender === 'FEMININE' ? 'e' : ''
-    return [
-      {name: "Oui, j'ai les diplômes suffisants", value: 'ENOUGH_DIPLOMAS'},
-      {name: "Je ne pense pas, mais j'ai beaucoup d'expérience", value: 'ENOUGH_EXPERIENCE'},
-      {name: 'Bientôt, je fais une formation pour ce poste', value: 'CURRENTLY_IN_TRAINING'},
-      {name: `Je ne suis pas sûr${genderE}`, value: 'TRAINING_FULFILLMENT_NOT_SURE'},
-    ]
-  }
-
-
-const MILLISECS_PER_MONTH = 30.5 * 24 * 60 * 60 * 1000
-
-
-const isOldProject = (project?: bayes.bob.Project): boolean => {
-  if (!project || !project.createdAt) {
-    return false
-  }
-  const millisecondsSinceProjectCreation = Date.now() - new Date(project.createdAt).getTime()
-  return millisecondsSinceProjectCreation > 2 * MILLISECS_PER_MONTH
-}
+const TRAINING_FULFILLMENT_ESTIMATE_OPTIONS:
+readonly LocalizedSelectOption<bayes.bob.TrainingFulfillmentEstimate>[] = [
+  {
+    name: prepareT("Oui, j'ai les diplômes suffisants"),
+    value: 'ENOUGH_DIPLOMAS',
+  },
+  {
+    name: prepareT("Je ne pense pas, mais j'ai beaucoup d'expérience"),
+    value: 'ENOUGH_EXPERIENCE',
+  },
+  {
+    name: prepareT('Bientôt, je fais une formation pour ce poste'),
+    value: 'CURRENTLY_IN_TRAINING',
+  },
+  {
+    name: prepareT('Je ne suis pas sûr·e'),
+    value: 'TRAINING_FULFILLMENT_NOT_SURE',
+  },
+]
 
 
 const flattenProject = (projectFields: bayes.bob.Project): bayes.bob.Project => ({
@@ -210,5 +221,5 @@ export {
   PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_EMPLOYMENT_TYPE_OPTIONS,
   PROJECT_WORKLOAD_OPTIONS, PROJECT_KIND_OPTIONS, createProjectTitle, newProject,
   createProjectTitleComponents, getSeniorityText, SALARY_TO_GROSS_ANNUAL_FACTORS,
-  getTrainingFulfillmentEstimateOptions, isOldProject, flattenProject, SENIORITY_OPTIONS,
+  TRAINING_FULFILLMENT_ESTIMATE_OPTIONS, flattenProject, SENIORITY_OPTIONS,
 }

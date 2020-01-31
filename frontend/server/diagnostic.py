@@ -5,7 +5,8 @@ import collections
 import itertools
 import logging
 import random
-from typing import List, Iterable, Iterator, Optional, Tuple, Union
+import re
+from typing import List, Generator, Iterable, Iterator, Optional, Set, Tuple, Union
 
 import pymongo
 
@@ -22,6 +23,9 @@ from bob_emploi.frontend.api import user_pb2
 _ScoredAdvice = collections.namedtuple('ScoredAdvice', ['advice', 'score'])
 
 _RANDOM = random.Random()
+
+# Matches bolding separators: <strong> and </strong>.
+_BOLDED_STRING_SEP = re.compile(r'</?strong>')
 
 
 def maybe_diagnose(
@@ -55,8 +59,7 @@ def diagnose(
 
     diagnostic = project.diagnostic
 
-    scoring_project = scoring.ScoringProject(
-        project, user.profile, user.features_enabled, database, now=now.get())
+    scoring_project = scoring.ScoringProject(project, user, database, now=now.get())
     return diagnose_scoring_project(scoring_project, diagnostic)
 
 
@@ -137,14 +140,19 @@ _EMPLOYMENT_TYPES = {
 }
 
 
+def _create_bolded_string(text: str) -> diagnostic_pb2.BoldedString:
+    """Creates a BoldedString proto from a string containing <strong> markup."""
+
+    return diagnostic_pb2.BoldedString(string_parts=_BOLDED_STRING_SEP.split(text))
+
+
 def quick_diagnose(
         user: user_pb2.User, project: project_pb2.Project, user_diff: user_pb2.User,
         database: pymongo.database.Database) -> diagnostic_pb2.QuickDiagnostic:
     """Create a quick diagnostic of a project or user profile focused on the given field."""
 
     scoring_project = scoring.ScoringProject(
-        project or project_pb2.Project(), user.profile, user.features_enabled,
-        database, now=now.get())
+        project or project_pb2.Project(), user, database, now=now.get())
 
     response = diagnostic_pb2.QuickDiagnostic()
     has_departement_diff = user_diff.projects and user_diff.projects[0].city.departement_id
@@ -155,11 +163,11 @@ def quick_diagnose(
             if departement_count:
                 response.comments.add(
                     field=diagnostic_pb2.CITY_FIELD,
-                    comment=diagnostic_pb2.BoldedString(string_parts=[
-                        'Super, ',
-                        str(departement_count),
-                        ' personnes dans ce département ont déjà testé le diagnostic de Bob\xa0!',
-                    ]))
+                    comment=_create_bolded_string(scoring_project.translate_string(
+                        'Super, <strong>{count}</strong> personnes dans ce département ont déjà '
+                        'testé le diagnostic de Bob\xa0!',
+                    ).format(count=str(departement_count))),
+                )
 
     has_rome_id_diff = user_diff.projects and user_diff.projects[0].target_job.job_group.rome_id
     if has_rome_id_diff:
@@ -169,11 +177,11 @@ def quick_diagnose(
             if job_group_count:
                 response.comments.add(
                     field=diagnostic_pb2.TARGET_JOB_FIELD,
-                    comment=diagnostic_pb2.BoldedString(string_parts=[
-                        "Ça tombe bien, j'ai déjà accompagné ",
-                        str(job_group_count),
-                        ' personnes pour ce métier\xa0!',
-                    ]))
+                    comment=_create_bolded_string(scoring_project.translate_string(
+                        "Ça tombe bien, j'ai déjà accompagné <strong>{count}</strong> personnes "
+                        'pour ce métier\xa0!',
+                    ).format(count=str(job_group_count))),
+                )
 
     if user_diff.profile.year_of_birth or has_rome_id_diff or has_departement_diff:
         if user.profile.year_of_birth:
@@ -188,9 +196,11 @@ def quick_diagnose(
                     field=diagnostic_pb2.SALARY_FIELD,
                     is_before_question=True,
                     comment=diagnostic_pb2.BoldedString(string_parts=[
-                        'En général les gens demandent un salaire '
-                        f'{french.lower_first_letter(salary_estimation.short_text)} par mois.'
-                    ]))
+                        scoring_project.translate_string(
+                            'En général les gens demandent un salaire {of_salary} par mois.',
+                        ).format(of_salary=french.lower_first_letter(salary_estimation.short_text)),
+                    ]),
+                )
 
     if has_rome_id_diff:
         required_diplomas = sorted(
@@ -215,7 +225,9 @@ def quick_diagnose(
                 field=diagnostic_pb2.REQUESTED_DIPLOMA_FIELD,
                 is_before_question=True,
                 comment=diagnostic_pb2.BoldedString(string_parts=[
-                    f'Les offres demandent souvent un {diplomas} ou équivalent.'
+                    scoring_project.translate_string(
+                        'Les offres demandent souvent un {diplomas} ou équivalent.'
+                    ).format(diplomas=diplomas),
                 ]))
 
     if has_rome_id_diff or has_departement_diff:
@@ -223,17 +235,23 @@ def quick_diagnose(
         if local_diagnosis.imt.employment_type_percentages:
             main_employment_type_percentage = local_diagnosis.imt.employment_type_percentages[0]
             if main_employment_type_percentage.percentage > 98:
-                percentage_text = 'La plupart'
+                comment = scoring_project.translate_string(
+                    'La plupart des offres sont en {employment_type}.',
+                )
             else:
-                percentage_text = f'Plus de {int(main_employment_type_percentage.percentage)}%'
+                comment = scoring_project.translate_string(
+                    'Plus de {percentage}% des offres sont en {employment_type}.',
+                )
             if main_employment_type_percentage.employment_type in _EMPLOYMENT_TYPES:
                 response.comments.add(
                     field=diagnostic_pb2.EMPLOYMENT_TYPE_FIELD,
                     is_before_question=True,
-                    comment=diagnostic_pb2.BoldedString(string_parts=[
-                        f'{percentage_text} des offres sont '
-                        f'en {_EMPLOYMENT_TYPES[main_employment_type_percentage.employment_type]}.'
-                    ]))
+                    comment=_create_bolded_string(comment.format(
+                        percentage=str(int(main_employment_type_percentage.percentage)),
+                        employment_type=_EMPLOYMENT_TYPES[
+                            main_employment_type_percentage.employment_type],
+                    )),
+                )
 
     return response
 
@@ -466,6 +484,7 @@ def _get_find_what_you_like_relevance(
     return diagnostic_pb2.RELEVANT_AND_GOOD
 
 
+# TODO(pascal): Convert those to relevant scoring models.
 _CATEGORIES_RELEVANCE_GETTERS = {
     # TODO(pascal): Add a relevance getter for confidence-for-search
     'enhance-methods-to-interview': _get_enhance_methods_relevance,
@@ -475,11 +494,98 @@ _CATEGORIES_RELEVANCE_GETTERS = {
 }
 
 
+def _translate_category(
+        category: diagnostic_pb2.DiagnosticCategory, project: scoring.ScoringProject) \
+        -> diagnostic_pb2.DiagnosticCategory:
+    translated = diagnostic_pb2.DiagnosticCategory()
+    translated.CopyFrom(category)
+    translated.ClearField('relevance_scoring_model')
+    translated.metric_title = project.translate_string(category.metric_title)
+    translated.ClearField('metric_details_feminine')
+    details = project.user_profile.gender == user_pb2.FEMININE and \
+        category.metric_details_feminine or \
+        category.metric_details
+    translated.metric_details = project.translate_string(details)
+    return translated
+
+
+def _get_relevance_from_its_model(
+        category: diagnostic_pb2.DiagnosticCategory,
+        project: scoring.ScoringProject,
+        has_missing_fields: bool) \
+        -> diagnostic_pb2.CategoryRelevance:
+    if category.relevance_scoring_model:
+        relevance_score = project.score(category.relevance_scoring_model)
+        if relevance_score <= 0:
+            return diagnostic_pb2.NOT_RELEVANT
+        if relevance_score >= 3:
+            return diagnostic_pb2.RELEVANT_AND_GOOD
+        return diagnostic_pb2.NEUTRAL_RELEVANCE
+    try:
+        return _CATEGORIES_RELEVANCE_GETTERS[category.category_id](project)
+    except KeyError:
+        if has_missing_fields:
+            return diagnostic_pb2.NEUTRAL_RELEVANCE
+        return diagnostic_pb2.RELEVANT_AND_GOOD
+
+
+# TODO(cyrille): Find why python doesn't read the proto pyi to recognize CategoryRelevance
+# as a type.
+# TODO(cyrille): Profit from scoring models inheriting RelevanceModelBase.
+def _get_relevance(
+        category: diagnostic_pb2.DiagnosticCategory, project: scoring.ScoringProject) \
+        -> Tuple['diagnostic_pb2.CategoryRelevance', Set[str]]:
+    try:
+        if project.check_filters(category.filters):
+            return diagnostic_pb2.NEEDS_ATTENTION, set()
+        missing_fields: Set[str] = set()
+    except scoring.NotEnoughDataException as err:
+        # We don't have enough info about this category for the project,
+        # so we let the relevance model decide.
+        missing_fields = err.fields
+    return _get_relevance_from_its_model(category, project, bool(missing_fields)), missing_fields
+
+
+def _set_categories_relevance(
+        project: Union[scoring.ScoringProject, user_pb2.User],
+        categories: Optional[Iterable[diagnostic_pb2.DiagnosticCategory]],
+        database: Optional[pymongo.database.Database],
+        should_highlight_first_blocker: bool) -> \
+        Generator[diagnostic_pb2.DiagnosticCategory, None, Set[str]]:
+    if isinstance(project, user_pb2.User):
+        if not database:
+            raise AttributeError(
+                'Cannot call score_categories without a database to call upon.')
+        if not project.projects:
+            return set()
+        project = scoring.ScoringProject(project.projects[0], project, database)
+    else:
+        database = database or project.database
+    if not categories:
+        categories = list_categories(database)
+
+    is_highlight_set = False
+    missing_fields = set()
+    for category in categories:
+        translated = _translate_category(category, project)
+        translated.relevance, new_missings = _get_relevance(category, project)
+        missing_fields.update(new_missings)
+        is_blocker = translated.relevance == diagnostic_pb2.NEEDS_ATTENTION
+        if not is_blocker or is_highlight_set:
+            translated.is_highlighted = False
+        elif should_highlight_first_blocker or category.is_highlighted:
+            translated.is_highlighted = True
+            is_highlight_set = True
+        yield translated
+    return missing_fields
+
+
 def set_categories_relevance(
         project: Union[scoring.ScoringProject, user_pb2.User],
         categories: Optional[Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
-        database: Optional[pymongo.database.Database] = None) \
-        -> Iterator[diagnostic_pb2.DiagnosticCategory]:
+        database: Optional[pymongo.database.Database] = None,
+        should_highlight_first_blocker: bool = True) \
+        -> scoring.IteratorWithMissingFields[diagnostic_pb2.DiagnosticCategory]:
     """For all categories, tell whether it's relevant for a project.
 
     Arg list:
@@ -490,31 +596,15 @@ def set_categories_relevance(
         - database, the database in which to find the categories, if not specified.
             If `project` is a ScoringProject, defaults to `project.database`,
             otherwise, it's mandatory (raises an AttributeError).
-    Returns the list of categories, with a relevance qualifier.
+        - should_highlight_first_blocker, a flag to make sure the first category that needs
+            attention is highlighted for the end-user.
+    Returns an iterator with the list of categories, each having a relevance qualifier and
+    translated natural language fields. The iterator has an additionnal attribute `missing_fields`
+    that gives information about what would help to get a better diagnostic.
     """
 
-    if isinstance(project, user_pb2.User):
-        if not database:
-            raise AttributeError(
-                'Cannot call score_categories without a database to call upon.')
-        if not project.projects:
-            return None
-        project = scoring.ScoringProject(
-            project.projects[0], project.profile, project.features_enabled, database)
-    else:
-        database = database or project.database
-    if not categories:
-        categories = list_categories(database)
-    for category in categories:
-        if project.check_filters(category.filters):
-            category.relevance = diagnostic_pb2.NEEDS_ATTENTION
-        else:
-            try:
-                category.relevance = \
-                    _CATEGORIES_RELEVANCE_GETTERS[category.category_id](project)
-            except KeyError:
-                category.relevance = diagnostic_pb2.RELEVANT_AND_GOOD
-        yield category
+    return scoring.IteratorWithMissingFields(
+        _set_categories_relevance(project, categories, database, should_highlight_first_blocker))
 
 
 def find_category(

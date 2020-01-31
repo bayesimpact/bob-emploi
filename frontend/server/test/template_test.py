@@ -4,6 +4,7 @@ import datetime
 import itertools
 import unittest
 from unittest import mock
+from typing import Set
 
 import mongomock
 
@@ -15,6 +16,20 @@ from bob_emploi.frontend.api import user_pb2
 
 class PopulateProjectTemplateTest(unittest.TestCase):
     """All unit tests for populate_template."""
+
+    unused_variables: Set[str] = set()
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.unused_variables = set(
+            scoring.scoring_base._TEMPLATE_VARIABLES)  # pylint: disable=protected-access
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        unused_variables_string = ', '.join(cls.unused_variables)
+        cls().assertFalse(
+            cls.unused_variables,
+            msg=f"Some variables haven't been tested:\n{unused_variables_string}")
 
     def setUp(self) -> None:
         super().setUp()
@@ -36,27 +51,13 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'prefix': 'en ',
             'name': 'Auvergne-Rhône-Alpes',
         })
-        self.scoring_project = scoring.ScoringProject(
-            self.project, user_pb2.UserProfile(), user_pb2.Features(), self.database)
+        self.scoring_project = scoring.ScoringProject(self.project, user_pb2.User(), self.database)
 
     def _populate_template(self, template: str) -> str:
-        return self.scoring_project.populate_template(template)
-
-    def test_percent_template(self) -> None:
-        """All templates should follow the template pattern."""
-
-        # pylint: disable=protected-access
-        for variable in scoring.scoring_base._TEMPLATE_VARIABLES:
-            self.assertTrue(scoring.scoring_base._TEMPLATE_VAR.match(variable), msg=variable)
-
-    def test_case_different(self) -> None:
-        """Two different variables cannot be equal ignoring case."""
-
-        # pylint: disable=protected-access
-        for variable, other in itertools.combinations(scoring.scoring_base._TEMPLATE_VARIABLES, 2):
-            self.assertNotEqual(
-                variable.lower(), other.lower(),
-                msg=f'{variable} is almost the same as {other}')
+        populated = self.scoring_project.populate_template(template)
+        self.unused_variables -= set(
+            self.scoring_project._template_variables)  # pylint: disable=protected-access
+        return populated
 
     def test_capitalized(self) -> None:
         """Forces capitalization if needed."""
@@ -148,6 +149,18 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         self.assertEqual(
             'https://labonneboite.pole-emploi.fr/entreprises/Toulouse-31000/'
             'boucherie?sort=distance&d=10&h=1',
+            link)
+
+    def test_url_encode(self) -> None:
+        """Test URL encoding any var."""
+
+        self.scoring_project.user_profile.gender = user_pb2.MASCULINE
+        self.project.target_job.masculine_name = 'Employé de ménage'
+
+        link = self._populate_template(
+            'https://www.pole-emploi.fr/offres/?mots-clef=%urlEncodeJobName')
+        self.assertEqual(
+            'https://www.pole-emploi.fr/offres/?mots-clef=employ%C3%A9%20de%20m%C3%A9nage',
             link)
 
     def test_la_bonne_boite_dom(self) -> None:
@@ -242,6 +255,39 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             mock_warning.call_args_list[0][0][0])
 
         self.assertEqual('Je suis steward en %random.', sentence)
+
+    @mock.patch(scoring.logging.__name__ + '.warning')
+    def test_missing_titled_variables(self, mock_warning: mock.MagicMock) -> None:
+        """ Template still has some variable not replaced, and it's title cased."""
+
+        self.project.target_job.masculine_name = 'Steward'
+        self.project.target_job.feminine_name = 'Hôtesse'
+        self.project.seniority = project_pb2.SENIOR
+        sentence = self._populate_template('Je suis %MasculineJbName.')
+
+        mock_warning.assert_called_once()
+        self.assertEqual(
+            'One or more template variables have not been replaced in:\n'
+            'Je suis %MasculineJbName.',
+            mock_warning.call_args_list[0][0][0])
+
+        self.assertEqual('Je suis %MasculineJbName.', sentence)
+
+    @mock.patch(scoring.logging.__name__ + '.warning')
+    def test_url_encoding(self, mock_warning: mock.MagicMock) -> None:
+        """ Template has URL encoding that might look like missing variables."""
+
+        sentence = self._populate_template('https://www.studentjob.fr/offre?utf8=%E2%9C%93')
+
+        mock_warning.assert_not_called()
+
+        self.assertEqual('https://www.studentjob.fr/offre?utf8=%E2%9C%93', sentence)
+
+        sentence = self._populate_template('https://www.studentjob.fr/offre?utf8=%E2%ACfollow')
+
+        mock_warning.assert_not_called()
+
+        self.assertEqual('https://www.studentjob.fr/offre?utf8=%E2%ACfollow', sentence)
 
     def test_job_presentation(self) -> None:
         """Present a job name."""
@@ -581,6 +627,37 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'Mon travail nécessite un diplôme',
             self._populate_template('Mon travail nécessite %aRequiredDiploma'))
         mock_warning.assert_called_once()
+
+    def test_ids(self) -> None:
+        """Gives IDs for user's market in a URL."""
+
+        self.project.target_job.code_ogr = '10435'
+        self.assertEqual(
+            'https://emploi.gouv.fr?ogr=10435&city=69123&region=84',
+            self._populate_template(
+                'https://emploi.gouv.fr?ogr=%jobId&city=%cityId&region=%regionId'))
+
+
+class TemplateVariablesTest(unittest.TestCase):
+    """Meta tests for template variables."""
+
+    ALL_VARIABLES = set(
+        scoring.scoring_base._TEMPLATE_VARIABLES)  # pylint: disable=protected-access
+
+    def test_percent_template(self) -> None:
+        """All templates should follow the template pattern."""
+
+        for variable in self.ALL_VARIABLES:
+            self.assertTrue(scoring.TEMPLATE_VAR_PATTERN.match(variable), msg=variable)
+
+    def test_no_prefix(self) -> None:
+        """A variable cannot be a case-insensitive prefix of another one."""
+
+        for variable, other in itertools.combinations(
+                sorted(self.ALL_VARIABLES, key=len), 2):
+            self.assertFalse(
+                other.lower().startswith(variable.lower()),
+                msg=f'Template variable "{variable}" is a prefix of "{other}".')
 
 
 if __name__ == '__main__':

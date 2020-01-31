@@ -1,11 +1,13 @@
+import {TFunction} from 'i18next'
 import _isEqual from 'lodash/isEqual'
 import _keyBy from 'lodash/keyBy'
 import _memoize from 'lodash/memoize'
 import _pick from 'lodash/pick'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
 import ReactDragList from 'react-drag-list'
 import {connect} from 'react-redux'
+import {InputActionMeta} from 'react-select'
 import {Link} from 'react-router-dom'
 
 import {DispatchAllEvalActions, EvalRootState, getEvalFiltersUseCases,
@@ -19,16 +21,11 @@ import {Routes} from 'components/url'
 
 const emptyArray = [] as const
 
+
 interface SelectorProps {
   dispatch: DispatchAllEvalActions
   isFetching: boolean
-}
-
-
-interface SelectorState {
-  filters: readonly string[]
-  inputValue: string
-  useCases: readonly bayes.bob.UseCase[]
+  t: TFunction
 }
 
 
@@ -38,74 +35,68 @@ interface SelectOption<T> {
 }
 
 
-class UseCaseSelectorBase extends React.PureComponent<SelectorProps, SelectorState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    isFetching: PropTypes.bool,
-  }
+const UseCaseSelectorBase = (props: SelectorProps): React.ReactElement => {
+  const {dispatch, isFetching, t} = props
+  const [inputValue, setInputValue] = useState('')
+  const [filters, setFilters] = useState<readonly string[]>([])
+  const [useCases, setUseCases] = useState<readonly bayes.bob.UseCase[]>([])
 
-  public state: SelectorState = {
-    filters: [],
-    inputValue: '',
-    useCases: [],
-  }
-
-  private onInputChange = (inputValue: string, {action}): void => {
-    if (action !== 'input-blur' && inputValue && !inputValue.endsWith(' ')) {
-      this.setState({inputValue})
+  const onInputChange = useCallback((newInputValue: string, {action}: InputActionMeta): void => {
+    if (action !== 'input-blur' && newInputValue && !newInputValue.endsWith(' ')) {
+      setInputValue(newInputValue)
       return
     }
-    const stateUpdater: Pick<SelectorState, 'inputValue'> = {inputValue: ''}
-    const {filters, inputValue: oldInputValue} = this.state
-    const filter = inputValue.trim() || oldInputValue
+    setInputValue('')
+    const filter = inputValue.trim() || inputValue
     if (filter && !filters.includes(filter)) {
-      this.setState({
-        ...stateUpdater,
-        filters: [...filters, filter],
-      })
-    } else {
-      this.setState(stateUpdater)
+      setFilters([...filters, filter])
     }
-  }
+  }, [inputValue, filters])
 
-  private handleFiltersChange = (filters: string[]): void => this.setState({filters})
-
-  private onClick = (): void => {
-    this.props.dispatch(getEvalFiltersUseCases(this.state.filters)).
+  const onClick = useCallback((): void => {
+    dispatch(getEvalFiltersUseCases(filters)).
       then((response): void => {
         if (response) {
-          this.setState({useCases: response})
+          setUseCases(response)
         }
       })
-  }
+  }, [dispatch, filters])
+
+  const options = useMemo(
+    (): readonly SelectOption<string>[] =>
+      filters.map((value: string): SelectOption<string> => ({name: value, value})),
+    [filters],
+  )
 
   // TODO(cyrille): Maybe get a list of filter suggestions from server.
   // TODO(cyrille): Warn if we don't get any use case from server.
-  public render(): React.ReactNode {
-    const {filters, inputValue, useCases} = this.state
-    return <div style={{maxWidth: 600, padding: 20}}>
-      <Select<string>
-        onInputChange={this.onInputChange}
-        options={filters.map((value: string): SelectOption<string> => ({name: value, value}))}
-        isMulti={true} value={filters} autoFocus={true} inputValue={inputValue} menuIsOpen={false}
-        onChange={this.handleFiltersChange} />
-      <Button style={{margin: 20}} type="validation" onClick={this.onClick}>
-        Trouver des cas d'usage
-      </Button>
-      {this.props.isFetching ? <CircularProgress /> : <ul>
-        {useCases.map(({useCaseId, poolName, title, userData}): React.ReactNode =>
-          <li key={useCaseId} ><Link
-            target="_blank" to={`${Routes.EVAL_PAGE}/${useCaseId}?poolName=${poolName}`}>
-            {getUseCaseTitle(title, userData)}
-          </Link></li>)}
-      </ul>}
-    </div>
-  }
+  return <div style={{maxWidth: 600, padding: 20}}>
+    <Select<string>
+      onInputChange={onInputChange}
+      options={options}
+      isMulti={true} value={filters} autoFocus={true} inputValue={inputValue} menuIsOpen={false}
+      onChange={setFilters} />
+    <Button style={{margin: 20}} type="validation" onClick={onClick}>
+      Trouver des cas d'usage
+    </Button>
+    {isFetching ? <CircularProgress /> : <ul>
+      {useCases.map(({useCaseId, poolName, title, userData}): React.ReactNode =>
+        <li key={useCaseId} ><Link
+          target="_blank" to={`${Routes.EVAL_PAGE}/${useCaseId}?poolName=${poolName}`}>
+          {getUseCaseTitle(t, title, userData)}
+        </Link></li>)}
+    </ul>}
+  </div>
+}
+UseCaseSelectorBase.propTypes = {
+  dispatch: PropTypes.func.isRequired,
+  isFetching: PropTypes.bool,
+  t: PropTypes.func.isRequired,
 }
 const UseCaseSelector = connect(
   (
     {asyncState: {isFetching: {GET_EVAL_FILTERS_USE_CASES: isFetching = false}}}: EvalRootState,
-  ): {isFetching: boolean} => ({isFetching}))(UseCaseSelectorBase)
+  ): {isFetching: boolean} => ({isFetching}))(React.memo(UseCaseSelectorBase))
 
 
 interface FiltersProps {
@@ -158,7 +149,7 @@ class Filters extends React.PureComponent<FiltersProps> {
   }
 
   public static getDerivedStateFromProps(
-    unusedProps, {filters, validFilters: previous}: FiltersState):
+    unusedProps: FiltersProps, {filters, validFilters: previous}: FiltersState):
     Pick<FiltersState, 'validFilters'>|null {
     const validFilters = filters.
       filter(({change}): boolean => !change || change === 'added').
@@ -186,7 +177,8 @@ class Filters extends React.PureComponent<FiltersProps> {
     onChange && onChange(this.state.validFilters)
   }
 
-  private handleInputChange = ({target: {value}}): void =>
+  private handleInputChange =
+  ({currentTarget: {value}}: React.ChangeEvent<HTMLInputElement>): void =>
     value.endsWith(' ') ? this.addFilter() : this.setState({inputValue: value})
 
   private handleFilterChange = _memoize(
@@ -214,11 +206,11 @@ class Filters extends React.PureComponent<FiltersProps> {
       padding: '2px 5px',
       whiteSpace: 'nowrap',
     }
-    const filterStyle = (change): React.CSSProperties => ({
+    const filterStyle = (change: 'added'|'removed'|''): React.CSSProperties => ({
       color: change === 'added' ? colors.GREENISH_TEAL : 'initial',
       textDecoration: change === 'removed' ? 'line-through' : 'initial',
     })
-    const changeStyle = (change): React.CSSProperties => ({
+    const changeStyle = (change: 'added'|'removed'|''): React.CSSProperties => ({
       color: change === 'removed' ? colors.GREENISH_TEAL : colors.RED_PINK,
       cursor: 'pointer',
       fontWeight: 'bold',
@@ -255,135 +247,154 @@ interface BobThinkStatsProps {
   filters?: readonly string[]
   initial?: Category
   isEmptyThink?: boolean
-  onChange?: (field: string, value: string) => void
+  onChange?: (categoryChanges: Partial<Category>) => void
   order?: number
   style?: React.CSSProperties
+  t: TFunction
   totalCount?: number
 }
 
 
-class BobThinkStats extends React.PureComponent<BobThinkStatsProps, {areUseCasesShown: boolean}> {
-  public static propTypes = {
-    categoryId: PropTypes.string.isRequired,
-    count: PropTypes.number,
-    examples: PropTypes.arrayOf(PropTypes.shape({
-      useCaseId: PropTypes.string.isRequired,
-    }).isRequired),
-    filters: PropTypes.arrayOf(PropTypes.string.isRequired),
-    // TODO(cyrille): Add other fields once we compare them.
-    initial: PropTypes.shape({
-      count: PropTypes.number.isRequired,
-      filters: PropTypes.arrayOf(PropTypes.string.isRequired),
-      order: PropTypes.number,
-      totalCount: PropTypes.number.isRequired,
-    }),
-    isEmptyThink: PropTypes.bool,
-    onChange: PropTypes.func,
-    order: PropTypes.number,
-    style: PropTypes.object,
-    totalCount: PropTypes.number.isRequired,
-  }
-
-  public state = {
-    areUseCasesShown: false,
-  }
-
-  private handleChange = _memoize((field: string): ((v) => void) => (value: string): void => {
-    this.props.onChange && this.props.onChange(field, value)
-  })
-
-  private handleShowUseCases = _memoize((areUseCasesShown): (() => void) =>
-    (): void => this.setState({areUseCasesShown}))
-
-  public render(): React.ReactNode {
-    const {categoryId, count = 0, filters = [], initial = {}, isEmptyThink, order, style,
-      totalCount, examples = []} = this.props
-    const {
-      count: initialCount = 0,
-      filters: initialFilters = emptyArray,
-      order: initialOrder,
-      totalCount: initialTotal,
-    } = initial
-    const {areUseCasesShown} = this.state
-    const defaultElementStyle = {
-      flexShrink: 0,
-      marginRight: 10,
-    }
-    const containerStyle = {
-      alignItems: 'center',
-      border: `1px solid ${colors.MODAL_PROJECT_GREY}`,
-      display: 'flex',
-      padding: 5,
-      ...style,
-    }
-    const filtersContainerStyle: React.CSSProperties = {
-      ...defaultElementStyle,
-      display: 'inline-flex',
-      flex: 1,
-      flexWrap: 'wrap',
-      overflow: 'hidden',
-    }
-    const useCasesSpanStyle: React.CSSProperties = {
-      ...defaultElementStyle,
-      display: 'inline-block',
-      marginLeft: '1.4em',
-      position: 'relative',
-      zIndex: 0,
-    }
-    const useCasesContainerStyle: React.CSSProperties = {
-      backgroundColor: '#fff',
-      borderRadius: 5,
-      boxShadow: '0 10px 30px rgba(0, 0, 0, .2)',
-      display: 'block',
-      left: '50%',
-      overflow: 'hidden',
-      padding: 10,
-      position: 'absolute',
-      top: '50%',
-      transform: 'translate(-50%,-50%)',
-      zIndex: 1,
-    }
-    const categoryPercentage = Math.round(100 * count / (totalCount || 1))
-    // TODO(cyrille): Make a better UI involving table.
-    return <div style={containerStyle}>
-      <span style={{...defaultElementStyle, marginLeft: 10, width: '3em'}}>
-        {isEmptyThink ? null :
-          <ComparedValue old={initialOrder} value={order || 0}>{order}</ComparedValue>}
-      </span>
-      <span style={{...defaultElementStyle, width: '10em'}}>
-        {categoryId}
-      </span>
-      <span style={filtersContainerStyle}>
-        {isEmptyThink ? null :
-          <Filters initial={initialFilters} onChange={this.handleChange('filters')}>
-            {filters}
-          </Filters>}
-      </span>
-      <span style={{...defaultElementStyle, fontWeight: 'bold'}}>
-        <ComparedValue
-          old={Math.round(100 * initialCount / (initialTotal || 1))}
-          value={categoryPercentage} isHigherUp={true}>
-          <GrowingNumber number={categoryPercentage} />%
-        </ComparedValue>
-      </span>
-      {examples.length ? <span
-        onMouseEnter={this.handleShowUseCases(true)}
-        onMouseLeave={this.handleShowUseCases(false)}
-        style={useCasesSpanStyle}>
-        Use Cases
-        {areUseCasesShown ? <div style={useCasesContainerStyle}>
-          {examples.map(({useCaseId, poolName, title, userData}): React.ReactNode =>
-            <div key={useCaseId} style={{margin: 5}} ><Link
-              style={{whiteSpace: 'nowrap'}}
-              target="_blank" to={`${Routes.EVAL_PAGE}/${useCaseId}?poolName=${poolName}`}>
-              {getUseCaseTitle(title, userData)}
-            </Link></div>)}
-        </div> : null}
-      </span> :
-        <span style={{...defaultElementStyle, color: colors.RED_PINK}}>No Use Cases</span>}
-    </div>
-  }
+const bobThinkStatsDefaultElementStyle = {
+  flexShrink: 0,
+  marginRight: 10,
 }
+const filtersContainerStyle: React.CSSProperties = {
+  ...bobThinkStatsDefaultElementStyle,
+  display: 'inline-flex',
+  flex: 1,
+  flexWrap: 'wrap',
+  overflow: 'hidden',
+}
+const useCasesSpanStyle: React.CSSProperties = {
+  ...bobThinkStatsDefaultElementStyle,
+  display: 'inline-block',
+  marginLeft: '1.4em',
+  position: 'relative',
+  zIndex: 0,
+}
+const useCasesContainerStyle: React.CSSProperties = {
+  backgroundColor: '#fff',
+  borderRadius: 5,
+  boxShadow: '0 10px 30px rgba(0, 0, 0, .2)',
+  display: 'block',
+  left: '50%',
+  overflow: 'hidden',
+  padding: 10,
+  position: 'absolute',
+  top: '50%',
+  transform: 'translate(-50%,-50%)',
+  zIndex: 1,
+}
+const orderContainerStyle: React.CSSProperties = {
+  ...bobThinkStatsDefaultElementStyle,
+  marginLeft: 10,
+  width: '3em',
+}
+const categoryIdStyle: React.CSSProperties = {
+  ...bobThinkStatsDefaultElementStyle,
+  width: '10em',
+}
+const percentageContainerStyle: React.CSSProperties = {
+  ...bobThinkStatsDefaultElementStyle,
+  fontWeight: 'bold',
+}
+const noUseCasesStyle: React.CSSProperties = {
+  ...bobThinkStatsDefaultElementStyle,
+  color: colors.RED_PINK,
+}
+
+
+const BobThinkStatsBase = (props: BobThinkStatsProps): React.ReactElement => {
+  const {categoryId, count = 0, filters = [], initial = {}, isEmptyThink, onChange, order, style,
+    t, totalCount, examples = []} = props
+  const [areUseCasesShown, setAreUseCasesShown] = useState(false)
+
+  const handleChangeFilters = useCallback(
+    (filters: readonly string[]): void => onChange && onChange({filters}),
+    [onChange],
+  )
+
+  const showUseCases = useCallback(() => setAreUseCasesShown(true), [])
+  const hideUseCases = useCallback(() => setAreUseCasesShown(false), [])
+
+  const {
+    count: initialCount = 0,
+    filters: initialFilters = emptyArray,
+    order: initialOrder,
+    totalCount: initialTotal,
+  } = initial
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    alignItems: 'center',
+    border: `1px solid ${colors.MODAL_PROJECT_GREY}`,
+    display: 'flex',
+    padding: 5,
+    ...style,
+  }), [style])
+  const categoryPercentage = Math.round(100 * count / (totalCount || 1))
+  // TODO(cyrille): Make a better UI involving table.
+  return <div style={containerStyle}>
+    <span style={orderContainerStyle}>
+      {isEmptyThink ? null :
+        <ComparedValue old={initialOrder} value={order || 0}>{order}</ComparedValue>}
+    </span>
+    <span style={categoryIdStyle}>
+      {categoryId}
+    </span>
+    <span style={filtersContainerStyle}>
+      {isEmptyThink ? null :
+        <Filters initial={initialFilters} onChange={handleChangeFilters}>
+          {filters}
+        </Filters>}
+    </span>
+    <span style={percentageContainerStyle}>
+      <ComparedValue
+        old={Math.round(100 * initialCount / (initialTotal || 1))}
+        value={categoryPercentage} isHigherUp={true}>
+        <GrowingNumber number={categoryPercentage} />%
+      </ComparedValue>
+    </span>
+    {examples.length ? <span
+      onMouseEnter={showUseCases}
+      onMouseLeave={hideUseCases}
+      style={useCasesSpanStyle}>
+      Use Cases
+      {areUseCasesShown ? <div style={useCasesContainerStyle}>
+        {examples.map(({useCaseId, poolName, title, userData}): React.ReactNode =>
+          <div key={useCaseId} style={{margin: 5}} ><Link
+            style={{whiteSpace: 'nowrap'}}
+            target="_blank" to={`${Routes.EVAL_PAGE}/${useCaseId}?poolName=${poolName}`}>
+            {getUseCaseTitle(t, title, userData)}
+          </Link></div>)}
+      </div> : null}
+    </span> :
+      <span style={noUseCasesStyle}>
+        No Use Cases
+      </span>}
+  </div>
+}
+BobThinkStatsBase.propTypes = {
+  categoryId: PropTypes.string.isRequired,
+  count: PropTypes.number,
+  examples: PropTypes.arrayOf(PropTypes.shape({
+    useCaseId: PropTypes.string.isRequired,
+  }).isRequired),
+  filters: PropTypes.arrayOf(PropTypes.string.isRequired),
+  // TODO(cyrille): Add other fields once we compare them.
+  initial: PropTypes.shape({
+    count: PropTypes.number.isRequired,
+    filters: PropTypes.arrayOf(PropTypes.string.isRequired),
+    order: PropTypes.number,
+    totalCount: PropTypes.number.isRequired,
+  }),
+  isEmptyThink: PropTypes.bool,
+  onChange: PropTypes.func,
+  order: PropTypes.number,
+  style: PropTypes.object,
+  t: PropTypes.func.isRequired,
+  totalCount: PropTypes.number.isRequired,
+}
+const BobThinkStats = React.memo(BobThinkStatsBase)
 
 
 interface ComparedValueProps {
@@ -422,11 +433,16 @@ interface Category extends bayes.bob.DiagnosticCategory {
 }
 
 
-const makeSendableCategory =
-  (category): bayes.bob.DiagnosticCategory => _pick(category, ['categoryId', 'filters', 'order'])
+const makeSendableCategory = (category: ValidCategory): bayes.bob.DiagnosticCategory =>
+  _pick(category, ['categoryId', 'filters', 'order'])
 
 
-function hasCategoryId(c?: Category): c is Category & {categoryId: string} {
+interface ValidCategory extends Category {
+  categoryId: string
+}
+
+
+function hasCategoryId(c?: Category): c is ValidCategory {
   return !!(c && c.categoryId)
 }
 
@@ -435,12 +451,13 @@ interface CategoriesDistributionProps {
   dispatch: DispatchAllEvalActions
   isFetchingDistribution: boolean
   style: React.CSSProperties
+  t: TFunction
 }
 
 
 interface CategoriesDistributionState {
-  categories: readonly Category[]
-  initialCategories: {[categoryId: string]: Category}
+  categories: readonly ValidCategory[]
+  initialCategories: {[categoryId: string]: ValidCategory}
   initialMissing?: Category
   lastCategories?: bayes.bob.DiagnosticCategory[]
   maxCount: number
@@ -468,8 +485,9 @@ class CategoriesDistributionBase
     totalCount: 0,
   }
 
-  public static getDerivedStateFromProps(unusedProps, {categories}):
-  Pick<CategoriesDistributionState, 'sendableCategories'> {
+  public static getDerivedStateFromProps(
+    unusedProps: CategoriesDistributionProps, {categories}: CategoriesDistributionState):
+    Pick<CategoriesDistributionState, 'sendableCategories'> {
     return {sendableCategories: categories.map(makeSendableCategory)}
   }
 
@@ -482,7 +500,7 @@ class CategoriesDistributionBase
         const {categories = [], distribution = {}, missingUseCases = {}, totalCount = 0} = response;
         [...categories].sort(({order = 0}): number => order)
         const initialCategories = categories.filter(hasCategoryId).map(
-          ({categoryId, ...category}, index): Category => ({
+          ({categoryId, ...category}, index): ValidCategory => ({
             categoryId,
             ...category,
             ...distribution[categoryId],
@@ -498,11 +516,11 @@ class CategoriesDistributionBase
           missingUseCases,
           totalCount,
         })
-      }
+      },
     )
   }
 
-  private recompute = (event): void => {
+  private recompute = (event?: React.FormEvent): void => {
     event && event.preventDefault && event.preventDefault()
     const {categories, maxCount, sendableCategories} = this.state
     this.props.dispatch(getUseCaseDistribution(sendableCategories, maxCount)).then(
@@ -512,7 +530,7 @@ class CategoriesDistributionBase
         }
         const {distribution = {}, missingUseCases = {}, totalCount = 0} = response
         const newCategories = categories.filter(hasCategoryId).
-          map(({categoryId, ...category}): Category => ({
+          map(({categoryId, ...category}): ValidCategory => ({
             categoryId,
             ...category,
             ...distribution[categoryId],
@@ -525,37 +543,45 @@ class CategoriesDistributionBase
           missingUseCases,
           totalCount,
         })
-      }
+      },
     )
   }
 
-  private addCategory = (event): void => {
+  private addCategory = (event?: React.SyntheticEvent): void => {
     event && event.preventDefault && event.preventDefault()
     this.setState(({categories, newCategory, totalCount}):
-    Pick<CategoriesDistributionState, 'categories'|'newCategory'> => ({
-      categories: [...categories, {
-        categoryId: newCategory,
-        filters: [],
-        order: categories.length + 1,
-        totalCount,
-      }],
-      newCategory: '',
-    }))
+    Pick<CategoriesDistributionState, 'categories'|'newCategory'>|null => {
+      if (!newCategory) {
+        return null
+      }
+      return {
+        categories: [...categories, {
+          categoryId: newCategory,
+          filters: [],
+          order: categories.length + 1,
+          totalCount,
+        }],
+        newCategory: '',
+      }
+    })
   }
 
-  private handleCategoryChange = _memoize((changedIndex: number): ((field, value) => void) =>
-    (field, value): void => {
-      this.setState(({categories}): Pick<CategoriesDistributionState, 'categories'> => ({
-        categories: categories.map((category, index): Category => index === changedIndex ? {
-          ...category,
-          [field]: value,
-        } : category),
-      }))
-    })
+  private handleCategoryChange = _memoize(
+    (changedIndex: number): ((c: Partial<Category>) => void) =>
+      (change: Partial<Category>): void => {
+        this.setState(({categories}): Pick<CategoriesDistributionState, 'categories'> => ({
+          categories: categories.map((category, index): ValidCategory => index === changedIndex ? {
+            ...category,
+            ...change,
+          } : category),
+        }))
+      })
 
-  private handleDrag = (event, categories): void => {
+  private handleDrag = (unusedEvent: object, categories: readonly object[]): void => {
     this.setState({
-      categories: categories.map((category, index): Category => ({...category, order: index + 1})),
+      categories: (categories as readonly ValidCategory[]).
+        map((category: ValidCategory, index: number): ValidCategory =>
+          ({...category, order: index + 1})),
     })
   }
 
@@ -564,25 +590,27 @@ class CategoriesDistributionBase
   private handleMaxCountChange = (maxCountString: string): void =>
     this.setState({maxCount: parseInt(maxCountString || '0')})
 
-  private renderStats = (category: Category & {categoryId: string}, index: number):
-  React.ReactElement<BobThinkStats> =>
-    <BobThinkStats
+  private renderStats = (row: object, index: number): React.ReactElement => {
+    const category = row as Category & {categoryId: string}
+    return <BobThinkStats
       style={{backgroundColor: '#fff'}} onChange={this.handleCategoryChange(index)}
-      initial={this.state.initialCategories[category.categoryId]} {...category} />
+      initial={this.state.initialCategories[category.categoryId]} t={this.props.t} {...category} />
+  }
 
   private getMutableCategories = _memoize(
-    (categories: readonly Category[]): Category[] => [...categories])
+    (categories: readonly ValidCategory[]): ValidCategory[] => [...categories])
 
   public render(): React.ReactNode {
+    const {isFetchingDistribution, style, t} = this.props
     const {categories, initialMissing, newCategory, maxCount, missingUseCases,
       totalCount}: CategoriesDistributionState = this.state
-    if (this.props.isFetchingDistribution) {
+    if (isFetchingDistribution) {
       return <CircularProgress />
     }
     if (!totalCount) {
       return null
     }
-    return <div style={{padding: 10, ...this.props.style}}>
+    return <div style={{padding: 10, ...style}}>
       {/* TODO(pascal): Fix ReactDragList so that it does not modify its props! */}
       <ReactDragList
         dataSource={this.getMutableCategories(categories)}
@@ -592,7 +620,7 @@ class CategoriesDistributionBase
         onUpdate={this.handleDrag} />
       <BobThinkStats
         {...{...missingUseCases, totalCount}} initial={initialMissing} isEmptyThink={true}
-        categoryId="In need of a category" />
+        categoryId="In need of a category" t={t} />
       <form onSubmit={this.addCategory} style={{alignItems: 'center', display: 'flex'}}>
         <Input
           placeholder="Nouvelle catégorie" value={newCategory}
@@ -619,7 +647,7 @@ class CategoriesDistributionBase
 }
 const CategoriesDistribution = connect(
   ({asyncState: {isFetching}}: EvalRootState): {isFetchingDistribution: boolean} => ({
-    isFetchingDistribution: isFetching['GET_USE_CASE_DISTRIBUTION'],
+    isFetchingDistribution: !!isFetching['GET_USE_CASE_DISTRIBUTION'],
   }))(CategoriesDistributionBase)
 
 

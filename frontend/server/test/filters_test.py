@@ -575,6 +575,36 @@ class MediumQualificationFilterTestCase(FilterTestBase):
         self._assert_pass_filter()
 
 
+class NoQualificationFilterTestCase(FilterTestBase):
+    """Unit tests for the _UserProfileFilter class for users that have no degrees."""
+
+    model_id = 'for-no-degree'
+
+    def test_phd(self) -> None:
+        """User has a PhD."""
+
+        self.persona.user_profile.highest_degree = job_pb2.DEA_DESS_MASTER_PHD
+        self._assert_fail_filter()
+
+    def test_bachelor(self) -> None:
+        """User has a bachelor degree."""
+
+        self.persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
+        self._assert_fail_filter()
+
+    def test_no_degree(self) -> None:
+        """User has no degree."""
+
+        self.persona.user_profile.highest_degree = job_pb2.NO_DEGREE
+        self._assert_pass_filter()
+
+    def test_dut(self) -> None:
+        """User has a DUT."""
+
+        self.persona.user_profile.highest_degree = job_pb2.BTS_DUT_DEUG
+        self._assert_fail_filter()
+
+
 class NegateFilterTestCase(FilterTestBase):
     """Unit tests for the negate filter."""
 
@@ -702,7 +732,6 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1601',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 7,
             }
         })
@@ -716,7 +745,6 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 5,
             }
         })
@@ -730,7 +758,6 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': -1,
             }
         })
@@ -744,7 +771,6 @@ class HighMarketStressFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 0,
             }
         })
@@ -764,7 +790,6 @@ class UnstressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1601',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 7,
             }
         })
@@ -778,7 +803,6 @@ class UnstressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 2,
             }
         })
@@ -792,7 +816,6 @@ class UnstressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': -1,
             }
         })
@@ -806,7 +829,6 @@ class UnstressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 0,
                 'yearlyAvgOffersPer10Candidates': 0,
             }
         })
@@ -826,7 +848,6 @@ class StressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1601',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 7,
             }
         })
@@ -840,7 +861,6 @@ class StressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': 2,
             }
         })
@@ -855,7 +875,6 @@ class StressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 10,
                 'yearlyAvgOffersPer10Candidates': -1,
             }
         })
@@ -869,7 +888,6 @@ class StressedMarketFilterTestCase(FilterTestBase):
         self.database.local_diagnosis.insert_one({
             '_id': '19:M1602',
             'imt': {
-                'yearlyAvgOffersDenominator': 0,
                 'yearlyAvgOffersPer10Candidates': 0,
             }
         })
@@ -1321,6 +1339,37 @@ class LongAccumulatedSearcherFilterTestCase(FilterTestBase):
         self._assert_fail_filter()
 
 
+class LongSearchFilterTestCase(FilterTestBase):
+    """Unit tests for the BaseFilter class for users that are searching for a long time."""
+
+    model_id = 'for-long-search(12)'
+
+    def test_not_started(self) -> None:
+        """User hasn't started on their project yet."""
+
+        self.persona.project.job_search_has_not_started = True
+        self.persona.project.job_search_length_months = -1
+        if not self.persona.project.HasField('created_at'):
+            self.persona.project.created_at.GetCurrentTime()
+        self._assert_fail_filter()
+
+    def test_just_started(self) -> None:
+        """User has just started this project."""
+
+        self.persona.project.job_search_length_months = 1
+        self.persona.project.job_search_started_at.FromDatetime(
+            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=30.5))
+        self._assert_fail_filter()
+
+    def test_started_2_years_ago(self) -> None:
+        """User has been working on this project for 2 years."""
+
+        self.persona.project.job_search_length_months = 24
+        self.persona.project.job_search_started_at.FromDatetime(
+            self.persona.project.created_at.ToDatetime() - datetime.timedelta(days=732))
+        self._assert_pass_filter()
+
+
 class RuralAreaFilterTestCase(FilterTestBase):
     """Unit tests for users living in a rural area."""
 
@@ -1745,7 +1794,7 @@ class DriverFilterTestCase(FilterTestBase):
     def test_has_no_license(self) -> None:
         """User does not have a driving license."""
 
-        self.persona.user_profile.has_car_driving_license = user_pb2.FALSE
+        self.persona.user_profile.has_car_driving_license = project_pb2.FALSE
         del self.persona.user_profile.driving_licenses[:]
         self._assert_fail_filter()
 
@@ -1758,7 +1807,7 @@ class DriverFilterTestCase(FilterTestBase):
     def test_has_car_driving_license(self) -> None:
         """User has car driving license."""
 
-        self.persona.user_profile.has_car_driving_license = user_pb2.TRUE
+        self.persona.user_profile.has_car_driving_license = project_pb2.TRUE
         self._assert_pass_filter()
 
 
@@ -1920,7 +1969,7 @@ class VeryFrustratedTestCase(FilterTestBase):
 
         self.persona.user_profile.custom_frustrations.extend([
             'la famille', 'les transports', 'la fatigue', 'la télé', 'le terrorisme'])
-        self._assert_pass_filter()
+        self._assert_fail_filter()
 
     def buggy_customly_frustrated(self) -> None:
         """User has the same custom frustration several times."""
@@ -1937,7 +1986,96 @@ class VeryFrustratedTestCase(FilterTestBase):
         self.persona.user_profile.frustrations.extend([user_pb2.NO_OFFERS, user_pb2.MOTIVATION])
         self.persona.user_profile.custom_frustrations.extend([
             'la famille', 'les transports', 'la fatigue'])
+
+
+class ForAnyProjectFilterTests(FilterTestBase):
+    """Unit tests for the "For any project" operator."""
+
+    model_id = 'for-any-project(for-job-group(D1102))'
+
+    def test_all_project_matches(self) -> None:
+        """All projects match the filter."""
+
+        if not self.persona.user.projects:
+            self.persona.user.projects.add()
+        for project in self.persona.user.projects:
+            project.target_job.job_group.rome_id = 'D1102'
+
         self._assert_pass_filter()
+
+    def test_second_project_matches(self) -> None:
+        """The second project matches the filter."""
+
+        self.persona.project.target_job.job_group.rome_id = 'D1101'
+        new_project = self.persona.user.projects.add()
+        new_project.target_job.job_group.rome_id = 'D1102'
+
+        self._assert_pass_filter()
+
+    def test_no_project_matches(self) -> None:
+        """No project matches the filter."""
+
+        for project in self.persona.user.projects:
+            if project.target_job.job_group.rome_id == 'D1102':
+                project.target_job.job_group.rome_id = 'D1101'
+
+        self._assert_fail_filter()
+
+
+class ForAllProjectFilterTests(FilterTestBase):
+    """Unit tests for the "For all for-all-projects" operator."""
+
+    model_id = 'for-all-projects(for-job-group(D1102))'
+
+    def test_all_project_matches(self) -> None:
+        """All projects match the filter."""
+
+        for project in self.persona.user.projects:
+            project.target_job.job_group.rome_id = 'D1102'
+
+        self._assert_pass_filter()
+
+    def test_second_project_matches(self) -> None:
+        """The second project matches the filter."""
+
+        self.persona.project.target_job.job_group.rome_id = 'D1101'
+        new_project = self.persona.user.projects.add()
+        new_project.target_job.job_group.rome_id = 'D1102'
+
+        self._assert_fail_filter()
+
+    def test_no_project_matches(self) -> None:
+        """No project matches the filter."""
+
+        for project in self.persona.user.projects:
+            if project.target_job.job_group.rome_id == 'D1102':
+                project.target_job.job_group.rome_id = 'D1101'
+
+        self._assert_fail_filter()
+
+
+class ForWithResumeFilterTests(FilterTestBase):
+    """Unit tests for the for-with-resume filter."""
+
+    model_id = 'for-with-resume'
+
+    def test_has_resume(self) -> None:
+        """User has a resume for their project."""
+
+        self.persona.project.has_resume = project_pb2.TRUE
+        self._assert_pass_filter()
+
+    def test_no_resume(self) -> None:
+        """User doesn't have a resume."""
+
+        self.persona.project.has_resume = project_pb2.FALSE
+        self._assert_fail_filter()
+
+    def test_unknown_resume(self) -> None:
+        """We don't know whether user has a resume or not."""
+
+        self.persona.project.ClearField('has_resume')
+        self._assert_fail_filter()
 
 
 if __name__ == '__main__':

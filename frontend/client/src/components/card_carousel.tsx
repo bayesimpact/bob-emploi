@@ -18,7 +18,7 @@ const numCardsToShow = (totalWidth: number, isLarge?: boolean): number => {
 
 interface CarouselProps {
   backGroundColor?: string
-  children: ReactStylableElement[]
+  children: readonly ReactStylableElement[]
   isLarge?: boolean
   maxWidth?: number
 }
@@ -107,13 +107,13 @@ const CardCarouselBase: React.FC<CarouselProps> = (props: CarouselProps): React.
     width: spaceBetweenCards * (children.length - 1) + cardWidth * children.length,
     ...SmoothTransitions,
   }
-  const cardStyle = (isVisible): React.CSSProperties => ({
+  const cardStyle = (isVisible: boolean): React.CSSProperties => ({
     flexShrink: 0,
     width: cardWidth,
     // Hide box-shadow on hidden cards except during transition.
     ...isTransitioning || isVisible ? {} : {boxShadow: 'none'},
   })
-  const disappearingStyle = (isLeft): React.CSSProperties => ({
+  const disappearingStyle = (isLeft: boolean): React.CSSProperties => ({
     background: `linear-gradient(
       to ${isLeft ? 'right' : 'left'}, ${backGroundColor || '#fff'}, transparent)`,
     bottom: 0,

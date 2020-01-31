@@ -17,6 +17,8 @@ class SalonArlesTestCase(mail_blast_test.CampaignTestBase):
 
         self.user.profile.gender = user_pb2.MASCULINE
         self.user.profile.name = 'Patrick'
+        self.project.project_id = '0'
+        self.project.advices.add().advice_id = 'improve-interview'
         self.project.target_job.job_group.rome_id = 'G1204'
         self.project.area_type = geo_pb2.CITY
         self.project.city.city_id = '13004'
@@ -26,6 +28,11 @@ class SalonArlesTestCase(mail_blast_test.CampaignTestBase):
         self._assert_user_receives_campaign()
 
         self._assert_has_unsubscribe_link()
+
+        self._assert_has_logged_url(
+            'improveInterviewAdviceUrl',
+            '/projet/0/methode/improve-interview',
+        )
 
         self._assert_remaining_variables({
             'firstName': 'Patrick',
@@ -64,6 +71,7 @@ class SalonArlesTestCase(mail_blast_test.CampaignTestBase):
         self._assert_remaining_variables({
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
+            'improveInterviewAdviceUrl': '',
             'isLocal': '',
         })
 

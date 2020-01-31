@@ -30,7 +30,8 @@ const HelpDeskLinkBase: React.FC<HelpDeskLinkProps> =
     }
     onClick && onClick(event)
   }, [dispatch, hasUser, onClick, ticketId])
-  const queryString = hasUser ? '?' + stringify({'identifiant_bob': ticketId}) : ''
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  const queryString = hasUser ? '?' + stringify({identifiant_bob: ticketId}) : ''
   const finalHref = (href || config.helpRequestUrl) + queryString
   const finalStyle = useMemo(() => ({
     color: 'inherit',

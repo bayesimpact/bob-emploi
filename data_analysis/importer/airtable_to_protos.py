@@ -22,7 +22,8 @@ import json
 import logging
 import os
 import typing
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, \
+    Type, Union
 
 from airtable import airtable
 from google.protobuf import json_format
@@ -125,7 +126,8 @@ class ProtoAirtableConverter(object):
     def __init__(
             self, proto_type: Type[message.Message],
             id_field: Optional[str] = None,
-            required_fields: Iterable[str] = ()) -> None:
+            required_fields: Iterable[str] = (),
+            unique_field_tuples: Iterable[Iterable[str]] = ()) -> None:
         self._proto_type = proto_type
         self._id_field = id_field
         self._required_fields_set = set(required_fields)
@@ -143,6 +145,7 @@ class ProtoAirtableConverter(object):
         # depend on how it's used there.
         self.sort_key = self._sort_key
         self._unarray_fields: Iterable[str] = ()
+        self._unique_field_tuples = list(unique_field_tuples)
 
     proto_type = property(lambda self: self._proto_type)
     id_field = property(lambda self: self._id_field)
@@ -226,6 +229,14 @@ class ProtoAirtableConverter(object):
         """
 
         return 0
+
+    def unique_keys(self, record: Dict[str, Any]) -> Sequence[Any]:
+        """Function to return keys that should be unique among other records."""
+
+        return tuple(
+            tuple(record[field] for field in unique_field)
+            for unique_field in self._unique_field_tuples
+        )
 
     def set_fields_sorter(
             self: ConverterType, sort_lambda: Callable[[Dict[str, Any]], Any]) \
@@ -426,7 +437,8 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
         strategy_pb2.StrategyModule, None,
         required_fields=('trigger_scoring_model', 'title', 'category_ids')),
     'StrategyAdviceTemplate': ProtoAirtableConverter(
-        strategy_pb2.StrategyAdviceTemplate, None, required_fields=('advice_id', 'strategy_id')
+        strategy_pb2.StrategyAdviceTemplate, None, required_fields=('advice_id', 'strategy_id'),
+        unique_field_tuples=(('strategyId', 'adviceId'),),
     ).set_fields_sorter(lambda record: record.get('strategy_id')).set_first_only_fields(
         'adviceId', 'strategyId'),
 }
@@ -479,6 +491,29 @@ def airtable2dicts(base_id: str, table: str, proto: str, view: Optional[str] = N
                 'An error happened while converting the record %s:\n%s', record.get('id'), error)
             continue
         proto_records.append(converted)
+
+        # Check for records unicity.
+    all_unique_keys: Optional[Sequence[Set[Any]]] = None
+    for record in proto_records:
+        unique_keys = converter.unique_keys(record)
+        if all_unique_keys is None:
+            all_unique_keys = [set((key,)) for key in unique_keys]
+            continue
+        if len(unique_keys) != len(all_unique_keys):
+            logging.error(
+                'The record "%s" with unique keys "%r" does not have the same number of '
+                'unique keys than the others (%d).',
+                record_id, unique_keys, len(all_unique_keys))
+            has_error = True
+            continue
+        for index, key in enumerate(unique_keys):
+            if key in all_unique_keys[index]:
+                logging.error(
+                    'There are duplicate records for the %d key: "%r" (see record "%s")',
+                    index, key, record_id)
+                has_error = True
+            all_unique_keys[index].add(key)
+
     has_error |= _has_validation_errors(proto_records, converter.proto_type, converter.checkers)
     if has_error:
         raise mongo.InvalidValueError(

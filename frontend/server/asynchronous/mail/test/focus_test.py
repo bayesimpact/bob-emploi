@@ -8,6 +8,7 @@ from unittest import mock
 import mongomock
 import requests
 
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server.asynchronous.mail import focus
 from bob_emploi.frontend.server.test import mailjetmock
 
@@ -15,7 +16,8 @@ from bob_emploi.frontend.server.test import mailjetmock
 # updated as the tests here depend on it to be complete and accurate.
 _GOLDEN_FOCUS_CAMPAIGNS = (
     'focus-body-language', 'focus-network', 'focus-self-develop', 'focus-spontaneous',
-    'galita-1', 'galita-2', 'galita-3', 'improve-cv', 'imt', 'network-plus',
+    'galita-1', 'galita-2', 'galita-3', 'get-diploma', 'improve-cv', 'imt', 'jobbing',
+    'network-plus', 'prepare-your-application',
 )
 
 
@@ -204,8 +206,19 @@ class SendFocusEmailTest(unittest.TestCase):
     def test_send_all_focus_emails(self, unused_mock_logging: mock.MagicMock) -> None:
         """Sending all focus emails in 6 months."""
 
-        for unused_day in range(180):
+        days_without_email = 0
+        sent_emails_count = 0
+
+        # Try sending emails until there has been a month without any email sent.
+        while days_without_email < 30 and sent_emails_count <= len(_GOLDEN_FOCUS_CAMPAIGNS):
             focus.main(['send', '--disable-sentry'])
+
+            emails_sent = mailjetmock.get_all_sent_messages()
+            if len(emails_sent) > sent_emails_count:
+                sent_emails_count = len(emails_sent)
+                days_without_email = 0
+            else:
+                days_without_email += 1
 
             self.mock_now.return_value += datetime.timedelta(days=1)
 
@@ -215,13 +228,25 @@ class SendFocusEmailTest(unittest.TestCase):
 
         user_data = self._db.user_test.user.find_one()
         campaigns_sent = [e.get('campaignId') for e in user_data['emailsSent']]
-        self.assertEqual(sorted(set(campaigns_sent)), sorted(campaigns_sent), msg='No duplicates')
+        self.assertCountEqual(set(campaigns_sent), campaigns_sent, msg='No duplicates')
         self.assertLessEqual(set(campaigns_sent), set(_GOLDEN_FOCUS_CAMPAIGNS))
 
-        last_sent_at = user_data['emailsSent'][-1]['sentAt']
-        self.assertGreaterEqual('2018-08', last_sent_at, msg='No emails sent after 3 months.')
+        # Try sending emails until the next check.
+        next_date = datetime.datetime.fromisoformat(user_data['sendCoachingEmailAfter'][:-1])
+        while next_date >= self.mock_now.return_value:
+            focus.main(['send', '--disable-sentry'])
 
-        self.assertLess('2018-12', user_data.get('sendCoachingEmailAfter'))
+            self.mock_now.return_value += datetime.timedelta(days=1)
+
+        self.assertEqual(
+            len(emails_sent), len(mailjetmock.get_all_sent_messages()),
+            msg='No new messages.'
+            ' There probably is an issue with time sensitive conditions on some emails')
+        user_data = self._db.user_test.user.find_one()
+        # Next check should be at least a month from now.
+        self.assertLessEqual(
+            self.mock_now.return_value + datetime.timedelta(days=30),
+            datetime.datetime.fromisoformat(user_data['sendCoachingEmailAfter'][:-1]))
 
     @mock.patch(focus.logging.__name__ + '.info')
     @mock.patch(focus.random.__name__ + '.random', new=lambda: 0.5)
@@ -244,7 +269,7 @@ class SendFocusEmailTest(unittest.TestCase):
 
         self.assertFalse(mailjetmock.get_all_sent_messages())
         user_data = self._db.user_test.user.find_one()
-        self.assertEqual(1, len(user_data.get('emailsSent')))
+        self.assertEqual(1, len(user_data.get('emailsSent', [])))
 
         # A month later, there should be another email.
         for unused_data in range(30):
@@ -255,7 +280,7 @@ class SendFocusEmailTest(unittest.TestCase):
             ['pascal@example.fr'],
             [m.recipient['Email'] for m in mailjetmock.get_all_sent_messages()])
         user_data = self._db.user_test.user.find_one()
-        self.assertEqual(2, len(user_data.get('emailsSent')))
+        self.assertEqual(2, len(user_data.get('emailsSent', [])))
         self.assertIn(user_data['emailsSent'][1]['campaignId'], _GOLDEN_FOCUS_CAMPAIGNS)
 
     def test_dont_send_to_deleted(self) -> None:
@@ -333,6 +358,24 @@ class SendFocusEmailTest(unittest.TestCase):
 
         mock_error.assert_called_once_with(
             'Please set SENTRY_DSN to enable logging to Sentry, or use --disable-sentry option')
+        self.assertFalse(mailjetmock.get_all_sent_messages())
+
+    def test_ghost_mode(self) -> None:
+        """Test the ghost mode."""
+
+        user = user_pb2.User()
+        user.profile.coaching_email_frequency = user_pb2.EMAIL_ONCE_A_MONTH
+        user.profile.frustrations.append(user_pb2.SELF_CONFIDENCE)
+        user.projects.add()
+
+        campaign_id = focus.send_focus_email_to_user(
+            'ghost', user, database=self._db, users_database=self._db,
+            instant=datetime.datetime.now())
+
+        self.assertIn(campaign_id, _GOLDEN_FOCUS_CAMPAIGNS)
+        self.assertEqual([campaign_id], [e.campaign_id for e in user.emails_sent])
+        self.assertGreater(user.send_coaching_email_after.ToDatetime(), datetime.datetime.now())
+
         self.assertFalse(mailjetmock.get_all_sent_messages())
 
 

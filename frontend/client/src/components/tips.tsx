@@ -1,6 +1,7 @@
 import _memoize from 'lodash/memoize'
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
+import {WithTranslation, withTranslation} from 'react-i18next'
 import {connect} from 'react-redux'
 import VisibilitySensor from 'react-visibility-sensor'
 
@@ -32,7 +33,7 @@ interface TipsListOwnProps {
 }
 
 
-interface TipsListProps extends TipsListConnectedProps, TipsListOwnProps {
+interface TipsListProps extends TipsListConnectedProps, TipsListOwnProps, WithTranslation {
   dispatch: DispatchAllActions
 }
 
@@ -49,8 +50,8 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
     dispatch: PropTypes.func.isRequired,
     project: PropTypes.object.isRequired,
     style: PropTypes.object,
+    t: PropTypes.func.isRequired,
     tips: PropTypes.arrayOf(PropTypes.object.isRequired).isRequired,
-    userYou: PropTypes.func.isRequired,
   }
 
   public state: TipsListState = {
@@ -95,7 +96,7 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
   private handleCloseTip = (): void => this.setState({openTip: undefined})
 
   public render(): React.ReactNode {
-    const {advice, project, style, userYou, tips} = this.props
+    const {advice, project, style, t, tips} = this.props
     const {numTipsShown, openTip} = this.state
     if (!tips.length) {
       return <div style={style} />
@@ -115,11 +116,10 @@ class TipsListBase extends React.PureComponent<TipsListProps, TipsListState> {
       <ActionDescriptionModal
         action={openTip}
         onClose={this.handleCloseTip}
-        isShown={!!openTip}
-        userYou={userYou} />
+        isShown={!!openTip} />
       <div style={titleStyle}>
         <PaddedOnMobile>
-          Voici quelques astuces pour {getAdviceGoal(advice, userYou)}&nbsp;:
+          Voici quelques astuces pour {getAdviceGoal(advice, t)}&nbsp;:
         </PaddedOnMobile>
       </div>
       <VisibilitySensor
@@ -146,7 +146,7 @@ const TipsList = connect(
     {advice: {adviceId = ''}, project: {projectId = ''}}: TipsListOwnProps,
   ): TipsListConnectedProps => ({
     tips: (adviceTips && adviceTips[projectId] || {})[adviceId] || emptyArray,
-  }))(TipsListBase)
+  }))(withTranslation()(TipsListBase))
 
 
 class AppearingComponent

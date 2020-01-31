@@ -15,7 +15,7 @@ interface CardState {
 }
 
 
-class ExpandedAdviceCardContentBase extends React.PureComponent<
+class ImmersionMiloMethod extends React.PureComponent<
 CardWithContentProps<bayes.bob.MissionLocaleData>, CardState> {
   public static propTypes = {
     adviceData: PropTypes.shape({
@@ -130,8 +130,7 @@ CardWithContentProps<bayes.bob.MissionLocaleData>, CardState> {
   }
 }
 const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.MissionLocaleData, CardProps>(
-    ExpandedAdviceCardContentBase)
+  connectExpandedCardWithContent<bayes.bob.MissionLocaleData, CardProps>(ImmersionMiloMethod)
 
 
 export default {ExpandedAdviceCardContent, Picto}

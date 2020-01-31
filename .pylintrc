@@ -19,8 +19,8 @@ ignore-long-lines=https?://\S{50}
 notes=FIXME,XXX
 string-quote=single-avoid-escape
 allowed-direct-imports=typing.{
-    AbstractSet,Any,Callable,Dict,ItemsView,Iterable,Iterator,KeysView,List,Mapping,
-    MutableMapping,NoReturn,Optional,Pattern,Sequence,Set,TextIO,Tuple,Type,Union},
+    AbstractSet,Any,Callable,Dict,Generator,ItemsView,Iterable,Iterator,KeysView,List,Literal,
+    Mapping,MutableMapping,NoReturn,Optional,Pattern,Sequence,Set,TextIO,Tuple,Type,TypedDict,Union},
     typing_extensions.Literal
 
 [VARIABLES]

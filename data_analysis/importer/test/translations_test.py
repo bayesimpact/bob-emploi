@@ -9,7 +9,8 @@ import airtablemock
 from bob_emploi.data_analysis.importer import translations
 
 
-@airtablemock.patch(translations.__name__ + '.airtable')
+@airtablemock.patch(translations.translation.__name__ + '.airtable')
+@mock.patch(translations.translation.__name__ + '._TRANSLATION_TABLE', new=[])
 @mock.patch.dict(os.environ, {'AIRTABLE_API_KEY': 'apikey42'})
 class ImporterTestCase(unittest.TestCase):
     """Tests for the importer."""
@@ -17,14 +18,15 @@ class ImporterTestCase(unittest.TestCase):
     def test_airtable2dicts(self) -> None:
         """Basic usage of the translations importer."""
 
-        base = airtablemock.Airtable('base_t123', 'apikey42')
-        base.create('table456', {
+        base = airtablemock.Airtable('appkEc8N0Bw4Uok43', 'apikey42')
+        base.create('tblQL7A5EgRJWhQFo', {
             'string': 'String to translate',
             'fr': 'La string in French',
             'de': 'Die String in German',
+            'quick_de': 'Das String aus Deutsch',
         })
 
-        dicts = list(translations.airtable2dicts('base_t123', 'table456'))
+        dicts = list(translations.airtable2dicts())
 
         self.assertEqual(
             [{

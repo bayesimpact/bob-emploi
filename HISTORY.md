@@ -54,8 +54,42 @@ This is a high level (non-technical) view of the Bob product history. For a deta
 
 **18 July 2017**: End of milestone 1 "Value Proposition is clear for team and users", beginning of work on milestone 2 "Reasonable quality content".
 
-**August 2017**: Create an evaluation tool to measure the quality content and the advice selection on day 1.
+**Aug. 2017**: Create an evaluation tool to measure the quality content and the advice selection on day 1.
 
-**5 September 2017**: End of milestone 2 "Reasonable quality content". Start working on milestone 3 "Ready for growth".
+**5 Sept. 2017**: End of milestone 2 "Reasonable quality content". Start working on milestone 3 "Ready for growth".
+
+**Oct. 2017**: Send automatically a survey to users 3 months after they used Bob to evaluate our impact.
+
+**Nov. 2017**: Create internal dashboards (Kibana) to track our impact evaluation across time, and publish it in our [Transparency Page](https://www.bob-emploi.fr/transparence)
+
+**Dec. 2017**: Create more advice modules.
+
+**11 Jan. 2018**: Release the diagnostic feature, a deeper view on a user's situation instead of the previous simple score
+
+**24 Apr. 2018**: Launch Bob Action, an app and communication campaign to have volunteers help jobseekers
+
+**June 2018**: Introduce a little man "Bob" talking to users with a chat-like interface. Clarify in our Landing Page that the main feature is the diagnostic.
+
+**Summer 2018**: Attempt to gamify engagement using Bob points. The idea didn't work as much as expected and was turned down.
+
+**9 Oct. 2018**: Release the "tutoiement" feature, for those users who prefers we say "tu" instead of "vous"
+
+**Nov. 2018**: Decision to reorganize the content to follow a "Bob Mind", structure the diagnostic and advice in three layers: main problem (category), strategy & methods.
+
+**8 Feb. 2019**: Release of the first category with strategies.
+
+**Mar. 2019**: Automate data import to get fresh data with no human intervention.
+
+**12 July 2019**: Release OpenJobGroups - [Medium](https://medium.com/bobemploi/avec-bob-de-lopen-source-%C3%A0-l-open-content-382ba7fac434)
+
+**15 July 2019**: Release "Late Sign-Up" to allow users to try out the full app without entering their email
+
+**2 Aug. 2019**: Introduce the Stats Page to users
+
+**Sep. 2019**: Finally release "Bob Mind" to all new users.
+
+**2 Oct. 2019**: Present all the categories as an explanation of the diagnostic.
+
+**Dec. 2019**: Improve the post-Bob coaching via e-mail.
 
 **Currently**: Work in progress

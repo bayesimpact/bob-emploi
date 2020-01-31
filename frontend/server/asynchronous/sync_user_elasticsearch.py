@@ -205,6 +205,15 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
         },
         'hasAccount': user.has_account,
     }
+    nps_email = next(
+        (email for email in user.emails_sent if email.campaign_id == 'nps'),
+        None)
+    if nps_email:
+        data['nps_request'] = {
+            'hasResponded': user.net_promoter_score_survey_response.HasField('responded_at'),
+            'sentAfterDays':
+            (nps_email.sent_at.ToDatetime() - user.registered_at.ToDatetime()).days,
+        }
     if user.net_promoter_score_survey_response.HasField('responded_at'):
         data['nps_response'] = {
             'loveScore': nps_love_score(user.net_promoter_score_survey_response.score),
@@ -213,8 +222,7 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
         }
     last_project = _get_last_complete_project(user)
     if last_project:
-        scoring_project = scoring.ScoringProject(
-            last_project, user.profile, user.features_enabled, _DB)
+        scoring_project = scoring.ScoringProject(last_project, user, _DB)
         data['project'] = {
             'targetJob': {
                 'name': last_project.target_job.name,
@@ -288,7 +296,7 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
     if user.client_metrics.is_first_session_mobile:
         data['clientMetrics'] = data.get('clientMetrics', {})
         data['clientMetrics']['isFirstSessionMobile'] = \
-            user_pb2.OptionalBool.Name(user.client_metrics.is_first_session_mobile)
+            project_pb2.OptionalBool.Name(user.client_metrics.is_first_session_mobile)
 
     return _remove_null_fields(data)
 
@@ -320,7 +328,7 @@ def export_user_to_elasticsearch(
         logging.debug(data)
 
         if not dry_run:
-            es_client.create(index=index, doc_type='user', id=user.user_id, body=json.dumps(data))
+            es_client.create(index=index, doc_type='_doc', id=user.user_id, body=json.dumps(data))
             nb_docs += 1
             if nb_docs % 1000 == 0:
                 logging.info('%i users processed', nb_docs)

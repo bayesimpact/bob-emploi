@@ -6,6 +6,7 @@ from unittest import mock
 
 import mongomock
 
+from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import stats_pb2
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.asynchronous import count_users
@@ -36,6 +37,7 @@ class CountUsersTestCase(unittest.TestCase):
                     },
                     'weeklyApplicationsEstimate': 'LESS_THAN_2',
                     'totalInterviewCount': 3,
+                    'passionateLevel': 'ALIMENTARY_JOB',
                     'jobSearchStartedAt': '2019-02-01T12:20:11Z',
                     'createdAt': '2019-09-01T12:20:11Z',
                 }],
@@ -52,6 +54,7 @@ class CountUsersTestCase(unittest.TestCase):
                     },
                     'weeklyApplicationsEstimate': 'LESS_THAN_2',
                     'totalInterviewCount': 1,
+                    'passionateLevel': 'ALIMENTARY_JOB',
                     'jobSearchStartedAt': '2019-02-01T12:20:11Z',
                     'createdAt': '2019-10-01T12:20:11Z',
                 }],
@@ -68,6 +71,7 @@ class CountUsersTestCase(unittest.TestCase):
                     },
                     'weeklyApplicationsEstimate': 'SOME',
                     'totalInterviewCount': 3,
+                    'passionateLevel': 'LIFE_GOAL_JOB',
                     'jobSearchStartedAt': '2019-02-01T12:20:11Z',
                     'createdAt': '2019-10-01T12:20:11Z',
                 }],
@@ -84,6 +88,7 @@ class CountUsersTestCase(unittest.TestCase):
                     },
                     'weeklyApplicationsEstimate': 'SOME',
                     'totalInterviewCount': 1,
+                    'passionateLevel': 'ALIMENTARY_JOB',
                     'jobSearchLengthMonths': 14,
                 }],
             },
@@ -115,7 +120,7 @@ class CountUsersTestCase(unittest.TestCase):
         """Test main."""
 
         count_users.main()
-        result = self._db.user_count.find_one({'_id': 'values'})
+        result = self._db.user_count.find_one({'_id': ''})
         self.assertTrue(result)
         result_proto = typing.cast(
             stats_pb2.UsersCount, proto.create_from_mongo(result, stats_pb2.UsersCount))
@@ -127,6 +132,17 @@ class CountUsersTestCase(unittest.TestCase):
         self.assertEqual(2, result_proto.weekly_application_counts['SOME'])
         self.assertEqual(2, result_proto.medium_search_interview_counts['3'])
         self.assertEqual(1, result_proto.long_search_interview_counts['1'])
+        self.assertEqual(
+            stats_pb2.SHORT_SEARCH_LENGTH, result_proto.passion_level_counts[0].search_length)
+        self.assertEqual(
+            stats_pb2.MEDIUM_SEARCH_LENGTH, result_proto.passion_level_counts[1].search_length)
+        self.assertEqual(2, len(result_proto.passion_level_counts[1].level_counts))
+        self.assertEqual(
+            [
+                stats_pb2.PassionLevelCount(passionate_level=project_pb2.LIFE_GOAL_JOB, count=1),
+                stats_pb2.PassionLevelCount(passionate_level=project_pb2.ALIMENTARY_JOB, count=2)
+            ],
+            sorted(result_proto.passion_level_counts[1].level_counts, key=lambda a: a.count))
 
     def test_update(self) -> None:
         """Ensure updating overrides previous values."""
@@ -135,7 +151,7 @@ class CountUsersTestCase(unittest.TestCase):
         # No more users in database.
         self._user_db.user.drop()
         count_users.main()
-        result = self._db.user_count.find_one({'_id': 'values'})
+        result = self._db.user_count.find_one({'_id': ''})
         self.assertTrue(result)
         result_proto = typing.cast(
             stats_pb2.UsersCount, proto.create_from_mongo(result, stats_pb2.UsersCount))

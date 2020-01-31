@@ -5,7 +5,7 @@ import {connect} from 'react-redux'
 
 import {DispatchAllActions, RootState, displayToasterMessage, saveUser} from 'store/actions'
 
-import {Modal} from './modal'
+import {Modal, ModalConfig} from './modal'
 import {Button, Textarea} from './theme'
 
 
@@ -42,15 +42,10 @@ interface DebugModalConnectedProps {
 }
 
 
-// TODO(pascal): Use Modal's props once modal module is typed.
-interface ModalOwnProps {
-  isShown?: boolean
-  onClose: () => void
-}
-
-
-interface DebugModalProps extends DebugModalConnectedProps, ModalOwnProps {
+interface DebugModalProps extends DebugModalConnectedProps, Omit<ModalConfig, 'children'> {
+  chilren?: never
   dispatch: DispatchAllActions
+  onClose: () => void
 }
 
 
@@ -110,19 +105,19 @@ class DebugModalBase extends React.PureComponent<DebugModalProps, DebugModalStat
     if (userJson === initialUserJson) {
       onClose()
     }
-    let user
+    let user: bayes.bob.User
     try {
-      user = JSON.parse(userJson.replace(/ObjectId\(("[a-f0-9]+")\)/, '$1'))
+      user = JSON.parse(userJson.replace(/ObjectId\(("[\da-f]+")\)/, '$1'))
     } catch (error) {
       dispatch(displayToasterMessage(error.toString()))
       return
     }
 
     // Delete fields starting with "_".
-    const fieldsToDelete: string[] = []
+    const fieldsToDelete: (keyof bayes.bob.User)[] = []
     for (const key in user) {
       if (key && key[0] === '_') {
-        fieldsToDelete.push(key)
+        fieldsToDelete.push(key as keyof bayes.bob.User)
       }
     }
     fieldsToDelete.forEach((field): void => {

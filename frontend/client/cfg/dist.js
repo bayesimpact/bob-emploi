@@ -10,9 +10,9 @@ const mapValues = require('lodash/mapValues')
 
 const baseConfig = require('./base')
 const entrypoints = require('./entrypoints')
-const colors = require('./colors.json')
-const constants = require('./const.json')
-const distConstants = require('./const_dist.json')
+const colors = require('./colors.json5')
+const constants = require('./const.json5')
+const distConstants = require('./const_dist.json5')
 
 const srcDir = path.resolve(__dirname, '../src') + '/'
 
@@ -52,6 +52,7 @@ module.exports = {
             plugins: [
               '@babel/plugin-syntax-dynamic-import',
               ['@babel/plugin-proposal-class-properties', {loose: false}],
+              ['@babel/plugin-proposal-optional-chaining', {loose: false}],
             ],
             presets: [['@babel/env', {modules: false}], '@babel/react', '@babel/typescript'],
           },
@@ -98,17 +99,19 @@ module.exports = {
         filename: `../${entrypoints[key].htmlFilename}`,
         minify,
         template: path.join(__dirname, '/../src/index.html'),
-      })
+      }),
     ),
     new WebpackPwaManifest({
-      'background_color': '#1888ff', // Colors.BOB_BLUE
+      // eslint-disable-next-line camelcase
+      background_color: '#1888ff', // Colors.BOB_BLUE
       lang: 'fr-FR',
       name: 'Bob',
-      'theme_color': '#1888ff', // Colors.BOB_BLUE
+      // eslint-disable-next-line camelcase
+      theme_color: '#1888ff', // Colors.BOB_BLUE
     }),
     new RenameOutputWebpackPlugin(fromPairs(
       Object.keys(entrypoints).filter(key => !entrypoints[key].htmlFilename).
-        map(key => [key, '[name].js'])
+        map(key => [key, '[name].js']),
     )),
   ],
 }

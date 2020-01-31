@@ -42,8 +42,7 @@ def instantiate(
     action.title_feminine = template.title_feminine
     action.short_description = template.short_description
     action.short_description_feminine = template.short_description_feminine
-    scoring_project = scoring.ScoringProject(
-        project, user_proto.profile, user_proto.features_enabled, base)
+    scoring_project = scoring.ScoringProject(project, user_proto, base)
     action.link = scoring_project.populate_template(template.link)
     action.how_to = template.how_to
     action.status = action_pb2.ACTION_UNREAD

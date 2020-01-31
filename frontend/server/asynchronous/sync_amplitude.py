@@ -11,6 +11,7 @@ from google.protobuf import json_format
 import pymongo
 import requests
 
+from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import mongo
 from bob_emploi.frontend.server import now
@@ -96,17 +97,17 @@ def compute_first_session_duration(events: List[Dict[str, Any]]) -> datetime.tim
     return sorted_times[-1] - sorted_times[0]
 
 
-def _compute_is_mobile(events: List[Dict[str, Any]]) -> 'user_pb2.OptionalBool':
+def _compute_is_mobile(events: List[Dict[str, Any]]) -> 'project_pb2.OptionalBool':
     """Compute whether a set of events contains at least one from a mobile version."""
 
     if not events:
-        return user_pb2.UNKNOWN_BOOL
+        return project_pb2.UNKNOWN_BOOL
 
     for event in events:
         if event.get('event_properties', {}).get('Mobile Version'):
-            return user_pb2.TRUE
+            return project_pb2.TRUE
 
-    return user_pb2.FALSE
+    return project_pb2.FALSE
 
 
 def update_users_client_metrics(

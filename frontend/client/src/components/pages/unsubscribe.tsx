@@ -1,14 +1,17 @@
 import CheckIcon from 'mdi-react/CheckIcon'
-import {parse} from 'query-string'
-import React from 'react'
+import React, {Suspense} from 'react'
 import ReactDOM from 'react-dom'
+import {WithTranslation, withTranslation} from 'react-i18next'
 
+import {init as i18nInit, localizeOptions} from 'store/i18n'
+import {parseQueryString} from 'store/parse'
 import {COACHING_EMAILS_OPTIONS} from 'store/user'
 
-import logoProductImage from 'images/logo-bob-beta.svg'
-
+import {Trans} from 'components/i18n'
 import {Button, SmoothTransitions} from 'components/theme'
 import {Select} from 'components/pages/connected/form_utils'
+import {WaitingPage} from 'components/pages/waiting'
+import logoProductImage from 'images/bob-logo.svg'
 
 require('styles/App.css')
 
@@ -19,22 +22,23 @@ interface UnsubscribePageState {
   isDeleting: boolean
   isUpdated: boolean
   isUpdating: boolean
-  params: {
-    [paramId: string]: string
-  }
+  params: ReturnType<typeof parseQueryString>
 }
 
 
-class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
+i18nInit()
+
+
+class UnsubscribePageBase extends React.PureComponent<WithTranslation, UnsubscribePageState> {
   public state: UnsubscribePageState = {
     isDeleted: false,
     isDeleting: false,
     isUpdated: false,
     isUpdating: false,
-    params: window.location.search ? parse(window.location.search.slice(1)) : {},
+    params: window.location.search ? parseQueryString(window.location.search.slice(1)) : {},
   }
 
-  public componentDidUpdate(prevProps, {isUpdated: wasUpdated}): void {
+  public componentDidUpdate(prevProps: {}, {isUpdated: wasUpdated}: UnsubscribePageState): void {
     const {isUpdated} = this.state
     if (isUpdated && !wasUpdated) {
       clearTimeout(this.timer)
@@ -53,6 +57,7 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
   }
 
   private handleDelete = (): void => {
+    const {t} = this.props
     // TODO(pascal): Drop the use of email after 2018-09-01, until then we need
     // to keep it as the link is used in old emails.
     const {auth = '', email = '', user = ''} = this.state.params || {}
@@ -64,10 +69,12 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
         'Content-Type': 'application/json',
       },
       method: 'delete',
-    }).then(this.handleDeletionResponse)
+    }).then(this.handleDeletionResponse).catch((): void => {
+      this.setState({errorMessage: t('La suppression a échoué'), isDeleting: false})
+    })
   }
 
-  private handleDeletionResponse = (response): void => {
+  private handleDeletionResponse = (response: Response): void => {
     if (response.status >= 400 || response.status < 200) {
       response.text().then((errorMessage: string): void => {
         const page = document.createElement('html')
@@ -84,7 +91,9 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
     this.setState({isDeleted: true, isDeleting: false})
   }
 
-  private handleCoachingEmailFrequencyChange = (coachingEmailFrequency): void => {
+  private handleCoachingEmailFrequencyChange =
+  (coachingEmailFrequency: bayes.bob.EmailFrequency): void => {
+    const {t} = this.props
     const {params: {auth = '', user = '', coachingEmailFrequency: prevCoachingEmailFrequency}} =
       this.state
     if (prevCoachingEmailFrequency === coachingEmailFrequency) {
@@ -119,6 +128,8 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
         return
       }
       this.setState({isUpdated: true, isUpdating: false})
+    }).catch((): void => {
+      this.setState({errorMessage: t('La mise à jour a échoué'), isUpdating: false})
     })
   }
 
@@ -133,12 +144,13 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
     }
     return <header style={style}>
       <img
-        style={{cursor: 'pointer', height: 40}} onClick={this.handleCancel}
+        style={{cursor: 'pointer', height: 30}} onClick={this.handleCancel}
         src={logoProductImage} alt={config.productName} />
     </header>
   }
 
   private renderEmailFrequency(): React.ReactNode {
+    const {t} = this.props
     const {errorMessage, isUpdated, isUpdating, params: {coachingEmailFrequency}} = this.state
     const containerStyle: React.CSSProperties = {
       display: 'flex',
@@ -171,48 +183,53 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
       marginRight: 10,
       width: 30,
     }
-    const messageStyle = (status): React.CSSProperties => ({
+    const messageStyle = (status?: boolean): React.CSSProperties => ({
       marginTop: 15,
       opacity: status ? 1 : 0,
       position: 'absolute',
     })
     return <div style={{position: 'relative'}}>
-      Quel coaching mail de {config.productName} souhaitez-vous&nbsp;?
+      {t(
+        'Quel coaching mail de {{productName}} souhaitez-vous\u00A0?',
+        {productName: config.productName},
+      )}
       <div style={containerStyle}>
         <Select<bayes.bob.EmailFrequency>
           onChange={this.handleCoachingEmailFrequencyChange}
           value={coachingEmailFrequency as bayes.bob.EmailFrequency}
-          options={COACHING_EMAILS_OPTIONS} />
+          placeholder={t('choisissez une option')}
+          options={localizeOptions(t, COACHING_EMAILS_OPTIONS)} />
       </div>
-      <div style={messageStyle(isUpdating)}>Application du changement en cours…</div>
-      {errorMessage ? <div style={{maxWidth: 340, ...messageStyle(errorMessage)}}>
+      <Trans style={messageStyle(isUpdating)}>Application du changement en cours…</Trans>
+      {errorMessage ? <div style={{maxWidth: 340, ...messageStyle(true)}}>
         {errorMessage}
       </div> : null}
       {/* TODO(marielaure): Consider refactoring with profile's save confirmation. */}
       <div style={confirmationPopUpStyle}>
         <div style={checkIconStyle}><CheckIcon size={24} style={{color: '#fff'}} /></div>
-        Sauvegardé
+        {t('Sauvegardé')}
       </div>
     </div>
   }
 
   private renderUnsubscribe(): React.ReactNode {
+    const {t} = this.props
     const {errorMessage, isDeleting} = this.state
     return <React.Fragment>
-      <div>
-        La desinscription de {config.productName} supprimera l'ensemble de vos
+      <Trans>
+        La desinscription de {{productName: config.productName}} supprimera l'ensemble de vos
         données sur notre site.
         <br />
         <br />
         Voulez-vous vraiment continuer&nbsp;?
-      </div>
+      </Trans>
       <div style={{marginTop: 30}}>
         {isDeleting ? null : <Button
           type="back" onClick={this.handleDelete} style={{marginRight: 20}}>
-          Oui, je supprime mon compte
+          {t('Oui, je supprime mon compte')}
         </Button>}
         <Button onClick={this.handleCancel} type="validation">
-          Non, je garde mon compte
+          {t('Non, je garde mon compte')}
         </Button>
         {errorMessage ? <div style={{marginTop: 20}}>
           {errorMessage}
@@ -224,7 +241,7 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
   public render(): React.ReactNode {
     const {params: {coachingEmailFrequency}} = this.state
     if (this.state.isDeleted) {
-      return <div>Votre compte a bien été supprimé</div>
+      return <Trans>Votre compte a bien été supprimé</Trans>
     }
     const pageStyle: React.CSSProperties = {
       alignItems: 'center',
@@ -249,6 +266,9 @@ class UnsubscribePage extends React.PureComponent<{}, UnsubscribePageState> {
     </div>
   }
 }
+const UnsubscribePage = withTranslation()(UnsubscribePageBase)
 
 
-ReactDOM.render(<UnsubscribePage />, document.getElementById('app'))
+ReactDOM.render(<Suspense fallback={<WaitingPage />}>
+  <UnsubscribePage />
+</Suspense>, document.getElementById('app'))

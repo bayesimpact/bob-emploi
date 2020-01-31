@@ -25,6 +25,10 @@ const AUX_PAGES = [
     urlTest: /^\/mini/,
   },
   {
+    redirect: '/mini-onboarding.html',
+    urlTest: /^\/unml\/a-li/,
+  },
+  {
     redirect: '/nps.html',
     urlTest: /^\/retours/,
   },

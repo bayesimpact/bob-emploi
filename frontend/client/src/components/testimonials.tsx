@@ -1,7 +1,9 @@
 import _memoize from 'lodash/memoize'
-import React from 'react'
 import PropTypes from 'prop-types'
+import React, {useMemo} from 'react'
+import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
 
+import {Trans} from 'components/i18n'
 import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
 import {Img, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
@@ -169,7 +171,7 @@ class Testimonials extends React.PureComponent<TestimonialsProps, TestimonialsSt
 }
 
 
-interface CardProps {
+interface CardProps extends WithTranslation {
   author: {
     age?: number
     imageLink?: string
@@ -177,143 +179,150 @@ interface CardProps {
     jobName?: string
     name: string
   }
+  children: React.ReactNode
   isLong?: boolean
   style?: React.CSSProperties
 }
 
 
-class TestimonialCard extends React.PureComponent<CardProps> {
-  public static propTypes = {
-    author: PropTypes.shape({
-      age: PropTypes.number,
-      imageLink: PropTypes.string,
-      isMan: PropTypes.bool,
-      jobName: PropTypes.string,
-      name: PropTypes.string.isRequired,
-    }).isRequired,
-    children: PropTypes.node,
-    isLong: PropTypes.bool,
-    style: PropTypes.object,
-  }
+const TestimonialCardBase: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
+  const {author, children, isLong, style, t} = props
+  const horizontalPadding = isMobileVersion && !isLong ? 30 : 75
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    boxShadow: '0 25px 40px 0 rgba(0, 0, 0, 0.15)',
+    color: isLong ? colors.DARK : colors.DARK_TWO,
+    fontSize: isLong ? 16 : 18,
+    lineHeight: 1.44,
+    margin: isLong ? '10px 10px' : 'initial',
+    maxWidth: isLong ? 320 : 600,
+    minHeight: isLong ? 'initial' : 150,
+    padding: isMobileVersion || isLong ? '30px 30px' : `40px ${horizontalPadding}px`,
+    position: isLong ? 'initial' : 'relative',
+    ...style,
+  }), [horizontalPadding, isLong, style])
+  const authorStyle = useMemo((): React.CSSProperties => ({
+    alignItems: 'center',
+    backgroundColor: isLong ? colors.VERY_LIGHT_BLUE : 'initial',
+    borderTopLeftRadius: isLong ? 5 : 'initial',
+    borderTopRightRadius: isLong ? 5 : 'initial',
+    color: isLong ? 'inherit' : '#fff',
+    display: 'flex',
+    fontSize: 14,
+    fontStyle: isLong ? 'initial' : 'italic',
+    justifyContent: isLong ? 'initial' : 'center',
+    left: 0,
+    margin: isLong ? '-30px -30px 20px -30px' : '15px 0 0',
+    minHeight: isLong ? 85 : 'initial',
+    padding: isLong ? author.imageLink ? '10px 30px' : '0 30px' : `0 ${horizontalPadding}px`,
+    position: isLong ? 'initial' : 'absolute',
+    right: 0,
+    top: isLong ? 'initial' : '100%',
+  }), [author.imageLink, horizontalPadding, isLong])
+  const authorPicto = <Img
+    style={{height: 'auto', marginRight: 15, maxHeight: 100, maxWidth: 100, width: 'auto'}}
+    src={author.imageLink ? author.imageLink : author.isMan ? manImage : womanImage}
+    fallbackSrc={author.isMan ? manImage : womanImage}
+    // We don't always have the isMan flag, so we cannot say for sure when it's a woman.
+    alt={author.name || author.isMan ? 'homme' : ''} />
 
-  public render(): React.ReactNode {
-    const {author, children, isLong} = this.props
-    const horizontalPadding = isMobileVersion && !isLong ? 30 : 75
-    const style: React.CSSProperties = {
-      backgroundColor: '#fff',
-      borderRadius: 5,
-      boxShadow: '0 25px 40px 0 rgba(0, 0, 0, 0.15)',
-      color: isLong ? colors.DARK : colors.DARK_TWO,
-      fontSize: isLong ? 16 : 18,
-      lineHeight: 1.44,
-      margin: isLong ? '10px 10px' : 'initial',
-      maxWidth: isLong ? 320 : 600,
-      minHeight: isLong ? 'initial' : 150,
-      padding: isMobileVersion || isLong ? '30px 30px' : `40px ${horizontalPadding}px`,
-      position: isLong ? 'initial' : 'relative',
-      ...this.props.style,
-    }
-    const authorStyle: React.CSSProperties = {
-      alignItems: 'center',
-      backgroundColor: isLong ? colors.VERY_LIGHT_BLUE : 'initial',
-      borderTopLeftRadius: isLong ? 5 : 'initial',
-      borderTopRightRadius: isLong ? 5 : 'initial',
-      color: isLong ? 'inherit' : '#fff',
-      display: 'flex',
-      fontSize: 14,
-      fontStyle: isLong ? 'initial' : 'italic',
-      justifyContent: isLong ? 'initial' : 'center',
-      left: 0,
-      margin: isLong ? '-30px -30px 20px -30px' : '15px 0 0',
-      minHeight: isLong ? 85 : 'initial',
-      padding: isLong ? author.imageLink ? '10px 30px' : '0 30px' : `0 ${horizontalPadding}px`,
-      position: isLong ? 'initial' : 'absolute',
-      right: 0,
-      top: isLong ? 'initial' : '100%',
-    }
-    const authorPicto = <Img
-      style={{height: 'auto', marginRight: 15, maxHeight: 100, maxWidth: 100, width: 'auto'}}
-      src={author.imageLink ? author.imageLink : author.isMan ? manImage : womanImage}
-      fallbackSrc={author.isMan ? manImage : womanImage}
-      // We don't always have the isMan flag, so we cannot say for sure when it's a woman.
-      alt={author.name || author.isMan ? 'homme' : ''} />
+  const authorName = author.age || author.jobName ? `${author.name},` : author.name
+  const authorAge = author.age ? t(' {{age}} ans', {age: author.age}) : ''
+  const authorJobName = author.jobName ? `${author.jobName}` : ''
 
-    const authorName = author.age || author.jobName ? `${author.name},` : author.name
-    const authorAge = author.age ? ` ${author.age} ans` : ''
-    const authorJobName = author.jobName ? `${author.jobName}` : ''
-
-    return <div style={style}>
-      {isLong ?
-        <div style={authorStyle}>
-          {authorPicto} {authorName}{authorAge}<br />{authorJobName}
-        </div> : null}
-      {children}
-      {isLong ? null : <div style={authorStyle}> {authorName}{authorAge} {authorJobName}</div>}
-    </div>
-  }
+  return <div style={containerStyle}>
+    {isLong ?
+      <div style={authorStyle}>
+        {authorPicto} {authorName}{authorAge}<br />{authorJobName}
+      </div> : null}
+    {children}
+    {isLong ? null : <div style={authorStyle}> {authorName}{authorAge} {authorJobName}</div>}
+  </div>
 }
+TestimonialCardBase.propTypes = {
+  author: PropTypes.shape({
+    age: PropTypes.number,
+    imageLink: PropTypes.string,
+    isMan: PropTypes.bool,
+    jobName: PropTypes.string,
+    name: PropTypes.string.isRequired,
+  }).isRequired,
+  children: PropTypes.node,
+  isLong: PropTypes.bool,
+  style: PropTypes.object,
+}
+
+const TestimonialCard = withTranslation()(TestimonialCardBase)
 
 
 interface SectionProps {
-  children: React.ReactElement<{author: {name: string}}>[]
+  children: readonly React.ReactElement<{author: {name: string}}>[]
   maxShown?: number
   visualElement?: string
 }
 
 
-class TestimonialStaticSection extends React.PureComponent<SectionProps> {
-  public static propTypes = {
-    children: PropTypes.arrayOf(PropTypes.shape({
-      props: PropTypes.shape({
-        author: PropTypes.shape({
-          name: PropTypes.string.isRequired,
-        }),
-      }),
-    })).isRequired,
-    maxShown: PropTypes.number,
-    visualElement: PropTypes.string,
-  }
-
-  public render(): React.ReactNode {
-    // TODO(cyrille): Use Carousel 3 by 3 on Desktop.
-    const {children, maxShown = isMobileVersion ? 5 : 3, visualElement} = this.props
-    const sectionStyle: React.CSSProperties = {
-      backgroundColor: colors.BOB_BLUE,
-      flexDirection: 'column',
-      padding: isMobileVersion ? '50px 20px' : `50px ${MIN_CONTENT_PADDING}px`,
-    }
-    const titleStyle: React.CSSProperties = {
-      color: '#fff',
-      fontSize: 33,
-      margin: 0,
-      textAlign: 'center',
-    }
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'flex-start',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      margin: '100px auto 0',
-      maxWidth: isMobileVersion ? 320 : MAX_CONTENT_WIDTH,
-    }
-    const firstHelped = children.slice(0, 2).
-      map(({props: {author: {name}}}): string => name).join(', ')
-
-    return <section style={sectionStyle}>
-      <h2 style={titleStyle}>
-        {config.productName} a aidé {firstHelped} et bien d'autres...<br />
-        Pourquoi pas vous&nbsp;?
-      </h2>
-      <div style={containerStyle}>
-        {children.slice(0, maxShown)}
-      </div>
-      <LoginButton style={{display: 'block', margin: '88px auto 0'}} isSignUp={true}
-        type="validation"
-        visualElement={`testimonials${visualElement ? `-${visualElement}` : ''}`}>
-        Obtenir mes conseils personnalisés
-      </LoginButton>
-    </section>
-  }
+const sectionStyle: React.CSSProperties = {
+  backgroundColor: colors.BOB_BLUE,
+  flexDirection: 'column',
+  padding: isMobileVersion ? '50px 20px' : `50px ${MIN_CONTENT_PADDING}px`,
 }
+const titleStyle: React.CSSProperties = {
+  color: '#fff',
+  fontSize: 33,
+  margin: 0,
+  textAlign: 'center',
+}
+const containerStyle: React.CSSProperties = {
+  alignItems: 'flex-start',
+  display: 'flex',
+  flexDirection: isMobileVersion ? 'column' : 'row',
+  margin: '100px auto 0',
+  maxWidth: isMobileVersion ? 320 : MAX_CONTENT_WIDTH,
+}
+
+
+// TODO(pascal): Move to the static_advice folder.
+// i18next-extract-mark-ns-start staticAdvice
+const TestimonialStaticSectionBase: React.FC<SectionProps> =
+(props: SectionProps): React.ReactElement => {
+  // TODO(cyrille): Use Carousel 3 by 3 on Desktop.
+  const {children, maxShown = isMobileVersion ? 5 : 3, visualElement} = props
+  const {t} = useTranslation('staticAdvice')
+  const firstHelped = useMemo(
+    (): string => children.slice(0, 2).map(({props: {author: {name}}}): string => name).join(', '),
+    [children],
+  )
+
+  return <section style={sectionStyle}>
+    <Trans style={titleStyle} t={t} parent="h2">
+      {{productName: config.productName}} a aidé {{names: firstHelped}} et bien d'autres...<br />
+      Pourquoi pas vous&nbsp;?
+    </Trans>
+    <div style={containerStyle}>
+      {children.slice(0, maxShown)}
+    </div>
+    <LoginButton style={{display: 'block', margin: '88px auto 0'}} isSignUp={true}
+      type="validation"
+      visualElement={`testimonials${visualElement ? `-${visualElement}` : ''}`}>
+      {t('Obtenir mes conseils personnalisés')}
+    </LoginButton>
+  </section>
+}
+TestimonialStaticSectionBase.propTypes = {
+  children: PropTypes.arrayOf(PropTypes.shape({
+    props: PropTypes.shape({
+      author: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+      }),
+    }),
+  })).isRequired,
+  maxShown: PropTypes.number,
+  visualElement: PropTypes.string,
+}
+const TestimonialStaticSection = React.memo(TestimonialStaticSectionBase)
+// i18next-extract-mark-ns-stop staticAdvice
 
 
 export {TestimonialCard, Testimonials, TestimonialStaticSection}

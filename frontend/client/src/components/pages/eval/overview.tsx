@@ -1,11 +1,109 @@
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useMemo} from 'react'
 
 import commentImage from 'images/comment-picto.svg'
 import optimizeImage from 'images/optimize-picto.svg'
 
 import {EVAL_SCORES} from './score_levels'
+
+
+const scoreLevelCellStyle = {
+  alignItems: 'center',
+  display: 'flex',
+  padding: '0 15px',
+}
+const imageStyle = {marginLeft: 15}
+const titleStyle = {flex: 1}
+
+
+const CommentCellBase = ({children}: {children: React.ReactNode}): React.ReactElement => <th>
+  <div style={scoreLevelCellStyle}>
+    <div style={titleStyle}>{children}</div>
+    <img src={commentImage} alt="" style={imageStyle} />
+  </div>
+</th>
+const CommentCell = React.memo(CommentCellBase)
+
+
+const headContainerStyle = {
+  backgroundColor: colors.BOB_BLUE_HOVER,
+  color: '#fff',
+}
+const cellStyle = {
+  padding: '14px 15px 11px',
+}
+
+
+const HeaderBase = (): React.ReactElement => <thead style={headContainerStyle}>
+  <tr>
+    <th style={cellStyle}>Métier</th>
+    <th style={cellStyle}>Note</th>
+    <CommentCell>Commentaire texte diagnostic</CommentCell>
+    <CommentCell>Commentaires généraux</CommentCell>
+  </tr>
+</thead>
+const Header = React.memo(HeaderBase)
+
+
+interface UseCaseProps {
+  index: number
+  onSelect: (useCase: bayes.bob.UseCase) => void
+  useCase: bayes.bob.UseCase
+}
+
+
+const useCaseCellStyle = {
+  padding: 14,
+}
+const clickableCellStyle = {
+  ...useCaseCellStyle,
+  cursor: 'pointer',
+}
+const imageInTextStyle = {
+  verticalAlign: 'middle',
+  width: 15,
+}
+
+
+const UseCaseBase = ({index, onSelect, useCase}: UseCaseProps): React.ReactElement => {
+  const {evaluation, indexInPool, title, useCaseId} = useCase
+  const containerStyle = useMemo((): React.CSSProperties => ({
+    backgroundColor: index % 2 ? colors.LIGHT_GREY : '#fff',
+    color: colors.DARK_TWO,
+  }), [index])
+  const onClick = useCallback((): void => onSelect(useCase), [onSelect, useCase])
+  return <tr style={containerStyle}>
+    <td onClick={onClick} style={clickableCellStyle}>
+      {indexInPool || '0'} - {title}
+    </td>
+    <td style={useCaseCellStyle}>
+      {EVAL_SCORES.
+        filter(({score}): boolean => score === (evaluation && evaluation.score)).
+        map(({image, score}): React.ReactNode => <img
+          key={`${useCaseId}-eval-${score}`} src={image} alt={score}
+          style={{height: 25, verticalAlign: 'middle'}} />)}
+    </td>
+    <td style={useCaseCellStyle}>
+      {evaluation && evaluation.diagnostic && evaluation.diagnostic.text &&
+        evaluation.diagnostic.text.comment || ''}
+    </td>
+    <td style={useCaseCellStyle}>
+      {/* TODO(pascal): Consider truncating very long comments. */}
+      {evaluation && evaluation.comments || ''}
+      {Object.entries(evaluation && evaluation.advices || {}).
+        filter(([unusedAdviceId, {comment, shouldBeOptimized}]): boolean =>
+          !!(comment || shouldBeOptimized)).
+        map(([adviceId, {comment, shouldBeOptimized}]): React.ReactNode =>
+          <div key={`comment-${useCaseId}-${adviceId}`}>
+            {adviceId}: {shouldBeOptimized && <span>
+              <img src={optimizeImage} style={imageInTextStyle} alt="" /> à optimiser, </span>
+            }
+            {comment}
+          </div>)}
+    </td>
+  </tr>
+}
+const UseCase = React.memo(UseCaseBase)
 
 
 interface PoolOverviewProps {
@@ -14,113 +112,38 @@ interface PoolOverviewProps {
 }
 
 
-// TODO(marielaure) : Make new cells for important comments.
-class PoolOverview extends React.PureComponent<PoolOverviewProps> {
-  public static propTypes = {
-    onSelectUseCase: PropTypes.func.isRequired,
-    useCases: PropTypes.arrayOf(PropTypes.shape({
-      evaluation: PropTypes.shape({
-        comments: PropTypes.string,
-        score: PropTypes.string,
-      }),
-      indexInPool: PropTypes.number,
-      title: PropTypes.string,
-      useCaseId: PropTypes.string.isRequired,
-    }).isRequired).isRequired,
-  }
-
-  private handleSelectUseCase = _memoize(
-    (useCase: bayes.bob.UseCase): (() => void) => (): void => this.props.onSelectUseCase(useCase),
-    ({useCaseId}: bayes.bob.UseCase): string => useCaseId || '')
-
-  private renderCommentCell(title: React.ReactNode): React.ReactNode {
-    const scoreLevelCellStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      padding: '0 15px',
-    }
-    const imageStyle = {marginLeft: 15}
-    return <th>
-      <div style={scoreLevelCellStyle}>
-        <div style={{flex: 1}}>{title}</div>
-        <img src={commentImage} alt="" style={imageStyle} />
-      </div>
-    </th>
-  }
-
-  private renderHeader(): React.ReactNode {
-    const containerStyle = {
-      backgroundColor: colors.BOB_BLUE_HOVER,
-      color: '#fff',
-    }
-    const cellStyle = {
-      padding: '14px 15px 11px',
-    }
-    return <thead style={containerStyle}>
-      <tr>
-        <th style={cellStyle}>Métier</th>
-        <th style={cellStyle}>Note</th>
-        {this.renderCommentCell('Commentaire texte diagnostic')}
-        {this.renderCommentCell('Commentaires généraux')}
-      </tr>
-    </thead>
-  }
-
-  private renderUseCase = (useCase: bayes.bob.UseCase, index: number): React.ReactNode => {
-    const {evaluation, indexInPool, title, useCaseId} = useCase
-    const containerStyle = {
-      backgroundColor: index % 2 ? colors.LIGHT_GREY : '#fff',
-      color: colors.DARK_TWO,
-    }
-    const cellStyle = {
-      padding: 14,
-    }
-    const imageInTextStyle = {
-      verticalAlign: 'middle',
-      width: 15,
-    }
-    return <tr key={useCaseId} style={containerStyle}>
-      <td onClick={this.handleSelectUseCase(useCase)} style={{...cellStyle, cursor: 'pointer'}}>
-        {indexInPool || '0'} - {title}
-      </td>
-      <td style={cellStyle}>
-        {EVAL_SCORES.
-          filter(({score}): boolean => score === (evaluation && evaluation.score)).
-          map(({image, score}): React.ReactNode => <img
-            key={`${useCaseId}-eval-${score}`} src={image} alt={score}
-            style={{height: 25, verticalAlign: 'middle'}} />)}
-      </td>
-      <td style={cellStyle}>
-        {evaluation && evaluation.diagnostic && evaluation.diagnostic.text &&
-          evaluation.diagnostic.text.comment || ''}
-      </td>
-      <td style={cellStyle}>
-        {/* TODO(pascal): Consider truncating very long comments. */}
-        {evaluation && evaluation.comments || ''}
-        {Object.entries(evaluation && evaluation.advices || {}).
-          filter(([unusedAdviceId, {comment, shouldBeOptimized}]): boolean =>
-            !!(comment || shouldBeOptimized)).
-          map(([adviceId, {comment, shouldBeOptimized}]): React.ReactNode =>
-            <div key={`comment-${useCaseId}-${adviceId}`}>
-              {adviceId}: {shouldBeOptimized && <span>
-                <img src={optimizeImage} style={imageInTextStyle} alt="" /> à optimiser, </span>
-              }
-              {comment}
-            </div>)}
-      </td>
-    </tr>
-  }
-
-  public render(): React.ReactNode {
-    const {useCases} = this.props
-    return <table style={{fontSize: 14, width: '100%'}}>
-      {this.renderHeader()}
-      <tbody>
-        {useCases.map(this.renderUseCase)}
-      </tbody>
-    </table>
-  }
+const tableStyle = {
+  fontSize: 14,
+  width: '100%',
 }
+
+
+// TODO(marielaure) : Make new cells for important comments.
+const PoolOverviewBase = (props: PoolOverviewProps): React.ReactElement => {
+  const {onSelectUseCase, useCases} = props
+  return <table style={tableStyle}>
+    <Header />
+    <tbody>
+      {useCases.map((useCase, index) =>
+        <UseCase
+          useCase={useCase} index={index} onSelect={onSelectUseCase} key={useCase.useCaseId} />)}
+    </tbody>
+  </table>
+}
+PoolOverviewBase.propTypes = {
+  onSelectUseCase: PropTypes.func.isRequired,
+  useCases: PropTypes.arrayOf(PropTypes.shape({
+    evaluation: PropTypes.shape({
+      comments: PropTypes.string,
+      score: PropTypes.string,
+    }),
+    indexInPool: PropTypes.number,
+    title: PropTypes.string,
+    useCaseId: PropTypes.string.isRequired,
+  }).isRequired).isRequired,
+}
+const PoolOverview = React.memo(PoolOverviewBase)
+
 
 
 export {PoolOverview}
