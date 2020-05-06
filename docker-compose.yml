@@ -44,8 +44,9 @@ services:
       - "3000:80"
   frontend-flask:
     build:
-      context: frontend
-      dockerfile: server/Dockerfile
+      context: .
+      dockerfile: frontend/server/Dockerfile
+      target: server
       args:
         - GIT_SHA1
     image: bayesimpact/bob-emploi-frontend-server
@@ -69,7 +70,8 @@ services:
   frontend-flask-test:
     build:
       context: .
-      dockerfile: frontend/server/Dockerfile.test
+      dockerfile: frontend/server/Dockerfile
+      target: test
     image: bayesimpact/bob-emploi-frontend-server-test
     depends_on:
       - frontend-flask
