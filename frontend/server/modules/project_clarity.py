@@ -1,36 +1,8 @@
 """Module to score the clarity of a project."""
 
 from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import scoring_base
-
-
-# TODO(pascal): Import from Airtable.
-_SUPER_GROUPS = [
-    {'M1602', 'M1606', 'M1607', 'M1608'},  # Secretariat.
-    {'K2204', 'K2303', 'G1501'},  # Cleaning.
-    {'G1502', 'G1702'},  # Hotel industry.
-    {'B', 'L'},  # Artists.
-    {'N1103', 'N1104', 'N1105'},  # Goods handling.
-    {'E1103', 'E1106'},  # Communication/Media.
-    {'D1106', 'D1211', 'D1212', 'D1213', 'D1214', 'D1507', 'D1505'},  # Sales.
-]
-
-
-# TODO(pascal): Make sure that there are no conflicts (a job in several super groups).
-_SUPER_GROUPS_BY_PREFIX = {
-    prefix: f'super-{index}'
-    for index, prefixes in enumerate(_SUPER_GROUPS)
-    for prefix in prefixes
-}
-
-
-def _upgrade_to_super_group(rome_id: str) -> str:
-    for i in range(len(rome_id) - 1):
-        try:
-            return _SUPER_GROUPS_BY_PREFIX[rome_id[:-(i + 1)]]
-        except KeyError:
-            pass
-    return rome_id
 
 
 def _count_project_super_groups(project: scoring_base.ScoringProject) -> int:
@@ -43,7 +15,7 @@ def _count_project_super_groups(project: scoring_base.ScoringProject) -> int:
     if not job_groups:
         return 0
 
-    job_super_groups = {_upgrade_to_super_group(g) for g in job_groups}
+    job_super_groups = {jobs.upgrade_to_super_group(g) or g for g in job_groups}
     return len(job_super_groups)
 
 
@@ -78,18 +50,30 @@ class _UnclearProject(scoring_base.BaseFilter):
         return project.details.has_clear_project == project_pb2.FALSE
 
 
-class _CantSellSelf(scoring_base.ModelBase):
+# TODO(cyrille): Split into three different filters once those are used in lever rules.
+class _CantSellSelf(scoring_base.BaseFilter):
+    """
+    A filter for users who are experienced in a job, but have never really applied for it,
+    so they don't know how to sell themselves.
+    """
 
-    def score(self, project: scoring_base.ScoringProject) -> float:
+    def __init__(self) -> None:
+        super().__init__(self._filter)
+
+    def _filter(self, project: scoring_base.ScoringProject) -> bool:
         super_groups_count = _count_project_super_groups(project)
         if not super_groups_count or super_groups_count > 2:
             # User project is not clear.
-            return 0
+            return False
         if project.details.seniority < project_pb2.SENIOR:
             # User is not experienced enough.
-            return 0
-        # TODO(cyrille): Add something about unable to sell themself.
-        return 3
+            return False
+
+        if project.user_profile.is_autonomous == project_pb2.UNKNOWN_BOOL:
+            raise scoring_base.NotEnoughDataException(
+                "Don't know if user is autonomous.", fields={'profile.isAutonomous'})
+
+        return project.user_profile.is_autonomous == project_pb2.FALSE
 
 
 scoring_base.register_model('cant-sell-self', _CantSellSelf())

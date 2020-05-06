@@ -31,11 +31,12 @@ RUN pip install --upgrade \
   nose-exclude \
   nose-watch \
   nose-terse-output \
-  pandas \
+  # TODO(pascal): Uncap once https://github.com/pandas-dev/pandas/issues/31441 fix is released.
+  "pandas<1.0.0" \
   polib \
   protobuf \
   pycodestyle \
-  "pylint>=2.4.1" \
+  "pylint>=2.5.0" \
   pylint-doc-spacing \
   pylint-import-modules \
   pylint-quotes \

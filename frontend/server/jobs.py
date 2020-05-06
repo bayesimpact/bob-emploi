@@ -1,10 +1,12 @@
 """Common function to handle jobs."""
 
-from typing import Optional
+import typing
+from typing import Mapping, Optional, Set
 
 import pymongo
 
 from bob_emploi.frontend.api import job_pb2
+from bob_emploi.frontend.server import i18n
 from bob_emploi.frontend.server import proto
 
 
@@ -55,3 +57,62 @@ def get_local_stats(database: pymongo.database.Database, departement_id: str, ro
         database, job_pb2.LocalJobStats, 'recent_job_offers', local_id) or job_pb2.LocalJobStats()
     local_stats.MergeFrom(recent_job_offers)
     return local_stats
+
+
+class _SuperGroup(typing.NamedTuple):
+    name: str
+    prefixes: Set[str]
+
+
+# TODO(pascal): Import from Airtable.
+_SUPER_GROUPS = [
+    _SuperGroup(
+        i18n.make_translatable_string('Secrétariat'),
+        {'M1602', 'M1606', 'M1607', 'M1608'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Nettoyage'),
+        {'K2204', 'K2303', 'G1501'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Relations internationales'),
+        {'K140101', 'K140401', 'K240101'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Enseignement et recherche'),
+        {'K21', 'K24'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Hôtellerie, restauraration et cafés'),
+        {'G1502', 'G1702'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Art et spectacle'),
+        {'B', 'L'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Manutention'),
+        {'N1103', 'N1104', 'N1105'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Communication et médias'),
+        {'E1103', 'E1106'}),
+    _SuperGroup(
+        i18n.make_translatable_string('Vente'),
+        {'D1106', 'D1211', 'D1212', 'D1213', 'D1214', 'D1507', 'D1505'}),
+]
+
+
+# TODO(pascal): Make sure that there are no conflicts (a job in several super groups).
+_SUPER_GROUPS_BY_PREFIX = {
+    prefix: group.name
+    for group in _SUPER_GROUPS
+    for prefix in group.prefixes
+}
+
+
+def upgrade_to_super_group(
+        rome_id: str,
+        super_groups: Mapping[str, str] = _SUPER_GROUPS_BY_PREFIX,
+) -> Optional[str]:
+    """Get a super_group name for a given job group ID if it exists."""
+
+    for i in range(len(rome_id)):
+        try:
+            return super_groups[rome_id[:-i] if i else rome_id]
+        except KeyError:
+            pass
+    return None

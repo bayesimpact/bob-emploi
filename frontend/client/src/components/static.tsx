@@ -5,7 +5,7 @@ import {useTranslation} from 'react-i18next'
 import {useDispatch} from 'react-redux'
 import {Link} from 'react-router-dom'
 
-import {startAsGuest} from 'store/actions'
+import {DispatchAllActions, startAsGuest} from 'store/actions'
 
 import desktopScreenshot from 'images/bobdesktop.png'
 import phoneScreenshot from 'images/bobphone.png'
@@ -13,7 +13,7 @@ import facebookImage from 'images/facebook.svg'
 import logoProductWhiteImage from 'images/bob-logo.svg?fill=#fff'
 import twitterImage from 'images/twitter.svg'
 
-import {FastForward} from 'components/fast_forward'
+import {useFastForward} from 'components/fast_forward'
 import {HelpDeskLink} from 'components/help'
 import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
@@ -381,15 +381,14 @@ const phoneScreenshotStyle = {
 
 const TitleLoginButtons: React.FC = () => {
   const {t} = useTranslation()
-  const dispatch = useDispatch()
-  const handleClick = useCallback(
-    (visualElement: string): (() => void) => (): void =>
-      void dispatch(startAsGuest(visualElement)),
-    [dispatch])
-  const onForward = useCallback(handleClick('fast-forward'), [handleClick])
-  const onClick = useCallback(handleClick('title'), [handleClick])
+  const dispatch = useDispatch<DispatchAllActions>()
+  const onClick = useCallback((): void => {
+    dispatch(startAsGuest('title'))
+  }, [dispatch])
+  useFastForward(
+    (): void => void dispatch(startAsGuest('fast-forward')),
+    [dispatch], Routes.INTRO_PAGE)
   return <div style={buttonGroupStyle}>
-    <FastForward to={Routes.INTRO_PAGE} onForward={onForward} />
     <Link to={Routes.INTRO_PAGE} onClick={onClick}>
       <Button style={startDiagnosticButtonStyle}>
         {t('Évaluer ma recherche')}
@@ -440,18 +439,20 @@ const TitleSectionBase: React.FC<TitleSectionProps> = (props): React.ReactElemen
         Avec {{productName: config.productName}}, la recherche d'emploi<br />
         devient plus simple&nbsp;!
       </Trans>}</h1>
-      {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : <Trans style={subTitleStyle}>
-        <strong>{{productName: config.productName}} est un coach gratuit</strong> qui vous aide à
-        comprendre et agir sur votre recherche d'emploi
-      </Trans>}
-      {isLoginButtonShown ? <TitleLoginButtons /> : null}
-      {isMobileVersion ? null : <div style={screenshotsStyle}>
-        {isMediumScreen ? null : <img
-          style={desktopScreenshotStyle} src={desktopScreenshot} alt={t('version large')} />}
-        <div style={phoneScreenshotBorderStyle}>
-          <img style={phoneScreenshotStyle} src={phoneScreenshot} alt={t('version mobile')} />
-        </div>
-      </div>}
+      {isLoginButtonShown ? <React.Fragment>
+        {subtitle ? <div style={subTitleStyle}>{subtitle}</div> : <Trans style={subTitleStyle}>
+          <strong>{{productName: config.productName}} est un coach gratuit</strong> qui vous aide à
+          comprendre et agir sur votre recherche d'emploi
+        </Trans>}
+        <TitleLoginButtons />
+        {isMobileVersion ? null : <div style={screenshotsStyle}>
+          {isMediumScreen ? null : <img
+            style={desktopScreenshotStyle} src={desktopScreenshot} alt={t('version large')} />}
+          <div style={phoneScreenshotBorderStyle}>
+            <img style={phoneScreenshotStyle} src={phoneScreenshot} alt={t('version mobile')} />
+          </div>
+        </div>}
+      </React.Fragment> : null}
     </div>
   </section>
 }

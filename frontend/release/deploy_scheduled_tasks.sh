@@ -68,6 +68,13 @@ function check_rule() {
   fi
 }
 
+if [ "$1" == "list" ]; then
+  for rule in $(jq ".Rules[].Name" -r frontend/release/scheduled-tasks/index.json); do
+    echo $rule
+  done
+  exit 0
+fi
+
 if [ "$1" == "download" ]; then
   readonly RULE="$2"
   if [[ -n "$RULE" ]]; then
@@ -115,6 +122,7 @@ if [ "$1" == "run" ]; then
 fi
 
 echo "Usage:"
+echo "  > \`deploy_scheduled_tasks.sh list\` to list all available rules."
 echo "  > \`deploy_scheduled_tasks.sh download\` to download all rules from AWS to this folder."
 echo "  > \`deploy_scheduled_tasks.sh upload <rule_name>\` to upload one of them."
 echo "  > \`deploy_scheduled_tasks.sh download <rule_name>\` to view a rule's definition."

@@ -25,7 +25,7 @@ from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.api import use_case_pb2
 
-app = flask.Blueprint('evaluation', __name__)  # pylint: disable=invalid-name
+app = flask.Blueprint('eval', __name__)
 
 _EMAILS_PATTERN = os.getenv('EMAILS_FOR_EVALUATIONS', '@bayesimpact.org')
 
@@ -265,7 +265,7 @@ def get_relevant_categories(use_case: use_case_pb2.UseCase) -> diagnostic_pb2.Di
     """Analyse a use case for each category, and return whether the category is relevant for it."""
 
     result = diagnostic_pb2.DiagnosticCategories()
-    result.categories.extend(diagnostic.set_categories_relevance(
+    result.categories.extend(category for category, _ in diagnostic.set_categories_relevance(
         use_case.user_data, database=flask.current_app.config['DATABASE']))
     return result
 

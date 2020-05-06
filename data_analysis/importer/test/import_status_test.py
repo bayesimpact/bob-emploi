@@ -557,5 +557,45 @@ class ImportStatusSyncTests(unittest.TestCase):
                 'The Amazon Ressource Name and the rule name are different.')
 
 
+@mock.patch(import_status.__name__ + '._MONGO_URL', _FAKE_MONGO_URL)
+@mock.patch.dict(import_status.IMPORTERS, {})
+class ImportStatusPluginTest(unittest.TestCase):
+    """Test the plugin interface."""
+
+    @mock.patch('logging.info')
+    def test_plugin_relative_module(self, mock_log_info: mock.MagicMock) -> None:
+        """Plug-in a relative module."""
+
+        import_status.main(['--plugin', '.test.test_plugin', 'plugged-in'])
+        mock_log_info.assert_called_once()
+        self.assertIn(_AnyColorText('plugged-in'), mock_log_info.call_args[0])
+
+    @mock.patch('logging.info')
+    def test_plugin_absolute_module(self, mock_log_info: mock.MagicMock) -> None:
+        """Plug-in an absolute module."""
+
+        import_status.main(
+            ['--plugin', 'bob_emploi.data_analysis.importer.test.test_plugin', 'plugged-in'])
+        mock_log_info.assert_called_once()
+        self.assertIn(_AnyColorText('plugged-in'), mock_log_info.call_args[0])
+
+    @mock.patch('logging.info')
+    def test_plugin_update(self, mock_log_info: mock.MagicMock) -> None:
+        """Plug-in can update existing importers."""
+
+        import_status.main(['--plugin', '.test.test_plugin', 'job_group_info'])
+        mock_log_info.assert_called_once()
+        self.assertTrue(
+            any('some-script.py' in arg for arg in mock_log_info.call_args[0]),
+            msg=mock_log_info.call_args[0])
+
+    def test_unknown_plugin(self) -> None:
+        """Plugin a missing module."""
+
+        with self.assertRaises(ModuleNotFoundError):
+            import_status.main(
+                ['--plugin', 'bob_emploi.data_analysis.importer.test.not_a_plugin', 'plugged-in'])
+
+
 if __name__ == '__main__':
     unittest.main()

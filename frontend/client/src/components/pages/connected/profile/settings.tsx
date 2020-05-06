@@ -1,11 +1,12 @@
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React from 'react'
-import {connect} from 'react-redux'
+import React, {useCallback, useState} from 'react'
+import {useSelector} from 'react-redux'
+import {useTranslation} from 'react-i18next'
 
 import {DispatchAllActions, RootState, commentIsShown, emailCheck,
   silentlyRegisterUser} from 'store/actions'
 import {localizeOptions} from 'store/i18n'
+import {useSafeDispatch} from 'store/promise'
 import {COACHING_EMAILS_OPTIONS, ORIGIN_OPTIONS, getUniqueExampleEmail,
   userExample} from 'store/user'
 import {validateEmail} from 'store/validations'
@@ -15,23 +16,8 @@ import {LoginLink} from 'components/login'
 import {FieldSet, Select} from 'components/pages/connected/form_utils'
 import {Input, LabeledToggle} from 'components/theme'
 
-import {OnboardingCommentContent, ProfileStepProps, Step, ProfileUpdater} from './step'
-
-
-interface StepState {
-  email?: string
-  isCoachingConfirmShown?: boolean
-  isEmailAlreadyUsed?: boolean
-  isValidated?: boolean
-}
-
-interface ConnectedProps {
-  hasSeenComment: RootState['app']['hasSeenComment']
-}
-
-interface StepProps extends ProfileStepProps, ConnectedProps {
-  dispatch: DispatchAllActions
-}
+import {OnboardingCommentContent, ProfileStepProps, Step, useProfileChangeCallback,
+  useProfileUpdater} from './step'
 
 
 const alreadyUsedStyle: React.CSSProperties = {
@@ -42,72 +28,40 @@ const alreadyUsedStyle: React.CSSProperties = {
 }
 
 
-class SettingsStepBase extends React.PureComponent<StepProps, StepState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    hasSeenComment: PropTypes.shape({
-      coaching: PropTypes.bool,
-      email: PropTypes.bool,
-    }),
-    onChange: PropTypes.func,
-    onSubmit: PropTypes.func.isRequired,
-    profile: PropTypes.shape({
-      coachingEmailFrequency: PropTypes.string,
-      email: PropTypes.string,
-      origin: PropTypes.string,
-    }).isRequired,
-    t: PropTypes.func.isRequired,
-  }
+const fieldsRequired = {
+  coachingEmailFrequency: true,
+  isNewsletterEnabled: false,
+  origin: true,
+} as const
 
-  public state: StepState = {
-    email: this.props.profile.email,
-  }
 
-  private updater_ = new ProfileUpdater({
-    coachingEmailFrequency: true,
-    isNewsletterEnabled: false,
-    origin: true,
-  }).attachToComponent(this)
+const SettingsStepBase = (props: ProfileStepProps): React.ReactElement => {
+  const {isShownAsStepsDuringOnboarding, onBack, onChange, onSubmit, profile, profile: {
+    coachingEmailFrequency,
+    email: profileEmail,
+    gender,
+    hasCompletedOnboarding,
+    isNewsletterEnabled,
+    origin,
+  }} = props
+  const dispatch = useSafeDispatch<DispatchAllActions>()
+  const {t} = useTranslation()
+  const {isFormValid: areFieldsSet, isValidated, handleBack, handleSubmit: submitFields} =
+    useProfileUpdater(fieldsRequired, profile, onSubmit, onBack)
+  const hasSeenComment = useSelector(
+    ({app: {hasSeenComment}}: RootState): RootState['app']['hasSeenComment'] => hasSeenComment,
+  )
+  const [email, setEmail] = useState(profileEmail)
+  const [isEmailAlreadyUsed, setIsEmailAlreadyUsed] = useState(false)
+  const isFormValid = areFieldsSet && (
+    coachingEmailFrequency === 'EMAIL_NONE' || validateEmail(email))
 
-  private fastForward = (): void => {
-    if (this.isFormValid()) {
-      this.handleSubmit()
+  const handleSubmit = useCallback((): void => {
+    if (!isFormValid) {
       return
     }
-    const profileDiff: {-readonly [K in keyof bayes.bob.UserProfile]?: bayes.bob.UserProfile[K]} =
-      {}
-    const {onChange, profile: {coachingEmailFrequency, email, origin}} = this.props
-    if (!origin) {
-      profileDiff.origin = userExample.profile.origin
-    }
-    if (!coachingEmailFrequency) {
-      profileDiff.coachingEmailFrequency = userExample.profile.coachingEmailFrequency
-    }
-    if ((coachingEmailFrequency || profileDiff.coachingEmailFrequency) !== 'EMAIL_NONE' && !email) {
-      this.setState({email: getUniqueExampleEmail()})
-    }
-    onChange && onChange({profile: profileDiff})
-  }
-
-  private handleEmailChange = (email: string): void => this.setState({
-    email,
-    isEmailAlreadyUsed: false,
-  })
-
-  private isFormValid = (): boolean => {
-    return this.updater_.isFormValid() &&
-      (this.props.profile.coachingEmailFrequency === 'EMAIL_NONE' ||
-        validateEmail(this.state.email))
-  }
-
-  private handleSubmit = (): void => {
-    if (!this.isFormValid()) {
-      return
-    }
-    const {dispatch, profile: {coachingEmailFrequency, email: originalEmail}} = this.props
-    const {email} = this.state
-    if (!email || originalEmail || coachingEmailFrequency === 'EMAIL_NONE') {
-      this.updater_.handleSubmit()
+    if (!email || email === profileEmail || coachingEmailFrequency === 'EMAIL_NONE') {
+      submitFields()
       return
     }
     dispatch(emailCheck(email)).then((response): void => {
@@ -115,21 +69,58 @@ class SettingsStepBase extends React.PureComponent<StepProps, StepState> {
         return
       }
       if (!response.isNewUser) {
-        this.setState({isEmailAlreadyUsed: true})
+        setIsEmailAlreadyUsed(true)
         return
       }
-      dispatch(silentlyRegisterUser(email)).then((): void => this.updater_.handleSubmit())
+      dispatch(silentlyRegisterUser(email)).then(submitFields)
     })
-  }
+  }, [coachingEmailFrequency, dispatch, email, isFormValid, profileEmail, submitFields])
 
-  private handleShownComment = _memoize((commentKey: string): (() => void) => (): void => {
-    this.props.dispatch(commentIsShown(commentKey))
-  })
+  const fastForward = useCallback((): void => {
+    if (isFormValid) {
+      handleSubmit()
+      return
+    }
+    const profileDiff: {-readonly [K in keyof bayes.bob.UserProfile]?: bayes.bob.UserProfile[K]} =
+      {}
+    if (!origin) {
+      profileDiff.origin = userExample.profile.origin
+    }
+    if (!coachingEmailFrequency) {
+      profileDiff.coachingEmailFrequency = userExample.profile.coachingEmailFrequency
+    }
+    if ((coachingEmailFrequency || profileDiff.coachingEmailFrequency) !== 'EMAIL_NONE' && !email) {
+      setEmail(getUniqueExampleEmail())
+    }
+    onChange?.({profile: profileDiff})
+  }, [coachingEmailFrequency, email, handleSubmit, isFormValid, onChange, origin])
 
-  private renderCoachingDetails(): React.ReactNode {
-    const {hasSeenComment = {}, isShownAsStepsDuringOnboarding,
-      profile: {coachingEmailFrequency, email: profileEmail}, t} = this.props
-    const {email, isEmailAlreadyUsed, isValidated} = this.state
+  const handleEmailChange = useCallback((email: string): void => {
+    setEmail(email.toLocaleLowerCase())
+    setIsEmailAlreadyUsed(false)
+  }, [])
+
+  const handleCoachingEmailFrequencyChange =
+    useProfileChangeCallback('coachingEmailFrequency', profile, onChange)
+
+  const handleOriginChange = useProfileChangeCallback('origin', profile, onChange)
+
+  const handleNewsletterChange = useProfileChangeCallback('isNewsletterEnabled', profile, onChange)
+  const toggleNewsletter = useCallback(
+    (): void => handleNewsletterChange(!isNewsletterEnabled),
+    [handleNewsletterChange, isNewsletterEnabled],
+  )
+
+  const handleEmailShownComment = useCallback(
+    (): void => void dispatch(commentIsShown('email')),
+    [dispatch],
+  )
+  const handleCoachingShownComment = useCallback(
+    (): void => void dispatch(commentIsShown('coaching')),
+    [dispatch],
+  )
+
+  const renderCoachingDetails = (): React.ReactNode => {
     const hasEmailInput = isShownAsStepsDuringOnboarding &&
       coachingEmailFrequency && coachingEmailFrequency !== 'EMAIL_NONE' &&
       !profileEmail
@@ -151,7 +142,7 @@ class SettingsStepBase extends React.PureComponent<StepProps, StepState> {
         label={label}
         isValid={!!coachingEmailFrequency} isValidated={isValidated} hasCheck={true}>
         <Select
-          onChange={this.updater_.handleChange('coachingEmailFrequency')}
+          onChange={handleCoachingEmailFrequencyChange}
           value={coachingEmailFrequency}
           options={localizeOptions(t, COACHING_EMAILS_OPTIONS)}
           placeholder={t('choisissez une option')} />
@@ -162,13 +153,13 @@ class SettingsStepBase extends React.PureComponent<StepProps, StepState> {
       </FieldSet>
       {isShownAsStepsDuringOnboarding ?
         <OnboardingCommentContent
-          comment={comment} shouldWait={!hasSeenComment.coaching}
-          onShown={this.handleShownComment('coaching')} /> : null}
+          comment={comment} shouldWait={!hasSeenComment?.coaching}
+          onShown={handleCoachingShownComment} /> : null}
       {hasEmailInput ? <React.Fragment>
         <FieldSet
           label={t('Saisissez votre email')} hasCheck={true}
           isValid={validateEmail(email) && !isEmailAlreadyUsed} isValidated={isValidated}>
-          <Input style={inputStyle} onChange={this.handleEmailChange} value={email} />
+          <Input style={inputStyle} onChange={handleEmailChange} value={email} />
           {isEmailAlreadyUsed ?
             <Trans style={alreadyUsedStyle}>
               Cet email est déjà lié à un compte, <LoginLink
@@ -178,17 +169,13 @@ class SettingsStepBase extends React.PureComponent<StepProps, StepState> {
             </Trans> : null}
         </FieldSet>
         <OnboardingCommentContent
-          comment={emailComment} shouldWait={hasSeenComment.email}
-          onShown={this.handleShownComment('email')} />
+          comment={emailComment} shouldWait={hasSeenComment?.email}
+          onShown={handleEmailShownComment} />
       </React.Fragment> : null}
     </React.Fragment>
   }
 
-  private handleToggleNewsletter = (): void =>
-    this.updater_.handleChange('isNewsletterEnabled')(!this.props.profile.isNewsletterEnabled)
-
-  private renderNotificationsFieldSet(): React.ReactNode {
-    const {profile: {gender, isNewsletterEnabled}, t} = this.props
+  const renderNotificationsFieldSet = (): React.ReactNode => {
     const detailsStyle = {
       color: colors.COOL_GREY,
       fontSize: 14,
@@ -206,48 +193,54 @@ class SettingsStepBase extends React.PureComponent<StepProps, StepState> {
         type="checkbox"
         label={t("Suivre l'actualité de {{productName}}", {productName: config.productName})}
         isSelected={isNewsletterEnabled}
-        onClick={this.handleToggleNewsletter} />
+        onClick={toggleNewsletter} />
     </FieldSet>
   }
 
-  public render(): React.ReactNode {
-    const {isShownAsStepsDuringOnboarding,
-      profile: {coachingEmailFrequency, hasCompletedOnboarding, origin}, t} = this.props
-    const {dispatch: omittedDispatch, ...baseProps} = this.props
-    const {email, isEmailAlreadyUsed, isValidated} = this.state
-    // Keep in sync with 'isValid' props from list of fieldset below.
-    const checks = [
-      origin,
-      coachingEmailFrequency,
-      coachingEmailFrequency === 'EMAIL_NONE' || validateEmail(email) && !isEmailAlreadyUsed,
-    ]
-    const title = isShownAsStepsDuringOnboarding ?
-      t('{{productName}} et vous', {productName: config.productName}) :
-      t('Notifications & coaching')
-    return <Step
-      title={title}
-      fastForward={this.fastForward}
-      progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}
-      onPreviousButtonClick={this.updater_.getBackHandler()}
-      {...baseProps}>
-      {hasCompletedOnboarding && isShownAsStepsDuringOnboarding ? null : <FieldSet
-        label={t(
-          'Comment avez-vous connu {{productName}}\u00A0?', {productName: config.productName})}
-        isValid={!!origin} isValidated={isValidated} hasCheck={true}>
-        <Select
-          onChange={this.updater_.handleChange('origin')} value={origin}
-          options={localizeOptions(t, ORIGIN_OPTIONS)}
-          placeholder={t('choisissez une option')} />
-      </FieldSet>}
-      {isShownAsStepsDuringOnboarding ? null : this.renderNotificationsFieldSet()}
-      {checks[0] ? this.renderCoachingDetails() : null}
-    </Step>
-  }
+  // Keep in sync with 'isValid' props from list of fieldset below.
+  const checks = [
+    origin,
+    coachingEmailFrequency,
+    coachingEmailFrequency === 'EMAIL_NONE' || validateEmail(email) && !isEmailAlreadyUsed,
+  ]
+  const title = isShownAsStepsDuringOnboarding ?
+    t('{{productName}} et vous', {productName: config.productName}) :
+    t('Notifications & coaching')
+  return <Step
+    title={title}
+    fastForward={fastForward}
+    progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
+    onNextButtonClick={isFormValid ? handleSubmit : undefined}
+    onPreviousButtonClick={handleBack}
+    {...props}>
+    {hasCompletedOnboarding && isShownAsStepsDuringOnboarding ? null : <FieldSet
+      label={t(
+        'Comment avez-vous connu {{productName}}\u00A0?', {productName: config.productName})}
+      isValid={!!origin} isValidated={isValidated} hasCheck={true}>
+      <Select
+        onChange={handleOriginChange} value={origin}
+        options={localizeOptions(t, ORIGIN_OPTIONS)}
+        placeholder={t('choisissez une option')} />
+    </FieldSet>}
+    {isShownAsStepsDuringOnboarding ? null : renderNotificationsFieldSet()}
+    {checks[0] ? renderCoachingDetails() : null}
+  </Step>
 }
-const SettingsStep = connect(
-  ({app: {hasSeenComment}}: RootState): ConnectedProps => ({hasSeenComment}),
-)(SettingsStepBase)
+SettingsStepBase.propTypes = {
+  hasSeenComment: PropTypes.shape({
+    coaching: PropTypes.bool,
+    email: PropTypes.bool,
+  }),
+  onChange: PropTypes.func,
+  onSubmit: PropTypes.func.isRequired,
+  profile: PropTypes.shape({
+    coachingEmailFrequency: PropTypes.string,
+    email: PropTypes.string,
+    origin: PropTypes.string,
+  }).isRequired,
+  t: PropTypes.func.isRequired,
+}
+const SettingsStep = React.memo(SettingsStepBase)
 
 
 export {SettingsStep}

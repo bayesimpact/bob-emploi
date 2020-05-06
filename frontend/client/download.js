@@ -1,7 +1,7 @@
+// TODO(cyrille): Migrate to typescript, see https://github.com/TypeStrong/ts-node#usage.
 const Airtable = require('airtable')
 const fs = require('fs')
 const stringify = require('json-stable-stringify')
-const pickBy = require('lodash/pickBy')
 const fromPairs = require('lodash/fromPairs')
 const keyBy = require('lodash/keyBy')
 require('json5/lib/register')
@@ -59,7 +59,6 @@ const shouldDownload = {
   categories: shouldDownloadAll,
   emailTemplates: shouldDownloadAll,
   strategyGoals: shouldDownloadAll,
-  strategyTestimonials: shouldDownloadAll,
   vae: shouldDownloadAll,
 }
 
@@ -103,6 +102,7 @@ const checkNotRegexpHighlight = (regexp, field, errorMessage, text) => checkNotR
 const checkNoCurlyQuotes = (text, context) =>
   checkNotRegexp(
     /’/,
+    // eslint-disable-next-line unicorn/string-content
     `Curly quotes ’ are not allowed in ${context}: "${text}"`,
     text,
   )
@@ -115,7 +115,7 @@ const vaeFromAirtable =
 
 // STEP 2 //
 
-const getTranslationOrThrow = (object, lang, sentence) => {
+const getTranslationOrThrow = (object, lang, sentence, field) => {
   if (!object) {
     console.log('To collect the sentences to translate:')
     console.log('    docker-compose run --rm data-analysis-prepare i18n/collect_strings.py')
@@ -127,32 +127,39 @@ const getTranslationOrThrow = (object, lang, sentence) => {
   if (translated) {
     return translated
   }
-  throwError(`The sentence "${sentence}" was not translated into "${lang}".`)
+  if (lang === 'fr') {
+    return object.string
+  }
+  throwError(`The sentence "${sentence}" for field "${field}" was not translated into "${lang}".`)
   return sentence
 }
 
 // Gather strings to translate and their tranlations in multiple locales.
 // The output is a tuple with the original records, then a map of translation dicts.
-const gatherTranslations = (langs, translatableFields) => airTableRecords =>
+const gatherTranslations = (getLangsForField, contexts = ['']) => airTableRecords =>
   translations.then(translationDict => {
     // Make one records list for each lang.
-    const translatedStringsByLang = fromPairs(langs.map(lang => [lang, {}]))
+    const translatedStringsByLang = {}
     airTableRecords.forEach(({fields}) => {
       forEach(fields, (value, field) => {
-        if (!translatableFields.includes(field)) {
-          return
-        }
         // Translate each translatable field (or throw error).
         const fieldByLang = translationDict[value]
-        langs.forEach(lang => {
-          const translatedValue = getTranslationOrThrow(fieldByLang, lang, value)
-          if (translatedValue !== value) {
-            translatedStringsByLang[lang][value] = translatedValue
-          }
+        getLangsForField(field).forEach(lang => {
+          getTranslationOrThrow(fieldByLang, lang, value, field)
+          contexts.forEach((context) => {
+            const key = value + context
+            const translatedValue = translationDict[key] && translationDict[key][lang]
+            if (translatedValue && translatedValue !== value) {
+              if (!translatedStringsByLang[lang]) {
+                translatedStringsByLang[lang] = {}
+              }
+              translatedStringsByLang[lang][key] = translatedValue
+            }
+          })
         })
       })
     })
-    return [airTableRecords, pickBy(translatedStringsByLang, t => !!Object.keys(t).length)]
+    return [airTableRecords, translatedStringsByLang]
   }, maybeThrowError)
 
 
@@ -166,7 +173,6 @@ const mapAdviceModules = record => {
   const {
     advice_id: adviceId,
     call_to_action: callToAction,
-    diagnostic_topics: diagnosticTopics,
     'explanations (for client)': explanations,
     goal,
     short_title: shortTitle,
@@ -211,10 +217,7 @@ const mapAdviceModules = record => {
         text,
       ))
   }
-  if (!diagnosticTopics || !diagnosticTopics.length) {
-    throwError(`Advice ${adviceId} is not in any topic and will not be shown in the explorer.`)
-  }
-  return {adviceId, newModule, topics: diagnosticTopics}
+  return {adviceId, newModule}
 }
 
 const mapEmailTemplates = record => {
@@ -245,37 +248,8 @@ const mapStrategyGoals = ({fields}) => {
   return {content, goalId, stepTitle, strategyIds}
 }
 
-const mapStrategyTestimonials = ({id, fields}) => {
-  forEach(fields, (text, key) => checkNoCurlyQuotes(text, `${key} field of strategy_testimonials`))
-  const {
-    content,
-    created_at: createdAt,
-    is_male: isMale,
-    job,
-    name,
-    rating,
-    strategy_ids: strategyIds,
-  } = fields
-  if (!content || !createdAt || !job || !name || !rating || !strategyIds || !strategyIds.length) {
-    throwError(new Error(`Testimonial with record ID "${id}" has an empty field.`))
-  }
-  checkNotRegexp(
-    / (\n|$)/,
-    `Content of ${id} should not have extra spaces at the end of the line:
-      "${content.replace(/ (\n|$)/g, '**$&**')}".`,
-    content,
-  )
-  checkNotRegexp(
-    / [!:;?]/,
-    `Content of ${id} should have unbreakable space before a French double punctuation mark:
-      "${content.replace(/ [!:;?]/g, '**$&**')}".`,
-    content,
-  )
-  return {content, createdAt, isMale, job, name, rating, strategyIds}
-}
-
 const mapCategory = ({id, fields}) => {
-  ['metric_title', 'metric_details', 'metric_details_feminine'].forEach(fieldname => {
+  ['metric_title', 'metric_details'].forEach(fieldname => {
     const value = fields[fieldname]
     if (!value) {
       return
@@ -309,9 +283,8 @@ const mapCategory = ({id, fields}) => {
     category_id: categoryId,
     metric_title: metricTitle,
     metric_details: metricDetails,
-    metric_details_feminine: metricDetailsFeminine,
   } = fields
-  return {categoryId, metricDetails, metricDetailsFeminine, metricTitle}
+  return {categoryId, metricDetails, metricTitle}
 }
 
 const mapVae = ({fields}) => {
@@ -330,21 +303,12 @@ const reduceRecords = (recordToResult, reduceResults, reduceZero) => records => 
 
 const reduceAdviceModules = reduceRecords(
   mapAdviceModules,
-  ({categories, modules}, {adviceId, newModule, topics}) => {
-    const updatedTopics = fromPairs(topics.map(topic =>
-      [topic, [...categories[topic] || [], adviceId]]))
+  (modules, {adviceId, newModule}) => {
     return {
-      categories: {
-        ...categories,
-        ...updatedTopics,
-      },
-      modules: {
-        ...modules,
-        [adviceId]: newModule,
-      },
+      ...modules,
+      [adviceId]: newModule,
     }
   },
-  {categories: {}, modules: {}},
 )
 
 const reduceEmailTemplates = reduceRecords(
@@ -379,19 +343,6 @@ const reduceStrategyGoals = reduceRecords(mapStrategyGoals,
   },
 )
 
-const reduceStrategyTestimonials = reduceRecords(mapStrategyTestimonials,
-  (strategies, {content, createdAt, isMale, job, name, rating, strategyIds}) => {
-    const updatedStrategies = fromPairs(strategyIds.map(strategyId => [strategyId, [
-      ...strategies[strategyId] || [],
-      {content, createdAt, isMale, job, name, rating},
-    ]]))
-    return {
-      ...strategies,
-      ...updatedStrategies,
-    }
-  },
-)
-
 const reduceCategories = reduceRecords(mapCategory,
   (categories, {categoryId, ...otherFields}) => {
     return {
@@ -419,10 +370,15 @@ const writeWithTranslations = (jsonFile, namespace) => ([records, translations])
   })
 }
 
-const fromAirtableToObjects = (collection, mapReducer) => {
+const fromAirtableToObjects = (collection, mapReducer, contexts = ['']) => {
   const {base, table, view, translatableFields} = airtableFields[collection]
   return new Airtable().base(base).table(table).select({view}).all().
-    then(gatherTranslations(['fr@tu'], translatableFields), maybeThrowError).
+    then(gatherTranslations((field) => {
+      if (!translatableFields.includes(field)) {
+        return []
+      }
+      return ['en', 'fr', 'fr@tu']
+    }, contexts), maybeThrowError).
     then(([records, translations]) => [mapReducer(records), translations], maybeThrowError)
 }
 
@@ -431,16 +387,16 @@ const noOp = Promise.resolve()
 const importAdvices = shouldDownload.adviceModules ? fromAirtableToObjects(
   'adviceModules',
   reduceAdviceModules,
-).then(([{categories, modules}, translations]) => {
+).then(([modules, translations]) => {
   writeWithTranslations(
     'src/components/advisor/data/advice_modules', 'adviceModules',
   )([modules, translations])
-  writeToJson('src/components/advisor/data/categories.json')(categories)
 }, maybeThrowError) : noOp
 
 const importCategories = shouldDownload.categories ? fromAirtableToObjects(
   'categories',
   reduceCategories,
+  ['', '_FEMININE', '_MASCULINE'],
 ).then(
   writeWithTranslations('src/components/strategist/data/categories', 'categories'),
   maybeThrowError,
@@ -463,15 +419,6 @@ const importStrategyGoals = shouldDownload.strategyGoals ? fromAirtableToObjects
   maybeThrowError,
 ) : noOp
 
-// TODO(cyrille): Merge this with the previous one (goals) in a single file.
-const importStrategyTestimonials = shouldDownload.strategyTestimonials ? fromAirtableToObjects(
-  'strategyTestimonials',
-  reduceStrategyTestimonials,
-).then(
-  writeWithTranslations('src/components/strategist/data/testimonials', 'testimonials'),
-  maybeThrowError,
-) : noOp
-
 const importVae = shouldDownload.vae ?
   vaeFromAirtable.then(reduceVae).then(writeToJson('src/components/advisor/data/vae.json')) : noOp
 
@@ -480,6 +427,5 @@ module.exports = Promise.all([
   importCategories,
   importEmailTemplates,
   importStrategyGoals,
-  importStrategyTestimonials,
   importVae,
 ])

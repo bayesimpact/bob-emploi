@@ -1,7 +1,6 @@
 import PropTypes from 'prop-types'
 import {stringify} from 'query-string'
 import React from 'react'
-import {useTranslation} from 'react-i18next'
 
 import {getEmailTemplates} from 'store/french'
 
@@ -11,14 +10,10 @@ import {Trans} from 'components/i18n'
 import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-driving-license.svg'
 
-import {CardProps, CardWithContentProps, connectExpandedCardWithContent, EmailTemplate,
-  ExpandableAction, ToolCard} from './base'
+import {CardProps, EmailTemplate, ExpandableAction, ToolCard, useAdviceData} from './base'
 
 
-type Props = CardWithContentProps<bayes.bob.FrenchCity>
-
-
-interface RequirementsProps extends Props {
+interface RequirementsProps extends CardProps {
   style: React.CSSProperties
 }
 
@@ -68,22 +63,25 @@ const comparatorStyle: React.CSSProperties = {
 }
 
 
-const getVroomVroomUrl = ({adviceData: {latitude, longitude}, project: {city}}: Props): string => {
-  if (!city || !latitude || !longitude) {
-    return 'https://www.vroomvroom.fr/'
+const getVroomVroomUrl =
+  ({latitude, longitude}: bayes.bob.FrenchCity, city?: bayes.bob.FrenchCity): string => {
+    if (!city || !latitude || !longitude) {
+      return 'https://www.vroomvroom.fr/'
+    }
+    const {name, regionName} = city
+    const location = `${name}, ${regionName}, France`
+    const params = stringify({latitude, location, longitude})
+    return `https://www.vroomvroom.fr/auto-ecoles?${params}`
   }
-  const {name, regionName} = city
-  const location = `${name}, ${regionName}, France`
-  const params = stringify({latitude, location, longitude})
-  return `https://www.vroomvroom.fr/auto-ecoles?${params}`
-}
 
 
-const SchoolsBase: React.FC<Props> = (props: Props): React.ReactElement => {
-  const {handleExplore, t} = props
+const SchoolsBase: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
+  const {handleExplore, project: {city}, t} = props
+  const adviceData = useAdviceData<bayes.bob.FrenchCity>(props)
   const schoolComparators = [
     <ToolCard
-      imageSrc={vroomVroomImage} href={getVroomVroomUrl(props)} key="comparator-vroom-vroom"
+      imageSrc={vroomVroomImage} href={getVroomVroomUrl(adviceData, city)}
+      key="comparator-vroom-vroom"
       hasBorder={true} onClick={handleExplore('tool')}>
       VroomVroom.fr
       <div style={{fontSize: 13, fontWeight: 'normal'}}>
@@ -113,9 +111,8 @@ const SchoolsBase: React.FC<Props> = (props: Props): React.ReactElement => {
 const Schools = React.memo(SchoolsBase)
 
 
-const DrivingLicenseLowIncome: React.FC<Props> = (props: Props): React.ReactElement => {
-  const {advice: {adviceId}, handleExplore} = props
-  const {t} = useTranslation()
+const DrivingLicenseLowIncome: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
+  const {advice: {adviceId}, handleExplore, t} = props
   const templates = getEmailTemplates(t)[adviceId]
   const actions = templates.map((template, index): React.ReactNode =>
     <EmailTemplate {...template} key={`email-${index}`} onContentShown={handleExplore('email')} />,
@@ -131,10 +128,6 @@ DrivingLicenseLowIncome.propTypes = {
     adviceId: PropTypes.string.isRequired,
     numStars: PropTypes.number,
   }).isRequired,
-  adviceData: PropTypes.shape({
-    latitude: PropTypes.number,
-    longitude: PropTypes.number,
-  }).isRequired,
   handleExplore: PropTypes.func.isRequired,
   profile: PropTypes.shape({
     gender: PropTypes.oneOf(['FEMININE', 'MASCULINE']),
@@ -146,9 +139,7 @@ DrivingLicenseLowIncome.propTypes = {
     }),
   }).isRequired,
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.FrenchCity, CardProps>(
-    React.memo(DrivingLicenseLowIncome))
+const ExpandedAdviceCardContent = React.memo(DrivingLicenseLowIncome)
 
 
 export default {ExpandedAdviceCardContent, Picto}

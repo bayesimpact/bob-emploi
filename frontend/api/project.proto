@@ -7,6 +7,7 @@ import "bob_emploi/frontend/api/company.proto";
 import "bob_emploi/frontend/api/diagnostic.proto";
 import "bob_emploi/frontend/api/geo.proto";
 import "bob_emploi/frontend/api/job.proto";
+import "bob_emploi/frontend/api/jobboard.proto";
 import "bob_emploi/frontend/api/options.proto";
 import "bob_emploi/frontend/api/seasonal_jobbing.proto";
 import "bob_emploi/frontend/api/strategy.proto";
@@ -14,7 +15,7 @@ import "bob_emploi/frontend/api/training.proto";
 
 package bayes.bob;
 
-// Next available tag: 47.
+// Next available tag: 50.
 message Project {
   // A unique identifier for this project.
   string project_id = 1 [(field_usage) = PERSONAL_IDENTIFIER];
@@ -25,7 +26,7 @@ message Project {
   // Current status of this project for the user.
   ProjectStatus status = 3 [(field_usage) = APP_ONLY];
 
-  // Job targeted by this project.
+  // Job targeted by this project. It may be empty if the user does not know which job to target.
   Job target_job = 6;
 
   // Sector of activity targeted by this project.
@@ -174,11 +175,22 @@ message Project {
   // Whether the user has a relevant resume for this project.
   OptionalBool has_resume = 46;
 
-  // Whether the user project is clear (declarative), i.e. this is really what they want to do.
+  // Whether the user target job is clear (declarative), i.e. this is really what they want to do.
   // Note that this would be different than having a project defined that the user does not like
   // very much (category find-what-you-like), as this should reflect that we (Bob) are not sure
   // whether the user even chose that job to begin with.
+  // If the target_job field is empty, then this flag indicates whether it's just because they
+  // hadn't had the chance to set it (UNKNOWN_BOOL) or because they chose not to specify one
+  // (FALSE).
+  // TODO(pascal): Rename to has_chosen_target_job
   OptionalBool has_clear_project = 47;
+
+  // The user preferred way to apply for jobs.
+  ApplicationMode preferred_application_mode = 48;
+
+  // The self-diagnostic provided by the user before using Bob. If unknown the user didn't
+  // answer the question.
+  SelfDiagnostic original_self_diagnostic = 49;
 }
 
 message WorkingStrategy {
@@ -206,7 +218,7 @@ message ProjectFeedback {
   map<string, bool> useful_advice_modules = 3;
 }
 
-// Next ID: 35.
+// Next ID: 36.
 message Advice {
   // Unique ID for the advice module: note that it can be the same for other
   // users or for other projects. e.g "reorientation", "spontaneous-application".
@@ -231,7 +243,7 @@ message Advice {
     ImproveSuccessRateData improve_success_rate_data = 8;
 
     // Extra data needed to recommend the "find a job board" piece of advice.
-    JobBoardsData job_boards_data = 12;
+    JobBoards job_boards_data = 12;
 
     // Extra data needed to recommend the "spontaneous application" piece of advice.
     SpontaneousApplicationData spontaneous_application_data = 13;
@@ -262,7 +274,7 @@ message Advice {
 
     // Extra data needed for the "reorient jobbing" advice.
     // DEPRECATED: use reorient_data instead.
-    // TODO (marielaure): Convert old user and remove the field.
+    // TODO(sil): Convert old user and remove the field.
     ReorientData jobbing_data = 26 [deprecated = true];
 
     // Extra data needed for the "create your company" advice.
@@ -327,6 +339,9 @@ message Advice {
   // decided at the advice module level but for some advice it is overriden by
   // the server.
   repeated DiagnosticTopic diagnostic_topics = 33;
+
+  // Whether this advice has a good chance to give a positive outcome to the job search.
+  bool is_for_success = 35;
 }
 
 message AdviceCategory {
@@ -371,6 +386,9 @@ message JobBoardsData {
 
   // Whether the job board is specific to the project's city or region.
   bool is_specific_to_region = 3;
+
+  // A link to the specific job_board.
+  string url = 4;
 }
 
 message SpontaneousApplicationData {

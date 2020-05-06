@@ -7,7 +7,7 @@ import numbers
 from os import path
 import random
 import typing
-from typing import Any, Dict, Iterable, Iterator, Optional, Set, Type, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Type, Union
 import unittest
 from unittest import mock
 
@@ -17,10 +17,12 @@ import pyjson5
 import pymongo
 import rstr
 
+from bob_emploi.frontend.api import advisor_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
+from bob_emploi.frontend.server import advisor
 from bob_emploi.frontend.server import carif
 from bob_emploi.frontend.server import companies
 from bob_emploi.frontend.server import scoring
@@ -180,6 +182,8 @@ class _Persona(object):
 
 _PERSONAS = _Persona.load_set(path.join(_TESTDATA_FOLDER, 'personas.json5'))
 
+_Exception = typing.TypeVar('_Exception', bound=BaseException)
+
 
 class PersonaTestBase(unittest.TestCase):
     """A base class for tests using personas."""
@@ -211,16 +215,43 @@ class PersonaTestBase(unittest.TestCase):
                 f'The model_id {model} is not the ID of any known model')
         return model.score(self._scoring_project(persona, name))
 
+    def _explain(
+            self,
+            model: Union[str, scoring.ModelBase, None] = None,
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> List[str]:
+        if isinstance(model, str):
+            model = scoring.get_scoring_model(model)
+        if model is None:  # pragma: no-cover
+            raise NotImplementedError(
+                f'The model_id {model} is not the ID of any known model')
+        unused_score, reasons = model.score_and_explain(self._scoring_project(persona, name))
+        return reasons
+
+    def _override(
+            self,
+            model: Union[str, scoring.ModelBase, None] = None,
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> project_pb2.Advice:
+        if model is None or isinstance(model, scoring.ModelBase):  # pragma: no-cover
+            raise NotImplementedError(
+                f'The model {model} has no known attached ID.')
+        advice, unused_fields = next(iter(advisor.compute_available_methods(
+            self._scoring_project(persona, name),
+            [advisor_pb2.AdviceModule(trigger_scoring_model=model, is_ready_for_prod=True)])))
+        return advice
+
     def _assert_score_raises(
             self,
             model: Union[str, scoring.ModelBase],
-            exception_type: Type[Exception],
+            exception_type: Type[_Exception],
             persona: Optional[_Persona] = None,
-            name: Optional[str] = None) -> None:
+            name: Optional[str] = None) -> _Exception:
         if not persona:
             persona = _PERSONAS[name] if name is not None else self._random_persona()
-        with self.assertRaises(exception_type, msg=f'Fail for "{persona.name}"'):
+        with self.assertRaises(exception_type, msg=f'Fail for "{persona.name}"') as raise_context:
             self._score(model, persona, name)
+        return raise_context.exception
 
     def _random_persona(self) -> _Persona:
         return _PERSONAS[random.choice(list(_PERSONAS))]
@@ -261,10 +292,22 @@ class ScoringModelTestBase(PersonaTestBase):
 
     def _assert_score_persona_raises(
             self,
-            exception_type: Type[Exception],
+            exception_type: Type[_Exception],
+            persona: Optional[_Persona] = None,
+            name: Optional[str] = None) -> _Exception:
+        return self._assert_score_raises(self.model, exception_type, persona, name)
+
+    def _assert_missing_fields_to_score_persona(  # pylint: disable=invalid-name
+            self,
+            missing_fields: Set[str],
             persona: Optional[_Persona] = None,
             name: Optional[str] = None) -> None:
-        self._assert_score_raises(self.model, exception_type, persona, name)
+        if not persona:
+            persona = _PERSONAS[name] if name is not None else self._random_persona()
+        error = self._assert_score_persona_raises(
+            scoring.NotEnoughDataException, persona=persona, name=name)
+        if missing_fields is not None:
+            self.assertLessEqual(missing_fields, error.fields, msg=f'Fail for "{persona.name}"')
 
 
 class AdviceScoringModelTestBase(ScoringModelTestBase):
@@ -905,6 +948,10 @@ class AdviceFollowUpEmailTestCase(ScoringModelTestBase):
         self.assertEqual(score, 2, msg=f'Failed for "{persona.name}"')
 
 
+@mock.patch.dict(scoring.SCORING_MODELS, {
+    'test-zero': scoring.ConstantScoreModel('0'),
+    'test-two': scoring.ConstantScoreModel('2'),
+})
 class FilterUsingScoreTestCase(unittest.TestCase):
     """Unit tests for the filter_using_score function."""
 
@@ -912,14 +959,6 @@ class FilterUsingScoreTestCase(unittest.TestCase):
         project_pb2.Project(),
         user_pb2.User(),
         mongomock.MongoClient().test)
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        """Test setup."""
-
-        super().setUpClass()
-        scoring.SCORING_MODELS['test-zero'] = scoring.ConstantScoreModel('0')
-        scoring.SCORING_MODELS['test-two'] = scoring.ConstantScoreModel('2')
 
     def test_filter_list_with_no_filters(self) -> None:
         """Filter a list with no filters to apply."""
@@ -1040,6 +1079,16 @@ class StrategyLikeableJobTestCase(HundredScoringModelTestBase):
         score = self._score_persona(persona)
         self.assert_good_score(score, limit=30, msg=f'Failed for "{persona.name}"')
 
+    def test_undefined_project_category(self) -> None:
+        """User is in the undefined-project category."""
+
+        persona = self._random_persona().clone()
+        persona.project.diagnostic.category_id = 'undefined-project'
+        persona.project.ClearField('passionate_level')
+
+        score = self._score_persona(persona)
+        self.assert_good_score(score, limit=30, msg=f'Failed for "{persona.name}"')
+
 
 class StrategyForFrustratedTestCase(HundredScoringModelTestBase):
     """Unit tests for the "For frustrated" strategy."""
@@ -1059,8 +1108,8 @@ class StrategyForFrustratedTestCase(HundredScoringModelTestBase):
         """User is not frustrated byn something that matters."""
 
         persona = self._random_persona().clone()
-        if 'TRAINING' in persona.user_profile.frustrations or\
-                'MOTIVATION' in persona.user_profile.frustrations:
+        if user_pb2.TRAINING in persona.user_profile.frustrations or\
+                user_pb2.MOTIVATION in persona.user_profile.frustrations:
             del persona.user_profile.frustrations[:]
 
         score = self._score_persona(persona)

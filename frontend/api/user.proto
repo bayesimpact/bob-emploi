@@ -152,7 +152,7 @@ message TrackingParameters {
 }
 
 // Profile of a user, a job seeker.
-// Next IDs: 2, 4, 6, 14, 30, 31.
+// Next IDs: 4, 6, 14, 30, 31.
 message UserProfile {
   // Where the user is living.
   // We wanted to distinguish where the user is living from where they search
@@ -222,7 +222,13 @@ message UserProfile {
   UserOrigin origin = 21 [(field_usage) = APP_ONLY];
 
   // Whether the user asked to be "tutoyé".
-  bool can_tutoie = 23 [(field_usage) = APP_ONLY];
+  // DEPRECATED(2020-03-01): use locale "fr@tu" instead.
+  // Old users should be updated when they come back.
+  // A migration might be considered.
+  // Asynchronous server code (e.g. analytics, emails) should use
+  //   scoring_base.get_user_locale(profile)
+  // Client code should not set or read this field anymore.
+  bool can_tutoie = 23 [(field_usage) = APP_ONLY, deprecated = true];
 
   // The locale that the user prefers. E.g. "en", "nl", "fr", "fr@tu" (the tutoiement version of
   // French).
@@ -245,6 +251,10 @@ message UserProfile {
   // Set of languages on which we know the user's level. If a language is missing here, it means
   // that we don't know its current level.
   repeated LanguageKnowledge languages = 29;
+
+  // Whether the user is autonomous in their job search, and can apply without much help
+  // regarding how.
+  OptionalBool is_autonomous = 2;
 }
 
 // A lightweight message to reference a user.
@@ -262,10 +272,22 @@ message UpdatableUser {
   // Whether the missing data is necessary for a relevant assessment, or simply optimization.
   bool is_completion_required = 2;
 
-  // A list of fields that need completion for a better assessment of the user.
+  // A list of fields that need completion for a better assessment of the user,
+  // sorted by descending priority.
+  repeated MissingField missing_fields = 3;
+}
+
+message MissingField {
   // The fields follow the FieldMask JSON format for a user,
   // except that repeated fields are allowed, with the index specified, eg: `projects.0.hasResume`.
-  repeated string missing_fields = 3;
+  string field = 1;
+
+  // How much this field needs to be filled, the higher the value the more it's important.
+  // Values are only relevant related to each other in a given list.
+  // E.g. in a given list, a field required to find a main blocker would be prioritized at 2,
+  // a field required to establish a secondary blocker would be prioritized as 1,
+  // and a field required to check whether a method is relevant would be prioritized as 0.
+  uint32 priority = 2;
 }
 
 // A message containing fields according to which we can decide whether the app is available or not.
@@ -550,11 +572,11 @@ message LanguageKnowledge {
 
   // Whether the user has a good read/write knowledge of the language
   // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
-  bool has_written_knowledge = 2;
+  OptionalBool has_written_knowledge = 2;
 
   // Whether the user has a good listen/speak knowledge of the language
   // (at least B CEFRL level https://europass.cedefop.europa.eu/resources/european-language-levels-cefr).
-  bool has_spoken_knowledge = 3;
+  OptionalBool has_spoken_knowledge = 3;
 }
 
 // Status of the email sent to user to compute the Net Promoter Score.
@@ -569,9 +591,10 @@ enum NPSEmailStatus {
   NPS_EMAIL_SENT = 2;
 }
 
-// Responses to the survey sent by email to user to compute the Net Promoter Score
-// and get feedback on the advices (https://bayes.typeform.com/to/uuPH5r?email=me@example.com).
-// Next ID: 7.
+// Responses to the survey sent by email to user to compute the Net Promoter Score,
+// get feedback on the advices (https://bayes.typeform.com/to/uuPH5r?email=me@example.com)
+// and make sure the user understood Bob's value proposition.
+// Next ID: 10.
 message NPSSurveyResponse {
   // The email address used to answer the survey.
   string email = 1;
@@ -598,6 +621,13 @@ message NPSSurveyResponse {
   // 'which_advices_were_useful_comment' and at the list of advices the app actually
   // gave to the user.
   repeated string curated_useful_advice_ids = 7;
+
+  // User self-dagnostic right after using Bob.
+  SelfDiagnostic nps_self_diagnostic = 8;
+
+  // Whether the user has ideas to act on its own self-diagnostic. The exact action is part of the
+  // general feedback comment.
+  OptionalBool has_actions_idea = 9;
 }
 
 message SetNPSCommentRequest {
@@ -607,6 +637,12 @@ message SetNPSCommentRequest {
 
   // Free-form text answer about what the user liked or did not like in the app.
   string comment = 2;
+
+  // User self-dagnostic at the time of nps.
+  SelfDiagnostic self_diagnostic = 3;
+
+  // Whether the user has ideas to act on its own self-diagnostic.
+  OptionalBool has_actions_idea = 4;
 }
 
 // Description of an email we sent to the user.
@@ -662,8 +698,14 @@ message EmploymentStatus {
   // Whether bob has helped.
   string bob_has_helped = 4;
 
+  // Whether the user is in a new job (or kept the previous one).
+  OptionalBool is_new_job = 9;
+
   // Contract type of the new job, if any.
   EmploymentType new_job_contract_type = 5;
+
+  // Whether the user's new job is in a different sector than its previous one.
+  OptionalBool is_job_in_different_sector = 10;
 
   // List of Bob features that were useful.
   repeated UsefulFeature bob_features_that_helped = 6;

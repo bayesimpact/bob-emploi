@@ -1,10 +1,10 @@
 import {expect} from 'chai'
 // @ts-ignore
 import {FamilySituation, Frustration, UserOrigin} from 'api/user'
-import {getUserFrustrationTags, FAMILY_SITUATION_OPTIONS, increaseRevision,
+import {getUserFrustrationTags, FAMILY_SITUATION_OPTIONS, increaseRevision, addProjectIds,
   getHighestDegreeDescription, ORIGIN_OPTIONS, keepMostRecentRevision,
   isEmailTemplatePersonalized, projectMatchAllFilters, filterPredicatesMatch,
-  personalizationsPredicates, youForUser, getJobSearchLengthMonths, getUserLocale} from 'store/user'
+  personalizationsPredicates, getJobSearchLengthMonths, getUserLocale} from 'store/user'
 import emailTemplates from 'components/advisor/data/email_templates.json'
 
 
@@ -262,21 +262,6 @@ describe('Network email templates personalizations', (): void => {
 })
 
 
-describe('When we can tutoie people', (): void => {
-  it('should not be by default', (): void => {
-    const user = {}
-    expect(youForUser(user)('tu', 'vous')).to.equal('vous')
-  })
-
-  it('should only be when user asked for it', (): void => {
-    const tutoyableUser = {profile: {canTutoie: true}}
-    const notTutoyableUser = {profile: {canTutoie: false}}
-    expect(youForUser(tutoyableUser)('tu', 'vous')).to.equal('tu')
-    expect(youForUser(notTutoyableUser)('tu', 'vous')).to.equal('vous')
-  })
-})
-
-
 const dateNowStub = ((): number => 1568709243361)
 
 
@@ -306,13 +291,29 @@ describe('getUserLocale', (): void => {
     expect(locale).to.equal('fr')
   })
 
-  it('should return "fr@tu" for tutoiement', (): void => {
-    const locale = getUserLocale({canTutoie: true})
-    expect(locale).to.equal('fr@tu')
-  })
-
   it("should return the user's locale", (): void => {
     const locale = getUserLocale({locale: 'en'})
     expect(locale).to.equal('en')
+  })
+})
+
+
+describe('addProjectIds', (): void => {
+  it('should not modify objects already with project IDs', (): void => {
+    const emptyUser = {}
+    expect(addProjectIds(emptyUser)).to.equal(emptyUser)
+
+    const userWithProjectIds = {projects: [{projectId: '3'}]}
+    expect(addProjectIds(userWithProjectIds)).to.equal(userWithProjectIds)
+  })
+
+  it('should add an ID to a project without ID', (): void => {
+    const user = {projects: [{targetJob: {name: 'Boulanger'}}]}
+    const modifiedUser = addProjectIds(user)
+    expect(modifiedUser).not.to.equal(user)
+    expect(modifiedUser.projects).to.have.lengthOf(1)
+    const modifiedProject = modifiedUser!.projects![0]!
+    expect(modifiedProject).to.have.all.keys('targetJob', 'projectId')
+    expect(modifiedProject.projectId).to.be.ok
   })
 })

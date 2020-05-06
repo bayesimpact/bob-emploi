@@ -7,7 +7,7 @@ import {ThunkAction} from 'redux-thunk'
 import {aliUserDataPost} from 'store/api'
 import {validateEmail} from 'store/validations'
 
-import {FastForward} from 'components/fast_forward'
+import {useFastForward} from 'components/fast_forward'
 import {Modal, ModalConfig, useModal} from 'components/modal'
 import {FieldSet} from 'components/pages/connected/form_utils'
 import {IconInput, LabeledToggle} from 'components/theme'
@@ -46,7 +46,7 @@ ThunkAction<Promise<void>, MiniRootState, {}, SaveAction> =>
       type: 'MINI_UPDATE_ORG_INFO',
     })
     const {user, app: {orgInfo: {advisor: counselorName}}} = getState()
-    const resultsUrl = `${location}#${makeUrlUser(user)}`
+    const resultsUrl = `${location}?${makeUrlUser(user)}`
     return aliUserDataPost({
       counselorEmail,
       counselorName,
@@ -106,14 +106,14 @@ React.ReactElement => {
     !!maybeAdvisorEmail && !validateEmail(maybeAdvisorEmail) ||
     shouldSendToAdvisor && !validateEmail(maybeAdvisorEmail)
   const {href} = window.location
-  const dispatch = useDispatch()
+  const dispatch = useDispatch<DispatchActions>()
   const dispatchEmail = useCallback((event?: React.SyntheticEvent): void => {
     event?.preventDefault()
     setValidated(true)
     if (isFormInvalid) {
       return
     }
-    dispatch(saveAction(email, maybeAdvisorEmail, href.split('#')[0]))
+    dispatch(saveAction(email, maybeAdvisorEmail, href.split(/[#?]/)[0]))
     // TODO(cyrille): Give feedback on whether the email was actually sent.
     onClose()
   }, [dispatch, email, isFormInvalid, maybeAdvisorEmail, onClose, href])
@@ -128,9 +128,8 @@ React.ReactElement => {
       setEmail('youngpascal@example.com')
     }
   }, [advisorEmail, forceSendToAdvisor, email, shouldSendToAdvisor])
+  useFastForward(advisorEmail && email ? dispatchEmail : fillForm)
   return <Modal title="Conserver mon bilan" onClose={onClose} isShown={isShown} {...modalProps}>
-    <FastForward
-      onForward={advisorEmail && email ? dispatchEmail : fillForm} />
     <form style={modalContentStyle}>
       <FieldSet
         label="Je m'envoie un e-mail qui me permettra de retrouver

@@ -19,7 +19,7 @@ message FrenchCity {
   string departement_name = 4;
 
   // Prefix to use with departement name.
-  // TODO(marielaure): Populate old users.
+  // TODO(sil): Populate old users.
   string departement_prefix = 12;
 
   // ID of the région in which the city is. E.g. "84" for Auvergne-Rhône-Alpes.

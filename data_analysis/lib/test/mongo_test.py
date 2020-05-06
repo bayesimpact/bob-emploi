@@ -514,6 +514,15 @@ class ProtoTestCase(unittest.TestCase):
         ], user_pb2.User)
         self.assertRaises(mongo.json_format.ParseError, next, iterator)
 
+    def test_collection_to_proto_mapping_hidden_field(self) -> None:
+        """Use of hidden unknown proto field in a dict."""
+
+        iterator = mongo.collection_to_proto_mapping([
+            {'_id': '75056', '_hiddenField': 'Pascal'},
+        ], user_pb2.User)
+        user_id, unused_user = next(iterator)
+        self.assertEqual('75056', user_id)
+
 
 if __name__ == '__main__':
     unittest.main()

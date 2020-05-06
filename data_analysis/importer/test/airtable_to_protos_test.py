@@ -67,13 +67,14 @@ class _ConverterTestCase(airtablemock.TestCase):
         self._translation_base.create('tblQL7A5EgRJWhQFo', dict(translations, string=string))
 
     @mock.patch(airtable_to_protos.__name__ + '._AIRTABLE_API_KEY', new='apikey42')
-    def airtable2dicts(self, should_drop_id: bool = True) -> List[Dict[str, Any]]:
+    def airtable2dicts(self, should_drop_id_and_order: bool = True) -> List[Dict[str, Any]]:
         """Converts records from the table to dicts."""
 
         raw = airtable_to_protos.airtable2dicts(self._base_name, self._table, self.converter_id)
-        if should_drop_id:
+        if should_drop_id_and_order:
             for imported in raw:
                 del imported['_id']
+                del imported['_order']
         return raw
 
 
@@ -159,6 +160,22 @@ class AdviceModuleConverterTestCase(_ConverterTestCase):
         protos = self.airtable2dicts()
         self.assertEqual(
             ['my-advice', 'my-second-advice'], sorted(m['adviceId'] for m in protos))
+
+    def test_airtable2dicts_extrafields(self) -> None:
+        """Basic usage of airtable2dicts."""
+
+        id_1 = self.add_record({
+            'advice_id': 'my-advice',
+            'trigger_scoring_model': 'constant(2)',
+        })
+        id_2 = self.add_record({
+            'advice_id': 'my-second-advice',
+            'trigger_scoring_model': 'constant(3)',
+        })
+
+        protos = self.airtable2dicts(should_drop_id_and_order=False)
+        self.assertEqual([id_1, id_2], [m['_id'] for m in protos])
+        self.assertEqual([0, 1], [m['_order'] for m in protos])
 
 
 class ActionTemplateConverterTestCase(_ConverterTestCase):
@@ -385,7 +402,7 @@ class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
             'email_template': '',
             'name': 'Name',
         })
-        self.add_translation('Name', {'fr_FR@tu': 'Nom'})
+        self.add_translation('Name', {'fr@tu': 'Nom'})
         self.airtable2dicts()
         self.assertTrue(
             any('import translations' in call[0][0] for call in mock_logging.call_args_list),
@@ -407,9 +424,9 @@ class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
             'email_template': 'Hé, tu te souviens de moi\u00a0?',
             'name': 'English name',
         })
-        self.add_translation('English name', {'fr_FR@tu': 'Nom anglais'})
+        self.add_translation('English name', {'fr@tu': 'Nom anglais'})
         self.add_translation(
-            'Hé, tu te souviens de moi\u00a0?', {'fr_FR@tu': 'Hé, tu te souviens de moi\u00a0?'})
+            'Hé, tu te souviens de moi\u00a0?', {'fr@tu': 'Hé, tu te souviens de moi\u00a0?'})
         contact_leads = self.airtable2dicts()
         self.assertEqual(1, len(contact_leads))
         contact_lead = contact_leads[0]
@@ -426,9 +443,9 @@ class TranslatableContactLeadConverterTestCase(_ConverterTestCase):
             'email_template': 'Hé, tu te souviens de moi\u00a0?',
             'name': 'English name',
         })
-        self.add_translation('English name', {'fr_FR@tu': 'Nom anglais'})
+        self.add_translation('English name', {'fr@tu': 'Nom anglais'})
         self.add_translation(
-            'Hé, tu te souviens de moi\u00a0?', {'fr_FR@tu': 'Hé, tu te %souviens de moi\u00a0?'})
+            'Hé, tu te souviens de moi\u00a0?', {'fr@tu': 'Hé, tu te %souviens de moi\u00a0?'})
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
@@ -1013,6 +1030,18 @@ class DiagnosticOverallConverterTestCase(_ConverterTestCase):
         self.assertEqual(1, len(dicts), msg=dicts)
         self.assertEqual('stuck-market', dicts[0].get('categoryId'))
 
+    def test_variable(self) -> None:
+        """A diagnostic overall using a job group template."""
+
+        self.add_record({
+            'order': 0,
+            'sentence_template': 'Hello world %inDomain',
+            'score': 50,
+            'text_template': 'This is why you got this score.',
+        })
+
+        self.assertEqual(1, len(self.airtable2dicts()))
+
 
 class DiagnosticObservationConverterTestCase(_ConverterTestCase):
     """Tests for the diagnostic observation converter."""
@@ -1118,11 +1147,22 @@ class DiagnosticCategoryConverterTestCase(_ConverterTestCase):
         with self.assertRaises(ValueError):
             self.airtable2dicts()
 
+    def test_description_needed(self) -> None:
+        """Cannot import a category without its description."""
+
+        self.add_record({
+            'category_id': 'stuck-market',
+            'order': 1,
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
     def test_can_import_with_order_and_id(self) -> None:
         """Can import with only an order and an ID."""
 
         self.add_record({
             'category_id': 'stuck-market',
+            'description': 'I have a bad market',
             'order': 1,
         })
         self.assertTrue(self.airtable2dicts())
@@ -1132,6 +1172,7 @@ class DiagnosticCategoryConverterTestCase(_ConverterTestCase):
 
         self.add_record({
             'category_id': 'stuck-market',
+            'description': 'I have a bad market',
             'filters': ['unknown-scoring-model'],
             'order': 1,
         })
@@ -1143,11 +1184,13 @@ class DiagnosticCategoryConverterTestCase(_ConverterTestCase):
 
         self.add_record({
             'category_id': 'stuck-market',
+            'description': 'I have a bad market',
             'filters': ['not-for-unstressed-market(10/7)'],
             'order': 1,
         })
         self.add_record({
             'category_id': 'bad-network',
+            'description': 'I have a bad market',
             'filters': ['for-network(1)'],
             'order': 2,
         })
@@ -1158,10 +1201,12 @@ class DiagnosticCategoryConverterTestCase(_ConverterTestCase):
 
         self.add_record({
             'category_id': 'stuck-market',
+            'description': 'I have a bad market',
             'filters': ['not-for-unstressed-market(10/7)'],
             'order': 2,
         })
         self.add_record({
+            'description': 'I have a bad market',
             'category_id': 'bad-profile',
             'filters': ['for-network(1)'],
             'order': 1,
@@ -1173,14 +1218,38 @@ class DiagnosticCategoryConverterTestCase(_ConverterTestCase):
         """Cannot import categories if some earlier one completely covers a later one."""
 
         self.add_record({
+            'description': 'I have a bad market',
             'category_id': 'stuck-market',
             'filters': [],
             'order': 1,
         })
         self.add_record({
+            'description': 'I have a bad market',
             'category_id': 'bad-profile',
             'filters': ['for-network(1)'],
             'order': 2,
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_description_should_not_be_punctuated(self) -> None:
+        """Stop import if a description ends with a dot."""
+
+        self.add_record({
+            'category_id': 'stuck-market',
+            'description': 'I have a bad market.',
+            'order': 1,
+        })
+        with self.assertRaises(ValueError):
+            self.airtable2dicts()
+
+    def test_description_should_have_uppercase(self) -> None:
+        """Stop import if a description does not start with an uppercase letter."""
+
+        self.add_record({
+            'category_id': 'stuck-market',
+            'description': 'my market is bad',
+            'order': 1,
         })
         with self.assertRaises(ValueError):
             self.airtable2dicts()

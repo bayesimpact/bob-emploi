@@ -40,7 +40,8 @@ function add_previous_draft_and_commits_to_release_notes() {
   fi
 
   readonly git_cd_up="$(git rev-parse --show-cdup)"
-  git log "$last_tag_for_git_log..$tag" --format=%B -- "${git_cd_up}frontend" >> $release_notes
+  git log "$last_tag_for_git_log..$tag" --format=%B \
+    -- "${git_cd_up}frontend" >> $release_notes
 }
 
 

@@ -32,7 +32,7 @@ fi
 # Find the most recent commit that was in master (considered as green).
 readonly LAST_GREEN="$(git merge-base HEAD origin/master)"
 readonly DIFF_FILES=$(mktemp)
-git diff --name-only "${LAST_GREEN}" > "${DIFF_FILES}"
+git diff --name-only "${LAST_GREEN}" "${BRANCH}"> "${DIFF_FILES}"
 
 # Ignore changes on some files.
 sed -i -e "/^README.md$/d" "${DIFF_FILES}"

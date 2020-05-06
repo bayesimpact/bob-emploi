@@ -38,7 +38,7 @@ message Helper {
   // A flag to exclude user from analytics, because it was created for test purposes only.
   bool exclude_from_analytics = 8;
 
-  // TODO(marielaure): Start the boolean name with *is*.
+  // TODO(sil): Start the boolean name with *is*.
   // Whether user confirmed they own the email address.
   bool email_confirmed = 9;
 

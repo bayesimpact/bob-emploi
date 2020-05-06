@@ -1,12 +1,27 @@
 """Module to advise the user on specific jobboard they might not be aware of."""
 
 import random
-from typing import List
+from typing import Iterator, List
 
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server import scoring_base
 from bob_emploi.frontend.api import jobboard_pb2
 from bob_emploi.frontend.api import user_pb2
+
+_JOBBOARDS: proto.MongoCachedCollection[jobboard_pb2.JobBoard] = \
+    proto.MongoCachedCollection(jobboard_pb2.JobBoard, 'jobboards')
+
+
+def list_jobboards(project: scoring_base.ScoringProject) -> Iterator[jobboard_pb2.JobBoard]:
+    """List all job boards for this project."""
+
+    all_job_boards = _JOBBOARDS.get_collection(project.database)
+    for job_board_template in scoring_base.filter_using_score(
+            all_job_boards, lambda j: j.filters, project):
+        job_board = jobboard_pb2.JobBoard()
+        job_board.CopyFrom(job_board_template)
+        job_board.link = project.populate_template(job_board.link)
+        yield job_board
 
 
 class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
@@ -14,8 +29,6 @@ class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
 
     def __init__(self) -> None:
         super().__init__(user_pb2.NO_OFFERS)
-        self._db: proto.MongoCachedCollection[jobboard_pb2.JobBoard] = \
-            proto.MongoCachedCollection(jobboard_pb2.JobBoard, 'jobboards')
 
     def _explain(self, project: scoring_base.ScoringProject) -> List[str]:
         """Compute a score for the given ScoringProject, and with why it's received this score."""
@@ -30,12 +43,7 @@ class _AdviceJobBoards(scoring_base.LowPriorityAdvice):
             -> List[jobboard_pb2.JobBoard]:
         """List all job boards for this project."""
 
-        all_job_boards = self._db.get_collection(project.database)
-        filtered_job_boards = list(
-            scoring_base.filter_using_score(all_job_boards, lambda j: j.filters, project))
-        for job_board in filtered_job_boards:
-            job_board.link = project.populate_template(job_board.link)
-        return filtered_job_boards
+        return list(list_jobboards(project))
 
     def get_expanded_card_data(self, project: scoring_base.ScoringProject) \
             -> jobboard_pb2.JobBoards:

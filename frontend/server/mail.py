@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
         Name: str
         Email: str
 
-    _MailjetParsePartHeaderJson = TypedDict(  # pylint: disable=invalid-name
+    _MailjetParsePartHeaderJson = TypedDict(
         '_MailjetParsePartHeaderJson', {
             'Content-Type': List[str],
             'Content-Transfer-Encoding': List[str],
@@ -32,7 +32,7 @@ if typing.TYPE_CHECKING:
         ]
         Headers: _MailjetParsePartHeaderJson
 
-    _MailjetParseJson = TypedDict(  # pylint: disable=invalid-name
+    _MailjetParseJson = TypedDict(
         '_MailjetParseJson', {
             # Email of sender.
             'Sender': str,
@@ -59,7 +59,7 @@ if typing.TYPE_CHECKING:
         Filename: str
         Base64Content: str
 
-    _MailjetSendMessageJson = TypedDict(  # pylint: disable=invalid-name
+    _MailjetSendMessageJson = TypedDict(
         '_MailjetSendMessageJson', {
             # Email of sender.
             'To': List[_MailjetUser],

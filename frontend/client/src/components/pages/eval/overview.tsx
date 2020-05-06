@@ -118,7 +118,7 @@ const tableStyle = {
 }
 
 
-// TODO(marielaure) : Make new cells for important comments.
+// TODO(sil) : Make new cells for important comments.
 const PoolOverviewBase = (props: PoolOverviewProps): React.ReactElement => {
   const {onSelectUseCase, useCases} = props
   return <table style={tableStyle}>

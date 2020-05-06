@@ -1,9 +1,11 @@
+import {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {YouChooser} from 'store/french'
+import {LocalizableString, prepareT} from 'store/i18n'
 
+import {Trans} from 'components/i18n'
 import {RadiumExternalLink} from 'components/radium'
 import {ExternalLink, GrowingNumber, Tag, VideoFrame} from 'components/theme'
 import immersionVideoPoster from 'images/advices/immersion_video_poster.png'
@@ -12,13 +14,13 @@ import Picto from 'images/advices/picto-immersion.svg'
 import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
 
 
-const pmsmpEmailContent = (name: string|undefined, eFeminine: string): string =>
+const pmsmpEmailContent = prepareT(
   `Chère Madame, cher Monsieur,\n\n
 
 J'ai commencé à construire un projet d'orientation vers le métier de .....
 
 J'ai vu que j'avais la possibilité de faire un stage d'immersion (PMSMP), et je suis
-convaincu${eFeminine} que cela m'aiderait à valider mon projet. J'ai trois objectifs\u00A0:
+convaincu·e que cela m'aiderait à valider mon projet. J'ai trois objectifs\u00A0:
 
 1. essayer le métier pour confirmer ma motivation
 2. obtenir une expérience récente sur mon CV pour m'aider à postuler dans ce métier
@@ -30,56 +32,56 @@ Merci.
 
 Bien cordialement,
 
-${name || ''}`
+{{name}}`)
 
 interface ImmersionElementProps {
   isFree?: boolean
   isForYou?: boolean
-  subtitle: string
+  subtitle: LocalizableString
   title: string
   url: string
 }
 
 interface ImmersionLinkProps extends ImmersionElementProps {
   style?: RadiumCSSProperties
-  userYou: YouChooser
+  t: TFunction
 }
 
-const links: ImmersionElementProps[] = [
+const links: readonly ImmersionElementProps[] = [
   {
     isForYou: true,
-    subtitle: 'Pour essayer les métiers manuels',
+    subtitle: prepareT('Pour essayer les métiers manuels'),
     title: 'Savoir-Faire et Découverte',
     url: 'http://www.lesavoirfaire.fr/',
   },
   {
     isForYou: true,
     isFree: true,
-    subtitle: 'Pour essayer des métiers en voyageant',
+    subtitle: prepareT('Pour essayer des métiers en voyageant'),
     title: 'WorkAway',
     url: 'https://www.workaway.info/index-fr.html',
   },
   {
     isForYou: true,
-    subtitle: 'Pour faire des mini-stages de 1 à 30 jours',
+    subtitle: prepareT('Pour faire des mini-stages de 1 à 30 jours'),
     title: 'Test un métier',
     url: 'https://www.testunmetier.com/',
   },
   {
     isForYou: true,
-    subtitle: 'Pour faire des mini-stages de 1 à 5 jours',
+    subtitle: prepareT('Pour faire des mini-stages de 1 à 5 jours'),
     title: 'Test un job',
     url: 'https://www.testmonjob.fr/',
   },
   {
     isFree: true,
-    subtitle: 'Pour les stages de troisième',
+    subtitle: prepareT('Pour les stages de troisième'),
     title: 'Viens voir mon taf',
     url: 'https://www.viensvoirmontaf.fr/',
   },
   {
     isFree: true,
-    subtitle: 'Pour les stages de troisième',
+    subtitle: prepareT('Pour les stages de troisième'),
     title: 'Mon stage de troisième',
     url: 'https://www.monstagedetroisieme.fr/',
   },
@@ -114,16 +116,16 @@ const getContainerStyle = (style?: React.CSSProperties): React.CSSProperties => 
 
 const ImmersionLinkBase: React.FC<ImmersionLinkProps> =
   (props: ImmersionLinkProps): React.ReactElement => {
-    const {isForYou, isFree, style: propsStyle, subtitle, title, url, userYou} = props
+    const {isForYou, isFree, style: propsStyle, subtitle, t, t: translate, title, url} = props
     const style = useMemo(() => getContainerStyle(propsStyle), [propsStyle])
 
     return <RadiumExternalLink href={url} style={style}>
       <div style={{display: 'flex', flex: 1, flexDirection: 'column'}}>
         <span>
-          {title}<span style={{fontStyle: 'italic'}}>{isFree ? null : ' (payant)'}</span>
-          {isForYou ? <Tag style={tagStyle}>Pour {userYou('toi', 'vous')}</Tag> : null}
+          {title}<span style={{fontStyle: 'italic'}}>{isFree ? null : ` (${t('payant')})`}</span>
+          {isForYou ? <Tag style={tagStyle}>{t('Pour vous')}</Tag> : null}
         </span>
-        <span style={subtitleStyle}>{subtitle}</span>
+        <span style={subtitleStyle}>{translate(subtitle)}</span>
       </div>
       <ChevronRightIcon size={16} style={{flex: 'none'}} />
     </RadiumExternalLink>
@@ -133,16 +135,16 @@ ImmersionLinkBase.propTypes = {
   isFree: PropTypes.bool,
   style: PropTypes.object,
   subtitle: PropTypes.string.isRequired,
+  t: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   url: PropTypes.string.isRequired,
-  userYou: PropTypes.func.isRequired,
 }
 const ImmersionLink = React.memo(ImmersionLinkBase)
 
 interface ProgramProps {
   handleExplore: (visualElement: string) => () => void
   profile: bayes.bob.UserProfile
-  userYou: YouChooser
+  t: TFunction
 }
 
 const linkSentenceStyle = {
@@ -156,29 +158,33 @@ const linkStyle = {
 }
 
 const ProgramBase: React.FC<ProgramProps> = (props: ProgramProps): React.ReactElement => {
-  const {handleExplore, profile: {gender, name}} = props
+  const {handleExplore, profile: {gender, name = ''}, t, t: translate} = props
   const url = 'https://clara.pole-emploi.fr/aides/detail/pmsmp'
   return <MethodSuggestionList
-    title="Faire un mini-stage en entreprise"
-    subtitle="Il faut déjà être accompagné par une structure d'insertion (Pôle emploi, Cap Emploi,
-      Mission Locale &hellip;)."
+    title={t('Faire un mini-stage en entreprise')}
+    subtitle={t(
+      "Il faut déjà être accompagné·e par une structure d'insertion (Pôle emploi, Cap Emploi, " +
+      'Mission Locale …).',
+      {context: gender},
+    )}
     headerContent={<React.Fragment>
       <VideoFrame style={{marginTop: 15}}><video poster={immersionVideoPoster} controls={true}>
         <source
           src="https://cdn2.webtv-solution.com/pole-emploi/mp4/dossier-immersion-pro-st-0o1avome_38_3574_850.mp4"
           type="video/mp4" />
       </video></VideoFrame>
-      <p style={linkSentenceStyle}>
+      <Trans t={t} style={linkSentenceStyle}>
         Me renseigner sur ce programme de stages
         sur <ExternalLink href={url} onClick={handleExplore('link')} style={linkStyle}>
           pole-emploi.fr
         </ExternalLink>
-      </p>
+      </Trans>
     </React.Fragment>}>
     <EmailTemplate
       isMethodSuggestion={true}
-      title="Comment en parler avec mon conseiller&nbsp;?" onContentShown={handleExplore('email')}
-      content={pmsmpEmailContent(name, gender === 'FEMININE' ? 'e' : '')} />
+      title={t('Comment en parler avec mon conseiller\u00A0?')}
+      onContentShown={handleExplore('email')}
+      content={translate(pmsmpEmailContent, {context: gender, name})} />
     {/* TODO(cyrille): Add a direct action to show an email template for pe counselor asking for
     a PMSMP.*/}
   </MethodSuggestionList>
@@ -188,19 +194,20 @@ ProgramBase.propTypes = {
   profile: PropTypes.shape({
     gender: PropTypes.string,
   }).isRequired,
+  t: PropTypes.func.isRequired,
 }
 const Program = React.memo(ProgramBase)
 
-const ProgramLinksBase: React.FC<{userYou: YouChooser}> =
-  ({userYou}: {userYou: YouChooser}): React.ReactElement => {
-    const title = <React.Fragment>
-      <GrowingNumber isSteady={true} number={links.length} /> autres organismes pour faire un
+const ProgramLinksBase: React.FC<{t: TFunction}> =
+  ({t}: {t: TFunction}): React.ReactElement => {
+    const title = <Trans parent={null} t={t} count={links.length}>
+      <GrowingNumber isSteady={true} number={links.length} /> autre organisme pour faire un
       mini-stage
-    </React.Fragment>
+    </Trans>
     // TODO(cyrille): Make this one collapsable.
     return <MethodSuggestionList style={{marginTop: 15}} title={title}>
       {links.map((link, index): React.ReactElement<ImmersionLinkProps> =>
-        <ImmersionLink {...link} key={index} userYou={userYou} />)}
+        <ImmersionLink {...link} key={index} t={t} />)}
     </MethodSuggestionList>
   }
 const ProgramLinks = React.memo(ProgramLinksBase)
@@ -209,7 +216,7 @@ const ImmersionMethod: React.FC<CardProps> =
   (props: CardProps): React.ReactElement => {
     return <div>
       <Program {...props} />
-      <ProgramLinks userYou={props.userYou} />
+      <ProgramLinks t={props.t} />
     </div>
   }
 ImmersionMethod.propTypes = {
@@ -217,7 +224,7 @@ ImmersionMethod.propTypes = {
   profile: PropTypes.shape({
     gender: PropTypes.string,
   }).isRequired,
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(ImmersionMethod)
 

@@ -1,12 +1,13 @@
-import {TFunction, TOptions} from 'i18next'
+import {TOptions} from 'i18next'
+import _fromPairs from 'lodash/fromPairs'
+import _mapValues from 'lodash/mapValues'
 import _max from 'lodash/max'
 import PropTypes from 'prop-types'
-import React, {useCallback, useImperativeHandle, useMemo, useState} from 'react'
-import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
-import {connect} from 'react-redux'
-import {RouteComponentProps, withRouter} from 'react-router'
+import React, {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
+import {useDispatch, useSelector} from 'react-redux'
+import {RouteComponentProps, useLocation} from 'react-router'
 import {Redirect, Route, Switch, useHistory} from 'react-router-dom'
-import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, sendProjectFeedback} from 'store/actions'
 import {getAdviceShortTitle, isValidAdvice} from 'store/advice'
@@ -18,7 +19,7 @@ import starOutlineIcon from 'images/star-outline.svg'
 import greyStarOutlineIcon from 'images/star-outline.svg?stroke=#9596a0'
 import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
-import {Modal} from 'components/modal'
+import {Modal, useModal} from 'components/modal'
 import {ShareModal} from 'components/share'
 import {Button, SmoothTransitions, Textarea} from 'components/theme'
 import {FEEDBACK_TAB} from 'components/url'
@@ -44,7 +45,7 @@ const addDuration = (time: string, delayMillisec: number): Date | undefined => {
 
 // Get the date and time at which to show the request feedback.
 const getRequestFeedbackShowDate = (
-  {app: {submetricsExpansion = {}}, user: {featuresEnabled: {stratTwo} = {}}}: RootState,
+  {user: {featuresEnabled: {stratTwo} = {}}}: RootState,
   {advices, diagnosticShownAt, feedback, openedStrategies = [], strategies}: bayes.bob.Project,
 ): Date | undefined => {
   // Feedback already given.
@@ -53,10 +54,10 @@ const getRequestFeedbackShowDate = (
   }
 
   // User is in pre-strat UX.
+  // TODO(pascal): Fix now that all users have strategies.
   if (stratTwo !== 'ACTIVE' || !strategies || !strategies.length) {
     // The user started interacting with the pre-strat content.
-    if (advices && advices.some(({status}): boolean => status === 'ADVICE_READ') ||
-      !!Object.keys(submetricsExpansion).length) {
+    if (advices && advices.some(({status}): boolean => status === 'ADVICE_READ')) {
       return new Date()
     }
 
@@ -76,67 +77,70 @@ const getRequestFeedbackShowDate = (
 
 
 interface FormProps {
-  dispatch: DispatchAllActions
-  gender?: bayes.bob.Gender
-  onSubmit?: () => void
+  onSubmit?: (score: number) => void
   project: bayes.bob.Project
   score?: number
-  t: TFunction
 }
 
 
-interface BarConnectedProps {
-  gender?: bayes.bob.Gender
-}
-
-
-interface BarConfig {
+interface BarProps {
   children?: never
   evaluationUrl: string
   isShown: boolean
-  onSubmit?: () => void
+  onSubmit?: (score: number) => void
   project: bayes.bob.Project
 }
 
 
-interface BarProps extends BarConnectedProps, BarConfig, WithTranslation {
-  dispatch: DispatchAllActions
-}
+const FeedbackBarBase = (props: BarProps): React.ReactElement|null => {
+  const {isShown, evaluationUrl, project: {feedback}} = props
+  const [isModalShown, showModal, hideModal] = useModal()
+  const [score, setScore] = useState(0)
+  const form = useRef<FormRef>(null)
 
+  const openModal = useCallback((score: number): void => {
+    form.current?.setScore(score)
+    setScore(score)
+    showModal()
+  }, [showModal])
 
-interface BarState {
-  isModalShown: boolean
-  score: number
-}
+  const handleCancel = useCallback((): void => {
+    hideModal()
+    setScore(0)
+  }, [hideModal])
 
-
-class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
-  public static propTypes = {
-    evaluationUrl: PropTypes.string.isRequired,
-    isShown: PropTypes.bool.isRequired,
-    project: PropTypes.object.isRequired,
-    t: PropTypes.func.isRequired,
+  if (feedback && feedback.score) {
+    return null
   }
 
-  public state = {
-    isModalShown: false,
-    score: 0,
+  const hideBelowStyle: React.CSSProperties = {
+    transform: isShown ? 'initial' : 'translateY(calc(100% + 10px))',
+    ...SmoothTransitions,
+  }
+  const fixedBottomStyle: React.CSSProperties = {
+    bottom: 0,
+    left: 0,
+    pointerEvents: 'none',
+    position: 'fixed',
+    right: 0,
+    zIndex: 1,
+    ...hideBelowStyle,
+  }
+  const containerStyle: React.CSSProperties = {
+    // TODO(cyrille): Change colors for background, text and stars for a better contrast.
+    backgroundColor: colors.GREENISH_TEAL,
+    borderRadius: 5,
+    boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+    color: '#fff',
+    margin: '0 auto 10px',
+    padding: '10px 10px 5px',
+    pointerEvents: 'initial',
+    position: 'relative',
+    width: 310,
+    ...isMobileVersion ? hideBelowStyle : {},
   }
 
-  private form: React.RefObject<FormRef> = React.createRef()
-
-  private openModal = (score: number): void => {
-    if (this.form.current) {
-      this.form.current.setScore(score)
-    }
-    this.setState({isModalShown: true, score})
-  }
-
-  private handleCancel = (): void => this.setState({isModalShown: false, score: 0})
-
-  private renderModal(): React.ReactNode {
-    const {isModalShown, score} = this.state
-    const {evaluationUrl} = this.props
+  const modal = ((): React.ReactNode => {
     if (isMobileVersion) {
       if (isModalShown) {
         return <Redirect to={`${evaluationUrl}/${score}`} push={true} />
@@ -145,185 +149,105 @@ class FeedbackBarBase extends React.PureComponent<BarProps, BarState> {
     }
     return <Modal
       isShown={isModalShown} style={{margin: '0 10px'}}
-      onClose={this.handleCancel}>
-      <FeedbackForm {...this.props} ref={this.form} score={score} />
+      onClose={handleCancel}>
+      <FeedbackForm {...props} ref={form} score={score} />
     </Modal>
-  }
+  })()
 
-  public render(): React.ReactNode {
-    const {isShown, project: {feedback}} = this.props
-    const {score} = this.state
-    if (feedback && feedback.score) {
-      return null
-    }
-    const hideBelowStyle: React.CSSProperties = {
-      transform: isShown ? 'initial' : 'translateY(calc(100% + 10px))',
-      ...SmoothTransitions,
-    }
-    const fixedBottomStyle: React.CSSProperties = {
-      bottom: 0,
-      left: 0,
-      pointerEvents: 'none',
-      position: 'fixed',
-      right: 0,
-      zIndex: 1,
-      ...hideBelowStyle,
-    }
-    const containerStyle: React.CSSProperties = {
-      // TODO(cyrille): Change colors for background, text and stars for a better contrast.
-      backgroundColor: colors.GREENISH_TEAL,
-      borderRadius: 5,
-      boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
-      color: '#fff',
-      margin: '0 auto 10px',
-      padding: '10px 10px 5px',
-      pointerEvents: 'initial',
-      position: 'relative',
-      width: 310,
-      ...isMobileVersion ? hideBelowStyle : {},
-    }
-    return <React.Fragment>
-      {this.renderModal()}
-      <div style={isMobileVersion ? {overflow: 'hidden'} : fixedBottomStyle}>
-        <div style={containerStyle}>
-          <FeedbackStars score={score} onStarClick={this.openModal} isWhite={true} />
-        </div>
+  return <React.Fragment>
+    {modal}
+    <div style={isMobileVersion ? {overflow: 'hidden'} : fixedBottomStyle}>
+      <div style={containerStyle}>
+        <FeedbackStars score={score} onStarClick={openModal} isWhite={true} />
       </div>
-      {isMobileVersion ? null : <div style={{height: 80}} />}
-    </React.Fragment>
-  }
+    </div>
+    {isMobileVersion ? null : <div style={{height: 80}} />}
+  </React.Fragment>
 }
-const FeedbackBar = connect(({user}: RootState): BarConnectedProps => ({
-  gender: user.profile?.gender,
-}))(withTranslation()(FeedbackBarBase))
-
-
-interface PageWithFeedbackConnectedProps {
-  showAfter: Date | undefined
+FeedbackBarBase.propTypes = {
+  evaluationUrl: PropTypes.string.isRequired,
+  isShown: PropTypes.bool.isRequired,
+  project: PropTypes.object.isRequired,
 }
-
-
-interface PageWithFeedbackConfig
-  extends Omit<BarConfig, 'children' | 'evaluationUrl' | 'onSubmit' | 'isShown'> {
-  baseUrl: string
-  children: React.ReactNode
-}
+const FeedbackBar = React.memo(FeedbackBarBase)
 
 
 interface PageWithFeedbackProps
-  extends PageWithFeedbackConfig,
-  RouteComponentProps<{}, {}, {returningFromFeedbackPage?: boolean}>,
-  PageWithFeedbackConnectedProps, WithTranslation {
-  dispatch: DispatchAllActions
+  extends Omit<BarProps, 'children' | 'evaluationUrl' | 'onSubmit' | 'isShown'> {
+  baseUrl: string
+  children: React.ReactNode
 }
 
 
 type PageRouteProps = RouteComponentProps<{score?: string}>
 
 
-class PageWithFeedbackBase
-  extends React.PureComponent<PageWithFeedbackProps, {isShareBobShown: boolean; isShown: boolean}> {
-  public static propTypes = {
-    baseUrl: PropTypes.string.isRequired,
-    children: PropTypes.node.isRequired,
-    dispatch: PropTypes.func.isRequired,
-    location: ReactRouterPropTypes.location.isRequired,
-    project: PropTypes.object.isRequired,
-    showAfter: PropTypes.instanceOf(Date),
-  }
+const PageWithFeedbackBase = (props: PageWithFeedbackProps): React.ReactElement => {
+  const {baseUrl, children, project, project: {feedback: {score = 0} = {}}, ...barProps} = props
+  const dispatch = useDispatch<DispatchAllActions>()
+  const {t} = useTranslation()
+  const showAfter = useSelector(
+    (state: RootState): Date | undefined => getRequestFeedbackShowDate(state, project),
+  )
+  const [isShareBobShown, showShareBob, hideShareBob] = useModal()
+  const [isShown, setIsShown] = useState(!!showAfter && showAfter < new Date())
 
-  public state = {
-    isShareBobShown: false,
-    isShown: !!this.props.showAfter && this.props.showAfter < new Date(),
-  }
-
-  public componentDidMount(): void {
-    this.updateShowAfter(this.props.showAfter)
-  }
-
-  public componentDidUpdate(prevProps: PageWithFeedbackProps): void {
-    const {
-      location: {state: {returningFromFeedbackPage: prevReturning = false} = {}},
-      showAfter: prevShowAfter,
-    } = prevProps
-    const {
-      location: {state: {returningFromFeedbackPage = false} = {}},
-      showAfter,
-    } = this.props
-    if (!prevReturning && returningFromFeedbackPage) {
-      this.handleReturnFromFeedback()
+  useEffect((): (() => void) => {
+    if (!showAfter) {
+      return (): void => void 0
     }
-    if (showAfter !== prevShowAfter) {
-      this.updateShowAfter(showAfter)
+    const showInMillisec = showAfter.getTime() - new Date().getTime()
+    const timeout = window.setTimeout((): void => setIsShown(true), showInMillisec)
+    return (): void => clearTimeout(timeout)
+  }, [showAfter])
+
+  const handleReturnFromFeedback = useCallback((newScore: number): void => {
+    if (newScore >= 4) {
+      showShareBob()
     }
-  }
+  }, [showShareBob])
 
-  public componentWillUnmount(): void {
-    clearTimeout(this.timeout)
-  }
-
-  private timeout?: number
-
-  private handleReturnFromFeedback = (): void => {
-    const {feedback} = this.props.project
-    if (feedback && (feedback.score || 0) >= 4) {
-      this.setState({isShareBobShown: true})
+  const {state: {returningFromFeedbackPage = false} = {}} = useLocation()
+  useEffect((): void => {
+    if (returningFromFeedbackPage) {
+      handleReturnFromFeedback(score)
     }
-  }
+  }, [handleReturnFromFeedback, returningFromFeedbackPage, score])
 
-  private hideShareModal = (): void => {
-    this.setState({isShareBobShown: false})
-  }
-
-  private updateShowAfter(showAfter: Date | undefined): void {
-    clearTimeout(this.timeout)
-    if (showAfter) {
-      const showInMillisec = showAfter.getTime() - new Date().getTime()
-      this.timeout = window.setTimeout((): void => this.setState({isShown: true}), showInMillisec)
-    }
-  }
-
-  private renderPage = ({match: {params: {score}}}: PageRouteProps): React.ReactNode => {
-    const {baseUrl,
-      children: omittedChildren, dispatch: omittedDispatch, location: omittedLocation,
-      ...otherProps} = this.props
+  const renderPage = useCallback(({match: {params: {score}}}: PageRouteProps): React.ReactNode => {
     return <FeedbackPage
-      {...otherProps} score={score ? parseInt(score, 10) : undefined}
+      {...barProps} score={score ? Number.parseInt(score, 10) : undefined} project={project}
       backTo={{pathname: baseUrl, state: {returningFromFeedbackPage: true}}} />
-  }
+  }, [baseUrl, barProps, project])
 
-  public render(): React.ReactNode {
-    const {baseUrl, children, dispatch, showAfter: omittedShowAfter, t,
-      ...barProps} = this.props
-    const {isShareBobShown, isShown} = this.state
-    const evaluationUrl = `${baseUrl}/${FEEDBACK_TAB}`
-    return <Switch>
-      <Route path={`${evaluationUrl}/:score?`} render={this.renderPage} />
-      <React.Fragment>
-        {children}
-        <FeedbackBar
-          {...barProps} evaluationUrl={evaluationUrl}
-          onSubmit={this.handleReturnFromFeedback} isShown={isShown} />
-        <ShareModal
-          onClose={this.hideShareModal} isShown={isShareBobShown}
-          title={t('Vous aussi, aidez vos amis')}
-          campaign="fs" visualElement="feedback" dispatch={dispatch}
-          intro={<Trans parent={null}>
-            <strong>Envoyez-leur directement ce lien <br /></strong>
-            et on s'occupe du reste&nbsp;!
-          </Trans>} />
-      </React.Fragment>
-    </Switch>
-  }
+  const evaluationUrl = `${baseUrl}/${FEEDBACK_TAB}`
+  return <Switch>
+    <Route path={`${evaluationUrl}/:score?`} render={renderPage} />
+    <React.Fragment>
+      {children}
+      <FeedbackBar
+        {...barProps} evaluationUrl={evaluationUrl}
+        onSubmit={handleReturnFromFeedback} isShown={isShown} project={project} />
+      <ShareModal
+        onClose={hideShareBob} isShown={isShareBobShown}
+        title={t('Vous aussi, aidez vos amis')}
+        campaign="fs" visualElement="feedback" dispatch={dispatch}
+        intro={<Trans parent={null}>
+          <strong>Envoyez-leur directement ce lien <br /></strong>
+          et on s'occupe du reste&nbsp;!
+        </Trans>} />
+    </React.Fragment>
+  </Switch>
 }
-const PageWithFeedback = connect(
-  (state: RootState, {project}: PageWithFeedbackConfig): PageWithFeedbackConnectedProps => ({
-    showAfter: getRequestFeedbackShowDate(state, project),
-  }),
-)(withRouter(withTranslation()(PageWithFeedbackBase)))
+PageWithFeedbackBase.propTypes = {
+  baseUrl: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+  project: PropTypes.object.isRequired,
+}
+const PageWithFeedback = React.memo(PageWithFeedbackBase)
 
 
-interface PageProps extends BarConnectedProps, FormProps {
+interface PageProps extends FormProps {
   backTo: string | {pathname: string; state: object}
 }
 
@@ -341,9 +265,7 @@ const FeedbackPageBase = (props: PageProps): React.ReactElement => {
   }, [backTo, history])
   return <FeedbackForm {...formProps} onSubmit={handleSubmit} />
 }
-const FeedbackPage = connect(({user}: RootState): BarConnectedProps => ({
-  gender: user.profile?.gender,
-}))(React.memo(FeedbackPageBase))
+const FeedbackPage = React.memo(FeedbackPageBase)
 
 
 interface SelectOption {
@@ -358,7 +280,12 @@ interface FormRef {
 
 
 const FeedbackFormBase = (props: FormProps, ref: React.Ref<FormRef>): React.ReactElement => {
-  const {dispatch, gender, onSubmit, project, project: {advices}, t} = props
+  const {onSubmit, project, project: {advices}} = props
+  const dispatch = useDispatch<DispatchAllActions>()
+  const {t} = useTranslation()
+  const gender = useSelector(
+    ({user}: RootState): bayes.bob.Gender|undefined => user.profile?.gender,
+  )
   const [score, setScore] = useState(props.score || 0)
   const [selectedAdvices, setSelectedAdvices] = useState<readonly string[]>([])
   const [text, setText] = useState('')
@@ -370,9 +297,9 @@ const FeedbackFormBase = (props: FormProps, ref: React.Ref<FormRef>): React.Reac
     selectedAdvices.forEach((adviceId: string): void => {
       usefulAdviceModules[adviceId] = true
     })
-    dispatch(sendProjectFeedback(project, {score, text, usefulAdviceModules}))
-    onSubmit && onSubmit()
-  }, [dispatch, onSubmit, project, score, selectedAdvices, text])
+    dispatch(sendProjectFeedback(project, {score, text, usefulAdviceModules}, t))
+    onSubmit?.(score)
+  }, [dispatch, onSubmit, project, score, selectedAdvices, t, text])
 
   const isGoodFeedback = score > 2
   const shownAdvices = (advices || []).filter(({status}): boolean => status === 'ADVICE_READ')
@@ -423,18 +350,11 @@ const FeedbackFormBase = (props: FormProps, ref: React.Ref<FormRef>): React.Reac
     </div>
   </div>
 }
-FeedbackFormBase.propTypes = {
-  dispatch: PropTypes.func.isRequired,
-  gender: PropTypes.string,
-  onSubmit: PropTypes.func,
-  project: PropTypes.object.isRequired,
-  score: PropTypes.number,
-}
 const FeedbackForm = React.forwardRef(FeedbackFormBase)
 
 
 type NumStars = 1|2|3|4|5
-type NumStarsString = '1'|'2'|'3'|'4'|'5'
+export type NumStarsString = '1'|'2'|'3'|'4'|'5'
 
 
 interface StarProps extends
@@ -461,11 +381,12 @@ const FeedbackStar = React.memo(FeedbackStarBase)
 
 
 interface StarsProps {
-  // TODO(pascal): Consider removing as it's always true.
   isWhite?: boolean
+  levels?: {[key in NumStarsString]: string}
   onStarClick: (star: number) => void
   score: number
   size?: number
+  title?: string
 }
 
 
@@ -473,19 +394,24 @@ const starsTitleStyle: React.CSSProperties = {fontSize: 16, fontWeight: 500, mar
 
 
 const FeedbackStarsBase = (props: StarsProps): React.ReactElement => {
-  const {isWhite, onStarClick, score, size = 20} = props
-  const {t} = useTranslation()
+  const {t, t: translate} = useTranslation()
+  const {
+    isWhite,
+    levels = _mapValues(feedbackTitle, (title: string): string => translate(title)),
+    onStarClick,
+    score,
+    size = 20,
+    title,
+  } = props
   const [hoveredStars, setHoveredStars] = useState<0|NumStars>(0)
   const highlightedStars = hoveredStars || score || 0
 
   const resetHoveredStars = useCallback((): void => setHoveredStars(0), [])
 
-  const title = useMemo((): React.ReactNode => {
-    const title = feedbackTitle[(highlightedStars + '') as NumStarsString] ||
-      prepareT('Que pensez-vous de {{productName}}\u00A0?')
-    // i18next-extract-disable-next-line
-    return t(title, {productName: config.productName})
-  }, [highlightedStars, t])
+  const shownTitle = useMemo((): React.ReactNode => {
+    return levels[(highlightedStars + '') as NumStarsString] || title
+      || t('Que pensez-vous de {{productName}}\u00A0?', {productName: config.productName})
+  }, [highlightedStars, levels, t, title])
 
   const starStyle = useMemo((): React.CSSProperties => ({
     cursor: 'pointer',
@@ -497,7 +423,7 @@ const FeedbackStarsBase = (props: StarsProps): React.ReactElement => {
   const emptyStar = isWhite ? starOutlineIcon : greyStarOutlineIcon
   return <div style={{textAlign: 'center'}}>
     <div style={starsTitleStyle}>
-      {title}
+      {shownTitle}
     </div>
     <div>
       {new Array(5).fill(null).map((unused, index): React.ReactNode => <FeedbackStar
@@ -514,11 +440,14 @@ const FeedbackStarsBase = (props: StarsProps): React.ReactElement => {
 }
 FeedbackStarsBase.propTypes = {
   isWhite: PropTypes.bool,
+  levels: PropTypes.shape(_fromPairs(new Array(5).
+    fill(undefined).map((unused, index) => [index + 1 + '', PropTypes.string.isRequired]))),
   onStarClick: PropTypes.func.isRequired,
   score: PropTypes.number.isRequired,
   size: PropTypes.number,
+  title: PropTypes.string,
 }
 const FeedbackStars = React.memo(FeedbackStarsBase)
 
 
-export {PageWithFeedback}
+export {FeedbackStars, PageWithFeedback}

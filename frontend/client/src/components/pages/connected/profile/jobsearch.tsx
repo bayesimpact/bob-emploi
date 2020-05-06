@@ -181,11 +181,16 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
   const handleCommentRead = useCallback((): void => setApplicationCommentRead(true), [])
 
   const {totalInterviewCount, weeklyApplicationsEstimate, weeklyOffersEstimate} = newProject
-  const interviewsLabel = <Trans parent="span">
-    Combien d'entretiens d'embauche avez-vous obtenus <strong style={{fontWeight: 'bold'}}>
-      depuis que vous cherchez ce métier
-    </strong>&nbsp;?
-  </Trans>
+  const interviewsLabel = newProject.targetJob ?
+    <Trans parent="span">
+      Combien d'entretiens d'embauche avez-vous obtenus <strong style={{fontWeight: 'bold'}}>
+        depuis que vous cherchez ce métier
+      </strong>&nbsp;?
+    </Trans> : <Trans parent="span">
+      Combien d'entretiens d'embauche avez-vous obtenus <strong style={{fontWeight: 'bold'}}>
+        depuis que vous avez commencé votre recherche
+      </strong>&nbsp;?
+    </Trans>
   const {jobSearchHasNotStarted, jobSearchLengthMonths} = getJobSearch(newProject)
   // Keep in sync with 'isValid' props from list of fieldset below.
   const checks = [
@@ -200,8 +205,11 @@ const NewProjectJobsearchStepBase = (props: ProjectStepProps): React.ReactElemen
     progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
     title={t('Votre recherche')}>
     <FieldSet
-      label={t('Depuis combien de temps avez-vous commencé à postuler à des offres pour ce ' +
-        'métier\u00A0?')}
+      label={newProject.targetJob ?
+        t('Depuis combien de temps avez-vous commencé à postuler à des offres pour ce ' +
+          'métier\u00A0?') :
+        t("Depuis combien de temps avez-vous commencé votre recherche d'emploi\u00A0?")
+      }
       isValid={!!jobSearchLengthMonths} isValidated={isValidated}
       hasCheck={true}>
       <Select<number>

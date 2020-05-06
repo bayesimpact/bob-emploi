@@ -33,11 +33,17 @@ def _get_jobbing_vars(
     if not reorient_jobs:
         return None
 
+    if project.target_job.name:
+        of_job_name = scoring_project.populate_template('%ofJobName')
+    else:
+        # This is not translated to fr@tu because the email templates are only in fr for now.
+        of_job_name = 'de definir votre projet professionnel'
+
     return dict(campaign.get_default_coaching_email_vars(user), **{
         'inDepartement': scoring_project.populate_template('%inDepartement'),
         'jobs': [{'name': job.name} for job in reorient_jobs],
         'loginUrl': campaign.create_logged_url(user.user_id, f'/projet/{project.project_id}'),
-        'ofJobName': scoring_project.populate_template('%ofJobName'),
+        'ofJobName': of_job_name,
     })
 
 

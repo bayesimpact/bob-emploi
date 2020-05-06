@@ -56,7 +56,7 @@ const ForgottenPasswordNote = React.memo(ForgottenPasswordNoteBase)
 
 
 // TODO(cyrille): Check for missing email workflow.
-// TODO(marielaure): Add clearer error messages.
+// TODO(sil): Add clearer error messages.
 const PasswordStepBase: React.FC<StepProps> = (props: StepProps): React.ReactElement => {
   const {dispatch, hasAccount, hasPassword, isAuthenticating, profile: {email}} = props
   const [oldPassword, setOldPassword] = useState('')

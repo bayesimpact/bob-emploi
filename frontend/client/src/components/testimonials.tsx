@@ -1,31 +1,83 @@
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React, {useMemo} from 'react'
-import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 
-import {Trans} from 'components/i18n'
-import {LoginButton} from 'components/login'
 import {isMobileVersion} from 'components/mobile'
-import {Img, MAX_CONTENT_WIDTH, MIN_CONTENT_PADDING, SmoothTransitions} from 'components/theme'
+import {Img, SmoothTransitions} from 'components/theme'
 import manImage from 'images/man-icon.svg'
 import womanImage from 'images/woman-icon.svg'
 
 
-interface TestimonialsProps {
-  cardStyle?: React.CSSProperties
-  carouselAutoRotationDurationMs: number
-  children: ReactStylableElement[]
+const useTimeout =
+(callback: () => void, periodMs: number, ...cacheBusters: readonly unknown[]): void => {
+  useEffect((): (() => void) => {
+    const timeout = window.setTimeout(callback, periodMs)
+    return (): void => {
+      clearTimeout(timeout)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callback, periodMs, ...cacheBusters])
 }
 
 
-interface TestimonialsState {
-  isTransitionBlocked: boolean
-  previousTestimonial?: ReactStylableElement
-  previousTestimonialIndex: number
-  shownTestimonial: ReactStylableElement
-  shownTestimonialIndex: number
+interface RotateVars {
+  gotoIndex: (index: number) => void
+  index: number
+  isNew: boolean
+  previous: number
 }
 
+
+// Hook to rotate through items regularly. It returns the current index, the previous one and a
+// callback to manually set the index. It trigger a re-render (by state change) each time the index
+// is modified, and then immediately after (to update the isNew state).
+// @param numItems: number of items to cycle through. The results will always be between 0 and
+// numItems - 1.
+// @param periodMs: number of milliseconds to wait before each new value. If the value is set
+// manually, the timer is reset and we'll wait for another periodMs milliseconds before going to
+// the next one.
+// @return the current index, the previous index, a flag whether we've just changed index, a
+// callback to manually set the index.
+function useRotate(numItems: number, periodMs: number): RotateVars {
+  const [state, setState] = useState({index: 0, isNew: true, previous: 0})
+  const {index, isNew, previous} = state
+  const [numManualTimeReset, setNumManualTimeReset] = useState(0)
+
+  const gotoIndex = useCallback((newIndex: number, isAuto?: boolean): void => {
+    if (!isAuto) {
+      setNumManualTimeReset((value: number): number => value + 1)
+    }
+    if (newIndex % numItems === index % numItems) {
+      return
+    }
+    setState({
+      index: newIndex % numItems,
+      isNew: true,
+      previous: index % numItems,
+    })
+  }, [index, numItems])
+
+  const setNextIndex = useCallback((): void => {
+    gotoIndex(index + 1, true)
+  }, [index, gotoIndex])
+
+  useEffect((): void => {
+    if (state.isNew) {
+      setState({...state, isNew: false})
+    }
+  }, [state])
+
+  useTimeout(setNextIndex, periodMs, numManualTimeReset)
+
+  return {gotoIndex, index: index % numItems, isNew, previous: previous % numItems}
+}
+
+
+interface BulletProps {
+  index: number
+  isSelected: boolean
+  onClick: (index: number) => void
+}
 
 const bulletStyle: React.CSSProperties = {
   backgroundColor: 'rgba(255, 255, 255, .6)',
@@ -43,135 +95,100 @@ const selectedBulletStyle: React.CSSProperties = {
 }
 
 
-class Testimonials extends React.PureComponent<TestimonialsProps, TestimonialsState> {
-  public static propTypes = {
-    cardStyle: PropTypes.object,
-    carouselAutoRotationDurationMs: PropTypes.number.isRequired,
-    children: PropTypes.arrayOf(PropTypes.node.isRequired).isRequired,
-  }
+const BulletBase = (props: BulletProps): React.ReactElement => {
+  const {index, isSelected, onClick} = props
+  const handleClick = useCallback((): void => onClick(index), [index, onClick])
+  return <li onClick={handleClick} style={isSelected ? selectedBulletStyle : bulletStyle} />
+}
+const Bullet = React.memo(BulletBase)
 
-  public static defaultProps = {
-    carouselAutoRotationDurationMs: 5000,
-  }
 
-  public state: TestimonialsState = {
-    isTransitionBlocked: false,
-    previousTestimonial: undefined,
-    previousTestimonialIndex: 0,
-    shownTestimonial: this.getStyledTestimonial(0),
-    shownTestimonialIndex: 0,
-  }
+interface TestimonialsProps {
+  cardStyle?: React.CSSProperties
+  carouselAutoRotationDurationMs?: number
+  children: ReactStylableElement[]
+}
 
-  public componentDidMount(): void {
-    this.resetRotationTimer()
-  }
 
-  public componentWillUnmount(): void {
-    clearInterval(this.interval)
-    clearTimeout(this.timeout)
-  }
+const TestimonialsBase = (props: TestimonialsProps): React.ReactElement => {
+  const {cardStyle, carouselAutoRotationDurationMs = 5000, children} = props
 
-  private interval?: number
+  const {
+    gotoIndex: setIndex,
+    index: shownTestimonialIndex,
+    isNew: isNewIndex,
+    previous: previousTestimonialIndex,
+  } = useRotate(children.length, carouselAutoRotationDurationMs)
 
-  private timeout?: number
+  const isTransitionBlocked = isNewIndex
 
-  private getStyledTestimonial(index: number): ReactStylableElement {
-    const {cardStyle, children} = this.props
+  const styledTestimonials = useMemo((): readonly ReactStylableElement[] => {
     const style = {
       margin: 'auto',
       ...cardStyle,
     }
-    return React.cloneElement(children[index], {style}) || null
+    return children.map(child => React.cloneElement(child, {style}))
+  }, [cardStyle, children])
+
+  const shownTestimonial = styledTestimonials[shownTestimonialIndex]
+  const previousTestimonial = styledTestimonials[previousTestimonialIndex]
+
+  const style: React.CSSProperties = {
+    height: 200,
+    margin: 'auto',
+    overflow: 'hidden',
+    padding: isMobileVersion ? '45px 30px 10px' : '30px 100px 10px',
+    position: 'relative',
   }
-
-  private resetRotationTimer(): void {
-    const {carouselAutoRotationDurationMs} = this.props
-    clearInterval(this.interval)
-    this.interval = window.setInterval(
-      this.handlePickTestimonial(this.state.shownTestimonialIndex + 1),
-      carouselAutoRotationDurationMs)
+  const containerStyle: React.CSSProperties = {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    ...SmoothTransitions,
   }
-
-  private handlePickTestimonial = _memoize((index, isManuallyPicked?): (() => void) => (): void => {
-    const {children} = this.props
-    const shownTestimonialIndex = (index + children.length) % children.length
-    if (isManuallyPicked) {
-      this.resetRotationTimer()
-    }
-    if (shownTestimonialIndex === this.state.shownTestimonialIndex) {
-      return
-    }
-    this.setState({
-      isTransitionBlocked: true,
-      previousTestimonial: this.state.shownTestimonial,
-      previousTestimonialIndex: this.state.shownTestimonialIndex,
-      shownTestimonial: this.getStyledTestimonial(shownTestimonialIndex) || null,
-      shownTestimonialIndex,
-    }, (): void => {
-      clearTimeout(this.timeout)
-      this.timeout = window.setTimeout((): void => this.setState({isTransitionBlocked: false}), 0)
-    })
-  }, (index, isManuallyPicked): string => (isManuallyPicked ? '!' : '') + index)
-
-  private renderBullets(): React.ReactNode {
-    const {children} = this.props
-    const containerStyle: React.CSSProperties = {
-      marginBottom: 0,
-      padding: 0,
-      textAlign: 'center',
-    }
-    return <ol style={containerStyle}>
-      {children.map((card, i): React.ReactNode => <li
-        key={'bullet-' + i} onClick={this.handlePickTestimonial(i, true)}
-        style={i === this.state.shownTestimonialIndex ? selectedBulletStyle : bulletStyle} />)}
-    </ol>
+  const leavingStyle: React.CSSProperties = {
+    opacity: isTransitionBlocked ? 1 : 0,
+    transform: `translateX(${isTransitionBlocked ? '0' : '-500px'})`,
+    ...containerStyle,
   }
-
-  public render(): React.ReactNode {
-    const {isTransitionBlocked, previousTestimonial, previousTestimonialIndex,
-      shownTestimonial, shownTestimonialIndex} = this.state
-    const style: React.CSSProperties = {
-      height: 200,
-      margin: 'auto',
-      overflow: 'hidden',
-      padding: isMobileVersion ? '45px 30px 10px' : '30px 100px 10px',
-      position: 'relative',
-    }
-    const containerStyle: React.CSSProperties = {
-      bottom: 0,
-      left: 0,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      ...SmoothTransitions,
-    }
-    const leavingStyle: React.CSSProperties = {
-      opacity: isTransitionBlocked ? 1 : 0,
-      transform: `translateX(${isTransitionBlocked ? '0' : '-500px'})`,
-      ...containerStyle,
-    }
-    const arrivingStyle: React.CSSProperties = {
-      opacity: isTransitionBlocked ? 0 : 1,
-      transform: `translateX(${isTransitionBlocked ? '500px' : '0'})`,
-      ...containerStyle,
-    }
-    return <div>
-      <div style={style}>
-        {previousTestimonialIndex === shownTestimonialIndex ? null : <div
-          style={leavingStyle} key={previousTestimonialIndex}>
-          {previousTestimonial}
-        </div>}
-        <div style={arrivingStyle} key={shownTestimonialIndex}>
-          {shownTestimonial}
-        </div>
+  const arrivingStyle: React.CSSProperties = {
+    opacity: isTransitionBlocked ? 0 : 1,
+    transform: `translateX(${isTransitionBlocked ? '500px' : '0'})`,
+    ...containerStyle,
+  }
+  const bulletsContainerStyle: React.CSSProperties = {
+    marginBottom: 0,
+    padding: 0,
+    textAlign: 'center',
+  }
+  return <div>
+    <div style={style}>
+      {previousTestimonialIndex === shownTestimonialIndex ? null : <div
+        style={leavingStyle} key={previousTestimonialIndex}>
+        {previousTestimonial}
+      </div>}
+      <div style={arrivingStyle} key={shownTestimonialIndex}>
+        {shownTestimonial}
       </div>
-      {this.renderBullets()}
     </div>
-  }
+    <ol style={bulletsContainerStyle}>
+      {children.map((card, i): React.ReactNode => <Bullet
+        key={'bullet-' + i} onClick={setIndex} index={i}
+        isSelected={i === shownTestimonialIndex} />)}
+    </ol>
+  </div>
 }
+TestimonialsBase.propTypes = {
+  cardStyle: PropTypes.object,
+  carouselAutoRotationDurationMs: PropTypes.number,
+  children: PropTypes.arrayOf(PropTypes.node.isRequired).isRequired,
+}
+const Testimonials = React.memo(TestimonialsBase)
 
 
-interface CardProps extends WithTranslation {
+interface CardProps {
   author: {
     age?: number
     imageLink?: string
@@ -186,7 +203,8 @@ interface CardProps extends WithTranslation {
 
 
 const TestimonialCardBase: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
-  const {author, children, isLong, style, t} = props
+  const {author, children, isLong, style} = props
+  const {t} = useTranslation()
   const horizontalPadding = isMobileVersion && !isLong ? 30 : 75
   const containerStyle = useMemo((): React.CSSProperties => ({
     backgroundColor: '#fff',
@@ -252,77 +270,7 @@ TestimonialCardBase.propTypes = {
   isLong: PropTypes.bool,
   style: PropTypes.object,
 }
-
-const TestimonialCard = withTranslation()(TestimonialCardBase)
-
-
-interface SectionProps {
-  children: readonly React.ReactElement<{author: {name: string}}>[]
-  maxShown?: number
-  visualElement?: string
-}
+const TestimonialCard = React.memo(TestimonialCardBase)
 
 
-const sectionStyle: React.CSSProperties = {
-  backgroundColor: colors.BOB_BLUE,
-  flexDirection: 'column',
-  padding: isMobileVersion ? '50px 20px' : `50px ${MIN_CONTENT_PADDING}px`,
-}
-const titleStyle: React.CSSProperties = {
-  color: '#fff',
-  fontSize: 33,
-  margin: 0,
-  textAlign: 'center',
-}
-const containerStyle: React.CSSProperties = {
-  alignItems: 'flex-start',
-  display: 'flex',
-  flexDirection: isMobileVersion ? 'column' : 'row',
-  margin: '100px auto 0',
-  maxWidth: isMobileVersion ? 320 : MAX_CONTENT_WIDTH,
-}
-
-
-// TODO(pascal): Move to the static_advice folder.
-// i18next-extract-mark-ns-start staticAdvice
-const TestimonialStaticSectionBase: React.FC<SectionProps> =
-(props: SectionProps): React.ReactElement => {
-  // TODO(cyrille): Use Carousel 3 by 3 on Desktop.
-  const {children, maxShown = isMobileVersion ? 5 : 3, visualElement} = props
-  const {t} = useTranslation('staticAdvice')
-  const firstHelped = useMemo(
-    (): string => children.slice(0, 2).map(({props: {author: {name}}}): string => name).join(', '),
-    [children],
-  )
-
-  return <section style={sectionStyle}>
-    <Trans style={titleStyle} t={t} parent="h2">
-      {{productName: config.productName}} a aidé {{names: firstHelped}} et bien d'autres...<br />
-      Pourquoi pas vous&nbsp;?
-    </Trans>
-    <div style={containerStyle}>
-      {children.slice(0, maxShown)}
-    </div>
-    <LoginButton style={{display: 'block', margin: '88px auto 0'}} isSignUp={true}
-      type="validation"
-      visualElement={`testimonials${visualElement ? `-${visualElement}` : ''}`}>
-      {t('Obtenir mes conseils personnalisés')}
-    </LoginButton>
-  </section>
-}
-TestimonialStaticSectionBase.propTypes = {
-  children: PropTypes.arrayOf(PropTypes.shape({
-    props: PropTypes.shape({
-      author: PropTypes.shape({
-        name: PropTypes.string.isRequired,
-      }),
-    }),
-  })).isRequired,
-  maxShown: PropTypes.number,
-  visualElement: PropTypes.string,
-}
-const TestimonialStaticSection = React.memo(TestimonialStaticSectionBase)
-// i18next-extract-mark-ns-stop staticAdvice
-
-
-export {TestimonialCard, Testimonials, TestimonialStaticSection}
+export {TestimonialCard, Testimonials}

@@ -29,7 +29,7 @@ const pages = {
       'Identifiez les qualités importantes à mettre dans votre CV.\n' +
       'Trouvez les meilleurs outils gratuits pour générer des exemples de CV.\n' +
       'Trouvez des astuces pour repérer les bons mots-clés et adapter vos CV ' +
-      'en fonction des offres d’emploi.',
+      "en fonction des offres d'emploi.",
     title: 'Rendez votre CV plus percutant',
   },
   'conseil/entretien': {

@@ -2,13 +2,18 @@ import {expect} from 'chai'
 import i18n from 'i18next'
 import {lowerFirstLetter, ofPrefix, maybeContract, maybeContractPrefix, getDateString,
   toTitleCase, getAdviceModule, getEmailTemplates, slugify, getMonthName,
-  getDiffBetweenDatesInString} from 'store/french'
+  getDiffBetweenDatesInString, closeToCity, ofJobName} from 'store/french'
 
 // @ts-ignore
 import {Month} from 'api/job'
 
 
-i18n.init({lng: 'fr', resources: {}})
+i18n.init({
+  keySeparator: false,
+  lng: 'fr',
+  nsSeparator: false,
+  resources: {},
+})
 
 
 describe('maybeContract', (): void => {
@@ -125,6 +130,63 @@ describe('ofPrefix', (): void => {
 })
 
 
+describe('closeToCity', (): void => {
+  before((): void => {
+    i18n.changeLanguage('fr')
+    i18n.addResourceBundle('fr', 'translation', {})
+  })
+
+  it('should simply prefix "près de" for simple cases', (): void => {
+    const t = i18n.getFixedT('fr', 'other')
+    expect(closeToCity('Toulouse', t)).to.eql('près de Toulouse')
+  })
+
+  it('should take into account city prefixes', (): void => {
+    const t = i18n.getFixedT('fr', 'other')
+    expect(closeToCity('La Ferté', t)).to.eql('près de la Ferté')
+    expect(closeToCity('Le Mans', t)).to.eql('près du Mans')
+    expect(closeToCity('Les Ulis', t)).to.eql('près des Ulis')
+    expect(closeToCity("L'Arbresle", t)).to.eql("près de l'Arbresle")
+    expect(closeToCity('Arles', t)).to.eql("près d'Arles")
+  })
+
+  it('should not change prefixes when using another language', (): void => {
+    i18n.changeLanguage('en')
+    i18n.addResourceBundle('en', 'translation', {'près de {{cityName}}': 'close to {{cityName}}'})
+    const t = i18n.getFixedT('en', 'other')
+    expect(closeToCity('Toulouse', t)).to.eql('close to Toulouse')
+    expect(closeToCity('Le Mans', t)).to.eql('close to Le Mans')
+  })
+})
+
+
+describe('ofJobName', (): void => {
+  before((): void => {
+    i18n.changeLanguage('fr')
+    i18n.addResourceBundle('fr', 'translation', {})
+  })
+
+  it('should simply prefix "de " for simple cases', (): void => {
+    const t = i18n.getFixedT('fr', 'other')
+    expect(ofJobName('restaurateur', t)).to.eql('de restaurateur')
+  })
+
+  it('should contract the prefix if needed', (): void => {
+    const t = i18n.getFixedT('fr', 'other')
+    expect(ofJobName('ingénieur', t)).to.eql("d'ingénieur")
+    expect(ofJobName('hôtelier', t)).to.eql("d'hôtelier")
+  })
+
+  it('should not change prefixes when using another language', (): void => {
+    i18n.changeLanguage('en')
+    i18n.addResourceBundle('en', 'translation', {'de {{jobName}}': 'of {{jobName}}'})
+    const t = i18n.getFixedT('en', 'other')
+    expect(ofJobName('restaurateur', t)).to.eql('of restaurateur')
+    expect(ofJobName('ingénieur', t)).to.eql('of ingénieur')
+  })
+})
+
+
 describe('toTitleCase', (): void => {
   it('should capitalize simple words', (): void => {
     expect(toTitleCase('CARREFOUR')).to.eq('Carrefour')
@@ -229,45 +291,84 @@ describe('getEmailTemplates', (): void => {
 
 
 describe('getDateString', (): void => {
+  before((): void => {
+    i18n.changeLanguage('fr')
+  })
+
   it('should get a readable date from a timestamp', (): void => {
-    expect(getDateString(1539154358756)).to.eq('10 oct. 2018')
+    const t = i18n.getFixedT('fr', 'translation')
+    expect(getDateString(1539154358756, t)).to.eq('10 oct. 2018')
   })
 
   it('should accept a JSON ISO string as an input', (): void => {
-    expect(getDateString('2018-03-25T14:25:34Z')).to.eq('25 mars 2018')
+    const t = i18n.getFixedT('fr', 'translation')
+    expect(getDateString('2018-03-25T14:25:34Z', t)).to.eq('25 mars 2018')
   })
 
   it('should not print leading 0 in front of day in month', (): void => {
-    expect(getDateString('2018-03-05T14:25:34Z')).to.eq('5 mars 2018')
+    const t = i18n.getFixedT('fr', 'translation')
+    expect(getDateString('2018-03-05T14:25:34Z', t)).to.eq('5 mars 2018')
+  })
+
+  it('should print the date in English', (): void => {
+    i18n.addResourceBundle('en', 'translation', {
+      'fr': 'en',
+      'janv./févr./mars/avr./mai/juin/juil./août/sept./oct./nov./déc.':
+      'Jan./Feb./Mar./Apr./May/June/July/Aug./Sept./Oct./Nov./Dec.',
+    })
+    i18n.changeLanguage('en')
+    const t = i18n.getFixedT('en', 'translation')
+    expect(getDateString('2018-08-05T14:25:34Z', t)).to.eq('5 Aug. 2018')
   })
 })
 
 
 describe('getDateFromNowInString', (): void => {
+  before((): void => {
+    i18n.changeLanguage('fr')
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    i18n.addResourceBundle('fr', 'translation', {jour_plural: 'jours'})
+  })
+
   it('should return today when the two dates are the same', (): void => {
+    const t = i18n.getFixedT('fr', 'translation')
     expect(getDiffBetweenDatesInString(
-      new Date('1/29/2019'), new Date('1/29/2019'))).to.eq("aujourd'hui")
+      new Date('1/29/2019'), new Date('1/29/2019'), t)).to.eq("aujourd'hui")
   })
 
   it('should return the difference in months when the difference is greater than 30 days',
     (): void => {
+      const t = i18n.getFixedT('fr', 'translation')
       expect(getDiffBetweenDatesInString(
-        new Date('1/29/2019'), new Date('6/29/2019'))).to.eq('il y a 5 mois')
+        new Date('1/29/2019'), new Date('6/29/2019'), t)).to.eq('il y a 5 mois')
     })
 
   it('should return the difference in weeks when the difference is less than 30 days', (): void => {
+    const t = i18n.getFixedT('fr', 'translation')
     expect(getDiffBetweenDatesInString(
-      new Date('1/29/2019'), new Date('1/21/2019'))).to.eq('il y a 1 semaine')
+      new Date('1/29/2019'), new Date('1/21/2019'), t)).to.eq('il y a 1 semaine')
   })
 
   it('should return the difference in days when the difference is less than 7 days', (): void => {
+    const t = i18n.getFixedT('fr', 'translation')
     expect(getDiffBetweenDatesInString(
-      new Date('1/29/2019'), new Date('1/28/2019'))).to.eq('il y a 1 jour')
+      new Date('1/29/2019'), new Date('1/28/2019'), t)).to.eq('il y a 1 jour')
   })
 
   it('should return the plural form when there is a several days difference', (): void => {
+    const t = i18n.getFixedT('fr', 'translation')
     expect(getDiffBetweenDatesInString(
-      new Date('1/29/2019'), new Date('1/26/2019'))).to.eq('il y a 3 jours')
+      new Date('1/29/2019'), new Date('1/26/2019'), t)).to.eq('il y a 3 jours')
+  })
+
+  it('should work in English as well', (): void => {
+    i18n.addResourceBundle('en', 'translation', {
+      'il y a {{numUnits}} {{unit}}': '{{numUnits}} {{unit}} ago',
+      'jour_plural': 'days',
+    })
+    const t = i18n.getFixedT('en', 'translation')
+    expect(getDiffBetweenDatesInString(
+      new Date('1/29/2019'), new Date('1/26/2019'), t)).to.eq('3 days ago')
   })
 })
 

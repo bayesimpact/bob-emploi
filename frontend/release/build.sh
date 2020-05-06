@@ -43,6 +43,7 @@ function build_dist_folder {
 build_dist_folder "$TAG" "$BUILD_DIR"
 
 # Build the frontend container.
+node frontend/release/populate_nginx_conf.js frontend/release/nginx.conf
 cp \
   frontend/release/nginx.conf \
   frontend/release/entrypoint.sh \

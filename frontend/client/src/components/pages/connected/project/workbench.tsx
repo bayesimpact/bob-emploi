@@ -1,11 +1,10 @@
 import ChevronLeftIcon from 'mdi-react/ChevronLeftIcon'
 import PropTypes from 'prop-types'
 import {parse} from 'query-string'
-import React, {useMemo} from 'react'
-import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
-import {connect} from 'react-redux'
-import {RouteComponentProps} from 'react-router'
-import {Link, Redirect} from 'react-router-dom'
+import React, {useEffect, useMemo, useRef} from 'react'
+import {useTranslation} from 'react-i18next'
+import {useDispatch, useSelector} from 'react-redux'
+import {Link, Redirect, useLocation, useParams} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, advicePageIsShown, workbenchIsShown} from 'store/actions'
@@ -181,19 +180,9 @@ interface WorkbenchParams {
 }
 
 
-interface WorkbenchConnectedProps {
-  isForcedAllowed: boolean
-}
-
-
-interface WorkbenchProps extends RouteComponentProps<WorkbenchParams>, WorkbenchConnectedProps {
+interface WorkbenchProps {
   baseUrl: string
   project: bayes.bob.Project
-}
-
-
-interface WorkbenchState {
-  advice?: ValidAdvice
 }
 
 
@@ -202,84 +191,67 @@ function isValidAdvice(a?: bayes.bob.Advice): a is ValidAdvice {
 }
 
 
-// TODO(pascal): Merge back with the WorkbenchWithAdvice below.
-class WorkbenchBase extends React.PureComponent<WorkbenchProps, WorkbenchState> {
-  private static getAdvice(
-    adviceId: string|undefined, advices: readonly bayes.bob.Advice[], isForced: boolean,
-  ): ValidAdvice|undefined {
-    if (!adviceId) {
-      return undefined
-    }
-    const matchedAdvice = advices.find((a: bayes.bob.Advice): a is ValidAdvice =>
-      !!a.adviceId && a.adviceId.startsWith(adviceId))
-    if (matchedAdvice) {
-      return matchedAdvice
-    }
-    if (isForced) {
-      return {adviceId, numStars: 3, score: 10}
-    }
+function getAdvice(
+  adviceId: string|undefined, advices: readonly bayes.bob.Advice[], isForced: boolean,
+): ValidAdvice|undefined {
+  if (!adviceId) {
     return undefined
   }
-
-  public static propTypes = {
-    baseUrl: PropTypes.string.isRequired,
-    isForcedAllowed: PropTypes.bool,
-    location: ReactRouterPropTypes.location.isRequired,
-    match: ReactRouterPropTypes.match.isRequired,
-    project: PropTypes.shape({
-      advices: PropTypes.arrayOf(PropTypes.shape({
-        adviceId: PropTypes.string.isRequired,
-        score: PropTypes.number,
-      }).isRequired),
-    }).isRequired,
+  const matchedAdvice = advices.find((a: bayes.bob.Advice): a is ValidAdvice =>
+    !!a.adviceId && a.adviceId.startsWith(adviceId))
+  if (matchedAdvice) {
+    return matchedAdvice
   }
-
-  public state: WorkbenchState = {}
-
-  public static getDerivedStateFromProps(
-    nextProps: WorkbenchProps, {advice: prevAdvice}: WorkbenchState): WorkbenchState|null {
-    const {
-      isForcedAllowed,
-      location: {search},
-      match: {params: {adviceId}},
-      project: {advices = []},
-    } = nextProps
-    const {forced} = parse(search.slice(1))
-    const advice = WorkbenchBase.getAdvice(adviceId, advices, !!(isForcedAllowed && forced))
-
-    return (advice !== prevAdvice) ? {advice} : null
+  if (isForced) {
+    return {adviceId, numStars: 3, score: 10}
   }
-
-  public render(): React.ReactNode {
-    const {
-      baseUrl,
-      location: {hash, search},
-      match: {params: {strategyId}},
-      project: {strategies = []},
-    } = this.props
-
-    // TODO(cyrille): DRY up this with project.tsx.
-    const strategyIndex =
-      strategies.findIndex(({strategyId: sId}): boolean => strategyId === sId)
-    const strategy = strategies[strategyIndex]
-
-    const {advice} = this.state
-    const hasStrategyPage = !!strategy
-    const urlOnClose = hasStrategyPage ?
-      `${baseUrl}/${strategyId}/methodes${search}${hash}` : baseUrl
-    if (!isValidAdvice(advice)) {
-      // We're lost, go back to previous page.
-      return <Redirect to={urlOnClose} />
-    }
-
-    return <WorkbenchWithAdvice {...this.props} {...{advice, hasStrategyPage, urlOnClose}} />
-  }
+  return undefined
 }
-const Workbench = connect(
-  ({user: {
-    featuresEnabled: {alpha: isForcedAllowed = false} = {},
-  } = {}}: RootState): WorkbenchConnectedProps => ({isForcedAllowed}))(WorkbenchBase)
 
+
+// TODO(pascal): Merge back with the WorkbenchWithAdvice below.
+const WorkbenchBase = (props: WorkbenchProps): React.ReactElement => {
+  const {
+    baseUrl,
+    project: {advices = [], strategies = []},
+  } = props
+  const isForcedAllowed = useSelector(
+    ({user: {featuresEnabled: {alpha: isForcedAllowed = false} = {}} = {}}: RootState): boolean =>
+      isForcedAllowed,
+  )
+
+  const {hash, search} = useLocation()
+  const {forced} = parse(search.slice(1))
+  const {adviceId, strategyId} = useParams<WorkbenchParams>()
+  const advice = getAdvice(adviceId, advices, !!(isForcedAllowed && forced))
+
+  // TODO(cyrille): DRY up this with project.tsx.
+  const strategyIndex =
+    strategies.findIndex(({strategyId: sId}): boolean => strategyId === sId)
+  const strategy = strategies[strategyIndex]
+
+  const hasStrategyPage = !!strategy
+  const urlOnClose = hasStrategyPage ?
+    `${baseUrl}/${strategyId}/methodes${search}${hash}` : baseUrl
+  if (!isValidAdvice(advice)) {
+    // We're lost, go back to previous page.
+    return <Redirect to={urlOnClose} />
+  }
+
+  return <WorkbenchWithAdvice {...props} {...{advice, hasStrategyPage, urlOnClose}} />
+}
+WorkbenchBase.propTypes = {
+  baseUrl: PropTypes.string.isRequired,
+  location: ReactRouterPropTypes.location.isRequired,
+  match: ReactRouterPropTypes.match.isRequired,
+  project: PropTypes.shape({
+    advices: PropTypes.arrayOf(PropTypes.shape({
+      adviceId: PropTypes.string.isRequired,
+      score: PropTypes.number,
+    }).isRequired),
+  }).isRequired,
+}
+const Workbench = React.memo(WorkbenchBase)
 
 const contentStyle = {
   margin: 'auto',
@@ -291,98 +263,75 @@ const allMethodsStyle = {
 }
 
 
-interface WorkbenchWithAdviceConnectedProps {
-  profile: bayes.bob.UserProfile
-}
-
-
-interface WorkbenchWithAdviceProps extends WorkbenchWithAdviceConnectedProps, WithTranslation {
+interface WorkbenchWithAdviceProps {
   advice: bayes.bob.Advice & {adviceId: string}
   baseUrl: string
-  dispatch: DispatchAllActions
   hasStrategyPage?: boolean
   project: bayes.bob.Project
   urlOnClose: string
 }
 
 
-class WorkbenchWithAdviceBase extends React.PureComponent<WorkbenchWithAdviceProps> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-      score: PropTypes.number,
-    }).isRequired,
-    baseUrl: PropTypes.string.isRequired,
-    dispatch: PropTypes.func.isRequired,
-    hasStrategyPage: PropTypes.bool,
-    profile: PropTypes.object.isRequired,
-    project: PropTypes.shape({
-    }).isRequired,
-    t: PropTypes.func.isRequired,
-    urlOnClose: PropTypes.string.isRequired,
-  }
+const WorkbenchWithAdviceBase = (props: WorkbenchWithAdviceProps): React.ReactElement => {
+  const profile = useSelector(
+    ({user: {profile = emptyObject}}: RootState): bayes.bob.UserProfile => profile,
+  )
+  const dispatch = useDispatch<DispatchAllActions>()
+  const {t} = useTranslation()
+  const {advice, baseUrl, hasStrategyPage, project, urlOnClose} = props
 
-  public componentDidMount(): void {
-    const {advice, dispatch, project} = this.props
+  useEffect((): void => {
     dispatch(workbenchIsShown(project))
+    // Only ping once, even if the project changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch])
+
+  const pageDom = useRef<Scrollable>(null)
+
+  useEffect((): void => {
     dispatch(advicePageIsShown(project, advice))
+    pageDom.current?.scroll({behavior: 'smooth', top: 0})
+    // Only ping once for each advice change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, advice.adviceId])
+
+  // TODO(sil): Update to the new strategy UI (https://app.zeplin.io/project/574ff4c2e5c988a36aba1335/screen/5dcd1e49e0f29b23c5f6e31b).
+  const pageStyle: React.CSSProperties = {
+    backgroundColor: '#fff',
+    display: 'flex',
+    flexDirection: 'column',
   }
 
-  public componentDidUpdate(prevProps: WorkbenchWithAdviceProps): void {
-    const {advice, dispatch, project} = this.props
-    if (advice.adviceId === prevProps.advice.adviceId) {
-      return
-    }
-
-    if (this.pageDom.current) {
-      this.pageDom.current.scroll({behavior: 'smooth', top: 0})
-    }
-
-    // Opening a new advice page.
-    dispatch(advicePageIsShown(project, advice))
-  }
-
-  private pageDom: React.RefObject<Scrollable> = React.createRef()
-
-  // TODO(marielaure): Update to the new strategy UI (https://app.zeplin.io/project/574ff4c2e5c988a36aba1335/screen/5dcd1e49e0f29b23c5f6e31b).
-  private renderPageContent(style: React.CSSProperties): React.ReactNode {
-    const {advice, baseUrl, hasStrategyPage, profile, project, urlOnClose} = this.props
-    if (isMobileVersion) {
-      return <div style={{backgroundColor: '#fff', position: 'relative', ...style}}>
+  return <PageWithNavigationBar
+    page="workbench"
+    navBarContent={getAdviceShortTitle(advice, t)}
+    onBackClick={urlOnClose}
+    isContentScrollable={true}
+    ref={pageDom} isChatButtonShown={true} style={pageStyle}>
+    {isMobileVersion ?
+      <div style={{backgroundColor: '#fff', flex: 1, position: 'relative'}}>
         <WorkbenchAdvice {...{advice, profile, project}} />
-      </div>
-    }
-    return <div style={{backgroundColor: '#fff', flexShrink: 0, ...style}}>
-      <BreadCrumbs hasStrategyPage={hasStrategyPage} urlOnClose={urlOnClose} />
-      <div style={contentStyle}>
-        <WorkbenchAdvice {...{advice, profile, project}} />
-        <AllMethods style={allMethodsStyle} {...{advice, baseUrl, project}} />
-      </div>
-    </div>
-  }
-
-  public render(): React.ReactNode {
-    const {advice, t, urlOnClose} = this.props
-
-    const pageStyle: React.CSSProperties = {
-      backgroundColor: '#fff',
-      display: 'flex',
-      flexDirection: 'column',
-    }
-
-    return <PageWithNavigationBar
-      page="workbench"
-      navBarContent={getAdviceShortTitle(advice, t)}
-      onBackClick={urlOnClose}
-      isContentScrollable={true}
-      ref={this.pageDom} isChatButtonShown={true} style={pageStyle}>
-      {this.renderPageContent({flex: 1})}
-    </PageWithNavigationBar>
-  }
+      </div> : <div style={{backgroundColor: '#fff', flex: 1, flexShrink: 0}}>
+        <BreadCrumbs hasStrategyPage={hasStrategyPage} urlOnClose={urlOnClose} />
+        <div style={contentStyle}>
+          <WorkbenchAdvice {...{advice, profile, project}} />
+          <AllMethods style={allMethodsStyle} {...{advice, baseUrl, project}} />
+        </div>
+      </div>}
+  </PageWithNavigationBar>
 }
-const WorkbenchWithAdvice = connect(({user}: RootState): WorkbenchWithAdviceConnectedProps => ({
-  profile: user.profile || emptyObject,
-}))(withTranslation()(WorkbenchWithAdviceBase))
+WorkbenchWithAdviceBase.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+    score: PropTypes.number,
+  }).isRequired,
+  baseUrl: PropTypes.string.isRequired,
+  hasStrategyPage: PropTypes.bool,
+  project: PropTypes.shape({
+  }).isRequired,
+  urlOnClose: PropTypes.string.isRequired,
+}
+const WorkbenchWithAdvice = React.memo(WorkbenchWithAdviceBase)
 
 
 export {Workbench}

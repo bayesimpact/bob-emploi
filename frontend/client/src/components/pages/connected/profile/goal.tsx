@@ -1,13 +1,12 @@
 import {TFunction} from 'i18next'
-import _memoize from 'lodash/memoize'
 // eslint-disable-next-line you-dont-need-lodash-underscore/omit
 import _omit from 'lodash/omit'
 import PropTypes from 'prop-types'
-import React from 'react'
-import {connect} from 'react-redux'
+import React, {useCallback, useEffect, useRef, useState} from 'react'
+import {useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding} from 'store/actions'
-import {lowerFirstLetter, maybeContractPrefix} from 'store/french'
+import {lowerFirstLetter, ofJobName} from 'store/french'
 import {localizeOptions} from 'store/i18n'
 import {genderizeJob} from 'store/job'
 import {PROJECT_KIND_OPTIONS, PROJECT_LOCATION_AREA_TYPE_OPTIONS,
@@ -23,8 +22,8 @@ import pixisLogo from 'images/pixis-ico.png'
 import poleEmploiLogo from 'images/ple-emploi-ico.png'
 
 import {Trans} from 'components/i18n'
-import {CitySuggest, JobSuggest} from 'components/suggestions'
-import {ExternalLink, WithNote, Styles} from 'components/theme'
+import {CitySuggest, Focusable, JobSuggest} from 'components/suggestions'
+import {ExternalLink, LabeledToggle, WithNote, Styles} from 'components/theme'
 import {FieldSet, Select} from 'components/pages/connected/form_utils'
 
 import {OnboardingComment, ProjectStepProps, Step} from './step'
@@ -57,14 +56,12 @@ const _CREATION_TOOLS: readonly Tool[] = [
 
 interface CreationArgs {
   description?: (t: TFunction) => string
-  fieldShown: NullableStepStateKey
   title: (t: TFunction) => string
   tools: readonly Tool[]
 }
 
 
 const _CREATION_ARGS: CreationArgs = {
-  fieldShown: 'isCompanyCreationShown',
   title: (t): string => t("Nous ne traitons pas encore bien la création d'entreprise"),
   tools: _CREATION_TOOLS,
 }
@@ -129,157 +126,196 @@ const getHandicapSpecificTools = (departementId: string): readonly Tool[] => [
 
 
 const _REORIENTATION_ARGS: CreationArgs = {
-  fieldShown: 'isReorientationShown',
   title: (t: TFunction): string =>
     t('Nous ne traitons pas encore bien la reconversion professionnelle'),
   tools: _REORIENTATION_TOOLS,
 } as const
 
 
-interface ConnectedStepProps {
-  defaultProjectProps?: bayes.bob.Project
-}
+const jobUnknownStyle: React.CSSProperties = {marginBottom: 25}
 
 
-interface NewProjectGoalStepProps extends ConnectedStepProps, ProjectStepProps {
-  dispatch: DispatchAllActions
-}
+// Fields to reset when changing the job.
+const resetProjectForJobChange: bayes.bob.Project = {
+  jobSearchHasNotStarted: undefined,
+  jobSearchLengthMonths: undefined,
+  jobSearchStartedAt: undefined,
+  networkEstimate: undefined,
+  passionateLevel: undefined,
+  previousJobSimilarity: undefined,
+  seniority: undefined,
+  totalInterviewCount: undefined,
+  trainingFulfillmentEstimate: undefined,
+  weeklyApplicationsEstimate: undefined,
+  weeklyOffersEstimate: undefined,
+} as const
 
 
-interface StepState {
-  commentsRead: {
-    [K in keyof bayes.bob.Project]?: boolean
-  }
-  isCompanyCreationShown?: boolean
-  isReorientationShown?: boolean
-  isValidated?: boolean
-}
+const NewProjectGoalStepBase = (props: ProjectStepProps): React.ReactElement => {
+  const {newProject, newProject: {
+    areaType, city, hasClearProject, kind, passionateLevel, targetJob,
+  }, onSubmit, profile: {gender = undefined, hasHandicap = undefined} = {}, t} = props
+  const dispatch = useDispatch<DispatchAllActions>()
+  const defaultProjectProps = useSelector(
+    ({app: {defaultProjectProps = undefined}}: RootState): bayes.bob.Project|undefined =>
+      defaultProjectProps,
+  )
+  const [isCompanyCreationShown, setIsCompanyCreationShown] = useState(false)
+  const [isReorientationShown, setIsReorientationShown] = useState(false)
+  const hideCompanyCreation = useCallback((): void => setIsCompanyCreationShown(false), [])
+  const hideReorientation = useCallback((): void => setIsReorientationShown(false), [])
 
+  const [isCityCommentRead, setIsCityCommentRead] = useState(!!city)
+  const [isJobCommentRead, setIsJobCommentRead] = useState(!!targetJob)
+  const [isJobUnknown, setIsJobUnknown] = useState(!targetJob && !!hasClearProject)
+  const [isValidated, setIsValidated] = useState(false)
 
-type NullableStepStateKey = 'isCompanyCreationShown' | 'isReorientationShown' | 'isValidated'
-
-
-class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps, StepState> {
-  public static propTypes = {
-    defaultProjectProps: PropTypes.object,
-    dispatch: PropTypes.func,
-    newProject: PropTypes.object,
-    onSubmit: PropTypes.func.isRequired,
-    profile: PropTypes.object,
-    t: PropTypes.func.isRequired,
-  }
-
-  public state: StepState = {
-    commentsRead: {
-      city: !!this.props.newProject.city,
-      targetJob: !!this.props.newProject.targetJob,
-    },
-    isCompanyCreationShown: false,
-    isReorientationShown: false,
-    isValidated: false,
-  }
-
-  public componentDidMount(): void {
-    const {defaultProjectProps, newProject} = this.props
+  const [freshProject] = useState((): bayes.bob.Project|undefined => {
     if (!defaultProjectProps) {
       return
     }
     const fieldsToKeep = (Object.keys(newProject) as readonly (keyof bayes.bob.Project)[]).
       filter((k: keyof bayes.bob.Project): boolean => !!newProject[k])
-    this.props.dispatch(
-      diagnoseOnboarding({projects: [_omit(defaultProjectProps, fieldsToKeep)]}))
-  }
-
-  private handleSubmit = (): void => {
-    const {areaType, city, passionateLevel, kind, targetJob} = this.props.newProject
-    const {isCompanyCreationShown, isReorientationShown} = this.state
-    this.setState({isValidated: true})
-    if (this.isFormValid()) {
-      if (kind === 'CREATE_OR_TAKE_OVER_COMPANY' && !isCompanyCreationShown) {
-        this.setState({isCompanyCreationShown: true})
-        return
-      }
-      if (kind === 'REORIENTATION' && !isReorientationShown) {
-        this.setState({isReorientationShown: true})
-        return
-      }
-      this.props.onSubmit({areaType, city, kind, passionateLevel, targetJob})
+    _omit(defaultProjectProps, fieldsToKeep)
+  })
+  useEffect((): void => {
+    if (!freshProject) {
+      return
     }
-  }
+    dispatch(diagnoseOnboarding({projects: [freshProject]}))
+  }, [dispatch, freshProject])
 
-  private handlePrevious = _memoize((field: NullableStepStateKey): (() => void) =>
-    (): void => {
-      const stateUpdate: Pick<StepState, NullableStepStateKey> = {[field]: undefined}
-      this.setState(stateUpdate)
-    })
+  const jobSuggestRef = useRef<Focusable>(null)
 
-  private handleSuggestChange = _memoize(
-    <K extends 'city'|'targetJob'>(field: K): ((value: bayes.bob.Project[K] | null) => void) =>
-      (value: bayes.bob.Project[K]|null): void => {
-        if (value) {
-          this.handleChange(field)(value)
-        }
-      })
+  const isJobReallyUnknown = isJobUnknown
+  const isFormValid = !!(
+    kind && (targetJob || isJobReallyUnknown) && city && areaType &&
+    (passionateLevel || isJobReallyUnknown)
+  )
+
+  const handleSubmit = useCallback((): void => {
+    setIsValidated(true)
+    if (!isFormValid) {
+      return
+    }
+    if (kind === 'CREATE_OR_TAKE_OVER_COMPANY' && !isCompanyCreationShown) {
+      setIsCompanyCreationShown(true)
+      return
+    }
+    if (kind === 'REORIENTATION' && !isReorientationShown && !isJobUnknown) {
+      setIsReorientationShown(true)
+      return
+    }
+    const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} =
+      {areaType, city, hasClearProject, kind, passionateLevel, targetJob}
+    onSubmit(projectDiff)
+  }, [
+    isFormValid, isJobUnknown, areaType, city, hasClearProject, kind, passionateLevel,
+    targetJob, isCompanyCreationShown, isReorientationShown, onSubmit,
+  ])
+
+  const handleJobSuggestChange = useCallback((job: bayes.bob.Job|null): void => {
+    if (!job) {
+      return
+    }
+    const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} =
+      {targetJob: job}
+    if (isJobCommentRead) {
+      setIsJobCommentRead(false)
+    }
+    projectDiff.hasClearProject = 'TRUE'
+    if (targetJob?.codeOgr !== job.codeOgr) {
+      Object.assign(projectDiff, resetProjectForJobChange)
+    }
+    dispatch(diagnoseOnboarding({projects: [projectDiff]}))
+  }, [dispatch, isJobCommentRead, targetJob])
+
+  const handleCitySuggestChange = useCallback((city: bayes.bob.FrenchCity|null): void => {
+    if (!city) {
+      return
+    }
+    if (isCityCommentRead) {
+      setIsCityCommentRead(false)
+    }
+    dispatch(diagnoseOnboarding({projects: [{city}]}))
+  }, [dispatch, isCityCommentRead])
 
   // TODO(cyrille): Factorize this with all project steps.
-  private handleChange = _memoize(
-    <K extends keyof bayes.bob.Project>(field: K): ((value: bayes.bob.Project[K]) => void) =>
-      (value: bayes.bob.Project[K]): void => {
-        const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} =
-          {[field]: value}
-        if (field === 'kind' && value === 'CREATE_OR_TAKE_OVER_COMPANY' &&
-          !this.props.newProject.areaType) {
-          // Set the area type by default as we don't ask for it for this kind.
-          projectDiff.areaType = 'CITY'
-        }
-        if (this.state.commentsRead[field]) {
-          this.setState(({commentsRead}): StepState => ({commentsRead: {
-            ...commentsRead,
-            [field]: false,
-          }}))
-        }
-        this.props.dispatch(diagnoseOnboarding({projects: [projectDiff]}))
-      })
+  const handleChange = useCallback(
+    <K extends keyof bayes.bob.Project>(field: K, value: bayes.bob.Project[K]): void => {
+      const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} =
+        {[field]: value}
+      if (field === 'kind' && value === 'CREATE_OR_TAKE_OVER_COMPANY' && !areaType) {
+        // Set the area type by default as we don't ask for it for this kind.
+        projectDiff.areaType = 'CITY'
+      }
+      dispatch(diagnoseOnboarding({projects: [projectDiff]}))
+    }, [areaType, dispatch])
+
+  const handleChangeAreaType = useCallback(
+    (value: bayes.bob.AreaType): void => handleChange('areaType', value),
+    [handleChange],
+  )
+  const handleChangeKind = useCallback(
+    (value: bayes.bob.ProjectKind): void => handleChange('kind', value),
+    [handleChange],
+  )
+  const handleChangePassionateLevel = useCallback(
+    (value: bayes.bob.PassionateLevel): void => handleChange('passionateLevel', value),
+    [handleChange],
+  )
 
   // TODO(cyrille): Harmonize this amongst different steps.
-  private handleCommentRead = _memoize((field): (() => void) => (): void => this.setState(
-    ({commentsRead}): StepState => ({
-      commentsRead: {...commentsRead, [field]: true},
-    })))
+  const readCityComment = useCallback((): void => setIsCityCommentRead(true), [])
+  const readJobComment = useCallback((): void => setIsJobCommentRead(true), [])
 
-  private fastForward = (): void => {
-    const {areaType, city, kind, passionateLevel, targetJob} = this.props.newProject
-    if (this.isFormValid()) {
-      this.handleSubmit()
+  const handleChangeJobUnknown = useCallback((): void => {
+    setIsJobUnknown(!isJobUnknown)
+    if (isJobUnknown) {
+      jobSuggestRef.current?.focus()
+    }
+    dispatch(diagnoseOnboarding({projects: [{
+      hasClearProject: isJobUnknown ? undefined : 'FALSE',
+      ...resetProjectForJobChange,
+      targetJob: undefined,
+    }]}))
+  }, [dispatch, isJobUnknown])
+
+  const fastForward = useCallback((): void => {
+    if (isFormValid) {
+      handleSubmit()
       return
     }
     const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} = {}
     if (!kind) {
       projectDiff.kind = userExample.projects[0].kind
     }
-    if (!passionateLevel) {
-      projectDiff.passionateLevel = userExample.projects[0].passionateLevel
+    if (!isJobUnknown) {
+      if (!targetJob) {
+        projectDiff.targetJob = userExample.projects[0].targetJob
+        Object.assign(projectDiff, resetProjectForJobChange)
+      }
+      if (!passionateLevel) {
+        projectDiff.passionateLevel = userExample.projects[0].passionateLevel
+      }
     }
     if (!city) {
       projectDiff.city = userExample.projects[0].city
     }
-    if (!targetJob) {
-      projectDiff.targetJob = userExample.projects[0].targetJob
-    }
+    projectDiff.hasClearProject = isJobUnknown ? 'FALSE' : 'TRUE'
     if (!areaType) {
       projectDiff.areaType = userExample.projects[0].areaType
     }
-    this.setState({commentsRead: {city: true, targetJob: true}})
-    this.props.dispatch(diagnoseOnboarding({projects: [projectDiff]}))
-  }
+    setIsCityCommentRead(true)
+    setIsJobCommentRead(true)
+    dispatch(diagnoseOnboarding({projects: [projectDiff]}))
+  }, [
+    dispatch, areaType, city, handleSubmit, isFormValid, isJobUnknown, kind, passionateLevel,
+    targetJob,
+  ])
 
-  private isFormValid = (): boolean => {
-    const {areaType, kind, city, passionateLevel, targetJob} = this.props.newProject
-    return !!(kind && targetJob && city && areaType && passionateLevel)
-  }
-
-  private renderTool = ({description, from, logo, name, url}: Tool): React.ReactNode => {
-    const {t} = this.props
+  // TODO(pascal): Move out as a separate component.
+  const renderTool = ({description, from, logo, name, url}: Tool): React.ReactNode => {
     const containerStyle = {
       border: `solid 1px ${colors.SILVER}`,
       borderRadius: 4,
@@ -309,20 +345,20 @@ class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps
     </div>
   }
 
-  private renderUnsupportedProjectKind(
-    {description = undefined, fieldShown, title, tools}: CreationArgs): React.ReactNode {
-    const {profile: {gender = undefined} = {}, newProject: {targetJob = {}} = {}, t} = this.props
+  // TODO(pascal): Move out as a separate component.
+  const renderUnsupportedProjectKind =
+  ({description = undefined, title, tools}: CreationArgs, hide: () => void): React.ReactElement => {
     return <Step
-      {...this.props} title={title(t)}
-      fastForward={this.fastForward} progressInStep={.9}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}
-      onPreviousButtonClick={this.handlePrevious(fieldShown)}>
+      {...props} title={title(t)}
+      fastForward={fastForward} progressInStep={.9}
+      onNextButtonClick={isFormValid ? handleSubmit : undefined}
+      onPreviousButtonClick={hide}>
 
       <div style={{fontSize: 14}}>
         <div>
           <Trans parent="span">
             {{productName: config.productName}} se concentre aujourd'hui surtout sur la reprise d'un
-            emploi spécifique.</Trans><br />
+            emploi.</Trans><br />
           {description ? <React.Fragment><span>{description(t)}</span><br /></React.Fragment> :
             null}
           <Trans parent="span">
@@ -332,7 +368,7 @@ class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps
         </div>
 
         <div style={{marginTop: 30}}>
-          {tools.map(this.renderTool)}
+          {tools.map(renderTool)}
         </div>
 
         <div style={{alignItems: 'center', display: 'flex'}}>
@@ -343,17 +379,15 @@ class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps
           <div style={{backgroundColor: colors.MODAL_PROJECT_GREY, flex: 1, height: 1}} />
         </div>
 
-        <Trans>
+        {targetJob ? <Trans>
           Continuez pour voir nos autres conseils pour le métier
-          {' '}{{ofJobName: maybeContractPrefix('de ', "d'",
-            lowerFirstLetter(genderizeJob(targetJob, gender)))}}.
-        </Trans>
+          {' '}{{ofJobName: ofJobName(lowerFirstLetter(genderizeJob(targetJob, gender)), t)}}.
+        </Trans> : <Trans>Continuez pour voir nos autres conseils.</Trans>}
       </div>
     </Step>
   }
 
-  private renderWhichJobQuestion(): React.ReactNode {
-    const {newProject: {kind}, t} = this.props
+  const whichJobQuestion = ((): React.ReactNode => {
     switch (kind) {
       case 'CREATE_OR_TAKE_OVER_COMPANY':
         return t('Quel métier représente le plus votre expertise\u00A0?')
@@ -362,133 +396,130 @@ class NewProjectGoalStepBase extends React.PureComponent<NewProjectGoalStepProps
       default:
         return t('Quel est le poste que vous recherchez\u00A0?')
     }
-  }
+  })()
 
-  private renderWhichCityQuestion(): React.ReactNode {
-    const {newProject: {kind}, t} = this.props
-    switch (kind) {
-      case 'CREATE_OR_TAKE_OVER_COMPANY':
-        return t('Où voulez-vous créer ou reprendre une entreprise\u00A0?')
-      default:
-        return t('Autour de quelle ville cherchez-vous\u00A0?')
-    }
-  }
+  const whichCityQuestion = (kind === 'CREATE_OR_TAKE_OVER_COMPANY') ?
+    t('Où voulez-vous créer ou reprendre une entreprise\u00A0?') :
+    t('Autour de quelle ville cherchez-vous\u00A0?')
 
-  public render(): React.ReactNode {
-    const {
-      newProject: {areaType, city, city: {departementId = ''} = {}, kind, targetJob,
-        passionateLevel},
-      profile: {gender, hasHandicap},
-      t,
-    } = this.props
-    const {commentsRead, isCompanyCreationShown, isReorientationShown, isValidated} = this.state
-    if (isCompanyCreationShown) {
-      return this.renderUnsupportedProjectKind(_CREATION_ARGS)
-    }
-    if (isReorientationShown) {
-      return this.renderUnsupportedProjectKind({
-        ..._REORIENTATION_ARGS,
-        ...hasHandicap && {
-          description: (t: TFunction): string =>
-            t('Rentrer dans une période de reconversion suite à un accident ' +
-              'ou un problème de santé a des enjeux importants.'),
-          tools: [
-            ...getHandicapSpecificTools(departementId),
-            ..._REORIENTATION_TOOLS,
-          ],
-        },
-      })
-    }
-    // Keep in sync with 'isValid' from fieldsets below.
-    const checks = [
-      kind,
-      targetJob && commentsRead.targetJob,
-      passionateLevel,
-      city && commentsRead.city,
-      areaType,
-    ]
-    return <Step
-      title={t('Votre projet')}
-      {...this.props} fastForward={this.fastForward}
-      progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
-      onNextButtonClick={this.isFormValid() ? this.handleSubmit : undefined}>
-      <FieldSet label={t('Quel est votre projet\u00A0:')}
-        isValid={!!kind} isValidated={isValidated} hasCheck={true}>
-        <Select
-          value={kind} options={localizeOptions(t, PROJECT_KIND_OPTIONS)}
-          onChange={this.handleChange('kind')}
-          placeholder={t('choisissez un type de projet')} />
-      </FieldSet>
-      {checks[0] ? <React.Fragment>
-        {/* TODO(cyrille): Find a way to avoid note + comment. */}
-        <WithNote
-          hasComment={true}
-          note={<Trans parent={null}>
-            Vous ne trouvez pas votre métier&nbsp;?
-            <ExternalLink style={{color: colors.BOB_BLUE, fontSize: 15, marginLeft: 3}}
-              href="https://airtable.com/shreUw3GYqAwVAA27">
-              Cliquez ici pour l'ajouter
-            </ExternalLink>
-          </Trans>}>
-          <FieldSet
-            label={this.renderWhichJobQuestion()}
-            isValid={!!targetJob}
-            isValidated={isValidated}
-            hasCheck={true}
-            hasNoteOrComment={true}>
-            <JobSuggest
-              placeholder={t('entrez votre métier')}
-              value={targetJob}
-              onChange={this.handleSuggestChange('targetJob')}
-              gender={gender}
-              style={{padding: 1, ...Styles.INPUT}} />
-          </FieldSet>
-        </WithNote>
-        <OnboardingComment key={targetJob && targetJob.codeOgr || ''}
-          onDone={this.handleCommentRead('targetJob')}
-          field="TARGET_JOB_FIELD" shouldShowAfter={!!targetJob} />
-      </React.Fragment> : null}
-      {checks.slice(0, 2).every((c): boolean => !!c) ?
-        <FieldSet label={t('Que représente ce travail pour vous\u00A0?')}
-          isValid={!!passionateLevel} isValidated={isValidated} hasCheck={true}>
-          <Select value={passionateLevel} options={localizeOptions(t, PROJECT_PASSIONATE_OPTIONS)}
-            onChange={this.handleChange('passionateLevel')}
-            placeholder={t('choisissez une proposition')} />
-        </FieldSet> : null}
-      {checks.slice(0, 3).every((c): boolean => !!c) ? <React.Fragment>
+  if (isCompanyCreationShown) {
+    return renderUnsupportedProjectKind(_CREATION_ARGS, hideCompanyCreation)
+  }
+  const {departementId = ''} = city || {}
+  if (isReorientationShown) {
+    return renderUnsupportedProjectKind({
+      ..._REORIENTATION_ARGS,
+      ...hasHandicap && {
+        description: (t: TFunction): string =>
+          t('Rentrer dans une période de reconversion suite à un accident ' +
+            'ou un problème de santé a des enjeux importants.'),
+        tools: [
+          ...getHandicapSpecificTools(departementId),
+          ..._REORIENTATION_TOOLS,
+        ],
+      },
+    }, hideReorientation)
+  }
+  // Keep in sync with 'isValid' from fieldsets below.
+  const checks = [
+    kind,
+    (targetJob && isJobCommentRead) || isJobUnknown,
+    passionateLevel || isJobUnknown,
+    city && isCityCommentRead,
+    areaType,
+  ]
+  return <Step
+    title={t('Votre projet')}
+    {...props} fastForward={fastForward}
+    progressInStep={checks.filter((c): boolean => !!c).length / (checks.length + 1)}
+    onNextButtonClick={isFormValid ? handleSubmit : undefined}>
+    <FieldSet label={t('Quel est votre projet\u00A0:')}
+      isValid={!!kind} isValidated={isValidated} hasCheck={true}>
+      <Select
+        value={kind} options={localizeOptions(t, PROJECT_KIND_OPTIONS)}
+        onChange={handleChangeKind}
+        placeholder={t('choisissez un type de projet')} />
+    </FieldSet>
+    {checks[0] ? <React.Fragment>
+      {/* TODO(cyrille): Find a way to avoid note + comment. */}
+      <WithNote
+        hasComment={true}
+        note={<Trans parent={null}>
+          Vous ne trouvez pas votre métier&nbsp;?
+          <ExternalLink style={{color: colors.BOB_BLUE, fontSize: 15, marginLeft: 3}}
+            href="https://airtable.com/shreUw3GYqAwVAA27">
+            Cliquez ici pour l'ajouter
+          </ExternalLink>
+        </Trans>}>
         <FieldSet
-          label={this.renderWhichCityQuestion()}
-          isValid={!!city}
+          label={whichJobQuestion}
+          isValid={!!targetJob || isJobUnknown}
           isValidated={isValidated}
-          hasNoteOrComment={true}
-          hasCheck={true}>
-          <CitySuggest
-            onChange={this.handleSuggestChange('city')}
-            style={{padding: 1, ...Styles.INPUT}}
-            value={city}
-            placeholder={t('entrez votre ville ou votre code postal')} />
+          hasCheck={true}
+          hasNoteOrComment={true}>
+          <JobSuggest
+            placeholder={isJobUnknown ?
+              t('décochez la case ci-dessous pour entrer un métier') : t('entrez votre métier')}
+            value={targetJob} textValue={isJobUnknown ? '' : undefined}
+            onChange={handleJobSuggestChange}
+            gender={gender}
+            disabled={isJobUnknown}
+            style={{padding: 1, ...Styles.INPUT}} ref={jobSuggestRef} />
         </FieldSet>
-        <OnboardingComment key={city && city.cityId}
-          onDone={this.handleCommentRead('city')}
-          field="CITY_FIELD" shouldShowAfter={!!city} />
-      </React.Fragment> : null}
-      {checks.slice(0, 4).every((c): boolean => !!c) && kind !== 'CREATE_OR_TAKE_OVER_COMPANY' ?
-        <FieldSet
-          label={t("Jusqu'où êtes-vous prêt·e à vous déplacer\u00A0?", {context: gender})}
-          isValid={!!areaType}
-          isValidated={isValidated} hasCheck={true}>
-          <Select
-            options={localizeOptions(t, PROJECT_LOCATION_AREA_TYPE_OPTIONS)} value={areaType}
-            onChange={this.handleChange('areaType')}
-            placeholder={t(
-              'choisissez une zone où vous êtes prêt·e à vous déplacer', {context: gender})} />
-        </FieldSet> : null}
-    </Step>
-  }
+      </WithNote>
+      <LabeledToggle
+        type="checkbox" isSelected={isJobUnknown} onClick={handleChangeJobUnknown}
+        label={t('Je ne sais pas quel métier faire')}
+        style={isJobUnknown ? jobUnknownStyle : undefined} />
+      {isJobUnknown ? null :
+        <OnboardingComment key={targetJob && targetJob.codeOgr || ''}
+          onDone={readJobComment}
+          field="TARGET_JOB_FIELD" shouldShowAfter={!!targetJob} />}
+    </React.Fragment> : null}
+    {checks.slice(0, 2).every((c): boolean => !!c) && !isJobUnknown ?
+      <FieldSet label={t('Que représente ce travail pour vous\u00A0?')}
+        isValid={!!passionateLevel} isValidated={isValidated} hasCheck={true}>
+        <Select value={passionateLevel} options={localizeOptions(t, PROJECT_PASSIONATE_OPTIONS)}
+          onChange={handleChangePassionateLevel}
+          placeholder={t('choisissez une proposition')} />
+      </FieldSet> : null}
+    {checks.slice(0, 3).every((c): boolean => !!c) ? <React.Fragment>
+      <FieldSet
+        label={whichCityQuestion}
+        isValid={!!city}
+        isValidated={isValidated}
+        hasNoteOrComment={true}
+        hasCheck={true}>
+        <CitySuggest
+          onChange={handleCitySuggestChange}
+          style={{padding: 1, ...Styles.INPUT}}
+          value={city}
+          placeholder={t('entrez votre ville ou votre code postal')} />
+      </FieldSet>
+      <OnboardingComment key={city && city.cityId}
+        onDone={readCityComment}
+        field="CITY_FIELD" shouldShowAfter={!!city} />
+    </React.Fragment> : null}
+    {checks.slice(0, 4).every((c): boolean => !!c) && kind !== 'CREATE_OR_TAKE_OVER_COMPANY' ?
+      <FieldSet
+        label={t("Jusqu'où êtes-vous prêt·e à vous déplacer\u00A0?", {context: gender})}
+        isValid={!!areaType}
+        isValidated={isValidated} hasCheck={true}>
+        <Select
+          options={localizeOptions(t, PROJECT_LOCATION_AREA_TYPE_OPTIONS)} value={areaType}
+          onChange={handleChangeAreaType}
+          placeholder={t(
+            'choisissez une zone où vous êtes prêt·e à vous déplacer', {context: gender})} />
+      </FieldSet> : null}
+  </Step>
 }
-const NewProjectGoalStep = connect(
-  ({app: {defaultProjectProps = undefined}}: RootState): ConnectedStepProps =>
-    ({defaultProjectProps}))(NewProjectGoalStepBase)
+NewProjectGoalStepBase.propTypes = {
+  newProject: PropTypes.object,
+  onSubmit: PropTypes.func.isRequired,
+  profile: PropTypes.object,
+  t: PropTypes.func.isRequired,
+}
+const NewProjectGoalStep = React.memo(NewProjectGoalStepBase)
 
 
 export {NewProjectGoalStep}

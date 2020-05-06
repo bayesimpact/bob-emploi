@@ -87,7 +87,7 @@ class StringCollector(object):
             if not is_already_used:
                 self._i18n_base.update(
                     'translations', self._existing_translations[text]['id'],
-                    {'last_used': self._now})
+                    {'last_used': self._now, 'origin': origin, 'origin_id': origin_id})
             # TODO(pascal): Keep track of all places where it is used.
             return
         fields = {

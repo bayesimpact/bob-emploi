@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types'
-import React from 'react'
-import {connect} from 'react-redux'
-import {Redirect, RouteComponentProps} from 'react-router'
+import React, {useCallback, useEffect, useLayoutEffect, useState} from 'react'
+import {useTranslation} from 'react-i18next'
+import {useDispatch, useSelector} from 'react-redux'
+import {useHistory, useLocation} from 'react-router'
 
 import {DispatchAllActions, RootState, closeLoginModal, loginUserFromToken, openLoginModal,
   openRegistrationModal} from 'store/actions'
@@ -17,44 +18,32 @@ import bobHeadImage from 'images/bob-head.svg'
 import {WaitingPage} from './waiting'
 
 
-interface ConnectedProps {
-  canCloseModal: boolean
-  hasLoginModal: boolean
-}
+const SignUpPageBase = (): React.ReactElement => {
+  const dispatch = useDispatch<DispatchAllActions>()
+  const history = useHistory()
+  const hasLoginModal = useSelector(({app: {loginModal}}: RootState): boolean => !!loginModal)
+  const canCloseModal = useSelector(
+    ({app: {loginModal}}: RootState): boolean =>
+      !!loginModal && !(loginModal.defaultValues && loginModal.defaultValues.resetToken),
+  )
+  const {hash, pathname, search, state} = useLocation<{pathname?: string}>()
+  const [hadLoginModal, setHadLoginModal] = useState(hasLoginModal)
 
-
-interface Props extends RouteComponentProps<{}, {}, {pathname?: string}>, ConnectedProps {
-  children?: never
-  dispatch: DispatchAllActions
-}
-
-
-interface State {
-  hasLoginModal?: boolean
-  shouldRedirect?: boolean
-}
-class SignUpPageBase extends React.PureComponent<Props, State> {
-  public static propTypes = {
-    canCloseModal: PropTypes.bool,
-    dispatch: PropTypes.func.isRequired,
-  }
-
-  public state: State = {}
-
-  public static getDerivedStateFromProps(
-    {hasLoginModal}: Props,
-    {hasLoginModal: hadLoginModal}: State): State|null {
-    if (!hasLoginModal === !hadLoginModal) {
-      return null
+  useLayoutEffect((): void => {
+    if (hasLoginModal === hadLoginModal) {
+      return
     }
-    return {
-      hasLoginModal,
-      ...hasLoginModal ? {} : {shouldRedirect: true},
+    if (!hasLoginModal) {
+      if (pathname === Routes.SIGNUP_PAGE) {
+        history.goBack()
+        return
+      }
+      history.replace(hash || search ? pathname : Routes.ROOT)
     }
-  }
+    setHadLoginModal(hasLoginModal)
+  }, [hadLoginModal, hasLoginModal, hash, history, pathname, search])
 
-  public componentDidMount(): void {
-    const {dispatch, hasLoginModal, location: {hash, search}} = this.props
+  useLayoutEffect((): void => {
     if (isMobileVersion && hasLoginModal) {
       return
     }
@@ -77,28 +66,17 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
       return
     }
     dispatch(openLoginModal({email}, 'returninguser'))
-  }
+  }, [dispatch, hash, hasLoginModal, search])
 
-  public componentDidUpdate(
-    unusedPrevProps: Props, {shouldRedirect: prevShouldRedirect}: State): void {
-    const {history, location: {pathname}} = this.props
-    const {shouldRedirect} = this.state
-    if (!prevShouldRedirect && shouldRedirect && pathname === Routes.SIGNUP_PAGE) {
-      history.goBack()
-    }
-  }
+  useEffect((): (() => void) => {
+    return (): void => void dispatch(closeLoginModal())
+  }, [dispatch])
 
-  public componentWillUnmount(): void {
-    const {dispatch} = this.props
+  const handleClick = useCallback((): void => {
     dispatch(closeLoginModal())
-  }
+  }, [dispatch])
 
-  private handleClick = (): void => {
-    this.props.dispatch(closeLoginModal())
-  }
-
-  private renderMobile(): React.ReactNode {
-    const {canCloseModal, location: {state: {pathname = ''} = {}}} = this.props
+  if (isMobileVersion) {
     const containerStyle = {
       alignItems: 'center',
       backgroundColor: '#fff',
@@ -113,27 +91,13 @@ class SignUpPageBase extends React.PureComponent<Props, State> {
     }
     return <div style={containerStyle}>
       {canCloseModal ? <ModalCloseButton
-        style={closeButtonStyle} onClick={this.handleClick} /> : null}
-      <LoginMethods forwardLocation={pathname || '/'} onFinish={this.handleClick} />
+        style={closeButtonStyle} onClick={handleClick} /> : null}
+      <LoginMethods forwardLocation={state?.pathname || '/'} onFinish={handleClick} />
     </div>
   }
-
-  public render(): React.ReactNode {
-    if (this.state.shouldRedirect) {
-      const {location: {hash, pathname, search}} = this.props
-      const to = pathname === Routes.SIGNUP_PAGE || hash || search ? pathname : Routes.ROOT
-      return <Redirect to={to} />
-    }
-    if (isMobileVersion) {
-      return this.renderMobile()
-    }
-    return <WaitingPage />
-  }
+  return <WaitingPage />
 }
-const SignUpPage = connect(({app: {loginModal}}: RootState): ConnectedProps => ({
-  canCloseModal: !!loginModal && !(loginModal.defaultValues && loginModal.defaultValues.resetToken),
-  hasLoginModal: !!loginModal,
-}))(SignUpPageBase)
+const SignUpPage = React.memo(SignUpPageBase)
 
 
 interface BannerProps {
@@ -141,81 +105,74 @@ interface BannerProps {
   style?: React.CSSProperties
 }
 
-
-interface BannerState {
-  isShown?: boolean
+const closeStyle: React.CSSProperties = {
+  backgroundColor: colors.SLATE,
+  boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.2)',
+  color: '#fff',
+  fontSize: 12,
+  height: 35,
+  width: 35,
+}
+const textBannerStyle: React.CSSProperties = {
+  fontSize: 18,
+  fontStyle: 'italic',
+  padding: isMobileVersion ? 20 : '33px 32px 35px',
 }
 
+const SignUpBannerBase = (props: BannerProps): React.ReactElement|null => {
+  const {onClose, style} = props
+  const {t} = useTranslation()
+  const [isShown, setIsShown] = useState(true)
 
-class SignUpBanner extends React.Component<BannerProps, BannerState> {
-  public static propTypes = {
-    onClose: PropTypes.func,
-    style: PropTypes.object,
+  const handleClose = useCallback((): void => {
+    setIsShown(false)
+    onClose?.()
+  }, [onClose])
+
+  const bannerStyle: React.CSSProperties = {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    border: isMobileVersion ? `solid 2px ${colors.SILVER}` : 'initial',
+    borderRadius: 10,
+    boxShadow: isMobileVersion ? 'initial' : '0 4px 14px 0 rgba(0, 0, 0, 0.05)',
+    display: 'flex',
+    flexDirection: isMobileVersion ? 'column' : 'row',
+    paddingBottom: isMobileVersion ? 20 : 0,
+    paddingRight: isMobileVersion ? 0 : 40,
+    position: 'relative',
+    textAlign: isMobileVersion ? 'center' : 'left',
+    ...style,
+    ...(isMobileVersion ? {width: 'calc(100vw - 40px)'} : {}),
   }
 
-  public state = {
-    isShown: true,
+  if (!isShown) {
+    // TODO(pascal): Add a transition when hiding the banner.
+    return null
   }
 
-  private handleClose = (): void => {
-    const {onClose} = this.props
-    this.setState({isShown: false})
-    onClose && onClose()
-  }
+  return <div style={bannerStyle}>
+    <ModalCloseButton onClick={handleClose} style={closeStyle} />
+    {isMobileVersion ? null :
+      <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />}
+    {isMobileVersion ? <Trans style={textBannerStyle} parent="span">
 
-  public render(): React.ReactNode {
-    const {style} = this.props
-    const {isShown} = this.state
-    if (!isShown) {
-      // TODO(pascal): Add a transition when hiding the banner.
-      return null
-    }
-    const bannerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      border: isMobileVersion ? `solid 2px ${colors.SILVER}` : 'initial',
-      borderRadius: 10,
-      boxShadow: isMobileVersion ? 'initial' : '0 4px 14px 0 rgba(0, 0, 0, 0.05)',
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      paddingBottom: isMobileVersion ? 20 : 0,
-      paddingRight: isMobileVersion ? 0 : 40,
-      position: 'relative',
-      textAlign: isMobileVersion ? 'center' : 'left',
-      ...style,
-      ...(isMobileVersion ? {width: 'calc(100vw - 40px)'} : {}),
-    }
-    const textBannerStyle: React.CSSProperties = {
-      fontSize: 18,
-      fontStyle: 'italic',
-      padding: isMobileVersion ? 20 : '33px 32px 35px',
-    }
-    const closeStyle: React.CSSProperties = {
-      backgroundColor: colors.SLATE,
-      boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.2)',
-      color: '#fff',
-      fontSize: 12,
-      height: 35,
-      width: 35,
-    }
-    return <div style={bannerStyle}>
-      <ModalCloseButton onClick={this.handleClose} style={closeStyle} />
-      {isMobileVersion ? null :
-        <img src={bobHeadImage} alt="" style={{marginLeft: 32, width: 56}} />}
-      {isMobileVersion ? <Trans style={textBannerStyle} parent="span">
+      Pensez à sauvegarder votre progression
+    </Trans> : <Trans style={textBannerStyle} parent="span">
+      Pensez à créer votre compte pour sauvegarder votre progression
+    </Trans>}
+    <span style={{flex: 1}}></span>
+    <LoginButton
+      type="navigation" isRound={true} visualElement="diagnostic">
+      {t('Créer mon compte')}
+    </LoginButton>
+  </div>
 
-        Pensez à sauvegarder votre progression
-      </Trans> : <Trans style={textBannerStyle} parent="span">
-        Pensez à créer votre compte pour sauvegarder votre progression
-      </Trans>}
-      <span style={{flex: 1}}></span>
-      <LoginButton
-        type="navigation" isRound={true} visualElement="diagnostic">
-        Créer mon compte
-      </LoginButton>
-    </div>
-  }
 }
+SignUpBannerBase.propTypes = {
+  onClose: PropTypes.func,
+  style: PropTypes.object,
+}
+const SignUpBanner = React.memo(SignUpBannerBase)
 
 
 export {SignUpBanner, SignUpPage}

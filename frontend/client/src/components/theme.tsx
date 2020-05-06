@@ -11,10 +11,12 @@ import ChevronUpIcon from 'mdi-react/ChevronUpIcon'
 import MenuDownIcon from 'mdi-react/MenuDownIcon'
 import MenuUpIcon from 'mdi-react/MenuUpIcon'
 import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import VisibilitySensor from 'react-visibility-sensor'
 
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {useRadium} from 'components/radium'
 
@@ -24,15 +26,15 @@ import 'styles/fonts/Lato/font.css'
 export const colorToComponents = (color: string): [number, number, number] => {
   if (color.length === 7) {
     return [
-      parseInt(color.slice(1, 3), 16),
-      parseInt(color.slice(3, 5), 16),
-      parseInt(color.slice(5, 7), 16),
+      Number.parseInt(color.slice(1, 3), 16),
+      Number.parseInt(color.slice(3, 5), 16),
+      Number.parseInt(color.slice(5, 7), 16),
     ]
   }
   return [
-    parseInt(color.slice(1, 2), 16) * 0x11,
-    parseInt(color.slice(2, 3), 16) * 0x11,
-    parseInt(color.slice(3, 4), 16) * 0x11,
+    Number.parseInt(color.slice(1, 2), 16) * 0x11,
+    Number.parseInt(color.slice(2, 3), 16) * 0x11,
+    Number.parseInt(color.slice(3, 4), 16) * 0x11,
   ]
 }
 
@@ -189,153 +191,106 @@ export interface ButtonProps extends Omit<React.ComponentPropsWithoutRef<'button
 }
 
 
-export interface RadiumButtonProps extends React.ComponentPropsWithoutRef<'button'> {
-  innerRef: React.RefObject<HTMLButtonElement>
-  style?: RadiumCSSProperties
+const progressContainerStyle: React.CSSProperties = {
+  alignItems: 'center',
+  display: 'flex',
+  height: '100%',
+  justifyContent: '100%',
+  left: 0,
+  position: 'absolute',
+  top: 0,
+  width: '100%',
 }
 
 
-// TODO(cyrille): Use forwardRef.
-const RadiumButtonBase = ({innerRef, ...otherProps}: RadiumButtonProps): React.ReactElement => {
-  const [radiumProps] = useRadium<HTMLButtonElement, Omit<RadiumButtonProps, 'innerRef'>>(
-    otherProps,
-  )
-  return <button ref={innerRef} {...radiumProps} />
-}
-const RadiumButton = React.memo(RadiumButtonBase)
+const ButtonBase = (props: ButtonProps, ref: React.Ref<HTMLButtonElement>): React.ReactElement => {
+  const [clickingEvent, setClickingEvent] =
+    useState<React.MouseEvent<HTMLButtonElement>|undefined>()
+  const {bounceDurationMs = 50, children, disabled, isNarrow, isProgressShown, type, style,
+    isHighlighted, isRound, onClick, ...otherProps} = props
 
-
-class Button extends React.PureComponent<ButtonProps, {isClicking: boolean}> {
-  public static propTypes = {
-    bounceDurationMs: PropTypes.number,
-    children: PropTypes.node.isRequired,
-    // We keep disabled by consistency with the DOM button element.
-    // eslint-disable-next-line react/boolean-prop-naming
-    disabled: PropTypes.bool,
-    isHighlighted: PropTypes.bool,
-    isNarrow: PropTypes.bool,
-    isProgressShown: PropTypes.bool,
-    isRound: PropTypes.bool,
-    onClick: PropTypes.func,
-    onMouseDown: PropTypes.func,
-    style: PropTypes.object,
-    type: PropTypes.oneOf(Object.keys(BUTTON_TYPE_STYLES)),
-  }
-
-  public static defaultProps = {
-    bounceDurationMs: 50,
-  }
-
-  public state = {
-    isClicking: false,
-  }
-
-  public componentWillUnmount(): void {
-    clearTimeout(this.timeout)
-  }
-
-  private dom: React.RefObject<HTMLButtonElement> = React.createRef()
-
-  private timeout: number|undefined
-
-  public blur(): void {
-    this.dom.current?.blur()
-  }
-
-  public focus(): void {
-    this.dom.current?.focus()
-  }
-
-  private handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
-    const {bounceDurationMs, onClick} = this.props
+  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>): void => {
     if (!onClick) {
       return
     }
     event?.stopPropagation?.()
     event?.preventDefault?.()
-    this.setState({isClicking: true})
-    this.timeout = window.setTimeout((): void => {
-      this.setState({isClicking: false})
-      onClick(event)
+    setClickingEvent(event)
+  }, [onClick])
+
+  useEffect((): (() => void)|void => {
+    if (!clickingEvent) {
+      return
+    }
+    const timeout = window.setTimeout((): void => {
+      setClickingEvent(undefined)
+      onClick?.(clickingEvent)
     }, bounceDurationMs)
-  }
+    return (): void => clearTimeout(timeout)
+  }, [bounceDurationMs, clickingEvent, onClick])
 
-  public render(): React.ReactNode {
-    const {bounceDurationMs, children, disabled, isNarrow, isProgressShown, type, style,
-      isHighlighted, isRound, ...otherProps} = this.props
-    const {isClicking} = this.state
-    const typeStyle = BUTTON_TYPE_STYLES[type || 'navigation']
+  const typeStyle = BUTTON_TYPE_STYLES[type || 'navigation']
 
-    const buttonStyle: RadiumCSSProperties = {
-      border: 'none',
-      borderRadius: isRound ? 30 : 5,
-      ...!disabled && {boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)'},
-      color: '#fff',
-      cursor: 'pointer',
-      flexShrink: 0,
-      fontSize: isRound ? 15 : 16,
-      fontStyle: 'normal',
-      fontWeight: 'normal',
-      padding: isNarrow ? '10px 14px' : isRound ? '12px 35px' : '12px 20px',
-      position: 'relative',
-      textAlign: 'center',
-      transform: 'translateY(0)',
-      transition: `ease ${bounceDurationMs}ms`,
-      ...typeStyle,
-      ...style,
-    }
-    const progressContainerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      height: '100%',
-      justifyContent: '100%',
-      left: 0,
-      position: 'absolute',
-      top: 0,
-      width: '100%',
-    }
-    if (!disabled) {
-      buttonStyle[':hover'] = {
-        backgroundColor: buttonStyle.backgroundColor,
-        boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
-        transform: 'translateY(-1px)',
-        ...typeStyle[':hover'],
-        ...(style ? style[':hover'] : {}),
-      }
-      buttonStyle[':focus'] = buttonStyle[':hover']
-      buttonStyle[':active'] = {
-        boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
-        transform: 'translateY(1px)',
-        ...typeStyle[':active'],
-        ...(style ? style[':active'] : {}),
-      }
-    } else {
-      buttonStyle[':hover'] = {}
-      buttonStyle.backgroundColor = typeStyle.disabledColor ||
-        (colorToAlpha(typeStyle?.backgroundColor, .5)) ||
-        'rgba(67, 212, 132, 0.5)'
-      buttonStyle.cursor = 'inherit'
-    }
-    if (isHighlighted) {
-      Object.assign(buttonStyle, buttonStyle[':hover'])
-    }
-    if (isClicking) {
-      Object.assign(buttonStyle, buttonStyle[':active'])
-    }
-    return <RadiumButton
-      style={buttonStyle} disabled={disabled} {...otherProps}
-      onClick={this.handleClick} innerRef={this.dom} type="button">
-      {isProgressShown ? <React.Fragment>
-        <div style={progressContainerStyle}>
-          <CircularProgress size={23} style={{color: '#fff'}} thickness={2} />
-        </div>
-        <span style={{opacity: 0}}>
-          {children}
-        </span>
-      </React.Fragment> : children}
-    </RadiumButton>
+  const buttonStyle: RadiumCSSProperties = {
+    border: 'none',
+    borderRadius: isRound ? 30 : 5,
+    ...!disabled && {boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)'},
+    color: '#fff',
+    cursor: 'pointer',
+    flexShrink: 0,
+    fontSize: isRound ? 15 : 16,
+    fontStyle: 'normal',
+    fontWeight: 'normal',
+    padding: isNarrow ? '10px 14px' : isRound ? '12px 35px' : '12px 20px',
+    position: 'relative',
+    textAlign: 'center',
+    transform: 'translateY(0)',
+    transition: `ease ${bounceDurationMs}ms`,
+    ...typeStyle,
+    ...style,
   }
+  if (!disabled) {
+    buttonStyle[':hover'] = {
+      backgroundColor: buttonStyle.backgroundColor,
+      boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
+      transform: 'translateY(-1px)',
+      ...typeStyle[':hover'],
+      ...(style ? style[':hover'] : {}),
+    }
+    buttonStyle[':focus'] = buttonStyle[':hover']
+    buttonStyle[':active'] = {
+      boxShadow: '0 4px 6px rgba(0, 0, 0, .11), 0 1px 3px rgba(0, 0, 0, .08)',
+      transform: 'translateY(1px)',
+      ...typeStyle[':active'],
+      ...(style ? style[':active'] : {}),
+    }
+  } else {
+    buttonStyle[':hover'] = {}
+    buttonStyle.backgroundColor = typeStyle.disabledColor ||
+      (colorToAlpha(typeStyle?.backgroundColor, .5)) ||
+      'rgba(67, 212, 132, 0.5)'
+    buttonStyle.cursor = 'inherit'
+  }
+  if (isHighlighted) {
+    Object.assign(buttonStyle, buttonStyle[':hover'])
+  }
+  if (clickingEvent) {
+    Object.assign(buttonStyle, buttonStyle[':active'])
+  }
+  const [radiumProps] =
+    useRadium<HTMLButtonElement, Omit<ButtonProps, 'type'>>({...otherProps, style: buttonStyle})
+  return <button disabled={disabled} {...radiumProps} onClick={handleClick} ref={ref}>
+    {isProgressShown ? <React.Fragment>
+      <div style={progressContainerStyle}>
+        <CircularProgress size={23} style={{color: '#fff'}} thickness={2} />
+      </div>
+      <span style={{opacity: 0}}>
+        {children}
+      </span>
+    </React.Fragment> : children}
+  </button>
 }
+const Button = React.memo(React.forwardRef(ButtonBase))
 
 
 type LinkProps = React.HTMLProps<HTMLAnchorElement>
@@ -397,133 +352,94 @@ const Markdown = React.memo(MarkdownBase)
 
 
 interface CircularProgressProps {
-  periodMilliseconds: number
-  size: number
+  periodMilliseconds?: number
+  size?: number
   style?: React.CSSProperties
-  thickness: number
+  thickness?: number
 }
 
 
-interface CircularProgressState {
-  isWrapperRotated: boolean
-  scalePathStep: number
-}
+const CircularProgressBase = (props: CircularProgressProps): React.ReactElement => {
+  const {periodMilliseconds = 1750, size = 80, style, thickness = 3.5} = props
+  const [isWrapperRotated, setIsWrappedRotated] = useState(false)
+  const [scalePath, setScalePath] = useState(0)
 
+  useEffect((): (() => void) => {
+    const timeout = window.setTimeout(
+      (): void => setScalePath((scalePath + 1) % 3),
+      scalePath ? .4 * periodMilliseconds : .2 * periodMilliseconds,
+    )
+    return (): void => clearTimeout(timeout)
+  }, [periodMilliseconds, scalePath])
 
-class CircularProgress extends React.PureComponent<CircularProgressProps, CircularProgressState> {
-  public static propTypes = {
-    periodMilliseconds: PropTypes.number,
-    size: PropTypes.number,
-    style: PropTypes.object,
-    thickness: PropTypes.number,
+  useEffect((): (() => void) => {
+    const timeout = setTimeout(
+      (): void => setIsWrappedRotated(!isWrapperRotated),
+      isWrapperRotated ? periodMilliseconds * 5.7143 : 50,
+    )
+    return (): void => clearTimeout(timeout)
+  }, [isWrapperRotated, periodMilliseconds])
+
+  const containerStyle: React.CSSProperties = {
+    color: colors.BOB_BLUE,
+    height: size,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    position: 'relative',
+    width: size,
+    ...style,
+  }
+  const color = containerStyle.color
+  const wrapperStyle: React.CSSProperties = {
+    display: 'inline-block',
+    height: size,
+    transform: `rotate(${isWrapperRotated ? '1800' : '0'}deg)`,
+    transition: `all ${isWrapperRotated ? '10' : '0'}s linear`,
+    width: size,
+  }
+  const getArcLength = (fraction: number): number => fraction * Math.PI * (size - thickness)
+  let strokeDasharray, strokeDashoffset, transitionDuration
+  if (scalePath === 0) {
+    strokeDasharray = `${getArcLength(0)}, ${getArcLength(1)}`
+    strokeDashoffset = 0
+    transitionDuration = '0'
+  } else if (scalePath === 1) {
+    strokeDasharray = `${getArcLength(0.7)}, ${getArcLength(1)}`
+    strokeDashoffset = getArcLength(-0.3)
+    transitionDuration = periodMilliseconds * .4
+  } else {
+    strokeDasharray = `${getArcLength(0.7)}, ${getArcLength(1)}`
+    strokeDashoffset = getArcLength(-1)
+    transitionDuration = periodMilliseconds * .4857
+  }
+  const pathStyle: React.CSSProperties = {
+    stroke: color,
+    strokeDasharray,
+    strokeDashoffset,
+    strokeLinecap: 'round',
+    transition: `all ${transitionDuration}ms ease-in-out`,
   }
 
-  public static defaultProps = {
-    periodMilliseconds: 1750,
-    size: 80,
-    thickness: 3.5,
-  }
-
-  public state = {
-    isWrapperRotated: false,
-    scalePathStep: 0,
-  }
-
-  public componentDidMount(): void {
-    this.scalePath(0)
-    this.rotateWrapper()
-  }
-
-  public componentWillUnmount(): void {
-    clearTimeout(this.scalePathTimer)
-    clearTimeout(this.rotateWrapperTimer1)
-    clearTimeout(this.rotateWrapperTimer2)
-  }
-
-  private rotateWrapperTimer1: number|undefined
-
-  private rotateWrapperTimer2: number|undefined
-
-  private scalePathTimer: number|undefined
-
-  private scalePath(step: number): void {
-    const {periodMilliseconds} = this.props
-    this.setState({scalePathStep: step})
-    this.scalePathTimer = window.setTimeout(
-      (): void => this.scalePath((step + 1) % 3),
-      step ? .4 * periodMilliseconds : .2 * periodMilliseconds)
-  }
-
-  private rotateWrapper(): void {
-    const {periodMilliseconds} = this.props
-    this.setState({isWrapperRotated: false})
-
-    this.rotateWrapperTimer1 = window.setTimeout((): void => {
-      this.setState({isWrapperRotated: true})
-    }, 50)
-
-    this.rotateWrapperTimer2 = window.setTimeout(
-      (): void => this.rotateWrapper(),
-      50 + periodMilliseconds * 5.7143)
-  }
-
-  public render(): React.ReactNode {
-    const {periodMilliseconds, size, thickness} = this.props
-    const {isWrapperRotated, scalePathStep} = this.state
-    const style: React.CSSProperties = {
-      color: colors.BOB_BLUE,
-      height: size,
-      marginLeft: 'auto',
-      marginRight: 'auto',
-      position: 'relative',
-      width: size,
-      ...this.props.style,
-    }
-    const color = style.color
-    const wrapperStyle: React.CSSProperties = {
-      display: 'inline-block',
-      height: size,
-      transform: `rotate(${isWrapperRotated ? '1800' : '0'}deg)`,
-      transition: `all ${isWrapperRotated ? '10' : '0'}s linear`,
-      width: size,
-    }
-    const getArcLength = (fraction: number): number => fraction * Math.PI * (size - thickness)
-    let strokeDasharray, strokeDashoffset, transitionDuration
-    if (scalePathStep === 0) {
-      strokeDasharray = `${getArcLength(0)}, ${getArcLength(1)}`
-      strokeDashoffset = 0
-      transitionDuration = '0'
-    } else if (scalePathStep === 1) {
-      strokeDasharray = `${getArcLength(0.7)}, ${getArcLength(1)}`
-      strokeDashoffset = getArcLength(-0.3)
-      transitionDuration = periodMilliseconds * .4
-    } else {
-      strokeDasharray = `${getArcLength(0.7)}, ${getArcLength(1)}`
-      strokeDashoffset = getArcLength(-1)
-      transitionDuration = periodMilliseconds * .4857
-    }
-    const pathStyle: React.CSSProperties = {
-      stroke: color,
-      strokeDasharray,
-      strokeDashoffset,
-      strokeLinecap: 'round',
-      transition: `all ${transitionDuration}ms ease-in-out`,
-    }
-
-    return <div style={style}>
-      <div style={wrapperStyle}>
-        <svg viewBox={`0 0 ${size} ${size}`}>
-          <circle
-            style={pathStyle}
-            cx={size / 2} cy={size / 2}
-            r={(size - thickness) / 2}
-            strokeWidth={thickness}
-            strokeMiterlimit="20" fill="none" />
-        </svg>
-      </div>
+  return <div style={containerStyle}>
+    <div style={wrapperStyle}>
+      <svg viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          style={pathStyle}
+          cx={size / 2} cy={size / 2}
+          r={(size - thickness) / 2}
+          strokeWidth={thickness}
+          strokeMiterlimit="20" fill="none" />
+      </svg>
     </div>
-  }
+  </div>
 }
+CircularProgressBase.propTypes = {
+  periodMilliseconds: PropTypes.number,
+  size: PropTypes.number,
+  style: PropTypes.object,
+  thickness: PropTypes.number,
+}
+const CircularProgress = React.memo(CircularProgressBase)
 
 
 interface MultiSizeImageDef {
@@ -687,251 +603,192 @@ JobGroupCoverImageBase.propTypes = {
 const JobGroupCoverImage = React.memo(JobGroupCoverImageBase)
 
 
-interface RadioButtonProps {
+interface WrappedInputProps {
   isDisabled?: boolean
   isHovered?: boolean
-  isSelected?: boolean
   onBlur?: () => void
   onClick?: (event?: React.SyntheticEvent<HTMLDivElement>) => void
   onFocus?: () => void
-  style?: React.CSSProperties
+  onKeyPress?: (event?: React.KeyboardEvent<HTMLDivElement>) => void
+  tabIndex?: number
 }
 
 
-class RadioButton extends React.PureComponent<RadioButtonProps, {isFocused: boolean}> {
-  public static propTypes = {
-    isDisabled: PropTypes.bool,
-    isHovered: PropTypes.bool,
-    isSelected: PropTypes.bool,
-    onBlur: PropTypes.func,
-    onClick: PropTypes.func,
-    onFocus: PropTypes.func,
-    style: PropTypes.object,
-  }
+interface WrappedInputInnerProps extends Omit<WrappedInputProps, 'isDisabled'|'isHovered'> {
+  isHighlighted: boolean
+}
 
-  public state = {
-    isFocused: false,
-  }
 
-  private dom: React.RefObject<HTMLDivElement> = React.createRef()
+function useWrappedInput(props: WrappedInputProps): WrappedInputInnerProps {
+  const {
+    isDisabled,
+    isHovered,
+    onBlur,
+    onClick,
+    onFocus,
+    onKeyPress,
+    tabIndex = 0,
+  } = props
+  const [isFocused, setIsFocused] = useState(false)
 
-  private handleFocused = _memoize((isFocused): (() => void) => (): void => {
-    const {onBlur, onFocus} = this.props
-    this.setState({isFocused})
-    if (isFocused) {
-      onFocus?.()
+  const handleBlur = useCallback((): void => {
+    setIsFocused(false)
+    onBlur?.()
+  }, [onBlur])
+
+  const handleFocus = useCallback((): void => {
+    setIsFocused(true)
+    onFocus?.()
+  }, [onFocus])
+
+  const handleClick = useCallback((event?: React.SyntheticEvent<HTMLDivElement>): void => {
+    handleFocus()
+    onClick?.(event)
+  }, [handleFocus, onClick])
+
+  const handleKeyPress = useCallback((event?: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (onClick) {
+      onClick(event)
     } else {
-      onBlur?.()
+      onKeyPress?.(event)
     }
-  })
+  }, [onClick, onKeyPress])
 
-  private handleClick = (event?: React.SyntheticEvent<HTMLDivElement>): void => {
-    this.focus()
-    const {isDisabled, onClick} = this.props
-    !isDisabled && onClick?.(event)
-  }
-
-  public focus(): void {
-    this.dom.current?.focus()
-  }
-
-  public render(): React.ReactNode {
-    const {isDisabled, isHovered, isSelected, onClick: unsafeOnClick, style} = this.props
-    const onClick = isDisabled ? undefined : unsafeOnClick
-    const {isFocused} = this.state
-    const isHighlighted = !isDisabled && (isHovered || isFocused)
-    const outerCircleStyle: React.CSSProperties = {
-      backgroundColor: '#fff',
-      borderColor: isHighlighted ? colors.COOL_GREY : colors.PINKISH_GREY,
-      borderRadius: '50%',
-      borderStyle: 'solid',
-      borderWidth: 1,
-      ...onClick && {cursor: 'pointer'},
-      height: 20,
-      position: 'absolute',
-      width: 20,
-    }
-    const innerCircleStyle: React.CSSProperties = {
-      backgroundColor: colors.BOB_BLUE,
-      borderRadius: '50%',
-      height: 10,
-      left: 4,
-      position: 'absolute',
-      top: 4,
-      width: 10,
-    }
-    const containerStyle: React.CSSProperties = {
-      display: 'inline-block',
-      height: outerCircleStyle.height,
-      position: 'relative',
-      width: outerCircleStyle.width,
-      ...style,
-    }
-    return <div
-      style={containerStyle} tabIndex={isDisabled ? undefined : 0} ref={this.dom}
-      onFocus={this.handleFocused(true)}
-      onBlur={this.handleFocused(false)}
-      onClick={this.handleClick}
-      onKeyPress={isFocused ? onClick : undefined}>
-      <div style={outerCircleStyle}>
-        {isSelected ? <div style={innerCircleStyle} /> : null}
-      </div>
-    </div>
+  return {
+    isHighlighted: !isDisabled && (isHovered || isFocused),
+    onBlur: handleBlur,
+    onClick: isDisabled ? undefined : handleClick,
+    onFocus: handleFocus,
+    onKeyPress: isDisabled ? undefined : handleKeyPress,
+    tabIndex: isDisabled ? undefined : tabIndex,
   }
 }
 
 
-interface CheckboxProps {
-  isDisabled?: boolean
-  isHovered?: boolean
+interface WrappedInputConfig extends WrappedInputProps {
   isSelected?: boolean
-  onClick?: () => void
   size?: number
   style?: React.CSSProperties
 }
 
 
-class Checkbox extends React.PureComponent<CheckboxProps, {isFocused: boolean}> {
-  public static propTypes = {
-    isDisabled: PropTypes.bool,
-    isHovered: PropTypes.bool,
-    isSelected: PropTypes.bool,
-    onClick: PropTypes.func,
-    size: PropTypes.number.isRequired,
-    style: PropTypes.object,
+const RadioButtonBase =
+(props: WrappedInputConfig, ref: React.Ref<HTMLDivElement>): React.ReactElement => {
+  const {isSelected, size = 20, style} = props
+  const {isHighlighted, ...otherProps} = useWrappedInput(props)
+  const {onClick} = otherProps
+
+  const outerCircleStyle: React.CSSProperties = {
+    backgroundColor: '#fff',
+    borderColor: isHighlighted ? colors.COOL_GREY : colors.PINKISH_GREY,
+    borderRadius: '50%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    ...onClick && {cursor: 'pointer'},
+    height: size,
+    position: 'absolute',
+    width: size,
   }
-
-  public static defaultProps = {
-    size: 20,
+  const innerCircleStyle: React.CSSProperties = {
+    backgroundColor: colors.BOB_BLUE,
+    borderRadius: '50%',
+    height: size / 2,
+    left: size / 4 - 1,
+    position: 'absolute',
+    top: size / 4 - 1,
+    width: size / 2,
   }
-
-  public state = {
-    isFocused: false,
+  const containerStyle: React.CSSProperties = {
+    display: 'inline-block',
+    height: size,
+    position: 'relative',
+    width: size,
+    ...style,
   }
-
-  private dom: React.RefObject<HTMLDivElement> = React.createRef()
-
-  private handleFocused = _memoize((isFocused): (() => void) =>
-    (): void => this.setState({isFocused}))
-
-  public focus(): void {
-    this.dom.current?.focus()
-  }
-
-  public render(): React.ReactNode {
-    const {isDisabled, isHovered, isSelected, onClick: unsafeOnClick, size, style} = this.props
-    const onClick = isDisabled ? undefined : unsafeOnClick
-    const {isFocused} = this.state
-    const isHighlighted = !isDisabled && (isHovered || isFocused)
-    const outerBoxStyle: React.CSSProperties = {
-      alignItems: 'center',
-      backgroundColor: isSelected ? colors.BOB_BLUE : '#fff',
-      borderColor: isSelected ? colors.BOB_BLUE : (
-        isHighlighted ? colors.COOL_GREY : colors.PINKISH_GREY
-      ),
-      borderRadius: 4,
-      borderStyle: 'solid',
-      borderWidth: 1,
-      color: '#fff',
-      ...onClick && {cursor: 'pointer'},
-      display: 'flex',
-      fontSize: 16,
-      height: size,
-      justifyContent: 'center',
-      position: 'absolute',
-      width: size,
-    }
-    const containerStyle: React.CSSProperties = {
-      display: 'inline-block',
-      height: outerBoxStyle.height,
-      position: 'relative',
-      width: outerBoxStyle.width,
-      ...style,
-    }
-    return <div
-      style={containerStyle} tabIndex={isDisabled ? undefined : 0} ref={this.dom}
-      onFocus={this.handleFocused(true)}
-      onBlur={this.handleFocused(false)}
-      onClick={onClick}
-      onKeyPress={isFocused ? onClick : undefined}>
-      <div style={outerBoxStyle}>
-        {isSelected ? <CheckIcon style={{fill: '#fff', width: 16}} /> : null}
-      </div>
+  return <div style={containerStyle} ref={ref} {...otherProps}>
+    <div style={outerCircleStyle}>
+      {isSelected ? <div style={innerCircleStyle} /> : null}
     </div>
+  </div>
+}
+const RadioButton = React.memo(React.forwardRef(RadioButtonBase))
+
+
+
+const CheckboxBase =
+(props: WrappedInputConfig, ref: React.Ref<HTMLDivElement>): React.ReactElement => {
+  const {isSelected, size = 20, style} = props
+  const {isHighlighted, ...otherProps} = useWrappedInput(props)
+  const {onClick} = otherProps
+
+  const outerBoxStyle: React.CSSProperties = {
+    alignItems: 'center',
+    backgroundColor: isSelected ? colors.BOB_BLUE : '#fff',
+    borderColor: isSelected ? colors.BOB_BLUE : (
+      isHighlighted ? colors.COOL_GREY : colors.PINKISH_GREY
+    ),
+    borderRadius: 4,
+    borderStyle: 'solid',
+    borderWidth: 1,
+    color: '#fff',
+    ...onClick && {cursor: 'pointer'},
+    display: 'flex',
+    fontSize: 16,
+    height: size,
+    justifyContent: 'center',
+    position: 'absolute',
+    width: size,
   }
+  const containerStyle: React.CSSProperties = {
+    display: 'inline-block',
+    height: outerBoxStyle.height,
+    position: 'relative',
+    width: outerBoxStyle.width,
+    ...style,
+  }
+  return <div style={containerStyle} ref={ref} {...otherProps}>
+    <div style={outerBoxStyle}>
+      {isSelected ? <CheckIcon style={{fill: '#fff', width: 16}} /> : null}
+    </div>
+  </div>
 }
+const Checkbox = React.memo(React.forwardRef(CheckboxBase))
 
-
-interface SwipeProps {
-  isDisabled?: boolean
-  isHovered?: boolean
-  isSelected?: boolean
-  onClick?: (event?: React.SyntheticEvent<HTMLDivElement>) => void
-  size?: number
-  style?: React.CSSProperties
-}
 
 // TODO(cyrille): Handle actual swipe.
-class SwipeToggle extends React.PureComponent<SwipeProps, {isFocused: boolean}> {
-  public static defaultProps = {
-    size: 20,
-  } as const
+const SwipeToggleBase =
+(props: WrappedInputConfig, ref: React.Ref<HTMLDivElement>): React.ReactElement => {
+  const {isSelected, size = 20, style} = props
+  const {isHighlighted, ...otherProps} = useWrappedInput(props)
+  const {onClick} = otherProps
 
-  public state = {
-    isFocused: false,
+  const containerStyle = {
+    backgroundColor: isSelected ? colors.BOB_BLUE : '#fff',
+    border: `1px solid ${isSelected ?
+      isHighlighted ? colors.DARK_BLUE : colors.BOB_BLUE :
+      isHighlighted ? colors.COOL_GREY : colors.MODAL_PROJECT_GREY}`,
+    borderRadius: size,
+    ...onClick ? {cursor: 'pointer'} : undefined,
+    height: size,
+    width: 1.7 * size,
+    ...SmoothTransitions,
+    ...style,
   }
-
-  private dom: React.RefObject<HTMLDivElement> = React.createRef()
-
-  private handleClick = (event?: React.SyntheticEvent<HTMLDivElement>): void => {
-    this.focus()
-    const {isDisabled, onClick} = this.props
-    !isDisabled && onClick?.(event)
+  const toggleStyle = {
+    backgroundColor: '#fff',
+    border: containerStyle.border,
+    borderRadius: '50%',
+    height: size,
+    marginLeft: (isSelected ? size * .7 : 0) - 1,
+    marginTop: -1,
+    width: size,
+    ...FastTransitions,
   }
-
-  private handleFocused = _memoize((isFocused): (() => void) =>
-    (): void => this.setState({isFocused}))
-
-  public focus(): void {
-    this.dom.current?.focus()
-  }
-
-  public render(): React.ReactNode {
-    const {isDisabled, isHovered, isSelected, onClick: unsafeOnClick, size = 20, style} = this.props
-    const {isFocused} = this.state
-    const isHighlighted = !isDisabled && (isHovered || isFocused)
-    const containerStyle = {
-      backgroundColor: isSelected ? colors.BOB_BLUE : '#fff',
-      border: `1px solid ${isSelected ?
-        isHighlighted ? colors.DARK_BLUE : colors.BOB_BLUE :
-        isHighlighted ? colors.COOL_GREY : colors.MODAL_PROJECT_GREY}`,
-      borderRadius: size,
-      ...(isDisabled || !unsafeOnClick) ? undefined : {cursor: 'pointer'},
-      height: size,
-      width: 1.7 * size,
-      ...SmoothTransitions,
-      ...style,
-    }
-    const toggleStyle = {
-      backgroundColor: '#fff',
-      border: containerStyle.border,
-      borderRadius: '50%',
-      height: size,
-      marginLeft: (isSelected ? size * .7 : 0) - 1,
-      marginTop: -1,
-      width: size,
-      ...FastTransitions,
-    }
-    return <div
-      style={containerStyle} onClick={this.handleClick}
-      tabIndex={isDisabled ? undefined : 0} ref={this.dom}
-      onFocus={this.handleFocused(true)}
-      onBlur={this.handleFocused(false)}
-      onKeyPress={isFocused ? this.handleClick : undefined}>
-      <div style={toggleStyle} />
-    </div>
-  }
+  return <div style={containerStyle} {...otherProps} ref={ref}>
+    <div style={toggleStyle} />
+  </div>
 }
+const SwipeToggle = React.memo(React.forwardRef(SwipeToggleBase))
 
 
 const TOGGLE_INPUTS = {
@@ -941,7 +798,7 @@ const TOGGLE_INPUTS = {
 } as const
 
 
-interface LabeledToggleProps {
+export interface LabeledToggleProps {
   isDisabled?: boolean
   isSelected?: boolean
   label: React.ReactNode
@@ -953,77 +810,62 @@ interface LabeledToggleProps {
 }
 
 
-interface ToggleInputProps {
-  isDisabled?: boolean
-  isHovered?: boolean
-  isSelected?: boolean
-  onBlur?: () => void
-  onClick?: (event?: React.SyntheticEvent<HTMLDivElement>) => void
-  onFocus?: () => void
-  size?: number
-  style?: React.CSSProperties
+interface ToggleInputProps extends WrappedInputConfig {
+  ref: React.Ref<HTMLDivElement>
 }
 
-class LabeledToggle extends React.PureComponent<LabeledToggleProps, {isHovered: boolean}> {
-  public static propTypes = {
-    isDisabled: PropTypes.bool,
-    isSelected: PropTypes.bool,
-    label: PropTypes.node.isRequired,
-    onClick: PropTypes.func,
-    style: PropTypes.object,
-    type: PropTypes.oneOf(Object.keys(TOGGLE_INPUTS)).isRequired,
-  }
+export interface Focusable {
+  focus: () => void
+}
 
-  public state = {
-    isHovered: false,
-  }
+const LabeledToggleBase =
+(props: LabeledToggleProps, ref: React.Ref<Focusable>): React.ReactElement => {
+  const {isDisabled, isSelected, label, onBlur, onClick, onFocus, style, type,
+    ...otherProps} = props
+  const [isHovered, setIsHovered] = useState(false)
 
-  private inputRef: React.RefObject<Checkbox|RadioButton|SwipeToggle> = React.createRef()
+  const onMouseEnter = useCallback((): void => setIsHovered(true), [])
+  const onMouseLeave = useCallback((): void => setIsHovered(false), [])
 
-  private handleHover = _memoize((isHovered): (() => void) =>
-    (): void => this.setState({isHovered}))
+  const toggleRef = useRef<HTMLDivElement>(null)
+  useImperativeHandle(ref, (): Focusable => ({
+    focus: (): void => {
+      toggleRef.current?.focus()
+    },
+  }))
 
-  private handleClick = (event?: React.SyntheticEvent<HTMLDivElement>): void => {
-    const {onClick} = this.props
+  const handleClick = useCallback((event?: React.SyntheticEvent<HTMLDivElement>): void => {
     if (onClick) {
       // Prevent the click to be consumed twice.
       event?.stopPropagation()
     }
-    this.focus()
+    toggleRef.current?.focus()
     onClick?.(event)
-  }
+  }, [onClick])
 
-  public focus(): void {
-    this.inputRef.current?.focus()
+  const containerStyle: React.CSSProperties = {
+    alignItems: 'center',
+    cursor: isDisabled ? 'initial' : 'pointer',
+    display: 'flex',
+    listStyle: 'none',
+    marginBottom: 7,
+    ...style,
   }
-
-  public render(): React.ReactNode {
-    const {isDisabled, isSelected, label, onBlur, onClick: omittedOnClick, onFocus, style, type,
-      ...otherProps} = this.props
-    const {isHovered} = this.state
-    const containerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      cursor: isDisabled ? 'initial' : 'pointer',
-      display: 'flex',
-      listStyle: 'none',
-      marginBottom: 7,
-      ...style,
-    }
-    const ToggleInput: React.ComponentType<ToggleInputProps> = TOGGLE_INPUTS[type]
-    return <div
-      {...otherProps} style={containerStyle}
-      onMouseOver={this.handleHover(true)} onMouseOut={this.handleHover(false)}
-      onClick={isDisabled ? undefined : this.handleClick}>
-      <ToggleInput
-        style={{flex: 'none'}} ref={this.inputRef}
-        onClick={isDisabled ? undefined : this.handleClick}
-        {...{isDisabled, isHovered, isSelected, onBlur, onFocus}} />
-      <span style={{marginLeft: 10}}>
-        {label}
-      </span>
-    </div>
-  }
+  const ToggleInput: React.ComponentType<ToggleInputProps> = TOGGLE_INPUTS[type]
+  return <div
+    {...otherProps} style={containerStyle}
+    onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}
+    onClick={isDisabled ? undefined : handleClick}>
+    <ToggleInput
+      style={{flex: 'none'}} ref={toggleRef}
+      onClick={isDisabled ? undefined : handleClick}
+      {...{isDisabled, isHovered, isSelected, onBlur, onFocus}} />
+    <span style={{marginLeft: 10}}>
+      {label}
+    </span>
+  </div>
 }
+const LabeledToggle = React.memo(React.forwardRef(LabeledToggleBase))
 
 
 interface UpDownIconProps extends MdiReactIconProps {
@@ -1057,63 +899,38 @@ interface IconInputProps extends InputProps {
   iconComponent: React.ComponentType<MdiReactIconProps>
   iconStyle?: React.CSSProperties
   inputStyle?: React.CSSProperties
-  shouldFocusOnMount?: boolean
 }
 
 
-class IconInput extends React.PureComponent<IconInputProps> {
-  public static propTypes = {
-    iconComponent: PropTypes.object.isRequired,
-    iconStyle: PropTypes.object,
-    inputStyle: PropTypes.object,
-    shouldFocusOnMount: PropTypes.bool,
-    style: PropTypes.object,
+const IconInputBase = (props: IconInputProps, ref: React.Ref<Inputable>): React.ReactElement => {
+  const {iconComponent, iconStyle, inputStyle, style, ...otherProps} = props
+  const iconContainer: React.CSSProperties = {
+    alignItems: 'center',
+    backgroundColor: 'white',
+    bottom: 0,
+    color: colors.PINKISH_GREY,
+    cursor: 'text',
+    display: 'flex',
+    fontSize: 20,
+    margin: 1,
+    paddingLeft: 5,
+    paddingRight: 5,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   }
-
-  public componentDidMount(): void {
-    const {shouldFocusOnMount} = this.props
-    if (shouldFocusOnMount && !isMobileVersion) {
-      this.focus()
-    }
-  }
-
-  private input: React.RefObject<Input> = React.createRef()
-
-  public focus = (): void => {
-    this.input.current?.focus()
-  }
-
-  public render(): React.ReactNode {
-    const {iconComponent, iconStyle, inputStyle, style,
-      shouldFocusOnMount: omittedShouldFocusOnMount,
-      ...otherProps} = this.props
-    const iconContainer: React.CSSProperties = {
-      alignItems: 'center',
-      backgroundColor: 'white',
-      bottom: 0,
-      color: colors.PINKISH_GREY,
-      cursor: 'text',
-      display: 'flex',
-      fontSize: 20,
-      margin: 1,
-      paddingLeft: 5,
-      paddingRight: 5,
-      position: 'absolute',
-      right: 0,
-      top: 0,
-    }
-    const Icon = iconComponent
-    return <div style={{position: 'relative', ...style}}>
-      <Input
-        {...otherProps}
-        ref={this.input}
-        style={inputStyle} />
-      <div style={iconContainer} onClick={this.focus}>
-        <Icon style={iconStyle} />
-      </div>
+  const Icon = iconComponent
+  return <div style={{position: 'relative', ...style}}>
+    <Input
+      {...otherProps}
+      ref={ref}
+      style={inputStyle} />
+    <div style={iconContainer} onClick={focus}>
+      <Icon style={iconStyle} />
     </div>
-  }
+  </div>
 }
+const IconInput = React.memo(React.forwardRef(IconInputBase))
 
 
 interface WithNoteProps {
@@ -1159,128 +976,106 @@ export interface InputProps
   extends Pick<HTMLInputElementProps, Exclude<keyof HTMLInputElementProps, 'onChange' | 'ref'>> {
   applyFunc?: (inputValue: string) => string
   onChange?: (inputValue: string) => void
+  // If this is set to a non-zero value, the components will wait the given amount of time before
+  // calling onChange, to avoid calling it for each key pressed. It also calls it on blur events
+  // and at unmount.
   onChangeDelayMillisecs?: number
+  // If onChangeDelayMillisecs is set, this is called everytime the editable value changes,
+  // without waiting for any delay.
   onEdit?: (inputValue: string) => void
+  shouldFocusOnMount?: boolean
   value?: string
 }
 
 
-interface InputState {
-  lastChangedValue?: string
-  propValue?: string
-  value?: string
-}
+const InputBase = (props: InputProps, ref: React.Ref<Inputable>): React.ReactElement => {
+  const {applyFunc, onBlur, onChange, onChangeDelayMillisecs, onEdit, shouldFocusOnMount, style,
+    value: propValue, ...otherProps} = props
+  const dom = useRef<HTMLInputElement>(null)
+  useImperativeHandle(ref, (): Inputable => ({
+    blur: (): void => dom.current?.blur(),
+    focus: (): void => dom.current?.focus(),
+    select: (): void => dom.current?.select(),
+  }))
 
+  // TODO(cyrille): Check behaviour when isDelayed changes.
+  const isDelayed = !!onChangeDelayMillisecs
 
-class Input extends React.PureComponent<InputProps, InputState> {
-  public static propTypes = {
-    applyFunc: PropTypes.func,
-    onBlur: PropTypes.func,
-    onChange: PropTypes.func,
-    // If this is set to a non-zero value, the components will wait the given amount of time before
-    // calling onChange, to avoid calling it for each key pressed. It also calls it on blur events
-    // and at unmount.
-    onChangeDelayMillisecs: PropTypes.number,
-    // If onChangeDelayMillisecs is set, this is called everytime the editable value changes,
-    // without waiting for any delay.
-    onEdit: PropTypes.func,
-    style: PropTypes.object,
-    value: PropTypes.string,
-  }
+  const [lastChangedValue, setLastChangedValue] = useState(propValue || '')
+  const [stateValue, setStateValue] = useState(propValue || '')
 
-  public state: InputState = {
-    lastChangedValue: this.props.value,
-  }
-
-  public static getDerivedStateFromProps(
-    {value}: InputProps, {propValue}: InputState): InputState|null {
-    if (propValue !== value) {
-      return {propValue: value, value}
-    }
-    return null
-  }
-
-  // TODO(cyrille): Check behaviour when onChangeDelayMillisecs changes.
-  public componentDidUpdate(prevProps: InputProps, {value: prevValue}: InputState): void {
-    const {onChange, onChangeDelayMillisecs} = this.props
-    const {lastChangedValue, value} = this.state
-    // Nothing to do if the update is not related to a change in state value.
-    if (value === prevValue) {
+  useEffect((): void => {
+    if (!isDelayed) {
       return
     }
-    // Nothing to do if onChange doesn't exist or has already been called by handleChange.
-    if (!onChangeDelayMillisecs || !onChange) {
+    setStateValue(propValue || '')
+    setLastChangedValue(propValue || '')
+  }, [isDelayed, propValue])
+
+  useEffect((): void => {
+    if (shouldFocusOnMount && !isMobileVersion) {
+      dom.current?.focus()
+    }
+  }, [shouldFocusOnMount])
+
+  const submitDelayedChange = useCallback((isFinal: boolean): void => {
+    if (!isDelayed || stateValue === lastChangedValue) {
       return
     }
-    clearTimeout(this.timeout)
-    if (value !== lastChangedValue) {
-      this.timeout = window.setTimeout(
-        (): void => this.onChange(value || ''), onChangeDelayMillisecs)
+    onChange?.(stateValue)
+    if (!isFinal) {
+      setLastChangedValue(stateValue)
     }
-  }
+  }, [isDelayed, lastChangedValue, onChange, stateValue])
 
-  public componentWillUnmount(): void {
-    clearTimeout(this.timeout)
-    this.onChange(this.state.value || '', true)
-  }
+  // We use a ref to keep the latest value of submitDelayedChange as we want the last version of it
+  // when we unmount while not running it each time it's modified.
+  const submitDelayedChangeRef = useRef(submitDelayedChange)
+  useEffect((): void => {
+    submitDelayedChangeRef.current = submitDelayedChange
+  }, [submitDelayedChange])
 
-  private dom: React.RefObject<HTMLInputElement> = React.createRef()
+  // Submit delayed change on unmount.
+  useEffect(() => (): void => submitDelayedChangeRef.current?.(true), [])
 
-  private timeout: number|undefined
-
-  private onChange = (value: string, isLastSave?: boolean): void => {
-    const {onChange} = this.props
-    if (this.state.lastChangedValue === value) {
-      return
+  // Submit delayed change after a delay except if the stateValue changes again.
+  useEffect((): (() => void) => {
+    if (!isDelayed) {
+      return (): void => void 0
     }
-    onChange?.(value)
-    !isLastSave && this.setState({lastChangedValue: value})
-  }
+    const timeout = window.setTimeout(
+      (): void => submitDelayedChangeRef.current?.(false),
+      onChangeDelayMillisecs,
+    )
+    return (): void => clearTimeout(timeout)
+  }, [stateValue, isDelayed, onChangeDelayMillisecs])
 
-  private handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>): void => {
     event.stopPropagation()
-    const {applyFunc, onChange, onEdit, onChangeDelayMillisecs} = this.props
     const value = applyFunc ? applyFunc(event.target.value) : event.target.value
-    this.setState({value})
-    onChangeDelayMillisecs ? onEdit?.(value) : onChange?.(value)
-  }
-
-  private handleBlur = (event: React.FocusEvent<HTMLInputElement>): void => {
-    const {onBlur, onChange, onChangeDelayMillisecs} = this.props
-    if (onChangeDelayMillisecs && onChange) {
-      clearTimeout(this.timeout)
-      this.onChange(this.state.value || '')
+    if (isDelayed) {
+      setStateValue(value)
+      onEdit?.(value)
+    } else {
+      onChange?.(value)
     }
+  }, [applyFunc, onChange, onEdit, isDelayed])
+
+  const handleBlur = useCallback((event: React.FocusEvent<HTMLInputElement>): void => {
+    submitDelayedChange(false)
     onBlur?.(event)
-  }
+  }, [onBlur, submitDelayedChange])
 
-  public blur(): void {
-    this.dom.current?.blur()
+  const inputValue = isDelayed ? stateValue : propValue
+  const inputStyle = {
+    ...Styles.INPUT,
+    ...style,
   }
-
-  public focus(): void {
-    this.dom.current?.focus()
-  }
-
-  public select(): void {
-    this.dom.current?.select()
-  }
-
-  public render(): React.ReactNode {
-    const {onChangeDelayMillisecs, style, value,
-      applyFunc: omittedApplyFunc, onBlur: omittedOnBlur,
-      onChange: omittedOnChange, onEdit: omittedOnEdit,
-      ...otherProps} = this.props
-    const inputValue = onChangeDelayMillisecs ? this.state.value : value
-    const inputStyle = {
-      ...Styles.INPUT,
-      ...style,
-    }
-    return <input
-      {...otherProps} style={inputStyle} onChange={this.handleChange}
-      value={inputValue} onBlur={this.handleBlur} ref={this.dom} />
-  }
+  return <input
+    {...otherProps} style={inputStyle} onChange={handleChange}
+    value={inputValue} onBlur={handleBlur} ref={dom} />
 }
+const Input = React.memo(React.forwardRef(InputBase))
 
 
 interface PieChartProps {
@@ -1345,10 +1140,10 @@ const PieChartBase = (props: PieChartProps): React.ReactElement => {
 PieChartBase.propTypes = {
   backgroundColor: PropTypes.string,
   children: PropTypes.node,
-  durationMillisec: PropTypes.number.isRequired,
+  durationMillisec: PropTypes.number,
   percentage: PropTypes.number.isRequired,
-  radius: PropTypes.number.isRequired,
-  strokeWidth: PropTypes.number.isRequired,
+  radius: PropTypes.number,
+  strokeWidth: PropTypes.number,
   style: PropTypes.object,
 }
 const PieChart = React.memo(PieChartBase)
@@ -1515,9 +1310,21 @@ interface StringJoinerProps {
 }
 
 
+const extractSeparator = _memoize((listString: string): readonly [string, string] => {
+  const parts = listString.split(/<\d><\/\d>/)
+  if (parts.length !== 4) {
+    Sentry.captureMessage?.(`Separators could not be identified in: ${listString}.`)
+    return [', ', ' ou ']
+  }
+  return parts.slice(1, 2) as [string, string]
+})
+
+
 const StringJoinerBase = (props: StringJoinerProps): React.ReactElement => {
-  // TODO(pascal): Translate those separators.
-  const {children, lastSeparator = ' ou ', separator = ', '} = props
+  const {t} = useTranslation()
+  const [defaultSeparator, defaultLastSeparator] =
+    extractSeparator(t('<0></0>, <1></1> ou <2></2>'))
+  const {children, lastSeparator = defaultLastSeparator, separator = defaultSeparator} = props
   const parts: React.ReactNode[] = []
   const numChildren = React.Children.count(children)
   React.Children.forEach(children, (child: React.ReactElement|string, index: number): void => {
@@ -1545,36 +1352,32 @@ interface OutsideClickHandlerProps extends React.HTMLProps<HTMLDivElement> {
 // A component to handle when mouse is clicked outside its children.
 // All clicks on children won't be handled. All clicks outside will trigger onOutsideClick. You can
 // also add other props such as style.
-class OutsideClickHandler extends React.PureComponent<OutsideClickHandlerProps> {
-  public static propTypes = {
-    children: PropTypes.element.isRequired,
-    onOutsideClick: PropTypes.func.isRequired,
-  }
+const OutsideClickHandlerBase = (props: OutsideClickHandlerProps): React.ReactElement => {
+  const {children, onOutsideClick, ...extraProps} = props
 
-  public componentDidMount(): void {
-    document.addEventListener('mousedown', this.handleClickOutside)
-  }
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
-  public componentWillUnmount(): void {
-    document.removeEventListener('mousedown', this.handleClickOutside)
-  }
-
-  private wrapperRef: React.RefObject<HTMLDivElement> = React.createRef()
-
-  private handleClickOutside = (event: MouseEvent): void => {
-    if (event.target && this.wrapperRef.current?.contains(event.target as Node)) {
+  const handleClickOutside = useCallback((event: MouseEvent): void => {
+    if (event.target && wrapperRef.current?.contains(event.target as Node)) {
       return
     }
-    this.props.onOutsideClick()
-  }
+    onOutsideClick?.()
+  }, [onOutsideClick])
 
-  public render(): React.ReactNode {
-    const {children, onOutsideClick: omittedOnOutsideClick, ...extraProps} = this.props
-    return <div ref={this.wrapperRef} {...extraProps}>
-      {children}
-    </div>
-  }
+  useEffect((): (() => void) => {
+    document.addEventListener('mousedown', handleClickOutside)
+    return (): void => document.removeEventListener('mousedown', handleClickOutside)
+  }, [handleClickOutside])
+
+  return <div ref={wrapperRef} {...extraProps}>
+    {children}
+  </div>
 }
+OutsideClickHandlerBase.propTypes = {
+  children: PropTypes.element.isRequired,
+  onOutsideClick: PropTypes.func.isRequired,
+}
+const OutsideClickHandler = React.memo(OutsideClickHandlerBase)
 
 
 interface PercentBarProps {
@@ -1635,7 +1438,7 @@ interface CarouselArrowProps {
 }
 
 
-// TODO(marielaure): Find a way to refactor carousels. There are too many custom ones.
+// TODO(sil): Find a way to refactor carousels. There are too many custom ones.
 const CarouselArrowBase = (props: CarouselArrowProps): React.ReactElement => {
   const {chevronSize, handleClick, isLeft, isVisible, style} = props
   const chevronContainerStyle = useMemo((): React.CSSProperties => ({
@@ -1676,32 +1479,31 @@ interface TextareaProps
 }
 
 
-class Textarea extends React.PureComponent<TextareaProps> {
-  public static propTypes = {
-    onChange: PropTypes.func,
-  }
-
-  private dom: React.RefObject<HTMLTextAreaElement> = React.createRef()
-
-  private handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
-    event.stopPropagation()
-    const {onChange} = this.props
-    onChange?.(event.target.value || '')
-  }
-
-  public focus(): void {
-    this.dom.current?.focus()
-  }
-
-  public select(): void {
-    this.dom.current?.select()
-  }
-
-  public render(): React.ReactNode {
-    return <textarea
-      {...this.props} onChange={this.props.onChange && this.handleChange} ref={this.dom} />
-  }
+export interface Inputable {
+  blur: () => void
+  focus: () => void
+  select: () => void
 }
+
+
+const TextareaBase = (props: TextareaProps, ref: React.Ref<Inputable>): React.ReactElement => {
+  const {onChange, ...otherProps} = props
+
+  const dom = useRef<HTMLTextAreaElement>(null)
+  useImperativeHandle(ref, (): Inputable => ({
+    blur: (): void => dom.current?.blur(),
+    focus: (): void => dom.current?.focus(),
+    select: (): void => dom.current?.select(),
+  }))
+
+  const handleChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    event.stopPropagation()
+    onChange?.(event.target.value || '')
+  }, [onChange])
+
+  return <textarea {...otherProps} onChange={onChange && handleChange} ref={dom} />
+}
+const Textarea = React.memo(React.forwardRef(TextareaBase))
 
 
 const ColoredBulletBase = (props: {color: string}): React.ReactElement => {
@@ -1778,44 +1580,38 @@ interface ImgProps
 }
 
 
-class Img extends React.PureComponent<ImgProps, {hasErred?: boolean}> {
-  public static propTypes = {
-    alt: PropTypes.string.isRequired,
-    fallbackSrc: PropTypes.string,
-  }
+const ImgBase = (props: ImgProps): React.ReactElement => {
+  const {alt, fallbackSrc, ...otherProps} = props
+  const [hasErred, setHasErred] = useState(false)
 
-  public state = {
-    hasErred: false,
-  }
+  const imgRef = useRef<HTMLImageElement>(null)
 
-  private imgRef: React.RefObject<HTMLImageElement> = React.createRef()
-
-  private handleError = (): void => {
-    if (!this.state.hasErred && this.imgRef.current) {
-      const src = this.imgRef.current.src
+  const handleError = useCallback((): void => {
+    if (!hasErred && imgRef.current) {
+      const src = imgRef.current.src
       if (!missingImages.has(src)) {
         Sentry.captureMessage?.(`Image source is no longer available: ${src}.`) &&
           missingImages.add(src)
       }
-      const {fallbackSrc} = this.props
       if (fallbackSrc) {
-        this.imgRef.current.src = fallbackSrc
+        imgRef.current.src = fallbackSrc
       }
-      this.setState({hasErred: true})
+      setHasErred(true)
     }
-  }
+  }, [fallbackSrc, hasErred])
 
-  public render(): React.ReactNode {
-    const {alt, fallbackSrc: omittedFallbackSrc, ...otherProps} = this.props
-    return <img {...otherProps} alt={alt} onError={this.handleError} />
-  }
+  return <img ref={imgRef} {...otherProps} alt={alt} onError={handleError} />
 }
+ImgBase.propTypes = {
+  alt: PropTypes.string.isRequired,
+  fallbackSrc: PropTypes.string,
+}
+const Img = React.memo(ImgBase)
 
 
 interface CircleProps {
   color: string
   durationMillisec?: number
-  gaugeRef?: React.RefObject<SVGSVGElement>
   halfAngleDeg?: number
   isAnimated?: boolean
   isCaptionShown?: boolean
@@ -1826,6 +1622,7 @@ interface CircleProps {
   startColor?: string
   strokeWidth?: number
   style?: React.CSSProperties & {
+    margin?: never
     marginBottom?: number
     marginLeft?: number
     marginRight?: number
@@ -1857,7 +1654,6 @@ const BobScoreCircleBase = (props: CircleProps): React.ReactElement => {
   const {
     color,
     durationMillisec = 1000,
-    gaugeRef,
     halfAngleDeg = 60,
     isAnimated = true,
     isCaptionShown = true,
@@ -1938,9 +1734,10 @@ const BobScoreCircleBase = (props: CircleProps): React.ReactElement => {
             durationMillisec={durationMillisec} number={percent} isSteady={true} /> :
           percent
         }%</div> : null}
-      {isCaptionShown ? <div style={bobScoreCaptionStyle}>score d'employabilité</div> : null}
+      {isCaptionShown ?
+        <Trans style={bobScoreCaptionStyle}>score d'employabilité</Trans> : null}
       <svg
-        fill="none" ref={gaugeRef}
+        fill="none"
         viewBox={`${-largeRadius} ${-largeRadius} ${totalWidth} ${totalHeight}`}>
         <g strokeLinecap="round">
           <path
@@ -1975,9 +1772,6 @@ const BobScoreCircleBase = (props: CircleProps): React.ReactElement => {
 BobScoreCircleBase.propTypes = {
   color: PropTypes.string,
   durationMillisec: PropTypes.number,
-  gaugeRef: PropTypes.shape({
-    current: PropTypes.object,
-  }),
   halfAngleDeg: PropTypes.number,
   // TODO(cyrille): Fix the non-animated version.
   isAnimated: PropTypes.bool,
@@ -1993,6 +1787,33 @@ BobScoreCircleBase.propTypes = {
 const BobScoreCircle = React.memo(BobScoreCircleBase)
 
 
+interface ValuedLabeledToggleProps<T> extends Omit<LabeledToggleProps, 'onClick'|'onFocus'> {
+  index: number
+  onClick?: (value: T) => void
+  onFocus?: (index: number) => void
+  value: T
+}
+
+
+const ValuedLabeledToggleBase = <T extends {}>(
+  props: ValuedLabeledToggleProps<T>, ref?: React.Ref<Focusable>): React.ReactElement => {
+  const {index, onClick, onFocus, value, ...otherProps} = props
+  const handleClick = useCallback((): void => {
+    onClick?.(value)
+  }, [onClick, value])
+  const handleFocus = useCallback((): void => {
+    onFocus?.(index)
+  }, [onFocus, index])
+  return <LabeledToggle
+    {...otherProps} ref={ref} onClick={onClick && handleClick} onFocus={onFocus && handleFocus} />
+}
+// TODO(pascal): Remove the type assertion once we understand how
+// https://github.com/Microsoft/TypeScript/issues/9366 should work.
+const ValuedLabeledToggle = React.memo(React.forwardRef(ValuedLabeledToggleBase)) as <T>(
+  props: ValuedLabeledToggleProps<T> & {ref?: React.Ref<Focusable>},
+) => React.ReactElement
+
+
 interface RadioGroupProps<T> {
   childStyle?: React.CSSProperties
   onChange: (value: T) => void
@@ -2005,109 +1826,102 @@ interface RadioGroupProps<T> {
 }
 
 
-interface RadioGroupState {
-  focusIndex: number
-}
+const RadioGroupBase =
+<T extends {}>(props: RadioGroupProps<T>, ref: React.Ref<Focusable>): React.ReactElement => {
+  const {childStyle, onChange, options, style, value} = props
+  const [focusIndex, setFocusIndex] = useState(-1)
 
-
-class RadioGroup<T> extends React.PureComponent<RadioGroupProps<T>, RadioGroupState> {
-  public static propTypes = {
-    childStyle: PropTypes.object,
-    onChange: PropTypes.func.isRequired,
-    options: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.node.isRequired,
-      value: PropTypes.oneOfType([
-        PropTypes.bool,
-        PropTypes.number,
-        PropTypes.string,
-      ]).isRequired,
-    })).isRequired,
-    style: PropTypes.object,
-    value: PropTypes.oneOfType([
-      PropTypes.bool,
-      PropTypes.number,
-      PropTypes.string,
-    ]),
+  const optionsRef = useRef<readonly React.RefObject<Focusable>[] | undefined>()
+  if (!optionsRef.current || optionsRef.current.length !== options.length) {
+    optionsRef.current = new Array(options.length).fill(undefined).
+      map((): React.RefObject<Focusable> => React.createRef())
   }
 
-  public state: RadioGroupState = {
-    focusIndex: -1,
-  }
-
-  private optionsRef?: readonly React.RefObject<LabeledToggle>[]
-
-  private handleChange = _memoize((value: T): (() => void) =>
-    (): void => this.props.onChange(value))
-
-  private handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
-    const {keyCode} = event
-    // Left or Up.
-    if (keyCode === 37 || keyCode === 38) {
-      this.focusOnOther(-1)
+  const focusOn = useCallback((focusIndex: number): void => {
+    if (!optionsRef.current) {
+      return
     }
-    // Right or Down.
-    if (keyCode === 39 || keyCode === 40) {
-      this.focusOnOther(1)
-    }
-  }
+    optionsRef.current?.[focusIndex]?.current?.focus()
+  }, [])
 
-  private getBlurHandler = _memoize((focusIndex: number): (() => void) => (): void => {
-    if (this.state.focusIndex === focusIndex) {
-      this.setState({focusIndex: -1})
-    }
-  })
-
-  private getFocusHandler = _memoize((focusIndex: number): (() => void) =>
-    (): void => this.setState({focusIndex}))
-
-  private focusOnOther(delta: number): void {
-    const {focusIndex} = this.state
+  const focusOnOther = useCallback((delta: number): void => {
     if (focusIndex === -1) {
       return
     }
-    this.focusOn(focusIndex + delta)
-  }
+    focusOn(focusIndex + delta)
+  }, [focusIndex, focusOn])
 
-  private focusOn(focusIndex: number): void {
-    if (!this.optionsRef) {
-      return
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>): void => {
+    const {keyCode} = event
+    // Left or Up.
+    if (keyCode === 37 || keyCode === 38) {
+      focusOnOther(-1)
     }
-    const optionRef = this.optionsRef[focusIndex]?.current
-    if (optionRef) {
-      optionRef.focus()
+    // Right or Down.
+    if (keyCode === 39 || keyCode === 40) {
+      focusOnOther(1)
     }
-  }
+  }, [focusOnOther])
 
-  public focus(): void {
-    if (this.state.focusIndex === -1) {
-      this.focusOn(0)
-    }
-  }
+  const clearFocus = useCallback((): void => setFocusIndex(-1), [])
 
-  public render(): React.ReactNode {
-    const {childStyle, options, style, value} = this.props
-    const containerStyle: React.CSSProperties = {
-      display: 'flex',
-      flexWrap: 'wrap',
-      ...style,
-    }
-    if (!this.optionsRef || this.optionsRef.length !== options.length) {
-      this.optionsRef = new Array(options.length).fill(undefined).
-        map((): React.RefObject<LabeledToggle> => React.createRef())
-    }
-    return <div style={containerStyle} onKeyDown={this.handleKeyDown}>
-      {options.map((option, index): React.ReactNode => {
-        return <LabeledToggle
-          key={option.value + ''} label={option.name} type="radio" style={childStyle}
-          ref={this.optionsRef?.[index]}
-          isSelected={option.value === value}
-          onClick={this.handleChange(option.value)}
-          onFocus={this.getFocusHandler(index)}
-          onBlur={this.getBlurHandler(index)} />
-      })}
-    </div>
+  const focus = useCallback((): void => focusOn(0), [focusOn])
+  useImperativeHandle(ref, (): Focusable => ({focus}))
+
+  const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    ...style,
   }
+  return <div style={containerStyle} onKeyDown={handleKeyDown}>
+    {options.map((option, index): React.ReactNode => {
+      return <ValuedLabeledToggle<T>
+        key={option.value + ''} label={option.name} type="radio" style={childStyle}
+        ref={optionsRef.current?.[index]} value={option.value} index={index}
+        isSelected={option.value === value}
+        onClick={onChange}
+        onFocus={setFocusIndex}
+        onBlur={index === focusIndex ? clearFocus : undefined} />
+    })}
+  </div>
 }
+// TODO(pascal): Remove the type assertion once we understand how
+// https://github.com/Microsoft/TypeScript/issues/9366 should work.
+const RadioGroup = React.memo(React.forwardRef(RadioGroupBase)) as <T>(
+  props: RadioGroupProps<T> & {ref?: React.Ref<Focusable>},
+) => React.ReactElement
+
+
+interface DataSourceConfig {
+  children: React.ReactNode
+  isStarShown?: boolean
+  style?: React.CSSProperties
+}
+
+const DataSourceBase: React.FC<DataSourceConfig> =
+(props: DataSourceConfig): React.ReactElement => {
+  const {children, isStarShown, style} = props
+  const sourceStyle = {
+    color: colors.COOL_GREY,
+    fontSize: 13,
+    fontStyle: 'italic',
+    margin: '15px 0',
+    ...style,
+  }
+  const {t} = useTranslation()
+  return <PaddedOnMobile style={sourceStyle}>
+    {isStarShown ? '*' : ''}{t('Source\u00A0:')} {children}
+  </PaddedOnMobile>
+}
+DataSourceBase.propTypes = {
+  children: PropTypes.node,
+  isStarShown: PropTypes.bool.isRequired,
+  style: PropTypes.object,
+}
+DataSourceBase.defaultProps = {
+  isStarShown: true,
+}
+const DataSource = React.memo(DataSourceBase)
 
 
 export {
@@ -2115,4 +1929,5 @@ export {
   JobGroupCoverImage, PieChart, OutsideClickHandler, GrowingNumber, PaddedOnMobile, AppearingList,
   CircularProgress, StringJoiner, Checkbox, UpDownIcon, chooseImageVersion, MultiSizeImage,
   CarouselArrow, Textarea, ColoredBullet, VideoFrame, Img, BobScoreCircle, RadioGroup, SwipeToggle,
+  DataSource, RadioButton,
 }

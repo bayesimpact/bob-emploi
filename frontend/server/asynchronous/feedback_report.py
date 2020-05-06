@@ -9,7 +9,6 @@ Usage:
 import argparse
 import collections
 import datetime
-import re
 import os
 import sys
 import typing
@@ -62,6 +61,7 @@ def _compute_nps_report(users: Iterable[user_pb2.User], from_date: str, to_date:
 
     # Total number of users that we asked for NPS during that time.
     total_num_users = _USER_DB.user.count_documents({
+        'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         'emailsSent': {'$elemMatch': {
             'campaignId': 'nps',
             # Note that this is not taking the same base, as we are counting
@@ -110,6 +110,7 @@ def _compute_stars_report(users: Iterable[user_pb2.User], from_date: str, to_dat
 
     # Total number of finished projects during that time.
     total_num_projects = _USER_DB.user.count_documents({
+        'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         'projects.diagnostic': {'$exists': True},
         'projects.createdAt': {
             '$gt': from_date,
@@ -237,7 +238,7 @@ def _compute_and_send_report(
     report = _REPORTS[report_id]
 
     selected_users = _USER_DB.user.find(dict(report.mongo_filters, **{
-        'profile.email': {'$not': re.compile(r'@example.com$')},
+        'featuresEnabled.excludeFromAnalytics': {'$ne': True},
         'registeredAt': {'$lt': to_date},
         report.timestamp_field: {
             '$gt': from_date,

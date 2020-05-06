@@ -60,6 +60,10 @@ enum StringFormat {
   // A field whose value is only a partial sentence, and as such should never start with an
   // uppercase letter or end with a punctuation mark.
   PARTIAL_SENTENCE = 5;
+
+  // A field whose value is going to be used as an option in a list, therefore it should start with
+  // an uppercase letter and not end with a punctuation mark.
+  LIST_OPTION = 6;
 }
 
 enum ListFormat {

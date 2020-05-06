@@ -1,6 +1,7 @@
 import _keyBy from 'lodash/keyBy'
 import _mapValues from 'lodash/mapValues'
 import _memoize from 'lodash/memoize'
+import _sortBy from 'lodash/sortBy'
 import _range from 'lodash/range'
 import CheckIcon from 'mdi-react/CheckIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
@@ -12,15 +13,15 @@ import React, {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {genderize, getTranslatedCategories} from 'store/french'
+import {getTranslatedCategories} from 'store/french'
 import {prepareT} from 'store/i18n'
 
 import vaeStats from 'components/advisor/data/vae.json'
-import {DataSource} from 'components/advisor/base'
 import FrenchDepartements from 'components/france_departements'
 import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
-import {Tag, SmoothTransitions, UpDownIcon, colorToAlpha, colorGradient} from 'components/theme'
+import {DataSource, Tag, SmoothTransitions, UpDownIcon, colorToAlpha,
+  colorGradient} from 'components/theme'
 
 
 const emptyArray = [] as const
@@ -41,16 +42,10 @@ const relevanceColors: {[R in bayes.bob.CategoryRelevance]?: string} = {
 }
 
 
-interface ArrowProps {
+interface LineProps {
   style?: React.CSSProperties
+  type: 'arrow' | 'dash'
 }
-
-const arrowLineStyle = {
-  backgroundColor: colors.MODAL_PROJECT_GREY,
-  height: 20,
-  margin: 'auto',
-  width: 2,
-} as const
 
 const arrowEndStyle = {
   borderLeft: '5px solid transparent',
@@ -60,18 +55,24 @@ const arrowEndStyle = {
   width: 4,
 } as const
 
-const ArrowBase = ({style}: ArrowProps): React.ReactElement => {
-  const arrowStyle: React.CSSProperties = useMemo(() => ({
-    marginLeft: 5,
+const WagonLineBase = ({style, type}: LineProps): React.ReactElement => {
+  const isDash = type === 'dash'
+  const containerStyle: React.CSSProperties = {
+    marginLeft: isDash ? 9 : 5,
     position: 'absolute',
     ...style,
-  }), [style])
-
-  return <div style={arrowStyle}>
-    <div style={arrowLineStyle} /><div style={arrowEndStyle} />
+  }
+  const lineStyle: React.CSSProperties = {
+    border: `1px ${isDash ? 'dashed' : 'solid'} ${colors.MODAL_PROJECT_GREY}`,
+    height: isDash ? 30 : 20,
+    margin: 'auto',
+    width: 0,
+  }
+  return <div style={containerStyle}>
+    <div style={lineStyle} />{isDash ? null : <div style={arrowEndStyle} />}
   </div>
 }
-const Arrow = React.memo(ArrowBase)
+const WagonLine = React.memo(WagonLineBase)
 
 interface WagonDetailsProps {
   children: string
@@ -151,14 +152,11 @@ interface CategoryWagonProps extends bayes.bob.DiagnosticCategory {
   hasFirstBlockerTag: boolean
   hasTopBorder: boolean
   isCategoryShown: boolean
-  isLast?: boolean
+  line?: LineProps['type']
   style?: React.CSSProperties
 }
 
-interface WagonMarkerProps {
-  hasArrow?: boolean
-  relevance?: bayes.bob.CategoryRelevance
-}
+type WagonMarkerProps = Pick<CategoryWagonProps, 'line' | 'relevance'>
 
 const wagonMarkerWidth = 20 as const
 
@@ -180,7 +178,7 @@ const wagonMarkerIconStyle = {
   transform: 'translate(-50%, -50%)',
 } as const
 
-const WagonMarker: React.FC<WagonMarkerProps> = ({hasArrow, relevance}):
+const WagonMarkerBase: React.FC<WagonMarkerProps> = ({line, relevance}):
 React.ReactElement => {
   const style = useMemo((): React.CSSProperties => getWagonMarkerStyle(relevance), [relevance])
   return <div><div style={style}>
@@ -188,12 +186,13 @@ React.ReactElement => {
     {relevance === 'RELEVANT_AND_GOOD' ?
       <CheckIcon size={17} style={wagonMarkerIconStyle} /> : null}
   </div>
-  {hasArrow ? <Arrow /> : null}</div>
+  {line ? <WagonLine type={line} /> : null}</div>
 }
-WagonMarker.propTypes = {
-  hasArrow: PropTypes.bool,
+WagonMarkerBase.propTypes = {
+  line: PropTypes.oneOf(['arrow', 'dash']),
   relevance: PropTypes.string,
 }
+const WagonMarker = React.memo(WagonMarkerBase)
 
 const getWagonStyle = (relevance?: bayes.bob.CategoryRelevance, style?: React.CSSProperties):
 React.CSSProperties => ({
@@ -253,17 +252,15 @@ const neutralWagonTitleStyle = {
 } as const
 
 const CategoryWagonBase: React.FC<CategoryWagonProps> = (props): React.ReactElement => {
-  const {areDetailsShownAsHover, areNeutralDetailsShown, categoryId, gender, hasFirstBlockerTag,
-    hasTopBorder, isCategoryShown, isHighlighted, isLast, metricDetails = '', metricDetailsFeminine,
+  const {areDetailsShownAsHover, areNeutralDetailsShown, categoryId, hasFirstBlockerTag,
+    hasTopBorder, isCategoryShown, isHighlighted, line, metricDetails = '',
     metricTitle, relevance, style} = props
   const [isHovered, setIsHovered] = useState(false)
   const handleHover = useCallback((): void => setIsHovered(true), [])
   const handleLeave = useCallback((): void => setIsHovered(false), [])
   const containerStyle =
     useMemo((): React.CSSProperties => getWagonStyle(relevance, style), [relevance, style])
-  const details = genderize(
-    metricDetails, metricDetailsFeminine || metricDetails, metricDetails, gender)
-  const canShowDetails = details &&
+  const canShowDetails = metricDetails &&
     (relevance === 'NEEDS_ATTENTION' || relevance === 'RELEVANT_AND_GOOD' ||
       areNeutralDetailsShown && relevance === 'NEUTRAL_RELEVANCE') &&
     (!areDetailsShownAsHover || isHovered)
@@ -271,7 +268,7 @@ const CategoryWagonBase: React.FC<CategoryWagonProps> = (props): React.ReactElem
   return <li
     onMouseEnter={handleHover} onMouseLeave={handleLeave}
     style={containerStyle} title={isCategoryShown ? categoryId : undefined}>
-    <WagonMarker relevance={relevance} hasArrow={!isLast} />
+    <WagonMarker {...{line, relevance}} />
     <div>
       <div style={relevance === 'NEUTRAL_RELEVANCE' ? neutralWagonTitleStyle : wagonTitleStyle}>
         {metricTitle}
@@ -279,7 +276,7 @@ const CategoryWagonBase: React.FC<CategoryWagonProps> = (props): React.ReactElem
           Frein principal
         </Trans> : null}
       </div>
-      {canShowDetails ? <Details>{details}</Details> : null}
+      {canShowDetails ? <Details>{metricDetails}</Details> : null}
     </div>
     {isHighlighted ? <div style={wagonBackgroundOverlayStyle} /> : null}
     {hasTopBorder ? <div style={wagonTopBorderStyle} /> : null}
@@ -289,14 +286,12 @@ CategoryWagonBase.propTypes = {
   areDetailsShownAsHover: PropTypes.bool,
   areNeutralDetailsShown: PropTypes.bool,
   categoryId: PropTypes.string.isRequired,
-  gender: PropTypes.oneOf(['MASCULINE', 'FEMININE']),
   hasFirstBlockerTag: PropTypes.bool,
   hasTopBorder: PropTypes.bool,
   isCategoryShown: PropTypes.bool,
   isHighlighted: PropTypes.bool,
-  isLast: PropTypes.bool,
+  line: PropTypes.string,
   metricDetails: PropTypes.string,
-  metricDetailsFeminine: PropTypes.string,
   metricTitle: PropTypes.string.isRequired,
   relevance: PropTypes.string.isRequired,
   style: PropTypes.object,
@@ -327,7 +322,7 @@ const CategoriesTrain: React.FC<CategoriesTrainProps> = (props): React.ReactElem
   const {areCategoryIdsShown, areDetailsShownAsHover, areNeutralDetailsShown, categories, gender,
     hasFirstBlockerTag, style} = props
   const {t} = useTranslation()
-  const categoriesData = getTranslatedCategories(t)
+  const categoriesData = getTranslatedCategories(t, gender)
   const shownCategories = useMemo(() =>
     categories.filter(({categoryId, metricTitle, relevance}): boolean =>
       !!(metricTitle || !!(categoryId && categoriesData[categoryId] || {}).metricTitle) &&
@@ -344,9 +339,10 @@ const CategoriesTrain: React.FC<CategoriesTrainProps> = (props): React.ReactElem
         key={category.categoryId}
         isCategoryShown={!!areCategoryIdsShown}
         hasFirstBlockerTag={!!hasFirstBlockerTag && index === firstBlockerIndex}
-        {...{areDetailsShownAsHover, areNeutralDetailsShown, gender}}
+        {...{areDetailsShownAsHover, areNeutralDetailsShown}}
         hasTopBorder={!!index && index !== highlightedIndex && index !== highlightedIndex + 1}
-        isLast={index === shownCategories.length - 1}
+        line={index === shownCategories.length - 1 ? undefined :
+          index < firstBlockerIndex ? 'arrow' : 'dash'}
         style={wagonStyle}
         // TODO(cyrille): Decide whether we want to keep metric content in client or server.
         {...(category.categoryId && categoriesData[category.categoryId])} {...category} />)}
@@ -382,43 +378,43 @@ const colorFromMarketScore = (score: number): string => {
 
 
 // Fixes the scale of market scores to see the importance of small values with a log scale:
-const fixScale = (score: number): number => (.5 + 10 * Math.min(1, Math.log10(score))) / .12
+const fixScale = (score: number): number => score > 0 ?
+  (.5 + 10 * Math.min(1, Math.log10(score))) / .12 : 0
 
 
 interface StressBarProps extends bayes.bob.RelatedLocalJobGroup {
-  children?: React.ReactNode
   color?: string
   isMarketScoreShown?: boolean
+  isTarget?: boolean
   maxBarWidth: number | string
   style?: React.CSSProperties
-  titleStyle?: React.CSSProperties
 }
 
 
 const JobGroupStressBarBase: React.FC<StressBarProps> =
 (props: StressBarProps): React.ReactElement|null => {
   const {
-    children,
     isMarketScoreShown,
+    isTarget,
     jobGroup: {name = ''} = {},
     localStats: {imt: {yearlyAvgOffersPer10Candidates = 0} = {}} = {},
     maxBarWidth,
     mobilityType = '',
     style,
-    titleStyle,
   } = props
+  const {t} = useTranslation()
   const [hasStarted, setHasStarted] = useState(false)
   const width = hasStarted ? `${fixScale(yearlyAvgOffersPer10Candidates)}%` : 1
   const color = colorFromMarketScore(yearlyAvgOffersPer10Candidates)
-  const barStyle = useMemo((): React.CSSProperties => ({
+  const barStyle: React.CSSProperties = {
     backgroundColor: color,
     flex: 'none',
     height: 5,
     position: 'relative',
     width,
     ...SmoothTransitions,
-  }), [color, width])
-  const bulletStyle = useMemo((): React.CSSProperties => ({
+  }
+  const bulletStyle: React.CSSProperties = {
     backgroundColor: barStyle.backgroundColor,
     borderRadius: 10,
     height: 20,
@@ -428,29 +424,37 @@ const JobGroupStressBarBase: React.FC<StressBarProps> =
     transform: 'translateY(-50%)',
     width: 20,
     ...SmoothTransitions,
-  }), [barStyle.backgroundColor])
-  const containerStyle = useMemo((): React.CSSProperties => ({
+  }
+  const containerStyle: React.CSSProperties = {
     alignItems: 'center',
     display: 'flex',
     fontSize: 14,
     ...style,
-  }), [style])
-  if (!yearlyAvgOffersPer10Candidates) {
-    return null
+  }
+  const marketScore = yearlyAvgOffersPer10Candidates > 0 ? '' + yearlyAvgOffersPer10Candidates :
+    yearlyAvgOffersPer10Candidates ? '0' : t('données manquantes')
+  const titleStyle: React.CSSProperties = {
+    color: yearlyAvgOffersPer10Candidates ? 'initial' : colors.COOL_GREY,
+    fontWeight: isTarget ? 'bold' : 'normal',
   }
   return <div
     style={containerStyle}
-    title={isMarketScoreShown ? `10/${yearlyAvgOffersPer10Candidates}` : undefined}>
+    title={isMarketScoreShown ? marketScore : undefined}>
     <VisibilitySensor
       active={!hasStarted} intervalDelay={250}
       partialVisibility={true} onChange={setHasStarted}>
       <div style={{flexShrink: 0, width: maxBarWidth}}>
-        <div style={barStyle}>
+        {yearlyAvgOffersPer10Candidates ? <div style={barStyle}>
           <div style={bulletStyle} />
-        </div>
+        </div> : null}
       </div>
     </VisibilitySensor>
-    <span style={titleStyle}>{name}{mobilityType === 'CLOSE' ? '*' : ''} {children}</span>
+    <span style={titleStyle}>
+      {name}
+      {isTarget ? ` (${t('vous')})` : null}
+      {/* Cannot have both a mobility type and a missing yearlyAvgOffersPer10Candidates. */}
+      {mobilityType === 'CLOSE' ? '*' : yearlyAvgOffersPer10Candidates ? '' : '**'}
+    </span>
   </div>
 }
 const JobGroupStressBar = React.memo(JobGroupStressBarBase)
@@ -467,7 +471,7 @@ interface StressBarsProps {
   maxBarWidth?: number | string
   source?: string
   style?: React.CSSProperties
-  targetJobGroup: bayes.bob.RelatedLocalJobGroup
+  targetJobGroups: readonly bayes.bob.RelatedLocalJobGroup[]
 }
 
 
@@ -484,7 +488,7 @@ const jobGroupStressBarsCaptionStyle: React.CSSProperties = {
 const JobGroupStressBarsBase: React.FC<StressBarsProps> =
 (props: StressBarsProps): React.ReactElement => {
   const {areMarketScoresShown, jobGroups, maxBarWidth = 330, source = `Pôle emploi ${yearForData}`,
-    style, targetJobGroup} = props
+    style, targetJobGroups = []} = props
   const {t} = useTranslation()
   const captionEltStyle = (min: number, max: number): React.CSSProperties => ({
     color: colorFromMarketScore((min + max) / 2),
@@ -492,28 +496,39 @@ const JobGroupStressBarsBase: React.FC<StressBarsProps> =
     position: 'absolute',
     transform: 'translateX(-50%)',
   })
-  const hasAnyCloseJob = jobGroups.some(({mobilityType}): boolean => mobilityType === 'CLOSE')
+  // TODO(cyrille): Maybe do a cleverer merge of related jobs with the same romeId.
+  const allJobGroups = _keyBy(
+    [...jobGroups, ...targetJobGroups].filter(isValidRelatedJobGroup),
+    ({jobGroup: {romeId}}): string => romeId)
+  const targetRomeIds = new Set(targetJobGroups.
+    filter(isValidRelatedJobGroup).
+    map(({jobGroup: {romeId}}) => romeId))
+  const sortedJobGroups = _sortBy(
+    Object.values(allJobGroups),
+    (({localStats: {imt: {yearlyAvgOffersPer10Candidates = 0} = {}} = {}}) =>
+      -yearlyAvgOffersPer10Candidates),
+  )
+  const hasAnyCloseJob = sortedJobGroups.some(({mobilityType}): boolean => mobilityType === 'CLOSE')
+  const hasAnyMissingData = sortedJobGroups.
+    some(({localStats: {imt: {yearlyAvgOffersPer10Candidates = 0} = {}} = {}}) =>
+      !yearlyAvgOffersPer10Candidates)
   return <figure style={style}>
-    {jobGroups.filter(isValidRelatedJobGroup).map((relatedJobGroup, index): React.ReactNode =>
+    {sortedJobGroups.filter(isValidRelatedJobGroup).map((relatedJobGroup, index): React.ReactNode =>
       <JobGroupStressBar
         maxBarWidth={maxBarWidth}
         style={{marginTop: index ? 15 : 0}} key={relatedJobGroup.jobGroup.romeId}
-        isMarketScoreShown={areMarketScoresShown} {...relatedJobGroup} />)}
-    <JobGroupStressBar
-      isMarketScoreShown={areMarketScoresShown} {...targetJobGroup}
-      maxBarWidth={maxBarWidth}
-      style={{marginTop: 15}} titleStyle={{fontWeight: 'bold'}}>
-      ({t('vous')})
-    </JobGroupStressBar>
+        isMarketScoreShown={areMarketScoresShown}
+        isTarget={targetRomeIds.has(relatedJobGroup.jobGroup.romeId)} {...relatedJobGroup} />)}
     <figcaption style={jobGroupStressBarsCaptionStyle}>
       <div style={{position: 'relative', width: maxBarWidth}}>
         <Trans style={captionEltStyle(1, 2)} parent="span">Forte</Trans>
         <Trans style={captionEltStyle(2, 6)} parent="span">Moyenne</Trans>
         <Trans style={captionEltStyle(6, 10)} parent="span">Faible</Trans>
       </div>
-      <span style={{fontStyle: 'italic', visibility: hasAnyCloseJob ? 'initial' : 'hidden'}}>
-        * {t('ne nécessite pas de formation')}
-      </span>
+      <div style={{fontStyle: 'italic'}}>
+        {hasAnyCloseJob ? <div>* {t('ne nécessite pas de formation')}</div> : null}
+        {hasAnyMissingData ? <div>** {t('données manquantes')}</div> : null}
+      </div>
     </figcaption>
     <DataSource style={{margin: '15px 0 0'}} isStarShown={false}>
       {source}
@@ -853,8 +868,8 @@ function getOptionFromInterviewCount(interviewCount: string): string|undefined {
   if (interviewCount in USER_INTERVIEW_COUNT_OPTIONS) {
     return interviewCount
   }
-  if (parseInt(interviewCount) >
-    parseInt(USER_INTERVIEW_COUNT_OPTIONS[lastOptionIndex - 1])) {
+  if (Number.parseInt(interviewCount) >
+    Number.parseInt(USER_INTERVIEW_COUNT_OPTIONS[lastOptionIndex - 1])) {
     return lastOptionName
   }
 }
@@ -927,7 +942,7 @@ const transparentBlue = colorToAlpha(colors.BOB_BLUE, .7)
 const HistogramBarBase: React.FC<HistogramBarProps> =
 (props: HistogramBarProps): React.ReactElement => {
   const {height, isHighlighted, style, subtitle, title} = props
-  // TODO(marielaure): Find a way to explain why a bar is highlighted.
+  // TODO(sil): Find a way to explain why a bar is highlighted.
   const containerStyle = useMemo((): React.CSSProperties => ({
     backgroundColor: isHighlighted ? colors.BOB_BLUE : transparentBlue,
     height,
@@ -1254,7 +1269,7 @@ readonly bayes.bob.PassionLevelCount[]|undefined => {
   return undefined
 }
 
-// TODO(marielaure): Add a legend and find a better title.
+// TODO(sil): Add a legend and find a better title.
 const PassionLevelHistogramBase: React.FC<PassionLevelHistogramProps> =
 (props: PassionLevelHistogramProps): React.ReactElement => {
   const {passionLevel, counts, style} = props

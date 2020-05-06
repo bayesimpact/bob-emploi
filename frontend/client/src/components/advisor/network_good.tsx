@@ -16,7 +16,7 @@ const NetworkGoodCard = (props: CardProps): React.ReactElement => {
     )} />
 }
 NetworkGoodCard.propTypes = {
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(NetworkGoodCard)
 
