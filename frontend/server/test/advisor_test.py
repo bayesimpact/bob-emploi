@@ -417,6 +417,31 @@ class MaybeAdviseTestCase(_BaseTestCase):
         mock_logger.assert_called_once()
         self.assertIn('REDACTED', mock_logger.call_args[0][0] % mock_logger.call_args[0][1:])
 
+    @mock.patch(advisor.scoring.scoring_base.__name__ + '.SCORING_MODELS', new_callable=dict)
+    @mailjetmock.patch()
+    def test_module_has_missing_data(self, mock_scoring_models: Dict[str, Any]) -> None:
+        """A module fails because of missing data."""
+
+        mock_scoring_models['missing-data'] = mock.MagicMock(spec=[
+            'get_advice_override',
+            'score_and_explain'])
+        mock_scoring_models['missing-data'].get_advice_override.return_value = None
+        mock_scoring_models['missing-data'].score_and_explain.side_effect = \
+            advisor.scoring.NotEnoughDataException(
+                'Please, feed me data', fields={'field1', 'field2'}, reasons=['missing-diploma'])
+        self.database.advice_modules.insert_one({
+            'advice_id': 'get-a-diploma',
+            'triggerScoringModel': 'missing-data',
+            'isReadyForProd': True,
+        })
+        project = project_pb2.Project()
+        advisor.maybe_advise(self.user, project, self.database)
+        self.assertEqual(1, len(project.advices), msg=project.advices)
+        advice = project.advices[0]
+        self.assertIn('missing-diploma', advice.explanations)
+        self.assertEqual('get-a-diploma', advice.advice_id)
+        self.assertAlmostEqual(.1, advice.num_stars)
+
     @mock.patch(advisor.logging.__name__ + '.warning')
     def test_timeout_on_scoring(self, mock_warning: mock.MagicMock) -> None:
         """Check that we don't wait scoring models for ever."""

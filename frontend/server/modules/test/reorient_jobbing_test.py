@@ -273,6 +273,56 @@ class ReorientJobbingEndpointTestCase(base_test.ServerTestCase):
             ],
             jobs['reorientJobbingJobs'])
 
+    def _add_undefined_project_modifier(self, user: Dict[str, Any]) -> None:
+        """Modifier to add an undefined project."""
+
+        user['projects'] = user.get('projects', []) + [{
+            'city': {'departementId': '45'},
+        }]
+        user['profile'] = user.get('profile', {})
+        user['profile']['gender'] = 'FEMININE'
+
+    def test_undefined_project(self) -> None:
+        """Basic test with two recommended jobs."""
+
+        user_id, auth_token = self.create_user_with_token(
+            modifiers=[self._add_undefined_project_modifier], advisor=True)
+        user_info = self.get_user_info(user_id, auth_token)
+        project_id = user_info['projects'][0]['projectId']
+
+        self._db.reorient_jobbing.insert_one(
+            {
+                '_id': '45',
+                'departementJobStats':
+                    {
+                        'jobs': [
+                            {
+                                'romeId': 'A1413',
+                                'masculineName': 'Superman',
+                                'feminineName': 'Wonderwoman',
+                                'name': 'Superhero',
+                                'marketScore': 9,
+                            },
+                            {
+                                'romeId': 'A1401',
+                                'feminineName': 'Aide arboricole',
+                                'masculineName': 'Aide arboricole',
+                                'name': 'Aide arboricole',
+                                'marketScore': 4,
+                            },
+                        ],
+                    },
+            }
+        )
+        response = self.app.get(
+            f'/api/advice/reorient-jobbing/{user_id}/{project_id}',
+            headers={'Authorization': 'Bearer ' + auth_token})
+
+        jobs = self.json_from_response(response)
+        self.assertEqual(
+            [{'name': 'Wonderwoman'}],
+            jobs['reorientJobbingJobs'])
+
 
 if __name__ == '__main__':
     unittest.main()

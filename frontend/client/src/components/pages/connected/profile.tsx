@@ -2,16 +2,17 @@ import {TFunction} from 'i18next'
 import _pick from 'lodash/pick'
 import CheckIcon from 'mdi-react/CheckIcon'
 import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useState} from 'react'
-import {WithTranslation, withTranslation} from 'react-i18next'
-import {connect} from 'react-redux'
-import {RouteComponentProps, withRouter} from 'react-router'
+import React, {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
+import {connect, useDispatch} from 'react-redux'
+import {RouteComponentProps} from 'react-router'
 import {Redirect} from 'react-router-dom'
 import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding, displayToasterMessage,
   setUserProfile} from 'store/actions'
 import {onboardingComplete} from 'store/main_selectors'
+import {useSafeDispatch} from 'store/promise'
 import {USER_PROFILE_FIELDS} from 'store/user'
 
 import {Trans} from 'components/i18n'
@@ -22,8 +23,7 @@ import {SmoothTransitions, Styles, colorToAlpha} from 'components/theme'
 import {Routes} from 'components/url'
 
 import {ProfileStepProps} from './profile/step'
-import {getProfileOnboardingStep, gotoNextStep, gotoPreviousStep, hasPreviousStep,
-  onboardingStepCount} from './profile/onboarding'
+import {useProfileOnboarding} from './profile/onboarding'
 import {AccountStep} from './profile/account'
 import {FrustrationsStep} from './profile/frustrations'
 import {GeneralStep} from './profile/general'
@@ -65,8 +65,8 @@ const PAGE_VIEW_STEPS: readonly PageViewStep[] = [
 
 interface PageViewTab {
   fragment: string
-  predicate?: (user: bayes.bob.User) => boolean
-  title: (user: bayes.bob.User, t: TFunction) => string
+  predicate?: (hasAccount: boolean, profile: bayes.bob.UserProfile) => boolean
+  title: (hasAccount: boolean, profile: bayes.bob.UserProfile, t: TFunction) => string
 }
 
 interface UserPageViewTab {
@@ -77,25 +77,24 @@ interface UserPageViewTab {
 const PAGE_VIEW_TABS: readonly PageViewTab[] = [
   {
     fragment: 'compte',
-    title: (unusedUser: bayes.bob.User, t: TFunction): string => t('Profil'),
+    title: (unusedAccount, unusedProfile, t: TFunction): string => t('Profil'),
   },
   {
     fragment: 'securite',
     // TODO(cyrille): Prepare this page for users without an email and/or an account.
-    predicate: ({hasAccount, profile: {email} = {}}: bayes.bob.User): boolean =>
+    predicate: (hasAccount: boolean, {email}: bayes.bob.UserProfile): boolean =>
       !hasAccount || !!email,
-    title: ({hasAccount}: bayes.bob.User, t: TFunction): string => hasAccount ?
-      t('Mot de passe') : t('Créer un compte'),
+    title: (hasAccount: boolean, profile: bayes.bob.UserProfile, t: TFunction): string =>
+      hasAccount ? t('Mot de passe') : t('Créer un compte'),
   },
   {
     fragment: 'notifications',
-    title: (unusedUser: bayes.bob.User, t: TFunction): string => t('Notifications et coaching'),
+    title: (unusedAccount, unusedProfile, t: TFunction): string => t('Notifications et coaching'),
   },
 ]
 
 
-interface OnboardingViewProps extends RouteComponentProps<{}>, WithTranslation {
-  dispatch: DispatchAllActions
+interface OnboardingViewProps {
   featuresEnabled?: bayes.bob.Features
   hasAccount?: boolean
   onProfileSave: (profile: bayes.bob.UserProfile, type: string, isLastProjectStep: boolean) => void
@@ -104,93 +103,80 @@ interface OnboardingViewProps extends RouteComponentProps<{}>, WithTranslation {
 }
 
 
-class OnboardingViewBase extends React.PureComponent<OnboardingViewProps> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    featuresEnabled: PropTypes.object,
-    history: ReactRouterPropTypes.history.isRequired,
-    onProfileSave: PropTypes.func.isRequired,
-    stepName: PropTypes.string.isRequired,
-    t: PropTypes.func.isRequired,
-    userProfile: PropTypes.object.isRequired,
-  }
+const OnboardingViewBase = (props: OnboardingViewProps): React.ReactElement => {
+  const {featuresEnabled, hasAccount, onProfileSave, stepName, userProfile} = props
+  const {t} = useTranslation()
+  const dispatch = useDispatch<DispatchAllActions>()
+  const pageRef = useRef<Scrollable>(null)
 
-  public componentDidUpdate(prevProps: OnboardingViewProps): void {
-    const {stepName} = this.props
-    if (stepName !== prevProps.stepName && this.pageRef.current) {
-      this.pageRef.current.scrollTo(0)
-    }
-  }
+  useEffect((): void => pageRef.current?.scrollTo(0), [stepName])
 
-  private pageRef: React.RefObject<Scrollable> = React.createRef()
+  const {goBack, goNext, step, stepCount} = useProfileOnboarding(stepName)
 
-  private maybeUpdateProfile(stepUpdates?: bayes.bob.UserProfile): void {
-    const {onProfileSave, stepName} = this.props
-    const {isLastProjectStep, type} = getProfileOnboardingStep(stepName) || {}
+  const maybeUpdateProfile = useCallback((stepUpdates?: bayes.bob.UserProfile): void => {
+    const {isLastProjectStep, type} = step || {}
     if (!type) {
       return
     }
     // Filter fields of stepUpdates to keep only the ones that are part of the profile.
     const profileUpdates: bayes.bob.UserProfile = _pick(stepUpdates, USER_PROFILE_FIELDS)
     onProfileSave(profileUpdates, type, !!isLastProjectStep)
-  }
+  }, [onProfileSave, step])
 
-  private handleSubmit = (stepUpdates: bayes.bob.UserProfile): void => {
-    const {dispatch, history, stepName} = this.props
-    this.maybeUpdateProfile(stepUpdates)
-    gotoNextStep(Routes.PROFILE_PAGE, stepName, dispatch, history)
-  }
+  const handleSubmit = useCallback((stepUpdates: bayes.bob.UserProfile): void => {
+    maybeUpdateProfile(stepUpdates)
+    goNext()
+  }, [maybeUpdateProfile, goNext])
 
-  private handleStepBack = (stepUpdates?: bayes.bob.UserProfile): void => {
-    const {history, stepName} = this.props
-    this.maybeUpdateProfile(stepUpdates)
-    gotoPreviousStep(Routes.PROFILE_PAGE, stepName, history)
-  }
+  const handleStepBack = useCallback((stepUpdates?: bayes.bob.UserProfile): void => {
+    maybeUpdateProfile(stepUpdates)
+    goBack?.()
+  }, [goBack, maybeUpdateProfile])
 
-  private handleStepChange = (userDiff: bayes.bob.User): void => {
-    this.props.dispatch(diagnoseOnboarding(userDiff))
-  }
+  const handleStepChange = useCallback((userDiff: bayes.bob.User): void => {
+    dispatch(diagnoseOnboarding(userDiff))
+  }, [dispatch])
 
-  public render(): React.ReactNode {
-    const {featuresEnabled, hasAccount, stepName, t, userProfile} = this.props
-    const {
-      component: StepComponent,
-      stepNumber,
-    } = getProfileOnboardingStep(stepName) || {}
-    if (!StepComponent) {
-      return <Redirect to={Routes.PROFILE_PAGE} />
-    }
-    const canGoBack = hasPreviousStep(Routes.PROFILE_PAGE, stepName)
-    const pageStyle = {
-      backgroundColor: '#fff',
-      display: 'flex',
-    }
-    return <PageWithNavigationBar
-      style={pageStyle}
-      page="profile"
-      onBackClick={isMobileVersion && canGoBack ? this.handleStepBack : undefined}
-      ref={this.pageRef}>
-      <StepComponent
-        onChange={this.handleStepChange}
-        onSubmit={this.handleSubmit}
-        onBack={isMobileVersion || !canGoBack ? undefined : this.handleStepBack}
-        featuresEnabled={featuresEnabled || emptyObject}
-        isShownAsStepsDuringOnboarding={true}
-        stepNumber={stepNumber} totalStepCount={onboardingStepCount}
-        profile={userProfile || emptyObject} hasAccount={hasAccount} t={t} />
-    </PageWithNavigationBar>
+  const {
+    component: StepComponent,
+    stepNumber,
+  } = step || {}
+  if (!StepComponent) {
+    return <Redirect to={Routes.PROFILE_PAGE} />
   }
+  const pageStyle = {
+    backgroundColor: '#fff',
+    display: 'flex',
+  }
+  return <PageWithNavigationBar
+    style={pageStyle}
+    page="profile"
+    onBackClick={isMobileVersion && goBack ? handleStepBack : undefined}
+    ref={pageRef}>
+    <StepComponent
+      onChange={handleStepChange}
+      onSubmit={handleSubmit}
+      onBack={!isMobileVersion && goBack ? handleStepBack : undefined}
+      featuresEnabled={featuresEnabled || emptyObject}
+      isShownAsStepsDuringOnboarding={true}
+      stepNumber={stepNumber} totalStepCount={stepCount}
+      profile={userProfile || emptyObject} hasAccount={hasAccount} t={t} />
+  </PageWithNavigationBar>
 }
-const OnboardingView = withTranslation()(withRouter(OnboardingViewBase))
+OnboardingViewBase.propTypes = {
+  featuresEnabled: PropTypes.object,
+  onProfileSave: PropTypes.func.isRequired,
+  stepName: PropTypes.string.isRequired,
+  userProfile: PropTypes.object.isRequired,
+}
+const OnboardingView = React.memo(OnboardingViewBase)
 
 
-interface PageViewProps extends WithTranslation {
-  dispatch: DispatchAllActions
+interface PageViewProps {
   featuresEnabled: bayes.bob.Features
   hasAccount?: boolean
   onChange: (userProfile: bayes.bob.UserProfile) => void
   stepName?: string
-  tabs: UserPageViewTab[]
   userProfile: bayes.bob.UserProfile
 }
 
@@ -201,16 +187,10 @@ interface SaveState {
 }
 
 
-interface PageViewState {
-  saves: SaveState[]
-  totalSavesCount: number
-}
-
-
 interface TabsProps {
   stepName?: string
   style?: React.CSSProperties
-  tabs: UserPageViewTab[]
+  tabs: readonly UserPageViewTab[]
 }
 const tabStyle = (isSelected: boolean): RadiumCSSProperties => ({
   ':hover': isSelected ? {} : {backgroundColor: colorToAlpha(colors.BOB_BLUE, .1)},
@@ -244,162 +224,186 @@ const TabListBase: React.FC<TabsProps> = (props: TabsProps): React.ReactElement 
 const TabList = React.memo(TabListBase)
 
 
-class PageViewBase extends React.PureComponent<PageViewProps, PageViewState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    featuresEnabled: PropTypes.object,
-    hasAccount: PropTypes.bool,
-    onChange: PropTypes.func.isRequired,
-    stepName: PropTypes.string,
-    t: PropTypes.func.isRequired,
-    userProfile: PropTypes.object.isRequired,
-  }
+interface SaveNotificationProps extends SaveState {
+  index: number
+  onRemove: (rank: number) => void
+}
 
-  public state: PageViewState = {
-    // TODO(cyrille): Move saves management to its own component.
-    saves: [],
-    totalSavesCount: 0,
-  }
 
-  public componentDidUpdate(
-    prevProps: PageViewProps, {totalSavesCount: createdSaveIndex}: PageViewState): void {
-    if (createdSaveIndex !== this.state.totalSavesCount) {
-      this.setActiveSave(createdSaveIndex, true)
-      this.savesTimeout.push(
-        setTimeout((): void => this.setActiveSave(createdSaveIndex, false), 2000))
-    }
-  }
+const checkIconStyle: React.CSSProperties = {
+  alignItems: 'center',
+  backgroundColor: colors.GREENISH_TEAL,
+  borderRadius: '50%',
+  display: 'flex',
+  height: 30,
+  justifyContent: 'center',
+  marginRight: 10,
+  width: 30,
+}
+const getSavedPopUpStyle = (isActive: boolean, index: number): React.CSSProperties => ({
+  alignItems: 'center',
+  backgroundColor: '#fff',
+  borderRadius: 10,
+  boxShadow: '0 11px 13px 0 rgba(0, 0, 0, 0.1)',
+  display: 'flex',
+  padding: '15px 20px',
+  position: 'fixed',
+  right: 0,
+  top: 70,
+  transform: `translate(${isActive ? '-10px' : '120%'}, ${120 * index}%)`,
+  zIndex: 1,
+  ...SmoothTransitions,
+})
 
-  public componentWillUnmount(): void {
-    this.savesTimeout.forEach(clearTimeout)
-  }
 
-  private savesTimeout: (ReturnType<typeof setTimeout>)[] = []
+const SaveNotificationBase = (props: SaveNotificationProps): React.ReactElement => {
+  const {index, isActive, onRemove, rank} = props
+  const handleTransitionHand = useCallback((): void => onRemove(rank), [onRemove, rank])
+  return <div
+    style={getSavedPopUpStyle(isActive, index)}
+    onTransitionEnd={isActive ? undefined : handleTransitionHand}>
+    <div style={checkIconStyle}><CheckIcon size={24} style={{color: '#fff'}} /></div>
+    <Trans parent={null}>Sauvegardé</Trans>
+  </div>
+}
+SaveNotificationBase.propTypes = {
+  index: PropTypes.number.isRequired,
+  isActive: PropTypes.bool.isRequired,
+  onRemove: PropTypes.func.isRequired,
+  rank: PropTypes.number.isRequired,
+}
+const SaveNotification = React.memo(SaveNotificationBase)
 
-  private setActiveSave = (rankToSet: number, setActive: boolean): void => {
-    this.setState(({saves}: PageViewState): Pick<PageViewState, 'saves'> => ({
-      saves: saves.map(({isActive, rank}): SaveState => ({
+
+interface Notifiable {
+  notify: () => void
+}
+
+
+const SaveNotifierBase = (props: {}, ref: React.Ref<Notifiable>): React.ReactElement => {
+  const [saves, setSaves] = useState<readonly SaveState[]>([])
+  const [totalSavesCount, setTotalSavesCount] = useState(0)
+
+  const notify = useCallback((): void => {
+    setSaves((saves): readonly SaveState[] => [...saves, {isActive: false, rank: totalSavesCount}])
+  }, [totalSavesCount])
+
+  useImperativeHandle(ref, (): Notifiable => ({notify}))
+
+  const setActiveSave = useCallback((rankToSet: number, setActive: boolean): void => {
+    setSaves((saves): readonly SaveState[] => saves.map(
+      ({isActive, rank}): SaveState => ({
         isActive: rank === rankToSet ? setActive : isActive,
         rank,
-      })),
-    }))
-  }
+      }),
+    ))
+  }, [])
 
-  private onChange = (userDiff: bayes.bob.User): void => {
-    this.props.dispatch(diagnoseOnboarding(userDiff)).then((): void =>
-      this.setState(({saves, totalSavesCount}: PageViewState): PageViewState => ({
-        saves: [...saves, {isActive: false, rank: totalSavesCount}],
-        totalSavesCount: totalSavesCount + 1,
-      })),
-    )
-  }
+  const removeSave = useCallback((n: number): void => {
+    setSaves((saves): readonly SaveState[] => saves.filter(({rank}): boolean => rank !== n))
+  }, [])
 
-  private getSaveRemover = (n: number): (() => void) => (): void => {
-    this.setState(({saves}: PageViewState): Pick<PageViewState, 'saves'> => ({
-      saves: saves.filter(({rank}): boolean => rank !== n),
-    }))
-  }
+  const savesTimeout = useRef<number[]>([])
 
-  public render(): React.ReactNode {
-    const {featuresEnabled, hasAccount, onChange, stepName, t, tabs, userProfile} = this.props
-    if (isMobileVersion && stepName) {
-      // No tabs on mobile.
-      return <Redirect to={Routes.PROFILE_PAGE} />
+  useEffect((): void => {
+    const lastSave = saves.find(({rank}: SaveState): boolean => rank === totalSavesCount)
+    if (!lastSave || lastSave.isActive) {
+      return
     }
-    const stepsToShow = stepName ?
-      PAGE_VIEW_STEPS.filter(({fragment}): boolean => fragment === stepName) : PAGE_VIEW_STEPS
-    if (!stepsToShow.length) {
-      // We're lost, go back to root page.
-      return <Redirect to={Routes.PROFILE_PAGE} />
-    }
-    const {title} = tabs.find(({fragment}) => fragment === stepName) || {}
-    if (!isMobileVersion && !(stepName && title)) {
-      // We have no tab title to show, go to first tab.
-      const firstTab = tabs[0].fragment
-      return <Redirect to={`${Routes.PROFILE_PAGE}/${firstTab}`} />
-    }
-    const {saves} = this.state
-    const getSavedPopUpStyle = (isActive: boolean, index: number): React.CSSProperties => ({
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      borderRadius: 10,
-      boxShadow: '0 11px 13px 0 rgba(0, 0, 0, 0.1)',
-      display: 'flex',
-      padding: '15px 20px',
-      position: 'fixed',
-      right: 0,
-      top: 70,
-      transform: `translate(${isActive ? '-10px' : '120%'}, ${120 * index}%)`,
-      zIndex: 1,
-      ...SmoothTransitions,
-    })
-    const checkIconStyle: React.CSSProperties = {
-      alignItems: 'center',
-      backgroundColor: colors.GREENISH_TEAL,
-      borderRadius: '50%',
-      display: 'flex',
-      height: 30,
-      justifyContent: 'center',
-      marginRight: 10,
-      width: 30,
-    }
-    const tabStyle = {
-      backgroundColor: '#fff',
-      borderRadius: 10,
-      boxShadow: '0 5px 20px 0 rgba(0, 0, 0, 0.1)',
-      padding: isMobileVersion ? 30 : 40,
-      width: isMobileVersion ? 'initial' : 600,
-    }
-    const stepStyle = {
-      ...isMobileVersion && tabStyle,
-      display: 'block',
-      marginTop: isMobileVersion ? 40 : 0,
-    }
-    const contentStyle = {
-      alignItems: 'flex-start',
-      marginTop: 0,
-      padding: 0,
-    }
-    return <div style={{...Styles.CENTERED_COLUMN, paddingBottom: 100}}>
-      {saves.map(({isActive, rank}, index): React.ReactNode => <div
-        key={rank} style={getSavedPopUpStyle(isActive, index)}
-        onTransitionEnd={isActive ? undefined : this.getSaveRemover(rank)} >
-        <div style={checkIconStyle}><CheckIcon size={24} style={{color: '#fff'}} /></div>
-        <Trans parent={null}>Sauvegardé</Trans>
-      </div>)}
-      <div style={{alignItems: 'flex-start', display: 'flex', margin: '40px 20px 0'}}>
-        {isMobileVersion ? null :
-          <TabList tabs={tabs} stepName={stepName} style={{marginRight: 40, minWidth: 360}} />}
-        <div style={isMobileVersion ? {marginTop: -40} : tabStyle}>
-          {isMobileVersion ? null : <h3 style={{margin: '0 0 30px'}}>{title}</h3>}
-          {stepsToShow.map(({component: StepComponent}, index): React.ReactNode => {
-            return <StepComponent
-              // Override title on desktop.
-              {...isMobileVersion ? {} : {title: ''}}
-              key={index}
-              onSubmit={onChange}
-              onChange={this.onChange}
-              contentStyle={contentStyle}
-              style={stepStyle}
-              // Hide previous button.
-              onPreviousButtonClick={null}
-              isShownAsStepsDuringOnboarding={false}
-              buttonsOverride={<div />}
-              profile={userProfile}
-              featuresEnabled={featuresEnabled} hasAccount={hasAccount} t={t} />
-          })}
-        </div>
+    setTotalSavesCount(totalSavesCount + 1)
+    setActiveSave(totalSavesCount, true)
+    const timeout = window.setTimeout((): void => setActiveSave(totalSavesCount, false), 2000)
+    savesTimeout.current?.push(timeout)
+  }, [saves, setActiveSave, totalSavesCount])
+
+  useEffect((): (() => void) => (): void => {
+    savesTimeout.current?.forEach((timeout: number): void => clearTimeout(timeout))
+  }, [])
+
+  return <React.Fragment>
+    {saves.map((save, index): React.ReactNode => <SaveNotification
+      key={save.rank} index={index} onRemove={removeSave} {...save} />)}
+  </React.Fragment>
+}
+const SaveNotifier = React.memo(React.forwardRef(SaveNotifierBase))
+
+
+const PageViewBase = (props: PageViewProps): React.ReactElement => {
+  const {featuresEnabled, hasAccount = false, onChange, stepName, userProfile} = props
+  const dispatch = useSafeDispatch<DispatchAllActions>()
+  const saveNotifier = useRef<Notifiable>(null)
+  const {t} = useTranslation()
+
+  const tabs = useMemo((): readonly UserPageViewTab[] => PAGE_VIEW_TABS.
+    filter(({predicate}): boolean => !predicate || predicate(hasAccount, userProfile)).
+    map(({fragment, title}) => ({fragment, title: title(hasAccount, userProfile, t)})),
+  [hasAccount, t, userProfile])
+
+  const handleChange = useCallback((userDiff: bayes.bob.User): void => {
+    dispatch(diagnoseOnboarding(userDiff)).then(saveNotifier.current?.notify)
+  }, [dispatch])
+
+  if (isMobileVersion && stepName) {
+    // No tabs on mobile.
+    return <Redirect to={Routes.PROFILE_PAGE} />
+  }
+  const stepsToShow = stepName ?
+    PAGE_VIEW_STEPS.filter(({fragment}): boolean => fragment === stepName) : PAGE_VIEW_STEPS
+  if (!stepsToShow.length) {
+    // We're lost, go back to root page.
+    return <Redirect to={Routes.PROFILE_PAGE} />
+  }
+  const {title} = tabs.find(({fragment}) => fragment === stepName) || {}
+  if (!isMobileVersion && !(stepName && title)) {
+    // We have no tab title to show, go to first tab.
+    const firstTab = tabs[0].fragment
+    return <Redirect to={`${Routes.PROFILE_PAGE}/${firstTab}`} />
+  }
+  const tabStyle = {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    boxShadow: '0 5px 20px 0 rgba(0, 0, 0, 0.1)',
+    padding: isMobileVersion ? 30 : 40,
+    width: isMobileVersion ? 'initial' : 600,
+  }
+  const stepStyle = {
+    ...isMobileVersion && tabStyle,
+    display: 'block',
+    marginTop: isMobileVersion ? 40 : 0,
+  }
+  const contentStyle = {
+    alignItems: 'flex-start',
+    marginTop: 0,
+    padding: 0,
+  }
+  return <div style={{...Styles.CENTERED_COLUMN, paddingBottom: 100}}>
+    <SaveNotifier ref={saveNotifier} />
+    <div style={{alignItems: 'flex-start', display: 'flex', margin: '40px 20px 0'}}>
+      {isMobileVersion ? null :
+        <TabList tabs={tabs} stepName={stepName} style={{marginRight: 40, minWidth: 360}} />}
+      <div style={isMobileVersion ? {marginTop: -40} : tabStyle}>
+        {isMobileVersion ? null : <h3 style={{margin: '0 0 30px'}}>{title}</h3>}
+        {stepsToShow.map(({component: StepComponent}, index): React.ReactNode => {
+          return <StepComponent
+            // Override title on desktop.
+            {...isMobileVersion ? {} : {title: ''}}
+            key={index}
+            onSubmit={onChange}
+            onChange={handleChange}
+            contentStyle={contentStyle}
+            style={stepStyle}
+            // Hide previous button.
+            onPreviousButtonClick={null}
+            isShownAsStepsDuringOnboarding={false}
+            buttonsOverride={<div />}
+            profile={userProfile}
+            featuresEnabled={featuresEnabled} hasAccount={hasAccount} t={t} />
+        })}
       </div>
     </div>
-  }
+  </div>
 }
-const PageView = withTranslation()(connect(
-  ({user}: RootState, {t}: WithTranslation): {tabs: UserPageViewTab[]} => ({
-    tabs: PAGE_VIEW_TABS.
-      filter(({predicate}): boolean => !predicate || predicate(user)).
-      map(({fragment, title}) => ({fragment, title: title(user, t)})),
-  }),
-)(PageViewBase))
+const PageView = React.memo(PageViewBase)
 
 
 interface ProfilePageConnectedProps {
@@ -443,12 +447,10 @@ const ProfilePageBase: React.FC<ProfilePageProps> = (props): React.ReactElement 
     </PageWithNavigationBar>
   }
   if (!stepName) {
-    const defaultStepName =
-      (profile && profile.gender || !hasAccount) ? 'profil' : 'confidentialite'
+    const defaultStepName = profile?.name ? 'profil' : 'confidentialite'
     return <Redirect to={`${url}/${defaultStepName}`} />
   }
   return <OnboardingView
-    dispatch={dispatch}
     onProfileSave={handleProfileSave}
     stepName={stepName}
     userProfile={profile}

@@ -634,11 +634,9 @@
           "OriginReadTimeout": 30,
           "OriginSslProtocols": {
             "Items": [
-              "TLSv1",
-              "TLSv1.1",
               "TLSv1.2"
             ],
-            "Quantity": 3
+            "Quantity": 1
           }
         },
         "DomainName": "flask.eu-west-3.aws.bob.bayes.org",
@@ -664,7 +662,7 @@
             "Quantity": 3
           }
         },
-        "DomainName": "storage.gra1.cloud.ovh.net",
+        "DomainName": "storage.gra.cloud.ovh.net",
         "Id": "PE Static Assets on OVH",
         "OriginPath": "/v1/AUTH_7b9ade05d5f84f719adc2cbc76c07eec/PE%20Static%20Assets"
       }

@@ -1,7 +1,6 @@
 import {TFunction} from 'i18next'
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useMemo} from 'react'
 
 import {ofPrefix} from 'store/french'
 
@@ -35,53 +34,64 @@ const ofPlatformName = (name: string, t?: TFunction): string => {
 }
 
 
-class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
-  public static propTypes = {
-    handleExplore: PropTypes.func.isRequired,
-    t: PropTypes.func.isRequired,
-  }
-
-  private handleExplorePlatform = _memoize((link: string): (() => void) => (): void => {
-    window.open(link, '_blank')
-    this.props.handleExplore('platform')()
-  })
-
-  private renderPlatforms(): React.ReactNode {
-    const {t} = this.props
-    return <AdviceSuggestionList>
-      {platforms.map(({link, name, price}): ReactStylableElement => <div
-        key={`platform-${name}`}
-        onClick={this.handleExplorePlatform(link)}>
-        <span>{name} &mdash; {price ? `${price}\u00A0€` : t('GRATUIT')}</span>
-        <span style={{flex: 1}} />
-        <Trans parent="span" t={t} tOptions={{platform: name}}>
-          Aller sur le site {{ofPlatform: ofPlatformName(name)}}
-        </Trans>
-      </div>)}
-    </AdviceSuggestionList>
-  }
-
-  public render(): React.ReactNode {
-    const {t} = this.props
-    return <div>
-      <div style={{marginBottom: 35}}>
-        <p>
-          {t(
-            'Attaquez-vous à la première étape du permis de conduire\u00A0: la révision du code ' +
-            'en ligne.',
-          )}
-        </p>
-        <Trans parent="p" t={t}>
-          J'ai sélectionné <GrowingNumber
-            style={{fontWeight: 'bold'}} number={3} isSteady={true} /> plateformes
-          (j'ai aussi inclus des services payants, simplement parce que je les trouve
-          bien et pas très chers comparés aux autres options).
-        </Trans>
-      </div>
-      {this.renderPlatforms()}
-    </div>
-  }
+interface PlatformProps {
+  onClick: () => void
+  link: string
+  name: string
+  price?: number
+  t: TFunction
 }
+
+const PlatformBase = (props: PlatformProps): React.ReactElement => {
+  const {onClick, link, name, price, t} = props
+  const handleClick = useCallback((): void => {
+    window.open(link, '_blank')
+    onClick()
+  }, [link, onClick])
+  return <div
+    onClick={handleClick}>
+    <span>{name} &mdash; {price ? `${price}\u00A0€` : t('GRATUIT')}</span>
+    <span style={{flex: 1}} />
+    <Trans parent="span" t={t} tOptions={{platform: name}}>
+      Aller sur le site {{ofPlatform: ofPlatformName(name)}}
+    </Trans>
+  </div>
+}
+const Platform = React.memo(PlatformBase)
+
+
+const DrivingLicenseWritten = (props: CardProps): React.ReactElement => {
+  const {handleExplore, t} = props
+
+  const handleExplorePlatform = useMemo(() => handleExplore('platform'), [handleExplore])
+
+  return <div>
+    <div style={{marginBottom: 35}}>
+      <p>
+        {t(
+          'Attaquez-vous à la première étape du permis de conduire\u00A0: la révision du code ' +
+          'en ligne.',
+        )}
+      </p>
+      <Trans parent="p" t={t}>
+        J'ai sélectionné <GrowingNumber
+          style={{fontWeight: 'bold'}} number={3} isSteady={true} /> plateformes
+        (j'ai aussi inclus des services payants, simplement parce que je les trouve
+        bien et pas très chers comparés aux autres options).
+      </Trans>
+    </div>
+    <AdviceSuggestionList>
+      {platforms.map((platform): ReactStylableElement => <Platform
+        key={`platform-${platform.name}`}
+        onClick={handleExplorePlatform} {...platform} t={t} />)}
+    </AdviceSuggestionList>
+  </div>
+}
+DrivingLicenseWritten.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
+}
+const ExpandedAdviceCardContent = React.memo(DrivingLicenseWritten)
 
 
 export default {ExpandedAdviceCardContent, Picto}

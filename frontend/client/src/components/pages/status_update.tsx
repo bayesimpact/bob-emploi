@@ -25,6 +25,19 @@ require('styles/App.css')
 i18nInit()
 
 
+const commonSituationOptions = [
+  {name: prepareT('Je suis en formation'), value: 'FORMATION'},
+  {name: prepareT('Je suis en stage'), value: 'INTERNSHIP'},
+  {name: prepareT('Je suis en alternance'), value: 'ALTERNANCE'},
+  {name: prepareT('Je travaille en freelance'), value: 'FREELANCE'},
+  {name: prepareT("J'ai monté ou repris une entreprise"), value: 'CREATE_OR_TAKE_OVER_COMPANY'},
+] as const
+
+const optionalBoolOptions = [
+  {name: prepareT('oui'), value: 'TRUE'},
+  {name: prepareT('non'), value: 'FALSE'},
+] as const
+
 const FORM_OPTIONS = {
   'en-recherche': {
     headerText: prepareT(
@@ -35,7 +48,7 @@ const FORM_OPTIONS = {
     seekingOptions: [],
     situationOptions: [
       {name: prepareT("J'ai un travail mais je cherche encore"), value: 'WORKING'},
-      {name: prepareT('Je suis en formation'), value: 'FORMATION'},
+      ...commonSituationOptions,
       {name: prepareT('Je cherche toujours un emploi'), value: 'SEEKING'},
     ],
   },
@@ -51,7 +64,7 @@ const FORM_OPTIONS = {
     ],
     situationOptions: [
       {name: prepareT("J'ai un travail"), value: 'WORKING'},
-      {name: prepareT('Je suis en formation'), value: 'FORMATION'},
+      ...commonSituationOptions,
       {name: prepareT("Je suis à la recherche d'un emploi"), value: 'SEEKING'},
       {name: prepareT("C'est compliqué"), value: 'COMPLICATED'},
     ],
@@ -66,7 +79,7 @@ const FORM_OPTIONS = {
     seekingOptions: [],
     situationOptions: [
       {name: prepareT("J'ai un travail"), value: 'WORKING'},
-      {name: prepareT('Je suis en formation'), value: 'FORMATION'},
+      ...commonSituationOptions,
       {name: prepareT("C'est compliqué"), value: 'COMPLICATED'},
     ],
   },
@@ -169,12 +182,18 @@ const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
   paddingBottom: 40,
 }
+const optionalChildStyle: React.CSSProperties = {
+  marginRight: 20,
+}
 
 
 const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
   const [bobFeaturesThatHelped, setBobFeaturesThatHelped] =
     useState<readonly bayes.bob.UsefulFeature[]>([])
   const [bobHasHelped, setBobHasHelped] = useState('')
+  const [isNewJob, setIsNewJob] = useState<bayes.bob.OptionalBool|undefined>(undefined)
+  const [isJobInDifferentSector, setIsJobInDifferentSector] =
+    useState<bayes.bob.OptionalBool|undefined>(undefined)
   const [newJobContractType, setNewJobContractType] =
     useState<bayes.bob.EmploymentType|undefined>(undefined)
   const [seeking, setSeeking] = useState(initialSeeking)
@@ -211,6 +230,8 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
     const newStatus: bayes.bob.EmploymentStatus = {
       bobFeaturesThatHelped,
       bobHasHelped,
+      isJobInDifferentSector,
+      isNewJob,
       newJobContractType,
       seeking,
       situation,
@@ -222,7 +243,7 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
       method: 'post',
     }).then(handleUpdateResponse)
   }, [bobFeaturesThatHelped, bobHasHelped, handleUpdateResponse, newJobContractType, seeking,
-    situation])
+    situation, isNewJob, isJobInDifferentSector])
   const {headerText, seekingOptions, situationOptions} = FORM_OPTIONS[page || 'mise-a-jour']
   const {gender} = params
   const localizedSeekingOptions = useMemo(
@@ -231,7 +252,7 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
     [seekingOptions, t],
   )
   const localizedSituationOptions = useMemo(
-    (): readonly Option<string>[] => localizeOptions(t, situationOptions),
+    (): readonly Option<string>[] => localizeOptions<Option<string>>(t, situationOptions),
     [situationOptions, t],
   )
   const localizedContractTypeOptions = useMemo(
@@ -250,11 +271,16 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
       }),
     [gender, t],
   )
+  const localizedOptionalBoolOptions = useMemo(
+    (): readonly Option<bayes.bob.OptionalBool>[] =>
+      localizeOptions(t, optionalBoolOptions),
+    [t],
+  )
 
   if (!page) {
     return <Trans style={pageStyle} t={t}>Page introuvable</Trans>
   }
-  const isEmploymentDurationQuestionShown = seeking === 'STOP_SEEKING' && situation === 'WORKING'
+  const isEmployedAndStoppedSeeking = seeking === 'STOP_SEEKING' && situation === 'WORKING'
   const isHowProductHelpedQuestionShown = bobHasHelped && /YES/.test(bobHasHelped)
   if (isFormSent) {
     return <div style={{...containerStyle, ...pageStyle}}>
@@ -313,7 +339,16 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             options={localizedSituationOptions}
             value={situation} />
         </FieldSet>
-        {isEmploymentDurationQuestionShown ? <FieldSet
+        {isEmployedAndStoppedSeeking ? <FieldSet
+          label={t('Est-ce un nouvel emploi\u00A0?')}
+          isValidated={isValidated} isValid={!!isNewJob}>
+          <RadioGroup<bayes.bob.OptionalBool>
+            onChange={setIsNewJob}
+            options={localizedOptionalBoolOptions}
+            value={isNewJob}
+            childStyle={optionalChildStyle} />
+        </FieldSet> : null}
+        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
           label={t('Quel type de contrat avez-vous décroché\u00A0?')}
           isValidated={isValidated} isValid={!!newJobContractType}>
           <RadioGroup<bayes.bob.EmploymentType>
@@ -321,6 +356,15 @@ const StatusUpdatePageBase: React.FC = (): React.ReactElement => {
             style={{flexDirection: 'column'}}
             options={localizedContractTypeOptions}
             value={newJobContractType} />
+        </FieldSet> : null}
+        {isEmployedAndStoppedSeeking && isNewJob === 'TRUE' ? <FieldSet
+          label={t('Votre nouvel emploi est-il dans un secteur différent du précédent\u00A0?')}
+          isValidated={isValidated} isValid={!!isJobInDifferentSector}>
+          <RadioGroup<bayes.bob.OptionalBool>
+            onChange={setIsJobInDifferentSector}
+            options={localizedOptionalBoolOptions}
+            value={isJobInDifferentSector}
+            childStyle={optionalChildStyle} />
         </FieldSet> : null}
         <FieldSet
           label={t(

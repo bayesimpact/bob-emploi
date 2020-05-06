@@ -114,6 +114,15 @@ describe('createProjectTitle', (): void => {
     const title = createProjectTitle(newProject, fakeT, 'MASCULINE')
     expect(title).to.equal('Me réorienter à Rennes')
   })
+
+  it("shouldn't fail if no target job is speciied", (): void => {
+    const newProject: bayes.bob.Project = {
+      ...createNewProject(),
+      targetJob: undefined,
+    }
+    const title = createProjectTitle(newProject, fakeT, 'MASCULINE')
+    expect(title).to.equal('Trouver un emploi à Rennes')
+  })
 })
 
 

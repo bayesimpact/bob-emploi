@@ -1,11 +1,14 @@
+import {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
+import {getDateString} from 'store/french'
+import {prepareT} from 'store/i18n'
+
+import {Trans} from 'components/i18n'
 import {RadiumExternalLink} from 'components/radium'
 import {GrowingNumber} from 'components/theme'
-import {getDateString, YouChooser} from 'store/french'
-
 import jobteaserImage from 'images/jobteaser-picto.png'
 import meetupImage from 'images/meetup-picto.png'
 import poleEmploiEventsImage from 'images/pole-emploi-evenements-picto.png'
@@ -20,7 +23,7 @@ const EVENT_TOOLS = [
   {
     href: 'http://www.emploi-store.fr/portail/services/poleEmploiEvenements',
     imageSrc: poleEmploiEventsImage,
-    title: 'App Pôle emploi Évènements',
+    title: prepareT('App Pôle emploi Évènements'),
   },
   {
     href: 'https://www.meetup.com/fr-FR/',
@@ -40,52 +43,52 @@ const EVENT_TOOLS = [
   {
     href: 'http://www.pole-emploi.fr/informations/en-region-@/region/?/evenements.html',
     imageSrc: poleEmploiImage,
-    title: 'Évènements régionaux',
+    title: prepareT('Évènements régionaux'),
   },
-]
+] as const
+
 
 interface EventsListProps {
   events: readonly bayes.bob.Event[]
   handleExplore: (visualElement: string) => () => void
-  userYou: YouChooser
+  t: TFunction
 }
 const EventsListBase: React.FC<EventsListProps> =
   (props: EventsListProps): React.ReactElement => {
-    const {events, handleExplore, userYou} = props
-    const title = <React.Fragment>
+    const {events, handleExplore, t} = props
+    const title = <Trans parent={null} t={t} count={events.length}>
       <GrowingNumber number={events.length} isSteady={true} />
-      {' '}évènement{events.length > 1 ? 's ' : ' '}
-      pourrai{events.length > 1 ? 'ent ' : 't '}
-      {userYou("t'intéresser :", 'vous intéresser :')}
-    </React.Fragment>
+      {' '}évènement pourrait vous intéresser
+    </Trans>
     return <MethodSuggestionList title={title}>
       {events.map((event: bayes.bob.Event): ReactStylableElement => <Event
-        {...event} key={event.link} onClick={handleExplore('event')} />)}
+        {...event} key={event.link} onClick={handleExplore('event')} t={t} />)}
     </MethodSuggestionList>
   }
 EventsListBase.propTypes = {
   events: PropTypes.arrayOf(PropTypes.object.isRequired).isRequired,
   handleExplore: PropTypes.func.isRequired,
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
 const EventsList = React.memo(EventsListBase)
 
-const methodTitle = <React.Fragment>
-  <GrowingNumber number={EVENT_TOOLS.length} isSteady={true} />
-  {' '}outils pour trouver des évènements
-</React.Fragment>
 
 const EventsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
-  const {handleExplore, userYou} = props
+  const {handleExplore, t, t: translate} = props
   const {events} = useAdviceData<bayes.bob.Events>(props)
   const hasEvents = !!(events && events.length)
   const eventBoxStyle = hasEvents && {marginTop: 20} || undefined
+
+  const methodTitle = <Trans parent={null} t={t}>
+    <GrowingNumber number={EVENT_TOOLS.length} isSteady={true} />
+    {' '}outils pour trouver des évènements
+  </Trans>
   return <div>
-    {(hasEvents && events) ? <EventsList {...{events, handleExplore, userYou}} /> : null}
+    {(hasEvents && events) ? <EventsList {...{events, handleExplore, t}} /> : null}
     <MethodSuggestionList title={methodTitle} style={eventBoxStyle}>
       {EVENT_TOOLS.map(({title, ...props}, index: number): ReactStylableElement =>
         <ToolCard {...props} key={index} onClick={handleExplore('tool')}>
-          {title}
+          {translate(title)}
         </ToolCard>,
       )}
     </MethodSuggestionList>
@@ -93,7 +96,7 @@ const EventsMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement
 }
 EventsMethod.propTypes = {
   handleExplore: PropTypes.func.isRequired,
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(EventsMethod)
 
@@ -101,6 +104,7 @@ const ExpandedAdviceCardContent = React.memo(EventsMethod)
 interface EventProps extends bayes.bob.Event {
   onClick?: () => void
   style?: RadiumCSSProperties
+  t: TFunction
 }
 
 const chevronStyle = {
@@ -112,7 +116,7 @@ const chevronStyle = {
   width: 20,
 }
 const EventBase: React.FC<EventProps> = (props: EventProps): React.ReactElement => {
-  const {filters: omittedFilters, link, organiser, startDate, style, title,
+  const {filters: omittedFilters, link, organiser, startDate, style, t, title,
     ...extraProps} = props
   const linkStyle = useMemo(() => ({
     color: 'inherit',
@@ -124,10 +128,10 @@ const EventBase: React.FC<EventProps> = (props: EventProps): React.ReactElement 
       {title}
     </strong>
     <span style={{fontWeight: 'normal', marginLeft: '1em'}}>
-      par {organiser}
+      {t('par {{organiser}}', {organiser})}
     </span>
     <span style={{flex: 1}} />
-    <span>{startDate && getDateString(startDate)}</span>
+    <span>{startDate && getDateString(startDate, t)}</span>
     <ChevronRightIcon style={chevronStyle} />
   </RadiumExternalLink>
 }
@@ -137,6 +141,7 @@ EventBase.propTypes = {
   organiser: PropTypes.string.isRequired,
   startDate: PropTypes.string.isRequired,
   style: PropTypes.object,
+  t: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
 }
 const Event = React.memo(EventBase)

@@ -1,15 +1,13 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import {createBrowserHistory} from 'history'
-import {TFunction} from 'i18next'
-import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import {parse} from 'query-string'
-import React, {Suspense, useCallback, useMemo, useState} from 'react'
+import React, {Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import GoogleLogin, {GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
 import {useTranslation} from 'react-i18next'
-import {connect, Provider} from 'react-redux'
-import {Redirect, Route, RouteComponentProps, Switch} from 'react-router'
-import ReactRouterPropTypes from 'react-router-prop-types'
+import {connect, Provider, useDispatch} from 'react-redux'
+import {Redirect, Route, RouteComponentProps, Switch, useHistory, useLocation,
+  useParams} from 'react-router'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {composeWithDevTools} from 'redux-devtools-extension'
 import thunk from 'redux-thunk'
@@ -22,9 +20,12 @@ import {AllEvalActions, AuthEvalState, DispatchAllEvalActions, EvalRootState,
 import {app, asyncState} from 'store/app_reducer'
 import {getUseCaseTitle} from 'store/eval'
 import {init as i18nInit} from 'store/i18n'
-import {parseQueryString, parsedValueFlattener} from 'store/parse'
+import {parseQueryString} from 'store/parse'
+import {CancelablePromise, makeCancelable, makeCancelableDispatch,
+  useSafeDispatch} from 'store/promise'
 import {createSentryMiddleware} from 'store/sentry'
 
+import {useModal} from 'components/modal'
 import {RadiumDiv, RadiumSpan} from 'components/radium'
 import {Snackbar} from 'components/snackbar'
 import {Button, SmoothTransitions, Textarea} from 'components/theme'
@@ -67,10 +68,18 @@ type EvalPanel =
 i18nInit()
 
 
+interface UseCaseEvalState {
+  advices?: readonly bayes.bob.Advice[]
+  emailsSent?: readonly bayes.bob.EmailSent[]
+  diagnostic?: bayes.bob.Diagnostic
+  strategies?: readonly bayes.bob.Strategy[]
+}
+
+
 interface EvalPanelConfig {
   name: string
   panelId: EvalPanel
-  predicate: (state: UseCaseEvalPageState) => boolean
+  predicate: (state: UseCaseEvalState) => boolean
 }
 
 
@@ -78,17 +87,17 @@ const panels: readonly EvalPanelConfig[] = [
   {
     name: 'Diagnostic',
     panelId: DIAGNOSTIC_PANEL,
-    predicate: ({diagnostic}: UseCaseEvalPageState): boolean => !!diagnostic,
+    predicate: ({diagnostic}: UseCaseEvalState): boolean => !!diagnostic,
   },
   {
     name: 'Conseils',
     panelId: ADVICE_PANEL,
-    predicate: ({advices}: UseCaseEvalPageState): boolean => !!(advices && advices.length),
+    predicate: ({advices}: UseCaseEvalState): boolean => !!(advices && advices.length),
   },
   {
     name: 'Stratégies',
     panelId: STRATEGIES_PANEL,
-    predicate: ({strategies}: UseCaseEvalPageState): boolean => !!(strategies && strategies.length),
+    predicate: ({strategies}: UseCaseEvalState): boolean => !!(strategies && strategies.length),
   },
   {
     name: 'Statistiques',
@@ -98,239 +107,146 @@ const panels: readonly EvalPanelConfig[] = [
   {
     name: 'Coaching',
     panelId: COACHING_PANEL,
-    predicate: ({emailsSent}: UseCaseEvalPageState): boolean => !!(emailsSent && emailsSent.length),
+    predicate: ({emailsSent}: UseCaseEvalState): boolean => !!(emailsSent && emailsSent.length),
   },
 ]
 
 
-const emptyUser = {} as const
-
-
-interface UseCaseEvalPageProps extends RouteComponentProps<{useCaseId: string}> {
-  dispatch: DispatchAllEvalActions
-  fetchGoogleIdToken: () => Promise<string>
-  t: TFunction
-}
-
-
-interface UseCaseEvalPageState {
-  advices?: readonly bayes.bob.Advice[]
-  diagnostic?: bayes.bob.Diagnostic
-  categories?: readonly bayes.bob.DiagnosticCategory[]
-  coachingEmailFrequency: bayes.bob.EmailFrequency
-  emailsSent?: readonly bayes.bob.EmailSent[]
-  evaluation?: bayes.bob.UseCaseEvaluation
-  initialUseCaseId?: string
-  isCreatePoolModalShown?: boolean
-  isModified?: boolean
-  isOverviewShown?: boolean
-  isSaved?: boolean
-  jobGroupInfo?: bayes.bob.JobGroup
-  localStats?: bayes.bob.LocalJobStats
-  pools: readonly bayes.bob.UseCasePool[]
-  selectedPoolName?: string
-  selectedUseCase?: bayes.bob.UseCase
+interface PanelHeaderLinkProps extends EvalPanelConfig {
+  onClick: (panelId: EvalPanel) => void
   shownPanel?: EvalPanel
-  strategies?: readonly bayes.bob.Strategy[]
-  useCases: readonly bayes.bob.UseCase[]
-  userCounts?: bayes.bob.UsersCount
+  state: UseCaseEvalState
 }
 
 
-interface SelectOption {
-  name: string
-  value: string
+const PanelHeaderLinkBase = (props: PanelHeaderLinkProps): React.ReactElement => {
+  const {name, onClick, panelId, predicate, shownPanel, state} = props
+  const handleClick = useCallback((): void => onClick(panelId), [onClick, panelId])
+  const isAvailable = predicate(state)
+  const toggleTitleStyle = {
+    ':hover': {
+      borderBottom: `2px solid ${colors.BOB_BLUE_HOVER}`,
+    },
+    'borderBottom': shownPanel === panelId ? `2px solid ${colors.BOB_BLUE}` : 'initial',
+    'opacity': isAvailable ? 1 : .5,
+    'paddingBottom': 5,
+  }
+  return <HeaderLink onClick={handleClick} isSelected={shownPanel === panelId}>
+    <RadiumSpan style={toggleTitleStyle}>{name}</RadiumSpan>
+  </HeaderLink>
+}
+const PanelHeaderLink = React.memo(PanelHeaderLinkBase)
+
+
+interface UseCaseEvalProps {
+  onSaveEval: (useCase: bayes.bob.UseCase, evaluation: bayes.bob.UseCaseEvaluation) => Promise<void>
+  selectNextUseCase: () => void
+  useCase?: bayes.bob.UseCase
 }
 
 
-class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalPageState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    fetchGoogleIdToken: PropTypes.func.isRequired,
-    location: ReactRouterPropTypes.location.isRequired,
-    match: PropTypes.shape({
-      params: PropTypes.shape({
-        useCaseId: PropTypes.string,
-      }).isRequired,
-    }).isRequired,
-    t: PropTypes.func.isRequired,
-  }
+const UseCaseEvalBase = (props: UseCaseEvalProps): React.ReactElement => {
+  const {onSaveEval, selectNextUseCase, useCase} = props
+  const dispatch = useDispatch<DispatchAllEvalActions>()
 
-  public state: UseCaseEvalPageState = {
-    advices: [],
-    categories: [],
-    coachingEmailFrequency: 'EMAIL_MAXIMUM',
-    diagnostic: undefined,
-    evaluation: {},
-    initialUseCaseId: undefined,
-    isCreatePoolModalShown: false,
-    isModified: false,
-    isOverviewShown: false,
-    isSaved: false,
-    jobGroupInfo: undefined,
-    localStats: undefined,
-    pools: emptyArray,
-    selectedPoolName: undefined,
-    selectedUseCase: undefined,
-    shownPanel: DIAGNOSTIC_PANEL,
-    strategies: undefined,
-    useCases: emptyArray,
-  }
+  const [advices, setAdvices] = useState<readonly bayes.bob.Advice[]>(emptyArray)
+  const [categories, setCategories] = useState<readonly bayes.bob.DiagnosticCategory[]>(emptyArray)
+  const [coachingEmailFrequency, setCoachingEmailFrequency] =
+    useState<bayes.bob.EmailFrequency>('EMAIL_MAXIMUM')
+  const [diagnostic, setDiagnostic] = useState<bayes.bob.Diagnostic|undefined>(undefined)
+  const [emailsSent, setEmailsSent] = useState<readonly bayes.bob.EmailSent[]>(emptyArray)
+  const [evaluation, setEvaluation] = useState<bayes.bob.UseCaseEvaluation>(emptyObject)
+  const [isModified, setIsModified] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [jobGroupInfo, setJobGroupInfo] = useState<bayes.bob.JobGroup|undefined>(undefined)
+  const [localStats, setLocalStats] = useState<bayes.bob.LocalJobStats|undefined>(undefined)
+  const [shownPanel, setShownPanel] = useState<EvalPanel>(DIAGNOSTIC_PANEL)
+  const [strategies, setStrategies] = useState<readonly bayes.bob.Strategy[]>(emptyArray)
+  const [userCounts, setUserCounts] = useState<bayes.bob.UsersCount|undefined>(undefined)
 
-  public static getDerivedStateFromProps(
-    {location: {search}, match: {params: {useCaseId}}}: UseCaseEvalPageProps,
-    {selectedPoolName}: UseCaseEvalPageState):
-    Pick<UseCaseEvalPageState, 'initialUseCaseId'|'isOverviewShown'|'selectedPoolName'>|null {
-    if (selectedPoolName) {
-      return null
+  useEffect((): (() => void) => {
+    setAdvices(emptyArray)
+    setCategories(emptyArray)
+    setDiagnostic(undefined)
+    setEmailsSent(emptyArray)
+    setIsModified(false)
+    setIsSaved(false)
+    setJobGroupInfo(undefined)
+    setLocalStats(undefined)
+    setStrategies(emptyArray)
+    setUserCounts(undefined)
+    setEvaluation(useCase?.evaluation || emptyObject)
+    if (!useCase || !useCase.userData) {
+      return (): void => void 0
     }
-    const {poolName} = parse(search)
-    if (!poolName) {
-      return null
-    }
-    return {
-      initialUseCaseId: useCaseId,
-      isOverviewShown: useCaseId === OVERVIEW_ID,
-      selectedPoolName: parsedValueFlattener.last(poolName),
-    }
-  }
+    const {userData} = useCase
+    const [safeDispatch, cancelPromises] = makeCancelableDispatch(dispatch)
 
-  public componentDidMount(): void {
-    const {dispatch} = this.props
-    if (this.getUseCaseFromEmail()) {
-      return
-    }
-    dispatch(getEvalUseCasePools()).then((pools: void|readonly bayes.bob.UseCasePool[]): void => {
-      this.setState({
-        pools: pools || [],
-        selectedPoolName: this.state.selectedPoolName ||
-          (pools && pools.length ? pools[0].name : undefined),
-      }, this.fetchPoolUseCases)
-    })
-  }
-
-  public componentWillUnmount(): void {
-    this.isUnmounting = true
-  }
-
-  private isUnmounting = false
-
-  private getUseCaseFromEmail(): boolean {
-    const {dispatch, location: {search}} = this.props
-    const {email, ticketId, userId} = parseQueryString(search.slice(1))
-    if (!email && !userId && !ticketId) {
-      return false
-    }
-    dispatch(createUseCase({email, ticketId, userId})).
-      then((selectedUseCase: bayes.bob.UseCase|void): void => {
-        if (!selectedUseCase || this.isUnmounting) {
+    safeDispatch(getLaborStats(userData)).
+      then((laborStats: bayes.bob.LaborStatsData|void): void => {
+        if (!laborStats) {
           return
         }
-        this.setState({selectedUseCase}, this.advise)
+        const {jobGroupInfo, localStats, userCounts} = laborStats
+        setJobGroupInfo(jobGroupInfo)
+        setLocalStats(localStats)
+        setUserCounts(userCounts)
       })
-    return true
-  }
 
-  private fetchPoolUseCases(): void {
-    const {dispatch} = this.props
-    const {isOverviewShown, initialUseCaseId, selectedPoolName} = this.state
-    if (!selectedPoolName) {
-      return
-    }
-    dispatch(getEvalUseCases(selectedPoolName)).
-      then((useCases: readonly bayes.bob.UseCase[]|void): void => {
-        if (!useCases) {
+    safeDispatch(getAllCategories(useCase)).
+      then((response: bayes.bob.DiagnosticCategories | void): void => {
+        if (!response) {
           return
         }
-        const initialUseCase = initialUseCaseId && useCases.find(
-          ({useCaseId}: bayes.bob.UseCase): boolean => useCaseId === initialUseCaseId)
-        this.setState({useCases})
-        if (!isOverviewShown) {
-          this.selectUseCase(initialUseCase || useCases.length && useCases[0] || null)
-        }
+        setCategories(response.categories || emptyArray)
       })
-  }
 
-  private handleChoosePanel = _memoize((wantedPanel?: string): (() => void) => (): void => {
-    const availablePanels = panels.filter(({predicate}): boolean => predicate(this.state))
-    const {panelId: nextPanel} =
-      availablePanels.find(({panelId}): boolean => panelId === wantedPanel) ||
-      availablePanels[0]
-    this.setState(({shownPanel}): Pick<UseCaseEvalPageState, 'shownPanel'> =>
-      nextPanel === shownPanel ? {} : {shownPanel: nextPanel})
-  })
-
-  private advise = (): void => {
-    const {dispatch} = this.props
-    const {selectedUseCase} = this.state
-    if (!selectedUseCase || !selectedUseCase.userData) {
-      return
-    }
-    const {userData} = selectedUseCase
-    dispatch(getLaborStats(userData)).then((laborStats): void => {
-      if (!laborStats || this.isUnmounting || this.state.selectedUseCase !== selectedUseCase) {
+    // Compute the diagnostic.
+    safeDispatch(diagnoseProject(userData)).then((diagnostic: bayes.bob.Diagnostic|void): void => {
+      // Set diagnostic on state and compute the advice modules.
+      if (!diagnostic) {
         return
       }
-      const {jobGroupInfo, localStats, userCounts} = laborStats
-      this.setState({jobGroupInfo, localStats, userCounts})
+      setDiagnostic(diagnostic)
+      const userWithDiagnostic = {
+        ...userData,
+        projects: [{
+          ...userData.projects?.[0],
+          diagnostic,
+        }],
+      }
+      safeDispatch(computeAdvicesForProject(userWithDiagnostic)).
+        then((response: bayes.bob.Advices|void): void => {
+          if (!response || !response.advices) {
+            return
+          }
+          setAdvices(response.advices)
+          const userWithAdviceAndDiagnostic = {
+            ...userData,
+            projects: [{
+              ...userData.projects?.[0],
+              advices: response.advices,
+              diagnostic,
+            }],
+          }
+          safeDispatch(strategizeProject(userWithAdviceAndDiagnostic)).
+            then((response: bayes.bob.Strategies|void): void => {
+              if (!response) {
+                return
+              }
+              setStrategies(response.strategies || emptyArray)
+            })
+        })
     })
-    dispatch(getAllCategories(selectedUseCase)).
-      then((response: bayes.bob.DiagnosticCategories | void): void => {
-        if (!response || this.isUnmounting || this.state.selectedUseCase !== selectedUseCase) {
-          return
-        }
-        this.setState({categories: response.categories})
-      })
-    // Compute the diagnostic.
-    dispatch(diagnoseProject(userData)).
-      // Set diagnostic on state and compute the advice modules.
-      then((diagnostic: bayes.bob.Diagnostic|void): void => {
-        if (!diagnostic || this.isUnmounting || this.state.selectedUseCase !== selectedUseCase) {
-          return
-        }
-        this.setState({diagnostic})
-        const userWithDiagnostic = {
-          ...userData,
-          projects: [{
-            ...userData.projects?.[0],
-            diagnostic,
-          }],
-        }
-        dispatch(computeAdvicesForProject(userWithDiagnostic)).
-          then((response: bayes.bob.Advices|void): void => {
-            if (this.isUnmounting || !response || !response.advices ||
-              this.state.selectedUseCase !== selectedUseCase) {
-              return
-            }
-            this.setState({advices: response.advices})
-            const userWithAdviceAndDiagnostic = {
-              ...userData,
-              projects: [{
-                ...userData.projects?.[0],
-                advices: response.advices,
-                diagnostic,
-              }],
-            }
-            dispatch(strategizeProject(userWithAdviceAndDiagnostic)).
-              then((response: bayes.bob.Strategies|void): void => {
-                if (!response || this.isUnmounting ||
-                  this.state.selectedUseCase !== selectedUseCase) {
-                  return
-                }
-                this.setState({strategies: response.strategies})
-                this.updateCoachingEmails()
-              })
-          })
-      })
-  }
 
-  private updateCoachingEmails = (): void => {
-    const {dispatch} = this.props
-    const {advices, coachingEmailFrequency, diagnostic, selectedUseCase, strategies} = this.state
-    if (!selectedUseCase) {
-      return
+    return cancelPromises
+  }, [dispatch, useCase])
+
+  useEffect((): (() => void) => {
+    if (!useCase) {
+      return (): void => void 0
     }
-    const {userData} = selectedUseCase
+    const {userData} = useCase
     const userWithAdviceDiagnosticAndStrategies = {
       ...userData,
       profile: {
@@ -344,169 +260,56 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
         strategies,
       }],
     }
-    dispatch(simulateFocusEmails(userWithAdviceDiagnosticAndStrategies)).
-      then((response: bayes.bob.User|void): void => {
-        if (!response || this.isUnmounting || !response.emailsSent ||
-          this.state.selectedUseCase !== selectedUseCase) {
-          return
-        }
-        this.setState({emailsSent: response.emailsSent})
-      })
-  }
-
-  private getUrlFromState(): string|null {
-    const {selectedPoolName, selectedUseCase} = this.state
-    const {match: {params: {useCaseId}}, location: {search}} = this.props
-    const {email, poolName, ticketId, userId} = parse(search)
-    const selectedUseCaseId = selectedUseCase ? selectedUseCase.useCaseId : OVERVIEW_ID
-    if (email || ticketId || userId ||
-      poolName === selectedPoolName && selectedUseCaseId === useCaseId) {
-      return null
-    }
-    const searchString = selectedPoolName ? `?poolName=${encodeURIComponent(selectedPoolName)}` : ''
-    return `${Routes.EVAL_PAGE}/${selectedUseCaseId}${searchString}`
-  }
-
-  private selectUseCase = (selectedUseCase?: bayes.bob.UseCase|null): void => {
-    const {evaluation = {}, userData = emptyUser} = selectedUseCase || {}
-    this.setState({
-      advices: [],
-      categories: [],
-      diagnostic: undefined,
-      emailsSent: [],
-      evaluation,
-      isModified: false,
-      isOverviewShown: false,
-      isSaved: false,
-      jobGroupInfo: undefined,
-      localStats: undefined,
-      selectedUseCase: selectedUseCase || undefined,
-      strategies: [],
-      userCounts: undefined,
-    }, this.advise)
-    this.props.dispatch({type: 'SELECT_USER', user: userData})
-  }
-
-  private handlePoolChange = (selectedPoolName: string): void => {
-    this.setState({selectedPoolName}, this.fetchPoolUseCases)
-  }
-
-  private handleCoachingEmailFrequency =
-  (coachingEmailFrequency: bayes.bob.EmailFrequency): void => {
-    this.setState({coachingEmailFrequency}, this.updateCoachingEmails)
-  }
-
-  private selectNextUseCase = (): void => {
-    const {selectedUseCase, useCases} = this.state
-    let nextUseCase: bayes.bob.UseCase|null = null;
-    (useCases || []).forEach((useCase: bayes.bob.UseCase): void => {
-      const indexInPool = useCase.indexInPool || 0
-      if (indexInPool <= (selectedUseCase && selectedUseCase.indexInPool || 0)) {
+    const get = makeCancelable<bayes.bob.User|void>(dispatch(
+      simulateFocusEmails(userWithAdviceDiagnosticAndStrategies)))
+    get.promise.then((response: bayes.bob.User|void): void => {
+      if (!response || !response.emailsSent) {
         return
       }
-      if (!nextUseCase || indexInPool < (nextUseCase && nextUseCase.indexInPool || 0)) {
-        nextUseCase = useCase
-      }
+      setEmailsSent(response.emailsSent)
     })
-    if (nextUseCase) {
-      this.selectUseCase(nextUseCase)
-    } else {
-      this.handleUseCaseChange(OVERVIEW_ID)
-    }
-  }
+    return get.cancel
+  }, [dispatch, useCase, advices, coachingEmailFrequency, diagnostic, strategies])
 
-  private handleSaveEval = (): void => {
-    const {evaluation, pools, selectedPoolName, selectedUseCase, useCases} = this.state
-    const {useCaseId = undefined, evaluation: selectedEval = undefined} = selectedUseCase || {}
-    if (!useCaseId) {
-      return
-    }
-    this.setState({
-      // Let the pool know if the use case got evaluated for the first time.
-      pools: selectedEval ? pools : pools.map((pool): bayes.bob.UseCasePool => {
-        if (pool.name === selectedPoolName) {
-          return {
-            ...pool,
-            evaluatedUseCaseCount: (pool.evaluatedUseCaseCount || 0) + 1,
-          }
-        }
-        return pool
-      }),
-      useCases: useCases.map((useCase): bayes.bob.UseCase => {
-        if (useCase.useCaseId === useCaseId) {
-          return {
-            ...useCase,
-            evaluation,
-          }
-        }
-        return useCase
-      }),
-    })
-    this.props.fetchGoogleIdToken().
-      then((googleIdToken): Promise<{}> => fetch(`/api/eval/use-case/${useCaseId}`, {
-        body: JSON.stringify(evaluation),
-        headers: {
-          'Authorization': 'Bearer ' + googleIdToken,
-          'Content-Type': 'application/json',
-        },
-        method: 'post',
-      })).
-      then((): void => {
-        if (selectedUseCase !== this.state.selectedUseCase) {
-          return
-        }
-        this.setState({
-          isModified: false,
-          isSaved: true,
-        })
-        this.selectNextUseCase()
-      })
-  }
+  const state = useMemo((): UseCaseEvalState => ({
+    advices,
+    diagnostic,
+    emailsSent,
+    strategies,
+  }), [advices, diagnostic, emailsSent, strategies])
+  const availablePanels = panels.filter(({predicate}): boolean => predicate(state))
 
-  private handleUseCaseChange = (selectedUseCaseId: string): void => {
-    if (selectedUseCaseId !== OVERVIEW_ID) {
-      this.selectUseCase(
-        this.state.useCases.find(({useCaseId}): boolean => useCaseId === selectedUseCaseId))
-      return
-    }
-    this.setState({
-      isOverviewShown: true,
-      selectedUseCase: undefined,
-    })
-    this.props.dispatch({type: 'SELECT_USER', user: emptyUser})
-  }
+  const choosePanel = useCallback((wantedPanel?: string): void => {
+    const {panelId: nextPanel} =
+      availablePanels.find(({panelId}): boolean => panelId === wantedPanel) ||
+      availablePanels[0]
+    setShownPanel(nextPanel)
+  }, [availablePanels])
 
-  private handleRescoreAdvice = (adviceId: string, newScore: string): void => {
-    const {evaluation} = this.state
+  const handleRescoreAdvice = useCallback((adviceId: string, newScore: string): void => {
     if (!newScore) {
       const modules: {[key: string]: number} = {...evaluation && evaluation.modules}
       delete modules[adviceId]
-      this.setState({
-        evaluation: {
-          ...evaluation,
-          modules,
-        },
+      setEvaluation({
+        ...evaluation,
+        modules,
       })
       return
     }
-    this.setState({
-      evaluation: {
-        ...evaluation,
-        modules: {
-          ...(evaluation && evaluation.modules),
-          [adviceId]: parseInt(newScore, 10),
-        },
+    setEvaluation({
+      ...evaluation,
+      modules: {
+        ...(evaluation && evaluation.modules),
+        [adviceId]: Number.parseInt(newScore, 10),
       },
-      isModified: true,
     })
-  }
+    setIsModified(true)
+  }, [evaluation])
 
-  private handleEvaluateAdvice =
-  (adviceId: string, adviceEvaluation: bayes.bob.AdviceEvaluation): void => {
-    const {evaluation} = this.state
-    const advices = evaluation && evaluation.advices
-    this.setState({
-      evaluation: {
+  const handleEvaluateAdvice =
+    useCallback((adviceId: string, adviceEvaluation: bayes.bob.AdviceEvaluation): void => {
+      const advices = evaluation && evaluation.advices
+      setEvaluation({
         ...evaluation,
         advices: {
           ...advices,
@@ -515,17 +318,14 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
             ...adviceEvaluation,
           },
         },
-      },
-      isModified: true,
-    })
-  }
+      })
+      setIsModified(true)
+    }, [evaluation])
 
-  private handleEvaluateDiagnosticSection =
-  (sectionId: string, sectionEvaluation: bayes.bob.GenericEvaluation): void => {
-    const {evaluation} = this.state
-    const diagnostic = evaluation && evaluation.diagnostic
-    this.setState({
-      evaluation: {
+  const handleEvaluateDiagnosticSection =
+    useCallback((sectionId: string, sectionEvaluation: bayes.bob.GenericEvaluation): void => {
+      const diagnostic = evaluation && evaluation.diagnostic
+      setEvaluation({
         ...evaluation,
         diagnostic: {
           ...diagnostic,
@@ -534,59 +334,44 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
             ...sectionEvaluation,
           },
         },
-      },
-      isModified: true,
-    })
-  }
+      })
+      setIsModified(true)
+    }, [evaluation])
 
-  private handleShowCreatePoolModal = _memoize((isCreatePoolModalShown): (() => void) =>
-    (): void => this.setState({isCreatePoolModalShown}))
+  const cancelOnChangeRef = useRef<(() => void)[]>([])
 
-  private handleNewUseCase = (selectedUseCase: bayes.bob.UseCase): void => {
-    this.handleShowCreatePoolModal(false)()
-    this.setState({selectedUseCase}, this.advise)
-  }
-
-  private renderCreatePoolModal(): React.ReactNode {
-    return <CreatePoolModal
-      dispatch={this.props.dispatch}
-      isShown={this.state.isCreatePoolModalShown}
-      onTransientCreated={this.handleNewUseCase}
-      onClose={this.handleShowCreatePoolModal(false)} />
-  }
-
-  private renderHeaderLink = ({name, panelId, predicate}: EvalPanelConfig): React.ReactNode => {
-    const isAvailable = predicate(this.state)
-    const {shownPanel} = this.state
-    const toggleTitleStyle = {
-      ':hover': {
-        borderBottom: `2px solid ${colors.BOB_BLUE_HOVER}`,
-      },
-      'borderBottom': shownPanel === panelId ? `2px solid ${colors.BOB_BLUE}` : 'initial',
-      'opacity': isAvailable ? 1 : .5,
-      'paddingBottom': 5,
+  const handleSaveEval = useCallback((): void => {
+    if (!useCase) {
+      return
     }
-    return <HeaderLink
-      onClick={this.handleChoosePanel(panelId)} isSelected={shownPanel === panelId} key={panelId}>
-      <RadiumSpan style={toggleTitleStyle}>{name}</RadiumSpan>
-    </HeaderLink>
-  }
-
-  private updateEvaluation = (changes: bayes.bob.UseCaseEvaluation): void => {
-    const {evaluation} = this.state
-    this.setState({
-      evaluation: {
-        ...evaluation,
-        ...changes,
-      },
-      isModified: true,
+    const get = makeCancelable(onSaveEval(useCase, evaluation))
+    cancelOnChangeRef.current?.push(get.cancel)
+    get.promise.then((): void => {
+      setIsModified(false)
+      setIsSaved(true)
     })
-  }
+  }, [evaluation, onSaveEval, useCase])
 
-  private renderPanelContent(
-    profile: bayes.bob.UserProfile, project: bayes.bob.Project): React.ReactNode {
-    const {advices, categories, coachingEmailFrequency, diagnostic, emailsSent, evaluation,
-      jobGroupInfo, localStats, shownPanel, strategies, userCounts} = this.state
+  useEffect((): (() => void) => {
+    return (): void => {
+      cancelOnChangeRef.current?.forEach((cancel): void => cancel())
+      cancelOnChangeRef.current = []
+    }
+  }, [useCase])
+
+  const updateEvaluation = useCallback((changes: bayes.bob.UseCaseEvaluation): void => {
+    setEvaluation({
+      ...evaluation,
+      ...changes,
+    })
+    setIsModified(true)
+  }, [evaluation])
+
+  const {userData = undefined} = useCase || {}
+  const {profile = {}, projects = []} = userData || {}
+  const project = projects && projects.length && projects[0] || {}
+
+  const panelContent = ((): React.ReactNode => {
     const fullProject = {
       ...project,
       advices,
@@ -594,8 +379,7 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
       localStats,
       strategies,
     }
-    const isPanelAvailable = !!panels.some(({panelId, predicate}): boolean =>
-      panelId === shownPanel && predicate(this.state))
+    const isPanelAvailable = !!availablePanels.some(({panelId}): boolean => panelId === shownPanel)
     if (!isPanelAvailable) {
       return null
     }
@@ -604,14 +388,14 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
         return <Assessment
           diagnostic={diagnostic || emptyObject}
           diagnosticEvaluations={evaluation && evaluation.diagnostic || emptyObject}
-          onEvaluateSection={this.handleEvaluateDiagnosticSection}
+          onEvaluateSection={handleEvaluateDiagnosticSection}
         />
       case ADVICE_PANEL:
         return <AdvicesRecap
           profile={profile} project={fullProject} advices={advices || emptyArray}
           adviceEvaluations={evaluation && evaluation.advices || emptyObject}
-          onEvaluateAdvice={this.handleEvaluateAdvice}
-          onRescoreAdvice={this.handleRescoreAdvice}
+          onEvaluateAdvice={handleEvaluateAdvice}
+          onRescoreAdvice={handleRescoreAdvice}
           moduleNewScores={evaluation && evaluation.modules || emptyObject}
         />
       case STRATEGIES_PANEL:
@@ -627,117 +411,307 @@ class UseCaseEvalPage extends React.Component<UseCaseEvalPageProps, UseCaseEvalP
         return <Coaching
           project={fullProject} emailsSent={emailsSent || emptyArray}
           coachingEmailFrequency={coachingEmailFrequency}
-          onChangeFrequency={this.handleCoachingEmailFrequency} />
+          onChangeFrequency={setCoachingEmailFrequency} />
     }
-  }
+  })()
 
-  // TODO(cyrille): Move to its own component.
-  private renderBobMindPanel(
-    profile: bayes.bob.UserProfile, project: bayes.bob.Project): React.ReactNode {
-    const toggleStyle: React.CSSProperties = {
-      display: 'flex',
-      flexDirection: 'row',
-      marginBottom: 34,
-    }
-    const style: React.CSSProperties = {
-      backgroundColor: '#fff',
-      flex: 1,
-      padding: '25px 30px',
-    }
-    return <div style={style}>
+  const toggleStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'row',
+    marginBottom: 34,
+  }
+  const style: React.CSSProperties = {
+    backgroundColor: '#fff',
+    flex: 1,
+    padding: '25px 30px',
+  }
+  return <React.Fragment>
+    <div style={style}>
       <div style={toggleStyle}>
-        {panels.map(this.renderHeaderLink)}
+        {panels.map((panel: EvalPanelConfig): React.ReactElement => <PanelHeaderLink
+          {...panel} key={panel.panelId} state={state} shownPanel={shownPanel}
+          onClick={choosePanel} />)}
       </div>
-      {this.renderPanelContent(profile, project)}
+      {panelContent}
     </div>
-  }
+    <ScorePanel
+      evaluation={evaluation}
+      isModified={!!isModified}
+      isSaved={!!isSaved}
+      onSave={handleSaveEval}
+      onUpdate={updateEvaluation}
+      selectNextUseCase={selectNextUseCase}
+      style={{marginTop: 20}} />
+  </React.Fragment>
+}
+const UseCaseEval = React.memo(UseCaseEvalBase)
 
-  public render(): React.ReactNode {
-    const {t} = this.props
-    const {evaluation, isOverviewShown, isModified, isSaved, pools, selectedPoolName,
-      selectedUseCase, useCases} = this.state
-    const poolOptions = pools.
-      map(({evaluatedUseCaseCount, name = '', useCaseCount}): SelectOption => {
-        const isPoolEvaluated = evaluatedUseCaseCount === useCaseCount
-        return {
-          name: (isPoolEvaluated ? '✅ ' :
-            evaluatedUseCaseCount && evaluatedUseCaseCount >= 10 ? '✓ ' : '🎯 ') + name,
-          value: name,
+
+const emptyUser = {} as const
+
+
+interface UseCaseEvalPageProps {
+  fetchGoogleIdToken: () => Promise<string>
+}
+
+
+interface SelectOption {
+  name: string
+  value: string
+}
+
+
+const UseCaseEvalPageBase = (props: UseCaseEvalPageProps): React.ReactElement => {
+  const {fetchGoogleIdToken} = props
+  const {search} = useLocation()
+  const dispatch = useSafeDispatch<DispatchAllEvalActions>()
+  const history = useHistory()
+  const {useCaseId: locationUseCaseId} = useParams<{useCaseId: string}>()
+
+  const [selectedUseCase, selectUseCase] = useState<bayes.bob.UseCase|undefined>()
+  const [pools, setPools] = useState<readonly bayes.bob.UseCasePool[]>([])
+  const [poolName, setPoolName] = useState<string|undefined>()
+  const [isFirstRun, setIsFirstRun] = useState(true)
+  const [useCases, setUseCases] = useState<readonly bayes.bob.UseCase[]>([])
+  const [initialUseCaseId] = useState(locationUseCaseId)
+  const isOverviewShown = locationUseCaseId === OVERVIEW_ID
+  const [isCreatePoolModalShown, showCreatePoolModal, hideCreatePoolModal] = useModal()
+
+  // On first run get the a usecase from email or download use case pools.
+  const hasPools = !!pools.length
+  const hasSelectedUseCase = !!selectedUseCase
+  useEffect((): void => {
+    if (!isFirstRun) {
+      return
+    }
+    setIsFirstRun(false)
+    const {email, ticketId, userId} = parseQueryString(search.slice(1))
+    if (!hasSelectedUseCase && (email || userId || ticketId)) {
+      dispatch(createUseCase({email, ticketId, userId})).
+        then((selectedUseCase: bayes.bob.UseCase|void): void => {
+          if (selectedUseCase) {
+            selectUseCase(selectedUseCase)
+          }
+        })
+      return
+    }
+    if (!hasPools) {
+      dispatch(getEvalUseCasePools()).then((pools: void|readonly bayes.bob.UseCasePool[]): void => {
+        if (pools) {
+          setPools(pools)
         }
       })
-    const overviewOption: SelectOption = {
-      name: 'Sommaire',
-      value: OVERVIEW_ID,
-    } as const
-    const useCasesOptions = [overviewOption].concat([...useCases].
-      sort((a: bayes.bob.UseCase, b: bayes.bob.UseCase): number =>
-        (a.indexInPool || 0) - (b.indexInPool || 0)).
-      map(({indexInPool, title, useCaseId, userData, evaluation}): SelectOption => {
-        return {
-          name: (evaluation ? '✅ ' : '🎯 ') +
-            (indexInPool || 0).toString() + ' - ' + getUseCaseTitle(this.props.t, title, userData),
-          value: useCaseId || '',
+    }
+  }, [dispatch, hasPools, hasSelectedUseCase, isFirstRun, search, selectedUseCase])
+
+  // Select the first pool when they are loaded.
+  const hasPoolName = !!poolName
+  useEffect((): void => {
+    if (pools && !hasPoolName) {
+      setPoolName(pools.length ? pools[0].name : undefined)
+    }
+  }, [pools, hasPoolName])
+
+  // Get usecases for the selected pool.
+  useEffect((): void => {
+    if (!poolName) {
+      return
+    }
+    setUseCases([])
+    selectUseCase(undefined)
+    dispatch(getEvalUseCases(poolName)).
+      then((useCases: readonly bayes.bob.UseCase[]|void): void => {
+        if (useCases) {
+          setUseCases(useCases)
+        } else {
+          setPoolName(undefined)
         }
-      }))
-    const {useCaseId = undefined, userData = undefined} = selectedUseCase || {}
-    const {profile = null, projects = []} = userData || {}
-    const project = projects && projects.length && projects[0] || {}
-    const centralPanelstyle: React.CSSProperties = {
-      display: 'flex',
-      flex: 1,
-      flexDirection: 'column',
-      minWidth: 650,
+      })
+  }, [dispatch, poolName])
+
+  useEffect((): void => {
+    if (isOverviewShown || selectedUseCase || !useCases) {
+      return
     }
-    const style: React.CSSProperties = {
-      display: 'flex',
-      flexDirection: 'row',
-      padding: 20,
+    const initialUseCase = initialUseCaseId && useCases.find(
+      ({useCaseId}: bayes.bob.UseCase): boolean => useCaseId === initialUseCaseId)
+    selectUseCase(initialUseCase || useCases.length && useCases[0] || undefined)
+  }, [initialUseCaseId, isOverviewShown, selectedUseCase, useCases])
+
+  useEffect((): void => {
+    const {userData = emptyUser} = selectedUseCase || {}
+    dispatch({type: 'SELECT_USER', user: userData})
+  }, [dispatch, selectedUseCase])
+
+  const urlFromState = ((): string|null => {
+    const {email, poolName: poolNameFromUrl, ticketId, userId} = parse(search)
+    const selectedUseCaseId = selectedUseCase ? selectedUseCase.useCaseId :
+      (locationUseCaseId === OVERVIEW_ID) ? OVERVIEW_ID : ''
+    if (email || ticketId || userId ||
+      poolName === poolNameFromUrl && selectedUseCaseId === locationUseCaseId) {
+      return null
     }
-    const letfBarStyle: React.CSSProperties = {
-      display: 'flex',
-      flex: isOverviewShown ? 1 : 0,
-      flexDirection: 'column',
-      marginRight: 20,
-      minWidth: 400,
-      padding: 5,
+    const searchString = poolName ? `?poolName=${encodeURIComponent(poolName)}` : ''
+    return `${Routes.EVAL_PAGE}/${selectedUseCaseId}${searchString}`
+  })()
+
+  const selectNextUseCase = useCallback((): void => {
+    let nextUseCase: bayes.bob.UseCase|undefined = undefined;
+    (useCases || []).forEach((useCase: bayes.bob.UseCase): void => {
+      const indexInPool = useCase.indexInPool || 0
+      if (indexInPool <= (selectedUseCase && selectedUseCase.indexInPool || 0)) {
+        return
+      }
+      if (!nextUseCase || indexInPool < (nextUseCase && nextUseCase.indexInPool || 0)) {
+        nextUseCase = useCase
+      }
+    })
+    selectUseCase(nextUseCase)
+  }, [selectedUseCase, useCases])
+
+  const savedEvalRef = useRef<CancelablePromise<{}>|undefined>()
+  // Cancel the aftermath of saving the eval on unmount.
+  useEffect((): (() => void) => (): void => savedEvalRef.current?.cancel(), [])
+  // Cancel the aftermath of saving the eval if a new use case is selected.
+  useEffect((): void => savedEvalRef.current?.cancel(), [selectedUseCase])
+
+  const handleSaveEval = useCallback(
+    (useCase: bayes.bob.UseCase, evaluation: bayes.bob.UseCaseEvaluation): Promise<void> => {
+      const {useCaseId = undefined, evaluation: selectedEval = undefined} = useCase || {}
+      if (!useCaseId) {
+        return Promise.resolve()
+      }
+      return new Promise((resolve: () => void): void => {
+        // Let the pool know if the use case got evaluated for the first time.
+        if (!selectedEval) {
+          setPools(pools => pools.map((pool): bayes.bob.UseCasePool => {
+            if (pool.name === poolName) {
+              return {
+                ...pool,
+                evaluatedUseCaseCount: (pool.evaluatedUseCaseCount || 0) + 1,
+              }
+            }
+            return pool
+          }))
+        }
+        setUseCases((useCases) => useCases.map((useCase): bayes.bob.UseCase => {
+          if (useCase.useCaseId === useCaseId) {
+            return {
+              ...useCase,
+              evaluation,
+            }
+          }
+          return useCase
+        }))
+        const saveEval = makeCancelable(fetchGoogleIdToken().
+          then((googleIdToken): Promise<{}> => fetch(`/api/eval/use-case/${useCaseId}`, {
+            body: JSON.stringify(evaluation),
+            headers: {
+              'Authorization': 'Bearer ' + googleIdToken,
+              'Content-Type': 'application/json',
+            },
+            method: 'post',
+          })))
+        saveEval.promise.then(selectNextUseCase).then(resolve)
+        savedEvalRef.current?.cancel()
+        savedEvalRef.current = saveEval
+      })
+    }, [fetchGoogleIdToken, poolName, selectNextUseCase])
+
+  const handleUseCaseChange = useCallback((selectedUseCaseId: string): void => {
+    if (selectedUseCaseId !== OVERVIEW_ID) {
+      selectUseCase(useCases.find(({useCaseId}): boolean => useCaseId === selectedUseCaseId))
+      return
     }
-    const redirectUrl = this.getUrlFromState()
-    if (redirectUrl) {
-      return <Redirect to={redirectUrl} push={true} />
-    }
-    return <div style={style}>
-      {this.renderCreatePoolModal()}
-      <div style={letfBarStyle}>
-        <Select
-          options={poolOptions} value={selectedPoolName}
-          onChange={this.handlePoolChange} style={{backgroundColor: '#fff', marginBottom: 5}} />
-        <Select
-          options={useCasesOptions} value={useCaseId || undefined}
-          onChange={this.handleUseCaseChange} style={{backgroundColor: '#fff'}} />
-        <div style={{margin: '5px 0 10px', textAlign: 'center'}}>
-          <Button onClick={this.handleShowCreatePoolModal(true)}>
-            Créer un cas d'utilisation
-          </Button>
-        </div>
-        {selectedUseCase ? <UseCase useCase={selectedUseCase} t={t} /> : null}
-        {isOverviewShown ? <PoolOverview
-          useCases={useCases} onSelectUseCase={this.selectUseCase} /> : null}
-      </div>
-      <div style={centralPanelstyle}>
-        {selectedUseCase ? this.renderBobMindPanel(profile || emptyObject, project) : null}
-        {(isOverviewShown || !evaluation) ? null :
-          <ScorePanel
-            evaluation={evaluation}
-            isModified={!!isModified}
-            isSaved={!!isSaved}
-            onSave={this.handleSaveEval}
-            onUpdate={this.updateEvaluation}
-            selectNextUseCase={this.selectNextUseCase}
-            style={{marginTop: 20}} />}
-      </div>
-    </div>
+    selectUseCase(undefined)
+    const searchString = poolName ? `?poolName=${encodeURIComponent(poolName)}` : ''
+    history.push(`${Routes.EVAL_PAGE}/${OVERVIEW_ID}${searchString}`)
+  }, [history, poolName, useCases])
+
+  const handleNewUseCase = useCallback((selectedUseCase: bayes.bob.UseCase): void => {
+    hideCreatePoolModal()
+    selectUseCase(selectedUseCase)
+  }, [hideCreatePoolModal])
+
+  const {t} = useTranslation()
+  const poolOptions = pools.
+    map(({evaluatedUseCaseCount, name = '', useCaseCount}): SelectOption => {
+      const isPoolEvaluated = evaluatedUseCaseCount === useCaseCount
+      return {
+        name: (isPoolEvaluated ? '✅ ' :
+          evaluatedUseCaseCount && evaluatedUseCaseCount >= 10 ? '✓ ' : '🎯 ') + name,
+        value: name,
+      }
+    })
+  const overviewOption: SelectOption = {
+    name: 'Sommaire',
+    value: OVERVIEW_ID,
+  } as const
+  const useCasesOptions = [overviewOption].concat([...useCases].
+    sort((a: bayes.bob.UseCase, b: bayes.bob.UseCase): number =>
+      (a.indexInPool || 0) - (b.indexInPool || 0)).
+    map(({indexInPool, title, useCaseId, userData, evaluation}): SelectOption => {
+      return {
+        name: (evaluation ? '✅ ' : '🎯 ') +
+          (indexInPool || 0).toString() + ' - ' + getUseCaseTitle(t, title, userData),
+        value: useCaseId || '',
+      }
+    }))
+  const {useCaseId = undefined} = selectedUseCase || {}
+  const centralPanelstyle: React.CSSProperties = {
+    display: 'flex',
+    flex: 1,
+    flexDirection: 'column',
+    minWidth: 650,
   }
+  const style: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'row',
+    padding: 20,
+  }
+  const letfBarStyle: React.CSSProperties = {
+    display: 'flex',
+    flex: isOverviewShown ? 1 : 0,
+    flexDirection: 'column',
+    marginRight: 20,
+    minWidth: 400,
+    padding: 5,
+  }
+  if (urlFromState) {
+    return <Redirect to={urlFromState} push={true} />
+  }
+  return <div style={style}>
+    <CreatePoolModal
+      isShown={isCreatePoolModalShown}
+      onTransientCreated={handleNewUseCase}
+      onClose={hideCreatePoolModal} />
+    <div style={letfBarStyle}>
+      <Select
+        options={poolOptions} value={poolName}
+        onChange={setPoolName} style={{backgroundColor: '#fff', marginBottom: 5}} />
+      <Select
+        options={useCasesOptions} value={useCaseId || undefined}
+        onChange={handleUseCaseChange} style={{backgroundColor: '#fff'}} />
+      <div style={{margin: '5px 0 10px', textAlign: 'center'}}>
+        <Button onClick={showCreatePoolModal}>
+          Créer un cas d'utilisation
+        </Button>
+      </div>
+      {selectedUseCase ? <UseCase useCase={selectedUseCase} t={t} /> : null}
+      {isOverviewShown && useCases.length ? <PoolOverview
+        useCases={useCases} onSelectUseCase={selectUseCase} /> : null}
+    </div>
+    <div style={centralPanelstyle}>
+      {selectedUseCase ? <UseCaseEval
+        useCase={selectedUseCase} onSaveEval={handleSaveEval}
+        selectNextUseCase={selectNextUseCase} /> : null}
+    </div>
+  </div>
 }
+UseCaseEvalPageBase.propTypes = {
+  fetchGoogleIdToken: PropTypes.func.isRequired,
+}
+const UseCaseEvalPage = React.memo(UseCaseEvalPageBase)
 
 
 interface ScoreButtonProps {
@@ -789,7 +763,7 @@ const ConceptEvalPageBase = (): React.ReactElement => {
   const {t} = useTranslation()
   return <div style={conceptEvalPageStyle}>
     <UseCaseSelector t={t} />
-    <CategoriesDistribution style={{maxWidth: 1000}} t={t} />
+    <CategoriesDistribution style={{maxWidth: 1000}} />
   </div>
 }
 const ConceptEvalPage = React.memo(ConceptEvalPageBase)
@@ -806,7 +780,7 @@ interface AuthEvalPageProps
 
 const AuthenticateEvalPageBase = (props: AuthEvalPageProps): React.ReactElement => {
   const [hasAuthenticationFailed, setHasAuthenticationFailed] = useState(false)
-  const {dispatch, fetchGoogleIdToken, ...otherProps} = props
+  const {dispatch, fetchGoogleIdToken} = props
 
   const handleGoogleFailure = useCallback((): void => setHasAuthenticationFailed(true), [])
 
@@ -830,16 +804,13 @@ const AuthenticateEvalPageBase = (props: AuthEvalPageProps): React.ReactElement 
     [dispatch, handleGoogleFailure],
   )
 
-  const {t} = useTranslation()
-
   if (fetchGoogleIdToken) {
     return <Switch>
       <Route path={Routes.CONCEPT_EVAL_PAGE}>
         <ConceptEvalPage />
       </Route>
-      <Route path="*">
-        <UseCaseEvalPage
-          dispatch={dispatch} t={t} fetchGoogleIdToken={fetchGoogleIdToken} {...otherProps} />
+      <Route path={Routes.EVAL_PATH}>
+        <UseCaseEvalPage fetchGoogleIdToken={fetchGoogleIdToken} />
       </Route>
     </Switch>
   }
@@ -1062,7 +1033,7 @@ const App = (): React.ReactElement => <Provider store={store}>
   <Suspense fallback={<WaitingPage />}>
     <div style={{backgroundColor: colors.BACKGROUND_GREY, color: colors.DARK_TWO}}>
       <ConnectedRouter history={history}>
-        <Route path={Routes.EVAL_PATH} component={AuthenticateEvalPage} />
+        <Route path={Routes.EVAL_PAGE} component={AuthenticateEvalPage} />
       </ConnectedRouter>
       <EvalSnackbar timeoutMillisecs={4000} />
     </div>

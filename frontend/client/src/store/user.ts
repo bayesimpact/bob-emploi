@@ -1,7 +1,7 @@
 import Storage from 'local-storage-fallback'
 import {useSelector} from 'react-redux'
 
-import {ClientFilter, YouChooser, tutoyer, vouvoyer} from './french'
+import {ClientFilter} from './french'
 import {WithLocalizableName, prepareT} from './i18n'
 import {PROJECT_EXPERIENCE_OPTIONS, PROJECT_LOCATION_AREA_TYPE_OPTIONS, PROJECT_PASSIONATE_OPTIONS,
   SENIORITY_OPTIONS, TRAINING_FULFILLMENT_ESTIMATE_OPTIONS} from './project'
@@ -160,7 +160,7 @@ const MILLIS_IN_MONTH = 2635200000
 
 
 // Returns user's job search length.
-// TODO(marielaure): Update this when we stop using jobSearchLengthMonths.
+// TODO(sil): Update this when we stop using jobSearchLengthMonths.
 function getJobSearchLengthMonths(project: bayes.bob.Project): number {
   const {jobSearchHasNotStarted = false,
     jobSearchLengthMonths = 0, jobSearchStartedAt = ''} = project
@@ -198,21 +198,7 @@ bayes.bob.User {
 
 
 function getUserLocale(profile?: bayes.bob.UserProfile): string {
-  const {canTutoie = false, locale = 'fr'} = profile || {}
-  if (canTutoie && locale === 'fr') {
-    return 'fr@tu'
-  }
-  return locale
-}
-
-
-function youForUser({profile: {canTutoie = false} = {}}: bayes.bob.User): YouChooser {
-  return canTutoie ? tutoyer : vouvoyer
-}
-
-
-function useUserYou(): YouChooser {
-  return useSelector(({user}: {user: bayes.bob.User}) => youForUser(user))
+  return profile?.locale || 'fr'
 }
 
 
@@ -400,11 +386,25 @@ function isAdvisorUser(user: bayes.bob.User): boolean {
 }
 
 
+function addProjectIds(user: bayes.bob.User): bayes.bob.User {
+  if (!user.projects || !user.projects.some(({projectId}): boolean => !projectId)) {
+    return user
+  }
+  return {
+    ...user,
+    projects: user.projects.map((project, index): bayes.bob.Project => ({
+      ...project,
+      projectId: index + '',
+    })),
+  }
+}
+
+
 export {
-  getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision, youForUser,
+  getUserFrustrationTags, USER_PROFILE_FIELDS, increaseRevision,
   userAge, getHighestDegreeDescription, keepMostRecentRevision,
   FAMILY_SITUATION_OPTIONS, DEGREE_OPTIONS, ORIGIN_OPTIONS, isEmailTemplatePersonalized,
   projectMatchAllFilters, COACHING_EMAILS_OPTIONS, GENDER_OPTIONS, userExample,
-  getUniqueExampleEmail, getJobSearchLengthMonths, useUserYou, getUserLocale, isAdvisorUser,
-  useGender,
+  getUniqueExampleEmail, getJobSearchLengthMonths, getUserLocale, isAdvisorUser,
+  useGender, addProjectIds,
 }

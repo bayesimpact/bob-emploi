@@ -1,6 +1,6 @@
 import React, {useCallback, useState} from 'react'
 import PropTypes from 'prop-types'
-import {connect} from 'react-redux'
+import {useSelector} from 'react-redux'
 import Storage from 'local-storage-fallback'
 
 import {RootState} from 'store/actions'
@@ -13,20 +13,16 @@ import {ExternalLink} from './theme'
 const HAS_SEEN_BETA_BANNER = 'has-seen-2-beta-banner'
 
 
-interface MessageConnectedProps {
-  isLoggedIn: boolean
-  registeredAt?: string
-}
-
-
-interface MessageProps extends MessageConnectedProps {
+interface MessageProps {
   style?: React.CSSProperties
 }
 
 
-const BetaMessageBase: React.FC<MessageProps> = (props: MessageProps): React.ReactElement|null => {
-  const {isLoggedIn, registeredAt, style} = props
+const BetaMessageBase: React.FC<MessageProps> = ({style}: MessageProps):
+React.ReactElement|null => {
   const [isHidden, setIsHidden] = useState(!!Storage.getItem(HAS_SEEN_BETA_BANNER))
+  const isLoggedIn = useSelector(({user}: RootState): boolean => !!user.userId)
+  const registeredAt = useSelector(({user}: RootState): string|undefined => user.registeredAt)
   const handleCloseClick = useCallback((): void => {
     Storage.setItem(HAS_SEEN_BETA_BANNER, '1')
     setIsHidden(true)
@@ -54,14 +50,9 @@ const BetaMessageBase: React.FC<MessageProps> = (props: MessageProps): React.Rea
   </Banner>
 }
 BetaMessageBase.propTypes = {
-  isLoggedIn: PropTypes.bool,
-  registeredAt: PropTypes.string,
   style: PropTypes.object,
 }
-const BetaMessage = connect(({user}: RootState): MessageConnectedProps => ({
-  isLoggedIn: !!user.userId,
-  registeredAt: user.registeredAt,
-}))(React.memo(BetaMessageBase))
+const BetaMessage = React.memo(BetaMessageBase)
 
 
 export {BetaMessage}

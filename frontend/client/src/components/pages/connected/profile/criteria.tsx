@@ -1,12 +1,11 @@
-import {TFunction} from 'i18next'
-import _memoize from 'lodash/memoize'
 import CurrencyEurIcon from 'mdi-react/CurrencyEurIcon'
 import PropTypes from 'prop-types'
-import React from 'react'
-import {connect} from 'react-redux'
+import React, {useCallback, useLayoutEffect, useState} from 'react'
+import {useTranslation} from 'react-i18next'
+import {useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, diagnoseOnboarding, setUserProfile} from 'store/actions'
-import {localizeOptions, prepareT} from 'store/i18n'
+import {getLanguage, localizeOptions, prepareT} from 'store/i18n'
 import {PROJECT_EMPLOYMENT_TYPE_OPTIONS, PROJECT_WORKLOAD_OPTIONS} from 'store/project'
 import {userExample} from 'store/user'
 
@@ -18,43 +17,53 @@ import {Select, CheckboxList, FieldSet} from 'components/pages/connected/form_ut
 import {OnboardingComment, Step, ProjectStepProps} from './step'
 
 
-interface StepState {
-  minSalaryCommentRead?: boolean
-  isValidated?: boolean
+const checkboxListContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: isMobileVersion ? 'column' : 'row',
+  justifyContent: 'space-between',
 }
 
 
-class NewProjectCriteriaStepBase
-  extends React.PureComponent<ProjectStepProps & {dispatch: DispatchAllActions}, StepState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    newProject: PropTypes.object,
-    onSubmit: PropTypes.func,
-    t: PropTypes.func.isRequired,
-  }
+const NewProjectCriteriaStepBase = (props: ProjectStepProps): React.ReactElement => {
+  const {newProject: {employmentTypes, minSalary, workloads}, onSubmit, t} = props
+  const [isValidated, setIsValidated] = useState(false)
+  const [minSalaryCommentRead, setMinSalaryCommentRead] = useState(false)
+  const dispatch = useDispatch<DispatchAllActions>()
 
-  public state: StepState = {}
+  const isFormValid = !!((employmentTypes || []).length > 0 && (workloads || []).length > 0)
 
-  private handleSubmit = (): void => {
+  const handleSubmit = useCallback((): void => {
     // minSalary is sent in unit ANNUAL_GROSS_SALARY.
-    const {newProject: {employmentTypes, minSalary, workloads}, onSubmit} = this.props
-    this.setState({isValidated: true})
-    if (this.isFormValid()) {
+    setIsValidated(true)
+    if (isFormValid) {
       onSubmit && onSubmit({employmentTypes, minSalary, workloads})
     }
-  }
+  }, [employmentTypes, isFormValid, minSalary, workloads, onSubmit])
 
-  private handleChange = _memoize((field): (<T>(value: T) => void) => (value): void => {
-    if (field === 'minSalary' && this.state.minSalaryCommentRead) {
-      this.setState({minSalaryCommentRead: false})
+  const handleChangeMinSalary = useCallback((minSalary: number): void => {
+    if (minSalaryCommentRead) {
+      setMinSalaryCommentRead(false)
     }
-    this.props.dispatch(diagnoseOnboarding({projects: [{[field]: value}]}))
-  })
+    dispatch(diagnoseOnboarding({projects: [{minSalary}]}))
+  }, [dispatch, minSalaryCommentRead])
 
-  private fastForward = (): void => {
-    const {employmentTypes, minSalary, workloads} = this.props.newProject
-    if (this.isFormValid()) {
-      this.handleSubmit()
+  const handleChangeEmploymentTypes = useCallback(
+    (employmentTypes: readonly bayes.bob.EmploymentType[]): void => {
+      dispatch(diagnoseOnboarding({projects: [{employmentTypes}]}))
+    },
+    [dispatch],
+  )
+
+  const handleChangeWorkloads = useCallback(
+    (workloads: readonly bayes.bob.ProjectWorkload[]): void => {
+      dispatch(diagnoseOnboarding({projects: [{workloads}]}))
+    },
+    [dispatch],
+  )
+
+  const fastForward = useCallback((): void => {
+    if (isFormValid) {
+      handleSubmit()
       return
     }
     const projectDiff: {-readonly [K in keyof bayes.bob.Project]?: bayes.bob.Project[K]} = {}
@@ -67,72 +76,59 @@ class NewProjectCriteriaStepBase
     if (!minSalary) {
       projectDiff.minSalary = userExample.projects[0].minSalary
     }
-    this.props.dispatch(diagnoseOnboarding({projects: [projectDiff]}))
-    this.setState({minSalaryCommentRead: true})
-  }
-
-  private isFormValid = (): boolean => {
-    const {employmentTypes, workloads} = this.props.newProject
-    return !!((employmentTypes || []).length > 0 &&
-              (workloads || []).length > 0)
-  }
+    dispatch(diagnoseOnboarding({projects: [projectDiff]}))
+    setMinSalaryCommentRead(true)
+  }, [dispatch, employmentTypes, isFormValid, handleSubmit, minSalary, workloads])
 
   // Handle the event marking the comment as read.
   //
   // NOTE: If there ever are any other commented fields,
   // add the field name as a parameter to the function and memoize it.
-  private handleCommentRead = (): void => this.setState({minSalaryCommentRead: true})
-
-  public render(): React.ReactNode {
-    const {newProject: {minSalary, employmentTypes, workloads}, t} = this.props
-    const {isValidated, minSalaryCommentRead} = this.state
-    const checkboxListContainerStyle: React.CSSProperties = {
-      display: 'flex',
-      flexDirection: isMobileVersion ? 'column' : 'row',
-      justifyContent: 'space-between',
-    }
-    const checks = [
-      (employmentTypes || []).length && (workloads || []).length,
-      !minSalary || minSalaryCommentRead,
-    ]
-    // TODO(cyrille): Find a way to consider those steps as done (or not done yet).
-    return <Step
-      title={t('Vos attentes')}
-      {...this.props} fastForward={this.fastForward}
-      onNextButtonClick={this.handleSubmit}>
+  const handleCommentRead = useCallback((): void => setMinSalaryCommentRead(true), [])
+  const checks = [
+    (employmentTypes || []).length && (workloads || []).length,
+    !minSalary || minSalaryCommentRead,
+  ]
+  // TODO(cyrille): Find a way to consider those steps as done (or not done yet).
+  return <Step
+    title={t('Vos attentes')} {...props} fastForward={fastForward} onNextButtonClick={handleSubmit}>
+    <FieldSet
+      label={t('Quels types de contrat vous intéressent\u00A0?')}
+      isValid={!!(employmentTypes || []).length && !!(workloads || []).length}
+      isValidated={isValidated}>
+      <div style={checkboxListContainerStyle}>
+        <CheckboxList
+          options={localizeOptions(t, PROJECT_EMPLOYMENT_TYPE_OPTIONS)}
+          values={employmentTypes}
+          onChange={handleChangeEmploymentTypes} />
+        <CheckboxList
+          options={localizeOptions(t, PROJECT_WORKLOAD_OPTIONS)}
+          values={workloads}
+          onChange={handleChangeWorkloads} />
+      </div>
+      <OnboardingComment field="EMPLOYMENT_TYPE_FIELD" shouldShowAfter={false} />
+    </FieldSet>
+    {checks[0] ? <React.Fragment>
       <FieldSet
-        label={t('Quels types de contrat vous intéressent\u00A0?')}
-        isValid={!!(employmentTypes || []).length && !!(workloads || []).length}
-        isValidated={isValidated}>
-        <div style={checkboxListContainerStyle}>
-          <CheckboxList
-            options={localizeOptions(t, PROJECT_EMPLOYMENT_TYPE_OPTIONS)}
-            values={employmentTypes}
-            onChange={this.handleChange('employmentTypes')} />
-          <CheckboxList
-            options={localizeOptions(t, PROJECT_WORKLOAD_OPTIONS)}
-            values={workloads}
-            onChange={this.handleChange('workloads')} />
-        </div>
-        <OnboardingComment field="EMPLOYMENT_TYPE_FIELD" shouldShowAfter={false} />
+        hasNoteOrComment={true}
+        label={t('Quelles sont vos attentes en terme de salaire\u00A0? (optionnel)')}>
+        <SalaryInput value={minSalary} onChange={handleChangeMinSalary} />
+        <Trans style={{color: colors.COOL_GREY, marginTop: 5}}>
+            Laissez vide si vous n'avez pas d'idée précise
+        </Trans>
       </FieldSet>
-      {checks[0] ? <React.Fragment>
-        <FieldSet
-          hasNoteOrComment={true}
-          label={t('Quelles sont vos attentes en terme de salaire\u00A0? (optionnel)')}>
-          <SalaryInput value={minSalary} onChange={this.handleChange('minSalary')} t={t} />
-          <Trans style={{color: colors.COOL_GREY, marginTop: 5}}>
-              Laissez vide si vous n'avez pas d'idée précise
-          </Trans>
-        </FieldSet>
-        <OnboardingComment
-          field="SALARY_FIELD" shouldShowAfter={!!minSalary}
-          onDone={this.handleCommentRead} key={minSalary} />
-      </React.Fragment> : null}
-    </Step>
-  }
+      <OnboardingComment
+        field="SALARY_FIELD" shouldShowAfter={!!minSalary}
+        onDone={handleCommentRead} key={minSalary} />
+    </React.Fragment> : null}
+  </Step>
 }
-const NewProjectCriteriaStep = connect()(NewProjectCriteriaStepBase)
+NewProjectCriteriaStepBase.propTypes = {
+  newProject: PropTypes.object,
+  onSubmit: PropTypes.func,
+  t: PropTypes.func.isRequired,
+}
+const NewProjectCriteriaStep = React.memo(NewProjectCriteriaStepBase)
 
 
 const SALARY_UNIT_OPTIONS = [
@@ -159,111 +155,93 @@ const TO_GROSS_ANNUAL_FACTORS = {
 } as const
 type SalaryUnit = keyof typeof TO_GROSS_ANNUAL_FACTORS
 
-const getSalaryValue = (value: number|undefined, unitValue: SalaryUnit): string => {
-  if (!value) {
-    return ''
-  }
-  const factor = TO_GROSS_ANNUAL_FACTORS[unitValue]
-  return (value / factor).toLocaleString('fr')
-}
-
 
 interface SalaryInputProps {
-  dispatch: DispatchAllActions
   onChange: (value: number) => void
-  t: TFunction
-  unitValue: SalaryUnit
   value?: number
 }
 
 
-interface SalaryInputState {
-  salaryValue: string
-  value?: number
-}
+const SalaryInputBase = (props: SalaryInputProps): React.ReactElement => {
+  const {onChange, value: propsValue} = props
+  const unitValue = useSelector(({user}: RootState): SalaryUnit => {
+    const {preferredSalaryUnit = 'ANNUAL_GROSS_SALARY'} = user.profile || {}
+    return BEST_OPTION[preferredSalaryUnit]
+  })
 
+  const dispatch = useDispatch()
+  const {t} = useTranslation()
+  const simpleLocale = getLanguage()
 
-class SalaryInputBase extends React.PureComponent<SalaryInputProps, SalaryInputState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    onChange: PropTypes.func.isRequired,
-    t: PropTypes.func.isRequired,
-    unitValue: PropTypes.string.isRequired,
-    value: PropTypes.number,
-  }
-
-  public state: SalaryInputState = {
-    // String value.
-    salaryValue: '',
-  }
-
-  public static getDerivedStateFromProps(
-    {unitValue, value}: SalaryInputProps, {value: prevValue}: SalaryInputState):
-    SalaryInputState|null {
-    if (value !== prevValue) {
-      return {salaryValue: getSalaryValue(value, unitValue), value}
+  const getSalaryText = useCallback((gross: number|undefined, unitValue: SalaryUnit): string => {
+    if (!gross) {
+      return ''
     }
-    return null
-  }
+    const factor = TO_GROSS_ANNUAL_FACTORS[unitValue]
+    return (gross / factor).toLocaleString(simpleLocale)
+  }, [simpleLocale])
 
-  private handleSalaryValueChange = (value: string): void => {
-    this.setState({salaryValue: value}, (): void => {
-      this.handleChange(this.props.unitValue)
-    })
-  }
+  const getSalaryValue = useCallback((salaryText: string, unitValue: SalaryUnit): number => {
+    const cleanText = simpleLocale === 'fr' ?
+      salaryText.replace(/[ \u00A0]/g, '').replace(',', '.') :
+      salaryText.replace(/,/g, '')
+    const factor = TO_GROSS_ANNUAL_FACTORS[unitValue]
+    return Math.round(Number.parseFloat(cleanText) * factor)
+  }, [simpleLocale])
 
-  private handleSalaryUnitChange = (salaryUnit: SalaryUnit): void => {
-    this.props.dispatch(setUserProfile({
-      preferredSalaryUnit: salaryUnit,
-    }, true))
-    this.handleChange(salaryUnit)
-  }
+  const salaryTextFromProps = getSalaryText(propsValue, unitValue)
+  const [salaryText, setSalaryText] = useState(salaryTextFromProps)
 
-  private handleChange = (salaryUnit: SalaryUnit): void => {
-    const {onChange} = this.props
-    const salaryValueString = this.state.salaryValue
-    if (!salaryValueString) {
+  useLayoutEffect(() => {
+    setSalaryText(salaryTextFromProps)
+  }, [salaryTextFromProps])
+
+  const handleChange = useCallback((salaryText: string, salaryUnit: SalaryUnit): void => {
+    if (!salaryText) {
       onChange(0)
       return
     }
-    const cleanSalaryValueString = salaryValueString.replace(/[^\d,.\u00A0]/g, '')
-    const salaryValue = parseFloat(cleanSalaryValueString.replace(/\u00A0/g, '').replace(',', '.'))
-    const factor = TO_GROSS_ANNUAL_FACTORS[salaryUnit]
-    const grossAnnualValue = Math.round(salaryValue * factor)
-    if (salaryValueString !== cleanSalaryValueString) {
-      this.setState({
-        salaryValue: getSalaryValue(grossAnnualValue, salaryUnit),
-      })
+    const cleanSalaryText = salaryText.replace(/[^\d ,.\u00A0]/g, '')
+    const grossAnnual = getSalaryValue(cleanSalaryText, salaryUnit)
+    if (salaryText !== cleanSalaryText) {
+      setSalaryText(getSalaryText(grossAnnual, salaryUnit))
     }
-    onChange(grossAnnualValue)
-  }
+    onChange(grossAnnual)
+  }, [getSalaryText, getSalaryValue, onChange])
 
-  public render(): React.ReactNode {
-    const {t, unitValue} = this.props
-    const {salaryValue} = this.state
-    const selectStyle = isMobileVersion ? {marginTop: 10} : {
-      marginLeft: 10,
-      width: 150,
-    }
-    return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
-      <IconInput
-        iconComponent={CurrencyEurIcon}
-        iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
-        placeholder={t('Montant')} inputStyle={{paddingRight: '2.1em', textAlign: 'right'}}
-        value={salaryValue} onChange={this.handleSalaryValueChange} />
-      <Select
-        options={localizeOptions(t, SALARY_UNIT_OPTIONS)} value={unitValue}
-        onChange={this.handleSalaryUnitChange}
-        style={selectStyle} />
-    </div>
+  const handleSalaryTextChange = useCallback((text: string): void => {
+    setSalaryText(text)
+    handleChange(text, unitValue)
+  }, [handleChange, setSalaryText, unitValue])
+
+  const handleSalaryUnitChange = useCallback((salaryUnit: SalaryUnit): void => {
+    dispatch(setUserProfile({
+      preferredSalaryUnit: salaryUnit,
+    }, true))
+    handleChange(salaryText, salaryUnit)
+  }, [dispatch, handleChange, salaryText])
+
+  const selectStyle = isMobileVersion ? {marginTop: 10} : {
+    marginLeft: 10,
+    width: 150,
   }
+  return <div style={{display: 'flex', flexDirection: isMobileVersion ? 'column' : 'row'}}>
+    <IconInput
+      iconComponent={CurrencyEurIcon}
+      iconStyle={{fill: colors.PINKISH_GREY, width: 20}}
+      placeholder={t('Montant')} inputStyle={{paddingRight: '2.1em', textAlign: 'right'}}
+      value={salaryText} onChange={handleSalaryTextChange} />
+    <Select
+      options={localizeOptions(t, SALARY_UNIT_OPTIONS)} value={unitValue}
+      onChange={handleSalaryUnitChange}
+      style={selectStyle} />
+  </div>
 }
-const SalaryInput = connect(({user}: RootState): {unitValue: SalaryUnit} => {
-  const {preferredSalaryUnit = 'ANNUAL_GROSS_SALARY'} = user.profile || {}
-  return {
-    unitValue: BEST_OPTION[preferredSalaryUnit],
-  }
-})(SalaryInputBase)
+SalaryInputBase.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.number,
+}
+const SalaryInput = React.memo(SalaryInputBase)
 
 
 export {NewProjectCriteriaStep}

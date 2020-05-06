@@ -1,3 +1,4 @@
+import {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import StarIcon from 'mdi-react/StarIcon'
@@ -5,8 +6,9 @@ import PropTypes from 'prop-types'
 import React, {useMemo, useCallback} from 'react'
 
 import {genderizeJob} from 'store/job'
-import {lowerFirstLetter, maybeContract, ofPrefix, toTitleCase} from 'store/french'
+import {closeToCity, lowerFirstLetter, ofJobName, toTitleCase} from 'store/french'
 
+import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {RadiumDiv} from 'components/radium'
 import {ExternalLink, GrowingNumber} from 'components/theme'
@@ -15,8 +17,7 @@ import laBonneAlternanceImage from 'images/labonnealternance-picto.svg'
 import poleEmploiImage from 'images/ple-emploi-ico.png'
 import Picto from 'images/advices/picto-spontaneous-application.svg'
 
-import {MethodSuggestionList, CardProps, CardWithContentProps, ToolCard,
-  connectExpandedCardWithContent} from './base'
+import {MethodSuggestionList, CardProps, ToolCard, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -47,6 +48,7 @@ interface CompaniesProps {
   isAfterOther?: boolean
   profile: bayes.bob.UserProfile
   project: bayes.bob.Project
+  t: TFunction
 }
 
 const linkStyle = {
@@ -60,42 +62,53 @@ const CompaniesBase: React.FC<CompaniesProps> =
     profile: {gender}, project: {
       city: {cityId = '', name = ''} = {},
       targetJob,
-    }} = props
+    }, t} = props
   const handleExploreMore = useCallback((isForAlternance?: boolean): (() => void) => (): void => {
     handleExplore(`more ${isForAlternance ? 'alternances' : 'companies'}`)()
   }, [handleExplore])
 
 
-  const {modifiedName: cityName, prefix} = ofPrefix(name)
   const {jobGroup: {romeId = ''} = {}} = targetJob || {}
 
   const appTitle = `La Bonne ${isForAlternance ? 'Alternance' : 'Boîte'}`
 
-  const title = <React.Fragment>
-    <GrowingNumber isSteady={true} number={companies.length} />
-    {' '}structure{companies.length > 1 ? 's ' : ' '}
-    {isForAlternance && isAfterOther ? 'susceptibles de recruter en alternance' :
-      'à qui envoyer une candidature spontanée'}
-  </React.Fragment>
-  const subtitle = isForAlternance && isAfterOther ? `
-    Aujourd'hui, l'alternance est ouverte pas seulement aux jeunes, mais à toute personne
-    inscrite à Pôle emploi ou bénéficiaire des minimas sociaux.
-  ` : `
-    Elles ont un fort potentiel d'embauche pour ${gender === 'FEMININE' ? 'une ' : 'un '}
-    ${lowerFirstLetter(genderizeJob(targetJob, gender))}
-    ${isForAlternance ? ' en alternance' : ''} près ${prefix}${cityName}
-  `
+  const title = isForAlternance && isAfterOther ?
+    <Trans t={t} parent={null} count={companies.length}>
+      <GrowingNumber isSteady={true} number={companies.length} />
+      {' '}structure susceptible de recruter en alternance
+    </Trans> : <Trans t={t} parent={null} count={companies.length}>
+      <GrowingNumber isSteady={true} number={companies.length} />
+      {' '}structure à qui envoyer une candidature spontanée
+    </Trans>
+  const subtitle = isForAlternance && isAfterOther ? t(
+    "Aujourd'hui, l'alternance est ouverte pas seulement aux jeunes, mais à toute personne " +
+    'inscrite à Pôle emploi ou bénéficiaire des minimas sociaux.',
+  ) : isForAlternance ? t(
+    "Elles ont un fort potentiel d'embauche pour un·e {{jobName}} en alternance {{closeToCity}}",
+    {
+      closeToCity: closeToCity(name, t),
+      context: gender,
+      jobName: lowerFirstLetter(genderizeJob(targetJob, gender)),
+    },
+  ) : t(
+    "Elles ont un fort potentiel d'embauche pour un·e {{jobName}} {{closeToCity}}",
+    {
+      closeToCity: closeToCity(name, t),
+      context: gender,
+      jobName: lowerFirstLetter(genderizeJob(targetJob, gender)),
+    },
+  )
   const footer = useMemo((): React.ReactElement =>
-    <React.Fragment>
+    <Trans t={t} parent={null}>
       <img
         src={poleEmploiImage} style={{height: 35, marginRight: 10, verticalAlign: 'middle'}}
         alt="Pôle emploi" />
       Voir d'autres entreprises sur <ExternalLink
         style={linkStyle}
         href={createLink(maxDistanceToCompaniesKm, isForAlternance, cityId, romeId)}
-        onClick={handleExploreMore(isForAlternance)}>{appTitle}</ExternalLink>
-    </React.Fragment>,
-  [appTitle, cityId, handleExploreMore, romeId, maxDistanceToCompaniesKm, isForAlternance])
+        onClick={handleExploreMore(isForAlternance)}>{{appTitle}}</ExternalLink>
+    </Trans>,
+  [appTitle, cityId, handleExploreMore, romeId, maxDistanceToCompaniesKm, isForAlternance, t])
   if (!companies || !companies.length) {
     return null
   }
@@ -104,7 +117,7 @@ const CompaniesBase: React.FC<CompaniesProps> =
     {companies.filter((c: bayes.bob.Company): c is ValidCompany => !!c.name).
       map((company: ValidCompany, index: number): ReactStylableElement =>
         <CompanyLink
-          key={`company-${index}`} {...company} {...{isForAlternance, romeId}}
+          key={`company-${index}`} {...company} {...{isForAlternance, romeId, t}}
           onClick={handleExplore(isForAlternance ? 'alternance' : 'company')}
           isNotClickable={!company.siret} />)}
   </MethodSuggestionList>
@@ -112,19 +125,19 @@ const CompaniesBase: React.FC<CompaniesProps> =
 const Companies = React.memo(CompaniesBase)
 
 
-const SpontaneousMethod: React.FC<CardWithContentProps<bayes.bob.SpontaneousApplicationData>> =
-(props: CardWithContentProps<bayes.bob.SpontaneousApplicationData>): React.ReactElement => {
+const SpontaneousMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
   const {
-    adviceData: {
-      alternanceCompanies,
-      companies,
-      maxDistanceToCompaniesKm = 10,
-      maxDistanceToAlternanceCompaniesKm = 10,
-    },
     profile: {gender},
     project: {diagnostic, employmentTypes = [], targetJob},
     strategyId,
+    t,
   } = props
+  const {
+    alternanceCompanies,
+    companies,
+    maxDistanceToCompaniesKm = 10,
+    maxDistanceToAlternanceCompaniesKm = 10,
+  } = useAdviceData<bayes.bob.SpontaneousApplicationData>(props)
   const isMissingDiploma = diagnostic && diagnostic.categoryId === 'missing-diploma'
   const isLookingForAlternance = isMissingDiploma ?
     strategyId === 'get-alternance' :
@@ -143,37 +156,33 @@ const SpontaneousMethod: React.FC<CardWithContentProps<bayes.bob.SpontaneousAppl
         companies={usefulAlternanceCompanies} {...props} />
     </React.Fragment>
   }
-  const title = `
-    Trouver des entreprises ${isOnlyLookingForAlternance ? 'qui recrutent en alternance' : ''}`
+  const title = isOnlyLookingForAlternance ?
+    t('Trouver des entreprises qui recrutent en alternance') :
+    t('Trouver des entreprises qui recrutent')
   const jobName = lowerFirstLetter(genderizeJob(targetJob, gender))
-  const subtitle = `
-    Faire des candidatures spontanées est un des meilleurs moyens de trouver
-    un poste ${maybeContract('de ', "d'", jobName)}${jobName}`
+  const subtitle = t(
+    'Faire des candidatures spontanées est un des meilleurs moyens de trouver un poste ' +
+    '{{ofJobName}}', {ofJobName: ofJobName(jobName, t)},
+  )
   return <MethodSuggestionList title={title} subtitle={subtitle}>
     {isOnlyLookingForAlternance ? null : <ToolCard
       imageSrc={laBonneBoiteImage} href={createLink(maxDistanceToCompaniesKm)}>
       La Bonne Boite
-      <div style={{fontSize: 13, fontWeight: 'normal'}}>
+      <Trans t={t} style={{fontSize: 13, fontWeight: 'normal'}}>
         pour trouver des entreprises à fort potentiel d'embauche
-      </div>
+      </Trans>
     </ToolCard>}
     {isLookingForAlternance ? <ToolCard
       imageSrc={laBonneAlternanceImage}
       href={createLink(maxDistanceToAlternanceCompaniesKm, true)}>
       La Bonne Alternance
-      <div style={{fontSize: 13, fontWeight: 'normal'}}>
+      <Trans t={t} style={{fontSize: 13, fontWeight: 'normal'}}>
         pour trouver des entreprises qui embauchent en alternance
-      </div>
+      </Trans>
     </ToolCard> : null}
   </MethodSuggestionList>
 }
 SpontaneousMethod.propTypes = {
-  adviceData: PropTypes.shape({
-    alternanceCompanies: PropTypes.array,
-    companies: PropTypes.array,
-    maxDistanceToAlternanceCompaniesKm: PropTypes.number,
-    maxDistanceToCompaniesKm: PropTypes.number,
-  }).isRequired,
   handleExplore: PropTypes.func.isRequired,
   profile: PropTypes.shape({
     gender: PropTypes.string,
@@ -189,10 +198,9 @@ SpontaneousMethod.propTypes = {
     }),
   }).isRequired,
   strategyId: PropTypes.string,
+  t: PropTypes.func.isRequired,
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.SpontaneousApplicationData, CardProps>(
-    React.memo(SpontaneousMethod))
+const ExpandedAdviceCardContent = React.memo(SpontaneousMethod)
 
 
 const titleStyle = {
@@ -213,20 +221,24 @@ const getStarStyle = _memoize(
   (starIndex: number, hiringPotential: number): string => `${starIndex}-${hiringPotential}`,
 )
 
-const StarsBase: React.FC<{hiringPotential: number}> =
-  ({hiringPotential}: {hiringPotential: number}): React.ReactElement|null => {
-    if (!hiringPotential) {
-      return null
-    }
-    return <span style={iconTextStyle}>
-      {isMobileVersion ? null : <span style={titleStyle}>
-        Potentiel d'embauche&nbsp;:
-      </span>}
-      {new Array(3).fill(null).map((unused, index): React.ReactNode =>
-        <StarIcon
-          style={getStarStyle(index, hiringPotential)} key={`star-${index}`} />)}
-    </span>
+interface StarsProps {
+  hiringPotential: number
+  t: TFunction
+}
+
+
+const StarsBase = ({hiringPotential, t}: StarsProps): React.ReactElement|null => {
+  if (!hiringPotential) {
+    return null
   }
+  return <span style={iconTextStyle}>
+    {isMobileVersion ? null : <Trans parent="span" style={titleStyle} t={t}>
+      Potentiel d'embauche&nbsp;:
+    </Trans>}
+    {new Array(3).fill(null).map((unused, index): React.ReactNode =>
+      <StarIcon style={getStarStyle(index, hiringPotential)} key={`star-${index}`} />)}
+  </span>
+}
 StarsBase.propTypes = {
   hiringPotential: PropTypes.number,
 }
@@ -239,6 +251,7 @@ interface CompanyLinkProps extends ValidCompany {
   onClick: () => void
   romeId: string
   style?: React.CSSProperties
+  t: TFunction
 }
 
 
@@ -261,7 +274,9 @@ const createLBAUrl = (siret: string|undefined, tracking: string, romeId: string)
 
 const CompanyLinkBase: React.FC<CompanyLinkProps> =
   (props: CompanyLinkProps): React.ReactElement => {
-    const {cityName, hiringPotential, isForAlternance, onClick, name, romeId, siret, style} = props
+    const {
+      cityName, hiringPotential, isForAlternance, onClick, name, romeId, siret, style, t,
+    } = props
     const tracking = 'utm_medium=web&utm_source=bob&utm_campaign=bob-conseil-ent'
     const LBBUrl = useMemo(() => createLBBUrl(siret, tracking), [siret, tracking])
     const LBAUrl = useMemo(() => createLBAUrl(siret, tracking, romeId), [siret, tracking, romeId])
@@ -294,7 +309,7 @@ const CompanyLinkBase: React.FC<CompanyLinkProps> =
             - {toTitleCase(cityName)}
           </span> : null}
       </span>
-      <Stars hiringPotential={hiringPotential || 0} />
+      <Stars hiringPotential={hiringPotential || 0} t={t} />
       <ChevronRightIcon style={chevronStyle} />
     </RadiumDiv>
   }

@@ -114,6 +114,7 @@ _BEFORE_TRANSLATION_CHECKERS: Dict['options_pb2.StringFormat', checker.ValueChec
     options_pb2.URL_FORMAT: checker.UrlChecker(),
     options_pb2.SCORING_PROJECT_TEMPLATE: checker.MissingTemplateVarsChecker(),
     options_pb2.PARTIAL_SENTENCE: checker.PartialSentenceChecker(),
+    options_pb2.LIST_OPTION: checker.ListOptionChecker(),
 }
 
 
@@ -387,7 +388,8 @@ PROTO_CLASSES: Dict[str, ProtoAirtableConverter] = {
         network_pb2.ContactLeadTemplate, None, required_fields=('name', 'email_template')
     ),
     'DiagnosticCategory': _ProtoAirtableFiltersConverter(
-        diagnostic_pb2.DiagnosticCategory, None, required_fields=['category_id', 'order']
+        diagnostic_pb2.DiagnosticCategory, None,
+        required_fields=['category_id', 'order', 'description']
     ).set_fields_sorter(
         lambda record: (_FilterSetSorter(record), record.get('order'))),
     'DiagnosticSentenceTemplate': _ProtoAirtableFiltersConverter(
@@ -482,9 +484,9 @@ def airtable2dicts(base_id: str, table: str, proto: str, view: Optional[str] = N
         previous_keys[record_id] = sort_key
 
     proto_records = []
-    for record in records:
+    for order, record in enumerate(records):
         try:
-            converted = converter.convert_record(record)
+            converted = dict(converter.convert_record(record), _order=order)
         except (ValueError, KeyError) as error:
             has_error = True
             logging.error(
@@ -612,6 +614,7 @@ def _has_validation_errors(
     for value in values:
         proto = proto_class()
         _id = typing.cast(str, value.pop('_id'))
+        order = value.pop('_order')
         # Enforce Proto schema.
         try:
             json_format.ParseDict(value, proto)
@@ -627,6 +630,7 @@ def _has_validation_errors(
                 proto_checkers,
                 _BEFORE_TRANSLATION_CHECKERS)
         value['_id'] = _id
+        value['_order'] = order
     return has_error
 
 

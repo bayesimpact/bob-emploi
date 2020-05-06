@@ -1,5 +1,72 @@
 This is a detailed changelog of past Bob product releases. For a high level non-technical view of the project history, see [HISTORY.md](HISTORY.md).
 
+# 2020-04-22_00
+
+- Start revamping the evaluation by asking the user for a self diagnostic.
+- Server performance fix.
+- Various clean ups, lib updates and use React hooks.
+- Fixes for A-Li
+
+Deployed on Wed, 22 Apr 2020 13:12:52 +0000
+
+# 2020-03-30_00
+
+- Fix typos in English translations.
+- Fix rare authentication bugs.
+
+Deployed on Tue, 31 Mar 2020 06:33:48 +0000
+
+# 2020-03-25_00
+
+2020-03-24_00
+
+- Add a page to help job seeker under the Covid-19 lockdown.
+- More translations.
+- Small fixes.
+
+Deployed on Thu, 26 Mar 2020 08:24:16 +0000
+
+# 2020-03-16_00
+
+- Launch the "Undefined Project" feature: allow users not to specify any job name.
+- More translations.
+- Fix small bugs and typo.
+
+Deployed on Mon, 16 Mar 2020 14:14:09 +0000
+
+# 2020-03-05_00
+
+- Translate most pages in English
+- Prepare possibility for an undefined project
+- Clean Code, Bug Fixes, ...
+
+Deployed on Thu, 05 Mar 2020 14:31:22 +0000
+
+# 2020-02-17_01
+
+- More translations.
+- Use new OVH endpoint URLs, the old ones are sunsetting on 2020-02-18.
+- Clean code used for very old users that are now migrated to use strategies.
+
+Deployed on Mon, 17 Feb 2020 16:40:53 +0000
+
+# 2020-02-11_00
+
+- Migrate users that had no strategies to the new UX when they are coming back to the app.
+- Fix the Imilo integration and link to A-Li.
+- Translate more and more advice modules.
+- Multiple fixes on the stats page.
+
+Deployed on Tue, 11 Feb 2020 12:11:44 +0000
+
+# 2020-02-06_00
+
+- Ensure order in collections from mongo where important.
+- More translation in the methods
+- Clean Code, Bug Fixes, ...
+
+Deployed on Thu, 06 Feb 2020 14:04:54 +0000
+
 # 2020-01-28_01
 
 - More English translations

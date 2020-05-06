@@ -1,26 +1,22 @@
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
-import {useTranslation} from 'react-i18next'
 
 import {getEmailTemplates} from 'store/french'
 
+import {Trans} from 'components/i18n'
 import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-follow-up.svg'
 
 import {CardProps, EmailTemplate, MethodSuggestionList} from './base'
 
 
-const makeTitle = (numTemplates: number): React.ReactNode =>
-  <React.Fragment>
-    <GrowingNumber number={numTemplates} /> exemple{numTemplates > 1 ? 's ' : ' '}
-    d'email de relance
-  </React.Fragment>
-
-const FollowUpCard: React.FC<CardProps> = (props): React.ReactElement => {
-  const {advice: {adviceId}, handleExplore} = props
-  const {t} = useTranslation()
+const FollowUpCard: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
+  const {advice: {adviceId}, handleExplore, t} = props
   const templates = useMemo(() => getEmailTemplates(t)[adviceId], [adviceId, t]) || []
-  const title = useMemo(() => makeTitle(templates.length), [templates])
+  const numTemplates = templates.length
+  const title = <Trans parent={null} count={numTemplates} t={t}>
+    <GrowingNumber number={numTemplates} /> exemple d'email de relance
+  </Trans>
   return <MethodSuggestionList title={title}>
     {templates.map((template, index: number): ReactStylableElement => <EmailTemplate
       onContentShown={handleExplore('email')} isMethodSuggestion={true}

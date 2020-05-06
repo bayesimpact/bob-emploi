@@ -75,11 +75,19 @@ class Importer(object):
         real_collection = self._collection_from_flags(collection_name)
         has_old_data = bool(real_collection.estimated_document_count())
 
-        if has_old_data and not self.review_diff(items, real_collection, bool(check_error)):
-            return
+        if has_old_data:
+            has_diff_to_review, has_diff = self.print_diff(items, real_collection)
+        else:
+            has_diff_to_review, has_diff = False, True
 
         if check_error:
             raise check_error
+
+        if not has_diff:
+            return
+
+        if has_diff_to_review and not self.approve_diff():
+            return
 
         unique_suffix = f'_{round(time.time() * 1e6):x}'
         collection = self._collection_from_flags(collection_name, suffix=unique_suffix)
@@ -143,29 +151,38 @@ class Importer(object):
         _database = client.get_database()
         return _database.get_collection(collection_name + suffix)
 
-    def review_diff(
+    def print_diff(
             self,
             new_list: List[JsonType],
-            old_mongo_collection: pymongo_collection.Collection,
-            has_error: bool) -> bool:
-        """Review the difference between an old and new dataset."""
+            old_mongo_collection: pymongo_collection.Collection) -> Tuple[bool, bool]:
+        """Print the difference between an old and new dataset.
 
-        if len(new_list) > 1000:
-            return True
+        Returns: whether there is a diff to approve, and whether there is a diff to import.
+        """
+
+        new_list_len = len(new_list)
+        if new_list_len > 1000:
+            self._print_in_report(f'Too many entries to diff ({new_list_len}).')
+            return False, True
 
         old_list = list(old_mongo_collection.find())
 
         diff = _compute_diff(old_list, new_list)
         if not diff:
             self._print_in_report('The data is already up to date.')
-            return not has_error
+            return False, False
 
-        if not has_error and self.flag_values.always_accept_diff:
+        if not self.flag_values.always_accept_diff:
+            self._print(json.dumps(diff, indent=2, ensure_ascii=False))
+
+        return True, True
+
+    def approve_diff(self) -> bool:
+        """Review the difference between an old and new dataset."""
+
+        if self.flag_values.always_accept_diff:
             return True
 
-        self._print(json.dumps(diff, indent=2, ensure_ascii=False))
-        if has_error:
-            return True
         while True:
             # Needed as input() prompts to stderr and stderr might be captured,
             # e.g. by import_status subprocess.run(...).
@@ -400,6 +417,9 @@ def parse_doc_to_proto(document: JsonType, proto_type: Type[_ProtoType]) -> _Pro
     """Parse a single proto from a document."""
 
     proto = proto_type()
+    to_delete = [k for k in document if k.startswith('_')]
+    for k in to_delete:
+        del document[k]
     try:
         json_format.Parse(json.dumps(document), proto)
     except json_format.ParseError as error:

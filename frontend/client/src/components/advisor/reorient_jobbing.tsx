@@ -1,67 +1,53 @@
-import React from 'react'
+import React, {useMemo} from 'react'
 import PropTypes from 'prop-types'
 
 import {inDepartement} from 'store/french'
 
-import {GrowingNumber} from 'components/theme'
+import {Trans} from 'components/i18n'
+import {DataSource, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-reorient-jobbing.svg'
 
-import {CardProps, CardWithContentProps, DataSource, JobSuggestion, MethodSuggestionList,
-  connectExpandedCardWithContent} from './base'
+import {CardProps, JobSuggestion, MethodSuggestionList, useAdviceData} from './base'
 
 
+const emptyArray = [] as const
 type JobSuggestionProps = GetProps<typeof JobSuggestion>
 
 
-class ReorientJobbing
-  extends React.PureComponent<CardWithContentProps<bayes.bob.JobbingReorientJobs>> {
-  public static propTypes = {
-    adviceData: PropTypes.shape({
-      reorientJobbingJobs: PropTypes.arrayOf(PropTypes.shape({
-        name: PropTypes.string,
-      }).isRequired),
-    }).isRequired,
-    handleExplore: PropTypes.func.isRequired,
-    project: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  private computeAllJobs(): React.ReactElement<JobSuggestionProps>[] {
-    const {adviceData: {reorientJobbingJobs = []}, handleExplore} = this.props
-    const jobList = reorientJobbingJobs.slice(0, 6).
+const ReorientJobbing = (props: CardProps): React.ReactElement|null => {
+  const {handleExplore, project: {city}, t} = props
+  const {reorientJobbingJobs = emptyArray} = useAdviceData<bayes.bob.JobbingReorientJobs>(props)
+  const allJobs = useMemo(
+    (): readonly React.ReactElement<JobSuggestionProps>[] => reorientJobbingJobs.slice(0, 6).
       map((job, index): React.ReactElement<JobSuggestionProps> => <JobSuggestion
-        isMethodSuggestion={true} key={`job-${index}`} job={job} onClick={handleExplore('job')} />)
-    return jobList
-  }
+        isMethodSuggestion={true} key={`job-${index}`} job={job} onClick={handleExplore('job')} />),
+    [handleExplore, reorientJobbingJobs],
+  )
 
-  public render(): React.ReactNode {
-    const allJobs = this.computeAllJobs()
-    const {project: {city}, userYou} = this.props
+  const inYourDepartement = city && inDepartement(city) || t('dans votre département')
 
-    if (!allJobs.length) {
-      return null
-    }
-
-    const inYourDepartement = city && inDepartement(city) ||
-      `dans ${userYou('ton', 'votre')} département`
-    const isPlural = allJobs.length > 1
-
-    const title = <React.Fragment>
-      <GrowingNumber number={allJobs.length} isSteady={true} />&nbsp;métier{isPlural ? 's ' : ' '}
-      qui recrut{isPlural ? 'ent' : ''} beaucoup {inYourDepartement}*
-    </React.Fragment>
-    const footer = <DataSource style={{margin: 0}}>IMT 2017 / Pôle emploi</DataSource>
-    return <MethodSuggestionList title={title} footer={footer}>
-      {[<JobSuggestion
-        isNotClickable={true}
-        isMethodSuggestion={true}
-        isCaption={true}
-        key="jobs-caption" />].concat(allJobs)}
-    </MethodSuggestionList>
-  }
+  const title = <React.Fragment>
+    <Trans parent={null} t={t} count={allJobs.length}>
+      <GrowingNumber number={allJobs.length} isSteady={true} />&nbsp;métier
+      qui recrute beaucoup {{inYourDepartement}}
+    </Trans>
+    *
+  </React.Fragment>
+  const footer = <DataSource style={{margin: 0}}>IMT 2017 / Pôle emploi</DataSource>
+  return <MethodSuggestionList title={title} footer={footer}>
+    {[<JobSuggestion
+      isNotClickable={true}
+      isMethodSuggestion={true}
+      isCaption={true}
+      key="jobs-caption" />].concat(allJobs)}
+  </MethodSuggestionList>
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.JobbingReorientJobs, CardProps>(ReorientJobbing)
+ReorientJobbing.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+  project: PropTypes.object.isRequired,
+  t: PropTypes.func.isRequired,
+}
+const ExpandedAdviceCardContent = React.memo(ReorientJobbing)
 
 
 export default {ExpandedAdviceCardContent, Picto}

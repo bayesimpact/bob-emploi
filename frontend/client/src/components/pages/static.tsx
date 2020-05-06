@@ -5,6 +5,7 @@ import {Routes} from 'components/url'
 
 import Contribution from './static/contribution'
 import Cookies from './static/cookies'
+import Covid from './static/covid'
 import Privacy from './static/privacy'
 import Transparency from './static/transparency'
 import Team from './static/team'
@@ -18,6 +19,7 @@ import StaticAdvice from './static/static_advice'
 const StaticPages: React.FC<{}> = () => <Switch>
   <Route path={Routes.CONTRIBUTION_PAGE} component={Contribution} />
   <Route path={Routes.COOKIES_PAGE} component={Cookies} />
+  <Route path={Routes.COVID_PAGE} component={Covid} />
   <Route path={Routes.PRIVACY_PAGE} component={Privacy} />
   <Route path={Routes.TRANSPARENCY_PAGE} component={Transparency} />
   <Route path={Routes.TEAM_PAGE} component={Team} />

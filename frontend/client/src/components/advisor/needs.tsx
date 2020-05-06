@@ -1,9 +1,8 @@
+import {TFunction} from 'i18next'
 import PropTypes from 'prop-types'
-import _memoize from 'lodash/memoize'
-import React from 'react'
+import React, {useMemo} from 'react'
 
-import {YouChooser} from 'store/french'
-
+import {Trans} from 'components/i18n'
 import {ExternalLink, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-needs.svg'
 
@@ -23,25 +22,24 @@ const quoteStyle = {
   paddingLeft: 10,
 }
 
-const getTips = _memoize((userYou: YouChooser): readonly Tip[] => [
+const getTips = (t: TFunction): readonly Tip[] => [
   {
-    content: <span>
+    content: <Trans parent="span" t={t}>
       <p>
-        Un recruteur averti {userYou('te', 'vous')} posera la question&nbsp;: "êtes-vous
+        Un recruteur averti vous posera la question&nbsp;: "êtes-vous
         bénéficiaire de la loi 2005 ou avez vous une RQTH&nbsp;?"
       </p>
       <p>
         La question "avez-vous besoin d'un aménagement de poste&nbsp;?" suivra.
       </p>
       <p>
-        Si cette question ne {userYou("t'", 'vous ')}est pas posée, {userYou('tu ', 'vous êt')}es en
-        droit de ne pas en parler.
+        Si cette question ne vous est pas posée, vous êtes en droit de ne pas en parler.
       </p>
-    </span>,
-    title: 'Connaître ses droits',
+    </Trans>,
+    title: t('Connaître ses droits'),
   },
   {
-    content: <span>
+    content: <Trans parent="span" t={t}>
       Selon Hanploi,
       <blockquote style={quoteStyle}>
         <p>
@@ -49,84 +47,75 @@ const getTips = _memoize((userYou: YouChooser): readonly Tip[] => [
           travail.
         </p>
         <p>
-          Aujourd'hui {userYou("tu n'as", "vous n'avez")} peut-être pas besoin d'un aménagement de
-          poste, mais demain&nbsp;?
+          Aujourd'hui vous n'avez peut-être pas besoin d'un aménagement de poste, mais demain&nbsp;?
         </p>
       </blockquote>
-    </span>,
-    title: 'Prioriser sa santé et son confort avant tout',
+    </Trans>,
+    title: t('Prioriser sa santé et son confort avant tout'),
   },
   {
     // TODO(cyrille): Add tabs for each disability.
-    content: <span>
+    content: <Trans parent="span" t={t}>
       Hanploi nous conseille&nbsp;:
       <blockquote style={quoteStyle}>
         <p>
-          Qui {userYou('te', 'vous')} connait mieux que {userYou('toi', 'vous')}-même&nbsp;?
-          {userYou(' Tu ', ' Vous êt')}es donc en mesure d'en parler&nbsp;! Pas de langue de bois
-          si {userYou('tu as', 'vous avez')} besoin d'aménagement de poste.
+          Qui vous connait mieux que vous-même&nbsp;? Vous êtes donc en mesure d'en parler&nbsp;!
+          Pas de langue de bois si vous avez besoin d'aménagement de poste.
         </p>
         <p>
-          Mais n'entre{userYou('', 'z')} pas dans le détail de {userYou('ton', 'votre')} handicap
-          cela ne regarde que {userYou('toi', 'vous')}&nbsp;!
+          Mais n'entrez pas dans le détail de votre handicap cela ne regarde que vous&nbsp;!
         </p>
         <p>
-          Pose{userYou('-toi', 'z-vous')} les bonnes questions par rapport au poste
-          que {userYou('tu vises', 'vous visez')}.
+          Posez-vous les bonnes questions par rapport au poste que vous visez.
         </p>
       </blockquote>
-    </span>,
-    title: "Se poser les bonnes questions avant de parler à l'employeur",
+    </Trans>,
+    title: t("Se poser les bonnes questions avant de parler à l'employeur"),
   },
   {
-    content: <span>
+    content: <Trans parent="span" t={t}>
       L'<ExternalLink href="https://www.agefiph.fr/aides-handicap/aide-laccueil-lintegration-et-levolution-professionnelle-des-personnes-handicapees">
         AGEFIPH
       </ExternalLink> et ou le <ExternalLink href="http://www.fiphfp.fr/FAQ/Quelles-aides-financieres-peut-apporter-le-FIPHFP">
         FIPHP
       </ExternalLink> peuvent prendre en charge tout ou une partie du coût
-      de {userYou('ton', 'votre')} aménagement. Pense{userYou('', 'z')} à le rappeler
-      à {userYou('ton', 'votre')} futur employeur.
-    </span>,
-    title: "Rassurer l'employeur",
+      de votre aménagement. Pensez à le rappeler à votre futur employeur.
+    </Trans>,
+    title: t("Rassurer l'employeur"),
   },
   {
-    content: <span>
+    content: <Trans parent="span" t={t}>
       Selon Hanploi&nbsp;:
       <blockquote style={quoteStyle}>
         <p>Une intégration réussie est l'une des clés d'une période d'essai validée.</p>
         <p>
-          En cernant davantage {userYou('tes', 'vos')} besoins, {userYou('ton', 'votre')} futur
-          employeur pourra préparer {userYou('ton', 'votre')} intégration dans son équipe.
+          En cernant davantage vos besoins, votre futur employeur pourra préparer votre intégration
+          dans son équipe.
         </p>
         <p>
-          Sans dévoiler {userYou('ton', 'votre')} handicap, il pourra justifier
-          de {userYou('tes', 'vos')} pauses, de {userYou('ton', 'votre')} aménagement de temps, ou
-          du mobilier mis à {userYou('ta', 'votre')} disposition.
+          Sans dévoiler votre handicap, il pourra justifier de vos pauses, de votre aménagement de
+          temps, ou du mobilier mis à votre disposition.
         </p>
-        <p>Ainsi {userYou('tes', 'vos')} collègues comprendront.</p>
+        <p>Ainsi vos collègues comprendront.</p>
       </blockquote>
-    </span>,
-    title: "Préparer son intégration au sein d'une nouvelle équipe",
+    </Trans>,
+    title: t("Préparer son intégration au sein d'une nouvelle équipe"),
   },
-])
-
-
-const FOOTER = <HandyLink
-  href="https://www.welcometothejungle.co/fr/articles/comment-parler-de-son-etat-de-sante-au-travail"
-  linkIntro="Conseils généraux sur comment parler de sa santé au travail&nbsp;:">
-  Welcome&nbsp;to&nbsp;the&nbsp;Jungle
-</HandyLink>
+]
 
 
 const Needs: React.FC<CardProps> = (props: CardProps) => {
-  const {handleExplore, userYou} = props
-  const tips = getTips(userYou)
-  const title = <React.Fragment>
-    <GrowingNumber number={tips.length} isSteady={true} /> astuce{tips.length > 1 ? 's' : ''} pour
-    une bonne communication
-  </React.Fragment>
-  return <MethodSuggestionList title={title} footer={FOOTER}>
+  const {handleExplore, t} = props
+  const tips = useMemo((): readonly Tip[] => getTips(t), [t])
+  const title = <Trans parent={null} t={t} count={tips.length}>
+    <GrowingNumber number={tips.length} isSteady={true} /> astuce pour une bonne communication
+  </Trans>
+  const footer = <HandyLink
+    href="https://www.welcometothejungle.co/fr/articles/comment-parler-de-son-etat-de-sante-au-travail"
+    linkIntro={t('Conseils généraux sur comment parler de sa santé au travail\u00A0:')}>
+    Welcome&nbsp;to&nbsp;the&nbsp;Jungle
+  </HandyLink>
+  return <MethodSuggestionList title={title} footer={footer}>
     {tips.map(({content, title}, index): ReactStylableElement =>
       <ExpandableAction
         isMethodSuggestion={true} title={title} key={index}
@@ -137,7 +126,7 @@ const Needs: React.FC<CardProps> = (props: CardProps) => {
 }
 Needs.propTypes = {
   handleExplore: PropTypes.func.isRequired,
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(Needs)
 

@@ -26,8 +26,13 @@ class PromiseI18nBackend {
 }
 
 /* eslint-disable no-console */
-const missingKeyHandler = (langs: string[], ns: string, key: string): void =>
+const missingKeyHandler = (langs: (string|undefined)[], ns: string, key: string): void =>
   langs.forEach(lang => {
+    if (!lang) {
+      // TODO(pascal): Investigate why we get undefined (it looks like the i18next Translator can
+      // be in a state where this.language is undefined).
+      return
+    }
     const langNs = `${lang}/${ns}`
     // TODO(cyrille): Find a way to have missing contextual translations properly logged.
     if (key.includes('_')) {
@@ -61,8 +66,8 @@ const UpdateDocumentElementLang = {
 } as const
 
 
-const init = (initOptions?: InitOptions): void => {
-  i18next.
+const init = (initOptions?: InitOptions): Promise<TFunction> => {
+  return i18next.
     use(initReactI18next).
     use(LanguageDetector).
     use(PromiseI18nBackend).
@@ -111,10 +116,10 @@ const prepareNamespace = (ns: string): void => {
 interface Localizable {
   __unreachable?: never
 }
-export type LocalizableString = string & Localizable
+export type LocalizableString<T extends string = string> = T & Localizable
 
-export interface WithLocalizableName {
-  readonly name: LocalizableString
+export interface WithLocalizableName<T extends string = string> {
+  readonly name: LocalizableString<T>
 }
 
 function localizeOptions<T extends WithLocalizableName>(
@@ -124,20 +129,31 @@ function localizeOptions<T extends WithLocalizableName>(
 }
 
 // Marker for string to be extracted for translation.
-const prepareT = (str: string, unusedOptions?: TOptions): LocalizableString =>
-  str as LocalizableString
+function prepareT<T extends string = string>(str: T, unusedOptions?: TOptions):
+LocalizableString<T> {
+  return str as LocalizableString<T>
+}
 
 
 function isTuPossible(language: string): boolean {
   return language.startsWith('fr')
 }
 
+
 // Returns the language currently in use, without dialect markers.
 // For example, if locale is fr@tu, will return fr.
-const getLanguage = (): string => i18next?.languages?.[0]?.replace(/@.*$/, '') || 'fr'
+const getLanguage = (locale?: string): string =>
+  (locale || i18next?.languages?.[0] || 'fr').replace(/@.*$/, '')
+
+
+function getLocaleWithTu(locale: string, canTutoie?: boolean): string {
+  const language = getLanguage(locale)
+  return language + (isTuPossible(language) && canTutoie ? '@tu' : '')
+}
 
 
 type PromiseImportFunc = (language: string, namespace: string) => Promise<{default: ResourceKey}>
 
 
-export {init, getLanguage, isTuPossible, localizeOptions, prepareT, prepareNamespace}
+export {init, getLanguage, getLocaleWithTu, isTuPossible, localizeOptions, prepareT,
+  prepareNamespace}

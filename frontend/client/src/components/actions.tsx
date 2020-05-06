@@ -2,7 +2,7 @@ import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useEffect} from 'react'
-import {connect} from 'react-redux'
+import {useDispatch} from 'react-redux'
 
 import {DispatchAllActions, readTip, openTipExternalLink} from 'store/actions'
 
@@ -14,12 +14,11 @@ import {Modal, ModalHeader} from './modal'
 import {ExternalLink, Markdown} from './theme'
 
 
-type ActionPropWithId = bayes.bob.Action & {actionId: string}
+export type ActionPropWithId = bayes.bob.Action & {actionId: string}
 
 
 interface ModalProps {
   action?: ActionPropWithId
-  dispatch: DispatchAllActions
   isShown?: boolean
   onClose: () => void
 }
@@ -27,7 +26,8 @@ interface ModalProps {
 
 // TODO(pascal): Add static propTypes back.
 const ActionDescriptionModalBase: React.FC<ModalProps> =
-({action, dispatch, isShown, onClose}: ModalProps): React.ReactElement|null => {
+({action, isShown, onClose}: ModalProps): React.ReactElement|null => {
+  const dispatch = useDispatch<DispatchAllActions>()
   useEffect(() => {
     if (isShown && action?.status === 'ACTION_UNREAD') {
       dispatch(readTip(action))
@@ -75,7 +75,7 @@ const ActionDescriptionModalBase: React.FC<ModalProps> =
     </div>
   </Modal>
 }
-const ActionDescriptionModal = connect()(React.memo(ActionDescriptionModalBase))
+const ActionDescriptionModal = React.memo(ActionDescriptionModalBase)
 
 
 const ActionModalHeaderBase: React.FC<bayes.bob.Action> =
@@ -98,7 +98,7 @@ const ActionModalHeader = React.memo(ActionModalHeaderBase)
 interface ActionProps {
   action?: bayes.bob.Action
   context?: '' | 'project'
-  onOpen: () => void
+  onOpen: (action?: bayes.bob.Action) => void
   project: bayes.bob.Project
   style?: React.CSSProperties
 }
@@ -151,9 +151,10 @@ const getBulletStyle = (status?: bayes.bob.ActionStatus): React.CSSProperties =>
 
 const ActionBase: React.FC<ActionProps> = (props: ActionProps): React.ReactElement => {
   const {
-    action: {status = undefined, title = undefined} = {},
+    action, action: {status = undefined, title = undefined} = {},
     context, onOpen, project, style: propsStyle,
   } = props
+  const onClick = useCallback((): void => onOpen(action), [action, onOpen])
   const isRead = status === 'ACTION_UNREAD'
   const style: RadiumCSSProperties = {
     ':focus': {backgroundColor: colors.LIGHT_GREY},
@@ -189,7 +190,7 @@ const ActionBase: React.FC<ActionProps> = (props: ActionProps): React.ReactEleme
   }
   const contextText = context === 'project' ? project.title : ''
   return <RadiumDiv style={style}>
-    <div style={contentStyle} onClick={onOpen}>
+    <div style={contentStyle} onClick={onClick}>
       <div style={getBulletStyle(status)} />
       <div style={titleStyle}>
         {title} {contextText ? <span style={contextStyle}>

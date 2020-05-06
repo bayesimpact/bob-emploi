@@ -17,6 +17,8 @@ from bob_emploi.frontend.server import server
 from bob_emploi.frontend.server.test import base_test
 from bob_emploi.frontend.server.test import mailjetmock
 
+# pylint: disable=too-many-lines
+
 
 class OtherEndpointTestCase(base_test.ServerTestCase):
     """Unit tests for the other small endpoints."""
@@ -26,6 +28,29 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
 
         response = self.app.get('/')
         self.assertEqual(200, response.status_code)
+
+    def test_english_message(self) -> None:
+        """Test translation of server messages"""
+
+        self._db.translations.insert_one({
+            'string': 'Serveur opérationnel',
+            'en': 'Up and running',
+        })
+
+        response = self.app.get('/')
+        self.assertEqual('Serveur opérationnel', response.get_data(as_text=True))
+
+        response_en = self.app.get('/', headers={'Accept-Language': 'nl,en,fr'})
+        self.assertEqual('Up and running', response_en.get_data(as_text=True))
+
+    @mock.patch('logging.exception')
+    def test_missing_english_message(self, mock_log_exception: mock.MagicMock) -> None:
+        """Test missing translation of server messages"""
+
+        self.app.get('/', headers={'Accept-Language': 'nl,en,fr'})
+        mock_log_exception.assert_called_once()
+        self.assertIn('Falling back to French', mock_log_exception.call_args[0][0])
+        self.assertEqual('Serveur opérationnel', str(mock_log_exception.call_args[0][1]))
 
     def _create_user_joe_the_cheminot(self) -> Tuple[str, str]:
         """Joe is a special user used to analyse feedback."""
@@ -269,21 +294,26 @@ class OtherEndpointTestCase(base_test.ServerTestCase):
     def test_diagnose_for_project(self) -> None:
         """Check the /api/project/diagnose endpoint."""
 
-        self._db.diagnostic_sentences.insert_one({
-            'order': 1,
-            'sentenceTemplate': 'Yay',
-        })
-        self._db.diagnostic_submetrics_scorers.insert_one({
-            '_id': 'recJ3ugOeIIM6BlN3',
-            'triggerScoringModel': 'constant(3)',
-            'submetric': 'PROFILE_DIAGNOSTIC',
-            'weight': 1,
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'bravo',
+                'strategiesIntroduction': 'Voici vos stratégies',
+                'order': 2,
+            },
+        ])
+        self._db.diagnostic_overall.insert_one({
+            'categoryId': 'bravo',
+            'score': 50,
+            'sentenceTemplate': 'Manque de précision dans votre recherche',
+            'textTemplate': 'Vous devriez réfléchir à vos méthodes',
         })
         response = self.app.post(
             '/api/project/diagnose',
             data='{"projects": [{}]}', content_type='application/json')
         diagnostic = self.json_from_response(response)
-        self.assertEqual({'overallScore', 'subDiagnostics', 'text'}, diagnostic.keys())
+        self.assertEqual(
+            {'categories', 'categoryId', 'overallScore', 'overallSentence', 'text'},
+            set(diagnostic.keys()))
 
     @mock.patch(server.now.__name__ + '.get')
     def test_simulate_focus_emails(self, mock_now: mock.MagicMock) -> None:
@@ -397,7 +427,6 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
         patcher = mailjetmock.patch()
         patcher.start()
         self.addCleanup(patcher.stop)
-        server.clear_cache()
         self.user_id, self.auth_token = self.create_user_with_token(
             modifiers=[base_test.add_project], advisor=True)
         user_info = self.get_user_info(self.user_id, self.auth_token)
@@ -449,6 +478,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             'string': 'First tip',
             'fr@tu': 'Premier tip',
         })
+        self.app.get('/api/cache/clear')
         user_info = self.get_user_info(self.user_id, self.auth_token)
         user_info['profile']['canTutoie'] = True
         self.json_from_response(self.app.post(
@@ -475,6 +505,7 @@ class ProjectAdviceTipsTestCase(base_test.ServerTestCase):
             'string': 'First tip',
             'nl': 'Eerste tip',
         })
+        self.app.get('/api/cache/clear')
         user_info = self.get_user_info(self.user_id, self.auth_token)
         user_info['profile']['locale'] = 'nl'
         self.json_from_response(self.app.post(
@@ -549,7 +580,7 @@ class CacheClearEndpointTestCase(base_test.ServerTestCase):
         # Clear cache using the endpoint.
         response = self.app.get('/api/cache/clear')
         self.assertEqual(200, response.status_code)
-        self.assertEqual('Server cache cleared.', response.get_data(as_text=True))
+        self.assertEqual('Cache serveur vidé.', response.get_data(as_text=True))
 
         # Updated DB content is now served.
         self.assertEqual(['6789'], self._get_requirements('A1234'))
@@ -568,7 +599,6 @@ class MigrateAdvisorEndpointTestCase(base_test.ServerTestCase):
                 'triggerScoringModel': 'constant(3)',
             },
         ])
-        server.clear_cache()
 
     def test_migrate_user(self) -> None:
         """Test a simple user migration."""
@@ -967,6 +997,76 @@ class SupportTestCase(base_test.ServerTestCase):
             ticket.get('ticketId') for ticket in user_data.get('supportTickets', [])]
         self.assertEqual(
             [ticket_id1, ticket_id2], saved_ticket_ids)
+
+
+class DiagnosticDataEndpointTestCase(base_test.ServerTestCase):
+    """Unit tests for the diagnostic data endpoint.s"""
+
+    def setUp(self) -> None:
+        super(DiagnosticDataEndpointTestCase, self).setUp()
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'one',
+                'order': 1,
+                'description': 'First blocker',
+            },
+            {
+                'categoryId': 'two',
+                'order': 3,
+                'description': 'Second blocker',
+            },
+            {
+                'categoryId': 'alpha',
+                'order': 2,
+                'areStrategiesForAlphaOnly': True,
+                'description': 'Alpha blocker',
+            },
+        ])
+        self._db.translations.insert_many([
+            {'string': 'First blocker', 'en': 'First English blocker'},
+        ])
+
+    def test_list_categories(self) -> None:
+        """Test with an empty user."""
+
+        response = self.json_from_response(self.app.post(
+            '/api/diagnostic/categories',
+            content_type='application/json',
+            data='{}'))
+        self.assertEqual({'categories': [
+            {'categoryId': 'one', 'order': 1, 'description': 'First blocker'},
+            {'categoryId': 'two', 'order': 3, 'description': 'Second blocker'},
+        ]}, response)
+
+    def test_list_translated_cagetories(self) -> None:
+        """Test with a different locale."""
+
+        response = self.json_from_response(self.app.post(
+            '/api/diagnostic/categories',
+            content_type='application/json',
+            data='{"profile": {"locale": "en"}}'))
+        self.assertEqual({'categories': [
+            {'categoryId': 'one', 'order': 1, 'description': 'First English blocker'},
+            {'categoryId': 'two', 'order': 3, 'description': 'Second blocker'},
+        ]}, response)
+
+    def test_list_alpha_categories(self) -> None:
+        """Test with alpha user."""
+
+        response = self.json_from_response(self.app.post(
+            '/api/diagnostic/categories',
+            content_type='application/json',
+            data='{"featuresEnabled": {"alpha": true}}'))
+        self.assertEqual({'categories': [
+            {'categoryId': 'one', 'order': 1, 'description': 'First blocker'},
+            {
+                'categoryId': 'alpha',
+                'order': 2,
+                'areStrategiesForAlphaOnly': True,
+                'description': 'Alpha blocker',
+            },
+            {'categoryId': 'two', 'order': 3, 'description': 'Second blocker'},
+        ]}, response)
 
 
 if __name__ == '__main__':

@@ -33,6 +33,7 @@
   "include": [
     "bob_emploi/frontend/api/*.d.ts",
     "custom.d.ts",
+    "plugins/*/src",
     "src",
     "test"
   ],

@@ -392,38 +392,6 @@ class PopulateProjectTemplateTest(unittest.TestCase):
         sentence = self._populate_template('Hier, tu es allé%eFeminine au marché')
         self.assertEqual(sentence, 'Hier, tu es allé au marché')
 
-    def test_you_singular(self) -> None:
-        """Tutoie a user."""
-
-        self.scoring_project.user_profile.can_tutoie = True
-
-        sentence = self._populate_template('Contacte%you</z> %you<tes/vos> connaissances.')
-        self.assertEqual(sentence, 'Contacte tes connaissances.')
-
-    def test_you_plural(self) -> None:
-        """Vouvoie a user."""
-
-        self.scoring_project.features_enabled.alpha = True
-        self.scoring_project.user_profile.year_of_birth = self.scoring_project.now.year - 40
-
-        sentence = self._populate_template('Contacte%you</z> %you<tes/vos> connaissances.')
-        self.assertEqual(sentence, 'Contactez vos connaissances.')
-
-    def test_you_in_template(self) -> None:
-        """Vouvoie a user in a template var."""
-
-        self.database.job_group_info.insert_one({
-            '_id': 'Z9007',
-            'whatILoveAbout': "j'adore %you<tes/vos> patisseries"
-        })
-        self.scoring_project.features_enabled.alpha = True
-        self.scoring_project.user_profile.year_of_birth = self.scoring_project.now.year - 40
-        self.project.target_job.job_group.rome_id = 'Z9007'
-
-        sentence = self._populate_template(
-            'Je voudrais %you<te/vous> rencontrer car %whatILoveAbout')
-        self.assertEqual("Je voudrais vous rencontrer car j'adore vos patisseries", sentence)
-
     def test_in_region_template(self) -> None:
         """Use inRegion template."""
 
@@ -636,6 +604,30 @@ class PopulateProjectTemplateTest(unittest.TestCase):
             'https://emploi.gouv.fr?ogr=10435&city=69123&region=84',
             self._populate_template(
                 'https://emploi.gouv.fr?ogr=%jobId&city=%cityId&region=%regionId'))
+
+    def test_language_fr(self) -> None:
+        """Gives the language for a person with French profile."""
+
+        self.scoring_project.user_profile.ClearField('locale')
+        self.assertEqual(
+            'https://www.bob-emploi.fr?hl=fr',
+            self._populate_template('https://www.bob-emploi.fr?hl=%language'))
+
+    def test_language_tutoie(self) -> None:
+        """Gives the language for a person with French tutoiement profile."""
+
+        self.scoring_project.user_profile.locale = 'fr@tu'
+        self.assertEqual(
+            'https://www.bob-emploi.fr?hl=fr',
+            self._populate_template('https://www.bob-emploi.fr?hl=%language'))
+
+    def test_language_en(self) -> None:
+        """Gives the language for a person with English profile."""
+
+        self.scoring_project.user_profile.locale = 'en'
+        self.assertEqual(
+            'https://www.bob-emploi.fr?hl=en',
+            self._populate_template('https://www.bob-emploi.fr?hl=%language'))
 
 
 class TemplateVariablesTest(unittest.TestCase):

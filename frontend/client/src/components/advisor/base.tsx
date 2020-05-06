@@ -2,13 +2,12 @@ import {TFunction} from 'i18next'
 import ChevronDownIcon from 'mdi-react/ChevronDownIcon'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
-import {connect, useDispatch, useSelector} from 'react-redux'
+import {useDispatch, useSelector} from 'react-redux'
 
 import {DispatchAllActions, RootState, getExpandedCardContent} from 'store/actions'
-import {YouChooser} from 'store/french'
-import {LocalizableString} from 'store/i18n'
+import {LocalizableString, prepareT} from 'store/i18n'
 import {getJobSearchURL} from 'store/job'
 import {assetProps} from 'store/skills'
 
@@ -16,22 +15,22 @@ import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {RadiumDiv} from 'components/radium'
 import {AppearingList, AppearingListProps, CircularProgress, ExternalLink, Markdown,
-  PaddedOnMobile, SmoothTransitions, Tag, UpDownIcon} from 'components/theme'
+  SmoothTransitions, Tag, UpDownIcon} from 'components/theme'
 
 
 interface TagProps {
   color: string
-  value: string
+  value: LocalizableString
 }
 // TODO: Find a better place for those tags if we don't need them elsewhere in this file.
 const typeTags: {[type: string]: TagProps} = {
   'apply-to-offer': {
     color: colors.SQUASH,
-    value: 'candidature à une offre',
+    value: prepareT('candidature à une offre'),
   },
   'spontaneous-application': {
     color: colors.GREENISH_TEAL,
-    value: 'candidature spontanée',
+    value: prepareT('candidature spontanée'),
   },
 }
 
@@ -48,7 +47,7 @@ interface ExpandableActionProps {
   tag?: TagProps
   title: React.ReactNode
   type?: 'apply-to-offer' | 'spontaneous-application'
-  // TODO(marielaure): Make this a classic tag.
+  // TODO(sil): Make this a classic tag.
   // TODO(cyrille): Make this a boolean.
   whyForYou?: string
 }
@@ -56,6 +55,7 @@ interface ExpandableActionProps {
 
 const ExpandableActionTypeBase: React.FC<{type?: ExpandableActionProps['type']}> =
 ({type}: {type?: ExpandableActionProps['type']}): React.ReactElement|null => {
+  const {t: translate} = useTranslation('advisor')
   if (isMobileVersion) {
     return null
   }
@@ -67,7 +67,7 @@ const ExpandableActionTypeBase: React.FC<{type?: ExpandableActionProps['type']}>
     backgroundColor: color,
     marginLeft: 10,
   }
-  return <Tag style={tagStyle}>{value}</Tag>
+  return <Tag style={tagStyle}>{translate(value)}</Tag>
 }
 const ExpandableActionType = React.memo(ExpandableActionTypeBase)
 
@@ -293,70 +293,12 @@ export interface CardProps extends WithAdvice {
   handleExplore: (visualElement: string) => () => void
   profile: bayes.bob.UserProfile
   t: TFunction
-  userYou: YouChooser
-}
-
-
-interface DispatchProp {
-  dispatch: DispatchAllActions
-}
-
-
-interface AdviceDataProp<AdviceType> {
-  adviceData: AdviceType
-}
-
-
-const emptyObject = {} as const
-
-
-export type WithAdviceData<T> = DispatchProp & AdviceDataProp<T>
-
-
-export type CardWithContentProps<T> = CardProps & WithAdviceData<T>
-
-
-type CombinedProps<AdviceDataType, Config> =
-  WithAdviceData<Partial<AdviceDataType>> & Omit<Config, 'adviceData'>
-
-
-// Extended version of redux' connect function (it should be used exactly the
-// same way), but augment the wrapped component with: an extra prop called
-// `adviceData` and a dispatch call just before the component is mounted to
-// populate it.
-// TODO(pascal): Migrate all callers to use the useAdviceData hook instead.
-const connectExpandedCardWithContent = <AdviceDataType, Config extends WithAdvice>(
-  Component: React.ComponentType<CombinedProps<AdviceDataType, Config>>,
-): React.ComponentType<Omit<Config, 'adviceData'>> => {
-  const ExpandedCardWithContentBase: React.FC<CombinedProps<AdviceDataType, Config>> =
-  (props: CombinedProps<AdviceDataType, Config>):
-  React.ReactElement => {
-    const {advice: {adviceId}, dispatch, project} = props
-    useEffect(() => {
-      dispatch(getExpandedCardContent(project, adviceId))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [adviceId, dispatch, project.projectId])
-    return <Component {...props} />
-  }
-  return connect(
-    function(state: RootState, config: Omit<Config, 'adviceData'>):
-    AdviceDataProp<Partial<AdviceDataType>> {
-      const {app} = state
-      const {advice, project} = config
-      const adviceData: Partial<AdviceDataType> =
-        project.projectId && (app.adviceData[project.projectId] || {})[advice.adviceId] ||
-        emptyObject
-      return {adviceData}
-    },
-  // TODO(pascal): Fix the type and remove this comment.
-  // @ts-ignore
-  )(React.memo(ExpandedCardWithContentBase))
 }
 
 
 function useAdviceData<AdviceDataType>(props: CardProps): Partial<AdviceDataType> {
   const {advice: {adviceId}, project} = props
-  const dispatch = useDispatch()
+  const dispatch = useDispatch<DispatchAllActions>()
   const adviceData = useSelector(({app}: RootState): Partial<AdviceDataType>|undefined =>
     project.projectId && (app.adviceData[project.projectId] || {})[adviceId] || undefined)
   const key = `adviceData-${project.projectId}-${adviceId}`
@@ -445,7 +387,7 @@ const hasComponent = (b: BoxProps): b is {component: React.ReactElement} =>
 
 
 type ApplicationTips = bayes.bob.InterviewTips | bayes.bob.ResumeTips
-type ImproveApplicationTipsProps = CardWithContentProps<ApplicationTips> & SectionsProps
+type ImproveApplicationTipsProps = CardProps & SectionsProps
 interface SectionProps {
   data: keyof bayes.bob.InterviewTips | keyof bayes.bob.ResumeTips
   title: LocalizableString
@@ -457,7 +399,8 @@ interface SectionsProps {
 
 const ImproveApplicationTipsBase: React.FC<ImproveApplicationTipsProps> =
 (props: ImproveApplicationTipsProps): React.ReactElement => {
-  const {adviceData, profile: {gender}, sections, ...otherProps} = props
+  const adviceData = useAdviceData<ApplicationTips>(props)
+  const {profile: {gender}, sections, ...otherProps} = props
   if (sections.some(({data}: SectionProps): boolean => !adviceData[data as 'qualities'])) {
     return <CircularProgress style={{margin: 'auto'}} />
   }
@@ -473,9 +416,7 @@ const ImproveApplicationTipsBase: React.FC<ImproveApplicationTipsProps> =
     })}
   </div>
 }
-const ImproveApplicationTips =
-  connectExpandedCardWithContent<ApplicationTips, CardProps & SectionsProps>(
-    React.memo(ImproveApplicationTipsBase))
+const ImproveApplicationTips = React.memo(ImproveApplicationTipsBase)
 
 
 const percentageBoxStyle = (percentage: number, isTarget?: true): React.CSSProperties => ({
@@ -955,38 +896,6 @@ ListItemBase.propTypes = {
 const ListItem = React.memo(ListItemBase)
 
 
-interface DataSourceConfig {
-  children: React.ReactNode
-  isStarShown?: boolean
-  style?: React.CSSProperties
-}
-
-const DataSourceBase: React.FC<DataSourceConfig> =
-(props: DataSourceConfig): React.ReactElement => {
-  const {children, isStarShown, style} = props
-  const sourceStyle = {
-    color: colors.COOL_GREY,
-    fontSize: 13,
-    fontStyle: 'italic',
-    margin: '15px 0',
-    ...style,
-  }
-
-  return <PaddedOnMobile style={sourceStyle}>
-    {isStarShown ? '*' : ''}Source&nbsp;: {children}
-  </PaddedOnMobile>
-}
-DataSourceBase.propTypes = {
-  children: PropTypes.node,
-  isStarShown: PropTypes.bool.isRequired,
-  style: PropTypes.object,
-}
-DataSourceBase.defaultProps = {
-  isStarShown: true,
-}
-const DataSource = React.memo(DataSourceBase)
-
-
 interface StaticAdviceCardContentProps {
   expandedCardHeader?: string
   expandedCardItems?: readonly string[]
@@ -1215,6 +1124,6 @@ const CardWithImage = React.memo(CardWithImageBase)
 
 
 export {ToolCard, EmailTemplate, ImproveApplicationTips, AdviceSuggestionList, Skill,
-  StaticAdviceCardContent, Tip, PercentageBoxes, connectExpandedCardWithContent, JobSuggestion,
-  ExpandableAction, Mission, DataSource, MethodSection, HandyLink,
-  ListItem, MethodSuggestionList, CardWithImage, ActionWithHandyLink, useAdviceData}
+  StaticAdviceCardContent, Tip, PercentageBoxes, JobSuggestion, ExpandableAction, Mission,
+  MethodSection, HandyLink, ListItem, MethodSuggestionList, CardWithImage, ActionWithHandyLink,
+  useAdviceData}

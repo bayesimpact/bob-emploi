@@ -1,3 +1,4 @@
+// TODO(cyrille): Migrate to typescript.
 const Airtable = require('airtable')
 const {expect} = require('chai')
 const fs = require('fs')
@@ -115,19 +116,6 @@ describe('download.js', () => {
             },
           },
         ],
-        strategy_testimonials: [
-          {fields:
-            {
-              content: "J'ai adoré",
-              created_at: '2/13/2019',
-              is_male: false,
-              job: 'Informaticienne',
-              name: 'Petra',
-              rating: 3,
-              strategy_ids: ['other-leads', 'get-moving'],
-            },
-          },
-        ],
       },
       // Translations.
       appkEc8N0Bw4Uok43: {translations: [
@@ -157,20 +145,35 @@ describe('download.js', () => {
         },
         {
           fields: {
+            'en': 'I know some cities',
             'fr@tu': 'Je connais des villes avec plus.',
             'string': "Je connais des villes offrant plus d'opportunités",
           },
         },
         {
           fields: {
+            'en': 'Market is important',
             'fr@tu': "Le marché c'est important pour toi.",
             'string': "Le marché c'est important.",
           },
         },
         {
           fields: {
+            'en': 'Market',
             'fr@tu': 'Marché',
             'string': 'Marché',
+          },
+        },
+        {
+          fields: {
+            fr: 'Le marché masculin',
+            string: "Le marché c'est important._MASCULINE",
+          },
+        },
+        {
+          fields: {
+            fr: 'Le marché féminin',
+            string: "Le marché c'est important._FEMININE",
           },
         },
       ]},
@@ -181,7 +184,6 @@ describe('download.js', () => {
       // https://github.com/chaijs/chai/issues/1228 is resolved.
       expect(_sortBy([...filesWritten], 0)).to.deep.eq(_sortBy(Object.entries({
         'src/components/advisor/data/advice_modules.json': '{\n}\n',
-        'src/components/advisor/data/categories.json': '{\n}\n',
         'src/components/advisor/data/email_templates.json': '{\n}\n',
         'src/components/advisor/data/vae.json': `[
   {
@@ -217,27 +219,18 @@ describe('download.js', () => {
   ]
 }
 `,
-        'src/components/strategist/data/testimonials.json': `{
-  "get-moving": [
-    {
-      "content": "J'ai adoré",
-      "createdAt": "2/13/2019",
-      "isMale": false,
-      "job": "Informaticienne",
-      "name": "Petra",
-      "rating": 3
-    }
-  ],
-  "other-leads": [
-    {
-      "content": "J'ai adoré",
-      "createdAt": "2/13/2019",
-      "isMale": false,
-      "job": "Informaticienne",
-      "name": "Petra",
-      "rating": 3
-    }
-  ]
+        'src/translations/en/categories.json': `{
+  "Le marché c'est important.": "Market is important",
+  "Marché": "Market"
+}
+`,
+        'src/translations/en/goals.json': `{
+  "Je connais des villes offrant plus d'opportunités": "I know some cities"
+}
+`,
+        'src/translations/fr/categories.json': `{
+  "Le marché c'est important._FEMININE": "Le marché féminin",
+  "Le marché c'est important._MASCULINE": "Le marché masculin"
 }
 `,
         'src/translations/fr@tu/categories.json': `{
@@ -280,19 +273,6 @@ describe('download.js', () => {
             },
           },
         ],
-        strategy_testimonials: [
-          {fields:
-            {
-              content: "J'ai adoré",
-              created_at: '2/13/2019',
-              is_male: false,
-              job: 'Informaticienne',
-              name: 'Petra',
-              rating: 3,
-              strategy_ids: ['other-leads', 'get-moving'],
-            },
-          },
-        ],
       },
       // Translations.
       appkEc8N0Bw4Uok43: {translations: [
@@ -322,6 +302,7 @@ describe('download.js', () => {
         },
         {
           fields: {
+            'en': 'I know some cities',
             'fr@tu': 'Je connais des villes avec plus.',
             'string': "Je connais des villes offrant plus d'opportunités",
           },
@@ -346,6 +327,10 @@ describe('download.js', () => {
       "goalId": "better-cities"
     }
   ]
+}
+`,
+        'src/translations/en/goals.json': `{
+  "Je connais des villes offrant plus d'opportunités": "I know some cities"
 }
 `,
         'src/translations/fr@tu/goals.json': `{

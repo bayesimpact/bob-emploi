@@ -4,6 +4,7 @@ import datetime
 import json
 import unittest
 
+from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import scoring
@@ -387,9 +388,7 @@ class EnhanceMethodsToInterviewTestCase(scoring_test.ScoringModelTestBase):
         persona.project.job_search_started_at.FromDatetime(
             datetime.datetime.now() - datetime.timedelta(days=90))
         persona.project.ClearField('total_interview_count')
-        with self.assertRaises(scoring.NotEnoughDataException) as err:
-            self._score_persona(persona)
-        self.assertIn('projects.0.totalInterviewCount', err.exception.fields)
+        self._assert_missing_fields_to_score_persona({'projects.0.totalInterviewCount'}, persona)
 
     def test_missing_applications(self) -> None:
         """User didn't give their estimate of applications."""
@@ -399,9 +398,8 @@ class EnhanceMethodsToInterviewTestCase(scoring_test.ScoringModelTestBase):
             datetime.datetime.now() - datetime.timedelta(days=90))
         persona.project.ClearField('weekly_applications_estimate')
         persona.project.total_interview_count = 2
-        with self.assertRaises(scoring.NotEnoughDataException) as err:
-            self._score_persona(persona)
-        self.assertIn('projects.0.weeklyApplicationsEstimate', err.exception.fields)
+        self._assert_missing_fields_to_score_persona(
+            {'projects.0.weeklyApplicationsEstimate'}, persona)
 
     def test_many_applications_no_interview(self) -> None:
         """User does a lot of applications, with no result."""
@@ -474,6 +472,85 @@ class RelevanceMethodsToInterviewTestCase(scoring_test.ScoringModelTestBase):
         persona.project.job_search_started_at.FromDatetime(
             datetime.datetime.now() - datetime.timedelta(days=90))
         persona.project.total_interview_count = 6
+        self.assertEqual(3, self._score_persona(persona))
+
+
+class BetterApplicationModesTestCase(scoring_test.ScoringModelTestBase):
+    """Tests for the search-methods category scorer."""
+
+    model_id = 'category-search-methods'
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.database.job_group_info.insert_one({
+            '_id': 'A1234',
+            'applicationModes': {
+                'R4Z92': {
+                    'modes': [
+                        {
+                            'percentage': 36.38,
+                            'mode': 'SPONTANEOUS_APPLICATION'
+                        },
+                        {
+                            'percentage': 29.46,
+                            'mode': 'PLACEMENT_AGENCY'
+                        },
+                        {
+                            'percentage': 18.38,
+                            'mode': 'UNDEFINED_APPLICATION_MODE'
+                        },
+                        {
+                            'percentage': 15.78,
+                            'mode': 'PERSONAL_OR_PROFESSIONAL_CONTACTS'
+                        },
+                    ],
+                },
+            },
+        })
+
+    def test_missing_application_mode(self) -> None:
+        """User didn't give their preferred application modes."""
+
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.ClearField('preferred_application_mode')
+        self._assert_missing_fields_to_score_persona(
+            {'projects.0.preferredApplicationMode'}, persona)
+
+    def test_missing_application_info(self) -> None:
+        """User didn't give their preferred application modes."""
+
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1235'
+        persona.project.preferred_application_mode = job_pb2.SPONTANEOUS_APPLICATION
+        self._assert_missing_fields_to_score_persona(
+            {'data.job_group_info.A1235.application_modes'}, persona)
+        with self.assertRaises(scoring.NotEnoughDataException) as err:
+            self._score_persona(persona)
+        self.assertIn('job has no application modes info', str(err.exception))
+
+    def test_has_correct_application_mode(self) -> None:
+        """User applies the right way."""
+
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.preferred_application_mode = job_pb2.SPONTANEOUS_APPLICATION
+        self.assertEqual(0, self._score_persona(persona))
+
+    def test_has_good_application_mode(self) -> None:
+        """User uses the second best application mode."""
+
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.preferred_application_mode = job_pb2.PLACEMENT_AGENCY
+        self.assertEqual(1, self._score_persona(persona))
+
+    def test_has_no_good_application_mode(self) -> None:
+        """User doesn't use one of the best application modes."""
+
+        persona = self._random_persona().clone()
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        persona.project.preferred_application_mode = job_pb2.PERSONAL_OR_PROFESSIONAL_CONTACTS
         self.assertEqual(3, self._score_persona(persona))
 
 

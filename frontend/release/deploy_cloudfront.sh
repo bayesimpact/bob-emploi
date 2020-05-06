@@ -15,6 +15,7 @@
 # apt-get or brew).
 
 set -e
+set -o pipefail
 
 # The ID of Bob's distribution on AWS.
 readonly DISTRIBUTION_ID=E3BI8P0VPS4VAY

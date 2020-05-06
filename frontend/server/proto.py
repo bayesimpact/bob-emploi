@@ -70,7 +70,7 @@ def parse_from_mongo(
     return True
 
 
-# TODO(cyrille): overload to have non Optional output when there are only two parameters.
+# TODO(cyrille): overload to have non Optional output always_create is not set.
 def create_from_mongo(
         mongo_dict: Optional[Dict[str, Any]],
         proto_type: Type[_ProtoType1],
@@ -282,31 +282,30 @@ def _get_flask_input_proto(in_type: Type[_ProtoType1]) -> _ProtoType1:
 
 def _cache_mongo_collection(
         mongo_iterator: Callable[[], Iterator[Dict[str, Any]]],
-        cache: Dict[str, _ProtoType1], proto_type: type, id_field: Optional[str],
+        proto_type: type, id_field: Optional[str],
         update_func: Optional[Callable[[_ProtoType1, str], None]] = None) \
         -> Dict[str, _ProtoType1]:
     """Cache in memory the content of a Mongo request returning protos.
 
     Args:
         mongo_iterator: a function that iterates over mongo documents.
-        cache: a list or a dict to populate with cached protos. If it is a dict
-            then the key populated will be the "_id" values.
         proto_type: the python proto class for the expected proto type.
         id_field (optional): the field in the proto where to put the id.
         update_func: an optional function to call on each proto once imported.
     Returns:
-        returns the cache value populated.
+        dict with all protos. The keys are the "_id" values.
     """
 
-    if cache:
-        return cache
+    documents: Dict[str, _ProtoType1] = {}
+
     for document in mongo_iterator():
         _id = str(document['_id'])
         proto = typing.cast(_ProtoType1, create_from_mongo(document, proto_type, id_field))
         if update_func:
             update_func(proto, _id)
-        cache[_id] = proto
-    return cache
+        documents[_id] = proto
+
+    return documents
 
 
 class CachedCollection(typing.Generic[_Type]):
@@ -316,9 +315,9 @@ class CachedCollection(typing.Generic[_Type]):
 
     def __init__(
             self,
-            populate: Callable[[Dict[str, _Type]], None],
+            get_values: Callable[[], Dict[str, _Type]],
             cache_duration: datetime.timedelta = _CACHE_DURATION):
-        self._populate = populate
+        self._get_values = get_values
         self._cache: Optional[Dict[str, _Type]] = None
         self._cached_valid_until: Optional[datetime.datetime] = None
         self._cache_duration = cache_duration
@@ -343,9 +342,8 @@ class CachedCollection(typing.Generic[_Type]):
             return typing.cast(Dict[str, _Type], self._cache)
         self._cache_version = self._global_cache_version
         self._cached_valid_until = instant + self._cache_duration
-        self._cache = collections.OrderedDict()
-        self._populate(self._cache)
-        return typing.cast(Dict[str, _Type], self._cache)
+        self._cache = self._get_values()
+        return self._cache
 
     def __getattr__(self, prop: str) -> Any:
         return getattr(self._ensure_cache(), prop)
@@ -385,7 +383,8 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
     def __init__(
             self, proto_type: type, collection_name: str, id_field: Optional[str] = None,
             update_func: Optional[Callable[[_ProtoType1, str], None]] = None,
-            query: Optional[Dict[str, Any]] = None):
+            query: Optional[Dict[str, Any]] = None,
+            sort_key: Optional[str] = None):
         """Creates a new collection.
 
         Args:
@@ -400,6 +399,7 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
         self._id_field = id_field
         self._update_func = update_func
         self._query = query
+        self._sort_key = sort_key
 
         self._cache: Optional[CachedCollection[_ProtoType1]] = None
         self._database: Optional[pymongo.database.Database] = None
@@ -410,7 +410,7 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
         if self._cache and database == self._database:
             return self._cache
         self._database = database
-        self._cache = CachedCollection(self._populate)
+        self._cache = CachedCollection(self._get_values)
         return self._cache
 
     # TODO(cyrille): Remove, since we have another way to deprecate cache.
@@ -420,15 +420,16 @@ class MongoCachedCollection(typing.Generic[_ProtoType1]):
         self._cache = None
         self._database = None
 
-    def _populate(self, cache: Dict[str, _ProtoType1]) -> None:
+    def _get_values(self) -> Dict[str, _ProtoType1]:
         def _mongo_iterator() -> Iterator[Dict[str, Any]]:
             assert self._database
             # TODO(pascal): Type pymongo find method and remove the cast.
             return typing.cast(
                 Iterator[Dict[str, Any]],
-                self._database.get_collection(self._collection_name).find(self._query))
-        _cache_mongo_collection(
-            _mongo_iterator, cache, self._proto_type, self._id_field, self._update_func)
+                self._database.get_collection(self._collection_name).find(
+                    self._query, sort=((self._sort_key, 1),) if self._sort_key else None))
+        return _cache_mongo_collection(
+            _mongo_iterator, self._proto_type, self._id_field, self._update_func)
 
 
 def datetime_to_json_string(instant: datetime.datetime) -> str:

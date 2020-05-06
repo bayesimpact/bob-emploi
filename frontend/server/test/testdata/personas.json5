@@ -7,6 +7,7 @@
     user: {
       highestDegree: 'BTS_DUT_DEUG',
       email: 'evolueuse.persona@gmail.com',
+      isAutonomous: 'TRUE',
       name: 'Évolueuse',
       situation: 'LOST_QUIT',
       yearOfBirth: 1975,
@@ -88,6 +89,7 @@
       yearOfBirth: 1993,
       gender: 'MASCULINE',
       hasHandicap: true,
+      isAutonomous: 'FALSE',
     },
     featuresEnabled: {
       lbbIntegration: 'ACTIVE',
@@ -246,8 +248,8 @@
       hasHandicap: true,
     },
     project: {
-      jobSearchLengthMonths: 3,
-      jobSearchStartedAt: '2016-06-25T07:54:02.514215Z',
+      jobSearchLengthMonths: 12,
+      jobSearchStartedAt: '2015-09-25T07:54:02.514215Z',
       hasResume: 'TRUE',
       kind: 'FIND_A_FIRST_JOB',
       workloads: ['FULL_TIME'],
@@ -266,6 +268,7 @@
         masculineName: 'Boucher',
       },
       minSalary: 25000,
+      preferredApplicationMode: 'SPONTANEOUS_APPLICATION',
       trainingFulfillmentEstimate: 'TRAINING_FULFILLMENT_NOT_SURE',
       title: 'Trouver un emploi de boucher autour de Bourg-en-Bresse',
       createdAt: '2016-09-26T14:16:32.199172Z',
@@ -2204,6 +2207,7 @@
       },
       "networkEstimate": 4,
       "projectId": "57ed175d-215a",
+      "seniority": "INTERN",
       "status": "PROJECT_CURRENT",
       "targetJob": {
         "codeOgr": "13999",
@@ -2227,6 +2231,7 @@
     },
     "projects": [
       {
+        "seniority": "SENIOR",
         "targetJob": {
           "codeOgr": "16437",
           "jobGroup": {

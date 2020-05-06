@@ -189,35 +189,6 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertGreater(
             job_search_started_at, datetime.datetime.now() - datetime.timedelta(days=200))
 
-    def test_get_user_diagnostic(self) -> None:
-        """Retrieving a user adds diagnostic observations if needed."""
-
-        self._db.diagnostic_observations.insert_one({
-            'sentenceTemplate': 'Vous faites un métier du futur',
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-        })
-        user_id, auth_token = self.create_user_with_token(data={'projects': [{}]})
-        # Updating the user directly in the DB because to mock the a user created before
-        # observations were generated, thus creating an inconsistent state.
-        self._user_db.user.update_one({'_id': objectid.ObjectId(user_id)}, {'$set': {
-            'projects.0.diagnostic': {
-                'subDiagnostics': [{
-                    'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-                    'score': 90,
-                }],
-            },
-        }})
-        user_info = self.get_user_info(user_id, auth_token)
-        self.assertTrue(user_info.get('projects'))
-        project = user_info['projects'][0]
-        self.assertEqual(1, len(project.get('diagnostic', {}).get('subDiagnostics', [])))
-        sub_diagnostic = project['diagnostic']['subDiagnostics'][0]
-        self.assertEqual({
-            'observations': [{'text': 'Vous faites un métier du futur'}],
-            'topic': 'JOB_OF_THE_FUTURE_DIAGNOSTIC',
-            'score': 90,
-        }, sub_diagnostic)
-
     def test_get_user_unauthorized(self) -> None:
         """When calling get user with unauthorized_token, endpoint should return error."""
 
@@ -347,9 +318,9 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertNotEqual(lyon_local_stats, toulouse_local_stats)
 
     @mock.patch(server.__name__ + '.advisor.maybe_advise')
-    @mock.patch(server.__name__ + '.time.time')
-    @mock.patch(server.__name__ + '.logging.warning')
-    @mock.patch(server.__name__ + '.logging.info')
+    @mock.patch('time.time')
+    @mock.patch('logging.warning')
+    @mock.patch('logging.info')
     def test_log_long_requests(
             self, mock_info: mock.MagicMock, mock_warning: mock.MagicMock,
             mock_time: mock.MagicMock, mock_advise: mock.MagicMock) -> None:
@@ -536,6 +507,19 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'targetJob': {'jobGroup': {'romeId': 'M1403'}},
         }
         user_id, auth_token = self.authenticate_new_user_token(email='foo@bayes.org')
+        self._db.diagnostic_category.insert_many([
+            {
+                'categoryId': 'bravo',
+                'strategiesIntroduction': 'Voici vos stratégies',
+                'order': 2,
+            },
+        ])
+        self._db.diagnostic_overall.insert_one({
+            'categoryId': 'bravo',
+            'score': 50,
+            'sentenceTemplate': 'Manque de précision dans votre recherche',
+            'textTemplate': 'Vous devriez réfléchir à vos méthodes',
+        })
         self._db.advice_modules.insert_many([
             {
                 'adviceId': 'spontaneous-application',
@@ -552,15 +536,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
             'order': 1,
             'sentenceTemplate': 'You are a star.',
         })
-        self._db.diagnostic_submetrics_scorers.insert_many([
-            {
-                'triggerScoringModel': 'constant(3)',
-                'submetric': submetric,
-                'weight': 1,
-            }
-            for submetric in {'PROFILE_DIAGNOSTIC', 'PROJECT_DIAGNOSTIC', 'JOB_SEARCH_DIAGNOSTIC'}
-        ])
-        server.clear_cache()
+        self.app.get('/api/cache/clear')
         response = self.app.post(
             '/api/user',
             data=f'{{"userId": "{user_id}", "profile": {{"email":"foo@bayes.org"}}, '
@@ -573,7 +549,7 @@ class UserEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual('ACTIVE', user_info.get('featuresEnabled', {}).get('advisor'))
 
         self.assertEqual(
-            {'overallScore', 'subDiagnostics', 'text'},
+            {'categories', 'categoryId', 'overallScore', 'overallSentence', 'text'},
             set(typing.cast(Dict[str, Any], project.get('diagnostic', {}))))
 
         all_advices = [
@@ -1044,6 +1020,21 @@ class UserEndpointTestCase(base_test.ServerTestCase):
 
         updated_user = self.get_user_info(user_id, auth_token)
         self.assertFalse(updated_user['projects'][0].get('openedStrategies'))
+
+    @mock.patch(now.__name__ + '.get')
+    def test_returning_can_tutoie(self, mock_now: mock.MagicMock) -> None:
+        """User returning with a canTutoie field set."""
+
+        mock_now.return_value = datetime.datetime(2019, 3, 6)
+        user_info = {'profile': {'canTutoie': True}}
+        user_id, auth_token = self.create_user_with_token(data=user_info)
+
+        mock_now.return_value = datetime.datetime(2020, 3, 6)
+        response = self.app.post(
+            f'/api/app/use/{user_id}', headers={'Authorization': f'Bearer {auth_token}'})
+        user = self.json_from_response(response)
+        self.assertFalse(user.get('profile', {}).get('canTutoie'))
+        self.assertEqual('fr@tu', user.get('profile', {}).get('locale'))
 
 
 if __name__ == '__main__':

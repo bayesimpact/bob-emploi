@@ -6,7 +6,7 @@
       "EventBusName": "default",
       "Name": "assess-assessment",
       "ScheduleExpression": "cron(0 9 ? * MON *)",
-      "State": "ENABLED"
+      "State": "DISABLED"
     },
     {
       "Arn": "arn:aws:events:eu-west-3:951168128976:rule/clean-guest-user",

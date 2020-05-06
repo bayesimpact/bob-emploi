@@ -1,7 +1,6 @@
 import {TFunction} from 'i18next'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
-import {useTranslation} from 'react-i18next'
 
 import {inCityPrefix, lowerFirstLetter} from 'store/french'
 
@@ -11,8 +10,7 @@ import {useRadium} from 'components/radium'
 import {AppearingList, GrowingNumber, Tag} from 'components/theme'
 import Picto from 'images/advices/picto-commute.svg'
 
-import {CardProps, CardWithContentProps, PercentageBoxes,
-  connectExpandedCardWithContent} from './base'
+import {CardProps, PercentageBoxes, useAdviceData} from './base'
 
 
 interface CommuteCitySuggestionProps {
@@ -40,7 +38,7 @@ const multiplierStyle: React.CSSProperties = {
 
 const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
 (props: CommuteCitySuggestionProps): React.ReactElement => {
-  const {city: {name}, isTargetCity, onClick, style, targetCity: {name: targetName}} = props
+  const {city: {name}, isTargetCity, onClick, style, t, targetCity: {name: targetName}} = props
   const handleClick = useCallback((): void => {
     // TODO(cyrille): Add INSEE code to avoid sending user to an homonymous city.
     const searchOrigin = encodeURIComponent(`${targetName}, france`)
@@ -65,13 +63,11 @@ const CommuteCitySuggestionBase: React.FC<CommuteCitySuggestionProps> =
     ...style,
   }), [style])
 
-  const {t} = useTranslation()
-
   const [radiumProps] = useRadium<HTMLDivElement>({style: containerStyle})
 
   if (isTargetCity) {
     const {hasComplexTarget} = props
-    const {prefix, cityName} = inCityPrefix(name || '')
+    const {prefix, cityName} = inCityPrefix(name || '', t)
     const hasSimpleLayout = !hasComplexTarget || isMobileVersion
     return <div style={containerStyle} onClick={handleClick}>
       <span style={targetCityStyle}>
@@ -120,6 +116,7 @@ CommuteCitySuggestionBase.propTypes = {
   isTargetCity: PropTypes.bool,
   onClick: PropTypes.func,
   style: PropTypes.object,
+  t: PropTypes.func.isRequired,
   targetCity: PropTypes.shape({
     name: PropTypes.string.isRequired,
   }).isRequired,
@@ -127,19 +124,16 @@ CommuteCitySuggestionBase.propTypes = {
 const CommuteCitySuggestion = React.memo(CommuteCitySuggestionBase)
 
 
-type CommuteProps = CardWithContentProps<bayes.bob.CommutingCities>
-
-
 const suggestionStyle = {marginTop: -1} as const
 
 
-const Commute: React.FC<CommuteProps> = (props: CommuteProps): React.ReactElement|null => {
+const Commute: React.FC<CardProps> = (props: CardProps): React.ReactElement|null => {
   const {
-    adviceData: {cities = []},
     handleExplore,
     project: {city: targetCity = {}, targetJob: {jobGroup: {name: jobGroupName = ''} = {}} = {}},
     t,
   } = props
+  const {cities = []} = useAdviceData<bayes.bob.CommutingCities>(props)
 
   const targetCityName = targetCity.name
   const otherCities = useMemo(
@@ -182,12 +176,6 @@ const Commute: React.FC<CommuteProps> = (props: CommuteProps): React.ReactElemen
   </div>
 }
 Commute.propTypes = {
-  adviceData: PropTypes.shape({
-    cities: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.string,
-      relativeOffersPerInhabitant: PropTypes.number,
-    })),
-  }).isRequired,
   handleExplore: PropTypes.func.isRequired,
   project: PropTypes.shape({
     city: PropTypes.shape({
@@ -201,8 +189,7 @@ Commute.propTypes = {
   }).isRequired,
   t: PropTypes.func.isRequired,
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.CommutingCities, CardProps>(React.memo(Commute))
+const ExpandedAdviceCardContent = React.memo(Commute)
 
 
 export default {ExpandedAdviceCardContent, Picto}

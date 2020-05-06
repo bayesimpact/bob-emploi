@@ -11,7 +11,8 @@ message Diagnostic {
   uint32 overall_score = 1;
 
   // Diagnostics on separated parts of the project.
-  repeated SubDiagnostic sub_diagnostics = 2;
+  // TODO(pascal): Clean up but make sure to keep interesting values in the Stats Page.
+  repeated SubDiagnostic sub_diagnostics = 2 [deprecated = true];
 
   // A textual personalized diagnostic. This uses markup language.
   string text = 3;
@@ -26,13 +27,14 @@ message Diagnostic {
 
   // The text introducing the strategies proposed for this diagnostic.
   // DEPRECATED (since 2019-03): Use strategies_introduction from DiagnosticTemplate instead.
-  string strategies_introduction = 6 [deprecated=true, (string_format) = NATURAL_LANGUAGE];
+  string strategies_introduction = 6 [deprecated = true, (string_format) = NATURAL_LANGUAGE];
 
   // A list of categories used in the diagnostic with their relevance for the project. The most
   // important (the one that was evaluated first) first. Only one of these can be highlighted.
   repeated DiagnosticCategory categories = 11;
 }
 
+// TODO(pascal): Clean up.
 message SubDiagnostic {
   // The topic of this sub diagnostic.
   DiagnosticTopic topic = 1;
@@ -49,6 +51,7 @@ message SubDiagnostic {
   repeated SubDiagnosticObservation observations = 4;
 }
 
+// TODO(pascal): Clean up.
 message SubDiagnosticObservation {
   // The observation as a Markdown text, given as a short description (just a few words).
   string text = 1;
@@ -225,13 +228,9 @@ message DiagnosticCategory {
   string strategies_introduction = 4 [(string_format) = NATURAL_LANGUAGE];
 
   // Whether this category is shown only because the user is using the Alpha version of the advisor.
-  // Note that non-alpha user will still get the category assigned but then will neither get the
-  // strategies, nor the related Bob talk.
+  // Note that non-alpha user will not get this category and will skip to the next one that matches
+  // their project.
   bool are_strategies_for_alpha_only = 5;
-
-  // Whether this category is relevant to a given context.
-  // DEPRECATED since 2019-07-02: Use relevance instead.
-  bool is_relevant = 6 [deprecated=true, (field_usage) = ALGORITHM_RESULT];
 
   // How much this category is relevant to a given context.
   CategoryRelevance relevance = 7 [(field_usage) = ALGORITHM_RESULT];
@@ -242,11 +241,29 @@ message DiagnosticCategory {
   // Static explanation of the metric.
   string metric_details = 9 [(string_format) = NATURAL_LANGUAGE];
 
+  // Short description of the category. Contrary to the metric_details, it is worded as a short
+  // self-diagnostic (1st person) and should highlight (using markup) the important part. e.g.
+  // Defining my **project cleary** (**Définir clairement** mon projet); Getting the **diploma** I
+  // need (Obtenir le **diplôme** qu'il me manque).
+  string description = 16 [(string_format) = NATURAL_LANGUAGE, (string_format) = LIST_OPTION];
+
+  // A short sentence describing user's challenge when this category is the user's main blocker.
+  string blocker_sentence = 14 [(string_format) = NATURAL_LANGUAGE];
+
   // Feminine version of the metrics_detail.
-  string metric_details_feminine = 10 [(string_format) = NATURAL_LANGUAGE];
+  // TODO(pascal): Clean up this field, we now use translation wiht context.
+  string metric_details_feminine = 10 [(string_format) = NATURAL_LANGUAGE, deprecated = true];
 
   // Whether this category should be highlighted in a list of categories.
   bool is_highlighted = 12;
+
+  // Score for a project in this category. 0 is unknown, 1 is bad (the user will need a long time
+  // and effort before getting a job), 100 is good (the user is super close to getting a job).
+  int32 score = 13;
+
+  // Whether this category is the last one that should be relevant. It should be done when the
+  // category is so important that the user should only focus on it.
+  bool is_last_relevant = 15;
 }
 
 enum CategoryRelevance {
@@ -264,4 +281,29 @@ enum CategoryRelevance {
 
 message DiagnosticCategories {
   repeated DiagnosticCategory categories = 1;
+}
+
+message SelfDiagnostic {
+  // An identifier for the category the user identifies in. It comes from the list of categories
+  // currently used, provided by the server. It should be empty when the selfDiagnosticStatus is
+  // set to "OTHER".
+  string category_id = 1;
+
+  // A sentence that describes the category the user identifies in. It is submitted by the user.
+  string category_details = 2;
+
+  // What to expect as user self-identified category, either unknown, undefined, known or other.
+  SelfDiagnosticStatus self_diagnostic_status = 3;
+}
+
+enum SelfDiagnosticStatus {
+  // User either has not answered the question or was not asked the question.
+  UNKNOWN_SELF_DIAGNOSTIC = 0;
+  // User doesn't know in which category they might be in when proposed for
+  // existing categories and an "other" category ("I don't know" answer).
+  UNDEFINED_SELF_DIAGNOSTIC = 1;
+  // User self identified in a known category.
+  KNOWN_SELF_DIAGNOSTIC = 2;
+  // User has proposed a custom category.
+  OTHER_SELF_DIAGNOSTIC = 3;
 }

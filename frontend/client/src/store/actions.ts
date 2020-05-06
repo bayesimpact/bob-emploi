@@ -1,6 +1,8 @@
 import {TFunction} from 'i18next'
+import _shuffle from 'lodash/shuffle'
 import {ReactFacebookLoginInfo} from 'react-facebook-login'
 import {GoogleLoginResponse} from 'react-google-login'
+import {useDispatch as reduxUseDispatch} from 'react-redux'
 import {Action, Dispatch} from 'redux'
 import {ThunkAction, ThunkDispatch} from 'redux-thunk'
 import sha1 from 'sha1'
@@ -15,7 +17,7 @@ import {adviceTipsGet, evalUseCasePoolsGet, evalUseCasesGet, advicePost, project
   projectDiagnosePost, convertUserWithAdviceSelectionFromProtoPost, useCaseDistributionPost,
   convertUserWithAdviceSelectionToProtoPost, projectStrategizePost, projectLaborStatsPost,
   getAllCategoriesPost, createEvalUseCasePost, applicationModesGet, supportTicketPost,
-  simulateFocusEmailsPost, strategyDelete,
+  simulateFocusEmailsPost, strategyDelete, authTokensGet, diagnosticCategoriesPost,
 } from './api'
 
 const ASYNC_MARKER = 'ASYNC_MARKER'
@@ -32,7 +34,6 @@ export const actionTypesToLog = {
   DIAGNOSTIC_IS_SHOWN: 'Diagnostic is shown',
   DIAGNOSTIC_TALK_IS_SHOWN: 'Introductory text to diagnostic is shown',
   DISPLAY_TOAST_MESSAGE: 'Display toast message',
-  DOWNLOAD_DIAGNOSTIC_PDF: 'Download the diagnostic as a PDF',
   EXPLORE_ADVICE: 'Explore advice (link or info)',
   FINISH_PROFILE_FRUSTRATIONS: 'Finish profile frustrations',
   FINISH_PROFILE_SETTINGS: 'Finish profile settings',
@@ -40,6 +41,7 @@ export const actionTypesToLog = {
   FINISH_PROJECT_CRITERIA: 'Finish project criteria',
   FINISH_PROJECT_EXPERIENCE: 'Finish project experience',
   FINISH_PROJECT_GOAL: 'Finish project goal',
+  FINISH_PROJECT_SELF_DIAGNOSTIC: 'Finish project self-diagnostic',
   FOLLOW_JOB_OFFERS_LINK: 'Follow a link to job offers',
   GET_USER_DATA: 'Load app',
   LANDING_PAGE_SECTION_IS_SHOWN: 'A landing page section is shown',
@@ -142,7 +144,7 @@ export type OpenStatsPageAction = Readonly<Action<'OPEN_STATS_PAGE'>>
 const openStatsPageAction: OpenStatsPageAction = {type: 'OPEN_STATS_PAGE'}
 
 export type RemoveAuthDataAction = Readonly<Action<'REMOVE_AUTH_DATA'>>
-const removeAuthData: RemoveAuthDataAction = {type: 'REMOVE_AUTH_DATA'}
+const removeAuthDataAction: RemoveAuthDataAction = {type: 'REMOVE_AUTH_DATA'}
 
 export type FollowJobOffersLinkAction = Readonly<Action<'FOLLOW_JOB_OFFERS_LINK'>>
 const followJobOffersLinkAction: FollowJobOffersLinkAction = {type: 'FOLLOW_JOB_OFFERS_LINK'}
@@ -189,23 +191,12 @@ AdviceCardIsShownAction {
   return {advice, project, type: 'ADVICE_CARD_IS_SHOWN'}
 }
 
-interface ChangeSubmetricExpansionAction extends
-  Readonly<Action<'CHANGE_SUBMETRIC_EXPANSION'>> {
-  readonly isExpanded: boolean
-  readonly topic: string
-}
-
 interface OpenLoginModalActionBase<T extends string> extends VisualElementAction<T> {
   readonly defaultValues: {
     email?: string
     isReturningUser?: boolean
     resetToken?: string
   }
-}
-
-function changeSubmetricExpansion(topic: string, isExpanded: boolean):
-ChangeSubmetricExpansionAction {
-  return {isExpanded, topic, type: 'CHANGE_SUBMETRIC_EXPANSION'}
 }
 
 interface CloseLoginModalAction extends Readonly<Action<'CLOSE_LOGIN_MODAL'>> {
@@ -240,12 +231,6 @@ export interface DisplayToastMessageAction extends Readonly<Action<'DISPLAY_TOAS
 
 function displayToasterMessage(error: string): DisplayToastMessageAction {
   return {error, type: 'DISPLAY_TOAST_MESSAGE'}
-}
-
-type DownloadDiagnosticPdfAction = ProjectAction<'DOWNLOAD_DIAGNOSTIC_PDF'>
-
-function downloadDiagnosticAsPdf(project: bayes.bob.Project): DownloadDiagnosticPdfAction {
-  return {project, type: 'DOWNLOAD_DIAGNOSTIC_PDF'}
 }
 
 type LandingPageSectionIsShownAction = VisualElementAction<'LANDING_PAGE_SECTION_IS_SHOWN'>
@@ -356,7 +341,7 @@ function startStrategy(
 
 type StaticAdvicePageIsShownAction = VisualElementAction<'STATIC_ADVICE_PAGE_IS_SHOWN'>
 
-// TODO(marielaure): Use a  dedicated field here instead of visualElement.
+// TODO(sil): Use a  dedicated field here instead of visualElement.
 function staticAdvicePageIsShown(adviceId: string): StaticAdvicePageIsShownAction {
   return {type: 'STATIC_ADVICE_PAGE_IS_SHOWN', visualElement: adviceId}
 }
@@ -612,6 +597,31 @@ ThunkAction<Promise<bayes.bob.JobRequirements|void>, {}, {}, GetProjectRequireme
   )
 }
 
+type GetDiagnosticCategoriesAction =
+  AsyncAction<'GET_DIAGNOSTIC_CATEGORIES', readonly bayes.bob.DiagnosticCategory[]> &
+  {key: string}
+
+function getDiagnoticCategories(): ThunkAction<
+Promise<readonly bayes.bob.DiagnosticCategory[]|void>,
+RootState, {}, GetDiagnosticCategoriesAction> {
+  return (dispatch, getState): Promise<readonly bayes.bob.DiagnosticCategory[]|void> => {
+    const {
+      app: {diagnosticCategories = {}},
+      user: {profile: {locale = ''} = {}, featuresEnabled: {alpha = false} = {}},
+    } = getState()
+    const key = `${locale || 'fr'}-${alpha}`
+    if (diagnosticCategories[key]) {
+      return Promise.resolve(diagnosticCategories[key])
+    }
+    return dispatch(wrapAsyncAction(
+      'GET_DIAGNOSTIC_CATEGORIES',
+      () => diagnosticCategoriesPost({featuresEnabled: {alpha}, profile: {locale}}).
+        then(response => _shuffle(response.categories || [])),
+      {key},
+    ))
+  }
+}
+
 type DeleteUserAction = AsyncAction<'DELETE_USER_DATA', bayes.bob.User>
 
 function deleteUser(user: bayes.bob.User):
@@ -630,11 +640,31 @@ function fetchUser(userId: string, ignoreFailure: boolean):
 ThunkAction<Promise<bayes.bob.User|void>, RootState, {}, GetUserDataAction> {
   return (dispatch, getState): Promise<bayes.bob.User|void> => {
     const {authToken} = getState().app
+    if (ignoreFailure && !authToken) {
+      return Promise.resolve()
+    }
     return dispatch(
       wrapAsyncAction(
         'GET_USER_DATA',
         (): Promise<bayes.bob.User> => markUsedAndRetrievePost(userId, ensureAuth(authToken)),
         {ignoreFailure}))
+  }
+}
+
+type GetAuthTokensAction = AsyncAction<'GET_AUTH_TOKENS', bayes.bob.AuthTokens>
+
+function getAuthTokens():
+ThunkAction<Promise<bayes.bob.AuthTokens|void>, RootState, {}, GetAuthTokensAction> {
+  return (dispatch, getState): Promise<bayes.bob.AuthTokens|void> => {
+    const {app: {authToken}, user: {userId}} = getState()
+    if (!authToken || !userId) {
+      return Promise.resolve()
+    }
+    return dispatch(
+      wrapAsyncAction(
+        'GET_AUTH_TOKENS',
+        (): Promise<bayes.bob.AuthTokens> => authTokensGet(userId, authToken),
+      ))
   }
 }
 
@@ -784,7 +814,7 @@ interface StateForFeedback {
 }
 
 function sendFeedback<T extends string, A extends AsyncAction<T, string> & WithFeedback>(
-  type: T, source: bayes.bob.FeedbackSource, feedback: bayes.bob.Feedback,
+  type: T, source: bayes.bob.FeedbackSource, feedback: bayes.bob.Feedback, t: TFunction,
   extraFields?: Omit<bayes.bob.Feedback, 'source' | 'feedback' | 'userId'>):
   ThunkAction<Promise<{}|void>, StateForFeedback, {}, A> {
   return (dispatch: DispatchAllActions, getState): Promise<{}|void> => {
@@ -796,11 +826,11 @@ function sendFeedback<T extends string, A extends AsyncAction<T, string> & WithF
         source,
         userId: user.userId,
         ...extraFields,
-      }, ensureAuth(app.authToken)),
+      }, app.authToken),
       {feedback},
     )).then((response: {}|void): {}|void => {
       if (response) {
-        dispatch(displayToasterMessage('Merci pour ce retour'))
+        dispatch(displayToasterMessage(t('Merci pour ce retour')))
       }
       return response
     })
@@ -812,18 +842,18 @@ type SendAdviceFeedbackAction = AsyncAction<'SEND_ADVICE_FEEDBACK', {}> & WithFe
 
 function sendAdviceFeedback(
   {projectId}: bayes.bob.Project = {}, {adviceId}: bayes.bob.Advice = {},
-  feedback: bayes.bob.Feedback, score = 0):
+  feedback: bayes.bob.Feedback, t: TFunction, score = 0):
   ThunkAction<Promise<{}|void>, StateForFeedback, {}, SendAdviceFeedbackAction> {
   return sendFeedback(
-    'SEND_ADVICE_FEEDBACK', 'ADVICE_FEEDBACK', feedback, {adviceId, projectId, score})
+    'SEND_ADVICE_FEEDBACK', 'ADVICE_FEEDBACK', feedback, t, {adviceId, projectId, score})
 }
 
 type SendProfessionalFeedbackAction =
   AsyncAction<'SEND_PROFESSIONAL_FEEDBACK', {}> & WithFeedback
 
-function sendProfessionalFeedback(feedback: bayes.bob.Feedback):
+function sendProfessionalFeedback(feedback: bayes.bob.Feedback, t: TFunction):
 ThunkAction<Promise<{}|void>, StateForFeedback, {}, SendProfessionalFeedbackAction> {
-  return sendFeedback('SEND_PROFESSIONAL_FEEDBACK', 'PROFESSIONAL_PAGE_FEEDBACK', feedback)
+  return sendFeedback('SEND_PROFESSIONAL_FEEDBACK', 'PROFESSIONAL_PAGE_FEEDBACK', feedback, t)
 }
 
 type SendProjectFeedbackAction =
@@ -832,13 +862,14 @@ type SendProjectFeedbackAction =
     readonly projectDiff: bayes.bob.Project
   }
 
-function sendProjectFeedback(project: bayes.bob.Project, feedback: bayes.bob.ProjectFeedback):
-ThunkAction<Promise<bayes.bob.Project|void>, StateForFeedback, {}, SendProjectFeedbackAction> {
+function sendProjectFeedback(
+  project: bayes.bob.Project, feedback: bayes.bob.ProjectFeedback, t: TFunction):
+  ThunkAction<Promise<bayes.bob.Project|void>, StateForFeedback, {}, SendProjectFeedbackAction> {
   return (dispatch: DispatchAllActions): Promise<bayes.bob.Project|void> => {
     return dispatch(updateProject('SEND_PROJECT_FEEDBACK', project, {feedback})).
       then((response: bayes.bob.Project|void): bayes.bob.Project|void => {
         if (response) {
-          dispatch(displayToasterMessage('Merci pour ce retour !'))
+          dispatch(displayToasterMessage(t('Merci pour ce retour\u00A0!')))
         }
         return response
       })
@@ -848,9 +879,9 @@ ThunkAction<Promise<bayes.bob.Project|void>, StateForFeedback, {}, SendProjectFe
 type SendChangelogFeedbackAction =
   AsyncAction<'SEND_CHANGELOG_FEEDBACK', {}> & WithFeedback
 
-function sendChangelogFeedback(feedback: bayes.bob.Feedback):
+function sendChangelogFeedback(feedback: bayes.bob.Feedback, t: TFunction):
 ThunkAction<Promise<{}|void>, StateForFeedback, {}, SendChangelogFeedbackAction> {
-  return sendFeedback('SEND_CHANGELOG_FEEDBACK', 'CHANGELOG_FEEDBACK', feedback)
+  return sendFeedback('SEND_CHANGELOG_FEEDBACK', 'CHANGELOG_FEEDBACK', feedback, t)
 }
 
 export type ReplaceStrategyAction =
@@ -937,7 +968,7 @@ export function asyncAuthenticate(
       if (disconnectOnError && !authResponse) {
         // There was an error while connecting, return to a clean authentication state.
         // TODO(cyrille): Handle the case where there's a response with an invalid body.
-        dispatch(removeAuthData)
+        dispatch(removeAuthDataAction)
       }
       if (authResponse && authResponse.isServerError) {
         return
@@ -1187,6 +1218,7 @@ type CreateProjectAction = ProjectAction<'CREATE_PROJECT'>
 type FinishProjectCriteriaAction = ProjectAction<'FINISH_PROJECT_CRITERIA'>
 type FinishProjectGoalAction = ProjectAction<'FINISH_PROJECT_GOAL'>
 type FinishProjectExperienceAction = ProjectAction<'FINISH_PROJECT_EXPERIENCE'>
+type FinishProjectSelfDiagnostic = ProjectAction<'FINISH_PROJECT_SELF_DIAGNOSTIC'>
 type EditFirstProjectAction = ProjectAction<'EDIT_FIRST_PROJECT'>
 type ModifyProjectAction = ProjectAction<'MODIFY_PROJECT'>
 
@@ -1388,6 +1420,8 @@ export type DispatchAllActions =
   ThunkDispatch<RootState, {}, ActivateDemoAction> &
   ThunkDispatch<RootState, {}, DiagnosticIsShownAction> &
   ThunkDispatch<RootState, {}, ExploreAdviceAction> &
+  ThunkDispatch<RootState, {}, GetAuthTokensAction> &
+  ThunkDispatch<RootState, {}, GetDiagnosticCategoriesAction> &
   ThunkDispatch<RootState, {}, GetUserDataAction> &
   ThunkDispatch<RootState, {}, MigrateUserToAdviceAction> &
   ThunkDispatch<RootState, {}, OpenLoginModalAction> &
@@ -1405,7 +1439,6 @@ export type AllActions =
   | AsyncStartedAction
   | AuthenticateUserAction
   | ChangePasswordAction
-  | ChangeSubmetricExpansionAction
   | ClearExpiredTokenAction
   | CloseLoginModalAction
   | CommentIsShown
@@ -1416,7 +1449,6 @@ export type AllActions =
   | DiagnosticIsShownAction
   | DiagnosticTalkIsShownAction
   | DisplayToastMessageAction
-  | DownloadDiagnosticPdfAction
   | EditFirstProjectAction
   | EmailCheckAction
   | ExploreAdviceAction
@@ -1426,10 +1458,14 @@ export type AllActions =
   | FinishProjectCriteriaAction
   | FinishProjectExperienceAction
   | FinishProjectGoalAction
+  | FinishProjectSelfDiagnostic
   | FollowJobOffersLinkAction
   | GetAdviceTipsAction
   | GetApplicationModesAction
+  | GetAuthTokensAction
+  | GetDiagnosticCategoriesAction
   | GetExpandedCardContentAction
+  | GetLocalStatsAction
   | GetJobAction
   | GetProjectRequirementsAction
   | CreateSupportTicketAction
@@ -1540,6 +1576,8 @@ export const noOp = (): void => {
   // Do nothing.
 }
 
+export const useDispatch: () => DispatchAllActions = reduxUseDispatch
+
 export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser, clearExpiredTokenAction,
   readTip, facebookAuthenticateUser, sendAdviceFeedback, modifyProject,
   googleAuthenticateUser, emailCheck, registerNewUser, loginUser, logoutAction,
@@ -1555,14 +1593,15 @@ export {saveUser, hideToasterMessageAction, setUserProfile, fetchUser, clearExpi
   sendChangelogFeedback, landingPageSectionIsShown, openRegistrationModal,
   computeAdvicesForProject, diagnosticTalkIsShown, getAllCategories,
   getEvalUseCasePools, getEvalUseCases, getExpandedCardContent,
-  activateDemoInFuture, activateDemo, diagnosticIsShown, downloadDiagnosticAsPdf,
-  loginUserFromToken, shareProductModalIsShown,
+  activateDemoInFuture, activateDemo, diagnosticIsShown,
+  loginUserFromToken, shareProductModalIsShown, getAuthTokens,
   staticAdvicePageIsShown, linkedInAuthenticateUser, pageIsLoaded,
   isActionRegister, workbenchIsShown, getEvalFiltersUseCases,
   exploreAdvice, diagnoseOnboarding, convertUserWithAdviceSelectionFromProto,
   convertUserWithAdviceSelectionToProto, replaceStrategy, fetchApplicationModes,
-  changeSubmetricExpansion, getUseCaseDistribution, startStrategy, stopStrategy,
+  getUseCaseDistribution, startStrategy, stopStrategy, removeAuthDataAction,
   strategyExplorationPageIsShown, strategyWorkPageIsShown, getLaborStats,
   startAsGuest, statsPageIsShown, changePassword, silentlyRegisterUser, getCurrentUserLaborStats,
   onboardingCommentIsShown, commentIsShown, simulateFocusEmails, silentlySetupCoaching,
+  getDiagnoticCategories,
 }

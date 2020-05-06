@@ -3,7 +3,7 @@ syntax = "proto3";
 package bayes.bob;
 
 // DEPRECATED: we use VolunteeringMissions and VolunteeringMission messages now.
-// TODO(marielaure): Remove this proto when old users get the new one.
+// TODO(sil): Remove this proto when old users get the new one.
 
 message CivicServiceMission {
   // Title of the mission.

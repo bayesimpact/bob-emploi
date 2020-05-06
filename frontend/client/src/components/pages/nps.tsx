@@ -1,19 +1,28 @@
+import i18next from 'i18next'
 import ExitToAppIcon from 'mdi-react/ExitToAppIcon'
-import React, {Suspense, useCallback, useMemo, useState} from 'react'
+import React, {Suspense, useCallback, useEffect, useMemo, useState} from 'react'
 import ReactDOM from 'react-dom'
 import {useTranslation} from 'react-i18next'
+import {Provider, useDispatch} from 'react-redux'
+import {createStore, applyMiddleware, combineReducers} from 'redux'
+import {composeWithDevTools} from 'redux-devtools-extension'
+import thunk from 'redux-thunk'
 
-import {init as i18nInit} from 'store/i18n'
+import {DispatchAllActions, AllActions, setUserProfile} from 'store/actions'
+import {app} from 'store/app_reducer'
+import {init as i18nInit, localizeOptions, prepareT} from 'store/i18n'
 import {parseQueryString} from 'store/parse'
+import {createSentryMiddleware} from 'store/sentry'
 
 import logoProductImage from 'images/bob-logo.svg'
 
 import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {useModal} from 'components/modal'
+import {SelfDiagnostic} from 'components/pages/connected/profile/self_diagnostic'
 import {WaitingPage} from 'components/pages/waiting'
 import {ShareModal} from 'components/share'
-import {Button, ExternalLink, MIN_CONTENT_PADDING, Textarea} from 'components/theme'
+import {Button, ExternalLink, MIN_CONTENT_PADDING, RadioGroup, Textarea} from 'components/theme'
 import {FieldSet} from 'components/pages/connected/form_utils'
 
 require('styles/App.css')
@@ -21,7 +30,13 @@ require('styles/App.css')
 // TODO(cyrille): Report events to Amplitude.
 
 
-i18nInit()
+const oni18nInit = i18nInit()
+
+
+const optionalBoolOptions = [
+  {name: prepareT('oui'), value: 'TRUE'},
+  {name: prepareT('non'), value: 'FALSE'},
+] as const
 
 
 interface AckFeedbackProps {
@@ -50,8 +65,7 @@ const AckFeedback = ({score, style}: AckFeedbackProps): React.ReactElement => {
       Merci d'avoir pris le temps de nous faire ce retour&nbsp;!
     </p>
     <p>
-      Nous l'étudierons avec soin afin de trouver des façons
-      d'améliorer {{productName: config.productName}}.
+      C'est important pour {{productName: config.productName}}.
       Nous tâcherons de faire mieux dans le futur&nbsp;!
     </p>
   </Trans>
@@ -98,7 +112,7 @@ const combineComments = (comment?: string, action?: string): string|undefined =>
 
 
 const queryParams = parseQueryString(window.location.search) || {}
-const initScore = parseInt(queryParams.score, 10) || 0
+const initScore = Number.parseInt(queryParams.score, 10) || 0
 
 
 function redirectToLandingPage(): void {
@@ -129,6 +143,9 @@ const textareaStyle: React.CSSProperties = {
   minHeight: 200,
   width: '100%',
 }
+const optionalRadioGroupStyle: React.CSSProperties = {
+  justifyContent: 'space-evenly',
+}
 
 
 const NPSFeedbackPage: React.FC = (): React.ReactElement => {
@@ -138,8 +155,17 @@ const NPSFeedbackPage: React.FC = (): React.ReactElement => {
   const [errorMessage, setErrorMessage] = useState<string|undefined>()
   const [action, setAction] = useState<string|undefined>()
   const [comment, setComment] = useState<string|undefined>()
+  const [hasActionsIdea, setHasActionsIdea] = useState<bayes.bob.OptionalBool|undefined>(undefined)
   const [isShareModalShown, showShareModal] = useModal()
+  const [selfDiagnostic, setSelfDiagnostic] = useState<bayes.bob.SelfDiagnostic>({})
   const {t} = useTranslation()
+  const dispatch = useDispatch<DispatchAllActions>()
+
+  useEffect((): void => {
+    oni18nInit.then((): void => {
+      dispatch(setUserProfile({locale: i18next.language}, false))
+    })
+  }, [dispatch])
 
   const handleUpdateResponse = useCallback((response: Response): void => {
     if (response.status >= 400 || response.status < 200) {
@@ -161,7 +187,7 @@ const NPSFeedbackPage: React.FC = (): React.ReactElement => {
   }, [comment, showShareModal])
 
   const handleUpdate = useCallback((): void => {
-    if (!comment && !action) {
+    if (!comment && !action && !selfDiagnostic.selfDiagnosticStatus) {
       setIsValidated(true)
       return
     }
@@ -171,12 +197,19 @@ const NPSFeedbackPage: React.FC = (): React.ReactElement => {
     fetch('/api/nps', {
       body: JSON.stringify({
         comment: combineComments(comment, action),
+        hasActionsIdea,
+        selfDiagnostic,
         userId: user,
       }),
       headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
       method: 'post',
     }).then(handleUpdateResponse)
-  }, [action, comment, handleUpdateResponse])
+  }, [action, comment, handleUpdateResponse, hasActionsIdea, selfDiagnostic])
+
+  const handleSelfDiagnosticChange = useCallback(
+    (originalSelfDiagnostic: bayes.bob.SelfDiagnostic): void =>
+      setSelfDiagnostic(originalSelfDiagnostic), [])
+
 
   const header = <header style={headerStyle}>
     <img
@@ -195,33 +228,56 @@ const NPSFeedbackPage: React.FC = (): React.ReactElement => {
       )
     }
     return t(
-      'Merci\u00A0! Pouvez-vous en dire plus sur ce qui vous a déplu ou ce que nous pourrions ' +
-      'améliorer\u00A0?',
+      'Merci\u00A0! Pour nous aider à nous améliorer, pourriez-vous répondre à la question ' +
+      'suivante\u00A0?',
     )
   }, [t])
+
+  const localizedOptionalBoolOptions = useMemo(
+    (): readonly {name: string; value: bayes.bob.OptionalBool}[] =>
+      localizeOptions(t, optionalBoolOptions),
+    [t],
+  )
 
   if (isFormSent && !isShareModalShown) {
     return <AckFeedback style={pageStyle} score={initScore} />
   }
+
+  const isSelfDiagnosticActionable =
+    !!selfDiagnostic.selfDiagnosticStatus &&
+    selfDiagnostic.selfDiagnosticStatus !== 'UNDEFINED_SELF_DIAGNOSTIC' &&
+    selfDiagnostic.categoryId !== 'bravo'
   return <div style={pageStyle}>
     {header}
     <NPSShareModal isShown={isShareModalShown} />
     <div
       style={{flex: 1, maxWidth: 500,
         padding: isMobileVersion ? `0px ${MIN_CONTENT_PADDING}px` : 'initial'}}>
-      <div style={{fontSize: 16, margin: '40px 0 0'}}>
+      <div style={{fontSize: 16, margin: '40px 0 10px'}}>
         {thankYouText}
       </div>
-      <FieldSet
+      {initScore >= 6 ? <FieldSet
         isValidated={isValidated} isValid={!!comment}>
         <Textarea
           onChange={setComment}
           value={comment} style={textareaStyle} />
+      </FieldSet> : null}
+      <FieldSet
+        label={t("Quel est, selon vous, votre plus grand défi dans votre retour à l'emploi\u00A0?")}
+        isValidated={isValidated} isValid={!!selfDiagnostic}>
+        <SelfDiagnostic onChange={handleSelfDiagnosticChange} value={selfDiagnostic} />
       </FieldSet>
-      {initScore >= 6 ? <React.Fragment>
+      {isSelfDiagnosticActionable ? <FieldSet
+        label={t("Avez-vous des idées d'actions à mener pour vous attaquer à ce défi\u00A0?")}
+        isValidated={isValidated} isValid={!!hasActionsIdea}>
+        <RadioGroup<bayes.bob.OptionalBool>
+          onChange={setHasActionsIdea} value={hasActionsIdea}
+          options={localizedOptionalBoolOptions}
+          style={optionalRadioGroupStyle} />
+      </FieldSet> : null}
+      {hasActionsIdea === 'TRUE' ? <React.Fragment>
         <Trans style={{margin: '0 0 11px'}}>
-          Y a-t-il une action en particulier que vous avez décidé d'entreprendre après avoir
-          utilisé {{productName: config.productName}}&nbsp;?
+          Quelle action avez-vous décidé de mener&nbsp;?
         </Trans>
         <Textarea
           onChange={setAction}
@@ -242,6 +298,36 @@ const NPSFeedbackPage: React.FC = (): React.ReactElement => {
 }
 
 
+const initialUser = {
+  profile: {locale: i18next.language},
+}
+
+
+function user(state: bayes.bob.User = initialUser, action: AllActions): bayes.bob.User {
+  if (action.type === 'SET_USER_PROFILE') {
+    return {
+      ...state,
+      profile: {
+        ...state.profile,
+        ...action.userProfile,
+      },
+    }
+  }
+  return state
+}
+
+const finalCreateStore = composeWithDevTools(applyMiddleware(
+  // sentryMiddleware needs to be first to correctly catch exception down the line.
+  createSentryMiddleware(),
+  thunk,
+))(createStore)
+
+// Create the store that will be provided to connected components via Context.
+const store = finalCreateStore(combineReducers({app, user}))
+
+
 ReactDOM.render(<Suspense fallback={<WaitingPage />}>
-  <NPSFeedbackPage />
+  <Provider store={store}>
+    <NPSFeedbackPage />
+  </Provider>
 </Suspense>, document.getElementById('app'))

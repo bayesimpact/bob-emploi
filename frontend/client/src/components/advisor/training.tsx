@@ -1,8 +1,10 @@
+import {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {lowerFirstLetter, maybeContractPrefix, slugify} from 'store/french'
+import {lowerFirstLetter, ofJobName, slugify} from 'store/french'
+import {LocalizableString, prepareT} from 'store/i18n'
 import {genderizeJob} from 'store/job'
 
 import {Trans} from 'components/i18n'
@@ -28,22 +30,15 @@ const valueToColor = {
   5: colors.GREENISH_TEAL,
 } as const
 
-const valueToText: {[K in keyof typeof valueToColor]: string} = {
+const valueToText: {[K in keyof typeof valueToColor]: LocalizableString} = {
   // 0 is unknown
-  0: 'Inconnu',
-  1: 'Faible',
-  2: 'Correct',
-  3: 'Satisfaisant',
-  4: 'Bon',
-  5: 'Excellent',
+  0: prepareT('Inconnu'),
+  1: prepareT('Faible'),
+  2: prepareT('Correct'),
+  3: prepareT('Satisfaisant'),
+  4: prepareT('Bon'),
+  5: prepareT('Excellent'),
 } as const
-
-
-const HANDICAP_FOOTER = <HandyLink
-  linkIntro="Se renseigner sur les aides formation pour les gens en situation de handicap&nbsp;:"
-  href="https://www.pole-emploi.fr/candidat/travailleurs-handicapes-@/article.jspz?id=60726">
-  Pôle emploi
-</HandyLink>
 
 
 // TODO(cyrille): Make a working link.
@@ -67,7 +62,6 @@ const TrainingMethod = (props: CardProps): React.ReactElement => {
   const tipsTemplates = useMemo(
     (): readonly Pick<EmailTemplateProps, 'content' | 'contentName' | 'title'>[] => {
       const jobName = lowerFirstLetter(genderizeJob(targetJob, gender))
-      const ofJobName = maybeContractPrefix('de ', "d'", jobName)
       const counselorTip = {
         content: t(`
 Bonjour,
@@ -81,7 +75,7 @@ Je suis disponible cette semaine, et la semaine prochaine, à votre convenance.
 Je vous remercie pour votre réponse.
 
 Bien cordialement,
-`, {ofJobName}),
+`, {ofJobName: ofJobName(jobName, t)}),
         title: hasHandicap ?
           t('Demander à son conseiller Cap emploi') : t('Demander à son conseiller emploi'),
       }
@@ -159,7 +153,12 @@ de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a p
       <GrowingNumber number={templates.length} isSteady={true} /> {{stepOrTip}} pour savoir quelle
       formation il vous faudrait
     </Trans>
-    const listFooter = hasHandicap ? HANDICAP_FOOTER : trainings.length ? null : footer
+    const listFooter = hasHandicap ? <HandyLink
+      linkIntro={t(
+        'Se renseigner sur les aides formation pour les personnes en situation de handicap\u00A0:',
+      )} href="https://www.pole-emploi.fr/candidat/travailleurs-handicapes-@/article.jspz?id=60726">
+      Pôle emploi
+    </HandyLink> : trainings.length ? null : footer
     return <MethodSuggestionList title={title} footer={listFooter}>
       {templates.map((template, index): ReactStylableElement => <EmailTemplate
         onContentShown={handleExplore('tip')}
@@ -181,7 +180,7 @@ de \\[années d'experience\\] serait suffisante même si le·a candidat·e n'a p
     </Trans>
     return <MethodSuggestionList title={title} footer={footer} style={wrapperStyle}>
       {trainings.map((training, index): ReactStylableElement => <TrainingSuggestion
-        onClick={handleExplore('training')} training={training} key={index} />)}
+        onClick={handleExplore('training')} training={training} key={index} t={t} />)}
     </MethodSuggestionList>
   }, [footer, t, handleExplore, trainings, wrapperStyle])
 
@@ -200,6 +199,7 @@ const ExpandedAdviceCardContent = React.memo(TrainingMethod)
 interface SuggestionProps {
   onClick: () => void
   style?: RadiumCSSProperties
+  t: TFunction
   training?: bayes.bob.Training
 }
 
@@ -235,7 +235,7 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
     name = '',
     hiringPotential: score = undefined,
     url = undefined,
-  } = {}, style} = props
+  } = {}, style, t: translate} = props
   const boxes = useMemo((): React.ReactNode => {
     const scoreKey = score as keyof typeof valueToColor
     if (!score || !valueToColor[scoreKey]) {
@@ -246,7 +246,7 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
     // There might be a more elegant way to do that, but it would be overkill and less readable.
     return <div style={boxesContainerStyle}>
       <div style={{color: valueToColor[scoreKey], textAlign: 'center'}}>
-        {valueToText[scoreKey]}
+        {translate(valueToText[scoreKey])}
       </div>
       <div style={{width: 105}}>
         <div style={{...boxStyle, backgroundColor: selectedColor, borderRadius: '20px 0 0 20px'}} />
@@ -257,7 +257,7 @@ const TrainingSuggestionBase = (props: SuggestionProps): React.ReactElement => {
           borderRadius: '0 20px 20px 0'}} />
       </div>
     </div>
-  }, [score])
+  }, [score, translate])
 
   const containerStyle = useMemo((): React.CSSProperties => ({
     color: 'inherit',

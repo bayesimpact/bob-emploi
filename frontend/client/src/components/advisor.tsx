@@ -1,16 +1,15 @@
 import * as Sentry from '@sentry/browser'
+import {TFunction} from 'i18next'
 import _memoize from 'lodash/memoize'
 import PropTypes from 'prop-types'
 import React, {Suspense, useEffect, useMemo, useState} from 'react'
 import {useTranslation} from 'react-i18next'
-import {connect, useDispatch} from 'react-redux'
+import {useSelector} from 'react-redux'
 import VisibilitySensor from 'react-visibility-sensor'
 
-import {DispatchAllActions, RootState, adviceCardIsShown, exploreAdvice,
-  seeAdvice} from 'store/actions'
+import {RootState, adviceCardIsShown, exploreAdvice, seeAdvice, useDispatch} from 'store/actions'
 import {getAdviceTitle} from 'store/advice'
-import {YouChooser, genderize, getAdviceModule, upperFirstLetter} from 'store/french'
-import {useUserYou} from 'store/user'
+import {getAdviceModule, upperFirstLetter} from 'store/french'
 
 import constructionImage from 'images/construction-picto.svg'
 import defaultPicto from 'images/default-picto.svg'
@@ -139,7 +138,6 @@ interface AdviceCardProps extends WithAdvice {
 const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): React.ReactElement => {
   const {advice, areTipsShown, onShow, project, style} = props
   const [hasBeenSeen, setHasBeenSeen] = useState(false)
-  const userYou = useUserYou()
   const dispatch = useDispatch()
   useEffect((): void => {
     dispatch(adviceCardIsShown(project, advice))
@@ -161,7 +159,7 @@ const AdviceCardBase: React.FC<AdviceCardProps> = (props: AdviceCardProps): Reac
         {/* TODO(cyrille): Enforce the fontSize somehow, since the Component does not
           expect a style prop. */}
         <ExpandedAdviceCardContent style={{fontSize: 16}} {...props} />
-        {areTipsShown ? <TipsList {...{advice, project, userYou}} /> : null}
+        {areTipsShown ? <TipsList {...{advice, project}} /> : null}
       </section>
     </VisibilitySensor>
   </div>
@@ -178,7 +176,7 @@ AdviceCardBase.propTypes = {
 }
 
 
-export interface ExplorerAdviceCardConfig extends ExpandedAdviceCardConfig {
+export interface ExplorerAdviceCardConfig extends ExpandedAdviceCardProps {
   howToSeeMore?: React.ReactNode
   onClick?: () => void
   style?: React.CSSProperties
@@ -306,7 +304,6 @@ const ExplorerRightPanelBase: React.FC<ExplorerAdviceCardConfig> =
     fontStyle: 'italic',
     fontWeight: 500,
     justifyContent: 'center',
-    position: 'relative',
     textAlign: 'center',
     ...style,
   }
@@ -316,10 +313,7 @@ const ExplorerRightPanelBase: React.FC<ExplorerAdviceCardConfig> =
     textTransform: 'uppercase',
   }
   const rocketsStyle: React.CSSProperties = {
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 30,
+    marginTop: 30,
     ...titleStyle,
   }
   const userGainStyle: React.CSSProperties|undefined = isMobileVersion ? {
@@ -346,6 +340,7 @@ const ExplorerRightPanelBase: React.FC<ExplorerAdviceCardConfig> =
       <div style={{marginBottom: 10}}>Notre avis</div>
       <RocketChain numStars={numStars || 0} rocketHeight={20} />
     </div>}
+    <div style={{flex: 1}} />
     {userGainCallout || userGainDetails ? <div style={userGainStyle}>
       {isMobileVersion ? null : <div style={titleStyle}>
         Votre bénéfice
@@ -357,6 +352,7 @@ const ExplorerRightPanelBase: React.FC<ExplorerAdviceCardConfig> =
         {userGainDetails}
       </div>
     </div> : null}
+    <div style={{flex: 1}} />
   </div>
 }
 const ExplorerRightPanel = React.memo(ExplorerRightPanelBase)
@@ -390,29 +386,21 @@ ExplorerAdviceCardBase.propTypes = {
   style: PropTypes.object,
 }
 
-export interface ExpandedAdviceCardConfig extends WithAdvice {
+export interface ExpandedAdviceCardProps extends WithAdvice {
   backgroundColor?: string | number
   style?: React.CSSProperties
 }
 
 
-interface ExpandedAdviceCardConnectedProps {
+interface GenericExpandedAdviceProps {
   profile: bayes.bob.UserProfile
-}
-
-interface GenericExpandedAdviceProps extends ExpandedAdviceCardConnectedProps {
   style?: React.CSSProperties
-  userYou: YouChooser
-}
-
-interface ExpandedAdviceCardProps
-  extends ExpandedAdviceCardConfig, ExpandedAdviceCardConnectedProps {
-  dispatch: DispatchAllActions
+  t: TFunction
 }
 
 
 const GenericExpandedAdviceBase: React.FC<GenericExpandedAdviceProps> =
-({profile: {gender}, style, userYou}: GenericExpandedAdviceProps): React.ReactElement => {
+({profile: {gender}, style, t}: GenericExpandedAdviceProps): React.ReactElement => {
   const containerStyle = {
     alignItems: 'center',
     display: 'flex',
@@ -422,16 +410,15 @@ const GenericExpandedAdviceBase: React.FC<GenericExpandedAdviceProps> =
     <div style={{flex: 1, textAlign: 'center'}}>
       <img src={constructionImage} alt="" />
       <div style={{fontStyle: 'italic', fontWeight: 500}}>
-        Module en construction
+        {t('Module en construction')}
       </div>
     </div>
 
     <div style={{flex: 2}}>
-      <p>
-        {userYou('Tu seras ', 'Vous serez ')}
-        {genderize('notifié', 'notifiée', 'notifié', gender)} lorsque le module
-        sera prêt pour {userYou("t'aider ", 'vous aider ')}à avancer sur ce sujet.
-      </p>
+      <p>{t(
+        'Vous serez notifié·e lorsque le module sera prêt pour vous aider à avancer sur ce sujet.',
+        {context: gender},
+      )}</p>
     </div>
   </div>
 }
@@ -446,29 +433,26 @@ const suspenseWaitingStyle: React.CSSProperties = {
 // TODO(pascal): Add a visual marker if this advice is only shown to alpha users.
 const ExpandedAdviceCardContentBase: React.FC<ExpandedAdviceCardProps> =
 (props: ExpandedAdviceCardProps): React.ReactElement => {
-  const {advice, dispatch, profile, project, style} = props
-  const userYou = useUserYou()
+  const {advice, project, style} = props
   const {t} = useTranslation('advisor')
+  const profile = useSelector(({user}: RootState) => user.profile || {})
+  const dispatch = useDispatch()
   const handleExplore = useMemo(() => _memoize((visualElement: string): (() => void) =>
     (): void => {
       dispatch(exploreAdvice(project, advice, visualElement))
     }), [advice, dispatch, project])
+  const pageProps = {...props, dispatch, handleExplore, profile, t}
   const PageComponent = ADVICE_MODULES[advice.adviceId]?.ExpandedAdviceCardContent || null
   if (PageComponent) {
     return <Suspense fallback={<CircularProgress style={suspenseWaitingStyle} />}>
-      <PageComponent {...props} handleExplore={handleExplore} userYou={userYou} t={t} />
+      <PageComponent {...pageProps} />
     </Suspense>
   }
-  return <GenericExpandedAdvice {...{profile, style, userYou}} />
+  return <GenericExpandedAdvice {...{profile, style, t}} />
 }
-const ExpandedAdviceCardContent =
-  connect(({user}: RootState): ExpandedAdviceCardConnectedProps => ({
-    profile: user.profile || {},
-  }))(React.memo(ExpandedAdviceCardContentBase))
+const ExpandedAdviceCardContent = React.memo(ExpandedAdviceCardContentBase)
 ExpandedAdviceCardContentBase.propTypes = {
   advice: PropTypes.object.isRequired,
-  dispatch: PropTypes.func.isRequired,
-  profile: PropTypes.object.isRequired,
   project: PropTypes.shape({
     projectId: PropTypes.string,
   }).isRequired,
@@ -487,7 +471,7 @@ interface MethodHeaderProps {
 const MethodHeaderBase: React.FC<MethodHeaderProps> =
 (props: MethodHeaderProps): React.ReactElement => {
   const {advice, advice: {adviceId, isForAlphaOnly, numStars}, style, title} = props
-  const {t} = useTranslation()
+  const {t} = useTranslation('advisor')
   const hasStrongImpact = numStars && numStars > 2
   const containerStyle: React.CSSProperties = {
     alignItems: 'center',

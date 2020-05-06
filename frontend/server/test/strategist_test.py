@@ -83,7 +83,7 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         }
 
     def test_get_strategy_two_control(self) -> None:
-        """User cannot get a strategy if they're in the control group for strat_two."""
+        """User in the control group for strat_two coming back ignore their strat_two flag."""
 
         self._user_db.user.update_one({}, {'$set': {'featuresEnabled.stratTwo': 'CONTROL'}})
         response = self.app.post(
@@ -94,8 +94,10 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         user_info = self.json_from_response(response)
 
         project = user_info['projects'][0]
-        self.assertFalse(project.get('strategies'))
-        self.assertEqual('CONTROL', user_info['featuresEnabled'].get('stratTwo'))
+        self.assertTrue(project.get('strategies'))
+        self.assertEqual(
+            'CONTROL', user_info['featuresEnabled'].get('stratTwo'),
+            msg='control flag should be kept')
 
     def test_get_strategy(self) -> None:
         """User gets a strategy on complete project if they have one advice in it."""
@@ -122,7 +124,6 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             }],
             strategy.get('piecesOfAdvice'))
         self.assertFalse(user_info['featuresEnabled'].get('stratOne'))
-        self.assertEqual('ACTIVE', user_info['featuresEnabled'].get('stratTwo'))
 
     def test_get_strategy_in_other_category(self) -> None:
         """User gets a strategy on complete project if they have one advice in it."""
@@ -142,7 +143,6 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
         self.assertEqual('Un troisième titre', strategy.get('title'))
         self.assertEqual([{'adviceId': 'improve-resume'}], strategy.get('piecesOfAdvice'))
         self.assertFalse(user_info['featuresEnabled'].get('stratOne'))
-        self.assertEqual('ACTIVE', user_info['featuresEnabled'].get('stratTwo'))
 
     def test_dont_get_strategy(self) -> None:
         """User doesn't get a strategy if they don't have the required advice."""
@@ -232,8 +232,9 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             ['other-leads', 'before-search', 'application-method'],
             [s.get('strategyId') for s in strategies])
 
-    def test_dont_get_alpha_strategies_if_not_alpha(self) -> None:
-        """Ensure a non-alpha user does not get strategies for a category in the works."""
+    # TODO(pascal): Clean up this test as having an alpha category is now restricted to alpha users.
+    def test_get_strategies_even_if_for_alpha_only(self) -> None:
+        """Ensure a non-alpha user still get strategies for a category in the works."""
 
         self._db.diagnostic_category.insert_one({
             'categoryId': 'stuck-market',
@@ -255,7 +256,9 @@ class StrategyModulesTestCase(base_test.ServerTestCase):
             headers={'Authorization': 'Bearer ' + self.auth_token})
         user_info = self.json_from_response(response)
         strategies = user_info['projects'][0].get('strategies', [])
-        self.assertFalse([s.get('strategyId') for s in strategies])
+        self.assertEqual(
+            ['other-leads', 'before-search', 'application-method'],
+            [s.get('strategyId') for s in strategies])
 
     def test_get_specific_to_job(self) -> None:
         """Ensure specific-to-job advice is given in the relevant strategies."""

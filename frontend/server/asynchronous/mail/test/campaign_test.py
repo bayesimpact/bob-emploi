@@ -17,13 +17,12 @@ class CampaignHelperFunctionTestCase(unittest.TestCase):
         """Test the status update function."""
 
         user_id = '02499e64387edfcc2ab7a948'
-        profile = user_pb2.UserProfile(gender=user_pb2.FEMININE, can_tutoie=True, locale='fr@tu')
+        profile = user_pb2.UserProfile(gender=user_pb2.FEMININE, locale='fr@tu')
         status_update_link = campaign.get_status_update_link(user_id, profile)
         base_url = f'https://www.bob-emploi.fr/statut/mise-a-jour?user={user_id}'
         self.assertRegex(
             status_update_link,
-            rf'^{re.escape(base_url)}&token=\d+\.[a-f0-9]+&gender=FEMININE&'
-            'can_tutoie=true&hl=fr%40tu$')
+            rf'^{re.escape(base_url)}&token=\d+\.[a-f0-9]+&gender=FEMININE&hl=fr%40tu$')
 
     def test_create_logged_url(self) -> None:
         """Test the create logged url function."""

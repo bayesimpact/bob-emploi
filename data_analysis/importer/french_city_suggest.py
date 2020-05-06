@@ -89,7 +89,7 @@ def prepare_cities(
         urban = cleaned_data.french_urban_entities(filename=urban_entities_filename)
         cities['urban'] = cities.cityId.map(urban.urban)
         cities.urban.fillna(0, inplace=True)
-        cities.urban.astype(int, inplace=True)
+        cities.urban.astype(int)
         useful_columns.append('urban')
 
     if transport_scores_filename:

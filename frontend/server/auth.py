@@ -48,7 +48,7 @@ if typing.TYPE_CHECKING:
         ],
         timestamp_pb2.Timestamp]
 
-_LinkedInEmailResponse = TypedDict(  # pylint: disable=invalid-name
+_LinkedInEmailResponse = TypedDict(
     '_LinkedInEmailResponse', {
         'handle~': Dict[str, str],
     }, total=False)
@@ -289,8 +289,8 @@ class Authenticator(object):
             self, user: user_pb2.User, user_data: auth_pb2.AuthUserData) -> user_pb2.User:
         """Save a user with additional data."""
 
-        user.profile.can_tutoie = user_data.can_tutoie
         user.profile.locale = user_data.locale
+        user.features_enabled.alpha = user_data.is_alpha
 
         return self._save_new_user(user)
 

@@ -22,6 +22,9 @@ def _get_find_diploma_vars(
     if not any(s.strategy_id == 'get-diploma' for s in project.opened_strategies):
         return None
 
+    if not project.target_job.job_group.rome_id:
+        return None
+
     trainings = scoring_project.get_trainings()[:3]
 
     deep_link_training_url = \

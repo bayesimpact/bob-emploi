@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {ofPrefix} from 'store/french'
+import {closeToCity} from 'store/french'
 
 import {Trans} from 'components/i18n'
 import {ExternalLink, GrowingNumber} from 'components/theme'
@@ -20,11 +20,10 @@ const CivicService = (props: CardProps): React.ReactElement => {
   const {handleExplore, project: {city}, t} = props
   const {missions = []} = useAdviceData<bayes.bob.VolunteeringMissions>(props)
   const missionCount = missions.length
-  const {modifiedName: cityName, prefix} = ofPrefix(city?.name || '')
   const title = useMemo((): React.ReactNode => <Trans parent={null} t={t} count={missionCount}>
     <GrowingNumber number={missionCount} isSteady={true} /> mission cherche des jeunes comme vous
   </Trans>, [missionCount, t])
-  const subtitle = `Près ${prefix}${cityName}`
+  const subtitle = closeToCity(city?.name || '', t)
   const footer = useMemo((): React.ReactNode => <Trans parent={null}>
     <img
       src={logoServiceCivique} style={{height: 35, marginRight: 10, verticalAlign: 'middle'}}

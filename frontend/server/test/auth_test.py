@@ -38,6 +38,7 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         self.assertEqual('Bob', auth_response['authenticatedUser']['profile']['name'])
         self.assertFalse(auth_response['authenticatedUser']['profile'].get('canTutoie'))
         self.assertFalse(auth_response['authenticatedUser'].get('hasAccount'))
+        self.assertFalse(auth_response['authenticatedUser'].get('featuresEnabled', {}).get('alpha'))
         user_id = auth_response['authenticatedUser']['userId']
         self.assertTrue(user_id)
 
@@ -45,10 +46,19 @@ class AuthenticateEndpointTestCase(base_test.ServerTestCase):
         """Auth request to create a guest user that can be tutoyed."""
 
         response = self.app.post(
-            '/api/user/authenticate', data='{"firstName": "Bob", "userData": {"canTutoie": true}}',
+            '/api/user/authenticate', data='{"firstName": "Bob", "userData": {"locale": "fr@tu"}}',
             content_type='application/json')
         auth_response = self.json_from_response(response)
-        self.assertTrue(auth_response['authenticatedUser']['profile'].get('canTutoie'))
+        self.assertEqual('fr@tu', auth_response['authenticatedUser']['profile'].get('locale'))
+
+    def test_create_guest_user_alpha(self) -> None:
+        """Auth request to create a guest user in alpha."""
+
+        response = self.app.post(
+            '/api/user/authenticate', data='{"firstName": "Bob", "userData": {"isAlpha": true}}',
+            content_type='application/json')
+        auth_response = self.json_from_response(response)
+        self.assertTrue(auth_response['authenticatedUser'].get('featuresEnabled', {}).get('alpha'))
 
     def test_register_guest_user_broken(self) -> None:
         """Sign-in a user after they created a guest account, but with a broken password."""

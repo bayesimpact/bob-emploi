@@ -73,6 +73,7 @@ interface BreadCrumbsProps {
 const BreadCrumbsBase: React.FC<BreadCrumbsProps> = (props: BreadCrumbsProps):
 React.ReactElement => {
   const {baseUrl, style} = props
+  const {t} = useTranslation()
   const containerStyle: React.CSSProperties = {
     padding: 8,
     position: 'relative',
@@ -98,7 +99,7 @@ React.ReactElement => {
     <Link to={baseUrl}>
       <Button type="discreet" style={backButtonStyle}>
         <ChevronLeftIcon style={chevronStyle} />
-        Retour au diagnostic
+        {t('Retour au diagnostic')}
       </Button>
     </Link>
   </nav>
@@ -136,13 +137,13 @@ React.ReactElement|null => {
     'Concurrence sur un métier proche du vôtre',
     {count: lessStressfulJobGroups.length},
   ), [lessStressfulJobGroups, t])
+  const targetJobGroups = useMemo(() => [{jobGroup, localStats}], [jobGroup, localStats])
   if (!marketScore || marketScore >= 7 || !lessStressfulJobGroups.length) {
     return null
   }
   return <Section header={header}>
     <JobGroupStressBars
-      targetJobGroup={{jobGroup, localStats}} maxBarWidth={300}
-      jobGroups={lessStressfulJobGroups} />
+      targetJobGroups={targetJobGroups} maxBarWidth={300} jobGroups={lessStressfulJobGroups} />
   </Section>
 }
 const RomeMobilitySection = React.memo(RomeMobilitySectionBase)
@@ -365,6 +366,13 @@ const useScroll = (): number => {
 }
 
 
+const pageHeaderStyle: React.CSSProperties = {
+  margin: '0 auto',
+  maxWidth: 600,
+  padding: '0 20px',
+  textAlign: 'center',
+}
+
 const StatisticsPageBase: React.FC<PageProps> = (props: PageProps): React.ReactElement => {
   const {baseUrl, dispatch, gender, laborStats, project} = props
   const scroll = useScroll()
@@ -422,7 +430,9 @@ const StatisticsPageBase: React.FC<PageProps> = (props: PageProps): React.ReactE
         <div style={{padding: 0}}>
           <BobThinksVisualCard category={categoryId} project={project} />
         </div>
-      </Section> : null}
+      </Section> : <header style={pageHeaderStyle}>
+        <h1 style={{margin: 0}}>{headerText}</h1>
+      </header>}
     <div style={contentStyle}>
       {categories ? <Section header={t('Facteurs pris en compte pour votre score')}>
         <CategoriesTrain hasFirstBlockerTag={true} categories={categories} gender={gender} />

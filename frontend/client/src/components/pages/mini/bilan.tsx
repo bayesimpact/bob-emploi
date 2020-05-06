@@ -1,10 +1,9 @@
 import CheckboxBlankOutlineIcon from 'mdi-react/CheckboxBlankOutlineIcon'
 import CheckboxMarkedOutlineIcon from 'mdi-react/CheckboxMarkedOutlineIcon'
 import PropTypes from 'prop-types'
-import React, {useMemo} from 'react'
-import {connect} from 'react-redux'
-import {RouteComponentProps} from 'react-router'
-import ReactRouterPropTypes from 'react-router-prop-types'
+import React, {useEffect, useMemo, useState} from 'react'
+import {useDispatch, useSelector} from 'react-redux'
+import {useLocation} from 'react-router'
 
 import greyFacesImage from 'images/mini/grey-faces.png'
 import greyLevelsImage from 'images/mini/grey-levels.svg'
@@ -25,7 +24,8 @@ import yesClearlyImage from 'images/mini/yes-clearly.png'
 
 import {AnswerType, QUESTIONS_TREE, Question, QuestionType, Topic} from './questions_tree'
 import {SaveButton} from './save'
-import {MiniRootState, PageProps, Routes, TopicPriority, UserState, makeUrlUser} from './store'
+import {DispatchActions, MiniRootState, Routes, TopicPriority, UserState,
+  makeUrlUser} from './store'
 import {Button} from './theme'
 
 
@@ -307,46 +307,27 @@ const AnswersAsTextBase = (props: AnswersAsTextProps): React.ReactElement => {
 const AnswersAsText = React.memo(AnswersAsTextBase)
 
 
-interface BilanPageInnerProps extends UserState {
-  user: string
-}
+const BilanPageBase = (): React.ReactElement => {
+  const {answers, priorities, orgInfo: {advisor = '', departement = '', milo = ''} = {}} =
+    useSelector(({user}: MiniRootState): UserState => user)
+  const user = useSelector(({user}: MiniRootState): string => makeUrlUser(user))
+  const dispatch = useDispatch<DispatchActions>()
+  const {pathname} = useLocation()
+  const [isPrinting] = useState(pathname.match(/imprimer/))
 
-
-type BilanPageProps = BilanPageInnerProps & PageProps & RouteComponentProps<{}>
-
-
-class BilanPageBase extends React.PureComponent<BilanPageProps, {isPrinting: boolean}> {
-  public static propTypes = {
-    answers: PropTypes.object.isRequired,
-    dispatch: PropTypes.func.isRequired,
-    location: ReactRouterPropTypes.location.isRequired,
-    orgInfo: PropTypes.shape({
-      advisor: PropTypes.string,
-      departement: PropTypes.string,
-      milo: PropTypes.string,
-    }),
-    priorities: PropTypes.object.isRequired,
-  }
-
-  public state = {
-    isPrinting: !!this.props.location.pathname.match(/imprimer/),
-  }
-
-  public componentDidMount(): void {
-    const {dispatch} = this.props
-    if (this.state.isPrinting) {
+  useEffect((): void => {
+    if (isPrinting) {
       dispatch({type: 'MINI_PRINT_SUMMARY'})
       window.print()
     } else {
       dispatch({type: 'MINI_OPEN_SUMMARY'})
     }
-  }
+  }, [dispatch, isPrinting])
 
-  private renderAsText(sortedTopics: readonly Topic[]): React.ReactNode {
-    if (!this.state.isPrinting) {
+  const renderAsText = (sortedTopics: readonly Topic[]): React.ReactNode => {
+    if (!isPrinting) {
       return
     }
-    const {answers, priorities} = this.props
     const pageStyle: React.CSSProperties = {
       breakBefore: 'page',
       fontSize: 11,
@@ -384,120 +365,112 @@ class BilanPageBase extends React.PureComponent<BilanPageProps, {isPrinting: boo
     </div>
   }
 
-  public render(): React.ReactNode {
-    const {answers, orgInfo: {advisor = '', departement = '', milo = ''} = {}, priorities,
-      user} = this.props
-    const {isPrinting} = this.state
-    const scoreTopic = ({url}: Topic): number => {
-      const priority = priorities[url]
-      if (!priority) {
-        return -1
-      }
-      if (priority === 'later') {
-        return 0
-      }
-      return 1
+  const scoreTopic = ({url}: Topic): number => {
+    const priority = priorities[url]
+    if (!priority) {
+      return -1
     }
-    const sortedTopics = [...QUESTIONS_TREE].
-      sort((topicA, topicB): number => scoreTopic(topicB) - scoreTopic(topicA))
-    const pageStyle: React.CSSProperties = {
-      fontSize: isPrinting ? '9.4px' : 'initial',
-      margin: 'auto',
-      maxWidth: '71.625em',
-      padding: '0 1.3125em',
+    if (priority === 'later') {
+      return 0
     }
-    const headerStyle = {
-      alignItems: 'flex-end',
-      display: 'flex',
-      margin: '3em 0 4.2em',
-    }
-    const titleStyle: React.CSSProperties = {
-      color: colors.MINI_PEA,
-      flex: 'none',
-      fontSize: '3.875em',
-      fontWeight: 'normal',
-      lineHeight: 1,
-      margin: 0,
-    }
-    const flexFillerStyle = {
-      flex: 1,
-    }
-    const orgInfoStyle: React.CSSProperties = {
-      flex: 1,
-      fontSize: '1.2em',
-      fontStyle: 'italic',
-      textAlign: 'right',
-    }
-    const cardsContainerStyle: React.CSSProperties = {
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      margin: '-1.3125em',
-    }
-    const notesStyle: React.CSSProperties = {
-      backgroundColor: '#fff',
-      borderRadius: '1.875em',
-      boxShadow: '0 0.625em 0.9375em 0 rgba(0, 0, 0, 0.2)',
-      flex: 1,
-      padding: '1.875em',
-    }
-    const notesTitleStyle: React.CSSProperties = {
-      color: colors.MINI_PEA,
-      fontSize: '1.1875em',
-      fontWeight: 'normal',
-      margin: 0,
-    }
-    const logoContainerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '0 3.75em',
-    }
-    return <div style={pageStyle}>
-      <header style={headerStyle}>
-        <img style={{marginRight: '1em', width: '4.5em'}} src={aliLogo} alt="" />
-        <h1 style={titleStyle}>Mon bilan</h1>
-        <div style={flexFillerStyle} />
-        {advisor || milo || departement ? <div style={orgInfoStyle}>
-          Réalisé{advisor ? ` avec ${advisor}` : ''}<br />
-          à la Mission&nbsp;Locale{milo ? ` de ${milo}` : ''}
-          {departement ? ` (${departement})` : ''}
-        </div> : null}
-      </header>
-      <div style={cardsContainerStyle}>
-        {sortedTopics.map((topic: Topic): React.ReactElement<BilanCardProps> => <BilanCard
-          key={topic.url} topic={topic} priority={priorities[topic.url]}
-          answers={answers[topic.url] || {}} style={{margin: '1.3125em'}} />)}
-      </div>
-      <div style={{display: 'flex', margin: '1.875em 0'}}>
-        <div style={notesStyle}>
-          <h2 style={notesTitleStyle}>Notes libres</h2>
-          <NoteLines count={4} />
-        </div>
-        <div style={logoContainerStyle}>
-          {isPrinting ? null : <React.Fragment>
-            <SaveButton />
-            <div style={{flex: 1}} />
-            <Button
-              style={{padding: '15px 30px'}}
-              target="_blank" to={`${Routes.BILAN_PAGE}/imprimer#${user}`}>
-              Imprimer
-            </Button>
-          </React.Fragment>}
-          <div style={{flex: 1}} />
-          <img
-            alt="Le réseau des missions locales" src={logoRDMLImage}
-            style={{margin: '1.25em', width: '13.125em'}} />
-        </div>
-      </div>
-      {this.renderAsText(sortedTopics)}
-    </div>
+    return 1
   }
+  const sortedTopics = [...QUESTIONS_TREE].
+    sort((topicA, topicB): number => scoreTopic(topicB) - scoreTopic(topicA))
+  const pageStyle: React.CSSProperties = {
+    fontSize: isPrinting ? '9.4px' : 'initial',
+    margin: 'auto',
+    maxWidth: '71.625em',
+    padding: '0 1.3125em',
+  }
+  const headerStyle = {
+    alignItems: 'flex-end',
+    display: 'flex',
+    margin: '3em 0 4.2em',
+  }
+  const titleStyle: React.CSSProperties = {
+    color: colors.MINI_PEA,
+    flex: 'none',
+    fontSize: '3.875em',
+    fontWeight: 'normal',
+    lineHeight: 1,
+    margin: 0,
+  }
+  const flexFillerStyle = {
+    flex: 1,
+  }
+  const orgInfoStyle: React.CSSProperties = {
+    flex: 1,
+    fontSize: '1.2em',
+    fontStyle: 'italic',
+    textAlign: 'right',
+  }
+  const cardsContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    margin: '-1.3125em',
+  }
+  const notesStyle: React.CSSProperties = {
+    backgroundColor: '#fff',
+    borderRadius: '1.875em',
+    boxShadow: '0 0.625em 0.9375em 0 rgba(0, 0, 0, 0.2)',
+    flex: 1,
+    padding: '1.875em',
+  }
+  const notesTitleStyle: React.CSSProperties = {
+    color: colors.MINI_PEA,
+    fontSize: '1.1875em',
+    fontWeight: 'normal',
+    margin: 0,
+  }
+  const logoContainerStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '0 3.75em',
+  }
+  return <div style={pageStyle}>
+    <header style={headerStyle}>
+      <img style={{marginRight: '1em', width: '4.5em'}} src={aliLogo} alt="" />
+      <h1 style={titleStyle}>Mon bilan</h1>
+      <div style={flexFillerStyle} />
+      {advisor || milo || departement ? <div style={orgInfoStyle}>
+        Réalisé{advisor ? ` avec ${advisor}` : ''}<br />
+        à la Mission&nbsp;Locale{milo ? ` de ${milo}` : ''}
+        {departement ? ` (${departement})` : ''}
+      </div> : null}
+    </header>
+    <div style={cardsContainerStyle}>
+      {sortedTopics.map((topic: Topic): React.ReactElement<BilanCardProps> => <BilanCard
+        key={topic.url} topic={topic} priority={priorities[topic.url]}
+        answers={answers[topic.url] || {}} style={{margin: '1.3125em'}} />)}
+    </div>
+    <div style={{display: 'flex', margin: '1.875em 0'}}>
+      <div style={notesStyle}>
+        <h2 style={notesTitleStyle}>Notes libres</h2>
+        <NoteLines count={4} />
+      </div>
+      <div style={logoContainerStyle}>
+        {isPrinting ? null : <React.Fragment>
+          <SaveButton />
+          <div style={{flex: 1}} />
+          <Button
+            style={{padding: '15px 30px'}}
+            target="_blank" to={`${Routes.BILAN_PAGE}/imprimer#${user}`}>
+            Imprimer
+          </Button>
+        </React.Fragment>}
+        <div style={{flex: 1}} />
+        <img
+          alt="Le réseau des missions locales" src={logoRDMLImage}
+          style={{margin: '1.25em', width: '13.125em'}} />
+      </div>
+    </div>
+    {renderAsText(sortedTopics)}
+  </div>
 }
-const BilanPage = connect(({user}: MiniRootState): BilanPageInnerProps => ({
-  ...user,
-  user: makeUrlUser(user),
-}))(BilanPageBase)
+const BilanPage = React.memo(BilanPageBase)
 
 
 export {BilanPage}

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import {FastForward} from 'components/fast_forward'
+import {useFastForward} from 'components/fast_forward'
 import aliLogo from 'images/mini/logo-ali.svg'
 
 import {GenericPage} from './page'
@@ -38,14 +38,15 @@ const summaryStyle: React.CSSProperties = {
   marginBottom: 18,
 }
 const logoStyle: React.CSSProperties = {
+  flexShrink: 0,
   marginRight: 60,
 }
 
 
-// TODO:(marielaure): Update bottom part.
+// TODO(sil): Update bottom part.
 const UserLandingPageBase: React.FC<{}> = (): React.ReactElement => {
+  useFastForward(undefined, [], Routes.HUB_PAGE)
   return <GenericPage bottomButton={<Button to={Routes.HUB_PAGE}>Suivant</Button>}>
-    <FastForward to={Routes.HUB_PAGE} />
     <div style={contentStyle}>
       <img src={aliLogo} alt="logo ali" style={logoStyle} />
       <div style={textPanelStyle}>

@@ -200,6 +200,7 @@ const Stats: React.FC<StatsProps> = (props: StatsProps) => {
     } = {},
   } = props
   const {t} = useTranslation()
+  const targetJobGroups = useMemo(() => [{jobGroup, localStats}], [jobGroup, localStats])
   // TODO(cyrille): Use departements directly once it's been imported.
   const departements = departementScores || bestDepartements
   const applicationModes = getApplicationModes(jobGroupInfo)
@@ -300,7 +301,7 @@ const Stats: React.FC<StatsProps> = (props: StatsProps) => {
     {lessStressfulJobGroups.length ? <section>
       <h2>Meilleurs domaines dans le département</h2>
       <JobGroupStressBars
-        targetJobGroup={{jobGroup, localStats}} areMarketScoresShown={true}
+        targetJobGroups={targetJobGroups} areMarketScoresShown={true}
         jobGroups={lessStressfulJobGroups} style={{maxWidth: 600}} />
     </section> : <h2>
       Les metiers proches ont autant, voire plus, de concurrence dans ce département

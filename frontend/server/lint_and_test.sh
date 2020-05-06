@@ -14,6 +14,14 @@ find -name "*.py" | grep -v test/vendor | grep -v _pb2.py$ | xargs pycodestyle -
 echo "Running pylint..."
 find -name "*.py" | grep -v test/vendor | grep -v _pb2.py$ | xargs pylint || EXIT=$?
 
+echo "Checking doc..."
+if ! diff <(python bob_emploi/frontend/server/scoring.py) bob_emploi/frontend/server/scoring.md; then
+    EXIT=1
+    echo "Scoring models documentation is not up to date."
+    echo "Please, run
+    python bob_emploi/frontend/server/scoring.py > bob_emploi/frontend/server/scoring.md"
+fi
+
 echo "Running tests..."
 nosetests $@ || EXIT=$?
 

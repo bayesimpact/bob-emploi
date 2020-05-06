@@ -1,68 +1,52 @@
+import {TFunction} from 'i18next'
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import {YouChooser} from 'store/french'
-
-import {GrowingNumber} from 'components/theme'
+import {Trans} from 'components/i18n'
+import {DataSource, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-reorient-to-close-job.svg'
 
-import {CardProps, CardWithContentProps, DataSource, JobSuggestion, MethodSuggestionList,
-  connectExpandedCardWithContent} from './base'
+import {CardProps, JobSuggestion, MethodSuggestionList, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
 
 
-// TODO(marielaure): Refactor this with reorientation-jobbing advice.
-class ReorientToCloseJobs
-  extends React.PureComponent<CardWithContentProps<bayes.bob.ReorientCloseJobs>> {
-  public static propTypes = {
-    adviceData: PropTypes.shape({
-      closeJobs: PropTypes.arrayOf(PropTypes.shape({
-        name: PropTypes.string.isRequired,
-        offersPercentGain: PropTypes.number,
-      }).isRequired),
-      evolutionJobs: PropTypes.arrayOf(PropTypes.shape({
-        name: PropTypes.string.isRequired,
-        offersPercentGain: PropTypes.number,
-      }).isRequired),
-    }).isRequired,
-    handleExplore: PropTypes.func.isRequired,
-    profile: PropTypes.shape({
-      gender: PropTypes.string,
-    }).isRequired,
-    project: PropTypes.shape({
-      city: PropTypes.object,
-    }).isRequired,
-    userYou: PropTypes.func.isRequired,
+// TODO(sil): Refactor this with reorientation-jobbing advice.
+const ReorientToCloseJobs = (props: CardProps): React.ReactElement => {
+  const adviceData = useAdviceData<bayes.bob.ReorientCloseJobs>(props)
+  const {handleExplore, profile: {gender}, project: {city}, t} = props
+  const {closeJobs = emptyArray, evolutionJobs = emptyArray} = adviceData
+  const areCloseJobShown = closeJobs.length > 1
+  const style = {
+    marginTop: areCloseJobShown ? 20 : 0,
   }
 
-  public render(): React.ReactNode {
-    const {adviceData, handleExplore, profile: {gender}, project: {city}, userYou} = this.props
-    const {closeJobs = emptyArray, evolutionJobs = emptyArray} =
-      adviceData.closeJobs || adviceData.evolutionJobs ? adviceData : {}
-    const areCloseJobShown = closeJobs.length > 1
-    const style = {
-      marginTop: areCloseJobShown ? 20 : 0,
-    }
-
-    // TODO(cyrille): Add short sentences to explain candidates per offer.
-    return <div>
-      <Section
-        kind="close"
-        items={closeJobs}
-        {...{city, gender, userYou}}
-        onExplore={handleExplore('close job')} />
-      <Section
-        kind="evolution"
-        items={evolutionJobs}
-        {...{city, gender, style, userYou}}
-        onExplore={handleExplore('evolution job')} />
-    </div>
-  }
+  // TODO(cyrille): Add short sentences to explain candidates per offer.
+  return <div>
+    <Section
+      kind="close"
+      items={closeJobs}
+      {...{city, gender, t}}
+      onExplore={handleExplore('close job')} />
+    <Section
+      kind="evolution"
+      items={evolutionJobs}
+      {...{city, gender, style, t}}
+      onExplore={handleExplore('evolution job')} />
+  </div>
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.ReorientCloseJobs, CardProps>(ReorientToCloseJobs)
+ReorientToCloseJobs.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+  profile: PropTypes.shape({
+    gender: PropTypes.string,
+  }).isRequired,
+  project: PropTypes.shape({
+    city: PropTypes.object,
+  }).isRequired,
+  t: PropTypes.func.isRequired,
+}
+const ExpandedAdviceCardContent = React.memo(ReorientToCloseJobs)
 
 
 interface SectionProps {
@@ -72,43 +56,39 @@ interface SectionProps {
   kind: 'close' | 'evolution'
   onExplore: () => void
   style?: React.CSSProperties
-  userYou: YouChooser
+  t: TFunction
 }
 
 
-class Section extends React.PureComponent<SectionProps> {
-  public static propTypes = {
-    city: PropTypes.object,
-    gender: PropTypes.string,
-    items: PropTypes.arrayOf(PropTypes.object.isRequired),
-    kind: PropTypes.oneOf(['close', 'evolution']).isRequired,
-    onExplore: PropTypes.func.isRequired,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
+const SectionBase = (props: SectionProps): React.ReactElement | null => {
+  const {city, gender, items = [], kind, onExplore, t, style} = props
+  if (!items.length) {
+    return null
   }
-
-  public render(): React.ReactNode {
-    const {city, gender, items = [], kind, onExplore, userYou, style} = this.props
-    const text = kind === 'evolution' ?
-      `proches que ${userYou('tu peux', 'vous pouvez')} acquérir` :
-      `que ${userYou('tu as', 'vous avez')} déjà`
-    if (!items.length) {
-      return null
-    }
-    const hasManyItems = items.length > 1
-    const title = <React.Fragment>
-      <GrowingNumber number={items.length} /> domaine{hasManyItems ? 's' : ''} qui
-      demande{hasManyItems ? 'nt' : ''} des compétences {text}.
-    </React.Fragment>
-    return <MethodSuggestionList
-      style={style} title={title}
-      footer={<DataSource style={{margin: 0}}>IMT 2019 / Pôle emploi</DataSource>}>
-      {items.map((job, index): ReactStylableElement => <JobSuggestion
-        isMethodSuggestion={true}
-        key={`job-${index}`} onClick={onExplore} {...{city, gender, job}} />)}
-    </MethodSuggestionList>
-  }
+  const title = kind === 'evolution' ? <Trans t={t} parent={null} count={items.length}>
+    <GrowingNumber number={items.length} /> domaine qui
+    demande des compétences proches que vous pouvez acquérir.
+  </Trans> : <Trans t={t} parent={null} count={items.length}>
+    <GrowingNumber number={items.length} /> domaine qui demande des compétences que vous avez déjà.
+  </Trans>
+  return <MethodSuggestionList
+    style={style} title={title}
+    footer={<DataSource style={{margin: 0}}>IMT 2019 / Pôle emploi</DataSource>}>
+    {items.map((job, index): ReactStylableElement => <JobSuggestion
+      isMethodSuggestion={true}
+      key={`job-${index}`} onClick={onExplore} {...{city, gender, job}} />)}
+  </MethodSuggestionList>
 }
+SectionBase.propTypes = {
+  city: PropTypes.object,
+  gender: PropTypes.string,
+  items: PropTypes.arrayOf(PropTypes.object.isRequired),
+  kind: PropTypes.oneOf(['close', 'evolution']).isRequired,
+  onExplore: PropTypes.func.isRequired,
+  style: PropTypes.object,
+  t: PropTypes.func.isRequired,
+}
+const Section = React.memo(SectionBase)
 
 
 export default {ExpandedAdviceCardContent, Picto}

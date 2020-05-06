@@ -189,13 +189,13 @@ def _user_to_analytics_data(user: user_pb2.User) -> Dict[str, Any]:
         'randomGroup': random.randint(0, 100) / 100,
         'profile': {
             'ageGroup': age_group(user.profile.year_of_birth),
-            'canTutoie': user.profile.can_tutoie,
             'coachingEmailFrequency': user_pb2.EmailFrequency.Name(
                 user.profile.coaching_email_frequency),
             'frustrations': [user_pb2.Frustration.Name(f) for f in user.profile.frustrations],
             'gender': user_pb2.Gender.Name(user.profile.gender),
             'hasHandicap': user.profile.has_handicap,
             'highestDegree': _get_degree_level(user.profile.highest_degree),
+            'locale': scoring.get_user_locale(user.profile),
             'origin': user_pb2.UserOrigin.Name(user.profile.origin),
         },
         'featuresEnabled': json_format.MessageToDict(user.features_enabled),

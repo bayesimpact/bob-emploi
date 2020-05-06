@@ -42,7 +42,7 @@ function isTimestampInCookieBeforeNow(cookieName: string): boolean {
   if (!cookieValue) {
     return false
   }
-  return new Date(parseInt(cookieValue)) > new Date()
+  return new Date(Number.parseInt(cookieValue)) > new Date()
 }
 
 
@@ -75,20 +75,15 @@ const appInitialData: AppState = {
   // Cache of job requirements.
   jobRequirements: {},
   // Cache of labor stats per project.
-  // TODO(pascal): Cleanup, it's not used anymore.
   laborStats: {},
   lastAccessAt: undefined,
   loginModal: undefined,
-  newProjectProps: {},
   quickDiagnostic: {
     after: {},
     before: {},
   },
   // Cache for specific jobs.
   specificJobs: {},
-  // Cache for submetric visibility in diagnostic. It's a map with
-  // submetric topics as key and a boolean as visibility status.
-  submetricsExpansion: {},
   userHasAcceptedCookiesUsage: isTimestampInCookieBeforeNow(ACCEPT_COOKIES_COOKIE_NAME),
 }
 
@@ -213,7 +208,19 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
       return {
         ...state,
         adviceData: dropKey(state.adviceData, action.project.projectId),
+        laborStats: dropKey(state.laborStats, action.project.projectId),
       }
+    case 'GET_LOCAL_STATS':
+      if (action.status === 'success' && action.project.projectId) {
+        return {
+          ...state,
+          laborStats: {
+            ...state.laborStats,
+            [action.project.projectId]: action.response,
+          },
+        }
+      }
+      return state
     case 'TRACK_INITIAL_UTM':
       if (!state.initialUtm && action.utm) {
         setOnceJsonToStorage(UTM_LOCAL_STORAGE_NAME, action.utm)
@@ -311,13 +318,15 @@ function app(state: AppState = appInitialData, action: AllActions): AppState {
           [action.commentKey]: true,
         },
       }
-    case 'CHANGE_SUBMETRIC_EXPANSION':
-      return {
-        ...state,
-        submetricsExpansion: {
-          ...state.submetricsExpansion,
-          [action.topic]: action.isExpanded,
-        },
+    case 'GET_DIAGNOSTIC_CATEGORIES':
+      if (action.status === 'success') {
+        return {
+          ...state,
+          diagnosticCategories: {
+            ...state.diagnosticCategories,
+            [action.key]: action.response,
+          },
+        }
       }
   }
   return state

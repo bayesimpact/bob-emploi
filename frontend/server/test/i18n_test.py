@@ -44,6 +44,43 @@ class TranslateStringTestCase(unittest.TestCase):
 
         self.assertEqual('', i18n.translate_string('', 'fr', self._db))
 
+    def test_translate_strings(self) -> None:
+        """Using fallback strings."""
+
+        self._db.translations.insert_one({
+            'string': 'my text',
+            'fr': 'mon texte',
+        })
+        self.assertEqual(
+            'mon texte',
+            i18n.translate_string(['my text_plural', 'my text'], 'fr', self._db),
+        )
+
+    def test_translate_strings_fail(self) -> None:
+        """Using fallback strings and failing on all of them."""
+
+        with self.assertRaises(i18n.TranslationMissingException) as error:
+            i18n.translate_string(['my text_plural', 'my text'], 'fr', self._db)
+        self.assertIn('my text_plural', str(error.exception))
+
+    def test_translate_string_use_cache(self) -> None:
+        """Make sure that the translate_string is using the cache."""
+
+        self._db.translations.insert_one({
+            'string': 'my text',
+            'fr': 'mon texte',
+        })
+        self.assertEqual(
+            'mon texte',
+            i18n.translate_string('my text', 'fr', self._db),
+        )
+
+        self._db.translations.update_one({'string': 'my text'}, {'$set': {'fr': 'updated text'}})
+        self.assertEqual(
+            'mon texte',
+            i18n.translate_string('my text', 'fr', self._db),
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

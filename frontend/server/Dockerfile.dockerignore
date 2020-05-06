@@ -1,0 +1,8 @@
+# This ignore file is used only when building the frontend-flask container.
+
+# Hide everything.
+*
+
+# Except for server and api.
+!server
+!api

@@ -74,11 +74,11 @@ interface EventsProps extends CardProps {
   t: TFunction
 }
 
-const renderLocation = (city: string): string => {
+const renderLocation = (city: string, t: TFunction): string => {
   if (!city) {
     return ''
   }
-  const {cityName, prefix} = inCityPrefix(city)
+  const {cityName, prefix} = inCityPrefix(city, t)
   return prefix + cityName
 }
 const seeAllLinkStyle = {
@@ -99,7 +99,7 @@ const EventsBase: React.FC<EventsProps> = (props: EventsProps): React.ReactEleme
   }
   const title = <Trans parent={null} t={t} count={events.length}>
     <GrowingNumber style={{fontWeight: 'bold'}} number={events.length} isSteady={true} />
-    {' '}évènement {{inCity: renderLocation(city)}} pour les "entrepreneurs de demain"
+    {' '}évènement {{inCity: renderLocation(city, t)}} pour les "entrepreneurs de demain"
   </Trans>
   const footer = <Trans parent={null} t={t}>
     <img src={adieLogo} style={{height: 20, marginRight: 10}} alt="logo adie" />

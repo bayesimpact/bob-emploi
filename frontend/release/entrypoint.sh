@@ -41,6 +41,7 @@ replace_var_if_value GOOGLE_SSO_CLIENT_ID googleSSOClientId
 replace_var_if_value GOOGLE_UA_ID googleUAID
 replace_var_if_value LINKED_IN_CLIENT_ID linkedInClientId
 replace_var_if_value SENTRY_PUBLIC_DSN sentryDSN
+# TODO(cyrille): Replace variables updated in plugins too.
 replace_string "$(cat /usr/share/bob-emploi/version)" "$CLIENT_VERSION" "$JS_APP_FILES"
 
 rm "${DIST_VARS}"

@@ -252,6 +252,10 @@ message LocalJobStats {
   // Percentage of the jobseekers that are in a market as stressful or more stressful than this one.
   // 0 means unkown.
   float more_stressed_jobseekers_percentage = 14;
+
+  // A sorted list of the least stressful job groups, the least stressful first.
+  // User jobgroup is absent of the list if part of the least stressful job groups.
+  repeated RelatedLocalJobGroup least_stressful_job_groups = 15;
 }
 
 // Stats for a job group related to another one, e.g. a similar job group that

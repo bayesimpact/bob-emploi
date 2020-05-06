@@ -1,7 +1,7 @@
 import _pick from 'lodash/pick'
 import PropTypes from 'prop-types'
-import React, {useCallback, useMemo} from 'react'
-import {WithTranslation, useTranslation, withTranslation} from 'react-i18next'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {EmailShareButton, FacebookIcon, FacebookShareButton, LinkedinIcon, LinkedinShareButton,
   TwitterIcon, TwitterShareButton, WhatsappIcon, WhatsappShareButton} from 'react-share'
 
@@ -10,7 +10,7 @@ import {DispatchAllActions, shareProductModalIsShown, shareProductToNetwork} fro
 import {Trans} from 'components/i18n'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalCloseButton, ModalConfig, useModal} from 'components/modal'
-import {Button, SmoothTransitions, Textarea} from 'components/theme'
+import {Button, Inputable, SmoothTransitions, Textarea} from 'components/theme'
 import {getAbsoluteUrl, Routes} from 'components/url'
 import emailIcon from 'images/email-icon.png'
 import facebookMessengerIcon from 'images/fb-messenger-logo.svg'
@@ -121,13 +121,13 @@ const textStyle: React.CSSProperties = {
   marginRight: isMobileVersion ? 'initial' : 100,
   padding: isMobileVersion ? '0 20px' : 'initial',
 }
-// TODO(marielaure): Make sure the button is below the "See my advice" button in mobile.
+// TODO(sil): Make sure the button is below the "See my advice" button in mobile.
 const shareButtonStyle: React.CSSProperties = {
   alignSelf: isMobileVersion ? 'center' : 'flex-end',
   flexShrink: 0,
   marginBottom: 30,
 }
-// TODO(marielaure): Move the close button to the center-left.
+// TODO(sil): Move the close button to the center-left.
 const closeStyle: React.CSSProperties = {
   backgroundColor: colors.COOL_GREY,
   boxShadow: 'initial',
@@ -150,7 +150,7 @@ const ShareBannerBase: React.FC<BannerProps> = (props: BannerProps): React.React
     ...style,
   }), [style])
 
-  // TODO(marielaure): Add a close button and make this position fixed and enable it when user
+  // TODO(sil): Add a close button and make this position fixed and enable it when user
   // has read most of the assessment.
   return <div style={containerStyle}>
     {onClose ? <ModalCloseButton onClick={onClose} style={closeStyle} /> : null}
@@ -187,7 +187,7 @@ const ShareBannerBase: React.FC<BannerProps> = (props: BannerProps): React.React
         Partager {config.productName} maintenant
       </Button>
     </div>
-    {/* TODO(marielaure): Put more relevant text here. */}
+    {/* TODO(sil): Put more relevant text here. */}
     <ShareModal
       onClose={hideModal} isShown={isShareBobShown}
       title={t('Partagez avec vos amis')} dispatch={dispatch}
@@ -268,83 +268,64 @@ interface ButtonsProps {
 }
 
 
-interface ButtonsState {
-  canBrowserShare: boolean
-  isShareLinkJustCopied: boolean
-  shareButtonWidth: number
-}
+const canBrowserShare = !!navigator.share
 
 
-class ShareButtonsBase extends React.PureComponent<ButtonsProps & WithTranslation, ButtonsState> {
-  public static propTypes = {
-    // The IDs are referenced at https://airtable.com/tblpbiUqtvn3poeXd.
-    campaign: PropTypes.string,
-    dispatch: PropTypes.func,
-    t: PropTypes.func.isRequired,
-    url: PropTypes.string,
-    // The visual element reference that explains the context in which this
-    // modal is shown. This is only to differentiate in logs.
-    visualElement: PropTypes.string.isRequired,
-  }
+const ShareButtonsBase = (props: ButtonsProps): React.ReactElement => {
+  const {campaign, dispatch, url, visualElement} = props
+  const [isShareLinkJustCopied, setIsShareLinkJustCopied] = useState(false)
+  const [shareButtonWidth, setShareButtonWidth] = useState(115)
 
-  public state = {
-    canBrowserShare: !!navigator.share,
-    isShareLinkJustCopied: false,
-    shareButtonWidth: 115,
-  }
-
-  public componentDidMount(): void {
-    const {dispatch, visualElement} = this.props
+  useEffect((): void => {
     if (dispatch && visualElement) {
       dispatch(shareProductModalIsShown(visualElement))
     }
-    if (this.buttonRef && this.buttonRef.current) {
-      this.setState({shareButtonWidth: this.buttonRef.current.offsetWidth})
+  }, [dispatch, visualElement])
+
+  const buttonRef = useRef<HTMLDivElement>(null)
+  useEffect((): void => {
+    if (buttonRef.current) {
+      setShareButtonWidth(buttonRef.current.offsetWidth)
     }
-  }
+  }, [])
 
-  public componentWillUnmount(): void {
-    clearTimeout(this.timeout)
-  }
+  const link = url ? url : getAbsoluteUrl(Routes.INVITE_PATH + (campaign ? `#${campaign}` : ''))
 
-  private timeout?: number
-
-  private getLink(): string {
-    const {campaign, url} = this.props
-    return url ? url : getAbsoluteUrl(Routes.INVITE_PATH + (campaign ? `#${campaign}` : ''))
-  }
-
-  private dispatchShared = (): void => {
-    const {dispatch, visualElement} = this.props
+  const dispatchShared = useCallback((): void => {
     if (dispatch && visualElement) {
       dispatch(shareProductToNetwork(visualElement))
     }
-  }
+  }, [dispatch, visualElement])
+
+  const shareLinkRef = useRef<Inputable>(null)
 
   // TODO(cyrille): Reinstate default share if canBrowserShare.
-  private copyShareLink = (): void => {
-    const {canBrowserShare} = this.state
-    if (!this.shareLinkRef || !this.shareLinkRef.current) {
+  const copyShareLink = useCallback((): void => {
+    if (!shareLinkRef.current) {
       return
     }
-    this.dispatchShared()
-    this.shareLinkRef.current.select()
+    dispatchShared()
+    shareLinkRef.current.select()
     if (canBrowserShare) {
-      navigator.share && navigator.share({title: config.productName, url: this.getLink()})
+      navigator.share?.({title: config.productName, url: link})
     }
     document.execCommand('Copy')
-    this.setState({isShareLinkJustCopied: true})
-    this.timeout =
-      window.setTimeout((): void => this.setState({isShareLinkJustCopied: false}), 4000)
-  }
+    setIsShareLinkJustCopied(true)
+  }, [dispatchShared, link])
 
-  private buttonRef: React.RefObject<HTMLDivElement> = React.createRef()
+  useEffect((): (() => void) => {
+    if (!isShareLinkJustCopied) {
+      return (): void => void 0
+    }
+    const timeout = window.setTimeout((): void => setIsShareLinkJustCopied(false), 4000)
+    return (): void => {
+      clearTimeout(timeout)
+    }
+  }, [isShareLinkJustCopied])
 
-  private shareLinkRef: React.RefObject<Textarea> = React.createRef()
+  const {t} = useTranslation()
 
-  private renderShareLink = (): React.ReactNode => {
-    const {t} = this.props
-    const {canBrowserShare, isShareLinkJustCopied, shareButtonWidth} = this.state
+  const shareLink = useMemo((): React.ReactNode => {
     const inputStyle: React.CSSProperties = {
       border: `solid 1px ${colors.SILVER}`,
       borderRadius: 4,
@@ -378,11 +359,11 @@ class ShareButtonsBase extends React.PureComponent<ButtonsProps & WithTranslatio
       <Textarea
         readOnly={true} className="blue-select"
         style={inputStyle}
-        value={t("Je recommande à tous mes amis en recherche d'emploi ") + this.getLink()}
-        ref={this.shareLinkRef} />
-      <div ref={this.buttonRef} style={buttonStyle}>
+        value={t("Je recommande à tous mes amis en recherche d'emploi ") + link}
+        ref={shareLinkRef} />
+      <div ref={buttonRef} style={buttonStyle}>
         <Button
-          onClick={this.copyShareLink} isRound={true} >
+          onClick={copyShareLink} isRound={true} >
           {canBrowserShare ? t('Partager') : t('Copier')}
         </Button>
       </div>
@@ -390,63 +371,70 @@ class ShareButtonsBase extends React.PureComponent<ButtonsProps & WithTranslatio
         {t('Lien copié dans le presse papier')}
       </span>
     </div>
-  }
+  }, [copyShareLink, isShareLinkJustCopied, link, shareButtonWidth, t])
 
-  public render(): React.ReactNode {
-    const link = this.getLink()
-    const iconProps = {
-      size: isMobileVersion ? 50 : 32,
-    }
-    const iconStyle: React.CSSProperties = {
-      borderRadius: 5,
-      cursor: 'pointer',
-      display: 'block',
-      height: iconProps.size,
-      marginBottom: 5,
-      marginRight: isMobileVersion ? 'initial' : 5,
-      overflow: 'hidden',
-      width: iconProps.size,
-    }
-    const buttonsContainerStyle: React.CSSProperties = {
-      alignItems: 'center',
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: isMobileVersion ? 'space-between' : 'initial',
-    }
-    return <React.Fragment>
-      <div style={buttonsContainerStyle}>
-        <FacebookShareButton url={link} style={iconStyle} beforeOnClick={this.dispatchShared}>
-          <FacebookIcon {...iconProps} />
-        </FacebookShareButton>
-        <TwitterShareButton url={link} style={iconStyle} beforeOnClick={this.dispatchShared}>
-          <TwitterIcon {...iconProps} />
-        </TwitterShareButton>
-        <LinkedinShareButton url={link} style={iconStyle} beforeOnClick={this.dispatchShared}>
-          <LinkedinIcon {...iconProps} />
-        </LinkedinShareButton>
-        {isMobileVersion ? <React.Fragment>
-          <WhatsappShareButton url={link} style={iconStyle} beforeOnClick={this.dispatchShared}>
-            <WhatsappIcon {...iconProps} />
-          </WhatsappShareButton>
-          <FbMessengerShareButton url={link} beforeOnClick={this.dispatchShared}>
-            <img src={facebookMessengerIcon} alt="messenger" style={iconStyle} />
-          </FbMessengerShareButton>
-          <SmsShareButton url={link} beforeOnClick={this.dispatchShared}>
-            <img src={smsIcon} alt="sms" style={iconStyle} />
-          </SmsShareButton>
-        </React.Fragment> : null}
-        <EmailShareButton url={link} beforeOnClick={this.dispatchShared} openWindow={true}>
-          <img src={emailIcon} alt="email" style={iconStyle} />
-        </EmailShareButton>
-        {/* Filler for regular space-between on different rows from flex-wrap. */}
-        {new Array(3).fill(0).map((unused, index): React.ReactNode =>
-          <div style={{height: 0, width: iconProps.size}} key={`filler-${index}`} />)}
-      </div>
-      {isMobileVersion ? null : this.renderShareLink()}
-    </React.Fragment>
+  const iconProps = {
+    size: isMobileVersion ? 50 : 32,
   }
+  const iconStyle: React.CSSProperties = {
+    borderRadius: 5,
+    cursor: 'pointer',
+    display: 'block',
+    height: iconProps.size,
+    marginBottom: 5,
+    marginRight: isMobileVersion ? 'initial' : 5,
+    overflow: 'hidden',
+    width: iconProps.size,
+  }
+  const buttonsContainerStyle: React.CSSProperties = {
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: isMobileVersion ? 'space-between' : 'initial',
+  }
+  return <React.Fragment>
+    <div style={buttonsContainerStyle}>
+      <FacebookShareButton url={link} style={iconStyle} beforeOnClick={dispatchShared}>
+        <FacebookIcon {...iconProps} />
+      </FacebookShareButton>
+      <TwitterShareButton url={link} style={iconStyle} beforeOnClick={dispatchShared}>
+        <TwitterIcon {...iconProps} />
+      </TwitterShareButton>
+      <LinkedinShareButton url={link} style={iconStyle} beforeOnClick={dispatchShared}>
+        <LinkedinIcon {...iconProps} />
+      </LinkedinShareButton>
+      {isMobileVersion ? <React.Fragment>
+        <WhatsappShareButton url={link} style={iconStyle} beforeOnClick={dispatchShared}>
+          <WhatsappIcon {...iconProps} />
+        </WhatsappShareButton>
+        <FbMessengerShareButton url={link} beforeOnClick={dispatchShared}>
+          <img src={facebookMessengerIcon} alt="messenger" style={iconStyle} />
+        </FbMessengerShareButton>
+        <SmsShareButton url={link} beforeOnClick={dispatchShared}>
+          <img src={smsIcon} alt="sms" style={iconStyle} />
+        </SmsShareButton>
+      </React.Fragment> : null}
+      <EmailShareButton url={link} beforeOnClick={dispatchShared} openWindow={true}>
+        <img src={emailIcon} alt="email" style={iconStyle} />
+      </EmailShareButton>
+      {/* Filler for regular space-between on different rows from flex-wrap. */}
+      {new Array(3).fill(0).map((unused, index): React.ReactNode =>
+        <div style={{height: 0, width: iconProps.size}} key={`filler-${index}`} />)}
+    </div>
+    {isMobileVersion ? null : shareLink}
+  </React.Fragment>
 }
-const ShareButtons = withTranslation()(ShareButtonsBase)
+ShareButtonsBase.propTypes = {
+  // The IDs are referenced at https://airtable.com/tblpbiUqtvn3poeXd.
+  campaign: PropTypes.string,
+  dispatch: PropTypes.func,
+  t: PropTypes.func.isRequired,
+  url: PropTypes.string,
+  // The visual element reference that explains the context in which this
+  // modal is shown. This is only to differentiate in logs.
+  visualElement: PropTypes.string.isRequired,
+}
+const ShareButtons = React.memo(ShareButtonsBase)
 
 
 export {ShareBanner, ShareButtons, ShareModal}
