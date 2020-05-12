@@ -6,7 +6,7 @@ import itertools
 import logging
 import random
 import re
-from typing import List, Generator, Iterable, Iterator, Optional, Set, Tuple, Union
+from typing import List, Iterable, Iterator, Optional, Set, Tuple, Union
 
 import pymongo
 
@@ -35,7 +35,7 @@ def maybe_diagnose(
 
     if project.is_incomplete:
         return False
-    if project.HasField('diagnostic'):
+    if project.diagnostic.categories:
         return False
 
     diagnose(user, project, database)
@@ -77,45 +77,15 @@ def diagnose_scoring_project(
     """
 
     del diagnostic.categories[:]
-    diagnostic.categories.extend(set_categories_relevance(scoring_project))
+    diagnostic.categories.extend(cat for cat, _ in set_categories_relevance(scoring_project))
     category: Optional[diagnostic_pb2.DiagnosticCategory]
     for category in diagnostic.categories:
         if category.relevance == diagnostic_pb2.NEEDS_ATTENTION:
             diagnostic.category_id = category.category_id
             break
     else:
+        logging.error('No diagnostic category relevant for user\n%s', diagnostic.categories)
         category = None
-    _compute_sub_diagnostics_scores(scoring_project, diagnostic)
-    # TODO(cyrille): Drop overall score computation once overall covers all possible cases.
-    # Combine the sub metrics to create the overall score.
-    sum_score = 0
-    sum_weight = 0
-    for sub_diagnostic in diagnostic.sub_diagnostics:
-        sum_score += sub_diagnostic.score
-        text = _compute_sub_diagnostic_text(scoring_project, sub_diagnostic)
-        if not text:
-            all_texts = _SUBTOPIC_SENTENCE_TEMPLATES.get_collection(scoring_project.database)
-            if all_texts:
-                logging.warning(
-                    'Uncovered case for subdiagnostic sentences in topic %s:\n%s',
-                    diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
-                    scoring_project)
-        sub_diagnostic.text = text
-        observations = list(
-            compute_sub_diagnostic_observations(scoring_project, sub_diagnostic.topic))
-        if not observations:
-            all_observations = \
-                _SUBTOPIC_OBSERVATION_TEMPLATES.get_collection(scoring_project.database)
-            if all_observations:
-                logging.warning(
-                    'No observation found on topic %s for project:\n%s',
-                    diagnostic_pb2.DiagnosticTopic.Name(sub_diagnostic.topic),
-                    scoring_project)
-        del sub_diagnostic.observations[:]
-        sub_diagnostic.observations.extend(observations)
-        sum_weight += 1
-    if sum_weight:
-        diagnostic.overall_score = round(sum_score / sum_weight)
 
     _compute_diagnostic_overall(scoring_project, diagnostic, category)
 
@@ -257,11 +227,13 @@ def quick_diagnose(
 
 
 _SENTENCE_TEMPLATES: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
-    proto.MongoCachedCollection(diagnostic_pb2.DiagnosticTemplate, 'diagnostic_sentences')
+    proto.MongoCachedCollection(
+        diagnostic_pb2.DiagnosticTemplate, 'diagnostic_sentences', sort_key='_order')
 
 
 _DIAGNOSTIC_OVERALL: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
-    proto.MongoCachedCollection(diagnostic_pb2.DiagnosticTemplate, 'diagnostic_overall')
+    proto.MongoCachedCollection(
+        diagnostic_pb2.DiagnosticTemplate, 'diagnostic_overall', sort_key='_order')
 
 
 def _compute_diagnostic_overall(
@@ -270,8 +242,7 @@ def _compute_diagnostic_overall(
         category: Optional[diagnostic_pb2.DiagnosticCategory]) -> diagnostic_pb2.Diagnostic:
     all_overalls = _DIAGNOSTIC_OVERALL.get_collection(project.database)
     restricted_overalls: Iterable[diagnostic_pb2.DiagnosticTemplate] = []
-    if category and (
-            not category.are_strategies_for_alpha_only or project.features_enabled.alpha):
+    if category:
         restricted_overalls = \
             [o for o in all_overalls if o.category_id == category.category_id]
     if not restricted_overalls:
@@ -324,115 +295,6 @@ def _compute_diagnostic_text(
     return '\n\n'.join(sentences) if not missing_sentences_orders else '', missing_sentences_orders
 
 
-# TODO(cyrille): Rename to diagnostic_submetrics_sentences once scorers are hard-coded.
-_SUBTOPIC_SENTENCE_TEMPLATES: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
-    proto.MongoCachedCollection(
-        diagnostic_pb2.DiagnosticTemplate, 'diagnostic_submetrics_sentences_new')
-
-
-def _compute_sub_diagnostic_text(
-        scoring_project: scoring.ScoringProject, sub_diagnostic: diagnostic_pb2.SubDiagnostic) \
-        -> str:
-    """Create the sentence of the diagnostic for a given project on a given topic.
-
-    Returns:
-        The text for the diagnostic submetric.
-    """
-
-    template = next(
-        scoring.filter_using_score((
-            template
-            for template in _SUBTOPIC_SENTENCE_TEMPLATES.get_collection(scoring_project.database)
-            if template.topic == sub_diagnostic.topic
-        ), lambda template: template.filters, scoring_project),
-        None)
-    if not template:
-        # TODO(cyrille): Change to warning once we have theoretical complete coverage.
-        logging.debug('Could not find a sentence for topic %s for user.', sub_diagnostic.topic)
-        return ''
-    translated_template = scoring_project.translate_string(template.sentence_template)
-    return scoring_project.populate_template(translated_template)
-
-
-_SUBTOPIC_OBSERVATION_TEMPLATES: proto.MongoCachedCollection[diagnostic_pb2.DiagnosticTemplate] = \
-    proto.MongoCachedCollection(
-        diagnostic_pb2.DiagnosticTemplate, 'diagnostic_observations')
-
-
-def compute_sub_diagnostic_observations(
-        scoring_project: scoring.ScoringProject, topic: diagnostic_pb2.DiagnosticTopic) \
-        -> Iterator[diagnostic_pb2.SubDiagnosticObservation]:
-    """Find all relevant observations for a given sub-diagnostic topic."""
-
-    templates = scoring.filter_using_score((
-        template
-        for template in _SUBTOPIC_OBSERVATION_TEMPLATES.get_collection(scoring_project.database)
-        if template.topic == topic
-    ), lambda template: template.filters, scoring_project)
-    for template in templates:
-        yield diagnostic_pb2.SubDiagnosticObservation(
-            text=scoring_project.populate_template(
-                scoring_project.translate_string(template.sentence_template)),
-            is_attention_needed=template.is_attention_needed)
-
-
-_SUBTOPIC_SCORERS: \
-    proto.MongoCachedCollection[diagnostic_pb2.DiagnosticSubmetricScorer] = \
-    proto.MongoCachedCollection(
-        diagnostic_pb2.DiagnosticSubmetricScorer, 'diagnostic_submetrics_scorers')
-
-
-# TODO(cyrille): Rethink scoring for submetrics.
-def _compute_diagnostic_topic_score(
-        topic: 'diagnostic_pb2.DiagnosticTopic',
-        scorers: Iterable[diagnostic_pb2.DiagnosticSubmetricScorer],
-        scoring_project: scoring.ScoringProject) \
-        -> Optional[diagnostic_pb2.SubDiagnostic]:
-    """Create the score for a given diagnostic submetric on a given project.
-
-    Args:
-        topic: the diagnostic topic we wish to evaluate
-        scorers: a list of scorers for the given topic, with a weight on each.
-        scoring_project: the project we want to score
-    Returns:
-        the populated subdiagnostic protobuf.
-    """
-
-    topic_score = 0.
-    topic_weight = 0.
-    sub_diagnostic = diagnostic_pb2.SubDiagnostic(topic=topic)
-
-    for scorer in scorers:
-        try:
-            score = scoring_project.score(scorer.trigger_scoring_model)
-        except scoring.NotEnoughDataException:
-            continue
-        # Use default weight of 1
-        weight = scorer.weight or 1
-        weighted_score = score * weight
-        topic_score += weighted_score
-        topic_weight += weight
-    if not topic_weight:
-        return None
-
-    sub_diagnostic.score = round(topic_score / topic_weight * 100 / 3)
-
-    return sub_diagnostic
-
-
-def _compute_sub_diagnostics_scores(
-        scoring_project: scoring.ScoringProject, diagnostic: diagnostic_pb2.Diagnostic) -> None:
-    """Populate the submetrics of the diagnostic for a given project."""
-
-    scorers_per_topic = itertools.groupby(
-        _SUBTOPIC_SCORERS.get_collection(scoring_project.database),
-        key=lambda scorer: scorer.submetric)
-    for topic, scorers in scorers_per_topic:
-        sub_diagnostic = _compute_diagnostic_topic_score(topic, scorers, scoring_project)
-        if sub_diagnostic:
-            diagnostic.sub_diagnostics.extend([sub_diagnostic])
-
-
 # TODO(cyrille): Use fetch_from_mongo once counts are saved under ID 'values'.
 def get_users_counts(database: pymongo.database.Database) -> Optional[stats_pb2.UsersCount]:
     """Get the count of users in departements and in job groups."""
@@ -444,7 +306,8 @@ def get_users_counts(database: pymongo.database.Database) -> Optional[stats_pb2.
 
 _DIAGNOSTIC_CATEGORY: \
     proto.MongoCachedCollection[diagnostic_pb2.DiagnosticCategory] = \
-    proto.MongoCachedCollection(diagnostic_pb2.DiagnosticCategory, 'diagnostic_category')
+    proto.MongoCachedCollection(
+        diagnostic_pb2.DiagnosticCategory, 'diagnostic_category', sort_key='order')
 
 
 def list_categories(database: pymongo.database.Database) \
@@ -484,7 +347,7 @@ def _get_find_what_you_like_relevance(
     return diagnostic_pb2.RELEVANT_AND_GOOD
 
 
-# TODO(pascal): Convert those to relevant scoring models.
+# TODO(pascal): Drop those once the relevant scoring models are used in prod.
 _CATEGORIES_RELEVANCE_GETTERS = {
     # TODO(pascal): Add a relevance getter for confidence-for-search
     'enhance-methods-to-interview': _get_enhance_methods_relevance,
@@ -494,31 +357,35 @@ _CATEGORIES_RELEVANCE_GETTERS = {
 }
 
 
-def _translate_category(
+def translate_category(
         category: diagnostic_pb2.DiagnosticCategory, project: scoring.ScoringProject) \
         -> diagnostic_pb2.DiagnosticCategory:
+    """Translate the field of a category template according to a project's preference."""
+
     translated = diagnostic_pb2.DiagnosticCategory()
     translated.CopyFrom(category)
     translated.ClearField('relevance_scoring_model')
     translated.metric_title = project.translate_string(category.metric_title)
     translated.ClearField('metric_details_feminine')
-    details = project.user_profile.gender == user_pb2.FEMININE and \
-        category.metric_details_feminine or \
-        category.metric_details
-    translated.metric_details = project.translate_string(details)
+    translated.metric_details = project.translate_string(
+        category.metric_details, is_genderized=True)
+    translated.blocker_sentence = project.translate_string(category.blocker_sentence)
+    translated.description = project.translate_string(category.description)
     return translated
 
 
+# TODO(cyrille): Return NEUTRAL_RELEVANCE when an error is raised without missing_fields.
 def _get_relevance_from_its_model(
         category: diagnostic_pb2.DiagnosticCategory,
         project: scoring.ScoringProject,
-        has_missing_fields: bool) \
+        has_missing_fields: bool,
+        relevant_should_be_neutral: bool) \
         -> diagnostic_pb2.CategoryRelevance:
     if category.relevance_scoring_model:
         relevance_score = project.score(category.relevance_scoring_model)
         if relevance_score <= 0:
             return diagnostic_pb2.NOT_RELEVANT
-        if relevance_score >= 3:
+        if relevance_score >= 3 and not relevant_should_be_neutral:
             return diagnostic_pb2.RELEVANT_AND_GOOD
         return diagnostic_pb2.NEUTRAL_RELEVANCE
     try:
@@ -526,32 +393,54 @@ def _get_relevance_from_its_model(
     except KeyError:
         if has_missing_fields:
             return diagnostic_pb2.NEUTRAL_RELEVANCE
-        return diagnostic_pb2.RELEVANT_AND_GOOD
+        return diagnostic_pb2.NEUTRAL_RELEVANCE if relevant_should_be_neutral else \
+            diagnostic_pb2.RELEVANT_AND_GOOD
 
 
 # TODO(cyrille): Find why python doesn't read the proto pyi to recognize CategoryRelevance
 # as a type.
 # TODO(cyrille): Profit from scoring models inheriting RelevanceModelBase.
 def _get_relevance(
-        category: diagnostic_pb2.DiagnosticCategory, project: scoring.ScoringProject) \
+        category: diagnostic_pb2.DiagnosticCategory, project: scoring.ScoringProject,
+        should_be_neutral: bool) \
         -> Tuple['diagnostic_pb2.CategoryRelevance', Set[str]]:
     try:
         if project.check_filters(category.filters):
+            if should_be_neutral:
+                return diagnostic_pb2.NEUTRAL_RELEVANCE, set()
             return diagnostic_pb2.NEEDS_ATTENTION, set()
         missing_fields: Set[str] = set()
     except scoring.NotEnoughDataException as err:
         # We don't have enough info about this category for the project,
         # so we let the relevance model decide.
         missing_fields = err.fields
-    return _get_relevance_from_its_model(category, project, bool(missing_fields)), missing_fields
+    return _get_relevance_from_its_model(
+        category, project, bool(missing_fields), should_be_neutral), missing_fields
 
 
-def _set_categories_relevance(
+def set_categories_relevance(
         project: Union[scoring.ScoringProject, user_pb2.User],
-        categories: Optional[Iterable[diagnostic_pb2.DiagnosticCategory]],
-        database: Optional[pymongo.database.Database],
-        should_highlight_first_blocker: bool) -> \
-        Generator[diagnostic_pb2.DiagnosticCategory, None, Set[str]]:
+        categories: Optional[Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
+        database: Optional[pymongo.database.Database] = None,
+        should_highlight_first_blocker: bool = True) -> \
+        Iterator[Tuple[diagnostic_pb2.DiagnosticCategory, List[user_pb2.MissingField]]]:
+    """For all categories, tell whether it's relevant for a project.
+
+    Arg list:
+        - project, either a User proto message, or a ScoringProject for which we want to determine a
+            category.
+        - categories, a list of DiagnosticCategory to select from. If not specified, will try and
+            fetch them from `database`
+        - database, the database in which to find the categories, if not specified.
+            If `project` is a ScoringProject, defaults to `project.database`,
+            otherwise, it's mandatory (raises an AttributeError).
+        - should_highlight_first_blocker, a flag to make sure the first category that needs
+            attention is highlighted for the end-user.
+    Returns an iterator of categories, together with the fields that would help
+    better diagnose them.
+    Each category has a relevance qualifier and translated natural language fields.
+    """
+
     if isinstance(project, user_pb2.User):
         if not database:
             raise AttributeError(
@@ -565,46 +454,25 @@ def _set_categories_relevance(
         categories = list_categories(database)
 
     is_highlight_set = False
-    missing_fields = set()
+    should_be_neutral = False
     for category in categories:
-        translated = _translate_category(category, project)
-        translated.relevance, new_missings = _get_relevance(category, project)
-        missing_fields.update(new_missings)
+        if category.are_strategies_for_alpha_only and not project.features_enabled.alpha:
+            continue
+        translated = translate_category(category, project)
+        translated.relevance, missing_fields = _get_relevance(category, project, should_be_neutral)
+        prioritized_fields = [
+            user_pb2.MissingField(field=field, priority=1 if is_highlight_set else 2)
+            for field in missing_fields]
         is_blocker = translated.relevance == diagnostic_pb2.NEEDS_ATTENTION
         if not is_blocker or is_highlight_set:
             translated.is_highlighted = False
+            translated.ClearField('blocker_sentence')
         elif should_highlight_first_blocker or category.is_highlighted:
             translated.is_highlighted = True
             is_highlight_set = True
-        yield translated
-    return missing_fields
-
-
-def set_categories_relevance(
-        project: Union[scoring.ScoringProject, user_pb2.User],
-        categories: Optional[Iterable[diagnostic_pb2.DiagnosticCategory]] = None,
-        database: Optional[pymongo.database.Database] = None,
-        should_highlight_first_blocker: bool = True) \
-        -> scoring.IteratorWithMissingFields[diagnostic_pb2.DiagnosticCategory]:
-    """For all categories, tell whether it's relevant for a project.
-
-    Arg list:
-        - project, either a User proto message, or a ScoringProject for which we want to determine a
-            category.
-        - categories, a list of DiagnosticCategory to select from. If not specified, will try and
-            fetch them from `database`
-        - database, the database in which to find the categories, if not specified.
-            If `project` is a ScoringProject, defaults to `project.database`,
-            otherwise, it's mandatory (raises an AttributeError).
-        - should_highlight_first_blocker, a flag to make sure the first category that needs
-            attention is highlighted for the end-user.
-    Returns an iterator with the list of categories, each having a relevance qualifier and
-    translated natural language fields. The iterator has an additionnal attribute `missing_fields`
-    that gives information about what would help to get a better diagnostic.
-    """
-
-    return scoring.IteratorWithMissingFields(
-        _set_categories_relevance(project, categories, database, should_highlight_first_blocker))
+        if is_blocker and category.is_last_relevant:
+            should_be_neutral = True
+        yield translated, prioritized_fields
 
 
 def find_category(
@@ -626,5 +494,5 @@ def find_category(
     """
 
     return next((
-        c for c in set_categories_relevance(project, categories, database)
+        c for c, _ in set_categories_relevance(project, categories, database)
         if c.relevance == diagnostic_pb2.NEEDS_ATTENTION), None)

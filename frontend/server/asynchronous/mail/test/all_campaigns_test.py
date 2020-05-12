@@ -236,7 +236,6 @@ class SelfDevelopmentVarsTestCase(mail_blast_test.CampaignTestBase):
             'isYoung': '',
             'isYoungNotWoman': '',
             'jobName': 'juriste',
-            'ofJobName': 'de juriste',
         })
 
     def test_no_project(self) -> None:
@@ -261,6 +260,13 @@ class SelfDevelopmentVarsTestCase(mail_blast_test.CampaignTestBase):
         self.project.job_search_has_not_started = True
         self.project.job_search_length_months = -1
         self._assert_user_receives_campaign(should_be_sent=False)
+
+    def test_undefined_project(self) -> None:
+        """Undefined project, an email is sent but without a job name."""
+
+        self.project.ClearField('target_job')
+        self._assert_user_receives_campaign()
+        self.assertEqual('', self._variables.pop('jobName'))
 
 
 class BodyLanguageVarsTestCase(mail_blast_test.CampaignTestBase):
@@ -493,7 +499,6 @@ class Galita2VarsTestCase(mail_blast_test.CampaignTestBase):
             'firstName': 'Patrick',
             'gender': 'MASCULINE',
             'isReorienting': '',
-            'ofJobName': 'de maçon',
         })
 
 

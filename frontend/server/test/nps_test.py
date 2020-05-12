@@ -219,7 +219,9 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
 
         response = self.app.post(
             '/api/nps',
-            data=f'{{"userId": "{self.user_id}", "comment": "My own comment"}}',
+            data=f'{{"userId": "{self.user_id}", "comment": "My own comment", "selfDiagnostic":'
+            '{"categoryId": "this_one", "selfDiagnosticStatus": "KNOWN_SELF_DIAGNOSTIC"},'
+            '"hasActionsIdea": "FALSE"}',
             headers={'Authorization': 'Bearer ' + self.nps_auth_token})
         self.assertEqual(200, response.status_code)
         self.assertFalse(response.get_data(as_text=True))
@@ -229,6 +231,10 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
         self.assertEqual(
             'My own comment',
             user.get('netPromoterScoreSurveyResponse', {}).get('generalFeedbackComment'))
+        self.assertEqual(
+            {'categoryId': 'this_one', 'selfDiagnosticStatus': 'KNOWN_SELF_DIAGNOSTIC'},
+            user.get('netPromoterScoreSurveyResponse', {}).get('npsSelfDiagnostic'))
+        self.assertEqual('FALSE', user['netPromoterScoreSurveyResponse'].get('hasActionsIdea'))
 
     # TODO(cyrille): Externalize in own module (or add PR to requests_mock).
     def _match_request_data(self, request: 'requests_mock._RequestObjectProxy') -> bool:
@@ -258,6 +264,17 @@ class NPSUpdateTestCase(base_test.ServerTestCase):
             '/api/nps',
             data=f'{{"userId": "{self.user_id}", "comment": "This is a bad comment"}}',
             headers={'Authorization': 'Bearer ' + self.nps_auth_token})
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(response.get_data(as_text=True))
+
+    def test_set_nps_no_content(self) -> None:
+        """Call the NPS API but without any content."""
+
+        response = self.app.post(
+            '/api/nps',
+            data=f'{{"userId": "{self.user_id}"}}',
+            headers={'Authorization': 'Bearer ' + self.nps_auth_token})
+
         self.assertEqual(200, response.status_code)
         self.assertFalse(response.get_data(as_text=True))
 

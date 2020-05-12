@@ -2,10 +2,11 @@
 
 import unittest
 
+from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.server.test import scoring_test
 
 
-class UnclearProjectTest(scoring_test.ScoringModelTestBase):
+class MissingLanguageTest(scoring_test.ScoringModelTestBase):
     """Tests for the scoring model "for-missing-language"."""
 
     model_id = 'for-missing-language'
@@ -15,8 +16,8 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         del persona.user_profile.languages[:]
-        score = self._score_persona(persona)
-        self.assertEqual(0, score, msg=persona.name)
+        self._assert_missing_fields_to_score_persona(
+            {'profile.languages.fr.hasSpokenKnowledge'}, persona)
 
     def test_no_french(self) -> None:
         """User does not speak French."""
@@ -24,7 +25,7 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=False)
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.FALSE)
         persona.project.city.departement_id = '31'
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg=persona.name)
@@ -35,12 +36,18 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=False)
-        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=False)
-        persona.user_profile.languages.add(locale='en', has_spoken_knowledge=True)
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.FALSE)
+        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=project_pb2.FALSE)
+        persona.user_profile.languages.add(locale='en', has_spoken_knowledge=project_pb2.TRUE)
         persona.project.city.departement_id = 'BRU'
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg=persona.name)
+
+
+class MissingJobLanguageTest(scoring_test.ScoringModelTestBase):
+    """Tests for the scoring model "for-missing-job-language"."""
+
+    model_id = 'for-missing-job-language'
 
     def test_french_sale_in_brussels(self) -> None:
         """User only speaks French in Brussels but want to work as a sale."""
@@ -48,8 +55,8 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=True)
-        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=False)
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.TRUE)
+        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=project_pb2.FALSE)
         persona.project.city.departement_id = 'BRU'
         persona.project.target_job.job_group.rome_id = 'D1201'
         score = self._score_persona(persona)
@@ -61,8 +68,8 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=True)
-        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=True)
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.TRUE)
+        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=project_pb2.TRUE)
         persona.project.city.departement_id = 'BRU'
         persona.project.target_job.job_group.rome_id = 'A1234'
         score = self._score_persona(persona)
@@ -74,12 +81,25 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
         persona = self._random_persona().clone()
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=True)
-        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=True)
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.TRUE)
+        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=project_pb2.TRUE)
         persona.project.city.departement_id = 'BRU'
         persona.project.target_job.job_group.rome_id = 'D1201'
         score = self._score_persona(persona)
         self.assertEqual(0, score, msg=persona.name)
+
+    def test_unknown_spoken_sales_in_brussels(self) -> None:
+        """User is in sales and speaks French in Brussels but no info about spoken Dutch."""
+
+        persona = self._random_persona().clone()
+        del persona.user_profile.languages[:]
+        del persona.user.projects[1:]
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.TRUE)
+        persona.user_profile.languages.add(locale='nl')
+        persona.project.city.departement_id = 'BRU'
+        persona.project.target_job.job_group.rome_id = 'D1201'
+        self._assert_missing_fields_to_score_persona(
+            {'profile.languages.nl.hasSpokenKnowledge'}, persona)
 
     def test_administrative_in_brussels_no_written(self) -> None:
         """User cannot write French in Brussels but wants to work in administrative jobs."""
@@ -88,13 +108,33 @@ class UnclearProjectTest(scoring_test.ScoringModelTestBase):
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
         persona.user_profile.languages.add(
-            locale='fr', has_spoken_knowledge=True, has_written_knowledge=False)
+            locale='fr',
+            has_spoken_knowledge=project_pb2.TRUE,
+            has_written_knowledge=project_pb2.FALSE)
         persona.user_profile.languages.add(
-            locale='nl', has_spoken_knowledge=True, has_written_knowledge=True)
+            locale='nl',
+            has_spoken_knowledge=project_pb2.TRUE,
+            has_written_knowledge=project_pb2.TRUE)
         persona.project.city.departement_id = 'BRU'
         persona.project.target_job.job_group.rome_id = 'M1605'
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg=persona.name)
+
+    def test_administrative_in_brussels_missing_info(self) -> None:
+        """User wants to work in administrative jobs in Brussels, but we don't know much."""
+
+        persona = self._random_persona().clone()
+        del persona.user_profile.languages[:]
+        del persona.user.projects[1:]
+        persona.user_profile.languages.add(locale='fr')
+        persona.user_profile.languages.add(locale='nl', has_written_knowledge=project_pb2.TRUE)
+        persona.project.city.departement_id = 'BRU'
+        persona.project.target_job.job_group.rome_id = 'M1605'
+        self._assert_missing_fields_to_score_persona({
+            'profile.languages.fr.hasSpokenKnowledge',
+            'profile.languages.fr.hasWrittenKnowledge',
+            'profile.languages.nl.hasSpokenKnowledge',
+        }, persona)
 
 
 class LanguageRelevanceTest(scoring_test.ScoringModelTestBase):
@@ -126,35 +166,22 @@ class LanguageRelevanceTest(scoring_test.ScoringModelTestBase):
         persona.project.city.departement_id = 'BRU'
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=True)
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.TRUE)
         persona.project.target_job.job_group.rome_id = 'A1234'
         score = self._score_persona(persona)
         self.assertEqual(3, score, msg=persona.name)
 
-    def test_sale_in_brussels_unknown_nl(self) -> None:
-        """User in sales speaks French but unknown level of Dutch in Brussels."""
+    def test_no_french_in_brussels(self) -> None:
+        """User doesn't speak French in Brussels, Dutch status unknown."""
 
         persona = self._random_persona().clone()
+        persona.project.city.departement_id = 'BRU'
         del persona.user_profile.languages[:]
         del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=True)
-        persona.project.city.departement_id = 'BRU'
-        persona.project.target_job.job_group.rome_id = 'D1201'
+        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=project_pb2.FALSE)
+        persona.project.target_job.job_group.rome_id = 'A1234'
         score = self._score_persona(persona)
         self.assertEqual(1, score, msg=persona.name)
-
-    def test_sale_in_brussels(self) -> None:
-        """User speaks French and Dutch in Brussels."""
-
-        persona = self._random_persona().clone()
-        del persona.user_profile.languages[:]
-        del persona.user.projects[1:]
-        persona.user_profile.languages.add(locale='fr', has_spoken_knowledge=True)
-        persona.user_profile.languages.add(locale='nl', has_spoken_knowledge=True)
-        persona.project.city.departement_id = 'BRU'
-        persona.project.target_job.job_group.rome_id = 'D1201'
-        score = self._score_persona(persona)
-        self.assertEqual(3, score, msg=persona.name)
 
 
 if __name__ == '__main__':

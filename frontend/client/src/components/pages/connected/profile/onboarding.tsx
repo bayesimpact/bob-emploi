@@ -1,6 +1,10 @@
 import {History} from 'history'
 import _keyBy from 'lodash/keyBy'
-import {AllActions, DispatchAllActions, createFirstProject} from 'store/actions'
+import {useCallback} from 'react'
+import {useDispatch, useSelector} from 'react-redux'
+import {useHistory} from 'react-router'
+
+import {AllActions, DispatchAllActions, RootState, createFirstProject} from 'store/actions'
 
 import {NEW_PROJECT_ID, Routes} from 'components/url'
 
@@ -13,6 +17,7 @@ import {NewProjectGoalStep} from './goal'
 import {NewProjectCriteriaStep} from './criteria'
 import {NewProjectExperienceStep} from './experience'
 import {NewProjectJobsearchStep} from './jobsearch'
+import {SelfDiagnosticStep} from './self_diagnostic'
 import {ProfileStepProps, ProjectStepProps} from './step'
 
 
@@ -20,17 +25,18 @@ interface BaseStep {
   doesNotCount?: boolean
   isBlockingBackwardsNavigation?: boolean
   name: string
+  shouldSkip?: (project: bayes.bob.Project, featuresEnabled: bayes.bob.Features) => boolean
   type?: AllActions['type']
 }
 
 
-interface ProfileBaseStep extends BaseStep {
+export interface ProfileBaseStep extends BaseStep {
   component: React.ComponentType<ProfileStepProps>
   path: typeof Routes.PROFILE_PAGE
 }
 
 
-interface ProjectBaseStep extends BaseStep {
+export interface ProjectBaseStep extends BaseStep {
   component: React.ComponentType<ProjectStepProps>
   path: typeof Routes.NEW_PROJECT_PAGE
 }
@@ -60,6 +66,12 @@ const STEPS: readonly AnyOnboardingStep[] = [
     type: 'FINISH_PROJECT_GOAL',
   },
   {
+    component: SelfDiagnosticStep,
+    name: 'defi',
+    path: Routes.NEW_PROJECT_PAGE,
+    type: 'FINISH_PROJECT_SELF_DIAGNOSTIC',
+  },
+  {
     component: NewProjectCriteriaStep,
     name: 'criteres',
     path: Routes.NEW_PROJECT_PAGE,
@@ -69,6 +81,7 @@ const STEPS: readonly AnyOnboardingStep[] = [
     component: NewProjectExperienceStep,
     name: 'experience',
     path: Routes.NEW_PROJECT_PAGE,
+    shouldSkip: ({targetJob}: bayes.bob.Project): boolean => !targetJob,
     type: 'FINISH_PROJECT_EXPERIENCE',
   },
   {
@@ -90,7 +103,7 @@ const STEPS: readonly AnyOnboardingStep[] = [
   },
 ]
 // Compute stepNumber for each step.
-interface WithNumber {
+export interface WithNumber {
   index: number
   isLastProjectStep?: boolean
   stepNumber?: number
@@ -125,7 +138,7 @@ const PRFOJECT_STEPS = _keyBy(NUMBERED_STEPS.filter(isProjectStep), 'name')
 
 
 // Total number of steps in the onboarding.
-export const onboardingStepCount = nextStepNumber - 1
+const onboardingStepCount = nextStepNumber - 1
 
 
 type OnboardingPath = typeof Routes.PROFILE_PAGE | typeof Routes.NEW_PROJECT_PAGE
@@ -151,24 +164,30 @@ function getOnboardingStep(path: OnboardingPath, name: string): NumberedStep | u
 
 function gotoRelativeStep(
   path: OnboardingPath, name: string, dispatch: DispatchAllActions|undefined, history: History,
-  relativeStep: number): boolean {
+  relativeStep: 1|-1, project: bayes.bob.Project, featuresEnabled: bayes.bob.Features): boolean {
   const currentStep = getOnboardingStep(path, name)
   if (!currentStep) {
     return false
   }
   const {index} = currentStep
-  const newStepIndex = index + relativeStep
-  if (newStepIndex < 0) {
-    return false
+  let newStepIndex: number
+  for (
+    newStepIndex = index + relativeStep;
+    newStepIndex >= 0 && newStepIndex < STEPS.length;
+    newStepIndex += relativeStep
+  ) {
+    const newStep = STEPS[newStepIndex]
+    if (newStep.shouldSkip?.(project, featuresEnabled)) {
+      continue
+    }
+    history.push(`${newStep.path}/${newStep.name}`)
+    return true
   }
   if (newStepIndex >= STEPS.length) {
-    dispatch && dispatch(createFirstProject())
+    dispatch?.(createFirstProject())
     history.push(`${Routes.PROJECT_PAGE}/${NEW_PROJECT_ID}`)
-    return false
   }
-  const newStep = STEPS[newStepIndex]
-  history.push(`${newStep.path}/${newStep.name}`)
-  return true
+  return false
 }
 
 
@@ -185,12 +204,51 @@ function hasPreviousStep(path: string, name: string): boolean {
 }
 
 
-const gotoPreviousStep = (path: string, name: string, history: History): boolean =>
-  gotoRelativeStep(path, name, undefined, history, -1)
-const gotoNextStep =
-  (path: string, name: string, dispatch: DispatchAllActions, history: History): boolean =>
-    gotoRelativeStep(path, name, dispatch, history, 1)
+interface OnboardingProps<T extends BaseStep> {
+  goBack: (() => void) | undefined
+  goNext: () => void
+  step: T & WithNumber | undefined
+  stepCount: number
+}
 
 
-export {gotoNextStep, gotoPreviousStep, hasPreviousStep,
-  getProfileOnboardingStep, getProjectOnboardingStep}
+const emptyObject = {} as const
+
+
+function useOnboarding<T extends BaseStep>(
+  getStep: (name?: string) => T & WithNumber | undefined, path: string, name?: string,
+): OnboardingProps<T> {
+  const history = useHistory()
+  const dispatch = useDispatch<DispatchAllActions>()
+  const step = getStep(name)
+  const project = useSelector(
+    ({user: {projects}}: RootState): bayes.bob.Project => projects?.[0] || emptyObject,
+  )
+  const featuresEnabled = useSelector(
+    ({user: {featuresEnabled}}: RootState): bayes.bob.Features => featuresEnabled || emptyObject,
+  )
+  const goNext = useCallback((): void => {
+    name && gotoRelativeStep(path, name, dispatch, history, 1, project, featuresEnabled)
+  }, [path, name, dispatch, history, project, featuresEnabled])
+  const goBack = useCallback((): void => {
+    name && gotoRelativeStep(path, name, undefined, history, -1, project, featuresEnabled)
+  }, [path, name, history, project, featuresEnabled])
+  return {
+    goBack: name && hasPreviousStep(path, name) ? goBack : undefined,
+    goNext,
+    step: step?.shouldSkip?.(project, featuresEnabled) ? undefined : step,
+    stepCount: onboardingStepCount,
+  }
+}
+
+
+function useProfileOnboarding(name?: string): OnboardingProps<ProfileBaseStep> {
+  return useOnboarding(getProfileOnboardingStep, Routes.PROFILE_PAGE, name)
+}
+
+
+function useProjectOnboarding(name?: string): OnboardingProps<ProjectBaseStep> {
+  return useOnboarding(getProjectOnboardingStep, Routes.PROJECT_PAGE, name)
+}
+
+export {useProfileOnboarding, useProjectOnboarding}

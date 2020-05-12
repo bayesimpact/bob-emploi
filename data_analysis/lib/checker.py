@@ -178,8 +178,7 @@ def _create_mock_scoring_project() -> scoring.ScoringProject:
     project.created_at.FromDatetime(datetime.datetime.now())
     project.job_search_started_at.FromDatetime(
         datetime.datetime.now() - datetime.timedelta(days=30))
-    features = user_pb2.Features()
-    return scoring.ScoringProject(project, user, features, _db)
+    return scoring.ScoringProject(project, user, database=_db)
 
 
 class MissingTemplateVarsChecker(ValueChecker):
@@ -250,10 +249,12 @@ class TranslationChecker(ValueChecker):
             self._has_warned = True
             logging.warning(
                 'Please, also import translations by running:\n'
-                '    docker-compose run --rm -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY '
+                '    docker-compose run --rm'
+                '    -e AIRTABLE_API_KEY=$AIRTABLE_API_KEY '
+                '    -e MONGO_URL=mongodb://frontend-db/test '
                 'data-analysis-prepare \\\n'
                 '        python bob_emploi/data_analysis/importer/import_status.py \\\n'
-                '        mongodb://frontend-db/test --run translations')
+                '        --run translations')
         if not field_value:
             return True
         missing_translations = translation.fetch_missing_translation_locales(field_value)
@@ -312,6 +313,28 @@ class PartialSentenceChecker(ValueChecker):
                 'The sentence must not be capitalized',
                 f'**{field_value[0]}**{field_value[1:]}',
                 f'{field_value[0].lower()}{field_value[1:]}')
+        if field_value[-1] in {'.', '!'}:
+            raise FixableValueError(
+                'The sentence must not end with a punctuation mark',
+                f'{field_value[:-1]}**{field_value[-1]}**',
+                field_value[:-1].strip())
+        return True
+
+
+class ListOptionChecker(ValueChecker):
+    """Checks that the required value is capitalized and not punctuated."""
+
+    name = 'list option checker'
+
+    def check_value(self, field_value: str) -> bool:
+        """Whether the field passes the check or not."""
+
+        # TODO(cyrille): Check both errors and report one error only.
+        if field_value[0].upper() != field_value[0]:
+            raise FixableValueError(
+                'The sentence must be capitalized',
+                f'**{field_value[0]}**{field_value[1:]}',
+                f'{field_value[0].upper()}{field_value[1:]}')
         if field_value[-1] in {'.', '!'}:
             raise FixableValueError(
                 'The sentence must not end with a punctuation mark',

@@ -1,10 +1,9 @@
 import {ConnectedRouter, connectRouter, routerMiddleware} from 'connected-react-router'
 import {History, createBrowserHistory} from 'history'
 import Storage from 'local-storage-fallback'
-import PropTypes from 'prop-types'
 import {composeWithDevTools} from 'redux-devtools-extension'
-import React from 'react'
-import {connect, Provider} from 'react-redux'
+import React, {useEffect, useMemo, useState} from 'react'
+import {connect, Provider, useDispatch, useSelector} from 'react-redux'
 import {RouteComponentProps} from 'react-router'
 import {Redirect, Route, Switch} from 'react-router-dom'
 import {Store, createStore, applyMiddleware, combineReducers} from 'redux'
@@ -23,7 +22,7 @@ import {LandingPage} from './mini/landing'
 import {QuestionPage} from './mini/question'
 import {UserLandingPage} from './mini/user_landing'
 import {AnswerType, Question, QUESTIONS_TREE, TopicId} from './mini/questions_tree'
-import {Action, AppState, DispatchActions, Logger, MiniRootState, PageProps, Routes,
+import {Action, AppState, DispatchActions, Logger, MiniRootState, Routes,
   TopicPriority, UserState} from './mini/store'
 import {ThankYouPage} from './mini/thank_you'
 
@@ -154,39 +153,40 @@ const TitleUpdate: React.FC<{}> = (): null => {
   return null
 }
 
-class MiniOnboardingPageBase extends React.PureComponent<PageProps> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    hasSeenLanding: PropTypes.bool.isRequired,
-    isUserSupervised: PropTypes.bool.isRequired,
-  }
+const MiniOnboardingPageBase = (): React.ReactElement => {
+  const dispatch = useDispatch<DispatchActions>()
+  const hasSeenLanding = useSelector(
+    ({app: {hasSeenLanding, orgInfo}}: MiniRootState): boolean =>
+      !!hasSeenLanding || Object.values(orgInfo).some(Boolean),
+  )
+  const isUserSupervised = useSelector(
+    ({app: {isUserSupervised}}: MiniRootState): boolean => !!isUserSupervised,
+  )
 
-  public componentDidMount(): void {
-    this.props.dispatch({hash: window.location.hash.slice(1), type: 'MINI_ONBOARDING_LOAD'})
-  }
+  useEffect((): void => {
+    const {hash, pathname, search} = window.location
+    dispatch({hash: (hash || search).slice(1), type: 'MINI_ONBOARDING_LOAD'})
+    if (hash || search) {
+      window?.history?.replaceState(null, '', pathname)
+    }
+  }, [dispatch])
 
-  public render(): React.ReactNode {
-    return <div style={{fontFamily: 'Open Sans'}}>
-      <TitleUpdate />
-      <Switch>
-        <Route path={Routes.THANKS_PAGE} component={ThankYouPage} />
-        <Route path={Routes.BILAN_PAGE} component={BilanPage} />
-        <Route path={Routes.LANDING_PAGE} component={LandingPage} />
-        <Route path={Routes.USER_LANDING_PAGE} component={UserLandingPage} />
-        <Route path={Routes.HUB_PAGE} component={HubPage} />
-        <Route path={Routes.PRIORITY_PATH} component={ConnectedPriorityQuestionPage} />
-        <Route path={Routes.QUESTION_PATH} component={ConnectedQuestionPage} />
-        <Redirect to={this.props.hasSeenLanding ? this.props.isUserSupervised ?
-          Routes.HUB_PAGE : Routes.USER_LANDING_PAGE : Routes.LANDING_PAGE} />
-      </Switch>
-    </div>
-  }
+  return <div style={{fontFamily: 'Open Sans'}}>
+    <TitleUpdate />
+    <Switch>
+      <Route path={Routes.THANKS_PAGE} component={ThankYouPage} />
+      <Route path={Routes.BILAN_PAGE} component={BilanPage} />
+      <Route path={Routes.LANDING_PAGE} component={LandingPage} />
+      <Route path={Routes.USER_LANDING_PAGE} component={UserLandingPage} />
+      <Route path={Routes.HUB_PAGE} component={HubPage} />
+      <Route path={Routes.PRIORITY_PATH} component={ConnectedPriorityQuestionPage} />
+      <Route path={Routes.QUESTION_PATH} component={ConnectedQuestionPage} />
+      <Redirect to={hasSeenLanding ? isUserSupervised ?
+        Routes.HUB_PAGE : Routes.USER_LANDING_PAGE : Routes.LANDING_PAGE} />
+    </Switch>
+  </div>
 }
-const MiniOnboardingPage =
-  connect(({app: {hasSeenLanding, isUserSupervised, orgInfo}}: MiniRootState) => ({
-    hasSeenLanding: !!hasSeenLanding || Object.values(orgInfo).some(Boolean),
-    isUserSupervised: !!isUserSupervised,
-  }))(MiniOnboardingPageBase)
+const MiniOnboardingPage = React.memo(MiniOnboardingPageBase)
 
 
 const STORAGE_PREFIX = 'ali-'
@@ -320,8 +320,8 @@ interface AppComponentState {
 }
 
 
-class App extends React.PureComponent<{}, AppComponentState> {
-  private static createBrowserHistoryAndStore(): AppComponentState {
+const App = (): React.ReactElement => {
+  const state = useMemo((): AppComponentState => {
     const history = createBrowserHistory({basename})
 
     const amplitudeMiddleware = createAmplitudeMiddleware(new Logger({
@@ -350,20 +350,18 @@ class App extends React.PureComponent<{}, AppComponentState> {
       }),
     )
     return {history, store}
-  }
+  }, [])
+  const [history] = useState(state.history)
+  const [store] = useState(state.store)
 
-  public state = App.createBrowserHistoryAndStore()
-
-  public render(): React.ReactNode {
-    const {history, store} = this.state
-    return <Provider store={store}>
-      <ConnectedRouter history={history}>
-        <Route path="*" component={MiniOnboardingPage} />
-      </ConnectedRouter>
-      <MiniOnboardingSnackbar timeoutMillisecs={4000} />
-    </Provider>
-  }
+  return <Provider store={store}>
+    <ConnectedRouter history={history}>
+      <Route path="*" component={MiniOnboardingPage} />
+    </ConnectedRouter>
+    <MiniOnboardingSnackbar timeoutMillisecs={4000} />
+  </Provider>
 }
+const AppMemo = React.memo(App)
 
 
-export {App}
+export {AppMemo as App}

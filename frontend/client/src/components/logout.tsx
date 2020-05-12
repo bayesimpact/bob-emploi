@@ -1,31 +1,21 @@
 import {TOptions} from 'i18next'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
-import {WithTranslation, withTranslation} from 'react-i18next'
-import {connect} from 'react-redux'
-import {RouteComponentProps, withRouter} from 'react-router'
-import ReactRouterPropTypes from 'react-router-prop-types'
+import {useTranslation} from 'react-i18next'
+import {useSelector} from 'react-redux'
+import {useHistory} from 'react-router-dom'
 
-import {DispatchAllActions, RootState, deleteUser, displayToasterMessage} from 'store/actions'
+import {RootState, deleteUser, displayToasterMessage, useDispatch} from 'store/actions'
 
 import {Trans} from 'components/i18n'
 import {Button, ExternalLink} from 'components/theme'
 import {Routes} from 'components/url'
-import {Modal} from 'components/modal'
+import {Modal, ModalConfig} from 'components/modal'
 
 
-interface AccountDeletionModalConnectedProps {
-  user: bayes.bob.User
-}
-
-
-interface AccountDeletionModalProps
-  extends AccountDeletionModalConnectedProps, RouteComponentProps<{}>, WithTranslation {
-  dispatch: DispatchAllActions
-  isShown?: boolean
+interface AccountDeletionModalProps extends Omit<ModalConfig, 'children' | 'title'> {
   onClose: () => void
 }
-
 
 const buttonsBarStyle: React.CSSProperties = {
   display: 'flex',
@@ -35,8 +25,12 @@ const buttonsBarStyle: React.CSSProperties = {
 
 
 const AccountDeletionModalBase = (props: AccountDeletionModalProps): React.ReactElement => {
-  const {dispatch, history, t, user} = props
-  const {isShown, onClose, user: {hasAccount, profile: {gender = undefined} = {}}} = props
+  const dispatch = useDispatch()
+  const user = useSelector(({user}: RootState) => user)
+  const history = useHistory()
+  const {t} = useTranslation()
+  const {onClose} = props
+  const {hasAccount, profile: {gender = undefined} = {}} = user
 
   const handleDeletionClick = useCallback((): void => {
     dispatch(deleteUser(user)).
@@ -55,8 +49,7 @@ const AccountDeletionModalBase = (props: AccountDeletionModalProps): React.React
     width: hasAccount ? 700 : 400,
   }), [hasAccount])
   const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
-  return <Modal
-    isShown={isShown} onClose={onClose} title={t('Vous voulez nous quitter\u00A0? 😢')}>
+  return <Modal {...props} title={t('Vous voulez nous quitter\u00A0? 😢')}>
     {hasAccount ? <Trans style={contentStyle}>
       Si vous décidez de supprimer votre compte, toutes vos données personnelles seront
       définitivement effacées, notamment votre profil, vos projets, et vos actions effectuées.
@@ -81,16 +74,9 @@ const AccountDeletionModalBase = (props: AccountDeletionModalProps): React.React
   </Modal>
 }
 AccountDeletionModalBase.propTypes = {
-  dispatch: PropTypes.func.isRequired,
-  history: ReactRouterPropTypes.history.isRequired,
-  isShown: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
-  user: PropTypes.object.isRequired,
 }
-const AccountDeletionModal = connect(({user}: RootState): AccountDeletionModalConnectedProps => ({
-  user,
-}))(withRouter(withTranslation()(React.memo(AccountDeletionModalBase))))
+const AccountDeletionModal = React.memo(AccountDeletionModalBase)
 
 
 export {AccountDeletionModal}

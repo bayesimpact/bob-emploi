@@ -3,11 +3,12 @@ const webpack = require('webpack')
 const mapKeys = require('lodash/mapKeys')
 const mapValues = require('lodash/mapValues')
 
-const baseConfig = require('./base')
+const baseConfig = require('./base')[0]
 const colors = require('./colors.json5')
 const constants = require('./const.json5')
 
 
+// TODO(cyrille): Allow tests in plugins.
 module.exports = {
   devtool: 'eval',
   entry: './test/webpack/loadtests.ts',

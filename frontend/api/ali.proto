@@ -6,7 +6,7 @@ package bayes.ali;
 
 message User {
   // The date and time at which the user has registered with the app.
-  // TODO(marielaure): Deprecate that if it is not used anymore.
+  // TODO(sil): Deprecate that if it is not used anymore.
   google.protobuf.Timestamp registered_at = 1;
 
   // User's email.

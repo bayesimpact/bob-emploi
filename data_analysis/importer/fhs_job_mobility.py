@@ -37,7 +37,7 @@ class _JobseekerCriteria(typing.NamedTuple):
     gender: str
 
 
-# TODO(marielaure): Add tests.
+# TODO(sil): Add tests.
 def job_seeker_rows(job_seeker: fhs.JobSeeker, now: datetime.date) -> Iterator[_JobseekerCriteria]:
     """Yields multiple rows per job seeker with several fields.
 

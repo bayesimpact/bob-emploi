@@ -1,14 +1,14 @@
 import React, {useCallback, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 
-import {FastForward} from 'components/fast_forward'
+import {useFastForward} from 'components/fast_forward'
 import {ExternalLink, Input, LabeledToggle} from 'components/theme'
 import {FieldSet} from 'components/pages/connected/form_utils'
 import aliLogo from 'images/mini/logo-ali.svg'
 
 import {GenericPage} from './page'
 import {Button} from './theme'
-import {MiniRootState, OrgInfo, Routes} from './store'
+import {DispatchActions, MiniRootState, OrgInfo, Routes} from './store'
 
 
 const fullPageStyle: React.CSSProperties = {
@@ -69,7 +69,7 @@ const aliGuideURL = 'https://www.unml.info/assets/files/espace-docu-ml/A-Li/unml
 const LandingPageBase: React.FC<{}> = (): React.ReactElement => {
   const {orgInfo, isUserSupervised: wasUserSupervised} = useSelector(({app}: MiniRootState) => app)
   const {advisor, departement, email, milo} = orgInfo
-  const dispatch = useDispatch()
+  const dispatch = useDispatch<DispatchActions>()
   const [isUserSupervised, setIsUserSupervised] = useState(wasUserSupervised)
   const changeSupervision = useCallback(
     (): void => setIsUserSupervised(!isUserSupervised),
@@ -100,17 +100,15 @@ const LandingPageBase: React.FC<{}> = (): React.ReactElement => {
   }, [advisor, departement, email, milo, onChange])
   const skipLanding = useCallback(
     (): void => void dispatch(
-      {isUserSupervised: isUserSupervised, type: 'MINI_ONBOARDING_FINISH_LANDING'}),
+      {isUserSupervised: !!isUserSupervised, type: 'MINI_ONBOARDING_FINISH_LANDING'}),
     [dispatch, isUserSupervised])
   const isFormFull = advisor && milo && departement && email
+  useFastForward(isFormFull ? skipLanding : fillForm, [], isFormFull ? Routes.HUB_PAGE : undefined)
   return <GenericPage bottomButton={
     <Button
       to={isUserSupervised ? Routes.HUB_PAGE : Routes.USER_LANDING_PAGE} onClick={skipLanding}>
       Commencez A-Li
     </Button>}>
-    <FastForward
-      to={isFormFull ? Routes.HUB_PAGE : undefined}
-      onForward={isFormFull ? skipLanding : fillForm} />
     <div style={fullPageStyle}>
       <img src={aliLogo} alt="logo ali" style={logoStyle} />
       <div style={formContainerStyle}>

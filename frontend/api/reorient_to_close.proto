@@ -3,7 +3,7 @@ syntax = "proto3";
 import "bob_emploi/frontend/api/reorient_jobbing.proto";
 
 package bayes.bob;
-// TODO(marielaure): Merge with reorient_jobbing to have a reorient proto.
+// TODO(sil): Merge with reorient_jobbing to have a reorient proto.
 
 
 // Statistics for jobs or job groups close to a user's job.

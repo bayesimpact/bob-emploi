@@ -46,6 +46,10 @@ class VolunteeringMissionImporterTestCase(unittest.TestCase):
             volunteering_missions.get_missions_dicts(),
             association_pb2.VolunteeringMissions))
 
+        mock_get.assert_called_with(
+            'https://www.tousbenevoles.org/linkedin_webservice/xml/linkedin.xml',
+            headers={'user-agent': 'Bayes Impact collaboration'},
+        )
         self.assertEqual({'69', '75'}, missions.keys())
         self.assertEqual(['Cool Mission #2'], [m.title for m in missions['75'].missions])
         self.assertEqual(

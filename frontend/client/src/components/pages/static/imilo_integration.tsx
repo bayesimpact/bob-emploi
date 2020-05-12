@@ -1,6 +1,5 @@
-import PropTypes from 'prop-types'
 import React, {useCallback, useState} from 'react'
-import {connect} from 'react-redux'
+import {useDispatch} from 'react-redux'
 
 import {DispatchAllActions, displayToasterMessage} from 'store/actions'
 
@@ -105,8 +104,8 @@ const imgStyle: React.CSSProperties = {
 }
 
 
-const ImiloIntegrationPageBase = (props: {dispatch: DispatchAllActions}): React.ReactElement => {
-  const {dispatch} = props
+const ImiloIntegrationPageBase = (): React.ReactElement => {
+  const dispatch = useDispatch<DispatchAllActions>()
   const [userJson, setUserJson] = useState(initialUserJson)
 
   const getUserData = useCallback((): bayes.bob.User|null => {
@@ -190,10 +189,7 @@ const ImiloIntegrationPageBase = (props: {dispatch: DispatchAllActions}): React.
     </div>
   </StaticPage>
 }
-ImiloIntegrationPageBase.propTypes = {
-  dispatch: PropTypes.func.isRequired,
-}
-const ImiloIntegrationPage = connect()(React.memo(ImiloIntegrationPageBase))
+const ImiloIntegrationPage = React.memo(ImiloIntegrationPageBase)
 
 
 export default ImiloIntegrationPage

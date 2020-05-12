@@ -27,11 +27,18 @@ class _AdviceReorientJobbing(scoring_base.ModelBase):
         gender = project.user_profile.gender
         top_unqualified_jobs = self.list_reorient_jobbing_jobs(project)
         current_job_market_score = project.imt_proto().yearly_avg_offers_per_10_candidates
-        if current_job_market_score and departement_id in top_unqualified_jobs:
+        if departement_id in top_unqualified_jobs:
             for job in top_unqualified_jobs[departement_id].departement_job_stats.jobs:
-                if job.market_score / current_job_market_score < 1:
-                    break
-                offers_gain = (job.market_score / current_job_market_score - 1) * 100
+                if current_job_market_score:
+                    if job.market_score / current_job_market_score < 1:
+                        break
+                    offers_gain = (job.market_score / current_job_market_score - 1) * 100
+                else:
+                    if job.market_score < 8:
+                        # User is in an unknown market, we only show jobbing jobs that have at least
+                        # some job offers.
+                        break
+                    offers_gain = 0
                 recommended_jobs.reorient_jobbing_jobs.add(
                     name=french.genderize_job(job, gender),
                     offers_percent_gain=offers_gain)

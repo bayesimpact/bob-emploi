@@ -1,11 +1,9 @@
 
-import PropTypes from 'prop-types'
-import React from 'react'
-import {WithTranslation, withTranslation} from 'react-i18next'
-import {connect} from 'react-redux'
-import {RouteComponentProps, withRouter} from 'react-router'
+import React, {useCallback, useEffect, useMemo, useRef} from 'react'
+import {useTranslation} from 'react-i18next'
+import {useDispatch, useSelector} from 'react-redux'
+import {useParams} from 'react-router'
 import {Redirect} from 'react-router-dom'
-import ReactRouterPropTypes from 'react-router-prop-types'
 
 import {DispatchAllActions, RootState, editFirstProject} from 'store/actions'
 import {flattenProject} from 'store/project'
@@ -14,120 +12,88 @@ import {isMobileVersion} from 'components/mobile'
 import {CircularProgress} from 'components/theme'
 import {PageWithNavigationBar, Scrollable} from 'components/navigation'
 import {Routes} from 'components/url'
-import {getProjectOnboardingStep, gotoNextStep, gotoPreviousStep,
-  onboardingStepCount} from './profile/onboarding'
+import {useProjectOnboarding} from './profile/onboarding'
 
 
 const emptyObject = {} as const
 
 
-interface PageConnectedProps {
-  existingProject?: bayes.bob.Project
-  isCreatingProject: boolean
-  userProfile: bayes.bob.UserProfile
-}
+const NewProjectPage = (): React.ReactElement => {
+  const {t} = useTranslation()
+  const existingProject = useSelector(
+    ({user}: RootState): bayes.bob.Project|undefined => user.projects?.[0],
+  )
+  const featuresEnabled = useSelector(
+    ({user: {featuresEnabled}}: RootState): bayes.bob.Features => featuresEnabled || emptyObject,
+  )
+  const isCreatingProject = useSelector(
+    ({asyncState: {isFetching}}: RootState): boolean => !!isFetching['CREATE_PROJECT_SAVE'],
+  )
+  const userProfile = useSelector(
+    ({user: {profile}}: RootState): bayes.bob.UserProfile => profile || emptyObject,
+  )
 
+  const newProject = useMemo(
+    (): bayes.bob.Project => flattenProject(existingProject || {}),
+    [existingProject],
+  )
 
-interface PageProps
-  extends PageConnectedProps, RouteComponentProps<{stepName?: string}>, WithTranslation {
-  dispatch: DispatchAllActions
-}
+  const {stepName} = useParams()
+  const {goBack, goNext, step, stepCount} = useProjectOnboarding(stepName)
+  const pageDom = useRef<Scrollable>(null)
+  useEffect((): void => pageDom.current?.scrollTo(0), [stepName])
+  const dispatch = useDispatch<DispatchAllActions>()
 
-
-interface PageState {
-  newProject: bayes.bob.Project
-}
-
-
-class NewProjectPageBase extends React.PureComponent<PageProps, PageState> {
-  public static propTypes = {
-    dispatch: PropTypes.func.isRequired,
-    existingProject: PropTypes.object,
-    history: ReactRouterPropTypes.history.isRequired,
-    isCreatingProject: PropTypes.bool,
-    match: ReactRouterPropTypes.match.isRequired,
-    t: PropTypes.func.isRequired,
-    userProfile: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }).isRequired,
-  }
-
-  public state: PageState = {
-    newProject: flattenProject(this.props.existingProject || {}),
-  }
-
-  public static getDerivedStateFromProps({existingProject}: PageProps): PageState {
-    // TODO(cyrille): Replace with memoization.
-    return {newProject: flattenProject(existingProject || {})}
-  }
-
-  public componentDidUpdate(prevProps: PageProps): void {
-    if (prevProps.match.params.stepName === this.props.match.params.stepName) {
+  const handleSubmit = useCallback((): void => {
+    if (!step || !newProject) {
       return
     }
-    this.pageDom.current && this.pageDom.current.scrollTo(0)
-  }
+    const {type = undefined} = step || {}
+    dispatch(editFirstProject(newProject, t, type))
+    goNext()
+  }, [dispatch, goNext, newProject, step, t])
 
-  private pageDom: React.RefObject<Scrollable> = React.createRef()
-
-  private handleSubmit = (): void => {
-    const {dispatch, history, match: {params: {stepName}}, t: translate} = this.props
-    const {type = undefined} = getProjectOnboardingStep(stepName) || {}
-    if (!stepName || !this.state.newProject) {
+  const handleBack = useCallback((): void => {
+    if (!step) {
       return
     }
-    dispatch(editFirstProject(this.state.newProject, translate, type))
-    gotoNextStep(Routes.NEW_PROJECT_PAGE, stepName, dispatch, history)
-  }
+    // TODO(pascal): Save state when going back as well.
+    goBack?.()
+  }, [goBack, step])
 
-  private handleBack = (): void => {
-    const {history, match: {params: {stepName}}} = this.props
-    if (stepName) {
-      // TODO(pascal): Save state when going back as well.
-      gotoPreviousStep(Routes.NEW_PROJECT_PAGE, stepName, history)
-    }
+  // Prevent people from manually going back and creating another project.
+  if (existingProject && !existingProject.isIncomplete) {
+    return <Redirect to={`${Routes.PROJECT_PAGE}/${existingProject.projectId}`} />
   }
-
-  public render(): React.ReactNode {
-    const {existingProject, isCreatingProject, match, t, userProfile} = this.props
-    // Prevent people from manually going back and creating another project.
-    if (existingProject && !existingProject.isIncomplete) {
-      return <Redirect to={`${Routes.PROJECT_PAGE}/{existingProject.projectId}`} />
-    }
-    const spinnerBoxStyle = {
-      alignItems: 'center',
-      display: 'flex',
-      justifyContent: 'center',
-      margin: '20px 0',
-    }
-    let content
-    if (isCreatingProject) {
-      content = <div style={spinnerBoxStyle}><CircularProgress /></div>
-    } else {
-      const {
-        component: StepComponent,
-        stepNumber,
-      } = getProjectOnboardingStep(match.params.stepName) || {}
-      if (!StepComponent) {
-        return <Redirect to="/" />
-      }
-      content = <StepComponent
-        isShownAsStepsDuringOnboarding={true}
-        onSubmit={this.handleSubmit} profile={userProfile}
-        onPreviousButtonClick={isMobileVersion ? undefined : this.handleBack}
-        newProject={this.state.newProject} totalStepCount={onboardingStepCount}
-        stepNumber={stepNumber} t={t} />
-    }
-    return <PageWithNavigationBar style={{backgroundColor: '#fff'}}
-      onBackClick={isMobileVersion ? this.handleBack : undefined}
-      page="new_project" ref={this.pageDom}>
-      <div>{content}</div>
-    </PageWithNavigationBar>
+  const spinnerBoxStyle = {
+    alignItems: 'center',
+    display: 'flex',
+    justifyContent: 'center',
+    margin: '20px 0',
   }
+  let content
+  if (isCreatingProject) {
+    content = <div style={spinnerBoxStyle}><CircularProgress /></div>
+  } else {
+    const {
+      component: StepComponent,
+      stepNumber,
+    } = step || {}
+    if (!StepComponent) {
+      return <Redirect to="/" />
+    }
+    content = <StepComponent
+      featuresEnabled={featuresEnabled}
+      isShownAsStepsDuringOnboarding={true}
+      onSubmit={handleSubmit} profile={userProfile}
+      onPreviousButtonClick={isMobileVersion ? undefined : handleBack}
+      newProject={newProject} totalStepCount={stepCount}
+      stepNumber={stepNumber} t={t} />
+  }
+  return <PageWithNavigationBar style={{backgroundColor: '#fff'}}
+    onBackClick={isMobileVersion ? handleBack : undefined}
+    page="new_project" ref={pageDom}>
+    <div>{content}</div>
+  </PageWithNavigationBar>
 }
-export default connect(({app, asyncState, user}: RootState): PageConnectedProps => ({
-  existingProject: user.projects && user.projects.length && user.projects[0] || undefined,
-  isCreatingProject: !!asyncState.isFetching['CREATE_PROJECT_SAVE'],
-  userProfile: user.profile || emptyObject,
-  ...app.newProjectProps,
-}))(withTranslation()(withRouter(NewProjectPageBase)))
+export default React.memo(NewProjectPage)

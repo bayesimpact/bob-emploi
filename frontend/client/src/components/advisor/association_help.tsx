@@ -1,9 +1,9 @@
+import {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useMemo} from 'react'
 
-import {YouChooser} from 'store/french'
-
+import {Trans} from 'components/i18n'
 import {RadiumDiv} from 'components/radium'
 import {ExternalLink, GrowingNumber, Tag} from 'components/theme'
 import Picto from 'images/advices/picto-association-help.svg'
@@ -14,50 +14,54 @@ function isValidAssociation(a: bayes.bob.Association): a is bayes.bob.Associatio
   return !!(a.link)
 }
 
+const emptyArray = [] as const
+
 
 const AssociationHelp: React.FC<CardProps> = (props: CardProps) => {
-  const {handleExplore, userYou} = props
+  const {handleExplore, t} = props
   const {associations = []} = useAdviceData<bayes.bob.Associations>(props)
   const validAssociations = associations.filter(isValidAssociation)
   // TODO(cyrille): Investigate why 1 filter is not considered specialized.
   const numSpecializedAssociations =
     validAssociations.filter(({filters}): boolean => !!filters && filters.length > 1).length
-  const maybeS = (count: number): string => count > 1 ? 's' : ''
   const hasOnlySpecialized = numSpecializedAssociations === validAssociations.length
-  const specialized = ` spécialisée${maybeS(numSpecializedAssociations)}`
-  const title = <React.Fragment>
-    <GrowingNumber
-      style={{fontWeight: 'bold'}} number={validAssociations.length} isSteady={true} />
-    {' '}association{maybeS(validAssociations.length)}
-    {hasOnlySpecialized ? specialized : null} pour {userYou('toi', 'vous')}
-    {(numSpecializedAssociations > 0 && !hasOnlySpecialized) ? <span>
-      {' '}dont <GrowingNumber
+  // i18next-extract-mark-plural-next-line disable
+  const specialized = t(' spécialisée', {count: numSpecializedAssociations})
+  const forYou = t('pour vous')
+  const title = numSpecializedAssociations > 0 && !hasOnlySpecialized ?
+    <Trans parent={null} t={t} count={validAssociations.length}>
+      <GrowingNumber
+        style={{fontWeight: 'bold'}} number={validAssociations.length} isSteady={true} />
+      {' '}association {{forYou}} dont <GrowingNumber
         style={{fontWeight: 'bold'}} number={numSpecializedAssociations} isSteady={true} />
-      {specialized}
-    </span> : null}
-  </React.Fragment>
+      {{specialized}}
+    </Trans> : <Trans parent={null} t={t} count={validAssociations.length}>
+      <GrowingNumber
+        style={{fontWeight: 'bold'}} number={validAssociations.length} isSteady={true} />
+      {' '}association{{specialized: hasOnlySpecialized ? specialized : null}} {{forYou}}
+    </Trans>
   const linkStyle = {
     color: colors.BOB_BLUE,
     textDecoration: 'none',
   }
-  const footer = <React.Fragment>
-    Trouve{userYou('', 'z')} un accompagnement qui répond à {userYou('tes', 'vos')} attentes
-    précises sur <ExternalLink href="http://www.aidesalemploi.fr" style={linkStyle}>
+  const footer = <Trans parent={null} t={t}>
+    Trouvez un accompagnement qui répond à vos attentes précises
+    sur <ExternalLink href="http://www.aidesalemploi.fr" style={linkStyle}>
       aidesalemploi.fr
     </ExternalLink>
-  </React.Fragment>
+  </Trans>
   return <MethodSuggestionList title={title} footer={footer}>
     {validAssociations.map(({filters, link, name}, index): React.ReactElement<AssociationProps> =>
       <AssociationLink
         key={`association-${index}`} href={link} onClick={handleExplore('association')}
-        {...{filters, userYou}}>
+        {...{filters, t}}>
         {name}
       </AssociationLink>)}
   </MethodSuggestionList>
 }
 AssociationHelp.propTypes = {
   handleExplore: PropTypes.func.isRequired,
-  userYou: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(AssociationHelp)
 
@@ -68,52 +72,42 @@ interface AssociationProps {
   href: string
   onClick?: () => void
   style?: RadiumCSSProperties
-  userYou: YouChooser
+  t: TFunction
 }
 
-class AssociationLink extends React.Component<AssociationProps> {
-  public static propTypes = {
-    children: PropTypes.node,
-    filters: PropTypes.array,
-    href: PropTypes.string.isRequired,
-    onClick: PropTypes.func,
-    style: PropTypes.object,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  private handleClick = (): void => {
-    const {href, onClick} = this.props
+const AssociationLinkBase = (props: AssociationProps): React.ReactElement => {
+  const {children, filters = emptyArray, href, onClick, style, t} = props
+  const handleClick = useCallback((): void => {
     window.open(href, '_blank')
     onClick?.()
-  }
+  }, [href, onClick])
 
   // TODO(cyrille): DRY up with job_boards.
-  private getTags(): readonly {color: string; value: string}[] {
-    const {filters = [], href, userYou} = this.props
+  const tags = useMemo((): readonly {color: string; value: string}[] => {
     // TODO(cyrille): Replace with flatMap or equivalent.
     const tags: {color: string; value: string}[] = []
     if (/\.pole-emploi\.fr/.test(href)) {
       tags.push({
         color: colors.SQUASH,
-        value: 'officielle',
+        value: t('officielle'),
       })
     }
     if (filters.some((f): boolean => f.startsWith('for-job-group'))) {
       tags.push({
         color: colors.RED_PINK,
-        value: userYou('pour ton métier', 'pour votre métier'),
+        value: t('pour votre métier'),
       })
     }
     if (filters.some((f): boolean => f.startsWith('for-departement'))) {
       tags.push({
         color: colors.BOB_BLUE,
-        value: userYou('pour ta région', 'pour votre région'),
+        value: t('pour votre région'),
       })
     }
     if (filters.some((f): boolean => f === 'for-women')) {
       tags.push({
         color: colors.GREENISH_TEAL,
-        value: 'pour les femmes',
+        value: t('pour les femmes'),
       })
     }
     const forOldFilter = filters.find((f): boolean => /^for-old\(\d+\)$/.test(f))
@@ -121,31 +115,38 @@ class AssociationLink extends React.Component<AssociationProps> {
       const age = forOldFilter.replace(/^for-old\((\d+)\)$/, '$1')
       tags.push({
         color: colors.GREENISH_TEAL,
-        value: `pour les plus de ${age} ans`,
+        value: t('pour les plus de {{age}} ans', {age}),
       })
     }
     if (filters.some((f): boolean => f === 'for-handicaped')) {
       tags.push({
         color: colors.BOB_BLUE,
-        value: 'recommandée par Hanploi',
+        value: t('recommandée par Hanploi'),
       })
     }
     return tags
-  }
+  }, [filters, href, t])
 
-  public render(): React.ReactNode {
-    const {children, style} = this.props
-    return <RadiumDiv style={style} onClick={this.handleClick}>
-      {children}
-      {this.getTags().map(({color, value}): React.ReactNode => <Tag
-        key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
-        {value}
-      </Tag>)}
-      <div style={{flex: 1}} />
-      <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 24, width: 20}} />
-    </RadiumDiv>
-  }
+  return <RadiumDiv style={style} onClick={handleClick}>
+    {children}
+    {tags.map(({color, value}): React.ReactNode => <Tag
+      key={`tag-${value}`} style={{backgroundColor: color, marginLeft: 15}}>
+      {value}
+    </Tag>)}
+    <div style={{flex: 1}} />
+    <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, height: 24, width: 20}} />
+  </RadiumDiv>
 }
+AssociationLinkBase.propTypes = {
+  children: PropTypes.node,
+  filters: PropTypes.array,
+  href: PropTypes.string.isRequired,
+  onClick: PropTypes.func,
+  style: PropTypes.object,
+  t: PropTypes.func.isRequired,
+}
+const AssociationLink = React.memo(AssociationLinkBase)
+
 
 
 export default {ExpandedAdviceCardContent, Picto}

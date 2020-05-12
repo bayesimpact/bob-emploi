@@ -5,12 +5,9 @@ import Picto from 'images/advices/picto-specific-to-job.svg'
 import {CardProps, StaticAdviceCardContent} from './base'
 
 
-class ExpandedAdviceCardContent extends React.PureComponent<CardProps> {
-  public render(): React.ReactNode {
-    const {advice} = this.props
-    return <StaticAdviceCardContent {...advice} />
-  }
-}
+const AdviceFromServer = ({advice}: CardProps): React.ReactElement =>
+  <StaticAdviceCardContent {...advice} />
+const ExpandedAdviceCardContent = React.memo(AdviceFromServer)
 
 
 export default {ExpandedAdviceCardContent, Picto}

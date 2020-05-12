@@ -1,4 +1,4 @@
-# TODO(marielaure) Add the possibility to give a tag name
+# TODO(sil) Add the possibility to give a tag name
 # and create a new version of a previous tag.
 
 set -e

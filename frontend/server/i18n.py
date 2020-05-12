@@ -1,10 +1,17 @@
 """Module to translate strings on the frontend server."""
 
-from typing import Dict, Optional
+import logging
+from typing import Dict, Sequence, Optional, Union
 
 from pymongo import database as pymongo_database
 
 from bob_emploi.frontend.server import proto
+
+try:
+    import flask
+except ImportError:
+    # If flask is missing the translate_flask function won't work but the rest will.
+    pass
 
 
 class TranslationMissingException(Exception):
@@ -17,17 +24,26 @@ class _MongoCachedTranslations(object):
         self._cache: Optional[proto.CachedCollection[Dict[str, str]]] = None
         self._database: Optional[pymongo_database.Database] = None
 
+    def clear_cache(self) -> None:
+        """Clear the current cache."""
+
+        self._cache = None
+        self._database = None
+
     def get_dict(self, database: pymongo_database.Database) \
             -> proto.CachedCollection[Dict[str, str]]:
         """Get the translations dictionary from the database."""
 
         if self._cache is None or database != self._database:
 
-            def _populate_cache(cache: Dict[str, Dict[str, str]]) -> None:
-                for document in database.translations.find():
-                    cache[document.get('string', '')] = document
+            def _get_values() -> Dict[str, Dict[str, str]]:
+                return {
+                    document.get('string', ''): document
+                    for document in database.translations.find()
+                }
 
-            self._cache = proto.CachedCollection(_populate_cache)
+            self._cache = proto.CachedCollection(_get_values)
+            self._database = database
 
         return self._cache
 
@@ -35,17 +51,42 @@ class _MongoCachedTranslations(object):
 _TRANSLATIONS = _MongoCachedTranslations()
 
 
-def translate_string(string: str, locale: str, database: pymongo_database.Database) -> str:
+def flask_translate(string: str) -> str:
+    """Translate a string in host locale (from flask request)."""
+
+    if not flask or not flask.current_app:
+        raise ValueError('flask_translate called outside of a flask request context.')
+
+    host_language = flask.request.accept_languages.best_match(('en', 'fr')) or 'fr'
+    try:
+        return translate_string(string, host_language, flask.current_app.config['DATABASE'])
+    except TranslationMissingException:
+        if host_language != 'fr':
+            logging.exception('Falling back to French on "%s"', string)
+
+    return string
+
+
+def translate_string(
+        string: Union[str, Sequence[str]], locale: str, database: pymongo_database.Database) -> str:
     """Translate a string in a given locale."""
 
-    if not string:
-        return ''
+    strings: Sequence[str]
+    if isinstance(string, str):
+        strings = [string]
+    else:
+        strings = string
 
-    try:
-        return _TRANSLATIONS.get_dict(database)[string][locale]
-    except KeyError:
-        raise TranslationMissingException(
-            f'Could not find a translation in "{locale}" for "{string}".')
+    for key in strings:
+        if not key:
+            return ''
+        try:
+            return _TRANSLATIONS.get_dict(database)[key][locale]
+        except KeyError:
+            pass
+
+    raise TranslationMissingException(
+        f'Could not find a translation in "{locale}" for "{string}".')
 
 
 def make_translatable_string(string: str) -> str:
@@ -56,3 +97,9 @@ def make_translatable_string(string: str) -> str:
     """
 
     return string
+
+
+def clear_cache() -> None:
+    """Clear the translations cache."""
+
+    _TRANSLATIONS.clear_cache()

@@ -63,6 +63,7 @@ type ReactStylableElement = React.ReactElement<{style?: RadiumCSSProperties}>
 
 declare const colors: {[name: string]: string}
 declare const config: {
+  // TODO(cyrille): Make this list independant from plugin-specific config.
   readonly aliAmplitudeToken: string
   readonly amplitudeToken: string
   readonly clientVersion: string

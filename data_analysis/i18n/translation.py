@@ -9,7 +9,7 @@ from airtable import airtable
 _AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
 
 # Locales we want to ensure we have a translation for.
-LOCALES_TO_CHECK = frozenset({'fr_FR@tu'})
+LOCALES_TO_CHECK = frozenset(os.getenv('REQUIRED_LOCALES', 'fr@tu').split(','))
 
 # Airtable cache for the translation table as a dict.
 _TRANSLATION_TABLE: List[Dict[str, Dict[str, str]]] = []

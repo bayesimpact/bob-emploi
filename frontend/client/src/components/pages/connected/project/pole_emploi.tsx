@@ -1,13 +1,14 @@
 import {connect} from 'react-redux'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 
 import {DispatchAllActions, RootState, markChangelogAsSeen,
   sendChangelogFeedback} from 'store/actions'
 
 import editProjectImage from 'images/changelog/edit-project.png'
 import mobileImprovedImage from 'images/changelog/mobile-improved.png'
-import {FastForward} from 'components/fast_forward'
+import {useFastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalConfig} from 'components/modal'
 import {Button, RadioGroup, SmoothTransitions, Textarea} from 'components/theme'
@@ -199,6 +200,7 @@ const PoleEmploiChangelogModalBase = (props: ModalProps): React.ReactElement|nul
   const [onHidden, setOnHidden] = useState<(() => void)|undefined>(undefined)
   const [stepIndex, setStepIndex] = useState(0)
   const [stepState, setStepState] = useState({})
+  const {t} = useTranslation()
 
   const latestVersionSeen = (latestChangelogSeen && latestChangelogSeen > projectCreatedAt) ?
     latestChangelogSeen : projectCreatedAt
@@ -215,14 +217,14 @@ const PoleEmploiChangelogModalBase = (props: ModalProps): React.ReactElement|nul
     setOnHidden((): void => {
       const stateJson = JSON.stringify(stepState)
       if (stateJson !== '{}') {
-        dispatch(sendChangelogFeedback({feedback: stateJson}))
+        dispatch(sendChangelogFeedback({feedback: stateJson}, t))
       }
       setStepIndex(0)
       setStepState({})
       dispatch(markChangelogAsSeen(step.changelog))
     })
     onClose()
-  }, [dispatch, onClose, step, stepState])
+  }, [dispatch, onClose, step, stepState, t])
 
   const handleNextStep = useCallback(
     (): void => setStepIndex(stepIndex + 1),
@@ -230,6 +232,7 @@ const PoleEmploiChangelogModalBase = (props: ModalProps): React.ReactElement|nul
   )
 
   const handleNextOrLastStep = isLastStep ? handleClose : handleNextStep
+  useFastForward(handleNextOrLastStep)
 
   const stepRender = useMemo((): React.ReactNode => {
     if (!step) {
@@ -256,7 +259,6 @@ const PoleEmploiChangelogModalBase = (props: ModalProps): React.ReactElement|nul
   return <Modal
     title={step.title || `Nous avons mis à jour ${config.productName} !`} style={containerStyle}
     onHidden={onHidden} {...extraProps}>
-    <FastForward onForward={handleNextOrLastStep} />
     <div style={{fontSize: 14, lineHeight: 1.8, maxWidth: 450, textAlign: 'center'}}>
       {step.subtitle || `Dans le but d'améliorer notre accompagnement nous
         avons apporté quelques améliorations à ${config.productName} :`}

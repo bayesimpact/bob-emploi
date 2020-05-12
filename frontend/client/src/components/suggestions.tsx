@@ -16,103 +16,114 @@ const ALGOLIA_JOB_INDEX = 'jobs'
 
 
 interface AlgoliaSuggestProps<T> {
+  // API key of the Algolia app.
   algoliaApiKey: string
+  // ID of the Algolia app.
   algoliaApp: string
+  // Name of the index to use in the Algolia app.
   algoliaIndex: string
   autoselect?: boolean
   autoselectOnBlur?: boolean
+  disabled?: boolean
+  // A function to use on suggestion to compute the visible input. Overrides
+  // displayKey.
   display?: (suggestion: T) => string
+  // Key to use as visible input when a suggestion is selected. Is overriden
+  // by display.
   displayKey?: keyof T
+  // A value to set inside the field programatically.
   displayValue?: string
   hint?: boolean
+  // Numbers of suggestions shown when typing.
   hitsPerPage?: number
-  inputRef?: (input: HTMLInputElement) => void
   onBlur?: () => void
+  // Function called when the value changed either when the text changes or
+  // when a suggestion is selected. It takes 3 arguments: the browser event,
+  // the displayed value, and in the case of a suggestion selected, the
+  // suggestion object.
   onChange?: (
     event: Event|React.ChangeEvent<HTMLInputElement>,
     displaySuggestion: string,
     suggestion: T|null
   ) => void
   onFocus?: () => void
+  // Function called when a selection is suggested. It takes 3 arguments:
+  // the event, the displayed value, and the suggestion object.
   onSuggestSelect?: (event: Event, displaySuggestion: string, suggestion: T) => void
+  // A string to display in the input field when no text is entered.
   placeholder?: string
+  // Style to use for the input field.
   style?: React.CSSProperties
+  // Rendering function for each suggestion.
   suggestionTemplate?: (suggestion: Highlighted<T>) => string
 }
 
 
 // An autocomplete input using Algolia as a backend.
 // TODO: Contribute to autocomplete.js.
-class AlgoliaSuggest<T> extends React.Component<AlgoliaSuggestProps<T>> {
-  public static propTypes = {
-    // API key of the Algolia app.
-    algoliaApiKey: PropTypes.string.isRequired,
-    // ID of the Algolia app.
-    algoliaApp: PropTypes.string.isRequired,
-    // Name of the index to use in the Algolia app.
-    algoliaIndex: PropTypes.string.isRequired,
-    // A function to use on suggestion to compute the visible input. Overrides
-    // displayKey.
-    display: PropTypes.func,
-    // Key to use as visible input when a suggestion is selected. Is overriden
-    // by display.
-    displayKey: PropTypes.string,
-    // A value to set inside the field programatically.
-    displayValue: PropTypes.string,
-    // Numbers of suggestions shown when typing.
-    hitsPerPage: PropTypes.number,
-    // A callback ref to set on the input field.
-    inputRef: PropTypes.func,
-    // Function called when the value changed either when the text changes or
-    // when a suggestion is selected. It takes 3 arguments: the browser event,
-    // the displayed value, and in the case of a suggestion selected, the
-    // suggestion object.
-    onChange: PropTypes.func,
-    onFocus: PropTypes.func,
-    // Function called when a selection is suggested. It takes 3 arguments:
-    // the event, the displayed value, and the suggestion object.
-    onSuggestSelect: PropTypes.func,
-    // A string to display in the input field when no text is entered.
-    placeholder: PropTypes.string,
-    // Style to use for the input field.
-    style: PropTypes.object,
-    // Rendering function for each suggestion.
-    suggestionTemplate: PropTypes.func,
-    // Other props are used as autocomplete options.
-  }
+const AlgoliaSuggestBase =
+<T extends {}>(props: AlgoliaSuggestProps<T>, ref: React.Ref<Focusable>): React.ReactElement => {
+  const {
+    algoliaApiKey,
+    algoliaApp,
+    algoliaIndex,
+    autoselect,
+    autoselectOnBlur,
+    disabled,
+    display,
+    displayKey,
+    displayValue,
+    hint,
+    hitsPerPage,
+    onBlur,
+    onChange,
+    onFocus,
+    onSuggestSelect,
+    placeholder,
+    style,
+    suggestionTemplate,
+  } = props
 
-  public componentDidMount(): void {
-    const {
-      algoliaApp,
-      algoliaApiKey,
-      algoliaIndex,
-      display,
-      displayValue,
-      hitsPerPage,
-      onChange,
-      onSuggestSelect,
-      suggestionTemplate,
-      ...extraProps
-    } = this.props
-    const algoliaClient = algoliasearch(algoliaApp, algoliaApiKey)
-    const displayFunc = display || ((suggestion: T): string => {
-      const {displayKey} = this.props
-      return displayKey && (suggestion[displayKey] as unknown as string) || ''
-    })
-    const handleSelected = (event: Event, suggestion: T): void => {
-      const displaySuggestion = displayFunc(suggestion)
-      onSuggestSelect && onSuggestSelect(event, displaySuggestion, suggestion)
-      onChange && onChange(event, displaySuggestion, suggestion)
+  const [suggest, setSuggest] = useState<ReturnType<typeof autocomplete>|undefined>()
+  const cleanDisplayValue = displayValue || ''
+  useEffect((): void => {
+    suggest?.autocomplete?.setVal(cleanDisplayValue)
+  }, [cleanDisplayValue, suggest])
+
+  const styleDisplay = style?.display || 'initial'
+  const hintRef = useRef<HTMLElement>()
+  useEffect((): void => {
+    if (hintRef.current) {
+      hintRef.current.style.display = styleDisplay
     }
-    // TODO(pascal): Rething this pattern as this is not compatible with React.
+  }, [styleDisplay])
+
+  const displayKeyRef = useRef(displayKey)
+  useEffect((): void => {
+    displayKeyRef.current = displayKey
+  }, [displayKey])
+
+  const displayFunc = useCallback(display || ((suggestion: T): string => {
+    const displayKey = displayKeyRef.current
+    return displayKey && (suggestion[displayKey] as unknown as string) || ''
+  }), [display])
+
+  const node = useRef<HTMLInputElement>(null)
+
+  useEffect((): void => {
+    const algoliaClient = algoliasearch(algoliaApp, algoliaApiKey)
+    if (!node.current) {
+      return
+    }
+    // TODO(pascal): Rethink this pattern as this is not compatible with React.
     // Modifying the DOM without React is somewhat OK, but here it changes the
     // main DOM element of this component which confuses React when trying to
     // update the components before it.
-    const suggest = autocomplete(this.node.current, extraProps, [
+    const newSuggest = autocomplete(node.current, {autoselect, autoselectOnBlur, hint}, [
       {
         display: displayFunc,
         source: autocomplete.sources.hits<T>(
-          algoliaClient.initIndex(algoliaIndex), {hitsPerPage: hitsPerPage}),
+          algoliaClient.initIndex(algoliaIndex), {hitsPerPage}),
         templates: {
           footer: '<div class="aa-footer">recherche rapide grâce à ' +
             '<img src="' + algoliaLogoUrl + '" alt="Algolia"/></div>',
@@ -120,80 +131,54 @@ class AlgoliaSuggest<T> extends React.Component<AlgoliaSuggestProps<T>> {
         },
       },
     ])
-    suggest.on('autocomplete:selected', handleSelected)
-    suggest.on('autocomplete:autocompleted', handleSelected)
-    if (displayValue) {
-      suggest.autocomplete.setVal(displayValue)
-    }
-    this.suggest = suggest
+    setSuggest(newSuggest)
     // The hint object get styled by the autocomplete lib by copying the
     // initial style of the input. That is a problem because later we allow our
     // component to change this style (so we need to update the hint object
     // manually in componentDidUpdate).
-    this.hint = suggest.get(0).previousSibling as HTMLElement
+    hintRef.current = newSuggest.get(0).previousSibling as HTMLElement
     // As the style is copied over from the input, to make it more look like a
     // hint we change only the opacity.
-    if (this.hint) {
-      this.hint.style.opacity = '.5'
+    if (hintRef.current) {
+      hintRef.current.style.opacity = '.5'
     }
-  }
+  }, [
+    algoliaApiKey, algoliaApp, algoliaIndex, displayFunc, hitsPerPage, suggestionTemplate,
+    autoselect, autoselectOnBlur, hint,
+  ])
 
-  public componentDidUpdate = (prevProps: AlgoliaSuggestProps<T>): void => {
-    if (this.suggest && this.suggest.autocomplete &&
-        prevProps.displayValue !== this.props.displayValue) {
-      this.suggest.autocomplete.setVal(this.props.displayValue || '')
-    }
-    if (this.hint && prevProps.style !== this.props.style) {
-      // Update the display property. It would make sense to also update other
-      // properties but it's quite hard as the hint object is not managed by
-      // React and we have no use for it for now.
-      if ((prevProps.style && prevProps.style.display) !==
-          (this.props.style && this.props.style.display)) {
-        this.hint.style.display = this.props.style && this.props.style.display || 'initial'
-      }
-    }
-  }
-
-  private hint?: HTMLElement
-
-  private suggest?: ReturnType<typeof autocomplete>
-
-  private node: React.MutableRefObject<HTMLInputElement> =
-  React.createRef() as React.MutableRefObject<HTMLInputElement>
-
-  private handleRefs = (node: HTMLInputElement): void => {
-    const {inputRef} = this.props
-    this.node.current = node
-    if (!inputRef) {
+  useEffect((): void => {
+    if (!suggest) {
       return
     }
-    if (typeof inputRef === 'function') {
-      inputRef(node)
-      return
+    const handleSelected = (event: Event, suggestion: T): void => {
+      const displaySuggestion = displayFunc(suggestion)
+      onSuggestSelect?.(event, displaySuggestion, suggestion)
+      onChange?.(event, displaySuggestion, suggestion)
     }
-    (inputRef as React.MutableRefObject<HTMLInputElement>).current = node
-  }
+    suggest.on('autocomplete:selected', handleSelected)
+    suggest.on('autocomplete:autocompleted', handleSelected)
+  }, [displayFunc, onChange, onSuggestSelect, suggest])
 
-  public focus(): void {
-    this.node.current && this.node.current.focus()
-  }
+  useImperativeHandle(ref, (): Focusable => ({
+    focus: (): void => node.current?.focus(),
+  }))
 
-  public render(): React.ReactNode {
-    const {
-      onChange,
-      onFocus,
-      placeholder,
-      style,
-    } = this.props
-    const wrappedOnChange = onChange && ((event: React.ChangeEvent<HTMLInputElement>): void => {
-      onChange(event, event.target.value, null)
-    })
-    // TODO(pascal): Also style with focus and hover effects like the other inputs.
-    return <input
-      onChange={wrappedOnChange} ref={this.handleRefs} style={style} placeholder={placeholder}
-      onFocus={onFocus} />
-  }
+  const handleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>): void => {
+    onChange?.(event, event.target.value, null)
+  }, [onChange])
+  const wrappedOnChange = onChange && handleChange
+
+  // TODO(pascal): Also style with focus and hover effects like the other inputs.
+  return <input
+    onChange={wrappedOnChange} ref={node} style={style} placeholder={placeholder}
+    onFocus={onFocus} disabled={disabled} onBlur={onBlur} />
 }
+// TODO(pascal): Remove the type assertion once we understand how
+// https://github.com/Microsoft/TypeScript/issues/9366 should work.
+const AlgoliaSuggest = React.forwardRef(AlgoliaSuggestBase) as <T>(
+  props: AlgoliaSuggestProps<T> & {ref?: React.Ref<Focusable>},
+) => React.ReactElement
 
 
 // Genderize a job name from `store/job.js`.
@@ -293,10 +278,10 @@ const handleDisplay = _memoize(
 
 
 interface SuggestConfig<T, SuggestT> {
+  disabled?: boolean
   errorDelaySeconds?: number
   gender?: bayes.bob.Gender
   hitsPerPage?: number
-  inputRef?: (input: HTMLInputElement) => void
   isLowercased?: boolean
   onChange?: (value: T|null) => void
   onError?: () => void
@@ -304,6 +289,8 @@ interface SuggestConfig<T, SuggestT> {
   onSuggestSelect?: (event: Event, displaySuggestion: string, suggestion: SuggestT) => void
   placeholder?: string
   style?: React.CSSProperties
+  // Set or change to update the text value programatically.
+  textValue?: string
   value?: T
 }
 
@@ -317,17 +304,18 @@ React.RefForwardingComponent<Focusable, SuggestProps<bayes.bob.Job, JobSuggestio
 (props: SuggestProps<bayes.bob.Job, JobSuggestion>, ref: React.Ref<Focusable>):
 React.ReactElement => {
   const {errorDelaySeconds = 3, gender, isLowercased, style, onChange,
-    onError, value, ...otherProps} = props
-  const [jobName, setJobName] = useState('')
+    onError, textValue, value, ...otherProps} = props
+  const [jobName, setJobName] = useState(textValue || '')
   const hasError = useMemo((): boolean => !!jobName && !value, [jobName, value])
 
   useEffect((): void => {
     if (value && value.codeOgr) {
       setJobName(maybeLowerFirstLetter(genderizeJob(value, gender), !!isLowercased))
+    } else if (typeof textValue === 'string') {
+      setJobName(textValue)
     }
-  }, [gender, isLowercased, value])
+  }, [gender, isLowercased, textValue, value])
 
-  const inputRef = useRef<AlgoliaSuggest<JobSuggestion>>(null)
   const timeout = useRef<ReturnType<typeof setTimeout>|null>(null)
 
   const renderSuggestion = useCallback(
@@ -373,25 +361,21 @@ React.ReactElement => {
     hasError && onError && onError()
   }, [hasError, onError])
 
-  useImperativeHandle(ref, (): Focusable => ({
-    focus: (): void => {
-      inputRef && inputRef.current && inputRef.current.focus()
-    },
-  }))
-  // TODO(marielaure): Change the color here to a theme color.
   // TODO(cyrille): Add a prop for `errorStyle`.
   const fieldStyle = useMemo(() => ({
     ...style,
-    ...hasError && {borderColor: 'red'},
+    ...hasError && {borderColor: colors.RED_PINK},
   }), [hasError, style])
+
+  const display = useCallback(handleDisplay(!!isLowercased, gender), [isLowercased, gender])
 
   return <AlgoliaSuggest<JobSuggestion>
     {...otherProps}
     algoliaIndex={ALGOLIA_JOB_INDEX}
     algoliaApp={ALGOLIA_APP} algoliaApiKey={ALGOLIA_API_KEY}
     displayValue={jobName} hint={true} autoselect={true}
-    autoselectOnBlur={true} style={fieldStyle} display={handleDisplay(!!isLowercased, gender)}
-    onBlur={handleBlur} onChange={handleChange} ref={inputRef}
+    autoselectOnBlur={true} style={fieldStyle} display={display}
+    onBlur={handleBlur} onChange={handleChange} ref={ref}
     suggestionTemplate={renderSuggestion} />
 }
 const JobSuggest = React.forwardRef(JobSuggestBase)
@@ -518,19 +502,12 @@ React.RefForwardingComponent<Focusable, SuggestConfig<bayes.bob.FrenchCity, City
   ref: React.Ref<Focusable>): React.ReactElement => {
   const {style, onChange, value, ...otherProps} = props
   const [cityName, setCityName] = useState('')
-  const inputRef = useRef<AlgoliaSuggest<CitySuggestion>>(null)
 
   useEffect((): void => {
     if (value && value.cityId && value.name) {
       setCityName(value.name)
     }
   }, [value])
-
-  useImperativeHandle(ref, (): Focusable => ({
-    focus: (): void => {
-      inputRef && inputRef.current && inputRef.current.focus()
-    },
-  }))
 
   const renderSuggestion = useCallback((suggestion): string => {
     const name = suggestion._highlightResult.name.value
@@ -551,17 +528,16 @@ React.RefForwardingComponent<Focusable, SuggestConfig<bayes.bob.FrenchCity, City
     onChange && onChange(city)
   }, [onChange])
 
-  // TODO(marielaure): Change the color here to a theme color.
   const fieldStyle = useMemo(() => ({
     ...style,
-    ...cityName && !value && {borderColor: 'red'},
+    ...cityName && !value && {borderColor: colors.RED_PINK},
   }), [style, cityName, value])
 
-  return <AlgoliaSuggest
+  return <AlgoliaSuggest<CitySuggestion>
     {...otherProps} algoliaIndex={ALGOLIA_CITY_INDEX}
     algoliaApp={ALGOLIA_APP} algoliaApiKey={ALGOLIA_API_KEY}
     displayValue={cityName} hint={true} autoselect={true} autoselectOnBlur={true}
-    hitsPerPage={5} displayKey="name" ref={inputRef as React.Ref<AlgoliaSuggest<CitySuggestion>>}
+    hitsPerPage={5} displayKey="name" ref={ref}
     style={fieldStyle}
     onChange={handleChange}
     suggestionTemplate={renderSuggestion} />

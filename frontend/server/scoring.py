@@ -6,47 +6,25 @@ See design doc at http://go/bob:scoring-advices.
 import logging
 import re
 import typing
-from typing import Callable, Generator, Iterator, List, Iterable, Optional, Set
+from typing import Callable, List, Iterable, Optional, Set
 
+from bob_emploi.frontend.api import diagnostic_pb2
 from bob_emploi.frontend.api import geo_pb2
 from bob_emploi.frontend.api import job_pb2
 from bob_emploi.frontend.api import project_pb2
 from bob_emploi.frontend.api import training_pb2
 from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import companies
+from bob_emploi.frontend.server import modules
 from bob_emploi.frontend.server import scoring_base
 # pylint: disable=unused-import,import-only-modules
-# Import all plugins: they register themselves when imported.
-from bob_emploi.frontend.server.modules import application_modes
-from bob_emploi.frontend.server.modules import application_tips
-from bob_emploi.frontend.server.modules import associations_help
-from bob_emploi.frontend.server.modules import better_job_in_group
-from bob_emploi.frontend.server.modules import civic_service
-from bob_emploi.frontend.server.modules import commute
-from bob_emploi.frontend.server.modules import create_your_company
-from bob_emploi.frontend.server.modules import diagnostic
-from bob_emploi.frontend.server.modules import diplomas
-from bob_emploi.frontend.server.modules import driving_license
-from bob_emploi.frontend.server.modules import events
-from bob_emploi.frontend.server.modules import immersion
-from bob_emploi.frontend.server.modules import jobboards
-from bob_emploi.frontend.server.modules import language
-from bob_emploi.frontend.server.modules import network
-from bob_emploi.frontend.server.modules import online_salons
-from bob_emploi.frontend.server.modules import project_clarity
-from bob_emploi.frontend.server.modules import relocate
-from bob_emploi.frontend.server.modules import reorient_jobbing
-from bob_emploi.frontend.server.modules import reorient_to_close_job
-from bob_emploi.frontend.server.modules import seasonal_relocate
-from bob_emploi.frontend.server.modules import seniority
-from bob_emploi.frontend.server.modules import skill_for_future
-from bob_emploi.frontend.server.modules import volunteer
-# Re-export some base elements from here as well.
+# Re-export some base elements from here.
 from bob_emploi.frontend.server.scoring_base import APPLICATION_MODES
 from bob_emploi.frontend.server.scoring_base import ConstantScoreModel
 from bob_emploi.frontend.server.scoring_base import ExplainedScore
 from bob_emploi.frontend.server.scoring_base import filter_using_score
 from bob_emploi.frontend.server.scoring_base import get_scoring_model
+from bob_emploi.frontend.server.scoring_base import get_user_locale
 from bob_emploi.frontend.server.scoring_base import LowPriorityAdvice
 from bob_emploi.frontend.server.scoring_base import ModelBase
 from bob_emploi.frontend.server.scoring_base import NotEnoughDataException
@@ -61,31 +39,7 @@ from bob_emploi.frontend.server.scoring_base import TEMPLATE_VAR_PATTERN
 # pylint: disable=too-many-lines
 _Type = typing.TypeVar('_Type')
 
-
-# TODO(cyrille): Consider replacing with an Iterator[_Type, Set[str]], for simplicity.
-class IteratorWithMissingFields(Iterable[_Type]):
-    """A wrapper of iterators to get their return value as a missing_fields attribute.
-
-    Instantiate this class with an iterator that returns (not yields) a set of missing fields.
-    An object of this class can be used as an iterator,
-    so it can be iterated upon (for instance in a loop).
-    Once iterated upon, it gives the missing fields in its missing_fields attribute.
-    """
-
-    def __init__(self, gen: Generator[_Type, None, Set[str]]):
-        self.gen = gen
-        self._missing_fields: Optional[Set[str]] = None
-
-    def __iter__(self) -> Iterator[_Type]:
-        self._missing_fields = yield from self.gen
-
-    @property
-    def missing_fields(self) -> Set[str]:
-        """The missing fields the iterator has aggregated."""
-
-        if self._missing_fields is None:
-            raise ValueError(f'An IteratorWithMissingFields has not been iterated upon yet')
-        return self._missing_fields
+modules.import_all_modules()
 
 
 class _AdviceTrainingScoringModel(scoring_base.ModelBase):
@@ -433,6 +387,16 @@ class _MarketTensionFilter(scoring_base.BaseFilter):
         return tension <= self._tension_limit
 
 
+class _MarketStressRelevance(scoring_base.RelevanceModelBase):
+
+    def score_relevance(self, project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+        """Compute a relevance for the given project."""
+
+        if project.market_stress() is None:
+            return diagnostic_pb2.NEUTRAL_RELEVANCE
+        return diagnostic_pb2.RELEVANT_AND_GOOD
+
+
 class _AdviceOtherWorkEnv(scoring_base.ModelBase):
     """A scoring model to trigger the "Other Work Environment" Advice."""
 
@@ -741,17 +705,24 @@ class _FindWhatYouLikeFilter(scoring_base.BaseFilter):
             has_never_done_job
 
 
+# TODO(pascal): Merge with _RequiredDiplomasScoringModel.
 class _MissingDiplomaFilter(scoring_base.BaseFilter):
 
     def __init__(self) -> None:
         super().__init__(self._filter)
 
     def _filter(self, project: scoring_base.ScoringProject) -> bool:
-        if all(diploma.percent_required == 0 for diploma in project.requirements().diplomas):
-            # No diploma is actually required for the job.
-            return False
         if project.details.kind == project_pb2.CREATE_OR_TAKE_OVER_COMPANY:
             # No need for a diploma if you want to create your company.
+            return False
+        rome_id = project.details.target_job.job_group.rome_id
+        if not rome_id:
+            raise scoring_base.NotEnoughDataException(
+                'Need a job group to determine if the user has enough diplomas',
+                # TODO(pascal): Use project_id instead of 0.
+                {'projects.0.targetJob.jobGroup.romeId'})
+        if all(diploma.percent_required == 0 for diploma in project.requirements().diplomas):
+            # No diploma is actually required for the job.
             return False
         if project.details.training_fulfillment_estimate in {
                 project_pb2.ENOUGH_DIPLOMAS, project_pb2.CURRENTLY_IN_TRAINING}:
@@ -798,6 +769,30 @@ class _FindLikeableJobScorer(scoring_base.ModelHundredBase):
         if project.details.diagnostic.category_id == 'find-what-you-like':
             return 30
         return 40
+
+
+class _FindWhatYouLikeRelevance(scoring_base.RelevanceModelBase):
+
+    def score_relevance(self, project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+        """Compute a relevance for the given project."""
+
+        if project.details.passionate_level == project_pb2.LIKEABLE_JOB:
+            return diagnostic_pb2.NEUTRAL_RELEVANCE
+        market_stress = project.market_stress()
+        if project.details.passionate_level < project_pb2.LIKEABLE_JOB and \
+                market_stress and market_stress < 10 / 7:
+            return diagnostic_pb2.NEUTRAL_RELEVANCE
+        return diagnostic_pb2.RELEVANT_AND_GOOD
+
+
+class _EnhanceMethodsRelevance(scoring_base.RelevanceModelBase):
+
+    def score_relevance(self, project: ScoringProject) -> diagnostic_pb2.CategoryRelevance:
+        """Compute a relevance for the given project."""
+
+        if project.get_search_length_at_creation() < 0:
+            return diagnostic_pb2.NEUTRAL_RELEVANCE
+        return diagnostic_pb2.RELEVANT_AND_GOOD
 
 
 class _StrategyForFrustrated(scoring_base.ModelHundredBase):
@@ -895,6 +890,44 @@ class _TryAlternanceScoringModel(scoring_base.ModelBase):
 
         return ExplainedScore(
             2, [project.translate_string("l'alternance n'est pas que pour les jeunes")])
+
+
+class _ResumeScoringModel(_ProjectFilter):
+
+    def __init__(self) -> None:
+        super().__init__(self._filter)
+
+    def _filter(self, project: project_pb2.Project) -> bool:
+        if not project.has_resume:
+            raise NotEnoughDataException(
+                "It's not clear whether the user has a resume or not",
+                # TODO(pascal): Use project_id instead of 0. Same below.
+                {'projects.0.hasResume'},
+            )
+        return project.has_resume == project_pb2.TRUE
+
+
+class _CompanyCreatorScoringModel(_ProjectFilter):
+
+    def __init__(self) -> None:
+        super().__init__(self._filter)
+
+    def _filter(self, project: project_pb2.Project) -> bool:
+        if not project.kind:
+            raise NotEnoughDataException(
+                "It's not clear what kind of project the user wants",
+                {'projects.0.kind'},
+            )
+        return project.kind == project_pb2.CREATE_OR_TAKE_OVER_COMPANY
+
+
+def unoptional(maybe_bool: project_pb2.OptionalBool, field: Optional[str] = None) -> bool:
+    """Returns a boolean value from an optional one, or raise if the value is missing."""
+
+    if maybe_bool == project_pb2.UNKNOWN_BOOL:
+        raise NotEnoughDataException(
+            'An OptionalBool field is missing', fields=None if field is None else {field})
+    return maybe_bool == project_pb2.TRUE
 
 
 def _is_long_term_mom(user: user_pb2.UserProfile) -> bool:
@@ -1011,11 +1044,13 @@ scoring_base.register_model(
     'for-application(2)', _ProjectFilter(
         lambda project: project.weekly_applications_estimate >= project_pb2.SOME))
 scoring_base.register_model(
+    'for-autonomous', _UserProfileFilter(
+        lambda profile: unoptional(profile.is_autonomous, 'profile.isAutonomous')))
+scoring_base.register_model(
     'for-big-city-inhabitant(100000)', _ProjectFilter(
         lambda project: project.city.population >= 100000))
 scoring_base.register_model(
-    'for-company-creator', _ProjectFilter(
-        lambda project: project.kind == project_pb2.CREATE_OR_TAKE_OVER_COMPANY))
+    'for-company-creator', _CompanyCreatorScoringModel())
 scoring_base.register_model(
     'for-complex-application', _ApplicationComplexityFilter(job_pb2.COMPLEX_APPLICATION_PROCESS))
 scoring_base.register_model(
@@ -1187,10 +1222,17 @@ scoring_base.register_model(
 scoring_base.register_model(
     'for-very-short-contract', _ProjectFilter(
         lambda project: job_pb2.INTERIM in project.employment_types))
+# TODO(cyrille): Rather use unoptional.
 scoring_base.register_model(
-    'for-with-resume', _ProjectFilter(lambda project: project.has_resume >= project_pb2.TRUE))
+    'for-with-resume', _ResumeScoringModel())
 scoring_base.register_model(
     'for-women', _UserProfileFilter(lambda user: user.gender == user_pb2.FEMININE))
+scoring_base.register_model(
+    'relevance-enhance-methods', _EnhanceMethodsRelevance())
+scoring_base.register_model(
+    'relevance-find-what-you-like', _FindWhatYouLikeRelevance())
+scoring_base.register_model(
+    'relevance-market-stress', _MarketStressRelevance())
 scoring_base.register_model(
     'strategy-interview-success', _InterviewSuccessScorer())
 scoring_base.register_model(
@@ -1199,3 +1241,24 @@ scoring_base.register_model(
     'strategy-likeable-job', _FindLikeableJobScorer())
 scoring_base.register_model(
     'strategy-try-without-diploma', _TryWithoutDiploma())
+
+
+# TODO(cyrille): Add documentation on each scoring model.
+def document_scoring_models() -> List[str]:
+    """Prepare the lines for a documentation file with the list of all scoring models."""
+
+    base_models = [
+        model for model in SCORING_MODELS
+        if not any(regexp.match(model) for regexp, c in SCORING_MODEL_REGEXPS)]
+    lines = ['# List of Available Scoring Models', '']
+    lines.extend(['## Scoring Models', '', '```'])
+    lines.extend(model for model in sorted(base_models) if model)
+    lines.extend(['```', '', '## Scoring Model Regular Expressions', '', '```'])
+    lines.extend(sorted(f'/{regexp.pattern}/' for regexp, c in SCORING_MODEL_REGEXPS))
+    lines.extend(['```'])
+    return lines
+
+
+if __name__ == '__main__':
+    for line in document_scoring_models():
+        print(line)

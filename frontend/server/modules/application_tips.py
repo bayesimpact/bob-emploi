@@ -227,9 +227,49 @@ class _MethodsToInterviewRelevance(scoring_base.RelevanceModelBase):
         return diagnostic_pb2.RELEVANT_AND_GOOD
 
 
+class _BetterApplicationModes(scoring_base.ModelBase):
+    """A scoring model for the category search-methods."""
+
+    def score(self, project: scoring_base.ScoringProject) -> float:
+        application_modes = project.job_group_info().application_modes.values()
+
+        missing_fields: Set[str] = set()
+        # User's job has no application modes info.
+        if not application_modes:
+            rome_id = project.details.target_job.job_group.rome_id
+            missing_fields.add(f'data.job_group_info.{rome_id}.application_modes')
+            raise scoring_base.NotEnoughDataException(
+                "User's job has no application modes info. We cannot say whether this is blocking.",
+                fields=missing_fields)
+
+        user_application_mode = project.details.preferred_application_mode
+        if not user_application_mode:
+            missing_fields.add('projects.0.preferredApplicationMode')
+            raise scoring_base.NotEnoughDataException(
+                "Missing some information about user's application modes", fields=missing_fields)
+
+        first_modes = set(
+            fap_modes.modes[0].mode for fap_modes in application_modes
+            if len(fap_modes.modes))
+        second_modes = set(
+            fap_modes.modes[1].mode for fap_modes in application_modes
+            if len(fap_modes.modes) > 1)
+
+        if user_application_mode in first_modes:
+            # User uses the correct application mode.
+            return 0
+
+        if user_application_mode in second_modes:
+            # User uses one of the best application modes.
+            return 1
+
+        return 3
+
+
 scoring_base.register_model('advice-fresh-resume', _AdviceFreshResume())
 scoring_base.register_model('advice-improve-interview', _AdviceImproveInterview())
 scoring_base.register_model('advice-improve-resume', _AdviceImproveResume())
 scoring_base.register_model('category-enhance-methods-to-interview', _EnhanceMethodsToInterview())
 scoring_base.register_model(
     'relevance-enhance-methods-to-interview', _MethodsToInterviewRelevance())
+scoring_base.register_model('category-search-methods', _BetterApplicationModes())

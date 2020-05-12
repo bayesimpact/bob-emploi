@@ -100,6 +100,17 @@ APPLICATION_MODES = {
 _AType = typing.TypeVar('_AType')
 
 
+# TODO(cyrille): Drop once all old users are migrated from can_tutoie to locale.
+def get_user_locale(profile: user_pb2.UserProfile) -> str:
+    """
+    Get the locale for a given profile,
+    assuming it might be for a user that comes from the can_tutoie era.
+    """
+
+    locale = '' if profile.locale == 'fr' else profile.locale
+    return locale or ('fr@tu' if profile.can_tutoie else 'fr')
+
+
 def _keep_only_departement_filters(
         association: association_pb2.Association) -> Iterator[str]:
     for association_filter in association.filters:
@@ -185,9 +196,13 @@ class ScoringProject(object):
 
         local_diagnosis = jobs.get_local_stats(
             self.database, self.details.city.departement_id, self._rome_id())
-        self.details.local_stats.CopyFrom(local_diagnosis)
         self._local_diagnosis = local_diagnosis
         return local_diagnosis
+
+    def add_local_diagnosis(self) -> None:
+        """Add local stats to the project local_stats field."""
+
+        self.details.local_stats.CopyFrom(self.local_diagnosis())
 
     def imt_proto(self) -> job_pb2.ImtLocalJobStats:
         """Get IMT data for the project's job and département."""
@@ -302,9 +317,6 @@ class ScoringProject(object):
         possible_configs = filter_using_score(_configs, lambda c: c.filters, self)
         return next(possible_configs, None)
 
-    def _can_tutoie(self) -> bool:
-        return self.user_profile.can_tutoie
-
     def get_region(self) -> Optional[geo_pb2.Region]:
         """The region proto for this project."""
 
@@ -381,14 +393,9 @@ class ScoringProject(object):
         if '%' not in template:
             return template
         pattern = re.compile('|'.join(_TEMPLATE_VARIABLES.keys()), flags=re.I)
-        vars_template = pattern.sub(
+        new_template = pattern.sub(
             lambda v: self._get_template_variable(v.group(0)),
             template)
-        # TODO(cyrille): Deprecate _YOU_PATTERN.
-        if _YOU_PATTERN.match(vars_template):
-            logging.warning('%%you is deprecated in templates, please fix: %s', template)
-        new_template = _YOU_PATTERN.sub(
-            lambda v: v.group(1) if self._can_tutoie() else v.group(2), vars_template)
         if TEMPLATE_VAR_PATTERN.search(_SKIP_VAR_PATTERN.sub(r'\1', new_template)):
             msg = 'One or more template variables have not been replaced in:\n' + new_template
             if raise_on_missing_var:
@@ -396,15 +403,19 @@ class ScoringProject(object):
             logging.warning(msg)
         return new_template
 
-    def translate_string(self, string: str) -> str:
+    def translate_string(self, string: str, is_genderized: bool = False) -> str:
         """Translate a string to a language and locale defined by the project."""
 
-        locale = self.user_profile.locale or ('fr@tu' if self.user_profile.can_tutoie else '')
+        locale = get_user_locale(self.user_profile)
 
-        if locale and locale != 'fr':
-            try:
-                return i18n.translate_string(string, locale, self._db)
-            except i18n.TranslationMissingException:
+        keys = [string]
+        if is_genderized and self.user_profile.gender:
+            keys.insert(0, f'{string}_{user_pb2.Gender.Name(self.user_profile.gender)}')
+
+        try:
+            return i18n.translate_string(keys, locale, self._db)
+        except i18n.TranslationMissingException:
+            if locale != 'fr':
                 logging.exception('Falling back to French on "%s"', string)
 
         return string
@@ -413,7 +424,7 @@ class ScoringProject(object):
         """Compute job search length (in months) relatively to a project creation date."""
 
         if self.details.WhichOneof('job_search_length') != 'job_search_started_at':
-            # TODO(marielaure): Check if it still makes sense to prioritize this field.
+            # TODO(sil): Check if it still makes sense to prioritize this field.
             if self.details.job_search_length_months:
                 return self.details.job_search_length_months
             return -1
@@ -624,6 +635,7 @@ _TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
     '%jobName': _job_name,
     # This in only the **number** of months, use as '%jobSearchLengthMonthsAtCreation mois'.
     '%jobSearchLengthMonthsAtCreation': _job_search_length_months_at_creation,
+    '%language': lambda scoring_project: scoring_project.user_profile.locale[:2] or 'fr',
     '%latin1CityName': lambda scoring_project: parse.quote(
         scoring_project.details.city.name.encode('latin-1', 'replace')),
     '%latin1MasculineJobName': lambda scoring_project: parse.quote(
@@ -649,9 +661,13 @@ _TEMPLATE_VARIABLES: Dict[str, Callable[[ScoringProject], str]] = {
 class NotEnoughDataException(Exception):
     """Exception raised while scoring if there's not enough data to compute a score."""
 
-    def __init__(self, msg: str = '', fields: Optional[Set[str]] = None) -> None:
-        super().__init__(msg, fields)
+    def __init__(
+            self, msg: str = '',
+            fields: Optional[Set[str]] = None,
+            reasons: Optional[List[str]] = None) -> None:
+        super().__init__(msg, fields, reasons)
         self.fields = fields or set()
+        self.reasons = reasons or []
 
 
 class ExplainedScore(typing.NamedTuple):

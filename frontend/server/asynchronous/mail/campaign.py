@@ -23,6 +23,7 @@ from bob_emploi.frontend.server import auth
 from bob_emploi.frontend.server import french
 from bob_emploi.frontend.server import jobs
 from bob_emploi.frontend.server import mail
+from bob_emploi.frontend.server import scoring
 
 
 class _EmailSendHistory(typing.Protocol):
@@ -331,11 +332,9 @@ def get_status_update_link(user_id: str, profile: user_pb2.UserProfile) -> str:
     """Make link with token from user ID for RER status update."""
 
     survey_token = parse.quote(auth.create_token(user_id, role='employment-status'))
-    # TODO(pascal): Drop can_tutoie when the RER page uses i18n.
     return f'{BASE_URL}/statut/mise-a-jour?user={user_id}&token={survey_token}&' \
         f'gender={user_pb2.Gender.Name(profile.gender)}' + \
-        ('&can_tutoie=true' if profile.can_tutoie else '') + \
-        f'&hl={parse.quote(profile.locale)}'
+        f'&hl={parse.quote(scoring.get_user_locale(profile))}'
 
 
 # TODO(cyrille): Fix this to account for same mode in different FAPs.

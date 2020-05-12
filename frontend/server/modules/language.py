@@ -3,7 +3,11 @@
 import typing
 from typing import Iterable, List, Optional
 
+from bob_emploi.frontend.api import project_pb2
+from bob_emploi.frontend.api import user_pb2
 from bob_emploi.frontend.server import scoring_base
+
+_UNKNOWN_LANG = user_pb2.LanguageKnowledge()
 
 
 class _LanguageRequirement(typing.NamedTuple):
@@ -96,38 +100,66 @@ class _MissingLanguage(scoring_base.ModelBase):
             if knowledge.locale in lang_requirements
         }
 
-        if not lang_knowledge:
-            # Unknown.
-            return 0
+        missing_fields = set()
 
         # Check that the user speaks at least one of the required languages.
         for lang in lang_requirements:
-            if not lang_knowledge.get(lang):
+            knowledge = lang_knowledge.get(lang, _UNKNOWN_LANG)
+            if knowledge.has_spoken_knowledge == project_pb2.UNKNOWN_BOOL:
                 # No clue about their level.
-                break
-            if lang_knowledge[lang].has_spoken_knowledge:
+                missing_fields.add(f'profile.languages.{lang}.hasSpokenKnowledge')
+                continue
+            if knowledge.has_spoken_knowledge == project_pb2.TRUE:
                 # User has at least one required spoken language.
+                missing_fields = set()
                 break
         else:
-            # User does not speak any of the required language.
-            return 3
+            if not missing_fields:
+                # User does not speak any of the required language.
+                return 3
 
+        if missing_fields:
+            raise scoring_base.NotEnoughDataException(
+                'Need local spoken language knowledge', fields=missing_fields)
+        return 0
+
+
+class _MissingJobLanguage(scoring_base.ModelBase):
+
+    def score(self, project: scoring_base.ScoringProject) -> float:
         # For specific job groups, check that the user speaks or write all the required languages.
         project_requirements = _get_project_requirements(project)
 
         if not project_requirements:
             return 0
 
+        lang_requirements = _LANGUAGE_REQUIREMENTS.get(project.details.city.departement_id)
+        if not lang_requirements:
+            # Default for France.
+            lang_requirements = {'fr'}
+
+        lang_knowledge = {
+            knowledge.locale: knowledge
+            for knowledge in project.user_profile.languages
+            if knowledge.locale in lang_requirements
+        }
+
+        missing_fields = set()
         for lang in lang_requirements:
-            if not lang_knowledge.get(lang):
-                # No clue about their level.
-                continue
-            if project_requirements.is_spoken_required and \
-                    not lang_knowledge[lang].has_spoken_knowledge:
-                return 3
-            if project_requirements.is_written_required and \
-                    not lang_knowledge[lang].has_written_knowledge:
-                return 3
+            knowledge = lang_knowledge.get(lang, _UNKNOWN_LANG)
+            if project_requirements.is_spoken_required:
+                if knowledge.has_spoken_knowledge == project_pb2.FALSE:
+                    return 3
+                if knowledge.has_spoken_knowledge == project_pb2.UNKNOWN_BOOL:
+                    missing_fields.add(f'profile.languages.{lang}.hasSpokenKnowledge')
+            if project_requirements.is_written_required:
+                if knowledge.has_written_knowledge == project_pb2.FALSE:
+                    return 3
+                if knowledge.has_written_knowledge == project_pb2.UNKNOWN_BOOL:
+                    missing_fields.add(f'profile.languages.{lang}.hasWrittenKnowledge')
+        if missing_fields:
+            raise scoring_base.NotEnoughDataException(
+                'Need project-specific language knowledge', fields=missing_fields)
 
         return 0
 
@@ -142,34 +174,13 @@ class _LanguageRelevance(scoring_base.ModelBase):
             # Language is not relevant for this city.
             return 0
 
-        lang_knowledge = {
-            knowledge.locale: knowledge
-            for knowledge in project.user_profile.languages
-            if knowledge.locale in lang_requirements
-        }
-
-        if not lang_knowledge:
-            # We have no clue of user's language so we cannot say whether this is a big problem or
-            # not: neutral relevance.
+        try:
+            project.score('for-missing-language')
+        except scoring_base.NotEnoughDataException:
             return 1
-
-        project_requirements = _get_project_requirements(project)
-
-        # Check that the user speaks at least one of the required languages or, if there are some
-        # project requirements, that those are met for all the required languages.
-        for lang in lang_requirements:
-            if not lang_knowledge.get(lang):
-                # No clue about their level.
-                if project_requirements:
-                    # User has an unknown level in a required language.
-                    return 1
-                continue
-            if lang_knowledge[lang].has_spoken_knowledge and not project_requirements:
-                # User has at least one required spoken language.
-                return 3
-
         return 3
 
 
 scoring_base.register_model('for-missing-language', _MissingLanguage())
+scoring_base.register_model('for-missing-job-language', _MissingJobLanguage())
 scoring_base.register_model('language-relevance', _LanguageRelevance())

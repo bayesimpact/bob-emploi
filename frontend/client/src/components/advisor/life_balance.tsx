@@ -1,6 +1,9 @@
+import {TFunction} from 'i18next'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
 import React, {useCallback, useMemo} from 'react'
+
+import {prepareT} from 'store/i18n'
 
 import cinemaIcon from 'images/hobbies/cinema.svg'
 import cookIcon from 'images/hobbies/cook.svg'
@@ -19,43 +22,43 @@ const hobbies = [
   {
     icon: fitnessIcon,
     keywords: 'salle sport',
-    title: 'Aller dans une salle de sport',
+    title: prepareT('Aller dans une salle de sport'),
   },
   {
     icon: cookIcon,
     keywords: 'cours cuisine',
-    title: 'Faire des cours de cuisine entre amis',
+    title: prepareT('Faire des cours de cuisine entre amis'),
   },
   {
     icon: swimIcon,
     keywords: 'piscine',
-    title: 'Aller à la piscine',
+    title: prepareT('Aller à la piscine'),
   },
   {
     icon: cinemaIcon,
     keywords: 'cinéma',
-    title: 'Se détendre devant un film au cinéma',
+    title: prepareT('Se détendre devant un film au cinéma'),
   },
   {
     icon: runIcon,
     keywords: 'randonnée',
-    title: 'Marcher / courir',
+    title: prepareT('Marcher / courir'),
   },
   {
     icon: searchIcon,
-    title: "Trouver d'autres activités…",
+    title: prepareT("Trouver d'autres activités…"),
     url: '/api/redirect/eterritoire/%cityId',
   },
 ] as const
 
 
 const LifeBalanceMethod: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
-  const {handleExplore, project: {city}} = props
+  const {handleExplore, project: {city}, t: translate} = props
   const handleClick = useMemo(() => handleExplore('hobby'), [handleExplore])
   return <MethodSuggestionList>
     {hobbies.map((hobby, index): ReactStylableElement => <Hobby
       {...hobby} key={`hobby-${index}`} city={city}
-      onClick={handleClick} />)}
+      onClick={handleClick} t={translate} />)}
   </MethodSuggestionList>
 }
 LifeBalanceMethod.propTypes = {
@@ -63,6 +66,7 @@ LifeBalanceMethod.propTypes = {
   project: PropTypes.shape({
     city: PropTypes.object.isRequired,
   }).isRequired,
+  t: PropTypes.func.isRequired,
 }
 const ExpandedAdviceCardContent = React.memo(LifeBalanceMethod)
 
@@ -72,7 +76,8 @@ interface HobbyProps {
   keywords?: string
   onClick: () => void
   style?: React.CSSProperties
-  title: React.ReactNode
+  title: string
+  t: TFunction
   url?: string
 }
 
@@ -96,7 +101,8 @@ const chevronStyle: React.CSSProperties = {
   width: 20,
 }
 const HobbyBase: React.FC<HobbyProps> = (props: HobbyProps): React.ReactElement => {
-  const {city: {cityId = '', name = ''} = {}, icon, keywords, onClick, url, style, title} = props
+  const {city: {cityId = '', name = ''} = {}, icon, keywords, onClick, url,
+    style, title = '', t: translate} = props
   const handleHobbyClick = useCallback((): void => {
     handleClick(cityId, name, keywords, onClick, url)
   }, [cityId, name, keywords, onClick, url])
@@ -108,7 +114,7 @@ const HobbyBase: React.FC<HobbyProps> = (props: HobbyProps): React.ReactElement 
   return <RadiumDiv style={containerStyle} onClick={handleHobbyClick}>
     {icon ? <img src={icon} style={imageStyle} alt="" /> : null}
     <span>
-      {title}
+      {translate(title)}
     </span>
     <span style={separatorStyle} />
     <ChevronRightIcon style={chevronStyle} />
@@ -123,6 +129,7 @@ HobbyBase.propTypes = {
   keywords: PropTypes.string,
   onClick: PropTypes.func.isRequired,
   style: PropTypes.object,
+  t: PropTypes.func.isRequired,
   title: PropTypes.node.isRequired,
   url: PropTypes.string,
 }

@@ -1,191 +1,149 @@
-import _memoize from 'lodash/memoize'
 import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useCallback, useMemo} from 'react'
 
 import {getEmailTemplates, inDepartement} from 'store/french'
 import {missionLocaleUrl} from 'store/job'
 
+import {Trans} from 'components/i18n'
 import {ExternalLink, GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-driving-license.svg'
 import missionLocaleImage from 'images/missions-locales-logo.png'
 
-import {AdviceSuggestionList, CardProps, CardWithContentProps, connectExpandedCardWithContent,
-  EmailTemplate, ExpandableAction, ToolCard} from './base'
+import {AdviceSuggestionList, CardProps, useAdviceData, EmailTemplate, ExpandableAction,
+  ToolCard} from './base'
 
 
-type ExpandedCardProps = CardWithContentProps<bayes.bob.OneEuroProgram>
-
-
-interface CardState {
-  schools?: readonly bayes.bob.DrivingSchool[]
+interface ExploreOnClickProps {
+  children: React.ReactNode
+  handleExplore: CardProps['handleExplore']
+  link?: string
+  style?: React.CSSProperties
+  visualElement: string
 }
 
 
-const emptyArray = [] as const
-
-
-class DrivingLicenseEuro extends React.PureComponent<ExpandedCardProps, CardState> {
-  public static propTypes = {
-    advice: PropTypes.shape({
-      adviceId: PropTypes.string.isRequired,
-    }).isRequired,
-    adviceData: PropTypes.shape({
-      missionLocale: PropTypes.shape({
-        agenciesListLink: PropTypes.string,
-      }),
-      partnerBanks: PropTypes.arrayOf(PropTypes.shape({
-        link: PropTypes.string.isRequired,
-        logo: PropTypes.string,
-        name: PropTypes.string.isRequired,
-      }).isRequired),
-      schoolListLink: PropTypes.string,
-      schools: PropTypes.arrayOf(PropTypes.shape({
-        address: PropTypes.string.isRequired,
-        link: PropTypes.string,
-        name: PropTypes.string.isRequired,
-      }).isRequired),
-    }),
-    handleExplore: PropTypes.func.isRequired,
-    profile: PropTypes.shape({
-      yearOfBirth: PropTypes.number,
-    }).isRequired,
-    project: PropTypes.shape({
-      city: PropTypes.shape({
-        departementName: PropTypes.string,
-        departementPrefix: PropTypes.string,
-      }),
-    }).isRequired,
-    t: PropTypes.func.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
-
-  public state: CardState = {}
-
-  public static getDerivedStateFromProps(
-    {adviceData: {schools = emptyArray} = {}}: ExpandedCardProps,
-    {schools: prevSchools}: CardState): CardState|null {
-    if (prevSchools === schools) {
-      return null
+const ExploreOnClickBase = (props: ExploreOnClickProps): React.ReactElement => {
+  const {children, handleExplore, link, visualElement, ...otherProps} = props
+  const onClick = useCallback((): void => {
+    if (!link) {
+      return
     }
-    return {schools}
-  }
-
-  private handleExploreSchool = _memoize((link: string): (() => void) => (): void => {
+    handleExplore(visualElement)()
     window.open(link, '_blank')
-    this.props.handleExplore('school')()
-  })
+  }, [handleExplore, link, visualElement])
+  return <div onClick={onClick} {...otherProps}>
+    {children}
+  </div>
+}
+const ExploreOnClick = React.memo(ExploreOnClickBase)
 
-  private handleExploreSchoolList = (): void => {
-    const {adviceData: {schoolListLink = ''} = {}, handleExplore} = this.props
-    handleExplore('more schools')()
-    window.open(schoolListLink, 'blank')
-  }
 
-  private renderAgeSpecificParagraph = (isMinor: boolean): React.ReactNode => {
-    const {userYou} = this.props
+const emptyArray = [] as const
+const emptyObject = {} as const
+
+
+const DrivingLicenseEuro = (props: CardProps): React.ReactElement => {
+  const {
+    advice: {adviceId},
+    handleExplore,
+    profile: {gender, yearOfBirth},
+    project: {city = emptyObject, city: {departementName = ''} = {}},
+    t,
+  } = props
+  const {missionLocale, partnerBanks, schoolListLink, schools = emptyArray} =
+    useAdviceData<bayes.bob.OneEuroProgram>(props)
+  const isMinor = (yearOfBirth && (new Date().getFullYear() - yearOfBirth) < 18) || false
+
+  const ageSpecificParagraph = useMemo((): React.ReactNode => {
     if (isMinor) {
-      return <span>
-        Comme {userYou('tu es', 'vous êtes')} mineur,
+      return <Trans parent="span" t={t}>
+        Comme vous êtes mineur·e,
         <ul>
-          <li>Soit ce sont {userYou('tes', 'vos')} parents qui empruntent
-            pour {userYou('toi', 'vous')}.
-          </li>
-          <li>Soit {userYou('tes', 'vos')} parents ne peuvent
-            pas {userYou("t'", 'vous ')}aider. Dans ce cas, des structures comme les
-            missions locales peuvent {userYou("t'", 'vous ')}accompagner. Ils
-            pourront {userYou("t'", 'vous ')}aider à obtenir une caution publique.
+          <li>Soit ce sont vos parents qui empruntent pour vous.</li>
+          <li>
+            Soit vos parents ne peuvent pas vous aider. Dans ce cas, des structures comme les
+            Missions Locales peuvent vous accompagner. Ils pourront vous aider à obtenir une caution
+            publique.
           </li>
         </ul>
-      </span>
+      </Trans>
     }
-    return <span>
-      Comme {userYou('tu es majeur, tu peux', 'vous êtes majeur, vous pouvez')} contacter
-      directement une des banques partenaires pour faire {userYou('ta', 'votre')} demande
-      de prêt. {userYou('Tu auras', 'Vous aurez')} ensuite besoin de prouver
-      que {userYou('tu pourras', 'vous pourrez')} rembourser le prêt.
-    </span>
-  }
+    return <Trans parent="span" t={t} tOptions={{context: gender}}>
+      Comme vous êtes majeur·e, vous pouvez contacter directement une des banques partenaires pour
+      faire votre demande de prêt. Vous aurez ensuite besoin de prouver que vous pourrez rembourser
+      le prêt.
+    </Trans>
+  }, [gender, isMinor, t])
 
-  private renderExplanation(style: React.CSSProperties, isMinor: boolean): React.ReactNode {
-    const {userYou} = this.props
-    return <div style={style}>
-      Grâce au dispositif "permis à 1€ par jour" mis en place par
-      l'État, {userYou('tu peux', 'vous pouvez')} demander un prêt d'une banque d'un montant de
-      600, 800, 1&nbsp;000 ou 1&nbsp;200&nbsp;€ pour financer {userYou('ton', 'votre')} permis de
-      conduire (en fonction des tarifs de l'auto-école). Les intérêts du prêt sont pris en charge
-      par l'État.<br /><br />
+  const explanation = useMemo((): React.ReactNode => {
+    return <div style={{marginBottom: 35}}>
+      <Trans t={t}>
+        Grâce au dispositif "permis à 1€ par jour" mis en place par
+        l'État, vous pouvez demander un prêt d'une banque d'un montant de 600, 800, 1&nbsp;000 ou
+        1&nbsp;200&nbsp;€ pour financer votre permis de conduire (en fonction des tarifs de
+        l'auto-école). Les intérêts du prêt sont pris en charge par l'État.<br /><br />
 
-      De {userYou('ton côté, tu dois', 'votre côté, vous devez')} rembourser 30&nbsp;€
-      par mois.
-      <br /><br />
-      {this.renderAgeSpecificParagraph(isMinor)}
+        De votre côté, vous devez rembourser 30&nbsp;€ par mois.
+      </Trans>
+      <br />
+      {ageSpecificParagraph}
     </div>
-  }
+  }, [ageSpecificParagraph, t])
 
-  private renderFindingSchool(key: string): React.ReactNode {
-    const {
-      adviceData: {schoolListLink, schools = []},
-      handleExplore,
-      project: {city},
-      userYou,
-    } = this.props
-
+  const findingSchool = useMemo((): React.ReactNode => {
     if (!schoolListLink && !schools.length) {
       return null
     }
-    const maybeS = schools.length > 1 ? 's' : ''
     const itemStyle = {
       alignItems: 'center',
       display: 'flex',
     }
-    const maybeMore = schools.length ? "Plus d'auto-écoles" :
-      'Accédez à la liste des auto-écoles'
-    const inDepartment =
-      city && inDepartement(city) || `dans ${userYou('ton', 'votre')} département`
-    return <ExpandableAction key={key}
-      contentName="la liste des auto-écoles"
-      title="Trouver une auto-école agréée pour le permis à 1&nbsp;€"
+    const inDepartment = city && inDepartement(city, t) || t('dans votre département')
+    return <ExpandableAction key="finding-school"
+      contentName={t('la liste des auto-écoles')}
+      title={t('Trouver une auto-école agréée pour le permis à 1\u00A0€')}
       onContentShown={handleExplore('schools')}>
       <div style={{marginBottom: 20}}>
-        Nous avons trouvé {schools.length ?
-          <span><GrowingNumber style={{fontWeight: 'bold'}}
-            number={schools.length} isSteady={true} /> auto-école{maybeS} agréée{maybeS}</span> :
-          <span>la liste des auto-écoles agréées</span>
-        } près de chez {userYou('toi', 'vous')}
+        {schools.length ? <Trans parent={null} t={t} count={schools.length}>
+          Nous avons trouvé <GrowingNumber style={{fontWeight: 'bold'}}
+            number={schools.length} isSteady={true} /> auto-école agréée près de chez vous
+        </Trans> : t('Nous avons trouvé la liste des auto-écoles agréées près de chez vous')}
         <AdviceSuggestionList style={{marginTop: 10}}>
           {[
-            ...schools.map(({address, link, name}, index): ReactStylableElement =>
-              <div
-                onClick={link && this.handleExploreSchool(link) || undefined}
-                style={itemStyle} key={`school-${index}`}>
-                <div style={{marginRight: 10, width: 200}}>
-                  {name}
-                </div>
-                <div>{address}</div>
-              </div>,
+            ...schools.map(
+              ({address, link, name}: bayes.bob.DrivingSchool, index: number):
+              ReactStylableElement =>
+                <ExploreOnClick
+                  handleExplore={handleExplore} link={link} visualElement="school"
+                  style={itemStyle} key={`school-${index}`}>
+                  <div style={{marginRight: 10, width: 200}}>
+                    {name}
+                  </div>
+                  <div>{address}</div>
+                </ExploreOnClick>,
             ),
-            schoolListLink ?
-              <div
-                key={key} style={itemStyle}
-                onClick={this.handleExploreSchoolList}>
-                {maybeMore} agréées pour le permis à 1&nbsp;€ {inDepartment}
-                <div style={{flex: 1}} />
-                <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, width: 20}} />
-              </div> : null,
+            schoolListLink ? <ExploreOnClick
+              key="finding-more-schools" style={itemStyle} handleExplore={handleExplore}
+              link={schoolListLink} visualElement="more schools">
+              {schools.length ?
+                t(
+                  "Plus d'auto-écoles agréées pour le permis à 1\u00A0€ {{inDepartment}}",
+                  {inDepartment}) :
+                <Trans parent={null} t={t}>
+                  Accédez à la liste des auto-écoles agréées pour le permis à
+                  1&nbsp;€ {{inDepartment}}
+                </Trans>}
+              <div style={{flex: 1}} />
+              <ChevronRightIcon style={{fill: colors.CHARCOAL_GREY, width: 20}} />
+            </ExploreOnClick> : null,
           ]}
         </AdviceSuggestionList>
       </div>
     </ExpandableAction>
-  }
+  }, [city, handleExplore, schoolListLink, schools, t])
 
-  private renderDocumentation(key: string, isMinor: boolean): React.ReactNode {
-    const {
-      adviceData: {missionLocale},
-      handleExplore,
-      project: {city: {departementName = ''} = {}},
-      userYou,
-    } = this.props
+  const documentation = useMemo((): React.ReactNode => {
     if (isMinor) {
       const comparatorStyle: React.CSSProperties = {
         color: colors.COOL_GREY,
@@ -195,30 +153,32 @@ class DrivingLicenseEuro extends React.PureComponent<ExpandedCardProps, CardStat
       }
       const missionLocaleLink = missionLocaleUrl(missionLocale, departementName)
       return <ExpandableAction
-        {...{key, userYou}}
+        key="documents"
         onContentShown={handleExplore('documentation-minor')}
-        title={`Expliquer le permis à 1\u00A0€ à ${userYou('tes', 'vos')} parents ou bien
-          contacter ${userYou('ta', 'votre')} Mission Locale`}>
+        title={t(
+          'Expliquer le permis à 1\u00A0€ à vos parents ou bien contacter votre Mission Locale',
+        )}>
         <div>
-          Si ce sont {userYou('tes', 'vos')} parents qui empruntent
-          pour {userYou('toi', 'vous')}, vous pouvez leur expliquer que :<br />
-          <ul>
-            <li>Le "permis à un euro par jour" a été mis en place par l'État, en partenariat avec
-              des banques et des écoles de conduite.
-            </li>
-            <li>Cela permet d'obtenir un prêt d'une banque d'un montant de 600, 800, 1&nbsp;000 ou
-              1&nbsp;200&nbsp;€ pour financer le permis. Les intérêts du prêt seront pris en charge
-              par l'État et vous devez rembourser 30&nbsp;€ par mois.
-            </li>
-          </ul>
-          <div>
-            Si {userYou('tes', 'vos')} parents ne peuvent
-            pas {userYou("t'", 'vous ')}aider,
-            {userYou(' tu peux', ' vous pouvez')} contacter
-            {userYou(' ta', ' votre')} Mission Locale qui pourra
-            peut-être {userYou("t'", 'vous ')}aider (attention ça n'est pas sur à 100%,
-            même si {userYou('tu remplis', 'vous remplissez')} tous les critères)
-          </div>
+          <Trans parent={null} t={t}>
+            Si ce sont vos parents qui empruntent pour vous, vous pouvez leur expliquer
+            que&nbsp;:<br />
+            <ul>
+              <li>
+                Le "permis à un euro par jour" a été mis en place par l'État, en partenariat avec
+                des banques et des écoles de conduite.
+              </li>
+              <li>
+                Cela permet d'obtenir un prêt d'une banque d'un montant de 600, 800, 1&nbsp;000 ou
+                1&nbsp;200&nbsp;€ pour financer le permis. Les intérêts du prêt seront pris en
+                charge par l'État et vous devez rembourser 30&nbsp;€ par mois.
+              </li>
+            </ul>
+          </Trans>
+          <Trans t={t}>
+            Si vos parents ne peuvent pas vous aider, vous pouvez contacter votre Mission Locale qui
+            pourra peut-être vous aider (attention ça n'est pas sur à 100%, même si vous remplissez
+            tous les critères)
+          </Trans>
           <ToolCard
             imageSrc={missionLocaleImage}
             hasBorder={true}
@@ -227,60 +187,52 @@ class DrivingLicenseEuro extends React.PureComponent<ExpandedCardProps, CardStat
             style={{margin: '35px 0'}}>
             Mission Locale
             <div style={{fontSize: 13, fontWeight: 'normal'}}>
-              obtenir une caution publique
+              {t('obtenir une caution publique')}
             </div>
-            <div style={comparatorStyle}>Association pour l'insertion des jeunes</div>
+            <div style={comparatorStyle}>{t("Association pour l'insertion des jeunes")}</div>
           </ToolCard>
         </div>
       </ExpandableAction>
     }
-    const youCanRefundYour =
-      userYou('tu pourras rembourser ton', 'vous pourrez rembourser votre')
-
     return <ExpandableAction
-      {...{key, userYou}} onContentShown={handleExplore('documentation')}
-      contentName="les options possibles"
-      title={`Réunir les documents pour montrer que ${youCanRefundYour} prêt`}>
-      <div>
-        3 options pour montrer que {userYou('tu peux', 'vous pouvez')} rembourser le
-        prêt&nbsp;:<br />
+      key="documents" onContentShown={handleExplore('documentation')}
+      contentName={t('les options possibles')}
+      title={t('Réunir les documents pour montrer que vous pourrez rembourser votre prêt')}>
+      <Trans t={t}>
+        3 options pour montrer que vous pouvez rembourser le prêt&nbsp;:<br />
         <ul>
           <li>
-            un justificatif de revenus qui montre
-            que {userYou('tu pourras', 'vous pourrez')} rembourser les
-            30&nbsp;€&nbsp;/&nbsp;mois
+            un justificatif de revenus qui montre que vous pourrez rembourser
+            les 30&nbsp;€&nbsp;/&nbsp;mois
           </li>
           <li>
             <strong>ou</strong> une personne caution, c'est-à-dire quelqu'un qui s'engage à
-            rembourser {userYou("ton prêt si tu n'y arrives ", "votre prêt si vous n'y arrivez ")}
-            pas
+            rembourser votre prêt si vous n'y arrivez pas
           </li>
           <li>
-            <strong>ou</strong> un co-emprunteur, une autre personne emprunte
-            avec {userYou('toi pour augmenter tes', 'vous pour augmenter vos')} chances
-            d'avoir une réponse positive de la banque.
+            <strong>ou</strong> un co-emprunteur, une autre personne emprunte avec vous pour
+            augmenter vos chances d'avoir une réponse positive de la banque.
           </li>
         </ul>
-      </div>
+      </Trans>
     </ExpandableAction>
-  }
+  }, [departementName, handleExplore, isMinor, missionLocale, t])
 
-  private renderFindABank(key: string): React.ReactNode {
-    const {adviceData: {partnerBanks}, handleExplore, userYou} = this.props
+  const findABank = useMemo((): React.ReactNode => {
     if (!partnerBanks || !partnerBanks.length) {
       return null
     }
     return <ExpandableAction
-      {...{key, userYou}} onContentShown={handleExplore('banks list')}
-      contentName="la liste des banques"
-      title={`Trouver un partenaire financier pour
-        faire ${userYou('ta', 'votre')} demande de prêt`}>
+      key="find-a-bank" onContentShown={handleExplore('banks list')}
+      contentName={t('la liste des banques')}
+      title={t('Trouver un partenaire financier pour faire votre demande de prêt')}>
       <div style={{marginBottom: 20}}>
-        Nous {userYou("t'", 'vous ')}avons réuni une liste de partenaires qui
-        peuvent {userYou("t'", 'vous ')}aider à
-        financer {userYou('ton', 'votre')} permis à 1&nbsp;€.<br />
-        {userYou('Tu peux aussi contacter ta ', 'Vous pouvez aussi contacter votre ')}
-        banque pour savoir si elle propose des prêts permis à 1&nbsp;€.
+        <Trans parent={null} t={t}>
+          Nous vous avons réuni une liste de partenaires qui peuvent vous aider à financer votre
+          permis à 1&nbsp;€.<br />
+          Vous pouvez aussi contacter votre banque pour savoir si elle propose des prêts permis à
+          1&nbsp;€.
+        </Trans>
         <div style={{
           alignItems: 'center',
           display: 'flex',
@@ -296,47 +248,56 @@ class DrivingLicenseEuro extends React.PureComponent<ExpandedCardProps, CardStat
         </div>
       </div>
     </ExpandableAction>
+  }, [partnerBanks, handleExplore, t])
+
+  const emails = (getEmailTemplates(t)[adviceId] || []).
+    map((template, index): React.ReactNode =>
+      <EmailTemplate
+        {...template} key={`email-${index}`}
+        onContentShown={handleExplore('email')} />,
+    )
+  const actions = [
+    findingSchool,
+    ...emails,
+    documentation,
+    findABank,
+  ]
+
+  const detailsLinkStyle: React.CSSProperties = {
+    color: colors.COOL_GREY,
+    fontSize: '.9em',
+    fontStyle: 'italic',
   }
 
-  public render(): React.ReactNode {
-    const {advice: {adviceId}, handleExplore, profile: {yearOfBirth}, t} = this.props
-
-    const isMinor = (yearOfBirth && (new Date().getFullYear() - yearOfBirth) < 18) || false
-
-    const emails = (getEmailTemplates(t)[adviceId] || []).
-      map((template, index): React.ReactNode =>
-        <EmailTemplate
-          {...template} key={`email-${index}`}
-          onContentShown={handleExplore('email')} />,
-      )
-    const actions = [
-      this.renderFindingSchool('finding-school'),
-      ...emails,
-      this.renderDocumentation('documents', isMinor),
-      this.renderFindABank('find-a-bank'),
-    ]
-
-    const detailsLinkStyle: React.CSSProperties = {
-      color: colors.COOL_GREY,
-      fontSize: '.9em',
-      fontStyle: 'italic',
-    }
-
-    return <div style={{fontSize: 16}}>
-      {this.renderExplanation({marginBottom: 35}, isMinor)}
-      {actions}
-      <div style={{marginTop: 35}}>
-        <ExternalLink
-          style={detailsLinkStyle}
-          href="http://www.securite-routiere.gouv.fr/permis-de-conduire/passer-son-permis/le-permis-a-1-euro-par-jour/informations">
-          Plus d'infos sur le permis à 1&nbsp;€ par jour
-        </ExternalLink>
-      </div>
+  return <div style={{fontSize: 16}}>
+    {explanation}
+    {actions}
+    <div style={{marginTop: 35}}>
+      <ExternalLink
+        style={detailsLinkStyle}
+        href="http://www.securite-routiere.gouv.fr/permis-de-conduire/passer-son-permis/le-permis-a-1-euro-par-jour/informations">
+        {t("Plus d'infos sur le permis à 1\u00A0€ par jour")}
+      </ExternalLink>
     </div>
-  }
+  </div>
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.OneEuroProgram, CardProps>(DrivingLicenseEuro)
+DrivingLicenseEuro.propTypes = {
+  advice: PropTypes.shape({
+    adviceId: PropTypes.string.isRequired,
+  }).isRequired,
+  handleExplore: PropTypes.func.isRequired,
+  profile: PropTypes.shape({
+    yearOfBirth: PropTypes.number,
+  }).isRequired,
+  project: PropTypes.shape({
+    city: PropTypes.shape({
+      departementName: PropTypes.string,
+      departementPrefix: PropTypes.string,
+    }),
+  }).isRequired,
+  t: PropTypes.func.isRequired,
+}
+const ExpandedAdviceCardContent = React.memo(DrivingLicenseEuro)
 
 
 export default {ExpandedAdviceCardContent, Picto}

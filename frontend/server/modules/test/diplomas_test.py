@@ -1,7 +1,6 @@
 """ Tests for the diplomas module."""
 
 from bob_emploi.frontend.api import job_pb2
-from bob_emploi.frontend.server import scoring
 from bob_emploi.frontend.server.test import scoring_test
 
 
@@ -15,19 +14,19 @@ class MissingDiplomaScoringModelTestCase(scoring_test.ScoringModelTestBase):
 
         persona = self._random_persona().clone()
         persona.project.ClearField('target_job')
-        with self.assertRaises(scoring.NotEnoughDataException) as err:
-            self._score_persona(persona)
-        self.assertIn('projects.0.targetJob.jobGroup.romeId', err.exception.fields)
+        self._assert_missing_fields_to_score_persona(
+            {'projects.0.targetJob.jobGroup.romeId'}, persona)
 
     def test_unknown_requirement(self) -> None:
         """User is in a job group with unknown required diploma."""
 
         self.database.job_group_info.delete_one({'_id': 'A1234'})
         persona = self._random_persona().clone()
+        if persona.user_profile.highest_degree == job_pb2.DEA_DESS_MASTER_PHD:
+            persona.user_profile.highest_degree = job_pb2.LICENCE_MAITRISE
         persona.project.target_job.job_group.rome_id = 'A1234'
-        with self.assertRaises(scoring.NotEnoughDataException) as err:
-            self._score_persona(persona)
-        self.assertIn('data.job_group_info.requirements.diplomas', err.exception.fields)
+        self._assert_missing_fields_to_score_persona(
+            {'data.job_group_info.A1234.requirements.diplomas'}, persona)
 
     def test_database_requirement(self) -> None:
         """User is in a job-group with no degree needed according to database."""
@@ -40,24 +39,32 @@ class MissingDiplomaScoringModelTestCase(scoring_test.ScoringModelTestBase):
         persona.project.target_job.job_group.rome_id = 'A1234'
         self.assertEqual(0, self._score_persona(persona))
 
-    def test_hardcoded_requirement(self) -> None:
-        """User is in a job-group with a needed master according to hard-coded values."""
+    def test_user_with_master(self) -> None:
+        """User with a master should not need more diplomas."""
 
-        self.database.job_group_info.delete_one({'_id': 'L120301'})
         persona = self._random_persona().clone()
         persona.user_profile.highest_degree = job_pb2.DEA_DESS_MASTER_PHD
-        persona.project.target_job.job_group.rome_id = 'L120301'
+        persona.project.target_job.job_group.rome_id = 'A1234'
+        self.assertEqual(0, self._score_persona(persona))
+
+    def test_hardcoded_requirement(self) -> None:
+        """User is in a job-group with a needed CAP according to hard-coded values."""
+
+        self.database.job_group_info.delete_one({'_id': 'N4104'})
+        persona = self._random_persona().clone()
+        persona.user_profile.highest_degree = job_pb2.CAP_BEP
+        persona.project.target_job.job_group.rome_id = 'N4104'
         self.assertEqual(0, self._score_persona(persona))
 
     def test_database_prevail_on_harcoded(self) -> None:
         """User is in a job-group with both a database and hard-coded requirement."""
 
         self.database.job_group_info.insert_one({
-            '_id': 'L120301',
+            '_id': 'N4104',
             'requirements': {'diplomas': [{'diploma': {'level': 'NO_DEGREE'}}]},
         })
         persona = self._random_persona().clone()
-        persona.project.target_job.job_group.rome_id = 'L120301'
+        persona.project.target_job.job_group.rome_id = 'N4104'
         self.assertEqual(0, self._score_persona(persona))
 
     def test_requirement_not_met(self) -> None:

@@ -4,7 +4,7 @@ import React, {useCallback, useMemo, useState} from 'react'
 import {connect} from 'react-redux'
 import {Link} from 'react-router-dom'
 
-import {FastForward} from 'components/fast_forward'
+import {useFastForward} from 'components/fast_forward'
 
 import 'styles/fonts/Fredoka/font.css'
 import 'styles/fonts/OpenSans/font.css'
@@ -252,6 +252,7 @@ const HubPageBase: React.FC<HubPageConnectedProps> =
     }
     return nextUrl
   }, [isNextButtonShown, nextUrl])
+  useFastForward(undefined, [], redirectTo)
 
   const bottomButton = useMemo((): React.ReactNode => {
     if (!isNextButtonShown) {
@@ -261,7 +262,6 @@ const HubPageBase: React.FC<HubPageConnectedProps> =
   }, [isNextButtonShown, nextUrl])
 
   return <GenericPage hasLogo={true} bottomButton={bottomButton}>
-    <FastForward to={redirectTo} />
     <div style={titleStyle}>
       <h1 style={pageHeadStyle}>Ma situation</h1>
       <div>Les sujets principaux pour moi sont…</div>

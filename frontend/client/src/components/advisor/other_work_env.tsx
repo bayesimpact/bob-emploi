@@ -1,14 +1,15 @@
-import React from 'react'
+import {TFunction} from 'i18next'
+import React, {useCallback} from 'react'
 import PropTypes from 'prop-types'
 
-import {YouChooser} from 'store/french'
+import {LocalizableString, prepareT} from 'store/i18n'
 
+import {Trans} from 'components/i18n'
 import {RadiumDiv} from 'components/radium'
 import {GrowingNumber} from 'components/theme'
 import Picto from 'images/advices/picto-other-work-env.svg'
 
-import {CardWithContentProps, CardProps, MethodSuggestionList,
-  connectExpandedCardWithContent} from './base'
+import {CardProps, MethodSuggestionList, useAdviceData} from './base'
 
 
 const emptyArray = [] as const
@@ -17,56 +18,43 @@ const emptyArray = [] as const
 const isNonEmptyString = (a: string|undefined): a is string => !!a
 
 
-class OtherWorkEnvMethod
-  extends React.PureComponent<CardWithContentProps<bayes.bob.OtherWorkEnvAdviceData>> {
-  public static propTypes = {
-    adviceData: PropTypes.shape({
-      workEnvironmentKeywords: PropTypes.shape({
-        domains: PropTypes.arrayOf(PropTypes.shape({
-          name: PropTypes.string,
-        }).isRequired),
-        sectors: PropTypes.arrayOf(PropTypes.string.isRequired),
-        structures: PropTypes.arrayOf(PropTypes.string.isRequired),
-      }),
-    }).isRequired,
-    handleExplore: PropTypes.func.isRequired,
-    project: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
+const OtherWorkEnvMethod = (props: CardProps): React.ReactElement => {
+  const {workEnvironmentKeywords: {
+    domains = emptyArray, sectors = emptyArray, structures = emptyArray} = {},
+  } = useAdviceData<bayes.bob.OtherWorkEnvAdviceData>(props)
+  const {
+    handleExplore,
+    project,
+    t,
+  } = props
+  const areSectorsShown = sectors.length > 1
+  const areStructuresShown = structures.length > 1
+  const style: React.CSSProperties = {
+    position: 'relative',
   }
-
-  public render(): React.ReactNode {
-    const {
-      adviceData: {workEnvironmentKeywords: {
-        domains = emptyArray, sectors = emptyArray, structures = emptyArray} = {}},
-      handleExplore,
-      project,
-      userYou,
-    } = this.props
-    const areSectorsShown = sectors.length > 1
-    const areStructuresShown = structures.length > 1
-    const style: React.CSSProperties = {
-      position: 'relative',
-    }
-    return <div>
-      <div style={style}>
-        {(domains.length > 1) ?
-          <Section
-            kind="secteurs"
-            items={domains.map(({name}): string|undefined => name).filter(isNonEmptyString)}
-            {...{project, userYou}} onExplore={handleExplore('domain')} /> :
-          <Section
-            kind="secteurs" items={sectors} {...{project, userYou}}
-            onExplore={handleExplore('sector')} />}
-        {(areSectorsShown && areStructuresShown) ? <div style={{height: 20, width: 35}} /> : null}
+  return <div>
+    <div style={style}>
+      {(domains.length > 1) ?
         <Section
-          kind="types de structure" items={structures} {...{project, userYou}}
-          onExplore={handleExplore('structure')} />
-      </div>
+          kind={prepareT('secteurs')}
+          items={domains.map(({name}): string|undefined => name).filter(isNonEmptyString)}
+          {...{project, t}} onExplore={handleExplore('domain')} /> :
+        <Section
+          kind={prepareT('secteurs')} items={sectors} {...{project, t}}
+          onExplore={handleExplore('sector')} />}
+      {(areSectorsShown && areStructuresShown) ? <div style={{height: 20, width: 35}} /> : null}
+      <Section
+        kind={prepareT('types de structure')} items={structures} {...{project, t}}
+        onExplore={handleExplore('structure')} />
     </div>
-  }
+  </div>
 }
-const ExpandedAdviceCardContent =
-  connectExpandedCardWithContent<bayes.bob.OtherWorkEnvAdviceData, CardProps>(OtherWorkEnvMethod)
+OtherWorkEnvMethod.propTypes = {
+  handleExplore: PropTypes.func.isRequired,
+  project: PropTypes.object.isRequired,
+  t: PropTypes.func.isRequired,
+}
+const ExpandedAdviceCardContent = React.memo(OtherWorkEnvMethod)
 
 
 interface SearchableElementProps {
@@ -77,64 +65,61 @@ interface SearchableElementProps {
 }
 
 
-class SearchableElement extends React.PureComponent<SearchableElementProps> {
-  public static propTypes = {
-    onClick: PropTypes.func,
-    project: PropTypes.object.isRequired,
-    style: PropTypes.object,
-    title: PropTypes.string.isRequired,
-  }
+const SearchableElementBase = (props: SearchableElementProps): React.ReactElement => {
+  const {onClick, project, title, style} = props
 
-  private handleClick = (): void => {
-    const {onClick, project, title} = this.props
+  const handleClick = useCallback((): void => {
     const url = `https://www.google.fr/search?q=${encodeURIComponent(title + ' ' + project.title)}`
     window.open(url, '_blank')
     onClick && onClick()
-  }
+  }, [onClick, project, title])
 
-  public render(): React.ReactNode {
-    const {title, style} = this.props
-    return <RadiumDiv style={style} onClick={this.handleClick}>
-      {title}
-    </RadiumDiv>
-  }
+  return <RadiumDiv style={style} onClick={handleClick}>
+    {title}
+  </RadiumDiv>
 }
+SearchableElementBase.propTypes = {
+  onClick: PropTypes.func,
+  project: PropTypes.object.isRequired,
+  style: PropTypes.object,
+  title: PropTypes.string.isRequired,
+}
+const SearchableElement = React.memo(SearchableElementBase)
 
 
 interface SectionProps {
   items: readonly string[]
-  kind: 'secteurs' | 'types de structure'
+  kind: LocalizableString<'secteurs' | 'types de structure'>
   onExplore: () => void
   project: bayes.bob.Project
-  userYou: YouChooser
+  t: TFunction
 }
 
 
-class Section extends React.PureComponent<SectionProps> {
-  public static propTypes = {
-    items: PropTypes.arrayOf(PropTypes.node.isRequired),
-    kind: PropTypes.oneOf(['secteurs', 'types de structure']).isRequired,
-    onExplore: PropTypes.func.isRequired,
-    project: PropTypes.object.isRequired,
-    userYou: PropTypes.func.isRequired,
-  }
+const SectionBase = (props: SectionProps): React.ReactElement|null => {
 
-  public render(): React.ReactNode {
-    const {items, kind, onExplore, project, userYou, ...extraProps} = this.props
-    if (!items || items.length < 2) {
-      return null
-    }
-    const title = <React.Fragment>
-      <GrowingNumber number={items.length} /> {kind} qui recrutent
-      dans {userYou('ton', 'votre')} métier
-    </React.Fragment>
-    return <MethodSuggestionList {...extraProps} title={title}>
-      {items.map((title, index): ReactStylableElement => <SearchableElement
-        title={title} project={project} key={`job-board-${index}`}
-        onClick={onExplore} />)}
-    </MethodSuggestionList>
+  const {items, kind, onExplore, project, t, t: translate, ...extraProps} = props
+  if (!items || items.length < 2) {
+    return null
   }
+  const title = <Trans parent={null} t={t}>
+    <GrowingNumber number={items.length} /> {{kind: translate(kind)}} qui recrutent
+    dans votre métier
+  </Trans>
+  return <MethodSuggestionList {...extraProps} title={title}>
+    {items.map((title, index): ReactStylableElement => <SearchableElement
+      title={title} project={project} key={`job-board-${index}`}
+      onClick={onExplore} />)}
+  </MethodSuggestionList>
 }
+SectionBase.propTypes = {
+  items: PropTypes.arrayOf(PropTypes.node.isRequired),
+  kind: PropTypes.oneOf(['secteurs', 'types de structure']).isRequired,
+  onExplore: PropTypes.func.isRequired,
+  project: PropTypes.object.isRequired,
+  t: PropTypes.func.isRequired,
+}
+const Section = React.memo(SectionBase)
 
 
 export default {ExpandedAdviceCardContent, Picto}

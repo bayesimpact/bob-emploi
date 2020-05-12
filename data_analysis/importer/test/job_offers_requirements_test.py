@@ -59,7 +59,7 @@ class JobOffersRequirementsImporterTestCase(unittest.TestCase):
         self.assertEqual(11, f1106.office_skills[0].percent_suggested)
         self.assertEqual(
             [job_pb2.CAR],
-            [l.driving_license for l in f1106.driving_licenses])
+            [license.driving_license for license in f1106.driving_licenses])
         self.assertEqual(11, f1106.driving_licenses[0].percent_suggested)
         self.assertEqual(100, f1106.driving_licenses[0].percent_required)
 

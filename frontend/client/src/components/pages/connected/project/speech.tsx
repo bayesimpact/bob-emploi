@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types'
 import React, {useMemo} from 'react'
 
-import {FastForward} from 'components/fast_forward'
+import {useFastForward} from 'components/fast_forward'
 import {isMobileVersion} from 'components/mobile'
 import {Modal, ModalConfig} from 'components/modal'
-import {ShortKey} from 'components/shortkey'
+import {useKeyListener} from 'components/shortkey'
 import {Button, Markdown} from 'components/theme'
 import bobHeadImage from 'images/bob-head.svg'
 
@@ -146,10 +146,10 @@ const imageStyle: React.CSSProperties = {
 
 const BobModalBase = (props: ModalProps): React.ReactElement => {
   const {buttonText, children, onClose, onConfirm, isShown} = props
+  useKeyListener('Escape', onClose, undefined, 'keydown')
+  useFastForward(onConfirm)
   // TODO(cyrille): Consider making a new button type of this.
   return <Modal isShown={isShown} style={modalStyle}>
-    <ShortKey keyCode="Escape" onKeyDown={onClose} />
-    {onConfirm ? <FastForward onForward={onConfirm} /> : null}
     <div style={headerStyle}>
       <img src={bobHeadImage} alt={config.productName} style={imageStyle} />
       {config.productName}
@@ -178,4 +178,4 @@ BobModalBase.propTypes = {
 const BobModal = React.memo(BobModalBase)
 
 
-export {BobModal, BobTalk}
+export {BobModal}

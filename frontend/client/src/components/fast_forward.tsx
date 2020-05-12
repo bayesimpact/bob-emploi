@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types'
-import React from 'react'
-import {Redirect} from 'react-router-dom'
+import React, {useCallback, useEffect} from 'react'
+import {useHistory} from 'react-router-dom'
 
 import {isMobileVersion} from 'components/mobile'
-import {ShortKey} from 'components/shortkey'
+import {useKeyListener} from 'components/shortkey'
 
 
 const maxDurationBetweenClickInARowMillisec = 500
@@ -122,6 +122,45 @@ class MobileFastForwardListener {
 }
 
 
+/*
+ * A Fast-forward hook: execute an imperative action on ctrl + shift + F.
+ * On mobile, it uses the MobileFastForwardListener.
+ *
+ * Parameters:
+ *  - onForward: a callback function to call when the a fast-forward is required.
+ *  - dependencies: a list of dependencies to update the memoized version of `onForward`.
+ *      If this list is not empty, this assumes that all dependencies for `onForward` are listed.
+ *  - to: a route (as a string) to go to when a fast-forward is required.
+ *      WARNING: switching dynamically from `onForward` to `to` is not very well handled yet.
+ */
+// TODO(cyrille): Use wherever the component is used, and move to store.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const useFastForward = (onForward?: () => void, dependencies: readonly any[] = [], to?: string):
+void => {
+  const history = useHistory()
+  const handleForward = useCallback((): void => {
+    onForward?.()
+    to && history.push(to)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...dependencies, history, to, dependencies.length || onForward])
+  useKeyListener('KeyF', handleForward, {ctrl: true, shift: true})
+  useEffect((): void|(() => void) => {
+    if (isMobileVersion) {
+      return
+    }
+    if (!mobileListener) {
+      mobileListener = new MobileFastForwardListener()
+    }
+    mobileListener.add(handleForward)
+    return (): void => {
+      if (mobileListener) {
+        mobileListener.remove(handleForward)
+      }
+    }
+  }, [handleForward])
+}
+
+
 interface LinkFastForwardProps {
   onForward?: () => void
   to: string
@@ -134,55 +173,17 @@ interface ActionFastForwardProps {
 
 type FastForwardProps = LinkFastForwardProps | ActionFastForwardProps
 
-class FastForward extends React.PureComponent<FastForwardProps, {forwarded: boolean}> {
-  // TODO(cyrille): Fix this when both are set.
-  public static propTypes = {
-    onForward: PropTypes.func,
-    to: PropTypes.string,
-  }
 
-  public state = {
-    forwarded: false,
-  }
-
-  public componentDidMount(): void {
-    if (!isMobileVersion) {
-      return
-    }
-    if (!mobileListener) {
-      mobileListener = new MobileFastForwardListener()
-    }
-    this.handler = (): void => this.props.onForward?.()
-    mobileListener.add(this.handler)
-  }
-
-  public componentWillUnmount(): void {
-    if (!isMobileVersion) {
-      return
-    }
-    if (mobileListener && this.handler) {
-      mobileListener.remove(this.handler)
-    }
-  }
-
-  private handler?: () => void
-
-  private onForward = (): void => {
-    this.props.onForward?.()
-    this.setState({forwarded: true})
-  }
-
-  public render(): React.ReactNode {
-    const {to} = this.props
-    // TODO(cyrille): Change to functional component, and use useHistory hook from react-router.
-    if (this.state.forwarded && typeof to !== 'undefined') {
-      return <Redirect to={to} push={true} />
-    }
-    return <ShortKey
-      keyCode="KeyF" hasCtrlModifier={true} hasShiftModifier={true}
-      onKeyUp={this.onForward} />
-  }
+const FastForwardBase = (props: FastForwardProps): null => {
+  const {onForward, to} = props
+  useFastForward(onForward, [], to)
+  return null
 }
+FastForwardBase.propTypes = {
+  onForward: PropTypes.func,
+  to: PropTypes.string,
+}
+const FastForward = React.memo(FastForwardBase)
 
 
-export {FastForward}
+export {FastForward, useFastForward}

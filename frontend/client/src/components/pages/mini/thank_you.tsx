@@ -1,8 +1,8 @@
-import {FastForward} from 'components/fast_forward'
 import PropTypes from 'prop-types'
 import React, {useEffect, useCallback, useMemo} from 'react'
 import {connect} from 'react-redux'
 
+import {useFastForward} from 'components/fast_forward'
 import likeImage from 'images/mini/like.svg'
 
 import {GenericPage} from './page'
@@ -65,9 +65,9 @@ const ThankYouPageBase: React.FC<ThankYouProps> = (props: ThankYouProps): React.
 
   const redirectTo = isUserSupervised ? Routes.HUB_PAGE : Routes.USER_LANDING_PAGE
 
+  useFastForward(undefined, [], Routes.BILAN_PAGE)
   return <GenericPage
     hasLogo={true} bottomButton={bottomButton} style={pageStyle} footerSize={216}>
-    <FastForward to={Routes.BILAN_PAGE} />
     <Button to={redirectTo} type="back" style={restartButtonstyle} onClick={handleRestart}>
       Recommencer
     </Button>

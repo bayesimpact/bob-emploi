@@ -168,7 +168,7 @@ const getInterests = (
 
 
 // TODO(cyrille): Choose which location to show if several.
-const getLocationProps = (areaType?: bayes.bob.AreaType, city?: bayes.bob.FrenchCity):
+const getLocationProps = (t: TFunction, areaType?: bayes.bob.AreaType, city?: bayes.bob.FrenchCity):
 LocationProps|null => {
   if (!city) {
     return null
@@ -183,7 +183,7 @@ LocationProps|null => {
   }
   if (areaType === 'CITY') {
     const {departementId = '', name: cityName = ''} = city
-    const {cityName: name, prefix} = inCityPrefix(cityName)
+    const {cityName: name, prefix} = inCityPrefix(cityName, t)
     return {...{departementId, name, prefix}}
   }
   return null
@@ -239,7 +239,7 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
     moreInfos.push(<React.Fragment key="domain">{domain}</React.Fragment>)
   }
   if (cityId) {
-    const locationProps = getLocationProps(areaType, city)
+    const locationProps = getLocationProps(t, areaType, city)
     if (locationProps) {
       moreInfos.push(<Location {...locationProps} />)
     }
@@ -261,12 +261,13 @@ const SalonBase: React.FC<SalonProps> = (props: SalonProps): React.ReactElement|
     onContentShown={handleExplore('salon info')}>
     <div>
       <Interests {...{interests, t}} />
-      <div>
-        Candidatures du {getDateString(startDate)} au {getDateString(endDate)}
+      <Trans t={t}>
+        Candidatures du {{startDate: getDateString(startDate, t)}} au
+        {' '}{{endDate: getDateString(endDate, t)}}
         {moreInfos.length ? <React.Fragment><br />
           <StringJoiner separator=" - " lastSeparator=" - ">{moreInfos}</StringJoiner>
         </React.Fragment> : null}
-      </div>
+      </Trans>
       <div style={{display: 'flex', fontWeight: 'bold', margin: '12px 0'}}>
         <NewWindowLink href={url} isStandardStyle={true} onClick={handleExplore('salon')}>
           {t('En savoir plus sur le salon')}

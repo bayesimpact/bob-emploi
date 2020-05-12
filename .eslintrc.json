@@ -8,7 +8,10 @@
   ],
   "overrides": [{
     "files": ["*.ts", "*.tsx"],
-    "extends": ["plugin:@typescript-eslint/recommended"],
+    "extends": [
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
     "rules": {
         "@typescript-eslint/ban-ts-ignore": 0,
         "@typescript-eslint/indent": ["error", 2, {"SwitchCase": 1}],
@@ -17,11 +20,7 @@
             "argsIgnorePattern": "^unused[A-Z]",
             "varsIgnorePattern": "^omitted[A-Z]"
         }],
-        "@typescript-eslint/no-var-requires": 0,
-        // Rules already defined in @typescript-eslint.
-        "indent": 0,
-        "no-unused-vars": 0,
-        "no-use-before-define": 0
+        "@typescript-eslint/no-var-requires": 0
     }
   }],
   "parser": "@typescript-eslint/parser",
@@ -138,7 +137,7 @@
         ]
     }],
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "error",
+    "react-hooks/exhaustive-deps": ["error", {"additionalHooks": "useFastForward"}],
     // TODO(cyrille): Consider adding the analogue for objects.
     "react-perf/jsx-no-new-array-as-prop": "error",
     "react-perf/jsx-no-new-function-as-prop": "error",
@@ -158,12 +157,22 @@
     // TODO(cyrille): Put back consistent-function-scoping once
     // https://github.com/sindresorhus/eslint-plugin-unicorn/issues/374 is resolved.
     "unicorn/consistent-function-scoping": 0,
+    // TODO(pascal): Consider reenabling.
+    "unicorn/no-fn-reference-in-iterator": 0,
+    // TODO(pascal): Consider dropping null.
+    "unicorn/no-null": 0,
+    "unicorn/string-content": ["error", {"patterns": {
+        "’": "'",
+        "Pôle Emploi": "Pôle emploi"
+    }}],
     "unicorn/filename-case": ["error", {"case": "snakeCase"}],
     "unicorn/no-nested-ternary": 0,
     "unicorn/prefer-add-event-listener": 0,
     "unicorn/prefer-node-append": 0,
     "unicorn/prefer-node-remove": 0,
     "unicorn/prefer-query-selector": 0,
-    "unicorn/prevent-abbreviations": 0
+    "unicorn/prevent-abbreviations": 0,
+    // Lodash throttle has a useful cancel option, we'd rather use it than the default implementation.
+    "you-dont-need-lodash-underscore/throttle": 0
   }
 }

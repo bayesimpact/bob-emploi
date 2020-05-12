@@ -13,6 +13,7 @@ interface AppState {
   authToken?: string
   defaultProjectProps?: {}
   demo?: keyof bayes.bob.Features
+  diagnosticCategories?: {[key: string]: readonly bayes.bob.DiagnosticCategory[]}
   hasLoadedApp?: boolean
   hasSeenComment?: {
     [commentKey: string]: true
@@ -32,7 +33,6 @@ interface AppState {
       resetToken?: string
     }
   }
-  newProjectProps?: {}
   quickDiagnostic?: {
     after: {
       [field in bayes.bob.ProjectOrProfileField]?: ValidDiagnosticComment
@@ -44,7 +44,6 @@ interface AppState {
   specificJobs?: {
     [romeId: string]: bayes.bob.JobGroup
   }
-  submetricsExpansion?: {}
   userHasAcceptedCookiesUsage?: boolean
 }
 

@@ -1,71 +1,79 @@
-import React from 'react'
+import {TOptions} from 'i18next'
+import React, {useMemo} from 'react'
 
-import {YouChooser} from 'store/french'
+import {LocalizableString, prepareT} from 'store/i18n'
 
+import {Trans} from 'components/i18n'
 import Picto from 'images/advices/picto-long-term-mom.svg'
 
 import {CardProps, MethodSuggestionList, Skill} from './base'
 
 
 interface MomSkill {
-  readonly assets: bayes.bob.SkillAsset[]
-  readonly description: (userYou: YouChooser) => string
-  readonly name: string
+  readonly assets: readonly bayes.bob.SkillAsset[]
+  readonly description: LocalizableString
+  readonly name: LocalizableString
 }
 
 
-const momSkills: MomSkill[] = [
+const momSkills: readonly MomSkill[] = [
   {
     assets: ['TIME_TO_MARKET', 'BREADTH_OF_JOBS'],
-    description: (userYou): string =>
-      `Organisée, ${userYou('tu sais', 'vous savez')} gérer des agendas complexes.`,
-    name: 'Organisation',
+    description: prepareT('Organisé·e, vous savez gérer des agendas complexes.'),
+    name: prepareT('Organisation'),
   },
   {
     assets: ['JOB_SATISFACTION'],
-    description: (userYou): string =>
-      `Empathique, ${userYou('tu sais adapter ton', 'vous savez adapter votre')} argumentation en
-      fonction des situations et faire preuve de tact.`,
-    name: 'Empathie',
+    description: prepareT(
+      'Empathique, vous savez adapter votre argumentation en fonction des situations et faire ' +
+      'preuve de tact.',
+    ),
+    name: prepareT('Empathie'),
   },
   {
     assets: ['BETTER_INCOME', 'JOB_SATISFACTION'],
-    description: (userYou): string =>
-      `Diplomate, ${userYou('tu sais', 'vous savez')} résoudre des conflits et faire preuve de bon
-      sens dans des situations nouvelles.`,
-    name: 'Diplomatie',
+    description: prepareT(
+      'Diplomate, vous savez résoudre des conflits et faire preuve de bon sens dans des ' +
+      'situations nouvelles.',
+    ),
+    name: prepareT('Diplomatie'),
   },
   {
     assets: ['TIME_TO_MARKET', 'BREADTH_OF_JOBS'],
-    description: (userYou): string =>
-      `Flexible, ${userYou('tu sais', 'vous savez')} gérer des imprévus
-      et ${userYou("tu sauras t'", 'vous saurez vous ')}adapter à l'esprit d'une nouvelle
-      entreprise.`,
-    name: 'Flexibilité',
+    description: prepareT(
+      "Flexible, vous savez gérer des imprévus et vous saurez vous adapter à l'esprit d'une " +
+      'nouvelle entreprise.',
+    ),
+    name: prepareT('Flexibilité'),
   },
-]
+] as const
 
 
-const ExpandedAdviceCardContent: React.FC<CardProps> =
-  ({handleExplore, userYou}: CardProps): React.ReactElement => {
-    // TODO(cyrille): Put text in title/subtitle/headerContent, once OKed by product team.
-    return <div>
-      {userYou("Tu t'", 'Vous vous êt')}es un peu éloignée du monde de l'emploi, rien de plus
-      normal. Pourtant, {userYou('tu as', 'vous avez')} continué de
-      développer {userYou('tes', 'vos')} talents pendant un des plus grands défis de la vie&nbsp;:
-      la parentalité 💪🏽
+const listStyle: React.CSSProperties = {marginTop: 20}
 
-      Pour {userYou('te', 'vous')} réinventer dans cette nouvelle étape professionnelle, <strong>
-        valorise{userYou(' ton', 'z votre')} expérience de parent
-        dans {userYou('tes', 'vos')} candidatures
-      </strong>. En voici quelques idées&nbsp;:
-      <MethodSuggestionList style={{marginTop: 20}}>
-        {momSkills.map((content): React.ReactElement<{style?: RadiumCSSProperties}> => <Skill
-          {...{handleExplore, ...content}} key={content.name}
-          description={content.description(userYou)} />)}
-      </MethodSuggestionList>
-    </div>
-  }
+
+const LongTermParent: React.FC<CardProps> = (props: CardProps): React.ReactElement => {
+  const {handleExplore, profile: {gender}, t, t: translate} = props
+  const tOptions = useMemo((): TOptions => ({context: gender}), [gender])
+  // TODO(cyrille): Put text in title/subtitle/headerContent, once OKed by product team.
+  return <Trans t={t} tOptions={tOptions}>
+    Vous vous êtes un peu éloigné·e du monde de l'emploi, rien de plus normal. Pourtant, vous avez
+    continué de développer vos talents pendant un des plus grands défis de la vie&nbsp;:
+    la parentalité <span aria-label={t('muscle')} role="img">💪🏽</span>{' '}
+
+    Pour vous réinventer dans cette nouvelle étape professionnelle, <strong>
+      valorisez votre expérience de parent dans vos candidatures
+    </strong>. En voici quelques idées&nbsp;:
+    <MethodSuggestionList style={listStyle}>
+      {momSkills.map(({description, name, ...content}):
+      React.ReactElement<{style?: RadiumCSSProperties}> => <Skill
+        {...{handleExplore, ...content}} key={name}
+        description={translate(description, tOptions)}
+        name={translate(name)} />)}
+    </MethodSuggestionList>
+  </Trans>
+}
+const ExpandedAdviceCardContent = React.memo(LongTermParent)
 
 
 export default {ExpandedAdviceCardContent, Picto}

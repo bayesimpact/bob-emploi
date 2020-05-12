@@ -6,8 +6,7 @@
     "metricTitle": "Méthode de recherche"
   },
   "find-what-you-like": {
-    "metricDetails": "Travailler dans un domaine qui vous motive est plus agréable mais également plus efficace. Les recruteurs le savent et la motivation est donc importante pour être recruté.",
-    "metricDetailsFeminine": "Travailler dans un domaine qui vous motive est plus agréable mais également plus efficace. Les recruteurs le savent et la motivation est donc importante pour être recrutée.",
+    "metricDetails": "Travailler dans un domaine qui vous motive est plus agréable mais également plus efficace. Les recruteurs le savent et la motivation est donc importante pour être recruté·e.",
     "metricTitle": "Motivation pour le métier"
   },
   "missing-diploma": {
@@ -21,5 +20,9 @@
   "stuck-market": {
     "metricDetails": "Le marché du travail considère les offres d'emploi et les recrutements dans le département mais également les autres candidats qui peuvent être vos concurrents. Un \"bon marché\" pour vous est un marché où il y a plus d'opportunités d'emploi que de concurrents.",
     "metricTitle": "Marché"
+  },
+  "undefined-project": {
+    "metricDetails": "Avoir un projet clair et bien défini est essentiel pour se lancer. C'est un excellent moyen de trouver de la motivation et de booster sa recherche.",
+    "metricTitle": "Projet professionnel"
   }
 }

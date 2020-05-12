@@ -13,7 +13,7 @@ import werkzeug
 from bob_emploi.frontend.server import proto
 from bob_emploi.frontend.server.test.testdata import test_pb2
 
-app = flask.Flask(__name__)  # pylint: disable=invalid-name
+app = flask.Flask(__name__)
 
 # TODO(pascal): Remove the type ignore once flask has proper typing for decorators.
 

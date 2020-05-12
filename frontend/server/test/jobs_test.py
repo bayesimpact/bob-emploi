@@ -73,6 +73,18 @@ class JobsTest(unittest.TestCase):
         self.assertEqual('Job Group with the correct Job', job_proto.job_group.name)
         self.assertFalse(job_proto.job_group.jobs)
 
+    def test_super_group(self) -> None:
+        """Upgrade a job-group to a super-job-group."""
+
+        self.assertEqual('Manutention', jobs.upgrade_to_super_group('N1103'))
+        self.assertEqual('Art et spectacle', jobs.upgrade_to_super_group('B1234'))
+        # job-group not in any super group.
+        self.assertFalse(jobs.upgrade_to_super_group('A1234'))
+
+        custom_groups = {'A': 'job-name', 'B': 'job-name'}
+        self.assertEqual('job-name', jobs.upgrade_to_super_group('A1234', custom_groups))
+        self.assertFalse(jobs.upgrade_to_super_group('C1234', custom_groups))
+
 
 if __name__ == '__main__':
     unittest.main()
